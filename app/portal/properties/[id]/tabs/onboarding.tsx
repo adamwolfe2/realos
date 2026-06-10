@@ -160,25 +160,28 @@ export async function OnboardingTab({
         </ul>
       </section>
 
-      {/* Optional checklist */}
-      <section className="space-y-3">
-        <header>
-          <h3 className="text-sm font-semibold text-foreground">
-            Optional integrations
-          </h3>
-          <p className="text-xs text-muted-foreground">
-            Connect these only if this property is running paid traffic
-            on the platform.
-          </p>
-        </header>
-        <ul className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
-          {checklist.items
-            .filter((i) => !i.required)
-            .map((item) => (
-              <ChecklistRow key={item.key} item={item} />
-            ))}
-        </ul>
-      </section>
+      {/* Optional checklist — only render when this property's package
+          actually includes optional integrations (ads, popups). */}
+      {checklist.items.some((i) => !i.required) ? (
+        <section className="space-y-3">
+          <header>
+            <h3 className="text-sm font-semibold text-foreground">
+              Optional integrations
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Connect these to round out this property — paid traffic and
+              on-site popups.
+            </p>
+          </header>
+          <ul className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+            {checklist.items
+              .filter((i) => !i.required)
+              .map((item) => (
+                <ChecklistRow key={item.key} item={item} />
+              ))}
+          </ul>
+        </section>
+      ) : null}
     </div>
   );
 }

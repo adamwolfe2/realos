@@ -35,6 +35,8 @@ const PIXEL_FRESHNESS_DAYS = 14;
 export type ChecklistItem = {
   key:
     | "marketing_content"
+    | "chatbot_configured"
+    | "popups_created"
     | "pixel_installed"
     | "pixel_firing"
     | "ga4_connected"
@@ -81,9 +83,23 @@ export async function getLaunchChecklist(
       description: true,
       launchStatus: true,
       launchStatusSetBy: true,
+      // Which features the workspace actually bought — the checklist is gated
+      // to these so a property only shows setup steps for the features that
+      // apply to it (a workspace without SEO never sees "Connect GA4").
+      org: {
+        select: {
+          moduleChatbot: true,
+          modulePixel: true,
+          moduleSEO: true,
+          moduleGoogleAds: true,
+          moduleMetaAds: true,
+          modulePopups: true,
+        },
+      },
     },
   });
   if (!property) return null;
+  const modules = property.org;
 
   const since = new Date(
     Date.now() - PIXEL_FRESHNESS_DAYS * 24 * 60 * 60 * 1000,
@@ -96,7 +112,8 @@ export async function getLaunchChecklist(
   // org-wide rows. Switched to OR-with-null pattern: prefer the
   // property-specific row if present, otherwise fall back to the
   // org-wide row. Mirrors the production pickIntegration logic.
-  const [cursive, seoRows, googleCampaign, metaCampaign] = await Promise.all([
+  const [cursive, seoRows, googleCampaign, metaCampaign, chatbotConfig, popup] =
+    await Promise.all([
     prisma.cursiveIntegration.findFirst({
       where: { orgId, OR: [{ propertyId }, { propertyId: null }] },
       orderBy: { propertyId: { sort: "desc", nulls: "last" } },
@@ -122,6 +139,18 @@ export async function getLaunchChecklist(
       where: { orgId, propertyId, platform: "META" },
       select: { id: true, name: true, status: true },
     }),
+    // Per-property chatbot override row (S1/S3). Its existence + enabled flag
+    // tells us whether this property's own bot is set up.
+    prisma.propertyChatbotConfig
+      .findUnique({
+        where: { propertyId },
+        select: { chatbotEnabled: true, chatbotKnowledgeBase: true },
+      })
+      .catch(() => null),
+    // Per-property popups — any PopupCampaign scoped to this property.
+    prisma.popupCampaign
+      .findFirst({ where: { orgId, propertyId }, select: { id: true } })
+      .catch(() => null),
   ]);
 
   // Prefer the property-specific row over the org-wide (propertyId=null)
@@ -152,25 +181,54 @@ export async function getLaunchChecklist(
       (property.metaTitle || property.description),
   );
 
-  const items: ChecklistItem[] = [
-    {
-      key: "marketing_content",
-      label: "Property page content",
+  const chatbotConfigured = Boolean(
+    chatbotConfig && chatbotConfig.chatbotEnabled !== false,
+  );
+
+  // Checklist is gated by the workspace's enabled features so each property
+  // only shows the setup steps for features it actually has. Every item is
+  // scoped to THIS property (its own pixel, GA4, GSC, chatbot, popups) — full
+  // per-property isolation.
+  const items: ChecklistItem[] = [];
+
+  items.push({
+    key: "marketing_content",
+    label: "Property page content",
+    description:
+      "Hero image and a property title or description are required so the marketing site has something to render.",
+    done: hasMarketingContent,
+    detail: hasMarketingContent
+      ? "Hero image set; title or description present."
+      : null,
+    actionLabel: "Edit content",
+    actionHref: `/portal/properties/${property.id}?tab=overview`,
+    required: true,
+  });
+
+  if (modules?.moduleChatbot) {
+    items.push({
+      key: "chatbot_configured",
+      label: "AI chatbot set up",
       description:
-        "Hero image and a property title or description are required so the marketing site has something to render.",
-      done: hasMarketingContent,
-      detail: hasMarketingContent
-        ? "Hero image set; title or description present."
+        "This property's own chatbot — give it a persona and a knowledge base with this building's facts.",
+      done: chatbotConfigured,
+      detail: chatbotConfigured
+        ? chatbotConfig?.chatbotKnowledgeBase
+          ? "Enabled with a property knowledge base."
+          : "Enabled — add this property's facts to its knowledge base."
         : null,
-      actionLabel: "Edit content",
-      actionHref: `/portal/properties/${property.id}?tab=overview`,
+      actionLabel: "Set up chatbot",
+      actionHref: `/portal/properties/${property.id}?tab=chatbot`,
       required: true,
-    },
-    {
+    });
+  }
+
+  if (modules?.modulePixel) {
+    items.push({
       key: "pixel_installed",
       label: "Cursive Pixel installed",
       description:
-        "The pixel snippet must be deployed on the property's marketing site so we can identify visitors.",
+        "This property's pixel snippet must be deployed on its marketing site so we can identify visitors.",
       done: pixelInstalled,
       detail: pixelInstalled
         ? `Pixel installed${cursive?.installedOnDomain ? ` on ${cursive.installedOnDomain}` : ""}.`
@@ -178,8 +236,8 @@ export async function getLaunchChecklist(
       actionLabel: "Install pixel",
       actionHref: `/portal/integrations/cursive?propertyId=${property.id}`,
       required: true,
-    },
-    {
+    });
+    items.push({
       key: "pixel_firing",
       label: "Pixel firing",
       description: `We've seen a pixel event in the last ${PIXEL_FRESHNESS_DAYS} days.`,
@@ -194,8 +252,11 @@ export async function getLaunchChecklist(
         ? `/portal/integrations/cursive?propertyId=${property.id}`
         : null,
       required: true,
-    },
-    {
+    });
+  }
+
+  if (modules?.moduleSEO) {
+    items.push({
       key: "ga4_connected",
       label: "Google Analytics 4 connected",
       description:
@@ -209,8 +270,8 @@ export async function getLaunchChecklist(
       actionLabel: "Connect GA4",
       actionHref: `/portal/seo?provider=GA4&propertyId=${property.id}`,
       required: true,
-    },
-    {
+    });
+    items.push({
       key: "gsc_connected",
       label: "Google Search Console connected",
       description:
@@ -224,8 +285,25 @@ export async function getLaunchChecklist(
       actionLabel: "Connect GSC",
       actionHref: `/portal/seo?provider=GSC&propertyId=${property.id}`,
       required: true,
-    },
-    {
+    });
+  }
+
+  if (modules?.modulePopups) {
+    items.push({
+      key: "popups_created",
+      label: "Popups created",
+      description:
+        "Add at least one on-site popup (promo, referral, or exit-intent) for this property.",
+      done: Boolean(popup),
+      detail: popup ? "A popup is configured for this property." : null,
+      actionLabel: "Create popup",
+      actionHref: `/portal/popups?propertyId=${property.id}`,
+      required: false,
+    });
+  }
+
+  if (modules?.moduleGoogleAds) {
+    items.push({
       key: "google_ads_connected",
       label: "Google Ads connected",
       description:
@@ -237,8 +315,11 @@ export async function getLaunchChecklist(
       actionLabel: "Connect Google Ads",
       actionHref: `/portal/integrations/ads?platform=GOOGLE&propertyId=${property.id}`,
       required: false,
-    },
-    {
+    });
+  }
+
+  if (modules?.moduleMetaAds) {
+    items.push({
       key: "meta_ads_connected",
       label: "Meta Ads connected",
       description:
@@ -250,8 +331,8 @@ export async function getLaunchChecklist(
       actionLabel: "Connect Meta Ads",
       actionHref: `/portal/integrations/ads?platform=META&propertyId=${property.id}`,
       required: false,
-    },
-  ];
+    });
+  }
 
   const requiredItems = items.filter((i) => i.required);
   const optionalItems = items.filter((i) => !i.required);
