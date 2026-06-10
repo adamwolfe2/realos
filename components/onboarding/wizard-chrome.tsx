@@ -11,9 +11,8 @@ import type { OnboardingStep } from "@/lib/onboarding/steps";
 
 const STEPS: Array<{ id: OnboardingStep; label: string }> = [
   { id: "welcome", label: "Workspace" },
-  { id: "integrations", label: "Connect" },
-  { id: "property", label: "Property" },
-  { id: "plan", label: "Plan" },
+  { id: "features", label: "Features" },
+  { id: "properties", label: "Properties" },
 ];
 
 export function WizardChrome({

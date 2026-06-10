@@ -79,9 +79,9 @@ export async function POST(req: NextRequest) {
       propertyType: parsed.propertyType,
       residentialSubtype,
       commercialSubtype,
-      onboardingStep: "integrations",
+      onboardingStep: "features",
     },
   });
 
-  return NextResponse.json({ ok: true, nextStep: "integrations" });
+  return NextResponse.json({ ok: true, nextStep: "features" });
 }

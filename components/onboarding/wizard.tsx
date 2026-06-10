@@ -13,9 +13,8 @@ import type {
 import type { OnboardingStep } from "@/lib/onboarding/steps";
 import { WizardChrome } from "./wizard-chrome";
 import { WelcomeStep } from "./welcome-step";
-import { IntegrationsStep } from "./integrations-step";
-import { PropertyStep } from "./property-step";
 import { FeaturesStep } from "./features-step";
+import { PropertiesStep, type PropertiesStepInitial } from "./properties-step";
 
 // ---------------------------------------------------------------------------
 // Top-level wizard host. Renders a chrome (progress dots + brand mark)
@@ -55,11 +54,11 @@ export type OnboardingProperty = {
 export function OnboardingWizard({
   step,
   org,
-  firstProperty,
+  properties,
 }: {
   step: OnboardingStep;
   org: OnboardingOrg;
-  firstProperty: OnboardingProperty;
+  properties: PropertiesStepInitial;
 }) {
   const router = useRouter();
   const [submitting, setSubmitting] = React.useState(false);
@@ -89,7 +88,7 @@ export function OnboardingWizard({
 
   const advance = React.useCallback(
     async (
-      action: "workspace" | "integrations" | "property" | "start-trial",
+      action: "workspace" | "features" | "properties",
       body: unknown,
     ) => {
       if (submitting) return;
@@ -158,32 +157,24 @@ export function OnboardingWizard({
         />
       ) : null}
 
-      {step === "integrations" ? (
-        <IntegrationsStep
-          onSubmit={(body) => advance("integrations", body)}
-          disabled={submitting}
-        />
-      ) : null}
-
-      {step === "property" ? (
-        <PropertyStep
-          initial={firstProperty}
-          orgPropertyType={org.propertyType}
-          onSubmit={(body) => advance("property", body)}
-          disabled={submitting}
-        />
-      ) : null}
-
-      {step === "plan" ? (
+      {step === "features" ? (
         <FeaturesStep
-          onSubmit={(body) => advance("start-trial", body)}
+          onSubmit={(body) => advance("features", body)}
           disabled={submitting}
         />
       ) : null}
-      {/* FeaturesStep posts { selectedModules: string[] } to
-          /api/onboarding/wizard/start-trial. The server writes EXACTLY that
-          set of feature flags (à-la-carte, no tier bleed-through) and infers
-          the billing tier from the selection. */}
+
+      {step === "properties" ? (
+        <PropertiesStep
+          initial={properties}
+          onSubmit={(body) => advance("properties", body)}
+          disabled={submitting}
+        />
+      ) : null}
+      {/* features → /api/onboarding/wizard/features writes the à-la-carte
+          module state (no tier bleed-through). properties →
+          /api/onboarding/wizard/properties creates the property rows, records
+          the CRM choice, starts the 14-day trial, and finishes onboarding. */}
     </WizardChrome>
   );
 }

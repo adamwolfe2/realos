@@ -55,19 +55,8 @@ export default async function OnboardingPage() {
           properties: {
             where: { lifecycle: { in: ["IMPORTED", "ACTIVE"] } },
             orderBy: { createdAt: "asc" },
-            take: 1,
-            select: {
-              id: true,
-              name: true,
-              addressLine1: true,
-              city: true,
-              state: true,
-              postalCode: true,
-              totalUnits: true,
-              yearBuilt: true,
-              propertyType: true,
-              residentialSubtype: true,
-            },
+            take: 99,
+            select: { name: true, city: true, state: true },
           },
         },
       },
@@ -85,7 +74,6 @@ export default async function OnboardingPage() {
   }
 
   const step = resolveCurrentStep(user.org.onboardingStep);
-  const firstProperty = user.org.properties[0] ?? null;
 
   return (
     <OnboardingWizard
@@ -98,7 +86,11 @@ export default async function OnboardingPage() {
         commercialSubtype: user.org.commercialSubtype,
         chosenTier: user.org.chosenTier,
       }}
-      firstProperty={firstProperty}
+      properties={user.org.properties.map((p) => ({
+        name: p.name,
+        city: p.city,
+        state: p.state,
+      }))}
     />
   );
 }

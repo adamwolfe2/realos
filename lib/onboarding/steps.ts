@@ -16,11 +16,15 @@
 // any user with `onboardingStep != "done"` back to the wizard.
 // ---------------------------------------------------------------------------
 
+// New à-la-carte order (slice S2): name the workspace, build a feature cart,
+// then add the properties those features run on, then land in the workspace
+// with the 14-day trial active. CRM/PMS choice lives inside the properties
+// step (with a "No CRM — set up manually" option), so there's no standalone
+// integrations step anymore.
 export const ONBOARDING_STEPS = [
   "welcome",
-  "integrations",
-  "property",
-  "plan",
+  "features",
+  "properties",
   "done",
 ] as const;
 

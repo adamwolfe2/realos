@@ -219,7 +219,7 @@ export function FeaturesStep({
             <span style={{ color: MUTED, fontSize: "12px", fontWeight: 500 }}> /property /mo</span>
           </div>
           <div style={{ color: MUTED, fontFamily: "var(--font-sans)", fontSize: "11.5px" }}>
-            {selected.size} feature{selected.size === 1 ? "" : "s"} · billed after your free trial
+            {selected.size} feature{selected.size === 1 ? "" : "s"} · free for 14 days, then billed
           </div>
         </div>
         <button
@@ -237,7 +237,7 @@ export function FeaturesStep({
             opacity: disabled ? 0.6 : 1,
           }}
         >
-          Start 14-day free trial
+          Continue to properties
         </button>
       </div>
     </div>
