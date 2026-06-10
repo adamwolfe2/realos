@@ -12,6 +12,7 @@ import {
 import { prisma } from "@/lib/db";
 import { computeTrialEndsAt } from "@/lib/onboarding/steps";
 import { SELF_SERVE_PROPERTY_CAP } from "@/lib/billing/catalog";
+import { scaffoldPropertyIntegrations } from "@/lib/onboarding/scaffold";
 
 // ---------------------------------------------------------------------------
 // POST /api/onboarding/wizard/properties
@@ -99,6 +100,8 @@ export async function POST(req: NextRequest) {
           commercialSubtype: true,
           trialStartedAt: true,
           trialEndsAt: true,
+          moduleChatbot: true,
+          modulePixel: true,
         },
       },
     },
@@ -142,6 +145,7 @@ export async function POST(req: NextRequest) {
     lifecycleSetAt: new Date(),
   };
 
+  const scaffoldProps: Array<{ id: string; name: string; websiteUrl: string | null }> = [];
   for (const p of parsed.properties) {
     const match = byName.get(p.name.toLowerCase());
     const fields = {
@@ -154,16 +158,28 @@ export async function POST(req: NextRequest) {
       ...common,
     };
     if (match) {
-      await prisma.property.update({
+      const row = await prisma.property.update({
         where: { id: match.id },
         data: { name: p.name, ...fields },
+        select: { id: true, name: true, websiteUrl: true },
       });
+      scaffoldProps.push(row);
     } else {
-      await prisma.property.create({
+      const row = await prisma.property.create({
         data: { orgId, name: p.name, slug: uniqueSlug(p.name), ...fields },
+        select: { id: true, name: true, websiteUrl: true },
       });
+      scaffoldProps.push(row);
     }
   }
+
+  // S3 — eager per-property scaffolding: give each property its own ready-to-use
+  // chatbot config + a queued pixel provision request for the features that are
+  // actually enabled, so the workspace lands set-up-ready (no blank properties).
+  await scaffoldPropertyIntegrations(orgId, scaffoldProps, {
+    chatbot: org.moduleChatbot,
+    pixel: org.modulePixel,
+  }).catch(() => undefined);
 
   // Record the CRM/PMS choice as a demand signal. "none" still logs so we can
   // see how many operators run fully manual.
