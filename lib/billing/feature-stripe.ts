@@ -70,6 +70,18 @@ export async function syncAllFeaturePricesToStripe(): Promise<SyncResult> {
           .retrieve(existing.stripePriceId)
           .catch(() => null);
         if (cur && cur.active && cur.unit_amount === row.monthlyCents) {
+          // Price is unchanged — but if we just recreated the PRODUCT (the old
+          // one was deleted/archived in Stripe), persist the new product id so
+          // the next sync doesn't keep recreating orphan products. (Found by a
+          // Codex review.)
+          if (productId !== existing.stripeProductId) {
+            await prisma.featurePrice
+              .update({
+                where: { key: row.key },
+                data: { stripeProductId: productId },
+              })
+              .catch(() => undefined);
+          }
           skipped++;
           continue;
         }
