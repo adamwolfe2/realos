@@ -24,46 +24,23 @@ import {
 } from "@/components/portal/seo/seo-data-cards";
 import {
   ExecSummaryRow,
-  PositionBucketChart,
-  CtrPositionScatter,
   StrikingDistanceTable,
   ShareOfVoiceDonut,
-  KeywordPipelineFunnel,
-  BrandedVsNonBrandedCard,
   SiteHealthGauge,
   LocalPackCard,
   type RangeKey,
 } from "@/components/portal/seo/seo-phase2-charts";
-
-// Heavy below-the-fold charts. Next.js 16 disallows `next/dynamic` with
-// `ssr: false` inside Server Components, so the dynamic loaders live in
-// a sibling Client Component (`./lazy-charts.tsx`). Import shape is
-// identical — the lazy boundary is invisible from this file.
-import {
-  ContentRoiTreemap,
-  OpportunityMatrix,
-  SearchPathSankey,
-} from "./lazy-charts";
 import {
   getExecSummary,
-  getPositionBucketSeries,
-  getCtrScatterPoints,
   getStrikingDistance,
   getShareOfVoice,
-  getOpportunityPoints,
-  getContentRoiNodes,
-  getPipelineFunnel,
-  getBrandedSplit,
   getSiteHealth,
   getLocalPackRows,
-  getScoreHistory,
-  getSearchPathSankey,
   getWeeklyChanges,
 } from "@/lib/seo/agent-charts-data";
 import { DraftLauncher } from "@/components/portal/seo/draft-launcher";
 import { TargetQueryManager } from "@/components/portal/seo/target-query-manager";
 import { RefreshRecommendationsButton } from "@/components/portal/seo/refresh-recommendations-button";
-import { ScoreHistoryChart } from "@/components/portal/seo/score-history-chart";
 import { DraftsInbox } from "@/components/portal/seo/drafts-inbox";
 import { PropertySwitcher } from "@/components/portal/seo/property-switcher";
 import { RecommendationManager } from "@/components/portal/seo/recommendation-manager";
@@ -413,48 +390,27 @@ export default async function SeoAgentPage({
     };
   });
 
-  // Phase 2 chart data — parallel fetch so the page renders fast.
+  // Actionable surfaces only — parallel fetch. (The vanity data-viz fetches —
+  // position buckets, CTR scatter, opportunity points, content-ROI, pipeline
+  // funnel, branded split, score history, search-path Sankey — were removed
+  // with their charts in the 2026-06-10 declutter.)
   const [
     execSummary,
-    positionBuckets,
-    ctrScatter,
     strikingDistance,
     shareOfVoice,
-    opportunityPoints,
-    contentRoiNodes,
-    pipelineStages,
-    brandedSplit,
     siteHealth,
     localPackRows,
-    scoreHistory,
-    sankey,
     weeklyChanges,
   ] = await Promise.all([
     getExecSummary({ orgId: scope.orgId, propertyId: property.id, range }),
-    getPositionBucketSeries({
-      orgId: scope.orgId,
-      propertyId: property.id,
-      range,
-    }),
-    getCtrScatterPoints({
-      orgId: scope.orgId,
-      propertyId: property.id,
-      range,
-    }),
     getStrikingDistance({ orgId: scope.orgId, propertyId: property.id }),
     getShareOfVoice({
       orgId: scope.orgId,
       propertyId: property.id,
       ourDomain: domain,
     }),
-    getOpportunityPoints({ orgId: scope.orgId, propertyId: property.id }),
-    getContentRoiNodes({ orgId: scope.orgId, propertyId: property.id }),
-    getPipelineFunnel({ orgId: scope.orgId, propertyId: property.id, range }),
-    getBrandedSplit({ orgId: scope.orgId, propertyId: property.id, range }),
     getSiteHealth({ orgId: scope.orgId, propertyId: property.id }),
     getLocalPackRows({ orgId: scope.orgId, propertyId: property.id }),
-    getScoreHistory({ orgId: scope.orgId, propertyId: property.id }),
-    getSearchPathSankey({ orgId: scope.orgId, propertyId: property.id, range }),
     getWeeklyChanges({ orgId: scope.orgId, propertyId: property.id }),
   ]);
 
@@ -713,30 +669,20 @@ export default async function SeoAgentPage({
           }))}
       />
 
-      {/* Phase 2 — the composite views Norman called "the real magic." */}
-      <KeywordPipelineFunnel stages={pipelineStages} />
+      {/* Declutter (2026-06-10): removed the non-actionable data-viz here —
+          the Search→revenue funnel, Search-path flow, position-bucket area,
+          CTR-vs-position + opportunity scatters, branded-vs-non-branded bar,
+          per-URL ROI list, and the score-history line. They were vanity charts
+          that didn't drive a decision. Kept the genuinely actionable surfaces:
+          the striking-distance queries, Share of Voice, site health, local
+          pack, SERP rankings, and the recommendations queue. */}
 
-      {/* Search path Sankey — top queries → landing URLs → outcomes. */}
-      <SearchPathSankey nodes={sankey.nodes} links={sankey.links} />
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <PositionBucketChart data={positionBuckets} />
-        <CtrPositionScatter data={ctrScatter} />
-      </div>
-
-      <OpportunityMatrix points={opportunityPoints} />
-
+      {/* Striking distance — queries ranking #4-20: the closest-to-page-1
+          wins, with the exact URL to optimize. Actionable. */}
       <StrikingDistanceTable rows={strikingDistance} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <ShareOfVoiceDonut slices={shareOfVoice} />
-        <BrandedVsNonBrandedCard
-          branded={brandedSplit.branded}
-          nonBranded={brandedSplit.nonBranded}
-        />
-      </div>
-
-      <ContentRoiTreemap nodes={contentRoiNodes} />
+      {/* Share of Voice — who owns the AI/search conversation in your market. */}
+      <ShareOfVoiceDonut slices={shareOfVoice} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <SiteHealthGauge
@@ -752,9 +698,6 @@ export default async function SeoAgentPage({
           including admin notes when changes are requested. Hidden when
           the operator has zero drafts. */}
       <DraftsInbox propertyId={property.id} />
-
-      {/* Score history — feeds the operator's "are we getting better?" question. */}
-      <ScoreHistoryChart data={scoreHistory} />
 
       {/* Target queries — operators add/remove their own queries here. */}
       <TargetQueryManager propertyId={property.id} />
