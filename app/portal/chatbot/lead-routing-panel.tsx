@@ -279,7 +279,7 @@ export function LeadRoutingPanel({
               if (candidateCount === null || candidateCount === 0) return;
               if (
                 !window.confirm(
-                  `Send ONE digest email covering ${candidateCount} captured conversation${candidateCount === 1 ? "" : "s"} to ${recipients.join(", ")}?\n\nClaude extracts each profile in parallel (~${Math.ceil(candidateCount / 4) * 2 + 5} sec total) and Jessica receives a single email with all ${candidateCount} prospect${candidateCount === 1 ? "" : "s"} sorted hot → warm → cold.`,
+                  `Send ONE digest email covering ${candidateCount} captured conversation${candidateCount === 1 ? "" : "s"} to ${recipients.join(", ")}?\n\nClaude extracts each profile in parallel (~${Math.ceil(candidateCount / 4) * 2 + 5} sec total) and ${recipients.length === 1 ? "the recipient receives" : "each recipient receives"} a single email with all ${candidateCount} prospect${candidateCount === 1 ? "" : "s"} sorted hot → warm → cold.`,
                 )
               ) {
                 return;
