@@ -86,7 +86,7 @@ function clerkIsConfigured(): boolean {
 
 async function coreHandler(
   req: NextRequest,
-  getAuth?: () => Promise<{ userId: string | null }>
+  getAuth?: () => Promise<{ userId: string | null }>,
 ) {
   const url = req.nextUrl;
   const hostname = req.headers.get("host") ?? "";
@@ -167,11 +167,28 @@ async function coreHandler(
     process.env.NEXT_PUBLIC_DEMO_MODE === "true" ||
     process.env.DEMO_MODE === "true";
 
-  // Platform hostname gates. Every NextResponse.next() in this branch
-  // forwards `sanitizedReqHeaders` so a downstream route handler can
-  // never observe spoofed x-tenant-* headers from the original request.
-  const passThrough = () =>
+  // Pass-through responses.
+  //
+  // CRITICAL (Clerk RSC auth): returning NextResponse.next() with a CUSTOM
+  // `request.headers` object drops the header clerkMiddleware injects to
+  // carry auth state into React Server Components. The result: auth() —
+  // and therefore getScope() — resolves to null in server components
+  // (/admin, /portal layouts) even though the session is valid, while
+  // route handlers still work (they fall back to the __session cookie).
+  // That asymmetry was the source of the sign-in redirect loop.
+  //
+  // So: PAGE routes get a clean NextResponse.next() (Clerk's RSC auth
+  // header survives). Only /api/* routes get the sanitized header set —
+  // they're route handlers (cookie-based auth, unaffected) and they're
+  // the ones that read x-tenant-* headers, so the spoof-stripping still
+  // applies exactly where it's a security control.
+  const passThroughClean = () => NextResponse.next();
+  const passThroughSanitized = () =>
     NextResponse.next({ request: { headers: sanitizedReqHeaders } });
+  const passThrough = () =>
+    url.pathname.startsWith("/api")
+      ? passThroughSanitized()
+      : passThroughClean();
 
   if (isAdminRoute(req) || isApiAdminRoute(req)) {
     if (demoMode) return passThrough();
@@ -202,7 +219,7 @@ function withTenantHeaders(
   source: Headers,
   orgId: string,
   slug: string,
-  hostname: string
+  hostname: string,
 ): Headers {
   const next = new Headers(source);
   next.set(TENANT_HEADER_ORG_ID, orgId);
