@@ -15,6 +15,7 @@ import { WizardChrome } from "./wizard-chrome";
 import { WelcomeStep } from "./welcome-step";
 import { FeaturesStep } from "./features-step";
 import { PropertiesStep, type PropertiesStepInitial } from "./properties-step";
+import type { FeatureDef } from "@/lib/billing/features";
 
 // ---------------------------------------------------------------------------
 // Top-level wizard host. Renders a chrome (progress dots + brand mark)
@@ -55,10 +56,13 @@ export function OnboardingWizard({
   step,
   org,
   properties,
+  featureCatalog,
 }: {
   step: OnboardingStep;
   org: OnboardingOrg;
   properties: PropertiesStepInitial;
+  // Effective (admin-priced) feature catalog, resolved server-side.
+  featureCatalog: { features: FeatureDef[]; basePlatformCents: number };
 }) {
   const router = useRouter();
   const [submitting, setSubmitting] = React.useState(false);
@@ -159,6 +163,8 @@ export function OnboardingWizard({
 
       {step === "features" ? (
         <FeaturesStep
+          features={featureCatalog.features}
+          basePlatformCents={featureCatalog.basePlatformCents}
           onSubmit={(body) => advance("features", body)}
           disabled={submitting}
         />

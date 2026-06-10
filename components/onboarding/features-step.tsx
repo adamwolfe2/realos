@@ -20,11 +20,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-import {
-  FEATURE_CATALOG,
-  cartMonthlyCentsPerProperty,
-  BASE_PLATFORM_CENTS,
-} from "@/lib/billing/features";
+import type { FeatureDef } from "@/lib/billing/features";
 
 // ---------------------------------------------------------------------------
 // Onboarding — à-la-carte feature cart (slice S2). The operator builds a
@@ -58,21 +54,23 @@ function dollars(cents: number): string {
   return `$${Math.round(cents / 100).toLocaleString()}`;
 }
 
-// Default cart = the recommended features so a fast operator gets a sensible
-// starting package they can trim.
-const DEFAULT_SELECTED = FEATURE_CATALOG.filter((f) => f.recommended).map(
-  (f) => f.key as string,
-);
-
 export function FeaturesStep({
+  features,
+  basePlatformCents,
   onSubmit,
   disabled,
 }: {
+  // Effective catalog (admin-priced) passed from the server so the cart shows
+  // the live, admin-editable prices, not hardcoded ones.
+  features: FeatureDef[];
+  basePlatformCents: number;
   onSubmit: (body: { selectedModules: string[] }) => void;
   disabled?: boolean;
 }) {
+  // Default cart = the recommended features so a fast operator gets a sensible
+  // starting package they can trim.
   const [selected, setSelected] = React.useState<Set<string>>(
-    () => new Set(DEFAULT_SELECTED),
+    () => new Set(features.filter((f) => f.recommended).map((f) => f.key as string)),
   );
 
   const toggle = React.useCallback((key: string) => {
@@ -85,7 +83,11 @@ export function FeaturesStep({
   }, []);
 
   const selectedArr = React.useMemo(() => Array.from(selected), [selected]);
-  const perPropertyCents = cartMonthlyCentsPerProperty(selectedArr);
+  const perPropertyCents =
+    basePlatformCents +
+    features
+      .filter((f) => selected.has(f.key))
+      .reduce((acc, f) => acc + f.monthlyCents, 0);
 
   return (
     <div className="space-y-6">
@@ -146,13 +148,13 @@ export function FeaturesStep({
           </span>
         </div>
         <span className="shrink-0" style={{ color: MUTED, fontFamily: "var(--font-mono)", fontSize: "11px" }}>
-          {dollars(BASE_PLATFORM_CENTS)}/mo · included
+          {dollars(basePlatformCents)}/mo · included
         </span>
       </div>
 
       {/* Feature grid — add-to-cart cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-        {FEATURE_CATALOG.map((f) => {
+        {features.map((f) => {
           const Icon = ICONS[f.icon] ?? Sparkles;
           const isOn = selected.has(f.key);
           return (

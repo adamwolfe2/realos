@@ -91,6 +91,7 @@ export const adminNavGroups: NavGroup[] = [
       { href: "/admin/leads", label: "Leads", icon: Activity },
       { href: "/admin/marketplace", label: "Marketplace sources", icon: Store },
       { href: "/admin/proposals", label: "Proposals", icon: FileSignature },
+      { href: "/admin/pricing", label: "Onboarding pricing", icon: DollarSign },
     ],
   },
   {

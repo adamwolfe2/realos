@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { BRAND_NAME } from "@/lib/brand";
 import { resolveCurrentStep } from "@/lib/onboarding/steps";
 import { OnboardingWizard } from "@/components/onboarding/wizard";
+import { getEffectiveFeatureCatalog } from "@/lib/billing/feature-prices";
 
 // ---------------------------------------------------------------------------
 // /onboarding — the self-serve, trial-first signup wizard.
@@ -74,10 +75,13 @@ export default async function OnboardingPage() {
   }
 
   const step = resolveCurrentStep(user.org.onboardingStep);
+  // Admin-editable feature prices drive the cart's running total.
+  const featureCatalog = await getEffectiveFeatureCatalog();
 
   return (
     <OnboardingWizard
       step={step}
+      featureCatalog={featureCatalog}
       org={{
         id: user.org.id,
         name: user.org.name,

@@ -881,6 +881,21 @@ model PropertyChatbotConfig {
   @@index([orgId])
 }
 
+// Admin-editable price per onboarding feature. One row per feature key (matches
+// FeatureKey in lib/billing/features.ts) plus the special key "base_platform".
+// A row OVERRIDES the code-default price from FEATURE_CATALOG; an absent row
+// falls back to that default. `active=false` hides the feature from the
+// onboarding cart. Global platform config (not org-scoped) — drives the
+// onboarding running total and, later, the per-feature Stripe prices.
+model FeaturePrice {
+  id           String   @id @default(cuid())
+  key          String   @unique
+  monthlyCents Int
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 // ============================================================================
 // REAL ESTATE ENTITIES
 // ============================================================================
