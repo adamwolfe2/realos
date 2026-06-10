@@ -140,38 +140,31 @@ export async function getScope(): Promise<ScopedContext | null> {
     clerkUserId = session.userId;
     sessionClaims = session.sessionClaims;
   } catch (err) {
-    console.error("[scope.diag] auth() THREW in RSC/route:", err);
+    console.error("[scope] auth() threw in RSC/route:", err);
     return await getDemoScope();
   }
   if (!clerkUserId) {
-    console.error("[scope.diag] auth() returned NO userId (RSC header?)");
     return await getDemoScope();
   }
 
-  // DIAG (temporary): capture the real DB error instead of swallowing it,
-  // so we can tell a genuine "no row" miss apart from a Neon pool/connection
-  // failure (which would also null this out and is a candidate root cause of
-  // the /admin 503 + ForbiddenError). Remove once the loop is confirmed dead.
-  let clerkIdLookupError: unknown = null;
+  // Capture (don't swallow) a real DB error on the primary lookup. A throw
+  // here means schema↔DB drift or a Neon connectivity problem — both of
+  // which null out scope and present as a bogus "Not authenticated". Logging
+  // the actual message once (only on error) is what turned a multi-hour
+  // "auth loop" into a 2-minute fix: the error was a missing Organization
+  // column, not anything auth-related.
   let user = await prisma.user
     .findUnique({
       where: { clerkUserId },
       include: { org: true },
     })
     .catch((e) => {
-      clerkIdLookupError = e;
+      console.error(
+        "[scope] user lookup failed (schema drift / DB?):",
+        (e as Error)?.message ?? e,
+      );
       return null;
     });
-  console.error("[scope.diag] auth+lookup", {
-    hasUserId: !!clerkUserId,
-    byClerkId: !!user,
-    hasOrg: !!user?.org,
-    dbError: clerkIdLookupError
-      ? String(
-          (clerkIdLookupError as Error)?.message ?? clerkIdLookupError,
-        ).slice(0, 160)
-      : null,
-  });
 
   // Self-heal: if the Clerk session is valid but there's no LeaseStack
   // User row yet (Clerk webhook not configured / hasn't fired / fired
@@ -223,18 +216,12 @@ export async function getScope(): Promise<ScopedContext | null> {
         clerkUser?.emailAddresses?.[0]?.emailAddress ??
         claimEmail ??
         backendEmail;
-      console.error("[scope.diag] self-heal email", {
-        hasCurrentUser: !!clerkUser,
-        claimEmail: !!claimEmail,
-        backendEmail: !!backendEmail,
-        resolvedEmail: email ? `${email.slice(0, 3)}…` : null,
-        backendError: backendError
-          ? String((backendError as Error)?.message ?? backendError).slice(
-              0,
-              160,
-            )
-          : null,
-      });
+      if (backendError) {
+        console.error(
+          "[scope] backend email lookup failed:",
+          (backendError as Error)?.message ?? backendError,
+        );
+      }
       if (email) {
         const normalized = email.toLowerCase().trim();
         // Direct email match + re-link. The User row's clerkUserId can
@@ -246,11 +233,6 @@ export async function getScope(): Promise<ScopedContext | null> {
         const byEmail = await prisma.user
           .findUnique({ where: { email: normalized }, include: { org: true } })
           .catch(() => null);
-        console.error("[scope.diag] byEmail", {
-          found: !!byEmail,
-          hasOrg: !!byEmail?.org,
-          rowClerkIdMatches: byEmail ? byEmail.clerkUserId === clerkUserId : null,
-        });
         if (byEmail && byEmail.org) {
           if (byEmail.clerkUserId !== clerkUserId) {
             await prisma.user
@@ -278,9 +260,6 @@ export async function getScope(): Promise<ScopedContext | null> {
     }
   }
   if (!user || !user.org) {
-    console.error("[scope.diag] returning NULL (no user/org after self-heal)", {
-      hasUserId: !!clerkUserId,
-    });
     return await getDemoScope();
   }
 
