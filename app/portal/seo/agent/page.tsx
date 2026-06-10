@@ -494,6 +494,31 @@ export default async function SeoAgentPage({
     },
   ];
 
+  // Self-explaining layer (refactor 2026-06-10): a plain-English line per
+  // metric + a good/ok/bad benchmark dot where there's a sensible threshold.
+  // Avg position is the clearest benchmark (top 10 = page 1).
+  const avgPosNow = execSummary.avgPosition.current;
+  const STAT_SUBLABEL: Record<string, string> = {
+    "Total clicks": "Visits from Google search",
+    Impressions: "Times you appeared in Google results",
+    "Avg position": "Average Google rank · top 10 = page 1",
+    "Ranked kws": "Keywords you rank for at all",
+    "Top 10": "Keywords sitting on page 1 of Google",
+    "Est. traffic": "Estimated monthly search visits",
+  };
+  const execStatsEnriched = execStats.map((s) => ({
+    ...s,
+    sublabel: STAT_SUBLABEL[s.label],
+    tone:
+      s.label === "Avg position" && avgPosNow != null
+        ? avgPosNow <= 10
+          ? ("good" as const)
+          : avgPosNow <= 20
+            ? ("ok" as const)
+            : ("bad" as const)
+        : undefined,
+  }));
+
   // Competitors — merge Google Places + DataforSEO into one ranked list.
   const competitorRows: CompetitorRow[] = [
     ...googleNearbyCompetitors.map((c) => ({
@@ -627,8 +652,9 @@ export default async function SeoAgentPage({
         ]}
       />
 
-      {/* The numbers — Search Console + DataForSEO KPIs with WoW deltas. */}
-      <ExecSummaryRow stats={execStats} />
+      {/* The numbers — Search Console + DataForSEO KPIs with WoW deltas +
+          plain-English sublabels + a benchmark dot. */}
+      <ExecSummaryRow stats={execStatsEnriched} />
 
       {/* Weekly changes — what moved (rank up/down, top-10 entries, new
           competitor citations). Hidden when there's no notable signal. */}

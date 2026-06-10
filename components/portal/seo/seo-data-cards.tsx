@@ -95,6 +95,18 @@ export function IntegrationStatusRow({
 // Composite health card — single big number + pillar dots
 // ---------------------------------------------------------------------------
 
+// Plain-English sublabel per pillar (also the tooltip), so "SEO 100" reads as
+// "search-friendly tags" — clarifying that it's Lighthouse's tag check, not a
+// rankings score, which is what made the numbers look contradictory.
+const PILLAR_SUBLABEL: Record<string, string> = {
+  "Perf.": "Page speed (Lighthouse)",
+  SEO: "Search-friendly tags",
+  A11y: "Accessibility",
+  "Top 10": "Keywords on page 1",
+  AEO: "Cited by AI engines",
+  Domain: "Backlink authority",
+};
+
 export function HealthScoreCard({
   composite,
   pillars,
@@ -162,25 +174,59 @@ export function HealthScoreCard({
                   ? "Below benchmark. Several quick wins available."
                   : "Critical. Open the action items below."}
         </h3>
+        {composite != null ? (
+          <p className="text-[12px] text-muted-foreground leading-snug mb-3">
+            A weighted blend of the six signals below — page speed, search-friendly
+            tags, page-1 rankings, AI-engine visibility, and domain authority.
+            Each is scored 0–100; a healthy overall score in your market is ~65+.
+          </p>
+        ) : null}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
-          {pillars.map((p) => (
-            <div
-              key={p.label}
-              className="rounded-md border border-border/60 bg-muted/20 px-2 py-1.5"
-            >
-              <p className="text-[10px] font-mono uppercase tracking-[0.08em] text-muted-foreground leading-tight">
-                {p.label}
-              </p>
-              <p className="text-[12px] font-semibold text-foreground tabular-nums leading-tight">
-                {p.value != null ? Math.round(p.value) : "—"}
-                {p.max ? (
-                  <span className="text-[10px] font-mono text-muted-foreground ml-0.5">
-                    / {p.max}
-                  </span>
+          {pillars.map((p) => {
+            const sub = PILLAR_SUBLABEL[p.label] ?? "";
+            const v = p.value;
+            const dot =
+              v == null
+                ? "#94A3B8"
+                : v >= 75
+                  ? "#10B981"
+                  : v >= 50
+                    ? "#2563EB"
+                    : v >= 25
+                      ? "#F59E0B"
+                      : "#EF4444";
+            return (
+              <div
+                key={p.label}
+                className="rounded-md border border-border/60 bg-muted/20 px-2 py-1.5"
+                title={sub}
+              >
+                <div className="flex items-center gap-1">
+                  <span
+                    className="inline-block w-1.5 h-1.5 rounded-full shrink-0"
+                    style={{ backgroundColor: dot }}
+                    aria-hidden="true"
+                  />
+                  <p className="text-[10px] font-mono uppercase tracking-[0.08em] text-muted-foreground leading-tight truncate">
+                    {p.label}
+                  </p>
+                </div>
+                <p className="text-[12px] font-semibold text-foreground tabular-nums leading-tight">
+                  {v != null ? Math.round(v) : "—"}
+                  {p.max ? (
+                    <span className="text-[10px] font-mono text-muted-foreground ml-0.5">
+                      / {p.max}
+                    </span>
+                  ) : null}
+                </p>
+                {sub ? (
+                  <p className="text-[9px] text-muted-foreground leading-tight mt-0.5 truncate">
+                    {sub}
+                  </p>
                 ) : null}
-              </p>
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>

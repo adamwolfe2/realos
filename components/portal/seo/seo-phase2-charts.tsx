@@ -188,6 +188,18 @@ export type ExecSummaryStat = {
   /** For metrics where "lower is better" (cost, position) — flips color. */
   inverted?: boolean;
   hint?: string;
+  /** Plain-English one-liner of what this number means, for non-SEO readers. */
+  sublabel?: string;
+  /** Benchmark state vs a sensible threshold; renders a good/ok/bad dot. */
+  tone?: "good" | "ok" | "bad";
+  /** When the source isn't connected, show this + a fix link instead of "—". */
+  notConnected?: { label: string; href: string };
+};
+
+const TONE_DOT: Record<"good" | "ok" | "bad", string> = {
+  good: "#10B981",
+  ok: "#F59E0B",
+  bad: "#EF4444",
 };
 
 export function ExecSummaryRow({ stats }: { stats: ExecSummaryStat[] }) {
@@ -213,24 +225,42 @@ export function ExecSummaryRow({ stats }: { stats: ExecSummaryStat[] }) {
               ? DANGER
               : MUTED;
           const sign = showDelta && s.delta! > 0 ? "+" : "";
+          const isMissing = s.value === "—" && s.notConnected;
           return (
             <div key={s.label} className="px-4 py-3">
-              <p className="text-[9.5px] font-mono font-semibold uppercase tracking-[0.1em] text-muted-foreground leading-tight">
-                {s.label}
-              </p>
+              <div className="flex items-center gap-1.5">
+                {s.tone ? (
+                  <span
+                    className="inline-block w-1.5 h-1.5 rounded-full shrink-0"
+                    style={{ backgroundColor: TONE_DOT[s.tone] }}
+                    aria-hidden="true"
+                  />
+                ) : null}
+                <p className="text-[9.5px] font-mono font-semibold uppercase tracking-[0.1em] text-muted-foreground leading-tight">
+                  {s.label}
+                </p>
+              </div>
               <p className="mt-0.5 text-[20px] font-display font-medium tabular-nums leading-none text-foreground">
                 {s.value}
               </p>
-              {showDelta ? (
+              {isMissing ? (
+                <a
+                  href={s.notConnected!.href}
+                  className="mt-1.5 inline-block text-[10px] font-medium text-primary hover:underline leading-tight"
+                >
+                  {s.notConnected!.label} →
+                </a>
+              ) : showDelta ? (
                 <p
                   className="mt-1.5 text-[11px] font-medium tabular-nums leading-none"
                   style={{ color }}
                 >
                   {flat ? "Flat" : `${sign}${s.deltaPct ? `${s.delta!.toFixed(1)}%` : s.delta!.toLocaleString()}`}
                 </p>
-              ) : s.hint ? (
-                <p className="mt-1.5 text-[10px] text-muted-foreground leading-tight truncate">
-                  {s.hint}
+              ) : null}
+              {s.sublabel ? (
+                <p className="mt-1.5 text-[10px] text-muted-foreground leading-snug">
+                  {s.sublabel}
                 </p>
               ) : null}
             </div>
