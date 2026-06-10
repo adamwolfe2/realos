@@ -100,19 +100,19 @@ function VisibilityScoreCard({
   const filled = Math.min(segments, Math.round((score / 100) * segments));
 
   return (
-    <div className="ls-card p-5 md:p-6 flex flex-col md:flex-row gap-5 md:items-center">
-      <div className="flex items-baseline gap-3 md:min-w-[200px]">
+    <div className="ls-card px-4 py-3 flex flex-col sm:flex-row gap-3 sm:items-center">
+      <div className="flex items-baseline gap-2 sm:min-w-[150px] shrink-0">
         <div className="text-[10px] font-mono uppercase tracking-[0.14em] text-muted-foreground">
-          AI Visibility Score
+          AI Visibility
         </div>
-        <div className="text-5xl font-semibold tabular-nums tracking-tight text-foreground leading-none">
+        <div className="text-2xl font-semibold tabular-nums tracking-tight text-foreground leading-none">
           {total === 0 ? "—" : score}
           {total > 0 ? (
-            <span className="text-xl text-muted-foreground"> / 100</span>
+            <span className="text-sm text-muted-foreground"> / 100</span>
           ) : null}
         </div>
       </div>
-      <div className="flex-1 space-y-2.5">
+      <div className="flex-1 space-y-1.5 min-w-0">
         {/* Segmented bar */}
         <div className="flex items-center gap-1">
           {Array.from({ length: segments }).map((_, i) => (
@@ -125,12 +125,12 @@ function VisibilityScoreCard({
             />
           ))}
         </div>
-        <p className="text-[13px] text-muted-foreground">
+        <p className="text-[12px] text-muted-foreground">
           {band.label}
           {total > 0 ? (
             <span className="text-muted-foreground/70">
               {" "}
-              · Based on {fmtNumber(total)} AI responses (last 30 days)
+              · {fmtNumber(total)} AI responses (30d)
             </span>
           ) : null}
         </p>
@@ -173,7 +173,7 @@ function NextActions({
   return (
     <SectionCard
       label="What to do next"
-      description="Actions derived from the AI responses below. Each links to where you can act."
+      description="Actions derived from the AI responses on this page. Each links to where you can act."
     >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         {recs.map((rec, i) => {
@@ -287,6 +287,13 @@ export function AeoClient({
         />
       </div>
 
+      {/* The actual AI prompts + responses — the most useful thing on the
+          page, so it leads right under the score instead of being buried at
+          the bottom. */}
+      <div id="all-responses">
+        <AeoResponsesTable rows={responses} />
+      </div>
+
       {/* Per-engine cards — now show BOTH mention + citation per engine */}
       <AeoEngineCards rows={engineCards} />
 
@@ -361,12 +368,6 @@ export function AeoClient({
           </ul>
         )}
       </SectionCard>
-
-      {/* All Responses table — moves to the bottom now that the score +
-          mentions + competitors + recommendations carry the headline. */}
-      <div id="all-responses">
-        <AeoResponsesTable rows={responses} />
-      </div>
     </div>
   );
 }
