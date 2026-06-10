@@ -65,7 +65,10 @@ const PRODUCT_LINKS: ProductLink[] = [
     icon: Search,
   },
   {
-    href: "/audit",
+    // Reputation has no dedicated /features sub-page — it lives as a section
+    // on the main features page. Deep-link there instead of /audit (the
+    // lead-magnet quiz), which read as a broken menu link.
+    href: "/features#reputation",
     label: "Reputation Management",
     description: "Every public mention, every 90 days",
     icon: Star,

@@ -115,6 +115,9 @@ type Feature = {
   href: string;
   linkLabel: string;
   artifact: ReactNode;
+  /** Optional anchor id so the nav can deep-link to this section
+   *  (e.g. /features#reputation for features without a dedicated sub-page). */
+  anchorId?: string;
   /** "sky" reads cooler / brand blue; "lavender" leans cluely-style.
    *  Alternated per row so the page rhythm doesn't feel mono-tonal. */
   tone: "sky" | "lavender" | "mint";
@@ -182,6 +185,7 @@ const FEATURES: Feature[] = [
   },
   {
     eyebrow: "Reputation · Add-on",
+    anchorId: "reputation",
     title: "Every public mention, every 90 days, in one feed.",
     body: "Reddit, Yelp, Google, BBB, ApartmentRatings, Facebook, and the open web — sentiment-classified, theme-tagged, one click to reply. The reputation score above your dashboard is calculated directly from these.",
     bullets: [
@@ -386,6 +390,7 @@ function FeatureRow({ feature, index }: { feature: Feature; index: number }) {
 
   return (
     <section
+      id={feature.anchorId}
       style={{
         backgroundColor: wrapperBg,
         borderBottom: `1px solid ${BORDER}`,
