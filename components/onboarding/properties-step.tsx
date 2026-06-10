@@ -231,12 +231,12 @@ export function PropertiesStep({
         <p style={{ color: "#DC2626", fontFamily: "var(--font-sans)", fontSize: "12.5px" }}>{error}</p>
       ) : null}
 
-      <div className="flex justify-end">
+      <div className="flex">
         <button
           type="button"
           onClick={submit}
           disabled={disabled}
-          className="rounded-lg transition-colors"
+          className="rounded-lg transition-colors w-full sm:w-auto sm:ml-auto"
           style={{ padding: "12px 20px", backgroundColor: ACCENT, color: "#FFFFFF", fontFamily: "var(--font-sans)", fontSize: "14px", fontWeight: 600, opacity: disabled ? 0.6 : 1 }}
         >
           Start 14-day free trial

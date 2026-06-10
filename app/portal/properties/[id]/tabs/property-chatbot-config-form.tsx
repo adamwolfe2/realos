@@ -68,7 +68,7 @@ export function PropertyChatbotConfigForm({
   const captureValue = config?.chatbotCaptureMode ?? "";
 
   return (
-    <form action={onSubmit} className="space-y-4 rounded-xl border border-border bg-card p-6">
+    <form action={onSubmit} className="space-y-4 rounded-xl border border-border bg-card p-4 sm:p-6">
       <input type="hidden" name="propertyId" value={propertyId} />
 
       <div>
@@ -208,11 +208,11 @@ export function PropertyChatbotConfigForm({
         </div>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex">
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 w-full sm:w-auto sm:ml-auto"
         >
           {pending ? "Saving…" : "Save chatbot"}
         </button>

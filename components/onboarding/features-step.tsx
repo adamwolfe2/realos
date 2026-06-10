@@ -138,13 +138,15 @@ export function FeaturesStep({
           <span style={{ color: INK, fontFamily: "var(--font-sans)", fontSize: "13px", fontWeight: 600 }}>
             LeaseStack platform
           </span>
-          <span className="ml-2 inline-flex items-center gap-2 align-middle" style={{ color: MUTED, fontSize: "11.5px" }}>
+          {/* Inline feature list hidden on phones so the row fits 370px —
+              just the name + price show on mobile. */}
+          <span className="ml-2 hidden sm:inline-flex items-center gap-2 align-middle" style={{ color: MUTED, fontSize: "11.5px" }}>
             <Globe className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden /> Marketing site
             <Users className="w-3.5 h-3.5 ml-1" strokeWidth={1.5} aria-hidden /> Lead capture + inbox
           </span>
         </div>
-        <span style={{ color: MUTED, fontFamily: "var(--font-mono)", fontSize: "11px" }}>
-          {dollars(BASE_PLATFORM_CENTS)}/property · included
+        <span className="shrink-0" style={{ color: MUTED, fontFamily: "var(--font-mono)", fontSize: "11px" }}>
+          {dollars(BASE_PLATFORM_CENTS)}/mo · included
         </span>
       </div>
 
@@ -210,7 +212,7 @@ export function FeaturesStep({
 
       {/* Running total + CTA */}
       <div
-        className="sticky bottom-0 rounded-xl flex items-center justify-between gap-4"
+        className="sticky bottom-0 rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
         style={{ padding: "14px 16px", border: `1px solid ${BORDER}`, backgroundColor: "#FFFFFF" }}
       >
         <div>
@@ -226,7 +228,7 @@ export function FeaturesStep({
           type="button"
           onClick={() => !disabled && onSubmit({ selectedModules: selectedArr })}
           disabled={disabled}
-          className="rounded-lg transition-colors"
+          className="rounded-lg transition-colors w-full sm:w-auto shrink-0"
           style={{
             padding: "12px 20px",
             backgroundColor: ACCENT,

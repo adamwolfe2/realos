@@ -109,7 +109,11 @@ export function WizardChrome({
                   >
                     {isDone ? <Check className="w-3 h-3" strokeWidth={1.5} /> : i + 1}
                   </span>
+                  {/* Labels hide on phones (just the numbered dots show) so
+                      the 3-step rail never overflows a 370px viewport. The
+                      active step's label stays visible for orientation. */}
                   <span
+                    className={isActive ? "inline-block" : "hidden sm:inline-block"}
                     style={{
                       color: isActive ? "#1E2A3A" : "#88867f",
                       fontFamily: "var(--font-mono)",
@@ -125,8 +129,8 @@ export function WizardChrome({
                 {i < STEPS.length - 1 ? (
                   <span
                     aria-hidden="true"
+                    className="w-4 sm:w-7"
                     style={{
-                      width: 28,
                       height: 1,
                       backgroundColor: "#E2E8F0",
                     }}
@@ -162,12 +166,11 @@ export function WizardChrome({
             </button>
           ) : null}
           <div
-            className="relative rounded-2xl"
+            className="relative rounded-2xl p-5 sm:p-8"
             style={{
               backgroundColor: "#ffffff",
               border: "1px solid #E2E8F0",
               boxShadow: "0 1px 2px rgba(30, 42, 58,0.03)",
-              padding: "32px 28px 32px",
             }}
           >
             {children}
