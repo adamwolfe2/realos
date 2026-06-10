@@ -22,9 +22,13 @@ import { DismissibleStrip } from "@/components/portal/dismissible-strip";
 import { PageTransition } from "@/components/portal/page-transition";
 import { getActivePropertyId } from "@/lib/portal/active-property";
 import { visibleProperties } from "@/lib/tenancy/property-filter";
+import { ScopeRecovery } from "@/components/auth/scope-recovery";
 
 export const metadata: Metadata = {
-  title: { template: `%s | ${BRAND_NAME} Portal`, default: `${BRAND_NAME} Portal` },
+  title: {
+    template: `%s | ${BRAND_NAME} Portal`,
+    default: `${BRAND_NAME} Portal`,
+  },
   robots: { index: false, follow: false },
 };
 
@@ -36,7 +40,10 @@ export default async function PortalLayout({
   children: React.ReactNode;
 }) {
   const scope = await getScope();
-  if (!scope) redirect("/sign-in");
+  // Middleware already verified auth — a null scope here is an RSC session
+  // race, not "logged out." Recover in place instead of redirecting to
+  // /sign-in (which loops for a signed-in user).
+  if (!scope) return <ScopeRecovery />;
 
   if (scope.isAgency && !scope.isImpersonating) {
     redirect("/admin");
@@ -430,8 +437,7 @@ export default async function PortalLayout({
           trialEndsAt: org.trialEndsAt,
         });
         if (
-          (trialState === "trial_active" ||
-            trialState === "trial_expired") &&
+          (trialState === "trial_active" || trialState === "trial_expired") &&
           org.trialEndsAt
         ) {
           return (
@@ -460,7 +466,8 @@ export default async function PortalLayout({
             className="shrink-0 h-7 bg-destructive/10 border-b border-destructive/30 text-destructive text-[11px] px-4 pr-9 flex items-center justify-between gap-3"
           >
             <span className="truncate">
-              Impersonating <strong>{org.name}</strong>. Changes attributed to you.
+              Impersonating <strong>{org.name}</strong>. Changes attributed to
+              you.
             </span>
             <form action="/api/admin/impersonate/end" method="post">
               <button
@@ -490,53 +497,51 @@ export default async function PortalLayout({
           for weeks. */}
       {showStaleBanner ? (
         <div data-no-print>
-        <DismissibleStrip
-          storageKey={`leasestack:appfolio-stale:${org.id}:${appfolioStatus.lastSyncAt?.getTime() ?? "none"}`}
-        >
-          <AlertBanner
-            severity={
-              appfolioStatus.state === "failed"
-                ? "critical"
-                : "warning" // partial-success and stale both render amber
-            }
-            flush
-            title={
-              appfolioStatus.state === "failed"
-                ? "AppFolio sync failed."
-                : appfolioStatus.state === "partial"
-                  ? "AppFolio sync completed with warnings."
-                  : "AppFolio data is stale."
-            }
-            action={{
-              label:
-                appfolioStatus.state === "failed"
-                  ? "Fix integration"
-                  : "Open integration",
-              href: "/portal/connect?provider=appfolio",
-            }}
+          <DismissibleStrip
+            storageKey={`leasestack:appfolio-stale:${org.id}:${appfolioStatus.lastSyncAt?.getTime() ?? "none"}`}
           >
-            {appfolioStatus.state === "failed" && appfolioStatus.lastError ? (
-              <>
-                {summarizeAppfolioError(appfolioStatus.lastError)}
-                {staleAgeDays != null
-                  ? ` Last attempt ${staleAgeDays}d ago.`
-                  : null}
-              </>
-            ) : appfolioStatus.state === "partial" ? (
-              <>
-                {appfolioStatus.stats?.phasesCompleted ?? 0} of{" "}
-                {appfolioStatus.stats?.totalPhases ?? 8} phases pulled data.
-                {appfolioStatus.stats?.warnings?.[0]
-                  ? ` First warning: ${summarizeAppfolioError(appfolioStatus.stats.warnings[0])}`
-                  : ""}
-              </>
-            ) : staleAgeDays != null ? (
-              `Last sync ${staleAgeDays}d ago. KPIs reflect that sync.`
-            ) : (
-              "KPIs reflect the last successful sync."
-            )}
-          </AlertBanner>
-        </DismissibleStrip>
+            <AlertBanner
+              severity={
+                appfolioStatus.state === "failed" ? "critical" : "warning" // partial-success and stale both render amber
+              }
+              flush
+              title={
+                appfolioStatus.state === "failed"
+                  ? "AppFolio sync failed."
+                  : appfolioStatus.state === "partial"
+                    ? "AppFolio sync completed with warnings."
+                    : "AppFolio data is stale."
+              }
+              action={{
+                label:
+                  appfolioStatus.state === "failed"
+                    ? "Fix integration"
+                    : "Open integration",
+                href: "/portal/connect?provider=appfolio",
+              }}
+            >
+              {appfolioStatus.state === "failed" && appfolioStatus.lastError ? (
+                <>
+                  {summarizeAppfolioError(appfolioStatus.lastError)}
+                  {staleAgeDays != null
+                    ? ` Last attempt ${staleAgeDays}d ago.`
+                    : null}
+                </>
+              ) : appfolioStatus.state === "partial" ? (
+                <>
+                  {appfolioStatus.stats?.phasesCompleted ?? 0} of{" "}
+                  {appfolioStatus.stats?.totalPhases ?? 8} phases pulled data.
+                  {appfolioStatus.stats?.warnings?.[0]
+                    ? ` First warning: ${summarizeAppfolioError(appfolioStatus.stats.warnings[0])}`
+                    : ""}
+                </>
+              ) : staleAgeDays != null ? (
+                `Last sync ${staleAgeDays}d ago. KPIs reflect that sync.`
+              ) : (
+                "KPIs reflect the last successful sync."
+              )}
+            </AlertBanner>
+          </DismissibleStrip>
         </div>
       ) : null}
 

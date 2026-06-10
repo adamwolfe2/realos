@@ -8,6 +8,7 @@ import { AdminNotifications } from "@/components/admin-notifications";
 import { BugReportButton } from "@/components/feedback/bug-report-button";
 import { BRAND_NAME } from "@/lib/brand";
 import { getScope } from "@/lib/tenancy/scope";
+import { ScopeRecovery } from "@/components/auth/scope-recovery";
 import { prisma } from "@/lib/db";
 import {
   BugReportStatus,
@@ -134,7 +135,7 @@ const getAdminNavBadges = unstable_cache(
     } as Record<string, number>;
   },
   ["admin-nav-badges"],
-  { revalidate: 60, tags: ["admin-nav-badges"] }
+  { revalidate: 60, tags: ["admin-nav-badges"] },
 );
 
 export default async function AdminLayout({
@@ -143,7 +144,12 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   const scope = await getScope();
-  if (!scope) redirect("/sign-in");
+  // Middleware already verified the Clerk session before this layout runs,
+  // so a null scope here is an RSC session-resolution race, NOT "logged
+  // out." Redirecting to /sign-in causes an infinite loop (Clerk bounces
+  // a signed-in user straight back). Recover in place: one reload usually
+  // resolves it, then a terminal screen. Never auto-bounce to /sign-in.
+  if (!scope) return <ScopeRecovery />;
   if (!scope.isAgency) {
     redirect("/portal");
   }
