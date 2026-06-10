@@ -140,14 +140,12 @@ export async function getScope(): Promise<ScopedContext | null> {
     clerkUserId = session.userId;
     sessionClaims = session.sessionClaims;
   } catch (err) {
-    console.error("[scope:null] auth() threw in RSC/route:", err);
+    console.error("[scope] auth() threw in RSC/route:", err);
     return await getDemoScope();
   }
   if (!clerkUserId) {
-    console.error("[scope:null] auth() returned no userId");
     return await getDemoScope();
   }
-  console.error("[scope:ok] auth() userId resolved:", clerkUserId);
 
   let user = await prisma.user
     .findUnique({
@@ -179,15 +177,6 @@ export async function getScope(): Promise<ScopedContext | null> {
         )?.emailAddress ??
         clerkUser?.emailAddresses?.[0]?.emailAddress ??
         claimEmail;
-      console.error(
-        "[scope:heal] clerkUser?",
-        !!clerkUser,
-        "email:",
-        email,
-        "(claimEmail:",
-        claimEmail,
-        ")",
-      );
       if (email) {
         const normalized = email.toLowerCase().trim();
         // Direct email match + re-link. The User row's clerkUserId can
@@ -199,14 +188,6 @@ export async function getScope(): Promise<ScopedContext | null> {
         const byEmail = await prisma.user
           .findUnique({ where: { email: normalized }, include: { org: true } })
           .catch(() => null);
-        console.error(
-          "[scope:heal] byEmail?",
-          !!byEmail,
-          "org?",
-          !!byEmail?.org,
-          "rowClerkId:",
-          byEmail?.clerkUserId,
-        );
         if (byEmail && byEmail.org) {
           if (byEmail.clerkUserId !== clerkUserId) {
             await prisma.user
@@ -234,14 +215,6 @@ export async function getScope(): Promise<ScopedContext | null> {
     }
   }
   if (!user || !user.org) {
-    console.error(
-      "[scope:null] no user/org after provision — clerkUserId:",
-      clerkUserId,
-      "user?",
-      !!user,
-      "org?",
-      !!user?.org,
-    );
     return await getDemoScope();
   }
 

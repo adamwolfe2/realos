@@ -14,7 +14,6 @@
  */
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
 
 type RoleResponse = {
   role: string | null;
@@ -59,16 +58,30 @@ async function fetchRoleWithRetry(): Promise<RoleResponse | null> {
 
 export default function AuthRedirectPage() {
   const { userId, isLoaded } = useAuth();
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  // Tracks how long we've waited for Clerk to surface a userId on THIS
+  // origin. A signed-in user landing here can briefly read userId === null
+  // while the Clerk client hydrates the session from the Frontend API. The
+  // previous code did `router.replace("/sign-in")` on that transient null —
+  // but Clerk's <SignIn forceRedirectUrl="/auth/redirect"> immediately
+  // bounces an already-signed-in user straight back here, so the two pages
+  // ping-pong dozens of times a second (observed in prod edge logs). We
+  // NEVER auto-navigate to /sign-in anymore: we wait out the hydration, and
+  // only after a hard timeout do we render a TERMINAL manual screen (a link,
+  // not an auto-redirect). That makes the loop structurally impossible.
+  const [signedOut, setSignedOut] = useState(false);
+
+  // Hydration grace period. If Clerk reports loaded-but-no-user, give the
+  // session a few seconds to populate before concluding the user is truly
+  // signed out. Resolves the moment userId appears.
+  useEffect(() => {
+    if (!isLoaded || userId) return;
+    const t = setTimeout(() => setSignedOut(true), 4000);
+    return () => clearTimeout(t);
+  }, [isLoaded, userId]);
 
   useEffect(() => {
-    if (!isLoaded) return;
-
-    if (!userId) {
-      router.replace("/sign-in");
-      return;
-    }
+    if (!isLoaded || !userId) return;
 
     fetchRoleWithRetry()
       .then((data) => {
@@ -114,7 +127,29 @@ export default function AuthRedirectPage() {
       .catch(() => {
         setError("auth-failed");
       });
-  }, [isLoaded, userId, router]);
+  }, [isLoaded, userId]);
+
+  // Terminal signed-out screen. Reached only after the hydration grace
+  // period elapses with no session on this origin. A MANUAL link — never an
+  // automatic router.replace — so we can't ping-pong with Clerk's <SignIn>
+  // forceRedirectUrl bounce.
+  if (signedOut && !userId) {
+    return (
+      <div className="min-h-screen bg-cream flex items-center justify-center">
+        <div className="text-center max-w-sm">
+          <p className="text-sm text-ink/60 mb-4">
+            You&apos;re signed out. Sign in to continue.
+          </p>
+          <a
+            href="/sign-in"
+            className="inline-block px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary-dark transition-colors"
+          >
+            Sign in
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (

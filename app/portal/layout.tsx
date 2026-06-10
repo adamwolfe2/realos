@@ -246,12 +246,18 @@ export default async function PortalLayout({
   ]);
 
   if (!org) {
-    redirect(scope.isAgency || scope.isAlPartner ? "/admin" : "/sign-in");
+    if (scope.isAgency || scope.isAlPartner) redirect("/admin");
+    // Authenticated client whose Organization row is missing/unresolved.
+    // NEVER bounce to /sign-in here — middleware already verified the Clerk
+    // session, so Clerk would bounce the signed-in user straight back →
+    // infinite loop. Recover in place (one reload, then a manual screen).
+    return <ScopeRecovery />;
   }
   // AL_PARTNER users without an impersonation target land on the audiences
   // catalog. Don't bounce them to /admin since they don't have agency UI.
   if (org.orgType !== "CLIENT" && !scope.isAlPartner) {
-    redirect(scope.isAgency ? "/admin" : "/sign-in");
+    if (scope.isAgency) redirect("/admin");
+    return <ScopeRecovery />;
   }
 
   // Self-serve onboarding gate. If the org is still mid-wizard (set by
