@@ -30,7 +30,7 @@ export type ScopedContext = {
   productLine: ProductLine;       // Effective org product line
   role: UserRole;
   email: string;
-  isAgency: boolean;              // Shorthand for actualOrgType === AGENCY
+  isAgency: boolean;              // AGENCY-typed org AND an agency role (not org type alone)
   isAlPartner: boolean;           // role === AL_PARTNER. Cross-org access to AUDIENCE_SYNC orgs
   isImpersonating: boolean;
   // Property-level RBAC gate.
@@ -265,7 +265,13 @@ export async function getScope(): Promise<ScopedContext | null> {
 
   const actualOrgType = user.org.orgType;
   const actualProductLine = user.org.productLine ?? ProductLine.STUDENT_HOUSING;
-  const isAgency = actualOrgType === OrgType.AGENCY;
+  // Agency privilege requires BOTH an agency-typed org AND an agency role — not
+  // org type alone. The Clerk membership.deleted handler re-homes removed client
+  // users into the agency org as CLIENT_VIEWER; an org-type-only check would
+  // grant them cross-tenant agency access everywhere isAgency is consulted
+  // (impersonation, properties, audiences, admin). (launch-critical-sweep P0.)
+  const isAgency =
+    actualOrgType === OrgType.AGENCY && AGENCY_ROLES.has(user.role);
   const isAlPartner = user.role === UserRole.AL_PARTNER;
 
   // Impersonation is expressed as `publicMetadata.impersonateOrgId`. The
@@ -412,9 +418,22 @@ export async function requireScope(): Promise<ScopedContext> {
   return scope;
 }
 
+// Roles permitted on agency-only surfaces. Being a MEMBER of an AGENCY-typed
+// org is NOT sufficient: the Clerk membership.deleted handler re-homes removed
+// client users into the agency org as CLIENT_VIEWER, so an org-type-only check
+// would hand them cross-tenant agency admin access. (launch-critical-sweep P0.)
+const AGENCY_ROLES: ReadonlySet<UserRole> = new Set([
+  UserRole.AGENCY_OWNER,
+  UserRole.AGENCY_ADMIN,
+  UserRole.AGENCY_OPERATOR, // "limited agency role" — still a real agency seat
+  UserRole.AL_PARTNER, // agency-typed org already; preserves its prior access
+]);
+
 export async function requireAgency(): Promise<ScopedContext> {
   const scope = await requireScope();
-  if (!scope.isAgency) throw new ForbiddenError("Agency access only");
+  if (!scope.isAgency || !AGENCY_ROLES.has(scope.role)) {
+    throw new ForbiddenError("Agency access only");
+  }
   return scope;
 }
 
