@@ -56,6 +56,8 @@ export type FeaturePriceRow = {
   monthlyCents: number;
   active: boolean;
   isBase: boolean;
+  // True once this feature's price has been pushed to Stripe.
+  synced: boolean;
 };
 
 export async function getFeaturePriceRows(): Promise<FeaturePriceRow[]> {
@@ -68,6 +70,7 @@ export async function getFeaturePriceRows(): Promise<FeaturePriceRow[]> {
     monthlyCents: byKey.get(BASE_PLATFORM_KEY)?.monthlyCents ?? BASE_PLATFORM_CENTS,
     active: byKey.get(BASE_PLATFORM_KEY)?.active ?? true,
     isBase: true,
+    synced: Boolean(byKey.get(BASE_PLATFORM_KEY)?.stripePriceId),
   };
 
   const featureRows: FeaturePriceRow[] = FEATURE_CATALOG.map((f) => ({
@@ -76,6 +79,7 @@ export async function getFeaturePriceRows(): Promise<FeaturePriceRow[]> {
     monthlyCents: byKey.get(f.key)?.monthlyCents ?? f.monthlyCents,
     active: byKey.get(f.key)?.active ?? true,
     isBase: false,
+    synced: Boolean(byKey.get(f.key)?.stripePriceId),
   }));
 
   return [base, ...featureRows];

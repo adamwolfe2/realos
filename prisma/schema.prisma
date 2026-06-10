@@ -892,6 +892,15 @@ model FeaturePrice {
   key          String   @unique
   monthlyCents Int
   active       Boolean  @default(true)
+  // Stripe linkage (slice: per-feature billing). When an admin syncs prices to
+  // Stripe, we create a recurring Price per feature with a stable lookup_key
+  // (transfer_lookup_key keeps the key pointing at the latest price after an
+  // amount change) and stash the resulting IDs here. Checkout reads these to
+  // bill base + selected features; the webhook maps a price ID back to this
+  // feature's module. Null = not yet synced to Stripe.
+  stripePriceId   String?
+  stripeProductId String?
+  stripeSyncedAt  DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }

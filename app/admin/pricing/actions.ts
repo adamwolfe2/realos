@@ -4,10 +4,12 @@ import { revalidatePath } from "next/cache";
 import { AuditAction, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireAgency, ForbiddenError, auditPayload } from "@/lib/tenancy/scope";
+import { isStripeConfigured } from "@/lib/stripe/config";
 import {
   getFeaturePriceRows,
   isValidFeaturePriceKey,
 } from "@/lib/billing/feature-prices";
+import { syncAllFeaturePricesToStripe } from "@/lib/billing/feature-stripe";
 
 export type SavePricesResult = { ok: true } | { ok: false; error: string };
 
@@ -82,5 +84,28 @@ export async function saveFeaturePrices(
     if (err instanceof ForbiddenError) return { ok: false, error: err.message };
     console.error("saveFeaturePrices failed", err);
     return { ok: false, error: "Failed to save prices" };
+  }
+}
+
+export type SyncResult =
+  | { ok: true; synced: number; skipped: number; errors: string[] }
+  | { ok: false; error: string };
+
+// Push the current admin prices into Stripe as per-feature recurring Prices.
+// Deliberate, agency-triggered (a button click) — never runs on deploy. Run
+// this after editing prices so checkout + the webhook use the new amounts.
+export async function syncFeaturePricesToStripeAction(): Promise<SyncResult> {
+  try {
+    await requireAgency();
+    if (!isStripeConfigured()) {
+      return { ok: false, error: "Stripe is not configured on this environment." };
+    }
+    const res = await syncAllFeaturePricesToStripe();
+    revalidatePath("/admin/pricing");
+    return { ok: true, ...res };
+  } catch (err) {
+    if (err instanceof ForbiddenError) return { ok: false, error: err.message };
+    console.error("syncFeaturePricesToStripeAction failed", err);
+    return { ok: false, error: "Sync to Stripe failed" };
   }
 }
