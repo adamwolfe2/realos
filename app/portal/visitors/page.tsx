@@ -146,6 +146,16 @@ export default async function VisitorsPage({
   const tenant = tenantWhere<{ orgId?: string }>(scope);
   const propertyIds = await parsePropertyFilter(params, scope.orgId);
 
+  // Deep-link the pixel install CTAs straight to the per-property setup wizard,
+  // pre-scoped to the active property so each property's pixel is requested for
+  // the right building. (Previously these pointed at /portal/connect, which
+  // bounced back here — an infinite loop with no way to actually request.)
+  const activePropertyId =
+    propertyIds && propertyIds.length === 1 ? propertyIds[0] : null;
+  const pixelSetupHref = activePropertyId
+    ? `/portal/settings/integrations?propertyId=${activePropertyId}`
+    : "/portal/settings/integrations";
+
   const allProperties = await prisma.property.findMany({
     where: marketablePropertyWhere(scope.orgId),
     select: { id: true, name: true },
@@ -576,9 +586,9 @@ export default async function VisitorsPage({
 
       {/* Empty / Feed */}
       {!hasPixel ? (
-        <EmptyNoPixel />
+        <EmptyNoPixel setupHref={pixelSetupHref} />
       ) : noVisitorsAtAll ? (
-        <EmptyNoVisitors />
+        <EmptyNoVisitors setupHref={pixelSetupHref} />
       ) : visitors.length === 0 ? (
         <div className="rounded-xl border border-border bg-card p-8 text-sm text-muted-foreground text-center">
           No visitors match these filters. Try widening the time window or the
@@ -669,7 +679,7 @@ function PixelStalenessBanner({
         </p>
       </div>
       <Link
-        href="/portal/connect"
+        href="/portal/settings/integrations"
         className="shrink-0 inline-flex items-center rounded-md bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-3 py-1.5 text-xs font-semibold hover:opacity-90"
       >
         Verify pixel install
@@ -862,26 +872,26 @@ function Pager({
 // Empty states
 // ---------------------------------------------------------------------------
 
-function EmptyNoPixel() {
+function EmptyNoPixel({ setupHref }: { setupHref: string }) {
   return (
     <DataPlaceholder
       intent="connect"
       icon={<Radio className="h-4 w-4" />}
       title="Install the visitor pixel to see named visitors"
       body="Once the pixel is live, every resolved visitor appears in this feed in real time \u2014 name, company, job title, and the pages they viewed."
-      action={{ label: "Install the pixel", href: "/portal/connect" }}
+      action={{ label: "Install the pixel", href: setupHref }}
     />
   );
 }
 
-function EmptyNoVisitors() {
+function EmptyNoVisitors({ setupHref }: { setupHref: string }) {
   return (
     <DataPlaceholder
       intent="waiting"
       icon={<Radio className="h-4 w-4" />}
       title="Pixel installed \u2014 waiting on first visitor events"
       body="The Cursive pixel resolves anonymous traffic to real names and emails in real time. Visitors will appear here within seconds of the next site visit."
-      action={{ label: "Verify pixel install", href: "/portal/connect" }}
+      action={{ label: "Verify pixel install", href: setupHref }}
     />
   );
 }

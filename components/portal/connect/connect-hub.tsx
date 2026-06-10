@@ -175,8 +175,10 @@ const SOURCE_META: Record<
     category: "Site",
     icon: Eye,
     brandSlug: "visitor-identification",
-    connectUrl: "/portal/visitors#install",
-    inline: true,
+    // Points at the per-property pixel setup wizard (property selector + one-
+    // flow webhook mint). Previously pointed at /portal/visitors#install which
+    // had no install UI — that bounced back here, an infinite loop.
+    connectUrl: "/portal/settings/integrations",
     payoff: "Identify anonymous prospects with name + email + intent score",
     unlocks: [
       "High-intent visitor alerts",

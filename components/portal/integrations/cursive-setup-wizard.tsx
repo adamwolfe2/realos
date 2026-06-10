@@ -41,6 +41,10 @@ type WizardState =
 type Props = {
   defaultWebsiteUrl?: string;
   properties?: Array<{ id: string; name: string }>;
+  // Pre-select a property — set when the operator arrives from a property-
+  // scoped surface (the per-property Visitors feed / setup checklist) so the
+  // pixel they request lands on the right building without re-picking.
+  defaultPropertyId?: string | null;
   // When the page was server-rendered with an in-flight setup we hydrate
   // straight into the configure phase so a refresh doesn't lose state.
   initialWebhookUrl?: string | null;
@@ -55,6 +59,7 @@ const POLL_MAX_ATTEMPTS = (POLL_MAX_MINUTES * 60 * 1000) / POLL_INTERVAL_MS;
 export function CursiveSetupWizard({
   defaultWebsiteUrl,
   properties = [],
+  defaultPropertyId,
   initialWebhookUrl,
   initialLastEventAt,
   initialPixelId,
@@ -72,7 +77,13 @@ export function CursiveSetupWizard({
   const [state, setState] = useState<WizardState>(initialPhase);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const [selectedPropertyId, setSelectedPropertyId] = useState<string>("");
+  // Pre-select the property the operator came in scoped to (if it's a real
+  // option), otherwise default to "all / org-wide".
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string>(
+    defaultPropertyId && properties.some((p) => p.id === defaultPropertyId)
+      ? defaultPropertyId
+      : "",
+  );
   const showPicker = properties.length > 1;
 
   // Poll for webhook verification while the customer is configuring AL.

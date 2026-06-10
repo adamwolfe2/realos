@@ -35,8 +35,17 @@ import { OAuthConnectButton } from "./oauth-button";
 export const metadata: Metadata = { title: "Integrations" };
 export const dynamic = "force-dynamic";
 
-export default async function IntegrationsPage() {
+export default async function IntegrationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ propertyId?: string }>;
+}) {
   const scope = await requireScope();
+  // Pre-select a property in the pixel wizard when the operator deep-links from
+  // a property-scoped surface (Visitors feed / setup checklist) so each
+  // property's pixel is requested for the right building.
+  const sp = await searchParams;
+  const defaultPixelPropertyId = sp.propertyId ?? null;
   const [
     org,
     pixel,
@@ -200,6 +209,7 @@ export default async function IntegrationsPage() {
           pixel?.installedOnDomain ? `https://${pixel.installedOnDomain}` : ""
         }
         properties={properties}
+        defaultPropertyId={defaultPixelPropertyId}
         initialWebhookUrl={pixelWebhookUrlInFlight}
         initialLastEventAt={pixel?.lastEventAt?.toISOString() ?? null}
         initialPixelId={pixel?.cursivePixelId ?? null}
@@ -214,6 +224,7 @@ export default async function IntegrationsPage() {
       <CursiveSetupWizard
         defaultWebsiteUrl=""
         properties={properties}
+        defaultPropertyId={defaultPixelPropertyId}
       />
     ) : (
       <div className="rounded-md border border-border bg-muted/30 p-4">
