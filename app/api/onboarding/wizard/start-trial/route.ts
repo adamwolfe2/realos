@@ -3,8 +3,11 @@ import { z } from "zod";
 import { auth } from "@clerk/nextjs/server";
 import { SubscriptionStatus, SubscriptionTier } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { getTierById, getModulesForTier } from "@/lib/billing/plans";
 import { computeTrialEndsAt } from "@/lib/onboarding/steps";
+import {
+  buildModuleStateFromSelection,
+  inferTierFromSelection,
+} from "@/lib/billing/features";
 
 // ---------------------------------------------------------------------------
 // POST /api/onboarding/wizard/start-trial
@@ -30,46 +33,16 @@ import { computeTrialEndsAt } from "@/lib/onboarding/steps";
 // stealth trial extension by tier-switching.
 // ---------------------------------------------------------------------------
 
-// Whitelist of module flag keys we accept from the picker. Keep in sync
-// with the PICKER_MODULES list in components/onboarding/plan-step.tsx.
-// Anything not in this set is silently dropped — operators can't sneak
-// extra entitlements through a crafted payload.
-const ALLOWED_MODULE_KEYS = new Set<string>([
-  "moduleChatbot",
-  "modulePixel",
-  "moduleGoogleAds",
-  "moduleMetaAds",
-  "moduleSEO",
-  "moduleCreativeStudio",
-  "moduleReferrals",
-  "moduleEmail",
-  "moduleOutboundEmail",
-  "modulePopups",
-  // Always-on modules are accepted as no-ops (the tier defaults already
-  // set them true). Listing them here keeps the picker payload schema
-  // lenient if the client sends them through.
-  "moduleWebsite",
-  "moduleLeadCapture",
-]);
-
-type ModuleFlagPatch = Partial<Record<string, boolean>>;
-
-function buildModulePatch(selectedModules: string[]): ModuleFlagPatch {
-  const patch: ModuleFlagPatch = {};
-  for (const key of selectedModules) {
-    if (!ALLOWED_MODULE_KEYS.has(key)) continue;
-    if (!key.startsWith("module")) continue;
-    patch[key] = true;
-  }
-  return patch;
-}
-
+// À-la-carte: the cart sends the exact set of feature module keys the operator
+// selected. We write that EXACT state to the org (always-on base + selected
+// features true, everything else false) — no tier bleed-through. The validated
+// allowlist + state builder live in lib/billing/features.ts, so a crafted
+// payload can only ever toggle known catalog features.
 const body = z.object({
-  tierId: z.enum(["starter", "growth", "scale"]),
-  // Optional for backwards compatibility — older clients (and tests)
-  // may still send just { tierId }. Default to an empty list and let
-  // the tier defaults do the work.
-  selectedModules: z.array(z.string().max(64)).max(20).optional(),
+  // tierId is accepted for backward compatibility (older clients/tests) but no
+  // longer drives entitlements — the tier is inferred from the selection.
+  tierId: z.enum(["starter", "growth", "scale"]).optional(),
+  selectedModules: z.array(z.string().max(64)).max(40).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -94,13 +67,8 @@ export async function POST(req: NextRequest) {
     throw err;
   }
 
-  const tierDef = getTierById(parsed.tierId);
-  if (!tierDef) {
-    return NextResponse.json(
-      { ok: false, error: `Unknown tier "${parsed.tierId}"` },
-      { status: 400 },
-    );
-  }
+  const selected = parsed.selectedModules ?? [];
+  const inferredTier = inferTierFromSelection(selected);
 
   const user = await prisma.user.findUnique({
     where: { clerkUserId: userId },
@@ -131,29 +99,27 @@ export async function POST(req: NextRequest) {
   const trialEndsAt =
     user.org.trialEndsAt ?? computeTrialEndsAt(trialStartedAt);
 
-  // Tier defaults plus the operator's hand-picked extras. Tier defaults
-  // win on conflicts (you can't downgrade a tier-included module to off
-  // through the picker). Picker can only add modules on top.
-  const tierModules = getModulesForTier(tierDef.tier) ?? {};
-  const pickerPatch = buildModulePatch(parsed.selectedModules ?? []);
-  const mergedModules = { ...tierModules, ...pickerPatch };
+  // Exact à-la-carte module state from the selection. Always-on base modules
+  // on, every selected catalog feature on, all other catalog features off.
+  const moduleState = buildModuleStateFromSelection(selected);
 
   await prisma.organization.update({
     where: { id: user.orgId },
     data: {
-      chosenTier: tierDef.tier as SubscriptionTier,
-      subscriptionTier: tierDef.tier as SubscriptionTier,
+      chosenTier: inferredTier as SubscriptionTier,
+      subscriptionTier: inferredTier as SubscriptionTier,
       subscriptionStatus: SubscriptionStatus.TRIALING,
       trialStartedAt,
       trialEndsAt,
       onboardingStep: "done",
-      ...mergedModules,
+      ...moduleState,
     },
   });
 
   return NextResponse.json({
     ok: true,
     nextStep: "done",
+    tier: inferredTier,
     trialEndsAt: trialEndsAt.toISOString(),
   });
 }

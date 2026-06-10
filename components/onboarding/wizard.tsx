@@ -15,7 +15,7 @@ import { WizardChrome } from "./wizard-chrome";
 import { WelcomeStep } from "./welcome-step";
 import { IntegrationsStep } from "./integrations-step";
 import { PropertyStep } from "./property-step";
-import { PlanStep } from "./plan-step";
+import { FeaturesStep } from "./features-step";
 
 // ---------------------------------------------------------------------------
 // Top-level wizard host. Renders a chrome (progress dots + brand mark)
@@ -175,16 +175,15 @@ export function OnboardingWizard({
       ) : null}
 
       {step === "plan" ? (
-        <PlanStep
-          chosenTier={org.chosenTier}
+        <FeaturesStep
           onSubmit={(body) => advance("start-trial", body)}
           disabled={submitting}
         />
       ) : null}
-      {/* PlanStep now posts { tierId, selectedModules: string[] } to
-          /api/onboarding/wizard/start-trial. The server validates the
-          module keys against the catalog allowlist and flips them ON
-          alongside the tier defaults. */}
+      {/* FeaturesStep posts { selectedModules: string[] } to
+          /api/onboarding/wizard/start-trial. The server writes EXACTLY that
+          set of feature flags (à-la-carte, no tier bleed-through) and infers
+          the billing tier from the selection. */}
     </WizardChrome>
   );
 }
