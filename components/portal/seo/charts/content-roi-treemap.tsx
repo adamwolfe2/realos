@@ -1,6 +1,5 @@
 "use client";
 
-import { ResponsiveContainer, Treemap } from "recharts";
 import { BRAND, BRAND_LIGHT, BRAND_LIGHTER, SectionHeader, EmptyStateBody } from "./shared";
 
 // Faded preview treemap — six cells in varying saturations so the
@@ -59,44 +58,9 @@ export type ContentRoiNode = {
   roiScore: number;
 };
 
-type TreemapCellProps = {
-  x?: number;
-  y?: number;
-  width?: number;
-  height?: number;
-  name?: string;
-  roiScore?: number;
-};
-
-function RoiTreemapCell(props: TreemapCellProps = {}) {
-  const { x = 0, y = 0, width = 0, height = 0, name, roiScore = 0 } = props;
-  if (!width || !height) return null;
-  const opacity = 0.25 + (roiScore / 100) * 0.7;
-  return (
-    <g>
-      <rect
-        x={x}
-        y={y}
-        width={width}
-        height={height}
-        fill={BRAND}
-        fillOpacity={opacity}
-      />
-      {width > 60 && height > 24 ? (
-        <text
-          x={x + 6}
-          y={y + 14}
-          fontSize={10}
-          fill="#fff"
-          fontFamily="var(--font-mono)"
-        >
-          {(name ?? "").slice(0, Math.max(8, width / 7))}
-        </text>
-      ) : null}
-    </g>
-  );
-}
-
+// Per-URL performance — a ranked bar list (replaced the recharts Treemap,
+// which collapsed to one giant blue cell for properties with a single page).
+// Sorted by clicks; the bar shows composite ROI (0–100). Legible at 1 URL or 50.
 export function ContentRoiTreemap({ nodes }: { nodes: ContentRoiNode[] }) {
   if (nodes.length === 0) {
     return (
@@ -104,40 +68,67 @@ export function ContentRoiTreemap({ nodes }: { nodes: ContentRoiNode[] }) {
         <SectionHeader
           eyebrow="Content ROI"
           title="Per-URL performance"
-          hint="Cell size = clicks · color saturation = composite ROI score (0–100)."
+          hint="Clicks + composite ROI score (clicks × keyword count × conversions)."
         />
         <EmptyStateBody
           preview={<ContentRoiPreview />}
-          body="Each URL gets its own cell — larger cells mean more clicks, deeper blue means a higher ROI score (clicks × keyword count × conversions). One glance tells you which pages are pulling weight and which need a refresh."
-          example={`A bright, oversized cell on /listings means it's a workhorse — a small, pale cell on /guides/section-8-housing flags a high-traffic page with low conversions, prime for a CTA rewrite.`}
+          body="Every URL is ranked by clicks with an ROI bar — clicks × keyword count × conversions. One glance tells you which pages are pulling weight and which need a refresh."
+          example={`/listings reads as a workhorse; a high-traffic /guides/section-8-housing with a short ROI bar flags a page with low conversions, prime for a CTA rewrite.`}
         />
       </section>
     );
   }
-  const data = nodes.map((n) => ({
-    name: n.url.replace(/^https?:\/\//, "").slice(0, 48),
-    size: Math.max(1, n.clicks),
-    roiScore: n.roiScore,
-    clicks: n.clicks,
-    rankCount: n.rankCount,
-  }));
+
+  const rows = [...nodes].sort((a, b) => b.clicks - a.clicks).slice(0, 12);
+
   return (
     <section className="rounded-xl border border-border bg-card p-5">
       <SectionHeader
         eyebrow="Content ROI"
         title="Per-URL performance"
-        hint="Cell size = clicks · saturation = composite ROI score (0–100)"
+        hint="Ranked by clicks · bar = composite ROI score (0–100)"
       />
-      <div className="w-full h-[320px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <Treemap
-            data={data}
-            dataKey="size"
-            stroke="#fff"
-            content={<RoiTreemapCell />}
-          />
-        </ResponsiveContainer>
-      </div>
+      <ul className="mt-3 space-y-1.5">
+        {rows.map((n) => {
+          const clean =
+            n.url.replace(/^https?:\/\//, "").replace(/\/$/, "") || "/";
+          const roiPct = Math.max(2, Math.min(100, Math.round(n.roiScore)));
+          return (
+            <li
+              key={n.url}
+              className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 items-center py-2 border-b border-[var(--hair)] last:border-0"
+            >
+              <div className="min-w-0">
+                <div
+                  className="text-[12.5px] text-foreground truncate font-mono"
+                  title={n.url}
+                >
+                  {clean}
+                </div>
+                <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-primary"
+                    style={{ width: `${roiPct}%` }}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-4 text-[11px] tabular-nums text-muted-foreground shrink-0">
+                <span>
+                  <span className="text-foreground font-semibold">
+                    {n.clicks.toLocaleString()}
+                  </span>{" "}
+                  clicks
+                </span>
+                <span>{n.rankCount} kw</span>
+                <span>{n.conversions} conv</span>
+                <span className="text-foreground font-semibold">
+                  {Math.round(n.roiScore)} ROI
+                </span>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
     </section>
   );
 }
