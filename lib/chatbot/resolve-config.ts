@@ -107,9 +107,13 @@ export async function resolveChatbotConfig(
   try {
     const [org, property] = await Promise.all([
       prisma.tenantSiteConfig.findUnique({ where: { orgId } }),
+      // Scope the property override by orgId too (Codex tenant-isolation): a
+      // propertyId belonging to another org must NOT merge its knowledge base /
+      // contact into this tenant's config. findFirst with the property relation
+      // pinned to orgId returns null on any cross-tenant mismatch.
       propertyId
         ? prisma.propertyChatbotConfig
-            .findUnique({ where: { propertyId } })
+            .findFirst({ where: { propertyId, property: { orgId } } })
             .catch(() => null)
         : Promise.resolve(null),
     ]);

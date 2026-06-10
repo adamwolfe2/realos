@@ -18,6 +18,7 @@ import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
 import { notifyChatbotLeadCaptured } from "@/lib/notifications/create";
 import { LeadNotifyChannel } from "@prisma/client";
 import { resolvePropertyForChatPage } from "@/lib/chatbot/property-attribution";
+import { resolveChatbotConfig } from "@/lib/chatbot/resolve-config";
 
 // POST /api/public/chatbot/lead
 //
@@ -55,6 +56,8 @@ const body = z.object({
     .optional()
     .transform((v) => (v && v.length > 0 ? v : undefined)),
   pageUrl: z.string().max(1000).optional(),
+  // Explicit property slug (authoritative attribution), matching /chat.
+  property: z.string().min(1).max(120).optional(),
 });
 
 export function OPTIONS() {
@@ -90,7 +93,8 @@ export async function POST(req: NextRequest) {
       { status: 400, headers: CORS_HEADERS }
     );
   }
-  const { slug, firstName, email, phone, pageUrl } = parsed.data;
+  const { slug, firstName, email, phone, pageUrl, property: propertySlug } =
+    parsed.data;
 
   const org = await prisma.organization.findUnique({
     where: { slug },
@@ -112,21 +116,27 @@ export async function POST(req: NextRequest) {
       { status: 403, headers: CORS_HEADERS }
     );
   }
-  if (!org.tenantSiteConfig?.chatbotEnabled) {
+  const orgId = org.id;
+
+  // Resolve the property: explicit slug (authoritative) → pageUrl inference →
+  // (helper falls back to the only property for single-property tenants). Never
+  // mis-attributes to properties[0] for a multi-property tenant. Matches /chat.
+  const explicitProperty = propertySlug
+    ? (org.properties.find((p) => p.slug === propertySlug) ?? null)
+    : null;
+  const propertyId =
+    explicitProperty?.id ?? resolvePropertyForChatPage(pageUrl, org.properties);
+
+  // Gate on the RESOLVED (property-or-org) config, not just the org default — a
+  // property whose chatbotEnabled=true (org default false) must still accept
+  // pre-chat capture, consistent with the config + chat endpoints. (Codex.)
+  const resolvedConfig = await resolveChatbotConfig(orgId, propertyId);
+  if (!resolvedConfig.chatbotEnabled) {
     return NextResponse.json(
       { error: "Chatbot disabled" },
       { status: 403, headers: CORS_HEADERS }
     );
   }
-
-  const orgId = org.id;
-  // Resolve the chat's host page → property. Audit BUG-08 found chatbot
-  // leads displaying property "—" because we were always attributing to
-  // the most-recently-updated property regardless of where the chat
-  // actually happened. Now we match against the URL when possible and
-  // only fall back to the first property when no match is found AND
-  // there's exactly one property (single-property tenants).
-  const propertyId = resolvePropertyForChatPage(pageUrl, org.properties);
   const userAgent = req.headers.get("user-agent") ?? undefined;
   const sessionId = crypto.randomUUID();
 

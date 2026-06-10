@@ -59,6 +59,10 @@ const body = z.object({
   sessionId: z.string().uuid(),
   messages: z.array(chatMessage).min(1).max(50),
   pageUrl: z.string().optional(),
+  // Explicit property slug the widget loaded its config with. Authoritative
+  // when present — keeps the chat's property in lockstep with the config that
+  // was served, instead of re-guessing from pageUrl. (Codex tenant-isolation.)
+  property: z.string().min(1).max(120).optional(),
 });
 
 export function OPTIONS() {
@@ -93,7 +97,8 @@ export async function POST(req: NextRequest) {
       { status: 400, headers: CORS_HEADERS }
     );
   }
-  const { slug, sessionId, messages, pageUrl } = parsed.data;
+  const { slug, sessionId, messages, pageUrl, property: propertySlug } =
+    parsed.data;
 
   const org = await prisma.organization.findUnique({
     where: { slug },
@@ -194,25 +199,37 @@ export async function POST(req: NextRequest) {
   // asks the user to "confirm" when they re-type it, which was Adam's
   // exact bug report 2026-06-03). Best-effort: a lookup miss collapses
   // to undefined and the bot falls back to the contact-capture script.
+  // SCOPED BY orgId (Codex tenant-isolation): sessionId is globally unique but
+  // client-supplied, so a findUnique by sessionId alone would inject ANOTHER
+  // tenant's captured name/email/phone into this tenant's system prompt (and
+  // let it be read back out of the bot). findFirst keyed on { sessionId, orgId }
+  // returns only this tenant's row.
   const captured = await prisma.chatbotConversation
-    .findUnique({
-      where: { sessionId },
+    .findFirst({
+      where: { sessionId, orgId },
       select: { capturedName: true, capturedEmail: true, capturedPhone: true },
     })
     .catch(() => null);
 
-  // Match the chat's host pageUrl to a specific property when possible.
-  // Multi-property tenants used to lose attribution because the previous
-  // logic always picked the most-recently-updated property. We resolve this
-  // BEFORE the system prompt now so the bot gets THIS property's config.
-  const resolvedPropertyId = resolvePropertyForChatPage(
-    pageUrl,
-    org.properties.map((p) => ({ id: p.id, slug: p.slug, name: p.name }))
-  );
+  // Resolve WHICH property this chat is for, most-authoritative first:
+  //  1. the explicit property slug the widget loaded its config with,
+  //  2. inference from the host pageUrl,
+  //  3. the org's only property (unambiguous for single-property tenants).
+  // For a MULTI-property tenant we could not resolve, stay null — never
+  // silently pick properties[0], which mis-attributed leads + served the wrong
+  // property's config/prompt. (Codex tenant-isolation.)
+  const explicitProperty = propertySlug
+    ? (org.properties.find((p) => p.slug === propertySlug) ?? null)
+    : null;
+  const resolvedPropertyId =
+    explicitProperty?.id ??
+    resolvePropertyForChatPage(
+      pageUrl,
+      org.properties.map((p) => ({ id: p.id, slug: p.slug, name: p.name })),
+    ) ??
+    (org.properties.length === 1 ? (org.properties[0]?.id ?? null) : null);
   const promptProperty =
-    org.properties.find((p) => p.id === resolvedPropertyId) ??
-    org.properties[0] ??
-    null;
+    org.properties.find((p) => p.id === resolvedPropertyId) ?? null;
 
   // Resolve the per-property chatbot config (knowledge base, persona, capture
   // mode, contact, CTA) with field-level fallback to the org default. A
@@ -255,7 +272,9 @@ export async function POST(req: NextRequest) {
           pageUrl,
           userAgent,
           ipAddress: ip,
-          propertyId: resolvedPropertyId ?? org.properties[0]?.id,
+          // Resolved property only — null when genuinely ambiguous, so a lead
+          // is never mis-attributed to an arbitrary property. (Codex.)
+          propertyId: resolvedPropertyId,
         });
       } catch (err) {
         console.error("[public/chatbot/chat] persistence error:", err);

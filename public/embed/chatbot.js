@@ -33,6 +33,15 @@
     return;
   }
 
+  // Optional per-property embed: a multi-property tenant adds
+  // data-property="<property-slug>" so this building gets its OWN chatbot
+  // config + correct lead attribution (instead of the server guessing from the
+  // page URL). Passed to BOTH config and chat so they stay in lockstep.
+  var propertySlug = script.getAttribute("data-property") || null;
+  var propertyQS = propertySlug
+    ? "&property=" + encodeURIComponent(propertySlug)
+    : "";
+
   // Apex → www pin (mirrors public/embed/popup.js): Vercel auto-
   // redirects leasestack.co → www.leasestack.co with HTTP 307, and
   // those redirect responses do NOT carry Access-Control-Allow-Origin
@@ -45,8 +54,8 @@
   var origin = scriptUrl.origin === "https://leasestack.co"
     ? "https://leasestack.co"
     : scriptUrl.origin;
-  var CONFIG_URL = origin + "/api/public/chatbot/config?slug=" + encodeURIComponent(slug);
-  var LISTINGS_URL = origin + "/api/public/chatbot/listings-summary?slug=" + encodeURIComponent(slug);
+  var CONFIG_URL = origin + "/api/public/chatbot/config?slug=" + encodeURIComponent(slug) + propertyQS;
+  var LISTINGS_URL = origin + "/api/public/chatbot/listings-summary?slug=" + encodeURIComponent(slug) + propertyQS;
   var CHAT_URL = origin + "/api/public/chatbot/chat";
   var LEAD_URL = origin + "/api/public/chatbot/lead";
 
@@ -415,6 +424,7 @@
         email: payload.email,
         phone: payload.phone || undefined,
         pageUrl: window.location.href,
+        property: propertySlug || undefined,
       }),
     }).then(function (res) {
       if (!res.ok) {
@@ -585,6 +595,7 @@
         sessionId: state.sessionId,
         messages: state.history,
         pageUrl: window.location.href,
+        property: propertySlug || undefined,
       }),
     })
       .then(function (res) {

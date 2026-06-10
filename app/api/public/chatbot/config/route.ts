@@ -189,6 +189,23 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  // An explicit ?property= that doesn't belong to this org must FAIL CLOSED,
+  // not silently fall back to another property's / the org's config — a typo or
+  // stale slug should disable the bot, not serve the wrong chatbot. (Codex
+  // tenant-isolation.)
+  if (
+    propertySlug &&
+    !org.properties.some((p) => p.slug === propertySlug)
+  ) {
+    return NextResponse.json(
+      { enabled: false },
+      {
+        status: 200,
+        headers: { ...CORS_HEADERS, ...SUCCESS_CACHE_HEADERS },
+      },
+    );
+  }
+
   // Resolve which property this embed serves: explicit `?property=` slug wins,
   // else the legacy heuristic (a property whose slug equals the org slug).
   const matchedProperty =
