@@ -8,7 +8,6 @@ import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { getCachedOrGenerateRecommendations } from "@/lib/seo/agent";
 import { isDataforSeoConfigured } from "@/lib/seo/dataforseo";
 import { isGooglePlacesConfigured } from "@/lib/seo/google-places";
-import { PropertyIntelligencePanel } from "@/components/portal/properties/property-intelligence-panel";
 import { ConnectWebsiteCard } from "@/components/portal/seo/connect-website-card";
 import {
   IntegrationStatusRow,
@@ -541,46 +540,21 @@ export default async function SeoAgentPage({
 
       <IntegrationStatusRow integrations={integrations} />
 
-      {/* Phase 2: executive summary at the top so the operator gets the
-          big numbers + WoW deltas before scrolling. Range selector
-          pinned right of the header band. */}
-      <ExecSummaryRow stats={execStats} />
-
-      <HealthScoreCard
-        composite={composite}
-        pillars={[
-          { label: "Perf.", value: performance },
-          { label: "SEO", value: seoScore },
-          { label: "A11y", value: accessibility },
-          {
-            label: "Top 10",
-            value: targetQueryCountTotal > 0 ? rankCoverage * 100 : null,
-          },
-          {
-            label: "AEO",
-            value: aeoTotal > 0 ? citationRate * 100 : null,
-          },
-          {
-            label: "Domain",
-            value:
-              backlinksLatest?.domainRank != null
-                ? backlinksLatest.domainRank / 10
-                : null,
-          },
-        ]}
-      />
-
-      {/* Operator action bar — refresh recs + spawn a new draft. */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3">
+      {/* ── ACTION PLAN — leads the page (refactor 2026-06-10). The
+          prioritized recommendations queue is the single most useful thing
+          here, so it sits directly under the header instead of below a wall
+          of metrics. The "Take action" controls ride on top of it. */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-foreground">
-            Take action
-          </h3>
+          <h2 className="text-base font-semibold text-foreground">
+            Your action plan
+          </h2>
           <p className="text-[12px] text-muted-foreground mt-0.5">
-            Refresh recommendations or generate a draft. Drafts go to admin for review.
+            Ranked most-impactful first. Each item has the time it takes and the
+            expected lift. Generated from your live search + AI data.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <RefreshRecommendationsButton propertyId={property.id} />
           <DraftLauncher
             propertyId={property.id}
@@ -588,50 +562,6 @@ export default async function SeoAgentPage({
           />
         </div>
       </div>
-
-      {/* Recommendations — synthesized by lib/seo/agent.ts from real data.
-          PropertyIntelligencePanel ALSO reads from the property
-          recommendation engine (lib/intelligence/...) which has overlap;
-          the SEO agent rules are a strict superset here. */}
-      <PropertyIntelligencePanel
-        propertyName={property.name}
-        actions={recommendationsRaw.map((r) => ({
-          id: r.kind,
-          category:
-            r.category === "CTR_FIX" || r.category === "ONPAGE_AUDIT"
-              ? "seo"
-              : r.category === "AEO_GAP" || r.category === "AEO_NOT_CITED"
-                ? "aeo"
-                : r.category === "NEIGHBORHOOD_PAGE" ||
-                    r.category === "CONTENT_GAP" ||
-                    r.category === "REFRESH" ||
-                    r.category === "SCHEMA_GAP"
-                  ? "content_freshness"
-                  : r.category === "BACKLINK_OPPORTUNITY"
-                    ? "competitor"
-                    : "listing",
-          severity:
-            r.severity === "CRITICAL"
-              ? "critical"
-              : r.severity === "HIGH"
-                ? "high"
-                : r.severity === "MEDIUM"
-                  ? "medium"
-                  : "low",
-          title: r.title,
-          detail: r.detail,
-          estimateMinutes: r.estimateMinutes,
-          score: r.score,
-          actionHref: r.actionHref ?? "/portal/seo",
-          actionLabel: r.actionLabel ?? "Open",
-          icon: "Sparkles",
-        }))}
-      />
-
-      {/* Weekly changes — surfaces meaningful deltas operators want to
-          see at a glance (rank up/down, top-10 entries, new competitor
-          citations). Hidden when there's no notable signal. */}
-      <WeeklyChangesPanel changes={weeklyChanges} />
 
       {/* Recommendation workflow — OPEN + IN_PROGRESS only. SNOOZED
           rows render in the SnoozedRecsPanel below so the active queue
@@ -668,6 +598,41 @@ export default async function SeoAgentPage({
             snoozedReason: r.snoozedReason,
           }))}
       />
+
+      {/* ── HOW YOU'RE DOING — the health score + the numbers, now BELOW the
+          action plan (refactor 2026-06-10). The PropertyIntelligencePanel was
+          removed here: it was a strict subset of the queue above, so it just
+          duplicated the same recommendations. */}
+      <HealthScoreCard
+        composite={composite}
+        pillars={[
+          { label: "Perf.", value: performance },
+          { label: "SEO", value: seoScore },
+          { label: "A11y", value: accessibility },
+          {
+            label: "Top 10",
+            value: targetQueryCountTotal > 0 ? rankCoverage * 100 : null,
+          },
+          {
+            label: "AEO",
+            value: aeoTotal > 0 ? citationRate * 100 : null,
+          },
+          {
+            label: "Domain",
+            value:
+              backlinksLatest?.domainRank != null
+                ? backlinksLatest.domainRank / 10
+                : null,
+          },
+        ]}
+      />
+
+      {/* The numbers — Search Console + DataForSEO KPIs with WoW deltas. */}
+      <ExecSummaryRow stats={execStats} />
+
+      {/* Weekly changes — what moved (rank up/down, top-10 entries, new
+          competitor citations). Hidden when there's no notable signal. */}
+      <WeeklyChangesPanel changes={weeklyChanges} />
 
       {/* Declutter (2026-06-10): removed the non-actionable data-viz here —
           the Search→revenue funnel, Search-path flow, position-bucket area,
