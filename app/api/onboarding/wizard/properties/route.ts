@@ -13,6 +13,7 @@ import { prisma } from "@/lib/db";
 import { computeTrialEndsAt } from "@/lib/onboarding/steps";
 import { SELF_SERVE_PROPERTY_CAP } from "@/lib/billing/catalog";
 import { scaffoldPropertyIntegrations } from "@/lib/onboarding/scaffold";
+import * as Sentry from "@sentry/nextjs";
 
 // ---------------------------------------------------------------------------
 // POST /api/onboarding/wizard/properties
@@ -38,7 +39,28 @@ const propertySchema = z.object({
 });
 
 const body = z.object({
-  properties: z.array(propertySchema).min(1).max(SELF_SERVE_PROPERTY_CAP),
+  properties: z
+    .array(propertySchema)
+    .min(1)
+    .max(SELF_SERVE_PROPERTY_CAP)
+    // Reject duplicate properties in one request — otherwise two identical rows
+    // silently create two properties (and a retry of a partial submit overwrites
+    // the wrong one). Keyed on name + city + state, so a genuine portfolio with
+    // "The Lofts" in two different cities is still allowed. (Codex onboarding
+    // review.)
+    .refine(
+      (props) => {
+        const keys = props.map(
+          (p) =>
+            `${p.name.trim().toLowerCase()}|${(p.city ?? "").trim().toLowerCase()}|${(p.state ?? "").trim().toLowerCase()}`,
+        );
+        return new Set(keys).size === keys.length;
+      },
+      {
+        message:
+          "Each property must be unique — duplicate names need a different city or state.",
+      },
+    ),
   // How they manage these properties. Recorded as a demand signal; the actual
   // connection (where supported) happens post-onboarding in the portal.
   crm: z
@@ -177,10 +199,19 @@ export async function POST(req: NextRequest) {
   // S3 — eager per-property scaffolding: give each property its own ready-to-use
   // chatbot config + a queued pixel provision request for the features that are
   // actually enabled, so the workspace lands set-up-ready (no blank properties).
+  // Non-blocking (a scaffold miss degrades gracefully — the chatbot inherits the
+  // org config and the user can still request the pixel from the Setup hub), but
+  // NO LONGER SILENT: capture failures to Sentry so a systemic break is visible
+  // and recoverable instead of swallowed. (Codex onboarding review.)
   await scaffoldPropertyIntegrations(orgId, scaffoldProps, {
     chatbot: org.moduleChatbot,
     pixel: org.modulePixel,
-  }).catch(() => undefined);
+  }).catch((err) => {
+    Sentry.captureException(err, {
+      tags: { route: "onboarding/properties", step: "scaffold" },
+      extra: { orgId, propertyCount: scaffoldProps.length },
+    });
+  });
 
   // Record the CRM/PMS choice as a demand signal. "none" still logs so we can
   // see how many operators run fully manual.

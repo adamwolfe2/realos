@@ -6,6 +6,7 @@ import { BRAND_NAME } from "@/lib/brand";
 import { resolveCurrentStep } from "@/lib/onboarding/steps";
 import { OnboardingWizard } from "@/components/onboarding/wizard";
 import { getEffectiveFeatureCatalog } from "@/lib/billing/feature-prices";
+import { FEATURE_CATALOG } from "@/lib/billing/features";
 
 // ---------------------------------------------------------------------------
 // /onboarding — the self-serve, trial-first signup wizard.
@@ -53,6 +54,22 @@ export default async function OnboardingPage() {
           chosenTier: true,
           trialStartedAt: true,
           subscriptionStatus: true,
+          // Module flags → reconstruct the operator's saved feature selection so
+          // navigating back to the features step restores it. (Codex.)
+          moduleChatbot: true,
+          modulePixel: true,
+          moduleSEO: true,
+          moduleReputation: true,
+          moduleGoogleAds: true,
+          moduleMetaAds: true,
+          modulePopups: true,
+          moduleCreativeStudio: true,
+          moduleEmail: true,
+          moduleOutboundEmail: true,
+          moduleReferrals: true,
+          moduleInsights: true,
+          moduleMarketIntelligence: true,
+          moduleAttribution: true,
           properties: {
             where: { lifecycle: { in: ["IMPORTED", "ACTIVE"] } },
             orderBy: { createdAt: "asc" },
@@ -78,10 +95,28 @@ export default async function OnboardingPage() {
   // Admin-editable feature prices drive the cart's running total.
   const featureCatalog = await getEffectiveFeatureCatalog();
 
+  // Reconstruct the operator's saved feature selection from the org module
+  // flags, but ONLY once they've actually submitted the features step
+  // (chosenTier gets set there). Before that, leave it undefined so the cart
+  // shows the recommended starter package. (Codex onboarding review.)
+  // Only restore features that are STILL in the active (admin-priced) catalog —
+  // a feature deactivated after the operator picked it must not silently stay
+  // counted/submitted/enabled. (Codex.)
+  const orgRecord = user.org as Record<string, unknown>;
+  const activeFeatureKeys = new Set(
+    featureCatalog.features.map((f) => f.key as string),
+  );
+  const savedFeatureSelection = user.org.chosenTier
+    ? FEATURE_CATALOG.filter(
+        (f) => orgRecord[f.key] === true && activeFeatureKeys.has(f.key as string),
+      ).map((f) => f.key as string)
+    : undefined;
+
   return (
     <OnboardingWizard
       step={step}
       featureCatalog={featureCatalog}
+      savedFeatureSelection={savedFeatureSelection}
       org={{
         id: user.org.id,
         name: user.org.name,

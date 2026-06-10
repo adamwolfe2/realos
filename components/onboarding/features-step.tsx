@@ -57,6 +57,7 @@ function dollars(cents: number): string {
 export function FeaturesStep({
   features,
   basePlatformCents,
+  initialSelected,
   onSubmit,
   disabled,
 }: {
@@ -64,13 +65,22 @@ export function FeaturesStep({
   // the live, admin-editable prices, not hardcoded ones.
   features: FeatureDef[];
   basePlatformCents: number;
+  // The operator's SAVED selection when they've already submitted this step
+  // (e.g. navigated back). Seeds the cart from their real choices instead of
+  // resetting to recommended. undefined = first visit → recommended starter.
+  // (Codex onboarding review.)
+  initialSelected?: string[];
   onSubmit: (body: { selectedModules: string[] }) => void;
   disabled?: boolean;
 }) {
-  // Default cart = the recommended features so a fast operator gets a sensible
-  // starting package they can trim.
-  const [selected, setSelected] = React.useState<Set<string>>(
-    () => new Set(features.filter((f) => f.recommended).map((f) => f.key as string)),
+  // First visit → recommended starter package the operator can trim. Returning
+  // with a saved selection → restore exactly what they had (even if empty).
+  const [selected, setSelected] = React.useState<Set<string>>(() =>
+    initialSelected !== undefined
+      ? new Set(initialSelected)
+      : new Set(
+          features.filter((f) => f.recommended).map((f) => f.key as string),
+        ),
   );
 
   const toggle = React.useCallback((key: string) => {

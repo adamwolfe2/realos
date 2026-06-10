@@ -57,12 +57,17 @@ export function OnboardingWizard({
   org,
   properties,
   featureCatalog,
+  savedFeatureSelection,
 }: {
   step: OnboardingStep;
   org: OnboardingOrg;
   properties: PropertiesStepInitial;
   // Effective (admin-priced) feature catalog, resolved server-side.
   featureCatalog: { features: FeatureDef[]; basePlatformCents: number };
+  // The operator's saved feature selection (module keys) when they've already
+  // completed the features step — so navigating back restores it instead of
+  // resetting to recommended. undefined on first visit.
+  savedFeatureSelection?: string[];
 }) {
   const router = useRouter();
   const [submitting, setSubmitting] = React.useState(false);
@@ -165,6 +170,7 @@ export function OnboardingWizard({
         <FeaturesStep
           features={featureCatalog.features}
           basePlatformCents={featureCatalog.basePlatformCents}
+          initialSelected={savedFeatureSelection}
           onSubmit={(body) => advance("features", body)}
           disabled={submitting}
         />
