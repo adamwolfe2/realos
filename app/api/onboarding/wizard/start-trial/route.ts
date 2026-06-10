@@ -103,17 +103,35 @@ export async function POST(req: NextRequest) {
   // on, every selected catalog feature on, all other catalog features off.
   const moduleState = buildModuleStateFromSelection(selected);
 
-  await prisma.organization.update({
-    where: { id: user.orgId },
+  // Never downgrade a paid workspace to TRIALING or rewrite its entitlements.
+  // Atomic where-clause (no read-then-write race) — matches the /properties
+  // guard. NULL status = brand-new = eligible. (launch-critical-sweep P1:
+  // legacy start-trial could trial-overwrite an active subscription.)
+  await prisma.organization.updateMany({
+    where: {
+      id: user.orgId,
+      OR: [
+        { subscriptionStatus: null },
+        {
+          subscriptionStatus: {
+            notIn: [SubscriptionStatus.ACTIVE, SubscriptionStatus.PAST_DUE],
+          },
+        },
+      ],
+    },
     data: {
       chosenTier: inferredTier as SubscriptionTier,
       subscriptionTier: inferredTier as SubscriptionTier,
       subscriptionStatus: SubscriptionStatus.TRIALING,
       trialStartedAt,
       trialEndsAt,
-      onboardingStep: "done",
       ...moduleState,
     },
+  });
+  // Completing onboarding is terminal + always safe, regardless of plan state.
+  await prisma.organization.update({
+    where: { id: user.orgId },
+    data: { onboardingStep: "done" },
   });
 
   return NextResponse.json({
