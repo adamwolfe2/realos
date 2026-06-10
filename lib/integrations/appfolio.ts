@@ -280,7 +280,11 @@ const REPORT_NAMES = [
   "delinquency",
   "work_order",
   "property_directory",
-  "applicant_directory",
+  // AppFolio's rental applications report. The correct v2 resource is
+  // `rental_applications` (requires a from_date filter) — NOT the
+  // `applicant_directory` name we shipped originally, which AppFolio rejects
+  // with 400 "Id is not a valid report" on every account.
+  "rental_applications",
 ] as const;
 
 export type AppFolioReportName = (typeof REPORT_NAMES)[number];
@@ -1085,10 +1089,10 @@ async function fetchRest(
 //   - never mutates the raw row; raw is preserved for the .raw column
 // ---------------------------------------------------------------------------
 
-// MappedApplication — rows from AppFolio's `applicant_directory` v2
-// report. Each row is one rental application AppFolio is tracking. We
-// match these to existing Lead rows by email (most reliable identifier
-// across both systems on the Core/Plus plan tiers we've validated).
+// MappedApplication — rows from AppFolio's `rental_applications` v2
+// report. Each row is one rental application AppFolio is tracking, with the
+// person nested under an `applicant` object. We match these to existing Lead
+// rows by email (most reliable cross-system identifier).
 export type ApplicantRoleValue =
   | "PRIMARY"
   | "CO_APPLICANT"
@@ -1218,11 +1222,22 @@ export function mapApplicationPayload(
     asString(raw.group_id) ??
     externalId;
 
+  // The `rental_applications` report nests the person under an `applicant`
+  // object (snake_case keys). Some plan tiers flatten it to top-level — read
+  // the nested object first, then fall back to top-level keys.
+  const applicant: RawRow =
+    raw.applicant && typeof raw.applicant === "object" && !Array.isArray(raw.applicant)
+      ? (raw.applicant as RawRow)
+      : {};
+
   return {
     externalId,
-    email: asString(raw.email)?.trim() || null,
-    firstName: asString(raw.first_name) ?? null,
-    lastName: asString(raw.last_name) ?? null,
+    email:
+      (asString(applicant.email) ??
+        asString(raw.email) ??
+        asString(raw.email_address))?.trim() || null,
+    firstName: asString(applicant.first_name) ?? asString(raw.first_name) ?? null,
+    lastName: asString(applicant.last_name) ?? asString(raw.last_name) ?? null,
     status: applicationStatusFromRaw(raw),
     appliedAt,
     decidedAt,

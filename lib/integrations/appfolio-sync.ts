@@ -692,17 +692,16 @@ export async function runAppfolioSync(
     }
   }
 
-  // 1b. APPLICATIONS — AppFolio v2 report: `applicant_directory`.
-  // Each row is a rental application AppFolio is tracking. We upsert
-  // into our Application table, matching applicants to existing Lead
-  // rows by email (the most reliable cross-system identifier — AppFolio
-  // doesn't expose the guest_card_id on this report on most plans).
-  // Property is resolved via the property_directory map populated in
-  // phase 0; applications missing a resolvable property are skipped
-  // (logged as a warning, not a hard failure).
+  // 1b. APPLICATIONS — AppFolio v2 report: `rental_applications`.
+  // Each row is a rental application AppFolio is tracking. We upsert into
+  // our Application table, matching applicants to existing Lead rows by
+  // email (the most reliable cross-system identifier). Property is resolved
+  // via the property_directory map populated in phase 0; applications
+  // missing a resolvable property are skipped (warning, not a hard failure).
   //
+  // The report REQUIRES a from_date filter (supplied via fromDate below).
   // Auto-skip behavior mirrors the leads phase: on tenant plans where
-  // applicant_directory isn't included, three consecutive 404s mark
+  // rental_applications isn't included, three consecutive failures mark
   // the phase as skipped and the cron re-attempts weekly.
   if (isPhaseSkipped("applications")) {
     stats.warnings.push(
@@ -711,7 +710,7 @@ export async function runAppfolioSync(
     phasesSkipped += 1;
   } else {
     try {
-      const rows = await fetchAllPages(client, "applicant_directory", {
+      const rows = await fetchAllPages(client, "rental_applications", {
         fromDate,
         toDate,
       });

@@ -90,6 +90,35 @@ describe("mapApplicationPayload", () => {
     expect(denied!.desiredMoveIn?.toISOString().slice(0, 10)).toBe("2026-07-01");
   });
 
+  it("reads the real rental_applications shape (nested applicant + group_id)", () => {
+    // Mirrors AppFolio's v2 `rental_applications` report: the person is
+    // nested under `applicant`, the row id is the application id, and
+    // co-applicants share `group_id`.
+    const mapped = mapApplicationPayload({
+      id: "ra-9001",
+      group_id: "grp-77",
+      unit_id: "u-512",
+      status: "Submitted",
+      submitted_at: "2026-06-05T18:00:00Z",
+      desired_move_in_date: "2026-08-01",
+      applicant: {
+        first_name: "Dana",
+        last_name: "Whitfield",
+        email: "dana.whitfield@example.com",
+      },
+    });
+    expect(mapped).not.toBeNull();
+    expect(mapped!.externalId).toBe("ra-9001");
+    expect(mapped!.applicationGroupId).toBe("grp-77");
+    expect(mapped!.unitExternalId).toBe("u-512");
+    expect(mapped!.status).toBe("SUBMITTED");
+    expect(mapped!.email).toBe("dana.whitfield@example.com");
+    expect(mapped!.firstName).toBe("Dana");
+    expect(mapped!.lastName).toBe("Whitfield");
+    expect(mapped!.receivedAt?.toISOString()).toBe("2026-06-05T18:00:00.000Z");
+    expect(mapped!.desiredMoveIn?.toISOString().slice(0, 10)).toBe("2026-08-01");
+  });
+
   it("supports multi-property applications", () => {
     const mapped = mapApplicationPayload({
       applicant_id: "m",
