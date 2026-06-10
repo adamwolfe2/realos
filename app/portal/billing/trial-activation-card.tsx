@@ -4,10 +4,6 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2, Sparkles } from "lucide-react";
-import {
-  TIERS,
-  computeGraduatedMonthlyCents,
-} from "@/lib/billing/catalog";
 
 // ---------------------------------------------------------------------------
 // TrialActivationCard
@@ -28,11 +24,6 @@ function tierLabel(id: "starter" | "growth" | "scale"): string {
   return id === "starter" ? "Foundation" : id === "growth" ? "Growth" : "Scale";
 }
 
-function tierBaseMonthlyCents(id: "starter" | "growth" | "scale"): number {
-  const t = TIERS.find((x) => x.id === id);
-  return t ? t.monthly.unitAmountCents : 0;
-}
-
 function daysLeft(end: Date | null): number | null {
   if (!end) return null;
   const ms = new Date(end).getTime() - Date.now();
@@ -44,18 +35,23 @@ export function TrialActivationCard({
   tierId,
   propertyCount,
   trialEndsAt,
+  selectedModuleKeys,
+  perPropertyCents,
 }: {
   tierId: "starter" | "growth" | "scale";
   propertyCount: number;
   trialEndsAt: Date | null;
+  // The exact features the operator enabled + the effective per-property price
+  // for them. Drives both the quoted total and the per-feature checkout so
+  // billing matches their à-la-carte selection (no tier clobber).
+  selectedModuleKeys: string[];
+  perPropertyCents: number;
 }) {
   const router = useRouter();
   const [submitting, setSubmitting] = React.useState(false);
 
-  const base = tierBaseMonthlyCents(tierId);
-  const totalMonthly = Math.round(
-    computeGraduatedMonthlyCents(base, propertyCount) / 100,
-  );
+  // Per-feature total = the effective per-property price × property count.
+  const totalMonthly = Math.round((perPropertyCents * propertyCount) / 100);
   const days = daysLeft(trialEndsAt);
   const expired = days === 0;
 
@@ -70,6 +66,9 @@ export function TrialActivationCard({
           tierId,
           cycle: "monthly",
           propertyCount,
+          // Bill the exact à-la-carte selection (per-feature pricing), not the
+          // tier default.
+          selectedModuleKeys,
           source: "trial_activation",
         }),
       });

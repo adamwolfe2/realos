@@ -6,6 +6,9 @@ import { getStripeClient, isStripeConfigured } from "@/lib/stripe/config";
 import { getScope } from "@/lib/tenancy/scope";
 import { getSiteUrl } from "@/lib/brand";
 import { ADDONS, getTierById, resolveLineItems } from "@/lib/billing/plans";
+import { isFeatureKey } from "@/lib/billing/features";
+import { BASE_PLATFORM_KEY } from "@/lib/billing/feature-prices";
+import { getFeatureStripePriceId } from "@/lib/billing/feature-stripe";
 import { captureWithContext } from "@/lib/sentry";
 
 // ---------------------------------------------------------------------------
@@ -171,56 +174,74 @@ export async function POST(req: NextRequest) {
     new Set([...(parsed.addOnLookupKeys ?? []), ...moduleDerivedAddons]),
   );
 
-  // Build the Checkout line items.
-  let lineItems;
-  try {
-    lineItems = resolveLineItems({
-      tier,
-      cycle: parsed.cycle,
-      propertyCount: parsed.propertyCount,
-      addOnLookupKeys: mergedAddOnKeys,
-    });
-  } catch (err) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error:
-          err instanceof Error
-            ? err.message
-            : "Could not build line items for the selected plan.",
-      },
-      { status: 500 },
-    );
-  }
+  // Build the Checkout line items. Two modes:
+  //  - À-la-carte (selectedModuleKeys present): bill the base platform + each
+  //    selected feature at its OWN per-feature Stripe price, quantity = N
+  //    properties. This carries the operator's exact selection through to
+  //    billing — no tier clobber. Requires admin to have synced prices.
+  //  - Tier (no selectedModuleKeys): the legacy graduated-tier path + add-ons.
+  const checkoutLineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
+  const useFeaturePricing = (parsed.selectedModuleKeys?.length ?? 0) > 0;
 
-  // Stripe Checkout requires every line item in `mode: subscription` to
-  // either be a recurring price OR included via the `subscription_data`
-  // path. One-time fees (setup, add-ons) ride along on the same
-  // subscription invoice using `invoice_creation` / `add_invoice_items`
-  // — but in Checkout mode they go into `line_items` as one-time prices,
-  // which Stripe will bill on the first invoice alongside the
-  // subscription. We use that path here.
-  const checkoutLineItems: Stripe.Checkout.SessionCreateParams.LineItem[] =
-    [];
-  for (const item of lineItems) {
-    if (item.kind === "subscription_tiered") {
-      // Graduated tiered subscription item — single line, quantity = N
-      // properties. Stripe applies the per-bracket discount math.
-      checkoutLineItems.push({
-        price: item.priceId,
-        quantity: item.quantity,
+  if (useFeaturePricing) {
+    const qty = Math.max(1, parsed.propertyCount);
+    const basePriceId = await getFeatureStripePriceId(BASE_PLATFORM_KEY);
+    if (!basePriceId) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "Feature prices aren't synced to Stripe yet. An admin must click \"Sync to Stripe\" on /admin/pricing first.",
+        },
+        { status: 503 },
+      );
+    }
+    checkoutLineItems.push({ price: basePriceId, quantity: qty });
+    for (const key of parsed.selectedModuleKeys ?? []) {
+      // Always-on base modules (website/lead capture) ride on the base price;
+      // only catalog features have their own line item.
+      if (!isFeatureKey(key)) continue;
+      const priceId = await getFeatureStripePriceId(key);
+      if (!priceId) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: `Feature "${key}" isn't priced in Stripe yet. Sync prices on /admin/pricing.`,
+          },
+          { status: 503 },
+        );
+      }
+      checkoutLineItems.push({ price: priceId, quantity: qty });
+    }
+  } else {
+    let lineItems;
+    try {
+      lineItems = resolveLineItems({
+        tier,
+        cycle: parsed.cycle,
+        propertyCount: parsed.propertyCount,
+        addOnLookupKeys: mergedAddOnKeys,
       });
-    } else if (item.kind === "subscription_addon") {
-      checkoutLineItems.push({
-        price: item.priceId,
-        quantity: 1,
-      });
-    } else if (item.kind === "subscription_metered_addon") {
-      // Metered prices have no quantity at Checkout. They aggregate
-      // usage events reported later via cron in arrears.
-      checkoutLineItems.push({
-        price: item.priceId,
-      });
+    } catch (err) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            err instanceof Error
+              ? err.message
+              : "Could not build line items for the selected plan.",
+        },
+        { status: 500 },
+      );
+    }
+    for (const item of lineItems) {
+      if (item.kind === "subscription_tiered") {
+        checkoutLineItems.push({ price: item.priceId, quantity: item.quantity });
+      } else if (item.kind === "subscription_addon") {
+        checkoutLineItems.push({ price: item.priceId, quantity: 1 });
+      } else if (item.kind === "subscription_metered_addon") {
+        checkoutLineItems.push({ price: item.priceId });
+      }
     }
   }
 

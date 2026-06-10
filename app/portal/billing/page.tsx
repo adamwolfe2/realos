@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/admin/page-header";
 import { BillingPortalButton } from "./billing-portal-button";
 import { getStripeClient, isStripeConfigured } from "@/lib/stripe/config";
 import { ADDONS, TIERS } from "@/lib/billing/plans";
+import { getEffectiveFeatureCatalog } from "@/lib/billing/feature-prices";
 import type Stripe from "stripe";
 import { TrialActivationCard } from "./trial-activation-card";
 // WebsiteBuildCard import removed per Norman bug #106 — replaced with a
@@ -32,10 +33,39 @@ export default async function BillingPage() {
       buildFeePaidCents: true,
       adSpendMarkupPct: true,
       stripeCustomerId: true,
+      // Feature flags drive per-feature conversion pricing — the operator pays
+      // for exactly what's enabled, not a tier default.
+      moduleChatbot: true,
+      modulePixel: true,
+      moduleSEO: true,
+      moduleReputation: true,
+      moduleGoogleAds: true,
+      moduleMetaAds: true,
+      modulePopups: true,
+      moduleCreativeStudio: true,
+      moduleEmail: true,
+      moduleOutboundEmail: true,
+      moduleReferrals: true,
+      moduleInsights: true,
+      moduleMarketIntelligence: true,
+      moduleAttribution: true,
       _count: { select: { properties: true } },
     },
   });
   if (!org) return null;
+
+  // Per-feature conversion pricing: which features are enabled + the effective
+  // (admin-set) per-property monthly total for exactly those features.
+  const { features: effectiveFeatures, basePlatformCents } =
+    await getEffectiveFeatureCatalog();
+  const enabledFeatureKeys = effectiveFeatures
+    .filter((f) => (org as Record<string, unknown>)[f.key] === true)
+    .map((f) => f.key as string);
+  const activationPerPropertyCents =
+    basePlatformCents +
+    effectiveFeatures
+      .filter((f) => enabledFeatureKeys.includes(f.key))
+      .reduce((acc, f) => acc + f.monthlyCents, 0);
 
   // Property count drives trial-activation pricing. Match the
   // dashboard's "marketable" filter so we don't quote a price that
@@ -239,6 +269,8 @@ export default async function BillingPage() {
           tierId={activationTierId}
           propertyCount={Math.max(1, marketablePropertyCount)}
           trialEndsAt={trialEndsAt}
+          selectedModuleKeys={enabledFeatureKeys}
+          perPropertyCents={activationPerPropertyCents}
         />
       ) : null}
 

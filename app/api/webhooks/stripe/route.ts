@@ -18,6 +18,7 @@ import {
   subscriptionHasWhiteLabel,
   tierFromStripePriceId,
 } from "@/lib/billing/plans";
+import { modulesFromFeaturePriceIds } from "@/lib/billing/feature-stripe";
 import { processStripeEventOnce } from "@/lib/proposals/idempotency";
 import { runProvisioningForProposal } from "@/lib/proposals/provision";
 
@@ -154,7 +155,11 @@ async function handleSubscriptionUpserted(
   const priceIds = subscription.items.data
     .map((i) => i.price?.id)
     .filter((id): id is string => !!id);
-  const modules = modulesFromSubscriptionPriceIds(priceIds);
+  // À-la-carte subscriptions bill per feature — resolve the EXACT module set
+  // from the feature prices so the operator's selection is never overwritten
+  // by a tier's defaults. Falls back to the tier mapping for legacy/tier subs.
+  const featureModules = await modulesFromFeaturePriceIds(priceIds);
+  const modules = featureModules ?? modulesFromSubscriptionPriceIds(priceIds);
   if (modules) {
     Object.assign(updateData, modules);
   }
