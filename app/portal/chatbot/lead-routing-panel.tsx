@@ -325,14 +325,20 @@ export function LeadRoutingPanel({
                 // null, Resend error, etc). Pull the unique non-"sent"
                 // reasons up top so the actionable failure modes are
                 // visible without scrolling.
-                if (result.reasons && result.reasons.length > 0) {
-                  const failures = result.reasons.filter(
-                    (r) => r !== "sent",
+                {
+                  // Use the action's AUTHORITATIVE counts (failed/skipped) to
+                  // decide success — don't infer failures by string-matching
+                  // reasons. The digest path pushes a SUCCESS reason
+                  // ("digest sent · N profiles"), which isn't the literal
+                  // "sent" and was being miscounted as "1 not sent" even when
+                  // every recipient received the email.
+                  const problems = (result.reasons ?? []).filter(
+                    (r) => !r.startsWith("digest sent") && r !== "sent",
                   );
-                  const summary =
-                    failures.length === 0
-                      ? `✓ All ${result.sent} emails sent successfully.`
-                      : `${result.sent}/${result.candidateCount} sent. ${failures.length} not sent:\n  · ${[...new Set(failures)].slice(0, 5).join("\n  · ")}`;
+                  const clean = result.failed === 0 && result.skipped === 0;
+                  const summary = clean
+                    ? `✓ Sent 1 digest covering ${result.sent} profile${result.sent === 1 ? "" : "s"} to all ${recipients.length} recipient${recipients.length === 1 ? "" : "s"}.`
+                    : `Sent ${result.sent}/${result.candidateCount}. ${result.failed} failed${result.skipped ? `, ${result.skipped} skipped` : ""}:\n  · ${[...new Set(problems)].slice(0, 5).join("\n  · ")}`;
                   setDiagnostic(summary);
                 }
                 // Refresh the candidate count for a UX confirmation
