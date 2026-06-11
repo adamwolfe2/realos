@@ -1526,6 +1526,31 @@ async function acceptProposalAndProvision(args: {
       });
       if (!fresh) return;
 
+      // Only a LIVE proposal may be accepted + provisioned. A stale checkout
+      // link paid against a CANCELED / EXPIRED / DRAFT / DECLINED proposal must
+      // NOT provision an org on voided terms. Already-ACCEPTED passes through
+      // for idempotent retries. Anything else is logged for out-of-band refund
+      // and skipped. (Codex CRITICAL.)
+      const ACCEPTABLE_STATUSES = new Set<ProposalStatus>([
+        ProposalStatus.SENT,
+        ProposalStatus.VIEWED,
+        ProposalStatus.ACCEPTED,
+      ]);
+      if (!ACCEPTABLE_STATUSES.has(fresh.status)) {
+        captureWithContext(
+          new Error(
+            "acceptProposalAndProvision: paid checkout for a non-acceptable proposal status — refused",
+          ),
+          {
+            route: "api/webhooks/stripe",
+            proposalId: args.proposalId,
+            eventId: args.eventId,
+            status: fresh.status,
+          },
+        );
+        return;
+      }
+
       const acceptance = await tx.proposalAcceptance.upsert({
         where: { proposalId: args.proposalId },
         create: {
