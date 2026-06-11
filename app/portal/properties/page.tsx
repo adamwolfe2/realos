@@ -284,16 +284,22 @@ export default async function PropertiesList({
   // as parking/storage) or pending curation review." Without this the
   // empty state read as 'you have no properties' even for orgs whose
   // AppFolio sync pulled 100+ rows that the classifier excluded.
-  const [excludedCount, totalAnyLifecycle] = await Promise.all([
-    prisma.property
-      .count({
-        where: { ...tenantWhere(scope), lifecycle: "EXCLUDED" },
-      })
-      .catch(() => 0),
-    prisma.property
-      .count({ where: tenantWhere(scope) })
-      .catch(() => 0),
-  ]);
+  // Header-strip totals (listings + leads) run in the SAME wave as the hidden-
+  // lifecycle counts — all four are independent of each other and of the page
+  // rows above, so one round-trip instead of two. (Codex perf.)
+  const [excludedCount, totalAnyLifecycle, totalListings, totalLeads] =
+    await Promise.all([
+      prisma.property
+        .count({
+          where: { ...tenantWhere(scope), lifecycle: "EXCLUDED" },
+        })
+        .catch(() => 0),
+      prisma.property
+        .count({ where: tenantWhere(scope) })
+        .catch(() => 0),
+      prisma.listing.count({ where: { property: baseWhere } }),
+      prisma.lead.count({ where: { property: baseWhere } }),
+    ]);
 
   const counts = {
     all: countAll,
@@ -306,10 +312,6 @@ export default async function PropertiesList({
   // require separate scoped count() queries because Prisma doesn't
   // support `_sum` on related _count fields. These run in parallel to
   // the rest above so wall-clock impact is one extra round-trip.
-  const [totalListings, totalLeads] = await Promise.all([
-    prisma.listing.count({ where: { property: baseWhere } }),
-    prisma.lead.count({ where: { property: baseWhere } }),
-  ]);
   const totalAvailable = portfolioStats._sum.availableCount ?? 0;
   const properties = pageRows;
 

@@ -581,13 +581,22 @@ export async function getPortfolioRecommendations(
     take: 50,
   });
 
-  const all: Array<ProactiveAction & { propertyName: string; propertyId: string }> = [];
-  for (const p of properties) {
-    const recs = await getPropertyRecommendations(orgId, p.id);
-    for (const r of recs) {
-      all.push({ ...r, propertyName: p.name, propertyId: p.id });
-    }
-  }
+  // Resolve each property's recommendations CONCURRENTLY instead of awaiting
+  // them one-by-one — for a multi-property portfolio this was the dominant
+  // latency (N sequential round-trips). (Codex perf.)
+  const perProperty = await Promise.all(
+    properties.map(async (p) => {
+      const recs = await getPropertyRecommendations(orgId, p.id);
+      return recs.map((r) => ({
+        ...r,
+        propertyName: p.name,
+        propertyId: p.id,
+      }));
+    }),
+  );
 
-  return all.sort((a, b) => b.score - a.score).slice(0, limit);
+  return perProperty
+    .flat()
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
 }
