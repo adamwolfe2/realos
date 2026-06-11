@@ -83,6 +83,16 @@ export async function POST(
   if (events.length === 0) {
     return NextResponse.json({ error: "No events" }, { status: 400 });
   }
+  // Cap the per-batch event COUNT, not just total bytes — thousands of tiny
+  // events under the byte limit would each fan out into DB-heavy work. AL
+  // batches are small; oversized batches should resend in chunks. (Codex.)
+  const MAX_EVENTS_PER_BATCH = 500;
+  if (events.length > MAX_EVENTS_PER_BATCH) {
+    return NextResponse.json(
+      { error: "Too many events in one batch", max: MAX_EVENTS_PER_BATCH },
+      { status: 413 },
+    );
+  }
 
   // Whole-body dedupe envelope. Same as the shared route — a byte-identical
   // retry from AL hits the unique bodyHash constraint and short-circuits.

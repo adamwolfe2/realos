@@ -40,7 +40,14 @@ export async function POST(req: NextRequest) {
 
   let body: unknown;
   try {
-    body = await req.json();
+    // Cap the body before parsing — `enrichedData` is an open record, so an
+    // authenticated key could otherwise persist arbitrarily large JSON and
+    // exhaust memory/DB. 64 KB is generous for a visitor payload. (Codex.)
+    const raw = await req.text();
+    if (Buffer.byteLength(raw, "utf8") > 64 * 1024) {
+      return NextResponse.json({ error: "Body too large" }, { status: 413 });
+    }
+    body = JSON.parse(raw);
   } catch {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }

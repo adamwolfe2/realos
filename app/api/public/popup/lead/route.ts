@@ -21,6 +21,7 @@ import { notifyNewIntake as notifyNewLeadSlack } from "@/lib/integrations/slack"
 import { notifyLeadCreated } from "@/lib/notifications/create";
 import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
 import { LeadNotifyChannel } from "@prisma/client";
+import { requireMatchingOrigin } from "@/lib/tenancy/origin-guard";
 import { recordPopupEvent } from "@/lib/popups/queries";
 
 // ---------------------------------------------------------------------------
@@ -139,6 +140,22 @@ export async function POST(req: NextRequest) {
       { ok: false, recorded: false },
       { status: 200, headers: CORS_HEADERS },
     );
+  }
+
+  // Origin guard (same model as the chatbot widget). The slug is public, so
+  // without this anyone could forge popup conversions + leads + notifications
+  // against a tenant from any origin. The legit embed loads from the tenant's
+  // own site (custom domain / {slug}.{PLATFORM_DOMAIN}); dev/preview bypasses
+  // via CHATBOT_ALLOW_ANY_ORIGIN. Soft-deny on mismatch so a misconfigured
+  // embed fails quiet rather than erroring. (Codex.)
+  if (process.env.CHATBOT_ALLOW_ANY_ORIGIN !== "true") {
+    const guard = await requireMatchingOrigin(req, org.id);
+    if (!guard.ok) {
+      return NextResponse.json(
+        { ok: false, recorded: false },
+        { status: 200, headers: CORS_HEADERS },
+      );
+    }
   }
 
   // Confirm the popup belongs to this org. The popupId is operator-

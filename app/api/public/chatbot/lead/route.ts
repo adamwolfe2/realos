@@ -19,6 +19,7 @@ import { notifyChatbotLeadCaptured } from "@/lib/notifications/create";
 import { LeadNotifyChannel } from "@prisma/client";
 import { resolvePropertyForChatPage } from "@/lib/chatbot/property-attribution";
 import { resolveChatbotConfig } from "@/lib/chatbot/resolve-config";
+import { requireMatchingOrigin } from "@/lib/tenancy/origin-guard";
 
 // POST /api/public/chatbot/lead
 //
@@ -117,6 +118,21 @@ export async function POST(req: NextRequest) {
     );
   }
   const orgId = org.id;
+
+  // Origin guard (mirrors /api/public/chatbot/chat). The slug is public, so
+  // without this anyone could forge pre-chat leads + notifications against a
+  // tenant from any origin. The legit embed loads from the tenant's own site,
+  // whose Origin matches their custom domain / {slug}.{PLATFORM_DOMAIN}.
+  // CHATBOT_ALLOW_ANY_ORIGIN=true bypasses for local/preview dev. (Codex.)
+  if (process.env.CHATBOT_ALLOW_ANY_ORIGIN !== "true") {
+    const guard = await requireMatchingOrigin(req, orgId);
+    if (!guard.ok) {
+      return NextResponse.json(
+        { error: "origin not allowed" },
+        { status: 403, headers: CORS_HEADERS }
+      );
+    }
+  }
 
   // Resolve the property: explicit slug (authoritative) → pageUrl inference →
   // (helper falls back to the only property for single-property tenants). Never
