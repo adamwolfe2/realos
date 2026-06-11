@@ -367,9 +367,9 @@ export function PlanStep({
                   opacity: 0.86,
                 }}
               >
-                Norman or someone on the LeaseStack team walks you through
-                the platform live. Recommended if you have specific
-                questions about your portfolio.
+                Someone on the LeaseStack team walks you through the platform
+                live. Recommended if you have specific questions about your
+                portfolio.
               </span>
             </span>
           </button>

@@ -518,7 +518,7 @@ function EditorModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              placeholder="Google Analytics 4 — Telegraph Commons"
+              placeholder="Google Analytics 4 — Main Property"
               className="input"
             />
           </Field>

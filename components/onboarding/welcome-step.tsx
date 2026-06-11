@@ -157,7 +157,7 @@ export function WelcomeStep({
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="SG Real Estate"
+          placeholder="Acme Residential"
           maxLength={120}
           className="w-full rounded-lg"
           style={{

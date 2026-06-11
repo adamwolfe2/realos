@@ -802,7 +802,7 @@ function PopupsCallout() {
                 lineHeight: 1.5,
               }}
             >
-              Tour Telegraph Commons this week and move in by June 1 —
+              Tour The Lofts at Main this week and move in by the 1st —
               we&apos;ll knock $500 off month one, no application fee.
             </p>
 

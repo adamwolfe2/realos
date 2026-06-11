@@ -162,7 +162,7 @@ export function PropertiesStep({
             <input
               className={FIELD}
               style={fieldStyle}
-              placeholder="Property name (e.g. Telegraph Commons)"
+              placeholder="Property name (e.g. The Lofts at Main)"
               value={row.name}
               onChange={(e) => update(i, { name: e.target.value })}
               disabled={disabled}

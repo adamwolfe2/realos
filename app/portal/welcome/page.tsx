@@ -285,7 +285,7 @@ export default async function PortalWelcomePage() {
             href={`mailto:hello@leasestack.co?subject=Walkthrough%20for%20${encodeURIComponent(org.name)}`}
             icon={Calendar}
             label="Book a 30-min walkthrough"
-            description="Norman or the team walks you through what's most valuable for your portfolio."
+            description="Our team walks you through what's most valuable for your portfolio."
             external
           />
         </div>
