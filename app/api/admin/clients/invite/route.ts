@@ -153,6 +153,23 @@ export async function POST(req: NextRequest) {
   const existing = await prisma.user.findUnique({ where: { email } });
   let userId: string;
   if (existing) {
+    // Cross-tenant guard (Codex): an invite must NEVER silently reassign a real
+    // user who already belongs to another workspace, nor touch an agency user —
+    // that was an account-hijack vector (set their orgId/role to the inviter's
+    // org). Only a same-org re-invite (role/name change) or an unclaimed
+    // pending seed may be updated here; anything else needs an explicit transfer.
+    const isPendingSeed = existing.clerkUserId.startsWith("seed_pending_");
+    const isAgencyUser =
+      existing.role.startsWith("AGENCY_") || existing.role === "AL_PARTNER";
+    if (isAgencyUser || (existing.orgId !== org.id && !isPendingSeed)) {
+      return NextResponse.json(
+        {
+          error:
+            "That email already belongs to another workspace. Ask an admin there to remove them first.",
+        },
+        { status: 409 },
+      );
+    }
     const updated = await prisma.user.update({
       where: { id: existing.id },
       data: {
