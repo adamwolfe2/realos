@@ -52,59 +52,57 @@ export async function getExecSummary(input: {
     ...(input.propertyId ? { propertyId: input.propertyId } : {}),
   };
 
-  const [currentAgg, priorAgg, currentRanked, priorRanked, currentTop, priorTop] =
-    await Promise.all([
-      prisma.queryLandingDaily.aggregate({
-        where: { ...baseWhere, date: { gte: periodStart } },
-        _sum: { gscClicks: true, gscImpressions: true },
-        _avg: { gscPosition: true },
-      }),
-      prisma.queryLandingDaily.aggregate({
-        where: {
-          ...baseWhere,
-          date: { gte: priorStart, lt: periodStart },
-        },
-        _sum: { gscClicks: true, gscImpressions: true },
-        _avg: { gscPosition: true },
-      }),
-      prisma.rankedKeyword.count({
-        where: { ...baseWhere, date: { gte: periodStart } },
-      }),
-      prisma.rankedKeyword.count({
-        where: {
-          ...baseWhere,
-          date: { gte: priorStart, lt: periodStart },
-        },
-      }),
-      prisma.rankedKeyword.count({
-        where: {
-          ...baseWhere,
-          date: { gte: periodStart },
-          position: { lte: 10 },
-        },
-      }),
-      prisma.rankedKeyword.count({
-        where: {
-          ...baseWhere,
-          date: { gte: priorStart, lt: periodStart },
-          position: { lte: 10 },
-        },
-      }),
-    ]);
+  // Clicks/impressions/avg-position SUM/AVG over the window are correct (GSC
+  // daily traffic). The ranked-keyword metrics are NOT: rankedKeyword is a
+  // daily snapshot, so counting/summing every row over the window counted
+  // keyword-DAYS — ~30× inflation in ranked-kw, top-10, AND estimated traffic.
+  // All three are point-in-time, so derive them from the LATEST snapshot in
+  // each period. (Codex.)
+  const [currentAgg, priorAgg, curMax, priorMax] = await Promise.all([
+    prisma.queryLandingDaily.aggregate({
+      where: { ...baseWhere, date: { gte: periodStart } },
+      _sum: { gscClicks: true, gscImpressions: true },
+      _avg: { gscPosition: true },
+    }),
+    prisma.queryLandingDaily.aggregate({
+      where: {
+        ...baseWhere,
+        date: { gte: priorStart, lt: periodStart },
+      },
+      _sum: { gscClicks: true, gscImpressions: true },
+      _avg: { gscPosition: true },
+    }),
+    prisma.rankedKeyword.aggregate({
+      where: { ...baseWhere, date: { gte: periodStart } },
+      _max: { date: true },
+    }),
+    prisma.rankedKeyword.aggregate({
+      where: { ...baseWhere, date: { gte: priorStart, lt: periodStart } },
+      _max: { date: true },
+    }),
+  ]);
 
-  // Estimated traffic — sum of (searchVolume × CTR-at-position) for the
-  // current ranked-keyword snapshot. Cheap, doesn't require GA4.
-  const currentRankedRows = await prisma.rankedKeyword.findMany({
-    where: { ...baseWhere, date: { gte: periodStart } },
-    select: { position: true, searchVolume: true },
-  });
-  const priorRankedRows = await prisma.rankedKeyword.findMany({
-    where: {
-      ...baseWhere,
-      date: { gte: priorStart, lt: periodStart },
-    },
-    select: { position: true, searchVolume: true },
-  });
+  const curSnap = curMax._max.date;
+  const priorSnap = priorMax._max.date;
+  const [currentRankedRows, priorRankedRows] = await Promise.all([
+    curSnap
+      ? prisma.rankedKeyword.findMany({
+          where: { ...baseWhere, date: curSnap },
+          select: { position: true, searchVolume: true },
+        })
+      : Promise.resolve([] as Array<{ position: number; searchVolume: number | null }>),
+    priorSnap
+      ? prisma.rankedKeyword.findMany({
+          where: { ...baseWhere, date: priorSnap },
+          select: { position: true, searchVolume: true },
+        })
+      : Promise.resolve([] as Array<{ position: number; searchVolume: number | null }>),
+  ]);
+
+  const currentRanked = currentRankedRows.length;
+  const priorRanked = priorRankedRows.length;
+  const currentTop = currentRankedRows.filter((r) => r.position <= 10).length;
+  const priorTop = priorRankedRows.filter((r) => r.position <= 10).length;
   const estCurrent = currentRankedRows.reduce(
     (sum, r) => sum + (r.searchVolume ?? 0) * expectedCtr(r.position),
     0,
