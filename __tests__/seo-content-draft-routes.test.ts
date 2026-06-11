@@ -23,7 +23,12 @@ describe("SEO content-draft routes — structural contract", () => {
 
     it("uses requireScope for tenant gating", () => {
       const src = read(route);
-      expect(src).toContain("requireScope");
+      // Tenant gating via either helper — requireWritableWorkspace is
+      // requireScope + the expired-trial write gate (strictly stronger).
+      expect(
+        src.includes("requireScope") ||
+          src.includes("requireWritableWorkspace"),
+      ).toBe(true);
       expect(src).toContain("tenantWhere");
     });
 
@@ -55,9 +60,14 @@ describe("SEO content-draft routes — structural contract", () => {
   describe("/api/portal/seo/drafts/[id]", () => {
     const route = "app/api/portal/seo/drafts/[id]/route.ts";
 
-    it("guards via requireScope on every verb", () => {
+    it("gates every verb via a tenant-scope helper", () => {
       const src = read(route);
-      expect(src.match(/requireScope\(\)/g)?.length ?? 0).toBeGreaterThanOrEqual(3);
+      // Each verb gates via requireScope (reads) or requireWritableWorkspace
+      // (mutations — requireScope + expired-trial write gate). Count both.
+      const gates =
+        (src.match(/requireScope\(\)/g)?.length ?? 0) +
+        (src.match(/requireWritableWorkspace\(\)/g)?.length ?? 0);
+      expect(gates).toBeGreaterThanOrEqual(3);
     });
 
     it("refuses to edit APPROVED or SHIPPED drafts", () => {
@@ -109,7 +119,12 @@ describe("SEO content-draft routes — structural contract", () => {
     it("exports PATCH with tenant scoping", () => {
       const src = read(route);
       expect(src).toMatch(/export async function PATCH/);
-      expect(src).toContain("requireScope");
+      // Tenant gating via either helper — requireWritableWorkspace is
+      // requireScope + the expired-trial write gate (strictly stronger).
+      expect(
+        src.includes("requireScope") ||
+          src.includes("requireWritableWorkspace"),
+      ).toBe(true);
       expect(src).toContain("tenantWhere");
     });
 
@@ -203,7 +218,12 @@ describe("SEO content-draft routes — structural contract", () => {
 
     it("validates tenant + property RBAC", () => {
       const src = read(route);
-      expect(src).toContain("requireScope");
+      // Tenant gating via either helper — requireWritableWorkspace is
+      // requireScope + the expired-trial write gate (strictly stronger).
+      expect(
+        src.includes("requireScope") ||
+          src.includes("requireWritableWorkspace"),
+      ).toBe(true);
       expect(src).toContain("tenantWhere");
       expect(src).toContain("allowedPropertyIds");
     });
@@ -324,7 +344,12 @@ describe("SEO content-draft routes — structural contract", () => {
 
     it("tenant + property-RBAC scoped", () => {
       const src = read(route);
-      expect(src).toContain("requireScope");
+      // Tenant gating via either helper — requireWritableWorkspace is
+      // requireScope + the expired-trial write gate (strictly stronger).
+      expect(
+        src.includes("requireScope") ||
+          src.includes("requireWritableWorkspace"),
+      ).toBe(true);
       expect(src).toContain("allowedPropertyIds");
     });
   });

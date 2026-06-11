@@ -13,14 +13,21 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // a different org).
 const scopeRef = { current: { userId: "user-1", orgId: "org-1" } };
 
-vi.mock("@/lib/tenancy/scope", () => ({
-  requireScope: vi.fn(async () => ({
+vi.mock("@/lib/tenancy/scope", () => {
+  const scope = async () => ({
     userId: scopeRef.current.userId,
     orgId: scopeRef.current.orgId,
     clerkUserId: "clerk_1",
     actualOrgId: scopeRef.current.orgId,
-  })),
-}));
+  });
+  return {
+    requireScope: vi.fn(scope),
+    // evaluateAddress now gates on requireWritableWorkspace (it spends on the
+    // RentCast API + writes). Mock it to the same scope so the test exercises
+    // the action logic, not the trial gate.
+    requireWritableWorkspace: vi.fn(scope),
+  };
+});
 
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),

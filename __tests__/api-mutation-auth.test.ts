@@ -26,6 +26,8 @@ const API_DIR = path.join(ROOT, "app/api");
 const AUTH_HELPERS = [
   // Scope / org helpers
   "requireScope",
+  // requireScope + expired-trial write gate (strictly stronger than requireScope)
+  "requireWritableWorkspace",
   "requireAgency",
   "requireUser",
   "requireSuperAdmin",
