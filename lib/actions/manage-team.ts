@@ -212,6 +212,37 @@ export async function updateUserRoleAsClient(
     return { ok: false, error: "You can't modify an agency user from the portal." };
   }
 
+  // Only an OWNER may create or change an OWNER. A CLIENT_ADMIN must not be able
+  // to promote anyone (incl. themselves) to Owner, nor demote/modify an
+  // existing Owner. (Codex privilege-escalation.)
+  const ownerMutation =
+    parsed.data.role === UserRole.CLIENT_OWNER ||
+    target.role === UserRole.CLIENT_OWNER;
+  if (ownerMutation && caller.role !== UserRole.CLIENT_OWNER) {
+    return {
+      ok: false,
+      error: "Only an Owner can assign or change the Owner role.",
+    };
+  }
+
+  // Last-owner protection: never demote the final Owner — the org would be left
+  // with nobody who can manage billing + the team.
+  if (
+    target.role === UserRole.CLIENT_OWNER &&
+    parsed.data.role !== UserRole.CLIENT_OWNER
+  ) {
+    const ownerCount = await prisma.user.count({
+      where: { orgId: scope.orgId, role: UserRole.CLIENT_OWNER },
+    });
+    if (ownerCount <= 1) {
+      return {
+        ok: false,
+        error:
+          "You can't remove the last Owner — promote another teammate to Owner first.",
+      };
+    }
+  }
+
   await prisma.user.update({
     where: { id: target.id },
     data: { role: parsed.data.role },
@@ -400,6 +431,25 @@ export async function removeUserFromOrgAsClient(
   }
   if (AGENCY_ROLES.has(target.role)) {
     return { ok: false, error: "You can't remove an agency user from the portal." };
+  }
+
+  // Only an OWNER may remove an OWNER (a CLIENT_ADMIN cannot remove the Owner),
+  // and never remove the last Owner — the org would be left with nobody who can
+  // manage billing + the team. (Codex privilege-escalation.)
+  if (target.role === UserRole.CLIENT_OWNER) {
+    if (caller.role !== UserRole.CLIENT_OWNER) {
+      return { ok: false, error: "Only an Owner can remove another Owner." };
+    }
+    const ownerCount = await prisma.user.count({
+      where: { orgId: scope.orgId, role: UserRole.CLIENT_OWNER },
+    });
+    if (ownerCount <= 1) {
+      return {
+        ok: false,
+        error:
+          "You can't remove the last Owner — promote another teammate to Owner first.",
+      };
+    }
   }
 
   const org = await prisma.organization.findUnique({
