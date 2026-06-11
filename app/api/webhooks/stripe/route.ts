@@ -19,6 +19,7 @@ import {
   tierFromStripePriceId,
 } from "@/lib/billing/plans";
 import { modulesFromFeaturePriceIds } from "@/lib/billing/feature-stripe";
+import { buildModuleStateFromSelection } from "@/lib/billing/features";
 import { processStripeEventOnce } from "@/lib/proposals/idempotency";
 import { runProvisioningForProposal } from "@/lib/proposals/provision";
 
@@ -488,15 +489,13 @@ async function handleSubscriptionDeleted(
     data: {
       subscriptionStatus: SubscriptionStatus.CANCELED,
       status: TenantStatus.CHURNED,
-      modulePixel: false,
-      moduleChatbot: false,
-      moduleGoogleAds: false,
-      moduleMetaAds: false,
-      moduleSEO: false,
-      moduleEmail: false,
-      moduleOutboundEmail: false,
-      moduleReferrals: false,
-      moduleCreativeStudio: false,
+      // Revoke EVERY paid catalog module from the canonical all-off state
+      // (always-on website + lead-capture stay on so the tenant site doesn't
+      // 404 mid-dispute). Derived from FEATURE_CATALOG so a newly-added module
+      // can't be silently left enabled on cancel — the old hardcoded list had
+      // already drifted (popups/reputation/insights/marketIntel/attribution
+      // stayed on). (Codex.)
+      ...buildModuleStateFromSelection([]),
       // Cancellation also revokes the white-label add-on. We keep the
       // override fields (logo/name/color) on the row so re-subscribing
       // restores the operator's brand without a re-upload.

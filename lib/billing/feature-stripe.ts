@@ -154,12 +154,14 @@ export async function modulesFromFeaturePriceIds(
   priceIds: string[],
 ): Promise<Record<string, boolean> | null> {
   if (priceIds.length === 0) return null;
-  const rows = await prisma.featurePrice
-    .findMany({
-      where: { stripePriceId: { in: priceIds } },
-      select: { key: true },
-    })
-    .catch(() => []);
+  // Do NOT swallow a DB error to [] — that would look like "no feature prices",
+  // fall through to tier defaults (or no change), and let the webhook commit
+  // status/MRR while the module entitlement stays wrong. Let it throw so the
+  // Stripe webhook returns non-2xx and retries. (Codex.)
+  const rows = await prisma.featurePrice.findMany({
+    where: { stripePriceId: { in: priceIds } },
+    select: { key: true },
+  });
   if (rows.length === 0) return null; // not an à-la-carte subscription
 
   const matched = new Set(rows.map((r) => r.key));
