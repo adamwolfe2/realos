@@ -1367,20 +1367,21 @@ async function upsertAppfolioApplication(
   mapped: MappedApplication,
   propertyId: string,
 ): Promise<"ok" | "no_lead"> {
-  // Match by email (case-insensitive) scoped to this org + property. We
-  // prefer same-property matches first; falls back to same-org if not
-  // found (covers operators whose AppFolio property mapping is one-off).
+  // Match by email (case-insensitive) scoped to this org + PROPERTY ONLY.
+  // The previous same-org fallback attached the application to a matching lead
+  // at a DIFFERENT property — mis-attributing it to the wrong building. No
+  // same-property lead → skip (no_lead) rather than corrupt attribution.
+  // (Codex.)
   const email = mapped.email?.toLowerCase();
   if (!email) return "no_lead";
-  const lead =
-    (await prisma.lead.findFirst({
-      where: { orgId, propertyId, email: { equals: email, mode: "insensitive" } },
-      select: { id: true },
-    })) ??
-    (await prisma.lead.findFirst({
-      where: { orgId, email: { equals: email, mode: "insensitive" } },
-      select: { id: true },
-    }));
+  const lead = await prisma.lead.findFirst({
+    where: {
+      orgId,
+      propertyId,
+      email: { equals: email, mode: "insensitive" },
+    },
+    select: { id: true },
+  });
   if (!lead) return "no_lead";
 
   const applicantData = {
