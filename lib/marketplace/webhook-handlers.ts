@@ -85,74 +85,6 @@ export async function handleMarketplaceCheckoutCompleted(
   // Snapshot the seller revenue split at sale time.
   const lead = purchase.lead;
 
-  // ── Atomic double-sale guard (launch-critical-sweep P1) ──────────────────
-  // Checkout deliberately lets multiple PENDING purchases coexist and relies on
-  // THIS webhook to arbitrate who paid first — but previously it didn't: every
-  // paid webhook unconditionally flipped the lead to SOLD + delivered PII, so
-  // two buyers could both pay and both receive the same lead. A conditional
-  // update is the lock: of N concurrent paid webhooks, exactly one flips a
-  // not-yet-SOLD lead (count === 1); the rest lose and get refunded, never
-  // delivered. The OR makes it idempotent on a winner's webhook retry.
-  const claim = await prisma.marketplaceLead.updateMany({
-    where: {
-      id: purchase.leadId,
-      OR: [
-        { status: { not: MarketplaceLeadStatus.SOLD } },
-        { soldToBuyerId: purchase.buyerId },
-      ],
-    },
-    data: {
-      status: MarketplaceLeadStatus.SOLD,
-      soldToBuyerId: purchase.buyerId,
-      soldAt: new Date(),
-    },
-  });
-  if (claim.count === 0) {
-    // Lost the race: the lead is already sold to a different buyer. Refund this
-    // payment, mark the purchase REFUNDED, and never deliver the PII.
-    if (paymentIntentId && !isComp) {
-      try {
-        await getStripeClient().refunds.create({
-          payment_intent: paymentIntentId,
-        });
-      } catch (err) {
-        console.error(
-          "marketplace — CRITICAL: refund failed for double-sale loser; buyer charged without delivery",
-          { purchaseId: purchase.id, leadId: purchase.leadId, paymentIntentId },
-          err,
-        );
-      }
-    }
-    await prisma.marketplacePurchase
-      .update({
-        where: { id: purchase.id },
-        data: {
-          status: MarketplacePurchaseStatus.REFUNDED,
-          stripePaymentIntentId: paymentIntentId,
-          // No piiDeliveredAt — the buyer never received the lead.
-        },
-      })
-      .catch(() => undefined);
-    await prisma.marketplaceAuditEvent
-      .create({
-        data: {
-          action: "LEAD_REFUNDED",
-          leadId: purchase.leadId,
-          purchaseId: purchase.id,
-          buyerId: purchase.buyerId,
-          amountCents: amountPaidCents,
-          description:
-            "Refunded — lead already sold to another buyer (lost the purchase race)",
-          metadata: {
-            stripeSessionId: session.id,
-            stripePaymentIntentId: paymentIntentId,
-          },
-        },
-      })
-      .catch(() => undefined);
-    return true;
-  }
-
   let sellerSplit: {
     sellerIdAtSale: string | null;
     sellerShareBps: number | null;
@@ -162,7 +94,9 @@ export async function handleMarketplaceCheckoutCompleted(
     sellerIdAtSale: null,
     sellerShareBps: null,
     sellerShareCents: null,
-    platformShareCents: isComp ? 0 : purchase.priceCents,
+    // Split the ACTUAL collected amount, not list price — a partial promo
+    // discount would otherwise owe the seller more than we took in. (Codex.)
+    platformShareCents: isComp ? 0 : amountPaidCents,
   };
   if (lead.sellerId && !isComp) {
     const seller = await prisma.marketplaceSeller.findUnique({
@@ -171,14 +105,12 @@ export async function handleMarketplaceCheckoutCompleted(
     });
     if (seller) {
       const bps = seller.revShareBps;
-      const sellerShareCents = Math.floor(
-        (purchase.priceCents * bps) / 10000,
-      );
+      const sellerShareCents = Math.floor((amountPaidCents * bps) / 10000);
       sellerSplit = {
         sellerIdAtSale: seller.id,
         sellerShareBps: bps,
         sellerShareCents,
-        platformShareCents: purchase.priceCents - sellerShareCents,
+        platformShareCents: amountPaidCents - sellerShareCents,
       };
     }
   } else if (lead.sellerId && isComp) {
@@ -192,14 +124,34 @@ export async function handleMarketplaceCheckoutCompleted(
     };
   }
 
-  const txnOps = [
-    prisma.marketplacePurchase.update({
+  // ── Atomic settlement (launch-critical-sweep P1 + Codex review) ───────────
+  // Of N concurrent paid webhooks for one lead, exactly ONE wins. The
+  // conditional claim (status != SOLD, strict) runs in the SAME transaction
+  // that marks the purchase PAID, credits the seller, and writes the audit, so
+  // the lead-SOLD flip and the PAID/credit can never diverge. Winner retries
+  // are handled by the `status === PAID` early-return at the top of this
+  // handler, so two purchases by the SAME buyer can't both win (the earlier
+  // buyer-scoped OR predicate let them — Codex finding).
+  const won = await prisma.$transaction(async (tx) => {
+    const claim = await tx.marketplaceLead.updateMany({
+      where: {
+        id: purchase.leadId,
+        status: { not: MarketplaceLeadStatus.SOLD },
+      },
+      data: {
+        status: MarketplaceLeadStatus.SOLD,
+        soldToBuyerId: purchase.buyerId,
+        soldAt: new Date(),
+      },
+    });
+    if (claim.count === 0) return false;
+
+    await tx.marketplacePurchase.update({
       where: { id: purchase.id },
       data: {
         status: MarketplacePurchaseStatus.PAID,
         // Comp purchases flip origin to COMP so dashboards + reports can
-        // exclude them from revenue / payout numbers. Stream purchases
-        // keep their own STREAM origin; direct paid buys stay DIRECT.
+        // exclude them from revenue / payout numbers.
         ...(isComp ? { origin: "COMP" } : {}),
         stripePaymentIntentId: paymentIntentId,
         receiptUrl,
@@ -209,28 +161,18 @@ export async function handleMarketplaceCheckoutCompleted(
         sellerShareCents: sellerSplit.sellerShareCents,
         platformShareCents: sellerSplit.platformShareCents,
       },
-    }),
-    // NOTE: the lead is already flipped to SOLD by the atomic claim above —
-    // doing it here too would re-open the double-sale window.
-  ];
-  if (sellerSplit.sellerIdAtSale && sellerSplit.sellerShareCents) {
-    txnOps.push(
-      prisma.marketplaceSeller.update({
+    });
+    if (sellerSplit.sellerIdAtSale && sellerSplit.sellerShareCents) {
+      await tx.marketplaceSeller.update({
         where: { id: sellerSplit.sellerIdAtSale },
         data: {
           accruedCents: { increment: sellerSplit.sellerShareCents },
           unpaidOwedCents: { increment: sellerSplit.sellerShareCents },
           totalLeadsSold: { increment: 1 },
         },
-      }) as never,
-    );
-  }
-  // Append-only audit row — every paid (or comp-granted) sale gets a record
-  // so we can answer "what happened to lead X" / "what did seller Y see" with
-  // a single index lookup. Bundled into the same transaction so a sale
-  // without an audit row is impossible.
-  txnOps.push(
-    prisma.marketplaceAuditEvent.create({
+      });
+    }
+    await tx.marketplaceAuditEvent.create({
       data: {
         action: isComp ? "PURCHASE_COMP_GRANTED" : "LEAD_SOLD",
         leadId: purchase.leadId,
@@ -250,9 +192,85 @@ export async function handleMarketplaceCheckoutCompleted(
           sellerShareBps: sellerSplit.sellerShareBps,
         },
       },
-    }) as never,
-  );
-  await prisma.$transaction(txnOps);
+    });
+    return true;
+  });
+
+  if (!won) {
+    // Did THIS purchase already win via a concurrent DUPLICATE webhook (the same
+    // Stripe event delivered twice)? One delivery claims the lead + marks this
+    // purchase PAID inside the tx; the other sees SOLD and lands here. That's
+    // not a loss — never refund the valid winner. (Codex finding.)
+    const current = await prisma.marketplacePurchase.findUnique({
+      where: { id: purchase.id },
+      select: { status: true },
+    });
+    // Short-circuit BOTH terminal states: PAID means a duplicate webhook for
+    // the winner; REFUNDED means a retried loser delivery already settled this
+    // one — re-running would write a duplicate LEAD_REFUNDED audit. (Codex.)
+    if (
+      current?.status === MarketplacePurchaseStatus.PAID ||
+      current?.status === MarketplacePurchaseStatus.REFUNDED
+    ) {
+      return true;
+    }
+
+    // Genuine loser — lost the lead to a DIFFERENT buyer's purchase. Refund,
+    // mark REFUNDED, never deliver the PII.
+    if (paymentIntentId && !isComp) {
+      try {
+        await getStripeClient().refunds.create(
+          { payment_intent: paymentIntentId },
+          // Idempotency keyed on the purchase so a webhook retry can't issue a
+          // second refund. (Codex finding.)
+          { idempotencyKey: `mp_refund_${purchase.id}` },
+        );
+      } catch (err) {
+        // Refund FAILED — the buyer is still charged. THROW so the route returns
+        // 500 and Stripe RETRIES this webhook (and the refund). The route
+        // ignores a boolean return (it always 200s), so returning here would
+        // silently strand a charged buyer. (Codex findings.)
+        console.error(
+          "marketplace — CRITICAL: refund failed for double-sale loser; buyer still charged, throwing to force Stripe retry",
+          { purchaseId: purchase.id, leadId: purchase.leadId, paymentIntentId },
+          err,
+        );
+        throw err instanceof Error
+          ? err
+          : new Error("marketplace refund failed");
+      }
+    }
+    // Mark REFUNDED + write the audit atomically, and let failures THROW (not
+    // swallow): the refund already succeeded, so a swallowed DB failure would
+    // strand a refunded purchase as PENDING + return 200. Throwing makes Stripe
+    // retry; the refund's idempotency key keeps the retry safe. (Codex finding.)
+    await prisma.$transaction([
+      prisma.marketplacePurchase.update({
+        where: { id: purchase.id },
+        data: {
+          status: MarketplacePurchaseStatus.REFUNDED,
+          stripePaymentIntentId: paymentIntentId,
+          // No piiDeliveredAt — the buyer never received the lead.
+        },
+      }),
+      prisma.marketplaceAuditEvent.create({
+        data: {
+          action: "LEAD_REFUNDED",
+          leadId: purchase.leadId,
+          purchaseId: purchase.id,
+          buyerId: purchase.buyerId,
+          amountCents: amountPaidCents,
+          description:
+            "Refunded — lead already sold to another buyer (lost the purchase race)",
+          metadata: {
+            stripeSessionId: session.id,
+            stripePaymentIntentId: paymentIntentId,
+          },
+        },
+      }),
+    ]);
+    return true;
+  }
 
   // Send the buyer their PII email. Failure doesn't unwind the sale.
   const fullName = [lead.firstName, lead.lastName]
@@ -345,16 +363,40 @@ export async function handleMarketplaceChargeRefunded(
   if (purchase.status === MarketplacePurchaseStatus.REFUNDED) return true;
 
   const refundReason = charge.refunds?.data?.[0]?.reason ?? null;
-  await prisma.$transaction([
-    prisma.marketplacePurchase.update({
-      where: { id: purchase.id },
+
+  // Atomic: only ONE concurrent charge.refunded webhook flips the purchase to
+  // REFUNDED (count === 1); a duplicate delivery gets 0 and skips — so the
+  // seller credit is reversed EXACTLY once. The flip, the seller-credit
+  // reversal, and the audit all commit together. (Codex finding: the prior
+  // read-then-write REFUNDED check could double-reverse on concurrent dupes.)
+  await prisma.$transaction(async (tx) => {
+    const flip = await tx.marketplacePurchase.updateMany({
+      where: {
+        id: purchase.id,
+        status: { not: MarketplacePurchaseStatus.REFUNDED },
+      },
       data: {
         status: MarketplacePurchaseStatus.REFUNDED,
         refundedAt: new Date(),
         refundReason,
       },
-    }),
-    prisma.marketplaceAuditEvent.create({
+    });
+    if (flip.count === 0) return; // already refunded by a concurrent delivery
+
+    // Reverse the seller's accrued credit for the refunded sale — otherwise we'd
+    // pay out for a sale we gave the money back on. Mirrors the sale-time
+    // increment. (Codex finding: refunds never reversed seller accrual.)
+    if (purchase.sellerIdAtSale && purchase.sellerShareCents) {
+      await tx.marketplaceSeller.update({
+        where: { id: purchase.sellerIdAtSale },
+        data: {
+          accruedCents: { decrement: purchase.sellerShareCents },
+          unpaidOwedCents: { decrement: purchase.sellerShareCents },
+          totalLeadsSold: { decrement: 1 },
+        },
+      });
+    }
+    await tx.marketplaceAuditEvent.create({
       data: {
         action: "LEAD_REFUNDED",
         leadId: purchase.leadId,
@@ -372,7 +414,7 @@ export async function handleMarketplaceChargeRefunded(
           refundReason,
         },
       },
-    }),
-  ]);
+    });
+  });
   return true;
 }
