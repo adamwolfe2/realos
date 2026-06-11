@@ -76,13 +76,17 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    const failed = results.filter((r) => !r.ok).length;
     return {
       result: NextResponse.json({
         ok: true,
         processed: results.length,
+        failed,
         results,
       }),
       recordsProcessed: results.filter((r) => r.ok).length,
+      // Per-org sync failures → record the run `partial`, not clean `ok`.
+      errorCount: failed,
     };
   });
 }

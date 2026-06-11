@@ -56,6 +56,9 @@ export async function GET(req: NextRequest) {
     let totalRows = 0;
     let neighborhoodPagesScanned = 0;
     let neighborhoodPagesSkipped = 0;
+    // Count caught-and-continued failures so the run is recorded `partial`
+    // (not a clean `ok`) when material errors occurred. (Codex.)
+    let errorCount = 0;
 
     for (const org of orgs) {
       try {
@@ -71,6 +74,7 @@ export async function GET(req: NextRequest) {
           enginesUsed: result.enginesUsed,
         });
       } catch (err) {
+        errorCount += 1;
         const message = err instanceof Error ? err.message : String(err);
         console.error(
           `[cron/aeo-scan] org ${org.id} (${org.name}) failed: ${message}`,
@@ -119,6 +123,7 @@ export async function GET(req: NextRequest) {
             totalRows += r.rowsWritten;
             neighborhoodPagesScanned += 1;
           } catch (err) {
+            errorCount += 1;
             console.error(
               `[cron/aeo-scan] neighborhood scan failed for page ${page.id}:`,
               err instanceof Error ? err.message : err,
@@ -126,6 +131,7 @@ export async function GET(req: NextRequest) {
           }
         }
       } catch (err) {
+        errorCount += 1;
         console.error(
           `[cron/aeo-scan] neighborhood iteration failed for org ${org.id}:`,
           err instanceof Error ? err.message : err,
@@ -166,6 +172,7 @@ export async function GET(req: NextRequest) {
             );
           }
         } catch (err) {
+          errorCount += 1;
           console.error(
             `[cron/aeo-scan] opportunity-score crash for org ${org.id}:`,
             err instanceof Error ? err.message : err,
@@ -178,6 +185,7 @@ export async function GET(req: NextRequest) {
       result: NextResponse.json({
         ok: true,
         totalRows,
+        errorCount,
         engineSource,
         recentSnapshotCount,
         neighborhoodPagesScanned,
@@ -189,6 +197,7 @@ export async function GET(req: NextRequest) {
         orgs: summary,
       }),
       recordsProcessed: totalRows,
+      errorCount,
     };
   });
 }

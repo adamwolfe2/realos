@@ -130,6 +130,8 @@ export async function GET(req: NextRequest) {
         aggregate.lighthouseAudits +
         aggregate.backlinkSummaries +
         aggregate.competitorRows,
+      // Per-property/stage failures → record the run `partial`, not clean `ok`.
+      errorCount: aggregate.errors.length,
     };
   });
 }

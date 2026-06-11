@@ -19,11 +19,16 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 
-export type CronStatus = "ok" | "error" | "timeout";
+export type CronStatus = "ok" | "error" | "timeout" | "partial";
 
 export interface CronRunHandlerReturn<T> {
   result: T;
   recordsProcessed?: number;
+  // Number of per-item/per-tenant failures the handler caught and continued
+  // past. When > 0 the run is recorded as `partial` instead of `ok`, so a cron
+  // that swallowed material failures no longer reads as a clean success on the
+  // health dashboard.
+  errorCount?: number;
 }
 
 export async function recordCronRun<T>(
@@ -49,13 +54,15 @@ export async function recordCronRun<T>(
     const finishedAt = new Date();
     const durationMs = finishedAt.getTime() - startedAt.getTime();
     const recordsProcessed = handlerReturn.recordsProcessed ?? null;
+    const errorCount = handlerReturn.errorCount ?? 0;
+    const status: CronStatus = errorCount > 0 ? "partial" : "ok";
 
     if (runId) {
       await prisma
         .$executeRaw`
           UPDATE "CronRun"
           SET "finishedAt" = ${finishedAt},
-              "status" = 'ok',
+              "status" = ${status},
               "durationMs" = ${durationMs},
               "recordsProcessed" = ${recordsProcessed}
           WHERE "id" = ${runId}

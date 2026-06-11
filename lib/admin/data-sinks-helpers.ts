@@ -126,7 +126,11 @@ export async function loadCronRollups(
         cur.successesLast24h + (row.status === "ok" ? count : 0),
       errorsLast24h:
         cur.errorsLast24h +
-        (row.status === "error" || row.status === "timeout" ? count : 0),
+        (row.status === "error" ||
+        row.status === "timeout" ||
+        row.status === "partial"
+          ? count
+          : 0),
       rowsLast24h: cur.rowsLast24h + (row.status === "ok" ? rows : 0),
     });
   }
@@ -146,7 +150,7 @@ export async function loadCronRollups(
       byJob.set(r.jobName, { ...after, lastSuccessAt: r.startedAt });
     }
     if (
-      (r.status === "error" || r.status === "timeout") &&
+      (r.status === "error" || r.status === "timeout" || r.status === "partial") &&
       after.lastErrorAt == null
     ) {
       byJob.set(r.jobName, {
@@ -156,7 +160,7 @@ export async function loadCronRollups(
       });
     }
     if (!streakClosed.has(r.jobName)) {
-      if (r.status === "error" || r.status === "timeout") {
+      if (r.status === "error" || r.status === "timeout" || r.status === "partial") {
         errorStreak.set(r.jobName, (errorStreak.get(r.jobName) ?? 0) + 1);
       } else if (r.status === "ok") {
         streakClosed.add(r.jobName);
