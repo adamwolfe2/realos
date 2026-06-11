@@ -6,6 +6,7 @@ import { AddonsGrid } from "@/components/platform/pricing/addons-grid";
 import { ComparisonTable } from "@/components/platform/pricing/comparison-table";
 import { PricingFaq } from "@/components/platform/pricing/pricing-faq";
 import { PricingCta } from "@/components/platform/pricing/pricing-cta";
+import { getEffectiveFeatureCatalog } from "@/lib/billing/feature-prices";
 
 // ---------------------------------------------------------------------------
 // Pricing page — /pricing
@@ -39,16 +40,26 @@ export const metadata: Metadata = {
   },
 };
 
-// Pricing page is mostly static — no per-request data. Let Next prerender
-// it at build time so first paint is instant.
-export const dynamic = "force-static";
+// ISR: the per-feature prices come from the live admin catalog
+// (getEffectiveFeatureCatalog), so an admin price edit reflects on the public
+// pricing page within the revalidation window without per-request DB load.
+export const revalidate = 600;
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const { features, basePlatformCents } = await getEffectiveFeatureCatalog();
   return (
     <>
       <PricingHero />
       <PricingTiers />
-      <AddonsGrid />
+      <AddonsGrid
+        features={features.map((f) => ({
+          name: f.name,
+          copy: f.copy,
+          monthlyCents: f.monthlyCents,
+          recommended: f.recommended,
+        }))}
+        basePlatformCents={basePlatformCents}
+      />
       <ComparisonTable />
       <PricingFaq />
       <PricingCta />
