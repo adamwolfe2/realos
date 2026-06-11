@@ -8,7 +8,11 @@ import {
 } from "@/lib/tenancy/scope";
 import { ContentFormat, DraftStatus } from "@prisma/client";
 import { draftContent, type DrafterContext } from "@/lib/seo/draft-writer";
-import { assertQuota, QuotaExceededError } from "@/lib/content/quota";
+import {
+  assertQuota,
+  recordQuotaUsage,
+  QuotaExceededError,
+} from "@/lib/content/quota";
 import { aiCallLimiter, checkRateLimit, rateLimited } from "@/lib/rate-limit";
 import {
   checkAiBillingGate,
@@ -237,6 +241,17 @@ export async function POST(req: NextRequest) {
         generatedAt: now,
         submittedAt: now,
       },
+    });
+
+    // Record quota usage now that the generation succeeded. The route
+    // previously only CHECKED the quota (assertQuota) and NEVER incremented it,
+    // so the per-format monthly counter stayed at 0 and generations were
+    // effectively unlimited (unbounded AI spend). (Codex.)
+    await recordQuotaUsage({
+      orgId: scope.orgId,
+      format: payload.format,
+    }).catch((err) => {
+      console.error("[content] recordQuotaUsage failed:", err);
     });
 
     return NextResponse.json({ ok: true, id: placeholder.id });
