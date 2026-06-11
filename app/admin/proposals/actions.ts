@@ -395,7 +395,7 @@ export async function updateLine(args: {
   if (!proposal) throw new Error("Proposal not found");
   assertEditable(proposal.status, "full");
 
-  const data: Prisma.ProposalLineItemUpdateInput = {};
+  const data: Prisma.ProposalLineItemUpdateManyMutationInput = {};
   if (args.patch.label !== undefined) data.label = args.patch.label;
   if (args.patch.description !== undefined) {
     data.description = args.patch.description;
@@ -410,10 +410,16 @@ export async function updateLine(args: {
     data.recurring = args.patch.recurring;
   }
 
-  await prisma.proposalLineItem.update({
-    where: { id: args.lineId },
+  // Scope the mutation to THIS proposal — updating by lineId alone let a
+  // valid (editable) proposalId be paired with a lineId from another (e.g.
+  // accepted/sent) proposal, tampering with a signed contract. (Codex.)
+  const updated = await prisma.proposalLineItem.updateMany({
+    where: { id: args.lineId, proposalId: args.proposalId },
     data,
   });
+  if (updated.count === 0) {
+    throw new Error("Line item not found on this proposal");
+  }
   await recomputeAndRevalidate(args.proposalId);
   return { ok: true };
 }
@@ -430,7 +436,13 @@ export async function removeLine(args: {
   if (!proposal) throw new Error("Proposal not found");
   assertEditable(proposal.status, "full");
 
-  await prisma.proposalLineItem.delete({ where: { id: args.lineId } });
+  // Scoped delete — never remove a line belonging to a different proposal.
+  const deleted = await prisma.proposalLineItem.deleteMany({
+    where: { id: args.lineId, proposalId: args.proposalId },
+  });
+  if (deleted.count === 0) {
+    throw new Error("Line item not found on this proposal");
+  }
   await recomputeAndRevalidate(args.proposalId);
   return { ok: true };
 }
@@ -447,10 +459,12 @@ export async function reorderLines(args: {
   if (!proposal) throw new Error("Proposal not found");
   assertEditable(proposal.status, "full");
 
+  // Each reorder is scoped to THIS proposal — an id from another proposal
+  // matches nothing (no-op) instead of reordering a foreign contract. (Codex.)
   await prisma.$transaction(
     args.ids.map((id, idx) =>
-      prisma.proposalLineItem.update({
-        where: { id },
+      prisma.proposalLineItem.updateMany({
+        where: { id, proposalId: args.proposalId },
         data: { sortOrder: idx },
       }),
     ),
