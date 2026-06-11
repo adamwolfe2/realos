@@ -1812,11 +1812,21 @@ export async function syncListingsForOrg(
     let remoteListings: NormalizedListing[];
     if (mode === "REST") {
       remoteListings = await fetchRest(integration);
+    } else if (properties.length > 1) {
+      // Multi-property tenant on embed-scrape: scraped listings carry no
+      // property-group hint, so they can't be attributed to the right
+      // building. The old code dumped every scraped listing onto properties[0],
+      // corrupting every other property's availability + pricing. Skip the
+      // listing sync entirely — multi-property listing sync requires REST/OAuth
+      // creds. (Codex.)
+      console.warn(
+        `[appfolio] embed-scrape listing sync skipped for ${properties.length} properties (no group hint; needs REST/OAuth)`,
+      );
+      remoteListings = [];
     } else {
-      // If the tenant only manages one property, scope the scrape by its
-      // street address to avoid sucking in listings from sibling buildings.
-      const addressMatch =
-        properties.length === 1 ? properties[0].addressLine1 ?? null : null;
+      // Single property — scope the scrape by its street address to avoid
+      // pulling in sibling-building listings.
+      const addressMatch = properties[0].addressLine1 ?? null;
       remoteListings = await fetchEmbedScrape(integration, addressMatch);
     }
 
