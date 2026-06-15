@@ -306,12 +306,20 @@ export default async function PropertyDetail({
 
   return (
     <div className="space-y-6">
-      <Link
-        href="/portal/properties"
-        className="inline-flex items-center text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-      >
-        ← All properties
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link
+          href="/portal/properties"
+          className="inline-flex items-center text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+        >
+          ← All properties
+        </Link>
+        <Link
+          href={`/portal/properties/${property.id}/snapshot`}
+          className="inline-flex items-center rounded-md border border-border bg-card px-3 py-1.5 text-[12px] font-medium text-foreground transition-colors hover:bg-muted"
+        >
+          Marketing snapshot →
+        </Link>
+      </div>
 
       {/* Premium "profile picture" hero. Replaces the previous flat
           PageHeader + PropertyAvatar combo so featured properties like
