@@ -502,6 +502,7 @@ model Organization {
   domains                 DomainBinding[]
   tenantSiteConfig        TenantSiteConfig?
   propertyChatbotConfigs  PropertyChatbotConfig[]
+  propertyKnowledgeBases  PropertyKnowledgeBase[]
   leads                   Lead[]
   visitors                Visitor[]
   chatbotConversations    ChatbotConversation[]
@@ -881,6 +882,51 @@ model PropertyChatbotConfig {
   @@index([orgId])
 }
 
+// Structured per-property knowledge base (slice "Property Knowledge Base" S1).
+// One optional row per property. Feeds the chatbot a grounded PROPERTY FACTS
+// block (lib/chatbot/build-system-prompt.ts) so it never invents unit
+// type->size mappings. floorPlans is the canonical type+beds+baths+sqft+price
+// mapping (THE fix for the Telegraph hallucination). All other facts are
+// nullable; a completeness score (lib/properties/kb-completeness.ts) warns
+// operators about gaps but never blocks publish.
+model PropertyKnowledgeBase {
+  id         String       @id @default(cuid())
+  orgId      String
+  propertyId String       @unique
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  property   Property     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // Canonical unit type -> size -> price mapping (THE fix). Shape:
+  // [{ type, bedrooms, bathrooms, squareFeet, priceMinCents, priceMaxCents, notes }]
+  floorPlans Json?
+
+  communityAmenities String[] @default([])
+  unitAmenities      String[] @default([])
+
+  petPolicy         String? @db.Text
+  parkingInfo       String? @db.Text
+  laundryInfo       String?
+  utilitiesIncluded String? @db.Text
+  smokingPolicy     String?
+
+  leaseTerms      String? @db.Text
+  depositInfo     String?
+  currentSpecials String? @db.Text
+
+  applicationProcess      String? @db.Text
+  applicationRequirements String? @db.Text
+
+  neighborhoodInfo String? @db.Text
+  transitInfo      String?
+  tourInfo         String?
+  additionalNotes  String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId])
+}
+
 // Admin-editable price per onboarding feature. One row per feature key (matches
 // FeatureKey in lib/billing/features.ts) plus the special key "base_platform".
 // A row OVERRIDES the code-default price from FEATURE_CATALOG; an absent row
@@ -1061,6 +1107,13 @@ model Property {
   // capture mode, branding) on this property's own website. Field-level
   // fallback to the org config is done in lib/chatbot/resolve-config.ts.
   chatbotConfig        PropertyChatbotConfig?
+  // Structured per-property knowledge base (slice "Property Knowledge Base"
+  // S1). Captures canonical floor plans, amenities, policies, lease terms,
+  // application process + neighborhood as STRUCTURED facts so the chatbot
+  // answers from grounded data instead of inventing unit type -> size maps
+  // (Telegraph "triple = 200 sq ft" bug). Distinct from the free-text
+  // chatbotKnowledgeBase blob on the config; this is queryable + scored.
+  knowledgeBase        PropertyKnowledgeBase?
   websiteBuildRequests WebsiteBuildRequest[]
   aeoChecks            AeoCitationCheck[]
   aeoMentionSnapshots  AeoMentionSnapshot[]

@@ -10,6 +10,7 @@ import {
   BarChart3,
   MessageSquare,
   Star,
+  BookOpen,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,7 @@ type TabKey =
   | "leads"
   | "ads"
   | "chatbot"
+  | "knowledge-base"
   | "reputation"
   | "occupancy"
   | "residents"
@@ -55,6 +57,7 @@ const CATEGORIES: Category[] = [
   { id: "traffic", label: "Traffic", icon: TrendingUp },
   { id: "ads", label: "Ads", icon: BarChart3 },
   { id: "chatbot", label: "Chatbot", icon: MessageSquare },
+  { id: "knowledge-base", label: "Knowledge Base", icon: BookOpen },
   { id: "reputation", label: "Reputation", icon: Star },
 ];
 
@@ -68,6 +71,7 @@ const TAB_TO_CATEGORY: Record<TabKey, TabKey> = {
   traffic: "traffic",
   ads: "ads",
   chatbot: "chatbot",
+  "knowledge-base": "knowledge-base",
   reputation: "reputation",
   residents: "overview",
   renewals: "overview",

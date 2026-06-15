@@ -15,6 +15,7 @@ import { TrafficTab } from "./tabs/traffic";
 import { LeadsTab } from "./tabs/leads";
 import { AdsTab } from "./tabs/ads";
 import { ChatbotTab } from "./tabs/chatbot";
+import { KnowledgeBaseTab } from "./tabs/knowledge-base";
 import { OccupancyTab } from "./tabs/occupancy";
 import { ReputationTab } from "./tabs/reputation";
 import { ResidentsTab } from "./tabs/residents";
@@ -424,6 +425,13 @@ export default async function PropertyDetail({
           ),
           chatbot: (
             <ChatbotTab
+              orgId={scope.orgId}
+              propertyId={property.id}
+              propertyName={property.name}
+            />
+          ),
+          "knowledge-base": (
+            <KnowledgeBaseTab
               orgId={scope.orgId}
               propertyId={property.id}
               propertyName={property.name}

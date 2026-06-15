@@ -21,6 +21,7 @@ import { LeadNotifyChannel } from "@prisma/client";
 import { stripChatbotMarkdown } from "@/lib/chatbot/strip-markdown";
 import { resolvePropertyForChatPage } from "@/lib/chatbot/property-attribution";
 import { resolveChatbotConfig } from "@/lib/chatbot/resolve-config";
+import { parseFloorPlans } from "@/lib/properties/kb-completeness";
 import {
   publicApiLimiter,
   checkRateLimit,
@@ -243,6 +244,26 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Structured per-property knowledge base (slice "Property Knowledge Base"
+  // S1). Scoped by orgId via the property relation (tenant isolation) so a
+  // cross-tenant propertyId can never merge another org's facts into this
+  // prompt. Best-effort: a miss yields null and the bot falls back to the
+  // anti-invention deflection copy.
+  const kbRow = resolvedPropertyId
+    ? await prisma.propertyKnowledgeBase
+        .findFirst({
+          // Double-scope: the KB row's own orgId AND its property's orgId must
+          // both match this tenant. If a property were ever reassigned across
+          // orgs, the now-stale KB row simply won't load (bot deflects) rather
+          // than injecting the prior tenant's facts. (Codex tenant-isolation.)
+          where: { propertyId: resolvedPropertyId, orgId, property: { orgId } },
+        })
+        .catch(() => null)
+    : null;
+  const knowledgeBase = kbRow
+    ? { ...kbRow, floorPlans: parseFloorPlans(kbRow.floorPlans) }
+    : null;
+
   const systemPrompt = buildSystemPrompt(
     org as ChatbotTenant,
     {
@@ -250,7 +271,7 @@ export async function POST(req: NextRequest) {
       email: captured?.capturedEmail ?? null,
       phone: captured?.capturedPhone ?? null,
     },
-    { property: promptProperty, config: resolvedConfig },
+    { property: promptProperty, config: resolvedConfig, knowledgeBase },
   );
   const userAgent = req.headers.get("user-agent") ?? undefined;
 

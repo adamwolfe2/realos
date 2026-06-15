@@ -15,6 +15,7 @@ import {
   Prisma,
 } from "@prisma/client";
 import { buildSystemPrompt, type ChatbotTenant } from "@/lib/chatbot/build-system-prompt";
+import { parseFloorPlans } from "@/lib/properties/kb-completeness";
 import { stripChatbotMarkdown } from "@/lib/chatbot/strip-markdown";
 import { extractLeadCapture } from "@/lib/chatbot/extract-lead";
 import { requireMatchingOrigin } from "@/lib/tenancy/origin-guard";
@@ -111,7 +112,29 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const systemPrompt = buildSystemPrompt(org as ChatbotTenant);
+  // Ground the prompt with the default property's structured knowledge base
+  // (slice "Property Knowledge Base" S1). This legacy endpoint serves the
+  // org's first property; scope the KB lookup by orgId via the relation for
+  // tenant isolation. Best-effort — a miss yields null and the bot deflects.
+  const defaultProperty = org.properties[0] ?? null;
+  const kbRow = defaultProperty
+    ? await prisma.propertyKnowledgeBase
+        .findFirst({
+          // Double-scope by KB orgId AND property orgId so a stale row (e.g.
+          // after a cross-org property reassignment) never injects another
+          // tenant's facts into the prompt. (Codex tenant-isolation.)
+          where: { propertyId: defaultProperty.id, orgId, property: { orgId } },
+        })
+        .catch(() => null)
+    : null;
+  const knowledgeBase = kbRow
+    ? { ...kbRow, floorPlans: parseFloorPlans(kbRow.floorPlans) }
+    : null;
+
+  const systemPrompt = buildSystemPrompt(org as ChatbotTenant, undefined, {
+    property: defaultProperty,
+    knowledgeBase,
+  });
   const userAgent = req.headers.get("user-agent") ?? undefined;
 
   const result = streamText({
