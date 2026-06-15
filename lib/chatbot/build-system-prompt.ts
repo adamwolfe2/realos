@@ -100,10 +100,19 @@ ${contactLines.map((l) => `- ${l}`).join("\n")}`
   // to honest "live availability not loaded yet — capture contact info
   // and the team will follow up". Lets the bot fall back to the human
   // team instead of fabricating occupancy state.
-  const availabilityBlock = listings.length
+  // Only surface listings that carry a real label (a unit type or a bedroom
+  // count). Anonymous rows — unitType AND bedrooms both null — were rendered
+  // as "Unit: …, 420 sq ft" with no type, and the bot then INVENTED which
+  // size was a single/double/triple (Telegraph bug: a triple shown as 200
+  // sq ft, smaller than a 420 sq ft double). Unlabeled-but-sized rows must
+  // not reach the prompt; fall back to the honest "no live unit list" copy.
+  const labeledListings = listings.filter(
+    (l) => l.unitType != null || l.bedrooms != null,
+  );
+  const availabilityBlock = labeledListings.length
     ? `
 AVAILABLE UNITS RIGHT NOW:
-${listings
+${labeledListings
         .slice(0, 24)
         .map((l) => formatListingLine(l))
         .join("\n")}`
@@ -191,6 +200,12 @@ CONTENT RULES:
 - Never invent pricing, availability, policies, or amenities that aren't in
   the facts above. If asked and you don't know, say so in one sentence and
   pivot to the contact info or a tour.
+- NEVER state or infer a unit's square footage, bedroom or bathroom count,
+  floor plan, or unit type (single, double, triple, studio, etc.) unless that
+  exact detail is written in the AVAILABLE UNITS block or agency context
+  above. Do not guess a size and do not map a size to a room type. If the
+  visitor asks and it is not in the facts, say you will send the floor plans
+  and ask for their email.
 - NEVER tell a visitor a property is "fully leased", "sold out", "no
   availability", "leased through Fall/Spring/Summer", or "out of units for
   [any term]" unless that exact status appears in the AVAILABLE UNITS block
