@@ -93,3 +93,70 @@ describe("buildSystemPrompt unit-data guardrails", () => {
     expect(prompt).toMatch(/do not map a size to a room type/i);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Structured Property Knowledge Base (slice S1): the real fix for the
+// Telegraph hallucination. When a KB is present, the prompt emits a grounded
+// PROPERTY FACTS block with the canonical type->size->price mapping. When
+// absent, no facts block is emitted and the anti-invention rules still apply.
+// ---------------------------------------------------------------------------
+describe("buildSystemPrompt PROPERTY FACTS knowledge-base block", () => {
+  it("renders floor plans with the correct type, size, and price", () => {
+    const prompt = buildSystemPrompt(makeOrg([]), undefined, {
+      knowledgeBase: {
+        floorPlans: [
+          {
+            type: "Triple",
+            bedrooms: 3,
+            bathrooms: 1,
+            squareFeet: 450,
+            priceMinCents: 120000,
+            priceMaxCents: 140000,
+          },
+          { type: "Double", bedrooms: 2, bathrooms: 1, squareFeet: 420 },
+        ],
+        communityAmenities: ["Rooftop deck", "Gym"],
+        petPolicy: "Cats welcome, no dogs",
+        leaseTerms: "12-month leases, August start",
+      },
+    });
+
+    expect(prompt).toContain("PROPERTY FACTS");
+    // Canonical type -> size mapping is explicit; bot has nothing to invent.
+    expect(prompt).toContain("Triple");
+    expect(prompt).toContain("450 sq ft");
+    expect(prompt).toContain("$1,200 to $1,400/mo");
+    expect(prompt).toContain("Double");
+    expect(prompt).toContain("420 sq ft");
+    // Other facts surface too.
+    expect(prompt).toContain("Community amenities: Rooftop deck, Gym");
+    expect(prompt).toContain("Pet policy: Cats welcome, no dogs");
+    expect(prompt).toContain("Lease terms: 12-month leases, August start");
+  });
+
+  it("emits NO facts block when the knowledge base is absent", () => {
+    const prompt = buildSystemPrompt(makeOrg([]));
+    expect(prompt).not.toContain("PROPERTY FACTS");
+  });
+
+  it("emits NO facts block for an empty knowledge base (no usable facts)", () => {
+    const prompt = buildSystemPrompt(makeOrg([]), undefined, {
+      knowledgeBase: { floorPlans: [], communityAmenities: [] },
+    });
+    expect(prompt).not.toContain("PROPERTY FACTS");
+  });
+
+  it("skips floor plans that lack a type but still renders valid ones", () => {
+    const prompt = buildSystemPrompt(makeOrg([]), undefined, {
+      knowledgeBase: {
+        floorPlans: [
+          { type: "", squareFeet: 999 },
+          { type: "Single", squareFeet: 250 },
+        ],
+      },
+    });
+    expect(prompt).toContain("Single");
+    expect(prompt).toContain("250 sq ft");
+    expect(prompt).not.toContain("999 sq ft");
+  });
+});
