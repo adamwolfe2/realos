@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { generateReportSnapshot } from "@/lib/reports/generate";
 import { PropertyOnePager } from "@/components/portal/reports/property-one-pager";
+import { ReportDashboard } from "@/components/portal/reports/dashboard/report-dashboard";
 import { PrintButton } from "@/components/portal/reports/print-button";
 
 export const metadata: Metadata = { title: "Marketing snapshot" };
@@ -53,7 +54,12 @@ export default async function PropertySnapshotPage({
   return (
     <div className="space-y-6">
       <BackBar propertyId={property.id} showPrint />
-      <PropertyOnePager snapshot={snapshot} property={property} />
+      {/* Interactive tabbed dashboard on screen. */}
+      <ReportDashboard snapshot={snapshot} property={property} />
+      {/* Printable one-pager — hidden on screen, the only thing that prints. */}
+      <div className="hidden print:block">
+        <PropertyOnePager snapshot={snapshot} property={property} />
+      </div>
     </div>
   );
 }

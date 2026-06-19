@@ -24,7 +24,7 @@ import {
   isFlagType,
   type FlagType,
 } from "@/components/portal/conversations/flag-pill";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, BarChart3 } from "lucide-react";
 import {
   TranscriptSearch,
   type SortOption,
@@ -221,9 +221,18 @@ export default async function ConversationsList({
         title="Chatbot conversations"
         description="Read transcripts inline, flag patterns to tune the system prompt, and find leads worth chasing. Filters are URL-driven."
         actions={
-          <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded" />}>
-            <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
-          </Suspense>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/portal/conversations/insights"
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-semibold text-primary ring-1 ring-inset ring-primary/30 hover:bg-primary/5"
+            >
+              <BarChart3 className="h-4 w-4" />
+              Insights
+            </Link>
+            <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded" />}>
+              <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+            </Suspense>
+          </div>
         }
       />
 
