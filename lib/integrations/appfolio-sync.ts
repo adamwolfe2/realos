@@ -68,13 +68,13 @@ const EXTERNAL_SYSTEM = "appfolio";
 // with an explicit `since` later; the incremental sync (default code
 // path) only walks the most-recent window anyway.
 const DEFAULT_BACKFILL_DAYS = 30;
-// Wider one-time catch-up window for the applications phase when it recovers
-// from a skip/failure. The global lastSyncAt has long since advanced past the
-// applications we never synced, so 30 days isn't enough to reclaim the backlog.
-// Idempotent upserts make over-fetching cheap; once recovered, incremental
-// syncs take over. Decided rental applications older than ~6 months aren't
-// actionable, so 180 days is a safe ceiling.
-const APPLICATIONS_RECOVERY_BACKFILL_DAYS = 180;
+// Wider one-time catch-up window for a date-windowed phase when it recovers
+// from a skip/failure (applications, leads, showings, work orders). The global
+// lastSyncAt has long since advanced past the records we never synced, so 30
+// days isn't enough to reclaim the backlog. Idempotent upserts make
+// over-fetching cheap; once recovered, incremental syncs take over. Decided
+// records older than ~6 months aren't actionable, so 180 days is a safe ceiling.
+const PHASE_RECOVERY_BACKFILL_DAYS = 180;
 
 export type AppfolioSyncStats = {
   leadsUpserted: number;
@@ -645,7 +645,20 @@ export async function runAppfolioSync(
     phasesSkipped += 1;
   } else {
     try {
-      const rows = await fetchAllPages(client, "guest_cards", { fromDate, toDate });
+      // Recovery window — mirrors the applications phase. lastSyncAt advances
+      // whenever ANY phase completes, so a leads phase that has been failing or
+      // skipped would resume with a "since ~now" window and permanently lose
+      // every guest_card in the gap. When recovering (explicit retry or prior
+      // failure state), widen to a backfill window; idempotent upserts keep it
+      // cheap and normal incremental syncs resume once it succeeds.
+      const leadsRecovering = options.retrySkipped || !!phaseFailures.leads;
+      const leadsFromDate = leadsRecovering
+        ? new Date(now.getTime() - PHASE_RECOVERY_BACKFILL_DAYS * 24 * 60 * 60 * 1000)
+        : fromDate;
+      const rows = await fetchAllPages(client, "guest_cards", {
+        fromDate: leadsFromDate,
+        toDate,
+      });
       for (const row of rows) {
         const mapped = mapLeadPayload(row);
         if (!mapped) continue;
@@ -677,7 +690,16 @@ export async function runAppfolioSync(
     phasesSkipped += 1;
   } else {
     try {
-      const rows = await fetchAppfolioV1Showings(integration, fromDate);
+      // Recovery window — mirrors the applications/leads phases. A showings
+      // phase that has been failing/skipped would resume with a "since ~now"
+      // window (start_date) and miss every showing in the gap. Widen to a
+      // backfill window when recovering; idempotent upserts keep it cheap.
+      const showingsRecovering =
+        options.retrySkipped || !!phaseFailures.showings;
+      const showingsFromDate = showingsRecovering
+        ? new Date(now.getTime() - PHASE_RECOVERY_BACKFILL_DAYS * 24 * 60 * 60 * 1000)
+        : fromDate;
+      const rows = await fetchAppfolioV1Showings(integration, showingsFromDate);
       let unmatchedNoLead = 0;
       for (const row of rows) {
         const mapped = mapShowingPayload(row);
@@ -728,7 +750,7 @@ export async function runAppfolioSync(
       const applicationsRecovering =
         options.retrySkipped || !!phaseFailures.applications;
       const applicationsFromDate = applicationsRecovering
-        ? new Date(now.getTime() - APPLICATIONS_RECOVERY_BACKFILL_DAYS * 24 * 60 * 60 * 1000)
+        ? new Date(now.getTime() - PHASE_RECOVERY_BACKFILL_DAYS * 24 * 60 * 60 * 1000)
         : fromDate;
       const rows = await fetchAllPages(client, "rental_applications", {
         fromDate: applicationsFromDate,
@@ -1025,7 +1047,22 @@ export async function runAppfolioSync(
 
   // 8. WORK ORDERS — maintenance ticket sync.
   try {
-    const rows = await fetchAllPages(client, "work_order", { fromDate, toDate });
+    // Recovery window — mirrors the applications/leads/showings phases. The
+    // work_order report honors fromDate, so a failed run resuming with a
+    // "since ~now" window would permanently lose tickets in the gap. This
+    // phase doesn't carry per-phase skip state (it uses the plain try/catch
+    // path, not recordPhaseFailure), so recovery is driven by an explicit
+    // operator retry; the phaseFailures check is kept for symmetry in case
+    // skip tracking is added here later.
+    const workOrdersRecovering =
+      options.retrySkipped || !!phaseFailures.work_orders;
+    const workOrdersFromDate = workOrdersRecovering
+      ? new Date(now.getTime() - PHASE_RECOVERY_BACKFILL_DAYS * 24 * 60 * 60 * 1000)
+      : fromDate;
+    const rows = await fetchAllPages(client, "work_order", {
+      fromDate: workOrdersFromDate,
+      toDate,
+    });
     let workOrdersNoProperty = 0;
     for (const row of rows) {
       const mapped = mapWorkOrderPayload(row);
@@ -1199,7 +1236,8 @@ export async function runAppfolioSync(
   };
 }
 
-async function upsertAppfolioLead(
+// Exported for the dedup regression test (__tests__/appfolio-lead-dedup.test.ts).
+export async function upsertAppfolioLead(
   orgId: string,
   mapped: MappedLead,
   propertyId: string | null
@@ -1231,29 +1269,64 @@ async function upsertAppfolioLead(
   const existing = await prisma.lead.findUnique({ where, select: { id: true } });
   if (existing) {
     await prisma.lead.update({ where, data });
-  } else {
-    await prisma.lead.create({
-      data: {
-        orgId,
-        externalSystem: EXTERNAL_SYSTEM,
-        externalId: mapped.externalId,
-        firstName: mapped.firstName,
-        lastName: mapped.lastName,
-        email: mapped.email,
-        phone: mapped.phone,
-        source: mapped.source,
-        sourceDetail: mapped.sourceDetail,
-        status: mapped.status,
-        desiredMoveIn: mapped.desiredMoveIn,
-        budgetMaxCents: mapped.budgetMaxCents,
-        preferredUnitType: mapped.preferredUnitType,
-        notes: mapped.notes,
-        propertyId: propertyId ?? null,
-        firstSeenAt: mapped.createdAt ?? new Date(),
-        lastActivityAt: new Date(),
-      },
-    });
+    return;
   }
+
+  // Dedup against an application-created lead. The applications phase creates a
+  // Lead with externalId `application:<id>` for any applicant without a prior
+  // guest_card lead. When the guest_card for that same person later lands, the
+  // findUnique above misses (different externalId) and we'd spawn a SECOND Lead
+  // row for the same prospect. Before creating, adopt the application-created
+  // lead — same (orgId, propertyId, email) — by switching its identity to the
+  // guest_card key and updating its fields. The update targets the row by its
+  // primary id, so two concurrent syncs converge on the same row; the worst
+  // case is a redundant update, never a duplicate.
+  const email = mapped.email?.toLowerCase();
+  if (email && propertyId) {
+    const applicantLead = await prisma.lead.findFirst({
+      where: {
+        orgId,
+        propertyId,
+        externalSystem: EXTERNAL_SYSTEM,
+        externalId: { startsWith: "application:" },
+        email: { equals: email, mode: "insensitive" },
+      },
+      select: { id: true },
+    });
+    if (applicantLead) {
+      await prisma.lead.update({
+        where: { id: applicantLead.id },
+        data: {
+          // Adopt the guest_card identity so future syncs match via findUnique.
+          externalId: mapped.externalId,
+          ...data,
+        },
+      });
+      return;
+    }
+  }
+
+  await prisma.lead.create({
+    data: {
+      orgId,
+      externalSystem: EXTERNAL_SYSTEM,
+      externalId: mapped.externalId,
+      firstName: mapped.firstName,
+      lastName: mapped.lastName,
+      email: mapped.email,
+      phone: mapped.phone,
+      source: mapped.source,
+      sourceDetail: mapped.sourceDetail,
+      status: mapped.status,
+      desiredMoveIn: mapped.desiredMoveIn,
+      budgetMaxCents: mapped.budgetMaxCents,
+      preferredUnitType: mapped.preferredUnitType,
+      notes: mapped.notes,
+      propertyId: propertyId ?? null,
+      firstSeenAt: mapped.createdAt ?? new Date(),
+      lastActivityAt: new Date(),
+    },
+  });
 }
 
 async function markLeadSignedByTenant(
