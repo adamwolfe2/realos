@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import {
   AuditAction,
   BackendPlatform,
+  LeadSource,
   LeadStatus,
   Prisma,
 } from "@prisma/client";
@@ -67,6 +68,13 @@ const EXTERNAL_SYSTEM = "appfolio";
 // with an explicit `since` later; the incremental sync (default code
 // path) only walks the most-recent window anyway.
 const DEFAULT_BACKFILL_DAYS = 30;
+// Wider one-time catch-up window for the applications phase when it recovers
+// from a skip/failure. The global lastSyncAt has long since advanced past the
+// applications we never synced, so 30 days isn't enough to reclaim the backlog.
+// Idempotent upserts make over-fetching cheap; once recovered, incremental
+// syncs take over. Decided rental applications older than ~6 months aren't
+// actionable, so 180 days is a safe ceiling.
+const APPLICATIONS_RECOVERY_BACKFILL_DAYS = 180;
 
 export type AppfolioSyncStats = {
   leadsUpserted: number;
@@ -710,8 +718,20 @@ export async function runAppfolioSync(
     phasesSkipped += 1;
   } else {
     try {
+      // Recovery window. `lastSyncAt` advances whenever ANY phase completes
+      // (see the watermark write below), so a phase that has been failing or
+      // skipped for weeks would resume with a "since lastSyncAt" (~now) window
+      // and miss every application it never managed to sync. When applications
+      // is recovering — an explicit retry, or it carries prior-failure state —
+      // pull a wide backfill so the historical applications land. Once it
+      // succeeds the failure state clears and normal incremental syncs resume.
+      const applicationsRecovering =
+        options.retrySkipped || !!phaseFailures.applications;
+      const applicationsFromDate = applicationsRecovering
+        ? new Date(now.getTime() - APPLICATIONS_RECOVERY_BACKFILL_DAYS * 24 * 60 * 60 * 1000)
+        : fromDate;
       const rows = await fetchAllPages(client, "rental_applications", {
-        fromDate,
+        fromDate: applicationsFromDate,
         toDate,
       });
       let unmatchedNoLead = 0;
@@ -734,7 +754,7 @@ export async function runAppfolioSync(
       }
       if (unmatchedNoLead > 0) {
         stats.warnings.push(
-          `applications: ${unmatchedNoLead} applicant${unmatchedNoLead === 1 ? "" : "s"} had no matching Lead by email — skipped. They'll attach automatically when the matching lead lands.`,
+          `applications: ${unmatchedNoLead} application${unmatchedNoLead === 1 ? "" : "s"} had no applicant email — skipped (can't be de-duplicated without one).`,
         );
       }
       if (unmatchedNoProperty > 0) {
@@ -1355,12 +1375,23 @@ async function upsertAppfolioShowing(
   return "ok";
 }
 
+// Initial Lead status when an application creates its own lead. STARTED means
+// the applicant only began the form (APPLICATION_SENT); any further state means
+// they actually applied (APPLIED). The Application row carries the precise
+// status (e.g. DENIED) for the dashboard; the lead funnel just needs the stage.
+function initialLeadStatusForApplication(
+  status: MappedApplication["status"],
+): LeadStatus {
+  return status === "STARTED" ? LeadStatus.APPLICATION_SENT : LeadStatus.APPLIED;
+}
+
 // ---------------------------------------------------------------------------
-// Application upsert. Matches the AppFolio applicant to an existing Lead
-// by email (the most reliable cross-system join key on Core/Plus plans).
-// Returns:
-//   "ok"      — upserted (insert OR update)
-//   "no_lead" — no matching Lead by email; row skipped
+// Application upsert. Matches the AppFolio applicant to an existing Lead by
+// email (the most reliable cross-system join key). When no same-property lead
+// exists, one is CREATED from the applicant — an application is itself a lead,
+// so it's never dropped. Returns:
+//   "ok"      — upserted (insert OR update), lead matched or created
+//   "no_lead" — applicant had no email at all; row skipped (can't dedup)
 // ---------------------------------------------------------------------------
 async function upsertAppfolioApplication(
   orgId: string,
@@ -1369,20 +1400,77 @@ async function upsertAppfolioApplication(
 ): Promise<"ok" | "no_lead"> {
   // Match by email (case-insensitive) scoped to this org + PROPERTY ONLY.
   // The previous same-org fallback attached the application to a matching lead
-  // at a DIFFERENT property — mis-attributing it to the wrong building. No
-  // same-property lead → skip (no_lead) rather than corrupt attribution.
-  // (Codex.)
+  // at a DIFFERENT property — mis-attributing it to the wrong building, so we
+  // never reach across properties. (Codex.)
+  //
+  // If no same-property lead exists, we CREATE one: a person who submitted a
+  // rental application IS a lead — the strongest signal there is. Previously
+  // these were dropped ("no_lead"), which silently lost every application on
+  // AppFolio plans where the guest_cards (leads) phase isn't available — the
+  // application phase was gated on a leads phase that never ran. The created
+  // lead is keyed on a namespaced external id so re-syncs are idempotent and
+  // two concurrent syncs can't duplicate it.
   const email = mapped.email?.toLowerCase();
-  if (!email) return "no_lead";
-  const lead = await prisma.lead.findFirst({
-    where: {
-      orgId,
-      propertyId,
-      email: { equals: email, mode: "insensitive" },
-    },
-    select: { id: true },
+  if (!email) return "no_lead"; // no email → cannot dedup; skip rather than create duplicates each sync
+  let leadId: string;
+  // Have we already stored THIS AppFolio application? backendAppId (the
+  // rental_application_id) is unique per application, so resolve it first and
+  // keep it on whatever lead it already lives on. Without this, if a
+  // guest_card lead with the same email/property landed AFTER we created the
+  // applicant-lead, the email match below could pick the new lead and the
+  // (leadId, backendAppId) upsert would spawn a SECOND Application row for the
+  // same application. (Codex.)
+  const existingApp = await prisma.application.findFirst({
+    where: { backendAppId: mapped.externalId, property: { orgId } },
+    select: { leadId: true },
   });
-  if (!lead) return "no_lead";
+  const existingLead = existingApp
+    ? null
+    : await prisma.lead.findFirst({
+        where: {
+          orgId,
+          propertyId,
+          email: { equals: email, mode: "insensitive" },
+        },
+        select: { id: true },
+      });
+  if (existingApp) {
+    leadId = existingApp.leadId;
+  } else if (existingLead) {
+    leadId = existingLead.id;
+  } else {
+    const created = await prisma.lead.upsert({
+      where: {
+        orgId_externalSystem_externalId: {
+          orgId,
+          externalSystem: EXTERNAL_SYSTEM,
+          externalId: `application:${mapped.externalId}`,
+        },
+      },
+      create: {
+        orgId,
+        externalSystem: EXTERNAL_SYSTEM,
+        externalId: `application:${mapped.externalId}`,
+        firstName: mapped.firstName,
+        lastName: mapped.lastName,
+        email: mapped.email,
+        phone: mapped.phone,
+        source: LeadSource.OTHER,
+        sourceDetail: "AppFolio application",
+        status: initialLeadStatusForApplication(mapped.status),
+        desiredMoveIn: mapped.desiredMoveIn,
+        propertyId,
+        firstSeenAt: mapped.appliedAt ?? mapped.receivedAt ?? new Date(),
+        lastActivityAt: new Date(),
+      },
+      // Found via the namespaced key (a prior sync created it). Leave identity
+      // fields alone; the application upsert + status promotion below keep the
+      // funnel current.
+      update: {},
+      select: { id: true },
+    });
+    leadId = created.id;
+  }
 
   const applicantData = {
     firstName: mapped.firstName,
@@ -1416,28 +1504,27 @@ async function upsertAppfolioApplication(
   await prisma.application.upsert({
     where: {
       leadId_backendAppId: {
-        leadId: lead.id,
+        leadId,
         backendAppId: mapped.externalId,
       },
     },
     create: {
-      leadId: lead.id,
+      leadId,
       backendAppId: mapped.externalId,
       ...writeData,
     },
     update: writeData,
   });
 
-  // Roll the Lead status forward so the funnel reflects reality. We only
-  // promote, never demote — a Lead already past SIGNED won't get knocked
-  // back to APPLIED by an AppFolio sync.
-  const promoteTo =
-    mapped.status === "APPROVED" || mapped.status === "SUBMITTED"
-      ? "APPLIED"
-      : mapped.status === "STARTED"
-        ? "APPLICATION_SENT"
-        : null;
-  if (promoteTo) {
+  // Roll the Lead status forward so the funnel reflects reality. We use the
+  // SAME rule whether the lead was matched or created: anything beyond STARTED
+  // means they actually applied (APPLIED); STARTED means they only began the
+  // form (APPLICATION_SENT). Previously a pre-existing lead was promoted only
+  // for APPROVED/SUBMITTED, so an UNDER_REVIEW/DENIED/WITHDRAWN application left
+  // a NEW lead stuck at NEW while a freshly-created lead for the same status
+  // started at APPLIED — inconsistent. (Codex.)
+  const promoteTo = initialLeadStatusForApplication(mapped.status);
+  {
     // Single atomic conditional update: only promote when the lead is at a
     // strictly lower-ranked status. updateMany with `status: { in: lower }`
     // avoids the read-modify-write race two concurrent syncs would hit, and
@@ -1453,11 +1540,11 @@ async function upsertAppfolioApplication(
       "APPLIED",
       "SIGNED",
     ] as LeadStatus[];
-    const lowerRanked = RANK.slice(0, RANK.indexOf(promoteTo as LeadStatus));
+    const lowerRanked = RANK.slice(0, RANK.indexOf(promoteTo));
     if (lowerRanked.length > 0) {
       await prisma.lead.updateMany({
-        where: { id: lead.id, status: { in: lowerRanked } },
-        data: { status: promoteTo as LeadStatus, lastActivityAt: new Date() },
+        where: { id: leadId, status: { in: lowerRanked } },
+        data: { status: promoteTo, lastActivityAt: new Date() },
       });
     }
   }

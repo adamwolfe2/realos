@@ -1101,8 +1101,9 @@ export type ApplicantRoleValue =
   | "GUARANTOR";
 
 export type MappedApplication = {
-  externalId: string;          // AppFolio applicant_id (unique per person)
+  externalId: string;          // AppFolio rental_application_id (unique per application)
   email: string | null;        // join key against Lead.email
+  phone: string | null;        // applicant phone, for lead creation
   firstName: string | null;
   lastName: string | null;
   status:
@@ -1169,11 +1170,28 @@ function applicationStatusFromRaw(
   return "STARTED";
 }
 
+// Split a combined display name ("Eiran C. Arriaza") into [first, last].
+// First token → first name; the remainder → last name (keeps middle initials
+// and multi-word surnames intact). Returns [null, null] for empty input.
+function splitName(full: string | null): [string | null, string | null] {
+  if (!full) return [null, null];
+  const parts = full.trim().split(/\s+/);
+  if (parts.length === 0) return [null, null];
+  if (parts.length === 1) return [parts[0], null];
+  return [parts[0], parts.slice(1).join(" ")];
+}
+
 export function mapApplicationPayload(
   raw: RawRow,
 ): MappedApplication | null {
+  // The live `rental_applications` v2 report keys the application on
+  // `rental_application_id` (a number). Earlier names (applicant_uuid/
+  // applicant_id/application_id) never appear on this report, so the original
+  // lookup returned null for EVERY row and silently dropped all applications.
+  // Keep the legacy names as fallbacks for other plan tiers.
   const externalId = asString(
-    raw.applicant_uuid ??
+    raw.rental_application_id ??
+      raw.applicant_uuid ??
       raw.applicant_id ??
       raw.application_id ??
       raw.id,
@@ -1191,18 +1209,24 @@ export function mapApplicationPayload(
     }
   }
 
+  // `received` is when AppFolio received the application — the de-facto
+  // "applied" timestamp on the v2 report (there is no `applied_at`).
   const appliedAt =
     asDate(raw.applied_at) ??
     asDate(raw.application_date) ??
-    asDate(raw.submitted_at);
+    asDate(raw.submitted_at) ??
+    asDate(raw.received);
   const decidedAt =
     asDate(raw.decided_at) ??
     asDate(raw.decision_date) ??
+    asDate(raw.decision_made_at) ??
     asDate(raw.approved_at) ??
-    asDate(raw.denied_at);
+    asDate(raw.denied_at) ??
+    asDate(raw.canceled_at);
   const receivedAt =
     asDate(raw.received_at) ??
     asDate(raw.received_date) ??
+    asDate(raw.received) ??
     asDate(raw.created_at) ??
     appliedAt;
   const desiredMoveIn =
@@ -1216,6 +1240,7 @@ export function mapApplicationPayload(
   // application (primary + co-signers). Falls back to the per-person id so a
   // solo applicant still forms a singleton group.
   const applicationGroupId =
+    asString(raw.rental_application_group_id) ??
     asString(raw.application_id) ??
     asString(raw.application_uuid) ??
     asString(raw.household_id) ??
@@ -1230,14 +1255,28 @@ export function mapApplicationPayload(
       ? (raw.applicant as RawRow)
       : {};
 
+  // The v2 report gives the applicant as a single `applicants` display string
+  // ("First M. Last"); only nested/flattened plan variants split it. Prefer
+  // explicit first/last when present, else split the combined name.
+  const combinedName =
+    asString(applicant.full_name) ?? asString(raw.applicants) ?? null;
+  const [splitFirst, splitLast] = splitName(combinedName);
+
   return {
     externalId,
     email:
       (asString(applicant.email) ??
         asString(raw.email) ??
         asString(raw.email_address))?.trim() || null,
-    firstName: asString(applicant.first_name) ?? asString(raw.first_name) ?? null,
-    lastName: asString(applicant.last_name) ?? asString(raw.last_name) ?? null,
+    phone:
+      asString(applicant.phone) ??
+      asString(raw.phone_number) ??
+      asString(raw.phone) ??
+      null,
+    firstName:
+      asString(applicant.first_name) ?? asString(raw.first_name) ?? splitFirst,
+    lastName:
+      asString(applicant.last_name) ?? asString(raw.last_name) ?? splitLast,
     status: applicationStatusFromRaw(raw),
     appliedAt,
     decidedAt,

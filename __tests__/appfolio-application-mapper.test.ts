@@ -127,4 +127,74 @@ describe("mapApplicationPayload", () => {
     });
     expect(mapped!.propertyIds).toEqual(["p1", "p2", "p3"]);
   });
+
+  // REGRESSION (2026-06-19): the live AppFolio `rental_applications` v2 report
+  // uses NONE of the previously-assumed keys. It keys the row on
+  // `rental_application_id` (a number), gives the applicant as a single flat
+  // `applicants` string, dates as `received` / `decision_made_at`, the group as
+  // `rental_application_group_id`, and a real numeric `property_id`. The old
+  // mapper looked for applicant_id/applicant_uuid/etc., found none, and
+  // returned null for EVERY row — silently dropping 288/288 real applications
+  // for the live customer. This fixture is a real captured row (sanitized) and
+  // must always map. Do not delete: it is the only test bound to reality.
+  it("maps the REAL live rental_applications v2 row shape", () => {
+    const mapped = mapApplicationPayload({
+      applicants: "Eiran C. Arriaza",
+      received: "2026-06-17T01:02:39Z",
+      desired_move_in: "2026-06-30",
+      lead_source: "Zillow Rental Network",
+      status: "Decision Pending",
+      application_status: "Decision Pending",
+      unit_name: "01",
+      property_name: "399 Schafer Rd.",
+      approved_at: null,
+      denied_at: null,
+      decision_made_at: null,
+      rental_application_id: 25610,
+      rental_application_group_id: null,
+      email: "eiran.arriaza2017@gmail.com",
+      phone_number: "(510) 674-7764",
+      unit_id: 1617,
+      property_id: 170,
+    });
+    expect(mapped).not.toBeNull();
+    expect(mapped!.externalId).toBe("25610"); // numeric id coerced to string
+    expect(mapped!.propertyIds).toEqual(["170"]); // resolvable, not empty
+    expect(mapped!.email).toBe("eiran.arriaza2017@gmail.com");
+    expect(mapped!.phone).toBe("(510) 674-7764");
+    expect(mapped!.firstName).toBe("Eiran");
+    expect(mapped!.lastName).toBe("C. Arriaza"); // remainder kept intact
+    expect(mapped!.status).toBe("UNDER_REVIEW"); // "Decision Pending"
+    expect(mapped!.unitName).toBe("01");
+    expect(mapped!.unitExternalId).toBe("1617");
+    expect(mapped!.appliedAt?.toISOString()).toBe("2026-06-17T01:02:39.000Z");
+    expect(mapped!.applicationGroupId).toBe("25610"); // singleton (group id null)
+  });
+
+  it("maps decided dates from decision_made_at / canceled_at (v2 keys)", () => {
+    const approved = mapApplicationPayload({
+      rental_application_id: 1,
+      application_status: "Approved",
+      decision_made_at: "2026-06-10T12:00:00Z",
+    });
+    expect(approved!.status).toBe("APPROVED");
+    expect(approved!.decidedAt?.toISOString()).toBe("2026-06-10T12:00:00.000Z");
+
+    const canceled = mapApplicationPayload({
+      rental_application_id: 2,
+      application_status: "Canceled",
+      canceled_at: "2026-06-11T12:00:00Z",
+    });
+    expect(canceled!.status).toBe("WITHDRAWN");
+    expect(canceled!.decidedAt?.toISOString()).toBe("2026-06-11T12:00:00.000Z");
+  });
+
+  it("splits a single-token applicant name without crashing", () => {
+    const mapped = mapApplicationPayload({
+      rental_application_id: 3,
+      applicants: "Cher",
+    });
+    expect(mapped!.firstName).toBe("Cher");
+    expect(mapped!.lastName).toBeNull();
+  });
 });
