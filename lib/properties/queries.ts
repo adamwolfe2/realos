@@ -133,14 +133,20 @@ export async function getPropertyOverviewKpis(
     leadRowsForSpark,
     organicSessions,
   ] = await Promise.all([
+    // Count leads by the REAL event date (firstSeenAt — when the prospect was
+    // first observed), NOT createdAt (DB insert time). After an AppFolio
+    // backfill, months of historical leads insert "now"; counting by createdAt
+    // would dump them all into the last-28d window and wildly inflate a new
+    // customer's first-sync KPIs. firstSeenAt is always populated (defaults to
+    // now() for native leads, set to the source event date for imports).
     prisma.lead.count({
-      where: { orgId, propertyId, createdAt: { gte: since28d } },
+      where: { orgId, propertyId, firstSeenAt: { gte: since28d } },
     }),
     prisma.lead.count({
       where: {
         orgId,
         propertyId,
-        createdAt: { gte: since56d, lt: since28d },
+        firstSeenAt: { gte: since56d, lt: since28d },
       },
     }),
     prisma.tour.count({
@@ -151,11 +157,19 @@ export async function getPropertyOverviewKpis(
         status: { in: [TourStatus.SCHEDULED, TourStatus.COMPLETED] },
       },
     }),
+    // Count applications by their REAL applied date, not DB insert time.
+    // Prefer appliedAt; fall back to receivedAt, then createdAt, when the
+    // earlier field is null — so a backfill doesn't inflate the window while
+    // manual entries (no appliedAt/receivedAt) still count by createdAt.
     prisma.application.count({
       where: {
         propertyId,
         lead: { orgId },
-        createdAt: { gte: since28d },
+        OR: [
+          { appliedAt: { gte: since28d } },
+          { appliedAt: null, receivedAt: { gte: since28d } },
+          { appliedAt: null, receivedAt: null, createdAt: { gte: since28d } },
+        ],
       },
     }),
     // Match the dashboard-level filter: only count spend from ad accounts
@@ -173,8 +187,8 @@ export async function getPropertyOverviewKpis(
       _sum: { spendCents: true },
     }),
     prisma.lead.findMany({
-      where: { orgId, propertyId, createdAt: { gte: since28d } },
-      select: { createdAt: true },
+      where: { orgId, propertyId, firstSeenAt: { gte: since28d } },
+      select: { firstSeenAt: true },
     }),
     patterns.length === 0
       ? Promise.resolve(null)
@@ -190,7 +204,7 @@ export async function getPropertyOverviewKpis(
     organicSessions28d: organicSessions,
     organicMapped: patterns.length > 0 && organicSessions !== null,
     leadsSparkline: bucketDailyCounts(
-      leadRowsForSpark.map((r) => r.createdAt),
+      leadRowsForSpark.map((r) => r.firstSeenAt),
       WINDOW_DAYS,
     ),
   };
