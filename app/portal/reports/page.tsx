@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BarChart3 } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { requireModule } from "@/lib/portal/module-gate";
@@ -175,6 +176,26 @@ export default async function ReportsListPage({
           </form>
         }
       />
+
+      {/* Quick link to the portfolio funnel — the one-page traffic→application
+          roll-up across every property, for sharing with managers. */}
+      <Link
+        href="/portal/reports/portfolio"
+        className="group flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 transition hover:border-primary/40"
+      >
+        <div className="flex items-center gap-3">
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <BarChart3 className="h-4.5 w-4.5" />
+          </span>
+          <div>
+            <div className="text-[13.5px] font-semibold text-foreground">Portfolio funnel</div>
+            <div className="text-[12px] text-muted-foreground">
+              Traffic → leads → tours → applications across every property — one page for managers.
+            </div>
+          </div>
+        </div>
+        <span className="text-[13px] font-semibold text-primary group-hover:underline">View →</span>
+      </Link>
 
       {/* Filters: property scope sits beside the kind/status filters so
           the operator picks "which properties" + "which kinds of reports"
