@@ -17,6 +17,7 @@
 // ---------------------------------------------------------------------------
 
 import type { ContentDraft, ContentFormat } from "@prisma/client";
+import { serializeJsonLdForTemplateLiteral } from "@/lib/seo/serialize-json-ld";
 
 // ---- Slug --------------------------------------------------------------
 
@@ -295,13 +296,18 @@ function renderJsonLdScripts(
     });
   }
 
-  // Use single-line JSON.stringify so the script block stays valid MDX/JSX.
+  // The script block is compiled as JSX by MDX, so its `__html` backtick body
+  // is evaluated at render time. serializeJsonLdForTemplateLiteral both
+  // HTML-escapes `<`/`>`/`&` (stops </script> breakout — stored XSS) AND
+  // escapes the template-literal metachars so the literal evaluates back to
+  // exactly the safe JSON. (Also fixes the prior bug where unescaped
+  // backslashes/quotes in content corrupted the JSON on eval.)
   return blocks
     .map(
       (b) =>
-        `<script type="application/ld+json" dangerouslySetInnerHTML={{ __html: \`${JSON.stringify(
+        `<script type="application/ld+json" dangerouslySetInnerHTML={{ __html: \`${serializeJsonLdForTemplateLiteral(
           b,
-        ).replace(/`/g, "\\`")}\` }} />`,
+        )}\` }} />`,
     )
     .join("\n");
 }

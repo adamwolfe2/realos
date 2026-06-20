@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { serializeJsonLd } from "@/lib/seo/serialize-json-ld";
 import { getTenantFromHeaders } from "@/lib/tenancy/tenant-context";
 import { getEffectiveBrand } from "@/lib/brand/effective";
 import { NeighborhoodPageStatus } from "@prisma/client";
@@ -146,7 +147,7 @@ export default async function NeighborhoodPublicPage({
       {/* JSON-LD blocks — placed early so crawlers see them before content. */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
 
       <header className="max-w-3xl mx-auto px-4 md:px-6 pt-20 pb-8">
