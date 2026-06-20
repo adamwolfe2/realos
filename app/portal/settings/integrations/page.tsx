@@ -31,6 +31,10 @@ import {
   MetaAdsManage,
 } from "./meta-ads-forms";
 import { OAuthConnectButton } from "./oauth-button";
+import {
+  getOrCreateCalWebhookToken,
+  buildCalWebhookUrl,
+} from "@/lib/integrations/cal-webhook";
 
 export const metadata: Metadata = { title: "Integrations" };
 export const dynamic = "force-dynamic";
@@ -57,6 +61,7 @@ export default async function IntegrationsPage({
     properties,
     pendingPixelRequest,
     allCursiveRows,
+    calWebhookToken,
   ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
@@ -165,6 +170,10 @@ export default async function IntegrationsPage({
       where: { orgId: scope.orgId },
       select: { propertyId: true, cursivePixelId: true },
     }),
+    // Lazily mint (once) the Cal.com webhook token so the panel can render the
+    // operator's unguessable Subscriber URL. Idempotent — returns the existing
+    // token on every subsequent view.
+    getOrCreateCalWebhookToken(scope.orgId),
   ]);
 
   if (!org) return null;
@@ -415,20 +424,20 @@ export default async function IntegrationsPage({
         }))}
         cursiveRows={allCursiveRows}
       />
-      <CalWebhookPanel orgId={scope.orgId} />
+      <CalWebhookPanel url={buildCalWebhookUrl(calWebhookToken)} />
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
 // CalWebhookPanel — surfaces the per-org Cal.com webhook URL the operator
-// can paste into any Cal.com webhook subscription. When a prospect books a
-// slot, the receiver creates a Lead (source=REFERRAL, sourceDetail=cal.com)
-// + a Tour scoped to the org's default property. See
-// app/api/webhooks/cal/[orgId]/route.ts for the full contract.
+// can paste into any Cal.com webhook subscription. The URL embeds an
+// unguessable per-org token (NOT the org id — see P0-2). When a prospect
+// books a slot, the receiver creates a Lead (source=REFERRAL,
+// sourceDetail=cal.com) + a Tour scoped to the org's default property. See
+// app/api/webhooks/cal/[token]/route.ts for the full contract.
 // ---------------------------------------------------------------------------
-function CalWebhookPanel({ orgId }: { orgId: string }) {
-  const url = `${(process.env.NEXT_PUBLIC_APP_URL ?? "https://leasestack.co").replace(/\/$/, "")}/api/webhooks/cal/${orgId}`;
+function CalWebhookPanel({ url }: { url: string }) {
   return (
     <section className="rounded-xl border border-border bg-card p-5 space-y-3">
       <div className="flex items-start justify-between gap-3 flex-wrap">
