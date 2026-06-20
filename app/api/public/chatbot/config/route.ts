@@ -236,7 +236,11 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(
     {
       enabled: true,
-      orgId: org.id,
+      // NOTE: org.id is deliberately NOT returned here. It was previously a
+      // de-facto secret (the Cal webhook used it as the path auth), and this
+      // unauthenticated, CORS-* endpoint leaked it, enabling cross-tenant
+      // booking injection (P0-2). Every consumer resolves the org server-side
+      // from `slug`, so the embed/chat flow never needs the raw id.
       slug,
       brandName,
       personaName: cfg.chatbotPersonaName ?? "Leasing",
