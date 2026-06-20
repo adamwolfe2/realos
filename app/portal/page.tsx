@@ -437,8 +437,13 @@ export default async function PortalHome({
         gscConnected: false,
         marketingSiteCustomized: false,
       })),
-      getOpenInsights(scope.orgId, { limit: 3 }).catch(() => []),
-      getInsightCounts(scope.orgId).catch(() => ({
+      // P1-2: scope the dashboard insight card + counts to the user's gated
+      // properties so a property-restricted user never sees other buildings'
+      // insights (effectiveIds is the org-wide null only for unrestricted users).
+      getOpenInsights(scope.orgId, { propertyIds: effectiveIds, limit: 3 }).catch(
+        () => [],
+      ),
+      getInsightCounts(scope.orgId, { propertyIds: effectiveIds }).catch(() => ({
         total: 0,
         critical: 0,
         warning: 0,

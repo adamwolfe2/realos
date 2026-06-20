@@ -47,17 +47,26 @@ export async function POST(_req: NextRequest) {
   const current = resolveCurrentStep(user.org.onboardingStep);
   const target: OnboardingStep = previousStep(current);
 
-  // No-op when already at the floor — return success so the client
-  // doesn't show an error toast for a button-press that did nothing
-  // observable.
+  // No-op when already at the floor (or terminal `done`, which previousStep
+  // now keeps as `done`) — return success so a button-press that did nothing
+  // observable doesn't surface an error toast.
   if (target === current) {
     return NextResponse.json({ ok: true, currentStep: current });
   }
 
-  await prisma.organization.update({
-    where: { id: user.org.id },
+  // Atomic terminal guard: a stale wizard tab or replayed POST must never
+  // rewrite a completed (trialing) org's step from `done` back into the
+  // wizard. updateMany with NOT done makes the write a no-op in that race
+  // (mirrors the sibling workspace/properties/start-trial routes). (P1-3)
+  const updated = await prisma.organization.updateMany({
+    where: { id: user.org.id, NOT: { onboardingStep: "done" } },
     data: { onboardingStep: target },
   });
+  if (updated.count === 0) {
+    // The org was already `done` (or concurrently completed) — report the
+    // terminal state, do not pretend we walked it back.
+    return NextResponse.json({ ok: true, currentStep: "done" });
+  }
 
   return NextResponse.json({ ok: true, currentStep: target });
 }

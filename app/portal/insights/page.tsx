@@ -59,9 +59,12 @@ export default async function InsightsPage({
   const requestedIds = await parsePropertyFilter(params, scope.orgId);
   const accessDenied = isAccessDenied(scope, requestedIds);
   const effectiveIds = effectivePropertyIds(scope, requestedIds);
-  const propertyClause = propertyIdsToWhere(effectiveIds);
-  const singlePropertyId =
-    effectiveIds && effectiveIds.length === 1 ? effectiveIds[0] : undefined;
+  // When a restricted user requests ONLY properties they can't see, effectiveIds
+  // is [] and propertyIdsToWhere([]) would fall back to the org-wide (no-filter)
+  // branch — leaking every building's data behind the "access denied" banner.
+  // Force a match-nothing scope for every query on this page in that case.
+  const scopedPropertyIds = accessDenied ? ["__access_denied__"] : effectiveIds;
+  const propertyClause = propertyIdsToWhere(scopedPropertyIds);
 
   const since7d = new Date(Date.now() - 7 * 86_400_000);
 
@@ -108,11 +111,14 @@ export default async function InsightsPage({
         },
         select: { createdAt: true },
       }),
+      // P1-2: pass the gated id list (mirrors getInsightCounts below) so a
+      // property-restricted user with ≥2 properties never reaches the
+      // unfiltered org-wide branch and sees other buildings' insights.
       getOpenInsights(scope.orgId, {
-        propertyId: singlePropertyId,
+        propertyIds: scopedPropertyIds,
         limit: 20,
       }),
-      getInsightCounts(scope.orgId, { propertyIds: effectiveIds }),
+      getInsightCounts(scope.orgId, { propertyIds: scopedPropertyIds }),
       prisma.property.findMany({
         where: marketablePropertyWhere(scope.orgId),
         select: { id: true, name: true },

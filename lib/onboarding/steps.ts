@@ -44,14 +44,15 @@ export function nextStep(current: OnboardingStep): OnboardingStep {
  * /api/onboarding/wizard/back which decrements via this helper.
  *
  * `welcome` is the first step; trying to go back from there returns
- * `welcome` (no-op). `done` is terminal; going back from there bounces
- * to `plan` so a freshly-trialing user can revisit their selections.
+ * `welcome` (no-op). `done` is TERMINAL — a finished, trialing customer
+ * has no "back": returning `done` keeps the no-op contract and prevents a
+ * stale/replayed back-press from regressing them into the wizard (P1-3).
  */
 export function previousStep(current: OnboardingStep): OnboardingStep {
+  // Terminal state has no predecessor — never walk a completed org backward.
+  if (current === "done") return "done";
   const idx = ONBOARDING_STEPS.indexOf(current);
   if (idx <= 0) return "welcome";
-  // From `done` (idx 4) the previous step is `plan` (idx 3). The cast
-  // is safe because we've already ruled out idx <= 0.
   return ONBOARDING_STEPS[idx - 1]!;
 }
 
