@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@clerk/nextjs/server";
-import type { SubscriptionTier } from "@prisma/client";
+import { SubscriptionStatus, type SubscriptionTier } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import {
   buildModuleStateFromSelection,
@@ -60,9 +60,23 @@ export async function POST(req: NextRequest) {
   const inferredTier = inferTierFromSelection(selected);
   const moduleState = buildModuleStateFromSelection(selected);
 
-  // Tier + module flags are always safe to (re)write.
-  await prisma.organization.update({
-    where: { id: user.orgId },
+  // Entitlement write is gated on a NON-paid status (mirrors start-trial /
+  // properties). A replayed or stale-tab features POST from an already
+  // ACTIVE/PAST_DUE org must NOT overwrite its tier + module* flags to the
+  // cart selection — that would silently dark-fire every paid module not in
+  // the payload. NULL status = brand-new = eligible. (P1-4)
+  await prisma.organization.updateMany({
+    where: {
+      id: user.orgId,
+      OR: [
+        { subscriptionStatus: null },
+        {
+          subscriptionStatus: {
+            notIn: [SubscriptionStatus.ACTIVE, SubscriptionStatus.PAST_DUE],
+          },
+        },
+      ],
+    },
     data: {
       chosenTier: inferredTier as SubscriptionTier,
       subscriptionTier: inferredTier as SubscriptionTier,

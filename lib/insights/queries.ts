@@ -2,6 +2,28 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { propertyIdsToWhere } from "@/lib/tenancy/property-filter";
 
+// Resolve the insight property `where` fragment. `propertyIds` (the gated list
+// from effectivePropertyIds) takes precedence and is the ONLY scoping a
+// property-restricted user should reach. Fail-closed semantics (P1-2):
+//   - undefined  → caller did not restrict        → {} (org-wide; e.g. cron digest)
+//   - null       → unrestricted user (no gate)    → {} (org-wide)
+//   - []         → restricted user, NOTHING in scope → match NOTHING (never org-wide)
+//   - [ids...]   → exactly those properties
+// The single `propertyId` path is kept for callers already scoped to one building.
+function insightPropertyWhere(opts: {
+  propertyId?: string;
+  propertyIds?: string[] | null;
+}): Record<string, unknown> {
+  if (opts.propertyIds !== undefined) {
+    if (opts.propertyIds === null) return {};
+    // An explicitly empty gated list is a restricted user with no permitted
+    // property in view — must match no rows, NOT fall through to org-wide.
+    if (opts.propertyIds.length === 0) return { propertyId: { in: [] } };
+    return propertyIdsToWhere(opts.propertyIds);
+  }
+  return opts.propertyId ? { propertyId: opts.propertyId } : {};
+}
+
 // ---------------------------------------------------------------------------
 // Read helpers for Insight rows. Used by the Command Center, /portal/insights
 // listing page, and the dashboard inline card.
@@ -47,6 +69,10 @@ export async function getOpenInsights(
   orgId: string,
   opts: {
     propertyId?: string;
+    /** Gated property list (from effectivePropertyIds). Takes precedence over
+     * `propertyId`. A property-restricted user MUST pass this so they never
+     * reach the unfiltered org-wide branch (P1-2). */
+    propertyIds?: string[] | null;
     limit?: number;
     /** Default false. Pass true to bypass the rent-roll filter (admin /
      * reports surfaces that explicitly want every detector). */
@@ -63,7 +89,7 @@ export async function getOpenInsights(
   const candidates = await prisma.insight.findMany({
     where: {
       orgId,
-      ...(opts.propertyId ? { propertyId: opts.propertyId } : {}),
+      ...insightPropertyWhere(opts),
       status: { in: ["open", "acknowledged"] },
       OR: [{ snoozeUntil: null }, { snoozeUntil: { lt: now } }],
       ...(opts.includeRentRoll
@@ -114,7 +140,7 @@ export async function getInsightCounts(
     where: {
       orgId,
       status: { in: ["open", "acknowledged"] },
-      ...propertyIdsToWhere(options.propertyIds ?? null),
+      ...insightPropertyWhere({ propertyIds: options.propertyIds }),
       // Match the getOpenInsights filter (Norman bug #71) so the counts
       // the badge shows and the rows the panel renders stay in sync.
       ...(options.includeRentRoll
