@@ -149,12 +149,24 @@ export async function getPropertyOverviewKpis(
         firstSeenAt: { gte: since56d, lt: since28d },
       },
     }),
+    // Count tours by their REAL event date, not DB insert time. Prefer
+    // completedAt (the tour actually happened), fall back to scheduledAt (when
+    // it was booked for), then createdAt — so an AppFolio backfill of historical
+    // showings doesn't dump months of tours into the last-28d window (P1-8).
     prisma.tour.count({
       where: {
         propertyId,
         lead: { orgId },
-        createdAt: { gte: since28d },
         status: { in: [TourStatus.SCHEDULED, TourStatus.COMPLETED] },
+        OR: [
+          { completedAt: { gte: since28d } },
+          { completedAt: null, scheduledAt: { gte: since28d } },
+          {
+            completedAt: null,
+            scheduledAt: null,
+            createdAt: { gte: since28d },
+          },
+        ],
       },
     }),
     // Count applications by their REAL applied date, not DB insert time.
