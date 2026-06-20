@@ -39,6 +39,10 @@ import {
   isHandledTrigger,
 } from "@/lib/integrations/cal-webhook";
 
+// vi.fn() types .mock.calls as empty tuples, so direct [0][0] indexing trips
+// strict tsc (TS2493). This reads a recorded call argument as `any`.
+const callArg = (fn: any, call = 0, arg = 0): any => fn.mock.calls[call][arg];
+
 beforeEach(() => {
   for (const m of Object.values(h.db)) {
     for (const fn of Object.values(m)) (fn as ReturnType<typeof vi.fn>).mockReset?.();
@@ -86,7 +90,7 @@ describe("getOrCreateCalWebhookToken (lazy, idempotent, race-safe)", () => {
       .mockResolvedValueOnce({ calWebhookToken: "b".repeat(32) }); // settled read
     const t = await getOrCreateCalWebhookToken("org_1");
     expect(t).toBe("b".repeat(32));
-    const call = h.db.organization.updateMany.mock.calls[0][0];
+    const call = callArg(h.db.organization.updateMany);
     expect(call.where).toEqual({ id: "org_1", calWebhookToken: null });
     expect(call.data.calWebhookToken).toMatch(/^[a-f0-9]{32}$/);
   });
@@ -107,19 +111,17 @@ describe("processCalBooking scopes everything to the resolved org", () => {
     expect(res).toMatchObject({ ok: true, action: "created", leadId: "lead_new" });
 
     // Lead created under the resolved org — never a client-supplied id.
-    expect(h.db.lead.create.mock.calls[0][0].data.orgId).toBe(
+    expect(callArg(h.db.lead.create).data.orgId).toBe(
       "org_victim_resolved_from_token",
     );
     // Email normalized to lowercase.
-    expect(h.db.lead.create.mock.calls[0][0].data.email).toBe(
-      "prospect@example.com",
-    );
+    expect(callArg(h.db.lead.create).data.email).toBe("prospect@example.com");
     // Tour scoped to the org's default ACTIVE property.
-    expect(h.db.property.findFirst.mock.calls[0][0].where).toMatchObject({
+    expect(callArg(h.db.property.findFirst).where).toMatchObject({
       orgId: "org_victim_resolved_from_token",
       lifecycle: "ACTIVE",
     });
-    expect(h.db.tour.create.mock.calls[0][0].data.propertyId).toBe("prop_1");
+    expect(callArg(h.db.tour.create).data.propertyId).toBe("prop_1");
   });
 
   it("ignores unhandled triggers with a 200-style ack (no DB writes)", async () => {

@@ -11,6 +11,7 @@ import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { portalConfig } from "@/lib/portal-config";
 import { BRAND_NAME } from "@/lib/brand";
+import { serializeJsonLd } from "@/lib/seo/serialize-json-ld";
 
 // DECISION: Fraunces is our open-source stand-in for Anthropic Serif
 // (Claude's custom headline face). Inter covers Anthropic Sans (UI + body).
@@ -141,7 +142,7 @@ export default function RootLayout({
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{
-              __html: JSON.stringify(organizationSchema),
+              __html: serializeJsonLd(organizationSchema),
             }}
           />
           <a
