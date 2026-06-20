@@ -562,12 +562,12 @@ async function handleInvoicePaid(
     updateData.subscriptionStatus = SubscriptionStatus.ACTIVE;
   }
 
-  // Update MRR from the invoice amount if this is a subscription invoice
-  const isSubscriptionInvoice =
-    invoice.parent?.type === "subscription_details";
-  if (isSubscriptionInvoice && invoice.amount_paid > 0) {
-    updateData.mrrCents = invoice.amount_paid;
-  }
+  // NOTE: do NOT write mrrCents here. invoice.amount_paid is the full charge
+  // for the billing period — for an annual subscriber that's ~12x the monthly
+  // MRR (e.g. $11,880/yr would store mrrCents=$11,880/mo). MRR is owned solely
+  // by handleSubscriptionUpserted via computeMrrCents(), which normalizes
+  // annual prices to a monthly figure. This handler only resolves past_due/
+  // paused → active on successful payment. (P2: MRR inflation for annual subs.)
 
   if (Object.keys(updateData).length > 0) {
     await prisma.organization.update({
