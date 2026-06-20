@@ -40,6 +40,13 @@ export async function GET(req: NextRequest) {
   }
 
   const slug = req.nextUrl.searchParams.get("slug");
+  // The embed widget on a multi-property tenant appends `&property=<slug>`
+  // (chatbot.js) so each building's greeting reflects THAT building's
+  // inventory. Previously this route ignored it and matched the property by
+  // the ORG slug (never a hit on multi-property orgs), pooling every
+  // building's listings into one greeting — Building B's site advertised
+  // Building A's rent/availability. (P1-9)
+  const propertySlug = req.nextUrl.searchParams.get("property");
   if (!slug) {
     return NextResponse.json(
       { openCount: 0, lowestRent: null, nextAvailable: null },
@@ -84,12 +91,27 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // Scope to a single property when the embed slug matches a property slug
-  // (multi-property org case). Without scoping, a tenant org with stale or
-  // imported listings under sibling properties would pollute the greeting
-  // (e.g. a $2/mo test record dragging lowestRent to garbage). When no slug
-  // matches, fall back to all properties (single-property org case).
-  const matchedProperty = org.properties.find((p) => p.slug === slug);
+  // An explicit ?property= that doesn't belong to this org must FAIL CLOSED —
+  // returning the empty summary (widget keeps its static greeting) rather than
+  // leaking sibling/portfolio inventory. Mirrors the config route's isolation.
+  if (
+    propertySlug &&
+    !org.properties.some((p) => p.slug === propertySlug)
+  ) {
+    return NextResponse.json(
+      { openCount: 0, lowestRent: null, nextAvailable: null },
+      { status: 200, headers: CORS_HEADERS }
+    );
+  }
+
+  // Resolve which building this greeting is for: an explicit `?property=` slug
+  // wins (multi-property case — each building's site embeds its own slug); else
+  // fall back to a property whose slug matches the org `slug` (legacy); else
+  // all properties (genuine single-property org). Without this, a multi-property
+  // tenant pools every building's listings into one greeting.
+  const matchedProperty = propertySlug
+    ? org.properties.find((p) => p.slug === propertySlug)
+    : org.properties.find((p) => p.slug === slug);
   const scopedProperties = matchedProperty
     ? [matchedProperty]
     : org.properties;
