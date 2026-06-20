@@ -1,312 +1,225 @@
-# Design System Inspired by Claude (Anthropic)
+# LeaseStack Design System
 
-## 1. Visual Theme & Atmosphere
+> Single source of truth for the LeaseStack portal + marketing surfaces. Tokens live in `app/globals.css` (`@theme` + `:root`), fonts in `app/layout.tsx`, charts in `components/portal/ui/chart-theme.ts`. **Reuse the tokens and components below — never reinvent them inline.**
 
-Claude's interface is a literary salon reimagined as a product page — warm, unhurried, and quietly intellectual. The entire experience is built on a parchment-toned canvas (`#f5f4ed`) that deliberately evokes the feeling of high-quality paper rather than a digital surface. Where most AI product pages lean into cold, futuristic aesthetics, Claude's design radiates human warmth, as if the AI itself has good taste in interior design.
+> **Heritage note:** This system began as a warm-parchment "inspired by Claude" theme (terracotta + Fraunces serif). That era is **gone**. The portal now reads as a clean white/blue software product. Several variables keep their old names for back-compat (`--terracotta`, `--coral`, `--warm-sand`, `--parchment`) but are **retargeted to blue/cool-gray values** — trust the value, not the name.
 
-The signature move is the custom Anthropic Serif typeface — a medium-weight serif with generous proportions that gives every headline the gravitas of a book title. Combined with organic, hand-drawn-feeling illustrations in terracotta (`#c96442`), black, and muted green, the visual language says "thoughtful companion" rather than "powerful tool." The serif headlines breathe at tight-but-comfortable line-heights (1.10–1.30), creating a cadence that feels more like reading an essay than scanning a product page.
+---
 
-What makes Claude's design truly distinctive is its warm neutral palette. Every gray has a yellow-brown undertone (`#5e5d59`, `#87867f`, `#4d4c48`) — there are no cool blue-grays anywhere. Borders are cream-tinted (`#f0eee6`, `#e8e6dc`), shadows use warm transparent blacks, and even the darkest surfaces (`#141413`, `#30302e`) carry a barely perceptible olive warmth. This chromatic consistency creates a space that feels lived-in and trustworthy.
+## 1. Principles
 
-**Key Characteristics:**
-- Warm parchment canvas (`#f5f4ed`) evoking premium paper, not screens
-- Custom Anthropic type family: Serif for headlines, Sans for UI, Mono for code
-- Terracotta brand accent (`#c96442`) — warm, earthy, deliberately un-tech
-- Exclusively warm-toned neutrals — every gray has a yellow-brown undertone
-- Organic, editorial illustrations replacing typical tech iconography
-- Ring-based shadow system (`0px 0px 0px 1px`) creating border-like depth without visible borders
-- Magazine-like pacing with generous section spacing and serif-driven hierarchy
+- **Light theme only.** No dark mode, no dark backgrounds. Page background is white (`#FFFFFF`); chrome is cool-gray. There is no `prefers-color-scheme` / `.dark` block. Dark text on dark = bug.
+- **No emojis, ever.** Use `lucide-react` icons (see `kpi-tile.tsx`: `ArrowUpRight`, `ArrowDownRight`, `Minus`). Icons render in brand blue or muted gray.
+- **Reuse, don't reinvent.** Use `KpiTile`, `PageHeader`, `SectionCard`, `EmptyState`, and the `ls-*` utilities. Hand-rolling a header / metric / card is the thing these primitives were built to kill.
+- **Immutable tokens.** All color/spacing/radius/shadow/type comes from CSS custom properties or the `ls-*`/shadcn utility layer. No one-off hex, no new fonts, no bespoke shadows.
+- **Inter for everything, JetBrains Mono for numerics/code.** One sans typeface; mono is reserved for tabular figures, deltas, eyebrows-as-mono, and code.
 
-## 2. Color Palette & Roles
+---
 
-### Primary
-- **Anthropic Near Black** (`#141413`): The primary text color and dark-theme surface — not pure black but a warm, almost olive-tinted dark that's gentler on the eyes. The warmest "black" in any major tech brand.
-- **Terracotta Brand** (`#c96442`): The core brand color — a burnt orange-brown used for primary CTA buttons, brand moments, and the signature accent. Deliberately earthy and un-tech.
-- **Coral Accent** (`#d97757`): A lighter, warmer variant of the brand color used for text accents, links on dark surfaces, and secondary emphasis.
+## 2. Color
 
-### Secondary & Accent
-- **Error Crimson** (`#b53333`): A deep, warm red for error states — serious without being alarming.
-- **Focus Blue** (`#3898ec`): Standard blue for input focus rings — the only cool color in the entire system, used purely for accessibility.
+Brand is **blue `#2563EB`**, not terracotta. Defined twice: as Tailwind v4 `@theme` `--color-*` tokens (shadcn-mirrored, line 18+) and as legacy `:root` aliases (line 78+). Source: `app/globals.css`.
 
-### Surface & Background
-- **Parchment** (`#f5f4ed`): The primary page background — a warm cream with a yellow-green tint that feels like aged paper. The emotional foundation of the entire design.
-- **Ivory** (`#faf9f5`): The lightest surface — used for cards and elevated containers on the Parchment background. Barely distinguishable but creates subtle layering.
-- **Pure White** (`#ffffff`): Reserved for specific button surfaces and maximum-contrast elements.
-- **Warm Sand** (`#e8e6dc`): Button backgrounds and prominent interactive surfaces — a noticeably warm light gray.
-- **Dark Surface** (`#30302e`): Dark-theme containers, nav borders, and elevated dark elements — warm charcoal.
-- **Deep Dark** (`#141413`): Dark-theme page background and primary dark surface.
+### Brand / accent
+| Token | Value | Role |
+|---|---|---|
+| `--color-primary` / `--terracotta` / `--accent` / `--blue` | `#2563EB` | Primary brand blue — CTAs, active states, series 1, eyebrows |
+| `--color-primary-dark` / `--terracotta-hover` | `#1D4ED8` | Hover / pressed brand |
+| `--color-primary-light` / `--coral` | `#3B82F6` | Lighter brand / 3rd series |
+| `--color-accent` | `#EFF6FF` | Brand wash / accent surface |
+| `--brand-soft` / `--brand-wash` / `--brand-glow` / `--brand-strong` | `rgba(37,99,235, .08 / .04 / .18 / .28)` | Tints, hover layers, glow (used by `ls-card-accent`, sidebar active) |
 
-### Neutrals & Text
-- **Charcoal Warm** (`#4d4c48`): Button text on light warm surfaces — the go-to dark-on-light text.
-- **Olive Gray** (`#5e5d59`): Secondary body text — a distinctly warm medium-dark gray.
-- **Stone Gray** (`#87867f`): Tertiary text, footnotes, and de-emphasized metadata.
-- **Dark Warm** (`#3d3d3a`): Dark text links and emphasized secondary text.
-- **Warm Silver** (`#b0aea5`): Text on dark surfaces — a warm, parchment-tinted light gray.
+### Canvas / surfaces
+| Token | Value | Role |
+|---|---|---|
+| `--color-background` / `--parchment` / `--white` | `#FFFFFF` | Page + card background |
+| `--color-secondary` / `--ivory` / `--color-surface` | `#F9FAFB` | App background, subtle panels |
+| `--warm-sand` / `--color-muted` | `#F3F4F6` | Chips, neutral pill bg |
+| `--color-elevated` | `#F4F6F8` | Sidebar item hover, meta pill bg |
+| `--color-overlay` | `#EDF0F4` | Dropdown / overlay layer |
 
-### Semantic & Accent
-- **Border Cream** (`#f0eee6`): Standard light-theme border — barely visible warm cream, creating the gentlest possible containment.
-- **Border Warm** (`#e8e6dc`): Prominent borders, section dividers, and emphasized containment on light surfaces.
-- **Border Dark** (`#30302e`): Standard border on dark surfaces — maintains the warm tone.
-- **Ring Warm** (`#d1cfc5`): Shadow ring color for button hover/focus states.
-- **Ring Subtle** (`#dedc01`): Secondary ring variant for lighter interactive surfaces.
-- **Ring Deep** (`#c2c0b6`): Deeper ring for active/pressed states.
+### Text
+| Token | Value | Role |
+|---|---|---|
+| `--color-foreground` / `--near-black` | `#0F172A` | Primary text + "dark" section ink |
+| `--charcoal-warm` | `#1F2937` | Body text |
+| `--olive-gray` | `#4B5563` | Secondary / muted text |
+| `--stone-gray` / `--color-muted-foreground` | `#6B7280` | Tertiary text, eyebrow labels, select chevron |
+| `--warm-silver` | `#D1D5DB` | Disabled / on-dark light gray |
 
-### Gradient System
-- Claude's design is **gradient-free** in the traditional sense. Depth and visual richness come from the interplay of warm surface tones, organic illustrations, and light/dark section alternation. The warm palette itself creates a "gradient" effect as the eye moves through cream → sand → stone → charcoal → black sections.
+### Borders / rings
+| Token | Value | Role |
+|---|---|---|
+| `--hair` | `#EEF0F3` | Default hairline on white (cards, headers, table rules) |
+| `--hair-strong` | `#DEE2E8` | Card-on-card boundary, select border, hover border |
+| `--hair-active` | `rgba(37,99,235,.32)` | Active hairline |
+| `--color-border` / `--border` / `--border-cream` | `#EAECEF` / `#E5E7EB` | shadcn border / legacy border |
+| `--border-warm` / `--ring-warm` | `#D1D5DB` | Stronger border, hover ring |
+| `--focus-blue` / `--color-ring` | `#2563EB` | Focus ring color |
 
-## 3. Typography Rules
+### Semantic status
+| Token | Value | Role |
+|---|---|---|
+| `--success` | `#16A34A` | Success / positive delta |
+| `--warning` | `#F59E0B` | Warning |
+| `--error` / `--danger` / `--color-destructive` | `#DC2626` | Error / negative delta |
 
-### Font Family
-- **Headline**: `Anthropic Serif`, with fallback: `Georgia`
-- **Body / UI**: `Anthropic Sans`, with fallback: `Arial`
-- **Code**: `Anthropic Mono`, with fallback: `Arial`
+### Chart colors — `components/portal/ui/chart-theme.ts`
+**All Recharts visuals import `CHART_COLORS`. Never hardcode chart hex.**
 
-*Note: These are custom typefaces. For external implementations, Georgia serves as the serif substitute and system-ui/Inter as the sans substitute.*
+| Key | Hex | Use |
+|---|---|---|
+| `brand` | `#2563EB` | Primary series |
+| `brandDeep` | `#1D4ED8` | 2nd series |
+| `brandSoft` | `#3B82F6` | 3rd series |
+| `brandFog` | `#93C5FD` | 4th / background fill |
+| `success` | `#16A34A` | Positive |
+| `warning` | `#F59E0B` | Caution |
+| `danger` | `#DC2626` | Negative |
+| `ink` | `#0F172A` | Darkest text |
+| `body` | `#1F2937` | Tooltip body text |
+| `muted` | `#6B7280` | Axis ticks, legend |
+| `silver` | `#9CA3AF` | De-emphasized |
+| `grid` | `#EEF0F3` | Horizontal grid lines |
+| `axis` | `#94A3B8` | Axis tick labels |
 
-### Hierarchy
+Also exports ready-made `CHART_AXIS_TICK`, `CHART_GRID_PROPS`, `CHART_TOOLTIP_STYLE`, `CHART_TOOLTIP_LABEL_STYLE`, `CHART_TOOLTIP_ITEM_STYLE`, `CHART_LEGEND_STYLE`, and `CHART_GRADIENTS` (`#lsBrandFill` linear gradient). KPI sparkline/bars/gauge in `kpi-tile.tsx` use the same blue (`#2563EB`) + `#93C5FD` family.
 
-| Role | Font | Size | Weight | Line Height | Letter Spacing | Notes |
-|------|------|------|--------|-------------|----------------|-------|
-| Display / Hero | Anthropic Serif | 64px (4rem) | 500 | 1.10 (tight) | normal | Maximum impact, book-title presence |
-| Section Heading | Anthropic Serif | 52px (3.25rem) | 500 | 1.20 (tight) | normal | Feature section anchors |
-| Sub-heading Large | Anthropic Serif | 36–36.8px (~2.3rem) | 500 | 1.30 | normal | Secondary section markers |
-| Sub-heading | Anthropic Serif | 32px (2rem) | 500 | 1.10 (tight) | normal | Card titles, feature names |
-| Sub-heading Small | Anthropic Serif | 25–25.6px (~1.6rem) | 500 | 1.20 | normal | Smaller section titles |
-| Feature Title | Anthropic Serif | 20.8px (1.3rem) | 500 | 1.20 | normal | Small feature headings |
-| Body Serif | Anthropic Serif | 17px (1.06rem) | 400 | 1.60 (relaxed) | normal | Serif body text (editorial passages) |
-| Body Large | Anthropic Sans | 20px (1.25rem) | 400 | 1.60 (relaxed) | normal | Intro paragraphs |
-| Body / Nav | Anthropic Sans | 17px (1.06rem) | 400–500 | 1.00–1.60 | normal | Navigation links, UI text |
-| Body Standard | Anthropic Sans | 16px (1rem) | 400–500 | 1.25–1.60 | normal | Standard body, button text |
-| Body Small | Anthropic Sans | 15px (0.94rem) | 400–500 | 1.00–1.60 | normal | Compact body text |
-| Caption | Anthropic Sans | 14px (0.88rem) | 400 | 1.43 | normal | Metadata, descriptions |
-| Label | Anthropic Sans | 12px (0.75rem) | 400–500 | 1.25–1.60 | 0.12px | Badges, small labels |
-| Overline | Anthropic Sans | 10px (0.63rem) | 400 | 1.60 | 0.5px | Uppercase overline labels |
-| Micro | Anthropic Sans | 9.6px (0.6rem) | 400 | 1.60 | 0.096px | Smallest text |
-| Code | Anthropic Mono | 15px (0.94rem) | 400 | 1.60 | -0.32px | Inline code, terminal |
+---
 
-### Principles
-- **Serif for authority, sans for utility**: Anthropic Serif carries all headline content with medium weight (500), giving every heading the gravitas of a published title. Anthropic Sans handles all functional UI text — buttons, labels, navigation — with quiet efficiency.
-- **Single weight for serifs**: All Anthropic Serif headings use weight 500 — no bold, no light. This creates a consistent "voice" across all headline sizes, as if the same author wrote every heading.
-- **Relaxed body line-height**: Most body text uses 1.60 line-height — significantly more generous than typical tech sites (1.4–1.5). This creates a reading experience closer to a book than a dashboard.
-- **Tight-but-not-compressed headings**: Line-heights of 1.10–1.30 for headings are tight but never claustrophobic. The serif letterforms need breathing room that sans-serif fonts don't.
-- **Micro letter-spacing on labels**: Small sans text (12px and below) uses deliberate letter-spacing (0.12px–0.5px) to maintain readability at tiny sizes.
+## 3. Typography
 
-## 4. Component Stylings
+Setup in `app/layout.tsx` → mapped to `@theme` variables in `app/globals.css` (line 18+).
 
-### Buttons
+| `next/font` import | CSS variable | Theme token | Role |
+|---|---|---|---|
+| `Inter` | `--font-inter` | `--font-sans` = `--font-display` = `--font-serif` | **Everything**: display, headings, body, UI |
+| `JetBrains_Mono` | `--font-jetbrains` | `--font-mono` | Tabular numerics, KPI metrics, deltas, code, mono eyebrows |
+| `Fraunces` | `--font-fraunces` | *(declared, effectively unused)* | Legacy serif var — `--font-serif` now points to Inter; do **not** introduce serif headings |
 
-**Warm Sand (Secondary)**
-- Background: Warm Sand (`#e8e6dc`)
-- Text: Charcoal Warm (`#4d4c48`)
-- Padding: 0px 12px 0px 8px (asymmetric — icon-first layout)
-- Radius: comfortably rounded (8px)
-- Shadow: ring-based (`#e8e6dc 0px 0px 0px 0px, #d1cfc5 0px 0px 0px 1px`)
-- The workhorse button — warm, unassuming, clearly interactive
+`layout.tsx` wires all three on `<html>` and sets `<body style={{ fontFamily: "var(--font-sans)" }}>`. The in-file `DECISION` comment is explicit: Fraunces/serif from the warm-cream era was removed; the portal reads as a clean software product.
 
-**White Surface**
-- Background: Pure White (`#ffffff`)
-- Text: Anthropic Near Black (`#141413`)
-- Padding: 8px 16px 8px 12px
-- Radius: generously rounded (12px)
-- Hover: shifts to secondary background color
-- Clean, elevated button for light surfaces
+**Stacks** (`globals.css`):
+- `--font-sans` → `var(--font-inter), -apple-system, system-ui, "Helvetica Neue", Arial, sans-serif`
+- `--font-mono` → `var(--font-jetbrains), ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace`
 
-**Dark Charcoal**
-- Background: Dark Surface (`#30302e`)
-- Text: Ivory (`#faf9f5`)
-- Padding: 0px 12px 0px 8px
-- Radius: comfortably rounded (8px)
-- Shadow: ring-based (`#30302e 0px 0px 0px 0px, ring 0px 0px 0px 1px`)
-- The inverted variant for dark-on-light emphasis
+**Type scale utilities** (`globals.css`): `.display-hero` (clamp 42→64px / 700), `.display-large` (36→52 / 700), `.heading-section` (28→40 / 700), `.heading-sub`, `.heading-card`, `.body-lead` (18 / 1.6), `.body-default` (16 / 1.6), `.body-small`, `.caption-ui`, `.label-mono`, `.eyebrow` (mono 11px, `letter-spacing: .22em`, uppercase, blue). All sans = Inter; tight negative tracking on headings, `1.6` line-height on body.
 
-**Brand Terracotta**
-- Background: Terracotta Brand (`#c96442`)
-- Text: Ivory (`#faf9f5`)
-- Radius: 8–12px
-- Shadow: ring-based (`#c96442 0px 0px 0px 0px, #c96442 0px 0px 0px 1px`)
-- The primary CTA — the only button with chromatic color
+---
 
-**Dark Primary**
-- Background: Anthropic Near Black (`#141413`)
-- Text: Warm Silver (`#b0aea5`)
-- Padding: 9.6px 16.8px
-- Radius: generously rounded (12px)
-- Border: thin solid Dark Surface (`1px solid #30302e`)
-- Used on dark theme surfaces
+## 4. Spacing / Radius / Shadow
 
-### Cards & Containers
-- Background: Ivory (`#faf9f5`) or Pure White (`#ffffff`) on light surfaces; Dark Surface (`#30302e`) on dark
-- Border: thin solid Border Cream (`1px solid #f0eee6`) on light; `1px solid #30302e` on dark
-- Radius: comfortably rounded (8px) for standard cards; generously rounded (16px) for featured; very rounded (32px) for hero containers and embedded media
-- Shadow: whisper-soft (`rgba(0,0,0,0.05) 0px 4px 24px`) for elevated content
-- Ring shadow: `0px 0px 0px 1px` patterns for interactive card states
-- Section borders: `1px 0px 0px` (top-only) for list item separators
+### Radius
+| Context | Value | Source |
+|---|---|---|
+| `ls-card` (default card) | `14px` | `globals.css` `.ls-card` |
+| `ls-select`, sidebar item, primary buttons | `8px` | `globals.css` |
+| `ls-alert` | `12px` | `globals.css` |
+| KpiTile focus ring wrapper, icon tiles | `rounded-xl` / `rounded-lg` | `kpi-tile.tsx` |
+| `EmptyState` card | `rounded-xl` | `empty-state.tsx` |
+| shadcn `.input` | `0.375rem` (`6px`) | `globals.css` |
+| Pills / deltas | `999px` | `globals.css` |
 
-### Inputs & Forms
-- Text: Anthropic Near Black (`#141413`)
-- Padding: 1.6px 12px (very compact vertical)
-- Border: standard warm borders
-- Focus: ring with Focus Blue (`#3898ec`) border-color — the only cool color moment
-- Radius: generously rounded (12px)
+### Shadow (`globals.css` `:root`)
+| Token | Value | Use |
+|---|---|---|
+| `--shadow-xs` | `0 1px 1px rgba(15,23,42,.03)` | Faintest lift |
+| `--shadow-sm` | `0 1px 2px /.04 + 0 1px 1px /.02` | Default card resting |
+| `--shadow-md` | `0 1px 2px /.04 + 0 4px 12px /.05` | Dropdowns, raised |
+| `--shadow-lg` | `0 2px 4px /.05 + 0 12px 28px /.08` | Modals / max elevation |
+| `--shadow-hover` | `0 1px 2px /.05 + 0 8px 22px /.08` | Card hover |
+| `--inner-hi` | `inset 0 1px 0 rgba(255,255,255,.9)` | Top inner highlight, pairs with every card |
 
-### Navigation
-- Sticky top nav with warm background
-- Logo: Claude wordmark in Anthropic Near Black
-- Links: mix of Near Black (`#141413`), Olive Gray (`#5e5d59`), and Dark Warm (`#3d3d3a`)
-- Nav border: `1px solid #30302e` (dark) or `1px solid #f0eee6` (light)
-- CTA: Terracotta Brand button or White Surface button
-- Hover: text shifts to foreground-primary, no decoration
+All shadows are cool-toned (`rgba(15,23,42,…)`) — the warm shadows in the old DESIGN.md are gone.
 
-### Image Treatment
-- Product screenshots showing the Claude chat interface
-- Generous border-radius on media (16–32px)
-- Embedded video players with rounded corners
-- Dark UI screenshots provide contrast against warm light canvas
-- Organic, hand-drawn illustrations for conceptual sections
+### Spacing & motion
+- Card padding: `p-5` (20px) on KpiTile / SectionCard; `--ls-card-pad` = `20px`.
+- PageHeader: `pb-5 mb-6` bordered (content sits 24px below).
+- Motion: `--ease-out: cubic-bezier(.2,.8,.2,1)`, `--ease-spring: cubic-bezier(.34,1.56,.64,1)`. Card transitions ~180–200ms.
 
-### Distinctive Components
+---
 
-**Model Comparison Cards**
-- Opus 4.5, Sonnet 4.5, Haiku 4.5 presented in a clean card grid
-- Each model gets a bordered card with name, description, and capability badges
-- Border Warm (`#e8e6dc`) separation between items
+## 5. Components
 
-**Organic Illustrations**
-- Hand-drawn-feeling vector illustrations in terracotta, black, and muted green
-- Abstract, conceptual rather than literal product diagrams
-- The primary visual personality — no other AI company uses this style
+### `KpiTile` — `components/portal/dashboard/kpi-tile.tsx`
+Canonical metric tile. White floating card (`ls-card`) with mono tabular hero number, optional micro-chart, delta pill, live dot, lock state.
 
-**Dark/Light Section Alternation**
-- The page alternates between Parchment light and Near Black dark sections
-- Creates a reading rhythm like chapters in a book
-- Each section feels like a distinct environment
+**Props:** `label`, `value`, `hint?`, `delta?: { value, trend: "up"|"down"|"flat" }`, `spark?: number[]`, `gaugeValue?: number (0..1)`, `chart?: "sparkline"|"bars"|"gauge"`, `icon?`, `loading?`, `href?`, `live?`, `locked?: { reason, href }`, `variant?: "default"|"accent"`.
 
-## 5. Layout Principles
+- Chart auto-routes: `gaugeValue` → gauge, else `spark` → sparkline; force with `chart`.
+- `variant="accent"` adds `ls-card-accent` brand glow (hero KPI).
+- `href` wraps in `Link` with brand focus ring. `locked` shows reason + "Connect →".
+- Number uses `ls-metric ls-metric-lg`; eyebrow label uses `ls-eyebrow`; delta uses `ls-delta`.
 
-### Spacing System
-- Base unit: 8px
-- Scale: 3px, 4px, 6px, 8px, 10px, 12px, 16px, 20px, 24px, 30px
-- Button padding: asymmetric (0px 12px 0px 8px) or balanced (8px 16px)
-- Card internal padding: approximately 24–32px
-- Section vertical spacing: generous (estimated 80–120px between major sections)
+```tsx
+<KpiTile label="Leads (30d)" value="1,284" delta={{ value: "+12%", trend: "up" }}
+  spark={[4,9,7,12,15]} icon={<Users className="h-4 w-4" />} href="/portal/leads" variant="accent" live />
+```
 
-### Grid & Container
-- Max container width: approximately 1200px, centered
-- Hero: centered with editorial layout
-- Feature sections: single-column or 2–3 column card grids
-- Model comparison: clean 3-column grid
-- Full-width dark sections breaking the container for emphasis
+### `PageHeader` — `components/admin/page-header.tsx`
+Canonical page chrome at the top of every admin/portal page. Replaces all hand-rolled `text-xl`/serif "Welcome" headers.
 
-### Whitespace Philosophy
-- **Editorial pacing**: Each section breathes like a magazine spread — generous top/bottom margins create natural reading pauses.
-- **Serif-driven rhythm**: The serif headings establish a literary cadence that demands more whitespace than sans-serif designs.
-- **Content island approach**: Sections alternate between light and dark environments, creating distinct "rooms" for each message.
+**Props:** `title`, `description?`, `eyebrow?`, `meta?` (freshness pill), `breadcrumb?`, `actions?`, `bordered?` (default true). Title = `var(--font-display)` (Inter) semibold `28px md:34px`, tracking `-0.022em`; eyebrow tinted `var(--terracotta)` (blue); bottom border `var(--hair)`.
 
-### Border Radius Scale
-- Sharp (4px): Minimal inline elements
-- Subtly rounded (6–7.5px): Small buttons, secondary interactive elements
-- Comfortably rounded (8–8.5px): Standard buttons, cards, containers
-- Generously rounded (12px): Primary buttons, input fields, nav elements
-- Very rounded (16px): Featured containers, video players, tab lists
-- Highly rounded (24px): Tag-like elements, highlighted containers
-- Maximum rounded (32px): Hero containers, embedded media, large cards
+```tsx
+<PageHeader eyebrow="Portfolio" title="Performance"
+  description="Every channel across all properties."
+  meta="as of 2:04 PM" actions={<Button>Export</Button>} />
+```
 
-## 6. Depth & Elevation
+Same file exports **`SectionCard`** (`label`, `description?`, `action?`, `padded?`) — `ls-card` section wrapper with a 14px semibold label row, for detail pages.
 
-| Level | Treatment | Use |
-|-------|-----------|-----|
-| Flat (Level 0) | No shadow, no border | Parchment background, inline text |
-| Contained (Level 1) | `1px solid #f0eee6` (light) or `1px solid #30302e` (dark) | Standard cards, sections |
-| Ring (Level 2) | `0px 0px 0px 1px` ring shadows using warm grays | Interactive cards, buttons, hover states |
-| Whisper (Level 3) | `rgba(0,0,0,0.05) 0px 4px 24px` | Elevated feature cards, product screenshots |
-| Inset (Level 4) | `inset 0px 0px 0px 1px` at 15% opacity | Active/pressed button states |
+### `EmptyState` — `components/portal/ui/empty-state.tsx`
+Single "no data yet" primitive: centered icon (in `bg-primary/10 text-primary` rounded chip) + title + body + optional primary/secondary CTA links.
 
-**Shadow Philosophy**: Claude communicates depth through **warm-toned ring shadows** rather than traditional drop shadows. The signature `0px 0px 0px 1px` pattern creates a border-like halo that's softer than an actual border — it's a shadow pretending to be a border, or a border that's technically a shadow. When drop shadows do appear, they're extremely soft (0.05 opacity, 24px blur) — barely visible lifts that suggest floating rather than casting.
+**Props:** `icon?`, `title`, `body?`, `action?: { label, href }`, `secondary?: { label, href }`, `variant?: "card"|"bare"`. `"card"` wraps in dashed-border `bg-secondary/40` rounded-xl panel.
 
-### Decorative Depth
-- **Light/Dark alternation**: The most dramatic depth effect comes from alternating between Parchment (`#f5f4ed`) and Near Black (`#141413`) sections — entire sections shift elevation by changing the ambient light level.
-- **Warm ring halos**: Button and card interactions use ring shadows that match the warm palette — never cool-toned or generic gray.
+```tsx
+<EmptyState icon={<Inbox className="h-4 w-4" />} title="No conversations yet"
+  body="Once the chatbot books a tour it shows here."
+  action={{ label: "View setup", href: "/portal/settings" }} />
+```
 
-## 7. Do's and Don'ts
+### `ls-*` utilities — `app/globals.css`
+| Class | Purpose |
+|---|---|
+| `.ls-card` | Floating white card: `bg #FFF`, `1px var(--hair)`, radius `14px`, `--shadow-sm + --inner-hi`, hover deepens to `--shadow-hover` + `--hair-strong`. Base for KpiTile/SectionCard/alerts. |
+| `.ls-card-accent` | Adds top-right radial brand-glow `::after`. Hero KPI / anchor cards. |
+| `.ls-card-pad` (`20px`) / `.ls-card-flush` (`0`) | Padding variants. |
+| `.ls-metric` + `.ls-metric-xl/lg/md` (`2.5 / 2 / 1.5rem`) | Mono tabular figures (`tnum`,`lnum`), weight 500, tight tracking. Big numbers. |
+| `.ls-eyebrow` | Sans 10px uppercase, `letter-spacing .12em`, `--stone-gray`. Anchors a metric/section. |
+| `.ls-delta` + `-up`/`-down`/`-flat` | Mono trend pill: up = green wash, down = red wash, flat = sand. |
+| `.ls-select` | Styled native `<select>`: `appearance-none`, painted chevron, `1px var(--hair-strong)`, radius 8px, focus ring `0 0 0 3px var(--brand-glow)`. Keeps native a11y/keyboard. Add `h-9 px-3 text-sm`. |
+| `.ls-pill` + `-neutral/-info/-active/-success/-warning/-danger` | Status pills with dot. |
+| `.ls-alert` + `-info/-warning/-success` | Insight cards with left accent bar. |
+| `.ls-sidebar`, `.ls-sidebar-item`, `.ls-sidebar-section-label` | Sidebar nav (active = brand bar + glow). |
 
-### Do
-- Use Parchment (`#f5f4ed`) as the primary light background — the warm cream tone IS the Claude personality
-- Use Anthropic Serif at weight 500 for all headlines — the single-weight consistency is intentional
-- Use Terracotta Brand (`#c96442`) only for primary CTAs and the highest-signal brand moments
-- Keep all neutrals warm-toned — every gray should have a yellow-brown undertone
-- Use ring shadows (`0px 0px 0px 1px`) for interactive element states instead of drop shadows
-- Maintain the editorial serif/sans hierarchy — serif for content headlines, sans for UI
-- Use generous body line-height (1.60) for a literary reading experience
-- Alternate between light and dark sections to create chapter-like page rhythm
-- Apply generous border-radius (12–32px) for a soft, approachable feel
+```tsx
+<select className="ls-select h-9 px-3 text-sm">…</select>
+<div className="ls-card p-5"><div className="ls-eyebrow">Occupancy</div>
+  <div className="ls-metric ls-metric-lg">94.2%</div></div>
+```
 
-### Don't
-- Don't use cool blue-grays anywhere — the palette is exclusively warm-toned
-- Don't use bold (700+) weight on Anthropic Serif — weight 500 is the ceiling for serifs
-- Don't introduce saturated colors beyond Terracotta — the palette is deliberately muted
-- Don't use sharp corners (< 6px radius) on buttons or cards — softness is core to the identity
-- Don't apply heavy drop shadows — depth comes from ring shadows and background color shifts
-- Don't use pure white (`#ffffff`) as a page background — Parchment (`#f5f4ed`) or Ivory (`#faf9f5`) are always warmer
-- Don't use geometric/tech-style illustrations — Claude's illustrations are organic and hand-drawn-feeling
-- Don't reduce body line-height below 1.40 — the generous spacing supports the editorial personality
-- Don't use monospace fonts for non-code content — Anthropic Mono is strictly for code
-- Don't mix in sans-serif for headlines — the serif/sans split is the typographic identity
+---
 
-## 8. Responsive Behavior
+## 6. Patterns
 
-### Breakpoints
-| Name | Width | Key Changes |
-|------|-------|-------------|
-| Small Mobile | <479px | Minimum layout, stacked everything, compact typography |
-| Mobile | 479–640px | Single column, hamburger nav, reduced heading sizes |
-| Large Mobile | 640–767px | Slightly wider content area |
-| Tablet | 768–991px | 2-column grids begin, condensed nav |
-| Desktop | 992px+ | Full multi-column layout, expanded nav, maximum hero typography (64px) |
+- **Tenant scoping (mandatory on every data surface).** Every portal page/action/query resolves access via `requireScope()` / `getScope()` / `requireAgency()` / `requireClient()` from `lib/tenancy/scope.ts`. Queries must filter by `orgId` **and** the property gate (`propertyIdsToWhere` / `propertyWhereFragment`) — never widen scope in a query module, and fail **closed** on an empty allowed-list (a restricted user with nothing in scope must match no rows, not org-wide).
+- **`loading.tsx` per route.** Every portal/admin route ships a skeleton `loading.tsx` so streaming renders instantly (no flash of nothing). Use `KpiTile loading` and shadcn skeletons for the placeholder.
+- **Charts via `chart-theme.ts` only.** Import `CHART_COLORS` + the `CHART_*` style objects; reuse `#lsBrandFill` gradient. Mono axis ticks, soft `#EEF0F3` grid, brand-blue series.
+- **Responsive.** Mobile-first; PageHeader stacks `flex-col md:flex-row`, titles scale `28px → md:34px`, KPI grids collapse to single column at `sm`/`md`. Generous touch targets.
+- **Accessibility.** Native `<select>` (`ls-select`) keeps keyboard/screen-reader behavior; every interactive element gets a focus ring (`focus-visible:ring-2 ring-primary/40`); icons are `aria-hidden` with text labels; live dots carry `aria-label="Live"`; semantic `<header>`/`<section>`/`<table>`; skip-link in `layout.tsx`.
 
-### Touch Targets
-- Buttons use generous padding (8–16px vertical minimum)
-- Navigation links adequately spaced for thumb navigation
-- Card surfaces serve as large touch targets
-- Minimum recommended: 44x44px
+---
 
-### Collapsing Strategy
-- **Navigation**: Full horizontal nav collapses to hamburger on mobile
-- **Feature sections**: Multi-column → stacked single column
-- **Hero text**: 64px → 36px → ~25px progressive scaling
-- **Model cards**: 3-column → stacked vertical
-- **Section padding**: Reduces proportionally but maintains editorial rhythm
-- **Illustrations**: Scale proportionally, maintain aspect ratios
+## 7. Anti-patterns
 
-### Image Behavior
-- Product screenshots scale proportionally within rounded containers
-- Illustrations maintain quality at all sizes
-- Video embeds maintain 16:9 aspect ratio with rounded corners
-- No art direction changes between breakpoints
-
-## 9. Agent Prompt Guide
-
-### Quick Color Reference
-- Brand CTA: "Terracotta Brand (#c96442)"
-- Page Background: "Parchment (#f5f4ed)"
-- Card Surface: "Ivory (#faf9f5)"
-- Primary Text: "Anthropic Near Black (#141413)"
-- Secondary Text: "Olive Gray (#5e5d59)"
-- Tertiary Text: "Stone Gray (#87867f)"
-- Borders (light): "Border Cream (#f0eee6)"
-- Dark Surface: "Dark Surface (#30302e)"
-
-### Example Component Prompts
-- "Create a hero section on Parchment (#f5f4ed) with a headline at 64px Anthropic Serif weight 500, line-height 1.10. Use Anthropic Near Black (#141413) text. Add a subtitle in Olive Gray (#5e5d59) at 20px Anthropic Sans with 1.60 line-height. Place a Terracotta Brand (#c96442) CTA button with Ivory text, 12px radius."
-- "Design a feature card on Ivory (#faf9f5) with a 1px solid Border Cream (#f0eee6) border and comfortably rounded corners (8px). Title in Anthropic Serif at 25px weight 500, description in Olive Gray (#5e5d59) at 16px Anthropic Sans. Add a whisper shadow (rgba(0,0,0,0.05) 0px 4px 24px)."
-- "Build a dark section on Anthropic Near Black (#141413) with Ivory (#faf9f5) headline text in Anthropic Serif at 52px weight 500. Use Warm Silver (#b0aea5) for body text. Borders in Dark Surface (#30302e)."
-- "Create a button in Warm Sand (#e8e6dc) with Charcoal Warm (#4d4c48) text, 8px radius, and a ring shadow (0px 0px 0px 1px #d1cfc5). Padding: 0px 12px 0px 8px."
-- "Design a model comparison grid with three cards on Ivory surfaces. Each card gets a Border Warm (#e8e6dc) top border, model name in Anthropic Serif at 25px, and description in Olive Gray at 15px Anthropic Sans."
-
-### Iteration Guide
-1. Focus on ONE component at a time
-2. Reference specific color names — "use Olive Gray (#5e5d59)" not "make it gray"
-3. Always specify warm-toned variants — no cool grays
-4. Describe serif vs sans usage explicitly — "Anthropic Serif for the heading, Anthropic Sans for the label"
-5. For shadows, use "ring shadow (0px 0px 0px 1px)" or "whisper shadow" — never generic "drop shadow"
-6. Specify the warm background — "on Parchment (#f5f4ed)" or "on Near Black (#141413)"
-7. Keep illustrations organic and conceptual — describe "hand-drawn-feeling" style
+- Inline one-off hex or spacing — use tokens (`var(--…)`) and `ls-*`/shadcn utilities.
+- New fonts, shadows, or radii — the scale in §3/§4 is the whole vocabulary. No serif headings (Fraunces is dead weight).
+- Dark backgrounds / dark mode — light theme only; dark-on-dark is a bug.
+- Emojis — use `lucide-react` icons.
+- Hand-rolled headers / metric tiles / empty states — use `PageHeader`, `KpiTile`, `EmptyState`, `SectionCard`.
+- Hardcoded chart colors — import `CHART_COLORS`.
+- Raw `dangerouslySetInnerHTML` JSON-LD — always run structured data through `serializeJsonLd` (`lib/seo/serialize-json-ld.ts`; XSS-tested) as `layout.tsx` does.
+- Trusting variable names over values — `--terracotta`/`--coral`/`--warm-sand`/`--parchment` are retargeted to blue/cool-gray; check §2.
+- Querying tenant data without `requireScope()` / property-gate filtering.
