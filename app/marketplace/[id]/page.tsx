@@ -1,8 +1,11 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { prisma } from "@/lib/db";
 import { getBuyerSession } from "@/lib/marketplace/auth";
-import { getBuyerPurchaseForLead, getFullLead } from "@/lib/marketplace/repo";
+import {
+  getBuyerPurchaseForLead,
+  getFullLead,
+  getMaskedLead,
+} from "@/lib/marketplace/repo";
 import { BuyLeadButton } from "@/components/marketplace/buy-lead-button";
 import { LeadAvatar } from "@/components/marketplace/initials-avatar";
 
@@ -19,24 +22,54 @@ export default async function MarketplaceLeadPage({
   const sp = await searchParams;
 
   const buyer = await getBuyerSession();
-  const lead = await getFullLead(id);
-  if (!lead) notFound();
 
-  // Has the signed-in buyer purchased this lead?
-  const purchase = buyer
-    ? await getBuyerPurchaseForLead(buyer.id, lead.id)
-    : null;
+  // Determine ownership BEFORE fetching any PII. The masked view is the only
+  // shape an unauthenticated visitor or non-buyer ever sees; the full-PII
+  // record is fetched solely when a paid purchase is proven, so gender /
+  // income / contact details can never reach the render layer otherwise.
+  const purchase = buyer ? await getBuyerPurchaseForLead(buyer.id, id) : null;
   const owned = !!purchase;
 
-  // Also fetch the raw status — used to decide whether to show the "buy"
-  // CTA. A SOLD or EXPIRED lead is never purchasable.
-  const status = await prisma.marketplaceLead.findUnique({
-    where: { id: lead.id },
-    select: { status: true },
-  });
+  const masked = await getMaskedLead(id);
+  if (!masked) notFound();
+
+  const full = owned ? await getFullLead(id) : null;
+
+  // Unified view object. Raw PII fields are present ONLY when `owned`
+  // (full !== null); for everyone else they are null and the render falls
+  // back to the masked "revealed on purchase" placeholders. Existence flags
+  // (`has`) drive which teaser rows appear without exposing the values.
+  const lead = {
+    id: masked.id,
+    market: masked.market,
+    age: masked.age,
+    photoUrl: masked.photoUrl,
+    displayName: masked.displayName,
+    intentScore: masked.intentScore,
+    propertyType: masked.propertyType,
+    timeline: masked.timeline,
+    priceCents: masked.priceCents,
+    signal: masked.signal,
+    budgetLabel: masked.budgetLabel,
+    has: masked.has,
+    // Raw PII — null unless owned.
+    fullName: full?.fullName ?? masked.displayName,
+    email: full?.email ?? null,
+    businessEmail: full?.businessEmail ?? null,
+    phone: full?.phone ?? null,
+    mobilePhone: full?.mobilePhone ?? null,
+    city: full?.city ?? null,
+    state: full?.state ?? null,
+    postalCode: full?.postalCode ?? null,
+    companyName: full?.companyName ?? null,
+    companyState: full?.companyState ?? null,
+    linkedinUrl: full?.linkedinUrl ?? null,
+    incomeRange: full?.incomeRange ?? null,
+    gender: full?.gender ?? null,
+  };
 
   const isAvailable =
-    status?.status === "AVAILABLE" || status?.status === "RESERVED";
+    masked.status === "AVAILABLE" || masked.status === "RESERVED";
 
   return (
     <div className="max-w-[1080px] mx-auto px-4 md:px-8 py-10 md:py-14">
@@ -154,11 +187,11 @@ export default async function MarketplaceLeadPage({
           <ul className="mt-3 space-y-0">
             <Row label="Name"  value={owned ? lead.fullName : `${lead.displayName} (full name on purchase)`} masked={!owned} />
             <Row label="Personal email" value={owned ? (lead.email ?? "—") : "•••••@•••••.com (revealed on purchase)"} masked={!owned} />
-            {(owned || lead.businessEmail) && (
+            {(owned || lead.has.businessEmail) && (
               <Row label="Business email" value={owned ? (lead.businessEmail ?? "—") : "••••@company.com (revealed on purchase)"} masked={!owned} />
             )}
             <Row label="Personal phone" value={owned ? (lead.phone ?? "—") : "•• (•••) •••-•••• (revealed on purchase)"} masked={!owned} />
-            {(owned || lead.mobilePhone) && (
+            {(owned || lead.has.mobilePhone) && (
               <Row label="Mobile phone" value={owned ? (lead.mobilePhone ?? "—") : "•• (•••) •••-•••• (revealed on purchase)"} masked={!owned} />
             )}
             <Row
@@ -172,7 +205,11 @@ export default async function MarketplaceLeadPage({
             />
           </ul>
 
-          {(owned || lead.companyName || lead.linkedinUrl || lead.incomeRange) && (
+          {(owned ||
+            lead.has.company ||
+            lead.has.linkedin ||
+            lead.has.income ||
+            lead.has.gender) && (
             <>
               <hr style={{ border: 0, borderTop: "1px solid #F1F5F9", margin: "28px 0" }} />
               <h2
@@ -240,40 +277,42 @@ export default async function MarketplaceLeadPage({
                 </div>
               )}
               <ul className="mt-3 space-y-0">
-                {(owned || lead.companyName) && (
+                {(owned || lead.has.company) && (
                   <Row
                     label="Company"
                     value={
                       owned
                         ? [lead.companyName, lead.companyState].filter(Boolean).join(" · ") || "—"
-                        : `${(lead.companyName ?? "Company").slice(0, 2)}••••• (revealed on purchase)`
+                        : "•••••• (revealed on purchase)"
                     }
                     masked={!owned}
                   />
                 )}
-                {!owned && lead.linkedinUrl && (
+                {!owned && lead.has.linkedin && (
                   <Row
                     label="LinkedIn"
                     value="linkedin.com/in/••••• (revealed on purchase)"
                     masked={true}
                   />
                 )}
-                {(owned || lead.incomeRange) && (
+                {(owned || lead.has.income) && (
                   <Row
                     label="Income range"
-                    value={owned ? (lead.incomeRange ?? "—") : (lead.incomeRange ?? "—")}
+                    value={owned ? (lead.incomeRange ?? "—") : "••• (revealed on purchase)"}
+                    masked={!owned}
                   />
                 )}
-                {(owned || lead.gender) && (
+                {(owned || lead.has.gender) && (
                   <Row
                     label="Gender"
-                    value={owned ? (lead.gender ?? "—") : (lead.gender ?? "—")}
+                    value={owned ? (lead.gender ?? "—") : "••• (revealed on purchase)"}
+                    masked={!owned}
                   />
                 )}
-                {(owned || lead.age != null) && (
+                {lead.age != null && (
                   <Row
                     label="Age"
-                    value={lead.age != null ? String(lead.age) : "—"}
+                    value={String(lead.age)}
                   />
                 )}
               </ul>

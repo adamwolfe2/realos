@@ -198,6 +198,67 @@ export async function getFullLead(id: string): Promise<FullLead | null> {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Masked detail — safe to render for unauthenticated visitors and non-buyers.
+// Returns the browse-safe fields plus *existence* booleans (never the raw
+// values) so the detail page can show "revealed on purchase" teaser rows
+// without ever leaking the gated PII (gender, income, company, contact). The
+// full-PII `getFullLead` is fetched ONLY after purchase ownership is proven.
+export type MaskedLead = BrowseLead & {
+  status: MarketplaceLeadStatus;
+  has: {
+    businessEmail: boolean;
+    mobilePhone: boolean;
+    company: boolean;
+    linkedin: boolean;
+    income: boolean;
+    gender: boolean;
+  };
+};
+
+export async function getMaskedLead(id: string): Promise<MaskedLead | null> {
+  const row = await prisma.marketplaceLead.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      age: true,
+      photoUrl: true,
+      market: true,
+      propertyType: true,
+      intentScore: true,
+      budgetLabel: true,
+      signal: true,
+      timeline: true,
+      priceCents: true,
+      status: true,
+      // Loaded only to derive existence booleans below — the raw values are
+      // never returned from this function, so they cannot reach the render
+      // layer for a non-owner.
+      businessEmail: true,
+      mobilePhone: true,
+      companyName: true,
+      linkedinUrl: true,
+      incomeRange: true,
+      gender: true,
+    },
+  });
+  if (!row) return null;
+  return {
+    ...toBrowseLead(row),
+    status: row.status,
+    has: {
+      businessEmail: !!row.businessEmail,
+      mobilePhone: !!row.mobilePhone,
+      company: !!row.companyName,
+      linkedin: !!row.linkedinUrl,
+      income: !!row.incomeRange,
+      gender: !!row.gender,
+    },
+  };
+}
+
 // Did the given buyer already purchase this lead? Used to gate PII reveal
 // and to short-circuit the checkout endpoint.
 export async function getBuyerPurchaseForLead(
