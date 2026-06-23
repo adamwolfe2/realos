@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from "react";
 import {
   MessageSquare,
@@ -11,19 +13,18 @@ import {
   Sparkles,
   type LucideIcon,
 } from "lucide-react";
-import { getSource } from "@/lib/attribution/source-taxonomy";
+import { getSource, SOURCE_DOMAIN } from "@/lib/attribution/source-taxonomy";
 
 // ---------------------------------------------------------------------------
 // SourceLogo — one recognizable mark per canonical source.
 //
-// Brand channels (Zillow, Apartments.com, Google, Meta…) render as a tinted
-// monogram tile in the brand color — instantly readable by color + initials,
-// and robust (no dependency on a brand asset file or a specific simple-icons
-// export existing). Our own capture surfaces (chatbot, form, email…) use a
-// matching lucide glyph. Light theme only, per DESIGN.md.
+// Brand channels (Zillow, Apartments.com, Google, Meta…) render the REAL brand
+// logo from /public/logos/sources/<id>.png on a clean white tile (local assets,
+// no runtime network). If the file is missing we fall back to a tinted
+// monogram so the row never breaks. Our own capture surfaces (chatbot, form,
+// email…) use a matching lucide glyph. Light theme only, per DESIGN.md.
 // ---------------------------------------------------------------------------
 
-// Monogram text per brand slug. Kept short (1–2 chars) so it stays legible.
 const MONOGRAM: Record<string, string> = {
   zillow: "Z",
   apartments_com: "A",
@@ -50,13 +51,12 @@ const MONOGRAM: Record<string, string> = {
   reddit: "r",
   youtube: "YT",
   x_twitter: "X",
-  google: "G",
-  bing: "b",
+  google_organic: "G",
+  bing_organic: "b",
   duckduckgo: "D",
   yahoo: "Y",
 };
 
-// Lucide glyph per owned / catch-all slug.
 const GLYPH: Record<string, LucideIcon> = {
   chatgpt: Sparkles,
   chatbot: MessageSquare,
@@ -78,40 +78,74 @@ export function SourceLogo({
   size?: number;
 }) {
   const src = getSource(logo);
-  const color = src.color;
-  const radius = Math.round(size * 0.28);
+  const domain = SOURCE_DOMAIN[src.id];
+  const [imgFailed, setImgFailed] = React.useState(false);
+
+  const radius = Math.round(size * 0.26);
   const Glyph = GLYPH[src.logo];
 
-  const tileStyle: React.CSSProperties = {
-    width: size,
-    height: size,
-    borderRadius: radius,
-    background: hexToTint(color, 0.12),
-    color,
-    border: `1px solid ${hexToTint(color, 0.22)}`,
-  };
+  // 1. Real brand logo (local asset) on a white tile.
+  if (domain && !imgFailed) {
+    return (
+      <span
+        className="inline-flex shrink-0 items-center justify-center overflow-hidden border border-border bg-white"
+        style={{ width: size, height: size, borderRadius: radius }}
+      >
+        {/* Plain img (not next/image) so an onError fallback works without
+            extra config; these are tiny local brand marks. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`/logos/sources/${src.id}.png`}
+          alt={src.label}
+          width={size}
+          height={size}
+          loading="lazy"
+          onError={() => setImgFailed(true)}
+          style={{
+            width: size * 0.72,
+            height: size * 0.72,
+            objectFit: "contain",
+          }}
+        />
+      </span>
+    );
+  }
 
+  // 2. Owned-surface glyph.
   if (Glyph) {
     return (
       <span
         role="img"
         aria-label={src.label}
         className="inline-flex shrink-0 items-center justify-center"
-        style={tileStyle}
+        style={{
+          width: size,
+          height: size,
+          borderRadius: radius,
+          background: tint(src.color, 0.12),
+          color: src.color,
+          border: `1px solid ${tint(src.color, 0.22)}`,
+        }}
       >
         <Glyph style={{ width: size * 0.5, height: size * 0.5 }} strokeWidth={1.9} />
       </span>
     );
   }
 
-  const text = MONOGRAM[src.logo] ?? src.label.slice(0, 1).toUpperCase();
+  // 3. Monogram fallback (brand logo unavailable).
+  const text = MONOGRAM[src.id] ?? src.label.slice(0, 1).toUpperCase();
   return (
     <span
       role="img"
       aria-label={src.label}
       className="inline-flex shrink-0 items-center justify-center font-bold leading-none"
       style={{
-        ...tileStyle,
+        width: size,
+        height: size,
+        borderRadius: radius,
+        background: tint(src.color, 0.12),
+        color: src.color,
+        border: `1px solid ${tint(src.color, 0.22)}`,
         fontSize: text.length > 1 ? size * 0.36 : size * 0.46,
         letterSpacing: "-0.02em",
       }}
@@ -121,9 +155,7 @@ export function SourceLogo({
   );
 }
 
-// Flatten a brand hex toward white at the given strength so the tile reads as a
-// soft tinted chip rather than a saturated block — keeps the light-theme feel.
-function hexToTint(hex: string, alpha: number): string {
+function tint(hex: string, alpha: number): string {
   const c = hex.replace("#", "");
   const r = parseInt(c.slice(0, 2), 16);
   const g = parseInt(c.slice(2, 4), 16);

@@ -93,6 +93,42 @@ export const CANONICAL_SOURCES: CanonicalSource[] = [
   { id: "other", label: "Other", category: "other", color: "#9CA3AF", logo: "other", matchHosts: [], matchUtm: [] },
 ];
 
+// Canonical id → primary domain, used to fetch the real brand logo
+// (logo.clearbit.com/{domain}). Owned surfaces have no external domain and
+// fall back to a lucide glyph in <SourceLogo>.
+export const SOURCE_DOMAIN: Record<string, string> = {
+  zillow: "zillow.com",
+  apartments_com: "apartments.com",
+  trulia: "trulia.com",
+  realtor_com: "realtor.com",
+  hotpads: "hotpads.com",
+  apartment_list: "apartmentlist.com",
+  zumper: "zumper.com",
+  padmapper: "padmapper.com",
+  rent_com: "rent.com",
+  apartmentguide: "apartmentguide.com",
+  rentcafe: "rentcafe.com",
+  craigslist: "craigslist.org",
+  loopnet: "loopnet.com",
+  chatgpt: "openai.com",
+  perplexity: "perplexity.ai",
+  gemini: "gemini.google.com",
+  claude_ai: "claude.ai",
+  google_ads: "google.com",
+  meta_ads: "facebook.com",
+  facebook: "facebook.com",
+  instagram: "instagram.com",
+  tiktok: "tiktok.com",
+  linkedin: "linkedin.com",
+  reddit: "reddit.com",
+  youtube: "youtube.com",
+  x_twitter: "x.com",
+  google_organic: "google.com",
+  bing_organic: "bing.com",
+  duckduckgo: "duckduckgo.com",
+  yahoo: "yahoo.com",
+};
+
 const BY_ID: Record<string, CanonicalSource> = Object.fromEntries(
   CANONICAL_SOURCES.map((s) => [s.id, s]),
 );
