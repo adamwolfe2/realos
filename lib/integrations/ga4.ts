@@ -221,6 +221,41 @@ export async function fetchGa4OrganicDaily(
   }));
 }
 
+export type Ga4SourceRow = {
+  source: string; // GA4 sessionSource, e.g. "google", "zillow.com", "(direct)"
+  medium: string; // GA4 sessionMedium, e.g. "organic", "cpc", "referral"
+  sessions: number;
+};
+
+// Sessions grouped by sessionSource + sessionMedium across ALL channels (no
+// organic filter). Powers attribution source fusion — fills in the traffic the
+// first-party pixel never saw (no-JS visits, blocked trackers).
+export async function fetchGa4SessionsBySource(
+  encryptedJson: string,
+  propertyId: string,
+  fromDate: Date,
+  toDate: Date,
+): Promise<Ga4SourceRow[]> {
+  const auth = jwtFromEncrypted(encryptedJson);
+  const data = google.analyticsdata({ version: "v1beta", auth });
+  const resp = await data.properties.runReport({
+    property: normalizePropertyId(propertyId),
+    requestBody: {
+      dateRanges: [{ startDate: ymd(fromDate), endDate: ymd(toDate) }],
+      dimensions: [{ name: "sessionSource" }, { name: "sessionMedium" }],
+      metrics: [{ name: "sessions" }],
+      orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+      limit: "250",
+    },
+  });
+  const rows = resp.data.rows ?? [];
+  return rows.map((r) => ({
+    source: (r.dimensionValues?.[0]?.value ?? "") as string,
+    medium: (r.dimensionValues?.[1]?.value ?? "") as string,
+    sessions: Number(r.metricValues?.[0]?.value ?? 0),
+  }));
+}
+
 // Landing page performance for organic traffic, broken down by date so the
 // "top pages" table can show trends. landingPagePlusQueryString preserves the
 // full path; we strip query strings on storage to avoid table cardinality

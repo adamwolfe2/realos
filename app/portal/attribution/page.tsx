@@ -17,6 +17,7 @@ import { realAdAccountWhere } from "@/lib/integrations/real-ad-account";
 import { TrendChart } from "@/components/portal/attribution/trend-chart";
 import {
   getAttributionHeadline,
+  getLeadFlow,
   getLeadsPerCity,
   getLeadsPerDeviceTrend,
   getLeadsPerModuleTrend,
@@ -26,6 +27,9 @@ import {
   getSessionsPerSource,
   type AttributionFilters,
 } from "@/lib/attribution/queries";
+import { fetchGa4SourceVolumes } from "@/lib/attribution/ga4-sources";
+import { LeadFlowDiagram } from "@/components/portal/attribution/lead-flow-diagram";
+import { SourceLogo } from "@/components/portal/attribution/source-logo";
 import { Users, Eye, MousePointerClick, BarChart3, Megaphone, Radio } from "lucide-react";
 import { DataPlaceholder } from "@/components/portal/ui/data-placeholder";
 
@@ -109,6 +113,7 @@ export default async function AttributionPage({
 
   const [
     headline,
+    leadFlow,
     sessionsPerSource,
     leadsLastTouch,
     leadsMultiTouch,
@@ -120,6 +125,16 @@ export default async function AttributionPage({
     pixelIntegration,
   ] = await Promise.all([
     getAttributionHeadline(filters),
+    // Flow hero — folds in GA4 source volumes (best-effort; null if GA4 isn't
+    // connected or the API is slow, in which case it degrades to pixel-only).
+    (async () => {
+      const ga4Sessions = await fetchGa4SourceVolumes(
+        scope.orgId,
+        fromDate,
+        toDate,
+      );
+      return getLeadFlow(filters, ga4Sessions);
+    })(),
     getSessionsPerSource(filters),
     getLeadsPerSourceLastTouch(filters),
     getLeadsPerSourceMultiTouch(filters),
@@ -293,6 +308,69 @@ export default async function AttributionPage({
           icon={<BarChart3 className="h-3.5 w-3.5" />}
         />
       </section>
+
+      {/* Flow hero — the headline visualization: where leads flow in from. */}
+      <LeadFlowDiagram
+        sources={leadFlow.sources}
+        stages={leadFlow.stages}
+        totalLeads={leadFlow.totalLeads}
+        totalSessions={leadFlow.totalSessions}
+      />
+
+      {/* Source leaderboard — full ranked list with logos + conversion rate,
+          so operators can see the long tail the flow hero collapses. */}
+      {leadFlow.sources.length > 0 ? (
+        <section className="ls-card p-4">
+          <div className="flex items-baseline justify-between mb-2.5">
+            <h3 className="text-sm font-semibold text-foreground">
+              Sources by lead volume
+            </h3>
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+              {leadFlow.sources.length} channels
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
+            {leadFlow.sources.slice(0, 12).map((s) => {
+              const pct =
+                leadFlow.totalLeads > 0
+                  ? (s.leads / leadFlow.totalLeads) * 100
+                  : 0;
+              return (
+                <div
+                  key={s.id}
+                  className="flex items-center gap-3 py-1.5 border-b border-border/50 last:border-0"
+                >
+                  <SourceLogo logo={s.logo} size={30} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-medium text-foreground truncate">
+                        {s.label}
+                      </span>
+                      <span className="font-mono text-xs tabular-nums text-foreground shrink-0">
+                        {s.leads.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="mt-1 h-1 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${Math.max(pct, s.leads > 0 ? 4 : 0)}%`,
+                          background: s.color,
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <span className="font-mono text-[10px] tabular-nums text-muted-foreground w-14 text-right shrink-0">
+                    {s.conversionRate !== null
+                      ? `${(s.conversionRate * 100).toFixed(1)}%`
+                      : "—"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
 
       {/* Row 1: traffic sources */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-3">

@@ -1,6 +1,13 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { LeadSource } from "@prisma/client";
+import {
+  classifySource,
+  getSource,
+  sourceFromLeadEnum,
+  type CanonicalSource,
+  type SourceCategory,
+} from "@/lib/attribution/source-taxonomy";
 // queries.ts is called BY the attribution page, which has already
 // applied the access gate via effectivePropertyIds(). We only need the
 // raw "ids → Prisma where" translation here, not the gated form. Using
@@ -159,8 +166,9 @@ export async function getLeadsPerSourceMultiTouch(
     const sessions = lead.visitor?.sessions ?? [];
     if (sessions.length === 0) {
       // No multi-touch data — fall back to the lead's source enum value
-      // so we never lose a contribution to a "—" bucket.
-      const fallback = LEAD_SOURCE_LABEL[lead.source]?.toLowerCase() ?? "direct";
+      // (mapped through the canonical taxonomy so it merges with the
+      // session-derived buckets instead of forming a stray lowercase bin).
+      const fallback = sourceFromLeadEnum(lead.source).label;
       counts.set(fallback, (counts.get(fallback) ?? 0) + 1);
       continue;
     }
@@ -391,34 +399,194 @@ export async function getAttributionHeadline(
 // Helpers
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Lead flow — powers the logo flow-hub hero. Returns each canonical source
+// with its session volume + lead count (so we can show a conversion rate),
+// plus the downstream funnel stages (toured → applied → signed). Optionally
+// folds in GA4 session volumes the first-party pixel never saw.
+// ---------------------------------------------------------------------------
+
+export type FlowSource = {
+  id: string;
+  label: string;
+  category: SourceCategory;
+  color: string;
+  logo: string;
+  leads: number;
+  sessions: number;
+  /** leads / sessions, or null when there is no session volume to divide by. */
+  conversionRate: number | null;
+};
+
+export type FlowStage = { id: string; label: string; count: number };
+
+export type LeadFlow = {
+  sources: FlowSource[];
+  stages: FlowStage[];
+  totalLeads: number;
+  totalSessions: number;
+};
+
+// Funnel ordering for LeadStatus — higher means further down the pipeline.
+const STATUS_RANK: Record<string, number> = {
+  NEW: 0,
+  CONTACTED: 1,
+  TOUR_SCHEDULED: 2,
+  TOURED: 3,
+  APPLICATION_SENT: 4,
+  APPLIED: 5,
+  APPROVED: 6,
+  SIGNED: 7,
+  LOST: -1,
+  UNQUALIFIED: -1,
+};
+
+export async function getLeadFlow(
+  filters: AttributionFilters,
+  ga4Sessions?: Map<string, number> | null,
+): Promise<LeadFlow> {
+  const [sessions, leads] = await Promise.all([
+    prisma.visitorSession.findMany({
+      where: {
+        orgId: filters.orgId,
+        startedAt: { gte: filters.fromDate, lte: filters.toDate },
+        ...(filters.propertyIds && filters.propertyIds.length > 0
+          ? { visitor: propertyIdsToWhere(filters.propertyIds) }
+          : {}),
+      },
+      select: { utmSource: true, utmMedium: true, firstReferrer: true },
+    }),
+    prisma.lead.findMany({
+      where: {
+        orgId: filters.orgId,
+        ...propertyIdsToWhere(filters.propertyIds ?? null),
+        createdAt: { gte: filters.fromDate, lte: filters.toDate },
+      },
+      select: {
+        source: true,
+        status: true,
+        visitor: {
+          select: {
+            sessions: {
+              orderBy: { startedAt: "desc" },
+              take: 1,
+              select: {
+                utmSource: true,
+                utmMedium: true,
+                firstReferrer: true,
+              },
+            },
+          },
+        },
+      },
+    }),
+  ]);
+
+  // Aggregate per canonical source id. We keep the CanonicalSource meta so the
+  // UI gets color/logo/label without a second lookup.
+  const meta = new Map<string, CanonicalSource>();
+  const sessionCounts = new Map<string, number>();
+  const leadCounts = new Map<string, number>();
+
+  const bump = (map: Map<string, number>, src: CanonicalSource, n = 1) => {
+    meta.set(src.id, meta.get(src.id) ?? src);
+    map.set(src.id, (map.get(src.id) ?? 0) + n);
+  };
+
+  for (const s of sessions) {
+    bump(sessionCounts, classifySource(s.utmSource, s.firstReferrer, s.utmMedium));
+  }
+
+  // GA4 sessions the pixel never saw — folded in by canonical id.
+  if (ga4Sessions) {
+    for (const [id, n] of ga4Sessions) {
+      bump(sessionCounts, getSource(id), n);
+    }
+  }
+
+  const stageCounts = { toured: 0, applied: 0, signed: 0 };
+  for (const lead of leads) {
+    bump(leadCounts, attributedSource(lead.source, lead.visitor?.sessions[0]));
+
+    const rank = STATUS_RANK[lead.status] ?? 0;
+    if (rank >= STATUS_RANK.TOURED) stageCounts.toured += 1;
+    if (rank >= STATUS_RANK.APPLIED) stageCounts.applied += 1;
+    if (rank >= STATUS_RANK.SIGNED) stageCounts.signed += 1;
+  }
+
+  const ids = new Set<string>([...sessionCounts.keys(), ...leadCounts.keys()]);
+  const sources: FlowSource[] = Array.from(ids)
+    .map((id) => {
+      const m = meta.get(id) ?? getSource(id);
+      const sessionN = sessionCounts.get(id) ?? 0;
+      const leadN = leadCounts.get(id) ?? 0;
+      return {
+        id: m.id,
+        label: m.label,
+        category: m.category,
+        color: m.color,
+        logo: m.logo,
+        leads: leadN,
+        sessions: sessionN,
+        conversionRate: sessionN > 0 ? leadN / sessionN : null,
+      };
+    })
+    // Rank by what matters most for the hero: leads first, then traffic.
+    .sort((a, b) => b.leads - a.leads || b.sessions - a.sessions);
+
+  const totalSessions = Array.from(sessionCounts.values()).reduce(
+    (a, b) => a + b,
+    0,
+  );
+
+  const stages: FlowStage[] = [
+    { id: "toured", label: "Toured", count: stageCounts.toured },
+    { id: "applied", label: "Applied", count: stageCounts.applied },
+    { id: "signed", label: "Signed", count: stageCounts.signed },
+  ];
+
+  return { sources, stages, totalLeads: leads.length, totalSessions };
+}
+
+// Best last-touch attribution for one lead: prefer the converting session's
+// referrer/UTM (finer ILS detail — Zillow vs "Referral"), fall back to the
+// lead's source enum (the capture-surface truth — chatbot/form — when the
+// referrer was blank or only resolved to Direct).
+function attributedSource(
+  leadEnum: LeadSource,
+  lastSession?: {
+    utmSource: string | null;
+    utmMedium: string | null;
+    firstReferrer: string | null;
+  } | null,
+): CanonicalSource {
+  const fromSession = lastSession
+    ? classifySource(
+        lastSession.utmSource,
+        lastSession.firstReferrer,
+        lastSession.utmMedium,
+      )
+    : null;
+  if (fromSession && fromSession.id !== "direct") return fromSession;
+
+  const fromEnum = sourceFromLeadEnum(leadEnum);
+  if (fromSession && fromEnum.id === "other") return fromSession; // keep Direct
+  return fromEnum;
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+// Resolve raw session signal to a canonical source LABEL (e.g. "Zillow",
+// "Google", "Direct"). Delegates to the shared taxonomy so every chart, the
+// flow diagram, and GA4 fusion classify identically — a referrer of
+// "zillow.com" and a UTM source of "zillow" collapse to one bucket.
 function normalizeSource(
   utmSource: string | null,
   firstReferrer: string | null
 ): string {
-  // Explicit UTM tag wins. Lowercase + trim so "Google" / "google " merge.
-  if (utmSource && utmSource.trim()) {
-    return utmSource.trim().toLowerCase();
-  }
-  if (firstReferrer && firstReferrer.trim()) {
-    try {
-      const host = new URL(firstReferrer).hostname.replace(/^www\./, "");
-      // Map common search engines + socials to clean labels.
-      if (host.includes("google.")) return "google organic";
-      if (host.includes("bing.")) return "bing organic";
-      if (host.includes("duckduckgo")) return "duckduckgo organic";
-      if (host.includes("facebook.")) return "facebook organic";
-      if (host.includes("instagram.")) return "instagram organic";
-      if (host.includes("tiktok.")) return "tiktok organic";
-      if (host.includes("linkedin.")) return "linkedin organic";
-      if (host.includes("reddit.")) return "reddit organic";
-      if (host.includes("chatgpt.")) return "chatgpt.com";
-      if (host.includes("perplexity.")) return "perplexity";
-      return host;
-    } catch {
-      // Non-URL referrer — fall through to direct.
-    }
-  }
-  return "direct";
+  return classifySource(utmSource, firstReferrer).label;
 }
 
 function readEnrichedString(
