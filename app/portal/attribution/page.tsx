@@ -13,21 +13,19 @@ import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { SourceDonut } from "@/components/portal/attribution/donut";
-import { realAdAccountWhere } from "@/lib/integrations/real-ad-account";
 import { TrendChart } from "@/components/portal/attribution/trend-chart";
 import {
   getAttributionHeadline,
+  getLeadFlow,
   getLeadsPerCity,
-  getLeadsPerDeviceTrend,
   getLeadsPerModuleTrend,
-  getLeadsPerSourceLastTouch,
-  getLeadsPerSourceMultiTouch,
   getLeadsPerTouchFrequency,
-  getSessionsPerSource,
   type AttributionFilters,
 } from "@/lib/attribution/queries";
-import { Users, Eye, MousePointerClick, BarChart3, Megaphone, Radio } from "lucide-react";
-import { DataPlaceholder } from "@/components/portal/ui/data-placeholder";
+import { fetchGa4SourceVolumes } from "@/lib/attribution/ga4-sources";
+import { LeadFlowDiagram } from "@/components/portal/attribution/lead-flow-diagram";
+import { SourceLogo } from "@/components/portal/attribution/source-logo";
+import { Users, Eye, MousePointerClick, BarChart3 } from "lucide-react";
 
 export const metadata: Metadata = { title: "Attribution" };
 export const dynamic = "force-dynamic";
@@ -107,42 +105,23 @@ export default async function AttributionPage({
     toDate,
   };
 
-  const [
-    headline,
-    sessionsPerSource,
-    leadsLastTouch,
-    leadsMultiTouch,
-    citySplit,
-    deviceTrend,
-    moduleTrend,
-    touchFreq,
-    adAccountCount,
-    pixelIntegration,
-  ] = await Promise.all([
-    getAttributionHeadline(filters),
-    getSessionsPerSource(filters),
-    getLeadsPerSourceLastTouch(filters),
-    getLeadsPerSourceMultiTouch(filters),
-    getLeadsPerCity(filters),
-    getLeadsPerDeviceTrend(filters),
-    getLeadsPerModuleTrend(filters),
-    getLeadsPerTouchFrequency(filters),
-    // Integration presence — used to decide whether the "no data" surfaces
-    // should be honest empty states or actionable connect-this-source CTAs.
-    prisma.adAccount.count({
-      where: {
-        orgId: scope.orgId,
-        ...(await realAdAccountWhere(scope.orgId)),
-      },
-    }),
-    prisma.cursiveIntegration.findFirst({
-      where: { orgId: scope.orgId },
-      select: { cursivePixelId: true, lastEventAt: true },
-    }),
-  ]);
-
-  const hasAdAccounts = adAccountCount > 0;
-  const hasPixel = Boolean(pixelIntegration?.cursivePixelId);
+  const [headline, leadFlow, citySplit, moduleTrend, touchFreq] =
+    await Promise.all([
+      getAttributionHeadline(filters),
+      // Flow hero — folds in GA4 source volumes (best-effort; null if GA4 isn't
+      // connected or slow, in which case it degrades to pixel-only).
+      (async () => {
+        const ga4Sessions = await fetchGa4SourceVolumes(
+          scope.orgId,
+          fromDate,
+          toDate,
+        );
+        return getLeadFlow(filters, ga4Sessions);
+      })(),
+      getLeadsPerCity(filters),
+      getLeadsPerModuleTrend(filters),
+      getLeadsPerTouchFrequency(filters),
+    ]);
 
   // Used in the page header description. When exactly one property is
   // selected we name it; when multiple are selected we just say how many.
@@ -160,22 +139,6 @@ export default async function AttributionPage({
   // collapses into "Other".
   const moduleSeries = buildModuleSeries(moduleTrend, 5);
   const moduleDates = moduleTrend.map((p) => p.date);
-
-  const deviceDates = deviceTrend.map((p) => p.date);
-  const deviceSeries = [
-    {
-      label: "Desktop",
-      values: deviceTrend.map((p) => p.desktop),
-    },
-    {
-      label: "Mobile",
-      values: deviceTrend.map((p) => p.mobile),
-    },
-    {
-      label: "Tablet",
-      values: deviceTrend.map((p) => p.tablet),
-    },
-  ];
 
   return (
     <div className="space-y-3 ls-page-fade">
@@ -276,8 +239,8 @@ export default async function AttributionPage({
         />
         <KpiTile
           label="Sessions"
-          value={headline.totalSessions.toLocaleString()}
-          hint="From visitor pixel"
+          value={leadFlow.totalSessions.toLocaleString()}
+          hint="GA4 + visitor pixel"
           icon={<MousePointerClick className="h-3.5 w-3.5" />}
         />
         <KpiTile
@@ -287,64 +250,96 @@ export default async function AttributionPage({
           icon={<Eye className="h-3.5 w-3.5" />}
         />
         <KpiTile
-          label="Unique modules"
-          value={headline.modules.length.toLocaleString()}
-          hint={`${headline.modules.length} active channels`}
+          label="Source channels"
+          value={leadFlow.sources.length.toLocaleString()}
+          hint="Distinct traffic sources"
           icon={<BarChart3 className="h-3.5 w-3.5" />}
         />
       </section>
 
-      {/* Row 1: traffic sources */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        {!hasPixel && headline.totalSessions === 0 ? (
-          <DataPlaceholder
-            intent="connect"
-            icon={<Radio className="h-4 w-4" />}
-            title="Install the visitor pixel to see sessions per source"
-            body="Once the pixel is live, this donut breaks down where every visit came from — UTM tags first, then referrer hostname, then direct."
-            action={{ label: "Install the pixel", href: "/portal/connect" }}
-          />
-        ) : (
-          <SourceDonut
-            title="Sessions per source"
-            description="Where the visits came from. UTM tags first, then referrer hostname, then direct."
-            palette="ink"
-            slices={sessionsPerSource.map((s) => ({
-              label: s.source,
-              value: s.count,
-            }))}
-            totalLabel={`${headline.totalSessions.toLocaleString()} sessions`}
-            emptyMessage="No tracked sessions in this window. Verify the visitor pixel is installed."
-          />
-        )}
-        {!hasAdAccounts && leadsMultiTouch.length === 0 ? (
-          <DataPlaceholder
-            intent="connect"
-            icon={<Megaphone className="h-4 w-4" />}
-            title="Connect ad accounts to see paid attribution"
-            body="Once Google Ads or Meta Ads are connected, this surface shows every channel that touched a lead before they converted."
-            action={{ label: "Connect ad accounts", href: "/portal/connect" }}
-          />
-        ) : (
-          <SourceDonut
-            title="Leads per source · multi-touch"
-            description="Every channel that touched a lead before they converted. A lead seen by both google-ads and direct counts in both."
-            palette="blue"
-            slices={leadsMultiTouch.map((s) => ({
-              label: s.source,
-              value: s.count,
-            }))}
-            totalLabel={`${headline.totalLeads.toLocaleString()} leads`}
-            emptyMessage="No leads in this window."
-          />
-        )}
-      </section>
+      {/* Flow hero — the headline visualization: where leads flow in from. */}
+      <LeadFlowDiagram
+        sources={leadFlow.sources}
+        stages={leadFlow.stages}
+        totalLeads={leadFlow.totalLeads}
+        totalSessions={leadFlow.totalSessions}
+      />
 
-      {/* Row 2: lead breakdowns */}
+      {/* Traffic & lead sources — the GA4-driven logo board. Real platform
+          logos, sessions blended from GA4 + pixel, leads, and conversion. This
+          replaces the old wall of look-alike donuts. */}
+      {leadFlow.sources.length > 0 ? (
+        <section className="ls-card p-4">
+          <div className="flex items-baseline justify-between mb-3">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">
+                Traffic &amp; lead sources
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                The sites visitors came from before yours. Sessions blended from
+                GA4 + visitor pixel · conversion = leads ÷ sessions.
+              </p>
+            </div>
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground shrink-0 pl-3">
+              {leadFlow.sources.length} channels
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-0.5">
+            {leadFlow.sources.slice(0, 12).map((s) => {
+              const max = Math.max(
+                1,
+                ...leadFlow.sources.map((x) => Math.max(x.leads, x.sessions)),
+              );
+              const barVal = Math.max(s.leads, s.sessions);
+              return (
+                <div
+                  key={s.id}
+                  className="flex items-center gap-3 py-2 border-b border-border/40 last:border-0"
+                >
+                  <SourceLogo logo={s.logo} size={32} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[13px] font-medium text-foreground truncate">
+                        {s.label}
+                      </span>
+                      <span className="font-mono text-[11px] tabular-nums text-muted-foreground shrink-0">
+                        {s.sessions > 0
+                          ? `${s.sessions.toLocaleString()} sess`
+                          : ""}
+                      </span>
+                    </div>
+                    <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{
+                          width: `${Math.max((barVal / max) * 100, barVal > 0 ? 3 : 0)}%`,
+                          background: s.color,
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0 w-16">
+                    <div className="font-mono text-sm font-semibold tabular-nums text-foreground leading-none">
+                      {s.leads.toLocaleString()}
+                    </div>
+                    <div className="font-mono text-[10px] tabular-nums text-muted-foreground mt-0.5">
+                      {s.conversionRate !== null
+                        ? `${(s.conversionRate * 100).toFixed(1)}%`
+                        : "leads"}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
+
+      {/* Capture surface + nurture depth — two purposeful breakdowns. */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <SourceDonut
-          title="Lead customers per module type"
-          description="Which capture surface created each lead — chatbot, form, ads, referral."
+          title="Leads by capture surface"
+          description="Which LeaseStack surface created each lead — chatbot, form, ads, referral."
           palette="emerald"
           slices={headline.modules.map((m) => ({
             label: m.label,
@@ -354,7 +349,7 @@ export default async function AttributionPage({
           emptyMessage="No leads in this window."
         />
         <SourceDonut
-          title="Leads per touch frequency"
+          title="Touch frequency"
           description="How many sessions each lead had before converting. Higher = more nurture needed."
           palette="amber"
           slices={touchFreq
@@ -368,30 +363,18 @@ export default async function AttributionPage({
         />
       </section>
 
-      {/* Row 3: trends — side by side to use horizontal space */}
+      {/* Trends + geography. */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <TrendChart
-          title="Leads per module type — daily"
-          description="Daily lead volume by capture surface. Top 5 sources shown, rest collapsed into Other."
+          title="Leads by source — daily"
+          description="Daily lead volume by channel. Top 5 shown, rest collapsed into Other."
           dates={moduleDates}
           series={moduleSeries}
           totalEntries={headline.totalLeads}
           emptyMessage="No leads in this window."
         />
-        <TrendChart
-          title="Leads per device — daily"
-          description="Daily lead volume by device class on the converting visitor's last session."
-          dates={deviceDates}
-          series={deviceSeries}
-          totalEntries={headline.totalLeads}
-          emptyMessage="No leads in this window."
-        />
-      </section>
-
-      {/* Row 4: city split */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <SourceDonut
-          title="Leads per city · last-touch"
+          title="Leads by city"
           description="Lead's resolved city from pixel enrichment (when available)."
           palette="violet"
           slices={citySplit.slice(0, 8).map((c) => ({
@@ -399,29 +382,8 @@ export default async function AttributionPage({
             value: c.count,
           }))}
           totalLabel={`${citySplit.reduce((s, c) => s + c.count, 0).toLocaleString()} located`}
-          emptyMessage="No city-resolved leads in this window. Pixel enrichment fills this in as visitors are identified."
+          emptyMessage="No city-resolved leads yet. Enrichment fills this in as visitors are identified."
         />
-        {!hasAdAccounts && leadsLastTouch.length === 0 ? (
-          <DataPlaceholder
-            intent="connect"
-            icon={<Megaphone className="h-4 w-4" />}
-            title="Connect ad accounts to see last-touch attribution"
-            body="Once Google Ads or Meta Ads are connected, this surface shows the final attributed channel for every converted lead."
-            action={{ label: "Connect ad accounts", href: "/portal/connect" }}
-          />
-        ) : (
-          <SourceDonut
-            title="Leads per source · last-touch"
-            description="Just the final attributed channel — what Clarity calls 'last-touch attribution.'"
-            palette="blue"
-            slices={leadsLastTouch.map((m) => ({
-              label: m.label,
-              value: m.count,
-            }))}
-            totalLabel={`${headline.totalLeads.toLocaleString()} leads`}
-            emptyMessage="No leads in this window."
-          />
-        )}
       </section>
 
       {/* Footer note — explicit positioning vs Clarity. */}
