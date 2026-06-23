@@ -234,7 +234,7 @@ export default async function AttributionPage({
         <KpiTile
           label="Total leads"
           value={headline.totalLeads.toLocaleString()}
-          hint={`Across ${dayCount} days`}
+          hint={`${leadFlow.totalLeads.toLocaleString()} attributed · ${leadFlow.imported.leads.toLocaleString()} imported`}
           icon={<Users className="h-3.5 w-3.5" />}
         />
         <KpiTile
@@ -263,6 +263,7 @@ export default async function AttributionPage({
         stages={leadFlow.stages}
         totalLeads={leadFlow.totalLeads}
         totalSessions={leadFlow.totalSessions}
+        imported={leadFlow.imported}
       />
 
       {/* Traffic & lead sources — the GA4-driven logo board. Real platform
@@ -296,7 +297,7 @@ export default async function AttributionPage({
                   key={s.id}
                   className="flex items-center gap-3 py-2 border-b border-border/40 last:border-0"
                 >
-                  <SourceLogo logo={s.logo} size={32} />
+                  <SourceLogo logo={s.id} size={32} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-[13px] font-medium text-foreground truncate">
@@ -339,14 +340,16 @@ export default async function AttributionPage({
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <SourceDonut
           title="Leads by capture surface"
-          description="Which LeaseStack surface created each lead — chatbot, form, ads, referral."
+          description="Which LeaseStack surface created each lead — chatbot, form, ads, referral. Imported/unattributed excluded."
           palette="emerald"
-          slices={headline.modules.map((m) => ({
-            label: m.label,
-            value: m.count,
-          }))}
-          totalLabel={`${headline.totalLeads.toLocaleString()} leads`}
-          emptyMessage="No leads in this window."
+          slices={headline.modules
+            .filter((m) => !["Other", "Manual entry"].includes(m.label))
+            .map((m) => ({
+              label: m.label,
+              value: m.count,
+            }))}
+          totalLabel={`${leadFlow.totalLeads.toLocaleString()} leads`}
+          emptyMessage="No attributed leads in this window."
         />
         <SourceDonut
           title="Touch frequency"

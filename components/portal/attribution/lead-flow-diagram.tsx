@@ -32,11 +32,13 @@ export function LeadFlowDiagram({
   stages,
   totalLeads,
   totalSessions,
+  imported,
 }: {
   sources: FlowSourceVM[];
   stages: FlowStageVM[];
   totalLeads: number;
   totalSessions: number;
+  imported?: { leads: number };
 }) {
   const [hovered, setHovered] = React.useState<string | null>(null);
 
@@ -101,10 +103,22 @@ export function LeadFlowDiagram({
             {totalLeads.toLocaleString()}
           </div>
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-            leads · {totalSessions.toLocaleString()} sessions
+            attributed leads · {totalSessions.toLocaleString()} sessions
           </div>
         </div>
       </div>
+
+      {imported && imported.leads > 0 ? (
+        <div className="mb-3 flex items-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 px-3 py-1.5">
+          <span className="text-[11px] text-muted-foreground">
+            <span className="font-mono font-semibold text-foreground">
+              {imported.leads.toLocaleString()}
+            </span>{" "}
+            imported leads (AppFolio sync, no marketing channel) are excluded
+            from attribution above.
+          </span>
+        </div>
+      ) : null}
 
       {display.length === 0 ? (
         <div className="py-12 text-center text-sm text-muted-foreground">
@@ -180,7 +194,7 @@ export function LeadFlowDiagram({
                   onMouseEnter={() => setHovered(s.id)}
                   onMouseLeave={() => setHovered(null)}
                 >
-                  <SourceLogo logo={s.logo} size={34} />
+                  <SourceLogo logo={s.id} size={34} />
                   <div className="min-w-0 leading-tight">
                     <div className="text-[12.5px] font-semibold text-foreground truncate">
                       {s.label}
