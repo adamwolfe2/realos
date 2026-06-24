@@ -423,9 +423,17 @@ export type FlowStage = { id: string; label: string; count: number };
 export type LeadFlow = {
   sources: FlowSource[];
   stages: FlowStage[];
+  /** Marketing-attributed leads (excludes imported / no-channel). */
   totalLeads: number;
   totalSessions: number;
+  /** AppFolio-synced / no-channel leads, kept out of the channel breakdown so
+   *  a bulk PMS import doesn't drown the real marketing attribution. */
+  imported: { leads: number; sessions: number };
 };
+
+// Canonical ids that mean "we don't actually know a marketing channel" —
+// routed to the imported/unattributed bucket instead of a channel stream.
+const UNATTRIBUTED_IDS = new Set(["other", "manual"]);
 
 // Funnel ordering for LeadStatus — higher means further down the pipeline.
 const STATUS_RANK: Record<string, number> = {
@@ -465,6 +473,7 @@ export async function getLeadFlow(
       select: {
         source: true,
         status: true,
+        externalSystem: true,
         visitor: {
           select: {
             sessions: {
@@ -504,40 +513,59 @@ export async function getLeadFlow(
     }
   }
 
+  // Split leads into marketing-attributed vs imported/no-channel. The funnel
+  // and channel breakdown only count marketing leads, so an AppFolio backfill
+  // of existing residents can't masquerade as "where leads came from."
   const stageCounts = { toured: 0, applied: 0, signed: 0 };
+  let importedLeads = 0;
   for (const lead of leads) {
-    bump(leadCounts, attributedSource(lead.source, lead.visitor?.sessions[0]));
+    const src = attributedSource(lead.source, lead.visitor?.sessions[0]);
+    const isImported =
+      UNATTRIBUTED_IDS.has(src.id) ||
+      (lead.externalSystem != null && src.id === "direct");
+    if (isImported) {
+      importedLeads += 1;
+      continue;
+    }
 
+    bump(leadCounts, src);
     const rank = STATUS_RANK[lead.status] ?? 0;
     if (rank >= STATUS_RANK.TOURED) stageCounts.toured += 1;
     if (rank >= STATUS_RANK.APPLIED) stageCounts.applied += 1;
     if (rank >= STATUS_RANK.SIGNED) stageCounts.signed += 1;
   }
 
-  const ids = new Set<string>([...sessionCounts.keys(), ...leadCounts.keys()]);
-  const sources: FlowSource[] = Array.from(ids)
-    .map((id) => {
-      const m = meta.get(id) ?? getSource(id);
-      const sessionN = sessionCounts.get(id) ?? 0;
-      const leadN = leadCounts.get(id) ?? 0;
-      return {
-        id: m.id,
-        label: m.label,
-        category: m.category,
-        color: m.color,
-        logo: m.logo,
-        leads: leadN,
-        sessions: sessionN,
-        conversionRate: sessionN > 0 ? leadN / sessionN : null,
-      };
-    })
-    // Rank by what matters most for the hero: leads first, then traffic.
-    .sort((a, b) => b.leads - a.leads || b.sessions - a.sessions);
-
   const totalSessions = Array.from(sessionCounts.values()).reduce(
     (a, b) => a + b,
     0,
   );
+
+  // Build channel rows, peeling the unattributed session volume into the
+  // imported bucket so it never shows up as a phantom channel.
+  const ids = new Set<string>([...sessionCounts.keys(), ...leadCounts.keys()]);
+  let importedSessions = 0;
+  const sources: FlowSource[] = [];
+  for (const id of ids) {
+    const sessionN = sessionCounts.get(id) ?? 0;
+    if (UNATTRIBUTED_IDS.has(id)) {
+      importedSessions += sessionN;
+      continue;
+    }
+    const m = meta.get(id) ?? getSource(id);
+    const leadN = leadCounts.get(id) ?? 0;
+    sources.push({
+      id: m.id,
+      label: m.label,
+      category: m.category,
+      color: m.color,
+      logo: m.logo,
+      leads: leadN,
+      sessions: sessionN,
+      conversionRate: sessionN > 0 ? leadN / sessionN : null,
+    });
+  }
+  // Rank by what matters most for the hero: leads first, then traffic.
+  sources.sort((a, b) => b.leads - a.leads || b.sessions - a.sessions);
 
   const stages: FlowStage[] = [
     { id: "toured", label: "Toured", count: stageCounts.toured },
@@ -545,7 +573,13 @@ export async function getLeadFlow(
     { id: "signed", label: "Signed", count: stageCounts.signed },
   ];
 
-  return { sources, stages, totalLeads: leads.length, totalSessions };
+  return {
+    sources,
+    stages,
+    totalLeads: leads.length - importedLeads,
+    totalSessions,
+    imported: { leads: importedLeads, sessions: importedSessions },
+  };
 }
 
 // Best last-touch attribution for one lead: prefer the converting session's

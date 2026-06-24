@@ -34,6 +34,7 @@ import {
   Home,
   CalendarClock,
   PieChart,
+  Waypoints,
   ShoppingBag,
   Plug,
   KeyRound,
@@ -343,6 +344,12 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/portal/attribution",
         label: "Attribution",
         icon: PieChart,
+        show: (o) => o.moduleAttribution,
+      },
+      {
+        href: "/portal/reverse-attribution",
+        label: "Reverse Attribution",
+        icon: Waypoints,
         show: (o) => o.moduleAttribution,
       },
       {

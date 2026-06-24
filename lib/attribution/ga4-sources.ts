@@ -1,8 +1,25 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { SeoProvider } from "@prisma/client";
-import { fetchGa4SessionsBySource } from "@/lib/integrations/ga4";
+import {
+  fetchGa4SessionsBySource,
+  fetchGa4SourceLandingPages,
+} from "@/lib/integrations/ga4";
 import { classifySource } from "@/lib/attribution/source-taxonomy";
+
+async function resolveGa4Integration(orgId: string) {
+  const integration = await prisma.seoIntegration.findFirst({
+    where: { orgId, provider: SeoProvider.GA4 },
+    select: { serviceAccountJsonEncrypted: true, propertyIdentifier: true },
+  });
+  if (
+    !integration?.serviceAccountJsonEncrypted ||
+    !integration.propertyIdentifier
+  ) {
+    return null;
+  }
+  return integration;
+}
 
 // ---------------------------------------------------------------------------
 // GA4 source fusion. Pulls sessions-by-source from the org's connected GA4
@@ -24,16 +41,8 @@ export async function fetchGa4SourceVolumes(
   toDate: Date,
 ): Promise<Map<string, number> | null> {
   try {
-    const integration = await prisma.seoIntegration.findFirst({
-      where: { orgId, provider: SeoProvider.GA4 },
-      select: { serviceAccountJsonEncrypted: true, propertyIdentifier: true },
-    });
-    if (
-      !integration?.serviceAccountJsonEncrypted ||
-      !integration.propertyIdentifier
-    ) {
-      return null;
-    }
+    const integration = await resolveGa4Integration(orgId);
+    if (!integration) return null;
 
     const rows = await fetchGa4SessionsBySource(
       integration.serviceAccountJsonEncrypted,
@@ -59,4 +68,59 @@ export async function fetchGa4SourceVolumes(
     );
     return null;
   }
+}
+
+export type Ga4SourceLanding = {
+  sourceId: string; // canonical source id
+  landingPath: string; // normalized path
+  sessions: number;
+};
+
+/**
+ * GA4 sessions by canonical source × landing page, for reverse attribution.
+ * Best-effort: returns null when GA4 is unavailable.
+ */
+export async function fetchGa4SourceLandingVolumes(
+  orgId: string,
+  fromDate: Date,
+  toDate: Date,
+): Promise<Ga4SourceLanding[] | null> {
+  try {
+    const integration = await resolveGa4Integration(orgId);
+    if (!integration) return null;
+
+    const rows = await fetchGa4SourceLandingPages(
+      integration.serviceAccountJsonEncrypted,
+      integration.propertyIdentifier,
+      fromDate,
+      toDate,
+    );
+
+    const out: Ga4SourceLanding[] = [];
+    for (const row of rows) {
+      if (row.sessions <= 0) continue;
+      const src = classifySource(row.source, null, row.medium);
+      out.push({
+        sourceId: src.id,
+        landingPath: normalizePath(row.landingPath),
+        sessions: row.sessions,
+      });
+    }
+    return out.length > 0 ? out : null;
+  } catch (err) {
+    console.error(
+      "[attribution] GA4 source×landing fusion failed:",
+      err instanceof Error ? err.message : err,
+    );
+    return null;
+  }
+}
+
+// Strip query string + trailing slash so "/floorplans?x=1" and "/floorplans/"
+// collapse to one landing node. Empty / "(not set)" → "/".
+function normalizePath(raw: string): string {
+  if (!raw || raw === "(not set)") return "/";
+  let p = raw.split("?")[0].split("#")[0].trim();
+  if (p.length > 1 && p.endsWith("/")) p = p.slice(0, -1);
+  return p || "/";
 }
