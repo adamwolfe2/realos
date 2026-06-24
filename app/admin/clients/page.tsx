@@ -11,6 +11,7 @@ import {
   Prisma,
 } from "@prisma/client";
 import { formatDistanceToNow } from "date-fns";
+import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
 import { StatusBadge } from "@/components/admin/status-badge";
 import { Button } from "@/components/ui/button";
@@ -219,6 +220,14 @@ export default async function ClientsList({
       <PageHeader
         title="Clients"
         description="Every client organization. Click in for full detail and impersonation."
+        actions={
+          <Button asChild size="sm">
+            <Link href="/admin/clients/new">
+              <Plus className="size-4" strokeWidth={1.5} />
+              New client
+            </Link>
+          </Button>
+        }
       />
 
       {topClient ? (
