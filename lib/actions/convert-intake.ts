@@ -24,6 +24,10 @@ import {
   sendTeammateInviteEmail,
 } from "@/lib/email/onboarding-emails";
 import { getDefaultProjectTasks } from "@/lib/build/default-tasks";
+import {
+  pickUniqueSlug,
+  deriveModuleFlags,
+} from "@/lib/actions/client-provisioning";
 
 // ---------------------------------------------------------------------------
 // Admin action: convert an IntakeSubmission into a fully provisioned CLIENT
@@ -57,75 +61,6 @@ export type ConvertIntakeResult =
 export type RejectIntakeResult =
   | { ok: true }
   | { ok: false; error: string };
-
-const SLUG_MAX = 60;
-const SLUG_COLLISION_MAX = 50;
-
-function deriveSlug(companyName: string): string {
-  const base = companyName
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, SLUG_MAX);
-  return base || "tenant";
-}
-
-async function pickUniqueSlug(companyName: string): Promise<string> {
-  const base = deriveSlug(companyName);
-  let candidate = base;
-  let n = 2;
-  while (n <= SLUG_COLLISION_MAX + 1) {
-    const existing = await prisma.organization.findUnique({
-      where: { slug: candidate },
-      select: { id: true },
-    });
-    if (!existing) return candidate;
-    const suffix = `-${n}`;
-    candidate = `${base.slice(0, SLUG_MAX - suffix.length)}${suffix}`;
-    n += 1;
-  }
-  throw new Error("Could not generate a unique tenant slug");
-}
-
-function deriveModuleFlags(selectedModules: unknown): {
-  moduleWebsite: boolean;
-  modulePixel: boolean;
-  moduleChatbot: boolean;
-  moduleGoogleAds: boolean;
-  moduleMetaAds: boolean;
-  moduleSEO: boolean;
-  moduleEmail: boolean;
-  moduleOutboundEmail: boolean;
-  moduleReferrals: boolean;
-  moduleCreativeStudio: boolean;
-  moduleLeadCapture: boolean;
-} {
-  const selected = Array.isArray(selectedModules)
-    ? selectedModules.filter((m): m is string => typeof m === "string")
-    : [];
-  const has = (key: string) => selected.includes(key);
-  // DECISION: website + leadCapture are Core features (every operator gets
-  // them, they're bundled in the base retainer). The intake UI marks them as
-  // "Core" in MODULE_CATALOG. We force them on server-side so a prospect who
-  // accidentally toggled them off still gets them provisioned.
-  return {
-    moduleWebsite: true,
-    moduleLeadCapture: true,
-    modulePixel: has("pixel"),
-    moduleChatbot: has("chatbot"),
-    // Support both snake_case and camelCase for safety across intake versions.
-    moduleGoogleAds: has("google_ads") || has("googleAds"),
-    moduleMetaAds: has("meta_ads") || has("metaAds"),
-    moduleSEO: has("seo"),
-    moduleEmail: has("email"),
-    moduleOutboundEmail:
-      has("outbound_email") || has("outboundEmail"),
-    moduleReferrals: has("referrals"),
-    moduleCreativeStudio:
-      has("creative_studio") || has("creativeStudio"),
-  };
-}
 
 export async function convertIntakeToClient(
   intakeId: string
