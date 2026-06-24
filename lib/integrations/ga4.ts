@@ -256,6 +256,46 @@ export async function fetchGa4SessionsBySource(
   }));
 }
 
+export type Ga4SourceLandingRow = {
+  source: string; // GA4 sessionSource
+  medium: string; // GA4 sessionMedium
+  landingPath: string; // GA4 landingPage (path), e.g. "/floorplans"
+  sessions: number;
+};
+
+// Sessions grouped by source × medium × landing page across ALL channels.
+// Powers reverse attribution: which referring site sent traffic to which page.
+export async function fetchGa4SourceLandingPages(
+  encryptedJson: string,
+  propertyId: string,
+  fromDate: Date,
+  toDate: Date,
+): Promise<Ga4SourceLandingRow[]> {
+  const auth = jwtFromEncrypted(encryptedJson);
+  const data = google.analyticsdata({ version: "v1beta", auth });
+  const resp = await data.properties.runReport({
+    property: normalizePropertyId(propertyId),
+    requestBody: {
+      dateRanges: [{ startDate: ymd(fromDate), endDate: ymd(toDate) }],
+      dimensions: [
+        { name: "sessionSource" },
+        { name: "sessionMedium" },
+        { name: "landingPage" },
+      ],
+      metrics: [{ name: "sessions" }],
+      orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+      limit: "500",
+    },
+  });
+  const rows = resp.data.rows ?? [];
+  return rows.map((r) => ({
+    source: (r.dimensionValues?.[0]?.value ?? "") as string,
+    medium: (r.dimensionValues?.[1]?.value ?? "") as string,
+    landingPath: (r.dimensionValues?.[2]?.value ?? "/") as string,
+    sessions: Number(r.metricValues?.[0]?.value ?? 0),
+  }));
+}
+
 // Landing page performance for organic traffic, broken down by date so the
 // "top pages" table can show trends. landingPagePlusQueryString preserves the
 // full path; we strip query strings on storage to avoid table cardinality
