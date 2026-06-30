@@ -209,6 +209,7 @@ export async function addDomainToProject(
       headers: authHeaders(),
       body: JSON.stringify({ name: hostname }),
       cache: "no-store",
+      signal: AbortSignal.timeout(8000),
     });
   } catch (err) {
     return {
@@ -301,6 +302,7 @@ export async function removeDomainFromProject(
     method: "DELETE",
     headers: authHeaders(),
     cache: "no-store",
+    signal: AbortSignal.timeout(8000),
   });
   // 404 = already gone; treat as success so removeClientDomain can still
   // tear down the local row even if Vercel state has drifted.
@@ -331,6 +333,7 @@ export async function getDomainStatus(
   const res = await fetch(url, {
     headers: authHeaders(),
     cache: "no-store",
+    signal: AbortSignal.timeout(8000),
   });
   if (res.status === 404) return null;
   if (!res.ok) {
@@ -360,6 +363,7 @@ export async function getDomainConfig(
   const res = await fetch(url, {
     headers: authHeaders(),
     cache: "no-store",
+    signal: AbortSignal.timeout(8000),
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
@@ -395,6 +399,7 @@ export async function verifyDomain(
     method: "POST",
     headers: authHeaders(),
     cache: "no-store",
+    signal: AbortSignal.timeout(8000),
   });
   const raw = await res.json().catch(() => ({}));
   if (!res.ok) {

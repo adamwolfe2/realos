@@ -186,6 +186,7 @@ export async function handleOAuthCallback(
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: tokenBody,
+    signal: AbortSignal.timeout(10000),
   });
   if (!tokenRes.ok) {
     const errText = await tokenRes.text().catch(() => "");

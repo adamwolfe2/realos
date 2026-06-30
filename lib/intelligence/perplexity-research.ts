@@ -81,6 +81,7 @@ export async function researchCompany(args: {
         max_tokens: 1800,
         temperature: 0.3,
       }),
+      signal: AbortSignal.timeout(30000),
     });
     if (!res.ok) {
       const detail = await res.text().catch(() => "");

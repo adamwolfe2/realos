@@ -128,6 +128,7 @@ export async function findNearbyCompetitors(input: {
         },
         rankPreference: "DISTANCE",
       }),
+      signal: AbortSignal.timeout(10000),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Network error";

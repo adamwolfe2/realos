@@ -24,6 +24,7 @@ export async function postSlack(message: SlackMessage): Promise<SlackResult> {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(message),
+      signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) {
       const body = await res.text().catch(() => "");

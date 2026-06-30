@@ -4,6 +4,7 @@ import { computeSignals } from "@/lib/signals/compute";
 import { persistSnapshot } from "@/lib/signals/persist";
 import { getMonthToDateSpend } from "@/lib/cost-tracker/cap";
 import { logUsage } from "@/lib/cost-tracker/log";
+import { verifyCronAuth } from "@/lib/cron/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,16 +39,11 @@ export const maxDuration = 300;
 // Auth: Bearer CRON_SECRET (raw header comparison, matches spec).
 // ---------------------------------------------------------------------------
 export async function GET(req: NextRequest) {
-  const expected = process.env.CRON_SECRET;
-  if (!expected) {
-    return NextResponse.json(
-      { error: "CRON_SECRET not configured" },
-      { status: 500 },
-    );
-  }
-  if (req.headers.get("authorization") !== `Bearer ${expected}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // Constant-time CRON_SECRET check via the shared helper (was a raw `!==`
+  // string compare — replaced for timing-safety + parity with every other
+  // cron route). Returns 503 if the secret is unconfigured, 401 on mismatch.
+  const authError = verifyCronAuth(req);
+  if (authError) return authError;
 
   // --- Spend cap pre-check --------------------------------------------------
   // Read MTD spend from ApiUsage; if we've already hit the configured

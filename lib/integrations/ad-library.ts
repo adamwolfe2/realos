@@ -171,7 +171,7 @@ export async function fetchAdsForAdvertiser(args: {
       searchValue: args.searchValue,
       countries: args.countries ?? ["US"],
     });
-    const response = await fetch(url, { cache: "no-store" });
+    const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(10000) });
     if (!response.ok) {
       const text = await response.text().catch(() => "");
       return {

@@ -7,6 +7,12 @@ import {
   handleMarketplaceChargeRefunded,
 } from "@/lib/marketplace/webhook-handlers";
 import { captureWithContext } from "@/lib/sentry";
+import {
+  webhookLimiter,
+  checkRateLimit,
+  getIp,
+  rateLimited,
+} from "@/lib/rate-limit";
 
 // ---------------------------------------------------------------------------
 // POST /api/webhooks/stripe/marketplace
@@ -22,12 +28,25 @@ import { captureWithContext } from "@/lib/sentry";
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
+  // Mirror the main Stripe webhook's DoS guards (this endpoint previously had
+  // neither): per-IP rate limit + body cap before any HMAC work, so a forged
+  // oversize/flood POST can't exhaust CPU/memory.
+  const ip = getIp(req);
+  const { allowed } = await checkRateLimit(webhookLimiter, `wh-stripe-mp:${ip}`);
+  if (!allowed) {
+    return rateLimited("Rate limit exceeded", 60);
+  }
+
   const sig = req.headers.get("stripe-signature");
   if (!sig) {
     return NextResponse.json({ error: "missing_signature" }, { status: 400 });
   }
 
   const rawBody = await req.text();
+  // Cap at 3 MB to prevent memory/CPU DoS via forged oversize POSTs.
+  if (Buffer.byteLength(rawBody, "utf8") > 3 * 1024 * 1024) {
+    return NextResponse.json({ error: "Body too large" }, { status: 413 });
+  }
   let event: Stripe.Event;
   try {
     event = await parseWebhookEvent(rawBody, sig);
