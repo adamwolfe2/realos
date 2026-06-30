@@ -170,11 +170,20 @@ export async function GET(req: NextRequest) {
           },
         });
 
-        // Pause the org if escalated and not already paused.
+        // Pause the org if escalated and not already paused. Set BOTH the
+        // lifecycle status (TenantStatus.PAUSED — gates the public chatbot)
+        // AND subscriptionStatus=PAUSED, which makes the portal read-only
+        // (isWorkspaceReadOnly) and denies AI (checkAiBillingGate). Without
+        // the subscriptionStatus write the "your account is paused" email
+        // was a lie — the customer kept full portal write access. Both flags
+        // are reversed by handleInvoicePaid on the next successful payment.
         if (isEscalated && org.status !== TenantStatus.PAUSED) {
           await prisma.organization.update({
             where: { id: org.id },
-            data: { status: TenantStatus.PAUSED },
+            data: {
+              status: TenantStatus.PAUSED,
+              subscriptionStatus: SubscriptionStatus.PAUSED,
+            },
           });
           results.push({ orgId: org.id, action: "sent_escalated_and_paused" });
         } else {

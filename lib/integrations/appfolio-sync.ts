@@ -1399,18 +1399,29 @@ async function upsertAppfolioShowing(
   });
   if (!lead) return "no_lead";
 
-  // Tour requires propertyId; fall back to the lead's propertyId. When
-  // the lead doesn't have one set, prefer the org's first ACTIVE
-  // property — same fallback rule the Cal webhook uses.
+  // Tour requires propertyId; fall back to the lead's propertyId. When the
+  // lead doesn't have one set, only guess the org's single ACTIVE property.
+  // For a multi-property org, guessing "first ACTIVE" mis-attributes the tour
+  // to the wrong building (inflating its metrics, starving the real one), so
+  // skip-with-warning instead — matching the no-guess rule used by the
+  // residents/leases/work-orders/applications phases.
   let propertyId = lead.propertyId;
   if (!propertyId) {
-    const fallback = await prisma.property.findFirst({
+    const activeProps = await prisma.property.findMany({
       where: { orgId, lifecycle: "ACTIVE" },
       select: { id: true },
       orderBy: { createdAt: "asc" },
+      take: 2,
     });
-    if (!fallback) return "no_lead";
-    propertyId = fallback.id;
+    if (activeProps.length !== 1) {
+      // Zero active → nothing to attach to; multiple active → ambiguous, do
+      // not guess. The operator can re-assign once the lead resolves a property.
+      console.warn(
+        `[appfolio-sync] showing ${mapped.externalId}: lead ${lead.id} has no propertyId and org ${orgId} has ${activeProps.length} active properties — skipping to avoid wrong-building attribution`,
+      );
+      return "no_lead";
+    }
+    propertyId = activeProps[0].id;
   }
 
   const existing = await prisma.tour.findFirst({

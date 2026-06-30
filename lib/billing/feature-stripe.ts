@@ -87,15 +87,30 @@ export async function syncAllFeaturePricesToStripe(): Promise<SyncResult> {
         }
       }
 
-      const price = await stripe.prices.create({
-        product: productId,
-        currency: "usd",
-        unit_amount: row.monthlyCents,
-        recurring: { interval: "month" },
-        lookup_key: featureStripeLookupKey(row.key),
-        transfer_lookup_key: true,
-        metadata: { featureKey: row.key },
-      });
+      // Idempotency guard: a prior sync run may have created the price in
+      // Stripe but then failed before persisting price.id to the DB (e.g. the
+      // upsert below threw). On re-run, reuse that orphan instead of minting a
+      // duplicate. We match by lookup_key (stable per feature) + amount +
+      // active, so re-running sync is a no-op when Stripe is already correct.
+      const lookupKey = featureStripeLookupKey(row.key);
+      const priorByKey = await stripe.prices
+        .list({ lookup_keys: [lookupKey], active: true, limit: 1 })
+        .catch(() => null);
+      const reusable = priorByKey?.data.find(
+        (p) => p.active && p.unit_amount === row.monthlyCents,
+      );
+
+      const price =
+        reusable ??
+        (await stripe.prices.create({
+          product: productId,
+          currency: "usd",
+          unit_amount: row.monthlyCents,
+          recurring: { interval: "month" },
+          lookup_key: lookupKey,
+          transfer_lookup_key: true,
+          metadata: { featureKey: row.key },
+        }));
 
       await prisma.featurePrice.upsert({
         where: { key: row.key },

@@ -546,7 +546,7 @@ async function handleInvoicePaid(
 
   const org = await prisma.organization.findUnique({
     where: { stripeCustomerId },
-    select: { id: true, subscriptionStatus: true },
+    select: { id: true, subscriptionStatus: true, status: true },
   });
 
   if (!org) return;
@@ -560,6 +560,16 @@ async function handleInvoicePaid(
     org.subscriptionStatus === SubscriptionStatus.PAUSED
   ) {
     updateData.subscriptionStatus = SubscriptionStatus.ACTIVE;
+  }
+
+  // Reverse the lifecycle pause too. The 14-day-overdue escalation
+  // (billing-reminders cron) sets TenantStatus.PAUSED — which disables the
+  // public chatbot — alongside subscriptionStatus=PAUSED. Without flipping
+  // status back here the chatbot stayed dead forever after a single lapse,
+  // even once the customer paid. Only touch the PAUSED→ACTIVE transition so
+  // we never clobber other lifecycle states (CHURNED, AT_RISK, etc.).
+  if (org.status === TenantStatus.PAUSED) {
+    updateData.status = TenantStatus.ACTIVE;
   }
 
   // NOTE: do NOT write mrrCents here. invoice.amount_paid is the full charge

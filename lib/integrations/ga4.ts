@@ -152,7 +152,7 @@ export async function testGa4Connection(
           metrics: [{ name: "sessions" }],
           limit: "1",
         },
-      });
+      }, { timeout: GA4_RUNREPORT_TIMEOUT_MS });
       const reason = adminErr instanceof Error ? adminErr.message : "unknown";
       return {
         ok: true,
@@ -212,7 +212,7 @@ export async function fetchGa4OrganicDaily(
       },
       limit: "1000",
     },
-  });
+  }, { timeout: GA4_RUNREPORT_TIMEOUT_MS });
   const rows = resp.data.rows ?? [];
   return rows.map((r) => ({
     date: ymdFromGa4((r.dimensionValues?.[0]?.value ?? "") as string),
@@ -226,6 +226,13 @@ export type Ga4SourceRow = {
   medium: string; // GA4 sessionMedium, e.g. "organic", "cpc", "referral"
   sessions: number;
 };
+
+// Hard ceiling on every GA4 runReport call. Without it a slow/hung Google
+// Analytics Data API request blocks the whole attribution page (the calls run
+// inside a Promise.all on /portal/attribution). On timeout gaxios rejects, the
+// caller's try/catch resolves the source to null, and the page degrades to
+// pixel-only attribution instead of hanging. (Brief: "GA4 without timeout".)
+const GA4_RUNREPORT_TIMEOUT_MS = 8000;
 
 // Sessions grouped by sessionSource + sessionMedium across ALL channels (no
 // organic filter). Powers attribution source fusion — fills in the traffic the
@@ -247,7 +254,7 @@ export async function fetchGa4SessionsBySource(
       orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
       limit: "250",
     },
-  });
+  }, { timeout: GA4_RUNREPORT_TIMEOUT_MS });
   const rows = resp.data.rows ?? [];
   return rows.map((r) => ({
     source: (r.dimensionValues?.[0]?.value ?? "") as string,
@@ -286,7 +293,7 @@ export async function fetchGa4SourceLandingPages(
       orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
       limit: "500",
     },
-  });
+  }, { timeout: GA4_RUNREPORT_TIMEOUT_MS });
   const rows = resp.data.rows ?? [];
   return rows.map((r) => ({
     source: (r.dimensionValues?.[0]?.value ?? "") as string,
@@ -328,7 +335,7 @@ export async function fetchGa4OrganicLandingPages(
       orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
       limit: "1000",
     },
-  });
+  }, { timeout: GA4_RUNREPORT_TIMEOUT_MS });
   const rows = resp.data.rows ?? [];
   return rows.map((r) => ({
     date: ymdFromGa4((r.dimensionValues?.[0]?.value ?? "") as string),

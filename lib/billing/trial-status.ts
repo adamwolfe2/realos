@@ -30,6 +30,7 @@ export type TrialState =
   | "trial_active"
   | "trial_expired"
   | "paid"
+  | "paused"
   | "none";
 
 export type TrialStatusInput = Pick<
@@ -43,6 +44,10 @@ export function resolveTrialState(org: TrialStatusInput): TrialState {
   const ends = org.trialEndsAt;
 
   if (status === "ACTIVE" || status === "PAST_DUE") return "paid";
+  // PAUSED is a hard dunning state set by the 14-day-overdue escalation
+  // (billing-reminders cron). The portal flips to read-only and the
+  // customer is told to update payment; invoice.paid restores it to ACTIVE.
+  if (status === "PAUSED") return "paused";
   if (status === "TRIALING") {
     if (!ends) return "trial_active"; // defensive — null end = treat as active
     return ends.getTime() > now.getTime() ? "trial_active" : "trial_expired";
@@ -74,7 +79,11 @@ export function isWorkspaceReadOnly(
   opts: { isImpersonating?: boolean } = {},
 ): boolean {
   if (opts.isImpersonating) return false;
-  return resolveTrialState(org) === "trial_expired";
+  const state = resolveTrialState(org);
+  // Both an unactivated expired trial AND a payment-paused workspace are
+  // read-only. PAUSED matches the "your account has been paused" dunning
+  // email — without this the email lied (portal stayed fully writable).
+  return state === "trial_expired" || state === "paused";
 }
 
 // Soft-deadline gating: "we're going to lock this down in N days".
