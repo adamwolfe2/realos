@@ -148,7 +148,7 @@ export async function listMetaAdAccounts(
     limit: "100",
   });
   const url = `${GRAPH_API_BASE}/me/adaccounts?${params.toString()}`;
-  const res = await fetch(url, { cache: "no-store" });
+  const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(10000) });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(
@@ -211,7 +211,7 @@ async function graphGet<T>(
   const MAX_PAGES = 50;
 
   while (url && pages < MAX_PAGES) {
-    const response = await fetch(url, { cache: "no-store" });
+    const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(10000) });
     const body = (await response.json().catch(() => ({}))) as GraphResponse<T>;
     if (!response.ok || body.error) {
       const message = body.error?.message ?? `HTTP ${response.status}`;
@@ -240,7 +240,7 @@ export async function testMetaAdsConnection(
     const url = `${GRAPH_API_BASE}/${accountPath}?fields=id,name,currency,account_status&access_token=${encodeURIComponent(
       creds.systemUserAccessToken
     )}`;
-    const response = await fetch(url, { cache: "no-store" });
+    const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(10000) });
     const body = (await response.json().catch(() => ({}))) as {
       id?: string;
       name?: string;

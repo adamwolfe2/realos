@@ -192,6 +192,7 @@ async function getAccessToken(creds: GoogleAdsCredentials): Promise<string> {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body,
     cache: "no-store",
+    signal: AbortSignal.timeout(15000),
   });
 
   if (!response.ok) {
@@ -247,6 +248,7 @@ async function searchStream(
     headers,
     body: JSON.stringify({ query: req.query }),
     cache: "no-store",
+    signal: AbortSignal.timeout(15000),
   });
 
   if (!response.ok) {
@@ -336,6 +338,7 @@ export async function listAccessibleCustomers(
         "developer-token": creds.developerToken,
       },
       cache: "no-store",
+      signal: AbortSignal.timeout(15000),
     }
   );
   if (!topRes.ok) {

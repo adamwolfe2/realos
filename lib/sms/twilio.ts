@@ -89,6 +89,7 @@ export async function sendSms({
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: form.toString(),
+      signal: AbortSignal.timeout(8000),
     });
     const data = (await r.json().catch(() => ({}))) as {
       sid?: string;
