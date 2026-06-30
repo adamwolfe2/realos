@@ -47,7 +47,14 @@ export async function resolveStripeCustomerForProposal(args: {
         where: { id: args.prospectOrgId },
         select: { stripeCustomerId: true },
       })
-      .catch(() => null);
+      .catch((e) => {
+        // Don't fail the whole resolve on a transient DB error — fall through
+        // to the email-based layers (a duplicate is still prevented by the
+        // Stripe email search + create idempotencyKey) — but log so the error
+        // doesn't masquerade as a silent "no org link".
+        console.warn("[proposal-customer-lookup] org lookup failed:", e);
+        return null;
+      });
     if (org?.stripeCustomerId) {
       return {
         stripeCustomerId: org.stripeCustomerId,
@@ -67,7 +74,10 @@ export async function resolveStripeCustomerForProposal(args: {
       orderBy: { createdAt: "desc" },
       select: { stripeCustomerId: true },
     })
-    .catch(() => null);
+    .catch((e) => {
+      console.warn("[proposal-customer-lookup] prior-proposal lookup failed:", e);
+      return null;
+    });
   if (priorProposal?.stripeCustomerId) {
     return {
       stripeCustomerId: priorProposal.stripeCustomerId,
