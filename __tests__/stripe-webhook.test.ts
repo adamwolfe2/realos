@@ -187,6 +187,15 @@ describe("Stripe webhook — app/api/webhooks/stripe/route.ts", () => {
     expect(content).toContain("All overdue invoices resolved");
   });
 
+  it("invoice.paid reverses the lifecycle pause (TenantStatus.PAUSED -> ACTIVE)", () => {
+    const content = readRoute();
+    // Without this the 14-day-overdue chatbot pause never lifted after payment.
+    expect(content).toContain("org.status === TenantStatus.PAUSED");
+    expect(content).toContain("updateData.status = TenantStatus.ACTIVE");
+    // Must read status to make the decision.
+    expect(content).toMatch(/select:\s*\{[^}]*status:\s*true/);
+  });
+
   it("uses createOrderWithRetry for quote-to-order conversion", () => {
     const content = readRoute();
     expect(content).toContain("createOrderWithRetry");
