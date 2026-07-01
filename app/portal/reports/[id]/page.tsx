@@ -122,7 +122,12 @@ export default async function ReportDetailPage({
               .portal-shell,
               .portal-main,
               .report-page,
-              .report-page > *,
+              /* :not(style) is load-bearing — the inline print <style> below
+                 is a direct child of .report-page. Without the exclusion the
+                 "display: block" reset un-hides the <style> element and its
+                 raw CSS prints as visible text (the "5 sheets of raw CSS in
+                 the PDF" bug). */
+              .report-page > *:not(style),
               article.report-article {
                 display: block !important;
                 overflow: visible !important;
@@ -130,6 +135,10 @@ export default async function ReportDetailPage({
                 max-height: none !important;
                 min-height: 0 !important;
               }
+              /* Belt-and-suspenders: never let a <style> element paint,
+                 whatever else targets it. Higher specificity than the reset. */
+              .report-page > style,
+              style { display: none !important; }
               .portal-main { padding: 0 !important; }
               .report-page {
                 padding: 0 !important;
