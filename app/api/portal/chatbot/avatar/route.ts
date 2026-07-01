@@ -169,12 +169,13 @@ export async function DELETE() {
     await delPublic(existing.chatbotAvatarUrl).catch(() => undefined);
   }
 
-  await prisma.tenantSiteConfig
-    .update({
-      where: { orgId: scope.orgId },
-      data: { chatbotAvatarUrl: "" },
-    })
-    .catch(() => undefined);
+  // Do NOT swallow: if this clearing write fails, the blob is already gone but
+  // the DB still points at it — returning {ok:true} would report a successful
+  // delete while the avatar persists in the UI. Let it throw → 500.
+  await prisma.tenantSiteConfig.update({
+    where: { orgId: scope.orgId },
+    data: { chatbotAvatarUrl: "" },
+  });
 
   await prisma.auditEvent
     .create({

@@ -335,7 +335,11 @@ export async function POST(req: NextRequest) {
           reviewedAt: new Date(),
         },
       })
-      .catch(() => undefined);
+      // See portal/content: keep non-throwing but log so a draft stuck in
+      // GENERATING (blocks resubmit) is diagnosable instead of silent.
+      .catch((e) =>
+        console.error("[seo/drafts] failed to roll draft to REJECTED:", e),
+      );
     return NextResponse.json(
       { error: "Generation failed", detail: message },
       { status: 502 },
