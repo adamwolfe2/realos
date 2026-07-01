@@ -151,6 +151,19 @@ export function CursiveSetupWizard({
             Pixel ID from the first event. No copy-pasting IDs back and forth.
           </p>
         </div>
+        <div className="rounded-md border border-border bg-muted/30 p-3 space-y-1.5">
+          <p className="text-[11px] font-medium text-foreground">
+            Before you start
+          </p>
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            Visitor identification runs on a Cursive (AudienceLab) pixel — a
+            one-line snippet Cursive gives you to place in your site&apos;s
+            &lt;head&gt;. If you don&apos;t have a Cursive pixel yet, your account
+            manager can set one up. This wizard connects that pixel to LeaseStack
+            so identified visitors become leads; it doesn&apos;t replace the pixel
+            itself.
+          </p>
+        </div>
         <div className="rounded-md border border-border bg-muted/30 p-4 space-y-4">
           {showPicker ? (
             <div className="flex flex-col gap-1.5">
@@ -225,6 +238,25 @@ export function CursiveSetupWizard({
         </div>
         <CursiveWebhookBadge lastEventAtIso={state.lastEventAt} />
       </div>
+
+      {!state.verified ? (
+        <ol className="list-decimal space-y-1.5 pl-4 text-[11px] text-muted-foreground leading-relaxed">
+          <li>
+            Install your Cursive pixel snippet on your site (Cursive provides
+            this — one line in your &lt;head&gt;). Skip if it&apos;s already live.
+          </li>
+          <li>
+            In Cursive, open your pixel&apos;s{" "}
+            <span className="font-medium text-foreground">Webhooks</span> and
+            paste the URL below into the destination field.
+          </li>
+          <li>
+            Click <span className="font-medium text-foreground">Test</span> in
+            Cursive. We auto-detect the first event and bind your Pixel ID —
+            nothing to copy back here.
+          </li>
+        </ol>
+      ) : null}
 
       <WebhookUrlBlock url={state.webhookUrl} />
 
