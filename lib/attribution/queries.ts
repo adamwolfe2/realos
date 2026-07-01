@@ -432,8 +432,13 @@ export type LeadFlow = {
 };
 
 // Canonical ids that mean "we don't actually know a marketing channel" —
-// routed to the imported/unattributed bucket instead of a channel stream.
+// leads landing here are either routed to the AppFolio/Leasing lane (if they
+// carry a PMS externalSystem) or the excluded imported bucket (if not).
 const UNATTRIBUTED_IDS = new Set(["other", "manual"]);
+
+// First-class leasing lane for PMS-synced leads. Resolved from the shared
+// taxonomy so its color/label/logo stay consistent with every other channel.
+const APPFOLIO_SOURCE = getSource("appfolio");
 
 // Funnel ordering for LeadStatus — higher means further down the pipeline.
 const STATUS_RANK: Record<string, number> = {
@@ -513,22 +518,35 @@ export async function getLeadFlow(
     }
   }
 
-  // Split leads into marketing-attributed vs imported/no-channel. The funnel
-  // and channel breakdown only count marketing leads, so an AppFolio backfill
-  // of existing residents can't masquerade as "where leads came from."
+  // Classify each lead's channel. Previously any AppFolio-synced / no-channel
+  // lead was dropped into a single "imported, excluded" bucket — which for an
+  // AppFolio-driven operator (Telegraph: 94% of leads) emptied the whole
+  // attribution view. Now AppFolio-sourced leads become a FIRST-CLASS
+  // "AppFolio / Leasing" lane: they get their own channel stream AND flow
+  // through the funnel stages. Only genuinely unknown, NON-external leads
+  // (source Other/Manual with no PMS origin) remain in the excluded bucket.
   const stageCounts = { toured: 0, applied: 0, signed: 0 };
   let importedLeads = 0;
   for (const lead of leads) {
     const src = attributedSource(lead.source, lead.visitor?.sessions[0]);
-    const isImported =
+    const noMarketingChannel =
       UNATTRIBUTED_IDS.has(src.id) ||
       (lead.externalSystem != null && src.id === "direct");
-    if (isImported) {
-      importedLeads += 1;
-      continue;
+
+    let channel = src;
+    if (noMarketingChannel) {
+      if (lead.externalSystem != null) {
+        // AppFolio (or any PMS) origin — a real leasing lane, not "Other".
+        channel = APPFOLIO_SOURCE;
+      } else {
+        // Genuinely unattributed, non-external — stays excluded so a stray
+        // manual/unknown lead doesn't inflate the funnel.
+        importedLeads += 1;
+        continue;
+      }
     }
 
-    bump(leadCounts, src);
+    bump(leadCounts, channel);
     const rank = STATUS_RANK[lead.status] ?? 0;
     if (rank >= STATUS_RANK.TOURED) stageCounts.toured += 1;
     if (rank >= STATUS_RANK.APPLIED) stageCounts.applied += 1;
