@@ -5,6 +5,20 @@ import { syncListingsForOrg } from "@/lib/integrations/appfolio";
 import { recordCronRun } from "@/lib/health/cron-run";
 import { trackCronDuration } from "@/lib/observability/cron-tracker";
 import { verifyCronAuth } from "@/lib/cron/auth";
+import { captureWithContext } from "@/lib/sentry";
+
+// The syncStatus column is the ONLY signal the dashboard has for a failed
+// AppFolio sync. Persisting it must stay non-throwing (a status-write failure
+// must not abort the rest of the batch), but it must NOT be swallowed silently
+// or a stuck integration becomes invisible. Log + capture instead.
+function logSyncStatusWriteFailure(orgId: string, err: unknown): void {
+  console.error("[appfolio-sync] failed to persist syncStatus", orgId, err);
+  captureWithContext(err, {
+    route: "api/cron/appfolio-sync",
+    handler: "processOne.syncStatusWrite",
+    orgId,
+  });
+}
 
 export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for unbounded loops
 
@@ -138,7 +152,7 @@ export async function GET(req: NextRequest) {
                 where: { orgId: integration.orgId },
                 data: { syncStatus: "error", lastError: r.error },
               })
-              .catch(() => undefined);
+              .catch((e) => logSyncStatusWriteFailure(integration.orgId, e));
           }
           return {
             orgId: integration.orgId,
@@ -153,7 +167,7 @@ export async function GET(req: NextRequest) {
               where: { orgId: integration.orgId },
               data: { syncStatus: "error", lastError: message },
             })
-            .catch(() => undefined);
+            .catch((e) => logSyncStatusWriteFailure(integration.orgId, e));
           return { orgId: integration.orgId, ok: false, error: message };
         }
       }
@@ -167,7 +181,7 @@ export async function GET(req: NextRequest) {
               where: { orgId: integration.orgId },
               data: { syncStatus: "idle", lastSyncAt: new Date(), lastError: null },
             })
-            .catch(() => undefined);
+            .catch((e) => logSyncStatusWriteFailure(integration.orgId, e));
         }
         return {
           orgId: integration.orgId,

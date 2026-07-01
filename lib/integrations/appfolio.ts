@@ -103,6 +103,7 @@ export async function probeEmbedScrape(
         "User-Agent": USER_AGENT,
         Accept: "text/html,application/xhtml+xml",
       },
+      signal: AbortSignal.timeout(APPFOLIO_FETCH_TIMEOUT_MS),
     });
     if (!response.ok) {
       return {
@@ -136,6 +137,7 @@ async function fetchEmbedScrape(
       "User-Agent": USER_AGENT,
       Accept: "text/html,application/xhtml+xml",
     },
+    signal: AbortSignal.timeout(APPFOLIO_FETCH_TIMEOUT_MS),
   });
   if (!response.ok) {
     throw new Error(`AppFolio listings HTML returned ${response.status}`);
@@ -398,6 +400,9 @@ export async function fetchAppfolioV1Showings(
 //     the phase silently — see per-phase try/catch in appfolio-sync.ts.
 //   - everything else: returned as-is for the caller to decide
 const RETRY_DELAY_MS = 2000;
+/** Per-request AppFolio fetch timeout. A hung report request otherwise leaves
+ *  the sync stuck in syncStatus='syncing' until the Vercel function is killed. */
+const APPFOLIO_FETCH_TIMEOUT_MS = 15000;
 
 function shouldRetryStatus(status: number): boolean {
   if (status === 429) return true;
@@ -422,13 +427,17 @@ async function doAppFolioPost(
     },
     body: JSON.stringify(body),
   };
-  let response = await fetch(url, opts);
+  // Fresh per-attempt timeout: a hung AppFolio report request otherwise never
+  // rejects and leaves the sync stuck in syncStatus='syncing' until Vercel
+  // kills the function. AbortSignal.timeout is created per fetch so the retry
+  // gets its own full budget rather than sharing the first attempt's clock.
+  let response = await fetch(url, { ...opts, signal: AbortSignal.timeout(APPFOLIO_FETCH_TIMEOUT_MS) });
   if (shouldRetryStatus(response.status)) {
     console.warn(
       `[appfolio] POST ${reportName ?? "report"} returned ${response.status}, retrying once in ${RETRY_DELAY_MS}ms`
     );
     await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
-    response = await fetch(url, opts);
+    response = await fetch(url, { ...opts, signal: AbortSignal.timeout(APPFOLIO_FETCH_TIMEOUT_MS) });
   } else if (response.status === 404) {
     // Skip silently — caller wraps this in a per-phase try/catch that
     // logs the warning. Don't retry, don't escalate, don't pollute the
@@ -455,13 +464,15 @@ async function doAppFolioGet(
       "User-Agent": USER_AGENT,
     },
   };
-  let response = await fetch(url, opts);
+  // Fresh per-attempt timeout — see doAppFolioPost. Prevents a hung GET
+  // (report fetch or pagination page) from wedging the sync open.
+  let response = await fetch(url, { ...opts, signal: AbortSignal.timeout(APPFOLIO_FETCH_TIMEOUT_MS) });
   if (shouldRetryStatus(response.status)) {
     console.warn(
       `[appfolio] GET ${reportName ?? "page"} returned ${response.status}, retrying once in ${RETRY_DELAY_MS}ms`
     );
     await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
-    response = await fetch(url, opts);
+    response = await fetch(url, { ...opts, signal: AbortSignal.timeout(APPFOLIO_FETCH_TIMEOUT_MS) });
   } else if (response.status === 404) {
     // Pagination cursor 404s are common when AppFolio's metadata_id TTL
     // expires between pages. fetchAllPages already restarts the full
