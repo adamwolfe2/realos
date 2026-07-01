@@ -20,6 +20,7 @@ export type SourceCategory =
   | "social" // Organic social referrers
   | "owned" // Our own capture surfaces — chatbot, forms, pixel, email
   | "referral" // Generic inbound referral
+  | "leasing" // Leasing / PMS pipeline import (AppFolio) — not a marketing channel
   | "direct" // Type-in / bookmark / untagged
   | "other";
 
@@ -85,6 +86,14 @@ export const CANONICAL_SOURCES: CanonicalSource[] = [
   { id: "web_form", label: "Web form", category: "owned", color: "#1D4ED8", logo: "web_form", matchHosts: [], matchUtm: ["form", "webform"] },
   { id: "pixel_outreach", label: "Pixel outreach", category: "owned", color: "#7C3AED", logo: "pixel_outreach", matchHosts: [], matchUtm: ["pixel", "pixel-outreach"] },
   { id: "email", label: "Email", category: "owned", color: "#0EA5E9", logo: "email", matchHosts: ["mail.google.", "outlook."], matchUtm: ["email", "newsletter", "drip", "cold-email"] },
+
+  // --- Leasing / PMS pipeline ---------------------------------------------
+  // AppFolio-synced leads (existing residents + PMS-originated prospects) are a
+  // FIRST-CLASS lane, not marketing "Other". For AppFolio-driven operators this
+  // is the bulk of the pipeline, so it gets its own distinct teal stream. Never
+  // matched from referrer/UTM — assigned explicitly when a lead has an
+  // externalSystem (see getLeadFlow).
+  { id: "appfolio", label: "AppFolio / Leasing", category: "leasing", color: "#0F766E", logo: "appfolio", matchHosts: [], matchUtm: [] },
 
   // --- Catch-alls ----------------------------------------------------------
   { id: "referral", label: "Referral", category: "referral", color: "#6B7280", logo: "referral", matchHosts: [], matchUtm: ["referral"] },

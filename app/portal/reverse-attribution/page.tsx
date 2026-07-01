@@ -126,6 +126,15 @@ export default async function ReverseAttributionPage({
         />
       </section>
 
+      {reverse.identifiedCount === 0 ? (
+        <div className="rounded-lg border border-dashed border-border bg-muted/20 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
+          Pixel identity resolution is off for this workspace, so individual
+          visits aren&apos;t matched to names on this page yet. Channel-level
+          reverse attribution below still works from referrers, UTMs, and
+          PMS-synced (AppFolio) leads.
+        </div>
+      ) : null}
+
       <ReverseAttributionView
         sources={reverse.graph.sources}
         landings={reverse.graph.landings}

@@ -103,7 +103,7 @@ export function LeadFlowDiagram({
             {totalLeads.toLocaleString()}
           </div>
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-            attributed leads · {totalSessions.toLocaleString()} sessions
+            leads mapped · {totalSessions.toLocaleString()} sessions
           </div>
         </div>
       </div>
@@ -114,8 +114,10 @@ export function LeadFlowDiagram({
             <span className="font-mono font-semibold text-foreground">
               {imported.leads.toLocaleString()}
             </span>{" "}
-            imported leads (AppFolio sync, no marketing channel) are excluded
-            from attribution above.
+            {imported.leads === 1 ? "lead" : "leads"} couldn&apos;t be matched to
+            any channel or PMS source and {imported.leads === 1 ? "is" : "are"}{" "}
+            excluded from the flow above. AppFolio-synced leads now appear as
+            their own leasing lane.
           </span>
         </div>
       ) : null}
