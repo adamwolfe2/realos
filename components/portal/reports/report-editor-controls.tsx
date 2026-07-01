@@ -118,18 +118,33 @@ export function ReportEditorControls({
   return (
     <section data-no-print className="space-y-4">
       <div className="flex items-start justify-between gap-3 flex-wrap">
-        <p className="text-xs text-muted-foreground">
-          Numbers are frozen. Your headline and note are the human layer your
-          client reads first.
-        </p>
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground">
+            Numbers are frozen. Your headline and note are the human layer your
+            client reads first.
+          </p>
+          {status === "shared" && shareUrl ? (
+            <p className="text-xs text-muted-foreground">
+              Live link (never a PDF):{" "}
+              <a
+                href={shareUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-primary underline underline-offset-2"
+              >
+                {shareUrl}
+              </a>
+            </p>
+          ) : null}
+        </div>
         <div className="flex items-center gap-2">
           {status === "shared" && shareUrl ? (
             <button
               type="button"
               onClick={handleCopyLink}
-              className="inline-flex items-center rounded-md border border-border bg-white px-3 py-2 text-sm font-medium hover:bg-muted"
+              className="inline-flex items-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
-              {copied ? "Copied" : "Copy share link"}
+              {copied ? "Link copied" : "Copy public link"}
             </button>
           ) : null}
           {status !== "shared" ? (
