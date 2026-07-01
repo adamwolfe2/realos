@@ -34,6 +34,12 @@ export function getStripeClient(): Stripe {
     _stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
       apiVersion: STRIPE_API_VERSION,
       typescript: true,
+      // Bound every Stripe API call so a slow/hung Stripe response can't
+      // pin a webhook or checkout handler open until Vercel kills the
+      // function. maxNetworkRetries adds Stripe's own idempotent retry on
+      // transient network errors.
+      timeout: 20000,
+      maxNetworkRetries: 2,
       appInfo: {
         name: BRAND_NAME,
         version: "1.0.0",

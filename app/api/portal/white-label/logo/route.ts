@@ -214,12 +214,12 @@ export async function DELETE() {
     await delPublic(existing.whiteLabelLogoUrl).catch(() => undefined);
   }
 
-  await prisma.organization
-    .update({
-      where: { id: scope.orgId },
-      data: { whiteLabelLogoUrl: null },
-    })
-    .catch(() => undefined);
+  // Do NOT swallow: a swallowed failure here reports a successful logo delete
+  // while the DB still points at the (now-deleted) blob. Let it throw → 500.
+  await prisma.organization.update({
+    where: { id: scope.orgId },
+    data: { whiteLabelLogoUrl: null },
+  });
 
   await prisma.auditEvent
     .create({

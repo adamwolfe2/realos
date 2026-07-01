@@ -10,6 +10,7 @@ import { CopySnippetButton } from "./copy-snippet";
 import { DisconnectPixelForm } from "./integration-forms";
 import { CursiveWebhookBadge } from "@/components/portal/integrations/cursive-webhook-badge";
 import { CursiveSetupWizard } from "@/components/portal/integrations/cursive-setup-wizard";
+import { PixelInstallCheck } from "@/components/portal/integrations/pixel-install-check";
 import { PixelRequestStatus } from "@prisma/client";
 import {
   ConnectAppfolioForm,
@@ -587,6 +588,8 @@ function PixelManage({
           </p>
         </div>
       ) : null}
+
+      <PixelInstallCheck />
 
       <DisconnectPixelForm />
     </div>

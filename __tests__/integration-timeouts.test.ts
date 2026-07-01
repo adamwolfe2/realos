@@ -17,6 +17,7 @@ const files = [
   "lib/integrations/al-segments.ts",
   "lib/integrations/vercel-domains.ts",
   "lib/intelligence/perplexity-research.ts",
+  "lib/integrations/appfolio.ts",
 ];
 
 describe("external integration fetch() calls have timeouts", () => {

@@ -269,7 +269,12 @@ export async function POST(req: NextRequest) {
           reviewedAt: new Date(),
         },
       })
-      .catch(() => undefined);
+      // If this roll-forward is itself swallowed, the draft is stuck in
+      // GENERATING forever (blocks resubmit). Keep it non-throwing so we still
+      // return the original 502, but log so a stuck draft is diagnosable.
+      .catch((e) =>
+        console.error("[content] failed to roll draft to REJECTED:", e),
+      );
     return NextResponse.json(
       { error: "Generation failed", detail: message, id: placeholder.id },
       { status: 502 },
