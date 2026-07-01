@@ -9,7 +9,6 @@ import {
   requireWritableWorkspace,
   ForbiddenError,
 } from "@/lib/tenancy/scope";
-import { sendPixelRequestOpsEmail } from "@/lib/email/pixel-emails";
 import { OrgType, PixelRequestStatus } from "@prisma/client";
 
 // Portal-side Cursive (the upstream pixel provider) pixel server actions.
@@ -165,44 +164,14 @@ export async function connectPixel(
     };
   }
 
-  const websiteName = parsed.data.websiteName ?? org.name;
-
-  // Look up the requesting user's email so ops can reply directly.
-  const user = await prisma.user.findUnique({
-    where: { id: scope.userId },
-    select: { id: true, email: true },
-  });
-
-  // Idempotent: if a pending request already exists for this org we just
-  // return success rather than queueing duplicates.
-  const existing = await prisma.pixelProvisionRequest.findFirst({
-    where: { orgId: org.id, status: PixelRequestStatus.PENDING },
-    select: { id: true },
-  });
-
-  let requestId = existing?.id;
-  if (!existing) {
-    const created = await prisma.pixelProvisionRequest.create({
-      data: {
-        orgId: org.id,
-        websiteName,
-        websiteUrl: websiteUrl.toString(),
-        requestedByUserId: user?.id ?? null,
-      },
-      select: { id: true },
-    });
-    requestId = created.id;
-
-    // Best-effort ops notification. Don't fail the request if email is down.
-    void sendPixelRequestOpsEmail({
-      orgName: org.name,
-      orgId: org.id,
-      websiteName,
-      websiteUrl: websiteUrl.toString(),
-      requestedByEmail: user?.email ?? null,
-      requestId: created.id,
-    }).catch(() => undefined);
-  }
+  // Legacy human-provisioning queue is RETIRED (Slice 1c). Pixel setup is now
+  // fully self-serve via startCursiveSetup (the Connect Cursive wizard), so
+  // connectPixel no longer mints a pixelProvisionRequest or emails ops — that
+  // 1-business-day handoff was the onboarding bottleneck. Existing PENDING
+  // requests for in-flight legacy orgs are still honored: the admin fulfilment
+  // path (admin-cursive.ts) and the PixelRequestPending view are untouched; we
+  // simply never create another one. With no pending request minted, a fresh
+  // caller falls through the page cascade to the self-serve wizard.
 
   // Pre-create the integration row so installedOnDomain is captured
   // even before ops fulfills. Writes to the row matching the chosen
