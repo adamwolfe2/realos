@@ -117,7 +117,18 @@ async function handleSubscriptionUpserted(
     {};
 
   if (newStatus !== null) {
-    updateData.subscriptionStatus = newStatus;
+    // Same PAUSED guard as handleInvoicePaymentFailed: Stripe's ongoing
+    // `customer.subscription.updated` events carry status=past_due while an
+    // org is on our internal 14-day PAUSED lock. Blocking only the
+    // PAUSED→PAST_DUE downgrade prevents re-arming dunning + unlocking the
+    // read-only gate, while still allowing a genuine PAUSED→ACTIVE (customer
+    // fixed their card in Stripe's portal) or PAUSED→CANCELED to apply.
+    const clobbersPause =
+      org.subscriptionStatus === SubscriptionStatus.PAUSED &&
+      newStatus === SubscriptionStatus.PAST_DUE;
+    if (!clobbersPause) {
+      updateData.subscriptionStatus = newStatus;
+    }
   }
   if (newTier !== null) {
     updateData.subscriptionTier = newTier;
@@ -621,6 +632,18 @@ async function handleInvoicePaymentFailed(
 
   if (!org) return;
 
+  // Do NOT clobber an internal PAUSED with PAST_DUE. After the 14-day-overdue
+  // escalation (billing-reminders cron) sets subscriptionStatus=PAUSED, Stripe
+  // keeps firing invoice.payment_failed on its smart-retry schedule. Reverting
+  // to PAST_DUE re-enrolls the org in the dunning cron (which selects on
+  // PAST_DUE) AND makes resolveTrialState treat it as "paid", silently lifting
+  // the read-only lock the pause promised. Leaving PAUSED is the correct
+  // terminal state until the customer pays (handleInvoicePaid → ACTIVE) or the
+  // subscription is canceled (handleSubscriptionDeleted).
+  if (org.subscriptionStatus === SubscriptionStatus.PAUSED) {
+    return;
+  }
+
   await prisma.organization.update({
     where: { id: org.id },
     data: { subscriptionStatus: SubscriptionStatus.PAST_DUE },
@@ -766,53 +789,59 @@ async function handleCheckoutExpired(
 //   createOrderWithRetry({ quoteId, sessionId })
 async function handlePaymentIntentSucceeded(
   intent: Stripe.PaymentIntent,
+  eventId: string,
+  eventType: string,
 ): Promise<void> {
-  try {
-    const stripeCustomerId =
-      typeof intent.customer === "string"
-        ? intent.customer
-        : intent.customer?.id;
-    if (!stripeCustomerId) return;
+  const stripeCustomerId =
+    typeof intent.customer === "string"
+      ? intent.customer
+      : intent.customer?.id;
+  if (!stripeCustomerId) return;
 
-    const org = await prisma.organization.findUnique({
-      where: { stripeCustomerId },
-      select: { id: true, buildFeePaidCents: true },
-    });
-    if (!org) return;
+  const org = await prisma.organization.findUnique({
+    where: { stripeCustomerId },
+    select: { id: true },
+  });
+  if (!org) return;
 
-    // Website-build fee path — credit the org so the build CTA flips
-    // to "kickoff scheduled".
-    if (intent.metadata?.kind === "website_build") {
-      await prisma.organization.update({
-        where: { id: org.id },
+  // Wrap the money-state write + audit in a first-write-wins dedupe fence.
+  // Previously this handler swallowed ALL errors and returned void, so the
+  // outer dispatcher 200'd and Stripe never retried — a failed audit insert
+  // silently dropped the credit for a PAID website-build fee. Now the writes
+  // either both commit (once) or roll back and re-throw so Stripe retries;
+  // the ProcessedStripeEvent row makes the retry a no-op instead of a
+  // double-credit. The credit itself uses an atomic `increment` so there is
+  // no read-modify-write race across concurrent deliveries.
+  await processStripeEventOnce(
+    { eventId, eventType, orgId: org.id },
+    async (tx) => {
+      // Website-build fee path — credit the org so the build CTA flips
+      // to "kickoff scheduled".
+      if (intent.metadata?.kind === "website_build") {
+        await tx.organization.update({
+          where: { id: org.id },
+          data: {
+            buildFeePaidCents: { increment: intent.amount_received },
+          },
+        });
+      }
+
+      await tx.auditEvent.create({
         data: {
-          buildFeePaidCents:
-            (org.buildFeePaidCents ?? 0) + intent.amount_received,
+          orgId: org.id,
+          action: AuditAction.UPDATE,
+          entityType: "Organization",
+          entityId: org.id,
+          description: `payment_intent ${intent.id} succeeded — $${(intent.amount_received / 100).toFixed(2)}`,
+          diff: {
+            paymentIntentId: intent.id,
+            amountReceivedCents: intent.amount_received,
+            kind: intent.metadata?.kind ?? null,
+          },
         },
       });
-    }
-
-    await prisma.auditEvent.create({
-      data: {
-        orgId: org.id,
-        action: AuditAction.UPDATE,
-        entityType: "Organization",
-        entityId: org.id,
-        description: `payment_intent ${intent.id} succeeded — $${(intent.amount_received / 100).toFixed(2)}`,
-        diff: {
-          paymentIntentId: intent.id,
-          amountReceivedCents: intent.amount_received,
-          kind: intent.metadata?.kind ?? null,
-        },
-      },
-    });
-  } catch (err) {
-    console.error("payment_intent.succeeded handler failed", err);
-    captureWithContext(err, {
-      route: "api/webhooks/stripe",
-      handler: "handlePaymentIntentSucceeded",
-    });
-  }
+    },
+  );
 }
 
 // `payment_intent.payment_failed` — the customer's card was declined on
@@ -821,48 +850,49 @@ async function handlePaymentIntentSucceeded(
 // don't double-charge.
 async function handlePaymentIntentFailed(
   intent: Stripe.PaymentIntent,
+  eventId: string,
+  eventType: string,
 ): Promise<void> {
-  try {
-    const stripeCustomerId =
-      typeof intent.customer === "string"
-        ? intent.customer
-        : intent.customer?.id;
-    if (!stripeCustomerId) return;
+  const stripeCustomerId =
+    typeof intent.customer === "string"
+      ? intent.customer
+      : intent.customer?.id;
+  if (!stripeCustomerId) return;
 
-    const org = await prisma.organization.findUnique({
-      where: { stripeCustomerId },
-      select: { id: true },
-    });
-    if (!org) return;
+  const org = await prisma.organization.findUnique({
+    where: { stripeCustomerId },
+    select: { id: true },
+  });
+  if (!org) return;
 
-    const errorMsg =
-      intent.last_payment_error?.message ?? "payment_failed";
+  const errorMsg =
+    intent.last_payment_error?.message ?? "payment_failed";
 
-    await prisma.auditEvent.create({
-      data: {
-        orgId: org.id,
-        action: AuditAction.UPDATE,
-        entityType: "Organization",
-        entityId: org.id,
-        description: `payment_intent ${intent.id} failed: ${errorMsg}`,
-        diff: {
-          paymentIntentId: intent.id,
-          amountCents: intent.amount,
-          errorMsg,
+  // Dedupe-fenced so a failed insert re-throws (→ outer 500 → Stripe retry)
+  // instead of being swallowed and losing the failure audit record.
+  await processStripeEventOnce(
+    { eventId, eventType, orgId: org.id },
+    async (tx) => {
+      await tx.auditEvent.create({
+        data: {
+          orgId: org.id,
+          action: AuditAction.UPDATE,
+          entityType: "Organization",
+          entityId: org.id,
+          description: `payment_intent ${intent.id} failed: ${errorMsg}`,
+          diff: {
+            paymentIntentId: intent.id,
+            amountCents: intent.amount,
+            errorMsg,
+          },
         },
-      },
-    });
+      });
+    },
+  );
 
-    // sendDisputeAlertEmail / sendPaymentReceivedEmail are not used here;
-    // ops alerting on hard failures happens via the daily billing-
-    // reminders cron which queries audit events tagged "payment_failed".
-  } catch (err) {
-    console.error("payment_intent.payment_failed handler failed", err);
-    captureWithContext(err, {
-      route: "api/webhooks/stripe",
-      handler: "handlePaymentIntentFailed",
-    });
-  }
+  // sendDisputeAlertEmail / sendPaymentReceivedEmail are not used here;
+  // ops alerting on hard failures happens via the daily billing-
+  // reminders cron which queries audit events tagged "payment_failed".
 }
 
 // `charge.refunded` — partial or full refund issued from the Stripe
@@ -870,74 +900,88 @@ async function handlePaymentIntentFailed(
 // sendRefundConfirmationEmail({ orgId, amountCents, reason }) so they
 // have a paper trail. No automatic subscription downgrade — that's a
 // manual decision for the agency owner.
-async function handleChargeRefunded(charge: Stripe.Charge): Promise<void> {
-  try {
-    // Marketplace charges don't have a corresponding Organization row.
-    // The marketplace handler returns true if it owned the charge.
-    const { handleMarketplaceChargeRefunded } = await import(
-      "@/lib/marketplace/webhook-handlers"
-    );
-    const handledByMarketplace = await handleMarketplaceChargeRefunded(charge);
-    if (handledByMarketplace) return;
+async function handleChargeRefunded(
+  charge: Stripe.Charge,
+  eventId: string,
+  eventType: string,
+): Promise<void> {
+  // Marketplace charges don't have a corresponding Organization row.
+  // The marketplace handler returns true if it owned the charge (and runs
+  // its own idempotency guard).
+  const { handleMarketplaceChargeRefunded } = await import(
+    "@/lib/marketplace/webhook-handlers"
+  );
+  const handledByMarketplace = await handleMarketplaceChargeRefunded(charge);
+  if (handledByMarketplace) return;
 
-    const stripeCustomerId =
-      typeof charge.customer === "string"
-        ? charge.customer
-        : charge.customer?.id;
-    if (!stripeCustomerId) return;
+  const stripeCustomerId =
+    typeof charge.customer === "string"
+      ? charge.customer
+      : charge.customer?.id;
+  if (!stripeCustomerId) return;
 
-    const org = await prisma.organization.findUnique({
-      where: { stripeCustomerId },
-      select: { id: true },
-    });
-    if (!org) return;
+  const org = await prisma.organization.findUnique({
+    where: { stripeCustomerId },
+    select: { id: true },
+  });
+  if (!org) return;
 
-    await prisma.auditEvent.create({
-      data: {
-        orgId: org.id,
-        action: AuditAction.UPDATE,
-        entityType: "Organization",
-        entityId: org.id,
-        description: `charge ${charge.id} refunded — $${(charge.amount_refunded / 100).toFixed(2)}`,
-        diff: {
-          chargeId: charge.id,
-          amountRefundedCents: charge.amount_refunded,
-          reason: charge.refunds?.data[0]?.reason ?? null,
+  // Dedupe-fenced: a failed audit insert now re-throws so Stripe retries the
+  // refund record instead of the handler swallowing it and 200-ing.
+  // sendRefundConfirmationEmail wiring lands with the order subsystem.
+  await processStripeEventOnce(
+    { eventId, eventType, orgId: org.id },
+    async (tx) => {
+      await tx.auditEvent.create({
+        data: {
+          orgId: org.id,
+          action: AuditAction.UPDATE,
+          entityType: "Organization",
+          entityId: org.id,
+          description: `charge ${charge.id} refunded — $${(charge.amount_refunded / 100).toFixed(2)}`,
+          diff: {
+            chargeId: charge.id,
+            amountRefundedCents: charge.amount_refunded,
+            reason: charge.refunds?.data[0]?.reason ?? null,
+          },
         },
-      },
-    });
-  } catch (err) {
-    console.error("charge.refunded handler failed", err);
-    captureWithContext(err, {
-      route: "api/webhooks/stripe",
-      handler: "handleChargeRefunded",
-    });
-  }
+      });
+    },
+  );
 }
 
 // `charge.dispute.created` — chargeback opened. Highest-urgency event
 // in this file: notify ops immediately via sendDisputeAlertEmail so
 // they can submit evidence inside Stripe's response window.
-async function handleDisputeCreated(dispute: Stripe.Dispute): Promise<void> {
-  try {
-    const stripeCustomerId =
-      typeof dispute.charge === "string"
-        ? null
-        : dispute.charge?.customer
-          ? typeof dispute.charge.customer === "string"
-            ? dispute.charge.customer
-            : dispute.charge.customer.id
-          : null;
+async function handleDisputeCreated(
+  dispute: Stripe.Dispute,
+  eventId: string,
+  eventType: string,
+): Promise<void> {
+  const stripeCustomerId =
+    typeof dispute.charge === "string"
+      ? null
+      : dispute.charge?.customer
+        ? typeof dispute.charge.customer === "string"
+          ? dispute.charge.customer
+          : dispute.charge.customer.id
+        : null;
 
-    const org = stripeCustomerId
-      ? await prisma.organization.findUnique({
-          where: { stripeCustomerId },
-          select: { id: true },
-        })
-      : null;
+  const org = stripeCustomerId
+    ? await prisma.organization.findUnique({
+        where: { stripeCustomerId },
+        select: { id: true },
+      })
+    : null;
 
-    if (org) {
-      await prisma.auditEvent.create({
+  if (!org) return;
+
+  // Dedupe-fenced so the chargeback record survives a transient insert
+  // failure (re-throw → outer 500 → Stripe retry) instead of being lost.
+  await processStripeEventOnce(
+    { eventId, eventType, orgId: org.id },
+    async (tx) => {
+      await tx.auditEvent.create({
         data: {
           orgId: org.id,
           action: AuditAction.UPDATE,
@@ -952,38 +996,41 @@ async function handleDisputeCreated(dispute: Stripe.Dispute): Promise<void> {
           },
         },
       });
-    }
-  } catch (err) {
-    console.error("charge.dispute.created handler failed", err);
-    captureWithContext(err, {
-      route: "api/webhooks/stripe",
-      handler: "handleDisputeCreated",
-    });
-  }
+    },
+  );
 }
 
 // `charge.dispute.closed` — dispute resolved (won or lost). Log the
 // outcome so finance can reconcile.
-async function handleDisputeClosed(dispute: Stripe.Dispute): Promise<void> {
-  try {
-    const stripeCustomerId =
-      typeof dispute.charge === "string"
-        ? null
-        : dispute.charge?.customer
-          ? typeof dispute.charge.customer === "string"
-            ? dispute.charge.customer
-            : dispute.charge.customer.id
-          : null;
+async function handleDisputeClosed(
+  dispute: Stripe.Dispute,
+  eventId: string,
+  eventType: string,
+): Promise<void> {
+  const stripeCustomerId =
+    typeof dispute.charge === "string"
+      ? null
+      : dispute.charge?.customer
+        ? typeof dispute.charge.customer === "string"
+          ? dispute.charge.customer
+          : dispute.charge.customer.id
+        : null;
 
-    const org = stripeCustomerId
-      ? await prisma.organization.findUnique({
-          where: { stripeCustomerId },
-          select: { id: true },
-        })
-      : null;
+  const org = stripeCustomerId
+    ? await prisma.organization.findUnique({
+        where: { stripeCustomerId },
+        select: { id: true },
+      })
+    : null;
 
-    if (org) {
-      await prisma.auditEvent.create({
+  if (!org) return;
+
+  // Dedupe-fenced so the resolution record survives a transient insert
+  // failure (re-throw → outer 500 → Stripe retry) instead of being lost.
+  await processStripeEventOnce(
+    { eventId, eventType, orgId: org.id },
+    async (tx) => {
+      await tx.auditEvent.create({
         data: {
           orgId: org.id,
           action: AuditAction.UPDATE,
@@ -996,14 +1043,8 @@ async function handleDisputeClosed(dispute: Stripe.Dispute): Promise<void> {
           },
         },
       });
-    }
-  } catch (err) {
-    console.error("charge.dispute.closed handler failed", err);
-    captureWithContext(err, {
-      route: "api/webhooks/stripe",
-      handler: "handleDisputeClosed",
-    });
-  }
+    },
+  );
 }
 
 // ============================================================================
@@ -1772,25 +1813,41 @@ export async function POST(req: NextRequest) {
       case "payment_intent.succeeded":
         await handlePaymentIntentSucceeded(
           event.data.object as Stripe.PaymentIntent,
+          event.id,
+          event.type,
         );
         break;
 
       case "payment_intent.payment_failed":
         await handlePaymentIntentFailed(
           event.data.object as Stripe.PaymentIntent,
+          event.id,
+          event.type,
         );
         break;
 
       case "charge.refunded":
-        await handleChargeRefunded(event.data.object as Stripe.Charge);
+        await handleChargeRefunded(
+          event.data.object as Stripe.Charge,
+          event.id,
+          event.type,
+        );
         break;
 
       case "charge.dispute.created":
-        await handleDisputeCreated(event.data.object as Stripe.Dispute);
+        await handleDisputeCreated(
+          event.data.object as Stripe.Dispute,
+          event.id,
+          event.type,
+        );
         break;
 
       case "charge.dispute.closed":
-        await handleDisputeClosed(event.data.object as Stripe.Dispute);
+        await handleDisputeClosed(
+          event.data.object as Stripe.Dispute,
+          event.id,
+          event.type,
+        );
         break;
 
       case "customer.created":

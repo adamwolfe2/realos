@@ -201,3 +201,60 @@ describe("Stripe webhook — app/api/webhooks/stripe/route.ts", () => {
     expect(content).toContain("createOrderWithRetry");
   });
 });
+
+describe("Stripe webhook — money/audit writes must not be swallowed (Batch A)", () => {
+  it("payment_intent/charge/dispute handlers no longer swallow errors", () => {
+    const content = readRoute();
+    // Regression: these five handlers used to wrap their body in try/catch
+    // that only logged + returned void, so the outer dispatcher 200'd and
+    // Stripe never retried — silently dropping a PAID build-fee credit and
+    // the refund/dispute audit trail. The swallow markers must stay gone.
+    expect(content).not.toContain("payment_intent.succeeded handler failed");
+    expect(content).not.toContain("payment_intent.payment_failed handler failed");
+    expect(content).not.toContain("charge.refunded handler failed");
+    expect(content).not.toContain("charge.dispute.created handler failed");
+    expect(content).not.toContain("charge.dispute.closed handler failed");
+  });
+
+  it("credits the website-build fee via an atomic increment (no read-modify-write)", () => {
+    const content = readRoute();
+    // Atomic increment avoids a double-credit race across concurrent
+    // deliveries AND removes the pre-read that made retries unsafe.
+    expect(content).toMatch(/buildFeePaidCents:\s*\{\s*increment:/);
+    // The old non-idempotent `(org.buildFeePaidCents ?? 0) + amount` pattern
+    // must not come back.
+    expect(content).not.toMatch(/\(org\.buildFeePaidCents\s*\?\?\s*0\)\s*\+/);
+  });
+
+  it("money/audit handlers dispatch through the processStripeEventOnce dedupe fence", () => {
+    const content = readRoute();
+    // A retry after a partial write must be a no-op, not a double side effect.
+    expect(content).toContain("processStripeEventOnce");
+    // The dispatcher must thread event.id into these handlers so the fence
+    // has a stable idempotency key.
+    expect(content).toMatch(
+      /handlePaymentIntentSucceeded\([\s\S]*?event\.id/,
+    );
+  });
+});
+
+describe("Stripe webhook — paused-dunning enforcement (Batch B)", () => {
+  it("invoice.payment_failed does not clobber an internal PAUSED with PAST_DUE", () => {
+    const content = readRoute();
+    // After the 14-day escalation sets PAUSED, Stripe's smart-retry
+    // payment_failed deliveries must NOT revert the org to PAST_DUE (which
+    // re-arms dunning and lifts the read-only lock).
+    expect(content).toMatch(
+      /if\s*\(\s*org\.subscriptionStatus\s*===\s*SubscriptionStatus\.PAUSED\s*\)\s*\{\s*return/,
+    );
+  });
+
+  it("subscription.updated only blocks the PAUSED->PAST_DUE downgrade", () => {
+    const content = readRoute();
+    // Guard is scoped: PAUSED->ACTIVE / PAUSED->CANCELED still apply.
+    expect(content).toContain("clobbersPause");
+    expect(content).toMatch(
+      /org\.subscriptionStatus\s*===\s*SubscriptionStatus\.PAUSED\s*&&\s*newStatus\s*===\s*SubscriptionStatus\.PAST_DUE/,
+    );
+  });
+});
