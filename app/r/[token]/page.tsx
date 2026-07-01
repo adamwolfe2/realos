@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { ReportView } from "@/components/portal/reports/report-view";
+import { PropertyHeroBanner } from "@/components/portal/properties/property-hero-banner";
+import { PropertyOnePager } from "@/components/portal/reports/property-one-pager";
 import { PrintButton } from "@/components/portal/reports/print-button";
-import { PrintExpander } from "@/components/portal/reports/print-expander";
 import { isValidShareToken } from "@/lib/reports/token";
 import { loadPropertyHero } from "@/lib/reports/load-property-hero";
 import type { ReportSnapshot } from "@/lib/reports/generate";
+import type { PropertyMeta } from "@/components/portal/reports/snapshot-shared";
 
 export const metadata: Metadata = {
   title: "Performance report",
@@ -21,6 +22,17 @@ export const dynamic = "force-dynamic";
 // Unauthenticated. Looks up ClientReport by shareToken; 404s unless status is
 // "shared". On success, increments viewCount + lastViewedAt so the operator
 // can see who's engaging with which report.
+//
+// Layout (2026-07-01): the shared link now renders the BEAUTIFUL one-pager
+// (PropertyOnePager) instead of the busy tabbed ReportView shell. Composition,
+// top to bottom:
+//   1. PropertyHeroBanner — Norman's May-22 requirement: the building image
+//      pinned at the top (loadPropertyHero resolves the scoped/flagship
+//      property). Portfolio-wide reports without any property fall through.
+//   2. Operator headline + personal note — the human layer the client reads
+//      first, authored in the report editor.
+//   3. PropertyOnePager — the single-page Marketing & Performance Snapshot.
+//   4. Public framing footer.
 // ---------------------------------------------------------------------------
 
 export default async function PublicReportPage({
@@ -65,15 +77,22 @@ export default async function PublicReportPage({
 
   const snapshot = report.snapshot as unknown as ReportSnapshot;
 
-  // Norman feedback (May 22): the shared report should open with the
-  // property's building image pinned at the top — same hero treatment
-  // as the main dashboard's Featured Property card. loadPropertyHero
-  // resolves the scoped property when the snapshot is property-scoped,
-  // and falls back to the org's flagship property (most leads this
-  // period, then most-occupied, then any LIVE property) for portfolio-
-  // wide reports so even the "all properties" view leads with a
-  // building photo instead of plain text.
+  // Building image pinned at the top — same hero treatment as the main
+  // dashboard's Featured Property card. Resolves the scoped property for
+  // property-scoped reports, or the org's flagship for portfolio-wide ones.
   const propertyHero = await loadPropertyHero(snapshot, report.orgId);
+
+  // PropertyOnePager needs a property label. Prefer the snapshot's own scope,
+  // then the resolved hero, then the org name for portfolio-wide reports.
+  const property: PropertyMeta = {
+    name:
+      snapshot.scope?.propertyName ??
+      propertyHero?.propertyName ??
+      report.org?.name ??
+      "Portfolio",
+  };
+
+  const hasOperatorNote = Boolean(report.headline || report.notes);
 
   return (
     <div className="min-h-screen bg-[var(--parchment)] py-4 sm:py-10 px-2 sm:px-4">
@@ -83,35 +102,7 @@ export default async function PublicReportPage({
             @media print {
               [data-no-print] { display: none !important; }
               body { background: #ffffff !important; }
-              .report-article section, .report-article header {
-                box-shadow: none !important;
-                break-inside: avoid;
-              }
               a { color: inherit; text-decoration: none; }
-              /* Skip the on-load animations entirely when printing.
-                 PDF exporters render the keyframe START state and end
-                 up with empty bars / undrawn lines if we don't snap
-                 them to their final values here. */
-              .report-article *,
-              .report-article *::before,
-              .report-article *::after {
-                animation: none !important;
-                transition: none !important;
-                opacity: 1 !important;
-                transform: none !important;
-                stroke-dashoffset: 0 !important;
-              }
-              /* Tab chrome is on-screen-only. Every tab panel renders
-                 in print so PDFs include the whole report. */
-              .ls-report-tab-strip { display: none !important; }
-              .ls-report-tabpanel[hidden],
-              .ls-report-tabpanel[data-active="false"] {
-                display: block !important;
-              }
-              .ls-insight-group details summary > span:last-child,
-              .ls-insight-group details summary > span.group-open\\:inline {
-                display: none !important;
-              }
             }
           `,
         }}
@@ -122,16 +113,70 @@ export default async function PublicReportPage({
           <PrintButton />
         </div>
 
-        <PrintExpander />
-        <ReportView
-          snapshot={snapshot}
-          headline={report.headline}
-          notes={report.notes}
-          orgName={report.org?.name ?? null}
-          orgLogoUrl={report.org?.logoUrl ?? null}
-          publicFraming
-          propertyHero={propertyHero}
-        />
+        {propertyHero ? (
+          <PropertyHeroBanner
+            propertyId={propertyHero.propertyId}
+            propertyName={propertyHero.propertyName}
+            subtitle={propertyHero.subtitle}
+            heroImageUrl={propertyHero.heroImageUrl}
+            imageOffsetX={propertyHero.imageOffsetX ?? 0}
+            imageOffsetY={propertyHero.imageOffsetY ?? 0}
+            imageScale={propertyHero.imageScale ?? 1}
+            editable={false}
+            compact
+            stats={[
+              {
+                label: "Captured · period",
+                value: (
+                  snapshot.kpis.leads + (snapshot.kpis.identifiedVisitors ?? 0)
+                ).toLocaleString("en-US"),
+                hint: `${snapshot.kpis.leads} form + ${snapshot.kpis.identifiedVisitors ?? 0} visitors`,
+              },
+              {
+                label: snapshot.aeoStats ? "AI search · cited" : "Tours · period",
+                value: snapshot.aeoStats
+                  ? `${snapshot.aeoStats.cited}/${snapshot.aeoStats.totalChecks}`
+                  : snapshot.kpis.tours.toLocaleString("en-US"),
+                hint: snapshot.aeoStats
+                  ? `${snapshot.aeoStats.enginesUsed.length} engines`
+                  : undefined,
+              },
+              {
+                label: "Reputation",
+                value:
+                  propertyHero.googleAggRating != null
+                    ? `${propertyHero.googleAggRating.toFixed(1)}★`
+                    : snapshot.reputationStats?.overallRating != null
+                      ? `${snapshot.reputationStats.overallRating.toFixed(1)}★`
+                      : "—",
+                hint: snapshot.reputationStats?.totalReviews
+                  ? `${snapshot.reputationStats.totalReviews} reviews`
+                  : undefined,
+              },
+            ]}
+          />
+        ) : null}
+
+        {hasOperatorNote ? (
+          <section className="mx-auto w-full max-w-[880px] rounded-2xl border border-border bg-card p-6 shadow-sm">
+            {report.headline ? (
+              <p className="text-lg font-semibold leading-snug text-foreground">
+                {report.headline}
+              </p>
+            ) : null}
+            {report.notes ? (
+              <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+                {report.notes}
+              </p>
+            ) : null}
+          </section>
+        ) : null}
+
+        <PropertyOnePager snapshot={snapshot} property={property} />
+
+        <footer className="pt-2 text-center text-[11px] text-muted-foreground">
+          Generated by LeaseStack on behalf of {report.org?.name ?? "your operator"}.
+        </footer>
       </div>
     </div>
   );
