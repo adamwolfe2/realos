@@ -31,11 +31,18 @@ export async function GET(req: NextRequest) {
       now.getTime() - 14 * 24 * 60 * 60 * 1000
     );
 
+    // Bound the batch: every sibling cron caps its scan (lead-nurture 200,
+    // lapsed-leads 500, …). Without a take, a signup burst loads the entire
+    // 14-day window into memory and serializes N email+update round-trips
+    // against the function's maxDuration. Oldest-first so the most overdue
+    // submissions are always handled; the remainder self-heal next tick.
     const submissions = await prisma.intakeSubmission.findMany({
       where: {
         status: { notIn: ["converted", "rejected", "archived"] },
         submittedAt: { gte: fourteenDaysAgo },
       },
+      orderBy: { submittedAt: "asc" },
+      take: 500,
     });
 
     const platformDomain =
