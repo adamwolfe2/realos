@@ -4,6 +4,7 @@ import {
   type PropertyType,
   type ResidentialSubtype,
 } from "@prisma/client";
+import { Card } from "@/components/ui/card";
 
 // ---------------------------------------------------------------------------
 // Sidebar — property meta card.
@@ -62,7 +63,7 @@ export function PropertyMetaCard({
   if (rows.length === 0) return null;
 
   return (
-    <section className="rounded-xl border border-border bg-card p-4 md:p-5">
+    <Card className="p-4 md:p-5 gap-0 shadow-none">
       <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
         Property
       </p>
@@ -79,6 +80,6 @@ export function PropertyMetaCard({
           </div>
         ))}
       </dl>
-    </section>
+    </Card>
   );
 }

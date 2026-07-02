@@ -1,5 +1,6 @@
 import { Building2 } from "lucide-react";
 import { formatAge } from "./helpers";
+import { Card } from "@/components/ui/card";
 
 // Compact "Property in onboarding" card. Renders in place of the dense
 // dashboard layout for AppFolio-imported rows that haven't been activated.
@@ -20,7 +21,7 @@ export function OnboardingShellCard({
     ? `Last synced ${formatAge(lastSyncedAt)}`
     : "Not synced yet";
   return (
-    <section className="rounded-xl border border-border bg-card p-5 md:p-6">
+    <Card className="p-5 md:p-6 gap-0 shadow-none">
       <div className="flex items-start gap-4 flex-wrap">
         <div className="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-muted text-muted-foreground shrink-0">
           <Building2 className="h-5 w-5" aria-hidden="true" />
@@ -62,6 +63,6 @@ export function OnboardingShellCard({
           </div>
         </div>
       </div>
-    </section>
+    </Card>
   );
 }

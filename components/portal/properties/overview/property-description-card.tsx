@@ -1,3 +1,5 @@
+import { Card } from "@/components/ui/card";
+
 export function PropertyDescriptionCard({
   description,
   priceRange,
@@ -6,7 +8,7 @@ export function PropertyDescriptionCard({
   priceRange: string | null;
 }) {
   return (
-    <section className="rounded-xl border border-border bg-card p-4 md:p-5">
+    <Card className="p-4 md:p-5 gap-0 shadow-none">
       <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
         Listing
       </p>
@@ -21,6 +23,6 @@ export function PropertyDescriptionCard({
           {description}
         </p>
       ) : null}
-    </section>
+    </Card>
   );
 }

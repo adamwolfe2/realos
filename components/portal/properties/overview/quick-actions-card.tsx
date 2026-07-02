@@ -1,5 +1,6 @@
 import { ExternalLink, Pencil, Settings } from "lucide-react";
 import { type BackendPlatform } from "@prisma/client";
+import { Card } from "@/components/ui/card";
 
 // ---------------------------------------------------------------------------
 // Sidebar — quick actions.
@@ -15,7 +16,7 @@ export function QuickActionsCard({
   const showAppFolioLink = backendPlatform === "APPFOLIO";
 
   return (
-    <section className="rounded-xl border border-border bg-card p-4 md:p-5">
+    <Card className="p-4 md:p-5 gap-0 shadow-none">
       <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
         Quick actions
       </p>
@@ -61,6 +62,6 @@ export function QuickActionsCard({
           </a>
         </li>
       </ul>
-    </section>
+    </Card>
   );
 }
