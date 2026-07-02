@@ -46,8 +46,16 @@ export default async function WhiteLabelPage() {
   if (!org) return null;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <PageHeader
+        eyebrow={
+          <Link
+            href="/portal/settings"
+            className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+          >
+            <span aria-hidden="true">←</span> Settings
+          </Link>
+        }
         title="White-label workspace"
         description="Strip LeaseStack branding from the portal, your public tenant marketing site, and outbound email display name + footer. Your sending mailbox stays the same for deliverability."
       />

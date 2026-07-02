@@ -37,7 +37,7 @@ export default async function ApiKeysPage() {
   const revoked = keys.filter((k) => k.revokedAt);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <PageHeader
         eyebrow={
           <Link

@@ -88,7 +88,7 @@ export default async function SettingsPage() {
   const onCount = modules.filter(([, v]) => v).length;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <PageHeader
         title="Settings"
         description="Update company info and brand tokens. Module selection and plan tier are managed by your account manager."
@@ -168,8 +168,8 @@ export default async function SettingsPage() {
         />
       </div>
 
-      <section className="rounded-xl border border-border bg-card p-6 shadow-sm">
-        <header className="flex items-start justify-between gap-3 mb-5">
+      <section className="rounded-xl border border-border bg-card p-5">
+        <header className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-start gap-2.5">
             <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted text-muted-foreground">
               <Boxes className="size-4" aria-hidden="true" />
@@ -218,9 +218,9 @@ export default async function SettingsPage() {
 
       <section
         id="team"
-        className="rounded-xl border border-border bg-card p-6 shadow-sm scroll-mt-24"
+        className="rounded-xl border border-border bg-card p-5 scroll-mt-24"
       >
-        <header className="flex items-start justify-between gap-3 mb-5">
+        <header className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-start gap-2.5">
             <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted text-muted-foreground">
               <Users className="size-4" aria-hidden="true" />

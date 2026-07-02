@@ -392,7 +392,7 @@ export default async function ConversationsList({
               <InlineTranscript conversationId={validSelectedId} />
             </Suspense>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-10 text-center bg-secondary/20">
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-secondary/20">
               <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-3">
                 <MessageSquare className="h-5 w-5 text-muted-foreground" />
               </div>

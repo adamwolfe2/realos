@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
@@ -412,6 +413,14 @@ export default async function IntegrationsPage({
   return (
     <div className="space-y-6">
       <PageHeader
+        eyebrow={
+          <Link
+            href="/portal/settings"
+            className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+          >
+            <span aria-hidden="true">←</span> Settings
+          </Link>
+        }
         title="Integrations"
         description="Connect the tools that feed your portal. New integrations unlock automatically as your account team activates them for you."
       />

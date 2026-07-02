@@ -78,8 +78,8 @@ export default async function ChatbotInsightsPage({
             className={cn(
               "rounded-full px-3 py-1 text-[12px] font-semibold ring-1 ring-inset transition",
               p.days === periodDays
-                ? "bg-primary text-white ring-primary"
-                : "bg-white text-muted-foreground ring-border hover:ring-primary/40",
+                ? "bg-primary text-primary-foreground ring-primary"
+                : "bg-card text-muted-foreground ring-border hover:ring-primary/40",
             )}
           >
             {p.label}
