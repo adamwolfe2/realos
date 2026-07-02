@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyCronAuth } from "@/lib/cron/auth";
 import { recordCronRun } from "@/lib/health/cron-run";
@@ -17,6 +17,13 @@ export async function GET(req: NextRequest) {
     const { count } = await prisma.processedStripeEvent.deleteMany({
       where: { processedAt: { lt: cutoff } },
     });
-    return { result: { deleted: count, cutoff: cutoff.toISOString() } };
+    return {
+      result: NextResponse.json({
+        ok: true,
+        deleted: count,
+        cutoff: cutoff.toISOString(),
+      }),
+      recordsProcessed: count,
+    };
   });
 }
