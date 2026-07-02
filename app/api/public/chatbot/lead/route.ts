@@ -9,10 +9,9 @@ import {
   Prisma,
 } from "@prisma/client";
 import {
-  publicApiLimiter,
+  chatbotLeadLimiter,
   checkRateLimit,
   getIp,
-  WIDGET_FALLBACK,
 } from "@/lib/rate-limit";
 import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
 import { notifyChatbotLeadCaptured } from "@/lib/notifications/create";
@@ -67,13 +66,13 @@ export function OPTIONS() {
 
 export async function POST(req: NextRequest) {
   const ip = getIp(req);
-  const { allowed } = await checkRateLimit(publicApiLimiter, ip, {
-    softFallback: WIDGET_FALLBACK.publicApi,
-  });
+  // Fail-closed: no softFallback. Lead capture creates DB rows and fires
+  // operator notifications — missing Redis is a hard stop, not a soft pass.
+  const { allowed } = await checkRateLimit(chatbotLeadLimiter, `chatbot-lead:${ip}`);
   if (!allowed) {
     return NextResponse.json(
       { error: "Too many requests" },
-      { status: 429, headers: { ...CORS_HEADERS, "Retry-After": "60" } }
+      { status: 429, headers: { ...CORS_HEADERS, "Retry-After": "3600" } }
     );
   }
 

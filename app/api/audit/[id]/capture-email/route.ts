@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import {
+  auditEmailCaptureLimiter,
+  checkRateLimit,
+  getIp,
+} from "@/lib/rate-limit";
 
 // POST /api/audit/[id]/capture-email
 // Public. Captures a prospect email against an existing ProspectAudit
@@ -19,6 +24,21 @@ export async function POST(
   req: NextRequest,
   ctx: { params: Promise<{ id: string }> },
 ) {
+  // Rate-limit per IP — fail-closed. No captureToken column exists yet
+  // (migration deferred); this + idempotency (409 below) are the lightweight
+  // mitigations against drive-by email injection on known audit UUIDs.
+  const ip = getIp(req);
+  const { allowed } = await checkRateLimit(
+    auditEmailCaptureLimiter,
+    `audit-email:${ip}`,
+  );
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429, headers: { "Retry-After": "3600" } },
+    );
+  }
+
   const { id } = await ctx.params;
 
   let body: unknown;
@@ -37,10 +57,18 @@ export async function POST(
 
   const audit = await prisma.prospectAudit.findUnique({
     where: { id },
-    select: { id: true },
+    select: { id: true, email: true },
   });
   if (!audit) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  // Idempotency: reject changes once an email has been captured.
+  if (audit.email !== null) {
+    return NextResponse.json(
+      { error: "Email already captured for this audit" },
+      { status: 409 },
+    );
   }
 
   await prisma.prospectAudit.update({

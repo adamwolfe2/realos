@@ -98,6 +98,19 @@ export const adminReadLimiter = createLimiter(redis, 30, '1 m')
 // 120 pixel/JS asset requests per IP per minute (high-volume CDN-cached asset)
 export const pixelAssetLimiter = createLimiter(redis, 120, '1 m')
 
+// 10 audit email-capture attempts per IP per hour. Public, unauthenticated
+// endpoint — any known audit UUID can receive an email update without a
+// capture token (migration deferred). Rate limit + idempotency (409 if
+// already captured) are the lightweight mitigations until a captureToken
+// column is added in a future migration.
+export const auditEmailCaptureLimiter = createLimiter(redis, 10, '1 h')
+
+// 10 chatbot pre-chat lead submissions per IP per hour. Lead-capture POSTs
+// are security-critical (they create Lead rows and fire operator notifications);
+// they must NOT use softFallback. Tight cap stops form-spam / scraper abuse
+// without affecting legitimate visitors (a real user submits the form once).
+export const chatbotLeadLimiter = createLimiter(redis, 10, '1 h')
+
 // 600 chatbot config lookups per IP per minute. The widget on every
 // tenant site fires this on page load, and many real visitors share an
 // IP (campus WiFi, mobile carriers, corporate NAT). 30/min was
