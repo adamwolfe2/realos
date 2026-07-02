@@ -244,7 +244,7 @@ export function MarketplaceClient({
   }, [allToggleableKeys, enabled]);
 
   return (
-    <div className="min-h-screen">
+    <div>
       {/* Header — canonical PageHeader. The marketing voice (serif "Welcome
           to ___. Build your stack.") moved to the marketing site; here the
           header reads as operator chrome. Activation progress sits in a
@@ -291,7 +291,7 @@ export function MarketplaceClient({
 
       {/* Categories — each group anchored by a SectionLabel for cohesion
           with the rest of the portal (no more serif inline H2s). */}
-      <section className="space-y-10">
+      <section className="space-y-6">
         {grouped.map((group) =>
           group.modules.length === 0 ? null : (
             <div key={group.category}>
@@ -368,7 +368,7 @@ function ModuleCard({
   const stripeColor = isComing
     ? "transparent"
     : isEnabled
-      ? "linear-gradient(90deg, #2563EB, #60A5FA)"
+      ? "linear-gradient(90deg, var(--color-primary), #60A5FA)"
       : isIncluded || isAddon || isConcierge
         ? "linear-gradient(90deg, rgba(37,99,235,0.85), rgba(96,165,250,0.85))"
         : "linear-gradient(90deg, rgba(37,99,235,0.35), rgba(96,165,250,0.35))";
@@ -376,7 +376,7 @@ function ModuleCard({
   return (
     <article
       className={[
-        "ls-card relative p-5 flex flex-col overflow-hidden",
+        "ls-card relative p-4 flex flex-col overflow-hidden",
         isComing ? "opacity-80" : "",
       ].join(" ")}
       style={{ minHeight: 144 }}
@@ -390,11 +390,10 @@ function ModuleCard({
       {/* Header — icon + title + status pill */}
       <div className="flex items-start gap-3">
         <div
-          className="inline-flex items-center justify-center w-9 h-9 rounded-lg shrink-0 ring-1 ring-inset"
+          className="inline-flex items-center justify-center w-9 h-9 rounded-lg shrink-0 ring-1 ring-inset text-primary"
           style={{
             background:
               "linear-gradient(180deg, rgba(37,99,235,0.10), rgba(37,99,235,0.04))",
-            color: "#2563EB",
             boxShadow: "0 1px 0 rgba(255,255,255,0.7) inset",
             opacity: isComing ? 0.6 : 1,
           }}
@@ -465,7 +464,7 @@ function ModuleCard({
       {/* Footer — flex-end aligned. Logos + price on the left, CTA on the
           right. No bullets, no separators, no "INTEGRATES WITH" label —
           the logos speak for themselves at this size. */}
-      <div className="mt-auto pt-4 flex items-center justify-between gap-2">
+      <div className="mt-auto pt-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           {m.brandLogoKeys && m.brandLogoKeys.length > 0 ? (
             <div className="flex items-center gap-1 shrink-0">
