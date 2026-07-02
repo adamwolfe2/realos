@@ -351,6 +351,13 @@ model Organization {
   subscriptionStatus    SubscriptionStatus?
   subscriptionStartedAt DateTime?
   mrrCents              Int?                @default(0)
+  // Surfaced on the billing page as an amber cancellation banner when the
+  // operator has scheduled a cancellation through the Stripe portal but
+  // the period has not yet ended. Cleared automatically when the webhook
+  // fires with cancel_at_period_end=false (reactivation) or subscription
+  // deleted (handleSubscriptionDeleted).
+  cancelAtPeriodEnd     Boolean             @default(false)
+  currentPeriodEnd      DateTime?
   buildFeePaidCents     Int?                @default(0)
   adSpendMarkupPct      Float?              @default(0.15) // 15% default
 

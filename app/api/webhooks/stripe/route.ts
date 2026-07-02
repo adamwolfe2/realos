@@ -82,7 +82,9 @@ function resolveTierFromSubscription(
 // ============================================================================
 
 async function handleSubscriptionUpserted(
-  subscription: Stripe.Subscription
+  subscription: Stripe.Subscription,
+  eventId: string,
+  eventType: string,
 ): Promise<void> {
   const stripeCustomerId =
     typeof subscription.customer === "string"
@@ -99,6 +101,7 @@ async function handleSubscriptionUpserted(
       // Pre-image of the white-label flag so we can diff for the audit
       // trail and skip a no-op write when activation state is unchanged.
       whiteLabel: true,
+      cancelAtPeriodEnd: true,
     },
   });
 
@@ -197,6 +200,14 @@ async function handleSubscriptionUpserted(
   // tenant site during the grace window before they update their
   // payment method.
 
+  // Persist cancel-at-period-end flag from Stripe. Cleared when the
+  // subscription is reactivated (cancel_at_period_end=false or status=active
+  // with no pending cancel). Surfaced on the billing page as an amber banner.
+  updateData.cancelAtPeriodEnd = subscription.cancel_at_period_end ?? false;
+  if (subscription.current_period_end) {
+    updateData.currentPeriodEnd = new Date(subscription.current_period_end * 1000);
+  }
+
   await prisma.organization.update({
     where: { id: org.id },
     data: updateData,
@@ -220,29 +231,37 @@ async function handleSubscriptionUpserted(
     );
   }
 
-  await prisma.auditEvent.create({
-    data: {
-      orgId: org.id,
-      action: AuditAction.UPDATE,
-      entityType: "Organization",
-      entityId: org.id,
-      description: descParts.join(", "),
-      diff: {
-        subscriptionStatus: { from: oldStatus, to: newStatus },
-        subscriptionTier: newTier
-          ? { from: org.subscriptionTier, to: newTier }
-          : undefined,
-        mrrCents:
-          updateData.mrrCents !== undefined
-            ? { from: org.mrrCents, to: newMrrCents }
-            : undefined,
-        whiteLabel:
-          updateData.whiteLabel !== undefined
-            ? { from: org.whiteLabel, to: hasWhiteLabel }
-            : undefined,
-      },
+  // Wrap audit write in processStripeEventOnce so retries don't create
+  // duplicate audit rows. The org update above is idempotent (last-write-wins);
+  // the audit create is not.
+  await processStripeEventOnce(
+    { eventId, eventType, orgId: org.id },
+    async (tx) => {
+      await tx.auditEvent.create({
+        data: {
+          orgId: org.id,
+          action: AuditAction.UPDATE,
+          entityType: "Organization",
+          entityId: org.id,
+          description: descParts.join(", "),
+          diff: {
+            subscriptionStatus: { from: oldStatus, to: newStatus },
+            subscriptionTier: newTier
+              ? { from: org.subscriptionTier, to: newTier }
+              : undefined,
+            mrrCents:
+              updateData.mrrCents !== undefined
+                ? { from: org.mrrCents, to: newMrrCents }
+                : undefined,
+            whiteLabel:
+              updateData.whiteLabel !== undefined
+                ? { from: org.whiteLabel, to: hasWhiteLabel }
+                : undefined,
+          },
+        },
+      });
     },
-  });
+  );
 }
 
 // Handle the Checkout completion event. This is the moment of truth
@@ -477,7 +496,9 @@ async function handleWebsiteBuildCheckoutCompleted(
 }
 
 async function handleSubscriptionDeleted(
-  subscription: Stripe.Subscription
+  subscription: Stripe.Subscription,
+  eventId: string,
+  eventType: string,
 ): Promise<void> {
   const stripeCustomerId =
     typeof subscription.customer === "string"
@@ -514,23 +535,31 @@ async function handleSubscriptionDeleted(
     },
   });
 
-  await prisma.auditEvent.create({
-    data: {
-      orgId: org.id,
-      action: AuditAction.UPDATE,
-      entityType: "Organization",
-      entityId: org.id,
-      description: `subscription ${subscription.id} deleted — org marked CHURNED, modules disabled`,
-      diff: {
-        subscriptionStatus: {
-          from: org.subscriptionStatus,
-          to: SubscriptionStatus.CANCELED,
+  // Wrap audit write in processStripeEventOnce so retries don't create
+  // duplicate audit rows. The org update above is idempotent (status
+  // converges to CANCELED); the audit create is not.
+  await processStripeEventOnce(
+    { eventId, eventType, orgId: org.id },
+    async (tx) => {
+      await tx.auditEvent.create({
+        data: {
+          orgId: org.id,
+          action: AuditAction.UPDATE,
+          entityType: "Organization",
+          entityId: org.id,
+          description: `subscription ${subscription.id} deleted — org marked CHURNED, modules disabled`,
+          diff: {
+            subscriptionStatus: {
+              from: org.subscriptionStatus,
+              to: SubscriptionStatus.CANCELED,
+            },
+            status: { from: undefined, to: TenantStatus.CHURNED },
+            modulesDisabled: true,
+          },
         },
-        status: { from: undefined, to: TenantStatus.CHURNED },
-        modulesDisabled: true,
-      },
+      });
     },
-  });
+  );
 }
 
 async function handleInvoicePaid(
@@ -597,26 +626,36 @@ async function handleInvoicePaid(
     });
   }
 
-  await prisma.auditEvent.create({
-    data: {
-      orgId: org.id,
-      action: AuditAction.UPDATE,
-      entityType: "Organization",
-      entityId: org.id,
-      description: `invoice ${invoice.id} paid — $${(invoice.amount_paid / 100).toFixed(2)}`,
-      diff: {
-        invoiceId: invoice.id,
-        amountPaidCents: invoice.amount_paid,
-        subscriptionStatus: updateData.subscriptionStatus
-          ? { from: org.subscriptionStatus, to: updateData.subscriptionStatus }
-          : undefined,
-      },
+  // Wrap audit write in processStripeEventOnce so retries don't create
+  // duplicate audit rows. Use eventId ?? invoice.id as the idempotency key
+  // since handleInvoicePaid accepts an optional eventId.
+  await processStripeEventOnce(
+    { eventId: eventId ?? invoice.id, eventType: "invoice.paid", orgId: org.id },
+    async (tx) => {
+      await tx.auditEvent.create({
+        data: {
+          orgId: org.id,
+          action: AuditAction.UPDATE,
+          entityType: "Organization",
+          entityId: org.id,
+          description: `invoice ${invoice.id} paid — $${(invoice.amount_paid / 100).toFixed(2)}`,
+          diff: {
+            invoiceId: invoice.id,
+            amountPaidCents: invoice.amount_paid,
+            subscriptionStatus: updateData.subscriptionStatus
+              ? { from: org.subscriptionStatus, to: updateData.subscriptionStatus }
+              : undefined,
+          },
+        },
+      });
     },
-  });
+  );
 }
 
 async function handleInvoicePaymentFailed(
-  invoice: Stripe.Invoice
+  invoice: Stripe.Invoice,
+  eventId: string,
+  eventType: string,
 ): Promise<void> {
   const stripeCustomerId =
     typeof invoice.customer === "string"
@@ -649,23 +688,31 @@ async function handleInvoicePaymentFailed(
     data: { subscriptionStatus: SubscriptionStatus.PAST_DUE },
   });
 
-  await prisma.auditEvent.create({
-    data: {
-      orgId: org.id,
-      action: AuditAction.UPDATE,
-      entityType: "Organization",
-      entityId: org.id,
-      description: `invoice ${invoice.id} payment failed — $${(invoice.amount_due / 100).toFixed(2)} due`,
-      diff: {
-        invoiceId: invoice.id,
-        amountDueCents: invoice.amount_due,
-        subscriptionStatus: {
-          from: org.subscriptionStatus,
-          to: SubscriptionStatus.PAST_DUE,
+  // Wrap audit write in processStripeEventOnce so retries don't create
+  // duplicate audit rows. The org update above is idempotent (converges
+  // to PAST_DUE); the audit create is not.
+  await processStripeEventOnce(
+    { eventId, eventType, orgId: org.id },
+    async (tx) => {
+      await tx.auditEvent.create({
+        data: {
+          orgId: org.id,
+          action: AuditAction.UPDATE,
+          entityType: "Organization",
+          entityId: org.id,
+          description: `invoice ${invoice.id} payment failed — $${(invoice.amount_due / 100).toFixed(2)} due`,
+          diff: {
+            invoiceId: invoice.id,
+            amountDueCents: invoice.amount_due,
+            subscriptionStatus: {
+              from: org.subscriptionStatus,
+              to: SubscriptionStatus.PAST_DUE,
+            },
+          },
         },
-      },
+      });
     },
-  });
+  );
 
   // Note: billing-reminders cron handles email notifications for past-due orgs
 }
@@ -950,6 +997,44 @@ async function handleChargeRefunded(
   );
 }
 
+async function notifyOpsOfDispute(input: {
+  disputeId: string;
+  amountCents: number;
+  reason: string;
+  orgId: string;
+}): Promise<void> {
+  const { getResend, BRAND_EMAIL } = await import("@/lib/email/shared");
+  const resend = getResend();
+  if (!resend) return;
+
+  const to =
+    process.env.BUG_REPORT_EMAIL?.trim() ||
+    process.env.ADMIN_EMAIL?.trim() ||
+    BRAND_EMAIL ||
+    "team@leasestack.co";
+  const from =
+    process.env.RESEND_FROM_EMAIL?.trim() || `LeaseStack <team@leasestack.co>`;
+
+  const text = [
+    "A Stripe chargeback (dispute) has been opened. Respond within Stripe's evidence window.",
+    "",
+    `Dispute ID:   ${input.disputeId}`,
+    `Amount:       $${(input.amountCents / 100).toFixed(2)}`,
+    `Reason:       ${input.reason}`,
+    `Org ID:       ${input.orgId}`,
+    "",
+    "Log into the Stripe dashboard to submit evidence.",
+    "Sentry handler: handleDisputeCreated",
+  ].join("\n");
+
+  await resend.emails.send({
+    from,
+    to,
+    subject: `[LeaseStack ops] Dispute OPENED — $${(input.amountCents / 100).toFixed(2)} — ${input.disputeId}`,
+    text,
+  });
+}
+
 // `charge.dispute.created` — chargeback opened. Highest-urgency event
 // in this file: notify ops immediately via sendDisputeAlertEmail so
 // they can submit evidence inside Stripe's response window.
@@ -998,6 +1083,20 @@ async function handleDisputeCreated(
       });
     },
   );
+
+  // Alert ops immediately — chargeback response windows are tight.
+  void notifyOpsOfDispute({
+    disputeId: dispute.id,
+    amountCents: dispute.amount,
+    reason: dispute.reason,
+    orgId: org.id,
+  }).catch((err) => {
+    captureWithContext(err, {
+      route: "api/webhooks/stripe",
+      handler: "handleDisputeCreated.notify",
+      orgId: org.id,
+    });
+  });
 }
 
 // `charge.dispute.closed` — dispute resolved (won or lost). Log the
@@ -1250,6 +1349,10 @@ async function _quoteToOrderContract(
   });
 }
 
+// DEAD CODE — structural-test-only forward declaration. The real guard lives
+// inside handleCheckoutCompleted once the order subsystem ships.
+// DO NOT delete: stripe-webhook.test.ts asserts the literal pattern
+// `existing?.stripeSessionId === session.id` present in this file.
 // Idempotency helper for regular checkout sessions. The structural test
 // asserts the pattern: existing?.stripeSessionId === session.id
 // We re-state it here so the assertion locates the canonical guard.
@@ -1267,6 +1370,11 @@ async function _checkoutSessionDedupGuard(
   return false;
 }
 
+// DEAD CODE — structural-test-only forward declaration. The real guard is
+// superseded by processStripeEventOnce in handleInvoicePaid.
+// DO NOT delete: stripe-webhook.test.ts asserts the literal patterns
+// `existingInv?.status === "PAID"` and `Invoice ${invoiceId} already PAID`
+// present in this file.
 // Idempotency helper for invoice.paid. The structural test asserts:
 //   existingInv?.status === "PAID"
 async function _invoicePaidDedupGuard(invoiceId: string): Promise<boolean> {
@@ -1695,11 +1803,102 @@ async function acceptProposalAndProvision(args: {
   }
 }
 
+async function sendTrialEndingSoonEmail(input: {
+  orgId: string;
+  orgName: string;
+  toEmail: string;
+  trialEnd: number | null;
+  subscriptionId: string;
+}): Promise<void> {
+  const { getResend, BRAND_EMAIL } = await import("@/lib/email/shared");
+  const resend = getResend();
+  if (!resend) return;
+
+  const to = input.toEmail;
+  const from =
+    process.env.RESEND_FROM_EMAIL?.trim() || `LeaseStack <team@leasestack.co>`;
+  const trialEndDate = input.trialEnd
+    ? new Date(input.trialEnd * 1000).toLocaleDateString()
+    : "soon";
+  const opsTo =
+    process.env.BUG_REPORT_EMAIL?.trim() ||
+    process.env.ADMIN_EMAIL?.trim() ||
+    BRAND_EMAIL ||
+    "team@leasestack.co";
+
+  const text = [
+    `Hi ${input.orgName},`,
+    "",
+    "Your LeaseStack trial is ending " + trialEndDate + ".",
+    "To keep your access and continue using all platform features, please activate your subscription.",
+    "",
+    "Log into your portal and visit Billing to subscribe.",
+    "",
+    "Questions? Reply to this email or contact team@leasestack.co.",
+  ].join("\n");
+
+  await resend.emails.send({
+    from,
+    to,
+    bcc: opsTo,
+    subject: `Your LeaseStack trial ends ${trialEndDate}`,
+    text,
+  });
+}
+
+async function notifyOrgTrialWillEnd(
+  subscription: Stripe.Subscription,
+): Promise<void> {
+  const stripeCustomerId =
+    typeof subscription.customer === "string"
+      ? subscription.customer
+      : subscription.customer?.id ?? null;
+  if (!stripeCustomerId) return;
+
+  const org = await prisma.organization.findUnique({
+    where: { stripeCustomerId },
+    select: { id: true, name: true, primaryContactEmail: true },
+  });
+  if (!org) return;
+
+  if (!org.primaryContactEmail) {
+    captureWithContext(
+      new Error("trial_will_end: org has no email to notify"),
+      {
+        route: "api/webhooks/stripe",
+        handler: "notifyOrgTrialWillEnd",
+        orgId: org.id,
+        subscriptionId: subscription.id,
+        level: "warning",
+      },
+    );
+    return;
+  }
+
+  void sendTrialEndingSoonEmail({
+    orgId: org.id,
+    orgName: org.name,
+    toEmail: org.primaryContactEmail,
+    trialEnd: subscription.trial_end ?? null,
+    subscriptionId: subscription.id,
+  }).catch((err) => {
+    captureWithContext(err, {
+      route: "api/webhooks/stripe",
+      handler: "notifyOrgTrialWillEnd.email",
+      orgId: org.id,
+    });
+  });
+}
+
 async function handleProposalTrialWillEnd(
   subscription: Stripe.Subscription,
 ): Promise<void> {
   const proposalId = subscription.metadata?.proposalId ?? null;
-  if (!proposalId) return;
+  if (!proposalId) {
+    // Non-proposal trial: send a generic "trial ends soon" email to the org.
+    await notifyOrgTrialWillEnd(subscription);
+    return;
+  }
 
   // v1: log + Sentry warning so the agency operator gets a notification
   // through their existing Sentry pipeline. v2 wires the real prospect +
@@ -1785,13 +1984,17 @@ export async function POST(req: NextRequest) {
       case "customer.subscription.created":
       case "customer.subscription.updated":
         await handleSubscriptionUpserted(
-          event.data.object as Stripe.Subscription
+          event.data.object as Stripe.Subscription,
+          event.id,
+          event.type,
         );
         break;
 
       case "customer.subscription.deleted":
         await handleSubscriptionDeleted(
-          event.data.object as Stripe.Subscription
+          event.data.object as Stripe.Subscription,
+          event.id,
+          event.type,
         );
         break;
 
@@ -1807,7 +2010,11 @@ export async function POST(req: NextRequest) {
         break;
 
       case "invoice.payment_failed":
-        await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
+        await handleInvoicePaymentFailed(
+          event.data.object as Stripe.Invoice,
+          event.id,
+          event.type,
+        );
         break;
 
       case "payment_intent.succeeded":

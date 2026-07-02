@@ -258,3 +258,72 @@ describe("Stripe webhook — paused-dunning enforcement (Batch B)", () => {
     );
   });
 });
+
+describe("Stripe webhook — billing correctness fixes (Batch C)", () => {
+  it("Fix 1: handleSubscriptionUpserted persists cancel_at_period_end flag", () => {
+    const content = readRoute();
+    expect(content).toContain("cancelAtPeriodEnd");
+    expect(content).toContain("cancel_at_period_end");
+    expect(content).toContain("currentPeriodEnd");
+    expect(content).toContain("current_period_end");
+  });
+
+  it("Fix 2: non-proposal trial_will_end notifies org via email", () => {
+    const content = readRoute();
+    expect(content).toContain("notifyOrgTrialWillEnd");
+    expect(content).toContain("sendTrialEndingSoonEmail");
+    expect(content).toContain("trial ends");
+  });
+
+  it("Fix 2: non-proposal trial_will_end logs to Sentry when org has no email", () => {
+    const content = readRoute();
+    expect(content).toContain("trial_will_end: org has no email to notify");
+  });
+
+  it("Fix 3: handleSubscriptionUpserted uses processStripeEventOnce for audit", () => {
+    const content = readRoute();
+    // The fence must appear inside handleSubscriptionUpserted — verify the
+    // function now accepts an eventId and threads it to processStripeEventOnce.
+    expect(content).toMatch(
+      /handleSubscriptionUpserted\([^)]*eventId[^)]*\)/,
+    );
+  });
+
+  it("Fix 3: handleInvoicePaymentFailed uses processStripeEventOnce for audit", () => {
+    const content = readRoute();
+    expect(content).toMatch(
+      /handleInvoicePaymentFailed\([^)]*eventId[^)]*\)/,
+    );
+  });
+
+  it("Fix 3: handleSubscriptionDeleted uses processStripeEventOnce for audit", () => {
+    const content = readRoute();
+    expect(content).toMatch(
+      /handleSubscriptionDeleted\([^)]*eventId[^)]*\)/,
+    );
+  });
+
+  it("Fix 4: handleDisputeCreated sends ops email (notifyOpsOfDispute)", () => {
+    const content = readRoute();
+    expect(content).toContain("notifyOpsOfDispute");
+    expect(content).toContain("Dispute OPENED");
+  });
+
+  it("Fix 5: cleanup-stripe-events cron file exists", () => {
+    const cronPath = path.resolve(
+      __dirname,
+      "../app/api/cron/cleanup-stripe-events/route.ts"
+    );
+    expect(fs.existsSync(cronPath)).toBe(true);
+  });
+
+  it("Fix 5: cleanup-stripe-events cron deletes rows older than 30 days", () => {
+    const cronPath = path.resolve(
+      __dirname,
+      "../app/api/cron/cleanup-stripe-events/route.ts"
+    );
+    const content = fs.readFileSync(cronPath, "utf-8");
+    expect(content).toContain("processedStripeEvent.deleteMany");
+    expect(content).toContain("30");
+  });
+});

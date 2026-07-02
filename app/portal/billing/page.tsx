@@ -30,6 +30,8 @@ export default async function BillingPage() {
       trialStartedAt: true,
       trialEndsAt: true,
       mrrCents: true,
+      cancelAtPeriodEnd: true,
+      currentPeriodEnd: true,
       buildFeePaidCents: true,
       adSpendMarkupPct: true,
       stripeCustomerId: true,
@@ -231,6 +233,8 @@ export default async function BillingPage() {
     !org.subscriptionStatus;
 
   const isTrialing = org.subscriptionStatus === "TRIALING";
+  const cancelAtPeriodEnd = org.cancelAtPeriodEnd ?? false;
+  const currentPeriodEnd = org.currentPeriodEnd ?? null;
   const trialEndsAt = org.trialEndsAt ?? null;
   const tierForActivation =
     (org.chosenTier ?? org.subscriptionTier ?? null) as
@@ -272,6 +276,17 @@ export default async function BillingPage() {
           selectedModuleKeys={enabledFeatureKeys}
           perPropertyCents={activationPerPropertyCents}
         />
+      ) : null}
+
+      {cancelAtPeriodEnd && currentPeriodEnd ? (
+        <section className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <p className="text-sm font-semibold text-amber-800">
+            Cancels on {new Date(currentPeriodEnd).toLocaleDateString()}
+          </p>
+          <p className="text-xs text-amber-700 mt-1">
+            Your subscription will not renew after this date. Reactivate from the Stripe portal if this was unintended.
+          </p>
+        </section>
       ) : null}
 
       {billingStatusPending ? (
