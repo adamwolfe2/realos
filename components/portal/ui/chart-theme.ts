@@ -25,6 +25,7 @@ export const CHART_AXIS_TICK = {
   fontSize: 11,
   fontFamily: "var(--font-mono)",
   fill: CHART_COLORS.muted,
+  fontVariantNumeric: "tabular-nums" as const,
 };
 
 export const CHART_GRID_PROPS = {

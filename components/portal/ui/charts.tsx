@@ -31,7 +31,7 @@ export type DonutSlice = { label: string; value: number; color?: string };
 
 export function Donut({
   slices,
-  size = 120,
+  size = 132,
   strokeWidth = 18,
   centerPrimary,
   centerSecondary,

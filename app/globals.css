@@ -952,6 +952,10 @@ body {
 }
 .input::placeholder { color: hsl(var(--muted-foreground) / 0.6); }
 
+/* Tabular-numerals utility — apply to any numeric/metric text where digit
+   alignment across rows matters (stat tiles, data-table cells, chart ticks). */
+.tabnum { font-variant-numeric: tabular-nums; }
+
 /* ---------------------------------------------------------------------------
  * Norman 2026-05-21: marketing copy was wrapping into uneven 3- and 4-line
  * blocks ("Catch the bad reviews / before / your owners do."). text-wrap:
