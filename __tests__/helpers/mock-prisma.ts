@@ -34,6 +34,12 @@ export function createMockPrisma() {
     quote: createModelMock(),
     product: createModelMock(),
     project: createModelMock(),
+    property: createModelMock(),
+    userPropertyAccess: {
+      ...createModelMock(),
+      deleteMany: vi.fn(),
+      createMany: vi.fn(),
+    },
     $transaction: vi.fn(),
   };
 }

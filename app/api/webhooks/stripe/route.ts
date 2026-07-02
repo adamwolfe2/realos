@@ -204,8 +204,9 @@ async function handleSubscriptionUpserted(
   // subscription is reactivated (cancel_at_period_end=false or status=active
   // with no pending cancel). Surfaced on the billing page as an amber banner.
   updateData.cancelAtPeriodEnd = subscription.cancel_at_period_end ?? false;
-  if (subscription.current_period_end) {
-    updateData.currentPeriodEnd = new Date(subscription.current_period_end * 1000);
+  const currentPeriodEnd = subscription.items.data[0]?.current_period_end;
+  if (currentPeriodEnd) {
+    updateData.currentPeriodEnd = new Date(currentPeriodEnd * 1000);
   }
 
   await prisma.organization.update({

@@ -17,6 +17,6 @@ export async function GET(req: NextRequest) {
     const { count } = await prisma.processedStripeEvent.deleteMany({
       where: { processedAt: { lt: cutoff } },
     });
-    return { deleted: count, cutoff: cutoff.toISOString() };
+    return { result: { deleted: count, cutoff: cutoff.toISOString() } };
   });
 }
