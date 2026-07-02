@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
 import { UserRole, OrgType } from "@prisma/client";
+import { timingSafeEqual } from "@/lib/auth/timing-safe";
 
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
@@ -20,7 +21,8 @@ export async function POST(req: NextRequest) {
   }
 
   const { secret } = await req.json().catch(() => ({ secret: "" }));
-  if (!secret || secret !== process.env.BOOTSTRAP_SECRET) {
+  const expected = process.env.BOOTSTRAP_SECRET ?? "";
+  if (!secret || !expected || !timingSafeEqual(secret, expected)) {
     return NextResponse.json({ error: "Invalid secret" }, { status: 403 });
   }
 
