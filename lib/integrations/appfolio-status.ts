@@ -248,24 +248,30 @@ export async function getAppFolioStatus(orgId: string): Promise<AppFolioStatus> 
   // instead of either lying with green "Synced" or screaming red
   // "Failed" for a 5/6-successful run.
   //
-  // Phases that have been *intentionally skipped* (auto-skip after 3
-  // consecutive failures — almost always a plan limitation, e.g.
-  // guest_cards isn't on AppFolio Core) count as accounted-for. Once
-  // every phase has either succeeded OR been deliberately skipped, the
-  // sync is in a steady state and the banner shouldn't keep alarming
-  // every page-load with "completed with warnings."
+  // Two distinct partial conditions:
+  //   1. Transient failure: phasesAccounted < totalPhases AND actionable
+  //      warnings present — some phases failed with recoverable errors.
+  //   2. Plan limitation: unsupportedReports.length > 0 — at least one
+  //      phase has been permanently skipped because the report isn't
+  //      exposed on this AppFolio plan (404). The phases count as
+  //      "accounted for" via phasesSkipped (so phasesAccounted ===
+  //      totalPhases), but the operator still deserves a quiet amber
+  //      notice that leads / showings etc. are not syncing and why.
+  //      Credential change resets these skips (see PATCH /api/tenant/appfolio).
   const phasesAccounted =
     (stats?.phasesCompleted ?? 0) + (stats?.phasesSkipped ?? 0);
-  const hasPhaseFailures =
+  const hasTransientFailures =
     !!stats &&
     phasesAccounted < stats.totalPhases &&
     stats.warnings.length > 0;
-  if (hasPhaseFailures) {
+  const hasPlanLimitations =
+    !!stats && (stats.unsupportedReports?.length ?? 0) > 0;
+  if (hasTransientFailures || hasPlanLimitations) {
     return {
       state: "partial",
       lastSyncAt: integ.lastSyncAt,
       syncStartedAt,
-      lastError: stats.warnings[0] ?? null,
+      lastError: stats!.warnings[0] ?? stats!.unsupportedReports[0] ?? null,
       subdomain: integ.instanceSubdomain ?? null,
       stale,
       stats,
@@ -299,8 +305,22 @@ function parseStats(raw: unknown): AppFolioSyncStatsSummary | null {
   // Split plan-limitation phases (permanent 404 / "not a valid report") out of
   // the actionable warning stream so they never drive the "partial / completed
   // with warnings" banner — they're a capability gap, not a sync problem.
-  const unsupportedReports = allWarnings.filter(isUnsupportedAppfolioWarning);
+  const unsupportedFromWarnings = allWarnings.filter(isUnsupportedAppfolioWarning);
   const warnings = allWarnings.filter((w) => !isUnsupportedAppfolioWarning(w));
+
+  // phaseWarnings: per-phase plan-limitation notices written by the sync
+  // worker for every phase permanently marked "unsupported". These are
+  // stored separately from stats.warnings so they survive lastError being
+  // cleared on partial success and remain visible in the UI even when
+  // phasesCompleted + phasesSkipped === totalPhases (all phases "accounted
+  // for"). Merged with any unsupported warnings from the runtime stream.
+  const storedPhaseWarnings = Array.isArray(r.phaseWarnings)
+    ? (r.phaseWarnings as unknown[]).filter((w): w is string => typeof w === "string")
+    : [];
+  const unsupportedReports = [
+    ...new Set([...unsupportedFromWarnings, ...storedPhaseWarnings]),
+  ];
+
   return {
     residentsUpserted: num("residentsUpserted"),
     leasesUpserted: num("leasesUpserted"),

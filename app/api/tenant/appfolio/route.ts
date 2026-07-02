@@ -141,7 +141,18 @@ export async function PATCH(req: NextRequest) {
     }
     const d = parsed.data;
 
-    const data = {
+    // Detect credential changes that warrant resetting skipped-phase state.
+    // When an operator upgrades their AppFolio plan or rotates credentials,
+    // phases previously marked "unsupported" (permanent 404 / plan limitation)
+    // must be re-evaluated — the new plan may expose those reports. We detect
+    // this by checking whether any credential field is being updated.
+    // Simplest safe signal: if apiKey or instanceSubdomain is being changed,
+    // clear phaseFailures from lastSyncStats so the next sync re-attempts all
+    // phases. This avoids a separate migration or credential-hash comparison.
+    const credentialsChanging =
+      d.instanceSubdomain !== undefined || d.apiKey !== undefined;
+
+    const data: Record<string, unknown> = {
       instanceSubdomain:
         d.instanceSubdomain !== undefined ? d.instanceSubdomain : undefined,
       propertyGroupFilter:
@@ -154,6 +165,22 @@ export async function PATCH(req: NextRequest) {
       apiKeyEncrypted:
         d.apiKey !== undefined ? maybeEncrypt(d.apiKey) : undefined,
     };
+
+    // Credential change: strip phaseFailures (and derived phaseWarnings) from
+    // the persisted stats so the next sync re-evaluates all phases against the
+    // new plan. Leaves all other stats intact (counts, completedAt, etc.) so
+    // the operator's dashboard doesn't blank out during the transition.
+    if (credentialsChanging) {
+      const existing = await prisma.appFolioIntegration.findUnique({
+        where: { orgId: scope.orgId },
+        select: { lastSyncStats: true },
+      });
+      if (existing?.lastSyncStats && typeof existing.lastSyncStats === "object") {
+        const { phaseFailures: _pf, phaseWarnings: _pw, ...rest } =
+          existing.lastSyncStats as Record<string, unknown>;
+        data.lastSyncStats = rest;
+      }
+    }
 
     // Ensure we have a stub row to upsert against.
     const integration = await prisma.appFolioIntegration.upsert({

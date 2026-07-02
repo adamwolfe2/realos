@@ -1135,6 +1135,27 @@ export async function runAppfolioSync(
   // phaseFailures map is persisted so the next run can decide whether to
   // skip a phase that's failed 3+ times in a row (e.g. guest_cards on
   // a Core-plan tenant that doesn't expose that report).
+  //
+  // phaseWarnings: operator-visible summary of every phase that has been
+  // permanently marked "unsupported" (404 / plan limitation). Stored
+  // separately from stats.warnings so parseStats can surface them in
+  // AppFolioStatus.stats.unsupportedReports WITHOUT being filtered by
+  // isUnsupportedAppfolioWarning or counted against actionable-warnings.
+  // This is how the "synced-but-leads-dead" state becomes visible: the
+  // status helper sees unsupportedReports and surfaces a quiet amber note
+  // even when phasesAccounted === totalPhases (all phases are "accounted
+  // for" because the skipped ones increment phasesSkipped).
+  //
+  // Credential reset: cleared when the operator saves new API credentials
+  // via PATCH /api/tenant/appfolio — a plan upgrade changes which reports
+  // are available, so prior "unsupported" verdicts must be re-evaluated.
+  const phaseWarnings: string[] = Object.entries(phaseFailures)
+    .filter(([, entry]) => entry.skipped && entry.reason === "unsupported")
+    .map(([phase, entry]) => {
+      const code = entry.lastError.match(/\b40[04]\b/)?.[0] ?? "plan limitation";
+      return `${phase}: report unavailable on this AppFolio plan (${code}) — upgrade plan or contact AppFolio support to enable this report`;
+    });
+
   const persistedStats: Prisma.InputJsonValue = {
     leadsUpserted: stats.leadsUpserted,
     toursUpserted: stats.toursUpserted,
@@ -1146,6 +1167,7 @@ export async function runAppfolioSync(
     workOrdersUpserted: stats.workOrdersUpserted,
     delinquenciesUpdated: stats.delinquenciesUpdated,
     warnings: stats.warnings.slice(0, 50), // cap to avoid runaway JSON
+    phaseWarnings, // operator-visible per-phase plan-limitation notices
     phasesCompleted,
     phasesSkipped,
     totalPhases,

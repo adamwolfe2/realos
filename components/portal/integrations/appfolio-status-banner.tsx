@@ -122,11 +122,39 @@ export function AppFolioStatusBanner({
   }
 
   if (status.state === "partial") {
-    // Partial-success state. Some phases pulled data, some failed. Don't
-    // render the apocalyptic red "sync failed" banner — that misleads the
-    // operator into thinking the whole integration is broken when in
-    // reality 5 of 6 surfaces are current. Show an amber heads-up with
-    // the specific phase that failed and a retry button.
+    // Partial-success state. Some phases pulled data, some skipped or failed.
+    // Two sub-cases:
+    //   a) Plan limitation only (unsupportedReports > 0, no actionable warnings):
+    //      quiet amber note — the operator's AppFolio plan doesn't expose
+    //      certain reports (e.g. guest_cards on Core). Everything else is fine.
+    //      Saving new credentials auto-resets skipped phases for re-evaluation.
+    //   b) Transient failure or mixed: show the first actionable warning and
+    //      offer a Retry sync button.
+    const hasActionableWarnings = (status.stats?.warnings?.length ?? 0) > 0;
+    const planLimitedPhases = status.stats?.unsupportedReports ?? [];
+    const isPlanLimitationOnly = !hasActionableWarnings && planLimitedPhases.length > 0;
+
+    if (isPlanLimitationOnly) {
+      return (
+        <Banner
+          tone="warn"
+          icon={<AlertTriangle className="h-4 w-4" />}
+          title="Some AppFolio reports are unavailable on your plan."
+          body={`${planLimitedPhases.length} report phase${planLimitedPhases.length === 1 ? "" : "s"} ${
+            planLimitedPhases.length === 1 ? "is" : "are"
+          } not exposed on your AppFolio plan: ${planLimitedPhases.map((w) => w.split(":")[0]).join(", ")}. All other data syncs normally. Upgrade your AppFolio plan and save new credentials to re-enable these reports.`}
+          meta={
+            status.lastSyncAt
+              ? `Last sync ${formatDistanceToNow(status.lastSyncAt, {
+                  addSuffix: true,
+                })}.`
+              : undefined
+          }
+          action={<RunAppFolioSyncButton label="Retry sync" />}
+        />
+      );
+    }
+
     return (
       <Banner
         tone="warn"
