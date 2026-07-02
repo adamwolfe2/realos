@@ -55,24 +55,24 @@ export async function POST(
     );
   }
 
+  // Existence check: distinguishes 404 (audit not found) from 409 (email
+  // already captured). Only selects `id` so we don't read the email field
+  // before the atomic guard below — the TOCTOU window between reading email
+  // and updating it is what we're eliminating.
   const audit = await prisma.prospectAudit.findUnique({
     where: { id },
-    select: { id: true, email: true },
+    select: { id: true },
   });
   if (!audit) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  // Idempotency: reject changes once an email has been captured.
-  if (audit.email !== null) {
-    return NextResponse.json(
-      { error: "Email already captured for this audit" },
-      { status: 409 },
-    );
-  }
-
-  await prisma.prospectAudit.update({
-    where: { id },
+  // Atomic guarded update: only matches rows where email IS NULL, so a
+  // concurrent request that already captured the email will see count === 0
+  // regardless of ordering — eliminating the TOCTOU race between check and
+  // write that the prior findUnique-then-update pattern had.
+  const r = await prisma.prospectAudit.updateMany({
+    where: { id, email: null },
     data: {
       email: parsed.data.email,
       emailCapturedAt: new Date(),
@@ -81,5 +81,12 @@ export async function POST(
       ),
     },
   });
+  if (r.count === 0) {
+    // Audit exists but email field is non-null — already captured.
+    return NextResponse.json(
+      { error: "Email already captured for this audit" },
+      { status: 409 },
+    );
+  }
   return NextResponse.json({ ok: true });
 }

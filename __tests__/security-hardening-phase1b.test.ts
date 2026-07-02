@@ -131,13 +131,20 @@ describe("S3 — audit capture-email mitigation (lightweight path)", () => {
 
   it("returns 409 when email is already captured (idempotency guard)", () => {
     expect(captureEmailSrc).toMatch(/409/);
-    // The guard condition checks audit.email !== null
-    expect(captureEmailSrc).toMatch(/audit\.email\s*!==\s*null/);
+    // The guard is now enforced atomically via updateMany where email: null.
+    // A count === 0 result means the row already had an email — 409.
+    // This is STRONGER than the old audit.email !== null check (which had a
+    // TOCTOU race between read and write). Asserting the atomic pattern here
+    // so a revert to the race-prone pattern will fail the test.
+    expect(captureEmailSrc).toMatch(/r\.count\s*===\s*0/);
   });
 
-  it("selects email field from DB to check idempotency", () => {
-    // The findUnique must select email to power the idempotency check.
-    expect(captureEmailSrc).toMatch(/select:\s*\{[^}]*email:\s*true/);
+  it("uses atomic updateMany with email:null guard to prevent TOCTOU race", () => {
+    // The idempotency fence must use updateMany WHERE email IS NULL so the
+    // check and the write are a single atomic DB operation — the old
+    // findUnique-then-update pattern had a race window between the two ops.
+    expect(captureEmailSrc).toMatch(/updateMany/);
+    expect(captureEmailSrc).toMatch(/email:\s*null/);
   });
 
   it("applies rate limit before DB access", () => {

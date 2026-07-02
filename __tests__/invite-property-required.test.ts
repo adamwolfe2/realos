@@ -270,3 +270,85 @@ describe("S1: invite route — property assignment required for scoped roles", (
     expect(json.ok).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// FIX 2: user upsert + property-access replacement must be atomic
+//
+// Before the fix, user create/update ran OUTSIDE the transaction that wrapped
+// property-access writes. A crash between user create and property-access
+// delete could leave a LEASING_AGENT with zero UserPropertyAccess rows, which
+// scope.ts collapses to `allowedPropertyIds: null` (org-wide access). Now
+// both writes happen inside a single $transaction so they commit or roll back
+// together.
+// ---------------------------------------------------------------------------
+
+describe("FIX 2: invite atomicity — user write and property access in one transaction", () => {
+  it("user create and property-access rows are written inside the same $transaction call", async () => {
+    mockPrisma.property = {
+      findMany: vi.fn().mockResolvedValue([{ id: "prop-atomic" }]),
+    } as unknown as MockPrisma["property"];
+
+    const callOrder: string[] = [];
+
+    // Spy on $transaction to record call order vs direct creates.
+    const originalTx = mockPrisma.$transaction;
+    mockPrisma.$transaction.mockImplementation(
+      async (fn: (tx: MockPrisma) => Promise<unknown>) => {
+        callOrder.push("tx:open");
+        // Inside the tx: wrap each relevant op
+        const txMock: typeof mockPrisma = {
+          ...mockPrisma,
+          user: {
+            ...mockPrisma.user,
+            create: vi.fn().mockImplementation(async (...args) => {
+              callOrder.push("tx:user.create");
+              return mockPrisma.user.create(...args);
+            }),
+          },
+          userPropertyAccess: {
+            deleteMany: vi.fn().mockImplementation(async (...args) => {
+              callOrder.push("tx:upa.deleteMany");
+              return mockPrisma.userPropertyAccess.deleteMany(...args);
+            }),
+            createMany: vi.fn().mockImplementation(async (...args) => {
+              callOrder.push("tx:upa.createMany");
+              return mockPrisma.userPropertyAccess.createMany(...args);
+            }),
+          },
+        } as unknown as typeof mockPrisma;
+        const result = await fn(txMock);
+        callOrder.push("tx:close");
+        return result;
+      },
+    );
+
+    const req = makeRequest({
+      email: "atomic@tenant.test",
+      role: "LEASING_AGENT",
+      organizationId: "client-org-1",
+      propertyIds: ["prop-atomic"],
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+
+    // All three writes must be inside the transaction boundary.
+    const txOpen = callOrder.indexOf("tx:open");
+    const txClose = callOrder.indexOf("tx:close");
+    const userCreate = callOrder.indexOf("tx:user.create");
+    const upaDelete = callOrder.indexOf("tx:upa.deleteMany");
+    const upaCreate = callOrder.indexOf("tx:upa.createMany");
+
+    expect(txOpen).toBeGreaterThanOrEqual(0);
+    expect(txClose).toBeGreaterThan(txOpen);
+    expect(userCreate).toBeGreaterThan(txOpen);
+    expect(userCreate).toBeLessThan(txClose);
+    expect(upaDelete).toBeGreaterThan(txOpen);
+    expect(upaDelete).toBeLessThan(txClose);
+    expect(upaCreate).toBeGreaterThan(txOpen);
+    expect(upaCreate).toBeLessThan(txClose);
+
+    // Restore original mock so other tests are unaffected.
+    mockPrisma.$transaction.mockImplementation(originalTx.getMockImplementation()!);
+  });
+});

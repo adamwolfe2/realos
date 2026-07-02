@@ -171,13 +171,15 @@ export async function POST(req: NextRequest) {
   // email on first sign-in, even if the Clerk webhook isn't wired up yet.
   const pendingId = `seed_pending_${email}`;
   const existing = await prisma.user.findUnique({ where: { email } });
-  let userId: string;
+
+  // Cross-tenant guard (Codex): must run BEFORE the transaction so we can
+  // return an early 409 without opening a write path. An invite must NEVER
+  // silently reassign a real user who already belongs to another workspace,
+  // nor touch an agency user — that was an account-hijack vector (set their
+  // orgId/role to the inviter's org). Only a same-org re-invite (role/name
+  // change) or an unclaimed pending seed may be updated here; anything else
+  // needs an explicit transfer.
   if (existing) {
-    // Cross-tenant guard (Codex): an invite must NEVER silently reassign a real
-    // user who already belongs to another workspace, nor touch an agency user —
-    // that was an account-hijack vector (set their orgId/role to the inviter's
-    // org). Only a same-org re-invite (role/name change) or an unclaimed
-    // pending seed may be updated here; anything else needs an explicit transfer.
     const isPendingSeed = existing.clerkUserId.startsWith("seed_pending_");
     const isAgencyUser =
       existing.role.startsWith("AGENCY_") || existing.role === "AL_PARTNER";
@@ -190,48 +192,56 @@ export async function POST(req: NextRequest) {
         { status: 409 },
       );
     }
-    const updated = await prisma.user.update({
-      where: { id: existing.id },
-      data: {
-        orgId: org.id,
-        role,
-        firstName: firstName ?? existing.firstName,
-        lastName: lastName ?? existing.lastName,
-      },
-    });
-    userId = updated.id;
-  } else {
-    const created = await prisma.user.create({
-      data: {
-        clerkUserId: pendingId,
-        email,
-        firstName,
-        lastName,
-        role,
-        orgId: org.id,
-      },
-    });
-    userId = created.id;
   }
 
-  // Replace any existing property access for this user with the new
-  // selection. Do it as a delete-then-create so the row set is exactly
-  // what was requested — easier mental model than diffing.
+  // Wrap the user upsert AND property-access replacement in a single
+  // transaction so they are atomic: a failure during property-access create
+  // will roll back the user write (leaving nothing half-done), and a crash
+  // between user create and property-access delete can never leave a scoped
+  // role with zero rows (which would otherwise silently widen to org-wide
+  // access in scope.ts).
+  //
+  // Property-access semantics (unchanged):
   //   * Empty selection => unrestricted (no rows).
-  //   * Non-empty selection => restricted to those properties only.
-  // Wrapped in a transaction so a failure during create doesn't leave
-  // the user with zero rows (which would silently widen them).
-  await prisma.$transaction(async (tx) => {
-    await tx.userPropertyAccess.deleteMany({ where: { userId } });
+  //   * Non-empty selection => restricted to exactly those properties.
+  const userId = await prisma.$transaction(async (tx) => {
+    let id: string;
+    if (existing) {
+      const updated = await tx.user.update({
+        where: { id: existing.id },
+        data: {
+          orgId: org.id,
+          role,
+          firstName: firstName ?? existing.firstName,
+          lastName: lastName ?? existing.lastName,
+        },
+      });
+      id = updated.id;
+    } else {
+      const created = await tx.user.create({
+        data: {
+          clerkUserId: pendingId,
+          email,
+          firstName,
+          lastName,
+          role,
+          orgId: org.id,
+        },
+      });
+      id = created.id;
+    }
+
+    await tx.userPropertyAccess.deleteMany({ where: { userId: id } });
     if (validPropertyIds.length > 0) {
       await tx.userPropertyAccess.createMany({
         data: validPropertyIds.map((propertyId) => ({
-          userId,
+          userId: id,
           propertyId,
           grantedBy: scope.userId,
         })),
       });
     }
+    return id;
   });
 
   // Best-effort Clerk invitation. We pass `notify: false` so Clerk does NOT
