@@ -18,5 +18,7 @@ export function timingSafeEqual(a: string, b: string): boolean {
   const bPad = Buffer.alloc(max);
   aBuf.copy(aPad);
   bBuf.copy(bPad);
-  return crypto.timingSafeEqual(aPad, bPad) && aBuf.length === bBuf.length;
+  const c = crypto.timingSafeEqual(aPad, bPad) ? 1 : 0;
+  const l = aBuf.length === bBuf.length ? 1 : 0;
+  return (c & l) === 1;
 }
