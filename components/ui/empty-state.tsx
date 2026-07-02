@@ -50,7 +50,7 @@ export function EmptyState({
       )}
     >
       {icon ? (
-        <div className="mb-1 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <div aria-hidden="true" className="mb-1 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
           {icon}
         </div>
       ) : null}
@@ -65,7 +65,7 @@ export function EmptyState({
           {primaryCta ? (
             <Link
               href={primaryCta.href}
-              className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold hover:bg-primary-dark transition-colors active:scale-[0.98]"
+              className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold hover:bg-primary-dark transition-colors active:scale-[0.98] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
               {primaryCta.label}
             </Link>
@@ -73,7 +73,7 @@ export function EmptyState({
           {secondaryCta ? (
             <Link
               href={secondaryCta.href}
-              className="inline-flex items-center rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors active:scale-[0.98]"
+              className="inline-flex items-center rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors active:scale-[0.98] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
               {secondaryCta.label}
             </Link>
