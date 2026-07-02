@@ -434,7 +434,7 @@ export default async function VisitorDetailPage({
           ) : null}
 
           {/* Intent score */}
-          <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-5 py-4">
+          <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
             <div
               className={cn(
                 "text-4xl font-semibold tabular-nums",
@@ -489,7 +489,7 @@ export default async function VisitorDetailPage({
                     .join(" / ");
 
                   return (
-                    <li key={session.id} className="p-5 space-y-2.5">
+                    <li key={session.id} className="p-4 space-y-2">
                       <div className="flex items-start justify-between gap-3 flex-wrap">
                         <div className="flex items-center gap-2 text-sm font-medium">
                           <span className="text-xs text-muted-foreground font-normal">

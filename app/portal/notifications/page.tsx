@@ -33,9 +33,9 @@ const KIND_COLOR: Record<string, string> = {
   integration_error: "bg-destructive/10 text-destructive",
   sync_complete: "bg-muted text-muted-foreground",
   ai_quota_warning: "bg-destructive/10 text-destructive",
-  pacing_alert: "bg-amber-100 text-amber-900 dark:bg-amber-900/20 dark:text-amber-200",
+  pacing_alert: "bg-warning/10 text-deep-slate",
   critical_insight: "bg-destructive/10 text-destructive",
-  warning_insight: "bg-amber-100 text-amber-900 dark:bg-amber-900/20 dark:text-amber-200",
+  warning_insight: "bg-warning/10 text-deep-slate",
 };
 
 // Severity-coded left border. Mirrors AlertBanner's palette so rows visually
@@ -45,8 +45,8 @@ const KIND_BORDER: Record<string, string> = {
   integration_error: "border-l-2 border-l-destructive",
   ai_quota_warning: "border-l-2 border-l-destructive",
   critical_insight: "border-l-2 border-l-destructive",
-  pacing_alert: "border-l-2 border-l-amber-500",
-  warning_insight: "border-l-2 border-l-amber-500",
+  pacing_alert: "border-l-2 border-l-warning",
+  warning_insight: "border-l-2 border-l-warning",
   lead_created: "border-l-2 border-l-primary",
   tour_scheduled: "border-l-2 border-l-primary",
   chatbot_lead: "border-l-2 border-l-primary",
@@ -286,7 +286,7 @@ export default function NotificationsPage() {
             ))}
           </div>
         ) : visible.length === 0 ? (
-          <div className="px-6 py-16 text-center flex flex-col items-center gap-1.5">
+          <div className="px-6 py-12 text-center flex flex-col items-center gap-1.5">
             <div className="mb-1 inline-flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
               <CheckCheck className="h-4 w-4" aria-hidden="true" />
             </div>
