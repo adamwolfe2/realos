@@ -54,7 +54,7 @@ export function LeaseStackWordmark({
           {/* Two-tone horizontal lockup: "Lease" in Deep Slate, "Stack"
               in Cobalt. Inline spans override any inherited text color so
               the split reads correctly on both light and dark surfaces. */}
-          <span className="text-[#1E2A3A]">Lease</span>
+          <span className="text-deep-slate">Lease</span>
           <span className="text-primary">Stack</span>
         </span>
       ) : null}
