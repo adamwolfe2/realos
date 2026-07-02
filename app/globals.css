@@ -54,6 +54,13 @@ body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-ins
   --color-destructive: #DC2626;
   --color-destructive-foreground: #FFFFFF;
 
+  /* Status tokens — exposed as Tailwind utilities (bg-warning, text-success…).
+     Amber = alerts/attention, Muted Green = positive trends. */
+  --color-warning: #F59E0B;
+  --color-warning-foreground: #1E2A3A;
+  --color-success: #16A34A;
+  --color-success-foreground: #FFFFFF;
+
   /* Borders + rings — neutral gray, softer hairlines for layered surfaces */
   --color-border: #EAECEF;
   --color-input: #E5E7EB;

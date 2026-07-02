@@ -5,7 +5,7 @@ import { CrispChat } from "@/components/crisp-chat";
 import { CalDemoProvider } from "@/components/marketing/cal-demo-modal";
 import { GoogleTags, GoogleTagManagerNoScript } from "@/components/analytics/google-tags";
 import { Toaster } from "@/components/ui/sonner";
-import { Inter, JetBrains_Mono, Fraunces } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -13,21 +13,13 @@ import { portalConfig } from "@/lib/portal-config";
 import { BRAND_NAME } from "@/lib/brand";
 import { serializeJsonLd } from "@/lib/seo/serialize-json-ld";
 
-// DECISION: Fraunces is our open-source stand-in for Anthropic Serif
-// (Claude's custom headline face). Inter covers Anthropic Sans (UI + body).
-// JetBrains Mono replaces Anthropic Mono for code and small labels.
+// Inter covers UI + body + headings (single geometric sans, per design system).
+// JetBrains Mono handles code, small labels, and tabular data figures.
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-inter",
   axes: ["opsz"],
-});
-
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-fraunces",
-  axes: ["opsz", "SOFT"],
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -128,7 +120,7 @@ export default function RootLayout({
     <ClerkProvider>
       <html
         lang="en"
-        className={`scroll-smooth ${inter.variable} ${fraunces.variable} ${jetbrainsMono.variable}`}
+        className={`scroll-smooth ${inter.variable} ${jetbrainsMono.variable}`}
       >
         <body
           className="antialiased bg-background text-foreground"
