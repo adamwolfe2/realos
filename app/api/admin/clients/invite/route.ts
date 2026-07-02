@@ -125,6 +125,26 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // S1 FIX: LEASING_AGENT and CLIENT_VIEWER must always be scoped to specific
+  // properties. An empty/missing propertyIds would silently grant org-wide
+  // access — reject explicitly so callers know what to fix.
+  const PROPERTY_SCOPED_ROLES: ReadonlySet<UserRole> = new Set([
+    UserRole.LEASING_AGENT,
+    UserRole.CLIENT_VIEWER,
+  ]);
+  if (
+    PROPERTY_SCOPED_ROLES.has(role) &&
+    (!parsed.propertyIds || parsed.propertyIds.length === 0)
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "property assignment required for this role — provide at least one propertyId for LEASING_AGENT and CLIENT_VIEWER invites",
+      },
+      { status: 400 },
+    );
+  }
+
   // Validate property ids belong to the target org BEFORE we touch
   // anything. A malformed list shouldn't half-create a user — we want
   // an atomic "either this whole invite is valid or none of it is."
