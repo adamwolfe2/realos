@@ -116,7 +116,7 @@ export default async function AdminSiteEnginePage({
   byStatus.forEach((row) => countMap.set(row.status, row._count._all));
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto w-full">
+    <div className="space-y-6 max-w-6xl mx-auto w-full">
       <PageHeader
         title="Site engine"
         description="Custom-build queue. Every row is a SiteRequest from /sites/request (public) or /portal/sites/request (logged-in customer). Click in to review intake, download the build packet, and walk it through the state machine."

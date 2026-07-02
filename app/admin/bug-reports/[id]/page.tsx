@@ -64,7 +64,7 @@ export default async function BugReportDetailPage({
   return (
     <div className="space-y-4 ls-page-fade max-w-5xl mx-auto w-full">
       <PageHeader
-        eyebrow={
+        breadcrumb={
           <Link
             href="/admin/bug-reports"
             className="inline-flex items-center gap-1 hover:text-foreground"

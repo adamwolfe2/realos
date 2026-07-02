@@ -306,7 +306,7 @@ export default async function ClientsList({
       </nav>
 
       {clients.length === 0 ? (
-        <div className="rounded-lg border border-border bg-card p-10 text-center space-y-2">
+        <div className="rounded-lg border border-border bg-card p-6 text-center space-y-2">
           <p className="text-sm font-semibold text-foreground">
             {status || type || q
               ? "No clients match these filters."

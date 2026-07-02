@@ -249,7 +249,7 @@ export default async function ClientDetail({
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow={
+        breadcrumb={
           <Link
             href="/admin/clients"
             className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
