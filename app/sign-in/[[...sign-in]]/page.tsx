@@ -30,7 +30,7 @@ export default function SignInPage() {
           looks pinned to the top at zoomed-out / tall-viewport sizes.
           Forcing each column to min-h-screen guarantees vertical
           centering at any zoom level. */}
-      <main className="w-full lg:w-[42%] xl:w-[38%] 2xl:w-[34%] lg:min-h-screen flex flex-col bg-white border-r border-[#EEEEEE] border-t-[3px] border-t-[#2563EB]">
+      <main className="w-full lg:w-[42%] xl:w-[38%] 2xl:w-[34%] lg:min-h-screen flex flex-col bg-white border-r border-border border-t-[3px] border-t-primary">
         <header className="px-6 lg:px-10 py-5 lg:py-6 flex items-center justify-between">
           <Link
             href="/"
@@ -48,7 +48,7 @@ export default function SignInPage() {
           </Link>
           <Link
             href="/sign-up"
-            className="text-xs font-semibold text-[#2563EB] hover:underline underline-offset-4"
+            className="text-xs font-semibold text-primary hover:underline underline-offset-4"
           >
             Create account →
           </Link>
@@ -57,40 +57,13 @@ export default function SignInPage() {
         <div className="flex-1 flex flex-col items-center justify-center px-6 lg:px-10 py-10">
           <div className="w-full max-w-[420px]">
             <div className="mb-7">
-              <p
-                className="mb-3 inline-flex items-center gap-1.5"
-                style={{
-                  color: "#2563EB",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "11px",
-                  letterSpacing: "0.22em",
-                  textTransform: "uppercase",
-                  fontWeight: 700,
-                }}
-              >
+              <p className="mb-3 inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.22em] uppercase font-bold text-primary">
                 Sign in
               </p>
-              <h1
-                style={{
-                  color: "#1E2A3A",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: "clamp(28px, 3.4vw, 36px)",
-                  fontWeight: 700,
-                  letterSpacing: "-0.025em",
-                  lineHeight: 1.08,
-                }}
-              >
+              <h1 className="font-sans text-[clamp(28px,3.4vw,36px)] font-bold tracking-[-0.025em] leading-[1.08] text-foreground">
                 Welcome back.
               </h1>
-              <p
-                className="mt-2"
-                style={{
-                  color: "#64748B",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: "14.5px",
-                  lineHeight: 1.5,
-                }}
-              >
+              <p className="mt-2 font-sans text-[14.5px] leading-[1.5] text-muted-foreground">
                 Sign in to your {BRAND_NAME} portal.
               </p>
             </div>
@@ -129,28 +102,28 @@ export default function SignInPage() {
                 },
                 elements: {
                   rootBox: "w-full",
-                  card: "w-full shadow-none border border-[#E5E5E5] bg-white rounded-xl p-7",
+                  card: "w-full shadow-none border border-input bg-card rounded-xl p-7",
                   headerTitle: "hidden",
                   headerSubtitle: "hidden",
                   socialButtonsBlockButton:
-                    "border border-[#E5E5E5] bg-white hover:bg-[#F7F7F7] text-foreground text-sm font-medium rounded-md h-11 transition-colors",
-                  dividerLine: "bg-[#EEEEEE]",
+                    "border border-input bg-card hover:bg-muted text-foreground text-sm font-medium rounded-md h-11 transition-colors",
+                  dividerLine: "bg-border",
                   dividerText:
-                    "text-[#8E8E8E] text-xs uppercase tracking-wider",
+                    "text-muted-foreground text-xs uppercase tracking-wider",
                   formFieldLabel:
-                    "text-[11px] font-semibold text-[#393C41] mb-1.5 uppercase tracking-wider",
+                    "text-[11px] font-semibold text-foreground mb-1.5 uppercase tracking-wider",
                   formFieldInput:
-                    "border border-[#D4D4D4] bg-white focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/15 focus:outline-none rounded-md h-11 text-sm text-foreground placeholder:text-[#8E8E8E] transition-colors",
+                    "border border-input bg-card focus:border-primary focus:ring-2 focus:ring-primary/15 focus:outline-none rounded-md h-11 text-sm text-foreground placeholder:text-muted-foreground transition-colors",
                   formButtonPrimary:
-                    "!bg-[#2563EB] hover:!bg-[#1d4ed8] !text-white !shadow-none !border-0 rounded-md h-11 text-sm font-semibold transition-colors",
+                    "!bg-primary hover:!bg-primary-dark !text-white !shadow-none !border-0 rounded-md h-11 text-sm font-semibold transition-colors",
                   footerActionLink:
-                    "!text-[#2563EB] font-semibold hover:underline underline-offset-2",
+                    "!text-primary font-semibold hover:underline underline-offset-2",
                   identityPreviewEditButton:
-                    "!text-[#2563EB] underline underline-offset-2",
+                    "!text-primary underline underline-offset-2",
                   otpCodeFieldInput:
-                    "border border-[#D4D4D4] rounded-md text-foreground focus:border-[#2563EB]",
+                    "border border-input rounded-md text-foreground focus:border-primary",
                   alertText: "text-sm",
-                  formFieldErrorText: "text-xs text-[#DC2626]",
+                  formFieldErrorText: "text-xs text-destructive",
                 },
               }}
             />
@@ -159,14 +132,14 @@ export default function SignInPage() {
               By continuing you agree to our{" "}
               <Link
                 href="/terms"
-                className="text-[#2563EB] underline hover:no-underline"
+                className="text-primary underline hover:no-underline"
               >
                 Terms
               </Link>{" "}
               and{" "}
               <Link
                 href="/privacy"
-                className="text-[#2563EB] underline hover:no-underline"
+                className="text-primary underline hover:no-underline"
               >
                 Privacy
               </Link>
@@ -177,7 +150,7 @@ export default function SignInPage() {
                 message is a dead-end for invitees who arrive here instead
                 of clicking the email's Accept Invitation button — they
                 have a pending DB row but no Clerk account yet. */}
-            <div className="mt-5 rounded-lg border border-[#EEEEEE] bg-[#F9F9F9] px-4 py-3">
+            <div className="mt-5 rounded-lg border border-border bg-secondary px-4 py-3">
               <p className="text-xs font-semibold text-foreground">
                 Were you invited to {BRAND_NAME}?
               </p>
@@ -198,7 +171,7 @@ export default function SignInPage() {
           </div>
         </div>
 
-        <footer className="px-6 lg:px-10 py-4 border-t border-[#EEEEEE] flex items-center justify-between text-[11px] text-muted-foreground">
+        <footer className="px-6 lg:px-10 py-4 border-t border-border flex items-center justify-between text-[11px] text-muted-foreground">
           <span>
             &copy; {new Date().getFullYear()} {BRAND_NAME}
           </span>
