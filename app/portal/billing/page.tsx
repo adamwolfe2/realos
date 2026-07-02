@@ -278,10 +278,24 @@ export default async function BillingPage() {
         />
       ) : null}
 
-      {cancelAtPeriodEnd && currentPeriodEnd ? (
+      {/* Only render when the subscription is still active-ish (pending
+          cancel, not yet deleted), cancelAtPeriodEnd is set, and the period
+          end is actually in the future. After handleSubscriptionDeleted fires
+          the org's cancelAtPeriodEnd resets to false, so a churned org never
+          shows this banner. */}
+      {cancelAtPeriodEnd &&
+      currentPeriodEnd !== null &&
+      org.subscriptionStatus !== "CANCELED" &&
+      org.subscriptionStatus !== null &&
+      new Date(currentPeriodEnd) > new Date() ? (
         <section className="rounded-xl border border-amber-200 bg-amber-50 p-4">
           <p className="text-sm font-semibold text-amber-800">
-            Cancels on {new Date(currentPeriodEnd).toLocaleDateString()}
+            Cancels on{" "}
+            {new Date(currentPeriodEnd).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
           </p>
           <p className="text-xs text-amber-700 mt-1">
             Your subscription will not renew after this date. Reactivate from the Stripe portal if this was unintended.

@@ -522,6 +522,11 @@ async function handleSubscriptionDeleted(
     data: {
       subscriptionStatus: SubscriptionStatus.CANCELED,
       status: TenantStatus.CHURNED,
+      // Clear cancel-at-period-end and period-end timestamp so the billing
+      // page "Cancels on {date}" banner never resurfaces for a fully churned
+      // org. The subscription is gone — there is no pending-cancel to show.
+      cancelAtPeriodEnd: false,
+      currentPeriodEnd: null,
       // Revoke EVERY paid catalog module from the canonical all-off state
       // (always-on website + lead-capture stay on so the tenant site doesn't
       // 404 mid-dispute). Derived from FEATURE_CATALOG so a newly-added module
@@ -575,7 +580,11 @@ async function handleInvoicePaid(
   // subscriptions in `incomplete` state. invoice.paid only fires when the
   // money actually clears.
   if (eventId) {
-    await maybeAcceptProposalFromInvoice(invoice, eventId);
+    // Use a namespaced key so this processStripeEventOnce fence and the
+    // audit fence below (which uses `${eventId}:audit`) never share the
+    // same ProcessedStripeEvent row — otherwise the second call silently
+    // skips because the unique-constraint fires on the same eventId.
+    await maybeAcceptProposalFromInvoice(invoice, `${eventId}:provision`);
   }
 
   const stripeCustomerId =
@@ -628,10 +637,12 @@ async function handleInvoicePaid(
   }
 
   // Wrap audit write in processStripeEventOnce so retries don't create
-  // duplicate audit rows. Use eventId ?? invoice.id as the idempotency key
-  // since handleInvoicePaid accepts an optional eventId.
+  // duplicate audit rows. Use an `:audit` suffix so this fence uses a
+  // distinct ProcessedStripeEvent key from the `:provision` fence above —
+  // without the suffix both calls share the same eventId and the second
+  // silently skips.
   await processStripeEventOnce(
-    { eventId: eventId ?? invoice.id, eventType: "invoice.paid", orgId: org.id },
+    { eventId: `${eventId ?? invoice.id}:audit`, eventType: "invoice.paid", orgId: org.id },
     async (tx) => {
       await tx.auditEvent.create({
         data: {
@@ -1841,7 +1852,6 @@ async function sendTrialEndingSoonEmail(input: {
   await resend.emails.send({
     from,
     to,
-    bcc: opsTo,
     subject: `Your LeaseStack trial ends ${trialEndDate}`,
     text,
   });
