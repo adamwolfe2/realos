@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { formatDistanceToNow } from "date-fns";
 import { ArrowRight, Check, Clock, AlertTriangle } from "lucide-react";
 import { requireScope } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
@@ -108,6 +109,11 @@ export default async function IntegrationsHubPage() {
   ]);
 
   const statusBySlug = new Map(statuses.map((s) => [s.slug, s.state]));
+  const lastSyncBySlug = new Map(
+    statuses
+      .filter((s) => s.lastEventAt != null)
+      .map((s) => [s.slug, s.lastEventAt as Date]),
+  );
   const connectedCount = statuses.filter(
     (s) => s.state === "connected" || s.state === "stale" || s.state === "error",
   ).length;
@@ -162,6 +168,7 @@ export default async function IntegrationsHubPage() {
                 key={def.slug}
                 def={def}
                 state={statusBySlug.get(def.slug) ?? "available"}
+                lastSyncAt={lastSyncBySlug.get(def.slug) ?? null}
               />
             ))}
           </div>
@@ -179,15 +186,25 @@ export default async function IntegrationsHubPage() {
 function IntegrationCard({
   def,
   state,
+  lastSyncAt,
 }: {
   def: IntegrationDefinition;
   state: IntegrationState;
+  lastSyncAt: Date | null;
 }) {
   const pill = STATE_PILL[state];
   const setupHref = SETUP_HREF[def.slug] ?? "/portal/settings/integrations";
   const isComingSoon = state === "coming_soon";
   const isConnected =
     state === "connected" || state === "stale" || state === "error";
+
+  // Relative timestamp — only shown when the integration is active
+  // (connected/stale/error) and we have a recorded sync time. Gives
+  // operators an at-a-glance freshness signal without opening the drawer.
+  const lastSyncLabel =
+    isConnected && lastSyncAt
+      ? `Synced ${formatDistanceToNow(lastSyncAt, { addSuffix: true })}`
+      : null;
 
   return (
     <article
@@ -231,7 +248,18 @@ function IntegrationCard({
         </div>
       ) : null}
 
-      <div className="mt-3 pt-2 border-t border-border/40 flex items-center justify-end gap-2">
+      <div className="mt-3 pt-2 border-t border-border/40 flex items-center justify-between gap-2">
+        {/* Last-synced timestamp — visible on connected integrations so
+            operators can judge data freshness without clicking into the
+            manage drawer. Omitted when no sync has ever run. */}
+        {lastSyncLabel ? (
+          <span className="inline-flex items-center gap-1 text-[10.5px] text-muted-foreground tabular-nums">
+            <Clock className="w-2.5 h-2.5 shrink-0" />
+            {lastSyncLabel}
+          </span>
+        ) : (
+          <span />
+        )}
         {isComingSoon ? (
           <span className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground">
             <Clock className="w-3 h-3" />
