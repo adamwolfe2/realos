@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { TenantSiteConfig } from "@prisma/client";
+import { SectionCard } from "@/components/admin/page-header";
 
 type Initial = TenantSiteConfig | null;
 
@@ -218,55 +219,59 @@ export function SiteBuilderForm({
 
   return (
     <form onSubmit={submit} className="space-y-6 pb-24">
-      <Section
-        title="Identity"
+      <SectionCard
+        label="Identity"
         description="The name + tagline visible across the marketing site and tab title."
       >
-        <Field
-          label="Site title"
-          value={state.siteTitle}
-          onChange={(v) => update("siteTitle", v)}
-          help="Shown in the browser tab and as the OG site name. Often the property or company name."
-        />
-        <Field
-          label="Tagline"
-          value={state.tagline}
-          onChange={(v) => update("tagline", v)}
-          help="One short sentence under the site title."
-        />
-      </Section>
+        <div className="space-y-3">
+          <Field
+            label="Site title"
+            value={state.siteTitle}
+            onChange={(v) => update("siteTitle", v)}
+            help="Shown in the browser tab and as the OG site name. Often the property or company name."
+          />
+          <Field
+            label="Tagline"
+            value={state.tagline}
+            onChange={(v) => update("tagline", v)}
+            help="One short sentence under the site title."
+          />
+        </div>
+      </SectionCard>
 
-      <Section
-        title="Hero"
+      <SectionCard
+        label="Hero"
         description="Top-of-page banner. The first thing every visitor sees."
       >
-        <Field
-          label="Headline"
-          value={state.heroHeadline}
-          onChange={(v) => update("heroHeadline", v)}
-          counter={{
-            current: state.heroHeadline.length,
-            max: HERO_HEADLINE_RECOMMENDED,
-            soft: true,
-          }}
-        />
-        <Field
-          label="Subheadline"
-          value={state.heroSubheadline}
-          onChange={(v) => update("heroSubheadline", v)}
-        />
-        <Field
-          label="Hero image URL"
-          value={state.heroImageUrl}
-          onChange={(v) => update("heroImageUrl", v)}
-          type="url"
-          error={validation.heroImageUrl}
-          help="HTTPS, ideally 16:9. Hosted anywhere (Vercel Blob, S3, Cloudinary)."
-        />
-      </Section>
+        <div className="space-y-3">
+          <Field
+            label="Headline"
+            value={state.heroHeadline}
+            onChange={(v) => update("heroHeadline", v)}
+            counter={{
+              current: state.heroHeadline.length,
+              max: HERO_HEADLINE_RECOMMENDED,
+              soft: true,
+            }}
+          />
+          <Field
+            label="Subheadline"
+            value={state.heroSubheadline}
+            onChange={(v) => update("heroSubheadline", v)}
+          />
+          <Field
+            label="Hero image URL"
+            value={state.heroImageUrl}
+            onChange={(v) => update("heroImageUrl", v)}
+            type="url"
+            error={validation.heroImageUrl}
+            help="HTTPS, ideally 16:9. Hosted anywhere (Vercel Blob, S3, Cloudinary)."
+          />
+        </div>
+      </SectionCard>
 
-      <Section
-        title="About + content"
+      <SectionCard
+        label="About + content"
         description="Long-form copy below the hero. Markdown not supported (yet)."
       >
         <TextArea
@@ -276,10 +281,10 @@ export function SiteBuilderForm({
           rows={8}
           counter={{ current: state.aboutCopy.length, soft: true }}
         />
-      </Section>
+      </SectionCard>
 
-      <Section
-        title="Primary CTA + contact"
+      <SectionCard
+        label="Primary CTA + contact"
         description="The single button that turns visitors into leads."
       >
         <div className="grid sm:grid-cols-2 gap-3">
@@ -310,41 +315,43 @@ export function SiteBuilderForm({
             error={validation.contactEmail}
           />
         </div>
-      </Section>
+      </SectionCard>
 
-      <Section
-        title="SEO + social preview"
+      <SectionCard
+        label="SEO + social preview"
         description="What Google + social platforms show when this site is shared."
       >
-        <Field
-          label="Meta title"
-          value={state.metaTitle}
-          onChange={(v) => update("metaTitle", v)}
-          counter={{ current: state.metaTitle.length, max: META_TITLE_MAX }}
-          error={validation.metaTitle}
-          help="Shown in Google results and as the page tab. Keep under 60 chars."
-        />
-        <TextArea
-          label="Meta description"
-          value={state.metaDescription}
-          onChange={(v) => update("metaDescription", v)}
-          rows={2}
-          counter={{ current: state.metaDescription.length, max: META_DESC_MAX }}
-          error={validation.metaDescription}
-          help="One-sentence summary under the title in Google results. Under 160."
-        />
-        <Field
-          label="OG image URL"
-          value={state.ogImageUrl}
-          onChange={(v) => update("ogImageUrl", v)}
-          type="url"
-          error={validation.ogImageUrl}
-          help="Square or 1.91:1 ratio. Used by Twitter, LinkedIn, Slack previews."
-        />
-      </Section>
+        <div className="space-y-3">
+          <Field
+            label="Meta title"
+            value={state.metaTitle}
+            onChange={(v) => update("metaTitle", v)}
+            counter={{ current: state.metaTitle.length, max: META_TITLE_MAX }}
+            error={validation.metaTitle}
+            help="Shown in Google results and as the page tab. Keep under 60 chars."
+          />
+          <TextArea
+            label="Meta description"
+            value={state.metaDescription}
+            onChange={(v) => update("metaDescription", v)}
+            rows={2}
+            counter={{ current: state.metaDescription.length, max: META_DESC_MAX }}
+            error={validation.metaDescription}
+            help="One-sentence summary under the title in Google results. Under 160."
+          />
+          <Field
+            label="OG image URL"
+            value={state.ogImageUrl}
+            onChange={(v) => update("ogImageUrl", v)}
+            type="url"
+            error={validation.ogImageUrl}
+            help="Square or 1.91:1 ratio. Used by Twitter, LinkedIn, Slack previews."
+          />
+        </div>
+      </SectionCard>
 
-      <Section
-        title="Sections visible on the site"
+      <SectionCard
+        label="Sections visible on the site"
         description="Toggle which sections render on the tenant marketing site."
       >
         <div className="grid sm:grid-cols-2 gap-2">
@@ -374,10 +381,10 @@ export function SiteBuilderForm({
             onChange={(v) => update("showBlog", v)}
           />
         </div>
-      </Section>
+      </SectionCard>
 
-      <Section
-        title="Chatbot"
+      <SectionCard
+        label="Chatbot"
         description="Configure persona, greeting, and knowledge base on the dedicated Chatbot page."
       >
         <a
@@ -386,50 +393,52 @@ export function SiteBuilderForm({
         >
           Open chatbot settings
         </a>
-      </Section>
+      </SectionCard>
 
-      <Section
-        title="Exit intent"
+      <SectionCard
+        label="Exit intent"
         description="Popup when the visitor's mouse leaves the window."
       >
-        <Toggle
-          label="Enable exit-intent popup"
-          checked={state.enableExitIntent}
-          onChange={(v) => update("enableExitIntent", v)}
-        />
-        <div className="grid sm:grid-cols-2 gap-3">
-          <Field
-            label="Popup headline"
-            value={state.exitIntentHeadline}
-            onChange={(v) => update("exitIntentHeadline", v)}
+        <div className="space-y-3">
+          <Toggle
+            label="Enable exit-intent popup"
+            checked={state.enableExitIntent}
+            onChange={(v) => update("enableExitIntent", v)}
           />
-          <Field
-            label="CTA text"
-            value={state.exitIntentCtaText}
-            onChange={(v) => update("exitIntentCtaText", v)}
-          />
-          <Field
-            label="Popup body"
-            value={state.exitIntentBody}
-            onChange={(v) => update("exitIntentBody", v)}
-          />
-          <Field
-            label="Offer code"
-            value={state.exitIntentOfferCode}
-            onChange={(v) => update("exitIntentOfferCode", v)}
-            help="Optional discount/promo code shown in the popup."
-          />
+          <div className="grid sm:grid-cols-2 gap-3">
+            <Field
+              label="Popup headline"
+              value={state.exitIntentHeadline}
+              onChange={(v) => update("exitIntentHeadline", v)}
+            />
+            <Field
+              label="CTA text"
+              value={state.exitIntentCtaText}
+              onChange={(v) => update("exitIntentCtaText", v)}
+            />
+            <Field
+              label="Popup body"
+              value={state.exitIntentBody}
+              onChange={(v) => update("exitIntentBody", v)}
+            />
+            <Field
+              label="Offer code"
+              value={state.exitIntentOfferCode}
+              onChange={(v) => update("exitIntentOfferCode", v)}
+              help="Optional discount/promo code shown in the popup."
+            />
+          </div>
         </div>
-      </Section>
+      </SectionCard>
 
-      <Section title="Visitor pixel" description="First-party tracking pixel.">
+      <SectionCard label="Visitor pixel" description="First-party tracking pixel.">
         <Toggle
           label={`Enable pixel${modulePixel ? "" : " (module disabled)"}`}
           checked={state.enablePixel && modulePixel}
           onChange={(v) => update("enablePixel", v)}
           disabled={!modulePixel}
         />
-      </Section>
+      </SectionCard>
 
       {/* Sticky save bar */}
       <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -480,28 +489,6 @@ export function SiteBuilderForm({
   );
 }
 
-function Section({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-xl border border-border bg-card p-5">
-      <header className="mb-4">
-        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-        {description ? (
-          <p className="text-xs text-muted-foreground mt-1">{description}</p>
-        ) : null}
-      </header>
-      <div className="space-y-3">{children}</div>
-    </section>
-  );
-}
-
 type Counter = {
   current: number;
   max?: number;
@@ -523,7 +510,7 @@ function CharCounter({ counter }: { counter: Counter }) {
       className={`text-[10px] tabular-nums ${
         over
           ? counter.soft
-            ? "text-amber-700"
+            ? "text-warning"
             : "text-destructive"
           : "text-muted-foreground"
       }`}
@@ -562,7 +549,7 @@ function Field({
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`rounded-md border bg-card px-3 py-2 text-sm ${
+        className={`rounded-md border bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
           error ? "border-destructive" : "border-border"
         }`}
       />
@@ -604,7 +591,7 @@ function TextArea({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={rows}
-        className={`rounded-md border bg-card px-3 py-2 text-sm ${
+        className={`rounded-md border bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
           error ? "border-destructive" : "border-border"
         }`}
       />
@@ -643,7 +630,7 @@ function NumberField({
         min={min}
         max={max}
         onChange={(e) => onChange(parseInt(e.target.value, 10) || 0)}
-        className="rounded-md border border-border bg-card px-3 py-2 text-sm"
+        className="rounded-md border border-border bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       />
       {help ? (
         <span className="text-[11px] text-muted-foreground">{help}</span>
