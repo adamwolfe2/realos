@@ -91,34 +91,12 @@ export function VisitorTable({ rows }: Props) {
     toast.success(`Exported ${targets.length} visitor${targets.length === 1 ? "" : "s"} as CSV`);
   };
 
-  // Stub bulk actions. Both kept as stubs because the current
-  // /portal/audiences pipeline is one-way (segments are pulled from
-  // the upstream identity provider — there's no org-controlled "push
-  // these visitors to an audience" model yet). Send-to-ads depends
-  // on the same sync infrastructure (push to Meta / Google / TikTok
-  // via the pixel's destinations). Toast copy reads vendor-agnostic;
-  // operators see "the pixel" not the third-party brand.
-  const stubPushToAudience = () => {
-    toast.message("Pushing visitors to audiences is coming soon", {
-      description:
-        "Audiences today are pulled from the pixel. Track outbound push at /portal/insights.",
-    });
-    setSelected(new Set());
-  };
-  const stubSendToAds = () => {
-    toast.message("Sending visitors to ads is coming soon", {
-      description:
-        "Requires the audience-sync pipeline. Track this at /portal/insights.",
-    });
-    setSelected(new Set());
-  };
-
   return (
     <div className="space-y-2">
       {/* Bulk action bar — uses the canonical BulkActionBar primitive so
           the toolbar shape matches Leads / Renewals. Renders nothing when
-          no rows are selected. Push-to-audience and Send-to-ads are stubs
-          that toast success until the corresponding pipelines ship. */}
+          no rows are selected. Push-to-audience and Send-to-ads are disabled
+          (need the audience-sync pipeline) and show a native tooltip. */}
       <BulkActionBar
         count={selected.size}
         onClear={() => setSelected(new Set())}
@@ -132,20 +110,24 @@ export function VisitorTable({ rows }: Props) {
           <Download className="h-3 w-3" aria-hidden="true" />
           Export CSV
         </button>
-        <button
-          type="button"
-          onClick={stubPushToAudience}
-          className="inline-flex items-center rounded-md border border-border bg-background hover:bg-muted px-2.5 py-1 text-xs font-medium transition-colors"
-        >
-          Push to audience
-        </button>
-        <button
-          type="button"
-          onClick={stubSendToAds}
-          className="inline-flex items-center rounded-md border border-border bg-background hover:bg-muted px-2.5 py-1 text-xs font-medium transition-colors"
-        >
-          Send to ads
-        </button>
+        <span title="Coming soon — requires the audience-sync pipeline">
+          <button
+            type="button"
+            disabled
+            className="inline-flex items-center rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium opacity-50 cursor-not-allowed"
+          >
+            Push to audience
+          </button>
+        </span>
+        <span title="Coming soon — requires the audience-sync pipeline">
+          <button
+            type="button"
+            disabled
+            className="inline-flex items-center rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium opacity-50 cursor-not-allowed"
+          >
+            Send to ads
+          </button>
+        </span>
       </BulkActionBar>
 
       <div className="rounded-xl border border-border bg-card overflow-hidden">

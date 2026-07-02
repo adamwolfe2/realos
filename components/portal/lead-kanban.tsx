@@ -22,7 +22,6 @@ import {
   bulkUpdateLeadStatus,
   bulkUnsubscribeLeads,
   bulkDeleteLeads,
-  bulkAssignLeads,
 } from "@/lib/actions/lead-bulk";
 import { SideDrawer } from "@/components/portal/ui/side-drawer";
 import { BulkActionBar } from "@/components/portal/ui/bulk-action-bar";
@@ -234,16 +233,6 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
       }
     });
   }
-  // Tag is intentionally still a stub: the Lead model has no `tags` column
-  // today (see prisma/schema.prisma model Lead), and the task explicitly
-  // asks us to skip the migration. Surface that honestly in the toast so
-  // operators know it's coming, not a silent no-op.
-  function stubTag() {
-    toast.message("Tagging is coming soon", {
-      description: "Track this on the roadmap at /portal/insights.",
-    });
-    clearSelection();
-  }
   // Real CSV export — pure client side, no server round-trip needed.
   // Columns chosen to match what's actually useful for downstream CRMs:
   // id, name, email, phone, status, source, score, createdAt.
@@ -269,26 +258,6 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
       `Exported ${rows.length} ${rows.length === 1 ? "lead" : "leads"} as CSV`,
     );
   }
-  function assignToMe() {
-    if (selected.size === 0) return;
-    setError(null);
-    const ids = Array.from(selected);
-    const n = ids.length;
-    startTransition(async () => {
-      const r = await bulkAssignLeads({ leadIds: ids });
-      if (r.ok) {
-        toast.success(
-          `Assigned ${r.count} ${r.count === 1 ? "lead" : "leads"} to you`,
-        );
-        clearSelection();
-        router.refresh();
-      } else {
-        setError(r.error);
-        toast.error(`Couldn't assign ${n} ${n === 1 ? "lead" : "leads"}: ${r.error}`);
-      }
-    });
-  }
-
   function deleteAll() {
     if (
       !window.confirm(
@@ -324,10 +293,8 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
     <div className="space-y-3">
       {/* Bulk action toolbar — uses the canonical BulkActionBar primitive so
           this matches the visitors and renewals pages. Renders nothing when
-          no leads are selected. Stub actions ("Mark contacted", "Tag",
-          "Export CSV", "Assign to me") sit alongside the real status /
-          unsubscribe / delete actions; stubs toast success messages until
-          the corresponding server actions ship. */}
+          no leads are selected. "Tag" and "Assign to me" are disabled
+          (not-yet-shipped) and render with a native tooltip explaining why. */}
       <BulkActionBar
         count={selected.size}
         onClear={clearSelection}
@@ -344,22 +311,24 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
           ) : null}
           Mark contacted
         </button>
-        <button
-          type="button"
-          onClick={stubTag}
-          disabled={pending}
-          className="inline-flex items-center rounded-md border border-border bg-background hover:bg-muted px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50"
-        >
-          Tag
-        </button>
-        <button
-          type="button"
-          onClick={assignToMe}
-          disabled={pending}
-          className="inline-flex items-center rounded-md border border-border bg-background hover:bg-muted px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50"
-        >
-          Assign to me
-        </button>
+        <span title="Coming soon — requires a Lead.tags column that is not yet migrated">
+          <button
+            type="button"
+            disabled
+            className="inline-flex items-center rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium opacity-50 cursor-not-allowed"
+          >
+            Tag
+          </button>
+        </span>
+        <span title="Coming soon — requires the assignment workflow to be wired to the UI">
+          <button
+            type="button"
+            disabled
+            className="inline-flex items-center rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium opacity-50 cursor-not-allowed"
+          >
+            Assign to me
+          </button>
+        </span>
         <button
           type="button"
           onClick={exportCsv}
