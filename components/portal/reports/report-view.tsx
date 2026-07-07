@@ -32,6 +32,8 @@ import {
   GeminiMark,
 } from "@/components/platform/artifacts/brand-logos";
 import { Donut as SharedDonut } from "@/components/portal/ui/charts";
+import { LeaseStackWordmark } from "@/components/brand/leasestack-wordmark";
+import { ClientLogo } from "@/components/portal/reports/client-logo";
 
 // ---------------------------------------------------------------------------
 // ReportView — 2026 redesign.
@@ -332,14 +334,28 @@ export function ReportView({
               {periodLabel}
             </span>
           </div>
-          {orgLogoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={orgLogoUrl}
-              alt={orgName ?? "Logo"}
-              className="h-7 w-auto object-contain shrink-0"
-            />
-          ) : null}
+          {/* Co-branded lockup: the client's own logo (rendered cleanly,
+              hidden if it fails to load) alongside a "Prepared by LeaseStack"
+              wordmark so the report reads as a professional, attributed
+              artifact instead of a squished mystery logo. */}
+          <div className="flex items-center gap-3 shrink-0">
+            {orgLogoUrl ? (
+              <ClientLogo
+                src={orgLogoUrl}
+                alt={orgName ?? "Client logo"}
+                className="h-8 w-auto max-w-[132px] object-contain"
+              />
+            ) : null}
+            {orgLogoUrl ? (
+              <span className="hidden sm:block h-7 w-px bg-border" aria-hidden />
+            ) : null}
+            <div className="flex flex-col items-end leading-tight">
+              <span className="text-[8.5px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                Prepared by
+              </span>
+              <LeaseStackWordmark className="text-[15px]" />
+            </div>
+          </div>
         </div>
 
         {headline || notes ? (

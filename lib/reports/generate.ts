@@ -626,6 +626,11 @@ export type GenerateReportOptions = {
   // against the property's slug/name/bound domains. NULL = portfolio-wide.
   propertyId?: string | null;
   now?: Date;
+  // Explicit period override. When set, bypasses the kind-derived rolling
+  // window (resolvePeriod) and reports on this exact range — e.g. a one-off
+  // calendar-month client report. The prior window used for deltas is the
+  // immediately-preceding range of equal length. periodEnd is exclusive.
+  period?: { periodStart: Date; periodEnd: Date };
 };
 
 // Internal scoped data resolved at the top of the function so every query
@@ -800,8 +805,26 @@ export async function generateReportSnapshot(
   const now = options.now ?? new Date();
   const propertyId = options.propertyId ?? null;
   const scope = await buildScope(orgId, propertyId);
-  const { periodStart, periodEnd, priorStart, priorEnd } = resolvePeriod(kind, now);
-  const days = kind === "weekly" ? 7 : 28;
+  // Period resolution. An explicit `period` override wins over the
+  // kind-derived rolling window; the prior comparison window is the
+  // immediately-preceding range of equal length so deltas stay meaningful.
+  const { periodStart, periodEnd, priorStart, priorEnd } = options.period
+    ? (() => {
+        const { periodStart: ps, periodEnd: pe } = options.period!;
+        const span = pe.getTime() - ps.getTime();
+        return {
+          periodStart: ps,
+          periodEnd: pe,
+          priorStart: new Date(ps.getTime() - span),
+          priorEnd: new Date(ps.getTime()),
+        };
+      })()
+    : resolvePeriod(kind, now);
+  const days = options.period
+    ? Math.max(1, Math.round((periodEnd.getTime() - periodStart.getTime()) / DAY_MS))
+    : kind === "weekly"
+      ? 7
+      : 28;
 
   const [
     leadsCount,
