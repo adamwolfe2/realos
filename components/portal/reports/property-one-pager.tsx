@@ -1,5 +1,4 @@
 import type { ReportSnapshot } from "@/lib/reports/generate";
-import { LeaseStackWordmark } from "@/components/brand/leasestack-wordmark";
 import {
   type PropertyMeta,
   compactUsd,
@@ -66,7 +65,12 @@ export function PropertyOnePager({ snapshot, property }: Props) {
           <div className="mb-1.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Prepared by
           </div>
-          <LeaseStackWordmark className="justify-end text-[20px] text-primary" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logos/leasestack-wordmark.png"
+            alt="LeaseStack"
+            className="ml-auto block h-7 w-auto"
+          />
         </div>
       </header>
 

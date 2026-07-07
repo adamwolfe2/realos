@@ -32,7 +32,6 @@ import {
   GeminiMark,
 } from "@/components/platform/artifacts/brand-logos";
 import { Donut as SharedDonut } from "@/components/portal/ui/charts";
-import { LeaseStackWordmark } from "@/components/brand/leasestack-wordmark";
 import { ClientLogo } from "@/components/portal/reports/client-logo";
 
 // ---------------------------------------------------------------------------
@@ -353,7 +352,12 @@ export function ReportView({
               <span className="text-[8.5px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 Prepared by
               </span>
-              <LeaseStackWordmark className="text-[15px]" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/logos/leasestack-wordmark.png"
+                alt="LeaseStack"
+                className="mt-1 block h-6 w-auto"
+              />
             </div>
           </div>
         </div>

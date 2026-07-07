@@ -5,7 +5,6 @@ import { Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { ReportSnapshot } from "@/lib/reports/generate";
 import { cn } from "@/lib/utils";
-import { LeaseStackWordmark } from "@/components/brand/leasestack-wordmark";
 import {
   type PropertyMeta,
   periodLabel,
@@ -86,7 +85,12 @@ function DashboardInner({
           <div className="mb-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Prepared by
           </div>
-          <LeaseStackWordmark className="justify-end text-[18px] text-primary" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logos/leasestack-wordmark.png"
+            alt="LeaseStack"
+            className="ml-auto block h-7 w-auto"
+          />
         </div>
       </header>
 
