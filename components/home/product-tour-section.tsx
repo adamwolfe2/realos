@@ -51,11 +51,10 @@ export function ProductTourSection() {
               boxShadow: "0 12px 32px rgba(30, 42, 58, 0.06)",
             }}
           >
-            {/* TODO(#25): swap stock for custom photography — and ship the
-                actual screenshot. The path below resolves to /public/marketing/
-                which does not exist yet; a real PNG of the operator-portal
-                dashboard (not a stock illustration) needs to land here so the
-                mobile fallback stops rendering a broken image. */}
+            {/* Real screenshot of the desktop operator-portal dashboard
+                (the same <ProductTour /> rendered below on md+), captured to
+                /public/marketing/product-tour-preview.png. Regenerate by
+                screenshotting the #product-tour dashboard at ~1280px wide. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/marketing/product-tour-preview.png"
@@ -67,11 +66,10 @@ export function ProductTourSection() {
                 height: "auto",
               }}
             />
-            {/* Note: no onError fallback — Next 16 forbids event handlers
-                on Server Component output (this section ships SSR-only).
-                The asset exists at /public/marketing/; if it ever goes
-                missing the browser-default broken-image is acceptable
-                rather than re-introducing a Client Component boundary. */}
+            {/* No onError fallback: this section is SSR-only (Server
+                Component), so no event handlers. The asset is committed at
+                /public/marketing/product-tour-preview.png — keep it in sync
+                with the live dashboard. */}
             <div
               style={{
                 padding: "16px 18px",
