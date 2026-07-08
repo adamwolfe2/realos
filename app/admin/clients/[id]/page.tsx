@@ -363,10 +363,15 @@ export default async function ClientDetail({
         items={[
           {
             label: "Clerk org linked",
-            status: org.clerkOrgId ? "ok" : "missing",
+            // Informational only — inviting users does NOT require a Clerk
+            // Organization (the invite route creates a standalone Clerk
+            // invitation + DB User directly). "warn" not "missing": this
+            // never blocks sending invites. See the "Needs attention" band
+            // above for the actual Clerk provisioning error when AT_RISK.
+            status: org.clerkOrgId ? "ok" : "warn",
             hint: org.clerkOrgId
               ? undefined
-              : "Convert the intake or re-provision to create the Clerk org.",
+              : "No Clerk Organization on file — doesn't block invites. Only affects Clerk-side org membership bookkeeping.",
           },
           {
             label: "Primary contact email",

@@ -45,7 +45,12 @@ export function InviteUserButton({
   const [result, setResult] = useState<InviteResult | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const disabled = !clerkOrgId;
+  // Inviting a user never requires a Clerk Organization — POST
+  // /api/admin/clients/invite creates a standalone Clerk invitation + DB
+  // User row directly, with no dependency on org.clerkOrgId. Do not gate
+  // this button on clerkOrgId (SG Real Estate has clerkOrgId=null and 5
+  // working users, proving the flow doesn't need it).
+  const disabled = false;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
