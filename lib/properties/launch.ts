@@ -32,10 +32,16 @@ import type { PropertyLaunchStatus } from "@prisma/client";
 // is generous enough to forgive weekend lulls and short outages.
 const PIXEL_FRESHNESS_DAYS = 14;
 
+// Same 14-day window as the pixel: a chatbot is "firing" (proven live on the
+// operator's real site) only if a visitor conversation landed in the last 14
+// days. Mirrors PIXEL_FRESHNESS_DAYS — generous enough for weekend lulls.
+const CHATBOT_FRESHNESS_DAYS = 14;
+
 export type ChecklistItem = {
   key:
     | "marketing_content"
     | "chatbot_configured"
+    | "chatbot_firing"
     | "popups_created"
     | "pixel_installed"
     | "pixel_firing"
@@ -104,6 +110,9 @@ export async function getLaunchChecklist(
   const since = new Date(
     Date.now() - PIXEL_FRESHNESS_DAYS * 24 * 60 * 60 * 1000,
   );
+  const chatbotSince = new Date(
+    Date.now() - CHATBOT_FRESHNESS_DAYS * 24 * 60 * 60 * 1000,
+  );
 
   // Norman bug (May 30): the launch checklist was reporting "GA4 not
   // connected" on properties where GA4 was wired at the org level
@@ -112,8 +121,15 @@ export async function getLaunchChecklist(
   // org-wide rows. Switched to OR-with-null pattern: prefer the
   // property-specific row if present, otherwise fall back to the
   // org-wide row. Mirrors the production pickIntegration logic.
-  const [cursive, seoRows, googleCampaign, metaCampaign, chatbotConfig, popup] =
-    await Promise.all([
+  const [
+    cursive,
+    seoRows,
+    googleCampaign,
+    metaCampaign,
+    chatbotConfig,
+    popup,
+    lastChatbotConversation,
+  ] = await Promise.all([
     prisma.cursiveIntegration.findFirst({
       where: { orgId, OR: [{ propertyId }, { propertyId: null }] },
       orderBy: { propertyId: { sort: "desc", nulls: "last" } },
@@ -151,6 +167,20 @@ export async function getLaunchChecklist(
     prisma.popupCampaign
       .findFirst({ where: { orgId, propertyId }, select: { id: true } })
       .catch(() => null),
+    // Real "chatbot is live" evidence: the most recent visitor conversation
+    // for THIS property. The embed (public/embed/chatbot.js) only produces a
+    // ChatbotConversation once it has actually executed on the operator's live
+    // site and a visitor engaged — so a recent row proves the snippet is
+    // installed and rendering, not just that chatbotEnabled=true in the DB.
+    // Scoped STRICTLY to this propertyId (no org-wide/null fallback) so one
+    // property's traffic can never mark another property's bot "live".
+    prisma.chatbotConversation
+      .findFirst({
+        where: { orgId, propertyId },
+        orderBy: { lastMessageAt: "desc" },
+        select: { lastMessageAt: true },
+      })
+      .catch(() => null),
   ]);
 
   // Prefer the property-specific row over the org-wide (propertyId=null)
@@ -184,6 +214,14 @@ export async function getLaunchChecklist(
   const chatbotConfigured = Boolean(
     chatbotConfig && chatbotConfig.chatbotEnabled !== false,
   );
+
+  // Mirror of pixelInstalled/pixelFiring: config is the "installed" half,
+  // a recent conversation is the "firing" half. Only counts as firing when
+  // the bot is also configured (a stray conversation on a disabled bot
+  // shouldn't mark the step done).
+  const lastChatAt = lastChatbotConversation?.lastMessageAt ?? null;
+  const chatbotFiring =
+    chatbotConfigured && lastChatAt != null && lastChatAt >= chatbotSince;
 
   // Checklist is gated by the workspace's enabled features so each property
   // only shows the setup steps for features it actually has. Every item is
@@ -219,6 +257,24 @@ export async function getLaunchChecklist(
         : null,
       actionLabel: "Set up chatbot",
       actionHref: `/portal/properties/${property.id}?tab=chatbot`,
+      required: true,
+    });
+    items.push({
+      key: "chatbot_firing",
+      label: "Chatbot live on site",
+      description: `We've seen a chatbot conversation on this property's site in the last ${CHATBOT_FRESHNESS_DAYS} days.`,
+      done: chatbotFiring,
+      detail: chatbotFiring
+        ? `Last conversation ${lastChatAt?.toISOString().slice(0, 10)}.`
+        : chatbotConfigured
+          ? lastChatAt
+            ? `Configured, but the last conversation was ${lastChatAt.toISOString().slice(0, 10)}. Confirm the embed snippet is still on your live site.`
+            : "Configured, but no conversations yet. Paste the embed snippet on your live site and confirm the widget renders for visitors."
+          : null,
+      actionLabel: chatbotConfigured ? "Install embed snippet" : null,
+      actionHref: chatbotConfigured
+        ? `/portal/properties/${property.id}?tab=chatbot`
+        : null,
       required: true,
     });
   }
