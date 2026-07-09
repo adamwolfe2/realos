@@ -7,6 +7,7 @@ import {
   ForbiddenError,
   auditPayload,
 } from "@/lib/tenancy/scope";
+import { propertyWhereFragment } from "@/lib/tenancy/property-filter";
 import { AuditAction, LeadStatus, Prisma } from "@prisma/client";
 
 const body = z.object({ status: z.nativeEnum(LeadStatus) });
@@ -20,7 +21,8 @@ export async function POST(
     const { id } = await params;
 
     const existing = await prisma.lead.findFirst({
-      where: { id, ...tenantWhere(scope) },
+      // Property-level RBAC: block status changes on out-of-scope leads.
+      where: { id, ...tenantWhere(scope), ...propertyWhereFragment(scope, null) },
       select: { id: true, status: true },
     });
     if (!existing) {

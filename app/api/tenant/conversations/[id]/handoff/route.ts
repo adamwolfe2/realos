@@ -6,6 +6,7 @@ import {
   ForbiddenError,
   auditPayload,
 } from "@/lib/tenancy/scope";
+import { propertyWhereFragment } from "@/lib/tenancy/property-filter";
 import {
   AuditAction,
   ChatbotConversationStatus,
@@ -22,7 +23,9 @@ export async function POST(
     const { id } = await params;
 
     const convo = await prisma.chatbotConversation.findFirst({
-      where: { id, ...tenantWhere(scope) },
+      // Property-level RBAC: a scoped agent can't hand off (and read captured
+      // PII from) a conversation on a property outside their access.
+      where: { id, ...tenantWhere(scope), ...propertyWhereFragment(scope, null) },
       select: {
         id: true,
         orgId: true,

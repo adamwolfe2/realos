@@ -7,6 +7,10 @@ import {
   ForbiddenError,
   auditPayload,
 } from "@/lib/tenancy/scope";
+import {
+  propertyWhereFragment,
+  propertyOrOrgLevelWhereFragment,
+} from "@/lib/tenancy/property-filter";
 import { AuditAction, EngagementStatus } from "@prisma/client";
 import {
   clientWriteLimiter,
@@ -70,15 +74,23 @@ export async function POST(
     // sessionId is bound to a ChatbotConversation in this org. That is the
     // real cross-tenant guard — a stolen visitorId from another org cannot
     // resolve to a session that org owns.
+    // Property-level RBAC: a scoped agent may only engage a visitor/session on
+    // a property they can access (visitors also match org-level null-property
+    // rows, matching the feed). Unrestricted users get empty fragments.
     const [visitor, convo] = await Promise.all([
       prisma.visitor.findFirst({
-        where: { id: visitorId, ...tenantWhere(scope) },
+        where: {
+          id: visitorId,
+          ...tenantWhere(scope),
+          ...propertyOrOrgLevelWhereFragment(scope, null),
+        },
         select: { id: true },
       }),
       prisma.chatbotConversation.findFirst({
         where: {
           sessionId: parsed.data.sessionId,
           ...tenantWhere(scope),
+          ...propertyWhereFragment(scope, null),
         },
         select: { id: true },
       }),

@@ -6,6 +6,7 @@ import {
   tenantWhere,
   ForbiddenError,
 } from "@/lib/tenancy/scope";
+import { propertyWhereFragment } from "@/lib/tenancy/property-filter";
 import { NoteType } from "@prisma/client";
 
 const body = z.object({ body: z.string().min(1).max(5000) });
@@ -22,7 +23,8 @@ export async function POST(
     const { id } = await params;
 
     const owned = await prisma.lead.findFirst({
-      where: { id, ...tenantWhere(scope) },
+      // Property-level RBAC: block notes on leads outside the agent's scope.
+      where: { id, ...tenantWhere(scope), ...propertyWhereFragment(scope, null) },
       select: { id: true },
     });
     if (!owned) return NextResponse.json({ error: "Not found" }, { status: 404 });

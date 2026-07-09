@@ -6,6 +6,7 @@ import {
   ForbiddenError,
   tenantWhere,
 } from "@/lib/tenancy/scope";
+import { propertyOrOrgLevelWhereFragment } from "@/lib/tenancy/property-filter";
 import {
   LeadSource,
   LeadStatus,
@@ -46,7 +47,14 @@ export async function POST(
 
   const { visitorId } = await ctx.params;
   const visitor = await prisma.visitor.findFirst({
-    where: { id: visitorId, ...tenantWhere(scope) },
+    // Property-level RBAC: a scoped agent may convert visitors on their own
+    // properties or org-level (null-property) pixel visitors — matching the
+    // visitor feed — but not a visitor tied to a property they can't access.
+    where: {
+      id: visitorId,
+      ...tenantWhere(scope),
+      ...propertyOrOrgLevelWhereFragment(scope, null),
+    },
   });
   if (!visitor) {
     return NextResponse.json({ error: "Visitor not found" }, { status: 404 });

@@ -8,6 +8,7 @@ import {
   ForbiddenError,
   auditPayload,
 } from "@/lib/tenancy/scope";
+import { propertyWhereFragment } from "@/lib/tenancy/property-filter";
 import { AuditAction, Prisma } from "@prisma/client";
 
 const patchSchema = z.object({
@@ -33,7 +34,9 @@ export async function GET(
     const scope = await requireScope();
     const { id } = await params;
     const lead = await prisma.lead.findFirst({
-      where: { id, ...tenantWhere(scope) },
+      // Property-level RBAC: a property-scoped agent must not read a lead on a
+      // property they can't access. Unrestricted users get an empty fragment.
+      where: { id, ...tenantWhere(scope), ...propertyWhereFragment(scope, null) },
       include: {
         property: true,
         tours: { orderBy: { scheduledAt: "desc" } },
@@ -62,7 +65,9 @@ export async function PATCH(
     const { id } = await params;
 
     const existing = await prisma.lead.findFirst({
-      where: { id, ...tenantWhere(scope) },
+      // Property-level RBAC gate (see GET). The bare-id update below is safe
+      // because it only runs after this scoped lookup confirms access.
+      where: { id, ...tenantWhere(scope), ...propertyWhereFragment(scope, null) },
       select: { id: true },
     });
     if (!existing) {
