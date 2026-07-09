@@ -26,6 +26,13 @@ vi.mock("@/lib/vault/crypto", () => ({
   encryptForOrg: vi.fn(),
   decryptForOrg: h.decryptForOrg,
 }));
+// The push path now runs an SSRF check that resolves the base URL via DNS.
+// These tests use a non-resolving `.test` host on purpose, so stub the guard
+// to a pass-through — SSRF behavior has its own coverage in ssrf-guard.test.ts.
+vi.mock("@/lib/security/ssrf-guard", () => ({
+  assertPublicHttpUrl: vi.fn(async (u: string) => new URL(u)),
+  SsrfError: class SsrfError extends Error {},
+}));
 
 import { pushConversationLeadToFunnel } from "@/lib/integrations/funnel-client";
 

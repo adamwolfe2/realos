@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireWritableWorkspace, auditPayload } from "@/lib/tenancy/scope";
 import { encryptFunnelApiKey } from "@/lib/integrations/funnel-client";
+import { assertPublicHttpUrl, SsrfError } from "@/lib/security/ssrf-guard";
 import { AuditAction } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
@@ -75,6 +76,23 @@ export async function connectFunnel(
   }
 
   const { apiKey, apiBaseUrl, groupId, discoverySourceId, enabled } = parsed.data;
+
+  // SSRF guard: reject a base URL that points at a private/internal/metadata
+  // address before we store it or the cron ever fetches it. Fast feedback here;
+  // the push path re-validates at fetch time (DNS can change).
+  if (apiBaseUrl) {
+    try {
+      await assertPublicHttpUrl(apiBaseUrl);
+    } catch (err) {
+      if (err instanceof SsrfError) {
+        return {
+          ok: false,
+          error: `That base URL isn't allowed: ${err.message}. Use the public Funnel API host.`,
+        };
+      }
+      throw err;
+    }
+  }
 
   try {
     const existing = await prisma.funnelIntegration.findUnique({

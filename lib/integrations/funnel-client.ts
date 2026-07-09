@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { encryptForOrg, decryptForOrg, type EncryptedSecret } from "@/lib/vault/crypto";
+import { assertPublicHttpUrl, SsrfError } from "@/lib/security/ssrf-guard";
 import { LeadNotifyChannel } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
@@ -291,6 +292,21 @@ export async function pushLeadToFunnel(
     });
 
     const baseUrl = integration.apiBaseUrl.replace(/\/+$/, "");
+
+    // SSRF guard: the base URL is operator-supplied. Reject any host that
+    // resolves to a private/loopback/metadata address BEFORE we send the API
+    // key + lead PII to it. Re-checked here (not just at connect time) so a
+    // host that later points at an internal IP can't be reached by the cron.
+    try {
+      await assertPublicHttpUrl(`${baseUrl}/api/v2/clients`);
+    } catch (err) {
+      if (err instanceof SsrfError) {
+        await recordError(input.orgId, `Blocked Funnel base URL: ${err.message}`);
+        return { ok: false, skipped: false, error: err.message };
+      }
+      throw err;
+    }
+
     // HTTP Basic: username = API key, password = empty string.
     const auth = Buffer.from(`${apiKey}:`, "utf8").toString("base64");
 
