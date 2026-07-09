@@ -10,6 +10,10 @@ import {
 } from "@/lib/rate-limit";
 import { checkAiQuota } from "@/lib/ai/quota";
 import {
+  exceedsChatInputBudget,
+  MAX_CHAT_OUTPUT_TOKENS,
+} from "@/lib/chatbot/input-budget";
+import {
   ChatbotConversationStatus,
   LeadSource,
   Prisma,
@@ -69,6 +73,14 @@ export async function POST(req: NextRequest) {
     );
   }
   const { orgId, sessionId, messages, pageUrl } = parsed.data;
+
+  // Denial-of-Wallet: cap aggregate input size per request. See input-budget.
+  if (exceedsChatInputBudget(messages)) {
+    return NextResponse.json(
+      { error: "Conversation too long" },
+      { status: 413 }
+    );
+  }
 
   // Verify the request's Origin header resolves to the claimed orgId. Without
   // this, anyone on the internet could spoof another tenant's orgId, drain
@@ -141,6 +153,8 @@ export async function POST(req: NextRequest) {
     model: anthropic("claude-haiku-4-5-20251001"),
     system: systemPrompt,
     messages,
+    // Denial-of-Wallet: bound the reply length per call.
+    maxOutputTokens: MAX_CHAT_OUTPUT_TOKENS,
     onFinish: async ({ text }) => {
       try {
         await persistConversation({

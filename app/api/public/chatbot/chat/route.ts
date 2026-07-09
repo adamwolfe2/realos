@@ -30,6 +30,10 @@ import {
 } from "@/lib/rate-limit";
 import { checkAiQuota } from "@/lib/ai/quota";
 import { requireMatchingOrigin } from "@/lib/tenancy/origin-guard";
+import {
+  exceedsChatInputBudget,
+  MAX_CHAT_OUTPUT_TOKENS,
+} from "@/lib/chatbot/input-budget";
 import * as Sentry from "@sentry/nextjs";
 
 // POST /api/public/chatbot/chat
@@ -100,6 +104,15 @@ export async function POST(req: NextRequest) {
   }
   const { slug, sessionId, messages, pageUrl, property: propertySlug } =
     parsed.data;
+
+  // Denial-of-Wallet: cap aggregate input size per request (each message is
+  // already ≤4000 chars, but 50 of them is ~50K input tokens). See input-budget.
+  if (exceedsChatInputBudget(messages)) {
+    return NextResponse.json(
+      { error: "Conversation too long" },
+      { status: 413, headers: CORS_HEADERS }
+    );
+  }
 
   const org = await prisma.organization.findUnique({
     where: { slug },
@@ -279,6 +292,9 @@ export async function POST(req: NextRequest) {
     model: anthropic("claude-haiku-4-5-20251001"),
     system: systemPrompt,
     messages,
+    // Denial-of-Wallet: bound the reply so a single call can't be prompted
+    // into an unbounded (expensive) generation.
+    maxOutputTokens: MAX_CHAT_OUTPUT_TOKENS,
     onFinish: async ({ text }) => {
       try {
         // Same markdown stripper the client renderer uses, so the
