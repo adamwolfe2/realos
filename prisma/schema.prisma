@@ -1875,6 +1875,14 @@ model ChatbotConversation {
   /// 5-min digest cron + the handoff route to avoid spamming the agency
   /// more than once per conversation.
   prospectProfileEmailedAt DateTime?
+  /// Timestamp the conversation's lead was pushed to the org's Funnel Leasing
+  /// CRM. Stamped by the funnel-lead-sync cron BEFORE the push fires, giving
+  /// at-most-once semantics: Funnel's POST /clients creates a new Prospect on
+  /// every call, so a re-push would duplicate the client's CRM record. A push
+  /// failure is surfaced via FunnelIntegration.lastError, not a retry. Null
+  /// until the conversation goes idle and is synced (or the integration is
+  /// disconnected, in which case the cron stamps it as a no-op skip).
+  funnelPushedAt           DateTime?
 
   // Engagement
   messageCount  Int       @default(0)
@@ -1903,6 +1911,11 @@ model ChatbotConversation {
   // Digest cron filter: rows that need a prospect-profile email. The
   // partial index trims the scan to "not yet emailed" rows only.
   @@index([lastMessageAt(sort: Desc)], map: "ChatbotConversation_digestQueue_idx")
+  // funnel-lead-sync cron filter: idle chatbot leads not yet pushed to Funnel.
+  // A partial index (WHERE funnelPushedAt IS NULL AND leadId IS NOT NULL) is
+  // applied in the migration SQL to keep the scan tight; Prisma can't express
+  // the predicate declaratively, so this @@index only declares the column set.
+  @@index([lastMessageAt], map: "ChatbotConversation_funnelQueue_idx")
 }
 
 // Operator -> live visitor outbound message. The widget polls

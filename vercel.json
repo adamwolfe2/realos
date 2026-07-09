@@ -113,6 +113,10 @@
       "schedule": "*/5 * * * *"
     },
     {
+      "path": "/api/cron/funnel-lead-sync",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/seo-scan-worker",
       "schedule": "* * * * *"
     },

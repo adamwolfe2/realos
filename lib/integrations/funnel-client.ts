@@ -335,6 +335,78 @@ export async function pushLeadToFunnel(
   }
 }
 
+/**
+ * Push a chatbot conversation's lead to Funnel, reading the FULL persisted
+ * transcript at call time. Used by the funnel-lead-sync cron once a
+ * conversation has gone idle — this is why chatbot leads are NOT pushed inline
+ * at capture (where the transcript is empty/partial): the cron reads the
+ * conversation after the visitor has stopped chatting, so Funnel's `notes` gets
+ * the complete Q&A. Delegates to pushLeadToFunnel, which loads the transcript by
+ * conversationId and is itself fully fail-soft. NEVER throws.
+ *
+ * Lead identity fields come from the Lead row (authoritative), falling back to
+ * the conversation's captured fields.
+ */
+export async function pushConversationLeadToFunnel(
+  conversationId: string,
+): Promise<PushLeadToFunnelResult> {
+  try {
+    const convo = await prisma.chatbotConversation
+      .findUnique({
+        where: { id: conversationId },
+        select: {
+          id: true,
+          orgId: true,
+          pageUrl: true,
+          capturedName: true,
+          capturedEmail: true,
+          capturedPhone: true,
+          lead: {
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+              intent: true,
+              sourceDetail: true,
+            },
+          },
+        },
+      })
+      .catch(() => null);
+
+    if (!convo) {
+      return { ok: false, skipped: true, reason: "conversation not found" };
+    }
+
+    const lead = convo.lead;
+    const name =
+      [lead?.firstName, lead?.lastName].filter(Boolean).join(" ").trim() ||
+      convo.capturedName ||
+      null;
+    const email = lead?.email ?? convo.capturedEmail ?? null;
+    const phone = lead?.phone ?? convo.capturedPhone ?? null;
+
+    return await pushLeadToFunnel({
+      orgId: convo.orgId,
+      channel: LeadNotifyChannel.CHATBOT,
+      lead: {
+        name,
+        email,
+        phone,
+        sourceLabel: convo.pageUrl ? `Chatbot on ${convo.pageUrl}` : "Chatbot",
+        intent: lead?.intent ?? null,
+      },
+      conversationId: convo.id,
+    });
+  } catch (err) {
+    // Absolute backstop — mirrors pushLeadToFunnel's contract of never throwing.
+    const message = err instanceof Error ? err.message : "unknown error";
+    console.warn("[funnel] pushConversationLeadToFunnel failed", err);
+    return { ok: false, skipped: false, error: message };
+  }
+}
+
 /** Best-effort error persistence. Never throws. */
 async function recordError(orgId: string, message: string): Promise<void> {
   await prisma.funnelIntegration

@@ -103,18 +103,29 @@ export async function notifyLeadCaptured(
     // Funnel outage / misconfiguration can NEVER throw out of this function or
     // block the Slack/email/bell notifications that follow. pushLeadToFunnel is
     // already internally fail-soft; the .catch is belt-and-suspenders.
-    void pushLeadToFunnel({
-      orgId: input.orgId,
-      channel: input.channel,
-      lead: {
-        name: input.lead.name ?? null,
-        email: input.lead.email ?? null,
-        phone: input.lead.phone ?? null,
-        sourceLabel: input.lead.sourceLabel ?? null,
-        intent: input.lead.intent ?? null,
-      },
-      conversationId: input.conversationId ?? null,
-    }).catch((err) => console.warn("[lead-notify] funnel push failed", err));
+    //
+    // CHATBOT is deliberately EXCLUDED here. A chatbot lead is captured BEFORE
+    // (pre-chat) or partway through (mid-conversation auto-extraction) the
+    // conversation, so an inline push would send Funnel an empty / partial
+    // transcript in `notes` — and Funnel's POST /clients creates a NEW Prospect
+    // every call (no upsert), so we can't just re-push later. Instead the
+    // funnel-lead-sync cron pushes chatbot leads ONCE, after the conversation
+    // has gone idle, with the full transcript. Every other channel is a
+    // complete event at capture time and pushes immediately here.
+    if (input.channel !== LeadNotifyChannel.CHATBOT) {
+      void pushLeadToFunnel({
+        orgId: input.orgId,
+        channel: input.channel,
+        lead: {
+          name: input.lead.name ?? null,
+          email: input.lead.email ?? null,
+          phone: input.lead.phone ?? null,
+          sourceLabel: input.lead.sourceLabel ?? null,
+          intent: input.lead.intent ?? null,
+        },
+        conversationId: input.conversationId ?? null,
+      }).catch((err) => console.warn("[lead-notify] funnel push failed", err));
+    }
 
     const channelEnabled = org[CHANNEL_TOGGLE[input.channel]] ?? true;
     const recipients = splitRecipients(

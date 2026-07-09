@@ -52,18 +52,22 @@ const ORG = {
   notifyOnManualLead: true,
 };
 
+// A POPUP lead is a complete event at capture time (no transcript to wait for),
+// so it pushes to Funnel INLINE from notifyLeadCaptured — the right channel to
+// prove the fail-soft guarantee on. Chatbot leads are handled separately by the
+// funnel-lead-sync cron (see the CHATBOT deferral test below).
 const INPUT = {
   orgId: "org_1",
   leadId: "lead_1",
   propertyId: null,
-  channel: LeadNotifyChannel.CHATBOT,
+  channel: LeadNotifyChannel.POPUP,
   lead: {
     name: "Jane Doe",
     email: "jane@example.com",
     phone: "555-1234",
-    sourceLabel: "Chatbot on /apartments",
+    sourceLabel: "Popup on /pricing",
   },
-  conversationId: "conv_1",
+  conversationId: null,
 };
 
 beforeEach(() => {
@@ -86,8 +90,7 @@ describe("notifyLeadCaptured — Funnel push is fail-soft", () => {
     expect(h.push).toHaveBeenCalledWith(
       expect.objectContaining({
         orgId: "org_1",
-        channel: LeadNotifyChannel.CHATBOT,
-        conversationId: "conv_1",
+        channel: LeadNotifyChannel.POPUP,
       }),
     );
     // ...and the email side-effect fired regardless.
@@ -111,7 +114,7 @@ describe("notifyLeadCaptured — Funnel push is fail-soft", () => {
     // its own side-effect and must still attempt.
     h.db.organization.findUnique.mockResolvedValue({
       ...ORG,
-      notifyOnChatbotLead: false,
+      notifyOnPopupLead: false,
     });
     h.push.mockResolvedValue({ ok: true });
 
@@ -119,5 +122,30 @@ describe("notifyLeadCaptured — Funnel push is fail-soft", () => {
 
     expect(h.push).toHaveBeenCalledTimes(1);
     expect(h.sendBrandedEmail).not.toHaveBeenCalled();
+  });
+});
+
+describe("notifyLeadCaptured — CHATBOT leads are NOT pushed inline", () => {
+  it("defers chatbot leads to the funnel-lead-sync cron (no inline push)", async () => {
+    // A chatbot lead is captured before / partway through the conversation, so
+    // an inline push would send Funnel an empty/partial transcript — and
+    // Funnel's POST /clients has no upsert, so we can't re-push. Chatbot leads
+    // must therefore be pushed ONCE by the idle cron, never inline here. The
+    // operator's email notification still fires immediately.
+    h.push.mockResolvedValue({ ok: true });
+
+    await expect(
+      notifyLeadCaptured({
+        ...INPUT,
+        channel: LeadNotifyChannel.CHATBOT,
+        lead: { ...INPUT.lead, sourceLabel: "Chatbot on /apartments" },
+        conversationId: "conv_1",
+      }),
+    ).resolves.toBeUndefined();
+
+    // No inline CRM push for chatbot...
+    expect(h.push).not.toHaveBeenCalled();
+    // ...but the operator email still went out.
+    expect(h.sendBrandedEmail).toHaveBeenCalledTimes(1);
   });
 });
