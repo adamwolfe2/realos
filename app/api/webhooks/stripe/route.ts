@@ -1796,6 +1796,33 @@ async function acceptProposalAndProvision(args: {
             result.warnings.join("; "),
           );
         }
+
+        // Audit the platform's highest-consequence money event: a proposal
+        // paid → new paying org provisioned. Every other Stripe state change in
+        // this file writes an AuditEvent; this one was the sole exception. The
+        // write lives inside the dedupe boundary so a retry can't duplicate it,
+        // and is scoped to the freshly-provisioned org.
+        await tx.auditEvent.create({
+          data: {
+            orgId: result.orgId,
+            action: AuditAction.CREATE,
+            entityType: "ProposalAcceptance",
+            entityId: args.proposalId,
+            description: `Proposal accepted & org provisioned — $${(
+              Math.max(0, Math.floor(args.amountPaidCents)) / 100
+            ).toFixed(2)} paid via ${args.eventType}`,
+            diff: {
+              proposalId: args.proposalId,
+              provisionedOrgId: result.orgId,
+              amountPaidCents: Math.max(0, Math.floor(args.amountPaidCents)),
+              stripeCustomerId: args.stripeCustomerId,
+              stripeSubscriptionId: args.stripeSubscriptionId,
+              stripeInvoiceId: args.stripeInvoiceId,
+              stripeCheckoutId,
+              eventType: args.eventType,
+            },
+          },
+        });
       } catch (err) {
         captureWithContext(err, {
           route: "api/webhooks/stripe",

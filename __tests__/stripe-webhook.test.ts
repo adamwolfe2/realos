@@ -236,6 +236,22 @@ describe("Stripe webhook — money/audit writes must not be swallowed (Batch A)"
       /handlePaymentIntentSucceeded\([\s\S]*?event\.id/,
     );
   });
+
+  it("acceptProposalAndProvision writes an AuditEvent for the acceptance", () => {
+    const content = readRoute();
+    // The platform's highest-consequence money event (proposal paid → new org
+    // provisioned) was the only Stripe state change with no audit trail. Assert
+    // the acceptance function now writes a ProposalAcceptance audit row inside
+    // its dedupe boundary so it can't silently regress.
+    const fn = content.slice(
+      content.indexOf("async function acceptProposalAndProvision"),
+      content.indexOf("async function sendTrialEndingSoonEmail"),
+    );
+    expect(fn.length).toBeGreaterThan(0);
+    expect(fn).toContain("auditEvent.create");
+    expect(fn).toContain('entityType: "ProposalAcceptance"');
+    expect(fn).toMatch(/provisionedOrgId:\s*result\.orgId/);
+  });
 });
 
 describe("Stripe webhook — paused-dunning enforcement (Batch B)", () => {
