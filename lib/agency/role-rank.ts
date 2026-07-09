@@ -30,6 +30,17 @@ export const CLIENT_ROLES: ReadonlySet<UserRole> = new Set([
   UserRole.LEASING_AGENT,
 ]);
 
+// Roles that MUST always be confined to at least one property. An empty
+// UserPropertyAccess set for these roles collapses to `allowedPropertyIds =
+// null` in scope.ts — i.e. org-wide access — which is a silent privilege
+// escalation. Both the invite endpoint and the later property-access editor
+// (manage-team.ts) must reject a 0-property assignment for these roles. This
+// set is the single source of truth so the two write paths can never drift.
+export const PROPERTY_SCOPED_ROLES: ReadonlySet<UserRole> = new Set([
+  UserRole.LEASING_AGENT,
+  UserRole.CLIENT_VIEWER,
+]);
+
 export const AGENCY_ROLE_RANK: Record<
   "AGENCY_OWNER" | "AGENCY_ADMIN" | "AGENCY_OPERATOR",
   number

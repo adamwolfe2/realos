@@ -9,6 +9,7 @@ import {
   type ScopedContext,
 } from "@/lib/tenancy/scope";
 import { AuditAction, OrgType, UserRole } from "@prisma/client";
+import { PROPERTY_SCOPED_ROLES } from "@/lib/agency/role-rank";
 import { sendTeammateInviteEmail } from "@/lib/email/onboarding-emails";
 
 const CLIENT_ALLOWED_ROLES: ReadonlySet<UserRole> = new Set([
@@ -127,11 +128,9 @@ export async function POST(req: NextRequest) {
 
   // S1 FIX: LEASING_AGENT and CLIENT_VIEWER must always be scoped to specific
   // properties. An empty/missing propertyIds would silently grant org-wide
-  // access — reject explicitly so callers know what to fix.
-  const PROPERTY_SCOPED_ROLES: ReadonlySet<UserRole> = new Set([
-    UserRole.LEASING_AGENT,
-    UserRole.CLIENT_VIEWER,
-  ]);
+  // access — reject explicitly so callers know what to fix. PROPERTY_SCOPED_ROLES
+  // is shared with manage-team.ts (the property-access editor) so both write
+  // paths enforce the same invariant and can't drift.
   if (
     PROPERTY_SCOPED_ROLES.has(role) &&
     (!parsed.propertyIds || parsed.propertyIds.length === 0)

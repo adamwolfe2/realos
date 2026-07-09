@@ -15,6 +15,7 @@ import {
 import {
   AGENCY_ROLES,
   CLIENT_ROLES,
+  PROPERTY_SCOPED_ROLES,
   agencyRoleRank,
   canManageAgencyRole,
 } from "@/lib/agency/role-rank";
@@ -526,6 +527,20 @@ async function applyPropertyAccess(
     select: { id: true, orgId: true, email: true, role: true },
   });
   if (!target) return { ok: false, error: "User not found." };
+
+  // A property-scoped role with zero grants collapses to org-wide access in
+  // scope.ts (empty UserPropertyAccess set => allowedPropertyIds = null). The
+  // invite endpoint already rejects a 0-property assignment for these roles;
+  // this second write path must enforce the identical invariant or an admin
+  // can silently escalate a scoped teammate to the full portfolio by clearing
+  // their property list. Change the role first if org-wide access is intended.
+  if (PROPERTY_SCOPED_ROLES.has(target.role) && propertyIds.length === 0) {
+    return {
+      ok: false,
+      error:
+        "This teammate's role must stay scoped to at least one property. Change their role before granting org-wide access.",
+    };
+  }
 
   if (propertyIds.length > 0) {
     const found = await prisma.property.findMany({
