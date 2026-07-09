@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/* Light-only product (cross-project rule: no dark theme). Tailwind v4 defaults
+   the `dark:` variant to @media (prefers-color-scheme: dark), so stray `dark:`
+   utilities across the app would silently activate for any operator whose OS is
+   in dark mode — producing broken, half-dark surfaces. Redefine the variant to
+   a selector that never matches so every `dark:` utility compiles to an inert
+   rule. Delete this only if the product intentionally ships a dark theme. */
+@custom-variant dark (&:where([data-enable-dark-theme] *));
+
 /* Mobile device support */
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); padding-bottom: env(safe-area-inset-bottom); }
