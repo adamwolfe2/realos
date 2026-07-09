@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { VisitorIdentificationStatus } from "@prisma/client";
 import { sendVisitorOutreachEmail } from "@/lib/email/visitor-emails";
+import { ensureLeadFromVisitor } from "@/lib/visitors/ensure-lead-from-visitor";
 import { recordCronRun } from "@/lib/health/cron-run";
 import { verifyCronAuth } from "@/lib/cron/auth";
 
@@ -80,6 +81,7 @@ export async function GET(req: NextRequest) {
   });
 
   let sent = 0;
+  let leadsMinted = 0;
   const errors: string[] = [];
 
   // Per-iteration try/catch so one bad email (Resend transient error,
@@ -103,6 +105,17 @@ export async function GET(req: NextRequest) {
           data: { outreachSent: true, outreachSentAt: new Date() },
         });
         sent++;
+        // Attribution bridge: a visitor we've actually reached out to is a
+        // tracked PIXEL_OUTREACH lead. Idempotent + best-effort — a failure
+        // here must not break the outreach batch or double-count sends.
+        try {
+          const lead = await ensureLeadFromVisitor(v);
+          if (lead?.created) leadsMinted++;
+        } catch (err) {
+          errors.push(
+            `${v.id} (lead-mint): ${err instanceof Error ? err.message : String(err)}`,
+          );
+        }
       } else if (result.error) {
         errors.push(`${v.id}: ${result.error}`);
       }
@@ -116,6 +129,7 @@ export async function GET(req: NextRequest) {
     return {
       result: NextResponse.json({
         sent,
+        leadsMinted,
         scanned: candidates.length,
         errors: errors.length ? errors : undefined,
       }),

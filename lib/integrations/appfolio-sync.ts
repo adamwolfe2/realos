@@ -1661,7 +1661,7 @@ async function upsertAppfolioApplication(
 // ---------------------------------------------------------------------------
 // Resident upsert — keyed on (orgId, externalSystem, externalId). Best-effort
 // match to an existing Lead by email so the Resident row carries leadId.
-async function upsertResident(
+export async function upsertResident(
   orgId: string,
   propertyId: string,
   listingId: string | null,
@@ -1669,8 +1669,11 @@ async function upsertResident(
 ): Promise<string> {
   let leadId: string | null = null;
   if (mapped.email) {
+    // Case-insensitive match so an AppFolio resident ("Jane@X.com") resolves
+    // to a lead stored lowercased ("jane@x.com"). Mirrors the case handling in
+    // upsertAppfolioLead — an exact match silently dropped attribution here.
     const lead = await prisma.lead.findFirst({
-      where: { orgId, email: mapped.email },
+      where: { orgId, email: { equals: mapped.email, mode: "insensitive" } },
       select: { id: true },
     });
     if (lead) leadId = lead.id;
