@@ -18,6 +18,7 @@ import {
   DisconnectAppfolioForm,
   SyncAppfolioButton,
 } from "./appfolio-forms";
+import { ConnectFunnelForm } from "./funnel-forms";
 import { AdPlatform, SeoProvider } from "@prisma/client";
 import {
   ConnectSeoForm,
@@ -56,6 +57,7 @@ export default async function IntegrationsPage({
     org,
     pixel,
     appfolio,
+    funnel,
     seoIntegrations,
     adAccounts,
     oauthBoundAds,
@@ -95,6 +97,18 @@ export default async function IntegrationsPage({
         useEmbedFallback: true,
         lastSyncAt: true,
         syncStatus: true,
+        lastError: true,
+      },
+    }),
+    prisma.funnelIntegration.findUnique({
+      where: { orgId: scope.orgId },
+      select: {
+        apiKeyEncrypted: true,
+        apiBaseUrl: true,
+        groupId: true,
+        discoverySourceId: true,
+        enabled: true,
+        lastPushAt: true,
         lastError: true,
       },
     }),
@@ -255,6 +269,18 @@ export default async function IntegrationsPage({
       />
     ) : (
       <ConnectAppfolioForm />
+    ),
+    funnel: (
+      <ConnectFunnelForm
+        connected={!!funnel}
+        hasKey={!!funnel?.apiKeyEncrypted}
+        apiBaseUrl={funnel?.apiBaseUrl ?? ""}
+        groupId={funnel?.groupId != null ? String(funnel.groupId) : ""}
+        discoverySourceId={funnel?.discoverySourceId ?? ""}
+        enabled={!!funnel?.enabled}
+        lastPushAt={funnel?.lastPushAt ? funnel.lastPushAt.toISOString() : null}
+        lastError={funnel?.lastError ?? null}
+      />
     ),
     gsc: (() => {
       // Manage-card displays the LEGACY org-wide GSC row. Per-property

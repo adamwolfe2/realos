@@ -69,6 +69,7 @@ export async function resolveIntegrationStatuses(
     org,
     cursive,
     appfolio,
+    funnel,
     seoIntegrations,
     adAccounts,
     pendingRequests,
@@ -111,6 +112,19 @@ export async function resolveIntegrationStatuses(
           // to "error" instead of falsely showing "connected" when
           // every recent cron run has failed.
           syncStatus: true,
+          lastError: true,
+        },
+      })
+      .catch(() => null),
+    prisma.funnelIntegration
+      .findUnique({
+        where: { orgId },
+        select: {
+          enabled: true,
+          apiKeyEncrypted: true,
+          apiBaseUrl: true,
+          groupId: true,
+          lastPushAt: true,
           lastError: true,
         },
       })
@@ -240,6 +254,7 @@ export async function resolveIntegrationStatuses(
     org,
     cursive,
     appfolio,
+    funnel,
     seoBySlug,
     adsBySlug,
     pendingBySlug,
@@ -265,6 +280,14 @@ function resolveOne(
       useEmbedFallback: boolean;
       lastSyncAt: Date | null;
       syncStatus: string | null;
+      lastError: string | null;
+    } | null;
+    funnel: {
+      enabled: boolean;
+      apiKeyEncrypted: string | null;
+      apiBaseUrl: string | null;
+      groupId: number | null;
+      lastPushAt: Date | null;
       lastError: string | null;
     } | null;
     seoBySlug: Map<string, { lastSyncAt: Date | null; hasError: boolean }>;
@@ -314,6 +337,24 @@ function resolveOne(
       slug: def.slug,
       state: hasError ? "error" : "connected",
       lastEventAt: ctx.appfolio?.lastSyncAt ?? null,
+    };
+  }
+
+  if (def.slug === "funnel") {
+    // Fully-configured-but-disconnected until the operator enables it with a
+    // key + base URL + group id. "connected" here means "enabled and wired",
+    // "error" surfaces the last failed push, otherwise "available".
+    const f = ctx.funnel;
+    const wired =
+      !!f?.enabled &&
+      !!f?.apiKeyEncrypted &&
+      !!f?.apiBaseUrl &&
+      f?.groupId != null;
+    if (!wired) return { slug: def.slug, state: "available" };
+    return {
+      slug: def.slug,
+      state: f?.lastError ? "error" : "connected",
+      lastEventAt: f?.lastPushAt ?? null,
     };
   }
 

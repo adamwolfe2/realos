@@ -73,6 +73,18 @@ export const INTEGRATIONS: IntegrationDefinition[] = [
     auth: "self_serve",
   },
   {
+    slug: "funnel",
+    name: "Funnel Leasing",
+    category: "property_platform",
+    tagline: "Push captured leads into your Funnel Leasing CRM.",
+    description:
+      "When a lead is captured on LeaseStack — chatbot, popup, form, or tour — we create a matching Prospect in your Funnel Leasing account, the same way your other lead sources feed Funnel. Chatbot conversations land in the prospect's notes. Outbound only: a Funnel outage never blocks lead capture. Requires an account-level API key from Funnel support plus your group id.",
+    landsIn: ["Funnel prospects", "Conversation notes"],
+    brandColor: "#FF2FFF",
+    initials: "Fn",
+    auth: "self_serve",
+  },
+  {
     slug: "yardi-breeze",
     name: "Yardi Breeze",
     category: "property_platform",

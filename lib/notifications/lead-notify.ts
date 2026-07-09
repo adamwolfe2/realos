@@ -7,6 +7,7 @@ import {
   type Prisma,
 } from "@prisma/client";
 import { buildLeadNotifyEmail } from "@/lib/email/lead-notify-email";
+import { pushLeadToFunnel } from "@/lib/integrations/funnel-client";
 
 // ---------------------------------------------------------------------------
 // notifyLeadCaptured — single entry point every lead-capture site calls.
@@ -93,6 +94,27 @@ export async function notifyLeadCaptured(
       console.warn("[lead-notify] org not found", input.orgId);
       return;
     }
+
+    // Fail-soft CRM push (Funnel Leasing). This is its OWN side-effect: it
+    // fires independent of the email channel toggles below (a CRM sync isn't
+    // gated on the operator's email-notification prefs) and independent of
+    // whether the Funnel integration is even connected — pushLeadToFunnel
+    // silently skips when it isn't. Fired fire-and-forget with a .catch so a
+    // Funnel outage / misconfiguration can NEVER throw out of this function or
+    // block the Slack/email/bell notifications that follow. pushLeadToFunnel is
+    // already internally fail-soft; the .catch is belt-and-suspenders.
+    void pushLeadToFunnel({
+      orgId: input.orgId,
+      channel: input.channel,
+      lead: {
+        name: input.lead.name ?? null,
+        email: input.lead.email ?? null,
+        phone: input.lead.phone ?? null,
+        sourceLabel: input.lead.sourceLabel ?? null,
+        intent: input.lead.intent ?? null,
+      },
+      conversationId: input.conversationId ?? null,
+    }).catch((err) => console.warn("[lead-notify] funnel push failed", err));
 
     const channelEnabled = org[CHANNEL_TOGGLE[input.channel]] ?? true;
     const recipients = splitRecipients(

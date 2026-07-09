@@ -535,6 +535,7 @@ model Organization {
   cursiveIntegrations     CursiveIntegration[]
   pixelProvisionRequests  PixelProvisionRequest[]
   appfolioIntegration     AppFolioIntegration?
+  funnelIntegration       FunnelIntegration?
   seoIntegrations         SeoIntegration[]
   seoSnapshots            SeoSnapshot[]
   seoQueries              SeoQuery[]
@@ -2138,6 +2139,54 @@ model AppFolioIntegration {
   // Fallback mode
   useEmbedFallback  Boolean @default(false)
   embedScriptConfig Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Funnel Leasing (funnelleasing.com) — outbound lead push. We are ALWAYS the
+// caller here: when a lead is captured (chatbot / popup / form / etc.) and this
+// integration is connected + enabled, we create a Prospect in the customer's
+// Funnel account via POST {apiBaseUrl}/api/v2/clients (HTTP Basic auth,
+// username = API key, password = blank). Mirrors AppFolioIntegration's
+// per-org, encrypted-credential shape. Everything is operator-supplied — no
+// host, group, or discovery-source is ever hardcoded (see funnel-client.ts).
+model FunnelIntegration {
+  id    String       @id @default(cuid())
+  orgId String       @unique
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  // Funnel Customer API key. Issued per Funnel customer account (account-level,
+  // not per-property) by Funnel support. Stored as the JSON-serialized
+  // envelope-encrypted secret from lib/vault/crypto.ts encryptForOrg — the SAME
+  // per-org AES-256-GCM mechanism the credentials vault uses, NOT the shared
+  // symmetric lib/crypto.ts key.
+  apiKeyEncrypted String? @db.Text
+
+  // Operator-supplied API host, e.g. https://api.funnelleasing.com. The Funnel
+  // docs we have never showed the real base URL/host, so we DO NOT hardcode or
+  // guess one — it must be confirmed with the client / Funnel support before
+  // the first real push. Empty until the operator fills it in.
+  apiBaseUrl String?
+
+  // Funnel's internal grouping id for the customer's account. Required on every
+  // create-prospect call. Operator-supplied — never guessed.
+  groupId Int?
+
+  // Discovery-source (lead-source attribution) id chosen from the account's own
+  // GET /api/v2/discovery-sources list. Can't be an arbitrary invented value —
+  // operator picks one that already exists in their Funnel account. Optional.
+  discoverySourceId String?
+
+  // Fully-built-but-disconnected by default. The push side-effect only fires
+  // when this is true (and credentials are present).
+  enabled Boolean @default(false)
+
+  // Fail-soft observability: last successful/attempted push + last error string
+  // so the operator can see whether the CRM sync is healthy without us ever
+  // throwing out of the lead-capture path.
+  lastPushAt DateTime?
+  lastError  String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
