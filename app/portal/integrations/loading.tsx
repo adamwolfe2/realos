@@ -14,7 +14,7 @@ export default function IntegrationsLoading() {
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-xl border border-border bg-card p-4 space-y-3"
+            className="rounded-[2px] border border-border bg-card p-4 space-y-3"
           >
             <div className="flex items-center gap-2">
               <div className="h-8 w-8 rounded-md bg-muted" />

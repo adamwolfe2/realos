@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowRight, Check, Clock, AlertTriangle } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { requireScope } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { PageHeader } from "@/components/admin/page-header";
@@ -14,58 +14,61 @@ import {
 } from "@/lib/integrations/catalog";
 import type { IntegrationState } from "@/lib/integrations/status";
 import { IntegrationIcon } from "@/components/portal/integrations/integration-icon";
+import {
+  StatusChip,
+  VerificationRow,
+  type ConnectionStatus,
+} from "@/components/portal/ui/status-chip";
 
 export const metadata: Metadata = {
-  title: "Integrations",
+  title: "Connection status",
   description:
-    "Connect every data source, ad platform, and PMS in one place. Cards link out to the existing config page for each provider.",
+    "Read-only connection status and sync history for every data source. Connecting and managing sources happens in Data sources.",
 };
 export const dynamic = "force-dynamic";
 
 // ---------------------------------------------------------------------------
-// /portal/integrations — canonical integrations hub.
+// /portal/integrations — read-only connection status + sync history.
 //
-// Replaces the five scattered surfaces (Setup, Connect, Marketplace,
-// Vault, Settings → Integrations) with ONE source-of-truth list of every
-// connector. Each card surfaces the live state (Connected / Needs setup
-// / Coming soon / etc.) and links out to the underlying config page so
-// the heavy per-provider UIs (AppFolio embed, OAuth flows, pixel install
-// snippet) are untouched.
+// This page used to be a second connect hub, rivaling /portal/connect with
+// its own cards, status vocabulary, and setup routes (the audit's "two rival
+// hubs" finding). It is now demoted to an audit view: it answers "what is
+// connected and how fresh is the data?" and nothing else. All connect /
+// manage actions live on the ONE spine at /portal/connect (which links out
+// to the per-provider credential forms itself).
 //
-// The marketplace remains a distinct surface (seller dashboard etc.) at
-// /portal/marketplace — this page just exposes its on/off state.
+// Status renders in the shared StatusChip vocabulary (green Live, never
+// blue-as-success) with a VerificationRow proof line on active sources.
 // ---------------------------------------------------------------------------
 
-type PillTone = "success" | "warning" | "danger" | "neutral" | "info";
-
-type StatePill = {
-  label: string;
-  tone: PillTone;
-};
-
-const STATE_PILL: Record<IntegrationState, StatePill> = {
-  connected: { label: "Connected", tone: "success" },
-  stale: { label: "Sync stale", tone: "warning" },
-  error: { label: "Sync error", tone: "danger" },
-  available: { label: "Needs setup", tone: "neutral" },
-  requested: { label: "Requested", tone: "info" },
-  managed: { label: "Provisioning", tone: "info" },
-  plan_locked: { label: "Upgrade required", tone: "neutral" },
-  coming_soon: { label: "Coming soon", tone: "neutral" },
-};
-
-// Per-integration deep link into the existing config surface. Untouched
-// per-provider UIs (AppFolio embed, OAuth flows, pixel installer) keep
-// living at /portal/settings/integrations#<slug>, /portal/connect, or
-// per-feature pages — this hub just routes the user through.
-const SETUP_HREF: Record<string, string> = {
-  appfolio: "/portal/settings/integrations#appfolio",
-  "visitor-identification": "/portal/settings/integrations#pixel",
-  ga4: "/portal/seo",
-  gsc: "/portal/seo",
-  "google-ads": "/portal/settings/integrations#google-ads",
-  "meta-ads": "/portal/settings/integrations#meta-ads",
-};
+// IntegrationState → shared StatusChip vocabulary. States the chip does not
+// model (plan gate, roadmap) render as Not connected plus a plain-text note
+// beside the chip — same pattern the Connect hub uses for blocked sources.
+function chipFor(state: IntegrationState): {
+  status: ConnectionStatus;
+  label?: string;
+  note?: string;
+} {
+  switch (state) {
+    case "connected":
+      return { status: "live" };
+    case "stale":
+      return { status: "stale" };
+    case "error":
+      return { status: "error" };
+    case "requested":
+      return { status: "provisioning", label: "Requested — provisioning" };
+    case "managed":
+      return { status: "provisioning" };
+    case "plan_locked":
+      return { status: "not_connected", note: "Upgrade required" };
+    case "coming_soon":
+      return { status: "not_connected", note: "Coming soon" };
+    case "available":
+    default:
+      return { status: "not_connected" };
+  }
+}
 
 const ORDERED_CATEGORIES: IntegrationCategory[] = [
   "property_platform",
@@ -76,7 +79,7 @@ const ORDERED_CATEGORIES: IntegrationCategory[] = [
   "automation",
 ];
 
-export default async function IntegrationsHubPage() {
+export default async function IntegrationsStatusPage() {
   const scope = await requireScope();
   const [statuses, org] = await Promise.all([
     resolveIntegrationStatuses(scope.orgId),
@@ -84,9 +87,9 @@ export default async function IntegrationsHubPage() {
       .findUnique({
         where: { id: scope.orgId },
         select: {
-          // Marketplace on/off state — surfaced on the hub per the
-          // consolidation brief without taking over the dedicated
-          // /portal/marketplace surface.
+          // Marketplace on/off state — surfaced here as part of the audit
+          // view without taking over the dedicated /portal/marketplace
+          // surface.
           modulePixel: true,
           moduleChatbot: true,
           moduleSEO: true,
@@ -120,7 +123,7 @@ export default async function IntegrationsHubPage() {
   const totalLive = INTEGRATIONS.filter((i) => !i.comingSoon).length;
 
   // Group integrations by category. Coming-soon items still render so
-  // operators can see the roadmap; they just can't activate.
+  // operators can see the roadmap.
   const grouped = ORDERED_CATEGORIES.map((cat) => ({
     category: cat,
     items: INTEGRATIONS.filter((i) => i.category === cat),
@@ -129,14 +132,14 @@ export default async function IntegrationsHubPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Integrations"
-        description="One source of truth for every connector. Connected sources flow data into the portal automatically — cards link out to the existing config page if you need to manage credentials."
+        title="Connection status"
+        description="Read-only status and sync history for every data source. To connect a new source or manage an existing one, head to Data sources."
       />
 
-      {/* Top summary strip — connected count + marketplace shortcut. */}
+      {/* Summary strip — connected count + the single CTA off this page. */}
       <section
-        className="rounded-xl border border-border bg-card p-4 flex flex-wrap items-center justify-between gap-3"
-        aria-label="Integration summary"
+        className="rounded-[2px] border border-border bg-card p-4 flex flex-wrap items-center justify-between gap-3"
+        aria-label="Connection summary"
       >
         <div className="flex items-baseline gap-3 min-w-0">
           <span className="text-2xl font-semibold tabular-nums text-foreground">
@@ -146,12 +149,19 @@ export default async function IntegrationsHubPage() {
             of {totalLive} sources connected
           </span>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-4 flex-wrap">
           <Link
             href="/portal/marketplace"
             className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
           >
             Manage modules in Marketplace
+            <ArrowRight className="w-3 h-3" />
+          </Link>
+          <Link
+            href="/portal/connect"
+            className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-none bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary-dark transition-colors"
+          >
+            Manage connections
             <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
@@ -164,7 +174,7 @@ export default async function IntegrationsHubPage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
             {g.items.map((def) => (
-              <IntegrationCard
+              <IntegrationStatusCard
                 key={def.slug}
                 def={def}
                 state={statusBySlug.get(def.slug) ?? "available"}
@@ -175,15 +185,14 @@ export default async function IntegrationsHubPage() {
         </section>
       ))}
 
-      {/* Module on/off state — the marketplace is its own surface but the
-          hub exposes whether each catalog module is currently enabled so
-          the operator can audit add-on state without leaving the page. */}
+      {/* Module on/off state — read-only audit of marketplace module state.
+          The dedicated marketplace page is still the place to flip them. */}
       {org ? <ModuleStateGrid org={org} /> : null}
     </div>
   );
 }
 
-function IntegrationCard({
+function IntegrationStatusCard({
   def,
   state,
   lastSyncAt,
@@ -192,25 +201,24 @@ function IntegrationCard({
   state: IntegrationState;
   lastSyncAt: Date | null;
 }) {
-  const pill = STATE_PILL[state];
-  const setupHref = SETUP_HREF[def.slug] ?? "/portal/settings/integrations";
+  const chip = chipFor(state);
   const isComingSoon = state === "coming_soon";
-  const isConnected =
+  const isActive =
     state === "connected" || state === "stale" || state === "error";
 
-  // Relative timestamp — only shown when the integration is active
-  // (connected/stale/error) and we have a recorded sync time. Gives
-  // operators an at-a-glance freshness signal without opening the drawer.
+  // Relative timestamp — only shown when the integration is active and we
+  // have a recorded sync time. Formatted upstream so VerificationRow stays
+  // presentation-only.
   const lastSyncLabel =
-    isConnected && lastSyncAt
-      ? `Synced ${formatDistanceToNow(lastSyncAt, { addSuffix: true })}`
-      : null;
+    isActive && lastSyncAt
+      ? formatDistanceToNow(lastSyncAt, { addSuffix: true })
+      : undefined;
 
   return (
     <article
-      className={`rounded-xl border p-4 transition-all hover:shadow-[0_2px_8px_rgba(15,23,42,0.05)] ${
-        isConnected
-          ? "border-primary/25 bg-primary/[0.03]"
+      className={`rounded-[2px] border p-4 ${
+        isActive
+          ? "border-[#c6c6c6] bg-card"
           : isComingSoon
             ? "border-dashed border-border bg-muted/30"
             : "border-border bg-card"
@@ -223,7 +231,19 @@ function IntegrationCard({
             <h3 className="text-[13px] font-semibold text-foreground tracking-tight truncate">
               {def.name}
             </h3>
-            <Pill pill={pill} />
+            <span className="flex items-center gap-1.5 shrink-0">
+              {/* Active sources carry their state in the VerificationRow
+                  below — a header chip too would read as two disagreeing
+                  chips (same rule as the Connect hub cards). */}
+              {!isActive ? (
+                <StatusChip status={chip.status} label={chip.label} />
+              ) : null}
+              {chip.note ? (
+                <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                  {chip.note}
+                </span>
+              ) : null}
+            </span>
           </div>
           <p className="text-[11.5px] text-muted-foreground leading-snug mt-0.5">
             {def.tagline}
@@ -231,15 +251,15 @@ function IntegrationCard({
         </div>
       </div>
 
-      {/* What it lands in — compact chip row so operators know the payoff
-          before they click into the config flow. */}
+      {/* What it lands in — so operators know which surfaces a source feeds
+          when auditing data freshness. */}
       {def.landsIn.length > 0 ? (
-        <div className="mt-3 pt-3 border-t border-border/40">
+        <div className="mt-3 pt-3 border-t border-[#e0e0e0]">
           <div className="flex flex-wrap gap-1.5">
             {def.landsIn.slice(0, 4).map((target) => (
               <span
                 key={target}
-                className="inline-flex items-center text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground bg-secondary rounded px-1.5 py-0.5"
+                className="inline-flex items-center text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground bg-secondary rounded-[2px] px-1.5 py-0.5"
               >
                 {target}
               </span>
@@ -248,77 +268,25 @@ function IntegrationCard({
         </div>
       ) : null}
 
-      <div className="mt-3 pt-2 border-t border-border/40 flex items-center justify-between gap-2">
-        {/* Last-synced timestamp — visible on connected integrations so
-            operators can judge data freshness without clicking into the
-            manage drawer. Omitted when no sync has ever run. */}
-        {lastSyncLabel ? (
-          <span className="inline-flex items-center gap-1 text-[10.5px] text-muted-foreground tabular-nums">
-            <Clock className="w-2.5 h-2.5 shrink-0" />
-            {lastSyncLabel}
-          </span>
-        ) : (
-          <span />
-        )}
-        {isComingSoon ? (
-          <span className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground">
-            <Clock className="w-3 h-3" />
-            On the roadmap
-          </span>
-        ) : (
-          <Link
-            href={setupHref}
-            className="inline-flex items-center gap-1 text-[12px] font-semibold text-primary hover:underline"
-          >
-            {isConnected ? "Manage" : "Set up"}
-            <ArrowRight className="w-3 h-3" />
-          </Link>
-        )}
-      </div>
+      {/* Sync history line — the proof row for active sources. Read-only:
+          no Set up / Manage links here; the one spine is /portal/connect. */}
+      {isActive ? (
+        <div className="mt-3 pt-2 border-t border-[#e0e0e0]">
+          <VerificationRow
+            status={chip.status}
+            accountLabel={def.name}
+            lastSyncAt={lastSyncLabel}
+          />
+        </div>
+      ) : null}
     </article>
   );
 }
 
-function Pill({ pill }: { pill: StatePill }) {
-  const toneClass = (() => {
-    switch (pill.tone) {
-      case "success":
-        return "text-primary bg-primary/10";
-      case "warning":
-        return "text-amber-700 bg-amber-100";
-      case "danger":
-        return "text-red-700 bg-red-100";
-      case "info":
-        return "text-blue-700 bg-blue-100";
-      case "neutral":
-      default:
-        return "text-muted-foreground bg-muted";
-    }
-  })();
-  const Icon =
-    pill.tone === "success"
-      ? Check
-      : pill.tone === "danger"
-        ? AlertTriangle
-        : pill.tone === "warning"
-          ? AlertTriangle
-          : null;
-  return (
-    <span
-      className={`inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.1em] rounded-full px-2 py-0.5 shrink-0 ${toneClass}`}
-    >
-      {Icon ? <Icon className="w-2.5 h-2.5" /> : null}
-      {pill.label}
-    </span>
-  );
-}
-
 // ---------------------------------------------------------------------------
-// Module on/off audit — the integrations hub exposes which marketplace
-// modules are currently active for this org. The dedicated marketplace
-// page (/portal/marketplace) is still the place to flip them on/off; we
-// just surface the state here so operators don't have to bounce between
-// surfaces to answer "is feature X enabled?".
+// Module on/off audit — read-only view of which marketplace modules are
+// active for this org. The dedicated marketplace page (/portal/marketplace)
+// is still the place to flip them on/off.
 // ---------------------------------------------------------------------------
 function ModuleStateGrid({
   org,
@@ -374,20 +342,20 @@ function ModuleStateGrid({
           Manage in Marketplace
         </Link>
       </div>
-      <div className="rounded-xl border border-border bg-card p-3">
+      <div className="rounded-[2px] border border-border bg-card p-3">
         <ul className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
           {modules.map((m) => {
             const on = org[m.key];
             return (
               <li
                 key={m.key}
-                className="flex items-center justify-between gap-2 rounded-md border border-border/60 px-3 py-2 text-[12px]"
+                className="flex items-center justify-between gap-2 rounded-[2px] border border-border/60 px-3 py-2 text-[12px]"
               >
                 <span className="truncate text-foreground">{m.label}</span>
                 <span
-                  className={`shrink-0 text-[10px] font-semibold uppercase tracking-[0.1em] rounded-full px-2 py-0.5 ${
+                  className={`shrink-0 text-[10px] font-semibold uppercase tracking-[0.1em] rounded-[2px] px-2 py-0.5 ${
                     on
-                      ? "text-primary bg-primary/10"
+                      ? "text-[#24a148] bg-[rgba(36,161,72,0.10)]"
                       : "text-muted-foreground bg-muted"
                   }`}
                 >

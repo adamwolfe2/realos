@@ -20,7 +20,9 @@ const DOT: Record<IntegrationStatus, string> = {
   off: "bg-muted-foreground/30",
 };
 
-const CONNECT_HREF = "/portal/settings/integrations";
+// One spine: connect CTAs route through the canonical hub at /portal/connect
+// (which deep-links to each provider's credential form itself).
+const CONNECT_HREF = "/portal/connect";
 
 export function IntegrationHealth({ chips }: { chips: IntegrationChip[] }) {
   return (

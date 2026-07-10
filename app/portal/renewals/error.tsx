@@ -31,7 +31,7 @@ export default function RenewalsError({
       <p className="text-sm text-muted-foreground mb-6 max-w-sm">
         We couldn&apos;t load your renewals. If AppFolio just synced this
         sometimes resolves with a refresh — if it persists, check your
-        AppFolio integration in Settings.
+        AppFolio connection in Data sources.
       </p>
       <div className="flex gap-3">
         <Button variant="outline" onClick={reset}>
@@ -39,9 +39,9 @@ export default function RenewalsError({
         </Button>
         <Button
           variant="outline"
-          onClick={() => (window.location.href = "/portal/settings/integrations")}
+          onClick={() => (window.location.href = "/portal/connect")}
         >
-          Check integrations
+          Check data sources
         </Button>
       </div>
       {error.digest && (

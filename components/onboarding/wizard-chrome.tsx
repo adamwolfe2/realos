@@ -2,12 +2,12 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Check, ArrowLeft } from "lucide-react";
+import { Check, ArrowLeft, ShieldCheck } from "lucide-react";
 import { BRAND_NAME } from "@/lib/brand";
 import type { OnboardingStep } from "@/lib/onboarding/steps";
 
 // Wizard chrome: brand bar at the top, progress dots, centered card.
-// Matches the platform palette (cream parchment + blue accent).
+// Carbon-forward: token-driven palette, 2px radii, flat hairline borders.
 
 const STEPS: Array<{ id: OnboardingStep; label: string }> = [
   { id: "welcome", label: "Workspace" },
@@ -41,13 +41,13 @@ export function WizardChrome({
 
   return (
     <div
-      style={{ backgroundColor: "#FFFFFF", minHeight: "100vh" }}
+      style={{ backgroundColor: "var(--color-background)", minHeight: "100vh" }}
       className="flex flex-col"
     >
       {/* Top bar */}
       <header
         style={{
-          borderBottom: "1px solid #E2E8F0",
+          borderBottom: "1px solid var(--color-border)",
           backgroundColor: "rgba(255, 255, 255,0.92)",
           backdropFilter: "blur(8px)",
         }}
@@ -57,7 +57,7 @@ export function WizardChrome({
             href="/"
             className="inline-flex items-center gap-2"
             style={{
-              color: "#1E2A3A",
+              color: "var(--color-foreground)",
               fontFamily: "var(--font-sans)",
               fontSize: "15px",
               fontWeight: 600,
@@ -69,10 +69,10 @@ export function WizardChrome({
           <div className="flex items-center gap-3">
             <span
               style={{
-                color: "#88867f",
+                color: "var(--color-muted-foreground)",
                 fontFamily: "var(--font-mono)",
                 fontSize: "10.5px",
-                letterSpacing: "0.16em",
+                letterSpacing: "0.12em",
                 textTransform: "uppercase",
               }}
             >
@@ -97,14 +97,17 @@ export function WizardChrome({
                       width: 22,
                       height: 22,
                       backgroundColor: isDone
-                        ? "#2563EB"
+                        ? "var(--color-primary)"
                         : isActive
-                          ? "#1E2A3A"
-                          : "#E2E8F0",
-                      color: isDone || isActive ? "#ffffff" : "#88867f",
+                          ? "var(--color-foreground)"
+                          : "var(--color-muted)",
+                      color:
+                        isDone || isActive
+                          ? "var(--color-primary-foreground)"
+                          : "var(--color-muted-foreground)",
                       fontFamily: "var(--font-sans)",
                       fontSize: "11px",
-                      fontWeight: 700,
+                      fontWeight: 600,
                     }}
                   >
                     {isDone ? <Check className="w-3 h-3" strokeWidth={1.5} /> : i + 1}
@@ -115,10 +118,12 @@ export function WizardChrome({
                   <span
                     className={isActive ? "inline-block" : "hidden sm:inline-block"}
                     style={{
-                      color: isActive ? "#1E2A3A" : "#88867f",
+                      color: isActive
+                        ? "var(--color-foreground)"
+                        : "var(--color-muted-foreground)",
                       fontFamily: "var(--font-mono)",
                       fontSize: "10.5px",
-                      letterSpacing: "0.16em",
+                      letterSpacing: "0.12em",
                       textTransform: "uppercase",
                       fontWeight: isActive ? 600 : 500,
                     }}
@@ -132,7 +137,7 @@ export function WizardChrome({
                     className="w-4 sm:w-7"
                     style={{
                       height: 1,
-                      backgroundColor: "#E2E8F0",
+                      backgroundColor: "var(--color-border)",
                     }}
                   />
                 ) : null}
@@ -150,9 +155,9 @@ export function WizardChrome({
               type="button"
               onClick={onBack}
               disabled={backDisabled}
-              className="inline-flex items-center gap-1.5 mb-3 px-2 py-1 -ml-2 rounded-md transition-colors hover:bg-[#F1F5F9] disabled:opacity-40 disabled:pointer-events-none"
+              className="inline-flex items-center gap-1.5 mb-3 px-2 py-1 -ml-2 rounded-[2px] transition-colors hover:bg-secondary disabled:opacity-40 disabled:pointer-events-none"
               style={{
-                color: "#475569",
+                color: "var(--color-muted-foreground)",
                 fontFamily: "var(--font-mono)",
                 fontSize: "11.5px",
                 letterSpacing: "0.06em",
@@ -166,15 +171,38 @@ export function WizardChrome({
             </button>
           ) : null}
           <div
-            className="relative rounded-2xl p-5 sm:p-8"
+            className="relative rounded-[2px] p-5 sm:p-8"
             style={{
-              backgroundColor: "#ffffff",
-              border: "1px solid #E2E8F0",
-              boxShadow: "0 1px 2px rgba(30, 42, 58,0.03)",
+              backgroundColor: "var(--color-card)",
+              border: "1px solid var(--color-border)",
             }}
           >
             {children}
           </div>
+
+          {/* Trust line — the wizard's footer chrome. Claims mirror the
+              verified trust footer in components/portal/connect/connect-hub.tsx:
+              AES-256-GCM at rest (lib/crypto.ts); GA4/GSC connect via readonly
+              scopes. Do NOT broaden into a blanket "read-only scopes" claim —
+              Google Ads + Meta OAuth scopes are write-capable and carry their
+              own per-card disclosures on the connect hub. */}
+          <p
+            className="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center"
+            style={{
+              color: "var(--color-muted-foreground)",
+              fontFamily: "var(--font-sans)",
+              fontSize: "11px",
+              lineHeight: 1.5,
+            }}
+          >
+            <ShieldCheck
+              className="w-3.5 h-3.5 shrink-0"
+              strokeWidth={1.75}
+              aria-hidden="true"
+            />
+            Credentials encrypted at rest (AES-256) · Analytics sources connect
+            read-only · Disconnect any integration anytime
+          </p>
         </div>
       </main>
     </div>

@@ -45,10 +45,10 @@ const ICONS: Record<string, LucideIcon> = {
   GitBranch,
 };
 
-const INK = "#1E2A3A";
-const MUTED = "#64748B";
-const BORDER = "#E2E8F0";
-const ACCENT = "#2563EB";
+const INK = "var(--color-foreground)";
+const MUTED = "var(--color-muted-foreground)";
+const BORDER = "var(--color-border)";
+const ACCENT = "var(--color-primary)";
 
 function dollars(cents: number): string {
   return `$${Math.round(cents / 100).toLocaleString()}`;
@@ -107,7 +107,7 @@ export function FeaturesStep({
             color: MUTED,
             fontFamily: "var(--font-mono)",
             fontSize: "10.5px",
-            letterSpacing: "0.16em",
+            letterSpacing: "0.12em",
             textTransform: "uppercase",
             fontWeight: 500,
           }}
@@ -118,10 +118,10 @@ export function FeaturesStep({
           className="mt-2 leading-tight"
           style={{
             color: INK,
-            fontFamily: "var(--font-serif)",
+            fontFamily: "var(--font-display)",
             fontSize: "26px",
-            fontWeight: 500,
-            letterSpacing: "-0.018em",
+            fontWeight: 600,
+            letterSpacing: "0",
           }}
         >
           Pick the features you want.
@@ -142,8 +142,8 @@ export function FeaturesStep({
 
       {/* Always-on base */}
       <div
-        className="rounded-lg flex items-center gap-3"
-        style={{ padding: "12px 14px", border: `1px solid ${BORDER}`, backgroundColor: "#F8FAFC" }}
+        className="rounded-[2px] flex items-center gap-3"
+        style={{ padding: "12px 14px", border: `1px solid ${BORDER}`, backgroundColor: "var(--color-surface)" }}
       >
         <Check className="w-4 h-4 shrink-0" strokeWidth={2} style={{ color: ACCENT }} aria-hidden />
         <div className="flex-1 min-w-0">
@@ -174,26 +174,26 @@ export function FeaturesStep({
               onClick={() => !disabled && toggle(f.key)}
               disabled={disabled}
               aria-pressed={isOn}
-              className="text-left rounded-lg transition-colors relative"
+              className="text-left rounded-[2px] transition-colors relative"
               style={{
                 padding: "12px 14px",
                 border: `1.5px solid ${isOn ? ACCENT : BORDER}`,
-                backgroundColor: isOn ? "rgba(37,99,235,0.04)" : "#FFFFFF",
+                backgroundColor: isOn ? "var(--color-accent)" : "var(--color-card)",
                 opacity: disabled ? 0.6 : 1,
               }}
             >
               <span className="flex items-start gap-2.5">
                 <span
-                  className="shrink-0 mt-0.5 grid place-items-center rounded-md"
+                  className="shrink-0 mt-0.5 grid place-items-center rounded-[2px]"
                   style={{
                     width: 28,
                     height: 28,
                     border: `1px solid ${isOn ? ACCENT : BORDER}`,
-                    backgroundColor: isOn ? ACCENT : "#FFFFFF",
+                    backgroundColor: isOn ? ACCENT : "var(--color-card)",
                   }}
                 >
                   {isOn ? (
-                    <Check className="w-4 h-4" strokeWidth={2.5} style={{ color: "#FFFFFF" }} aria-hidden />
+                    <Check className="w-4 h-4" strokeWidth={2.5} style={{ color: "var(--color-primary-foreground)" }} aria-hidden />
                   ) : (
                     <Icon className="w-4 h-4" strokeWidth={1.5} style={{ color: MUTED }} aria-hidden />
                   )}
@@ -224,11 +224,11 @@ export function FeaturesStep({
 
       {/* Running total + CTA */}
       <div
-        className="sticky bottom-0 rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-        style={{ padding: "14px 16px", border: `1px solid ${BORDER}`, backgroundColor: "#FFFFFF" }}
+        className="sticky bottom-0 rounded-[2px] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+        style={{ padding: "14px 16px", border: `1px solid ${BORDER}`, backgroundColor: "var(--color-card)" }}
       >
         <div>
-          <div style={{ color: INK, fontFamily: "var(--font-sans)", fontSize: "17px", fontWeight: 700 }}>
+          <div style={{ color: INK, fontFamily: "var(--font-sans)", fontSize: "17px", fontWeight: 600 }}>
             {dollars(perPropertyCents)}
             <span style={{ color: MUTED, fontSize: "12px", fontWeight: 500 }}> /property /mo</span>
           </div>
@@ -240,11 +240,11 @@ export function FeaturesStep({
           type="button"
           onClick={() => !disabled && onSubmit({ selectedModules: selectedArr })}
           disabled={disabled}
-          className="rounded-lg transition-colors w-full sm:w-auto shrink-0"
+          className="rounded-none transition-colors w-full sm:w-auto shrink-0"
           style={{
             padding: "12px 20px",
             backgroundColor: ACCENT,
-            color: "#FFFFFF",
+            color: "var(--color-primary-foreground)",
             fontFamily: "var(--font-sans)",
             fontSize: "14px",
             fontWeight: 600,

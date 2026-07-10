@@ -81,7 +81,7 @@ export function SetupStepCard({ step }: Props) {
       {/* Card */}
       <div
         className={[
-          "flex-1 rounded-[12px] border p-5 transition-colors duration-200",
+          "flex-1 rounded-[2px] border p-5 transition-colors duration-200",
           isLocked
             ? "border-border bg-card opacity-60 cursor-not-allowed"
             : "border-border bg-card hover:border-primary/40",
@@ -97,7 +97,7 @@ export function SetupStepCard({ step }: Props) {
                 {step.title}
               </h3>
               <StatusBadge status={step.status} lockedLabel={step.lockedLabel} />
-              <span className="ml-auto shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-medium bg-muted text-foreground">
+              <span className="ml-auto shrink-0 rounded-[2px] px-2.5 py-0.5 text-[11px] font-medium bg-muted text-foreground">
                 {step.estimateMinutes === 0
                   ? "Instant"
                   : `${step.estimateMinutes} min`}
@@ -121,8 +121,8 @@ export function SetupStepCard({ step }: Props) {
 function StatusDot({ status }: { status: ResolvedSetupStep["status"] }) {
   if (status === "done") {
     return (
-      <span className="relative z-10 w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow-[0_0_0_3px_hsl(var(--background))]">
-        <Check className="w-3 h-3 text-primary-foreground" aria-hidden="true" />
+      <span className="relative z-10 w-5 h-5 rounded-full bg-[#24a148] flex items-center justify-center shadow-[0_0_0_3px_hsl(var(--background))]">
+        <Check className="w-3 h-3 text-white" aria-hidden="true" />
       </span>
     );
   }
@@ -168,7 +168,7 @@ function IconTile({
   if (logo) {
     return (
       <span
-        className="shrink-0 w-8 h-8 rounded-[10px] flex items-center justify-center bg-card border border-border overflow-hidden p-1.5"
+        className="shrink-0 w-8 h-8 rounded-[2px] flex items-center justify-center bg-card border border-border overflow-hidden p-1.5"
         aria-hidden="true"
         style={{ color: logo.brandColor }}
       >
@@ -179,7 +179,7 @@ function IconTile({
 
   return (
     <span
-      className={`shrink-0 w-8 h-8 rounded-[10px] flex items-center justify-center ${tone}`}
+      className={`shrink-0 w-8 h-8 rounded-[2px] flex items-center justify-center ${tone}`}
       aria-hidden="true"
     >
       <Icon className="w-4 h-4" />
@@ -200,7 +200,7 @@ function StatusBadge({
 
   if (status === "done") {
     return (
-      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-primary/10 text-primary">
+      <span className="inline-flex items-center rounded-[2px] px-2 py-0.5 text-[11px] font-medium bg-[rgba(36,161,72,0.10)] text-[#24a148]">
         Done
       </span>
     );
@@ -208,7 +208,7 @@ function StatusBadge({
 
   if (status === "current") {
     return (
-      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-primary/15 text-primary">
+      <span className="inline-flex items-center rounded-[2px] px-2 py-0.5 text-[11px] font-medium bg-primary/15 text-primary">
         Up next
       </span>
     );
@@ -216,7 +216,7 @@ function StatusBadge({
 
   // locked
   return (
-    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-muted text-muted-foreground">
+    <span className="inline-flex items-center rounded-[2px] px-2 py-0.5 text-[11px] font-medium bg-muted text-muted-foreground">
       {lockedLabel ?? "Coming soon"}
     </span>
   );
@@ -244,7 +244,7 @@ function StepAction({ step }: { step: ResolvedSetupStep }) {
     <div className="mt-4">
       <Link
         href={step.actionHref}
-        className="inline-flex items-center gap-1.5 rounded-[10px] bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors duration-200 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        className="inline-flex items-center gap-1.5 rounded-none bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors duration-200 hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         {step.actionLabel}
         <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />

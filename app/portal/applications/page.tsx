@@ -345,10 +345,10 @@ export default async function ApplicationsPage({
           title="Applications"
           description="Every lease application from started through decision."
         />
-        <div className="rounded-xl border border-border bg-secondary px-4 py-3 text-sm text-foreground">
+        <div className="rounded-[2px] border border-border bg-secondary px-4 py-3 text-sm text-foreground">
           Application data could not be loaded. This usually means AppFolio hasn&apos;t synced yet.{" "}
           <a href="/portal/connect" className="underline font-medium">
-            Go to Settings → Integrations
+            Go to Data sources
           </a>
         </div>
       </div>

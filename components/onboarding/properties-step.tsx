@@ -10,13 +10,13 @@ import { Plus, Trash2, Building2 } from "lucide-react";
 // properties, records the CRM choice, and starts the 14-day trial.
 // ---------------------------------------------------------------------------
 
-const INK = "#1E2A3A";
-const MUTED = "#64748B";
-const BORDER = "#E2E8F0";
-const ACCENT = "#2563EB";
+const INK = "var(--color-foreground)";
+const MUTED = "var(--color-muted-foreground)";
+const BORDER = "var(--color-border)";
+const ACCENT = "var(--color-primary)";
 
 const FIELD =
-  "w-full rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#2563EB]/30";
+  "w-full rounded-none px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring/30";
 const fieldStyle: React.CSSProperties = {
   border: `1px solid ${BORDER}`,
   color: INK,
@@ -106,7 +106,7 @@ export function PropertiesStep({
             color: MUTED,
             fontFamily: "var(--font-mono)",
             fontSize: "10.5px",
-            letterSpacing: "0.16em",
+            letterSpacing: "0.12em",
             textTransform: "uppercase",
             fontWeight: 500,
           }}
@@ -117,10 +117,10 @@ export function PropertiesStep({
           className="mt-2 leading-tight"
           style={{
             color: INK,
-            fontFamily: "var(--font-serif)",
+            fontFamily: "var(--font-display)",
             fontSize: "26px",
-            fontWeight: 500,
-            letterSpacing: "-0.018em",
+            fontWeight: 600,
+            letterSpacing: "0",
           }}
         >
           Which properties are these for?
@@ -139,11 +139,11 @@ export function PropertiesStep({
         {rows.map((row, i) => (
           <div
             key={i}
-            className="rounded-xl"
+            className="rounded-[2px]"
             style={{ border: `1px solid ${BORDER}`, padding: "12px 14px" }}
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="inline-flex items-center gap-2" style={{ color: MUTED, fontFamily: "var(--font-mono)", fontSize: "10.5px", letterSpacing: "0.14em", textTransform: "uppercase" }}>
+              <span className="inline-flex items-center gap-2" style={{ color: MUTED, fontFamily: "var(--font-mono)", fontSize: "10.5px", letterSpacing: "0.12em", textTransform: "uppercase" }}>
                 <Building2 className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden />
                 Property {i + 1}
               </span>
@@ -152,7 +152,7 @@ export function PropertiesStep({
                   type="button"
                   onClick={() => remove(i)}
                   disabled={disabled}
-                  className="p-1 rounded-md hover:bg-[#F1F5F9] disabled:opacity-40"
+                  className="p-1 rounded-[2px] hover:bg-secondary disabled:opacity-40"
                   aria-label={`Remove property ${i + 1}`}
                 >
                   <Trash2 className="w-4 h-4" strokeWidth={1.5} style={{ color: MUTED }} />
@@ -192,7 +192,7 @@ export function PropertiesStep({
           type="button"
           onClick={add}
           disabled={disabled}
-          className="inline-flex items-center gap-2 rounded-lg transition-colors hover:bg-[#F8FAFC] disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-[2px] transition-colors hover:bg-secondary disabled:opacity-50"
           style={{ padding: "10px 14px", border: `1px dashed ${BORDER}`, color: ACCENT, fontFamily: "var(--font-sans)", fontSize: "13px", fontWeight: 600 }}
         >
           <Plus className="w-4 h-4" strokeWidth={2} />
@@ -204,7 +204,7 @@ export function PropertiesStep({
       <div>
         <label
           className="block mb-1"
-          style={{ color: INK, fontFamily: "var(--font-mono)", fontSize: "10.5px", letterSpacing: "0.14em", textTransform: "uppercase", fontWeight: 600 }}
+          style={{ color: INK, fontFamily: "var(--font-mono)", fontSize: "10.5px", letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 600 }}
         >
           How do you manage these?
         </label>
@@ -228,7 +228,7 @@ export function PropertiesStep({
       </div>
 
       {error ? (
-        <p style={{ color: "#DC2626", fontFamily: "var(--font-sans)", fontSize: "12.5px" }}>{error}</p>
+        <p style={{ color: "var(--color-destructive)", fontFamily: "var(--font-sans)", fontSize: "12.5px" }}>{error}</p>
       ) : null}
 
       <div className="flex">
@@ -236,8 +236,8 @@ export function PropertiesStep({
           type="button"
           onClick={submit}
           disabled={disabled}
-          className="rounded-lg transition-colors w-full sm:w-auto sm:ml-auto"
-          style={{ padding: "12px 20px", backgroundColor: ACCENT, color: "#FFFFFF", fontFamily: "var(--font-sans)", fontSize: "14px", fontWeight: 600, opacity: disabled ? 0.6 : 1 }}
+          className="rounded-none transition-colors w-full sm:w-auto sm:ml-auto"
+          style={{ padding: "12px 20px", backgroundColor: ACCENT, color: "var(--color-primary-foreground)", fontFamily: "var(--font-sans)", fontSize: "14px", fontWeight: 600, opacity: disabled ? 0.6 : 1 }}
         >
           Start 14-day free trial
         </button>

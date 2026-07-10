@@ -109,18 +109,18 @@ export function WelcomeStep({
       <header>
         <p
           className="eyebrow"
-          style={{ color: "#2563EB", letterSpacing: "0.16em" }}
+          style={{ color: "var(--color-primary)", letterSpacing: "0.12em" }}
         >
           Step 1 of 3
         </p>
         <h1
           className="mt-2"
           style={{
-            color: "#1E2A3A",
-            fontFamily: "var(--font-sans)",
+            color: "var(--color-foreground)",
+            fontFamily: "var(--font-display)",
             fontSize: "26px",
-            fontWeight: 700,
-            letterSpacing: "-0.014em",
+            fontWeight: 600,
+            letterSpacing: "0",
           }}
         >
           Welcome. Let&apos;s set up your workspace.
@@ -128,7 +128,7 @@ export function WelcomeStep({
         <p
           className="mt-2"
           style={{
-            color: "#64748B",
+            color: "var(--color-muted-foreground)",
             fontFamily: "var(--font-sans)",
             fontSize: "14.5px",
             lineHeight: 1.55,
@@ -144,7 +144,7 @@ export function WelcomeStep({
           htmlFor="workspace-name"
           className="block"
           style={{
-            color: "#1E2A3A",
+            color: "var(--color-foreground)",
             fontFamily: "var(--font-sans)",
             fontSize: "13.5px",
             fontWeight: 600,
@@ -159,14 +159,14 @@ export function WelcomeStep({
           onChange={(e) => setName(e.target.value)}
           placeholder="Acme Residential"
           maxLength={120}
-          className="w-full rounded-lg"
+          className="w-full rounded-none"
           style={{
-            backgroundColor: "#F1F5F9",
-            border: "1px solid #E2E8F0",
+            backgroundColor: "var(--color-surface)",
+            border: "1px solid var(--color-border)",
             padding: "12px 14px",
             fontFamily: "var(--font-sans)",
             fontSize: "15px",
-            color: "#1E2A3A",
+            color: "var(--color-foreground)",
             outline: "none",
           }}
           autoFocus
@@ -176,7 +176,7 @@ export function WelcomeStep({
       <div className="space-y-2">
         <p
           style={{
-            color: "#1E2A3A",
+            color: "var(--color-foreground)",
             fontFamily: "var(--font-sans)",
             fontSize: "13.5px",
             fontWeight: 600,
@@ -192,18 +192,22 @@ export function WelcomeStep({
                 key={opt.value}
                 type="button"
                 onClick={() => setPropertyType(opt.value)}
-                className="rounded-lg text-left transition-colors"
+                className="rounded-[2px] text-left transition-colors"
                 style={{
-                  border: active ? "1px solid #2563EB" : "1px solid #E2E8F0",
+                  border: active
+                    ? "1px solid var(--color-primary)"
+                    : "1px solid var(--color-border)",
                   backgroundColor: active
-                    ? "rgba(37,99,235,0.06)"
-                    : "#F1F5F9",
+                    ? "var(--color-accent)"
+                    : "var(--color-surface)",
                   padding: "12px 14px",
                 }}
               >
                 <div
                   style={{
-                    color: active ? "#2563EB" : "#1E2A3A",
+                    color: active
+                      ? "var(--color-primary)"
+                      : "var(--color-foreground)",
                     fontFamily: "var(--font-sans)",
                     fontSize: "14px",
                     fontWeight: 600,
@@ -214,7 +218,7 @@ export function WelcomeStep({
                 <div
                   className="mt-1"
                   style={{
-                    color: "#64748B",
+                    color: "var(--color-muted-foreground)",
                     fontFamily: "var(--font-sans)",
                     fontSize: "12px",
                     lineHeight: 1.45,
@@ -232,7 +236,7 @@ export function WelcomeStep({
         <div className="space-y-2">
           <p
             style={{
-              color: "#1E2A3A",
+              color: "var(--color-foreground)",
               fontFamily: "var(--font-sans)",
               fontSize: "13.5px",
               fontWeight: 600,
@@ -251,12 +255,14 @@ export function WelcomeStep({
                   className="rounded-full transition-colors"
                   style={{
                     border: active
-                      ? "1px solid #2563EB"
-                      : "1px solid #E2E8F0",
+                      ? "1px solid var(--color-primary)"
+                      : "1px solid var(--color-border)",
                     backgroundColor: active
-                      ? "rgba(37,99,235,0.08)"
-                      : "#ffffff",
-                    color: active ? "#2563EB" : "#64748B",
+                      ? "var(--color-accent)"
+                      : "var(--color-background)",
+                    color: active
+                      ? "var(--color-primary)"
+                      : "var(--color-muted-foreground)",
                     padding: "6px 12px",
                     fontFamily: "var(--font-sans)",
                     fontSize: "12.5px",
@@ -275,7 +281,7 @@ export function WelcomeStep({
         <div className="space-y-2">
           <p
             style={{
-              color: "#1E2A3A",
+              color: "var(--color-foreground)",
               fontFamily: "var(--font-sans)",
               fontSize: "13.5px",
               fontWeight: 600,
@@ -294,12 +300,14 @@ export function WelcomeStep({
                   className="rounded-full transition-colors"
                   style={{
                     border: active
-                      ? "1px solid #2563EB"
-                      : "1px solid #E2E8F0",
+                      ? "1px solid var(--color-primary)"
+                      : "1px solid var(--color-border)",
                     backgroundColor: active
-                      ? "rgba(37,99,235,0.08)"
-                      : "#ffffff",
-                    color: active ? "#2563EB" : "#64748B",
+                      ? "var(--color-accent)"
+                      : "var(--color-background)",
+                    color: active
+                      ? "var(--color-primary)"
+                      : "var(--color-muted-foreground)",
                     padding: "6px 12px",
                     fontFamily: "var(--font-sans)",
                     fontSize: "12.5px",
@@ -318,10 +326,10 @@ export function WelcomeStep({
         <button
           type="submit"
           disabled={!canSubmit}
-          className="inline-flex items-center gap-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-2 rounded-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           style={{
-            backgroundColor: "#2563EB",
-            color: "#ffffff",
+            backgroundColor: "var(--color-primary)",
+            color: "var(--color-primary-foreground)",
             padding: "10px 18px",
             fontFamily: "var(--font-sans)",
             fontSize: "14px",

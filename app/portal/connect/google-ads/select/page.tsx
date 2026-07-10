@@ -9,6 +9,7 @@ import {
   type AccessibleCustomer,
 } from "@/lib/integrations/google-ads";
 import { PageHeader } from "@/components/admin/page-header";
+import { ConnectStepper } from "@/components/portal/connect/account-picker-list";
 import { CustomerPicker } from "./customer-picker";
 
 export const metadata: Metadata = { title: "Choose a Google Ads account" };
@@ -36,9 +37,10 @@ export default async function GoogleAdsSelectPage() {
   const oauth = await getOAuthCredentials(scope.orgId, "google_ads");
   if (!oauth || !oauth.refreshToken) {
     // No OAuth on file — they didn't actually complete the consent step,
-    // or the row was revoked. Bounce them back to the integrations page
-    // where the Connect button lives.
-    redirect("/portal/settings/integrations?oauth=google_ads_missing");
+    // or the row was revoked. Bounce them back to the canonical connect
+    // hub where the Connect button lives (Wave-1 spine: /portal/connect,
+    // not the settings drawer).
+    redirect("/portal/connect?oauth=google_ads_missing");
   }
 
   const developerToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
@@ -74,7 +76,7 @@ export default async function GoogleAdsSelectPage() {
         description="These are the accounts your Google login can reach. Pick the one you want LeaseStack to sync. You can connect more later."
         actions={
           <Link
-            href="/portal/settings/integrations"
+            href="/portal/connect"
             className="text-xs font-medium text-muted-foreground hover:text-foreground"
           >
             Cancel
@@ -83,7 +85,9 @@ export default async function GoogleAdsSelectPage() {
       />
 
       {listError ? (
-        <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4">
+        <>
+          <ConnectStepper current={2} />
+          <div className="rounded-[2px] border border-destructive/30 bg-destructive/5 p-4">
           <p className="text-sm font-medium text-destructive">
             Couldn&apos;t load your Google Ads accounts.
           </p>
@@ -96,9 +100,12 @@ export default async function GoogleAdsSelectPage() {
           >
             Re-authorize with Google
           </Link>
-        </div>
+          </div>
+        </>
       ) : customers.length === 0 ? (
-        <div className="rounded-md border border-border bg-muted/20 p-5 space-y-2">
+        <>
+          <ConnectStepper current={2} />
+          <div className="rounded-[2px] border border-border bg-muted/20 p-5 space-y-2">
           <p className="text-sm font-medium text-foreground">
             No accessible Google Ads accounts.
           </p>
@@ -132,8 +139,11 @@ export default async function GoogleAdsSelectPage() {
           >
             Re-authorize with Google
           </Link>
-        </div>
+          </div>
+        </>
       ) : (
+        // Stepper for the happy path renders inside CustomerPicker so it can
+        // advance to step 3 (Verify) on bind success.
         <CustomerPicker customers={customers} />
       )}
     </div>

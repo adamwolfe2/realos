@@ -167,7 +167,7 @@ export default async function SetupHubPage() {
       <section aria-labelledby="connect-data">
         <h2
           id="connect-data"
-          className="font-sans text-xs uppercase tracking-[0.12px] text-muted-foreground mb-4"
+          className="font-sans text-xs uppercase tracking-[0.12em] text-muted-foreground mb-4"
         >
           Connect data sources
         </h2>
@@ -195,7 +195,7 @@ export default async function SetupHubPage() {
           <section key={p} aria-labelledby={`phase-${p}`}>
             <h2
               id={`phase-${p}`}
-              className="font-sans text-xs uppercase tracking-[0.12px] text-muted-foreground mb-4"
+              className="font-sans text-xs uppercase tracking-[0.12em] text-muted-foreground mb-4"
             >
               {PHASE_LABELS[p]}
             </h2>
@@ -231,7 +231,7 @@ function PhaseChip({
   return (
     <span
       className={[
-        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium",
+        "inline-flex items-center gap-1.5 rounded-[2px] border px-3 py-1 text-xs font-medium",
         active
           ? "border-primary/30 bg-primary/5 text-primary"
           : "border-border bg-card text-foreground",
@@ -250,7 +250,7 @@ function PhaseChip({
 
 function FoundationCompleteBanner() {
   return (
-    <div className="mb-6 rounded-[12px] border border-primary/20 bg-primary/5 p-5">
+    <div className="mb-6 rounded-[2px] border border-[#a6c8ff] bg-[#edf5ff] p-5">
       <h3 className="text-xl font-semibold tracking-tight text-foreground">
         Foundation complete.
       </h3>
@@ -269,7 +269,7 @@ function TimelineList({ steps }: { steps: ResolvedSetupStep[] }) {
       {/* Vertical rail — hidden on mobile, runs through dot centers. */}
       <div
         aria-hidden="true"
-        className="hidden md:block absolute left-[9px] top-5 bottom-5 w-[2px] bg-[var(--border-warm)]"
+        className="hidden md:block absolute left-[9px] top-5 bottom-5 w-[2px] bg-[#e0e0e0]"
       />
 
       <ul className="space-y-3 md:space-y-4">

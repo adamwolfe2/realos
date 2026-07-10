@@ -9,6 +9,8 @@ import {
   disconnectPixel,
   type ConnectPixelResult,
 } from "@/lib/actions/cursive-connect";
+import { StatusChip } from "@/components/portal/ui/status-chip";
+import { PrerequisiteLine } from "@/components/portal/connect/trust-footer";
 
 const INITIAL: ConnectPixelResult = { ok: true };
 
@@ -34,6 +36,11 @@ export function ConnectPixelForm({
 
   return (
     <form action={formAction} className="space-y-4">
+      <PrerequisiteLine>
+        You&apos;ll need: your website URL — we handle the rest · live within
+        4 business hours
+      </PrerequisiteLine>
+
       <div className="space-y-1">
         <h3 className="text-sm font-semibold">
           Turn anonymous visitors into named leads
@@ -46,7 +53,7 @@ export function ConnectPixelForm({
         </p>
       </div>
 
-      <div className="rounded-md border border-border bg-muted/30 p-4 space-y-4">
+      <div className="rounded-[2px] border border-border bg-muted/30 p-4 space-y-4">
         {showPicker ? (
           <div className="flex flex-col gap-1.5">
             <Label
@@ -117,9 +124,13 @@ export function ConnectPixelForm({
           {pending ? "Submitting…" : "Request your pixel"}
         </Button>
         {state && state.ok && state.queued ? (
-          <span className="text-xs text-primary">
-            Got it. We&apos;ll email your install snippet within one business day.
-          </span>
+          // Persisted request state in the shared vocabulary — the same
+          // status re-renders from the server row on refresh (Connect hub +
+          // this panel), so the requested moment is never silently lost.
+          <StatusChip
+            status="provisioning"
+            label="Requested — provisioning (≤4 business hrs)"
+          />
         ) : null}
         {state && !state.ok && state.error ? (
           <span className="text-xs text-destructive">{state.error}</span>

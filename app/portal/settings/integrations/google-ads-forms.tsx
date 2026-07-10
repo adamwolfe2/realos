@@ -8,8 +8,20 @@ import {
   type ConnectGoogleAdsResult,
 } from "@/lib/actions/google-ads-connect";
 import { cn } from "@/lib/utils";
+import { StatusChip, VerificationRow } from "@/components/portal/ui/status-chip";
+import { deriveSyncChip } from "@/components/portal/connect/trust-footer";
 
 const INITIAL: ConnectGoogleAdsResult = { ok: false, error: "" };
+
+// Deterministic formatter — fixed locale so the server render and client
+// hydration produce the same string (toLocaleString drifts with viewer
+// locale).
+const SYNC_DATE_FORMAT = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+});
 
 export function ConnectGoogleAdsForm() {
   const [state, formAction, pending] = useActionState<
@@ -19,7 +31,7 @@ export function ConnectGoogleAdsForm() {
 
   return (
     <form action={formAction} className="space-y-4">
-      <div className="rounded-md border border-border bg-muted/30 p-4 space-y-2">
+      <div className="rounded-[2px] border border-border bg-muted/30 p-4 space-y-2">
         <p className="text-xs font-medium text-foreground">
           Step 1 — Generate an OAuth refresh token
         </p>
@@ -48,7 +60,7 @@ export function ConnectGoogleAdsForm() {
         </ol>
       </div>
 
-      <div className="rounded-md border border-border bg-muted/30 p-4 space-y-4">
+      <div className="rounded-[2px] border border-border bg-muted/30 p-4 space-y-4">
         <p className="text-xs font-medium text-foreground">
           Step 2 — Paste your credentials
         </p>
@@ -102,15 +114,17 @@ export function ConnectGoogleAdsForm() {
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark disabled:opacity-60 transition-colors"
+          className="rounded-none bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark disabled:opacity-60 transition-colors"
         >
           {pending ? "Testing & connecting…" : "Connect Google Ads"}
         </button>
         {state.ok ? (
-          <span className="text-xs text-primary">
-            Connected. {state.currency ? `Currency: ${state.currency}.` : ""}
-            First backfill is running.
-          </span>
+          // Green proof line instead of blue "Connected." text.
+          <VerificationRow
+            status="live"
+            accountLabel="Google Ads"
+            recordSummary={`${state.currency ? `${state.currency} · ` : ""}first backfill running`}
+          />
         ) : state.error ? (
           <span className="text-xs text-destructive">{state.error}</span>
         ) : null}
@@ -136,21 +150,28 @@ export function GoogleAdsManage({
   lastSyncError: string | null;
   accessStatus: string | null;
 }) {
+  // Ads platforms report daily-ish — 72h staleness, matching the hub.
+  const chip = deriveSyncChip({
+    lastSyncAt,
+    error: lastSyncError,
+    staleAfterHours: 72,
+  });
   return (
     <div className="space-y-5">
+      <StatusChip status={chip.status} label={chip.label} />
       <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
         <DetailRow label="Account" value={displayName ?? "Google Ads"} />
         <DetailRow label="Customer ID" value={externalAccountId} mono />
         <DetailRow label="Currency" value={currency ?? "—"} />
         <DetailRow
           label="Last sync"
-          value={lastSyncAt ? lastSyncAt.toLocaleString() : "Never"}
+          value={lastSyncAt ? SYNC_DATE_FORMAT.format(lastSyncAt) : "Never"}
         />
         <DetailRow label="Status" value={accessStatus ?? "—"} />
       </dl>
 
       {lastSyncError ? (
-        <p className="text-[11px] text-destructive rounded-md border border-destructive/30 bg-destructive/10 p-3">
+        <p className="text-[11px] text-destructive rounded-[2px] border border-destructive/30 bg-destructive/10 p-3">
           {lastSyncError}
         </p>
       ) : null}
@@ -222,12 +243,12 @@ export function SyncButton({
         type="button"
         onClick={handleClick}
         disabled={pending}
-        className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted/50 disabled:opacity-60 transition-colors"
+        className="rounded-[2px] border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted/50 disabled:opacity-60 transition-colors"
       >
         {pending ? "Syncing…" : "Sync now"}
       </button>
       {result && result.ok ? (
-        <span className="text-xs text-primary">
+        <span className="text-xs text-[#24a148]">
           Synced {result.campaigns} campaigns, {result.metrics} metric rows.
         </span>
       ) : null}
@@ -267,7 +288,7 @@ function Field({
         placeholder={placeholder}
         autoComplete={autoComplete}
         className={cn(
-          "rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30",
+          "rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30",
           mono && "font-mono text-[13px]"
         )}
       />

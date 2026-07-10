@@ -31,7 +31,8 @@ import { prisma } from "@/lib/db";
 //     org because re-trial scenarios should surface the welcome again)
 //
 // On dismiss → /portal. On "Book a walkthrough" → opens the Cal.com
-// modal via BookDemoLink. On "Connect AppFolio" → /portal/integrations.
+// modal via BookDemoLink. On "Connect AppFolio" → /portal/connect (the
+// canonical get-connected spine).
 // ---------------------------------------------------------------------------
 
 export const metadata: Metadata = {
@@ -41,10 +42,10 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-const INK = "#1E2A3A";
-const MUTED = "#64748B";
-const BORDER = "#E2E8F0";
-const ACCENT = "#2563EB";
+const INK = "var(--color-foreground)";
+const MUTED = "var(--color-muted-foreground)";
+const BORDER = "var(--color-border)";
+const ACCENT = "var(--color-primary)";
 
 export default async function PortalWelcomePage() {
   const scope = await requireScope();
@@ -109,7 +110,7 @@ export default async function PortalWelcomePage() {
             color: ACCENT,
             fontFamily: "var(--font-mono)",
             fontSize: "10.5px",
-            letterSpacing: "0.18em",
+            letterSpacing: "0.12em",
             textTransform: "uppercase",
             fontWeight: 600,
           }}
@@ -120,10 +121,10 @@ export default async function PortalWelcomePage() {
           className="mt-2 leading-tight"
           style={{
             color: INK,
-            fontFamily: "var(--font-serif)",
+            fontFamily: "var(--font-display)",
             fontSize: "clamp(28px, 3.8vw, 38px)",
-            fontWeight: 500,
-            letterSpacing: "-0.02em",
+            fontWeight: 600,
+            letterSpacing: "0",
           }}
         >
           {org.name}, you&rsquo;re in.
@@ -145,11 +146,11 @@ export default async function PortalWelcomePage() {
       {/* Trial status strip */}
       {trialDaysLeft != null ? (
         <section
-          className="mb-6 rounded-xl flex items-center gap-3"
+          className="mb-6 rounded-[2px] flex items-center gap-3"
           style={{
             padding: "14px 16px",
             border: `1px solid ${BORDER}`,
-            backgroundColor: "rgba(37,99,235,0.04)",
+            backgroundColor: "var(--color-accent)",
           }}
         >
           <Clock
@@ -192,7 +193,7 @@ export default async function PortalWelcomePage() {
             color: INK,
             fontFamily: "var(--font-mono)",
             fontSize: "10.5px",
-            letterSpacing: "0.16em",
+            letterSpacing: "0.12em",
             textTransform: "uppercase",
             fontWeight: 600,
           }}
@@ -232,7 +233,7 @@ export default async function PortalWelcomePage() {
                 <CheckCircle2
                   className="w-4 h-4 shrink-0"
                   strokeWidth={1.5}
-                  style={{ color: "#10B981" }}
+                  style={{ color: "var(--color-success)" }}
                   aria-hidden="true"
                 />
                 {m.label}
@@ -250,7 +251,7 @@ export default async function PortalWelcomePage() {
             color: INK,
             fontFamily: "var(--font-mono)",
             fontSize: "10.5px",
-            letterSpacing: "0.16em",
+            letterSpacing: "0.12em",
             textTransform: "uppercase",
             fontWeight: 600,
           }}
@@ -270,7 +271,7 @@ export default async function PortalWelcomePage() {
             description="Where AppFolio sync, marketing site, and reporting all start."
           />
           <NextStepLink
-            href="/portal/integrations"
+            href="/portal/connect"
             icon={Link2}
             label="Connect AppFolio (or your PMS)"
             description="Pulls residents, leases, and listings every hour. Skip if you've already connected."
@@ -326,8 +327,8 @@ function NextStepLink({
   external?: boolean;
 }) {
   const inner = (
-    <span className="flex items-start gap-3 p-4 rounded-xl border transition-colors hover:bg-[#F8FAFC]"
-      style={{ borderColor: BORDER, backgroundColor: "#FFFFFF" }}
+    <span className="flex items-start gap-3 p-4 rounded-[2px] border transition-colors hover:bg-secondary"
+      style={{ borderColor: BORDER, backgroundColor: "var(--color-card)" }}
     >
       <Icon
         className="w-4.5 h-4.5 shrink-0 mt-0.5"

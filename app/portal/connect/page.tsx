@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PixelRequestStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
 import { getConnectStatusForOrg } from "@/lib/connect/status";
@@ -29,18 +30,46 @@ export const dynamic = "force-dynamic";
 export default async function ConnectPage() {
   const scope = await requireScope();
   const activePropertyId = await getActivePropertyId().catch(() => null);
-  const [sources, availability, activeProperty] = await Promise.all([
-    getConnectStatusForOrg(scope.orgId),
-    Promise.resolve(getProviderAvailability()),
-    activePropertyId
-      ? prisma.property
-          .findFirst({
-            where: { id: activePropertyId, orgId: scope.orgId },
-            select: { id: true, name: true },
-          })
-          .catch(() => null)
-      : Promise.resolve(null),
-  ]);
+  const [sources, availability, activeProperty, pixelInFlight, pixelRequest] =
+    await Promise.all([
+      getConnectStatusForOrg(scope.orgId),
+      Promise.resolve(getProviderAvailability()),
+      activePropertyId
+        ? prisma.property
+            .findFirst({
+              where: { id: activePropertyId, orgId: scope.orgId },
+              select: { id: true, name: true },
+            })
+            .catch(() => null)
+        : Promise.resolve(null),
+      // Cursive pixel "requested but not yet live" — server-persisted so a
+      // refresh doesn't silently drop back to "Not connected". Two signals:
+      // a cursiveIntegration row someone started (self-serve wizard minted a
+      // webhookToken, or the request captured installedOnDomain) that has no
+      // pixel bound yet…
+      prisma.cursiveIntegration
+        .findFirst({
+          where: {
+            orgId: scope.orgId,
+            cursivePixelId: null,
+            OR: [
+              { webhookToken: { not: null } },
+              { installedOnDomain: { not: null } },
+            ],
+          },
+          select: { id: true },
+        })
+        .catch(() => null),
+      // …or a legacy ops-fulfillment request still PENDING.
+      prisma.pixelProvisionRequest
+        .findFirst({
+          where: { orgId: scope.orgId, status: PixelRequestStatus.PENDING },
+          select: { id: true },
+        })
+        .catch(() => null),
+    ]);
+
+  const pixelRequested = Boolean(pixelInFlight || pixelRequest);
 
   return (
     <div className="max-w-[1100px] mx-auto px-4 lg:px-6 py-8 lg:py-12">
@@ -55,6 +84,8 @@ export default async function ConnectPage() {
           lastSyncAt: s.lastSyncAt ? s.lastSyncAt.toISOString() : null,
           accountLabel: s.accountLabel,
           healthNote: s.healthNote ?? null,
+          provisioning:
+            s.id === "cursive_pixel" && !s.connected ? pixelRequested : false,
         }))}
       />
     </div>

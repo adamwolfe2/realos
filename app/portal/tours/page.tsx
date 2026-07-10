@@ -464,10 +464,10 @@ export default async function ToursPage({
           title="Tours"
           description="Calendar, pipeline, and outcomes for every property tour."
         />
-        <div className="rounded-xl border border-border bg-secondary px-4 py-3 text-sm text-foreground">
+        <div className="rounded-[2px] border border-border bg-secondary px-4 py-3 text-sm text-foreground">
           Tour data could not be loaded. If this error persists, check{" "}
           <a href="/portal/connect" className="underline font-medium">
-            Settings → Integrations
+            Data sources
           </a>
           .
         </div>

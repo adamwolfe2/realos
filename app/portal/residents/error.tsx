@@ -38,9 +38,9 @@ export default function ResidentsError({
         </Button>
         <Button
           variant="outline"
-          onClick={() => (window.location.href = "/portal/settings/integrations")}
+          onClick={() => (window.location.href = "/portal/connect")}
         >
-          Check integrations
+          Check data sources
         </Button>
       </div>
       {error.digest && (

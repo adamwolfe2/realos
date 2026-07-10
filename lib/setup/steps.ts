@@ -100,7 +100,7 @@ export const SETUP_STEPS: SetupStepDefinition[] = [
     description:
       "See every lead, tour, and signed lease in real time. If you're on Core, pick Public Listings mode — just your subdomain, no API keys. Plus/Max plans can connect the full Reports API.",
     estimateMinutes: 5,
-    actionHref: "/portal/settings/integrations",
+    actionHref: "/portal/connect",
     actionLabel: "Connect AppFolio",
     isComplete: (ctx) => ctx.appfolio?.lastSyncAt != null,
   },
@@ -112,7 +112,7 @@ export const SETUP_STEPS: SetupStepDefinition[] = [
     description:
       "Name every anonymous visitor. See who's on your site right now.",
     estimateMinutes: 5,
-    actionHref: "/portal/settings/integrations",
+    actionHref: "/portal/connect",
     actionLabel: "Install pixel",
     isComplete: (ctx) =>
       ctx.cursive?.cursivePixelId != null && ctx.cursive?.lastEventAt != null,
@@ -151,7 +151,7 @@ export const SETUP_STEPS: SetupStepDefinition[] = [
     description:
       "Attribute signed leases to campaigns. See true cost per lease by keyword.",
     estimateMinutes: 10,
-    actionHref: "/portal/settings/integrations",
+    actionHref: "/portal/connect",
     actionLabel: "Connect Google Ads",
     requiresModule: "moduleGoogleAds",
     lockedLabel: "Growth plan required",
@@ -168,7 +168,7 @@ export const SETUP_STEPS: SetupStepDefinition[] = [
     description:
       "Same for Instagram and Facebook. See every paid lead attributed to ad set.",
     estimateMinutes: 10,
-    actionHref: "/portal/settings/integrations",
+    actionHref: "/portal/connect",
     actionLabel: "Connect Meta Ads",
     requiresModule: "moduleMetaAds",
     lockedLabel: "Growth plan required",
@@ -185,7 +185,7 @@ export const SETUP_STEPS: SetupStepDefinition[] = [
     description:
       "See which pages drive tours. Understand every traffic source in context.",
     estimateMinutes: 5,
-    actionHref: "/portal/settings/integrations",
+    actionHref: "/portal/connect",
     actionLabel: "Connect GA4",
     isComplete: (ctx) =>
       ctx.seoIntegrations.some(

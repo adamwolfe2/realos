@@ -9,6 +9,11 @@ import {
   type SyncAppfolioResult,
 } from "@/lib/actions/appfolio-connect";
 import { cn } from "@/lib/utils";
+import { StatusChip, VerificationRow } from "@/components/portal/ui/status-chip";
+import {
+  TrustFooter,
+  PrerequisiteLine,
+} from "@/components/portal/connect/trust-footer";
 
 const CONNECT_INITIAL: ConnectAppfolioResult = { ok: true, mode: "embed" };
 
@@ -88,6 +93,13 @@ export function ConnectAppfolioForm() {
     <form action={formAction} className="space-y-4">
       <input type="hidden" name="authMode" value={mode} />
 
+      {/* Prerequisites + time-to-connect, up front (per-mode). */}
+      <PrerequisiteLine>
+        {mode === "rest"
+          ? "You'll need: your AppFolio Reports API Client ID + Secret · ~2 min"
+          : "You'll need: your AppFolio subdomain · ~1 min"}
+      </PrerequisiteLine>
+
       <div className="space-y-2">
         <span className="text-xs font-medium text-foreground">
           Step 1 — Choose your connection type
@@ -108,7 +120,7 @@ export function ConnectAppfolioForm() {
         </div>
       </div>
 
-      <div className="space-y-4 rounded-md border border-border bg-muted/30 p-4">
+      <div className="space-y-4 rounded-[2px] border border-border bg-muted/30 p-4">
         <p className="text-xs font-medium text-foreground">
           Step 2 — Enter your AppFolio details
         </p>
@@ -179,7 +191,7 @@ export function ConnectAppfolioForm() {
         )}
       </div>
 
-      <div className="space-y-2 rounded-md border border-border bg-muted/30 p-4">
+      <div className="space-y-2 rounded-[2px] border border-border bg-muted/30 p-4">
         <p className="text-xs font-medium text-foreground">
           Step 3 — Test and save
         </p>
@@ -194,7 +206,7 @@ export function ConnectAppfolioForm() {
           AppFolio imports their entire directory and they choose what to
           activate, rather than discovering surprise billing line items
           after the first sync. */}
-      <div className="space-y-1.5 rounded-md border border-primary/20 bg-primary/[0.04] p-4">
+      <div className="space-y-1.5 rounded-[2px] border border-primary/20 bg-primary/[0.04] p-4">
         <p className="text-xs font-semibold text-foreground">
           What happens after you save
         </p>
@@ -222,18 +234,22 @@ export function ConnectAppfolioForm() {
           type="button"
           disabled={!canTest || isTesting}
           onClick={handleTest}
-          className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-muted/50 disabled:opacity-50 transition-colors"
+          className="rounded-none border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-muted/50 disabled:opacity-50 transition-colors"
         >
           {isTesting ? "Testing…" : "Test connection"}
         </button>
 
         {testState.status === "ok" ? (
-          <span className="text-xs text-primary flex items-center gap-1.5">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary" />
-            {testState.listingsFound != null
-              ? `Connection verified — found ${testState.listingsFound} listing${testState.listingsFound === 1 ? "" : "s"}`
-              : "Connection verified"}
-          </span>
+          // Green proof, not blue: verified against AppFolio is a success
+          // state and success is green in the shared vocabulary.
+          <StatusChip
+            status="live"
+            label={
+              testState.listingsFound != null
+                ? `Verified — found ${testState.listingsFound} listing${testState.listingsFound === 1 ? "" : "s"}`
+                : "Connection verified"
+            }
+          />
         ) : testState.status === "error" ? (
           <span className="text-xs text-destructive">{testState.error}</span>
         ) : null}
@@ -244,7 +260,7 @@ export function ConnectAppfolioForm() {
         <button
           type="submit"
           disabled={pending || !testPassed}
-          className="rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark disabled:opacity-60 transition-colors mt-3"
+          className="rounded-none bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark disabled:opacity-60 transition-colors mt-3"
         >
           {pending ? "Saving…" : "Save & connect"}
         </button>
@@ -257,12 +273,18 @@ export function ConnectAppfolioForm() {
           <span className="text-xs text-destructive mt-3">{state.error}</span>
         ) : null}
         {state && state.ok && state.mode && (state as { ok: true; mode: string; listingsFound?: number }).listingsFound != null ? (
-          <span className="text-xs text-primary mt-3">
-            Connected — found {(state as { ok: true; mode: string; listingsFound?: number }).listingsFound} listing
-            {(state as { ok: true; mode: string; listingsFound?: number }).listingsFound === 1 ? "" : "s"}.
-          </span>
+          // Proof of the successful bind: green Live chip + concrete record
+          // count, replacing the old blue text line.
+          <VerificationRow
+            className="mt-3"
+            status="live"
+            accountLabel="AppFolio"
+            recordSummary={`${(state as { ok: true; mode: string; listingsFound?: number }).listingsFound} listing${(state as { ok: true; mode: string; listingsFound?: number }).listingsFound === 1 ? "" : "s"} found`}
+          />
         ) : null}
       </div>
+
+      <TrustFooter scopeNote="Read-only access to your AppFolio Reports API" />
     </form>
   );
 }
@@ -293,7 +315,7 @@ function ModeCard({
       type="button"
       onClick={onClick}
       className={cn(
-        "rounded-md border p-3 text-left transition-colors",
+        "rounded-[2px] border p-3 text-left transition-colors",
         active
           ? "border-primary bg-primary/5"
           : "border-border bg-card hover:bg-muted/50",
@@ -347,7 +369,7 @@ function Field({
         value={value}
         onChange={onChange ? (e) => onChange(e.target.value) : undefined}
         className={cn(
-          "rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30",
+          "rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30",
           mono && "font-mono text-[13px]",
         )}
       />
@@ -398,17 +420,17 @@ export function SyncAppfolioButton() {
         type="button"
         onClick={handleClick}
         disabled={isPending}
-        className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted/50 disabled:opacity-60 transition-colors"
+        className="rounded-[2px] border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted/50 disabled:opacity-60 transition-colors"
       >
         {isPending ? "Syncing…" : "Sync now"}
       </button>
       {result && result.ok ? (
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-xs text-primary">
+          <span className="text-xs text-[#24a148]">
             {formatSyncSummary(result.stats)}
           </span>
           {result.stats.warnings.length > 0 ? (
-            <details className="text-[11px] text-amber-700">
+            <details className="text-[11px] text-[#8a6d00]">
               <summary className="cursor-pointer font-medium">
                 {result.stats.warnings.length} warning
                 {result.stats.warnings.length === 1 ? "" : "s"} (click to inspect)

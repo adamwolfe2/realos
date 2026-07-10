@@ -8,6 +8,7 @@ import {
   type AccessibleMetaAdAccount,
 } from "@/lib/integrations/meta-ads";
 import { PageHeader } from "@/components/admin/page-header";
+import { ConnectStepper } from "@/components/portal/connect/account-picker-list";
 import { AdAccountPicker } from "./account-picker";
 
 export const metadata: Metadata = { title: "Choose a Meta ad account" };
@@ -24,7 +25,9 @@ export default async function MetaAdsSelectPage() {
 
   const oauth = await getOAuthCredentials(scope.orgId, "meta_ads");
   if (!oauth) {
-    redirect("/portal/settings/integrations?oauth=meta_ads_missing");
+    // Wave-1 spine: bounce to the canonical connect hub, not the settings
+    // drawer, when the consent step never completed.
+    redirect("/portal/connect?oauth=meta_ads_missing");
   }
 
   let accounts: AccessibleMetaAdAccount[] = [];
@@ -46,7 +49,7 @@ export default async function MetaAdsSelectPage() {
         description="These are the ad accounts your Meta login can reach. Pick the one you want LeaseStack to sync. You can connect more later."
         actions={
           <Link
-            href="/portal/settings/integrations"
+            href="/portal/connect"
             className="text-xs font-medium text-muted-foreground hover:text-foreground"
           >
             Cancel
@@ -55,7 +58,9 @@ export default async function MetaAdsSelectPage() {
       />
 
       {listError ? (
-        <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4">
+        <>
+          <ConnectStepper current={2} />
+          <div className="rounded-[2px] border border-destructive/30 bg-destructive/5 p-4">
           <p className="text-sm font-medium text-destructive">
             Couldn&apos;t load your Meta ad accounts.
           </p>
@@ -68,9 +73,12 @@ export default async function MetaAdsSelectPage() {
           >
             Re-authorize with Meta
           </Link>
-        </div>
+          </div>
+        </>
       ) : accounts.length === 0 ? (
-        <div className="rounded-md border border-border bg-muted/20 p-5 space-y-2">
+        <>
+          <ConnectStepper current={2} />
+          <div className="rounded-[2px] border border-border bg-muted/20 p-5 space-y-2">
           <p className="text-sm font-medium text-foreground">
             No accessible Meta ad accounts.
           </p>
@@ -94,8 +102,11 @@ export default async function MetaAdsSelectPage() {
           >
             Re-authorize with Meta
           </Link>
-        </div>
+          </div>
+        </>
       ) : (
+        // Stepper for the happy path renders inside AdAccountPicker so it
+        // can advance to step 3 (Verify) on bind success.
         <AdAccountPicker accounts={accounts} />
       )}
     </div>

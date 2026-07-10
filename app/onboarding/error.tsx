@@ -33,13 +33,13 @@ export default function OnboardingError({
         <div className="flex items-center justify-center gap-3 pt-2">
           <button
             onClick={reset}
-            className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-4 py-2 text-sm font-medium hover:opacity-90 transition-opacity"
+            className="inline-flex items-center justify-center rounded-none bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-4 py-2 text-sm font-medium hover:opacity-90 transition-opacity"
           >
             Try again
           </button>
           <Link
             href="/"
-            className="inline-flex items-center justify-center rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+            className="inline-flex items-center justify-center rounded-none border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
           >
             Back home
           </Link>

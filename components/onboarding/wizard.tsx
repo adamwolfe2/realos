@@ -143,11 +143,11 @@ export function OnboardingWizard({
       {submitting ? (
         <div
           className="absolute inset-0 z-10 flex items-center justify-center"
-          style={{ backgroundColor: "rgba(245,244,237,0.7)" }}
+          style={{ backgroundColor: "rgba(255,255,255,0.7)" }}
         >
           <Loader2
             className="h-6 w-6 animate-spin"
-            style={{ color: "#2563EB" }}
+            style={{ color: "var(--color-primary)" }}
             aria-hidden="true"
           />
         </div>

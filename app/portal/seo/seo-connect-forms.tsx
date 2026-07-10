@@ -10,6 +10,12 @@ import {
   type SyncSeoResult,
 } from "@/lib/actions/seo-connect";
 import { cn } from "@/lib/utils";
+import { AlertDialog } from "@/components/portal/ui/alert-dialog";
+import { VerificationRow } from "@/components/portal/ui/status-chip";
+import {
+  TrustFooter,
+  PrerequisiteLine,
+} from "@/components/portal/connect/trust-footer";
 
 const CONNECT_INITIAL: ConnectSeoResult = { ok: true, provider: "GSC" };
 
@@ -33,7 +39,7 @@ function CopyEmailButton({ email }: { email: string }) {
           /* ignore - clipboard unavailable */
         }
       }}
-      className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[10.5px] font-medium text-foreground hover:bg-secondary transition-colors"
+      className="inline-flex items-center gap-1 rounded-[2px] border border-border bg-background px-2 py-1 text-[10.5px] font-medium text-foreground hover:bg-secondary transition-colors"
     >
       {copied ? "Copied" : "Copy email"}
     </button>
@@ -86,12 +92,20 @@ export function ConnectSeoForm({
     <form action={formAction} className="space-y-4">
       <input type="hidden" name="provider" value={provider} />
 
+      {/* Prerequisites + time-to-connect, up front — copy derived from what
+          this service-account flow actually asks for (not the OAuth flow). */}
+      <PrerequisiteLine>
+        {isGsc
+          ? "You'll need: owner access to your Search Console property · ~3 min"
+          : "You'll need: admin access to your GA4 property + its numeric Property ID · ~3 min"}
+      </PrerequisiteLine>
+
       {/* Step 0: pick which LeaseStack property this connection is
           for. Only renders for orgs with more than one property —
           single-property tenants don't see this and the connection
           lands on the legacy org-wide row. */}
       {showPicker ? (
-        <div className="rounded-md border border-border bg-muted/30 px-4 py-3 space-y-2">
+        <div className="rounded-[2px] border border-border bg-muted/30 px-4 py-3 space-y-2">
           <label className="block text-xs font-medium text-foreground">
             Which property is this {isGsc ? "Search Console" : "GA4"}{" "}
             connection for?
@@ -118,7 +132,7 @@ export function ConnectSeoForm({
       ) : null}
 
       {/* Step 1: grant access */}
-      <div className="rounded-md border border-border bg-muted/30 px-4 py-3 space-y-3">
+      <div className="rounded-[2px] border border-border bg-muted/30 px-4 py-3 space-y-3">
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs font-medium text-foreground">
             Step 1 — Grant read access to LeaseStack
@@ -269,7 +283,7 @@ export function ConnectSeoForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-60 transition-colors"
+          className="rounded-none bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark disabled:opacity-60 transition-colors"
         >
           {pending
             ? "Testing & connecting…"
@@ -279,17 +293,20 @@ export function ConnectSeoForm({
           <span className="text-xs text-destructive">{state.error}</span>
         ) : null}
         {state && state.ok && state.provider === provider ? (
-          <span className="text-xs text-primary">
-            Connected
-            {state.propertyDisplayName
-              ? ` to ${state.propertyDisplayName}`
-              : state.permissionLevel
-                ? ` (${state.permissionLevel})`
-                : ""}
-            . First backfill is running in the background.
-          </span>
+          // Proof, not a blue text-line: green Live chip + the account we
+          // actually verified against Google.
+          <VerificationRow
+            status="live"
+            accountLabel={
+              state.propertyDisplayName ??
+              `${provider}${state.permissionLevel ? ` (${state.permissionLevel})` : ""}`
+            }
+            recordSummary="first backfill running"
+          />
         ) : null}
       </div>
+
+      <TrustFooter scopeNote="We only read analytics data — nothing is written to your Google account" />
     </form>
   );
 }
@@ -302,32 +319,51 @@ export function DisconnectSeoForm({
   /** Property scope of the row to remove. NULL = legacy org-wide. */
   propertyId?: string | null;
 }) {
-  const [state, formAction, pending] = useActionState<
-    ConnectSeoResult,
-    FormData
-  >(async (_prev, formData) => disconnectSeo(formData), CONNECT_INITIAL);
+  // Real confirm via the shared AlertDialog (destructive variant) — a
+  // one-click disconnect on a data source was the only destructive action
+  // on this surface with no confirmation step.
+  const [open, setOpen] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  function handleConfirm() {
+    startTransition(async () => {
+      const fd = new FormData();
+      fd.set("provider", provider);
+      if (propertyId) fd.set("leasestackPropertyId", propertyId);
+      const result = await disconnectSeo(fd);
+      setOpen(false);
+      setError(!result.ok && result.error ? result.error : null);
+    });
+  }
 
   return (
-    <form action={formAction} className="inline-flex items-center gap-3">
-      <input type="hidden" name="provider" value={provider} />
-      {propertyId ? (
-        <input
-          type="hidden"
-          name="leasestackPropertyId"
-          value={propertyId}
-        />
-      ) : null}
+    <div className="inline-flex items-center gap-3">
       <button
-        type="submit"
+        type="button"
         disabled={pending}
+        onClick={() => {
+          setError(null);
+          setOpen(true);
+        }}
         className="text-xs font-medium text-destructive hover:opacity-80 hover:underline underline-offset-2 disabled:opacity-60"
       >
         {pending ? "Disconnecting…" : `Disconnect ${provider}`}
       </button>
-      {state && !state.ok && state.error ? (
-        <span className="text-xs text-destructive">{state.error}</span>
-      ) : null}
-    </form>
+      {error ? <span className="text-xs text-destructive">{error}</span> : null}
+      <AlertDialog
+        open={open}
+        destructive
+        pending={pending}
+        title={`Disconnect ${provider}?`}
+        body={`LeaseStack stops syncing ${
+          provider === "GSC" ? "Search Console" : "GA4"
+        } data for this connection immediately, and insights that depend on it stop updating. You can reconnect anytime.`}
+        confirmLabel={`Disconnect ${provider}`}
+        onCancel={() => setOpen(false)}
+        onConfirm={handleConfirm}
+      />
+    </div>
   );
 }
 
@@ -349,12 +385,12 @@ export function SyncSeoButton() {
         type="button"
         onClick={handleClick}
         disabled={isPending}
-        className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted/50 disabled:opacity-60 transition-colors"
+        className="rounded-[2px] border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted/50 disabled:opacity-60 transition-colors"
       >
         {isPending ? "Syncing…" : "Sync now"}
       </button>
       {result && result.ok ? (
-        <span className="text-xs text-primary">
+        <span className="text-xs text-[#24a148]">
           Pulled {result.stats.gscDays} GSC days, {result.stats.gscQueries}{" "}
           queries, {result.stats.ga4Days} GA4 days,{" "}
           {result.stats.ga4LandingPages} landing pages.
@@ -396,7 +432,7 @@ function Field({
         placeholder={placeholder}
         autoComplete={autoComplete}
         className={cn(
-          "rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30",
+          "rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30",
           mono && "font-mono text-[13px]",
         )}
       />

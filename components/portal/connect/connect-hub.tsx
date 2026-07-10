@@ -76,6 +76,11 @@ export type ConnectSourceVM = {
       not in a fully-green state (e.g. AppFolio with auto-sync paused). Not
       a banner, just a yellow action row beneath the verification line. */
   healthNote?: { label: string; href: string } | null;
+  /** Server-persisted "requested but not yet live" state (Cursive pixel
+      today: a provision request or in-flight self-serve setup exists but no
+      pixel is bound). Survives refresh — unlike the local `pending` click
+      state — so the requested→provisioning moment is never silently lost. */
+  provisioning?: boolean;
 };
 
 const SOURCE_META: Record<
@@ -296,6 +301,13 @@ function deriveChipState(
       return { status: "stale" };
     }
     return { status: "live" };
+  }
+  if (source.provisioning) {
+    // Server-persisted requested state (pixel provision request / in-flight
+    // setup on file) — beats the transient local click state and survives
+    // refresh. Full copy renders as the card's status line; the chip keeps
+    // the six-word vocabulary.
+    return { status: "provisioning" };
   }
   if (isPending) {
     // Local click state, pre-redirect.
@@ -695,10 +707,14 @@ function SourceCard({
         ) : null}
 
         {/* Prerequisite line — what you'll need + realistic time-to-connect.
-            Hidden once connected or when the source is blocked. */}
+            Hidden once connected or when the source is blocked. When a
+            request is already on file (provisioning), the line flips to the
+            persisted status copy instead of re-asking for prerequisites. */}
         {!isConnected && !isBlocked ? (
           <p className="text-[11px] text-[#525252] leading-snug">
-            {PREREQUISITES[source.id]}
+            {source.provisioning
+              ? "Requested — provisioning (≤4 business hrs). We'll email you when it's live."
+              : PREREQUISITES[source.id]}
           </p>
         ) : null}
 
@@ -782,7 +798,11 @@ function SourceCard({
                   ) : (
                     <ExternalLink className="w-3 h-3" />
                   )}
-                  {meta.connectLabel ?? "Connect"}
+                  {/* A source with a request on file routes back into its
+                      setup surface to finish/inspect, not "Request" again. */}
+                  {source.provisioning
+                    ? "Resume setup"
+                    : (meta.connectLabel ?? "Connect")}
                 </>
               )}
             </button>

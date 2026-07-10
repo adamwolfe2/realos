@@ -8,8 +8,19 @@ import {
 } from "@/lib/actions/meta-ads-connect";
 import { SyncButton } from "./google-ads-forms";
 import { cn } from "@/lib/utils";
+import { StatusChip, VerificationRow } from "@/components/portal/ui/status-chip";
+import { deriveSyncChip } from "@/components/portal/connect/trust-footer";
 
 const INITIAL: ConnectMetaAdsResult = { ok: false, error: "" };
+
+// Deterministic formatter — fixed locale so the server render and client
+// hydration produce the same string.
+const SYNC_DATE_FORMAT = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+});
 
 export function ConnectMetaAdsForm() {
   const [state, formAction, pending] = useActionState<
@@ -19,7 +30,7 @@ export function ConnectMetaAdsForm() {
 
   return (
     <form action={formAction} className="space-y-4">
-      <div className="rounded-md border border-border bg-muted/30 p-4 space-y-2">
+      <div className="rounded-[2px] border border-border bg-muted/30 p-4 space-y-2">
         <p className="text-xs font-medium text-foreground">
           Step 1 — Generate a System User access token in Business Manager
         </p>
@@ -49,7 +60,7 @@ export function ConnectMetaAdsForm() {
         </ol>
       </div>
 
-      <div className="rounded-md border border-border bg-muted/30 p-4 space-y-4">
+      <div className="rounded-[2px] border border-border bg-muted/30 p-4 space-y-4">
         <p className="text-xs font-medium text-foreground">
           Step 2 — Paste your credentials
         </p>
@@ -84,15 +95,17 @@ export function ConnectMetaAdsForm() {
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark disabled:opacity-60 transition-colors"
+          className="rounded-none bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark disabled:opacity-60 transition-colors"
         >
           {pending ? "Testing & connecting…" : "Connect Meta Ads"}
         </button>
         {state.ok ? (
-          <span className="text-xs text-primary">
-            Connected to {state.accountName ?? "ad account"}.
-            {state.currency ? ` Currency: ${state.currency}.` : ""}
-          </span>
+          // Green proof line instead of blue "Connected." text.
+          <VerificationRow
+            status="live"
+            accountLabel={state.accountName ?? "Meta ad account"}
+            recordSummary={state.currency ?? undefined}
+          />
         ) : state.error ? (
           <span className="text-xs text-destructive">{state.error}</span>
         ) : null}
@@ -118,8 +131,15 @@ export function MetaAdsManage({
   lastSyncError: string | null;
   accessStatus: string | null;
 }) {
+  // Ads platforms report daily-ish — 72h staleness, matching the hub.
+  const chip = deriveSyncChip({
+    lastSyncAt,
+    error: lastSyncError,
+    staleAfterHours: 72,
+  });
   return (
     <div className="space-y-5">
+      <StatusChip status={chip.status} label={chip.label} />
       <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
         <DetailRow label="Account" value={displayName ?? "Meta Ads"} />
         <DetailRow
@@ -130,13 +150,13 @@ export function MetaAdsManage({
         <DetailRow label="Currency" value={currency ?? "—"} />
         <DetailRow
           label="Last sync"
-          value={lastSyncAt ? lastSyncAt.toLocaleString() : "Never"}
+          value={lastSyncAt ? SYNC_DATE_FORMAT.format(lastSyncAt) : "Never"}
         />
         <DetailRow label="Status" value={accessStatus ?? "—"} />
       </dl>
 
       {lastSyncError ? (
-        <p className="text-[11px] text-destructive rounded-md border border-destructive/30 bg-destructive/10 p-3">
+        <p className="text-[11px] text-destructive rounded-[2px] border border-destructive/30 bg-destructive/10 p-3">
           {lastSyncError}
         </p>
       ) : null}
@@ -201,7 +221,7 @@ function Field({
         placeholder={placeholder}
         autoComplete={autoComplete}
         className={cn(
-          "rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30",
+          "rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30",
           mono && "font-mono text-[13px]"
         )}
       />

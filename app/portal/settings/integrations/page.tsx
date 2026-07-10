@@ -1,9 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
 import { PageHeader } from "@/components/admin/page-header";
+import { StatusChip } from "@/components/portal/ui/status-chip";
+import {
+  TrustFooter,
+  PrerequisiteLine,
+  deriveSyncChip,
+} from "@/components/portal/connect/trust-footer";
 import { IntegrationMarketplace } from "@/components/portal/integrations/integration-marketplace";
 import { PerPropertyIntegrationsPanel } from "@/components/portal/integrations/per-property-panel";
 import { resolveIntegrationStatuses } from "@/lib/integrations/status";
@@ -252,7 +259,7 @@ export default async function IntegrationsPage({
         defaultPropertyId={defaultPixelPropertyId}
       />
     ) : (
-      <div className="rounded-md border border-border bg-muted/30 p-4">
+      <div className="rounded-[2px] border border-border bg-muted/30 p-4">
         <p className="text-xs text-muted-foreground">
           Visitor identification isn&apos;t enabled on your current plan.
           Talk to your account manager to turn it on.
@@ -364,8 +371,12 @@ export default async function IntegrationsPage({
               </h3>
             ) : null}
             <div className="space-y-3">
+              <PrerequisiteLine>
+                You&apos;ll need: a Google login with access to your Google Ads
+                account · ~2 min
+              </PrerequisiteLine>
               <OAuthConnectButton provider="google_ads" />
-              <details className="group rounded-md border border-border bg-card">
+              <details className="group rounded-[2px] border border-border bg-card">
                 <summary className="cursor-pointer text-[11px] font-medium text-muted-foreground px-3 py-2 hover:text-foreground select-none">
                   Advanced — paste credentials manually
                 </summary>
@@ -378,6 +389,9 @@ export default async function IntegrationsPage({
                   <ConnectGoogleAdsForm />
                 </div>
               </details>
+              {/* Honest scope note — the adwords scope is write-capable, so
+                  no blanket "read-only" claim here (see connect-hub spec). */}
+              <TrustFooter scopeNote="Uses Google's standard Ads API scope" />
             </div>
           </div>
         </div>
@@ -415,8 +429,12 @@ export default async function IntegrationsPage({
               </h3>
             ) : null}
             <div className="space-y-3">
+              <PrerequisiteLine>
+                You&apos;ll need: a Facebook login with Business Manager access
+                to your ad account · ~2 min
+              </PrerequisiteLine>
               <OAuthConnectButton provider="meta_ads" />
-              <details className="group rounded-md border border-border bg-card">
+              <details className="group rounded-[2px] border border-border bg-card">
                 <summary className="cursor-pointer text-[11px] font-medium text-muted-foreground px-3 py-2 hover:text-foreground select-none">
                   Advanced — paste a system-user token manually
                 </summary>
@@ -429,6 +447,9 @@ export default async function IntegrationsPage({
                   <ConnectMetaAdsForm />
                 </div>
               </details>
+              {/* Honest scope note — ads_management is write-capable, so no
+                  blanket "read-only" claim here (see connect-hub spec). */}
+              <TrustFooter scopeNote="Uses Meta's ads_read + ads_management scopes" />
             </div>
           </div>
         </div>
@@ -444,7 +465,7 @@ export default async function IntegrationsPage({
             href="/portal/settings"
             className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
           >
-            <span aria-hidden="true">←</span> Settings
+            <ArrowLeft className="h-3 w-3" aria-hidden="true" /> Settings
           </Link>
         }
         title="Integrations"
@@ -475,7 +496,7 @@ export default async function IntegrationsPage({
 // ---------------------------------------------------------------------------
 function CalWebhookPanel({ url }: { url: string }) {
   return (
-    <section className="rounded-xl border border-border bg-card p-5 space-y-3">
+    <section className="rounded-[2px] border border-border bg-card p-5 space-y-3">
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h3 className="text-sm font-semibold text-foreground">
@@ -488,7 +509,7 @@ function CalWebhookPanel({ url }: { url: string }) {
           </p>
         </div>
       </div>
-      <code className="block rounded-md border border-border bg-background px-3 py-2 text-[11.5px] font-mono text-foreground overflow-x-auto whitespace-nowrap">
+      <code className="block rounded-[2px] border border-border bg-background px-3 py-2 text-[11.5px] font-mono text-foreground overflow-x-auto whitespace-nowrap">
         {url}
       </code>
       <ol className="text-[11.5px] text-muted-foreground space-y-1 list-decimal list-inside leading-relaxed">
@@ -548,9 +569,12 @@ function PixelManage({
           }
           totalEventsCount={totalPixelHitsCount || totalEventsCount}
         />
-        <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
-          {verified ? "Connected" : "Pending verification"}
-        </span>
+        {/* Shared status vocabulary — Live is green, waiting is blue
+            in-progress, never a hand-rolled uppercase label. */}
+        <StatusChip
+          status={verified ? "live" : "connecting"}
+          label={verified ? undefined : "Pending verification"}
+        />
       </div>
       <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
         <DetailRow label="Pixel ID" value={pixelId} mono />
@@ -610,8 +634,7 @@ function PixelManage({
             <CopySnippetButton snippet={installSnippet} />
           </div>
           <pre
-            className="rounded-md border border-border bg-muted/50 p-3 text-[11px] leading-relaxed overflow-x-auto whitespace-pre-wrap break-all text-foreground"
-            style={{ borderRadius: 6 }}
+            className="rounded-[2px] border border-border bg-muted/50 p-3 text-[11px] leading-relaxed overflow-x-auto whitespace-pre-wrap break-all text-foreground"
           >
             {installSnippet}
           </pre>
@@ -644,10 +667,13 @@ function PixelRequestPending({
   requestedAt: Date;
 }) {
   return (
-    <div className="rounded-md border border-border bg-muted/30 p-5 space-y-3">
-      <div className="flex items-center gap-2">
-        <span className="inline-block h-2 w-2 rounded-full bg-secondary animate-pulse" />
+    <div className="rounded-[2px] border border-border bg-muted/30 p-5 space-y-3">
+      <div className="flex items-center gap-2 flex-wrap">
         <h3 className="text-sm font-semibold">Setting up your pixel</h3>
+        <StatusChip
+          status="provisioning"
+          label="Requested — provisioning (≤4 business hrs)"
+        />
       </div>
       <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
         <DetailRow label="Website" value={websiteName} />
@@ -686,8 +712,12 @@ function AppfolioManage({
   syncStatus: string | null;
   lastError: string | null;
 }) {
+  // Same status ladder as the Connect hub: error → first-sync-running →
+  // live/stale (AppFolio's hourly cron makes 48h unambiguously stale).
+  const chip = deriveSyncChip({ lastSyncAt, error: lastError, staleAfterHours: 48 });
   return (
     <div className="space-y-5">
+      <StatusChip status={chip.status} label={chip.label} />
       <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
         <DetailRow label="Subdomain" value={subdomain} mono />
         <DetailRow label="Mode" value={mode} />
@@ -707,7 +737,7 @@ function AppfolioManage({
       </dl>
 
       {lastError ? (
-        <p className="text-[11px] text-destructive rounded-md border border-destructive/30 bg-destructive/10 p-3">
+        <p className="text-[11px] text-destructive rounded-[2px] border border-destructive/30 bg-destructive/10 p-3">
           {lastError}
         </p>
       ) : null}
@@ -769,8 +799,12 @@ function SeoManage({
   status: string | null;
   lastError: string | null;
 }) {
+  // GA4/GSC report daily-ish — 72h before we call it stale (matches the
+  // Connect hub's per-source thresholds).
+  const chip = deriveSyncChip({ lastSyncAt, error: lastError, staleAfterHours: 72 });
   return (
     <div className="space-y-5">
+      <StatusChip status={chip.status} label={chip.label} />
       <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
         <DetailRow label="Property" value={propertyIdentifier} mono />
         <DetailRow
@@ -790,7 +824,7 @@ function SeoManage({
       </dl>
 
       {lastError ? (
-        <p className="text-[11px] text-destructive rounded-md border border-destructive/30 bg-destructive/10 p-3">
+        <p className="text-[11px] text-destructive rounded-[2px] border border-destructive/30 bg-destructive/10 p-3">
           {lastError}
         </p>
       ) : null}

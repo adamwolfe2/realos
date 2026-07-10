@@ -12,7 +12,7 @@ export default function SetupLoading() {
           </div>
           <div className="flex gap-2">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-7 w-28 bg-muted rounded-full" />
+              <div key={i} className="h-7 w-28 bg-muted rounded-[2px]" />
             ))}
           </div>
         </div>
@@ -22,7 +22,7 @@ export default function SetupLoading() {
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-xl border border-border bg-card p-5 flex gap-5"
+            className="rounded-[2px] border border-border bg-card p-5 flex gap-5"
           >
             <div className="h-5 w-5 rounded-full bg-muted shrink-0 mt-0.5" />
             <div className="flex-1 space-y-2">

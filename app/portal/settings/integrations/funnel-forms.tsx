@@ -7,6 +7,11 @@ import {
   type ConnectFunnelResult,
 } from "@/lib/actions/funnel-connect";
 import { cn } from "@/lib/utils";
+import { StatusChip } from "@/components/portal/ui/status-chip";
+import {
+  TrustFooter,
+  PrerequisiteLine,
+} from "@/components/portal/connect/trust-footer";
 
 const INITIAL: ConnectFunnelResult = { ok: true, enabled: false };
 
@@ -50,6 +55,11 @@ export function ConnectFunnelForm({
 
   return (
     <form action={formAction} className="space-y-4">
+      <PrerequisiteLine>
+        You&apos;ll need: your Funnel Customer API key (request from Funnel
+        support), API base URL, and Group ID · ~3 min
+      </PrerequisiteLine>
+
       <div className="space-y-1">
         <h3 className="text-sm font-semibold text-foreground">
           Push captured leads into Funnel Leasing
@@ -62,7 +72,7 @@ export function ConnectFunnelForm({
         </p>
       </div>
 
-      <div className="space-y-4 rounded-md border border-border bg-muted/30 p-4">
+      <div className="space-y-4 rounded-[2px] border border-border bg-muted/30 p-4">
         <Field
           label="Funnel Customer API key"
           name="apiKey"
@@ -104,7 +114,7 @@ export function ConnectFunnelForm({
         />
       </div>
 
-      <label className="flex items-start gap-2.5 rounded-md border border-border bg-card p-3">
+      <label className="flex items-start gap-2.5 rounded-[2px] border border-border bg-card p-3">
         <input
           type="checkbox"
           name="enabled"
@@ -121,7 +131,7 @@ export function ConnectFunnelForm({
       </label>
 
       {connected && (lastPushAt || lastError) ? (
-        <div className="rounded-md border border-border bg-muted/20 p-3 text-[11px] space-y-1">
+        <div className="rounded-[2px] border border-border bg-muted/20 p-3 text-[11px] space-y-1">
           {lastPushAt ? (
             <p className="text-muted-foreground">
               Last push attempt:{" "}
@@ -135,7 +145,7 @@ export function ConnectFunnelForm({
               Last error: {lastError}
             </p>
           ) : (
-            <p className="text-primary">No recent errors.</p>
+            <p className="text-[#24a148]">No recent errors.</p>
           )}
         </div>
       ) : null}
@@ -144,7 +154,7 @@ export function ConnectFunnelForm({
         <button
           type="submit"
           disabled={pending}
-          className="mt-3 rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark disabled:opacity-60 transition-colors"
+          className="mt-3 rounded-none bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark disabled:opacity-60 transition-colors"
         >
           {pending ? "Saving…" : connected ? "Save changes" : "Save & connect"}
         </button>
@@ -152,15 +162,22 @@ export function ConnectFunnelForm({
           <span className="mt-3 text-xs text-destructive">{state.error}</span>
         ) : null}
         {state && state.ok && state.enabled ? (
-          <span className="mt-3 text-xs text-primary">
-            Saved — Funnel push is live.
-          </span>
+          // Green proof, not blue text: live push is a success state.
+          <StatusChip
+            className="mt-3"
+            status="live"
+            label="Saved — Funnel push live"
+          />
         ) : state && state.ok && connected ? (
           <span className="mt-3 text-xs text-muted-foreground">Saved.</span>
         ) : null}
       </div>
 
       {connected ? <DisconnectFunnelForm /> : null}
+
+      {/* No read-only-style scope note: this integration WRITES prospects
+          into Funnel by design — do not claim otherwise. */}
+      <TrustFooter />
     </form>
   );
 }
@@ -227,7 +244,7 @@ function Field({
         defaultValue={defaultValue}
         onChange={onChange ? (e) => onChange(e.target.value) : undefined}
         className={cn(
-          "rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30",
+          "rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30",
           mono && "font-mono text-[13px]",
         )}
       />

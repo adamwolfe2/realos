@@ -30,7 +30,7 @@ export function OAuthConnectButton({ provider }: { provider: OAuthProvider }) {
       ? "OAuth temporarily disabled by OAUTH_ENABLED=false."
       : (providerReadinessReason(provider) ?? "Provider not configured.");
     return (
-      <div className="rounded-md border border-border bg-muted/20 px-3 py-2.5 flex items-center justify-between gap-3">
+      <div className="rounded-[2px] border border-border bg-muted/20 px-3 py-2.5 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="text-sm font-medium text-foreground">
             Connect via {label} OAuth
@@ -43,7 +43,7 @@ export function OAuthConnectButton({ provider }: { provider: OAuthProvider }) {
         <button
           type="button"
           disabled
-          className="text-xs px-3 py-1.5 border border-border rounded-md text-muted-foreground bg-card cursor-not-allowed disabled:opacity-40"
+          className="text-xs px-3 py-1.5 border border-border rounded-[2px] text-muted-foreground bg-card cursor-not-allowed disabled:opacity-40"
           title={reason}
         >
           Waiting
@@ -55,7 +55,7 @@ export function OAuthConnectButton({ provider }: { provider: OAuthProvider }) {
   return (
     <a
       href={`/api/oauth/${providerToRouteSlug(provider)}/start`}
-      className="rounded-md border border-primary bg-primary text-primary-foreground px-3 py-2.5 flex items-center justify-between gap-3 hover:bg-primary/90 transition-colors"
+      className="rounded-none border border-primary bg-primary text-primary-foreground px-3 py-2.5 flex items-center justify-between gap-3 hover:bg-primary-dark transition-colors"
     >
       <div className="min-w-0">
         <div className="text-sm font-medium">Connect via {label} OAuth</div>
@@ -63,7 +63,7 @@ export function OAuthConnectButton({ provider }: { provider: OAuthProvider }) {
           Recommended. Tokens are stored encrypted and refreshed automatically.
         </p>
       </div>
-      <span className="text-xs px-3 py-1.5 border border-background/30 rounded-md">
+      <span className="text-xs px-3 py-1.5 border border-background/30 rounded-[2px]">
         Connect
       </span>
     </a>
