@@ -48,7 +48,7 @@ type Mote = {
   inverse: boolean;
 };
 
-const BRAND_BLUE = "37, 99, 235"; // #2563EB in rgb()
+const BRAND_BLUE = "37, 99, 235"; // #0f62fe in rgb()
 // Norman feedback (2026-05-21, second pass): the brand "swirl" Norman
 // actually wants is the orbiting + pulsing GlyphSwirl (3×3 dot patterns
 // from CapabilitiesRail). PixelSwirl is now a faint secondary texture —
@@ -198,7 +198,7 @@ export function PixelSwirl({
           position: "absolute",
           inset: 0,
           background:
-            "radial-gradient(ellipse 90% 70% at 75% 0%, rgba(37,99,235,0.18), transparent 60%), radial-gradient(ellipse 60% 50% at 10% 100%, rgba(37,99,235,0.10), transparent 65%), linear-gradient(180deg, #F4F7FF 0%, #FFFFFF 75%)",
+            "linear-gradient(180deg, #edf5ff 0%, #FFFFFF 75%)",
         }}
       />
       {/* Pixel-grid wash — square 28px grid with a faint brand-blue tint
@@ -210,7 +210,7 @@ export function PixelSwirl({
             position: "absolute",
             inset: 0,
             backgroundImage:
-              "linear-gradient(0deg, rgba(37,99,235,0.11) 1px, transparent 1px), linear-gradient(90deg, rgba(37,99,235,0.11) 1px, transparent 1px)",
+              "linear-gradient(0deg, rgba(15,98,254,0.11) 1px, transparent 1px), linear-gradient(90deg, rgba(15,98,254,0.11) 1px, transparent 1px)",
             backgroundSize: "28px 28px",
             backgroundPosition: "center top",
             // Wider mask radius + softer falloff so the grid stays visible

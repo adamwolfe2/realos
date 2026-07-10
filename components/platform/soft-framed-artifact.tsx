@@ -36,8 +36,9 @@ export type SoftFramedArtifactProps = {
   /** Outer-padding scale. "lg" (default) gives the inner card a generous
    *  halo; "md" tightens for surfaces where vertical space is tight. */
   padding?: "md" | "lg";
-  /** Optional label above the inner card — small mono "REAL-TIME" /
-   *  "LIVE" style chip, matching the Cluely "Cluely listens" pill. */
+  /** Optional label above the inner card — small mono chip. Demo-data
+   *  honesty convention: fabricated/simulated content must be labeled
+   *  "Example data" (neutral tone), never "LIVE". */
   pillLabel?: string;
   /** Optional className passthrough on the outer wrapper. */
   className?: string;
@@ -100,7 +101,7 @@ export function SoftFramedArtifact({
             fontSize: 10,
             letterSpacing: "0.14em",
             fontWeight: 600,
-            color: "#2563EB",
+            color: "var(--color-muted-foreground)",
             textTransform: "uppercase",
             boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05)",
           }}
@@ -108,7 +109,7 @@ export function SoftFramedArtifact({
           <span
             aria-hidden="true"
             className="inline-block h-1.5 w-1.5 rounded-full"
-            style={{ backgroundColor: "#2563EB" }}
+            style={{ backgroundColor: "var(--color-muted-foreground)" }}
           />
           {pillLabel}
         </span>

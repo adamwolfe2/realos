@@ -1,15 +1,17 @@
 import Link from "next/link";
 import { SectionEyebrow } from "@/components/platform/section-eyebrow";
+import { BookDemoLink } from "@/components/marketing/book-demo-link";
 
-// Bottom CTA. Parchment background, blue accent on the headline, two
-// paths forward. Self-serve framing.
+// Bottom CTA. White background, blue accent on the headline, the one
+// canonical buying pair: "Request pilot" → /sign-up and "Book intro
+// call" → Cal.com via BookDemoLink.
 
 export function PricingCta() {
   return (
     <section
       style={{
         backgroundColor: "#FFFFFF",
-        borderTop: "1px solid #E2E8F0",
+        borderTop: "1px solid var(--hair)",
       }}
     >
       <div className="max-w-[1100px] mx-auto px-4 md:px-8 pt-16 md:pt-24 pb-16 md:pb-24 text-center">
@@ -26,12 +28,12 @@ export function PricingCta() {
           }}
         >
           See what your dashboard actually says.{" "}
-          <span style={{ color: "#2563EB" }}>Free. No commitment.</span>
+          <span style={{ color: "var(--color-primary)" }}>Free. No commitment.</span>
         </h2>
         <p
           className="mt-5 mx-auto"
           style={{
-            color: "#64748B",
+            color: "var(--olive-gray)",
             fontFamily: "var(--font-sans)",
             fontSize: "17px",
             lineHeight: 1.55,
@@ -49,29 +51,28 @@ export function PricingCta() {
             href="/sign-up"
             className="inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-semibold transition-colors"
             style={{
-              backgroundColor: "#2563EB",
+              backgroundColor: "var(--color-primary)",
               color: "#ffffff",
             }}
           >
-            Start the free pilot
+            Request pilot
           </Link>
-          <Link
-            href="/demo"
+          <BookDemoLink
             className="inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-semibold transition-colors"
             style={{
               backgroundColor: "transparent",
               color: "#1E2A3A",
-              border: "1px solid #d6d3c8",
+              border: "1px solid var(--hair-strong)",
             }}
           >
-            See it on a live property
-          </Link>
+            Book intro call
+          </BookDemoLink>
         </div>
 
         <p
           className="mt-8"
           style={{
-            color: "#88867f",
+            color: "var(--stone-gray)",
             fontFamily: "var(--font-mono)",
             fontSize: "11px",
             letterSpacing: "0.14em",

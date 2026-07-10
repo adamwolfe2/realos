@@ -23,10 +23,10 @@ import { PerWordCrossfade, MaskRevealUp } from "@/components/ui/animate-text";
 // rhythm makes clear which side is the resolution.
 // ---------------------------------------------------------------------------
 
-const INK = "#1E2A3A";
-const MUTED = "#94A3B8";
-const ACCENT = "#2563EB";
-const BORDER = "#E2E8F0";
+const INK = "#161616";
+const MUTED = "#8d8d8d";
+const ACCENT = "#0f62fe";
+const BORDER = "#e0e0e0";
 
 // Drawing ease — matches `cubic-bezier(0.22, 1, 0.36, 1)` from the
 // soft-blur-in / mask-reveal-up specs we already use across the site.
@@ -275,7 +275,7 @@ export function Comparison() {
           <p
             className="mt-5 max-w-2xl"
             style={{
-              color: "#64748B",
+              color: "#6f6f6f",
               fontFamily: "var(--font-sans)",
               fontSize: "16px",
               lineHeight: 1.6,

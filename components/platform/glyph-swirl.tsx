@@ -17,7 +17,7 @@ import { useReducedMotion } from "framer-motion";
 //   - Per-glyph cell-alpha breathes on a sinusoid (the "pulse") so the
 //     dots gently brighten and dim — 0.35–0.85 of the brand-blue alpha,
 //     phased per-glyph so the field never flashes uniformly.
-//   - Solid brand blue (#2563EB) with per-glyph opacity multiplier.
+//   - Solid brand blue (#0f62fe) with per-glyph opacity multiplier.
 //     Far brighter than the previous 6% cap; this is now the primary
 //     ambient signal on the hero, not a faint decoration.
 //
@@ -71,7 +71,7 @@ type Placement = {
   opacity: number;
 };
 
-const BRAND_BLUE = "37, 99, 235"; // #2563EB
+const BRAND_BLUE = "37, 99, 235"; // #0f62fe
 
 export function GlyphSwirl({
   /** Multiplier on each glyph's final alpha. 1 = spec'd, 0 = invisible. */
@@ -286,7 +286,7 @@ function Glyph({
         gap: `${gap}px`,
         // Subtle drop-shadow on the brand-blue cells makes them feel
         // crisper against the white hero without needing a glow effect.
-        filter: "drop-shadow(0 1px 2px rgba(37, 99, 235, 0.12))",
+        filter: "drop-shadow(0 1px 2px rgba(15, 98, 254, 0.12))",
         willChange: "transform",
       }}
     >

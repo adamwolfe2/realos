@@ -70,12 +70,12 @@ export function SplitHero({
                   style={{
                     width: "28px",
                     height: "1px",
-                    backgroundColor: "#2563EB",
+                    backgroundColor: "#0f62fe",
                   }}
                 />
                 <p
                   style={{
-                    color: "#2563EB",
+                    color: "#0f62fe",
                     fontFamily: "var(--font-mono)",
                     fontSize: "11px",
                     letterSpacing: "0.12em",
@@ -100,7 +100,7 @@ export function SplitHero({
               const h1 = (
                 <h1
                   style={{
-                    color: "#1E2A3A",
+                    color: "#161616",
                     fontFamily: "var(--font-display)",
                     fontSize: "clamp(38px, 6.4vw, 68px)",
                     fontWeight: 400,
@@ -112,7 +112,7 @@ export function SplitHero({
                   {headlineAccent ? (
                     <>
                       {" "}
-                      <span style={{ color: "#2563EB" }}>{headlineAccent}</span>
+                      <span style={{ color: "#0f62fe" }}>{headlineAccent}</span>
                     </>
                   ) : null}
                 </h1>
@@ -127,7 +127,7 @@ export function SplitHero({
                   fontFamily: "var(--font-sans)",
                   fontSize: "clamp(15px, 4vw, 19px)",
                   lineHeight: 1.65,
-                  color: "#64748B",
+                  color: "#6f6f6f",
                   fontWeight: 400,
                   maxWidth: "580px",
                 }}
@@ -155,17 +155,17 @@ export function SplitHero({
               <Reveal delay={300}>
                 <div
                   className="mt-10 pt-6 grid grid-cols-3 sm:grid-cols-3 gap-4"
-                  style={{ borderTop: "1px solid #E2E8F0", maxWidth: "560px" }}
+                  style={{ borderTop: "1px solid #e0e0e0", maxWidth: "560px" }}
                 >
                   {trust.map((t, i) => (
                     <div
                       key={t.value}
                       className={i > 0 ? "pl-4 border-l" : ""}
-                      style={i > 0 ? { borderColor: "#E2E8F0" } : undefined}
+                      style={i > 0 ? { borderColor: "#e0e0e0" } : undefined}
                     >
                       <p
                         style={{
-                          color: "#1E2A3A",
+                          color: "#161616",
                           fontFamily: "var(--font-display)",
                           fontSize: "clamp(17px, 4vw, 22px)",
                           fontWeight: 500,
@@ -177,7 +177,7 @@ export function SplitHero({
                       </p>
                       <p
                         style={{
-                          color: "#94A3B8",
+                          color: "#8d8d8d",
                           fontFamily: "var(--font-mono)",
                           fontSize: "clamp(8px, 2vw, 10px)",
                           lineHeight: 1.35,
@@ -204,7 +204,7 @@ export function SplitHero({
                   // unchanged.
                   className="mt-4 mb-20 sm:mb-0"
                   style={{
-                    color: "#94A3B8",
+                    color: "#8d8d8d",
                     fontFamily: "var(--font-sans)",
                     fontSize: "13px",
                   }}
@@ -245,7 +245,7 @@ export function SplitSection({
 }) {
   const textOnLeft = side === "right";
   return (
-    <section style={{ backgroundColor: background ?? "#F1F5F9" }}>
+    <section style={{ backgroundColor: background ?? "#f4f4f4" }}>
       <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-20 md:py-24">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
           <div className={`lg:col-span-6 ${textOnLeft ? "lg:order-1" : "lg:order-2"}`}>
@@ -253,7 +253,7 @@ export function SplitSection({
               <p
                 className="mb-4"
                 style={{
-                  color: "#94A3B8",
+                  color: "#8d8d8d",
                   fontFamily: "var(--font-mono)",
                   fontSize: "11px",
                   letterSpacing: "0.18em",
@@ -268,7 +268,7 @@ export function SplitSection({
             <Reveal delay={60}>
               <h2
                 style={{
-                  color: "#1E2A3A",
+                  color: "#161616",
                   fontFamily: "var(--font-display)",
                   fontSize: "clamp(28px, 3.6vw, 42px)",
                   fontWeight: 500,
@@ -288,7 +288,7 @@ export function SplitSection({
                     fontFamily: "var(--font-sans)",
                     fontSize: "17px",
                     lineHeight: 1.65,
-                    color: "#64748B",
+                    color: "#6f6f6f",
                     maxWidth: "540px",
                   }}
                 >
@@ -306,7 +306,7 @@ export function SplitSection({
                       style={{
                         fontFamily: "var(--font-sans)",
                         fontSize: "15.5px",
-                        color: "#1E2A3A",
+                        color: "#161616",
                         lineHeight: 1.55,
                       }}
                     >
@@ -317,8 +317,8 @@ export function SplitSection({
                           width: "18px",
                           height: "18px",
                           borderRadius: "50%",
-                          backgroundColor: "rgba(37,99,235,0.12)",
-                          color: "#2563EB",
+                          backgroundColor: "rgba(15,98,254,0.12)",
+                          color: "#0f62fe",
                         }}
                       >
                         <svg width="10" height="10" viewBox="0 0 10 10" fill="none">

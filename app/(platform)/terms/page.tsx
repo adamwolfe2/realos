@@ -57,14 +57,14 @@ export default function TermsPage() {
       <header style={{ borderBottom: "1px solid var(--border)" }}>
         <div className="max-w-3xl mx-auto px-4 md:px-6 pt-24 pb-14">
           <p
-            className="font-mono text-[11px] uppercase tracking-[0.18em] mb-5"
+            className="font-mono text-[11px] uppercase tracking-[0.12em] mb-5"
             style={{ color: "var(--text-muted)" }}
           >
             Legal
           </p>
           <h1
-            className="font-serif text-4xl md:text-5xl font-normal leading-[1.05]"
-            style={{ color: "var(--text-headline)" }}
+            className="text-4xl md:text-5xl font-normal leading-[1.05]"
+            style={{ color: "var(--text-headline)", fontFamily: "var(--font-display)" }}
           >
             Terms of use
           </h1>
@@ -80,13 +80,13 @@ export default function TermsPage() {
         {SECTIONS.map((s) => (
           <section key={s.title}>
             <h2
-              className="font-serif text-2xl font-normal"
-              style={{ color: "var(--text-headline)" }}
+              className="text-2xl font-semibold"
+              style={{ color: "var(--text-headline)", fontFamily: "var(--font-display)" }}
             >
               {s.title}
             </h2>
             <div
-              className="mt-4 space-y-3 font-mono text-sm leading-relaxed"
+              className="mt-4 space-y-3 text-sm leading-relaxed"
               style={{ color: "var(--text-body)" }}
             >
               {s.body.map((p, i) => (

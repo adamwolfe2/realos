@@ -28,7 +28,7 @@ export function SectionEyebrow({
     <span
       aria-hidden
       className="hidden sm:inline-block"
-      style={{ width: 28, height: 1, backgroundColor: "#2563EB" }}
+      style={{ width: 28, height: 1, backgroundColor: "#0f62fe" }}
     />
   );
   return (
@@ -39,7 +39,7 @@ export function SectionEyebrow({
       <p
         className="text-[11px] font-mono uppercase tracking-[0.18em]"
         style={{
-          color: "#2563EB",
+          color: "#0f62fe",
           fontFamily: "var(--font-mono)",
           fontWeight: 600,
         }}

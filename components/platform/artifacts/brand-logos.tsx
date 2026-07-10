@@ -194,7 +194,7 @@ export function AppFolioMark({ size = 18 }: IconProps) {
 export function CalcomMark({ size = 18 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-label="Cal.com">
-      <rect x="2" y="2" width="20" height="20" rx="5" fill="#111827"/>
+      <rect x="2" y="2" width="20" height="20" rx="5" fill="#161616"/>
       <path
         d="M13 8.2c-.9-.8-2-1.2-3.1-1.2-2.5 0-4.6 2.1-4.6 4.8 0 2.6 2 4.8 4.6 4.8 1.2 0 2.3-.5 3.1-1.2l-1.3-1.3c-.5.4-1.1.7-1.8.7a2.8 2.8 0 0 1-2.8-2.9 2.8 2.8 0 0 1 2.8-2.9c.7 0 1.3.2 1.8.7L13 8.2Z"
         fill="#ffffff"
@@ -270,11 +270,11 @@ export function BrandPill({
         padding: "3px 9px 3px 6px",
         borderRadius: "999px",
         backgroundColor: "#ffffff",
-        boxShadow: `0 0 0 1px #E2E8F0`,
+        boxShadow: `0 0 0 1px #e0e0e0`,
         fontFamily: "var(--font-sans)",
         fontSize: "12px",
         fontWeight: 600,
-        color: "#1E2A3A",
+        color: "#161616",
         lineHeight: 1,
       }}
     >

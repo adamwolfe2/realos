@@ -24,15 +24,15 @@ const DEFAULT_PROPERTIES: PortfolioProperty[] = [
   { name: "The Rhodes",         location: "Nashville, TN",  units: 212, leased: 168, trend: "up"    },
 ];
 
-const ACCENT = "#2563EB";
-const INK = "#1E2A3A";
-const MUTED = "#94A3B8";
-const BORDER = "#E2E8F0";
-const PARCHMENT = "#F1F5F9";
+const ACCENT = "#0f62fe";
+const INK = "#161616";
+const MUTED = "#8d8d8d";
+const BORDER = "#e0e0e0";
+const PARCHMENT = "#f4f4f4";
 // Norman feedback (2026-05-21): chart accents on the marketing
 // surface stay on the brand blue ramp. No semantic green/red.
-const SUCCESS = "#2563EB";
-const ERROR = "#1E40AF";
+const SUCCESS = "#0f62fe";
+const ERROR = "#0043ce";
 
 export function PortfolioOccupancy({
   label = "Your whole portfolio, one view",
@@ -57,8 +57,8 @@ export function PortfolioOccupancy({
       className="w-full"
       style={{
         backgroundColor: "#ffffff",
-        borderRadius: "16px",
-        boxShadow: `0 0 0 1px ${BORDER}, 0 20px 60px rgba(30, 42, 58,0.06)`,
+        borderRadius: "2px",
+        boxShadow: `0 0 0 1px ${BORDER}`,
         overflow: "hidden",
       }}
     >
@@ -150,9 +150,9 @@ export function PortfolioOccupancy({
                         letterSpacing: "0.1em",
                         textTransform: "uppercase",
                         color: ACCENT,
-                        backgroundColor: "rgba(37,99,235,0.12)",
+                        backgroundColor: "rgba(15,98,254,0.12)",
                         padding: "2px 6px",
-                        borderRadius: "4px",
+                        borderRadius: "2px",
                         fontWeight: 600,
                       }}
                     >
@@ -198,7 +198,7 @@ export function PortfolioOccupancy({
                 style={{
                   height: "6px",
                   backgroundColor: PARCHMENT,
-                  borderRadius: "3px",
+                  borderRadius: "2px",
                   overflow: "hidden",
                 }}
               >
@@ -207,7 +207,7 @@ export function PortfolioOccupancy({
                     height: "100%",
                     width: show ? `${pct}%` : "0%",
                     backgroundColor: ACCENT,
-                    borderRadius: "3px",
+                    borderRadius: "2px",
                     transition: "width 900ms cubic-bezier(.2,.7,.2,1)",
                   }}
                 />

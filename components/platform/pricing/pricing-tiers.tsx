@@ -2,27 +2,32 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Check, Loader2 } from "lucide-react";
+import { Check } from "lucide-react";
 import {
   PROPERTY_BRACKETS,
   SELF_SERVE_PROPERTY_CAP,
   computeGraduatedMonthlyCents,
   effectivePerPropertyCents,
 } from "@/lib/billing/catalog";
+import { PLAN_DISPLAY } from "./plan-display";
+import { BookDemoLink } from "@/components/marketing/book-demo-link";
 
 // ---------------------------------------------------------------------------
-// PricingTiers — the three published plans (Foundation, Growth, Scale) plus
-// an Enterprise tile. Two design rules:
+// PricingTiers — the three published plans plus an Enterprise tile.
+// Names + prices come from lib/billing/catalog.ts via PLAN_DISPLAY so
+// this grid and the ComparisonTable below it can never drift. Design
+// rules (Carbon-forward, 2026-07-09):
 //
 //   1. The middle tier (Growth) gets the visual emphasis — that's where
-//      Adam wants 60-70% of customers to land. We elevate it with a
-//      darker card, the blue accent ring, and a "Most popular" eyebrow.
+//      Adam wants 60-70% of customers to land. Emphasis = a flat brand
+//      border + "Most popular" eyebrow. No glow, no halo.
 //   2. Per-property pricing is the headline number. The yearly toggle
 //      shows the 17% prepay discount as a calm savings line — never
 //      flashy, never percentage-shaming the monthly choice.
 //
-// Setup fees + ad-spend markup are surfaced beneath each card so the
-// total cost picture is honest, not buried.
+// CTA honesty rule: the plan buttons create an account (they navigate
+// to /sign-up with plan intent). They are plain links and never claim
+// to start a checkout — nothing here talks to Stripe.
 // ---------------------------------------------------------------------------
 
 type BillingCycle = "monthly" | "annual";
@@ -30,8 +35,8 @@ type BillingCycle = "monthly" | "annual";
 type Tier = {
   id: "foundation" | "growth" | "scale" | "enterprise";
   // `checkoutTierId` is the catalog id (matches `getTierById()` keys on
-  // the server). null means this card goes to /demo instead of starting
-  // a Checkout session.
+  // the server). null means this card books an intro call instead of
+  // linking to account creation.
   checkoutTierId: "starter" | "growth" | "scale" | null;
   name: string;
   tagline: string;
@@ -40,7 +45,6 @@ type Tier = {
   setupFee: number | null;
   highlighted: boolean;
   ctaLabel: string;
-  ctaHref: string;
   features: Array<{ label: string; emphasis?: boolean }>;
   audienceCallout: string;
 };
@@ -49,14 +53,16 @@ const TIERS: Tier[] = [
   {
     id: "foundation",
     checkoutTierId: "starter",
-    name: "Foundation",
+    name: PLAN_DISPLAY.foundation.name,
     tagline: "Free 14-day trial. We connect to your stack and show you what we see.",
+    // The public card leads with the free 14-day trial (no card), so the
+    // headline price is $0; PLAN_DISPLAY.foundation carries the catalog
+    // post-trial rate for surfaces that need it.
     monthly: 0,
     annual: 0,
     setupFee: null,
     highlighted: false,
-    ctaLabel: "Start the free trial",
-    ctaHref: "/onboarding?plan=foundation",
+    ctaLabel: "Request pilot",
     audienceCallout: "Operators evaluating LeaseStack on a single property",
     features: [
       { label: "14-day trial window" },
@@ -72,14 +78,13 @@ const TIERS: Tier[] = [
   {
     id: "growth",
     checkoutTierId: "growth",
-    name: "Growth",
+    name: PLAN_DISPLAY.growth.name,
     tagline: "Replace your retainer. Flexible, month-to-month.",
-    monthly: 899,
-    annual: 749,
+    monthly: PLAN_DISPLAY.growth.monthlyDollars,
+    annual: PLAN_DISPLAY.growth.annualDollars,
     setupFee: null,
     highlighted: true,
-    ctaLabel: "Start with Growth",
-    ctaHref: "/onboarding?plan=growth",
+    ctaLabel: `Start with ${PLAN_DISPLAY.growth.name}`,
     audienceCallout: "Single-property operators running a paid program today",
     features: [
       { label: "Everything in Foundation, plus:" },
@@ -100,14 +105,13 @@ const TIERS: Tier[] = [
   {
     id: "scale",
     checkoutTierId: "scale",
-    name: "Scale",
+    name: PLAN_DISPLAY.scale.name,
     tagline: "Per-property pricing with a portfolio rollup and operator success.",
-    monthly: 1499,
-    annual: 1249,
+    monthly: PLAN_DISPLAY.scale.monthlyDollars,
+    annual: PLAN_DISPLAY.scale.annualDollars,
     setupFee: null,
     highlighted: false,
-    ctaLabel: "Start with Scale",
-    ctaHref: "/onboarding?plan=scale",
+    ctaLabel: `Start with ${PLAN_DISPLAY.scale.name}`,
     audienceCallout: "Owners and asset managers running 5 or more properties",
     features: [
       { label: "Everything in Growth, plus:" },
@@ -134,8 +138,7 @@ const TIERS: Tier[] = [
     annual: null,
     setupFee: null,
     highlighted: false,
-    ctaLabel: "Talk to the team",
-    ctaHref: "/demo?plan=enterprise",
+    ctaLabel: "Book intro call",
     audienceCallout: "20+ properties or multi-brand owners",
     features: [
       { label: "Everything in Scale, plus:" },
@@ -180,7 +183,7 @@ export function PricingTiers() {
               className="inline-flex items-center gap-3 rounded-full"
               style={{
                 backgroundColor: "#ffffff",
-                border: "1px solid #E2E8F0",
+                border: "1px solid var(--hair)",
                 padding: "6px 8px",
               }}
             >
@@ -210,7 +213,7 @@ export function PricingTiers() {
                 }}
               >
                 {propertyCount}{" "}
-                <span style={{ color: "#88867f", fontWeight: 500 }}>
+                <span style={{ color: "var(--stone-gray)", fontWeight: 500 }}>
                   {propertyCount === 1 ? "property" : "properties"}
                 </span>
               </div>
@@ -242,8 +245,8 @@ export function PricingTiers() {
               className="inline-flex items-center p-1 rounded-full"
               style={{
                 backgroundColor: "#ffffff",
-                border: "1px solid #E2E8F0",
-                boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+                border: "1px solid var(--hair)",
+                boxShadow: "var(--shadow-xs)",
               }}
             >
               {(["monthly", "annual"] as const).map((c) => {
@@ -258,7 +261,7 @@ export function PricingTiers() {
                     className="relative inline-flex items-center gap-2 px-4 py-1.5 text-sm rounded-full transition-colors"
                     style={{
                       backgroundColor: active ? "#1E2A3A" : "transparent",
-                      color: active ? "#ffffff" : "#64748B",
+                      color: active ? "#ffffff" : "var(--olive-gray)",
                       fontWeight: active ? 600 : 500,
                     }}
                   >
@@ -269,8 +272,8 @@ export function PricingTiers() {
                         style={{
                           backgroundColor: active
                             ? "rgba(255,255,255,0.16)"
-                            : "rgba(37,99,235,0.08)",
-                          color: active ? "#ffffff" : "#2563EB",
+                            : "var(--brand-soft)",
+                          color: active ? "#ffffff" : "var(--color-primary)",
                           letterSpacing: "0.02em",
                         }}
                       >
@@ -287,7 +290,7 @@ export function PricingTiers() {
             <p
               className="text-center"
               style={{
-                color: "#2563EB",
+                color: "var(--color-primary)",
                 fontFamily: "var(--font-sans)",
                 fontSize: "12.5px",
                 fontWeight: 500,
@@ -313,24 +316,24 @@ export function PricingTiers() {
             <p
               className="text-center"
               style={{
-                color: "#88867f",
+                color: "var(--stone-gray)",
                 fontFamily: "var(--font-sans)",
                 fontSize: "12px",
                 maxWidth: "440px",
               }}
             >
-              Self-serve checkout caps at {MAX_PROPERTIES_STEPPER} properties.
+              Self-serve plans cap at {MAX_PROPERTIES_STEPPER} properties.
               For larger portfolios{" "}
-              <Link
-                href="/demo?plan=enterprise"
+              <BookDemoLink
                 style={{
-                  color: "#2563EB",
+                  color: "var(--color-primary)",
                   textDecoration: "underline",
                   textUnderlineOffset: "2px",
                 }}
+                ariaLabel="Book intro call for volume pricing"
               >
-                talk to sales
-              </Link>{" "}
+                book an intro call
+              </BookDemoLink>{" "}
               for volume pricing.
             </p>
           ) : null}
@@ -355,7 +358,7 @@ export function PricingTiers() {
         <p
           className="mt-8 text-center"
           style={{
-            color: "#88867f",
+            color: "var(--stone-gray)",
             fontFamily: "var(--font-sans)",
             fontSize: "13px",
             lineHeight: 1.5,
@@ -383,7 +386,6 @@ function TierCard({
 }) {
   const basePrice = cycle === "monthly" ? tier.monthly : tier.annual;
   const highlighted = tier.highlighted;
-  const [submitting, setSubmitting] = React.useState(false);
 
   // Compute the effective monthly total using the graduated brackets.
   // Mirrors lib/billing/catalog.ts and the Stripe `billing_scheme:
@@ -402,59 +404,53 @@ function TierCard({
         )
       : null;
 
-  // CTA click handler — Enterprise routes to /demo as a plain link; the
-  // other three tiers post to /api/billing/checkout to mint a Stripe
-  // Checkout session, then window.location to the returned URL. We
-  // default to 1 property for the public-pricing-page flow; the
-  // onboarding flow lets prospects bump the count after.
-  const startCheckout = React.useCallback(() => {
-    if (!tier.checkoutTierId || submitting) return;
-    setSubmitting(true);
-    // P1 (launch-critical-sweep): collapse the public pricing CTA to the
-    // no-card free trial. Send the prospect to sign-up → onboarding starts
-    // their 14-day trial (no Stripe charge yet). This retires anonymous Stripe
-    // checkout, which charged customers BEFORE an Organization existed and
-    // orphaned the payment. Plan intent is carried so onboarding can preselect.
-    const params = new URLSearchParams({
-      plan: tier.checkoutTierId,
-      properties: String(propertyCount),
-      cycle,
-    });
-    window.location.assign(`/sign-up?${params.toString()}`);
-  }, [tier.checkoutTierId, cycle, propertyCount, submitting]);
+  // CTA destination — an honest plain link. P1 (launch-critical-sweep):
+  // the public pricing CTA is the no-card free trial. Send the prospect
+  // to sign-up → onboarding starts their 14-day trial (no Stripe charge
+  // yet). This retires anonymous Stripe checkout, which charged
+  // customers BEFORE an Organization existed and orphaned the payment.
+  // Plan intent is carried so onboarding can preselect.
+  const signUpHref = tier.checkoutTierId
+    ? `/sign-up?${new URLSearchParams({
+        plan: tier.checkoutTierId,
+        properties: String(propertyCount),
+        cycle,
+      }).toString()}`
+    : null;
 
-  // Brand pass — every card is a clean white surface. Growth gets a
-  // soft blue ring + subtle lift, NOT a dark inversion. Previous black
-  // card broke the cream/blue/white palette of the platform.
+  // Carbon-forward pass — every card is a flat white surface with a
+  // hard 1px border and 2px radius. Growth gets the brand border, not
+  // a glow halo; elevation reads border-first.
   const cardStyle: React.CSSProperties = highlighted
     ? {
         backgroundColor: "#ffffff",
         color: "#1E2A3A",
-        border: "1px solid #2563EB",
-        boxShadow:
-          "0 0 0 4px rgba(37,99,235,0.08), 0 8px 24px rgba(37,99,235,0.10)",
+        border: "1px solid var(--color-primary)",
+        borderRadius: "2px",
+        boxShadow: "var(--shadow-xs)",
       }
     : {
         backgroundColor: "#ffffff",
         color: "#1E2A3A",
-        border: "1px solid #E2E8F0",
-        boxShadow: "0 1px 2px rgba(30, 42, 58,0.02)",
+        border: "1px solid var(--hair)",
+        borderRadius: "2px",
+        boxShadow: "var(--shadow-xs)",
       };
 
-  const mutedText = "#88867f";
+  const mutedText = "var(--stone-gray)";
   const bodyText = "#1E2A3A";
-  const accentText = "#2563EB";
+  const accentText = "var(--color-primary)";
 
   return (
     <div
-      className="relative rounded-2xl p-7 md:p-8 flex flex-col"
+      className="relative p-7 md:p-8 flex flex-col"
       style={cardStyle}
     >
       {highlighted ? (
         <div
           className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center rounded-full px-2.5 py-1"
           style={{
-            backgroundColor: "#2563EB",
+            backgroundColor: "var(--color-primary)",
             color: "#ffffff",
             fontFamily: "var(--font-mono)",
             fontSize: "11px",
@@ -485,7 +481,7 @@ function TierCard({
         <p
           className="mt-2"
           style={{
-            color: "#64748B",
+            color: "var(--olive-gray)",
             fontFamily: "var(--font-sans)",
             fontSize: "14px",
             lineHeight: 1.5,
@@ -650,11 +646,7 @@ function TierCard({
               key={idx}
               className="flex items-start gap-2"
               style={{
-                color: isContinuation
-                  ? highlighted
-                    ? "#bdbcb6"
-                    : "#88867f"
-                  : bodyText,
+                color: isContinuation ? mutedText : bodyText,
                 fontFamily: "var(--font-sans)",
                 fontSize: "13.5px",
                 lineHeight: 1.5,
@@ -669,9 +661,7 @@ function TierCard({
                   className="shrink-0 mt-[3px]"
                   size={14}
                   strokeWidth={2.5}
-                  style={{
-                    color: highlighted ? "#9ec1ff" : "#2563EB",
-                  }}
+                  style={{ color: "var(--color-primary)" }}
                   aria-hidden="true"
                 />
               )}
@@ -683,43 +673,49 @@ function TierCard({
 
       {/* CTA. `mt-auto` parks the button at the bottom of the flex
           column so every card's button aligns horizontally regardless
-          of feature-list length. Enterprise stays a static link to
-          /demo; the other three post to /api/billing/checkout and
-          forward to the Stripe-hosted Checkout page. */}
-      {tier.checkoutTierId ? (
-        <button
-          type="button"
-          onClick={startCheckout}
-          disabled={submitting}
-          className="mt-auto pt-6 inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-70 disabled:cursor-progress"
-          style={
-            highlighted
-              ? { backgroundColor: "#2563EB", color: "#ffffff" }
-              : { backgroundColor: "#1E2A3A", color: "#ffffff" }
-          }
-          aria-label={`Start checkout for ${tier.name} (${cycle})`}
-        >
-          {submitting ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-              Starting checkout…
-            </>
-          ) : (
-            tier.ctaLabel
-          )}
-        </button>
+          of feature-list length. The three published plans are honest
+          links to account creation (sign-up → onboarding starts the
+          trial on that plan); Enterprise books an intro call via
+          BookDemoLink. Nothing here claims to start a checkout. */}
+      {signUpHref ? (
+        <div className="mt-auto pt-6 flex flex-col items-stretch">
+          <Link
+            href={signUpHref}
+            className="inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors"
+            style={
+              highlighted
+                ? { backgroundColor: "var(--color-primary)", color: "#ffffff" }
+                : { backgroundColor: "#1E2A3A", color: "#ffffff" }
+            }
+            aria-label={`${tier.ctaLabel} (creates your account)`}
+          >
+            {tier.ctaLabel}
+          </Link>
+          <span
+            className="mt-2 text-center"
+            style={{
+              color: mutedText,
+              fontFamily: "var(--font-sans)",
+              fontSize: "11px",
+            }}
+          >
+            Creates your account. No card required.
+          </span>
+        </div>
       ) : (
-        <Link
-          href={tier.ctaHref}
-          className="mt-auto pt-6 inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold transition-colors"
-          style={{
-            backgroundColor: "transparent",
-            color: "#1E2A3A",
-            border: "1px solid #1E2A3A",
-          }}
-        >
-          {tier.ctaLabel}
-        </Link>
+        <div className="mt-auto pt-6 flex flex-col items-stretch">
+          <BookDemoLink
+            className="inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold transition-colors"
+            style={{
+              backgroundColor: "transparent",
+              color: "#1E2A3A",
+              border: "1px solid #1E2A3A",
+            }}
+            ariaLabel={`${tier.ctaLabel} (opens scheduling)`}
+          >
+            {tier.ctaLabel}
+          </BookDemoLink>
+        </div>
       )}
     </div>
   );

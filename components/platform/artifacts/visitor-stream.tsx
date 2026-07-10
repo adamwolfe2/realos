@@ -35,40 +35,40 @@ type Visitor = {
 // the visitor sees 4 reveals within ~2.5s of landing on the page.
 const POOL: Omit<Visitor, "id" | "ago">[] = [
   // Anonymous → Maya Patel  (initial-wave reveal #1)
-  { initials: "?",  name: "Anonymous visitor", org: "mobile · west coast",     page: "/floor-plans",        color: "#94A3B8", resolved: false,
-    revealsTo: { initials: "MP", name: "Maya Patel",     org: "UC Berkeley · rising junior",  color: "#2563EB", photo: "https://randomuser.me/api/portraits/women/22.jpg" } },
+  { initials: "?",  name: "Anonymous visitor", org: "mobile · west coast",     page: "/floor-plans",        color: "#8d8d8d", resolved: false,
+    revealsTo: { initials: "MP", name: "Maya Patel",     org: "UC Berkeley · rising junior",  color: "#0f62fe", photo: "https://randomuser.me/api/portraits/women/22.jpg" } },
   // Anonymous → Ethan Kim   (initial-wave reveal #2)
-  { initials: "?",  name: "Anonymous visitor", org: "mobile · Oakland",        page: "/gallery",            color: "#94A3B8", resolved: false,
-    revealsTo: { initials: "EK", name: "Ethan Kim",      org: "Cal Poly · sophomore",         color: "#5B8CE6", photo: "https://randomuser.me/api/portraits/men/85.jpg" } },
+  { initials: "?",  name: "Anonymous visitor", org: "mobile · Oakland",        page: "/gallery",            color: "#8d8d8d", resolved: false,
+    revealsTo: { initials: "EK", name: "Ethan Kim",      org: "Cal Poly · sophomore",         color: "#4589ff", photo: "https://randomuser.me/api/portraits/men/85.jpg" } },
   // Anonymous → Olivia Bennett (initial-wave reveal #3)
-  { initials: "?",  name: "Anonymous visitor", org: "Seattle, WA",             page: "/location",           color: "#94A3B8", resolved: false,
-    revealsTo: { initials: "OB", name: "Olivia Bennett", org: "U Washington · parent",         color: "#5B8CE6", photo: "https://randomuser.me/api/portraits/women/12.jpg" } },
+  { initials: "?",  name: "Anonymous visitor", org: "Seattle, WA",             page: "/location",           color: "#8d8d8d", resolved: false,
+    revealsTo: { initials: "OB", name: "Olivia Bennett", org: "U Washington · parent",         color: "#4589ff", photo: "https://randomuser.me/api/portraits/women/12.jpg" } },
   // Anonymous → Jordan Wu   (initial-wave reveal #4)
-  { initials: "?",  name: "Anonymous visitor", org: "Bay Area · mobile",       page: "/floor-plans/1-bed",  color: "#94A3B8", resolved: false,
-    revealsTo: { initials: "JW", name: "Jordan Wu",      org: "Stanford · transfer",          color: "#5B8CE6", photo: "https://randomuser.me/api/portraits/men/36.jpg" } },
+  { initials: "?",  name: "Anonymous visitor", org: "Bay Area · mobile",       page: "/floor-plans/1-bed",  color: "#8d8d8d", resolved: false,
+    revealsTo: { initials: "JW", name: "Jordan Wu",      org: "Stanford · transfer",          color: "#4589ff", photo: "https://randomuser.me/api/portraits/men/36.jpg" } },
   // Anonymous → Aisha Lin   (initial-wave reveal #5)
-  { initials: "?",  name: "Anonymous visitor", org: "campus IP",               page: "/amenities",          color: "#94A3B8", resolved: false,
-    revealsTo: { initials: "AL", name: "Aisha Lin",      org: "campus transfer",              color: "#2563EB", photo: "https://randomuser.me/api/portraits/women/79.jpg" } },
+  { initials: "?",  name: "Anonymous visitor", org: "campus IP",               page: "/amenities",          color: "#8d8d8d", resolved: false,
+    revealsTo: { initials: "AL", name: "Aisha Lin",      org: "campus transfer",              color: "#0f62fe", photo: "https://randomuser.me/api/portraits/women/79.jpg" } },
   // Identified row mixed in (rotation cycles bring more anonymous in via the loop)
-  { initials: "DJ", name: "Derek Johansson",  org: "parent · Illinois",       page: "/parents",            color: "#5B8CE6", resolved: true,
+  { initials: "DJ", name: "Derek Johansson",  org: "parent · Illinois",       page: "/parents",            color: "#4589ff", resolved: true,
     photo: "https://randomuser.me/api/portraits/men/52.jpg" },
   // Anonymous → Marisol Reyes  (rotation reveal)
-  { initials: "?",  name: "Anonymous visitor", org: "mobile · Bay Area",       page: "/floor-plans/2-bed",  color: "#94A3B8", resolved: false,
-    revealsTo: { initials: "MR", name: "Marisol Reyes",  org: "rising sophomore",             color: "#2563EB", photo: "https://randomuser.me/api/portraits/women/68.jpg" } },
-  { initials: "TM", name: "Tomás Mendes",     org: "NYU · rising junior",     page: "/floor-plans/3-bed",  color: "#5B8CE6", resolved: true,
+  { initials: "?",  name: "Anonymous visitor", org: "mobile · Bay Area",       page: "/floor-plans/2-bed",  color: "#8d8d8d", resolved: false,
+    revealsTo: { initials: "MR", name: "Marisol Reyes",  org: "rising sophomore",             color: "#0f62fe", photo: "https://randomuser.me/api/portraits/women/68.jpg" } },
+  { initials: "TM", name: "Tomás Mendes",     org: "NYU · rising junior",     page: "/floor-plans/3-bed",  color: "#4589ff", resolved: true,
     photo: "https://randomuser.me/api/portraits/men/41.jpg" },
   // Anonymous → Sofia Petrova  (rotation reveal)
-  { initials: "?",  name: "Anonymous visitor", org: "Sacramento, CA",          page: "/parents-faq",        color: "#94A3B8", resolved: false,
-    revealsTo: { initials: "SP", name: "Sofia Petrova",  org: "parent · California",          color: "#2563EB", photo: "https://randomuser.me/api/portraits/women/45.jpg" } },
-  { initials: "RK", name: "Ravi Krishnan",    org: "rising junior",           page: "/tour/schedule",      color: "#2563EB", resolved: true,
+  { initials: "?",  name: "Anonymous visitor", org: "Sacramento, CA",          page: "/parents-faq",        color: "#8d8d8d", resolved: false,
+    revealsTo: { initials: "SP", name: "Sofia Petrova",  org: "parent · California",          color: "#0f62fe", photo: "https://randomuser.me/api/portraits/women/45.jpg" } },
+  { initials: "RK", name: "Ravi Krishnan",    org: "rising junior",           page: "/tour/schedule",      color: "#0f62fe", resolved: true,
     photo: "https://randomuser.me/api/portraits/men/29.jpg" },
 ];
 
-const ACCENT = "#2563EB";
-const INK = "#1E2A3A";
-const MUTED = "#94A3B8";
-const BORDER = "#E2E8F0";
-const PARCHMENT = "#F1F5F9";
+const ACCENT = "#0f62fe";
+const INK = "#161616";
+const MUTED = "#8d8d8d";
+const BORDER = "#e0e0e0";
+const PARCHMENT = "#f4f4f4";
 
 // Per-row reveal-delay schedule. Norman feedback (2026-05-21): "people
 // scroll EXTREMELY quick — we need 3-5 reveals at a time, not 1 at a
@@ -136,8 +136,8 @@ export function VisitorStream({
       className="w-full"
       style={{
         backgroundColor: "#ffffff",
-        borderRadius: "16px",
-        boxShadow: `0 0 0 1px ${BORDER}, 0 20px 60px rgba(30, 42, 58,0.06)`,
+        borderRadius: "2px",
+        boxShadow: `0 0 0 1px ${BORDER}`,
         overflow: "hidden",
       }}
     >
@@ -152,8 +152,7 @@ export function VisitorStream({
               width: "8px",
               height: "8px",
               borderRadius: "50%",
-              backgroundColor: ACCENT,
-              animation: "liveDot 1.6s ease-in-out infinite",
+              backgroundColor: "var(--color-muted-foreground)",
             }}
           />
           <span
@@ -166,7 +165,7 @@ export function VisitorStream({
               fontWeight: 600,
             }}
           >
-            Live · on your site right now
+            Example data · identified visitors
           </span>
         </div>
         <div className="text-right">
@@ -311,7 +310,7 @@ function VisitorRow({
   const initials = showResolved ? identity.initials : v.initials;
   const displayName = showResolved ? identity.name : v.name;
   const displayOrg = showResolved ? identity.org : v.org;
-  const avatarColor = showResolved ? identity.color : "#E2E8F0";
+  const avatarColor = showResolved ? identity.color : "#e0e0e0";
 
   return (
     <li
@@ -319,7 +318,7 @@ function VisitorRow({
       style={{
         borderBottom: !isLast ? `1px solid ${BORDER}` : "none",
         animation: isTop ? "rowIn 520ms cubic-bezier(.2,.7,.2,1)" : undefined,
-        backgroundColor: isTop ? "rgba(37,99,235,0.04)" : "transparent",
+        backgroundColor: isTop ? "rgba(15,98,254,0.04)" : "transparent",
         transition: "background-color 1400ms ease",
       }}
     >
@@ -441,9 +440,9 @@ function VisitorRow({
                 letterSpacing: "0.12em",
                 textTransform: "uppercase",
                 color: justRevealed ? "#ffffff" : ACCENT,
-                backgroundColor: justRevealed ? ACCENT : "rgba(37,99,235,0.12)",
+                backgroundColor: justRevealed ? ACCENT : "rgba(15,98,254,0.12)",
                 padding: "2px 6px",
-                borderRadius: "4px",
+                borderRadius: "2px",
                 fontWeight: 600,
                 transition: "all 600ms ease",
                 animation: justRevealed ? "badgeFlash 2.4s ease" : undefined,
@@ -472,7 +471,7 @@ function VisitorRow({
           style={{
             fontFamily: "var(--font-sans)",
             fontSize: "12px",
-            color: "#64748B",
+            color: "#6f6f6f",
             marginTop: "2px",
             transition: "all 400ms ease",
           }}

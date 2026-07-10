@@ -599,11 +599,10 @@ function PopupsCallout() {
               width: 6,
               height: 6,
               borderRadius: 999,
-              backgroundColor: "#16A34A",
-              boxShadow: "0 0 0 3px rgba(22,163,74,0.18)",
+              backgroundColor: "var(--color-muted-foreground)",
             }}
           />
-          Live on site
+          Example data
         </span>
         <span
           style={{

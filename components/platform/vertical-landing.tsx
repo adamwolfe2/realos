@@ -38,7 +38,7 @@ export function VerticalLanding({
   caption,
 }: VerticalLandingProps) {
   return (
-    <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
+    <div style={{ backgroundColor: "#FFFFFF", color: "#161616" }}>
       <SplitHero
         eyebrow={eyebrow}
         headline={headline}
@@ -52,14 +52,14 @@ export function VerticalLanding({
         artifact={artifact}
       />
 
-      <section style={{ backgroundColor: "#F1F5F9" }}>
+      <section style={{ backgroundColor: "#f4f4f4" }}>
         <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
           <Reveal>
             <div className="text-center mb-14">
               <p
                 className="mb-4"
                 style={{
-                  color: "#94A3B8",
+                  color: "#8d8d8d",
                   fontFamily: "var(--font-mono)",
                   fontSize: "11px",
                   letterSpacing: "0.18em",
@@ -72,7 +72,7 @@ export function VerticalLanding({
               <h2
                 className="mx-auto max-w-[720px]"
                 style={{
-                  color: "#1E2A3A",
+                  color: "#161616",
                   fontFamily: "var(--font-display)",
                   fontSize: "clamp(28px, 3.4vw, 40px)",
                   fontWeight: 500,
@@ -91,14 +91,14 @@ export function VerticalLanding({
                   className="p-7 h-full"
                   style={{
                     backgroundColor: "#ffffff",
-                    borderRadius: "16px",
-                    boxShadow: "0 0 0 1px #E2E8F0",
+                    borderRadius: "2px",
+                    boxShadow: "0 0 0 1px #e0e0e0",
                     transition: "transform 260ms ease, box-shadow 260ms ease",
                   }}
                 >
                   <span
                     style={{
-                      color: "#2563EB",
+                      color: "#0f62fe",
                       fontFamily: "var(--font-mono)",
                       fontSize: "11px",
                       letterSpacing: "0.14em",
@@ -110,7 +110,7 @@ export function VerticalLanding({
                   <h3
                     className="mt-4"
                     style={{
-                      color: "#1E2A3A",
+                      color: "#161616",
                       fontFamily: "var(--font-display)",
                       fontSize: "20px",
                       fontWeight: 500,
@@ -122,7 +122,7 @@ export function VerticalLanding({
                   <p
                     className="mt-3"
                     style={{
-                      color: "#64748B",
+                      color: "#6f6f6f",
                       fontFamily: "var(--font-sans)",
                       fontSize: "14.5px",
                       lineHeight: 1.6,
@@ -144,7 +144,7 @@ export function VerticalLanding({
               <p
                 className="mb-4"
                 style={{
-                  color: "#94A3B8",
+                  color: "#8d8d8d",
                   fontFamily: "var(--font-mono)",
                   fontSize: "11px",
                   letterSpacing: "0.18em",
@@ -157,7 +157,7 @@ export function VerticalLanding({
               <h2
                 className="mx-auto max-w-[720px]"
                 style={{
-                  color: "#1E2A3A",
+                  color: "#161616",
                   fontFamily: "var(--font-display)",
                   fontSize: "clamp(28px, 3.4vw, 40px)",
                   fontWeight: 500,
@@ -175,9 +175,9 @@ export function VerticalLanding({
                 <div
                   className="p-7 h-full flex gap-4"
                   style={{
-                    backgroundColor: "#F1F5F9",
-                    borderRadius: "16px",
-                    boxShadow: "0 0 0 1px #E2E8F0",
+                    backgroundColor: "#f4f4f4",
+                    borderRadius: "2px",
+                    boxShadow: "0 0 0 1px #e0e0e0",
                   }}
                 >
                   <span
@@ -185,9 +185,9 @@ export function VerticalLanding({
                     style={{
                       width: "36px",
                       height: "36px",
-                      borderRadius: "10px",
-                      backgroundColor: "rgba(37,99,235,0.12)",
-                      color: "#2563EB",
+                      borderRadius: "2px",
+                      backgroundColor: "rgba(15,98,254,0.12)",
+                      color: "#0f62fe",
                       fontFamily: "var(--font-mono)",
                       fontSize: "11px",
                       fontWeight: 600,
@@ -198,7 +198,7 @@ export function VerticalLanding({
                   <div className="flex-1">
                     <h3
                       style={{
-                        color: "#1E2A3A",
+                        color: "#161616",
                         fontFamily: "var(--font-display)",
                         fontSize: "19px",
                         fontWeight: 500,
@@ -210,7 +210,7 @@ export function VerticalLanding({
                     <p
                       className="mt-2"
                       style={{
-                        color: "#64748B",
+                        color: "#6f6f6f",
                         fontFamily: "var(--font-sans)",
                         fontSize: "14.5px",
                         lineHeight: 1.6,
@@ -226,12 +226,12 @@ export function VerticalLanding({
         </div>
       </section>
 
-      <section style={{ backgroundColor: "#F1F5F9", borderTop: "1px solid #E2E8F0" }}>
+      <section style={{ backgroundColor: "#f4f4f4", borderTop: "1px solid #e0e0e0" }}>
         <div className="max-w-[1100px] mx-auto px-4 md:px-8 py-24 md:py-28 text-center">
           <Reveal>
             <p
               style={{
-                color: "#2563EB",
+                color: "#0f62fe",
                 fontFamily: "var(--font-mono)",
                 fontSize: "11px",
                 letterSpacing: "0.22em",
@@ -247,7 +247,7 @@ export function VerticalLanding({
             <h2
               className="mx-auto max-w-[760px]"
               style={{
-                color: "#1E2A3A",
+                color: "#161616",
                 fontFamily: "var(--font-display)",
                 fontSize: "clamp(30px, 3.8vw, 44px)",
                 fontWeight: 500,
@@ -262,7 +262,7 @@ export function VerticalLanding({
             <p
               className="mx-auto mt-5 max-w-[620px]"
               style={{
-                color: "#64748B",
+                color: "#6f6f6f",
                 fontFamily: "var(--font-sans)",
                 fontSize: "16px",
                 lineHeight: 1.6,

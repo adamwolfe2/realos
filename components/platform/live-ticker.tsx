@@ -75,7 +75,7 @@ const TOOL_ICON: Record<Tool, SiIcon> = {
 };
 
 const TOOL_COLOR: Record<Tool, string> = {
-  perplexity: "#1A1A1A",
+  perplexity: "#161616",
   chatgpt: "#10A37F",
   claude: "#C15F3C",
   gemini: "#4285F4",
@@ -85,10 +85,10 @@ const TOOL_COLOR: Record<Tool, string> = {
   linkedin: "#0A66C2",
 };
 
-const ACCENT = "#2563EB";
-const INK = "#1E2A3A";
-const MUTED = "#94A3B8";
-const BORDER = "#E2E8F0";
+const ACCENT = "#0f62fe";
+const INK = "#161616";
+const MUTED = "#8d8d8d";
+const BORDER = "#e0e0e0";
 
 export function LiveTicker({
   variant = "fixed",
@@ -133,8 +133,8 @@ export function LiveTicker({
         className="pointer-events-auto flex items-start gap-3"
         style={{
           backgroundColor: "#ffffff",
-          borderRadius: "12px",
-          boxShadow: `0 0 0 1px ${BORDER}, 0 20px 40px rgba(30, 42, 58,0.08)`,
+          borderRadius: "2px",
+          boxShadow: `0 0 0 1px ${BORDER}`,
           padding: "12px 14px 12px 12px",
           minWidth: "280px",
           maxWidth: "360px",
@@ -145,10 +145,10 @@ export function LiveTicker({
           style={{
             width: "30px",
             height: "30px",
-            borderRadius: "8px",
+            borderRadius: "2px",
             backgroundColor: event.tool
               ? TOOL_COLOR[event.tool]
-              : "rgba(37,99,235,0.10)",
+              : "rgba(15,98,254,0.10)",
             color: event.tool ? "#FFFFFF" : ACCENT,
           }}
         >

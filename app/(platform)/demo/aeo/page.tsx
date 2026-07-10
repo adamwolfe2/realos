@@ -414,19 +414,19 @@ const COMPETITOR_ROLLUP = [
 
 export default function DemoAeoPage() {
   return (
-    <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
+    <div style={{ backgroundColor: "#FFFFFF", color: "#161616" }}>
       <SplitHero
-        eyebrow="Live demo · AI Search Visibility"
+        eyebrow="Product demo · AI Search Visibility"
         headline="See your buildings the way"
         headlineAccent="ChatGPT, Perplexity, Claude, and Gemini do."
-        subhead="Every Monday morning, LeaseStack asks the same questions your prospects type into AI search — and shows you who got named, who got cited, and which competitor won the answer instead. This is the live dashboard, powered by a sample portfolio."
+        subhead="Every Monday morning, LeaseStack asks the same questions your prospects type into AI search — and shows you who got named, who got cited, and which competitor won the answer instead. This is the real dashboard, powered by a sample portfolio."
         ctas={[
           { label: "Run this on my portfolio", href: "/onboarding" },
           { label: "Talk to us", href: "/onboarding", variant: "secondary" },
         ]}
         caption="Updated weekly · 4 engines · per-property + per-keyword scoring"
         artifact={
-          <SoftFramedArtifact tone="lavender" padding="md" pillLabel="LIVE PREVIEW" bare>
+          <SoftFramedArtifact tone="lavender" padding="md" pillLabel="Example data" bare>
             <PreviewCard />
           </SoftFramedArtifact>
         }
@@ -452,15 +452,15 @@ function PreviewCard() {
     <div
       style={{
         backgroundColor: "#FFFFFF",
-        borderRadius: 16,
+        borderRadius: 2,
         boxShadow:
-          "0 0 0 1px #E2E8F0, 0 20px 60px rgba(30, 42, 58, 0.06)",
+          "0 0 0 1px #e0e0e0",
         overflow: "hidden",
       }}
     >
       <div
         className="px-5 py-3 flex items-center justify-between"
-        style={{ borderBottom: "1px solid #E2E8F0", backgroundColor: "#F8FAFC" }}
+        style={{ borderBottom: "1px solid #e0e0e0", backgroundColor: "#f4f4f4" }}
       >
         <span
           style={{
@@ -468,7 +468,7 @@ function PreviewCard() {
             fontSize: 10,
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: "#64748B",
+            color: "#6f6f6f",
             fontWeight: 600,
           }}
         >
@@ -478,7 +478,7 @@ function PreviewCard() {
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,
-            color: "#2563EB",
+            color: "#0f62fe",
             fontWeight: 600,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
@@ -494,7 +494,7 @@ function PreviewCard() {
             fontSize: 64,
             fontWeight: 600,
             lineHeight: 1,
-            color: "#1E2A3A",
+            color: "#161616",
             letterSpacing: "-0.02em",
           }}
         >
@@ -503,7 +503,7 @@ function PreviewCard() {
         <span
           style={{
             fontSize: 18,
-            color: "#94A3B8",
+            color: "#8d8d8d",
             fontFamily: "var(--font-display)",
           }}
         >
@@ -519,7 +519,7 @@ function PreviewCard() {
                 flex: 1,
                 height: 6,
                 borderRadius: 2,
-                backgroundColor: i < 6 ? "#2563EB" : "#E2E8F0",
+                backgroundColor: i < 6 ? "#0f62fe" : "#e0e0e0",
               }}
             />
           ))}
@@ -528,7 +528,7 @@ function PreviewCard() {
           className="mt-3"
           style={{
             fontSize: 12.5,
-            color: "#64748B",
+            color: "#6f6f6f",
             lineHeight: 1.5,
           }}
         >
@@ -537,7 +537,7 @@ function PreviewCard() {
         </p>
       </div>
       <div
-        style={{ borderTop: "1px solid #E2E8F0", backgroundColor: "#F8FAFC" }}
+        style={{ borderTop: "1px solid #e0e0e0", backgroundColor: "#f4f4f4" }}
         className="px-5 py-3 grid grid-cols-4 gap-3"
       >
         {[
@@ -552,7 +552,7 @@ function PreviewCard() {
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
-                color: "#1E2A3A",
+                color: "#161616",
                 fontWeight: 600,
                 fontVariantNumeric: "tabular-nums",
               }}
@@ -571,12 +571,12 @@ function PreviewCard() {
 function SampleNotice() {
   return (
     <section
-      style={{ backgroundColor: "#F8FAFC", borderTop: "1px solid #E2E8F0", borderBottom: "1px solid #E2E8F0" }}
+      style={{ backgroundColor: "#f4f4f4", borderTop: "1px solid #e0e0e0", borderBottom: "1px solid #e0e0e0" }}
     >
       <div className="max-w-[1180px] mx-auto px-4 md:px-10 py-5 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
         <div className="flex items-start gap-3">
-          <Sparkles className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#2563EB" }} />
-          <p style={{ fontSize: 13.5, color: "#1E2A3A", lineHeight: 1.5 }}>
+          <Sparkles className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#0f62fe" }} />
+          <p style={{ fontSize: 13.5, color: "#161616", lineHeight: 1.5 }}>
             <span style={{ fontWeight: 600 }}>This is the real product.</span>{" "}
             Same widgets your team uses inside LeaseStack, populated with a
             sample portfolio (4 properties · 4 engines · 160 weekly AI
@@ -604,7 +604,7 @@ function DemoDashboard() {
     <section className="bg-white">
       <div className="max-w-[1180px] mx-auto px-4 md:px-10 py-12 md:py-16">
         <PageHeader
-          eyebrow="AI ENGINE OPTIMIZATION · LIVE PREVIEW"
+          eyebrow="AI ENGINE OPTIMIZATION · EXAMPLE DATA"
           title="AI search visibility"
           description="When prospective renters ask ChatGPT, Perplexity, Claude, or Gemini for apartment recommendations in your market, do they get your property? Scans run automatically every Monday."
           meta="last scan 2 days ago"
@@ -692,7 +692,7 @@ function DemoDashboard() {
                       <span className="text-[11px] tabular-nums text-muted-foreground">
                         {count}×
                       </span>
-                      <span className="text-[11px] font-medium" style={{ color: "#2563EB" }}>
+                      <span className="text-[11px] font-medium" style={{ color: "#0f62fe" }}>
                         Counter →
                       </span>
                     </div>
@@ -788,7 +788,7 @@ function Annotation({
             style={{
               width: 3,
               borderRadius: 2,
-              backgroundColor: "#2563EB",
+              backgroundColor: "#0f62fe",
               alignSelf: "stretch",
               marginTop: 4,
               marginBottom: 4,
@@ -799,7 +799,7 @@ function Annotation({
             style={{
               fontSize: 12.5,
               lineHeight: 1.55,
-              color: "#475569",
+              color: "#525252",
               fontFamily: "var(--font-sans)",
               maxWidth: 760,
               paddingLeft: 8,
@@ -811,7 +811,7 @@ function Annotation({
                 fontSize: 10,
                 letterSpacing: "0.12em",
                 textTransform: "uppercase",
-                color: "#2563EB",
+                color: "#0f62fe",
                 fontWeight: 600,
                 marginRight: 8,
               }}
@@ -855,9 +855,9 @@ function AeoBoostBand() {
   return (
     <section
       style={{
-        backgroundColor: "#F8FAFC",
-        borderTop: "1px solid #E2E8F0",
-        borderBottom: "1px solid #E2E8F0",
+        backgroundColor: "#f4f4f4",
+        borderTop: "1px solid #e0e0e0",
+        borderBottom: "1px solid #e0e0e0",
       }}
     >
       <div className="max-w-[1180px] mx-auto px-4 md:px-10 py-16 md:py-20">
@@ -871,7 +871,7 @@ function AeoBoostBand() {
                 fontWeight: 400,
                 letterSpacing: "-0.025em",
                 lineHeight: 1.08,
-                color: "#1E2A3A",
+                color: "#161616",
               }}
             >
               The managed AI search add-on.
@@ -880,7 +880,7 @@ function AeoBoostBand() {
               style={{
                 fontSize: 16,
                 lineHeight: 1.6,
-                color: "#475569",
+                color: "#525252",
                 maxWidth: 480,
               }}
             >
@@ -900,7 +900,7 @@ function AeoBoostBand() {
             <p
               style={{
                 fontSize: 12,
-                color: "#94A3B8",
+                color: "#8d8d8d",
                 fontFamily: "var(--font-mono)",
                 letterSpacing: "0.06em",
                 paddingTop: 14,
@@ -916,8 +916,8 @@ function AeoBoostBand() {
                   key={f.title}
                   style={{
                     backgroundColor: "#FFFFFF",
-                    border: "1px solid #E2E8F0",
-                    borderRadius: 14,
+                    border: "1px solid #e0e0e0",
+                    borderRadius: 2,
                     padding: 18,
                   }}
                 >
@@ -926,7 +926,7 @@ function AeoBoostBand() {
                       fontFamily: "var(--font-display)",
                       fontSize: 15.5,
                       fontWeight: 600,
-                      color: "#1E2A3A",
+                      color: "#161616",
                       letterSpacing: "-0.01em",
                       lineHeight: 1.3,
                     }}
@@ -937,7 +937,7 @@ function AeoBoostBand() {
                     style={{
                       fontSize: 13,
                       lineHeight: 1.55,
-                      color: "#64748B",
+                      color: "#6f6f6f",
                       marginTop: 8,
                     }}
                   >
@@ -963,21 +963,21 @@ function BackgroundBand() {
     body: string;
   }> = [
     {
-      icon: <Calendar className="w-4 h-4" style={{ color: "#2563EB" }} />,
+      icon: <Calendar className="w-4 h-4" style={{ color: "#0f62fe" }} />,
       label: "Weekly cron · Mondays 02:00 UTC",
       title: "Your visibility is never stale.",
       body:
         "Every Monday morning we sample 5 prompts × 4 engines × every marketable property. AEO Boost runs the same loop daily.",
     },
     {
-      icon: <Database className="w-4 h-4" style={{ color: "#2563EB" }} />,
+      icon: <Database className="w-4 h-4" style={{ color: "#0f62fe" }} />,
       label: "DataForSEO",
       title: "10 search-intelligence APIs, billed in one place.",
       body:
         "LLM Responses, AI Overview capture, AI keyword volume, SERP, on-page Lighthouse, backlinks, keyword suggestions. We absorb the cost; you see the answers.",
     },
     {
-      icon: <Zap className="w-4 h-4" style={{ color: "#2563EB" }} />,
+      icon: <Zap className="w-4 h-4" style={{ color: "#0f62fe" }} />,
       label: "Per-prompt logging",
       title: "Every AI answer, archived.",
       body:
@@ -997,7 +997,7 @@ function BackgroundBand() {
               fontWeight: 400,
               letterSpacing: "-0.022em",
               lineHeight: 1.1,
-              color: "#1E2A3A",
+              color: "#161616",
             }}
           >
             The plumbing that makes the dashboard honest.
@@ -1009,10 +1009,10 @@ function BackgroundBand() {
               key={t.title}
               style={{
                 backgroundColor: "#FFFFFF",
-                border: "1px solid #E2E8F0",
-                borderRadius: 16,
+                border: "1px solid #e0e0e0",
+                borderRadius: 2,
                 padding: 22,
-                boxShadow: "0 1px 2px rgba(15, 23, 42, 0.03)",
+                boxShadow: "0 1px 2px rgba(22, 22, 22, 0.03)",
               }}
             >
               <div className="flex items-center gap-2">
@@ -1023,7 +1023,7 @@ function BackgroundBand() {
                     fontSize: 10,
                     letterSpacing: "0.12em",
                     textTransform: "uppercase",
-                    color: "#2563EB",
+                    color: "#0f62fe",
                     fontWeight: 600,
                   }}
                 >
@@ -1036,7 +1036,7 @@ function BackgroundBand() {
                   fontFamily: "var(--font-display)",
                   fontSize: 17,
                   fontWeight: 600,
-                  color: "#1E2A3A",
+                  color: "#161616",
                   letterSpacing: "-0.012em",
                   lineHeight: 1.3,
                 }}
@@ -1048,7 +1048,7 @@ function BackgroundBand() {
                 style={{
                   fontSize: 13.5,
                   lineHeight: 1.6,
-                  color: "#64748B",
+                  color: "#6f6f6f",
                 }}
               >
                 {t.body}
@@ -1065,13 +1065,13 @@ function BackgroundBand() {
 
 function FinalCta() {
   return (
-    <section style={{ backgroundColor: "#FFFFFF", borderTop: "1px solid #E2E8F0" }}>
+    <section style={{ backgroundColor: "#FFFFFF", borderTop: "1px solid #e0e0e0" }}>
       <div className="max-w-[1180px] mx-auto px-4 md:px-10 py-16 md:py-24">
         <div
           style={{
-            backgroundColor: "#F1F5F9",
-            border: "1px solid #E2E8F0",
-            borderRadius: 24,
+            backgroundColor: "#f4f4f4",
+            border: "1px solid #e0e0e0",
+            borderRadius: 2,
             padding: "56px 32px",
             textAlign: "center",
             position: "relative",
@@ -1087,7 +1087,7 @@ function FinalCta() {
               transform: "translateX(-50%)",
               width: 280,
               height: 4,
-              background: "linear-gradient(90deg, transparent, #2563EB, transparent)",
+              background: "linear-gradient(90deg, transparent, #0f62fe, transparent)",
               opacity: 0.6,
             }}
           />
@@ -1098,7 +1098,7 @@ function FinalCta() {
               fontWeight: 400,
               letterSpacing: "-0.028em",
               lineHeight: 1.08,
-              color: "#1E2A3A",
+              color: "#161616",
               maxWidth: 820,
               margin: "0 auto",
             }}
@@ -1110,7 +1110,7 @@ function FinalCta() {
             style={{
               fontSize: 16.5,
               lineHeight: 1.6,
-              color: "#64748B",
+              color: "#6f6f6f",
               maxWidth: 600,
               margin: "20px auto 0",
             }}

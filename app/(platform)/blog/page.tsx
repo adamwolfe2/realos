@@ -14,19 +14,19 @@ export default function BlogIndex() {
       <header style={{ borderBottom: "1px solid var(--border)" }}>
         <div className="max-w-4xl mx-auto px-4 md:px-8 pt-24 pb-14">
           <p
-            className="font-mono text-[11px] uppercase tracking-[0.18em] mb-5"
+            className="font-mono text-[11px] uppercase tracking-[0.12em] mb-5"
             style={{ color: "var(--text-muted)" }}
           >
             Blog
           </p>
           <h1
-            className="font-serif text-4xl md:text-5xl lg:text-6xl font-normal leading-[1.05]"
-            style={{ color: "var(--text-headline)" }}
+            className="text-4xl md:text-5xl lg:text-6xl font-normal leading-[1.05]"
+            style={{ color: "var(--text-headline)", fontFamily: "var(--font-display)" }}
           >
             Field notes from the build.
           </h1>
           <p
-            className="mt-6 font-mono text-sm md:text-base leading-relaxed max-w-2xl"
+            className="mt-6 text-sm md:text-base leading-relaxed max-w-2xl"
             style={{ color: "var(--text-body)" }}
           >
             Short essays about real estate marketing, pricing economics, and
@@ -43,12 +43,12 @@ export default function BlogIndex() {
               className="p-6 bg-white"
               style={{
                 border: "1px solid var(--border-strong)",
-                borderRadius: "12px",
+                borderRadius: "2px",
               }}
             >
               <Link href={`/blog/${post.slug}`} className="block group">
                 <p
-                  className="font-mono text-[10px] uppercase tracking-[0.18em]"
+                  className="font-mono text-[10px] uppercase tracking-[0.12em]"
                   style={{ color: "var(--text-muted)" }}
                 >
                   {new Date(post.publishedAt).toLocaleDateString("en-US", {
@@ -59,13 +59,13 @@ export default function BlogIndex() {
                   · {post.readingMinutes} min read
                 </p>
                 <h2
-                  className="font-serif text-2xl md:text-3xl font-normal mt-3 group-hover:opacity-70 transition-opacity"
-                  style={{ color: "var(--text-headline)" }}
+                  className="text-2xl md:text-3xl font-semibold mt-3 group-hover:opacity-70 transition-opacity"
+                  style={{ color: "var(--text-headline)", fontFamily: "var(--font-display)" }}
                 >
                   {post.title}
                 </h2>
                 <p
-                  className="font-mono text-sm leading-relaxed mt-3"
+                  className="text-sm leading-relaxed mt-3"
                   style={{ color: "var(--text-body)" }}
                 >
                   {post.description}

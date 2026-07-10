@@ -84,7 +84,7 @@ export default function LeadsPage() {
           { label: "Book a demo", href: "/onboarding" },
           { label: "See the marketplace", href: "#marketplace", variant: "secondary" },
         ]}
-        caption="Live demo on this page. No signup required."
+        caption="Interactive demo on this page. No signup required."
         artifact={<OverflowInbox />}
       />
 
@@ -258,7 +258,7 @@ export default function LeadsPage() {
                 Filter by market, property type, intent floor, and price band.
                 Subscribe to a saved filter as a stream and the platform
                 auto-routes every matching lead to your CRM the moment it
-                scores. Try it below — it's live.
+                scores. Try it below — no signup required.
               </p>
             </Reveal>
           </div>
@@ -268,19 +268,38 @@ export default function LeadsPage() {
           </Reveal>
 
           <Reveal delay={260}>
-            <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <MarketplaceStat
-                value="2,400+"
-                label="leads scored in the last 24 hours"
-              />
-              <MarketplaceStat
-                value="40–60%"
-                label="anonymous-visitor identification rate"
-              />
-              <MarketplaceStat
-                value="<1s"
-                label="from score to webhook delivery"
-              />
+            <div className="mt-12">
+              <div className="mb-3 flex justify-end">
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "9px",
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                    color: "var(--color-muted-foreground)",
+                    fontWeight: 600,
+                    padding: "2px 6px",
+                    borderRadius: "4px",
+                    backgroundColor: "var(--color-secondary)",
+                  }}
+                >
+                  Example data
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <MarketplaceStat
+                  value="2,400+"
+                  label="leads scored in the last 24 hours"
+                />
+                <MarketplaceStat
+                  value="40–60%"
+                  label="anonymous-visitor identification rate"
+                />
+                <MarketplaceStat
+                  value="<1s"
+                  label="from score to webhook delivery"
+                />
+              </div>
             </div>
           </Reveal>
         </div>

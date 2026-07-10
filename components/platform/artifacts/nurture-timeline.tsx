@@ -19,11 +19,11 @@ const TOUCHES: Touch[] = [
   { when: "Day 112",     kind: "call",  title: "Lease signed",             detail: "Resident moved in. Referral card sent to the family that helped." },
 ];
 
-const ACCENT = "#2563EB";
-const INK = "#1E2A3A";
-const MUTED = "#94A3B8";
-const BORDER = "#E2E8F0";
-const PARCHMENT = "#F1F5F9";
+const ACCENT = "#0f62fe";
+const INK = "#161616";
+const MUTED = "#8d8d8d";
+const BORDER = "#e0e0e0";
+const PARCHMENT = "#f4f4f4";
 
 export function NurtureTimeline() {
   const [revealed, setRevealed] = useState(0);
@@ -40,8 +40,8 @@ export function NurtureTimeline() {
       className="w-full"
       style={{
         backgroundColor: "#ffffff",
-        borderRadius: "16px",
-        boxShadow: `0 0 0 1px ${BORDER}, 0 20px 60px rgba(30, 42, 58,0.06)`,
+        borderRadius: "2px",
+        boxShadow: `0 0 0 1px ${BORDER}`,
         overflow: "hidden",
       }}
     >
@@ -82,7 +82,7 @@ export function NurtureTimeline() {
             top: "28px",
             bottom: "28px",
             width: "2px",
-            background: `linear-gradient(to bottom, ${ACCENT}, #E2E8F0)`,
+            background: `linear-gradient(to bottom, ${ACCENT}, #e0e0e0)`,
           }}
         />
         {TOUCHES.map((t, i) => {
@@ -141,7 +141,7 @@ export function NurtureTimeline() {
                   style={{
                     fontFamily: "var(--font-sans)",
                     fontSize: "12.5px",
-                    color: "#64748B",
+                    color: "#6f6f6f",
                     lineHeight: 1.5,
                   }}
                 >

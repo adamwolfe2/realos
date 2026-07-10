@@ -7,17 +7,17 @@ import {
   GeminiMark, LinkedInMark, VercelMark, FigmaMark,
 } from "./brand-logos";
 
-const ACCENT = "#2563EB";
-const INK = "#1E2A3A";
-const MUTED = "#94A3B8";
-const BORDER = "#E2E8F0";
-const PARCHMENT = "#F1F5F9";
+const ACCENT = "#0f62fe";
+const INK = "#161616";
+const MUTED = "#8d8d8d";
+const BORDER = "#e0e0e0";
+const PARCHMENT = "#f4f4f4";
 // Norman feedback (2026-05-21): every artifact on the marketing
 // surface stays on the brand blue ramp — no semantic green/red dots,
 // chips, or markers. SUCCESS reads as full brand blue, ERROR as a
 // darker brand-blue shade for emphasis without leaving the ramp.
-const SUCCESS = "#2563EB";
-const ERROR = "#1E40AF";
+const SUCCESS = "#0f62fe";
+const ERROR = "#0043ce";
 
 type Delta = "up" | "down-good" | "down-bad" | "neutral";
 
@@ -140,8 +140,8 @@ export function ConfigTabs() {
       onMouseLeave={() => setPaused(false)}
       style={{
         backgroundColor: "#ffffff",
-        borderRadius: "16px",
-        boxShadow: `0 0 0 1px ${BORDER}, 0 20px 60px rgba(30, 42, 58,0.06)`,
+        borderRadius: "2px",
+        boxShadow: `0 0 0 1px ${BORDER}`,
         overflow: "hidden",
       }}
     >
@@ -227,7 +227,7 @@ export function ConfigTabs() {
               style={{
                 fontFamily: "var(--font-sans)",
                 fontSize: "12.5px",
-                color: "#64748B",
+                color: "#6f6f6f",
                 lineHeight: 1.45,
               }}
             >
@@ -268,7 +268,7 @@ export function ConfigTabs() {
           {step.rows.map((row, i) => (
             <li
               key={row.label}
-              className="flex items-center gap-3 px-2 md:px-3 py-2.5 rounded-lg"
+              className="flex items-center gap-3 px-2 md:px-3 py-2.5 rounded-[2px]"
               style={{
                 backgroundColor: i % 2 === 0 ? PARCHMENT : "transparent",
                 animation: `configRow 480ms ease both`,
@@ -292,7 +292,7 @@ export function ConfigTabs() {
                 style={{
                   fontFamily: "var(--font-sans)",
                   fontSize: "13px",
-                  color: deltaColor(row.delta) ?? "#64748B",
+                  color: deltaColor(row.delta) ?? "#6f6f6f",
                   fontWeight: row.delta ? 600 : 400,
                   maxWidth: "52%",
                   textAlign: "right",
@@ -314,7 +314,7 @@ export function ConfigTabs() {
           style={{
             backgroundColor: ACCENT,
             color: "#ffffff",
-            borderRadius: "3px",
+            borderRadius: "2px",
           }}
         >
           <CheckSolid />
@@ -398,8 +398,8 @@ function FeatureIcon({
   const wrap = {
     width: "26px",
     height: "26px",
-    borderRadius: "7px",
-    boxShadow: `0 0 0 1px ${BORDER}, 0 1px 2px rgba(15,23,42,0.04)`,
+    borderRadius: "2px",
+    boxShadow: `0 0 0 1px ${BORDER}, 0 1px 2px rgba(22,22,22,0.04)`,
     backgroundColor: "#ffffff",
   } as const;
 
@@ -427,8 +427,8 @@ function FeatureIcon({
       className="inline-flex items-center justify-center flex-shrink-0"
       style={{
         ...wrap,
-        backgroundColor: "rgba(37,99,235,0.10)",
-        boxShadow: `0 0 0 1px rgba(37,99,235,0.18)`,
+        backgroundColor: "rgba(15,98,254,0.10)",
+        boxShadow: `0 0 0 1px rgba(15,98,254,0.18)`,
         color: ACCENT,
       }}
     >

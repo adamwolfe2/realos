@@ -14,11 +14,11 @@ import { BookDemoLink } from "@/components/marketing/book-demo-link";
 
 export function ProductTourSection() {
   return (
-    <section id="product-tour" style={{ backgroundColor: "#F1F5F9", borderTop: "1px solid #E2E8F0" }}>
+    <section id="product-tour" style={{ backgroundColor: "#f4f4f4", borderTop: "1px solid #e0e0e0" }}>
       <div className="max-w-[1280px] mx-auto px-4 md:px-8 pt-16 pb-16 md:pb-28 md:pt-24">
         <div className="max-w-3xl mb-8 md:mb-12">
           <p className="eyebrow mb-3 md:mb-4">Interactive preview</p>
-          <h2 className="heading-section" style={{ color: "#1E2A3A" }}>
+          <h2 className="heading-section" style={{ color: "#161616" }}>
             <span className="hidden md:inline">Click through the operator portal.</span>
             <span className="md:hidden">The operator portal.</span>
           </h2>
@@ -28,7 +28,7 @@ export function ProductTourSection() {
               fontFamily: "var(--font-sans)",
               fontSize: "15px",
               lineHeight: 1.6,
-              color: "#64748B",
+              color: "#6f6f6f",
             }}
           >
             <span className="hidden md:inline">
@@ -45,10 +45,9 @@ export function ProductTourSection() {
           <div
             style={{
               backgroundColor: "#FFFFFF",
-              border: "1px solid #E2E8F0",
-              borderRadius: 16,
+              border: "1px solid #e0e0e0",
+              borderRadius: 2,
               overflow: "hidden",
-              boxShadow: "0 12px 32px rgba(30, 42, 58, 0.06)",
             }}
           >
             {/* Real screenshot of the desktop operator-portal dashboard
@@ -73,7 +72,7 @@ export function ProductTourSection() {
             <div
               style={{
                 padding: "16px 18px",
-                borderTop: "1px solid #E2E8F0",
+                borderTop: "1px solid #e0e0e0",
               }}
             >
               <p
@@ -83,7 +82,7 @@ export function ProductTourSection() {
                   letterSpacing: "0.14em",
                   textTransform: "uppercase",
                   fontWeight: 600,
-                  color: "#94A3B8",
+                  color: "#8d8d8d",
                 }}
               >
                 Best on desktop
@@ -94,7 +93,7 @@ export function ProductTourSection() {
                   fontFamily: "var(--font-sans)",
                   fontSize: 14,
                   lineHeight: 1.5,
-                  color: "#475569",
+                  color: "#525252",
                 }}
               >
                 Open this page on a laptop to click through the live tour.
@@ -105,12 +104,12 @@ export function ProductTourSection() {
                   fontFamily: "var(--font-sans)",
                   fontSize: 14,
                   fontWeight: 600,
-                  color: "#2563EB",
+                  color: "#0f62fe",
                   textDecoration: "underline",
                   textUnderlineOffset: 3,
                 }}
               >
-                Book a demo instead
+                Book intro call
               </BookDemoLink>
             </div>
           </div>

@@ -3,11 +3,11 @@
 import React, { useEffect, useState } from "react";
 import { ChatGPTMark, PerplexityMark, ClaudeMark, GeminiMark, GoogleMark } from "./brand-logos";
 
-const ACCENT = "#2563EB";
-const INK = "#1E2A3A";
-const MUTED = "#94A3B8";
-const BORDER = "#E2E8F0";
-const PARCHMENT = "#F1F5F9";
+const ACCENT = "#0f62fe";
+const INK = "#161616";
+const MUTED = "#8d8d8d";
+const BORDER = "#e0e0e0";
+const PARCHMENT = "#f4f4f4";
 
 const ANSWER =
   "A private student-housing property two blocks from the main campus quad. Fully furnished units with wifi, fiber ethernet, and daily housekeeping included. Walk Score 99.";
@@ -74,8 +74,8 @@ export function SeoAnswer() {
       className="w-full"
       style={{
         backgroundColor: "#ffffff",
-        borderRadius: "16px",
-        boxShadow: `0 0 0 1px ${BORDER}, 0 20px 60px rgba(30, 42, 58,0.06)`,
+        borderRadius: "2px",
+        boxShadow: `0 0 0 1px ${BORDER}`,
         overflow: "hidden",
       }}
     >
@@ -158,7 +158,7 @@ export function SeoAnswer() {
             style={{
               width: "20px",
               height: "20px",
-              borderRadius: "6px",
+              borderRadius: "2px",
               backgroundColor: ACCENT,
               color: "#ffffff",
             }}
@@ -269,8 +269,8 @@ export function SeoAnswer() {
                       style={{
                         fontSize: "9px",
                         padding: "1px 6px",
-                        backgroundColor: "rgba(37,99,235,0.12)",
-                        borderRadius: "4px",
+                        backgroundColor: "rgba(15,98,254,0.12)",
+                        borderRadius: "2px",
                         letterSpacing: "0.08em",
                       }}
                     >
@@ -309,7 +309,7 @@ export function SeoAnswer() {
             color: MUTED,
             fontWeight: 600,
             padding: "2px 6px",
-            borderRadius: "4px",
+            borderRadius: "2px",
             backgroundColor: "rgba(135,134,127,0.12)",
             flexShrink: 0,
           }}
@@ -348,10 +348,10 @@ function renderAnswerWithHighlights(text: string) {
       <mark
         key={key++}
         style={{
-          backgroundColor: "rgba(37,99,235,0.16)",
+          backgroundColor: "rgba(15,98,254,0.16)",
           color: ACCENT,
           padding: "0 2px",
-          borderRadius: "3px",
+          borderRadius: "2px",
           fontWeight: 600,
         }}
       >

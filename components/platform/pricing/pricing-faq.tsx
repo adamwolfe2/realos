@@ -51,7 +51,7 @@ export function PricingFaq() {
     <section
       style={{
         backgroundColor: "#FFFFFF",
-        borderTop: "1px solid #E2E8F0",
+        borderTop: "1px solid var(--hair)",
       }}
     >
       <div className="max-w-[1100px] mx-auto px-4 md:px-8 pt-16 md:pt-24 pb-16 md:pb-24">
@@ -84,17 +84,17 @@ export function PricingFaq() {
             return (
               <li
                 key={idx}
-                className="rounded-xl overflow-hidden"
+                className="rounded-[2px] overflow-hidden"
                 style={{
                   backgroundColor: "#ffffff",
-                  border: "1px solid #E2E8F0",
+                  border: "1px solid var(--hair)",
                 }}
               >
                 <button
                   type="button"
                   onClick={() => setOpenIdx(open ? null : idx)}
                   aria-expanded={open}
-                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-[#F1F5F9]"
+                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-[#f4f4f4]"
                 >
                   <span
                     style={{
@@ -116,7 +116,7 @@ export function PricingFaq() {
                       display: "inline-flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      backgroundColor: open ? "#2563EB" : "#FFFFFF",
+                      backgroundColor: open ? "var(--color-primary)" : "#FFFFFF",
                       color: open ? "#ffffff" : "#64748B",
                       transition: "background-color 120ms ease",
                     }}

@@ -24,8 +24,10 @@ import { getEffectiveFeatureCatalog } from "@/lib/billing/feature-prices";
 //   5. FAQ         eight deal-breaker objections, accordion pattern
 //   6. CTA         last conversion push (demo or onboarding)
 //
-// Style: matches the platform brand (#FFFFFF parchment, #2563EB accent,
-// alternating section backgrounds, generous negative space).
+// Style: matches the platform brand (white canvas, var(--color-primary)
+// accent, alternating section backgrounds, flat Carbon-forward cards).
+// Plan names/prices on Tiers + Comparison both derive from
+// lib/billing/catalog.ts via components/platform/pricing/plan-display.ts.
 // ---------------------------------------------------------------------------
 
 export const metadata: Metadata = {

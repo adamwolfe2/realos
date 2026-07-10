@@ -18,25 +18,25 @@ import { ResendMark, SlackMark } from "./brand-logos";
 // list. Hairline borders, no cards-within-cards.
 // ---------------------------------------------------------------------------
 
-const ACCENT = "#2563EB";
-const INK = "#1E2A3A";
-const MUTED = "#94A3B8";
-const BORDER = "#E2E8F0";
-const PARCHMENT = "#F1F5F9";
+const ACCENT = "#0f62fe";
+const INK = "#161616";
+const MUTED = "#8d8d8d";
+const BORDER = "#e0e0e0";
+const PARCHMENT = "#f4f4f4";
 // Norman feedback (2026-05-21): every chart / accent stays on the
 // brand blue ramp. SUCCESS = brand blue, WARN = a darker brand-blue
 // shade for emphasis. The ATTRIBUTION channels also walk down the
 // blue ramp from darkest to lightest so the channel mix bar reads
 // like a single brand surface, not a rainbow.
-const SUCCESS = "#2563EB";
-const WARN = "#1E40AF";
+const SUCCESS = "#0f62fe";
+const WARN = "#0043ce";
 
 const ATTRIBUTION = [
-  { channel: "Google Ads",        leases: 4, share: 36, color: "#1E40AF" },
-  { channel: "Meta",              leases: 3, share: 27, color: "#2563EB" },
-  { channel: "Organic search",    leases: 2, share: 18, color: "#3B82F6" },
-  { channel: "Resident referral", leases: 1, share: 10, color: "#60A5FA" },
-  { channel: "Direct / brand",    leases: 1, share: 9,  color: "#93C5FD" },
+  { channel: "Google Ads",        leases: 4, share: 36, color: "#0043ce" },
+  { channel: "Meta",              leases: 3, share: 27, color: "#0f62fe" },
+  { channel: "Organic search",    leases: 2, share: 18, color: "#4589ff" },
+  { channel: "Resident referral", leases: 1, share: 10, color: "#4589ff" },
+  { channel: "Direct / brand",    leases: 1, share: 9,  color: "#a6c8ff" },
 ];
 
 const ACTIONS = [
@@ -60,8 +60,8 @@ export function WeeklyReport() {
       className="w-full"
       style={{
         backgroundColor: "#FFFFFF",
-        borderRadius: 16,
-        boxShadow: `0 0 0 1px ${BORDER}, 0 20px 60px rgba(30, 42, 58, 0.06)`,
+        borderRadius: 2,
+        boxShadow: `0 0 0 1px ${BORDER}`,
         overflow: "hidden",
       }}
     >
@@ -77,7 +77,7 @@ export function WeeklyReport() {
               style={{
                 width: 28,
                 height: 28,
-                borderRadius: 8,
+                borderRadius: 2,
                 backgroundColor: "#FFFFFF",
                 border: `1px solid ${BORDER}`,
               }}
@@ -171,7 +171,7 @@ export function WeeklyReport() {
             className="mt-2.5 flex overflow-hidden"
             style={{
               height: 10,
-              borderRadius: 4,
+              borderRadius: 2,
               backgroundColor: PARCHMENT,
             }}
             role="img"
@@ -267,7 +267,7 @@ export function WeeklyReport() {
                     width: 20,
                     height: 20,
                     borderRadius: "50%",
-                    backgroundColor: "rgba(37, 99, 235, 0.10)",
+                    backgroundColor: "rgba(15, 98, 254, 0.10)",
                     color: ACCENT,
                     fontFamily: "var(--font-mono)",
                     fontSize: 10.5,

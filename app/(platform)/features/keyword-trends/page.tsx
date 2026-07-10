@@ -32,7 +32,7 @@ export default function KeywordTrendsFeaturePage() {
       ]}
       bestFor="Operators in competitive markets where ranking position directly drives tour volume — student housing near major campuses, urban multifamily, hospitality, senior living in growing metros. Pairs naturally with the SEO + AEO module so the keyword data feeds the same content engine that ships the pages."
       artifact={
-        <SoftFramedArtifact tone="lavender" padding="md" pillLabel="LIVE" bare>
+        <SoftFramedArtifact tone="lavender" padding="md" pillLabel="Example data" bare>
           <SEOTrendChart />
         </SoftFramedArtifact>
       }

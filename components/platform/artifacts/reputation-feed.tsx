@@ -23,10 +23,10 @@ type SiIcon = { path: string; title: string };
 // data flows through /portal/reputation and /audit/[token].
 // ---------------------------------------------------------------------------
 
-const INK = "#1E2A3A";
-const MUTED = "#94A3B8";
-const BORDER = "#E2E8F0";
-const BORDER_SOFT = "#EEF2F7";
+const INK = "#161616";
+const MUTED = "#8d8d8d";
+const BORDER = "#e0e0e0";
+const BORDER_SOFT = "#e0e0e0";
 const CARD_BG = "#FFFFFF";
 
 type Sentiment = "positive" | "neutral" | "negative";
@@ -83,7 +83,7 @@ const SOURCE_COLOR: Record<Source, string> = {
   yelp: "#D32323",
   google: "#4285F4",
   bbb: "#0F4C81",
-  apartments: "#0E9F6E",
+  apartments: "#24a148",
   facebook: "#1877F2",
 };
 
@@ -148,9 +148,9 @@ function SourceGlyph({
 }
 
 const SENTIMENT_COLOR: Record<Sentiment, string> = {
-  positive: "#16A34A",
-  neutral: "#94A3B8",
-  negative: "#DC2626",
+  positive: "#24a148",
+  neutral: "#8d8d8d",
+  negative: "#da1e28",
 };
 
 const SENTIMENT_LABEL: Record<Sentiment, string> = {
@@ -162,7 +162,7 @@ const SENTIMENT_LABEL: Record<Sentiment, string> = {
 export function ReputationFeed() {
   return (
     <div
-      className="w-full rounded-2xl overflow-hidden shadow-sm"
+      className="w-full rounded-[2px] overflow-hidden shadow-sm"
       style={{
         backgroundColor: CARD_BG,
         border: `1px solid ${BORDER}`,
@@ -184,7 +184,7 @@ export function ReputationFeed() {
               width: 8,
               height: 8,
               borderRadius: "50%",
-              backgroundColor: "#2563EB",
+              backgroundColor: "#0f62fe",
               animation: "reputationDot 2s ease-in-out infinite",
             }}
             aria-hidden="true"
@@ -205,7 +205,7 @@ export function ReputationFeed() {
                 style={{
                   width: 20,
                   height: 20,
-                  borderRadius: 5,
+                  borderRadius: 2,
                   backgroundColor: SOURCE_COLOR[s],
                 }}
                 title={s.charAt(0).toUpperCase() + s.slice(1)}
@@ -230,7 +230,7 @@ export function ReputationFeed() {
               style={{
                 width: 30,
                 height: 30,
-                borderRadius: 7,
+                borderRadius: 2,
                 backgroundColor: SOURCE_COLOR[m.source],
               }}
               aria-hidden="true"
@@ -254,7 +254,7 @@ export function ReputationFeed() {
               </div>
               <p
                 className="mt-0.5 truncate"
-                style={{ fontSize: 12, color: "#475569", lineHeight: 1.45 }}
+                style={{ fontSize: 12, color: "#525252", lineHeight: 1.45 }}
               >
                 {m.snippet}
               </p>
@@ -285,7 +285,7 @@ export function ReputationFeed() {
         className="px-5 py-2.5 flex items-center justify-between"
         style={{
           borderTop: `1px solid ${BORDER_SOFT}`,
-          backgroundColor: "#F8FAFC",
+          backgroundColor: "#f4f4f4",
         }}
       >
         <p style={{ fontSize: 11, color: MUTED }}>
@@ -294,7 +294,7 @@ export function ReputationFeed() {
         <p
           style={{
             fontSize: 11,
-            color: "#2563EB",
+            color: "#0f62fe",
             fontWeight: 600,
             letterSpacing: "-0.005em",
           }}

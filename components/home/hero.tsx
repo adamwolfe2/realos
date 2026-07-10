@@ -20,7 +20,7 @@ export function Hero() {
         <SoftBlurIn
           segments={[
             { text: "Take control of your" },
-            { text: "online leasing.", color: "#2563EB" },
+            { text: "online leasing.", color: "#0f62fe" },
           ]}
         />
       }

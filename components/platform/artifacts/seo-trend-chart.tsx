@@ -23,8 +23,8 @@ import { motion, useReducedMotion } from "framer-motion";
 // surface that wants the same kinetic SEO story).
 // ---------------------------------------------------------------------------
 
-const ACCENT = "#2563EB";
-const ACCENT_DEEP = "#1E40AF";
+const ACCENT = "#0f62fe";
+const ACCENT_DEEP = "#0043ce";
 
 // 90-day series — 13 weekly samples. Values are organic sessions /
 // week, shaped to read as "slow start, steeper acquisition, plateau
@@ -137,23 +137,22 @@ export function SEOTrendChart() {
         whileInView={reduce ? undefined : { opacity: 1, rotateX: 2, y: 0 }}
         viewport={{ once: true, amount: 0.4 }}
         transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-        className="relative w-full rounded-2xl overflow-hidden"
+        className="relative w-full rounded-[2px] overflow-hidden"
         style={{
           backgroundColor: "#FFFFFF",
-          // Soft brand-blue grid + radial wash to create the "lifted
-          // panel" feel without a hard border.
+          // Flat Carbon panel: subtle grid texture + hard 1px border,
+          // no radial wash or glow shadows.
           backgroundImage:
-            "radial-gradient(circle at 30% 0%, rgba(37,99,235,0.06), transparent 60%), linear-gradient(0deg, rgba(37,99,235,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(37,99,235,0.05) 1px, transparent 1px)",
-          backgroundSize: "auto, 40px 40px, 40px 40px",
-          boxShadow:
-            "0 1px 2px rgba(15,23,42,0.04), 0 18px 48px rgba(37,99,235,0.12)",
+            "linear-gradient(0deg, rgba(15,98,254,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(15,98,254,0.05) 1px, transparent 1px)",
+          backgroundSize: "40px 40px, 40px 40px",
+          border: "1px solid #e0e0e0",
           transformStyle: "preserve-3d",
         }}
       >
         {/* Header */}
         <header
           className="flex items-baseline justify-between gap-3 px-6 py-5"
-          style={{ borderBottom: "1px solid rgba(37,99,235,0.08)" }}
+          style={{ borderBottom: "1px solid rgba(15,98,254,0.08)" }}
         >
           <div>
             <p
@@ -163,7 +162,7 @@ export function SEOTrendChart() {
                 letterSpacing: "0.14em",
                 textTransform: "uppercase",
                 fontWeight: 600,
-                color: "#94A3B8",
+                color: "#8d8d8d",
               }}
             >
               Organic + AI discovery · last 90 days
@@ -175,7 +174,7 @@ export function SEOTrendChart() {
                 fontSize: 22,
                 fontWeight: 600,
                 letterSpacing: "-0.022em",
-                color: "#1E2A3A",
+                color: "#161616",
               }}
             >
               SEO ramp
@@ -184,7 +183,7 @@ export function SEOTrendChart() {
           <span
             className="inline-flex items-center gap-1.5 rounded-full px-3 py-1"
             style={{
-              backgroundColor: "rgba(37,99,235,0.08)",
+              backgroundColor: "rgba(15,98,254,0.08)",
               color: ACCENT,
               fontFamily: "var(--font-mono)",
               fontSize: 10,
@@ -232,7 +231,7 @@ export function SEOTrendChart() {
                   y1={y}
                   x2={W - PAD.right}
                   y2={y}
-                  stroke="rgba(15,23,42,0.05)"
+                  stroke="rgba(22,22,22,0.05)"
                   strokeWidth="1"
                 />
               );
@@ -311,8 +310,8 @@ export function SEOTrendChart() {
         <footer
           className="px-6 py-3 flex items-center justify-between gap-3"
           style={{
-            borderTop: "1px solid rgba(37,99,235,0.08)",
-            backgroundColor: "#FAFBFF",
+            borderTop: "1px solid #e0e0e0",
+            backgroundColor: "#edf5ff",
           }}
         >
           <span
@@ -322,7 +321,7 @@ export function SEOTrendChart() {
               letterSpacing: "0.14em",
               textTransform: "uppercase",
               fontWeight: 500,
-              color: "#94A3B8",
+              color: "#8d8d8d",
             }}
           >
             Sessions · attributed to /n/ pages
@@ -375,10 +374,9 @@ function FloatingCard({
       }}
     >
       <div
-        className="rounded-xl px-3.5 py-2.5 bg-white"
+        className="rounded-[2px] px-3.5 py-2.5 bg-white"
         style={{
-          boxShadow:
-            "0 4px 12px rgba(15,23,42,0.08), 0 1px 3px rgba(15,23,42,0.05), 0 0 0 1px rgba(37,99,235,0.12)",
+          boxShadow: "0 1px 3px rgba(22,22,22,0.05), 0 0 0 1px #e0e0e0",
           minWidth: 168,
         }}
       >
@@ -401,7 +399,7 @@ function FloatingCard({
             fontSize: 14,
             fontWeight: 600,
             letterSpacing: "-0.012em",
-            color: "#1E2A3A",
+            color: "#161616",
             lineHeight: 1.2,
           }}
         >
@@ -412,7 +410,7 @@ function FloatingCard({
           style={{
             fontFamily: "var(--font-sans)",
             fontSize: 11,
-            color: "#64748B",
+            color: "#6f6f6f",
             lineHeight: 1.4,
           }}
         >
@@ -426,7 +424,7 @@ function FloatingCard({
         style={{
           width: 1,
           height: 14,
-          backgroundColor: "rgba(37,99,235,0.4)",
+          backgroundColor: "rgba(15,98,254,0.4)",
           [stat.side === "above" ? "bottom" : "top"]: -14,
           transform: "translateX(-50%)",
         }}

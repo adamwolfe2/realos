@@ -17,14 +17,14 @@ export function Faq() {
   // two-column scan. Header + intro centered above, questions list
   // capped at max-w-3xl and centered below.
   return (
-    <section style={{ backgroundColor: "#FFFFFF", borderTop: "1px solid #E2E8F0" }}>
+    <section style={{ backgroundColor: "#FFFFFF", borderTop: "1px solid #e0e0e0" }}>
       <div className="max-w-[800px] mx-auto px-4 md:px-8 py-12 md:py-16">
         {/* Centered header block */}
         <div className="text-center mb-10 md:mb-12">
           <p className="eyebrow mb-3">{faq.eyebrow}</p>
           <h2
             style={{
-              color: "#1E2A3A",
+              color: "#161616",
               fontFamily: "var(--font-sans)",
               fontSize: "clamp(28px, 3.6vw, 40px)",
               fontWeight: 700,
@@ -37,7 +37,7 @@ export function Faq() {
           <p
             className="mt-4 mx-auto max-w-md"
             style={{
-              color: "#64748B",
+              color: "#6f6f6f",
               fontFamily: "var(--font-sans)",
               fontSize: "15px",
               lineHeight: 1.55,
@@ -48,7 +48,7 @@ export function Faq() {
             <a
               href="mailto:team@leasestack.co"
               style={{
-                color: "#2563EB",
+                color: "#0f62fe",
                 textDecoration: "underline",
                 textUnderlineOffset: "2px",
               }}
@@ -64,8 +64,8 @@ export function Faq() {
         <ul
           style={{
             backgroundColor: "#FFFFFF",
-            border: "1px solid #E2E8F0",
-            borderRadius: 4,
+            border: "1px solid #e0e0e0",
+            borderRadius: 2,
             overflow: "hidden",
           }}
         >
@@ -73,17 +73,17 @@ export function Faq() {
               <li
                 key={item.q}
                 style={{
-                  borderTop: i === 0 ? "none" : "1px solid #E2E8F0",
+                  borderTop: i === 0 ? "none" : "1px solid #e0e0e0",
                 }}
               >
                 <details className="group">
                   <summary
-                    className="flex items-center justify-between gap-6 px-5 py-4 cursor-pointer list-none hover:bg-[#F8FAFC] transition-colors"
+                    className="flex items-center justify-between gap-6 px-5 py-4 cursor-pointer list-none hover:bg-[#f4f4f4] transition-colors"
                     style={{
                       fontFamily: "var(--font-sans)",
                       fontSize: "15.5px",
                       fontWeight: 600,
-                      color: "#1E2A3A",
+                      color: "#161616",
                       lineHeight: 1.35,
                       letterSpacing: "-0.005em",
                     }}
@@ -95,7 +95,7 @@ export function Faq() {
                       style={{
                         width: "18px",
                         height: "18px",
-                        color: "#94A3B8",
+                        color: "#8d8d8d",
                       }}
                     >
                       <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
@@ -114,7 +114,7 @@ export function Faq() {
                       fontFamily: "var(--font-sans)",
                       fontSize: "14px",
                       lineHeight: 1.6,
-                      color: "#64748B",
+                      color: "#6f6f6f",
                       maxWidth: "640px",
                     }}
                   >

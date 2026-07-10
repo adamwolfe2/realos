@@ -25,7 +25,7 @@ export function PlatformFooter() {
     <footer
       style={{
         backgroundColor: "#FFFFFF",
-        borderTop: "1px solid #E2E8F0",
+        borderTop: "1px solid #e0e0e0",
       }}
     >
       <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-10 flex flex-col md:flex-row items-center justify-between gap-6">
@@ -39,7 +39,7 @@ export function PlatformFooter() {
         <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
           {links.map((l) => {
             const sharedStyle = {
-              color: "#64748B",
+              color: "#6f6f6f",
               fontFamily: "var(--font-sans)",
               fontSize: "13px",
               fontWeight: 400,
@@ -67,7 +67,7 @@ export function PlatformFooter() {
         </nav>
         <p
           style={{
-            color: "#94A3B8",
+            color: "#8d8d8d",
             fontFamily: "var(--font-sans)",
             fontSize: "12px",
             fontWeight: 400,

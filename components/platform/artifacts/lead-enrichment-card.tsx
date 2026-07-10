@@ -22,12 +22,12 @@ import React, { useEffect, useState } from "react";
 
 type Stage = "raw" | "identity" | "intent";
 
-const ACCENT = "#2563EB";
-const INK = "#1E2A3A";
-const MUTED = "#94A3B8";
-const SLATE = "#64748B";
-const BORDER = "#E2E8F0";
-const PARCHMENT = "#F1F5F9";
+const ACCENT = "#0f62fe";
+const INK = "#161616";
+const MUTED = "#8d8d8d";
+const SLATE = "#6f6f6f";
+const BORDER = "#e0e0e0";
+const PARCHMENT = "#f4f4f4";
 const PHOTO = "https://randomuser.me/api/portraits/women/68.jpg";
 
 const STAGE_DURATION_MS: Record<Stage, number> = {
@@ -55,8 +55,8 @@ export function LeadEnrichmentCard() {
       className="w-full"
       style={{
         backgroundColor: "#ffffff",
-        borderRadius: "16px",
-        boxShadow: `0 0 0 1px ${BORDER}, 0 20px 60px rgba(30, 42, 58,0.08)`,
+        borderRadius: "2px",
+        boxShadow: `0 0 0 1px ${BORDER}`,
         overflow: "hidden",
       }}
     >
@@ -248,9 +248,9 @@ function StageBadge({ stage }: { stage: Stage }) {
   const cur = labels[stage];
   const palette =
     cur.tone === "green"
-      ? { bg: "rgba(16,185,129,0.12)", fg: "#059669" }
+      ? { bg: "rgba(36,161,72,0.12)", fg: "#24a148" }
       : cur.tone === "blue"
-        ? { bg: "rgba(37,99,235,0.12)", fg: ACCENT }
+        ? { bg: "rgba(15,98,254,0.12)", fg: ACCENT }
         : { bg: "rgba(148,163,184,0.18)", fg: SLATE };
 
   return (
@@ -263,7 +263,7 @@ function StageBadge({ stage }: { stage: Stage }) {
         color: palette.fg,
         backgroundColor: palette.bg,
         padding: "3px 8px",
-        borderRadius: "4px",
+        borderRadius: "2px",
         fontWeight: 700,
         whiteSpace: "nowrap",
         transition: "all 400ms ease",
@@ -293,7 +293,7 @@ function FieldRow({
       style={{
         borderBottom: `1px solid ${BORDER}`,
         transition: "background-color 400ms ease",
-        backgroundColor: revealed && !masked ? "rgba(37,99,235,0.03)" : "transparent",
+        backgroundColor: revealed && !masked ? "rgba(15,98,254,0.03)" : "transparent",
       }}
     >
       <span
@@ -339,8 +339,8 @@ function FieldRow({
               width: "16px",
               height: "16px",
               borderRadius: "50%",
-              backgroundColor: "rgba(16,185,129,0.14)",
-              color: "#059669",
+              backgroundColor: "rgba(36,161,72,0.14)",
+              color: "#24a148",
             }}
           >
             <svg width="9" height="9" viewBox="0 0 10 10" fill="none">

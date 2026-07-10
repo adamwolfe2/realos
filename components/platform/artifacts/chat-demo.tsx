@@ -18,11 +18,11 @@ const SCRIPT: Turn[] = [
   { role: "event", text: "Lead captured · emailed floor-plan PDF · added to CRM" },
 ];
 
-const ACCENT = "#2563EB";
-const INK = "#1E2A3A";
-const MUTED = "#94A3B8";
-const BORDER = "#E2E8F0";
-const PARCHMENT = "#F1F5F9";
+const ACCENT = "#0f62fe";
+const INK = "#161616";
+const MUTED = "#8d8d8d";
+const BORDER = "#e0e0e0";
+const PARCHMENT = "#f4f4f4";
 
 export function ChatDemo() {
   const [visibleCount, setVisibleCount] = useState(0);
@@ -71,8 +71,8 @@ export function ChatDemo() {
       className="w-full"
       style={{
         backgroundColor: "#ffffff",
-        borderRadius: "16px",
-        boxShadow: `0 0 0 1px ${BORDER}, 0 20px 60px rgba(30, 42, 58,0.06)`,
+        borderRadius: "2px",
+        boxShadow: `0 0 0 1px ${BORDER}`,
         overflow: "hidden",
       }}
     >
@@ -129,7 +129,7 @@ export function ChatDemo() {
             width: "8px",
             height: "8px",
             borderRadius: "50%",
-            backgroundColor: "#2563EB",
+            backgroundColor: "#0f62fe",
             animation: "chatDot 1.8s ease-in-out infinite",
           }}
         />
@@ -169,7 +169,7 @@ export function ChatDemo() {
           style={{
             width: "32px",
             height: "32px",
-            borderRadius: "8px",
+            borderRadius: "2px",
             backgroundColor: ACCENT,
             color: "#ffffff",
             border: "none",
@@ -198,9 +198,9 @@ function Bubble({ turn }: { turn: Turn }) {
       <div
         className="flex items-center gap-2 px-3 py-2 my-2"
         style={{
-          backgroundColor: "rgba(37,99,235,0.08)",
+          backgroundColor: "rgba(15,98,254,0.08)",
           border: `1px dashed ${ACCENT}`,
-          borderRadius: "10px",
+          borderRadius: "2px",
           animation: "bubbleIn 380ms ease",
         }}
       >

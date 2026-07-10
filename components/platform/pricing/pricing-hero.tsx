@@ -15,11 +15,11 @@ import { BookDemoLink } from "@/components/marketing/book-demo-link";
 //   centered trust strip
 // ---------------------------------------------------------------------------
 
-// Primary: real pilot signup wizard. Stays as /onboarding because this
-// CTA is "Request pilot," not "Book a demo" — it's the actual buy-now
-// path. Secondary: routes through BookDemoLink which resolves to the
+// Canonical CTA pair (Carbon wave 2): "Request pilot" → /sign-up (the
+// one self-serve pilot entry; sign-up flows into onboarding with the
+// trial). "Book intro call" → BookDemoLink, which resolves to the
 // configured Cal.com URL (NEXT_PUBLIC_CAL_BOOK_URL).
-const PRIMARY_HREF = "/onboarding";
+const PRIMARY_HREF = "/sign-up";
 
 export function PricingHero() {
   return (
@@ -34,18 +34,18 @@ export function PricingHero() {
             <span
               aria-hidden
               className="hidden sm:inline-block"
-              style={{ width: 28, height: 1, backgroundColor: "#2563EB" }}
+              style={{ width: 28, height: 1, backgroundColor: "var(--color-primary)" }}
             />
             <p
               className="text-[11px] font-mono uppercase tracking-[0.18em]"
-              style={{ color: "#2563EB", fontFamily: "var(--font-mono)" }}
+              style={{ color: "var(--color-primary)", fontFamily: "var(--font-mono)" }}
             >
               Pricing
             </p>
             <span
               aria-hidden
               className="hidden sm:inline-block"
-              style={{ width: 28, height: 1, backgroundColor: "#2563EB" }}
+              style={{ width: 28, height: 1, backgroundColor: "var(--color-primary)" }}
             />
           </div>
 
@@ -59,7 +59,7 @@ export function PricingHero() {
           >
             One platform. Every signal.
             <br />
-            <span style={{ color: "#2563EB" }}>One price per property.</span>
+            <span style={{ color: "var(--color-primary)" }}>One price per property.</span>
           </h1>
 
           {/* Subhead — Norman v2 PR2. Lead with the intelligence platform
@@ -75,26 +75,25 @@ export function PricingHero() {
             paid campaigns, we can manage those too.
           </p>
 
-          {/* Primary + secondary CTA. Norman v2 G1: every primary CTA on
-              the site says "Request pilot" or "Book your intro call".
-              "Book a demo" → "Book your intro call". */}
+          {/* Primary + secondary CTA — the one canonical buying pair:
+              "Request pilot" and "Book intro call". */}
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
               href={PRIMARY_HREF}
               className="inline-flex items-center justify-center h-11 px-6 rounded-md text-sm font-medium text-white transition-colors hover:opacity-90"
-              style={{ backgroundColor: "#2563EB" }}
+              style={{ backgroundColor: "var(--color-primary)" }}
             >
               Request pilot
             </Link>
             <BookDemoLink
               className="inline-flex items-center justify-center h-11 px-6 rounded-md text-sm font-medium transition-colors"
               style={{
-                border: "1px solid #E5E7EB",
+                border: "1px solid var(--hair)",
                 color: "#1E2A3A",
                 backgroundColor: "#FFFFFF",
               }}
             >
-              Book your intro call
+              Book intro call
             </BookDemoLink>
           </div>
 
@@ -121,7 +120,7 @@ function TrustChip({ value, label }: { value: string; label: string }) {
       </p>
       <p
         className="mt-0.5 text-[11px] font-mono uppercase tracking-[0.16em]"
-        style={{ color: "#88867f", fontFamily: "var(--font-mono)" }}
+        style={{ color: "var(--stone-gray)", fontFamily: "var(--font-mono)" }}
       >
         {label}
       </p>

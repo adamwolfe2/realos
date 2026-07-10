@@ -20,6 +20,10 @@ export const MARKETING = {
     // Sub-header: dropped feature list, leading with centralization +
     //   month-to-month flexibility instead (H3).
     // Primary CTA: "Start a free pilot" → "Request pilot" (G1).
+    // Carbon wave 2 (2026-07-10): canonical CTA pair across the buying
+    // spine — "Request pilot" → /sign-up (one destination; sign-up
+    // flows into onboarding + trial) and "Book intro call" → Cal.com
+    // via BookDemoLink.
     hero: {
       eyebrow: "Data intelligence platform",
       headline: "Take control of your online leasing.",
@@ -27,7 +31,7 @@ export const MARKETING = {
       subhead:
         "Centralize your tech stack on one platform with one login. Month-to-month contract flexibility.",
       primaryCta: "Request pilot",
-      primaryHref: "/onboarding",
+      primaryHref: "/sign-up",
       secondaryCta: "See it on a real property",
       secondaryHref: "/demo",
       microProof: "Live on a real student-housing lease-up. Built for multifamily, senior living, and commercial.",
@@ -118,8 +122,8 @@ export const MARKETING = {
       heading: "Free pilot. No commitment.",
       body:
         "We connect to your existing stack, show you what we see in your dashboard, and you decide if it's useful. No deck. No sales pitch.",
-      primaryCta: "Start a free pilot",
-      primaryHref: "/onboarding",
+      primaryCta: "Request pilot",
+      primaryHref: "/sign-up",
     },
     // Operating Rhythm — back on the homepage per Norman brief (2026-05-28).
     weekly: {

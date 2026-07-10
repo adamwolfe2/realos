@@ -3,9 +3,16 @@
 import * as React from "react";
 import { Check, Minus, ChevronDown } from "lucide-react";
 import { SectionEyebrow } from "@/components/platform/section-eyebrow";
+import { PLAN_DISPLAY } from "./plan-display";
 
 // ---------------------------------------------------------------------------
 // Compressed tier comparison table.
+//
+// Column names + prices come from lib/billing/catalog.ts via
+// PLAN_DISPLAY — the same source the PricingTiers cards render from —
+// so the table can never contradict the cards again (it previously
+// shipped as Pilot/Standard/Portfolio against Foundation/Growth/Scale
+// cards).
 //
 // Earlier version had 40+ rows in 9 sections, which dominated the page
 // and forced a long scroll. New approach:
@@ -21,6 +28,27 @@ import { SectionEyebrow } from "@/components/platform/section-eyebrow";
 
 type Cell = boolean | string;
 type Row = { feature: string; foundation: Cell; growth: Cell; scale: Cell };
+
+// Column headers, catalog-driven. Foundation's public card leads with
+// the free 14-day trial (no card), so its price cell reads "Free trial"
+// to match; Growth and Scale show the catalog first-property monthly
+// rate.
+const TIER_COLUMNS: Array<{
+  name: string;
+  price: string;
+  highlighted?: boolean;
+}> = [
+  { name: PLAN_DISPLAY.foundation.name, price: "Free trial" },
+  {
+    name: PLAN_DISPLAY.growth.name,
+    price: `$${PLAN_DISPLAY.growth.monthlyDollars.toLocaleString()}/mo`,
+    highlighted: true,
+  },
+  {
+    name: PLAN_DISPLAY.scale.name,
+    price: `$${PLAN_DISPLAY.scale.monthlyDollars.toLocaleString()}/mo`,
+  },
+];
 
 // Headline rows that drive tier decisions. Anything that isn't a deal-
 // breaker belongs in the full table behind the disclosure below.
@@ -169,7 +197,7 @@ function CellContent({ value }: { value: Cell }) {
       <Check
         size={15}
         strokeWidth={2.5}
-        style={{ color: "#2563EB" }}
+        style={{ color: "var(--color-primary)" }}
         aria-label="Included"
       />
     );
@@ -179,7 +207,7 @@ function CellContent({ value }: { value: Cell }) {
       <Minus
         size={13}
         strokeWidth={2}
-        style={{ color: "#bdbcb6" }}
+        style={{ color: "var(--hair-strong)" }}
         aria-label="Not included"
       />
     );
@@ -205,8 +233,8 @@ export function ComparisonTable() {
   return (
     <section
       style={{
-        backgroundColor: "#F1F5F9",
-        borderTop: "1px solid #E2E8F0",
+        backgroundColor: "var(--color-surface)",
+        borderTop: "1px solid var(--hair)",
       }}
     >
       <div className="max-w-[1100px] mx-auto px-4 md:px-8 pt-16 md:pt-24 pb-16 md:pb-24">
@@ -222,15 +250,16 @@ export function ComparisonTable() {
 
         {/* Compact table, 8 headline rows, no section dividers. */}
         <div
-          className="rounded-xl overflow-hidden"
+          className="overflow-hidden"
           style={{
             backgroundColor: "#ffffff",
-            border: "1px solid #E2E8F0",
+            border: "1px solid var(--hair)",
+            borderRadius: "2px",
           }}
         >
           <table className="w-full" style={{ borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ borderBottom: "1px solid #E2E8F0" }}>
+              <tr style={{ borderBottom: "1px solid var(--hair)" }}>
                 <th
                   className="text-left py-3 pl-4 pr-3"
                   style={{
@@ -239,24 +268,20 @@ export function ComparisonTable() {
                     fontSize: "10px",
                     letterSpacing: "0.16em",
                     textTransform: "uppercase",
-                    color: "#88867f",
+                    color: "var(--stone-gray)",
                     fontWeight: 600,
                   }}
                 >
                   Feature
                 </th>
-                {[
-                  { name: "Pilot", price: "Free" },
-                  { name: "Standard", price: "$899", highlighted: true },
-                  { name: "Portfolio", price: "$1,499" },
-                ].map((t) => (
+                {TIER_COLUMNS.map((t) => (
                   <th
                     key={t.name}
                     className="text-center py-3 px-3"
                     style={{
                       minWidth: "110px",
                       backgroundColor: t.highlighted
-                        ? "rgba(37,99,235,0.04)"
+                        ? "var(--brand-wash)"
                         : "transparent",
                     }}
                   >
@@ -265,7 +290,7 @@ export function ComparisonTable() {
                         fontFamily: "var(--font-sans)",
                         fontSize: "13.5px",
                         fontWeight: 700,
-                        color: t.highlighted ? "#2563EB" : "#1E2A3A",
+                        color: t.highlighted ? "var(--color-primary)" : "#1E2A3A",
                         letterSpacing: "-0.005em",
                       }}
                     >
@@ -276,11 +301,11 @@ export function ComparisonTable() {
                         fontFamily: "var(--font-sans)",
                         fontSize: "11.5px",
                         fontWeight: 500,
-                        color: "#88867f",
+                        color: "var(--stone-gray)",
                         marginTop: "1px",
                       }}
                     >
-                      {t.price}/mo
+                      {t.price}
                     </div>
                   </th>
                 ))}
@@ -294,7 +319,7 @@ export function ComparisonTable() {
                     borderBottom:
                       idx === HEADLINE_ROWS.length - 1
                         ? "none"
-                        : "1px solid #E2E8F0",
+                        : "1px solid var(--hair)",
                   }}
                 >
                   <td
@@ -313,7 +338,7 @@ export function ComparisonTable() {
                   </td>
                   <td
                     className="py-2.5 px-3 text-center"
-                    style={{ backgroundColor: "rgba(37,99,235,0.04)" }}
+                    style={{ backgroundColor: "var(--brand-wash)" }}
                   >
                     <CellContent value={row.growth} />
                   </td>
@@ -335,8 +360,8 @@ export function ComparisonTable() {
             className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-medium transition-colors"
             style={{
               backgroundColor: "transparent",
-              color: "#2563EB",
-              border: "1px solid rgba(37,99,235,0.25)",
+              color: "var(--color-primary)",
+              border: "1px solid var(--hair-active)",
             }}
           >
             {showFull ? "Hide full comparison" : "Show every detail"}
@@ -354,53 +379,37 @@ export function ComparisonTable() {
 
         {showFull ? (
           <div
-            className="mt-6 rounded-xl overflow-hidden"
+            className="mt-6 overflow-hidden"
             style={{
               backgroundColor: "#ffffff",
-              border: "1px solid #E2E8F0",
+              border: "1px solid var(--hair)",
+              borderRadius: "2px",
             }}
           >
             <table className="w-full" style={{ borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ borderBottom: "1px solid #E2E8F0" }}>
+                <tr style={{ borderBottom: "1px solid var(--hair)" }}>
                   <th className="py-3 pl-4 pr-3" style={{ minWidth: "240px" }}></th>
-                  <th
-                    className="text-center py-3 px-3"
-                    style={{
-                      fontFamily: "var(--font-sans)",
-                      fontSize: "12.5px",
-                      fontWeight: 700,
-                      color: "#1E2A3A",
-                      minWidth: "110px",
-                    }}
-                  >
-                    Pilot
-                  </th>
-                  <th
-                    className="text-center py-3 px-3"
-                    style={{
-                      fontFamily: "var(--font-sans)",
-                      fontSize: "12.5px",
-                      fontWeight: 700,
-                      color: "#2563EB",
-                      backgroundColor: "rgba(37,99,235,0.04)",
-                      minWidth: "110px",
-                    }}
-                  >
-                    Standard
-                  </th>
-                  <th
-                    className="text-center py-3 px-3"
-                    style={{
-                      fontFamily: "var(--font-sans)",
-                      fontSize: "12.5px",
-                      fontWeight: 700,
-                      color: "#1E2A3A",
-                      minWidth: "110px",
-                    }}
-                  >
-                    Portfolio
-                  </th>
+                  {TIER_COLUMNS.map((t) => (
+                    <th
+                      key={t.name}
+                      className="text-center py-3 px-3"
+                      style={{
+                        fontFamily: "var(--font-sans)",
+                        fontSize: "12.5px",
+                        fontWeight: 700,
+                        color: t.highlighted
+                          ? "var(--color-primary)"
+                          : "#1E2A3A",
+                        backgroundColor: t.highlighted
+                          ? "var(--brand-wash)"
+                          : "transparent",
+                        minWidth: "110px",
+                      }}
+                    >
+                      {t.name}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
@@ -415,7 +424,7 @@ export function ComparisonTable() {
                           fontSize: "10px",
                           letterSpacing: "0.18em",
                           textTransform: "uppercase",
-                          color: "#2563EB",
+                          color: "var(--color-primary)",
                           fontWeight: 600,
                         }}
                       >
@@ -425,7 +434,7 @@ export function ComparisonTable() {
                     {section.rows.map((row, idx) => (
                       <tr
                         key={`${section.title}-${idx}`}
-                        style={{ borderBottom: "1px solid #E2E8F0" }}
+                        style={{ borderBottom: "1px solid var(--hair)" }}
                       >
                         <td
                           className="py-2.5 pl-4 pr-3"
@@ -443,7 +452,7 @@ export function ComparisonTable() {
                         </td>
                         <td
                           className="py-2.5 px-3 text-center"
-                          style={{ backgroundColor: "rgba(37,99,235,0.04)" }}
+                          style={{ backgroundColor: "var(--brand-wash)" }}
                         >
                           <CellContent value={row.growth} />
                         </td>

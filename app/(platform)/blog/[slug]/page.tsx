@@ -37,14 +37,14 @@ export default async function BlogPostPage({
       <div className="max-w-2xl mx-auto px-4 md:px-8 pt-16 pb-20">
         <Link
           href="/blog"
-          className="font-mono text-[10px] uppercase tracking-[0.18em]"
+          className="font-mono text-[10px] uppercase tracking-[0.12em]"
           style={{ color: "var(--text-muted)" }}
         >
           ← Blog
         </Link>
         <header className="mt-8">
           <p
-            className="font-mono text-[11px] uppercase tracking-[0.18em]"
+            className="font-mono text-[11px] uppercase tracking-[0.12em]"
             style={{ color: "var(--text-muted)" }}
           >
             {new Date(post.publishedAt).toLocaleDateString("en-US", {
@@ -55,13 +55,13 @@ export default async function BlogPostPage({
             · {post.readingMinutes} min read · {post.author}
           </p>
           <h1
-            className="mt-4 font-serif text-4xl md:text-5xl font-normal leading-[1.1]"
-            style={{ color: "var(--text-headline)" }}
+            className="mt-4 text-4xl md:text-5xl font-normal leading-[1.1]"
+            style={{ color: "var(--text-headline)", fontFamily: "var(--font-display)" }}
           >
             {post.title}
           </h1>
           <p
-            className="mt-5 font-mono text-base leading-relaxed"
+            className="mt-5 text-base leading-relaxed"
             style={{ color: "var(--text-body)" }}
           >
             {post.description}
@@ -70,36 +70,38 @@ export default async function BlogPostPage({
 
         <article className="mt-12 space-y-5 text-base leading-[1.75]" style={{ color: "var(--text-body)" }}>
           {paragraphs.map((p, i) => (
-            <p key={i} className="font-mono">
-              {p}
-            </p>
+            <p key={i}>{p}</p>
           ))}
         </article>
 
         <div
           className="mt-16 p-10"
           style={{
-            backgroundColor: "var(--bg-blue-dark)",
-            borderRadius: "16px",
-            color: "white",
+            backgroundColor: "var(--color-accent)",
+            border: "1px solid var(--color-border)",
+            borderRadius: "2px",
+            color: "#161616",
           }}
         >
-          <h2 className="font-serif text-2xl font-normal">
+          <h2
+            className="text-2xl font-semibold"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
             Seeing yourself in this?
           </h2>
           <p
-            className="font-mono text-sm leading-relaxed mt-3"
-            style={{ opacity: 0.85 }}
+            className="text-sm leading-relaxed mt-3"
+            style={{ color: "#393939" }}
           >
             Book a demo and bring your current marketing invoice. We'll show
             you, line by line, how we'd rebuild it.
           </p>
           <Link
             href="/onboarding"
-            className="mt-6 inline-block font-mono text-xs font-semibold px-6 py-4 rounded"
+            className="mt-6 inline-block font-mono text-xs font-semibold px-6 py-4 rounded-none"
             style={{
-              backgroundColor: "white",
-              color: "var(--bg-blue-dark)",
+              backgroundColor: "var(--color-primary)",
+              color: "#FFFFFF",
               letterSpacing: "0.08em",
               textTransform: "uppercase",
             }}

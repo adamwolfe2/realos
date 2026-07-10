@@ -6,42 +6,39 @@ import { BookDemoLink } from "@/components/marketing/book-demo-link";
 // reader is most curious about the product, without competing with the
 // hero or the final Proof CTA.
 //
-// Norman feedback (2026-06-02): "Request pilot" used to route to
-// /onboarding (the trial wizard), bouncing prospects from a sales-call
-// intent into a product-onboarding flow. Now wired through BookDemoLink
-// so it opens the inline Cal.com modal — same conversation outcome,
-// without the path collision with self-serve trialers.
+// Carbon wave 2 (2026-07-10): canonical CTA pair. "Request pilot" is
+// the self-serve pilot entry (/sign-up, one destination site-wide);
+// "Book intro call" opens the Cal.com modal via BookDemoLink for the
+// operator-conversation intent this card's copy describes.
 
 export function PilotCta() {
   return (
     <section
       style={{
         backgroundColor: "#FFFFFF",
-        borderTop: "1px solid #E2E8F0",
+        borderTop: "1px solid #e0e0e0",
       }}
     >
       <div className="max-w-[1120px] mx-auto px-4 md:px-8 py-12 md:py-16">
         <div
-          className="relative overflow-hidden rounded-3xl"
+          className="relative overflow-hidden rounded-[2px]"
           style={{
             padding: "32px 28px",
-            background:
-              "linear-gradient(135deg, rgba(37,99,235,0.06) 0%, rgba(37,99,235,0.02) 60%, #FFFFFF 100%)",
-            boxShadow:
-              "0 0 0 1px rgba(15,23,42,0.06), 0 12px 36px rgba(37,99,235,0.06)",
+            background: "var(--color-accent)",
+            boxShadow: "0 0 0 1px #e0e0e0",
           }}
         >
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 md:gap-10">
             <div className="max-w-2xl">
               <p
                 className="eyebrow mb-3"
-                style={{ color: "#2563EB" }}
+                style={{ color: "#0f62fe" }}
               >
                 Free pilot
               </p>
               <h2
                 style={{
-                  color: "#1E2A3A",
+                  color: "#161616",
                   fontFamily: "var(--font-sans)",
                   fontSize: "clamp(22px, 2.6vw, 30px)",
                   fontWeight: 700,
@@ -56,7 +53,7 @@ export function PilotCta() {
               <p
                 className="mt-3"
                 style={{
-                  color: "#64748B",
+                  color: "#6f6f6f",
                   fontFamily: "var(--font-sans)",
                   fontSize: "15.5px",
                   lineHeight: 1.6,
@@ -67,20 +64,21 @@ export function PilotCta() {
             </div>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
-              <BookDemoLink
+              <Link
+                href="/sign-up"
                 className="btn-primary"
                 style={{ display: "inline-flex", justifyContent: "center" }}
-                ariaLabel="Request pilot — opens scheduling"
+                aria-label="Request pilot (creates your account)"
               >
                 Request pilot
-              </BookDemoLink>
-              <Link
-                href="/demo"
+              </Link>
+              <BookDemoLink
                 className="btn-secondary"
                 style={{ display: "inline-flex", justifyContent: "center" }}
+                ariaLabel="Book intro call (opens scheduling)"
               >
-                See a live property
-              </Link>
+                Book intro call
+              </BookDemoLink>
             </div>
           </div>
         </div>

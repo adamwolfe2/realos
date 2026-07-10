@@ -119,7 +119,7 @@ export function PlatformNav() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const labelColor = "#1E2A3A";
+  const labelColor = "#161616";
   const navBtnClass = "btn-nav";
 
   // Norman 2026-05-21: nav should glide into a floating glass-morphism
@@ -170,13 +170,13 @@ export function PlatformNav() {
             : "none",
           // Rounded corners only when floating. At top, the bar reads
           // as a flush edge with a hairline divider.
-          borderRadius: scrolled ? 18 : 0,
+          borderRadius: scrolled ? 2 : 0,
           // Subtle ring + lifted shadow when floating; hairline bottom
           // border at top. Both interpolate through the same CSS prop
           // (boxShadow) so the morph reads as a single animation.
           boxShadow: scrolled
-            ? "0 0 0 1px rgba(15, 23, 42, 0.06), 0 12px 36px rgba(15, 23, 42, 0.10)"
-            : "inset 0 -1px 0 #E2E8F0",
+            ? "0 0 0 1px rgba(22, 22, 22, 0.06), 0 1px 2px rgba(22, 22, 22, 0.04)"
+            : "inset 0 -1px 0 #e0e0e0",
           transition:
             "max-width 500ms cubic-bezier(0.22, 1, 0.36, 1)," +
             " padding-left 500ms cubic-bezier(0.22, 1, 0.36, 1)," +
@@ -226,12 +226,12 @@ export function PlatformNav() {
               style={{
                 minHeight: "36px",
                 padding: "8px 16px",
-                backgroundColor: "#2563EB",
-                color: "#F1F5F9",
+                backgroundColor: "#0f62fe",
+                color: "#f4f4f4",
                 fontSize: "14px",
                 fontWeight: 500,
-                borderRadius: "3px",
-                boxShadow: "0 0 0 1px #2563EB inset",
+                borderRadius: "2px",
+                boxShadow: "0 0 0 1px #0f62fe inset",
                 transition: "background-color 0.2s ease",
               }}
             >
@@ -240,7 +240,7 @@ export function PlatformNav() {
           </div>
           <button
             type="button"
-            className="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-[4px]"
+            className="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-[2px]"
             style={{ color: labelColor, transition: "color 0.33s" }}
             onClick={() => setMobileOpen((v) => !v)}
             aria-expanded={mobileOpen}
@@ -278,12 +278,12 @@ function NavLink({
       style={{
         minHeight: "36px",
         padding: "6px 12px",
-        borderRadius: "3px",
-        color: "#1E2A3A",
+        borderRadius: "2px",
+        color: "#161616",
         fontFamily: "var(--font-sans)",
         fontSize: "15px",
         fontWeight: 500,
-        backgroundColor: active ? "#E2E8F0" : "transparent",
+        backgroundColor: active ? "#e0e0e0" : "transparent",
         transition: "background-color 0.2s ease",
       }}
     >
@@ -345,8 +345,8 @@ function Dropdown({
             style={{
               backgroundColor: "#FFFFFF",
               boxShadow:
-                "0 0 0 1px #E2E8F0, 0 24px 48px rgba(15, 23, 42, 0.12), 0 4px 12px rgba(15, 23, 42, 0.04)",
-              borderRadius: "16px",
+                "0 0 0 1px #e0e0e0, 0 4px 12px rgba(22, 22, 22, 0.08)",
+              borderRadius: "2px",
               width: "min(680px, calc(100vw - 32px))",
             }}
           >
@@ -379,14 +379,14 @@ function DropdownCard({
     <Link
       href={item.href}
       onClick={onSelect}
-      className="group flex items-start gap-3 rounded-xl px-3 py-3 transition-colors"
+      className="group flex items-start gap-3 rounded-[2px] px-3 py-3 transition-colors"
       style={{
-        color: "#1E2A3A",
+        color: "#161616",
         fontFamily: "var(--font-sans)",
         backgroundColor: "transparent",
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = "#F1F5F9";
+        e.currentTarget.style.backgroundColor = "#f4f4f4";
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.backgroundColor = "transparent";
@@ -398,9 +398,9 @@ function DropdownCard({
         style={{
           width: 36,
           height: 36,
-          borderRadius: 8,
-          backgroundColor: "#F1F5F9",
-          color: "#2563EB",
+          borderRadius: 2,
+          backgroundColor: "#f4f4f4",
+          color: "#0f62fe",
         }}
       >
         <Icon size={18} strokeWidth={1.7} />
@@ -411,7 +411,7 @@ function DropdownCard({
           style={{
             fontSize: "14px",
             fontWeight: 600,
-            color: "#1E2A3A",
+            color: "#161616",
             letterSpacing: "-0.005em",
             lineHeight: 1.3,
           }}
@@ -422,7 +422,7 @@ function DropdownCard({
           className="block mt-0.5"
           style={{
             fontSize: "12.5px",
-            color: "#64748B",
+            color: "#6f6f6f",
             fontWeight: 400,
             lineHeight: 1.4,
           }}
@@ -448,7 +448,7 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
     <>
       <div
         className="fixed inset-0 z-50 md:hidden flex flex-col"
-        style={{ backgroundColor: "#F1F5F9" }}
+        style={{ backgroundColor: "#f4f4f4" }}
       >
         <style jsx>{`
           @keyframes menuSlideIn {
@@ -482,7 +482,7 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
               type="button"
               onClick={onClose}
               className="inline-flex items-center justify-center w-10 h-10 rounded-full"
-              style={{ backgroundColor: "#E2E8F0", color: "#1E2A3A" }}
+              style={{ backgroundColor: "#e0e0e0", color: "#161616" }}
               aria-label="Close menu"
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -501,8 +501,8 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
                 style={{
                   display: "block",
                   padding: "11px 12px",
-                  borderRadius: "3px",
-                  color: "#1E2A3A",
+                  borderRadius: "2px",
+                  color: "#161616",
                   fontSize: "18px",
                   fontWeight: 500,
                   fontFamily: "var(--font-sans)",
@@ -522,9 +522,9 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
                 alignItems: "center",
                 justifyContent: "center",
                 height: "52px",
-                borderRadius: "3px",
-                backgroundColor: "#2563EB",
-                color: "#F1F5F9",
+                borderRadius: "2px",
+                backgroundColor: "#0f62fe",
+                color: "#f4f4f4",
                 fontSize: "16px",
                 fontWeight: 600,
                 fontFamily: "var(--font-sans)",

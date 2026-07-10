@@ -432,8 +432,8 @@ function Close() {
           If it lands, we keep going. If it does not, you close the tab.
         </p>
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Link href="/onboarding" className="btn-primary">
-            Start the free pilot
+          <Link href="/sign-up" className="btn-primary">
+            Request pilot
           </Link>
           <Link href="/demo" className="btn-secondary">
             See it on a live property

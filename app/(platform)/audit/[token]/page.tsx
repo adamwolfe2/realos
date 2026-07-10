@@ -155,7 +155,13 @@ export default async function AuditViewerPage({
     .catch(() => undefined);
 
   if (audit.status !== ProspectAuditStatus.READY) {
-    return <PendingState status={audit.status} domain={audit.domain} />;
+    return (
+      <PendingState
+        status={audit.status}
+        domain={audit.domain}
+        createdAt={audit.createdAt}
+      />
+    );
   }
 
   const findings = (audit.findings as Findings | null) ?? {
@@ -457,14 +463,35 @@ function SectionEyebrow({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Staged progress copy for the pending screen. The pipeline runs
+// crawl → AI-engine fan-out → scoring; we don't get granular progress
+// events, so the active stage is estimated from elapsed time since the
+// audit was queued. Each meta-refresh re-renders and advances the stage.
+const PENDING_STAGES = [
+  { label: "Crawling your site", hint: "Rendering the homepage and reading structure, schema, and copy." },
+  { label: "Querying AI engines", hint: "Asking ChatGPT, Perplexity, Claude, and Gemini the questions your prospects ask." },
+  { label: "Scoring and writing recommendations", hint: "Weighting six pillars and prioritizing the action plan." },
+] as const;
+
+function estimateStage(status: ProspectAuditStatus, createdAt: Date): number {
+  if (status === ProspectAuditStatus.QUEUED) return 0;
+  const elapsedSec = (Date.now() - createdAt.getTime()) / 1000;
+  if (elapsedSec < 25) return 0;
+  if (elapsedSec < 75) return 1;
+  return 2;
+}
+
 function PendingState({
   status,
   domain,
+  createdAt,
 }: {
   status: ProspectAuditStatus;
   domain: string;
+  createdAt: Date;
 }) {
   const isFailed = status === ProspectAuditStatus.FAILED;
+  const activeStage = isFailed ? -1 : estimateStage(status, createdAt);
   return (
     <>
       {!isFailed ? (
@@ -488,9 +515,71 @@ function PendingState({
           </h1>
           <p className="text-base mt-3 max-w-lg" style={{ color: "#4B5563" }}>
             {isFailed
-              ? "Try again from /audit. The most common cause is a domain that's behind a login or returning 5xx."
+              ? "The most common cause is a domain that's behind a login or returning server errors. Start a fresh audit and we'll run the full scan again."
               : "This page refreshes itself every few seconds. You can also bookmark this URL and come back later."}
           </p>
+          {isFailed ? (
+            <div className="mt-6">
+              <Link
+                href="/audit"
+                className="inline-flex items-center justify-center h-10 px-5 text-[13px] font-medium text-white"
+                style={{
+                  backgroundColor: "var(--color-primary)",
+                  borderRadius: "2px",
+                }}
+              >
+                Start a new audit
+              </Link>
+            </div>
+          ) : (
+            <ol className="mt-8 max-w-lg" aria-label="Audit progress">
+              {PENDING_STAGES.map((stage, i) => {
+                const state =
+                  i < activeStage ? "done" : i === activeStage ? "active" : "pending";
+                return (
+                  <li
+                    key={stage.label}
+                    className="flex items-start gap-3 py-3"
+                    style={{
+                      borderBottom:
+                        i < PENDING_STAGES.length - 1
+                          ? "1px solid var(--color-border)"
+                          : "none",
+                    }}
+                  >
+                    <span
+                      aria-hidden
+                      className="mt-1.5 inline-block h-2 w-2 rounded-full flex-shrink-0"
+                      style={{
+                        backgroundColor:
+                          state === "pending"
+                            ? "var(--color-muted)"
+                            : "var(--color-primary)",
+                        opacity: state === "done" ? 0.45 : 1,
+                      }}
+                    />
+                    <div>
+                      <p
+                        className="text-sm font-medium"
+                        style={{
+                          color:
+                            state === "pending" ? "#6B7280" : "#1E2A3A",
+                        }}
+                      >
+                        {stage.label}
+                        {state === "active" ? "…" : ""}
+                      </p>
+                      {state === "active" ? (
+                        <p className="text-[13px] mt-0.5" style={{ color: "#6B7280" }}>
+                          {stage.hint}
+                        </p>
+                      ) : null}
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
         </div>
       </div>
     </>

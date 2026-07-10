@@ -17,8 +17,8 @@ export function Proof() {
     <section
       style={{
         backgroundColor: "#FFFFFF",
-        color: "#1E2A3A",
-        borderTop: "1px solid #E2E8F0",
+        color: "#161616",
+        borderTop: "1px solid #e0e0e0",
       }}
     >
       {/* Norman v2 (2026-06-01): was a two-column "offer left / CTAs
@@ -30,7 +30,7 @@ export function Proof() {
         {/* Eyebrow — urgency cue. */}
         <p
           style={{
-            color: "#2563EB",
+            color: "#0f62fe",
             fontFamily: "var(--font-mono)",
             fontSize: "11px",
             letterSpacing: "0.22em",
@@ -45,7 +45,7 @@ export function Proof() {
               width: 6,
               height: 6,
               borderRadius: "50%",
-              backgroundColor: "#2563EB",
+              backgroundColor: "#0f62fe",
               marginRight: 8,
               verticalAlign: "middle",
             }}
@@ -57,7 +57,7 @@ export function Proof() {
         <h2
           className="mt-6"
           style={{
-            color: "#1E2A3A",
+            color: "#161616",
             fontFamily: "var(--font-sans)",
             fontSize: "clamp(36px, 5.4vw, 64px)",
             fontWeight: 700,
@@ -67,12 +67,12 @@ export function Proof() {
         >
           Free pilot.
           <br />
-          <span style={{ color: "#2563EB" }}>No commitment.</span>
+          <span style={{ color: "#0f62fe" }}>No commitment.</span>
         </h2>
         <p
           className="mt-5 mx-auto max-w-[560px]"
           style={{
-            color: "#64748B",
+            color: "#6f6f6f",
             fontFamily: "var(--font-sans)",
             fontSize: "17px",
             lineHeight: 1.55,
@@ -91,12 +91,12 @@ export function Proof() {
               justifyContent: "center",
               minHeight: "50px",
               padding: "14px 28px",
-              backgroundColor: "#2563EB",
+              backgroundColor: "#0f62fe",
               color: "#FFFFFF",
               fontFamily: "var(--font-sans)",
               fontSize: "15.5px",
               fontWeight: 600,
-              borderRadius: "3px",
+              borderRadius: "2px",
               textDecoration: "none",
               letterSpacing: "-0.005em",
               transition: "background-color 0.2s ease",
@@ -128,14 +128,14 @@ export function Proof() {
               minHeight: "50px",
               padding: "14px 28px",
               backgroundColor: "#FFFFFF",
-              color: "#1E2A3A",
+              color: "#161616",
               fontFamily: "var(--font-sans)",
               fontSize: "15.5px",
               fontWeight: 600,
-              borderRadius: "3px",
+              borderRadius: "2px",
               textDecoration: "none",
               letterSpacing: "-0.005em",
-              border: "1px solid #CBD5E1",
+              border: "1px solid #c6c6c6",
               transition: "background-color 0.2s ease",
             }}
           >
@@ -147,7 +147,7 @@ export function Proof() {
         <div
           className="mt-12 md:mt-14 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-0"
           style={{
-            borderTop: "1px solid #E2E8F0",
+            borderTop: "1px solid #e0e0e0",
             paddingTop: 28,
           }}
         >
@@ -189,12 +189,12 @@ function TrustPoint({
     <div
       className="md:px-8 md:first:pl-0 md:last:pr-0"
       style={{
-        borderRight: divider ? "1px solid #E2E8F0" : "none",
+        borderRight: divider ? "1px solid #e0e0e0" : "none",
       }}
     >
       <p
         style={{
-          color: "#94A3B8",
+          color: "#8d8d8d",
           fontFamily: "var(--font-mono)",
           fontSize: "10px",
           letterSpacing: "0.18em",
@@ -207,7 +207,7 @@ function TrustPoint({
       <p
         className="mt-2"
         style={{
-          color: "#1E2A3A",
+          color: "#161616",
           fontFamily: "var(--font-sans)",
           fontSize: "clamp(24px, 2.4vw, 28px)",
           fontWeight: 700,
@@ -221,7 +221,7 @@ function TrustPoint({
       <p
         className="mt-2 max-w-[260px]"
         style={{
-          color: "#64748B",
+          color: "#6f6f6f",
           fontFamily: "var(--font-sans)",
           fontSize: "13.5px",
           lineHeight: 1.5,

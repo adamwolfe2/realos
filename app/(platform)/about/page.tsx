@@ -18,7 +18,7 @@ export default function AboutPage() {
         headlineAccent="not by vendors."
         subhead={`${BRAND_NAME} is the leasing intelligence platform that tells real estate operators exactly what their digital marketing is doing, and exactly what to do about it. Live today on a real lease-up.`}
         ctas={[
-          { label: "Start the free pilot", href: "/onboarding" },
+          { label: "Request pilot", href: "/sign-up" },
           { label: "Read the manifesto", href: "/manifesto", variant: "secondary" },
         ]}
         caption="Live on a real lease-up · built operator-to-operator"
@@ -84,8 +84,8 @@ export default function AboutPage() {
           </Reveal>
           <Reveal delay={140}>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href="/onboarding" className="btn-primary">
-                Start the free pilot
+              <Link href="/sign-up" className="btn-primary">
+                Request pilot
               </Link>
               <Link href="/manifesto" className="btn-secondary">
                 Read the manifesto

@@ -88,9 +88,9 @@ export function AddonsGrid({
   return (
     <section
       style={{
-        backgroundColor: "#F1F5F9",
-        borderTop: "1px solid #E2E8F0",
-        borderBottom: "1px solid #E2E8F0",
+        backgroundColor: "var(--color-surface)",
+        borderTop: "1px solid var(--hair)",
+        borderBottom: "1px solid var(--hair)",
       }}
     >
       <div className="max-w-[1100px] mx-auto px-4 md:px-8 pt-16 md:pt-24 pb-16 md:pb-24">
@@ -119,8 +119,8 @@ export function AddonsGrid({
 
         {/* Base platform — always included. */}
         <div
-          className="rounded-xl p-5 mb-3 flex items-baseline justify-between gap-3"
-          style={{ backgroundColor: "#ffffff", border: "1px solid #2563EB" }}
+          className="rounded-[2px] p-5 mb-3 flex items-baseline justify-between gap-3"
+          style={{ backgroundColor: "#ffffff", border: "1px solid var(--color-primary)" }}
         >
           <div>
             <div
@@ -129,7 +129,7 @@ export function AddonsGrid({
                 fontSize: "10px",
                 letterSpacing: "0.16em",
                 textTransform: "uppercase",
-                color: "#2563EB",
+                color: "var(--color-primary)",
                 fontWeight: 600,
                 marginBottom: "4px",
               }}
@@ -172,7 +172,7 @@ export function AddonsGrid({
             </div>
             <div
               style={{
-                color: "#88867f",
+                color: "var(--stone-gray)",
                 fontFamily: "var(--font-sans)",
                 fontSize: "11px",
               }}
@@ -187,8 +187,8 @@ export function AddonsGrid({
           {features.map((item) => (
             <div
               key={item.name}
-              className="rounded-xl p-5"
-              style={{ backgroundColor: "#ffffff", border: "1px solid #E2E8F0" }}
+              className="rounded-[2px] p-5"
+              style={{ backgroundColor: "#ffffff", border: "1px solid var(--hair)" }}
             >
               <div className="flex items-baseline justify-between gap-3 mb-2">
                 <div>
@@ -198,7 +198,7 @@ export function AddonsGrid({
                       fontSize: "10px",
                       letterSpacing: "0.16em",
                       textTransform: "uppercase",
-                      color: item.recommended ? "#2563EB" : "#94A3B8",
+                      color: item.recommended ? "var(--color-primary)" : "var(--stone-gray)",
                       fontWeight: 600,
                       marginBottom: "4px",
                     }}
@@ -230,7 +230,7 @@ export function AddonsGrid({
                   </div>
                   <div
                     style={{
-                      color: "#88867f",
+                      color: "var(--stone-gray)",
                       fontFamily: "var(--font-sans)",
                       fontSize: "11px",
                     }}
@@ -271,8 +271,8 @@ export function AddonsGrid({
           {EXTRAS.map((item) => (
             <div
               key={item.name}
-              className="rounded-xl p-5"
-              style={{ backgroundColor: "#ffffff", border: "1px solid #E2E8F0" }}
+              className="rounded-[2px] p-5"
+              style={{ backgroundColor: "#ffffff", border: "1px solid var(--hair)" }}
             >
               <div className="flex items-baseline justify-between gap-3 mb-2">
                 <div>
@@ -282,7 +282,7 @@ export function AddonsGrid({
                       fontSize: "10px",
                       letterSpacing: "0.16em",
                       textTransform: "uppercase",
-                      color: "#2563EB",
+                      color: "var(--color-primary)",
                       fontWeight: 600,
                       marginBottom: "4px",
                     }}
@@ -314,7 +314,7 @@ export function AddonsGrid({
                   </div>
                   <div
                     style={{
-                      color: "#88867f",
+                      color: "var(--stone-gray)",
                       fontFamily: "var(--font-sans)",
                       fontSize: "11px",
                     }}

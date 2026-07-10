@@ -24,7 +24,7 @@ const PRESETS = [
     body: "Three units left in our most-requested floor plan. Book a 15-minute tour before Friday and we'll waive your first month's rent.",
     ctaText: "Book a tour",
     offerCode: "TOUR1FREE",
-    primaryColor: "#2563EB",
+    primaryColor: "#0f62fe",
     position: "CENTER" as const,
     captureEmail: true,
     heroImageUrl: null,
@@ -36,7 +36,7 @@ const PRESETS = [
     body: "Send them this link. When they sign, the discount lands on your next statement. Simple as that.",
     ctaText: "Get my referral link",
     offerCode: "REFER300",
-    primaryColor: "#16A34A",
+    primaryColor: "#24a148",
     position: "BOTTOM_RIGHT" as const,
     captureEmail: false,
     heroImageUrl: null,
@@ -48,7 +48,7 @@ const PRESETS = [
     body: "Our last 2-bed corner unit didn't make the public listing. Want it sent to your inbox?",
     ctaText: "Send me the floor plan",
     offerCode: null as string | null,
-    primaryColor: "#0F172A",
+    primaryColor: "#161616",
     position: "CENTER" as const,
     captureEmail: true,
     heroImageUrl: null,
@@ -60,7 +60,7 @@ const PRESETS = [
     body: "",
     ctaText: "Apply now",
     offerCode: null as string | null,
-    primaryColor: "#DC2626",
+    primaryColor: "#da1e28",
     position: "TOP_BANNER" as const,
     captureEmail: false,
     heroImageUrl: null,
@@ -117,13 +117,13 @@ export function PopupsDemoSection() {
       <div className="grid grid-cols-1 lg:grid-cols-[380px_minmax(0,1fr)] gap-5">
         {/* LEFT, editor */}
         <div className="space-y-3">
-          <div className="rounded-2xl border border-border bg-white p-5 space-y-4">
+          <div className="rounded-[2px] border border-border bg-white p-5 space-y-4">
             <Field label="Headline">
               <input
                 value={headline}
                 onChange={(e) => setHeadline(e.target.value)}
                 maxLength={120}
-                className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm"
+                className="w-full rounded-[2px] border border-border bg-white px-3 py-2 text-sm"
               />
             </Field>
             <Field label="Body">
@@ -132,7 +132,7 @@ export function PopupsDemoSection() {
                 onChange={(e) => setBody(e.target.value)}
                 maxLength={400}
                 rows={3}
-                className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm resize-none"
+                className="w-full rounded-[2px] border border-border bg-white px-3 py-2 text-sm resize-none"
               />
             </Field>
             <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
@@ -141,7 +141,7 @@ export function PopupsDemoSection() {
                   value={ctaText}
                   onChange={(e) => setCtaText(e.target.value)}
                   maxLength={40}
-                  className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm"
+                  className="w-full rounded-[2px] border border-border bg-white px-3 py-2 text-sm"
                 />
               </Field>
               <Field label="Offer code">
@@ -150,7 +150,7 @@ export function PopupsDemoSection() {
                   onChange={(e) => setOfferCode(e.target.value || null)}
                   maxLength={40}
                   placeholder="(none)"
-                  className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm font-mono"
+                  className="w-full rounded-[2px] border border-border bg-white px-3 py-2 text-sm font-mono"
                 />
               </Field>
             </div>
@@ -159,7 +159,7 @@ export function PopupsDemoSection() {
                 <select
                   value={position}
                   onChange={(e) => setPosition(e.target.value as typeof position)}
-                  className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm"
+                  className="w-full rounded-[2px] border border-border bg-white px-3 py-2 text-sm"
                 >
                   <option value="CENTER">Center modal</option>
                   <option value="BOTTOM_RIGHT">Bottom right</option>
@@ -173,17 +173,17 @@ export function PopupsDemoSection() {
                     type="color"
                     value={primaryColor}
                     onChange={(e) => setPrimaryColor(e.target.value)}
-                    className="h-9 w-10 rounded-md border border-border cursor-pointer"
+                    className="h-9 w-10 rounded-[2px] border border-border cursor-pointer"
                   />
                   <input
                     value={primaryColor}
                     onChange={(e) => setPrimaryColor(e.target.value)}
-                    className="flex-1 min-w-0 rounded-md border border-border bg-white px-2 py-1.5 text-xs font-mono"
+                    className="flex-1 min-w-0 rounded-[2px] border border-border bg-white px-2 py-1.5 text-xs font-mono"
                   />
                 </span>
               </Field>
             </div>
-            <label className="flex items-start gap-2.5 rounded-md border border-border bg-white p-3 cursor-pointer">
+            <label className="flex items-start gap-2.5 rounded-[2px] border border-border bg-white p-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={captureEmail}
@@ -200,7 +200,7 @@ export function PopupsDemoSection() {
             <button
               type="button"
               onClick={() => setShowPopup(true)}
-              className="w-full rounded-md bg-primary text-primary-foreground py-2 text-sm font-semibold hover:bg-primary/90 transition-colors"
+              className="w-full rounded-[2px] bg-primary text-primary-foreground py-2 text-sm font-semibold hover:bg-primary/90 transition-colors"
             >
               {showPopup ? "Popup is showing →" : "Show popup"}
             </button>
@@ -214,11 +214,11 @@ export function PopupsDemoSection() {
         </div>
 
         {/* RIGHT, preview */}
-        <div className="relative h-[600px] rounded-2xl border border-dashed border-border bg-gradient-to-br from-[#F9FAFB] to-[#EFF6FF] overflow-hidden">
+        <div className="relative h-[600px] rounded-[2px] border border-dashed border-border bg-gradient-to-br from-[#f4f4f4] to-[#edf5ff] overflow-hidden">
           <div className="absolute top-0 inset-x-0 h-9 bg-white/70 border-b border-border flex items-center gap-1.5 px-3">
-            <span className="h-2.5 w-2.5 rounded-full bg-[#EF4444]/70" />
-            <span className="h-2.5 w-2.5 rounded-full bg-[#F59E0B]/70" />
-            <span className="h-2.5 w-2.5 rounded-full bg-[#16A34A]/70" />
+            <span className="h-2.5 w-2.5 rounded-full bg-[#da1e28]/70" />
+            <span className="h-2.5 w-2.5 rounded-full bg-[#f1c21b]/70" />
+            <span className="h-2.5 w-2.5 rounded-full bg-[#24a148]/70" />
             <span className="ml-3 text-[10px] font-mono text-muted-foreground truncate">
               your-property.com
             </span>
@@ -231,8 +231,8 @@ export function PopupsDemoSection() {
               <div className="h-3 w-5/6 bg-foreground/15 rounded" />
               <div className="h-3 w-4/6 bg-foreground/15 rounded" />
               <div className="mt-6 grid grid-cols-2 sm:grid-cols-2 gap-3">
-                <div className="aspect-video bg-foreground/15 rounded-lg" />
-                <div className="aspect-video bg-foreground/15 rounded-lg" />
+                <div className="aspect-video bg-foreground/15 rounded-[2px]" />
+                <div className="aspect-video bg-foreground/15 rounded-[2px]" />
               </div>
             </div>
             {showPopup ? (
@@ -245,7 +245,7 @@ export function PopupsDemoSection() {
                 secondaryText={null}
                 position={position}
                 primaryColor={primaryColor}
-                textColor="#0F172A"
+                textColor="#161616"
                 backgroundColor="#FFFFFF"
                 heroImageUrl={null}
                 captureEmail={captureEmail}

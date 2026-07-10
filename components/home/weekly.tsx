@@ -31,10 +31,10 @@ import { MaskRevealUp, PerWordCrossfade } from "@/components/ui/animate-text";
 // flat list of bullets.
 // ---------------------------------------------------------------------------
 
-const INK = "#1E2A3A";
-const MUTED = "#94A3B8";
-const ACCENT = "#2563EB";
-const BORDER = "#E2E8F0";
+const INK = "#161616";
+const MUTED = "#8d8d8d";
+const ACCENT = "#0f62fe";
+const BORDER = "#e0e0e0";
 
 // Per pixel-point/animate-text soft-blur-in / mask-reveal-up specs.
 const EASE_DRAW = [0.22, 1, 0.36, 1] as const;
@@ -183,9 +183,7 @@ function WeeklyItem({
               zIndex: 0,
               opacity: glowOpacity,
               scale: glowScale,
-              background:
-                "radial-gradient(circle, rgba(37,99,235,0.55) 0%, rgba(37,99,235,0.28) 35%, rgba(37,99,235,0.06) 65%, rgba(37,99,235,0) 100%)",
-              filter: "blur(6px)",
+              background: "rgba(15,98,254,0.12)",
             }}
           />
         ) : null}
@@ -254,7 +252,7 @@ function WeeklyItem({
           <p
             className="mt-2 md:mt-3 max-w-[640px]"
             style={{
-              color: "#64748B",
+              color: "#6f6f6f",
               fontFamily: "var(--font-sans)",
               fontSize: 14,
               lineHeight: 1.6,
@@ -364,7 +362,7 @@ export function Weekly() {
     <section
       style={{
         backgroundColor: "#FFFFFF",
-        borderTop: "1px solid #E2E8F0",
+        borderTop: "1px solid #e0e0e0",
       }}
     >
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-12 md:py-24">
@@ -385,7 +383,7 @@ export function Weekly() {
           <p
             className="mt-5 max-w-2xl"
             style={{
-              color: "#64748B",
+              color: "#6f6f6f",
               fontFamily: "var(--font-sans)",
               fontSize: 16,
               lineHeight: 1.6,

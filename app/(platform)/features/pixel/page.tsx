@@ -281,9 +281,25 @@ function PixelResults() {
     { label: "Retargeting audience",  value: "2,847", delta: "hashed emails" },
   ];
   return (
-    <div
-      className="w-full grid grid-cols-2 sm:grid-cols-2 gap-3"
-    >
+    <div className="w-full">
+      <div className="mb-3 flex justify-end">
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "9px",
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+            color: "var(--color-muted-foreground)",
+            fontWeight: 600,
+            padding: "2px 6px",
+            borderRadius: "4px",
+            backgroundColor: "var(--color-secondary)",
+          }}
+        >
+          Example data
+        </span>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
       {deltas.map((d, i) => (
         <Reveal key={d.label} delay={i * 70}>
           <div
@@ -332,6 +348,7 @@ function PixelResults() {
           </div>
         </Reveal>
       ))}
+      </div>
     </div>
   );
 }

@@ -60,7 +60,7 @@ const POOL: Omit<Inquiry, "id" | "ago">[] = [
       property: "The Vista · PH-B",
       source: "Instagram DM",
       hot: true,
-      color: "#2563EB",
+      color: "#0f62fe",
       photo: "https://randomuser.me/api/portraits/women/45.jpg",
     },
   },
@@ -73,7 +73,7 @@ const POOL: Omit<Inquiry, "id" | "ago">[] = [
       property: "412 Elm · 2BR",
       source: "Zillow",
       hot: true,
-      color: "#5B8CE6",
+      color: "#4589ff",
       photo: "https://randomuser.me/api/portraits/men/41.jpg",
     },
   },
@@ -86,7 +86,7 @@ const POOL: Omit<Inquiry, "id" | "ago">[] = [
       property: "88 Greene · 1BR",
       source: "Realtor",
       hot: false,
-      color: "#5B8CE6",
+      color: "#4589ff",
       photo: "https://randomuser.me/api/portraits/men/52.jpg",
     },
   },
@@ -99,7 +99,7 @@ const POOL: Omit<Inquiry, "id" | "ago">[] = [
       property: "Riverbend · 2BR",
       source: "Apartments.com",
       hot: false,
-      color: "#94A3B8",
+      color: "#8d8d8d",
       photo: "https://randomuser.me/api/portraits/women/68.jpg",
     },
   },
@@ -112,7 +112,7 @@ const POOL: Omit<Inquiry, "id" | "ago">[] = [
       property: "The Maxwell · 1BR",
       source: "Email",
       hot: true,
-      color: "#2563EB",
+      color: "#0f62fe",
       photo: "https://randomuser.me/api/portraits/men/29.jpg",
     },
   },
@@ -125,7 +125,7 @@ const POOL: Omit<Inquiry, "id" | "ago">[] = [
       property: "8th & Hill · 3BR",
       source: "Voicemail",
       hot: true,
-      color: "#5B8CE6",
+      color: "#4589ff",
       photo: "https://randomuser.me/api/portraits/men/85.jpg",
     },
   },
@@ -138,7 +138,7 @@ const POOL: Omit<Inquiry, "id" | "ago">[] = [
       property: "Parkway 220 · 2BR",
       source: "Site form",
       hot: false,
-      color: "#94A3B8",
+      color: "#8d8d8d",
       photo: "https://randomuser.me/api/portraits/women/22.jpg",
     },
   },
@@ -151,20 +151,20 @@ const POOL: Omit<Inquiry, "id" | "ago">[] = [
       property: "Coastline · oceanfront",
       source: "Instagram DM",
       hot: true,
-      color: "#2563EB",
+      color: "#0f62fe",
       photo: "https://randomuser.me/api/portraits/men/36.jpg",
     },
   },
 ];
 
-const ACCENT = "#2563EB";
-const INK = "#1E2A3A";
-const MUTED = "#94A3B8";
-const SLATE = "#64748B";
-const BORDER = "#E2E8F0";
-const PARCHMENT = "#F1F5F9";
-const HOT_BG = "rgba(239, 68, 68, 0.10)";
-const HOT_INK = "#DC2626";
+const ACCENT = "#0f62fe";
+const INK = "#161616";
+const MUTED = "#8d8d8d";
+const SLATE = "#6f6f6f";
+const BORDER = "#e0e0e0";
+const PARCHMENT = "#f4f4f4";
+const HOT_BG = "rgba(218, 30, 40, 0.10)";
+const HOT_INK = "#da1e28";
 
 const VISIBLE_ROWS = 4;
 const ROTATION_MS = 2400;
@@ -211,8 +211,8 @@ export function OverflowInbox() {
       className="w-full"
       style={{
         backgroundColor: "#ffffff",
-        borderRadius: "16px",
-        boxShadow: `0 0 0 1px ${BORDER}, 0 20px 60px rgba(30, 42, 58,0.08)`,
+        borderRadius: "2px",
+        boxShadow: `0 0 0 1px ${BORDER}`,
         overflow: "hidden",
       }}
     >
@@ -227,9 +227,7 @@ export function OverflowInbox() {
               width: "8px",
               height: "8px",
               borderRadius: "50%",
-              backgroundColor: "#10B981",
-              boxShadow: "0 0 0 4px rgba(16,185,129,0.18)",
-              animation: "liveDot 1.6s ease-in-out infinite",
+              backgroundColor: "var(--color-muted-foreground)",
             }}
           />
           <span
@@ -242,7 +240,7 @@ export function OverflowInbox() {
               fontWeight: 600,
             }}
           >
-            Live · inquiries arriving
+            Example data · overflow inbox
           </span>
         </div>
         <div className="text-right">
@@ -369,7 +367,7 @@ function InquiryRow({
       style={{
         borderBottom: !isLast ? `1px solid ${BORDER}` : "none",
         animation: isTop ? "rowIn 520ms cubic-bezier(.2,.7,.2,1)" : undefined,
-        backgroundColor: isTop ? "rgba(37,99,235,0.04)" : "transparent",
+        backgroundColor: isTop ? "rgba(15,98,254,0.04)" : "transparent",
         transition: "background-color 1400ms ease",
       }}
     >
@@ -472,7 +470,7 @@ function InquiryRow({
                     color: HOT_INK,
                     backgroundColor: HOT_BG,
                     padding: "1.5px 5px",
-                    borderRadius: "4px",
+                    borderRadius: "2px",
                     fontWeight: 700,
                   }}
                 >
@@ -490,7 +488,7 @@ function InquiryRow({
                 color: justRevealed ? "#ffffff" : MUTED,
                 backgroundColor: justRevealed ? ACCENT : "transparent",
                 padding: "1.5px 5px",
-                borderRadius: "4px",
+                borderRadius: "2px",
                 fontWeight: 600,
                 transition: "all 400ms ease",
               }}
@@ -552,9 +550,9 @@ function SourceTag({ source }: { source: Source }) {
         letterSpacing: "0.08em",
         textTransform: "uppercase",
         color: ACCENT,
-        backgroundColor: "rgba(37,99,235,0.10)",
+        backgroundColor: "rgba(15,98,254,0.10)",
         padding: "1.5px 5px",
-        borderRadius: "4px",
+        borderRadius: "2px",
         fontWeight: 600,
         whiteSpace: "nowrap",
       }}

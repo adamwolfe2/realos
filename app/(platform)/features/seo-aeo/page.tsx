@@ -30,7 +30,7 @@ export default function SEOAEOFeaturePage() {
         subhead="A growing share of prospects ask ChatGPT or Perplexity for housing recommendations before they ever open Google. If you're not in Google's index and not cited by the AI engines, you're invisible. We build per-location pages that show up in both, using the same content."
         ctas={[
           { label: "Book a demo", href: "/onboarding" },
-          { label: "See the live dashboard", href: "/demo/aeo", variant: "secondary" },
+          { label: "See the demo dashboard", href: "/demo/aeo", variant: "secondary" },
         ]}
         caption="Per-location coverage · schema on every page · monthly AI-discovery audit"
         // Norman 2026-05-21: the static SeoAnswer card read flat.
@@ -40,7 +40,7 @@ export default function SEOAEOFeaturePage() {
         // in SoftFramedArtifact for the lavender halo. `bare` because
         // SEOTrendChart ships its own white surface.
         artifact={
-          <SoftFramedArtifact tone="lavender" padding="md" pillLabel="LIVE" bare>
+          <SoftFramedArtifact tone="lavender" padding="md" pillLabel="Example data" bare>
             <SEOTrendChart />
           </SoftFramedArtifact>
         }
@@ -199,7 +199,7 @@ function CitedByAI() {
             flexShrink: 0,
           }}
         >
-          Illustrative
+          Example data
         </span>
       </div>
     </div>

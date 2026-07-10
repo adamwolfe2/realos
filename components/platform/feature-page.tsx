@@ -25,12 +25,12 @@ export function FeaturePage({
   artifact?: ReactNode;
 }) {
   return (
-    <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
+    <div style={{ backgroundColor: "#FFFFFF", color: "#161616" }}>
       <header>
         <div className="max-w-[920px] mx-auto px-4 md:px-8 pt-24 md:pt-28 pb-16 text-center">
           <p
             style={{
-              color: "#94A3B8",
+              color: "#8d8d8d",
               fontFamily: "var(--font-mono)",
               fontSize: "11px",
               letterSpacing: "0.18em",
@@ -44,7 +44,7 @@ export function FeaturePage({
           <h1
             className="mx-auto"
             style={{
-              color: "#1E2A3A",
+              color: "#161616",
               fontFamily: "var(--font-display)",
               fontSize: "clamp(36px, 5vw, 60px)",
               fontWeight: 500,
@@ -57,7 +57,7 @@ export function FeaturePage({
           <p
             className="mx-auto mt-6 max-w-[640px]"
             style={{
-              color: "#64748B",
+              color: "#6f6f6f",
               fontFamily: "var(--font-sans)",
               fontSize: "18px",
               lineHeight: 1.6,
@@ -76,13 +76,13 @@ export function FeaturePage({
         </section>
       ) : null}
 
-      <section style={{ backgroundColor: "#F1F5F9" }}>
+      <section style={{ backgroundColor: "#f4f4f4" }}>
         <div className="max-w-[920px] mx-auto px-4 md:px-8 py-16 text-center">
           <p className="eyebrow mb-4">What it is</p>
           <p
             className="mx-auto max-w-[760px]"
             style={{
-              color: "#1E2A3A",
+              color: "#161616",
               fontFamily: "var(--font-display)",
               fontSize: "clamp(22px, 2.4vw, 30px)",
               fontWeight: 500,
@@ -103,14 +103,14 @@ export function FeaturePage({
                 key={step}
                 className="p-6 flex gap-5"
                 style={{
-                  backgroundColor: "#F1F5F9",
-                  borderRadius: "16px",
-                  boxShadow: "0 0 0 1px #E2E8F0",
+                  backgroundColor: "#f4f4f4",
+                  borderRadius: "2px",
+                  boxShadow: "0 0 0 1px #e0e0e0",
                 }}
               >
                 <span
                   style={{
-                    color: "#94A3B8",
+                    color: "#8d8d8d",
                     fontFamily: "var(--font-mono)",
                     fontSize: "12px",
                     fontWeight: 500,
@@ -123,7 +123,7 @@ export function FeaturePage({
                 </span>
                 <p
                   style={{
-                    color: "#1E2A3A",
+                    color: "#161616",
                     fontFamily: "var(--font-sans)",
                     fontSize: "16px",
                     lineHeight: 1.6,
@@ -137,7 +137,7 @@ export function FeaturePage({
         </div>
       </section>
 
-      <section style={{ backgroundColor: "#F1F5F9" }}>
+      <section style={{ backgroundColor: "#f4f4f4" }}>
         <div className="max-w-[920px] mx-auto px-4 md:px-8 py-16">
           <p className="eyebrow text-center mb-10">What to expect</p>
           <ul className="mx-auto max-w-[680px] space-y-3">
@@ -146,7 +146,7 @@ export function FeaturePage({
                 key={r}
                 className="flex items-start gap-3"
                 style={{
-                  color: "#1E2A3A",
+                  color: "#161616",
                   fontFamily: "var(--font-sans)",
                   fontSize: "16px",
                   lineHeight: 1.6,
@@ -156,8 +156,8 @@ export function FeaturePage({
                   aria-hidden="true"
                   className="inline-flex items-center justify-center flex-shrink-0 mt-1 w-4 h-4 rounded-full"
                   style={{
-                    backgroundColor: "rgba(37,99,235,0.14)",
-                    color: "#2563EB",
+                    backgroundColor: "rgba(15,98,254,0.14)",
+                    color: "#0f62fe",
                   }}
                 >
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
@@ -183,7 +183,7 @@ export function FeaturePage({
           <p
             className="mx-auto max-w-[720px]"
             style={{
-              color: "#1E2A3A",
+              color: "#161616",
               fontFamily: "var(--font-display)",
               fontSize: "clamp(22px, 2.4vw, 30px)",
               fontWeight: 500,

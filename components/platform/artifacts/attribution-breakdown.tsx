@@ -48,15 +48,15 @@ function useEaseInProgress(durationMs: number): number {
 // hand-tuned bars.
 // ---------------------------------------------------------------------------
 
-const ACCENT = "#2563EB";
-const INK = "#1E2A3A";
-const MUTED = "#94A3B8";
-const BORDER = "#E2E8F0";
-const PARCHMENT = "#F1F5F9";
+const ACCENT = "#0f62fe";
+const INK = "#161616";
+const MUTED = "#8d8d8d";
+const BORDER = "#e0e0e0";
+const PARCHMENT = "#f4f4f4";
 // Norman feedback (2026-05-21): all marketing-surface chart + accent
 // colors stay on the brand blue ramp. SUCCESS reads as a calmer
 // brand-blue accent (no green/amber).
-const SUCCESS = "#2563EB";
+const SUCCESS = "#0f62fe";
 
 type Channel = {
   name: string;
@@ -76,7 +76,7 @@ const CHANNELS: Channel[] = [
     leads: 142,
     tours: 38,
     leases: 4,
-    color: "#2563EB",
+    color: "#0f62fe",
   },
   {
     name: "Meta",
@@ -85,7 +85,7 @@ const CHANNELS: Channel[] = [
     leads: 96,
     tours: 21,
     leases: 3,
-    color: "#5B8CE6",
+    color: "#4589ff",
   },
   {
     name: "TikTok",
@@ -94,7 +94,7 @@ const CHANNELS: Channel[] = [
     leads: 54,
     tours: 9,
     leases: 1,
-    color: "#0F172A",
+    color: "#161616",
   },
 ];
 
@@ -142,8 +142,8 @@ export function AttributionBreakdown() {
       className="w-full"
       style={{
         backgroundColor: "#FFFFFF",
-        borderRadius: 16,
-        boxShadow: `0 0 0 1px ${BORDER}, 0 20px 60px rgba(30, 42, 58, 0.06)`,
+        borderRadius: 2,
+        boxShadow: `0 0 0 1px ${BORDER}`,
         overflow: "hidden",
       }}
     >
@@ -229,7 +229,7 @@ export function AttributionBreakdown() {
               className="px-5 md:px-6 py-2.5 sm:py-3.5"
               style={{
                 borderBottom: i < CHANNELS.length - 1 ? `1px solid ${BORDER}` : "none",
-                backgroundColor: isActive ? "rgba(37,99,235,0.04)" : "transparent",
+                backgroundColor: isActive ? "rgba(15,98,254,0.04)" : "transparent",
                 transition: "background-color 320ms ease",
               }}
             >
@@ -239,7 +239,7 @@ export function AttributionBreakdown() {
                   style={{
                     width: 26,
                     height: 26,
-                    borderRadius: 6,
+                    borderRadius: 2,
                     backgroundColor: "#FFFFFF",
                     border: `1px solid ${BORDER}`,
                   }}
@@ -275,7 +275,7 @@ export function AttributionBreakdown() {
                   className="flex-1 relative overflow-hidden"
                   style={{
                     height: 6,
-                    borderRadius: 3,
+                    borderRadius: 2,
                     backgroundColor: PARCHMENT,
                   }}
                 >

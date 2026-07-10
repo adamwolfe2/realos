@@ -44,12 +44,12 @@ const PRICE_BANDS = [
   { label: "$100+",      min: 10000, max: Infinity },
 ];
 
-const ACCENT = "#2563EB";
-const INK = "#1E2A3A";
-const MUTED = "#94A3B8";
-const SLATE = "#64748B";
-const BORDER = "#E2E8F0";
-const PARCHMENT = "#F1F5F9";
+const ACCENT = "#0f62fe";
+const INK = "#161616";
+const MUTED = "#8d8d8d";
+const SLATE = "#6f6f6f";
+const BORDER = "#e0e0e0";
+const PARCHMENT = "#f4f4f4";
 
 const LEADS: LeadCard[] = [
   { id: "LD-91428", initials: "MR", name: "Marisol R.",   age: 34, photo: "https://randomuser.me/api/portraits/women/68.jpg", market: "New York",    propertyType: "Sale",       intent: 92, budget: "$680K – $920K", signal: "Viewed 23 listings · 7d", timeline: "0–30 days",  priceCents: 9500 },
@@ -103,8 +103,8 @@ export function LeadMarketplace() {
       className="w-full"
       style={{
         backgroundColor: "#ffffff",
-        borderRadius: "16px",
-        boxShadow: `0 0 0 1px ${BORDER}, 0 24px 70px rgba(30, 42, 58,0.10)`,
+        borderRadius: "2px",
+        boxShadow: `0 0 0 1px ${BORDER}`,
         overflow: "hidden",
       }}
     >
@@ -120,8 +120,8 @@ export function LeadMarketplace() {
               width: "8px",
               height: "8px",
               borderRadius: "50%",
-              backgroundColor: "#10B981",
-              boxShadow: "0 0 0 4px rgba(16,185,129,0.18)",
+              backgroundColor: "#24a148",
+              boxShadow: "0 0 0 4px rgba(36,161,72,0.18)",
               animation: "liveDot 1.6s ease-in-out infinite",
             }}
           />
@@ -161,7 +161,7 @@ export function LeadMarketplace() {
           className="p-5 md:p-6"
           style={{
             borderRight: `1px solid ${BORDER}`,
-            backgroundColor: "#FCFCFD",
+            backgroundColor: "#FFFFFF",
           }}
         >
           <FilterGroup label="Market">
@@ -232,7 +232,7 @@ export function LeadMarketplace() {
           </FilterGroup>
 
           <div
-            className="mt-6 p-3 rounded-md"
+            className="mt-6 p-3 rounded-[2px]"
             style={{
               backgroundColor: PARCHMENT,
               border: `1px dashed ${BORDER}`,
@@ -363,7 +363,7 @@ function LeadCardView({ lead }: { lead: LeadCard }) {
       className="p-4 h-full"
       style={{
         backgroundColor: "#fff",
-        borderRadius: "12px",
+        borderRadius: "2px",
         boxShadow: `0 0 0 1px ${BORDER}`,
         transition: "box-shadow 200ms ease, transform 200ms ease",
       }}
@@ -441,7 +441,7 @@ function LeadCardView({ lead }: { lead: LeadCard }) {
             fontSize: "12px",
             fontWeight: 600,
             padding: "6px 12px",
-            borderRadius: "8px",
+            borderRadius: "2px",
             backgroundColor: ACCENT,
             color: "#fff",
             border: "none",
@@ -491,10 +491,10 @@ function Row({ label, value, strong = false }: { label: string; value: string; s
 function IntentDot({ value }: { value: number }) {
   const tone =
     value >= 85
-      ? { bg: "rgba(16,185,129,0.14)", fg: "#059669" }
+      ? { bg: "rgba(36,161,72,0.14)", fg: "#24a148" }
       : value >= 75
-        ? { bg: "rgba(37,99,235,0.14)", fg: ACCENT }
-        : { bg: "rgba(245,158,11,0.14)", fg: "#D97706" };
+        ? { bg: "rgba(15,98,254,0.14)", fg: ACCENT }
+        : { bg: "rgba(241,194,27,0.25)", fg: "#161616" };
   return (
     <span
       className="inline-flex items-center gap-1 flex-shrink-0"
@@ -521,7 +521,7 @@ function EmptyState() {
       className="flex flex-col items-center justify-center py-10 px-6 text-center"
       style={{
         backgroundColor: PARCHMENT,
-        borderRadius: "12px",
+        borderRadius: "2px",
         border: `1px dashed ${BORDER}`,
         minHeight: "260px",
       }}
@@ -556,7 +556,7 @@ function EmptyState() {
           fontSize: "12.5px",
           fontWeight: 600,
           padding: "8px 14px",
-          borderRadius: "8px",
+          borderRadius: "2px",
           backgroundColor: ACCENT,
           color: "#fff",
           border: "none",

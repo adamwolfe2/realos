@@ -96,11 +96,10 @@ export function AudienceSyncStream() {
                 width: "6px",
                 height: "6px",
                 borderRadius: "999px",
-                backgroundColor: "#10b981",
-                boxShadow: "0 0 0 4px rgba(16,185,129,0.18)",
+                backgroundColor: "var(--color-muted-foreground)",
               }}
             />
-            Live syncs
+            Audience syncs
           </span>
         </div>
         <span
@@ -113,7 +112,7 @@ export function AudienceSyncStream() {
             color: MUTED,
           }}
         >
-          last 24h
+          Example data
         </span>
       </header>
 

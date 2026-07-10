@@ -40,7 +40,7 @@ const CARDS = [
     title: "SFR and build-to-rent",
     body:
       "Same data engine, scaled to single-asset operators and BTR portfolios.",
-    tag: "Live",
+    tag: "Same engine",
     accent: "#2563EB",
   },
 ];
@@ -54,7 +54,7 @@ export default function ResidentialHub() {
         headlineAccent="Every vertical."
         subhead="One data engine for student housing, multifamily, senior living, SFR, and BTR. Same pacing models and source-to-lease attribution. Different playbooks, creative, and compliance per market."
         ctas={[
-          { label: "Start a free pilot", href: "/onboarding" },
+          { label: "Request pilot", href: "/sign-up" },
           { label: "See it on a live property", href: "/demo", variant: "secondary" },
         ]}
         caption="Live today on a real lease-up. SFR and build-to-rent on the same engine."
@@ -195,8 +195,8 @@ export default function ResidentialHub() {
           </Reveal>
           <Reveal delay={140}>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href="/onboarding" className="btn-primary">
-                Start the free pilot
+              <Link href="/sign-up" className="btn-primary">
+                Request pilot
               </Link>
               <Link href="/commercial" className="btn-secondary">
                 Commercial roadmap

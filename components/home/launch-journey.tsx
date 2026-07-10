@@ -51,16 +51,16 @@ import { MaskRevealUp } from "@/components/ui/animate-text";
 // no pinning behavior (effectively the same content laid out statically).
 // ---------------------------------------------------------------------------
 
-const ACCENT = "#2563EB";
-const INK = "#1E2A3A";
-const MUTED = "#94A3B8";
-const BORDER = "#E2E8F0";
-const PARCHMENT = "#F1F5F9";
+const ACCENT = "#0f62fe";
+const INK = "#161616";
+const MUTED = "#8d8d8d";
+const BORDER = "#e0e0e0";
+const PARCHMENT = "#f4f4f4";
 // Norman feedback (2026-05-21): collapse all chart + accent colors onto
 // the brand blue ramp — no semantic green/amber/red on the marketing
 // surface. SUCCESS now reads as a calmer brand-blue accent for "this
 // milestone landed" markers.
-const SUCCESS = "#2563EB";
+const SUCCESS = "#0f62fe";
 
 type Milestone = {
   when: string;
@@ -230,13 +230,13 @@ export function LaunchJourney() {
                           aria-hidden
                           animate={{
                             scale: isUnlocked ? 1 : 0.7,
-                            backgroundColor: isUnlocked ? ACCENT : "#CBD5E1",
+                            backgroundColor: isUnlocked ? ACCENT : "#c6c6c6",
                             boxShadow:
                               isUnlocked && isLaunch
-                                ? "0 0 0 5px rgba(37,99,235,0.18)"
+                                ? "0 0 0 5px rgba(15,98,254,0.18)"
                                 : isUnlocked
-                                  ? "0 0 0 3px rgba(37,99,235,0.10)"
-                                  : "0 0 0 0px rgba(37,99,235,0)",
+                                  ? "0 0 0 3px rgba(15,98,254,0.10)"
+                                  : "0 0 0 0px rgba(15,98,254,0)",
                           }}
                           transition={{
                             duration: 0.4,
@@ -309,7 +309,7 @@ function JourneyHeader() {
       <p
         className="mt-3 md:mt-4 max-w-2xl"
         style={{
-          color: "#64748B",
+          color: "#6f6f6f",
           fontFamily: "var(--font-sans)",
           fontSize: 15,
           lineHeight: 1.6,
@@ -355,7 +355,7 @@ function DesktopMilestone({
       >
         <span
           style={{
-            color: unlocked ? (isLaunch ? ACCENT : "#64748B") : MUTED,
+            color: unlocked ? (isLaunch ? ACCENT : "#6f6f6f") : MUTED,
             fontFamily: "var(--font-mono)",
             fontSize: 10.5,
             letterSpacing: "0.16em",
@@ -372,7 +372,7 @@ function DesktopMilestone({
           className="inline-flex items-center justify-center mt-3 mb-4"
           animate={{
             scale: unlocked ? 1 : 0.88,
-            backgroundColor: unlocked ? "rgba(37,99,235,0.10)" : PARCHMENT,
+            backgroundColor: unlocked ? "rgba(15,98,254,0.10)" : PARCHMENT,
             color: unlocked ? ACCENT : MUTED,
           }}
           transition={
@@ -383,7 +383,7 @@ function DesktopMilestone({
           style={{
             width: 44,
             height: 44,
-            borderRadius: 8,
+            borderRadius: 2,
           }}
         >
           <Icon className="w-5 h-5" strokeWidth={1.6} />
@@ -405,7 +405,7 @@ function DesktopMilestone({
         <p
           className="mt-1.5"
           style={{
-            color: unlocked ? "#64748B" : "#CBD5E1",
+            color: unlocked ? "#6f6f6f" : "#c6c6c6",
             fontFamily: "var(--font-sans)",
             fontSize: 12.5,
             lineHeight: 1.5,
@@ -447,8 +447,8 @@ function MobileMilestone({
         style={{
           width: 44,
           height: 44,
-          borderRadius: 8,
-          backgroundColor: "rgba(37,99,235,0.10)",
+          borderRadius: 2,
+          backgroundColor: "rgba(15,98,254,0.10)",
           color: ACCENT,
         }}
       >
@@ -457,7 +457,7 @@ function MobileMilestone({
       <div className="flex-1 min-w-0">
         <p
           style={{
-            color: isLaunch ? ACCENT : "#64748B",
+            color: isLaunch ? ACCENT : "#6f6f6f",
             fontFamily: "var(--font-mono)",
             fontSize: 10.5,
             letterSpacing: "0.16em",
@@ -484,7 +484,7 @@ function MobileMilestone({
         <p
           className="mt-1.5"
           style={{
-            color: "#64748B",
+            color: "#6f6f6f",
             fontFamily: "var(--font-sans)",
             fontSize: 13.5,
             lineHeight: 1.55,
@@ -513,9 +513,9 @@ function CompletionRibbon({ visible }: { visible: boolean }) {
       transition={{ duration: 0.45, ease: [0.2, 0.7, 0.2, 1] }}
       className="mt-10 flex items-center justify-between gap-4 flex-wrap"
       style={{
-        backgroundColor: "rgba(37,99,235,0.06)",
-        border: `1px solid rgba(37,99,235,0.15)`,
-        borderRadius: 4,
+        backgroundColor: "rgba(15,98,254,0.06)",
+        border: `1px solid rgba(15,98,254,0.15)`,
+        borderRadius: 2,
         padding: "14px 18px",
       }}
       aria-hidden={!visible}
@@ -553,11 +553,12 @@ function CompletionRibbon({ visible }: { visible: boolean }) {
           Every capability unlocked. The platform compounds from here.
         </p>
       </div>
-      {/* Norman v2 (U20/FD9): "Start a pilot" was a dead span. Wired up
-          to /demo (book your intro call) and renamed to "Request pilot"
-          to match the rest of the site (G1). */}
+      {/* Carbon wave 2 (2026-07-10): "Request pilot" now has ONE
+          destination site-wide — /sign-up (the self-serve pilot entry).
+          Previously pointed at /demo, which is the live-property
+          showcase, not the pilot. */}
       <Link
-        href="/demo"
+        href="/sign-up"
         style={{
           color: ACCENT,
           fontFamily: "var(--font-mono)",

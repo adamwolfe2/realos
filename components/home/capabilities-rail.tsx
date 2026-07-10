@@ -31,10 +31,10 @@ import { MaskRevealUp } from "@/components/ui/animate-text";
 // six feature blocks.
 // ---------------------------------------------------------------------------
 
-const ACCENT = "#2563EB";
-const INK = "#1E2A3A";
-const MUTED = "#94A3B8";
-const BORDER = "#E2E8F0";
+const ACCENT = "#0f62fe";
+const INK = "#161616";
+const MUTED = "#8d8d8d";
+const BORDER = "#e0e0e0";
 
 type Capability = {
   num: string;
@@ -195,7 +195,7 @@ export function CapabilitiesRail() {
           <p
             className="mt-5 max-w-2xl"
             style={{
-              color: "#64748B",
+              color: "#6f6f6f",
               fontFamily: "var(--font-sans)",
               fontSize: 17,
               lineHeight: 1.55,
@@ -262,7 +262,7 @@ export function CapabilitiesRail() {
                     <p
                       className="mt-3 max-w-[560px]"
                       style={{
-                        color: "#64748B",
+                        color: "#6f6f6f",
                         fontFamily: "var(--font-sans)",
                         fontSize: 15,
                         lineHeight: 1.6,
@@ -378,7 +378,7 @@ export function CapabilitiesRail() {
 // CapabilityGlyph — small pixel-grid icon next to each capability title.
 //
 // Inspired by the reference image's clustered-square glyphs. Six distinct
-// 3x3 patterns, one per capability. Each glyph is muted (#E2E8F0) by
+// 3x3 patterns, one per capability. Each glyph is muted (#e0e0e0) by
 // default and fills to cobalt when its capability is active. The shape
 // hints at the capability without being a literal icon — patterns of dots
 // that read as "data", "channels", "stream", "messages", "alert",
@@ -448,7 +448,7 @@ function CapabilityGlyph({
             backgroundColor: on
               ? active
                 ? ACCENT
-                : "#CBD5E1"
+                : "#c6c6c6"
               : "transparent",
             transition: "background-color 240ms ease",
           }}
