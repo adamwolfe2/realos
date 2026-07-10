@@ -596,11 +596,23 @@ body {
 }
 .ls-select:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* Brand accent — flat Carbon treatment: a 2px Blue 60 left border on the
-   card we want to anchor visual hierarchy on. The radial-gradient glow was
-   deleted in the Carbon rebuild (2026-07-09) — border-first elevation only. */
+/* Soft brand accent — used on the dashboard's hero KPI tile or any card we
+   want to anchor visual hierarchy on. The radial glow sits in the top-right
+   corner so it never competes with content. */
 .ls-card-accent {
-  border-left: 2px solid #0f62fe;
+  position: relative;
+  overflow: hidden;
+}
+.ls-card-accent::after {
+  content: "";
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, var(--brand-glow) 0%, transparent 65%);
+  pointer-events: none;
+  opacity: 0.75;
 }
 
 /* ── Metric numeric — monospace tabular figures for big numbers ─────────── */

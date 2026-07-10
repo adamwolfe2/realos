@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { ArrowRight, Lightbulb } from "lucide-react";
+import { Sparkles, ArrowRight, Plug } from "lucide-react";
 import { InsightCard, type InsightCardData } from "@/components/portal/insights/insight-card";
-import { EmptyState } from "@/components/portal/ui/empty-state";
 
 // ---------------------------------------------------------------------------
 // InsightsHero — the dashboard centerpiece, also reused on per-property
@@ -51,50 +50,67 @@ export function InsightsHero({
   if (counts.total === 0) {
     if (isProperty) {
       return (
-        <section className="rounded-[2px] border border-border bg-muted/30 p-4 lg:p-5">
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#525252]">
-              Insights
-            </p>
-            <h2 className="text-[16px] font-semibold text-foreground mt-0.5">
-              Nothing to action at {propertyName} right now.
-            </h2>
-            <p className="text-[12.5px] text-muted-foreground mt-1 leading-relaxed">
-              We&apos;ll surface insights here as soon as detectors find an
-              actionable pattern in this property&apos;s data. Vacancy
-              concentration, ad-spend anomalies, renewal cliffs, negative
-              reviews, and more.
-            </p>
+        <section className="rounded-xl border border-border bg-muted/30 p-4 lg:p-5">
+          <div className="flex items-start gap-3">
+            <div className="inline-flex items-center justify-center w-9 h-9 rounded-md bg-primary/10 text-primary shrink-0">
+              <Sparkles className="w-[18px] h-[18px]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+                Insights
+              </p>
+              <h2 className="text-[16px] font-semibold text-foreground mt-0.5">
+                Nothing to action at {propertyName} right now.
+              </h2>
+              <p className="text-[12.5px] text-muted-foreground mt-1 leading-relaxed">
+                We&apos;ll surface insights here as soon as detectors find an
+                actionable pattern in this property&apos;s data. Vacancy
+                concentration, ad-spend anomalies, renewal cliffs, negative
+                reviews, and more.
+              </p>
+            </div>
           </div>
         </section>
       );
     }
-    // Portfolio scope — EmptyState primitive with a ghost connect action.
-    // The onboarding stepper owns the primary connect CTA; this surface
-    // only offers a quiet secondary route to /portal/connect.
+    // Portfolio scope — drive to /portal/connect.
     return (
-      <EmptyState
-        icon={<Lightbulb className="w-[18px] h-[18px]" />}
-        title={
-          sourcesConnected === 0
-            ? "Connect your first data source to start receiving insights."
-            : sourcesConnected < totalSources
-              ? `${sourcesConnected} of ${totalSources} sources connected.`
-              : "All sources connected."
-        }
-        body={
-          sourcesConnected === 0
-            ? "Connect AppFolio, Google Analytics, Search Console, your ad accounts, and the pixel. Each unlocks a new family of insights."
-            : sourcesConnected < totalSources
-              ? "Keep adding sources to unlock more insight categories. Reputation alerts need your website; ad-spend insights need Google or Meta Ads; renewal cliffs need AppFolio."
-              : "Analysis runs as new data lands. Insights appear here when actionable patterns show up in your data."
-        }
-        secondary={
-          sourcesConnected < totalSources
-            ? { label: "Connect data", href: "/portal/connect" }
-            : undefined
-        }
-      />
+      <section className="rounded-xl border border-primary/20 bg-primary/[0.03] p-5 lg:p-6">
+        <div className="flex items-start gap-4">
+          <div className="inline-flex items-center justify-center w-10 h-10 rounded-md bg-primary/10 text-primary shrink-0">
+            <Sparkles className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-primary mb-1">
+              Insights
+            </p>
+            <h2 className="text-[20px] lg:text-[22px] font-semibold tracking-tight text-foreground leading-snug">
+              {sourcesConnected === 0
+                ? "Connect your first data source to start receiving insights."
+                : sourcesConnected < totalSources
+                  ? `${sourcesConnected} of ${totalSources} sources connected. Insights flow within minutes of each connection.`
+                  : "All sources connected. We'll surface insights here as soon as actionable patterns appear in your data."}
+            </h2>
+            <p className="text-sm text-muted-foreground mt-2 leading-relaxed max-w-2xl">
+              {sourcesConnected === 0
+                ? "Plug in AppFolio, Google Analytics, Search Console, your ad accounts, and the Cursive pixel. Each unlocks a new family of insights — from CPL spikes to vacancy alerts to cross-property benchmarks."
+                : sourcesConnected < totalSources
+                  ? "Keep adding sources to unlock more insight categories. Reputation alerts need your website connected; ad-spend insights need Google or Meta Ads; renewal cliffs need AppFolio."
+                  : "We run our analysis the moment new data lands — no scheduled reports, no overnight delays. Sit tight while detectors complete their first pass."}
+            </p>
+            {sourcesConnected < totalSources ? (
+              <Link
+                href="/portal/connect"
+                className="inline-flex items-center gap-1.5 mt-4 h-10 px-5 rounded-md bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-dark transition-colors"
+              >
+                <Plug className="w-3.5 h-3.5" />
+                Connect data
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            ) : null}
+          </div>
+        </div>
+      </section>
     );
   }
 
@@ -106,10 +122,11 @@ export function InsightsHero({
 
   if (!hasActionable) {
     return (
-      <section className="rounded-[2px] border border-border bg-card px-4 py-2.5">
+      <section className="rounded-xl border border-border bg-card px-4 py-2.5">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2 min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#525252]">
+            <Sparkles className="w-3 h-3 text-primary" />
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
               {isProperty ? `Insights for ${propertyName}` : "Insights"}
             </p>
             <span className="text-[11.5px] tabular-nums text-muted-foreground">
@@ -128,10 +145,11 @@ export function InsightsHero({
   }
 
   return (
-    <section className="rounded-[2px] border border-border bg-card p-4 lg:p-5">
+    <section className="rounded-xl border border-border bg-card p-4 lg:p-5">
       <header className="flex items-center justify-between gap-3 mb-3">
         <div className="flex items-center gap-2 min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#525252]">
+          <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+            <Sparkles className="w-3 h-3" />
             {isProperty ? `Insights for ${propertyName}` : "Insights"}
           </p>
           <span className="text-[11px] tabular-nums text-muted-foreground">

@@ -1,11 +1,21 @@
 import type { Metadata } from "next";
 import {
   Users,
+  Flame,
   CalendarCheck,
   DollarSign,
+  Coins,
   Search,
+  Star,
+  Bot,
+  Megaphone,
+  MessageSquare,
   Building2,
-  ArrowRight,
+  AlertTriangle,
+  ClipboardList,
+  Wrench,
+  Home,
+  CalendarClock,
 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -29,6 +39,8 @@ import {
   ProductLine,
   TourStatus,
 } from "@prisma/client";
+import { SetupBanner } from "@/components/portal/setup/setup-banner";
+import { SetupWizardGate } from "@/components/portal/onboarding/setup-wizard-gate";
 import { AutoRefresh } from "@/components/portal/sync/auto-refresh";
 
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
@@ -36,6 +48,7 @@ import { DashboardSection } from "@/components/portal/dashboard/dashboard-sectio
 import { LeadSourceDonut } from "@/components/portal/dashboard/lead-source-donut";
 import { ConversionFunnel } from "@/components/portal/dashboard/conversion-funnel";
 import { ActivityFeed } from "@/components/portal/dashboard/activity-feed";
+import { IntegrationHealth } from "@/components/portal/dashboard/integration-health";
 import {
   getActivityFeed,
   getAdSpendKpi,
@@ -57,13 +70,13 @@ import {
   type LeaderboardPropertyRow,
 } from "@/lib/dashboard/queries";
 import {
-  RANGES,
+  DashboardGreeting,
   parseRange,
   rangeDays,
-  type DashboardRange,
-} from "@/lib/dashboard/range";
+} from "@/components/portal/dashboard/dashboard-greeting";
 import { PerformanceOverTime } from "@/components/portal/dashboard/performance-over-time";
 import { TopPropertiesLeaderboard } from "@/components/portal/dashboard/top-properties-leaderboard";
+import { RecentIdentifiedVisitors } from "@/components/portal/dashboard/recent-identified-visitors";
 import { getOpenInsights, getInsightCounts } from "@/lib/insights/queries";
 import {
   InsightCard,
@@ -71,13 +84,14 @@ import {
 } from "@/components/portal/insights/insight-card";
 import { InsightsHero } from "@/components/portal/dashboard/insights-hero";
 import { countConnectedSources } from "@/lib/connect/status";
+import { Sparkles } from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/admin/page-header";
 import { getFirstRunSignal } from "@/lib/portal/first-run";
 import { WelcomeLanding } from "@/components/portal/welcome-landing";
+import { FirstRunOverlay } from "@/components/portal/home/first-run-overlay";
 import { syncOnboardingProgress } from "@/lib/onboarding/step-detectors";
-import { OnboardingStepper } from "@/components/portal/onboarding/onboarding-stepper";
-import { VerificationRow } from "@/components/portal/ui/status-chip";
+import { OnboardingChecklistFloating } from "@/components/portal/onboarding/onboarding-checklist-floating";
 import { PropertyHeroBanner } from "@/components/portal/properties/property-hero-banner";
 import { DashboardActionItems } from "@/components/portal/dashboard/dashboard-action-items";
 import { PortfolioSeoActions } from "@/components/portal/dashboard/portfolio-seo-actions";
@@ -218,13 +232,6 @@ export default async function PortalHome({
   const compare = sp.compare === "1";
   const rangeDaysCount = rangeDays(range);
   const asOf = new Date().toISOString();
-  // Human "as of" time for the PageHeader meta pill. Pacific — matches the
-  // #58 / #109 timezone convention for operator-facing timestamps.
-  const asOfLabel = new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: "America/Los_Angeles",
-  }).format(new Date(asOf));
 
   // Property selector (Phase 4): unrestricted users (David, agency)
   // can narrow the dashboard to one or more properties via the
@@ -589,11 +596,15 @@ export default async function PortalHome({
           )
         : null;
 
+    const showFirstRun = leadsTotal === 0 && propertiesCount === 0;
+
     // Wizard step actionHref routes — every URL is verified to exist as a
-    // real Next.js route under /app/portal/. Retained as stepper fallback
-    // data after the SetupWizardGate removal (Carbon rebuild 2026-07-09);
-    // integration hrefs repointed to the canonical /portal/connect hub
-    // (hosts the pixel + GA4 flows — see connect-hub.tsx SOURCE ids).
+    // real Next.js route under /app/portal/. Pre-fix the wizard linked to
+    // /portal/properties/new (404) and /portal/site (404), dead-ending the
+    // most common first-action a brand-new operator takes. /portal/properties
+    // renders the empty-state CTA + the PropertyFormDialog, so the dialog
+    // opens with one click after navigation. /portal/site-builder is the
+    // actual marketing-site editor surface.
     const wizardSteps = [
       {
         id: "property",
@@ -610,7 +621,7 @@ export default async function PortalHome({
         description:
           "See live visitors, traffic sources, and engagement in real time.",
         actionLabel: "Set up pixel",
-        actionHref: "/portal/connect",
+        actionHref: "/portal/settings/integrations",
         done: firstRun.pixelInstalled,
       },
       {
@@ -619,7 +630,7 @@ export default async function PortalHome({
         description:
           "Pull organic sessions and top landing pages into your dashboard.",
         actionLabel: "Connect GA4",
-        actionHref: "/portal/connect",
+        actionHref: "/portal/settings/integrations",
         done: firstRun.gscConnected,
       },
       {
@@ -1064,66 +1075,115 @@ export default async function PortalHome({
           jobs and on-demand syncs keep fresh. No integration API calls. */}
         <AutoRefresh intervalMs={45_000} />
 
-        {/* Page identity chrome — Carbon rebuild 2026-07-09. PageHeader
-          replaces the animated greeting; the range pill group + property
-          multi-select live in the actions slot, and the filtered-scope
-          caption sits in the description slot. Range pills stay real
-          Links so deep-links and back/forward navigation work without
-          any client state. */}
-        <PageHeader
-          title="Dashboard"
-          eyebrow={org?.name ?? undefined}
-          meta={`as of ${asOfLabel} · last ${rangeDaysCount} days`}
-          description={
-            selectorProperties.length > 1
-              ? isFiltered
-                ? `Filtered to ${effectiveIds!.length} of ${selectorProperties.length} ${effectiveIds!.length === 1 ? "property" : "properties"}`
-                : `Showing all ${selectorProperties.length} properties`
-              : undefined
+        {/* First-run overlay — Task A. Renders ONLY when the org has zero
+          connected data sources, zero properties, and zero leads. The
+          existing first-run gate above re-routes to <WelcomeLanding /> in
+          even stricter conditions; this overlay covers the leftover case
+          where the operator activated a module (so they escaped that
+          redirect) but still hasn't connected, added, or captured
+          anything. Persisted dismissal via localStorage so the operator
+          can explore the empty dashboard if they want. */}
+        <FirstRunOverlay
+          shouldShow={
+            connectStatus.connected === 0 &&
+            propertiesCount === 0 &&
+            leadsTotal === 0
           }
-          actions={
-            <>
-              <div
-                className="inline-flex items-center rounded-none border border-[#e0e0e0] bg-white p-0"
-                role="group"
-                aria-label="Time range"
-              >
-                {RANGES.map((r) => (
-                  <Link
-                    key={r.key}
-                    href={dashboardHref(r.key, compare)}
-                    className={
-                      r.key === range
-                        ? "px-3 py-1 text-[12px] font-semibold rounded-none bg-[#0f62fe] text-white transition-colors"
-                        : "px-3 py-1 text-[12px] font-semibold rounded-none text-[#525252] hover:bg-[#f4f4f4] transition-colors"
-                    }
-                    prefetch={false}
-                  >
-                    {r.label}
-                  </Link>
-                ))}
-              </div>
-              {selectorProperties.length > 1 ? (
-                <PropertyMultiSelect
-                  properties={selectorProperties}
-                  orgId={scope.orgId}
-                />
-              ) : null}
-            </>
-          }
+          orgName={org?.name ?? "operator"}
         />
+
+        {/* Self-serve onboarding checklist — Norman 2026-05-21 feedback: the
+          old full-width card shoved Telegraph Commons' metrics below the
+          fold on every dashboard load. Moved to a bottom-right floating
+          widget (collapsed pill by default; click to expand into a slim
+          card with all Go / Done / Skip affordances). Hides automatically
+          once currentPhase advances to COMPLETED. */}
+        {showChecklist && onboardingProgress ? (
+          <OnboardingChecklistFloating progress={onboardingProgress} />
+        ) : null}
+
+        {/* Setup wizard overlay — floats above dashboard, dismissed via localStorage */}
+        <SetupWizardGate shouldShow={showFirstRun} steps={wizardSteps} />
+
+        <SetupBanner forceShow={forceShowSetup} />
+
+        {/* Norman feedback (May 22): the "Shipped this week" velocity
+          banner that lived here was meta noise — operators (vs admin)
+          don't care about our bug-queue throughput, and linking them
+          to /admin/bug-reports from the customer-facing dashboard is
+          confusing. Removed entirely. Velocity proof belongs in the
+          admin surface (where Norman + Adam already see the queue),
+          not on the operator dashboard. */}
 
         {accessDenied ? <PropertyAccessDeniedBanner /> : null}
 
-        {/* The single setup surface — Carbon horizontal stepper. Absorbs
-          FirstRunOverlay, OnboardingChecklistFloating, SetupWizardGate,
-          and SetupBanner. Server state hides it once currentPhase
-          reaches COMPLETED; no dismissal, no localStorage. */}
-        {showChecklist && onboardingProgress ? (
-          <OnboardingStepper
-            progress={onboardingProgress}
-            connectStatus={connectStatus}
+        {/* Personalized greeting with range pills + comparison toggle.
+          Sits above InsightsHero so the operator sees their name + the
+          active window the moment the page loads — every reference
+          dashboard (AeroStore, URBN, Emura, Mori) opens this way. */}
+        <DashboardGreeting
+          firstName={currentUser?.firstName ?? null}
+          orgName={org?.name ?? "operator"}
+          range={range}
+          compare={compare}
+          asOf={asOf}
+        />
+
+        {/* Featured-property hero — moved to the top so it's the FIRST
+          thing the operator (or anyone walking the demo) sees. Building
+          image floats above a brand-gradient base with the headline stats
+          next to it. The action items + SEO recs strips below give the
+          operator their next move; the hero anchors the dashboard in
+          something tangible (a real building) before the action chrome.
+          Renders only when the operator has exactly one LIVE property. */}
+        {featuredProperty ? (
+          <PropertyHeroBanner
+            propertyId={featuredProperty.id}
+            propertyName={featuredProperty.name}
+            subtitle={featuredSubtitle}
+            heroImageUrl={featuredProperty.heroImageUrl}
+            stats={featuredStats}
+            imageOffsetX={featuredProperty.heroImageOffsetX}
+            imageOffsetY={featuredProperty.heroImageOffsetY}
+            imageScale={featuredProperty.heroImageScale}
+            compact
           />
+        ) : null}
+
+        {/* Action items, SEO Agent rollup, and Insights hero MOVED below
+          the dashboard. Operator feedback (2026-06-03): the text-heavy
+          recommendation stacks pushed the charts/metrics below the fold.
+          Numbers + graphs come first now; "things you should do" lives
+          underneath Activity feed where the operator goes after they've
+          oriented to the state of the portfolio. */}
+
+        {/* Property selector — David can narrow the portfolio dashboard
+          to one or more buildings. Direct-prisma KPI queries (counts,
+          rent roll, residents, work orders, leases) honor the
+          selection. Helper-backed widgets (lead source, funnel, ad
+          spend, organic) currently remain org-wide; a "showing all
+          properties" caption flags those tiles. */}
+        {selectorProperties.length > 1 ? (
+          <div className="flex items-center justify-between gap-3 flex-wrap pt-1">
+            {/* Caption pre-fix read as flat muted text; the new treatment
+              uses a small dot + tracking so it reads as intentional page
+              chrome rather than a system message. */}
+            <div className="inline-flex items-center gap-1.5 text-[11px] tracking-wide text-muted-foreground">
+              <span
+                aria-hidden="true"
+                className={`inline-block h-1.5 w-1.5 rounded-full ${
+                  isFiltered ? "bg-primary" : "bg-muted-foreground/40"
+                }`}
+              />
+              {isFiltered
+                ? `Filtered to ${effectiveIds!.length} of ${selectorProperties.length} ${effectiveIds!.length === 1 ? "property" : "properties"}`
+                : `Showing all ${selectorProperties.length} properties`}
+            </div>
+            <PropertyMultiSelect
+              properties={selectorProperties}
+              orgId={scope.orgId}
+            />
+          </div>
         ) : null}
 
         {/* Removed three legacy alert banners (past-due leases, urgent work
@@ -1137,8 +1197,9 @@ export default async function PortalHome({
         {/* Removed the "Quick access — Jump in" tile section. Per design
           audit, those tiles duplicated entries already in the left nav
           and added a wall of competing CTAs above the KPI strip. The
-          dead QuickAccessTile component was deleted in the Carbon
-          rebuild (2026-07-09). */}
+          QuickAccessTile component remains in this file (used nowhere
+          else now) but is left in place rather than ripped out so the
+          rollback is a one-liner. */}
 
         {/* Insights now live in <InsightsHero /> at the top of the dashboard
           (above the property selector). Removed the duplicated mid-page
@@ -1159,7 +1220,7 @@ export default async function PortalHome({
             rent-roll occupancy tile removed (same theme as the property
             detail and dashboard rent-roll cleanup). */}
           <KpiTile
-            density="dense"
+            variant="accent"
             label="Leads (28d)"
             value={leadsNew28d.toLocaleString()}
             hint={`${leadsTotal.toLocaleString()} all-time`}
@@ -1187,7 +1248,6 @@ export default async function PortalHome({
             the row never reads as broken/inactive. */}
           {!adsOff && adSpend.spendUsd > 0 ? (
             <KpiTile
-              density="dense"
               label="Ad spend (28d)"
               value={`$${adSpend.spendUsd.toLocaleString()}`}
               hint={
@@ -1214,7 +1274,6 @@ export default async function PortalHome({
             />
           ) : (
             <KpiTile
-              density="dense"
               label="Tours scheduled (28d)"
               value={
                 toursScheduled === 0 ? "—" : toursScheduled.toLocaleString()
@@ -1229,7 +1288,6 @@ export default async function PortalHome({
             />
           )}
           <KpiTile
-            density="dense"
             label="Organic visitors (28d)"
             value={organic.sessions.toLocaleString()}
             // Reporter clarification: "Organic" was ambiguous. It's unique
@@ -1265,7 +1323,6 @@ export default async function PortalHome({
             the slot: total active properties + a link into the curate
             view. */}
           <KpiTile
-            density="dense"
             label="Active properties"
             value={properties.length.toLocaleString()}
             hint={
@@ -1308,16 +1365,16 @@ export default async function PortalHome({
             {propertiesInOnboarding > 0 ? (
               <Link
                 href="/portal/properties?launch=ONBOARDING"
-                className="mt-3 inline-flex items-center gap-1.5 rounded-[2px] border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors"
+                className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors"
               >
                 <span
                   aria-hidden="true"
-                  className="inline-block h-1.5 w-1.5 rounded-full bg-[#f1c21b]"
+                  className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500"
                 />
                 {propertiesInOnboarding.toLocaleString()}{" "}
                 {propertiesInOnboarding === 1 ? "property" : "properties"} in
                 onboarding
-                <ArrowRight className="h-3 w-3" aria-hidden="true" />
+                <span aria-hidden="true">→</span>
               </Link>
             ) : null}
           </DashboardSection>
@@ -1362,24 +1419,6 @@ export default async function PortalHome({
               <LeadSourceDonut slices={leadSourceSlices} />
             </DashboardSection>
           </section>
-        ) : null}
-
-        {/* Featured-property band — demoted below the funnel row per the
-          Carbon rebuild: identity chrome → setup → numbers → tables come
-          first; the building photo is context, not the headline. Renders
-          only when the operator has a LIVE featured property. */}
-        {featuredProperty ? (
-          <PropertyHeroBanner
-            propertyId={featuredProperty.id}
-            propertyName={featuredProperty.name}
-            subtitle={featuredSubtitle}
-            heroImageUrl={featuredProperty.heroImageUrl}
-            stats={featuredStats}
-            imageOffsetX={featuredProperty.heroImageOffsetX}
-            imageOffsetY={featuredProperty.heroImageOffsetY}
-            imageScale={featuredProperty.heroImageScale}
-            compact
-          />
         ) : null}
 
         {/* Activity feed — single full-width section. Previously this
@@ -1430,52 +1469,68 @@ export default async function PortalHome({
           totalSources={connectStatus.total}
         />
 
-        {/* AppFolio status — Carbon rebuild: the three hand-rolled branches
-              (amber wash / emerald dot / blue-wash CTA card) collapse into
-              one flat VerificationRow strip. The connect action is a ghost
-              link, never a filled CTA — the onboarding stepper owns the
-              single primary connect surface. */}
-        <section className="rounded-[2px] border border-[#e0e0e0] bg-white p-3">
-          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-            <VerificationRow
-              status={
-                appfolioAutoSyncPaused
-                  ? "stale"
-                  : appfolioConnected
-                    ? "live"
-                    : "not_connected"
-              }
-              accountLabel={
-                appfolioConnected && appfolioRow?.instanceSubdomain && !appfolioAutoSyncPaused
-                  ? `AppFolio · ${appfolioRow.instanceSubdomain}`
-                  : "AppFolio"
-              }
-            />
-            {appfolioAutoSyncPaused ? (
+        {/* AppFolio status row — Norman feedback evolution:
+              #97 said the previous "Coming soon · Operations module"
+              teaser leaned too far into rent-roll content. #104 said
+              the AppFolio connect CTA itself is worth keeping but
+              needs to be dynamic — show a confirmed/connected state
+              when the integration is already wired up. This row does
+              exactly that: a one-line status chip with three branches
+              (connected + sync paused → amber action; connected +
+              healthy → muted confirmation; not connected → blue
+              "Connect AppFolio" CTA). No rent-roll copy anywhere. */}
+        {appfolioAutoSyncPaused ? (
+          <section className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+            <Link
+              href="/portal/settings/integrations#appfolio"
+              className="inline-flex items-center gap-1.5 text-[12px] font-medium text-amber-900 hover:underline"
+            >
+              <span
+                aria-hidden="true"
+                className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500"
+              />
+              AppFolio auto-sync paused — enable to keep listings + leads fresh
+              <span aria-hidden="true">→</span>
+            </Link>
+          </section>
+        ) : appfolioConnected ? (
+          <section className="rounded-xl border border-border bg-card p-3">
+            <p className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground">
+              <span
+                aria-hidden="true"
+                className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500"
+              />
+              AppFolio connected
+              {appfolioRow?.instanceSubdomain ? (
+                <span className="text-foreground/70">
+                  · {appfolioRow.instanceSubdomain}
+                </span>
+              ) : null}
               <Link
                 href="/portal/settings/integrations#appfolio"
-                className="text-[12px] font-medium text-[#0f62fe] hover:underline"
-              >
-                Enable auto-sync
-              </Link>
-            ) : appfolioConnected ? (
-              <Link
-                href="/portal/settings/integrations#appfolio"
-                className="text-[12px] font-medium text-[#0f62fe] hover:underline"
+                className="ml-2 text-[11px] underline underline-offset-2 hover:text-foreground"
               >
                 Manage
               </Link>
-            ) : (
+            </p>
+          </section>
+        ) : (
+          <section className="rounded-xl border border-primary/20 bg-primary/[0.03] p-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <p className="text-[12.5px] text-foreground">
+                <span className="font-semibold">Connect AppFolio</span> to sync
+                your portfolio + listings automatically.
+              </p>
               <Link
                 href="/portal/connect"
-                className="inline-flex items-center gap-1 text-[12px] font-medium text-[#0f62fe] hover:underline"
+                className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-[12px] font-semibold hover:bg-primary-dark transition-colors"
               >
-                Connect
-                <ArrowRight className="h-3 w-3" aria-hidden="true" />
+                Connect AppFolio
+                <span aria-hidden="true">→</span>
               </Link>
-            )}
-          </div>
-        </section>
+            </div>
+          </section>
+        )}
       </div>
     );
   } catch (err) {
@@ -1483,14 +1538,14 @@ export default async function PortalHome({
     return (
       <div className="space-y-4">
         <PageHeader title="Dashboard" />
-        <div className="rounded-[2px] border border-[#e0e0e0] bg-[#f4f4f4] px-4 py-3 text-sm text-foreground">
+        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
           Dashboard data could not be loaded. This is usually temporary — try
           refreshing. If the issue persists, check{" "}
           <a
-            href="/portal/connect"
+            href="/portal/settings/integrations"
             className="underline font-medium text-primary"
           >
-            the Connect hub
+            Settings → Integrations
           </a>
           .
         </div>
@@ -1499,15 +1554,53 @@ export default async function PortalHome({
   }
 }
 
-// Build a /portal URL that preserves the range + compare params. Page-level
-// filters (property selector) live in their own search params and are
-// handled by PropertyMultiSelect itself — keep this helper narrow.
-// (Moved from dashboard-greeting.tsx's private hrefWith when the range
-// pills relocated into the PageHeader actions slot.)
-function dashboardHref(range: DashboardRange, compare: boolean): string {
-  const params = new URLSearchParams();
-  if (range !== "28d") params.set("range", range);
-  if (compare) params.set("compare", "1");
-  const qs = params.toString();
-  return `/portal${qs ? `?${qs}` : ""}`;
+// One-click feature shortcut. Compact tile with icon + label + secondary
+// metric. Optional badge (e.g. unreviewed count, critical insight count).
+function QuickAccessTile({
+  href,
+  label,
+  icon,
+  meta,
+  badge,
+  badgeTone,
+}: {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  meta?: string;
+  badge?: number | null;
+  badgeTone?: "rose";
+}) {
+  // Badge tone is intentionally a single brand-blue treatment now —
+  // the old "rose" amber variant fragmented the dashboard with a
+  // second status colour.
+  const badgeClass = "bg-primary/10 text-primary";
+  void badgeTone;
+  return (
+    <Link
+      href={href}
+      className="group relative flex items-center gap-2.5 rounded-xl border border-border bg-card hover:bg-muted/40 hover:border-primary/40 hover:shadow-[0_2px_8px_rgba(15,23,42,0.05)] transition-all px-3 py-2.5 min-w-0"
+    >
+      <span className="shrink-0 inline-flex items-center justify-center h-7 w-7 rounded-md bg-muted text-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-xs font-semibold text-foreground truncate">
+          {label}
+        </span>
+        {meta ? (
+          <span className="block text-[10px] text-muted-foreground truncate">
+            {meta}
+          </span>
+        ) : null}
+      </span>
+      {badge != null && badge > 0 ? (
+        <span
+          className={`shrink-0 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full px-1 text-[10px] font-semibold tabular-nums ${badgeClass}`}
+        >
+          {badge}
+        </span>
+      ) : null}
+    </Link>
+  );
 }

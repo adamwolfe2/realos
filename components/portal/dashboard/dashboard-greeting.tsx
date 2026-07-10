@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { GreetingAnimated } from "./greeting-animated";
-import { RANGES, type DashboardRange } from "@/lib/dashboard/range";
 
 // ---------------------------------------------------------------------------
 // DashboardGreeting — the personalized header that opens /portal home.
@@ -18,9 +17,26 @@ import { RANGES, type DashboardRange } from "@/lib/dashboard/range";
 // dashboard never depends on this string for behavior.
 // ---------------------------------------------------------------------------
 
-// RANGES / parseRange / rangeDays moved to lib/dashboard/range.ts
-// (Carbon rebuild 2026-07-09) — import from there. This component is no
-// longer rendered on the dashboard; file retained for the dead-code sweep.
+export type DashboardRange = "7d" | "28d" | "90d";
+
+export const RANGES: Array<{
+  key: DashboardRange;
+  label: string;
+  days: number;
+}> = [
+  { key: "7d", label: "7d", days: 7 },
+  { key: "28d", label: "28d", days: 28 },
+  { key: "90d", label: "90d", days: 90 },
+];
+
+export function parseRange(value: string | undefined): DashboardRange {
+  if (value === "7d" || value === "90d") return value;
+  return "28d";
+}
+
+export function rangeDays(range: DashboardRange): number {
+  return RANGES.find((r) => r.key === range)?.days ?? 28;
+}
 
 // Norman bug #109: the previous timeOfDayGreeting used now.getHours()
 // which reads the SERVER's local time. Vercel functions run in UTC so

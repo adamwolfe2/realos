@@ -95,9 +95,9 @@ export function SourceBars({
                 ) : null}
               </span>
             </div>
-            <div className="h-1.5 rounded-none bg-muted overflow-hidden">
+            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
               <div
-                className="h-full rounded-none bg-primary transition-[width] duration-300"
+                className="h-full rounded-full bg-primary transition-[width] duration-300"
                 style={{ width: `${Math.max(2, Math.min(100, pct))}%` }}
               />
             </div>
@@ -109,7 +109,7 @@ export function SourceBars({
             {row.href ? (
               <a
                 href={row.href}
-                className="block rounded-none -mx-1 px-1 py-0.5 hover:bg-[#f4f4f4] transition-colors"
+                className="block rounded-md -mx-1 px-1 py-0.5 hover:bg-muted/40 transition-colors"
               >
                 {Content}
               </a>

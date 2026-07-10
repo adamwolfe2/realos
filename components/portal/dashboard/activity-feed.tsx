@@ -163,7 +163,7 @@ export function ActivityFeed({ items }: { items: ActivityItem[] }) {
             {item.href ? (
               <Link
                 href={item.href}
-                className="block rounded-none -mx-1 px-1 hover:bg-[#f4f4f4] transition-colors"
+                className="block rounded-md -mx-1 px-1 hover:bg-muted/40 transition-colors"
               >
                 {Inner}
               </Link>

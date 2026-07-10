@@ -12,21 +12,26 @@
 //      premium? Ideally we could upload an image of the building and
 //      have some nice BG remover workflow to make it 3D and POP."
 //
-// Visual model (Carbon-forward 2026-07-09): flat white surface, hard
-// #e0e0e0 border, 2px radius. The building image sits on the card with
-// no gradient washes, grid textures, ground shadows, or drop-shadow
-// stacks — border-first elevation per the Carbon rubric. The compact
-// (dashboard) variant renders the image as a contained object-cover
-// block instead of the old floating spill-out treatment.
+// Visual model:
 //
 //   ┌───────────────────────────────────────────────────────────────┐
+//   │ ░░░░░░░░░ brand-blue radial wash + soft grid ░░░░░░░░░░░░    │
+//   │                                                                │
 //   │   ╔══════════╗   TELEGRAPH COMMONS                            │
 //   │   ║ building ║   Berkeley · Student housing                    │
 //   │   ║ image    ║   ────────────────                              │
-//   │   ╚══════════╝   99   1,136   $214                            │
+//   │   ║ floats   ║   99   1,136   $214                            │
+//   │   ║ above    ║   Walk  Sessions  CPL                          │
+//   │   ╚══════════╝   ────────────────                              │
+//   │                                                                │
 //   └───────────────────────────────────────────────────────────────┘
 //
-// "BG-remover workflow" — Phase 1 ships the upload + framing
+// The image sits inside a rounded card with:
+//   • drop-shadow(0 30px 40px) for the lift
+//   • subtle bottom radial-gradient shadow on the *parent* for grounding
+//   • mix-blend so even a square photo reads as "floating"
+//
+// "BG-remover workflow" — Phase 1 ships the upload + premium framing
 // (this component). Phase 2 will pipe uploads through remove.bg / a
 // Replicate model when the operator opts in, replacing the source URL
 // with the cutout. The UI surface (the upload affordance + this banner)
@@ -128,7 +133,7 @@ export function PropertyHeroBanner({
     containerH: number;
   } | null>(null);
 
-  const accentRgb = hexToRgb(accent ?? "#0f62fe");
+  const accentRgb = hexToRgb(accent ?? "#2563EB");
 
   async function handleFile(file: File) {
     setError(null);
@@ -309,18 +314,53 @@ export function PropertyHeroBanner({
   // both. The building silhouette IS the shape now. Bigger size +
   // generous negative margins so it visibly breaks out of all four
   // sides of its column.
-  // Compact (dashboard) variant: contained image block — no negative-margin
-  // spill, no float-out. Detail view keeps the larger silhouette treatment.
-  const imageSize = compact ? "h-[140px]" : "h-[320px] sm:h-[380px]";
-  const imageLift = compact ? "" : "-mt-16 sm:-mt-20 -mx-3 sm:-mx-5";
+  const imageSize = compact ? "h-[200px]" : "h-[320px] sm:h-[380px]";
+  const imageLift = compact ? "-mt-10 -mx-2" : "-mt-16 sm:-mt-20 -mx-3 sm:-mx-5";
 
   return (
     <section
       aria-label={`${propertyName} hero`}
       onDragOver={editable ? (e) => e.preventDefault() : undefined}
       onDrop={editable ? onDrop : undefined}
-      className={`relative rounded-[2px] border border-[#e0e0e0] bg-white ${padding}`}
+      className={`relative rounded-2xl border border-border ${padding}`}
+      style={{
+        // Layered brand-blue radial wash + soft grid texture, blended over
+        // pure white so the building image reads as the focal point.
+        background: `
+          radial-gradient(ellipse 80% 90% at 18% 10%, rgba(${accentRgb}, 0.18), transparent 65%),
+          radial-gradient(ellipse 70% 80% at 95% 100%, rgba(${accentRgb}, 0.10), transparent 65%),
+          linear-gradient(180deg, #F7F9FF 0%, #FFFFFF 80%)
+        `,
+      }}
     >
+      {/* Norman 2026-05-21: section no longer uses overflow-hidden so a
+          BG-removed building image can spill out the top of the card
+          and read as 3D pop instead of getting cropped at the section
+          bounds. The grid texture below keeps its own clip via the
+          rounded-2xl + overflow-hidden wrapper so it doesn't bleed out
+          of the card edges. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 pointer-events-none rounded-2xl overflow-hidden"
+        style={{
+          backgroundImage: `linear-gradient(0deg, rgba(${accentRgb}, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(${accentRgb}, 0.05) 1px, transparent 1px)`,
+          backgroundSize: "28px 28px",
+          WebkitMaskImage:
+            "radial-gradient(ellipse 110% 95% at 30% 50%, #000 70%, transparent 100%)",
+          maskImage:
+            "radial-gradient(ellipse 110% 95% at 30% 50%, #000 70%, transparent 100%)",
+        }}
+      />
+
+      {/* Norman 2026-05-21 fifth pass: dropped the perspective tilt and
+          the rounded-xl on the image. The whole point of a BG-removed
+          PNG is that the building silhouette IS the shape — wrapping
+          it in a tilted card with rounded corners undoes that. The
+          image now sits flat on the card surface (no tilt), no
+          rounded corners (silhouette is the outline), spilling beyond
+          all four edges of its grid column via large negative
+          margins, with a single strong drop-shadow stack for the
+          floating feel and a soft ground shadow to anchor it. */}
       <div className={`relative grid items-end gap-5 ${gridCols}`}>
         <div className="relative group" style={{ overflow: "visible" }}>
           {currentImage ? (
@@ -331,23 +371,27 @@ export function PropertyHeroBanner({
                 // Faint dashed outline appears only in reposition mode so
                 // the operator can see the editable canvas bounds.
                 outline: repositioning
-                  ? "1px dashed rgba(15,98,254,0.45)"
+                  ? "1px dashed rgba(37,99,235,0.45)"
                   : "none",
                 outlineOffset: 4,
-                borderRadius: 2,
+                borderRadius: 12,
               }}
             >
-              {/* Compact clips the (transformable) image to a contained
-                  block; the reposition/upload controls render outside the
-                  clip so the machinery stays fully usable. Detail view
-                  keeps overflow visible for the silhouette treatment. */}
+              {/* Ground shadow — soft radial smudge beneath the building. */}
               <div
-                className={
-                  compact ? "overflow-hidden rounded-[2px]" : undefined
-                }
-              >
+                aria-hidden="true"
+                className="absolute left-1/2 bottom-[-18px] w-[90%] h-8"
+                style={{
+                  transform: "translateX(-50%)",
+                  background:
+                    "radial-gradient(ellipse 60% 50% at 50% 50%, rgba(15, 23, 42, 0.40), transparent 72%)",
+                  filter: "blur(14px)",
+                }}
+              />
               {/* Image wrapper — handles pointer drag + wheel zoom in
-                  reposition mode. */}
+                  reposition mode. The transform is applied here so the
+                  drop-shadow filter on the <img> animates with it
+                  (drop-shadow respects the transform via the GPU). */}
               <div
                 className={`relative w-full ${imageSize}`}
                 onPointerDown={onImagePointerDown}
@@ -374,14 +418,15 @@ export function PropertyHeroBanner({
                 <img
                   src={currentImage}
                   alt={`${propertyName} exterior`}
-                  className={`relative w-full h-full ${
-                    compact ? "object-cover" : "object-contain"
-                  }`}
+                  className="relative w-full h-full object-contain"
                   draggable={false}
-                  style={{ pointerEvents: "none" }}
+                  style={{
+                    filter:
+                      "drop-shadow(0 30px 40px rgba(15, 23, 42, 0.28)) drop-shadow(0 10px 18px rgba(15, 23, 42, 0.18)) drop-shadow(0 2px 4px rgba(15, 23, 42, 0.10))",
+                    pointerEvents: "none",
+                  }}
                   loading="lazy"
                 />
-              </div>
               </div>
 
               {editable && !repositioning ? (
@@ -524,7 +569,7 @@ export function PropertyHeroBanner({
         <div className="min-w-0">
           <p
             className="text-[10px] font-mono font-semibold tracking-[0.16em] uppercase mb-1.5"
-            style={{ color: accent ?? "#0f62fe" }}
+            style={{ color: accent ?? "#2563EB" }}
           >
             Featured property
           </p>
@@ -552,10 +597,12 @@ export function PropertyHeroBanner({
                     <p
                       className={`font-display font-semibold tabular-nums text-foreground leading-none break-words ${
                         compact
-                          ? // Compact caps at text-xl (Carbon density; also
-                            // fixes the Norman May 22 mobile overlap bug —
-                            // ~95px columns at 390px viewport).
-                            "text-xl"
+                          ? // Norman May 22 mobile bug — at 390px viewport a
+                            // 3-stat compact grid only has ~95px per column;
+                            // a "42/114" at 30px overflowed. Scale starts at
+                            // text-xl on mobile so the values always fit
+                            // inside their column without overlap.
+                            "text-xl sm:text-3xl md:text-4xl"
                           : "text-3xl sm:text-4xl md:text-5xl"
                       }`}
                       style={{ letterSpacing: "-0.02em" }}
@@ -574,7 +621,7 @@ export function PropertyHeroBanner({
                       <p
                         className={`text-[10px] font-medium mt-0.5 ${
                           s.tone === "positive"
-                            ? "text-[#24a148]"
+                            ? "text-emerald-700"
                             : s.tone === "negative"
                               ? "text-destructive"
                               : "text-muted-foreground"
@@ -625,7 +672,7 @@ export function PropertyHeroBanner({
 
 function hexToRgb(hex: string): string {
   const cleaned = hex.replace("#", "");
-  if (cleaned.length !== 3 && cleaned.length !== 6) return "15, 98, 254";
+  if (cleaned.length !== 3 && cleaned.length !== 6) return "37, 99, 235";
   const full =
     cleaned.length === 3
       ? cleaned
@@ -636,6 +683,6 @@ function hexToRgb(hex: string): string {
   const r = parseInt(full.slice(0, 2), 16);
   const g = parseInt(full.slice(2, 4), 16);
   const b = parseInt(full.slice(4, 6), 16);
-  if ([r, g, b].some((n) => Number.isNaN(n))) return "15, 98, 254";
+  if ([r, g, b].some((n) => Number.isNaN(n))) return "37, 99, 235";
   return `${r}, ${g}, ${b}`;
 }

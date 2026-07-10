@@ -51,13 +51,13 @@ export function TopPropertiesLeaderboard({
   const peak = Math.max(...rows.map((r) => r.leadsCurrent), 1);
 
   return (
-    <ol className="divide-y divide-[#e0e0e0]">
+    <ol className="space-y-2.5">
       {rows.map((row, idx) => {
         const pct = Math.max(2, (row.leadsCurrent / peak) * 100);
         const delta = row.leadsCurrent - row.leadsPrior;
         const trendClass =
           delta > 0
-            ? "text-[#24a148]"
+            ? "text-emerald-700"
             : delta < 0
               ? "text-destructive"
               : "text-muted-foreground";
@@ -68,7 +68,7 @@ export function TopPropertiesLeaderboard({
           <li key={row.id}>
             <Link
               href={`/portal/properties/${row.id}`}
-              className="group grid grid-cols-[28px_minmax(0,1.4fr)_minmax(0,2fr)_72px] items-center gap-3 px-1.5 py-2 -mx-1.5 hover:bg-[#f4f4f4] transition-colors"
+              className="group grid grid-cols-[28px_minmax(0,1.4fr)_minmax(0,2fr)_72px] items-center gap-3 rounded-lg px-1.5 py-1.5 -mx-1.5 hover:bg-muted/40 transition-colors"
             >
               {/* Rank chip — the small "01 / 02 / 03" numeral the
                   URBN realtor leaderboard uses to anchor the row. */}
@@ -97,15 +97,15 @@ export function TopPropertiesLeaderboard({
                 </span>
               </span>
 
-              {/* Progress bar. Flat Carbon meter: Blue 10 track, brand
-                  primary fill, hard edges. Width is the relative share
-                  of the leader. */}
+              {/* Progress bar. Track in blue-50 so the active fill
+                  pops against the neutral surface; fill at brand
+                  primary. Width is the relative share of the leader. */}
               <span
                 aria-hidden="true"
-                className="h-1 rounded-none bg-[#edf5ff] relative overflow-hidden"
+                className="h-1.5 rounded-full bg-[#EFF6FF] relative overflow-hidden"
               >
                 <span
-                  className="absolute inset-y-0 left-0 rounded-none bg-primary"
+                  className="absolute inset-y-0 left-0 rounded-full bg-primary"
                   style={{ width: `${pct}%` }}
                 />
               </span>

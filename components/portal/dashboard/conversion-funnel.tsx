@@ -48,8 +48,8 @@ const TOP_MIN_H = FUNNEL_H * 0.28; // shortest slice — rightmost
 
 // Brand-blue gradient stops. Stage 0 is lightest, last stage darkest.
 // Interpolated linearly so any stage count produces a consistent look.
-const LIGHT = { r: 0x45, g: 0x89, b: 0xff }; // #4589ff — Carbon Blue 50
-const DEEP = { r: 0x00, g: 0x2d, b: 0x9c }; // #002d9c — Carbon Blue 80
+const LIGHT = { r: 0x60, g: 0xa5, b: 0xfa }; // #60A5FA — primary/300
+const DEEP = { r: 0x1e, g: 0x40, b: 0xaf }; // #1E40AF — primary/800
 
 function fillFor(i: number, total: number): string {
   if (total <= 1) return `rgb(${DEEP.r}, ${DEEP.g}, ${DEEP.b})`;
@@ -99,7 +99,7 @@ export function ConversionFunnel({ stages }: { stages: FunnelStage[] }) {
           y1={yTopAt(0)}
           x2={VIEW_W}
           y2={yTopAt(n)}
-          stroke="rgba(22, 22, 22, 0.04)"
+          stroke="rgba(15, 23, 42, 0.04)"
           strokeWidth={1}
         />
         <line
@@ -107,7 +107,7 @@ export function ConversionFunnel({ stages }: { stages: FunnelStage[] }) {
           y1={yBotAt(0)}
           x2={VIEW_W}
           y2={yBotAt(n)}
-          stroke="rgba(22, 22, 22, 0.04)"
+          stroke="rgba(15, 23, 42, 0.04)"
           strokeWidth={1}
         />
 
@@ -178,7 +178,7 @@ export function ConversionFunnel({ stages }: { stages: FunnelStage[] }) {
                 textAnchor="middle"
                 fontSize={20}
                 fontWeight={600}
-                fill="#161616"
+                fill="#0F172A"
                 style={{ letterSpacing: "-0.005em" }}
               >
                 {s.label}
@@ -189,7 +189,7 @@ export function ConversionFunnel({ stages }: { stages: FunnelStage[] }) {
                   y={FUNNEL_H + 52}
                   textAnchor="middle"
                   fontSize={16}
-                  fill="#525252"
+                  fill="#64748B"
                   style={{ fontVariantNumeric: "tabular-nums" }}
                 >
                   {conversion}% conv.
@@ -200,7 +200,7 @@ export function ConversionFunnel({ stages }: { stages: FunnelStage[] }) {
                   y={FUNNEL_H + 52}
                   textAnchor="middle"
                   fontSize={16}
-                  fill="#8d8d8d"
+                  fill="#94A3B8"
                 >
                   not connected
                 </text>
@@ -210,7 +210,7 @@ export function ConversionFunnel({ stages }: { stages: FunnelStage[] }) {
                   y={FUNNEL_H + 52}
                   textAnchor="middle"
                   fontSize={16}
-                  fill="#525252"
+                  fill="#64748B"
                   style={{ fontVariantNumeric: "tabular-nums" }}
                 >
                   top of funnel

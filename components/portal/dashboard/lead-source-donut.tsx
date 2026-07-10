@@ -32,12 +32,12 @@ export type LeadSourceSlice = {
 // ramp used in the product-tour demo so the live portal and the marketing
 // dashboard look like the same product.
 const PALETTE = [
-  "#002d9c", // Carbon Blue 80
-  "#0f62fe", // Carbon Blue 60 (brand)
-  "#4589ff", // Carbon Blue 50
-  "#78a9ff", // Carbon Blue 40
-  "#a6c8ff", // Carbon Blue 30
-  "#c6dcff", // Carbon Blue 20
+  "#1E40AF", // blue-800
+  "#2563EB", // blue-600 (brand)
+  "#3B82F6", // blue-500
+  "#60A5FA", // blue-400
+  "#93C5FD", // blue-300
+  "#BFDBFE", // blue-200
 ];
 
 export function LeadSourceDonut({ slices }: { slices: LeadSourceSlice[] }) {
@@ -96,7 +96,7 @@ export function LeadSourceDonut({ slices }: { slices: LeadSourceSlice[] }) {
             >
               <span
                 aria-hidden="true"
-                className="h-2.5 w-2.5 rounded-[1px]"
+                className="h-2.5 w-2.5 rounded-sm"
                 style={{ backgroundColor: d.color }}
               />
               <span className="text-foreground truncate">{d.name}</span>

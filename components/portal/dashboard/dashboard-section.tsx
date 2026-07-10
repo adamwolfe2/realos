@@ -27,9 +27,10 @@ export function DashboardSection({
   return (
     <section
       className={cn(
-        // Carbon-forward card chrome via the ls-card token: flat hard-ruled
-        // surface, border-first elevation. Padding stays owned by
-        // header/content below.
+        // Premium card chrome via the ls-card token: hairline border, 14px
+        // radius, soft shadow + inner top-edge highlight and a refined hover
+        // lift so every dashboard panel reads as a floating surface instead
+        // of a flat bordered box. Padding stays owned by header/content below.
         "ls-card flex flex-col",
         className,
       )}
@@ -37,7 +38,7 @@ export function DashboardSection({
       <header className="flex items-start justify-between gap-3 px-5 pt-4">
         <div className="min-w-0">
           {eyebrow ? (
-            <div className="text-[11px] tracking-[0.12em] uppercase font-semibold text-[#525252] mb-0.5">
+            <div className="text-[11px] tracking-[0.12em] uppercase font-semibold text-muted-foreground mb-0.5">
               {eyebrow}
             </div>
           ) : null}
