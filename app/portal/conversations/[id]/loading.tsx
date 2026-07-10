@@ -16,11 +16,11 @@ export default function ConversationDetailLoading() {
               <div className="h-7 w-7 rounded-full bg-muted shrink-0" />
               <div
                 className={`rounded-xl p-3 space-y-1.5 max-w-xs ${
-                  i % 2 === 0 ? "bg-muted" : "bg-muted/40"
+                  i % 2 === 0 ? "bg-muted" : "bg-secondary"
                 }`}
               >
                 <div className="h-3 w-40 bg-muted/60 rounded" />
-                <div className="h-3 w-28 bg-muted/40 rounded" />
+                <div className="h-3 w-28 bg-secondary rounded" />
               </div>
             </div>
           ))}

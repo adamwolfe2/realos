@@ -238,7 +238,7 @@ export function ChatbotConfigForm({
                 className={`flex items-start gap-3 rounded-md border px-3 py-2.5 text-sm cursor-pointer transition-colors ${
                   active
                     ? "border-primary bg-primary/5"
-                    : "border-border hover:bg-muted/40"
+                    : "border-border hover:bg-secondary"
                 }`}
               >
                 <input

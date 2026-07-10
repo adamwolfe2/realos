@@ -153,6 +153,14 @@ export default async function InsightsPage({
   const aeoSeries = series14.map((s) => s.aeo?.score ?? 0);
   const repSeries = series14.map((s) => s.reputation?.score ?? 0);
 
+  // Chatbot + leads sparklines use their OWN snapshot sections — never a
+  // proxy series. Days where the section didn't compute are dropped rather
+  // than zero-filled (a zero-fill would draw a fake dip). Fewer than two
+  // real points → empty series → SignalCard renders its honest
+  // "No history yet" placeholder instead of a line.
+  const chatbotSeries = realSeries(series14.map((s) => s.chatbot?.conversations));
+  const leadsSeries = realSeries(series14.map((s) => s.leads?.newLeads));
+
   // Movers come from precomputed seo.topMovers; fall back to empty so the
   // component renders its "no notable moves" state rather than the "connect
   // your data" empty state.
@@ -258,7 +266,7 @@ export default async function InsightsPage({
             value={`${latest.chatbot?.conversations ?? 0}`}
             caption="conversations · 24h"
             deltaPct={numOrNull(wow.chatbotConversations)}
-            series={series14.map((_, i) => seoSeries[i] != null ? (overallSeries[i] || 0) : 0)}
+            series={chatbotSeries}
             href="/portal/chatbot"
           />
           <SignalCard
@@ -266,7 +274,7 @@ export default async function InsightsPage({
             value={`${latest.leads?.newLeads ?? 0}`}
             caption="last 24h"
             deltaPct={numOrNull(wow.newLeads)}
-            series={overallSeries}
+            series={leadsSeries}
             href="/portal/leads"
           />
         </section>
@@ -330,4 +338,14 @@ function FirstScanEmpty() {
 function numOrNull(v: number | undefined | null): number | null {
   if (v == null || Number.isNaN(v)) return null;
   return v;
+}
+
+/**
+ * Keep only the days a signal section actually computed. Returns [] when
+ * fewer than two real points exist — the honest "no history yet" case —
+ * so no sparkline is ever drawn from synthesized or proxy data.
+ */
+function realSeries(values: Array<number | undefined>): number[] {
+  const present = values.filter((v): v is number => v != null);
+  return present.length >= 2 ? present : [];
 }

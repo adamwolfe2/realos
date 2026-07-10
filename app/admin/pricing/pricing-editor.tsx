@@ -121,7 +121,7 @@ export function PricingEditor({ rows }: { rows: FeaturePriceRow[] }) {
             type="button"
             onClick={onSync}
             disabled={pending || syncing}
-            className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/40 disabled:opacity-50"
+            className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-secondary disabled:opacity-50"
             title="Create/update the per-feature prices in Stripe from the amounts above"
           >
             {syncing ? "Syncing…" : "Sync to Stripe"}

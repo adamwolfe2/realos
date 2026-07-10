@@ -269,7 +269,7 @@ export function AppFolioStatusBanner({
         action={<RunAppFolioSyncButton label="Sync now" subtle />}
       />
       {hasWarnings ? (
-        <details className="rounded-xl border border-border bg-muted/40 px-4 py-2.5 text-xs text-amber-900">
+        <details className="rounded-xl border border-border bg-secondary px-4 py-2.5 text-xs text-amber-900">
           <summary className="cursor-pointer font-semibold">
             {warnings.length} sync warning{warnings.length === 1 ? "" : "s"}
             {" · "}

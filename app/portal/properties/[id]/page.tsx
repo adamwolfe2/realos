@@ -505,7 +505,7 @@ function MarketIntelligenceSkeleton() {
       <div className="rounded-xl border border-[var(--hair)] p-5 space-y-3">
         <div className="h-2.5 w-28 bg-muted/60 rounded" />
         <div className="h-10 w-44 bg-muted rounded" />
-        <div className="h-3 w-56 bg-muted/40 rounded" />
+        <div className="h-3 w-56 bg-secondary rounded" />
       </div>
     </div>
   );
@@ -527,7 +527,7 @@ function PropertyTabsSkeleton() {
           >
             <div className="h-3 w-20 bg-muted/60 rounded" />
             <div className="h-7 w-16 bg-muted rounded" />
-            <div className="h-3 w-24 bg-muted/40 rounded" />
+            <div className="h-3 w-24 bg-secondary rounded" />
           </div>
         ))}
       </div>

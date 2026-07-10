@@ -65,7 +65,7 @@ export function LaunchReadiness({ items }: Props) {
                 item.status === "ok"
                   ? "border-border bg-card"
                   : item.status === "warn"
-                    ? "border-border bg-muted/40"
+                    ? "border-border bg-secondary"
                     : "border-destructive/30 bg-destructive/5",
               ].join(" ")}
             >
@@ -111,7 +111,7 @@ function StatusGlyph({ status }: { status: ReadinessItem["status"] }) {
   }
   if (status === "warn") {
     return (
-      <span aria-label="Warning" className="mt-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-muted/40 text-white">
+      <span aria-label="Warning" className="mt-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-secondary text-white">
         <CircleAlert className="h-2.5 w-2.5" />
       </span>
     );

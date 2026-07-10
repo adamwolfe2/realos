@@ -105,7 +105,7 @@ export default async function CreativeQueue() {
                   <Link
                     key={r.id}
                     href={`/admin/creative-requests/${r.id}`}
-                    className="block rounded-lg border border-border bg-card p-3 hover:bg-muted/40 transition-colors"
+                    className="block rounded-lg border border-border bg-card p-3 hover:bg-secondary transition-colors"
                   >
                     <div className="font-medium text-sm text-foreground truncate">
                       {r.title}

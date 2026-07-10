@@ -12,7 +12,7 @@ export default function SystemLoading() {
               <div className="h-4 w-24 bg-muted rounded" />
               <div className="h-5 w-16 bg-muted/60 rounded" />
             </div>
-            <div className="h-3 w-40 bg-muted/40 rounded" />
+            <div className="h-3 w-40 bg-secondary rounded" />
           </div>
         ))}
       </div>

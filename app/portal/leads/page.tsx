@@ -488,7 +488,7 @@ export default async function LeadsKanbanPage({
           <div className="flex items-center gap-3 flex-wrap">
             <Suspense
               fallback={
-                <div className="h-9 w-48 rounded-md border border-border bg-muted/40" />
+                <div className="h-9 w-48 rounded-md border border-border bg-secondary" />
               }
             >
               <PropertyMultiSelect
@@ -676,7 +676,7 @@ export default async function LeadsKanbanPage({
           {sp.source || sp.property || sp.properties || sp.q ? (
             <Link
               href="/portal/leads"
-              className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+              className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
             >
               Clear
             </Link>
@@ -880,7 +880,7 @@ function SourcePill({
         "inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors",
         active
           ? "bg-primary text-primary-foreground"
-          : "bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-muted/40",
+          : "bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-secondary",
       )}
     >
       {label}

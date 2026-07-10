@@ -357,7 +357,7 @@ export function IntakeForm({
                   ? "bg-primary text-primary-foreground border-primary"
                   : i <= sectionIndex
                     ? "bg-muted text-foreground border-border"
-                    : "bg-card text-muted-foreground border-border hover:bg-muted/40",
+                    : "bg-card text-muted-foreground border-border hover:bg-secondary",
               )}
             >
               {SECTION_LABELS[id]}
@@ -591,7 +591,7 @@ function IdentitySection({
                 "px-3 py-2 rounded-md border text-sm text-left transition-colors",
                 form.identityType === id
                   ? "border-primary bg-primary/5 text-foreground"
-                  : "border-border bg-background hover:bg-muted/40",
+                  : "border-border bg-background hover:bg-secondary",
               )}
             >
               {humanizeIdentity(id)}
@@ -611,7 +611,7 @@ function IdentitySection({
                 "px-3 py-3 rounded-md border text-sm text-left transition-colors",
                 form.tier === t
                   ? "border-primary bg-primary/5 text-foreground"
-                  : "border-border bg-background hover:bg-muted/40",
+                  : "border-border bg-background hover:bg-secondary",
               )}
             >
               <div className="font-semibold">{tierLabel(t)}</div>
@@ -1066,7 +1066,7 @@ function TimelineSection({ form, update }: SectionProps) {
                 "px-3 py-2 rounded-md border text-sm capitalize transition-colors",
                 form.timelineExpectation === t
                   ? "border-primary bg-primary/5"
-                  : "border-border bg-background hover:bg-muted/40",
+                  : "border-border bg-background hover:bg-secondary",
               )}
             >
               {humanizeTimeline(t)}
@@ -1146,7 +1146,7 @@ function SelectChips<T extends string>({
               "px-2.5 py-1 rounded-md text-xs font-medium border transition-colors capitalize",
               active
                 ? "border-primary bg-primary/10 text-foreground"
-                : "border-border bg-card text-muted-foreground hover:bg-muted/40",
+                : "border-border bg-card text-muted-foreground hover:bg-secondary",
             )}
           >
             {humanize ? humanize(opt) : opt}

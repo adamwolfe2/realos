@@ -222,7 +222,7 @@ export default async function AdminHome() {
         }
       >
         {actionItems.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border bg-muted/10 px-4 py-6 text-center">
+          <div className="rounded-lg border border-dashed border-border bg-secondary px-4 py-6 text-center">
             <p className="text-sm font-medium text-foreground">All clear.</p>
             <p className="text-xs text-muted-foreground mt-1">
               No stale intakes, failed integrations, or at-risk clients. We'll

@@ -736,7 +736,7 @@ function EmptyState({ onSample }: { onSample: () => void }) {
       <button
         type="button"
         onClick={onSample}
-        className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-[11.5px] font-medium hover:bg-muted/40"
+        className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-[11.5px] font-medium hover:bg-secondary"
       >
         <Sparkles className="h-3 w-3" />
         Try: {SAMPLE_ADDRESS}
@@ -785,7 +785,7 @@ function RecentList({ recent, onArchive }: { recent: RecentRow[]; onArchive: (id
                 type="button"
                 onClick={() => onArchive(r.id)}
                 title="Archive"
-                className="shrink-0 inline-flex items-center justify-center h-7 w-7 rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                className="shrink-0 inline-flex items-center justify-center h-7 w-7 rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-secondary"
               >
                 <Archive className="h-3.5 w-3.5" />
               </button>

@@ -463,7 +463,7 @@ export function SiteBuilderForm({
               href={previewUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs px-3 py-1.5 border border-border rounded-md hover:bg-muted/40"
+              className="text-xs px-3 py-1.5 border border-border rounded-md hover:bg-secondary"
             >
               Preview site
             </a>
@@ -471,7 +471,7 @@ export function SiteBuilderForm({
               type="button"
               onClick={discard}
               disabled={!isDirty || pending}
-              className="text-xs px-3 py-1.5 border border-border rounded-md hover:bg-muted/40 disabled:opacity-40"
+              className="text-xs px-3 py-1.5 border border-border rounded-md hover:bg-secondary disabled:opacity-40"
             >
               Discard
             </button>

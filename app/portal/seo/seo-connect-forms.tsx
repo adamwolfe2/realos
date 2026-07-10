@@ -33,7 +33,7 @@ function CopyEmailButton({ email }: { email: string }) {
           /* ignore - clipboard unavailable */
         }
       }}
-      className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[10.5px] font-medium text-foreground hover:bg-muted/40 transition-colors"
+      className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[10.5px] font-medium text-foreground hover:bg-secondary transition-colors"
     >
       {copied ? "Copied" : "Copy email"}
     </button>

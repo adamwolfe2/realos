@@ -261,7 +261,7 @@ export function CursiveSetupWizard({
       <WebhookUrlBlock url={state.webhookUrl} />
 
       {state.verified && state.pixelId ? (
-        <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-[12px] text-emerald-700 dark:text-emerald-300">
+        <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-[12px] text-emerald-700">
           Detected Pixel ID:{" "}
           <span className="font-mono">{state.pixelId}</span>
         </div>

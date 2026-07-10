@@ -93,8 +93,9 @@ export default async function BlogPostPage({
             className="text-sm leading-relaxed mt-3"
             style={{ color: "#393939" }}
           >
-            Book a demo and bring your current marketing invoice. We'll show
-            you, line by line, how we'd rebuild it.
+            Book a demo and connect a property. We'll show you the leasing
+            signals it's already generating — AppFolio, analytics, ads, and
+            website activity in one view.
           </p>
           <Link
             href="/onboarding"

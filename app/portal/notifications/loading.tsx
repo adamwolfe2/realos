@@ -20,7 +20,7 @@ export default function NotificationsLoading() {
               <div className="h-4 w-64 bg-muted rounded" />
               <div className="h-3 w-48 bg-muted/60 rounded" />
             </div>
-            <div className="h-3 w-16 bg-muted/40 rounded shrink-0" />
+            <div className="h-3 w-16 bg-secondary rounded shrink-0" />
           </div>
         ))}
       </div>

@@ -287,7 +287,7 @@ export function PopupEditor({
                 "flex-1 rounded-lg px-2.5 py-1.5 text-[12px] font-semibold transition-colors",
                 tab === key
                   ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40",
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary",
               )}
             >
               {label}

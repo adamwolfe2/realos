@@ -10,7 +10,7 @@ export default function AdsLoading() {
           <div key={i} className="rounded-xl border border-border bg-card p-4 space-y-2">
             <div className="h-3 w-24 bg-muted/60 rounded" />
             <div className="h-8 w-20 bg-muted rounded-md" />
-            <div className="h-3 w-16 bg-muted/40 rounded" />
+            <div className="h-3 w-16 bg-secondary rounded" />
           </div>
         ))}
       </div>

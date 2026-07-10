@@ -43,7 +43,7 @@ export default function MarketplaceLoading() {
                     </div>
                   </div>
                   <div className="flex items-center justify-between gap-2 pt-1">
-                    <div className="h-3 w-20 bg-muted/40 rounded" />
+                    <div className="h-3 w-20 bg-secondary rounded" />
                     <div className="h-7 w-16 bg-primary/10 rounded-md" />
                   </div>
                 </div>

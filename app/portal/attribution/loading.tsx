@@ -14,7 +14,7 @@ export default function AttributionLoading() {
           >
             <div className="h-3 w-20 bg-muted/60 rounded" />
             <div className="h-7 w-16 bg-muted rounded" />
-            <div className="h-3 w-24 bg-muted/40 rounded" />
+            <div className="h-3 w-24 bg-secondary rounded" />
           </div>
         ))}
       </div>

@@ -75,14 +75,14 @@ const CRON_SCHEDULE: Array<{ jobName: string; schedule: string; description: str
 // ---------------------------------------------------------------------------
 function toneFor(status: HealthStatus): string {
   if (status === "ok") return "bg-primary/5 text-primary border-primary/30";
-  if (status === "degraded") return "bg-muted/40 text-foreground border-border";
-  return "bg-muted/40 text-destructive border-destructive/30";
+  if (status === "degraded") return "bg-secondary text-foreground border-border";
+  return "bg-secondary text-destructive border-destructive/30";
 }
 
 function bannerToneFor(status: HealthStatus): string {
   if (status === "ok") return "bg-primary/5 border-primary/30 text-primary";
-  if (status === "degraded") return "bg-muted/40 border-border text-foreground";
-  return "bg-muted/40 border-destructive/30 text-destructive";
+  if (status === "degraded") return "bg-secondary border-border text-foreground";
+  return "bg-secondary border-destructive/30 text-destructive";
 }
 
 function statusLabel(status: HealthStatus): string {
@@ -356,8 +356,8 @@ function CheckCard({
 
 const STATE_DOT: Record<CheckState, string> = {
   pass: "bg-primary/5",
-  warn: "bg-muted/40",
-  fail: "bg-muted/40",
+  warn: "bg-secondary",
+  fail: "bg-secondary",
   skip: "bg-muted-foreground/30",
 };
 
@@ -482,7 +482,7 @@ function CronTable({
     <div className="rounded-lg border border-border bg-card overflow-hidden">
       <div className="overflow-x-auto">
       <table className="w-full text-sm min-w-[720px]">
-        <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
+        <thead className="bg-secondary text-xs uppercase tracking-wide text-muted-foreground">
           <tr>
             <th className="px-4 py-3 text-left font-medium">Job</th>
             <th className="px-4 py-3 text-left font-medium">Schedule</th>

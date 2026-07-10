@@ -205,7 +205,7 @@ export function CitationHealthPanel({ data }: { data: CitationHealthData }) {
       ) : (
         <div className="ls-card overflow-hidden">
           <table className="w-full text-[12px]">
-            <thead className="bg-muted/40 text-muted-foreground">
+            <thead className="bg-secondary text-muted-foreground">
               <tr>
                 <th className="text-left font-medium px-4 py-2 w-[45%]">
                   Claim
@@ -259,7 +259,7 @@ function ClaimRowItem({ row }: { row: ClaimRow }) {
               {tested.map((e) => (
                 <span
                   key={e}
-                  className="inline-flex items-center px-1.5 py-0.5 text-[10px] rounded border border-border bg-muted/40"
+                  className="inline-flex items-center px-1.5 py-0.5 text-[10px] rounded border border-border bg-secondary"
                 >
                   {ENGINE_LABEL[e]}
                 </span>

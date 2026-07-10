@@ -79,7 +79,7 @@ function ListBody() {
       </div>
       {/* Table */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
-        <div className="h-10 border-b border-border bg-muted/40" />
+        <div className="h-10 border-b border-border bg-secondary" />
         {Array.from({ length: 8 }).map((_, i) => (
           <div
             key={i}

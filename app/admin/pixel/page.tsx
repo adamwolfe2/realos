@@ -144,7 +144,7 @@ export default async function PixelHealthPage() {
 function PixelStatusBadge({ status }: { status: "firing" | "stale" | "dark" | "unconfigured" }) {
   const styles: Record<string, string> = {
     firing: "bg-primary/5 text-primary border border-primary/30",
-    stale: "bg-muted/40 text-foreground border border-border",
+    stale: "bg-secondary text-foreground border border-border",
     dark: "bg-destructive/5 text-destructive border border-destructive/30",
     unconfigured: "bg-muted text-muted-foreground border border-border",
   };

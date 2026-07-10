@@ -21,7 +21,7 @@ export default function IntegrationsLoading() {
               <div className="h-4 w-28 bg-muted rounded" />
             </div>
             <div className="h-3 w-full bg-muted/50 rounded" />
-            <div className="h-3 w-3/4 bg-muted/40 rounded" />
+            <div className="h-3 w-3/4 bg-secondary rounded" />
             <div className="h-8 w-24 bg-muted/60 rounded-md" />
           </div>
         ))}

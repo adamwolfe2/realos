@@ -2046,11 +2046,6 @@ async function buildContentStats(
     DraftStatus.CHANGES_REQUESTED,
     DraftStatus.GENERATING,
   ];
-  const ALL_DRAFT_STATUSES = [
-    ...PUBLISHED_DRAFT_STATUSES,
-    ...IN_PROGRESS_DRAFT_STATUSES,
-  ];
-
   const [
     publishedDrafts,
     inProgressDrafts,
@@ -2192,12 +2187,6 @@ async function buildContentStats(
       })
       .catch(() => 0),
   ]);
-  // Suppress unused warning — the published variants are counted via
-  // the dedicated count queries above so the lifecycle ratio stays
-  // honest, but we also expose them via the draft pipeline tally
-  // below for the renderer.
-  void ALL_DRAFT_STATUSES;
-
   const totalPublished = publishedDrafts.length + publishedNeighborhoods.length;
   const totalInProgress = inProgressDrafts.length + draftNeighborhoods.length;
   const publishedInPeriod =

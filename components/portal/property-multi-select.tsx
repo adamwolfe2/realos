@@ -173,7 +173,7 @@ export function PropertyMultiSelect({
         disabled={isPending}
         aria-expanded={open}
         aria-haspopup="listbox"
-        className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-muted/40 disabled:opacity-50"
+        className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
       >
         {isPending ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
@@ -236,7 +236,7 @@ export function PropertyMultiSelect({
                     onClick={() => toggle(p.id)}
                     role="option"
                     aria-selected={checked}
-                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-muted/40"
+                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-secondary"
                   >
                     <span
                       className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border ${

@@ -206,7 +206,7 @@ export function DomainsPanel({
                       ? "bg-primary/5 text-primary"
                       : d.sslStatus === "failed"
                         ? "bg-destructive/5 text-destructive"
-                        : "bg-muted/40 text-foreground"
+                        : "bg-secondary text-foreground"
                   }`}
                 >
                   SSL {d.sslStatus ?? "pending"}
@@ -222,7 +222,7 @@ export function DomainsPanel({
                   type="button"
                   onClick={() => onVerify(d.id)}
                   disabled={pending}
-                  className="text-[11px] px-2 py-1 border border-border rounded hover:bg-muted/40 disabled:opacity-40"
+                  className="text-[11px] px-2 py-1 border border-border rounded hover:bg-secondary disabled:opacity-40"
                 >
                   Verify
                 </button>
@@ -231,7 +231,7 @@ export function DomainsPanel({
                     type="button"
                     onClick={() => onSetPrimary(d.id)}
                     disabled={pending}
-                    className="text-[11px] px-2 py-1 border border-border rounded hover:bg-muted/40 disabled:opacity-40"
+                    className="text-[11px] px-2 py-1 border border-border rounded hover:bg-secondary disabled:opacity-40"
                   >
                     Set primary
                   </button>
@@ -251,7 +251,7 @@ export function DomainsPanel({
       )}
 
       {pendingVerification ? (
-        <div className="rounded-md border border-border bg-muted/40 p-3 space-y-2">
+        <div className="rounded-md border border-border bg-secondary p-3 space-y-2">
           <div className="text-xs font-semibold text-foreground">
             Set these DNS records at the registrar for {pendingVerification.hostname}
           </div>
@@ -261,7 +261,7 @@ export function DomainsPanel({
           </p>
           <div className="rounded border border-border bg-card overflow-hidden">
             <table className="w-full text-xs">
-              <thead className="bg-muted/40 text-[10px] uppercase tracking-wide">
+              <thead className="bg-secondary text-[10px] uppercase tracking-wide">
                 <tr>
                   <th className="px-2 py-1.5 text-left">Type</th>
                   <th className="px-2 py-1.5 text-left">Host</th>

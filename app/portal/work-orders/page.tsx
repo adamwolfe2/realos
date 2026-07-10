@@ -456,7 +456,7 @@ export default async function WorkOrdersPage({
           title="Work orders"
           description="Maintenance pipeline mirrored from AppFolio. Operator fulfillment happens in AppFolio; this view keeps you ahead of property issues."
         />
-        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
+        <div className="rounded-xl border border-border bg-secondary px-4 py-3 text-sm text-foreground">
           Work order data could not be loaded.{" "}
           {err instanceof Error ? err.message : ""}
         </div>

@@ -212,9 +212,9 @@ export default async function AdminInsightsPage({
                   key={sev}
                   className={`rounded-md px-2 py-0.5 ${
                     sev === "CRITICAL"
-                      ? "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                      ? "bg-red-50 text-red-700"
                       : sev === "HIGH"
-                        ? "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                        ? "bg-amber-50 text-amber-700"
                         : sev === "MEDIUM"
                           ? "bg-muted text-muted-foreground"
                           : "bg-muted/50 text-muted-foreground"

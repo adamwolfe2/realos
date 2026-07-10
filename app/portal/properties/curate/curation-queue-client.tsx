@@ -194,7 +194,7 @@ export function CurationQueueClient({
                   type="button"
                   onClick={() => actBulk("exclude")}
                   disabled={pending}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-border bg-card hover:bg-muted/40 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-border bg-card hover:bg-secondary disabled:opacity-50"
                   title="Exclude — keep in AppFolio mirror but do not bill or surface in dashboards"
                 >
                   <X className="w-3.5 h-3.5" aria-hidden="true" />
@@ -264,11 +264,11 @@ export function CurationQueueClient({
                       {item.name}
                     </span>
                     {item.totalUnits ? (
-                      <span className="text-[11px] text-muted-foreground px-1.5 py-0.5 rounded bg-muted/40">
+                      <span className="text-[11px] text-muted-foreground px-1.5 py-0.5 rounded bg-secondary">
                         {item.totalUnits} units
                       </span>
                     ) : (
-                      <span className="text-[11px] text-muted-foreground px-1.5 py-0.5 rounded bg-muted/40">
+                      <span className="text-[11px] text-muted-foreground px-1.5 py-0.5 rounded bg-secondary">
                         no units
                       </span>
                     )}
@@ -278,7 +278,7 @@ export function CurationQueueClient({
                       </span>
                     )}
                     {item.lifecycleSetBy === "AUTO_CLASSIFIER" && (
-                      <span className="text-[11px] text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded bg-amber-500/10">
+                      <span className="text-[11px] text-amber-700 px-1.5 py-0.5 rounded bg-amber-500/10">
                         auto-classified
                       </span>
                     )}
@@ -309,7 +309,7 @@ export function CurationQueueClient({
                           "inline-flex items-center gap-1 px-2 py-1 text-xs rounded border transition-colors disabled:opacity-50",
                           openImageRow === item.id
                             ? "border-foreground bg-muted/60 text-foreground"
-                            : "border-border text-muted-foreground hover:bg-muted/40",
+                            : "border-border text-muted-foreground hover:bg-secondary",
                         )}
                         title="Add hero image — paste URL, upload, or scrape from website"
                         aria-expanded={openImageRow === item.id}
@@ -338,7 +338,7 @@ export function CurationQueueClient({
                         type="button"
                         onClick={() => actSingle(item.id, "exclude")}
                         disabled={pending}
-                        className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground rounded border border-border hover:bg-muted/40 disabled:opacity-50"
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground rounded border border-border hover:bg-secondary disabled:opacity-50"
                         title="Exclude — keep in AppFolio mirror but do not bill or display"
                       >
                         <X className="w-3 h-3" aria-hidden="true" />
@@ -528,7 +528,7 @@ function ImageActionsPanel({
             type="button"
             onClick={onScrape}
             disabled={anyBusy}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded border border-border bg-card hover:bg-muted/40 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded border border-border bg-card hover:bg-secondary disabled:opacity-50"
             title={`Pull og:image / logo from ${property.websiteUrl}`}
           >
             {scraping ? (
@@ -558,7 +558,7 @@ function ImageActionsPanel({
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={anyBusy}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded border border-border bg-card hover:bg-muted/40 disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded border border-border bg-card hover:bg-secondary disabled:opacity-50"
           title="Upload an image file (PNG/JPG/WebP, up to 10MB)"
         >
           {uploading ? (
@@ -609,7 +609,7 @@ function ImageActionsPanel({
           type="button"
           onClick={onDone}
           disabled={anyBusy}
-          className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground rounded border border-border hover:bg-muted/40 disabled:opacity-50"
+          className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground rounded border border-border hover:bg-secondary disabled:opacity-50"
           aria-label="Close image actions"
         >
           <X className="w-3 h-3" aria-hidden="true" />

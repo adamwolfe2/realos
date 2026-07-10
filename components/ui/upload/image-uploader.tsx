@@ -106,7 +106,7 @@ export function ImageUploader({
       {value ? (
         <div
           className={cn(
-            "relative w-full overflow-hidden rounded-md border border-border bg-muted/40",
+            "relative w-full overflow-hidden rounded-md border border-border bg-secondary",
             aspect,
           )}
         >
@@ -157,7 +157,7 @@ export function ImageUploader({
             aspect,
             dragActive
               ? "border-primary bg-primary/5"
-              : "border-border hover:border-primary/40 hover:bg-muted/40",
+              : "border-border hover:border-primary/40 hover:bg-secondary",
             (disabled || uploading) && "opacity-60 cursor-not-allowed",
           )}
         >

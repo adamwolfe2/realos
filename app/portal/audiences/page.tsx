@@ -25,23 +25,6 @@ export const metadata = { title: "Audience segments" };
 
 const DAY = 24 * 60 * 60 * 1000;
 
-function deterministicSpark(seed: string, base: number): number[] {
-  // Stable per-segment 28d sparkline. Replace with real reach history once
-  // we cache member counts over time.
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) {
-    h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-  }
-  const arr: number[] = [];
-  for (let i = 0; i < 28; i++) {
-    h = (h * 1664525 + 1013904223) >>> 0;
-    const noise = (h % 1000) / 1000;
-    const trend = i / 28;
-    arr.push(Math.max(0, Math.round(base * (0.7 + 0.3 * trend) * (0.85 + 0.3 * noise))));
-  }
-  return arr;
-}
-
 export default async function AudiencesPage() {
   const scope = await getScope();
   if (!scope) redirect("/sign-in");
@@ -180,7 +163,6 @@ export default async function AudiencesPage() {
       alSegmentId: s.alSegmentId,
       memberCount: s.memberCount,
       lastFetchedAt: s.lastFetchedAt ? s.lastFetchedAt.getTime() : null,
-      spark: deterministicSpark(s.alSegmentId, s.memberCount),
       destinationCount: destCountBySegment.get(s.id) ?? 0,
       emailMatchRate:
         typeof raw?.email_match_rate === "number"

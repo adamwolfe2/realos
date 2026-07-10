@@ -313,7 +313,7 @@ export function PropertyFormDialog({
                 type="button"
                 onClick={() => setOpen(false)}
                 disabled={pending}
-                className="text-xs px-3 py-1.5 border border-border rounded-md hover:bg-muted/40"
+                className="text-xs px-3 py-1.5 border border-border rounded-md hover:bg-secondary"
               >
                 Cancel
               </button>

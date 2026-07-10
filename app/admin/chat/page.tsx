@@ -175,7 +175,7 @@ export default async function SupportPage() {
         </div>
         <div className="overflow-x-auto">
         <table className="w-full text-sm min-w-[680px]">
-          <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
+          <thead className="bg-secondary text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
               <th className="px-4 py-3 text-left font-medium">Visitor</th>
               <th className="px-4 py-3 text-left font-medium">Tenant</th>

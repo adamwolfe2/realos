@@ -28,7 +28,7 @@ export default function SetupLoading() {
             <div className="flex-1 space-y-2">
               <div className="h-5 w-48 bg-muted rounded" />
               <div className="h-3 w-72 bg-muted/60 rounded" />
-              <div className="h-3 w-56 bg-muted/40 rounded" />
+              <div className="h-3 w-56 bg-secondary rounded" />
             </div>
           </div>
         ))}

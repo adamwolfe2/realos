@@ -42,7 +42,7 @@ export function CursiveWebhookBadge({ lastEventAtIso, totalEventsCount }: Props)
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-500 opacity-50" />
           <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
         </span>
-        <span className="text-[11px] font-medium text-amber-700 dark:text-amber-300">
+        <span className="text-[11px] font-medium text-amber-700">
           Pending verification — waiting for first event
         </span>
       </div>
@@ -54,7 +54,7 @@ export function CursiveWebhookBadge({ lastEventAtIso, totalEventsCount }: Props)
   return (
     <div className="inline-flex items-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1">
       <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-      <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+      <span className="text-[11px] font-medium text-emerald-700">
         Last event {label}
         {typeof totalEventsCount === "number" && totalEventsCount > 0
           ? ` · ${totalEventsCount.toLocaleString()} total`

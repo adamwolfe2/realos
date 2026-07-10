@@ -91,7 +91,7 @@ export function MarketIntelligenceClient({ propertyId, freshnessLabel }: Props) 
         type="button"
         onClick={onRefresh}
         disabled={pending}
-        className="inline-flex items-center gap-1.5 rounded-md border border-[var(--hair)] bg-background px-2.5 py-1 text-[11.5px] font-medium text-foreground hover:bg-muted/40 transition-colors disabled:opacity-60"
+        className="inline-flex items-center gap-1.5 rounded-md border border-[var(--hair)] bg-background px-2.5 py-1 text-[11.5px] font-medium text-foreground hover:bg-secondary transition-colors disabled:opacity-60"
       >
         <span
           className={`inline-block w-3 h-3 rounded-full border-2 border-current border-t-transparent ${

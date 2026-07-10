@@ -119,7 +119,7 @@ export function PixelSyncButton({
         type="button"
         onClick={runSync}
         disabled={pending}
-        className="inline-flex items-center justify-center gap-1.5 rounded-md border border-border bg-card px-3 text-xs font-medium text-foreground hover:bg-muted/40 disabled:opacity-60 transition-colors h-[34px] min-w-[110px]"
+        className="inline-flex items-center justify-center gap-1.5 rounded-md border border-border bg-card px-3 text-xs font-medium text-foreground hover:bg-secondary disabled:opacity-60 transition-colors h-[34px] min-w-[110px]"
       >
         <RefreshCw className={"h-3 w-3 " + (pending ? "animate-spin" : "")} />
         {pending ? "Syncing…" : "Sync now"}

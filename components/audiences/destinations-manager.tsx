@@ -183,7 +183,7 @@ function DestinationRow({
     destination.type === "GOOGLE_CUSTOMER_MATCH";
 
   return (
-    <tr className="hover:bg-muted/40 transition-colors">
+    <tr className="hover:bg-secondary transition-colors">
       <td className="py-3 px-5 align-top">
         <div className="flex items-center gap-2.5 min-w-0">
           <span

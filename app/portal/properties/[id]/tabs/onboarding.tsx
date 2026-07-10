@@ -41,7 +41,7 @@ const STATUS_TONE: Record<string, StatusBadgeTone> = {
 
 const TONE_CLASS: Record<StatusBadgeTone, string> = {
   live: "bg-primary/10 text-primary border-primary/30",
-  onboarding: "bg-muted/40 text-foreground border-border dark:bg-muted/40/10 dark:text-muted-foreground dark:border-primary/30",
+  onboarding: "bg-secondary text-foreground border-border",
   draft: "bg-muted text-muted-foreground border-border",
   paused: "bg-muted text-muted-foreground border-border",
 };
@@ -131,7 +131,7 @@ export async function OnboardingTab({
                 tone === "live"
                   ? "bg-primary"
                   : tone === "onboarding"
-                    ? "bg-muted/40"
+                    ? "bg-secondary"
                     : "bg-muted-foreground/40",
               )}
               style={{ width: `${requiredPct}%` }}
@@ -206,7 +206,7 @@ function ChecklistRow({ item }: { item: Awaited<ReturnType<typeof getLaunchCheck
             {item.label}
           </span>
           {!item.done && item.required ? (
-            <span className="inline-flex items-center gap-1 text-[10px] text-foreground dark:text-muted-foreground px-1.5 py-0.5 rounded bg-muted/40/10">
+            <span className="inline-flex items-center gap-1 text-[10px] text-foreground px-1.5 py-0.5 rounded bg-secondary/10">
               <AlertCircle className="w-2.5 h-2.5" aria-hidden="true" />
               required
             </span>
@@ -231,7 +231,7 @@ function ChecklistRow({ item }: { item: Awaited<ReturnType<typeof getLaunchCheck
       ) : item.done && item.actionHref ? (
         <Link
           href={item.actionHref}
-          className="inline-flex items-center px-2.5 py-1 text-xs text-muted-foreground rounded-md border border-border hover:bg-muted/40 transition-colors shrink-0"
+          className="inline-flex items-center px-2.5 py-1 text-xs text-muted-foreground rounded-md border border-border hover:bg-secondary transition-colors shrink-0"
         >
           Manage
         </Link>

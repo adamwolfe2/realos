@@ -160,7 +160,7 @@ export function NotificationBell() {
                   type="button"
                   onClick={() => handleItemClick(item)}
                   className={cn(
-                    "w-full text-left px-4 py-3 hover:bg-muted/40 transition-colors",
+                    "w-full text-left px-4 py-3 hover:bg-secondary transition-colors",
                     !item.readAt && "bg-primary/5"
                   )}
                 >

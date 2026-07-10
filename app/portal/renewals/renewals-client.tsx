@@ -3,26 +3,25 @@
 import * as React from "react";
 import Link from "next/link";
 import { format, formatDistanceToNow, differenceInDays } from "date-fns";
-import { CheckSquare, Square, ExternalLink } from "lucide-react";
-import { toast } from "sonner";
+import { ExternalLink } from "lucide-react";
 
-import { cn } from "@/lib/utils";
 import { SideDrawer } from "@/components/portal/ui/side-drawer";
-import { BulkActionBar } from "@/components/portal/ui/bulk-action-bar";
 import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 
 // ---------------------------------------------------------------------------
 // RenewalsClient — wraps the renewals pipeline + actionable list table so
 // each bucket card AND each table row open a unified SideDrawer with the
-// resident / lease summary. The bottom table also supports row checkboxes
-// + a BulkActionBar (Send renewal offer / Mark contacted) so the operator
-// can act on a batch without leaving the page.
+// resident / lease summary.
 //
-// The server page passes pre-bucketed leases plus the flat upcoming list;
-// we keep all rendering identical to the previous server-only implementation
-// (StatusPill chrome, KpiTile section above, etc.) so the swap is purely
-// additive UX.
+// Honesty rule (Wave 3): nothing filled-primary may be inert. "Send renewal
+// offer" and "Mark contacted" aren't shippable yet ("Send" needs a renewal
+// email template + Resend integration; "Mark contacted" needs a
+// Resident.lastContactedAt column), so the drawer renders them as
+// disabled-with-reason, and the old bulk-select bar — whose ONLY two actions
+// were those same stubs — is removed until a real bulk action exists.
+//
+// The server page passes pre-bucketed leases plus the flat upcoming list.
 // ---------------------------------------------------------------------------
 
 export type RenewalLease = {
@@ -55,7 +54,6 @@ function fmtMoney(cents: number | null | undefined): string {
 
 export function RenewalsClient({ buckets, upcoming }: Props) {
   const [openId, setOpenId] = React.useState<string | null>(null);
-  const [selected, setSelected] = React.useState<Set<string>>(new Set());
 
   // Look up the open lease across the flat upcoming list — bucket items
   // are subsets of `upcoming`, so this single source covers both surfaces.
@@ -63,45 +61,6 @@ export function RenewalsClient({ buckets, upcoming }: Props) {
     () => upcoming.find((l) => l.id === openId) ?? null,
     [upcoming, openId],
   );
-
-  const allChecked = upcoming.length > 0 && selected.size === upcoming.length;
-  const someChecked = selected.size > 0 && !allChecked;
-
-  function toggleAll() {
-    if (allChecked) setSelected(new Set());
-    else setSelected(new Set(upcoming.map((l) => l.id)));
-  }
-  function toggleOne(id: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-  function clearSelection() {
-    setSelected(new Set());
-  }
-
-  // Stub bulk actions. Both kept as stubs because:
-  //  - "Send renewal offer" requires a renewal-email template + Resend
-  //    integration that doesn't exist yet (no template under lib/email/).
-  //  - "Mark contacted" requires a Resident.lastContactedAt column that
-  //    isn't in the Prisma schema today.
-  // The toast copy makes that explicit so operators don't think the bulk
-  // action silently committed.
-  function stubSendRenewalOffer() {
-    toast.message("Renewal offer template coming", {
-      description: "Track this on the roadmap at /portal/insights.",
-    });
-    clearSelection();
-  }
-  function stubMarkContacted() {
-    toast.message("Resident contact tracking coming", {
-      description: "Track this on the roadmap at /portal/insights.",
-    });
-    clearSelection();
-  }
 
   const now = new Date();
 
@@ -188,50 +147,10 @@ export function RenewalsClient({ buckets, upcoming }: Props) {
       >
         {upcoming.length === 0 ? null : (
           <div className="space-y-2">
-            <BulkActionBar
-              count={selected.size}
-              onClear={clearSelection}
-              noun="resident"
-            >
-              <button
-                type="button"
-                onClick={stubSendRenewalOffer}
-                className="inline-flex items-center rounded-md bg-primary text-primary-foreground hover:bg-primary-dark px-2.5 py-1 text-xs font-medium transition-colors"
-              >
-                Send renewal offer
-              </button>
-              <button
-                type="button"
-                onClick={stubMarkContacted}
-                className="inline-flex items-center rounded-md border border-border bg-background hover:bg-muted px-2.5 py-1 text-xs font-medium transition-colors"
-              >
-                Mark contacted
-              </button>
-            </BulkActionBar>
-
             <div className="overflow-x-auto -mx-4 md:mx-0">
               <table className="w-full text-xs min-w-[760px]">
                 <thead className="text-left text-[10px] tracking-widest uppercase text-muted-foreground">
                   <tr className="border-b border-border">
-                    <th className="w-10 px-2 py-2">
-                      <button
-                        type="button"
-                        onClick={toggleAll}
-                        className="text-muted-foreground hover:text-foreground"
-                        aria-label={allChecked ? "Deselect all" : "Select all"}
-                      >
-                        {allChecked || someChecked ? (
-                          <CheckSquare
-                            className={cn(
-                              "h-3.5 w-3.5",
-                              someChecked && "opacity-60",
-                            )}
-                          />
-                        ) : (
-                          <Square className="h-3.5 w-3.5" />
-                        )}
-                      </button>
-                    </th>
                     <th className="px-2 py-2 font-medium">Resident</th>
                     <th className="px-2 py-2 font-medium">Property</th>
                     <th className="px-2 py-2 font-medium">Unit</th>
@@ -254,7 +173,6 @@ export function RenewalsClient({ buckets, upcoming }: Props) {
                         : days != null && days <= 60
                           ? "text-foreground font-semibold"
                           : "text-foreground";
-                    const isSelected = selected.has(l.id);
                     return (
                       <tr
                         key={l.id}
@@ -264,34 +182,8 @@ export function RenewalsClient({ buckets, upcoming }: Props) {
                             return;
                           setOpenId(l.id);
                         }}
-                        className={cn(
-                          "border-b border-border last:border-0 cursor-pointer transition-colors",
-                          isSelected ? "bg-primary/5" : "hover:bg-muted/40",
-                        )}
+                        className="border-b border-border last:border-0 cursor-pointer transition-colors hover:bg-secondary"
                       >
-                        <td className="px-2 py-2 align-middle">
-                          <button
-                            type="button"
-                            onClick={() => toggleOne(l.id)}
-                            aria-label={
-                              isSelected
-                                ? "Deselect resident"
-                                : "Select resident"
-                            }
-                            className={cn(
-                              "transition-colors",
-                              isSelected
-                                ? "text-primary"
-                                : "text-muted-foreground hover:text-foreground",
-                            )}
-                          >
-                            {isSelected ? (
-                              <CheckSquare className="h-3.5 w-3.5" />
-                            ) : (
-                              <Square className="h-3.5 w-3.5" />
-                            )}
-                          </button>
-                        </td>
                         <td className="px-2 py-2 text-foreground">
                           {l.residentName}
                           {l.residentEmail ? (
@@ -362,29 +254,24 @@ export function RenewalsClient({ buckets, upcoming }: Props) {
         footer={
           openLease ? (
             <>
+              <p className="mr-auto max-w-[220px] text-[11px] leading-snug text-muted-foreground">
+                Coming soon — offers ship from LeaseStack in Q3.
+              </p>
               <button
                 type="button"
-                onClick={() => {
-                  toast.message("Resident contact tracking coming", {
-                    description:
-                      "Track this on the roadmap at /portal/insights.",
-                  });
-                  setOpenId(null);
-                }}
-                className="inline-flex items-center rounded-md border border-border bg-background hover:bg-muted px-3 py-1.5 text-xs font-medium transition-colors"
+                disabled
+                aria-disabled="true"
+                title="Coming soon — offers ship from LeaseStack in Q3"
+                className="inline-flex cursor-not-allowed items-center rounded-md border border-border bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground"
               >
                 Mark contacted
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  toast.message("Renewal offer template coming", {
-                    description:
-                      "Track this on the roadmap at /portal/insights.",
-                  });
-                  setOpenId(null);
-                }}
-                className="inline-flex items-center rounded-md bg-primary text-primary-foreground hover:bg-primary-dark px-3 py-1.5 text-xs font-medium transition-colors"
+                disabled
+                aria-disabled="true"
+                title="Coming soon — offers ship from LeaseStack in Q3"
+                className="inline-flex cursor-not-allowed items-center rounded-md border border-border bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground"
               >
                 Send renewal offer
               </button>

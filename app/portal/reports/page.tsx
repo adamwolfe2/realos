@@ -365,12 +365,15 @@ async function generateReport(formData: FormData): Promise<void> {
 // ---------------------------------------------------------------------------
 
 function StatusPill({ status }: { status: string }) {
+  // Tones follow the StatusChip convention (status-chip.tsx): a shared
+  // report is a positive terminal state → success green; draft is neutral
+  // gray (work in progress, no signal); archived is dimmed neutral.
   const tone =
     status === "shared"
-      ? "bg-primary/10 text-primary"
+      ? "bg-success/10 text-success"
       : status === "archived"
-        ? "bg-muted text-muted-foreground"
-        : "bg-primary/10 text-primary";
+        ? "bg-muted text-muted-foreground/70"
+        : "bg-muted text-muted-foreground";
   return (
     <span className={"text-xs uppercase tracking-wide px-1.5 py-0.5 rounded " + tone}>
       {status}

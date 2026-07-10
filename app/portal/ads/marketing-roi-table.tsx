@@ -52,7 +52,7 @@ export function MarketingRoiTable({ rows }: { rows: RoiRow[] }) {
         </thead>
         <tbody className="divide-y divide-border">
           {rows.map((r) => (
-            <tr key={r.channel} className="hover:bg-muted/40 transition-colors">
+            <tr key={r.channel} className="hover:bg-secondary transition-colors">
               <td className="py-2.5 pr-4 text-xs font-medium text-foreground">
                 {r.channel}
               </td>

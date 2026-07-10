@@ -27,9 +27,9 @@ export default function AdminLeadsLoading() {
                 <td className="px-4 py-3"><div className="h-4 w-36 bg-muted rounded" /></td>
                 <td className="px-4 py-3"><div className="h-4 w-28 bg-muted/60 rounded" /></td>
                 <td className="px-4 py-3"><div className="h-5 w-20 bg-muted/60 rounded" /></td>
-                <td className="px-4 py-3"><div className="h-4 w-20 bg-muted/40 rounded" /></td>
-                <td className="px-4 py-3"><div className="h-4 w-16 bg-muted/40 rounded" /></td>
-                <td className="px-4 py-3"><div className="h-4 w-24 bg-muted/40 rounded" /></td>
+                <td className="px-4 py-3"><div className="h-4 w-20 bg-secondary rounded" /></td>
+                <td className="px-4 py-3"><div className="h-4 w-16 bg-secondary rounded" /></td>
+                <td className="px-4 py-3"><div className="h-4 w-24 bg-secondary rounded" /></td>
               </tr>
             ))}
           </tbody>

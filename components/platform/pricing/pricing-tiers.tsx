@@ -519,7 +519,9 @@ function TierCard({
                 fontSize: "12px",
               }}
             >
-              No card, no commitment
+              No card, no commitment. Then $
+              {PLAN_DISPLAY.foundation.monthlyDollars}/mo per property if you
+              stay.
             </p>
           </div>
         ) : basePrice == null || totalMonthly == null ? (

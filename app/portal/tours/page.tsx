@@ -341,7 +341,7 @@ export default async function ToursPage({
                     <ul className="space-y-1.5">
                       {items.map((t) => (
                         <li key={t.id}>
-                          <div className="rounded-lg border border-border bg-card hover:border-primary/40 hover:bg-muted/40 hover:shadow-sm transition-all">
+                          <div className="rounded-lg border border-border bg-card hover:border-primary/40 hover:bg-secondary hover:shadow-sm transition-all">
                             <Link
                               href={`/portal/leads/${t.lead.id}`}
                               className="block px-2 pt-1.5 pb-1"
@@ -464,7 +464,7 @@ export default async function ToursPage({
           title="Tours"
           description="Calendar, pipeline, and outcomes for every property tour."
         />
-        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
+        <div className="rounded-xl border border-border bg-secondary px-4 py-3 text-sm text-foreground">
           Tour data could not be loaded. If this error persists, check{" "}
           <a href="/portal/connect" className="underline font-medium">
             Settings → Integrations

@@ -81,7 +81,7 @@ export function EmbedDetectionChip({ url, orgSlug }: Props) {
 
   if (loading && !result) {
     return (
-      <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/40 px-3 py-1 text-[12px] text-muted-foreground">
+      <div className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary px-3 py-1 text-[12px] text-muted-foreground">
         <Loader2 className="h-3.5 w-3.5 animate-spin" />
         Checking embed on your site…
       </div>
@@ -93,7 +93,7 @@ export function EmbedDetectionChip({ url, orgSlug }: Props) {
       <button
         type="button"
         onClick={() => probe(true)}
-        className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/40 px-3 py-1 text-[12px] text-muted-foreground hover:text-foreground"
+        className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary px-3 py-1 text-[12px] text-muted-foreground hover:text-foreground"
       >
         <AlertTriangle className="h-3.5 w-3.5" />
         Couldn&apos;t check embed — retry
@@ -124,13 +124,13 @@ export function EmbedDetectionChip({ url, orgSlug }: Props) {
     },
     NO_URL: {
       Icon: AlertTriangle,
-      tone: "border-border bg-muted/40 text-muted-foreground",
+      tone: "border-border bg-secondary text-muted-foreground",
       iconTone: "text-muted-foreground",
       label: "No website URL configured",
     },
     FETCH_FAILED: {
       Icon: AlertTriangle,
-      tone: "border-border bg-muted/40 text-muted-foreground",
+      tone: "border-border bg-secondary text-muted-foreground",
       iconTone: "text-muted-foreground",
       label: "Couldn't reach your site",
     },

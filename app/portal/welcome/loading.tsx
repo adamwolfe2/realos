@@ -19,7 +19,7 @@ export default function WelcomeLoading() {
             <div className="h-9 w-9 rounded-md bg-muted" />
             <div className="h-4 w-44 bg-muted rounded" />
             <div className="h-3 w-full bg-muted/50 rounded" />
-            <div className="h-3 w-2/3 bg-muted/40 rounded" />
+            <div className="h-3 w-2/3 bg-secondary rounded" />
           </div>
         ))}
       </div>

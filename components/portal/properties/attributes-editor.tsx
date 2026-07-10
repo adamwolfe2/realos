@@ -166,7 +166,7 @@ export function AttributesEditor({
               type="button"
               onClick={() => addTag(pendingTag)}
               disabled={!pendingTag.trim()}
-              className="inline-flex items-center justify-center rounded-md border border-border bg-card px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-muted/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="inline-flex items-center justify-center rounded-md border border-border bg-card px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               aria-label="Add tag"
             >
               <Plus className="h-3 w-3" />

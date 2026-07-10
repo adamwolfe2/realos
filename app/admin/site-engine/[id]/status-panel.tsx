@@ -125,7 +125,7 @@ export function StatusPanel(props: StatusPanelProps) {
                 "px-2.5 py-1 rounded-md text-xs font-medium border transition-colors",
                 pickerStatus === s
                   ? "border-primary bg-primary/10 text-foreground"
-                  : "border-border bg-background hover:bg-muted/40",
+                  : "border-border bg-background hover:bg-secondary",
                 suggestedNext === s ? "ring-1 ring-primary/40" : "",
               )}
             >
@@ -150,7 +150,7 @@ export function StatusPanel(props: StatusPanelProps) {
                   "px-2 py-1 rounded text-left text-xs",
                   pickerStatus === s
                     ? "bg-primary/10 text-foreground"
-                    : "hover:bg-muted/40",
+                    : "hover:bg-secondary",
                 )}
               >
                 {humanStatus(s)}

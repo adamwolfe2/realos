@@ -166,7 +166,7 @@ export async function LeadsTab({
                 className={`group flex-1 px-3 py-2.5 transition-colors ${
                   p.count > 0
                     ? "bg-card hover:bg-primary/[0.04]"
-                    : "bg-muted/10 hover:bg-muted/30"
+                    : "bg-secondary hover:bg-muted/30"
                 }`}
               >
                 <p className="text-[9px] font-mono font-semibold uppercase tracking-[0.1em] text-muted-foreground truncate">
@@ -233,7 +233,7 @@ export async function LeadsTab({
                         <span className="text-sm font-medium text-foreground truncate group-hover:underline">
                           {name}
                         </span>
-                        <span className="text-[10px] uppercase tracking-widest text-muted-foreground px-1.5 py-0.5 bg-muted/40 rounded">
+                        <span className="text-[10px] uppercase tracking-widest text-muted-foreground px-1.5 py-0.5 bg-secondary rounded">
                           {STATUS_LABEL[lead.status]}
                         </span>
                       </div>

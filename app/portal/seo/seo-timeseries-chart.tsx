@@ -103,7 +103,7 @@ export function SeoTimeseriesChart({
               className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
                 on
                   ? "border-border bg-card text-foreground"
-                  : "border-border bg-muted/40 text-muted-foreground line-through"
+                  : "border-border bg-secondary text-muted-foreground line-through"
               }`}
               aria-pressed={on}
             >

@@ -169,7 +169,7 @@ export function MarketingSection({
         const liveMetrics = metrics.filter((m) => typeof m.value !== "object");
         if (liveMetrics.length === 0) {
           return (
-            <div className="rounded-lg border border-dashed border-border bg-muted/10 p-4 text-center">
+            <div className="rounded-lg border border-dashed border-border bg-secondary p-4 text-center">
               <p className="text-[12px] font-semibold text-foreground">
                 No marketing signal yet
               </p>

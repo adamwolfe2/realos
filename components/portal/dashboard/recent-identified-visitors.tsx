@@ -44,7 +44,7 @@ export function RecentIdentifiedVisitors({
           <li key={v.id}>
             <Link
               href={`/portal/visitors/${v.id}`}
-              className="flex items-center justify-between gap-3 px-1 py-2.5 -mx-1 rounded-md hover:bg-muted/40 transition-colors"
+              className="flex items-center justify-between gap-3 px-1 py-2.5 -mx-1 rounded-md hover:bg-secondary transition-colors"
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 min-w-0">

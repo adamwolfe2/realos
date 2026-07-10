@@ -16,7 +16,7 @@ export default function ReportsLoading() {
         <div className="flex gap-3">
           <div className="h-9 w-32 bg-muted rounded-md" />
           <div className="h-9 w-32 bg-muted/60 rounded-md" />
-          <div className="h-9 w-24 bg-muted/40 rounded-md" />
+          <div className="h-9 w-24 bg-secondary rounded-md" />
         </div>
       </div>
       <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
@@ -25,7 +25,7 @@ export default function ReportsLoading() {
             <div className="space-y-1.5">
               <div className="flex gap-2">
                 <div className="h-3 w-16 bg-muted/60 rounded" />
-                <div className="h-3 w-12 bg-muted/40 rounded" />
+                <div className="h-3 w-12 bg-secondary rounded" />
               </div>
               <div className="h-4 w-64 bg-muted rounded" />
               <div className="h-3 w-48 bg-muted/50 rounded" />

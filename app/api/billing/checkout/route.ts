@@ -79,8 +79,8 @@ const bodySchema = z.object({
 
 // Module key → Stripe add-on lookup key. Only modules that have a real
 // recurring add-on SKU are listed; everything else is tier-gated and
-// chosen via the `tierId` param. Keep this map in sync with the picker
-// in components/onboarding/plan-step.tsx and the ADDONS catalog.
+// chosen via the `tierId` param. Keep this map in sync with the ADDONS
+// catalog.
 const MODULE_KEY_TO_ADDON_LOOKUP: Record<string, string> = {
   // Currently only two non-metered self-serve add-ons exist. The rest of
   // the picker's modules ride on the tier price.

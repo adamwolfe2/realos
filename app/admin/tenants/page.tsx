@@ -50,7 +50,7 @@ export default async function TenantsPage() {
       <div className="rounded-lg border border-border bg-card overflow-hidden">
         <div className="overflow-x-auto">
         <table className="w-full text-sm min-w-[720px]">
-          <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
+          <thead className="bg-secondary text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
               <th className="px-4 py-3 text-left font-medium">Tenant</th>
               <th className="px-4 py-3 text-left font-medium">Status</th>
@@ -153,7 +153,7 @@ function DomainRow({
         className={`text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded ${
           sslOk
             ? "bg-primary/5 text-primary"
-            : "bg-muted/40 text-foreground"
+            : "bg-secondary text-foreground"
         }`}
         title={`SSL: ${domain.sslStatus ?? "unknown"}`}
       >

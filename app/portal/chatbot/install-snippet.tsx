@@ -27,7 +27,7 @@ export function InstallSnippet({ snippet }: { snippet: string }) {
         can add a script.
       </p>
       <div className="relative">
-        <pre className="border rounded bg-muted/40 px-3 py-3 pr-24 text-xs font-mono overflow-x-auto">
+        <pre className="border rounded bg-secondary px-3 py-3 pr-24 text-xs font-mono overflow-x-auto">
           <code>{snippet}</code>
         </pre>
         <button

@@ -267,7 +267,7 @@ export default async function SiteIntelligenceDetailPage({
           </div>
 
           {si.brandVoice && si.brandVoice.trim().length > 0 ? (
-            <blockquote className="mt-4 rounded-xl border-l-2 border-primary bg-muted/40 p-4 text-[13px] leading-relaxed text-foreground whitespace-pre-wrap">
+            <blockquote className="mt-4 rounded-xl border-l-2 border-primary bg-secondary p-4 text-[13px] leading-relaxed text-foreground whitespace-pre-wrap">
               {si.brandVoice}
             </blockquote>
           ) : (
@@ -365,7 +365,7 @@ export default async function SiteIntelligenceDetailPage({
           ) : (
             <div className="mt-4 overflow-hidden rounded-xl border border-border">
               <table className="w-full text-left text-[12px]">
-                <thead className="bg-muted/40 text-[10px] font-mono uppercase tracking-wide text-muted-foreground">
+                <thead className="bg-secondary text-[10px] font-mono uppercase tracking-wide text-muted-foreground">
                   <tr>
                     <th className="px-3 py-2 font-medium">URL</th>
                     <th className="px-3 py-2 font-medium">Title</th>

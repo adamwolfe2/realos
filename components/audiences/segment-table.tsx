@@ -13,7 +13,6 @@ export type SegmentRow = {
   // Timestamp in ms (or null) — using a primitive avoids Date serialization
   // issues when this row crosses the server → client component boundary.
   lastFetchedAt: number | null;
-  spark: number[];
   destinationCount: number;
   emailMatchRate?: number | null;
   phoneMatchRate?: number | null;
@@ -68,9 +67,8 @@ export function SegmentTable({
               Segment
             </th>
             <th className="text-right font-semibold py-2 px-3">Reach</th>
-            <th className="text-left font-semibold py-2 px-3 hidden md:table-cell">
-              28d activity
-            </th>
+            {/* NOTE: no activity/sparkline column until we cache real
+                per-segment reach history — never render synthesized series. */}
             <th className="text-right font-semibold py-2 px-3 hidden lg:table-cell">
               Destinations
             </th>
@@ -85,7 +83,7 @@ export function SegmentTable({
           {rows.map((row) => (
             <tr
               key={row.id}
-              className="group hover:bg-muted/40 transition-colors"
+              className="group hover:bg-secondary transition-colors"
             >
               <td className="py-3 px-5 align-top">
                 <Link
@@ -107,9 +105,6 @@ export function SegmentTable({
               </td>
               <td className="py-3 px-3 text-right tabular-nums font-medium align-top">
                 {formatCount(row.memberCount)}
-              </td>
-              <td className="py-3 px-3 align-top hidden md:table-cell">
-                <Sparkline data={row.spark} />
               </td>
               <td className="py-3 px-3 text-right tabular-nums text-muted-foreground align-top hidden lg:table-cell">
                 {row.destinationCount > 0 ? (
@@ -187,44 +182,5 @@ function MatchQualityPills({
         </span>
       ) : null}
     </div>
-  );
-}
-
-function Sparkline({ data, height = 22 }: { data: number[]; height?: number }) {
-  if (!data || data.length < 2) {
-    return <span className="text-xs text-muted-foreground">—</span>;
-  }
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = max - min || 1;
-  const w = 80;
-  const h = height;
-  const stepX = w / (data.length - 1);
-  const points = data
-    .map((v, i) => {
-      const x = i * stepX;
-      const y = h - ((v - min) / range) * (h - 4) - 2;
-      return `${x.toFixed(2)},${y.toFixed(2)}`;
-    })
-    .join(" ");
-  const areaPath = `M0,${h} L${points.split(" ").join(" L")} L${w},${h} Z`;
-  return (
-    <svg
-      viewBox={`0 0 ${w} ${h}`}
-      preserveAspectRatio="none"
-      className="w-20 h-5"
-      aria-hidden="true"
-    >
-      <path d={areaPath} fill="#2563EB" opacity="0.08" />
-      <polyline
-        points={points}
-        fill="none"
-        stroke="#2563EB"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        vectorEffect="non-scaling-stroke"
-      />
-    </svg>
   );
 }

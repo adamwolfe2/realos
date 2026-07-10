@@ -58,13 +58,13 @@ const ICON_BY_PROVIDER: Record<
 
 const STATUS_TONE: Record<SinkStatus, string> = {
   fresh: "bg-primary/5 text-primary border-primary/30",
-  stale: "bg-muted/40 text-foreground border-border",
-  erroring: "bg-muted/40 text-destructive border-destructive/30",
+  stale: "bg-secondary text-foreground border-border",
+  erroring: "bg-secondary text-destructive border-destructive/30",
   // dead = the same red pill but with a slow pulse so the operator sees
   // it cross-room. Reserved for sinks that haven't succeeded in 7d or
   // have 3+ consecutive failed runs.
-  dead: "bg-muted/40 text-destructive border-destructive/30 animate-pulse",
-  missing: "bg-muted/40 text-muted-foreground border-border",
+  dead: "bg-secondary text-destructive border-destructive/30 animate-pulse",
+  missing: "bg-secondary text-muted-foreground border-border",
 };
 
 const STATUS_LABEL: Record<SinkStatus, string> = {
@@ -191,7 +191,7 @@ function SinkCard({
       ) : null}
 
       {sink.lastErrorMessage ? (
-        <div className="rounded-md border border-destructive/30 bg-muted/40 p-2 text-[11px] text-destructive">
+        <div className="rounded-md border border-destructive/30 bg-secondary p-2 text-[11px] text-destructive">
           <div className="line-clamp-2 break-words">
             {sink.lastErrorMessage}
           </div>

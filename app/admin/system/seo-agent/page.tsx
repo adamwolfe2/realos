@@ -349,8 +349,8 @@ function RecStatCell({
   tone: "critical" | "high" | "medium";
 }) {
   const tones: Record<typeof tone, string> = {
-    critical: "text-red-700 dark:text-red-300",
-    high: "text-amber-700 dark:text-amber-300",
+    critical: "text-red-700",
+    high: "text-amber-700",
     medium: "text-foreground",
   };
   return (

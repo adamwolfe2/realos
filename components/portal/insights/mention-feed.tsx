@@ -60,7 +60,7 @@ export function MentionFeed({ mentions }: { mentions: MentionRow[] }) {
           <li key={m.id}>
             <Link
               href="/portal/reputation"
-              className="flex items-start gap-3 px-5 py-3 hover:bg-muted/40 transition-colors"
+              className="flex items-start gap-3 px-5 py-3 hover:bg-secondary transition-colors"
             >
               <SourceIcon source={m.source} />
               <div className="flex-1 min-w-0">

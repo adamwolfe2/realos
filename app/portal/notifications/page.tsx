@@ -136,16 +136,36 @@ export default function NotificationsPage() {
   const router = useRouter();
   const [items, setItems] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
   const [, startTransition] = useTransition();
+  // Bumping this key re-runs the fetch effect (the Retry affordance).
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setLoadError(false);
+    // A failed fetch must NOT render the "You're all set." empty state —
+    // that's a false all-clear. Surface the failure and offer a retry.
     fetch("/api/portal/notifications?limit=50", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : { notifications: [] }))
-      .then((d: { notifications: Notification[] }) => setItems(d.notifications))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+      .then((r) => {
+        if (!r.ok) throw new Error(`Notifications request failed (${r.status})`);
+        return r.json();
+      })
+      .then((d: { notifications: Notification[] }) => {
+        if (!cancelled) setItems(d.notifications);
+      })
+      .catch(() => {
+        if (!cancelled) setLoadError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey]);
 
   function handleMarkAll() {
     startTransition(async () => {
@@ -281,9 +301,26 @@ export default function NotificationsPage() {
                   <div className="h-4 w-64 bg-muted rounded" />
                   <div className="h-3 w-48 bg-muted/60 rounded" />
                 </div>
-                <div className="h-3 w-14 bg-muted/40 rounded shrink-0" />
+                <div className="h-3 w-14 bg-secondary rounded shrink-0" />
               </div>
             ))}
+          </div>
+        ) : loadError ? (
+          <div className="px-6 py-12 text-center flex flex-col items-center gap-1.5">
+            <p className="text-sm font-semibold text-foreground">
+              Couldn&rsquo;t load notifications.
+            </p>
+            <p className="max-w-sm text-[11px] text-muted-foreground leading-snug">
+              Something went wrong fetching your feed. Your notifications are
+              safe — try again in a moment.
+            </p>
+            <button
+              type="button"
+              onClick={() => setReloadKey((k) => k + 1)}
+              className="mt-2 inline-flex items-center rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:border-foreground/40 transition-colors"
+            >
+              Retry
+            </button>
           </div>
         ) : visible.length === 0 ? (
           <div className="px-6 py-12 text-center flex flex-col items-center gap-1.5">
@@ -369,7 +406,7 @@ function NotificationRow(props: {
   return (
     <div
       className={cn(
-        "px-3 py-1 hover:bg-muted/40 transition-colors flex items-center gap-1.5 leading-none",
+        "px-3 py-1 hover:bg-secondary transition-colors flex items-center gap-1.5 leading-none",
         KIND_BORDER[item.kind] ?? "",
         !item.readAt && !resolved && "bg-primary/5",
         (snoozed || resolved) && "opacity-60",

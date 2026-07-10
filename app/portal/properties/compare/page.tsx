@@ -646,7 +646,7 @@ function PropertyPicker({
                 ? "border-primary bg-primary/10 text-primary"
                 : disabled
                   ? "border-border bg-muted/30 text-muted-foreground cursor-not-allowed"
-                  : "border-border bg-card hover:border-primary/40 hover:bg-muted/40"
+                  : "border-border bg-card hover:border-primary/40 hover:bg-secondary"
             }`}
           >
             <p className="text-xs font-semibold truncate">{p.name}</p>

@@ -16,7 +16,7 @@ export function RenewalTimeline({
     "bg-primary/15 border-primary/30",
     "bg-primary/10 border-primary/20",
     "bg-primary/[0.06] border-border",
-    "bg-muted/40 border-border",
+    "bg-secondary border-border",
   ];
 
   return (

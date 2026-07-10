@@ -58,7 +58,7 @@ export function LaunchStatusActions({
                   "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
                   allRequiredComplete
                     ? "border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors"
-                    : "border border-border bg-muted/40 text-muted-foreground cursor-not-allowed",
+                    : "border border-border bg-secondary text-muted-foreground cursor-not-allowed",
                   pending && "opacity-50",
                 )}
               >
@@ -75,7 +75,7 @@ export function LaunchStatusActions({
                 onClick={() => act("mark_onboarding")}
                 disabled={pending}
                 title="Move back to ONBOARDING — useful if integrations need re-verification"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground rounded-md border border-border hover:bg-muted/40 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground rounded-md border border-border hover:bg-secondary disabled:opacity-50"
               >
                 <Undo2 className="w-3.5 h-3.5" aria-hidden="true" />
                 Mark onboarding
@@ -86,7 +86,7 @@ export function LaunchStatusActions({
               onClick={() => act("pause")}
               disabled={pending}
               title="Pause reporting for this property without removing it"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground rounded-md border border-border hover:bg-muted/40 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground rounded-md border border-border hover:bg-secondary disabled:opacity-50"
             >
               <Pause className="w-3.5 h-3.5" aria-hidden="true" />
               Pause

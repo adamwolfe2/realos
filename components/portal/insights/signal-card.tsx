@@ -71,7 +71,13 @@ export function SignalCard({
         </div>
       ) : null}
       <div className="mt-2 -mx-1">
-        <Sparkline points={series} tone={inferredTone} />
+        {series.length > 0 ? (
+          <Sparkline points={series} tone={inferredTone} />
+        ) : (
+          <div className="flex h-6 items-center px-1 text-[10px] text-muted-foreground">
+            No history yet
+          </div>
+        )}
       </div>
     </Link>
   );

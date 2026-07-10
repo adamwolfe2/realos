@@ -68,11 +68,11 @@ export function PricingHero() {
               acknowledged in a single follow-on sentence. No em dashes. */}
           <p
             className="mt-5 text-lg md:text-xl leading-relaxed mx-auto max-w-2xl"
-            style={{ color: "#4B5563" }}
+            style={{ color: "#525252" }}
           >
             Connect your existing stack. Get one dashboard showing leads,
-            traffic, reputation, and AI visibility. When you want to run
-            paid campaigns, we can manage those too.
+            traffic, reputation, and AI visibility. When you run paid
+            campaigns, we track every dollar to a lease.
           </p>
 
           {/* Primary + secondary CTA — the one canonical buying pair:

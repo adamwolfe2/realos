@@ -76,7 +76,7 @@ export function DraftReviewControls({ draftId }: Props) {
               }
               call("reject", { mode: "reject", notes });
             }}
-            className="rounded-lg border border-red-300 bg-red-50 px-3 py-1.5 text-[12px] font-medium text-red-700 hover:bg-red-100 disabled:opacity-50 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-300"
+            className="rounded-lg border border-red-300 bg-red-50 px-3 py-1.5 text-[12px] font-medium text-red-700 hover:bg-red-100 disabled:opacity-50"
           >
             Reject
           </button>
@@ -90,7 +90,7 @@ export function DraftReviewControls({ draftId }: Props) {
               }
               call("reject", { mode: "request_changes", notes });
             }}
-            className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-[12px] font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-50 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-300"
+            className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-[12px] font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-50"
           >
             Request changes
           </button>

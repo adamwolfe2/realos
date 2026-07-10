@@ -9,6 +9,7 @@ import {
   type CreateApiKeyResult,
   type RotateApiKeyResult,
 } from "@/lib/actions/api-keys";
+import { AlertDialog } from "@/components/portal/ui/alert-dialog";
 
 const SCOPE_OPTIONS = [
   { value: "ingest:lead", label: "Leads" },
@@ -228,16 +229,10 @@ export function RevokeApiKeyButton({
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
 
-  function onClick() {
-    if (
-      typeof window !== "undefined" &&
-      !window.confirm(
-        `Revoke "${name}"? Any integrations using this key will stop working immediately.`
-      )
-    ) {
-      return;
-    }
+  function confirmRevoke() {
+    setConfirming(false);
     startTransition(async () => {
       const res = await revokeApiKey(id);
       if (!res.ok) setError(res.error);
@@ -248,7 +243,7 @@ export function RevokeApiKeyButton({
     <div className="flex flex-col items-end gap-1">
       <button
         type="button"
-        onClick={onClick}
+        onClick={() => setConfirming(true)}
         disabled={pending}
         className="text-xs text-destructive underline underline-offset-2 disabled:opacity-40"
       >
@@ -257,6 +252,16 @@ export function RevokeApiKeyButton({
       {error ? (
         <span className="text-[11px] text-destructive">{error}</span>
       ) : null}
+      <AlertDialog
+        open={confirming}
+        title={`Revoke "${name}"?`}
+        body="Any integrations using this key will stop working immediately."
+        confirmLabel="Revoke"
+        destructive
+        pending={pending}
+        onCancel={() => setConfirming(false)}
+        onConfirm={confirmRevoke}
+      />
     </div>
   );
 }
@@ -275,16 +280,10 @@ export function RotateApiKeyButton({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [rotated, setRotated] = useState<RotateApiKeyResult | null>(null);
+  const [confirming, setConfirming] = useState(false);
 
-  function onClick() {
-    if (
-      typeof window !== "undefined" &&
-      !window.confirm(
-        `Rotate "${name}"? A new key will be issued with the same scopes and expiration. The current key is revoked immediately — update every consumer with the new key right away.`
-      )
-    ) {
-      return;
-    }
+  function confirmRotate() {
+    setConfirming(false);
     startTransition(async () => {
       const res = await rotateApiKey(id);
       if (!res.ok) {
@@ -300,12 +299,21 @@ export function RotateApiKeyButton({
     <div className="flex flex-col items-end gap-2 w-full">
       <button
         type="button"
-        onClick={onClick}
+        onClick={() => setConfirming(true)}
         disabled={pending || !!rotated}
         className="text-xs text-foreground underline underline-offset-2 disabled:opacity-40"
       >
         {pending ? "Rotating…" : "Rotate"}
       </button>
+      <AlertDialog
+        open={confirming}
+        title={`Rotate "${name}"?`}
+        body="A new key will be issued with the same scopes and expiration. The current key is revoked immediately — update every consumer with the new key right away."
+        confirmLabel="Rotate key"
+        pending={pending}
+        onCancel={() => setConfirming(false)}
+        onConfirm={confirmRotate}
+      />
       {error ? (
         <span className="text-[11px] text-destructive">{error}</span>
       ) : null}

@@ -108,7 +108,7 @@ export function DashboardGreeting({
                 "px-3 py-1 text-[12px] font-semibold rounded-md transition-colors",
                 r.key === range
                   ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40",
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary",
               )}
               prefetch={false}
             >

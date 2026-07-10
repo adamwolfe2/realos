@@ -33,7 +33,7 @@ export default function ReputationError({
           Reputation
         </h1>
       </header>
-      <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
+      <div className="rounded-xl border border-border bg-secondary px-4 py-3 text-sm text-foreground">
         <p className="font-semibold">Reputation view temporarily unavailable.</p>
         <p className="mt-1 text-xs leading-snug">
           A render error escaped the page-level handler. The data may be

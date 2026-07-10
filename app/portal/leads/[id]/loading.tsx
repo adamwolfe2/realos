@@ -21,7 +21,7 @@ export default function LeadDetailLoading() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-4 w-full bg-muted/40 rounded" />
+                <div key={i} className="h-4 w-full bg-secondary rounded" />
               ))}
             </div>
           </div>

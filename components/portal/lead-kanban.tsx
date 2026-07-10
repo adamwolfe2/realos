@@ -25,6 +25,7 @@ import {
 } from "@/lib/actions/lead-bulk";
 import { SideDrawer } from "@/components/portal/ui/side-drawer";
 import { BulkActionBar } from "@/components/portal/ui/bulk-action-bar";
+import { AlertDialog } from "@/components/portal/ui/alert-dialog";
 
 export type LeadKanbanItem = {
   id: string;
@@ -135,6 +136,11 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
   // page remains canonical and deep-linkable; the drawer is purely a
   // "stay in context" affordance.
   const [openId, setOpenId] = React.useState<string | null>(null);
+  // Bulk actions with real consequences confirm via the shared AlertDialog
+  // instead of window.confirm (unstyled + suppressible by the browser).
+  const [confirmAction, setConfirmAction] = React.useState<
+    "unsubscribe" | "delete" | null
+  >(null);
   const openLead = React.useMemo(
     () => items.find((i) => i.id === openId) ?? null,
     [items, openId],
@@ -185,12 +191,11 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
   }
 
   function unsubscribe() {
-    if (
-      !window.confirm(
-        `Unsubscribe ${selected.size} ${selected.size === 1 ? "lead" : "leads"} from all email cadences? They can be re-subscribed individually later.`,
-      )
-    )
-      return;
+    setConfirmAction("unsubscribe");
+  }
+
+  function performUnsubscribe() {
+    setConfirmAction(null);
     setError(null);
     const ids = Array.from(selected);
     startTransition(async () => {
@@ -259,12 +264,11 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
     );
   }
   function deleteAll() {
-    if (
-      !window.confirm(
-        `Permanently delete ${selected.size} ${selected.size === 1 ? "lead" : "leads"}? This cannot be undone — tours, applications, and conversations will be cascade-deleted.`,
-      )
-    )
-      return;
+    setConfirmAction("delete");
+  }
+
+  function performDelete() {
+    setConfirmAction(null);
     setError(null);
     const ids = Array.from(selected);
     startTransition(async () => {
@@ -384,10 +388,30 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
         ) : null}
       </BulkActionBar>
 
+      <AlertDialog
+        open={confirmAction === "unsubscribe"}
+        title={`Unsubscribe ${selected.size} ${selected.size === 1 ? "lead" : "leads"}?`}
+        body="They'll be removed from all email cadences. Leads can be re-subscribed individually later."
+        confirmLabel="Unsubscribe"
+        pending={pending}
+        onCancel={() => setConfirmAction(null)}
+        onConfirm={performUnsubscribe}
+      />
+      <AlertDialog
+        open={confirmAction === "delete"}
+        title={`Permanently delete ${selected.size} ${selected.size === 1 ? "lead" : "leads"}?`}
+        body="This cannot be undone — tours, applications, and conversations will be cascade-deleted."
+        confirmLabel="Delete"
+        destructive
+        pending={pending}
+        onCancel={() => setConfirmAction(null)}
+        onConfirm={performDelete}
+      />
+
       <div className="rounded-xl border border-border bg-card overflow-x-auto">
         <table className="w-full text-sm min-w-[680px]">
           <thead>
-            <tr className="border-b border-border bg-muted/40">
+            <tr className="border-b border-border bg-secondary">
               <th className="w-10 px-3 py-3">
                 <button
                   type="button"

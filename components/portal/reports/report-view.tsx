@@ -1240,7 +1240,7 @@ function MentionGroup({
               Hide additional mentions
             </span>
           </summary>
-          <div className="space-y-2.5 px-3 pb-3 pt-1 border-t border-border bg-muted/10">
+          <div className="space-y-2.5 px-3 pb-3 pt-1 border-t border-border bg-secondary">
             {tail.map((m) => (
               <ReportMentionCard key={m.id} mention={m} variant={variant} />
             ))}
@@ -2138,7 +2138,7 @@ function AeoSection({ stats }: { stats: ReportAeoStats }) {
                         {prettyEngineName(e.engine)}
                       </span>
                     </div>
-                    <div className="flex-1 h-6 rounded-md overflow-hidden bg-muted/40 flex relative min-w-0">
+                    <div className="flex-1 h-6 rounded-md overflow-hidden bg-secondary flex relative min-w-0">
                       {e.cited > 0 ? (
                         <div
                           className="h-full flex items-center justify-center min-w-0"
@@ -3012,7 +3012,7 @@ function GroupedInsights({ items }: { items: InsightItem[] }) {
                   Hide
                 </span>
               </summary>
-              <ul className="space-y-1.5 px-3 pb-3 pt-1 border-t border-border bg-muted/10">
+              <ul className="space-y-1.5 px-3 pb-3 pt-1 border-t border-border bg-secondary">
                 {group.map((insight) => (
                   <InsightRow key={insight.id} insight={insight} />
                 ))}
@@ -3092,7 +3092,7 @@ function ContentSection({ stats }: { stats: ReportContentStats }) {
               <div className="text-[12px] font-medium text-foreground w-44 truncate">
                 {row.format}
               </div>
-              <div className="flex-1 h-4 bg-muted/40 rounded overflow-hidden">
+              <div className="flex-1 h-4 bg-secondary rounded overflow-hidden">
                 <div
                   className="h-full bg-primary rounded"
                   style={{ width: `${(row.count / maxCount) * 100}%` }}

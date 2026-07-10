@@ -247,7 +247,7 @@ export default async function IntakeDetail({
               {selected.map((m) => (
                 <li
                   key={m}
-                  className="text-[11px] px-2 py-1 rounded-md border border-border bg-muted/40 text-foreground"
+                  className="text-[11px] px-2 py-1 rounded-md border border-border bg-secondary text-foreground"
                 >
                   {m}
                 </li>
@@ -290,7 +290,7 @@ export default async function IntakeDetail({
         <summary className="text-xs tracking-widest uppercase text-muted-foreground cursor-pointer">
           Raw payload
         </summary>
-        <pre className="mt-3 text-[11px] bg-muted/40 rounded p-3 overflow-x-auto">
+        <pre className="mt-3 text-[11px] bg-secondary rounded p-3 overflow-x-auto">
           {JSON.stringify(intake.raw ?? {}, null, 2)}
         </pre>
       </details>

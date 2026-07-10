@@ -9,6 +9,7 @@ import {
   sendTestLeadEmail,
   updateLeadRouting,
 } from "@/lib/actions/chatbot-config";
+import { AlertDialog } from "@/components/portal/ui/alert-dialog";
 
 // ---------------------------------------------------------------------------
 // LeadRoutingPanel — surfaces Organization.notifyLeadEmail +
@@ -38,6 +39,9 @@ export function LeadRoutingPanel({
   const [backfillDayRange, setBackfillDayRange] = useState<7 | 30 | 90>(30);
   const [candidateCount, setCandidateCount] = useState<number | null>(null);
   const [diagnostic, setDiagnostic] = useState<string | null>(null);
+  // Backfill is expensive (real emails go out) — confirm via the shared
+  // AlertDialog instead of window.confirm.
+  const [confirmBackfill, setConfirmBackfill] = useState(false);
 
   // Dry-run the backfill query whenever the look-back window changes
   // (or on mount) so the operator sees the candidate count BEFORE
@@ -71,6 +75,75 @@ export function LeadRoutingPanel({
         return;
       }
       toast.success("Lead routing saved");
+      router.refresh();
+    });
+  }
+
+  // Fires the real (non-dry-run) backfill. Only reachable via the
+  // AlertDialog confirm on the "Send catch-up emails" button.
+  function runBackfill() {
+    startBackfill(async () => {
+      // Server actions can throw (timeouts, deploy mid-flight,
+      // upstream 500s) and the rejection collapses to a generic
+      // "An unexpected response was received from the server"
+      // toast. Catch explicitly so we get an actionable error
+      // instead of a stuck Sending… spinner.
+      let result: Awaited<ReturnType<typeof backfillChatbotLeadEmails>>;
+      try {
+        result = await backfillChatbotLeadEmails({
+          dayRange: backfillDayRange,
+          dryRun: false,
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        toast.error(`Backfill request failed: ${msg}`);
+        setDiagnostic(
+          `✗ Backfill request failed before returning: ${msg}\n\nThis usually means the serverless function timed out. Try a shorter time window (Last 7 days) or wait a minute and retry.`,
+        );
+        return;
+      }
+      if (!result.ok) {
+        toast.error(result.error);
+        setDiagnostic(`✗ Backfill failed: ${result.error}`);
+        return;
+      }
+      toast.success(
+        result.sent > 0
+          ? `Sent 1 digest covering ${result.sent} profile${result.sent === 1 ? "" : "s"}${
+              result.failed > 0
+                ? ` · ${result.failed} extraction${result.failed === 1 ? "" : "s"} failed`
+                : ""
+            }`
+          : `0 profiles sent · ${result.failed} failed · ${result.skipped} skipped`,
+      );
+      // Per-conversation diagnostic so the operator can see
+      // WHY emails skipped or failed (suppression, extraction
+      // null, Resend error, etc). Pull the unique non-"sent"
+      // reasons up top so the actionable failure modes are
+      // visible without scrolling.
+      {
+        // Use the action's AUTHORITATIVE counts (failed/skipped) to
+        // decide success — don't infer failures by string-matching
+        // reasons. The digest path pushes a SUCCESS reason
+        // ("digest sent · N profiles"), which isn't the literal
+        // "sent" and was being miscounted as "1 not sent" even when
+        // every recipient received the email.
+        const problems = (result.reasons ?? []).filter(
+          (r) => !r.startsWith("digest sent") && r !== "sent",
+        );
+        const clean = result.failed === 0 && result.skipped === 0;
+        const summary = clean
+          ? `✓ Sent 1 digest covering ${result.sent} profile${result.sent === 1 ? "" : "s"} to all ${recipients.length} recipient${recipients.length === 1 ? "" : "s"}.`
+          : `Sent ${result.sent}/${result.candidateCount}. ${result.failed} failed${result.skipped ? `, ${result.skipped} skipped` : ""}:\n  · ${[...new Set(problems)].slice(0, 5).join("\n  · ")}`;
+        setDiagnostic(summary);
+      }
+      // Refresh the candidate count for a UX confirmation
+      // ("0 captured conversations ready to email" after).
+      const fresh = await backfillChatbotLeadEmails({
+        dayRange: backfillDayRange,
+        dryRun: true,
+      });
+      if (fresh.ok) setCandidateCount(fresh.candidateCount);
       router.refresh();
     });
   }
@@ -181,7 +254,7 @@ export function LeadRoutingPanel({
                 );
               });
             }}
-            className="inline-flex items-center justify-center h-9 px-4 rounded-md text-[13px] font-medium border border-border bg-background hover:bg-muted/40 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center justify-center h-9 px-4 rounded-md text-[13px] font-medium border border-border bg-background hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {testPending ? "Sending…" : "Send test email"}
           </button>
@@ -277,79 +350,7 @@ export function LeadRoutingPanel({
                 return;
               }
               if (candidateCount === null || candidateCount === 0) return;
-              if (
-                !window.confirm(
-                  `Send ONE digest email covering ${candidateCount} captured conversation${candidateCount === 1 ? "" : "s"} to ${recipients.join(", ")}?\n\nClaude extracts each profile in parallel (~${Math.ceil(candidateCount / 4) * 2 + 5} sec total) and ${recipients.length === 1 ? "the recipient receives" : "each recipient receives"} a single email with all ${candidateCount} prospect${candidateCount === 1 ? "" : "s"} sorted hot → warm → cold.`,
-                )
-              ) {
-                return;
-              }
-              startBackfill(async () => {
-                // Server actions can throw (timeouts, deploy mid-flight,
-                // upstream 500s) and the rejection collapses to a generic
-                // "An unexpected response was received from the server"
-                // toast. Catch explicitly so we get an actionable error
-                // instead of a stuck Sending… spinner.
-                let result: Awaited<
-                  ReturnType<typeof backfillChatbotLeadEmails>
-                >;
-                try {
-                  result = await backfillChatbotLeadEmails({
-                    dayRange: backfillDayRange,
-                    dryRun: false,
-                  });
-                } catch (err) {
-                  const msg = err instanceof Error ? err.message : String(err);
-                  toast.error(`Backfill request failed: ${msg}`);
-                  setDiagnostic(
-                    `✗ Backfill request failed before returning: ${msg}\n\nThis usually means the serverless function timed out. Try a shorter time window (Last 7 days) or wait a minute and retry.`,
-                  );
-                  return;
-                }
-                if (!result.ok) {
-                  toast.error(result.error);
-                  setDiagnostic(`✗ Backfill failed: ${result.error}`);
-                  return;
-                }
-                toast.success(
-                  result.sent > 0
-                    ? `Sent 1 digest covering ${result.sent} profile${result.sent === 1 ? "" : "s"}${
-                        result.failed > 0
-                          ? ` · ${result.failed} extraction${result.failed === 1 ? "" : "s"} failed`
-                          : ""
-                      }`
-                    : `0 profiles sent · ${result.failed} failed · ${result.skipped} skipped`,
-                );
-                // Per-conversation diagnostic so the operator can see
-                // WHY emails skipped or failed (suppression, extraction
-                // null, Resend error, etc). Pull the unique non-"sent"
-                // reasons up top so the actionable failure modes are
-                // visible without scrolling.
-                {
-                  // Use the action's AUTHORITATIVE counts (failed/skipped) to
-                  // decide success — don't infer failures by string-matching
-                  // reasons. The digest path pushes a SUCCESS reason
-                  // ("digest sent · N profiles"), which isn't the literal
-                  // "sent" and was being miscounted as "1 not sent" even when
-                  // every recipient received the email.
-                  const problems = (result.reasons ?? []).filter(
-                    (r) => !r.startsWith("digest sent") && r !== "sent",
-                  );
-                  const clean = result.failed === 0 && result.skipped === 0;
-                  const summary = clean
-                    ? `✓ Sent 1 digest covering ${result.sent} profile${result.sent === 1 ? "" : "s"} to all ${recipients.length} recipient${recipients.length === 1 ? "" : "s"}.`
-                    : `Sent ${result.sent}/${result.candidateCount}. ${result.failed} failed${result.skipped ? `, ${result.skipped} skipped` : ""}:\n  · ${[...new Set(problems)].slice(0, 5).join("\n  · ")}`;
-                  setDiagnostic(summary);
-                }
-                // Refresh the candidate count for a UX confirmation
-                // ("0 captured conversations ready to email" after).
-                const fresh = await backfillChatbotLeadEmails({
-                  dayRange: backfillDayRange,
-                  dryRun: true,
-                });
-                if (fresh.ok) setCandidateCount(fresh.candidateCount);
-                router.refresh();
-              });
+              setConfirmBackfill(true);
             }}
             className="inline-flex items-center justify-center h-8 px-3 rounded-md text-[12.5px] font-semibold text-white bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed"
           >
@@ -361,6 +362,19 @@ export function LeadRoutingPanel({
           </button>
         </div>
       </div>
+
+      <AlertDialog
+        open={confirmBackfill}
+        title={`Send ${candidateCount ?? 0} catch-up email${candidateCount === 1 ? "" : "s"}?`}
+        body={`One digest email covering ${candidateCount ?? 0} captured conversation${candidateCount === 1 ? "" : "s"} goes to ${recipients.join(", ")}. Claude extracts each profile in parallel (~${Math.ceil((candidateCount ?? 0) / 4) * 2 + 5} sec total) and ${recipients.length === 1 ? "the recipient receives" : "each recipient receives"} a single email with all prospects sorted hot → warm → cold.`}
+        confirmLabel="Send digest"
+        pending={backfillPending}
+        onCancel={() => setConfirmBackfill(false)}
+        onConfirm={() => {
+          setConfirmBackfill(false);
+          runBackfill();
+        }}
+      />
     </section>
   );
 }

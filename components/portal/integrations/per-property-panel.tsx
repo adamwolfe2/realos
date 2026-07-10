@@ -17,7 +17,7 @@
 // ---------------------------------------------------------------------------
 
 import Link from "next/link";
-import { Check, AlertCircle, Plus } from "lucide-react";
+import { Check, AlertCircle } from "lucide-react";
 import type { SeoProvider } from "@prisma/client";
 
 type PropertyMini = { id: string; name: string };
@@ -212,8 +212,3 @@ function Cell({
     </td>
   );
 }
-
-// Lint guard: import is referenced if/when we add a quick-connect CTA
-// per cell; keep the symbol available so the icon doesn't disappear
-// from the bundle in the meantime.
-void Plus;

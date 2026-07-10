@@ -118,7 +118,7 @@ export function BillingImpactCallout({
               />
             </div>
           ) : (
-            <div className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-[12px] text-muted-foreground">
+            <div className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-border bg-secondary px-2.5 py-1.5 text-[12px] text-muted-foreground">
               <ShieldCheck className="h-3 w-3" aria-hidden="true" />
               Pricing tier not selected yet —{" "}
               <Link

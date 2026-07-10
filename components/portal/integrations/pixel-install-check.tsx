@@ -21,7 +21,7 @@ type ProbeResult = {
 
 const TONE: Record<ProbeResult["status"], string> = {
   DETECTED_OK:
-    "border-emerald-500/30 bg-emerald-500/5 text-emerald-700 dark:text-emerald-300",
+    "border-emerald-500/30 bg-emerald-500/5 text-emerald-700",
   DETECTED_WRONG_PIXEL: "border-amber-500/30 bg-amber-500/5 text-amber-700",
   NOT_DETECTED: "border-amber-500/30 bg-amber-500/5 text-amber-700",
   NO_URL: "border-border bg-muted/30 text-muted-foreground",

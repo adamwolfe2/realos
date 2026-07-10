@@ -19,7 +19,7 @@ export default function IntakeDetailLoading() {
           <div key={i} className="rounded-xl border border-border bg-card p-5 space-y-3">
             <div className="h-5 w-32 bg-muted rounded" />
             {Array.from({ length: 4 }).map((_, j) => (
-              <div key={j} className="h-4 w-full bg-muted/40 rounded" />
+              <div key={j} className="h-4 w-full bg-secondary rounded" />
             ))}
           </div>
         ))}

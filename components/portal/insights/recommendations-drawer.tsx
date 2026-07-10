@@ -31,7 +31,7 @@ export function RecommendationsDrawer({
         onClick={() => setOpen((v) => !v)}
         className={cn(
           "w-full flex items-center gap-3 px-5 py-3 text-left",
-          "hover:bg-muted/40 transition-colors",
+          "hover:bg-secondary transition-colors",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
         )}
         aria-expanded={open}
@@ -53,7 +53,7 @@ export function RecommendationsDrawer({
         )}
       </button>
       {open ? (
-        <div className="border-t border-border p-4 sm:p-5 bg-muted/10">
+        <div className="border-t border-border p-4 sm:p-5 bg-secondary">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {insights.map((insight) => (
               <InsightCard key={insight.id} insight={insight} />

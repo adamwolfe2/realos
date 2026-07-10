@@ -146,7 +146,7 @@ export function ProspectPicker() {
           type="button"
           disabled={pending}
           onClick={startBlank}
-          className="inline-flex items-center rounded-md bg-card border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/40 transition-colors disabled:opacity-60"
+          className="inline-flex items-center rounded-md bg-card border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary transition-colors disabled:opacity-60"
         >
           Start from blank
         </button>

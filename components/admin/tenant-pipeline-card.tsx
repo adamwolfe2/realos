@@ -92,7 +92,7 @@ export function TenantPipelineCard({ item }: { item: TenantPipelineItem }) {
         {item.modulesActive} module{item.modulesActive === 1 ? "" : "s"} · {updated}
       </div>
       {item.atRiskReason ? (
-        <p className="text-[11px] text-foreground bg-muted/40 rounded px-2 py-1 mt-1">
+        <p className="text-[11px] text-foreground bg-secondary rounded px-2 py-1 mt-1">
           {item.atRiskReason}
         </p>
       ) : null}

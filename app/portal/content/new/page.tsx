@@ -152,7 +152,7 @@ export default async function NewContentDraftPage(props: {
             name="title"
             required
             maxLength={140}
-            placeholder="e.g. 9 medical waste handling mistakes to avoid"
+            placeholder="e.g. 9 questions to ask on your first apartment tour"
             className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>

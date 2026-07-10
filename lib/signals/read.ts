@@ -43,6 +43,8 @@ export async function getSnapshotSeries(
     seo: SeoSignal | null;
     aeo: AeoSignal | null;
     reputation: ReputationSignal | null;
+    chatbot: ChatbotSignal | null;
+    leads: LeadsSignal | null;
   }>
 > {
   const key = scopeKey(scope);
@@ -59,6 +61,8 @@ export async function getSnapshotSeries(
       aeo: (r.aeo as unknown as AeoSignal | null) ?? null,
       reputation:
         (r.reputation as unknown as ReputationSignal | null) ?? null,
+      chatbot: (r.chatbot as unknown as ChatbotSignal | null) ?? null,
+      leads: (r.leads as unknown as LeadsSignal | null) ?? null,
     }))
     .reverse(); // oldest → newest for charting
 }

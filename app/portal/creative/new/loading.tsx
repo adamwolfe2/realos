@@ -10,10 +10,10 @@ export default function NewCreativeLoading() {
         {Array.from({ length: 5 }).map((_, i) => (
           <div key={i} className="space-y-2">
             <div className="h-3 w-24 bg-muted/60 rounded" />
-            <div className="h-10 w-full bg-muted/40 rounded-md" />
+            <div className="h-10 w-full bg-secondary rounded-md" />
           </div>
         ))}
-        <div className="h-32 w-full bg-muted/40 rounded-md" />
+        <div className="h-32 w-full bg-secondary rounded-md" />
         <div className="h-9 w-32 bg-muted rounded-md" />
       </div>
     </div>

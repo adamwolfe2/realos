@@ -153,7 +153,7 @@ function ScheduleRowView({ row }: { row: ScheduleRow }) {
   }
 
   return (
-    <tr className="hover:bg-muted/40 transition-colors">
+    <tr className="hover:bg-secondary transition-colors">
       <td className="py-3 px-5 align-top">
         <div className="flex items-center gap-2.5 min-w-0">
           <span className="inline-flex h-7 w-7 items-center justify-center rounded-md shrink-0 text-primary bg-primary/10">

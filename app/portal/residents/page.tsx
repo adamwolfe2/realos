@@ -368,7 +368,7 @@ export default async function ResidentsPage({
                   return (
                     <tr
                       key={r.id}
-                      className="border-b border-border last:border-0 hover:bg-muted/40"
+                      className="border-b border-border last:border-0 hover:bg-secondary"
                     >
                       <td className="px-4 md:px-2 py-2 text-foreground">{name}</td>
                       <td className="px-2 py-2 text-foreground">
@@ -537,7 +537,7 @@ export default async function ResidentsPage({
           title="Residents"
           description="Active roster mirrored from AppFolio. Source of truth for resident records remains AppFolio; this view is read-only."
         />
-        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
+        <div className="rounded-xl border border-border bg-secondary px-4 py-3 text-sm text-foreground">
           Resident data could not be loaded.{" "}
           {err instanceof Error ? err.message : ""}
         </div>

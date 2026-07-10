@@ -19,7 +19,7 @@ function fmtMoney(cents: number | null | undefined): string {
 
 const BUCKETS = [
   { label: "0–30 days", min: 0, max: 30, tone: "border-border bg-muted text-foreground" },
-  { label: "31–60 days", min: 31, max: 60, tone: "border-border bg-muted/40 text-foreground" },
+  { label: "31–60 days", min: 31, max: 60, tone: "border-border bg-secondary text-foreground" },
   { label: "61–90 days", min: 61, max: 90, tone: "border-primary/30 bg-primary/10 text-primary" },
   { label: "91–120 days", min: 91, max: 120, tone: "border-border bg-card text-foreground" },
 ] as const;
@@ -232,7 +232,7 @@ export async function RenewalsTab({
                         ? "text-foreground font-semibold"
                         : "text-foreground";
                   return (
-                    <tr key={l.id} className="border-b border-border last:border-0 hover:bg-muted/40">
+                    <tr key={l.id} className="border-b border-border last:border-0 hover:bg-secondary">
                       <td className="py-2 text-foreground">
                         {name}
                         {l.resident?.email ? (
@@ -264,7 +264,7 @@ export async function RenewalsTab({
   } catch (err) {
     console.error("[RenewalsTab] Failed to load AppFolio lease data:", err);
     return (
-      <div className="rounded-xl border border-border bg-muted/40 p-6 text-center">
+      <div className="rounded-xl border border-border bg-secondary p-6 text-center">
         <p className="text-sm font-semibold text-foreground">Renewal data unavailable</p>
         <p className="mt-1 text-xs text-foreground">
           AppFolio sync may not be configured for this property. Check{" "}

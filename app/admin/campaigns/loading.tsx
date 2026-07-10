@@ -16,7 +16,7 @@ export default function CampaignsLoading() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {Array.from({ length: 3 }).map((_, j) => (
                 <div key={j} className="space-y-1">
-                  <div className="h-3 w-12 bg-muted/40 rounded" />
+                  <div className="h-3 w-12 bg-secondary rounded" />
                   <div className="h-5 w-10 bg-muted rounded" />
                 </div>
               ))}

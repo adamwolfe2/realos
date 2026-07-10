@@ -16,12 +16,12 @@ export default function InsightsLoading() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="h-5 w-16 bg-muted/60 rounded-full" />
-                <div className="h-3 w-20 bg-muted/40 rounded" />
+                <div className="h-3 w-20 bg-secondary rounded" />
               </div>
-              <div className="h-3 w-12 bg-muted/40 rounded" />
+              <div className="h-3 w-12 bg-secondary rounded" />
             </div>
             <div className="h-5 w-3/4 bg-muted rounded" />
-            <div className="h-3 w-full bg-muted/40 rounded" />
+            <div className="h-3 w-full bg-secondary rounded" />
             <div className="h-3 w-5/6 bg-muted/30 rounded" />
           </div>
         ))}

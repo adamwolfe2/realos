@@ -425,7 +425,7 @@ export function BugReportButton() {
                         "w-full rounded-md border-2 border-dashed transition-colors py-3 text-xs font-medium",
                         dragActive
                           ? "border-primary bg-primary/5 text-primary"
-                          : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground hover:bg-muted/40",
+                          : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground hover:bg-secondary",
                       )}
                     >
                       <ImagePlus className="w-4 h-4 inline mr-1.5 -mt-0.5" />

@@ -453,7 +453,7 @@ export default async function PropertiesList({
               shareable links preserve the active query. */}
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
             <EntityToolbar views={views} />
-            <Suspense fallback={<div className="h-9 w-56 rounded-md border border-border bg-muted/40" />}>
+            <Suspense fallback={<div className="h-9 w-56 rounded-md border border-border bg-secondary" />}>
               <PropertiesSearch initialValue={searchQuery} />
             </Suspense>
           </div>
@@ -588,10 +588,10 @@ export default async function PropertiesList({
                     }
                     const tone =
                       score >= 75
-                        ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                        ? "bg-green-50 text-green-700"
                         : score >= 50
-                          ? "bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
-                          : "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300";
+                          ? "bg-amber-50 text-amber-800"
+                          : "bg-red-50 text-red-700";
                     return (
                       <Link
                         href={`/portal/seo/agent?propertyId=${p.id}`}
@@ -634,6 +634,9 @@ export default async function PropertiesList({
             total={filteredTotal}
             view={view}
             searchQuery={searchQuery}
+            assetClass={assetClassFilter}
+            size={sizeFilter}
+            tag={tagFilter}
           />
         </>
       )}
@@ -719,12 +722,18 @@ function PropertiesPagination({
   total,
   view,
   searchQuery,
+  assetClass,
+  size,
+  tag,
 }: {
   page: number;
   pageSize: number;
   total: number;
   view: ViewKey;
   searchQuery: string;
+  assetClass: string | null;
+  size: string | null;
+  tag: string | null;
 }) {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   if (totalPages <= 1) return null;
@@ -733,6 +742,11 @@ function PropertiesPagination({
     const params = new URLSearchParams();
     if (view !== "all") params.set("view", view);
     if (searchQuery) params.set("q", searchQuery);
+    // Attribute filter chips are URL-bound — paging must carry them or
+    // page 2 silently resets the operator's filtered view.
+    if (assetClass) params.set("assetClass", assetClass);
+    if (size) params.set("size", size);
+    if (tag) params.set("tag", tag);
     if (p > 1) params.set("page", String(p));
     const qs = params.toString();
     return qs ? `/portal/properties?${qs}` : "/portal/properties";
@@ -755,7 +769,7 @@ function PropertiesPagination({
         {page > 1 ? (
           <Link
             href={buildHref(page - 1)}
-            className="inline-flex items-center rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted/40 transition-colors"
+            className="inline-flex items-center rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground hover:bg-secondary transition-colors"
           >
             ← Previous
           </Link>
@@ -770,7 +784,7 @@ function PropertiesPagination({
         {page < totalPages ? (
           <Link
             href={buildHref(page + 1)}
-            className="inline-flex items-center rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted/40 transition-colors"
+            className="inline-flex items-center rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground hover:bg-secondary transition-colors"
           >
             Next →
           </Link>

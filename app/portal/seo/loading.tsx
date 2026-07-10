@@ -25,7 +25,7 @@ export default function SeoLoading() {
                 <div key={j} className="px-5 py-3 flex items-center justify-between gap-3">
                   <div className="h-3 w-40 bg-muted rounded" />
                   <div className="h-3 w-12 bg-muted/50 rounded" />
-                  <div className="h-3 w-10 bg-muted/40 rounded" />
+                  <div className="h-3 w-10 bg-secondary rounded" />
                 </div>
               ))}
             </div>

@@ -78,7 +78,7 @@ export function CustomerPicker({
                   "w-full text-left rounded-md border px-4 py-3 flex items-center gap-3 transition-colors",
                   isSelected
                     ? "border-primary bg-primary/5"
-                    : "border-border bg-card hover:bg-muted/40"
+                    : "border-border bg-card hover:bg-secondary"
                 )}
               >
                 <Icon

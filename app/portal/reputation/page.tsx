@@ -47,7 +47,7 @@ const SENTIMENT_TONE: Record<Sentiment, string> = {
   POSITIVE: "bg-primary/10 text-primary border-primary/30",
   NEUTRAL: "bg-muted text-muted-foreground border-border",
   NEGATIVE: "bg-muted text-muted-foreground border-border",
-  MIXED: "bg-muted/40 text-foreground border-border",
+  MIXED: "bg-secondary text-foreground border-border",
 };
 
 const SENTIMENT_LABEL: Record<Sentiment, string> = {
@@ -237,7 +237,7 @@ export default async function PortfolioReputationPage({
       <div className="space-y-4">
         {accessDenied ? <PropertyAccessDeniedBanner /> : null}
         {loadError ? (
-          <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
+          <div className="rounded-xl border border-border bg-secondary px-4 py-3 text-sm text-foreground">
             <strong>Reputation data unavailable.</strong> The scanner tables may
             still be initializing — run a reputation scan from any property to
             seed the data. This page will display results once the first scan
@@ -254,7 +254,7 @@ export default async function PortfolioReputationPage({
               {properties.length > 1 ? (
                 <Suspense
                   fallback={
-                    <div className="h-9 w-48 rounded-md border border-border bg-muted/40" />
+                    <div className="h-9 w-48 rounded-md border border-border bg-secondary" />
                   }
                 >
                   <PropertyMultiSelect
@@ -279,7 +279,7 @@ export default async function PortfolioReputationPage({
           (e.g. /portal/reputation?source=REDDIT&sentiment=NEGATIVE). */}
         <Suspense
           fallback={
-            <div className="h-8 w-full rounded-md bg-muted/40 animate-pulse" />
+            <div className="h-8 w-full rounded-md bg-secondary animate-pulse" />
           }
         >
           <ReputationFilters
@@ -569,7 +569,7 @@ function PropertySummaryRow({
     <li>
       <Link
         href={`/portal/properties/${p.propertyId}?tab=reputation`}
-        className="flex items-center gap-2 rounded-md px-2 py-1.5 -mx-2 text-xs hover:bg-muted/40 transition-colors"
+        className="flex items-center gap-2 rounded-md px-2 py-1.5 -mx-2 text-xs hover:bg-secondary transition-colors"
       >
         <span className="font-medium text-foreground truncate">
           {p.propertyName ?? "Property"}
@@ -724,7 +724,7 @@ function ReputationFallback({
   return (
     <div className="space-y-4">
       <PageHeader eyebrow="Brand health" title="Reputation" />
-      <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
+      <div className="rounded-xl border border-border bg-secondary px-4 py-3 text-sm text-foreground">
         <p className="font-semibold">
           Reputation view temporarily unavailable.
         </p>

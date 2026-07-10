@@ -164,7 +164,7 @@ function MemberRow({
               Agency
             </span>
           ) : isPending ? (
-            <span className="inline-flex items-center rounded-full bg-muted/40 text-foreground border border-border px-1.5 py-0.5 text-[10px] font-medium">
+            <span className="inline-flex items-center rounded-full bg-secondary text-foreground border border-border px-1.5 py-0.5 text-[10px] font-medium">
               Pending invite
             </span>
           ) : (
@@ -311,7 +311,7 @@ function PropertyAccessEditor({
           return (
             <label
               key={p.id}
-              className="flex items-center gap-2 text-xs cursor-pointer hover:bg-muted/40 px-2 py-1 rounded"
+              className="flex items-center gap-2 text-xs cursor-pointer hover:bg-secondary px-2 py-1 rounded"
             >
               <input
                 type="checkbox"

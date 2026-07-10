@@ -263,7 +263,7 @@ export function Composer({
         ) : null}
 
         {readOnly ? (
-          <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-[12px] text-muted-foreground">
+          <div className="rounded-md border border-border bg-secondary px-3 py-2 text-[12px] text-muted-foreground">
             This proposal is {labelStatus(localProposal.status)} — read-only.
           </div>
         ) : null}
@@ -275,7 +275,7 @@ export function Composer({
               <button
                 type="button"
                 onClick={addBlankLine}
-                className="text-xs px-2 py-1 rounded-md border border-border bg-card hover:bg-muted/40"
+                className="text-xs px-2 py-1 rounded-md border border-border bg-card hover:bg-secondary"
               >
                 + Custom line
               </button>

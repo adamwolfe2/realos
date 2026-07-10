@@ -68,7 +68,7 @@ export default async function HistoryPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {runs.map((run) => (
-                  <tr key={run.id} className="hover:bg-muted/40 transition-colors">
+                  <tr key={run.id} className="hover:bg-secondary transition-colors">
                     <td className="py-3 px-5 align-top">
                       <Link
                         href={`/portal/audiences/${run.segment.id}`}

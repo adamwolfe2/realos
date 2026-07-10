@@ -117,8 +117,8 @@ export default async function AdminContentDraftDetailPage({
       </article>
 
       {draft.reviewNotes ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-900/20">
-          <p className="text-[11px] font-mono uppercase tracking-wide text-amber-700 dark:text-amber-300 mb-1">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+          <p className="text-[11px] font-mono uppercase tracking-wide text-amber-700 mb-1">
             Review notes
           </p>
           <p className="text-[13px] text-foreground whitespace-pre-wrap">

@@ -218,7 +218,7 @@ function VaultImportButton({
       type="button"
       data-vault-action="import"
       data-properties-count={properties.length}
-      className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/40"
+      className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary"
     >
       <Upload className="h-3 w-3" />
       Import CSV

@@ -633,7 +633,7 @@ function MissingFieldsChip({ missing }: { missing: string[] }) {
     <span
       className={cn(
         "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs",
-        "bg-muted/40 text-muted-foreground",
+        "bg-secondary text-muted-foreground",
         "ring-1 ring-border"
       )}
       title={`Lead is missing: ${summary}`}

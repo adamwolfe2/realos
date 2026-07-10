@@ -199,7 +199,7 @@ export default async function PopupsListPage({
           <div className="mt-3 pt-3 border-t border-border flex justify-end">
             <Link
               href="/portal/popups/new"
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/40 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary transition-colors"
             >
               <Plus className="h-3 w-3" />
               Create another

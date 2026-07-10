@@ -31,9 +31,9 @@ export default function PixelHealthLoading() {
                   <td className="px-4 py-3"><div className="h-4 w-36 bg-muted rounded" /></td>
                   <td className="px-4 py-3"><div className="h-4 w-32 bg-muted/50 rounded" /></td>
                   <td className="px-4 py-3"><div className="h-5 w-16 bg-muted/60 rounded" /></td>
-                  <td className="px-4 py-3"><div className="h-4 w-12 bg-muted/40 rounded ml-auto" /></td>
-                  <td className="px-4 py-3"><div className="h-4 w-20 bg-muted/40 rounded ml-auto" /></td>
-                  <td className="px-4 py-3"><div className="h-4 w-16 bg-muted/40 rounded ml-auto" /></td>
+                  <td className="px-4 py-3"><div className="h-4 w-12 bg-secondary rounded ml-auto" /></td>
+                  <td className="px-4 py-3"><div className="h-4 w-20 bg-secondary rounded ml-auto" /></td>
+                  <td className="px-4 py-3"><div className="h-4 w-16 bg-secondary rounded ml-auto" /></td>
                 </tr>
               ))}
             </tbody>

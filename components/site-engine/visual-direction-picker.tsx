@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Image from "next/image";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -264,7 +263,7 @@ function UrlsPanel({
         <Input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="https://parishandcompany.com"
+          placeholder="https://a-property-site-you-love.com"
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
@@ -497,7 +496,7 @@ function StylePanel({
             "px-3 py-1.5 rounded-md text-xs font-medium border transition-colors",
             view === "presets"
               ? "bg-foreground text-background border-foreground"
-              : "bg-card border-border hover:bg-muted/40",
+              : "bg-card border-border hover:bg-secondary",
           )}
         >
           Our presets ({presets.length})
@@ -509,7 +508,7 @@ function StylePanel({
             "px-3 py-1.5 rounded-md text-xs font-medium border transition-colors",
             view === "languages"
               ? "bg-foreground text-background border-foreground"
-              : "bg-card border-border hover:bg-muted/40",
+              : "bg-card border-border hover:bg-secondary",
           )}
         >
           Design language library ({designLanguages.length})
@@ -870,7 +869,3 @@ function PalettesPanel({
 function humanCategory(c: string): string {
   return c.replaceAll("-", " ");
 }
-
-// Silence unused-import warning on Image — kept for future preview-image usage
-// in design language cards.
-void Image;

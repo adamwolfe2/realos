@@ -15,7 +15,7 @@ export default function ApplicationsLoading() {
         ))}
       </div>
       <div className="rounded-xl border border-border bg-card overflow-hidden">
-        <div className="h-10 bg-muted/40 border-b border-border" />
+        <div className="h-10 bg-secondary border-b border-border" />
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="flex gap-4 px-4 py-3 border-b border-border last:border-0">
             <div className="h-4 w-32 bg-muted rounded" />

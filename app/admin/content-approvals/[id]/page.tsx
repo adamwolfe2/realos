@@ -131,7 +131,7 @@ export default async function ContentApprovalDetailPage({
       </header>
 
       {draft.reviewNotes ? (
-        <div className="rounded-2xl border border-border bg-muted/40 p-4">
+        <div className="rounded-2xl border border-border bg-secondary p-4">
           <p className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground mb-1">
             Prior review notes
           </p>

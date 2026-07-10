@@ -94,7 +94,7 @@ export default async function PipelinePage({
       </div>
 
       {visibleColumns.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-border bg-muted/10 p-10 text-center">
+        <div className="rounded-lg border border-dashed border-border bg-secondary p-10 text-center">
           <p className="text-sm font-semibold text-foreground">
             Pipeline is empty.
           </p>

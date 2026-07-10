@@ -15,17 +15,17 @@ export function SeverityPill({ severity, size = "md" }: Props) {
     critical: {
       label: "Critical",
       icon: AlertCircle,
-      cls: "bg-white text-red-700 border-red-400 dark:bg-red-950/40 dark:text-red-300 dark:border-red-700",
+      cls: "bg-white text-red-700 border-red-400",
     },
     high: {
       label: "High",
       icon: AlertCircle,
-      cls: "bg-white text-amber-700 border-amber-400 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-700",
+      cls: "bg-white text-amber-700 border-amber-400",
     },
     warning: {
       label: "Warning",
       icon: AlertTriangle,
-      cls: "bg-white text-amber-700 border-amber-400 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-700",
+      cls: "bg-white text-amber-700 border-amber-400",
     },
     info: {
       label: "Info",

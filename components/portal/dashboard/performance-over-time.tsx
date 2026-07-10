@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import dynamic from "next/dynamic";
-import { SPARKLINE_AREA } from "@/lib/charts/palette";
 
 // ---------------------------------------------------------------------------
 // PerformanceOverTime — the headline chart on /portal home.
@@ -71,7 +70,4 @@ export function PerformanceOverTime({
       />
     </div>
   );
-  // Reference the area-fill token so the import isn't tree-shaken before
-  // a future variant uses it directly. Cheap and prevents lint churn.
-  void SPARKLINE_AREA;
 }

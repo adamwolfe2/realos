@@ -354,7 +354,7 @@ function PropertyAccessEditor({
           return (
             <label
               key={p.id}
-              className="flex items-center gap-2 text-xs cursor-pointer hover:bg-muted/40 px-2 py-1 rounded"
+              className="flex items-center gap-2 text-xs cursor-pointer hover:bg-secondary px-2 py-1 rounded"
             >
               <input
                 type="checkbox"
@@ -556,7 +556,7 @@ function InviteForm({
                 return (
                   <label
                     key={p.id}
-                    className="flex items-center gap-2 text-xs cursor-pointer hover:bg-muted/40 px-2 py-1 rounded"
+                    className="flex items-center gap-2 text-xs cursor-pointer hover:bg-secondary px-2 py-1 rounded"
                   >
                     <input
                       type="checkbox"
@@ -648,7 +648,7 @@ function CopyInviteLink({ link }: { link: string }) {
         readOnly
         value={link}
         onFocus={(e) => e.currentTarget.select()}
-        className="w-full rounded-sm border border-border bg-muted/40 px-2 py-1 text-[11px] font-mono text-foreground"
+        className="w-full rounded-sm border border-border bg-secondary px-2 py-1 text-[11px] font-mono text-foreground"
       />
       <p className="text-[10px] text-muted-foreground leading-snug">
         Send this directly to the invitee if the email didn&apos;t arrive.

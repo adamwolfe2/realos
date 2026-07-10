@@ -633,62 +633,6 @@ export default async function VisitorsPage({
 }
 
 // ---------------------------------------------------------------------------
-// PixelStalenessBanner — explicit warning when the Cursive pixel hasn't
-// fired in 24h+. Operators previously had no signal that the snippet had
-// gone quiet; they'd assume "no traffic" when the real issue was a removed
-// script or a CSP regression on the property site.
-// ---------------------------------------------------------------------------
-
-function PixelStalenessBanner({
-  lastEventAt,
-  dormant,
-  domain,
-}: {
-  lastEventAt: Date | null;
-  dormant: boolean;
-  domain: string | null;
-}) {
-  const ageLabel = lastEventAt
-    ? formatDistanceToNow(lastEventAt, { addSuffix: true })
-    : "never";
-  // Brand-aligned tone scale — dormant (>7d) is destructive (real
-  // problem); stale (>24h) is muted neutral (informational).
-  const tone = dormant
-    ? "border-destructive/30 bg-destructive/10 text-destructive"
-    : "border-border bg-muted/40 text-foreground";
-  const headline = dormant
-    ? "Pixel hasn't fired in 7+ days — feed isn't live."
-    : "Pixel hasn't fired in 24+ hours — feed isn't live.";
-  return (
-    <div
-      role="status"
-      className={`rounded-xl border px-3 py-2 flex items-start justify-between gap-3 flex-wrap ${tone}`}
-    >
-      <div className="min-w-0 flex-1">
-        <p className="text-xs font-semibold leading-tight">{headline}</p>
-        <p className="text-[11px] mt-0.5 leading-snug opacity-90">
-          Real-time sync IS running (this page polls every 15s) — but the pixel
-          snippet on{" "}
-          <span className="font-semibold">
-            {domain ?? "your property site"}
-          </span>{" "}
-          stopped sending events {ageLabel}. Check the snippet is still in the
-          &lt;head&gt;, ad blockers / CSP rules aren&apos;t stripping it, and
-          the domain matches. Until events resume, the feed below shows
-          historical visitors only.
-        </p>
-      </div>
-      <Link
-        href="/portal/settings/integrations"
-        className="shrink-0 inline-flex items-center rounded-md bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-3 py-1.5 text-xs font-semibold hover:opacity-90"
-      >
-        Verify pixel install
-      </Link>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // LiveChatsPanel — surfaces ChatbotConversations active in the last 5 minutes
 // so an operator can push a contextual message into the visitor's widget.
 // ---------------------------------------------------------------------------

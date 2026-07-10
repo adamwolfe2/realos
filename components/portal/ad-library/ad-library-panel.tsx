@@ -254,7 +254,7 @@ function AdvertiserCard({
           <button
             onClick={handleRescan}
             disabled={scanning}
-            className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40 disabled:opacity-60 transition-colors"
+            className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-secondary disabled:opacity-60 transition-colors"
           >
             <RefreshCw
               className={cn("h-3 w-3", scanning && "animate-spin")}

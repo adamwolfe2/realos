@@ -23,13 +23,13 @@ type Props = {
 const STATUS_TONE: Record<string, string> = {
   GENERATING: "bg-muted text-muted-foreground",
   PENDING_REVIEW:
-    "bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
+    "bg-amber-50 text-amber-800",
   APPROVED:
-    "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+    "bg-green-50 text-green-700",
   CHANGES_REQUESTED:
-    "bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
-  REJECTED: "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-  SHIPPED: "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+    "bg-amber-50 text-amber-800",
+  REJECTED: "bg-red-50 text-red-700",
+  SHIPPED: "bg-blue-50 text-blue-700",
   EXPIRED: "bg-muted text-muted-foreground",
 };
 
@@ -151,7 +151,7 @@ export function BulkActions({ drafts }: Props) {
               type="button"
               disabled={pending}
               onClick={() => openNotesModal("reject")}
-              className="rounded-md border border-red-300 bg-red-50 px-2.5 py-1 text-[11.5px] font-medium text-red-700 hover:bg-red-100 disabled:opacity-50 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-300"
+              className="rounded-md border border-red-300 bg-red-50 px-2.5 py-1 text-[11.5px] font-medium text-red-700 hover:bg-red-100 disabled:opacity-50"
             >
               Reject
             </button>
@@ -159,7 +159,7 @@ export function BulkActions({ drafts }: Props) {
               type="button"
               disabled={pending}
               onClick={() => openNotesModal("request_changes")}
-              className="rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 text-[11.5px] font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-50 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-300"
+              className="rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 text-[11.5px] font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-50"
             >
               Request changes
             </button>

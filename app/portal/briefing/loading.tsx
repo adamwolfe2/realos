@@ -17,7 +17,7 @@ export default function BriefingLoading() {
                 </div>
                 <div className="h-5 w-16 bg-muted/60 rounded-full" />
               </div>
-              <div className="h-3 w-full bg-muted/40 rounded" />
+              <div className="h-3 w-full bg-secondary rounded" />
               <div className="h-3 w-3/4 bg-muted/30 rounded" />
             </div>
           ))}

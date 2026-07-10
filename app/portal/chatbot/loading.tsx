@@ -24,10 +24,10 @@ export default function ChatbotLoading() {
           <div className="h-4 w-20 bg-muted rounded" />
           <div className="rounded-lg border border-border bg-muted/20 h-72 flex flex-col justify-end p-3 space-y-2">
             <div className="h-8 w-3/4 bg-muted/50 rounded-xl self-start" />
-            <div className="h-8 w-1/2 bg-muted/40 rounded-xl self-end" />
+            <div className="h-8 w-1/2 bg-secondary rounded-xl self-end" />
             <div className="h-8 w-2/3 bg-muted/50 rounded-xl self-start" />
           </div>
-          <div className="h-9 w-full bg-muted/40 rounded-md" />
+          <div className="h-9 w-full bg-secondary rounded-md" />
         </div>
       </div>
     </div>

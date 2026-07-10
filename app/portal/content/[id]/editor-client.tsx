@@ -479,7 +479,7 @@ export function EditorClient(props: Props) {
             className="flex-1 overflow-y-auto px-4 py-4 space-y-4"
           >
             {messages.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border bg-muted/40 p-4">
+              <div className="rounded-xl border border-dashed border-border bg-secondary p-4">
                 <p className="text-[12px] text-foreground font-medium">
                   Ask the assistant for help.
                 </p>

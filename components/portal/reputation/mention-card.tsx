@@ -430,7 +430,7 @@ export function MentionCard({
         {typeof mention.rating === "number" ? (
           <>
             <span>·</span>
-            <span className="inline-flex items-center gap-0.5 text-amber-600 dark:text-amber-500">
+            <span className="inline-flex items-center gap-0.5 text-amber-600">
               <Star className="h-3 w-3 fill-current" aria-hidden="true" />
               <span className="font-medium">{mention.rating.toFixed(1)}</span>
             </span>

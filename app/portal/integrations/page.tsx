@@ -239,7 +239,7 @@ function IntegrationCard({
             {def.landsIn.slice(0, 4).map((target) => (
               <span
                 key={target}
-                className="inline-flex items-center text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground bg-muted/40 rounded px-1.5 py-0.5"
+                className="inline-flex items-center text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground bg-secondary rounded px-1.5 py-0.5"
               >
                 {target}
               </span>

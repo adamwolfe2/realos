@@ -79,7 +79,7 @@ type PriorMetric = {
 
 type Filter = "all" | "GOOGLE_ADS" | "META";
 
-type SortKey = "name" | "status" | "spend" | "clicks" | "conversions" | "cpl" | "ctr";
+type SortKey = "name" | "platform" | "status" | "spend" | "clicks" | "conversions" | "cpl" | "ctr";
 
 export function AdsDashboard({
   accounts,
@@ -263,7 +263,7 @@ export function AdsDashboard({
                 />
                 <SortHeader
                   label="Platform"
-                  k="status"
+                  k="platform"
                   current={sortKey}
                   dir={sortDir}
                   onSort={setSort(setSortKey, setSortDir)}
@@ -524,7 +524,7 @@ function StatusPill({ status }: { status: string }) {
     norm === "ENABLED" || norm === "ACTIVE"
       ? "bg-primary/10 text-primary border-primary/30"
       : norm === "PAUSED"
-        ? "bg-muted/40 text-foreground border-border"
+        ? "bg-secondary text-foreground border-border"
         : "bg-muted text-muted-foreground border-border";
   return (
     <span
@@ -593,6 +593,8 @@ function compareCampaigns(a: Campaign, b: Campaign, key: SortKey): number {
   switch (key) {
     case "name":
       return a.name.localeCompare(b.name);
+    case "platform":
+      return a.platform.localeCompare(b.platform);
     case "status":
       return a.status.localeCompare(b.status);
     case "spend":

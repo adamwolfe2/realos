@@ -39,7 +39,7 @@ export default function VisitorDetailLoading() {
                 </div>
                 <div className="flex gap-4">
                   {Array.from({ length: 3 }).map((_, j) => (
-                    <div key={j} className="h-3 w-16 bg-muted/40 rounded" />
+                    <div key={j} className="h-3 w-16 bg-secondary rounded" />
                   ))}
                 </div>
               </div>

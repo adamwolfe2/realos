@@ -82,7 +82,7 @@ function Group({
               disabled={disabled}
               onClick={() => onAdd(i.id)}
               className={cn(
-                "w-full text-left rounded-md border border-border bg-card px-3 py-2 hover:bg-muted/40 transition-colors",
+                "w-full text-left rounded-md border border-border bg-card px-3 py-2 hover:bg-secondary transition-colors",
                 "disabled:opacity-50 disabled:cursor-not-allowed",
               )}
               title={i.description}

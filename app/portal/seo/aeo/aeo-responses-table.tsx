@@ -346,7 +346,7 @@ function GroupedRow({
         </div>
       </button>
       {open ? (
-        <div className="divide-y divide-[var(--hair)] bg-muted/10">
+        <div className="divide-y divide-[var(--hair)] bg-secondary">
           {responses
             .slice()
             .sort(

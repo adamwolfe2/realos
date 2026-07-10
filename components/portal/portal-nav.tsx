@@ -150,7 +150,6 @@ export type NavGroup = {
 };
 
 const ALWAYS = () => true;
-const NEVER = () => false;
 
 // Audience Sync product line nav. Shown when org.isAudienceSync is true
 // (or AL_PARTNER user without an impersonation target). Replaces the full
@@ -431,9 +430,6 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
 ];
-
-// Silence the "unused" warning for the NEVER helper retained for callers.
-void NEVER;
 
 export function PortalNav({
   org,

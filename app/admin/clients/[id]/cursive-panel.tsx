@@ -213,13 +213,13 @@ export function CursivePanel({
         {tenantWebhookUrl ? (
           <>
             <div className="flex items-center gap-2">
-              <code className="flex-1 text-xs font-mono bg-muted/40 border border-border rounded px-2 py-1.5 break-all">
+              <code className="flex-1 text-xs font-mono bg-secondary border border-border rounded px-2 py-1.5 break-all">
                 {tenantWebhookUrl}
               </code>
               <button
                 type="button"
                 onClick={() => onCopy("tenant", tenantWebhookUrl)}
-                className="text-xs px-3 py-1.5 border border-border rounded-md hover:bg-muted/40"
+                className="text-xs px-3 py-1.5 border border-border rounded-md hover:bg-secondary"
               >
                 {copied === "tenant" ? "Copied" : "Copy"}
               </button>
@@ -242,13 +242,13 @@ export function CursivePanel({
           Shared webhook URL (Studio Segment Trigger)
         </div>
         <div className="flex items-center gap-2">
-          <code className="flex-1 text-xs font-mono bg-muted/40 border border-border rounded px-2 py-1.5 break-all">
+          <code className="flex-1 text-xs font-mono bg-secondary border border-border rounded px-2 py-1.5 break-all">
             {webhookUrl}
           </code>
           <button
             type="button"
             onClick={() => onCopy("shared", webhookUrl)}
-            className="text-xs px-3 py-1.5 border border-border rounded-md hover:bg-muted/40"
+            className="text-xs px-3 py-1.5 border border-border rounded-md hover:bg-secondary"
           >
             {copied === "shared" ? "Copied" : "Copy"}
           </button>
@@ -365,7 +365,7 @@ export function CursivePanel({
             type="button"
             onClick={onTest}
             disabled={pending || !initial.cursivePixelId}
-            className="text-xs px-3 py-1.5 border border-border rounded-md hover:bg-muted/40 disabled:opacity-40"
+            className="text-xs px-3 py-1.5 border border-border rounded-md hover:bg-secondary disabled:opacity-40"
             title={
               initial.cursivePixelId
                 ? "Send a synthetic event through /api/webhooks/cursive to verify auth + pixel routing"
@@ -378,7 +378,7 @@ export function CursivePanel({
             type="button"
             onClick={onSync}
             disabled={pending || !segmentId.trim()}
-            className="text-xs px-3 py-1.5 border border-border rounded-md hover:bg-muted/40 disabled:opacity-40"
+            className="text-xs px-3 py-1.5 border border-border rounded-md hover:bg-secondary disabled:opacity-40"
             title={
               segmentId.trim()
                 ? "Pull resolved visitors from the Cursive segment"

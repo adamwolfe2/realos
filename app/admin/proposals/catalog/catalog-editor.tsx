@@ -47,7 +47,7 @@ export function CatalogEditor({ items }: { items: ComposerCatalogItem[] }) {
           type="button"
           onClick={seed}
           disabled={seeding}
-          className="inline-flex items-center rounded-md bg-card border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted/40 transition-colors disabled:opacity-60"
+          className="inline-flex items-center rounded-md bg-card border border-border px-3 py-1.5 text-xs font-medium hover:bg-secondary transition-colors disabled:opacity-60"
         >
           {seeding ? "Seeding…" : "Seed from defaults"}
         </button>
@@ -192,7 +192,7 @@ function CatalogRow({
                 setDescription(item.description);
                 setPriceCents(item.defaultPriceCents);
               }}
-              className="text-xs px-2 py-1 rounded-md border border-border bg-card hover:bg-muted/40"
+              className="text-xs px-2 py-1 rounded-md border border-border bg-card hover:bg-secondary"
             >
               Cancel
             </button>
@@ -209,7 +209,7 @@ function CatalogRow({
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="text-xs px-2 py-1 rounded-md border border-border bg-card hover:bg-muted/40"
+            className="text-xs px-2 py-1 rounded-md border border-border bg-card hover:bg-secondary"
           >
             Edit
           </button>

@@ -134,7 +134,7 @@ export function ComposerToolbar({
         <button
           type="button"
           onClick={copyShareUrl}
-          className="inline-flex items-center rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium hover:bg-muted/40 transition-colors"
+          className="inline-flex items-center rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium hover:bg-secondary transition-colors"
           title={shareUrl}
         >
           {copied ? "Copied" : "Copy share link"}
@@ -145,7 +145,7 @@ export function ComposerToolbar({
         href={`/api/admin/proposals/${proposal.id}/pdf`}
         target="_blank"
         rel="noreferrer"
-        className="inline-flex items-center rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium hover:bg-muted/40 transition-colors"
+        className="inline-flex items-center rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium hover:bg-secondary transition-colors"
       >
         Download PDF
       </a>
@@ -154,7 +154,7 @@ export function ComposerToolbar({
         type="button"
         onClick={doDuplicate}
         disabled={working === "dup"}
-        className="inline-flex items-center rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium hover:bg-muted/40 transition-colors disabled:opacity-60"
+        className="inline-flex items-center rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium hover:bg-secondary transition-colors disabled:opacity-60"
       >
         Duplicate
       </button>
@@ -232,7 +232,7 @@ export function ComposerToolbar({
             <button
               type="button"
               onClick={() => setConfirmSend(false)}
-              className="px-3 py-1.5 text-xs rounded-md border border-border bg-card hover:bg-muted/40"
+              className="px-3 py-1.5 text-xs rounded-md border border-border bg-card hover:bg-secondary"
             >
               Cancel
             </button>
@@ -273,7 +273,7 @@ export function ComposerToolbar({
             <button
               type="button"
               onClick={() => setConfirmVoid(false)}
-              className="px-3 py-1.5 text-xs rounded-md border border-border bg-card hover:bg-muted/40"
+              className="px-3 py-1.5 text-xs rounded-md border border-border bg-card hover:bg-secondary"
             >
               Cancel
             </button>

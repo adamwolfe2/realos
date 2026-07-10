@@ -210,7 +210,7 @@ export function VaultClient({
                       type="button"
                       onClick={() => setEditing(entry)}
                       title="Edit"
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground"
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </button>
@@ -422,7 +422,7 @@ function RevealModal({
         <button
           type="button"
           onClick={onClose}
-          className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/40"
+          className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary"
         >
           Close
         </button>
@@ -586,7 +586,7 @@ function EditorModal({
               <button
                 type="button"
                 onClick={() => setShowPassword((s) => !s)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-card text-muted-foreground hover:bg-muted/40"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-card text-muted-foreground hover:bg-secondary"
                 title={showPassword ? "Hide" : "Show"}
               >
                 {showPassword ? (
@@ -598,7 +598,7 @@ function EditorModal({
               <button
                 type="button"
                 onClick={onGenerate}
-                className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/40"
+                className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary"
               >
                 Generate
               </button>
@@ -620,7 +620,7 @@ function EditorModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/40"
+            className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary"
           >
             Cancel
           </button>
@@ -762,7 +762,7 @@ function ImportModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/40"
+              className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary"
             >
               {result ? "Done" : "Cancel"}
             </button>

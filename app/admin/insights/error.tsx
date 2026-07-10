@@ -43,7 +43,7 @@ export default function AdminInsightsError({
         </button>
         <Link
           href="/admin"
-          className="inline-flex items-center rounded-md border border-border bg-card px-4 h-9 text-xs font-medium text-foreground hover:bg-muted/40 transition-colors"
+          className="inline-flex items-center rounded-md border border-border bg-card px-4 h-9 text-xs font-medium text-foreground hover:bg-secondary transition-colors"
         >
           Back to overview
         </Link>

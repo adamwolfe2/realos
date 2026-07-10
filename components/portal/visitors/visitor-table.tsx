@@ -171,7 +171,7 @@ export function VisitorTable({ rows }: Props) {
                     }}
                     className={
                       "border-b border-border last:border-0 transition-colors group cursor-pointer " +
-                      (isSelected ? "bg-blue-50/40 " : "hover:bg-muted/40")
+                      (isSelected ? "bg-blue-50/40 " : "hover:bg-secondary")
                     }
                   >
                     <td className="px-3 py-2 align-middle">

@@ -116,7 +116,7 @@ export function OperatorReviewBar({
       <div
         id="operator-review-content"
         hidden={!open}
-        className="border-t border-border bg-muted/10"
+        className="border-t border-border bg-secondary"
       >
         <div className="p-4 space-y-4">{children}</div>
       </div>

@@ -335,7 +335,7 @@ export function HandleCell({
     <span
       className={cn(
         baseChip,
-        "border-border bg-muted/40 text-foreground hover:bg-muted/60 transition-colors",
+        "border-border bg-secondary text-foreground hover:bg-muted/60 transition-colors",
       )}
     >
       <AtSign
@@ -508,7 +508,7 @@ export function HashCell({ value }: { value: string | number | null | undefined 
     <span
       className={cn(
         baseChip,
-        "border-border bg-muted/40 text-foreground font-mono",
+        "border-border bg-secondary text-foreground font-mono",
       )}
     >
       <Hash className="h-3 w-3 shrink-0 opacity-50" aria-hidden="true" />

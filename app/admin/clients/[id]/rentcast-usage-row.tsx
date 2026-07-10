@@ -77,7 +77,7 @@ export function RentCastUsageRow({ orgId, used, initialBudget, monthKey }: Props
           type="button"
           onClick={onSave}
           disabled={pending || budget === String(initialBudget)}
-          className="rounded-md border border-[var(--hair)] bg-background px-2.5 py-1 text-[11.5px] text-foreground hover:bg-muted/40 disabled:opacity-50"
+          className="rounded-md border border-[var(--hair)] bg-background px-2.5 py-1 text-[11.5px] text-foreground hover:bg-secondary disabled:opacity-50"
         >
           {pending ? "Saving…" : "Save"}
         </button>

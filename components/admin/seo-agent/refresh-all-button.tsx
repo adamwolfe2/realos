@@ -1,8 +1,9 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { AlertDialog } from "@/components/portal/ui/alert-dialog";
 
 // ---------------------------------------------------------------------------
 // AdminRefreshAllButton — kicks /api/admin/seo-agent/refresh-all to
@@ -13,16 +14,10 @@ import { toast } from "sonner";
 export function AdminRefreshAllButton() {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [confirming, setConfirming] = useState(false);
 
   function go() {
-    if (
-      typeof window !== "undefined" &&
-      !window.confirm(
-        "Re-run the recommendation engine for every LIVE property across every client org? This runs up to 200 properties.",
-      )
-    ) {
-      return;
-    }
+    setConfirming(false);
     startTransition(async () => {
       try {
         const res = await fetch("/api/admin/seo-agent/refresh-all", {
@@ -44,13 +39,24 @@ export function AdminRefreshAllButton() {
   }
 
   return (
-    <button
-      type="button"
-      onClick={go}
-      disabled={pending}
-      className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-primary/15 transition-colors disabled:opacity-50"
-    >
-      {pending ? "Refreshing all clients…" : "Force-refresh all clients"}
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={() => setConfirming(true)}
+        disabled={pending}
+        className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-primary/15 transition-colors disabled:opacity-50"
+      >
+        {pending ? "Refreshing all clients…" : "Force-refresh all clients"}
+      </button>
+      <AlertDialog
+        open={confirming}
+        title="Force-refresh all clients?"
+        body="Re-runs the recommendation engine for every LIVE property across every client org — up to 200 properties. This is expensive; only run it when recommendations are stale fleet-wide."
+        confirmLabel="Refresh all"
+        pending={pending}
+        onCancel={() => setConfirming(false)}
+        onConfirm={go}
+      />
+    </>
   );
 }

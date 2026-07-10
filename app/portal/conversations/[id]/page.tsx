@@ -238,7 +238,7 @@ function MetaChip({
 }) {
   const toneClass =
     tone === "warn"
-      ? "bg-muted/40 text-foreground ring-border"
+      ? "bg-secondary text-foreground ring-border"
       : tone === "muted"
         ? "bg-muted text-muted-foreground ring-border"
         : "bg-card text-foreground ring-border";
@@ -292,7 +292,7 @@ function CaptureOnlyDetails({
   const hasAnyContact = Boolean(capturedName || capturedEmail || capturedPhone);
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-border bg-muted/40 px-4 py-3">
+      <div className="rounded-xl border border-border bg-secondary px-4 py-3">
         <p className="text-sm font-semibold text-foreground">
           {hasAnyContact
             ? "Capture-only conversation"
