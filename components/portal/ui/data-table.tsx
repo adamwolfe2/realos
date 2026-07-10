@@ -295,14 +295,14 @@ function RowLinkInjector({
 // product. All-blue here so the directory reads as a coherent
 // LeaseStack surface.
 const AVATAR_PALETTE = [
-  { bg: "#1E3A8A", fg: "#FFFFFF" },
-  { bg: "#1D4ED8", fg: "#FFFFFF" },
-  { bg: "#2563EB", fg: "#FFFFFF" },
-  { bg: "#3B82F6", fg: "#FFFFFF" },
-  { bg: "#60A5FA", fg: "#0F172A" },
-  { bg: "#93C5FD", fg: "#0F172A" },
-  { bg: "#BFDBFE", fg: "#0F172A" },
-  { bg: "#DBEAFE", fg: "#1D4ED8" },
+  { bg: "#002d9c", fg: "#FFFFFF" },
+  { bg: "#0043ce", fg: "#FFFFFF" },
+  { bg: "#0f62fe", fg: "#FFFFFF" },
+  { bg: "#4589ff", fg: "#FFFFFF" },
+  { bg: "#78a9ff", fg: "#161616" },
+  { bg: "#a6c8ff", fg: "#161616" },
+  { bg: "#c6dcff", fg: "#161616" },
+  { bg: "#edf5ff", fg: "#0043ce" },
 ];
 
 function hashStringToIndex(s: string, modulo: number): number {
@@ -333,7 +333,7 @@ export function Avatar({
     <span
       aria-hidden="true"
       className={cn(
-        "inline-flex items-center justify-center rounded-md font-semibold leading-none shrink-0",
+        "inline-flex items-center justify-center rounded-[2px] font-semibold leading-none shrink-0",
         className,
       )}
       style={{
