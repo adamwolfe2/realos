@@ -4,8 +4,6 @@
 
 > **Heritage note:** This system began as a warm-parchment "inspired by Claude" theme (terracotta + Fraunces serif). That era is **gone**. The portal now reads as a clean white/blue software product. Several variables keep their old names for back-compat (`--terracotta`, `--coral`, `--warm-sand`, `--parchment`) but are **retargeted to blue/cool-gray values** — trust the value, not the name.
 
-> **⚑ Carbon-forward retarget (2026-07-09):** the token *values* below were retargeted toward IBM Carbon (light) for an enterprise, production-grade read. **Brand blue `#2563EB → #0f62fe`** (hover `#0043ce`); **ink `#0F172A → #161616`**; hairlines/surfaces → Carbon grays (`#e0e0e0`, `#f4f4f4`); semantic → Carbon (`#24a148` / `#f1c21b` / `#da1e28`). **Shape sharpened:** cards `14px → 2px`, buttons/inputs/select `8/6px → 0`, alerts `12px → 2px` (pills stay `999px`); elevation is **flat #e0e0e0 border over soft shadow** (no gradient/glow on buttons or default cards). Display weights lightened (`700 → 400/600`), eyebrow `.22em → .12em` Gray-70. New primitives: **`StatusChip` / `VerificationRow`** (`components/portal/ui/status-chip.tsx`) — the one connection-status vocabulary (Live = green, never blue). Full spec + fix-wave plan: `.claude/specs/2026-07-09-ibm-carbon-forward-design.md` + `-carbon-audit-findings.md`. The tables below still show the *pre-retarget* hexes in places — trust the CSS token values in `app/globals.css`.
-
 ---
 
 ## 1. Principles
