@@ -52,9 +52,9 @@ const PHASE_ORDER: Array<Exclude<OnboardingPhase, "COMPLETED">> = [
   "POLISH",
 ];
 
-// Lifted from onboarding-checklist-floating.tsx (the floating checklist this
-// component replaces on the dashboard). INSTALL_PIXEL repointed to
-// /portal/connect — the canonical connect hub hosts the pixel + GA4 flows.
+// Lifted from the now-deleted onboarding-checklist-floating.tsx (the floating
+// checklist this component replaced on the dashboard). INSTALL_PIXEL repointed
+// to /portal/connect — the canonical connect hub hosts the pixel + GA4 flows.
 const STEP_META: Record<
   OnboardingStepKey,
   { label: string; description: string; href: string }

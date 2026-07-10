@@ -146,13 +146,6 @@ export default async function SettingsPage() {
           stat={`${onCount} of ${modules.length} active`}
         />
         <NavCard
-          href="/portal/settings/integrations"
-          icon={<Plug className="size-4" aria-hidden="true" />}
-          title="Integration details"
-          description="Per-integration status, sync schedules, credential rotation, and manual disconnection."
-          stat={`${integrationsActive} connected`}
-        />
-        <NavCard
           href="/portal/settings/api-keys"
           icon={<KeyRound className="size-4" aria-hidden="true" />}
           title="API keys"

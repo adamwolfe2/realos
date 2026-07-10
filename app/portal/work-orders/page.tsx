@@ -288,7 +288,7 @@ export default async function WorkOrdersPage({
         <EmptyState
           title="No work orders synced yet"
           body="Maintenance tickets mirror from AppFolio on the hourly cron. The pipeline and property hotspots populate as soon as the first batch lands."
-          action={{ label: "Manage integrations", href: "/portal/settings/integrations" }}
+          action={{ label: "Open Connect hub", href: "/portal/connect" }}
         />
       ) : (
         <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">

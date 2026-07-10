@@ -87,7 +87,7 @@ export function ResolutionsTable({
                 <span className="inline-flex items-center gap-1.5">
                   {r.name}
                   {r.isLead ? (
-                    <span className="rounded bg-primary/10 px-1 py-0.5 text-[9px] font-semibold uppercase text-primary">
+                    <span className="rounded-[2px] bg-primary/10 px-1 py-0.5 text-[9px] font-semibold uppercase text-primary">
                       Lead
                     </span>
                   ) : null}

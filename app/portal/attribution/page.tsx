@@ -25,6 +25,9 @@ import {
 import { fetchGa4SourceVolumes } from "@/lib/attribution/ga4-sources";
 import { LeadFlowDiagram } from "@/components/portal/attribution/lead-flow-diagram";
 import { SourceLogo } from "@/components/portal/attribution/source-logo";
+import { RangePresetControl } from "@/components/portal/attribution/range-preset-control";
+import { StatusChip } from "@/components/portal/ui/status-chip";
+import { getConnectStatusForOrg } from "@/lib/connect/status";
 import { Users, Eye, MousePointerClick, BarChart3 } from "lucide-react";
 
 export const metadata: Metadata = { title: "Attribution" };
@@ -105,7 +108,7 @@ export default async function AttributionPage({
     toDate,
   };
 
-  const [headline, leadFlow, citySplit, moduleTrend, touchFreq] =
+  const [headline, leadFlow, citySplit, moduleTrend, touchFreq, connectSources] =
     await Promise.all([
       getAttributionHeadline(filters),
       // Flow hero — folds in GA4 source volumes (best-effort; null if GA4 isn't
@@ -121,7 +124,16 @@ export default async function AttributionPage({
       getLeadsPerCity(filters),
       getLeadsPerModuleTrend(filters),
       getLeadsPerTouchFrequency(filters),
+      // Feed-state chips — same derivation the Connect hub uses (one
+      // integration row = connected), so "Live" here always agrees with
+      // /portal/connect.
+      getConnectStatusForOrg(scope.orgId),
     ]);
+
+  const ga4Connected =
+    connectSources.find((s) => s.id === "ga4")?.connected ?? false;
+  const pixelConnected =
+    connectSources.find((s) => s.id === "cursive_pixel")?.connected ?? false;
 
   // Used in the page header description. When exactly one property is
   // selected we name it; when multiple are selected we just say how many.
@@ -144,7 +156,7 @@ export default async function AttributionPage({
     <div className="space-y-3 ls-page-fade">
       <PageHeader
         title="Attribution"
-        description={`Lead and session attribution across every connected channel. Same surface as Clarity Attribution — included in your LeaseStack subscription.${
+        description={`Lead and session attribution across every connected channel.${
           activeProperty
             ? ` Filtered to ${activeProperty.name}.`
             : activePropertyIds
@@ -156,36 +168,41 @@ export default async function AttributionPage({
         }
       />
 
-      {/* Filter bar — preset quick ranges + custom date input. Upgraded from
-          two bare <input type="date"> fields to a pill-based preset row that
-          matches the visitors page window filter. Custom dates stay available
-          for operators who need non-standard windows. */}
-      <div className="rounded-xl border border-border bg-card p-2.5 flex flex-wrap items-center gap-3">
-        {/* Preset range pills */}
-        <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/30 p-0.5">
-          {[
-            { days: 7, label: "7d" },
-            { days: 30, label: "30d" },
-            { days: 60, label: "60d" },
-            { days: 90, label: "90d" },
-          ].map((preset) => {
-            const active = dayCount === preset.days;
-            const href = presetRangeHref(preset.days, params.properties);
-            return (
-              <Link
-                key={preset.days}
-                href={href}
-                className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                  active
-                    ? "bg-card shadow-sm text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {preset.label}
-              </Link>
-            );
-          })}
-        </div>
+      {/* Feed-state row — attribution silently degrades when GA4 or the
+          visitor pixel is missing (sessions undercount, identities blank).
+          Make the state explicit instead of letting charts read as broken. */}
+      <div className="ls-card flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2">
+        <span className="flex items-center gap-2">
+          <span className="text-[11px] font-semibold text-foreground">
+            Google Analytics 4
+          </span>
+          <StatusChip status={ga4Connected ? "live" : "not_connected"} />
+        </span>
+        <span aria-hidden="true" className="h-4 w-px bg-border" />
+        <span className="flex items-center gap-2">
+          <span className="text-[11px] font-semibold text-foreground">
+            Visitor pixel
+          </span>
+          <StatusChip status={pixelConnected ? "live" : "not_connected"} />
+        </span>
+        {!ga4Connected || !pixelConnected ? (
+          <Link
+            href="/portal/connect"
+            className="ml-auto text-[11px] font-semibold text-primary underline-offset-2 hover:underline"
+          >
+            Connect data sources
+          </Link>
+        ) : null}
+      </div>
+
+      {/* Filter bar — shared preset range control (same Carbon chip group as
+          the dashboard) + custom date form for non-standard windows. */}
+      <div className="ls-card p-2.5 flex flex-wrap items-center gap-3">
+        <RangePresetControl
+          basePath="/portal/attribution"
+          activeDays={dayCount}
+          properties={params.properties}
+        />
 
         {/* Divider */}
         <span aria-hidden="true" className="h-4 w-px bg-border" />
@@ -206,7 +223,7 @@ export default async function AttributionPage({
               type="date"
               name="from"
               defaultValue={fromIso}
-              className="rounded-lg border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
+              className="rounded-[2px] border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
             />
           </label>
           <label className="flex items-center gap-1.5">
@@ -217,12 +234,12 @@ export default async function AttributionPage({
               type="date"
               name="to"
               defaultValue={toIso}
-              className="rounded-lg border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
+              className="rounded-[2px] border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
             />
           </label>
           <button
             type="submit"
-            className="inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground px-3 py-1 text-xs font-semibold hover:bg-primary/90 transition-colors"
+            className="inline-flex items-center justify-center rounded-none bg-primary text-primary-foreground px-3 py-1 text-xs font-semibold hover:bg-primary/90 transition-colors"
           >
             Apply
           </button>
@@ -309,9 +326,9 @@ export default async function AttributionPage({
                           : ""}
                       </span>
                     </div>
-                    <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className="mt-1.5 h-1.5 bg-muted overflow-hidden">
                       <div
-                        className="h-full rounded-full transition-all"
+                        className="h-full transition-all"
                         style={{
                           width: `${Math.max((barVal / max) * 100, barVal > 0 ? 3 : 0)}%`,
                           background: s.color,
@@ -389,50 +406,6 @@ export default async function AttributionPage({
         />
       </section>
 
-      {/* Footer note — explicit positioning vs Clarity. */}
-      <section className="rounded-xl border border-dashed border-border bg-muted/20 px-3 py-2.5">
-        <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
-          What you get with LeaseStack that Clarity can&apos;t deliver
-        </p>
-        <ul className="mt-1.5 grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-foreground">
-          <li>
-            <Link
-              href="/portal/visitors"
-              className="font-semibold underline-offset-2 hover:underline"
-            >
-              Identified visitors →
-            </Link>
-            <p className="mt-0.5 text-muted-foreground leading-snug">
-              Resolve the &ldquo;Direct&rdquo; bucket above into actual people
-              with names, companies, and pages viewed.
-            </p>
-          </li>
-          <li>
-            <Link
-              href="/portal/reputation"
-              className="font-semibold underline-offset-2 hover:underline"
-            >
-              Reputation pulse →
-            </Link>
-            <p className="mt-0.5 text-muted-foreground leading-snug">
-              Real-time scan of Google reviews, Reddit, Yelp so a parking
-              complaint doesn&apos;t kill conversion next month.
-            </p>
-          </li>
-          <li>
-            <Link
-              href="/portal/residents"
-              className="font-semibold underline-offset-2 hover:underline"
-            >
-              Operations layer →
-            </Link>
-            <p className="mt-0.5 text-muted-foreground leading-snug">
-              Residents, leases, work orders mirrored from AppFolio so the
-              lead doesn&apos;t disappear at &ldquo;signed.&rdquo;
-            </p>
-          </li>
-        </ul>
-      </section>
     </div>
   );
 }
@@ -524,16 +497,4 @@ function toIsoDay(d: Date): string {
   const month = String(d.getUTCMonth() + 1).padStart(2, "0");
   const day = String(d.getUTCDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
-}
-
-/** Build an attribution page href for a "last N days" preset. */
-function presetRangeHref(days: number, properties?: string): string {
-  const today = new Date();
-  const toDay = toIsoDay(today);
-  const fromDay = toIsoDay(
-    new Date(today.getTime() - days * 24 * 60 * 60 * 1000),
-  );
-  const p = new URLSearchParams({ from: fromDay, to: toDay });
-  if (properties) p.set("properties", properties);
-  return `/portal/attribution?${p.toString()}`;
 }

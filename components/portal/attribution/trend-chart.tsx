@@ -1,4 +1,5 @@
 import * as React from "react";
+import { CHART_COLORS } from "@/components/portal/ui/chart-theme";
 
 // ---------------------------------------------------------------------------
 // TrendChart — multi-series line chart for the attribution page. Pure SVG
@@ -25,16 +26,17 @@ type Props = {
   emptyMessage?: string;
 };
 
-// Monochrome blue series — each line steps down in saturation so multi-
-// series charts stay legible without resorting to a rainbow.
+// Carbon series ramp from CHART_COLORS (chart-theme.ts) — blues stepping
+// down in weight, then grays for the collapsed "Other" tail. Sourcing from
+// the shared theme keeps this chart inside any future token retarget.
 const SERIES_COLORS = [
-  "#1D4ED8",
-  "#2563EB",
-  "#3B82F6",
-  "#60A5FA",
-  "#93C5FD",
-  "#9CA3AF",
-  "#D1D5DB",
+  CHART_COLORS.brand,
+  CHART_COLORS.brandDeep,
+  CHART_COLORS.brandSoft,
+  CHART_COLORS.brandFog,
+  CHART_COLORS.muted,
+  CHART_COLORS.silver,
+  CHART_COLORS.grid,
 ];
 
 export function TrendChart({
@@ -108,7 +110,7 @@ export function TrendChart({
                 x2={W - PAD_RIGHT}
                 y1={y}
                 y2={y}
-                stroke="#E5E7EB"
+                stroke={CHART_COLORS.grid}
                 strokeWidth={1}
                 strokeDasharray="2 4"
               />
@@ -120,7 +122,7 @@ export function TrendChart({
             y={PAD_TOP + 4}
             textAnchor="end"
             fontSize={9}
-            fill="#6B7280"
+            fill={CHART_COLORS.axis}
           >
             {max.toLocaleString()}
           </text>
@@ -135,7 +137,7 @@ export function TrendChart({
                 y={H - 8}
                 textAnchor="middle"
                 fontSize={9}
-                fill="#6B7280"
+                fill={CHART_COLORS.axis}
               >
                 {formatTickLabel(date)}
               </text>
@@ -176,7 +178,7 @@ export function TrendChart({
             >
               <span
                 aria-hidden="true"
-                className="inline-block h-2 w-2 rounded-full"
+                className="inline-block h-2 w-2"
                 style={{
                   backgroundColor: SERIES_COLORS[i % SERIES_COLORS.length],
                 }}
@@ -224,7 +226,7 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-border bg-card p-3">
+    <section className="ls-card p-3">
       <div className="mb-2">
         <h3 className="text-xs font-semibold tracking-tight text-foreground">
           {title}

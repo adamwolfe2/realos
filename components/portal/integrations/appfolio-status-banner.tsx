@@ -74,8 +74,8 @@ export function AppFolioStatusBanner({
         body={`AppFolio remains your source of truth. Once connected, LeaseStack pulls ${resourceLabel} on an hourly schedule so you never have to leave AppFolio for routine reporting.`}
         action={
           <Link
-            href="/portal/settings/integrations"
-            className="inline-flex items-center rounded-md bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-3 py-1.5 text-xs font-semibold hover:opacity-90"
+            href="/portal/connect"
+            className="inline-flex items-center rounded-none bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-3 py-1.5 text-xs font-semibold"
           >
             Connect AppFolio
           </Link>

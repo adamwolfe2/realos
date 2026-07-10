@@ -4,6 +4,7 @@ import * as React from "react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { saveReportCadence } from "@/lib/actions/report-cadence";
+import { LocalTime } from "@/components/portal/reports/schedule-times";
 
 // ---------------------------------------------------------------------------
 // ReportCadenceForm — client form for /portal/reports/settings.
@@ -16,11 +17,48 @@ import { saveReportCadence } from "@/lib/actions/report-cadence";
 
 type Cadence = "none" | "daily" | "weekly" | "monthly";
 
-const CADENCE_OPTIONS: Array<{ value: Cadence; label: string; hint: string }> = [
-  { value: "none", label: "Off", hint: "Draft only — operator ships manually" },
-  { value: "daily", label: "Daily", hint: "Ships at 07:30 UTC every day" },
-  { value: "weekly", label: "Weekly", hint: "Mondays at 07:00 UTC" },
-  { value: "monthly", label: "Monthly", hint: "1st of the month at 07:00 UTC" },
+// Schedule times render with the viewer's local equivalent appended
+// (LocalTime) — UTC-only labels invite misconfigured sends.
+const CADENCE_OPTIONS: Array<{
+  value: Cadence;
+  label: string;
+  hint: React.ReactNode;
+}> = [
+  {
+    value: "none",
+    label: "Off",
+    hint: "Draft only — reports are reviewed and shared manually",
+  },
+  {
+    value: "daily",
+    label: "Daily",
+    hint: (
+      <>
+        Every day at 07:30 UTC
+        <LocalTime hourUtc={7} minuteUtc={30} />
+      </>
+    ),
+  },
+  {
+    value: "weekly",
+    label: "Weekly",
+    hint: (
+      <>
+        Mondays at 07:00 UTC
+        <LocalTime hourUtc={7} weekdayUtc={1} />
+      </>
+    ),
+  },
+  {
+    value: "monthly",
+    label: "Monthly",
+    hint: (
+      <>
+        1st of the month at 07:00 UTC
+        <LocalTime hourUtc={7} />
+      </>
+    ),
+  },
 ];
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -144,7 +182,8 @@ export function ReportCadenceForm({
         />
         <p className="text-[11px] text-muted-foreground">
           One email per line (or comma-separated). Up to 25 valid
-          addresses. We dedupe + lowercase before saving.
+          addresses. Duplicates are removed and addresses are lowercased
+          before saving.
         </p>
         {parsedRecipients.length > 0 ? (
           <p className="text-[11px] text-foreground">
@@ -159,18 +198,18 @@ export function ReportCadenceForm({
       <div className="flex items-start justify-between gap-3 rounded-lg border border-border bg-card p-3">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-foreground">
-            Auto-send the moment a snapshot is generated
+            Send automatically when a snapshot is generated
           </p>
           <p className="text-[12px] text-muted-foreground mt-0.5 leading-relaxed">
-            When off, the cron drafts the report and notifies you — you
-            ship it manually. When on, the report goes straight to the
-            recipient list.
+            When off, the scheduled run creates a draft and notifies you
+            for manual review and sharing. When on, the report is delivered
+            directly to the recipient list.
           </p>
           {!canAutoSend ? (
             <p className="text-[11.5px] text-amber-700 mt-1.5">
               {cadence === "none"
-                ? "Pick a cadence other than Off to enable auto-send."
-                : "Add at least one valid recipient email to enable auto-send."}
+                ? "Select a cadence other than Off to enable automatic sending."
+                : "Add at least one valid recipient email to enable automatic sending."}
             </p>
           ) : null}
         </div>

@@ -252,7 +252,7 @@ export default async function ResidentsPage({
         <EmptyState
           title="No resident roster yet"
           body="Resident KPIs populate once AppFolio finishes syncing the first 90 days of active leases. The first sync typically completes in 30–90 seconds."
-          action={{ label: "Manage integrations", href: "/portal/settings/integrations" }}
+          action={{ label: "Open Connect hub", href: "/portal/connect" }}
         />
       ) : (
         <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">

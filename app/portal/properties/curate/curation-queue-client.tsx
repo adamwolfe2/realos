@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { AlertDialog } from "@/components/portal/ui/alert-dialog";
 import {
   setPropertyLifecycle,
   setPropertyLifecycleBulk,
@@ -54,6 +55,21 @@ type Item = {
   websiteUrl: string | null;
 };
 
+// Billing impact for the "Activate all N" confirmation — computed server-side
+// from lib/billing/catalog.ts (graduated per-property monthly rate). Cents
+// fields are absent when the org's tier is unknown; the dialog then falls
+// back to qualitative copy. Display-only: no billing logic lives here.
+type BillingImpact = {
+  currentActive: number;
+  currentMonthlyCents?: number;
+  projectedMonthlyCents?: number;
+  trialing: boolean;
+};
+
+function fmtUSD(cents: number): string {
+  return `$${Math.round(cents / 100).toLocaleString()}`;
+}
+
 function hostnameOf(url: string | null): string | null {
   if (!url) return null;
   try {
@@ -67,14 +83,17 @@ function hostnameOf(url: string | null): string | null {
 export function CurationQueueClient({
   items,
   view,
+  billingImpact,
 }: {
   items: Item[];
   view: "imported" | "excluded";
+  billingImpact: BillingImpact;
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pending, startTransition] = useTransition();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [openImageRow, setOpenImageRow] = useState<string | null>(null);
+  const [confirmAllOpen, setConfirmAllOpen] = useState(false);
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -117,17 +136,11 @@ export function CurationQueueClient({
     });
   }
 
-  function actActivateAll() {
-    if (view !== "imported" || items.length === 0) return;
-    const ok = window.confirm(
-      `Activate all ${items.length} imported building${items.length === 1 ? "" : "s"}? ` +
-        `They'll count toward your marketable property total and billing. ` +
-        `Auto-excluded sub-records (parking, storage, etc.) are not affected.`,
-    );
-    if (!ok) return;
+  function confirmActivateAll() {
     setErrorMessage(null);
     startTransition(async () => {
       const result = await activateAllImportedProperties();
+      setConfirmAllOpen(false);
       if (!result.ok) {
         setErrorMessage(result.error);
         return;
@@ -139,12 +152,24 @@ export function CurationQueueClient({
     });
   }
 
+  const count = items.length;
+  const {
+    currentActive,
+    currentMonthlyCents,
+    projectedMonthlyCents,
+    trialing,
+  } = billingImpact;
+  const deltaCents =
+    currentMonthlyCents != null && projectedMonthlyCents != null
+      ? projectedMonthlyCents - currentMonthlyCents
+      : null;
+
   return (
     <div className="space-y-3">
       {/* Portfolio-wide one-click — activate the whole imported set without
           hand-selecting each building. */}
       {view === "imported" && items.length > 0 && (
-        <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/20 px-4 py-2.5">
+        <div className="flex items-center gap-3 rounded-[2px] border border-border bg-muted/20 px-4 py-2.5">
           <div className="min-w-0">
             <p className="text-sm font-medium text-foreground">
               {items.length} building{items.length === 1 ? "" : "s"} ready to activate
@@ -156,7 +181,7 @@ export function CurationQueueClient({
           </div>
           <button
             type="button"
-            onClick={actActivateAll}
+            onClick={() => setConfirmAllOpen(true)}
             disabled={pending}
             className="ml-auto shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
             title="Activate every imported building in your portfolio — counts toward billing"
@@ -166,14 +191,80 @@ export function CurationQueueClient({
             ) : (
               <Check className="w-3.5 h-3.5" aria-hidden="true" />
             )}
-            Activate all {items.length}
+            Activate all {count}
           </button>
         </div>
       )}
 
+      {/* Billing-affecting confirmation — itemized delta from the billing
+          catalog (display-only), replacing the old window.confirm. */}
+      <AlertDialog
+        open={confirmAllOpen}
+        title={`Activate all ${count} imported building${count === 1 ? "" : "s"}?`}
+        body={
+          <div className="space-y-2 pt-1">
+            <p>
+              Every activated building counts toward your marketable property
+              total and billing. Auto-excluded sub-records (parking, storage,
+              etc.) are not affected.
+            </p>
+            {deltaCents != null &&
+            currentMonthlyCents != null &&
+            projectedMonthlyCents != null ? (
+              <ul className="space-y-1 border-t border-border pt-2 tabular-nums">
+                <li className="flex justify-between gap-4">
+                  <span>
+                    Active today · {currentActive.toLocaleString()}{" "}
+                    {currentActive === 1 ? "property" : "properties"}
+                  </span>
+                  <span className="font-medium text-foreground">
+                    {fmtUSD(currentMonthlyCents)}/mo
+                  </span>
+                </li>
+                <li className="flex justify-between gap-4">
+                  <span>
+                    Activating · {count.toLocaleString()}{" "}
+                    {count === 1 ? "property" : "properties"} × graduated
+                    per-property rate
+                  </span>
+                  <span className="font-medium text-foreground">
+                    +{fmtUSD(deltaCents)}/mo
+                  </span>
+                </li>
+                <li className="flex justify-between gap-4 border-t border-border pt-1">
+                  <span>
+                    After · {(currentActive + count).toLocaleString()}{" "}
+                    properties
+                  </span>
+                  <span className="font-semibold text-foreground">
+                    {fmtUSD(projectedMonthlyCents)}/mo total
+                  </span>
+                </li>
+              </ul>
+            ) : (
+              <p className="border-t border-border pt-2">
+                Your monthly total is billed at your tier&rsquo;s graduated
+                per-property rate — review it on the billing page before
+                activating a large portfolio.
+              </p>
+            )}
+            {trialing ? (
+              <p>
+                You&rsquo;re still in trial — no charge today; activations take
+                effect when the trial converts.
+              </p>
+            ) : null}
+          </div>
+        }
+        confirmLabel={`Activate all ${count}`}
+        pending={pending}
+        onCancel={() => setConfirmAllOpen(false)}
+        onConfirm={confirmActivateAll}
+      />
+
       {/* Bulk action bar */}
       {selected.size > 0 && (
-        <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 sticky top-0 z-10">
+        <div className="flex items-center gap-2 rounded-[2px] border border-border bg-card px-4 py-2 sticky top-0 z-10">
           <span className="text-sm font-medium">
             {selected.size} selected
           </span>
@@ -218,12 +309,12 @@ export function CurationQueueClient({
       )}
 
       {errorMessage && (
-        <div className="rounded-xl border border-destructive/40 bg-destructive/5 px-4 py-2 text-sm text-destructive">
+        <div className="rounded-[2px] border border-destructive/40 bg-destructive/5 px-4 py-2 text-sm text-destructive">
           {errorMessage}
         </div>
       )}
 
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="rounded-[2px] border border-border bg-card overflow-hidden">
         <div className="px-4 py-2 border-b border-border bg-muted/20 flex items-center gap-3">
           <input
             type="checkbox"

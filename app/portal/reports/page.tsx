@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BarChart3 } from "lucide-react";
+import { ArrowRight, BarChart3 } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { requireModule } from "@/lib/portal/module-gate";
@@ -13,7 +13,12 @@ import {
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PageHeader } from "@/components/admin/page-header";
 import { EmptyState } from "@/components/portal/ui/empty-state";
+import {
+  DataTable,
+  type DataTableColumn,
+} from "@/components/portal/ui/data-table";
 import { createReport } from "@/lib/actions/reports";
+import { cn } from "@/lib/utils";
 import { Prisma } from "@prisma/client";
 
 export const metadata: Metadata = { title: "Client reports" };
@@ -24,7 +29,18 @@ type Search = {
   status?: string;
   property?: string;
   properties?: string;
+  sort?: string;
+  dir?: string;
 };
+
+// Sortable columns map straight onto indexed-ish scalar fields, so the sort
+// is a one-line orderBy swap — no extra queries.
+const SORT_KEYS = ["period", "generated", "shared", "views"] as const;
+type SortKey = (typeof SORT_KEYS)[number];
+
+function parseSortKey(raw: string | undefined): SortKey {
+  return SORT_KEYS.includes(raw as SortKey) ? (raw as SortKey) : "generated";
+}
 
 export default async function ReportsListPage({
   searchParams,
@@ -49,6 +65,28 @@ export default async function ReportsListPage({
     where.status = sp.status;
   }
 
+  const sortKey = parseSortKey(sp.sort);
+  const sortDir: "asc" | "desc" = sp.dir === "asc" ? "asc" : "desc";
+  const orderBy: Prisma.ClientReportOrderByWithRelationInput =
+    sortKey === "period"
+      ? { periodStart: sortDir }
+      : sortKey === "shared"
+        ? { sharedAt: sortDir }
+        : sortKey === "views"
+          ? { viewCount: sortDir }
+          : { generatedAt: sortDir };
+
+  const hrefForSort = (key: string): string => {
+    const params = new URLSearchParams();
+    if (sp.kind) params.set("kind", sp.kind);
+    if (sp.status) params.set("status", sp.status);
+    if (sp.property) params.set("property", sp.property);
+    if (sp.properties) params.set("properties", sp.properties);
+    params.set("sort", key);
+    params.set("dir", key === sortKey && sortDir === "desc" ? "asc" : "desc");
+    return `/portal/reports?${params.toString()}`;
+  };
+
   // Property list for the picker. Hidden when the org only has one
   // property (single-asset tenants don't need to choose). Narrowed to
   // the user's allowed set via UserPropertyAccess.
@@ -61,7 +99,7 @@ export default async function ReportsListPage({
 
   const reports = await prisma.clientReport.findMany({
     where,
-    orderBy: { generatedAt: "desc" },
+    orderBy,
     take: 100,
     select: {
       id: true,
@@ -76,6 +114,7 @@ export default async function ReportsListPage({
       property: { select: { id: true, name: true } },
     },
   });
+  type ReportRow = (typeof reports)[number];
 
   // Bug #115 (was #8): three reports with identical title "End of Month
   // Report 5/22" (2 SHARED + 1 GENERATED) made it impossible to tell which
@@ -89,10 +128,10 @@ export default async function ReportsListPage({
   type DupeBadge = "most-recent" | "outdated" | null;
   const dupeBadge = new Map<string, DupeBadge>();
   {
-    const effectiveTitle = (r: (typeof reports)[number]): string =>
+    const effectiveTitle = (r: ReportRow): string =>
       (r.headline?.trim() ||
         `${r.periodStart.toISOString()}_${r.periodEnd.toISOString()}`).toLowerCase();
-    const groups = new Map<string, typeof reports>();
+    const groups = new Map<string, ReportRow[]>();
     for (const r of reports) {
       const propertyKey = r.property?.id ?? "__portfolio__";
       const key = `${r.kind}::${propertyKey}::${r.periodStart.toISOString()}::${effectiveTitle(r)}`;
@@ -122,12 +161,111 @@ export default async function ReportsListPage({
     }
   }
 
+  const isDim = (r: ReportRow): boolean => dupeBadge.get(r.id) === "outdated";
+
+  const columns: DataTableColumn<ReportRow>[] = [
+    {
+      key: "period",
+      header: "Report",
+      sortable: true,
+      accessor: (r) => (
+        <div className={cn("min-w-0", isDim(r) && "opacity-60")}>
+          <p className="text-xs font-semibold text-foreground truncate leading-tight">
+            {r.headline ||
+              `${formatDate(r.periodStart)} to ${formatDate(r.periodEnd)}`}
+          </p>
+          <p className="text-[10px] text-muted-foreground truncate leading-tight mt-0.5">
+            {kindLabel(r.kind)} · {r.property ? r.property.name : "Portfolio"}
+          </p>
+        </div>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      width: "110px",
+      accessor: (r) => <StatusPill status={r.status} dim={isDim(r)} />,
+    },
+    {
+      key: "version",
+      header: "Version",
+      width: "130px",
+      hideOnMobile: true,
+      accessor: (r) => {
+        const badge = dupeBadge.get(r.id) ?? null;
+        if (badge === "most-recent") {
+          return (
+            <span
+              title="Most recently shared version of a duplicate set"
+              className="ls-pill ls-pill-success uppercase tracking-wide"
+            >
+              Most recent
+            </span>
+          );
+        }
+        if (badge === "outdated") {
+          return (
+            <span
+              title="A newer report with the same title and period has been shared. Consider archiving."
+              className="ls-pill ls-pill-warning uppercase tracking-wide"
+            >
+              Outdated
+            </span>
+          );
+        }
+        return <span className="text-muted-foreground/50">—</span>;
+      },
+    },
+    {
+      key: "generated",
+      header: "Generated",
+      sortable: true,
+      width: "120px",
+      hideOnMobile: true,
+      accessor: (r) => (
+        <span className={cn("text-muted-foreground", isDim(r) && "opacity-60")}>
+          {formatDate(r.generatedAt)}
+        </span>
+      ),
+    },
+    {
+      key: "shared",
+      header: "Shared",
+      sortable: true,
+      width: "120px",
+      hideOnMobile: true,
+      accessor: (r) =>
+        r.sharedAt ? (
+          <span className={cn("text-muted-foreground", isDim(r) && "opacity-60")}>
+            {formatDate(r.sharedAt)}
+          </span>
+        ) : (
+          <span className="text-muted-foreground/50">—</span>
+        ),
+    },
+    {
+      key: "views",
+      header: "Views",
+      sortable: true,
+      align: "right",
+      width: "80px",
+      accessor: (r) =>
+        r.viewCount > 0 ? (
+          <span className={cn(isDim(r) && "opacity-60")}>
+            {r.viewCount.toLocaleString()}
+          </span>
+        ) : (
+          <span className="text-muted-foreground/50">0</span>
+        ),
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Client reports"
         title="Weekly and monthly reviews"
-        description="Generate a frozen snapshot of the numbers, add a personal note, then share a clean link with your client. Nothing auto-sends. You review every report before it leaves the building."
+        description="Generate a frozen snapshot of the numbers, add a note, then share a clean link with your client. Nothing is sent automatically — every report is reviewed before it is shared."
         actions={
           <form
             action={generateReport}
@@ -181,10 +319,10 @@ export default async function ReportsListPage({
           roll-up across every property, for sharing with managers. */}
       <Link
         href="/portal/reports/portfolio"
-        className="group flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 transition hover:border-primary/40"
+        className="group flex items-center justify-between gap-3 ls-card p-4 transition hover:border-primary/40"
       >
         <div className="flex items-center gap-3">
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-[2px] bg-primary/10 text-primary">
             <BarChart3 className="h-4.5 w-4.5" />
           </span>
           <div>
@@ -194,7 +332,10 @@ export default async function ReportsListPage({
             </div>
           </div>
         </div>
-        <span className="text-[13px] font-semibold text-primary group-hover:underline">View →</span>
+        <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-primary group-hover:underline">
+          View
+          <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+        </span>
       </Link>
 
       {/* Filters: property scope sits beside the kind/status filters so
@@ -202,7 +343,7 @@ export default async function ReportsListPage({
           at the same level. The multi-select lives outside the form (it
           drives the URL directly) and the hidden field below preserves
           the property selection across kind/status submits. */}
-      <div className="rounded-xl border border-border bg-card p-4 flex flex-wrap items-end gap-3">
+      <div className="ls-card p-4 flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1.5">
           <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
             Properties
@@ -219,6 +360,8 @@ export default async function ReportsListPage({
           {sp.properties ? (
             <input type="hidden" name="properties" value={sp.properties} />
           ) : null}
+          {sp.sort ? <input type="hidden" name="sort" value={sp.sort} /> : null}
+          {sp.dir ? <input type="hidden" name="dir" value={sp.dir} /> : null}
           <label className="flex flex-col gap-1.5">
             <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
               Kind
@@ -264,77 +407,21 @@ export default async function ReportsListPage({
         </form>
       </div>
 
-      {/* List */}
-      {reports.length === 0 ? (
-        <EmptyState
-          title="Generate your first report"
-          body="Use the Generate report button up top to capture this period's leads, tours, ad spend, and organic traffic as a frozen snapshot. Add a personal note, then copy a shareable link for your client. Nothing auto-sends."
-        />
-      ) : (
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
-          <div className="divide-y divide-border">
-            {reports.map((r) => {
-              const badge = dupeBadge.get(r.id) ?? null;
-              const dim = badge === "outdated";
-              return (
-              <Link
-                key={r.id}
-                href={`/portal/reports/${r.id}`}
-                className={
-                  "flex items-center justify-between gap-3 px-5 py-4 hover:bg-muted transition-colors" +
-                  (dim ? " opacity-60" : "")
-                }
-              >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                    <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
-                      {kindLabel(r.kind)}
-                    </span>
-                    <StatusPill status={r.status} />
-                    {r.property ? (
-                      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-widest font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
-                        <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                        {r.property.name}
-                      </span>
-                    ) : (
-                      <span className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
-                        Portfolio
-                      </span>
-                    )}
-                    {badge === "most-recent" ? (
-                      <span
-                        title="Most recently shared version of a duplicate set"
-                        className="inline-flex items-center gap-1 text-[10px] uppercase tracking-widest font-semibold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded"
-                      >
-                        Most recent
-                      </span>
-                    ) : null}
-                    {badge === "outdated" ? (
-                      <span
-                        title="A newer report with the same title and period has been shared. Consider archiving."
-                        className="inline-flex items-center gap-1 text-[10px] uppercase tracking-widest font-semibold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded"
-                      >
-                        Outdated
-                      </span>
-                    ) : null}
-                  </div>
-                  <div className="text-sm font-semibold text-foreground truncate">
-                    {r.headline ||
-                      `${formatDate(r.periodStart)} to ${formatDate(r.periodEnd)}`}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-0.5">
-                    Generated {formatDate(r.generatedAt)}
-                    {r.sharedAt ? ` \u00b7 Shared ${formatDate(r.sharedAt)}` : ""}
-                    {r.viewCount > 0 ? ` \u00b7 ${r.viewCount} views` : ""}
-                  </div>
-                </div>
-                <span className="text-xs text-muted-foreground">Open</span>
-              </Link>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      {/* List — DataTable v2 (dense rows, URL-driven sort) replaces the
+          rounded-xl card list. */}
+      <DataTable<ReportRow>
+        columns={columns}
+        rows={reports}
+        getRowHref={(r) => `/portal/reports/${r.id}`}
+        sort={{ by: sortKey, dir: sortDir, hrefForSort }}
+        density="compact"
+        emptyState={
+          <EmptyState
+            title="Generate your first report"
+            body="Use the Generate report button up top to capture this period's leads, tours, ad spend, and organic traffic as a frozen snapshot. Add a note, then copy a shareable link for your client. Nothing is sent automatically."
+          />
+        }
+      />
     </div>
   );
 }
@@ -364,18 +451,20 @@ async function generateReport(formData: FormData): Promise<void> {
 // Local helpers
 // ---------------------------------------------------------------------------
 
-function StatusPill({ status }: { status: string }) {
-  // Tones follow the StatusChip convention (status-chip.tsx): a shared
-  // report is a positive terminal state → success green; draft is neutral
-  // gray (work in progress, no signal); archived is dimmed neutral.
-  const tone =
-    status === "shared"
-      ? "bg-success/10 text-success"
-      : status === "archived"
-        ? "bg-muted text-muted-foreground/70"
-        : "bg-muted text-muted-foreground";
+function StatusPill({ status, dim }: { status: string; dim?: boolean }) {
+  // Wave-3 tone mapping preserved, routed through the ls-pill system
+  // (StatusChip convention, status-chip.tsx): a shared report is a positive
+  // terminal state → success green; draft is neutral gray (work in
+  // progress, no signal); archived is dimmed neutral.
+  const tone = status === "shared" ? "ls-pill-success" : "ls-pill-neutral";
   return (
-    <span className={"text-xs uppercase tracking-wide px-1.5 py-0.5 rounded " + tone}>
+    <span
+      className={cn(
+        "ls-pill uppercase tracking-wide",
+        tone,
+        (status === "archived" || dim) && "opacity-60",
+      )}
+    >
       {status}
     </span>
   );

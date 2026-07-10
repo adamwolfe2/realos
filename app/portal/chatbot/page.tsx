@@ -9,6 +9,7 @@ import { MasterToggle } from "./master-toggle";
 import { LeadRoutingPanel } from "./lead-routing-panel";
 import { InstallSnippet } from "./install-snippet";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
+import type { ConnectionStatus } from "@/components/portal/ui/status-chip";
 
 export const metadata: Metadata = { title: "Chatbot" };
 export const dynamic = "force-dynamic";
@@ -58,6 +59,7 @@ export default async function ChatbotPage() {
     existingConfig,
     appUrl,
     convStats,
+    latestConversation,
   ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
@@ -115,6 +117,18 @@ export default async function ChatbotPage() {
     ])
       .then(([d1, d7, d30, intakes30d]) => ({ d1, d7, d30, intakes30d }))
       .catch(() => ({ d1: 0, d7: 0, d30: 0, intakes30d: 0 })),
+    // Install heartbeat. There is no dedicated lastSeenAt / installVerifiedAt
+    // column and the widget's config fetch is edge-cached (can't be logged),
+    // so the strongest install proof is the most recent conversation the
+    // widget has reported. Read-only; the InstallSnippet Verify button just
+    // re-runs this read via router.refresh().
+    prisma.chatbotConversation
+      .findFirst({
+        where: { orgId: scope.orgId },
+        orderBy: { lastMessageAt: "desc" },
+        select: { lastMessageAt: true },
+      })
+      .catch(() => null),
   ]);
 
   if (!org) return null;
@@ -156,17 +170,36 @@ export default async function ChatbotPage() {
   const stats = convStats;
   const hasAnyConversations = stats.d30 > 0;
 
+  // Heartbeat chip state: Live if the widget reported activity in the last
+  // 7 days, Stale if it has ever reported but has gone quiet, otherwise
+  // Not connected. Rendered from last-known server state — no live probe.
+  const HEARTBEAT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+  const lastActivityAt = latestConversation?.lastMessageAt ?? null;
+  const installStatus: ConnectionStatus = lastActivityAt
+    ? now - lastActivityAt.getTime() <= HEARTBEAT_WINDOW_MS
+      ? "live"
+      : "stale"
+    : "not_connected";
+  const lastActivityLabel = lastActivityAt
+    ? `last activity ${lastActivityAt.toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      })}`
+    : null;
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Chatbot"
-        description="See how the AI leasing assistant is performing on your site, then tune persona, knowledge, and capture rules below."
+        description="Install the AI leasing assistant on your site and verify it's live, then tune persona, knowledge, and capture rules below."
       />
 
       {!org.moduleChatbot ? (
         <div
           role="status"
-          className="rounded-xl border border-primary/20 bg-primary/[0.03] p-4 text-sm text-foreground flex items-start gap-3"
+          className="rounded-[2px] border border-primary/20 bg-primary/[0.03] p-4 text-sm text-foreground flex items-start gap-3"
         >
           <div className="flex-1">
             <p className="font-semibold">Chatbot module isn&apos;t active yet.</p>
@@ -178,14 +211,24 @@ export default async function ChatbotPage() {
           </div>
           <a
             href="/portal/marketplace"
-            className="shrink-0 inline-flex items-center rounded-md bg-primary text-primary-foreground px-3 h-8 text-xs font-semibold hover:bg-primary-dark transition-colors"
+            className="shrink-0 inline-flex items-center rounded-[2px] bg-primary text-primary-foreground px-3 h-8 text-xs font-semibold hover:bg-primary-dark transition-colors"
           >
             Activate
           </a>
         </div>
       ) : null}
 
-      {/* ── INSIGHT (top of page per #91) ──────────────────────────── */}
+      {/* ── INSTALL (top of page — Carbon Wave 4) ──────────────────────
+          The install prerequisite leads: Copy → Paste → Verify stepper +
+          heartbeat chip. Everything below is tuning; none of it matters
+          until the widget is on the operator's site. */}
+      <InstallSnippet
+        snippet={snippet}
+        status={installStatus}
+        lastActivityLabel={lastActivityLabel}
+      />
+
+      {/* ── INSIGHT (below install, above config per #91) ──────────── */}
       {hasAnyConversations ? (
         <SectionCard
           label="Performance"
@@ -228,8 +271,6 @@ export default async function ChatbotPage() {
         orgPrimaryColor={org.primaryColor}
         moduleActive={org.moduleChatbot}
       />
-
-      <InstallSnippet snippet={snippet} />
     </div>
   );
 }
@@ -247,7 +288,7 @@ function ChatbotStatTile({
   hint?: string;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-muted/20 p-3">
+    <div className="rounded-[2px] border border-border bg-muted/20 p-3">
       <dt className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground truncate">
         {label}
       </dt>

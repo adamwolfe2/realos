@@ -102,12 +102,12 @@ export function OpportunityScoreCard({
         engineSource === "dataforseo" ? (
           <div className="text-[13px] text-muted-foreground py-2">
             Opportunity scores populate on your next scan. If none surface,
-            connect Google Search Console under{" "}
+            connect Google Search Console from the{" "}
             <a
-              href="/portal/settings/integrations"
+              href="/portal/connect"
               className="underline underline-offset-2"
             >
-              Settings → Integrations
+              Connect hub
             </a>{" "}
             so we can rank your real top queries.
           </div>

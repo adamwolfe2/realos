@@ -39,7 +39,6 @@ import { ActivityFeed } from "@/components/portal/dashboard/activity-feed";
 import {
   getActivityFeed,
   getAdSpendKpi,
-  getFirstRunProgress,
   getFunnel,
   getHotVisitors,
   getIntegrationHealth,
@@ -264,7 +263,6 @@ export default async function PortalHome({
       funnelStages,
       activity,
       integrationChips,
-      firstRun,
       openInsights,
       insightCounts,
       connectStatus,
@@ -424,12 +422,6 @@ export default async function PortalHome({
       ),
       getActivityFeed(scope.orgId, 10).catch(() => []),
       getIntegrationHealth(scope.orgId).catch(() => []),
-      getFirstRunProgress(scope.orgId).catch(() => ({
-        hasProperty: false,
-        pixelInstalled: false,
-        gscConnected: false,
-        marketingSiteCustomized: false,
-      })),
       // P1-2: scope the dashboard insight card + counts to the user's gated
       // properties so a property-restricted user never sees other buildings'
       // insights (effectiveIds is the org-wide null only for unrestricted users).
@@ -588,49 +580,6 @@ export default async function PortalHome({
               100,
           )
         : null;
-
-    // Wizard step actionHref routes — every URL is verified to exist as a
-    // real Next.js route under /app/portal/. Retained as stepper fallback
-    // data after the SetupWizardGate removal (Carbon rebuild 2026-07-09);
-    // integration hrefs repointed to the canonical /portal/connect hub
-    // (hosts the pixel + GA4 flows — see connect-hub.tsx SOURCE ids).
-    const wizardSteps = [
-      {
-        id: "property",
-        title: "Add your first property",
-        description:
-          "Properties are the foundation — everything else maps to them.",
-        actionLabel: "Add property",
-        actionHref: "/portal/properties",
-        done: firstRun.hasProperty,
-      },
-      {
-        id: "pixel",
-        title: "Install the tracking pixel",
-        description:
-          "See live visitors, traffic sources, and engagement in real time.",
-        actionLabel: "Set up pixel",
-        actionHref: "/portal/connect",
-        done: firstRun.pixelInstalled,
-      },
-      {
-        id: "seo",
-        title: "Connect Google Analytics",
-        description:
-          "Pull organic sessions and top landing pages into your dashboard.",
-        actionLabel: "Connect GA4",
-        actionHref: "/portal/connect",
-        done: firstRun.gscConnected,
-      },
-      {
-        id: "site",
-        title: "Customize your marketing site",
-        description: "Set your headline, hero image, and primary CTA link.",
-        actionLabel: "Customize site",
-        actionHref: "/portal/site-builder",
-        done: firstRun.marketingSiteCustomized,
-      },
-    ];
 
     const cursiveOff =
       integrationChips.find((c) => c.key === "cursive")?.status === "off";
@@ -1453,14 +1402,14 @@ export default async function PortalHome({
             />
             {appfolioAutoSyncPaused ? (
               <Link
-                href="/portal/settings/integrations#appfolio"
+                href="/portal/connect"
                 className="text-[12px] font-medium text-[#0f62fe] hover:underline"
               >
                 Enable auto-sync
               </Link>
             ) : appfolioConnected ? (
               <Link
-                href="/portal/settings/integrations#appfolio"
+                href="/portal/connect"
                 className="text-[12px] font-medium text-[#0f62fe] hover:underline"
               >
                 Manage

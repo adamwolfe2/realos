@@ -72,7 +72,7 @@ export function ReverseAttributionView({
             <button
               type="button"
               onClick={() => setFilter(null)}
-              className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-muted transition-colors"
+              className="inline-flex items-center gap-1 rounded-[2px] border border-border bg-secondary px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-muted transition-colors"
             >
               {filter.type === "source" ? "Source" : "Page"}: {filter.value}
               <X className="h-3 w-3" />

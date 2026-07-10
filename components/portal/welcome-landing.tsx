@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, ExternalLink, Globe, Layers, Plug, Sparkles } from "lucide-react";
+import { ArrowRight, ExternalLink, Globe, Layers, Plug, Users } from "lucide-react";
 import {
   groupModulesByCategory,
   type CatalogEntry,
@@ -24,9 +24,15 @@ import {
 //      Categories from groupModulesByCategory() so the visual order matches
 //      /portal/marketplace exactly.
 //
-// Design tone: Apple-clean, single LeaseStack blue accent, generous
-// whitespace, no rainbow status colors. No serif marketing voice — this is
-// product chrome.
+// Design tone: Carbon-flat product chrome — 2px radii, hairline borders,
+// token-driven color (no inline hex, no gradients, no glows), single blue
+// accent. No serif marketing voice.
+//
+// This is the ONE first-run entry experience for brand-new zero-signal orgs
+// (different route condition from the dashboard's OnboardingStepper — the
+// stepper takes over the moment any signal flips non-zero). Its CTAs point
+// at the same destinations the stepper's FOUNDATION/GROWTH phases use:
+// /portal/connect (connect data) and /portal/leads (capture leads).
 // ---------------------------------------------------------------------------
 
 type Props = {
@@ -68,7 +74,7 @@ const SETUP_STEPS = [
   },
   {
     id: "capture",
-    icon: Sparkles,
+    icon: Users,
     title: "Start capturing leads",
     description:
       "Drop in the visitor pixel, share your forms, or import historic leads via CSV.",
@@ -190,12 +196,7 @@ export function WelcomeLanding({
           <div className="flex items-center gap-4 flex-wrap">
             <span
               aria-hidden
-              className="inline-flex items-center justify-center w-10 h-10 rounded-xl"
-              style={{
-                background:
-                  "linear-gradient(180deg, rgba(37,99,235,0.14), rgba(37,99,235,0.06))",
-                color: "var(--primary, #2563EB)",
-              }}
+              className="inline-flex items-center justify-center w-10 h-10 rounded-[2px] bg-accent text-primary"
             >
               <Globe className="w-5 h-5" strokeWidth={1.75} />
             </span>
@@ -204,17 +205,10 @@ export function WelcomeLanding({
                 <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                   Your site is live
                 </p>
-                <span
-                  className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-mono font-semibold uppercase tracking-[0.1em]"
-                  style={{
-                    backgroundColor: "rgba(22,163,74,0.10)",
-                    color: "#15803D",
-                  }}
-                >
+                <span className="inline-flex items-center gap-1.5 rounded-[2px] bg-success/10 px-2 py-0.5 text-[10px] font-mono font-semibold uppercase tracking-[0.1em] text-success">
                   <span
                     aria-hidden
-                    className="inline-block w-1.5 h-1.5 rounded-full"
-                    style={{ backgroundColor: "#15803D" }}
+                    className="inline-block w-1.5 h-1.5 rounded-full bg-success"
                   />
                   Online
                 </span>
@@ -241,7 +235,7 @@ export function WelcomeLanding({
               href={liveSiteUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 h-10 text-[13px] font-semibold text-primary-foreground hover:bg-primary/90 transition-colors flex-shrink-0"
+              className="inline-flex items-center justify-center gap-2 rounded-none bg-primary px-4 h-10 text-[13px] font-semibold text-primary-foreground hover:bg-primary-dark transition-colors flex-shrink-0"
             >
               View site
               <ExternalLink className="w-3.5 h-3.5" />
@@ -267,14 +261,7 @@ export function WelcomeLanding({
               className="ls-card relative p-5 flex flex-col gap-3 min-h-[148px]"
             >
               <div className="flex items-center gap-3">
-                <span
-                  className="inline-flex items-center justify-center w-9 h-9 rounded-lg ring-1 ring-inset ring-border"
-                  style={{
-                    background:
-                      "linear-gradient(180deg, rgba(37,99,235,0.10), rgba(37,99,235,0.04))",
-                    color: "var(--primary, #2563EB)",
-                  }}
-                >
+                <span className="inline-flex items-center justify-center w-9 h-9 rounded-[2px] bg-accent text-primary">
                   <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
                 </span>
                 <div className="flex items-center gap-2">

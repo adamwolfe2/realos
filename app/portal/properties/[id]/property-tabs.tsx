@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import {
   LayoutDashboard,
+  Rocket,
   TrendingUp,
   Users,
   BarChart3,
@@ -53,6 +54,7 @@ type Category = {
 // tab. URL contract (?tab=X) is unchanged — every key still resolves.
 const CATEGORIES: Category[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "onboarding", label: "Onboarding", icon: Rocket },
   { id: "leads", label: "Leads", icon: Users },
   { id: "traffic", label: "Traffic", icon: TrendingUp },
   { id: "ads", label: "Ads", icon: BarChart3 },
@@ -63,10 +65,10 @@ const CATEGORIES: Category[] = [
 
 // Map every TabKey → the top-level tab it belongs to. Visible tabs map to
 // themselves; hidden Operations-group tabs (residents/renewals/occupancy/
-// work-orders) + onboarding fall back to overview so deep links don't 404.
+// work-orders) fall back to overview so deep links don't 404.
 const TAB_TO_CATEGORY: Record<TabKey, TabKey> = {
   overview: "overview",
-  onboarding: "overview",
+  onboarding: "onboarding",
   leads: "leads",
   traffic: "traffic",
   ads: "ads",

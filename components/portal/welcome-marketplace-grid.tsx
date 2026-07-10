@@ -131,7 +131,7 @@ export function WelcomeMarketplaceGrid({
       {error ? (
         <div
           role="alert"
-          className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-2.5 text-sm text-destructive"
+          className="rounded-[2px] border border-destructive/30 bg-destructive/10 px-4 py-2.5 text-sm text-destructive"
         >
           {error}
         </div>
@@ -183,13 +183,10 @@ function WelcomeModuleCard({
     >
       <div className="flex items-start gap-3">
         <div
-          className="inline-flex items-center justify-center w-10 h-10 rounded-lg shrink-0 ring-1 ring-inset ring-border"
-          style={{
-            background:
-              "linear-gradient(180deg, rgba(37,99,235,0.10), rgba(37,99,235,0.04))",
-            color: "var(--primary, #2563EB)",
-            opacity: isComing ? 0.6 : 1,
-          }}
+          className={[
+            "inline-flex items-center justify-center w-10 h-10 rounded-[2px] shrink-0 bg-accent text-primary",
+            isComing ? "opacity-60" : "",
+          ].join(" ")}
         >
           <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
         </div>
@@ -371,7 +368,7 @@ function WelcomeCta({
     return (
       <Link
         href={setupHref}
-        className="inline-flex items-center gap-1 h-8 px-3 rounded-md bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary-dark transition-colors"
+        className="inline-flex items-center gap-1 h-8 px-3 rounded-none bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary-dark transition-colors"
       >
         Open <ArrowRight className="w-3 h-3" />
       </Link>
@@ -381,7 +378,7 @@ function WelcomeCta({
     return (
       <Link
         href={setupHref}
-        className="inline-flex items-center gap-1 h-8 px-3 rounded-md bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary-dark transition-colors"
+        className="inline-flex items-center gap-1 h-8 px-3 rounded-none bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary-dark transition-colors"
       >
         Add <ArrowRight className="w-3 h-3" />
       </Link>
@@ -391,7 +388,7 @@ function WelcomeCta({
     return (
       <Link
         href={setupHref}
-        className="inline-flex items-center gap-1 h-8 px-3 rounded-md border border-primary text-primary text-[12px] font-semibold hover:bg-primary hover:text-primary-foreground transition-colors"
+        className="inline-flex items-center gap-1 h-8 px-3 rounded-none border border-primary text-primary text-[12px] font-semibold hover:bg-primary hover:text-primary-foreground transition-colors"
       >
         Request setup <ArrowRight className="w-3 h-3" />
       </Link>
@@ -403,7 +400,7 @@ function WelcomeCta({
         type="button"
         onClick={onActivate}
         disabled={isPending}
-        className="inline-flex items-center justify-center gap-1 h-8 px-3 rounded-md bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary-dark disabled:opacity-40 transition-colors"
+        className="inline-flex items-center justify-center gap-1 h-8 px-3 rounded-none bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary-dark disabled:opacity-40 transition-colors"
       >
         {isPending ? "Activating…" : isTrialing ? "Activate" : "Unlock"}
         {!isPending ? <ArrowRight className="w-3 h-3" /> : null}

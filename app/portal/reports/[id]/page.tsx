@@ -94,7 +94,7 @@ export default async function ReportDetailPage({
                  slate background from the app shell. */
               html, body {
                 background: #ffffff !important;
-                color: #0F172A !important;
+                color: #161616 !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
               }
@@ -166,8 +166,8 @@ export default async function ReportDetailPage({
               article.report-article header,
               article.report-article section {
                 box-shadow: none !important;
-                border: 1px solid #E5E7EB !important;
-                border-radius: 6pt !important;
+                border: 1px solid #e0e0e0 !important;
+                border-radius: 2px !important;
                 padding: 10pt 12pt !important;
                 break-inside: avoid;
                 page-break-inside: avoid;
@@ -200,12 +200,14 @@ export default async function ReportDetailPage({
               a { color: inherit; text-decoration: none; }
 
               /* Background-clip:text gradient fallback for renderers
-                 that don't honor the clip-path. */
+                 that don't honor the clip-path. Hero numbers are flat
+                 #0f62fe ink now (Carbon re-skin) so this is a
+                 belt-and-suspenders backstop only. */
               @supports not (-webkit-background-clip: text) {
                 .ls-report [style*="WebkitBackgroundClip"],
                 .ls-report [style*="-webkit-background-clip"] {
-                  -webkit-text-fill-color: #1D4ED8 !important;
-                  color: #1D4ED8 !important;
+                  -webkit-text-fill-color: #0f62fe !important;
+                  color: #0f62fe !important;
                 }
               }
 

@@ -1,15 +1,11 @@
 import Link from "next/link";
-import { format } from "date-fns";
-import {
-  CheckCircle2,
-  Circle,
-  AlertCircle,
-  Rocket,
-  Pause,
-  Play,
-} from "lucide-react";
+import { CheckCircle2, Circle, AlertCircle, Rocket } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getLaunchChecklist } from "@/lib/properties/launch";
+import {
+  StatusChip,
+  type ConnectionStatus,
+} from "@/components/portal/ui/status-chip";
 import { LaunchStatusActions } from "./launch-status-actions";
 
 // ---------------------------------------------------------------------------
@@ -23,28 +19,16 @@ import { LaunchStatusActions } from "./launch-status-actions";
 // from DRAFT → ONBOARDING → LIVE.
 // ---------------------------------------------------------------------------
 
-type StatusBadgeTone = "live" | "onboarding" | "draft" | "paused";
-
-const STATUS_LABEL: Record<string, string> = {
-  LIVE: "Live",
-  ONBOARDING: "Onboarding",
-  DRAFT: "Draft",
-  PAUSED: "Paused",
-};
-
-const STATUS_TONE: Record<string, StatusBadgeTone> = {
-  LIVE: "live",
-  ONBOARDING: "onboarding",
-  DRAFT: "draft",
-  PAUSED: "paused",
-};
-
-const TONE_CLASS: Record<StatusBadgeTone, string> = {
-  live: "bg-primary/10 text-primary border-primary/30",
-  onboarding: "bg-secondary text-foreground border-border",
-  draft: "bg-muted text-muted-foreground border-border",
-  paused: "bg-muted text-muted-foreground border-border",
-};
+// Launch status → shared StatusChip vocabulary. Live is GREEN (#24a148,
+// never blue — blue is reserved for in-progress); Onboarding maps to the
+// in-progress blue; Draft/Paused read neutral.
+const STATUS_CHIP: Record<string, { status: ConnectionStatus; label: string }> =
+  {
+    LIVE: { status: "live", label: "Live" },
+    ONBOARDING: { status: "connecting", label: "Onboarding" },
+    DRAFT: { status: "not_connected", label: "Draft" },
+    PAUSED: { status: "stale", label: "Paused" },
+  };
 
 export async function OnboardingTab({
   orgId,
@@ -62,7 +46,7 @@ export async function OnboardingTab({
     );
   }
 
-  const tone = STATUS_TONE[checklist.status] ?? "draft";
+  const chip = STATUS_CHIP[checklist.status] ?? STATUS_CHIP.DRAFT;
 
   // Required progress drives the headline. Optional items render below
   // and don't block LIVE.
@@ -81,14 +65,7 @@ export async function OnboardingTab({
               <span className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
                 Launch status
               </span>
-              <span
-                className={cn(
-                  "px-2 py-0.5 rounded text-[11px] font-semibold border",
-                  TONE_CLASS[tone],
-                )}
-              >
-                {STATUS_LABEL[checklist.status] ?? checklist.status}
-              </span>
+              <StatusChip status={chip.status} label={chip.label} />
               {checklist.setBy === "OPERATOR" ? (
                 <span className="text-[10px] text-muted-foreground">
                   set by operator
@@ -122,19 +99,19 @@ export async function OnboardingTab({
           />
         </div>
 
-        {/* Progress bar */}
+        {/* Progress bar — real visible fill on a hard #e0e0e0 track.
+            (The prior bg-secondary fill was near-invisible against the
+            muted track.) Live fills success green; everything else uses
+            the primary token. */}
         <div className="mt-4">
-          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+          <div className="h-1.5 w-full rounded-[2px] bg-[#e0e0e0] overflow-hidden">
             <div
-              className={cn(
-                "h-full transition-all",
-                tone === "live"
-                  ? "bg-primary"
-                  : tone === "onboarding"
-                    ? "bg-secondary"
-                    : "bg-muted-foreground/40",
-              )}
-              style={{ width: `${requiredPct}%` }}
+              className="h-full transition-all"
+              style={{
+                width: `${requiredPct}%`,
+                backgroundColor:
+                  chip.status === "live" ? "#24a148" : "var(--color-primary)",
+              }}
             />
           </div>
         </div>
@@ -199,10 +176,7 @@ function ChecklistRow({ item }: { item: Awaited<ReturnType<typeof getLaunchCheck
       />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className={cn(
-            "text-sm font-medium",
-            item.done ? "text-foreground" : "text-foreground"
-          )}>
+          <span className="text-sm font-medium text-foreground">
             {item.label}
           </span>
           {!item.done && item.required ? (
@@ -224,7 +198,7 @@ function ChecklistRow({ item }: { item: Awaited<ReturnType<typeof getLaunchCheck
       {!item.done && item.actionHref && item.actionLabel ? (
         <Link
           href={item.actionHref}
-          className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors transition-colors shrink-0"
+          className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors shrink-0"
         >
           {item.actionLabel}
         </Link>
@@ -239,5 +213,3 @@ function ChecklistRow({ item }: { item: Awaited<ReturnType<typeof getLaunchCheck
     </li>
   );
 }
-
-export { Pause, Play };

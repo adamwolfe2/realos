@@ -44,9 +44,9 @@ export function ChannelPipelineTable({ rows }: { rows: ChannelPipelineRow[] }) {
                     <span className="block truncate text-[12px] font-medium text-foreground">
                       {r.label}
                     </span>
-                    <span className="mt-1 block h-1 w-24 rounded-full bg-muted overflow-hidden">
+                    <span className="mt-1 block h-1 w-24 bg-muted overflow-hidden">
                       <span
-                        className="block h-full rounded-full"
+                        className="block h-full"
                         style={{
                           width: `${Math.max((r.leads / maxLeads) * 100, 4)}%`,
                           background: r.color,

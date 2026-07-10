@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
 import { requireModule } from "@/lib/portal/module-gate";
@@ -17,6 +18,9 @@ import { type AttributionFilters } from "@/lib/attribution/queries";
 import { fetchGa4SourceLandingVolumes } from "@/lib/attribution/ga4-sources";
 import { ReverseAttributionView } from "@/components/portal/attribution/reverse-attribution-view";
 import { ChannelPipelineTable } from "@/components/portal/attribution/channel-pipeline-table";
+import { RangePresetControl } from "@/components/portal/attribution/range-preset-control";
+import { StatusChip } from "@/components/portal/ui/status-chip";
+import { getConnectStatusForOrg } from "@/lib/connect/status";
 
 export const metadata: Metadata = { title: "Reverse Attribution" };
 export const dynamic = "force-dynamic";
@@ -74,7 +78,7 @@ export default async function ReverseAttributionPage({
     toDate,
   };
 
-  const [reverse, pipeline] = await Promise.all([
+  const [reverse, pipeline, connectSources] = await Promise.all([
     (async () => {
       const ga4Landing = await fetchGa4SourceLandingVolumes(
         scope.orgId,
@@ -84,10 +88,20 @@ export default async function ReverseAttributionPage({
       return getReverseAttribution(filters, ga4Landing);
     })(),
     getChannelPipeline(filters),
+    // Same derivation the Connect hub uses (one integration row with a bound
+    // pixel = connected), so the chip below always agrees with /portal/connect.
+    getConnectStatusForOrg(scope.orgId),
   ]);
+
+  const pixelConnected =
+    connectSources.find((s) => s.id === "cursive_pixel")?.connected ?? false;
 
   const totalLeads = pipeline.reduce((s, r) => s + r.leads, 0);
   const totalSigned = pipeline.reduce((s, r) => s + r.signed, 0);
+
+  const dayCount = Math.round(
+    (toDate.getTime() - fromDate.getTime()) / (24 * 60 * 60 * 1000),
+  );
 
   return (
     <div className="space-y-3 ls-page-fade">
@@ -98,6 +112,16 @@ export default async function ReverseAttributionPage({
           <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
         }
       />
+
+      {/* Shared preset range control — same Carbon chip group as
+          /portal/attribution and the dashboard. */}
+      <div className="ls-card flex flex-wrap items-center gap-3 p-2.5">
+        <RangePresetControl
+          basePath="/portal/reverse-attribution"
+          activeDays={dayCount}
+          properties={params.properties}
+        />
+      </div>
 
       <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
         <KpiTile
@@ -126,12 +150,34 @@ export default async function ReverseAttributionPage({
         />
       </section>
 
-      {reverse.identifiedCount === 0 ? (
-        <div className="rounded-lg border border-dashed border-border bg-muted/20 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
-          Pixel identity resolution is off for this workspace, so individual
-          visits aren&apos;t matched to names on this page yet. Channel-level
-          reverse attribution below still works from referrers, UTMs, and
-          PMS-synced (AppFolio) leads.
+      {/* Identity-resolution state. Previously a dead-end explainer with no
+          exit; now an explicit StatusChip + a direct path to /portal/connect. */}
+      {!pixelConnected ? (
+        <div className="ls-card flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5">
+          <StatusChip
+            status="not_connected"
+            label="Identity resolution · Not connected"
+          />
+          <span className="text-[11px] leading-relaxed text-muted-foreground">
+            Pixel identity resolution is off for this workspace, so individual
+            visits aren&apos;t matched to names yet. Channel-level reverse
+            attribution below still works from referrers, UTMs, and PMS-synced
+            (AppFolio) leads.
+          </span>
+          <Link
+            href="/portal/connect"
+            className="ml-auto text-[11px] font-semibold text-primary underline-offset-2 hover:underline"
+          >
+            Enable identity resolution
+          </Link>
+        </div>
+      ) : reverse.identifiedCount === 0 ? (
+        <div className="ls-card flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5">
+          <StatusChip status="live" label="Identity resolution · Live" />
+          <span className="text-[11px] leading-relaxed text-muted-foreground">
+            No visits were identified in this window yet. Resolved visitors
+            appear here as the pixel matches traffic to people.
+          </span>
         </div>
       ) : null}
 

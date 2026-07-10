@@ -1,4 +1,5 @@
 import * as React from "react";
+import { CHART_COLORS } from "@/components/portal/ui/chart-theme";
 
 // ---------------------------------------------------------------------------
 // SourceDonut — minimalist SVG donut chart for the attribution page.
@@ -29,19 +30,28 @@ type Props = {
   palette?: "ink" | "blue" | "emerald" | "amber" | "violet";
 };
 
-// Monochrome blue palettes. Variants are named for backwards-compat with
-// existing call sites; every palette now leads with the brand primary
-// (#2563EB) — the previous "ink" palette had near-black (#0F172A) at the
-// top of the stack, which made the dominant slice render BLACK against
-// a blue-branded product. That regression is what motivated the
-// platform-wide blue audit; the palette below is the single source of
-// truth for attribution charts.
+// Carbon series ramp sourced from CHART_COLORS (chart-theme.ts) — the single
+// source of truth for chart styling. Blue 60 → Blue 80 → Blue 50 → Blue 30,
+// then grays for the long tail. The `palette` prop is retained for
+// backwards-compat with existing call sites, but every variant now maps to
+// this one ramp so a future token retarget lands here automatically (the
+// previous local Tailwind-blue hex was immune to retargeting).
+const CARBON_SERIES = [
+  CHART_COLORS.brand,
+  CHART_COLORS.brandDeep,
+  CHART_COLORS.brandSoft,
+  CHART_COLORS.brandFog,
+  CHART_COLORS.muted,
+  CHART_COLORS.silver,
+  CHART_COLORS.grid,
+];
+
 const PALETTES: Record<NonNullable<Props["palette"]>, string[]> = {
-  ink:     ["#2563EB", "#3B82F6", "#60A5FA", "#1D4ED8", "#1E3A8A", "#93C5FD", "#BFDBFE", "#DBEAFE"],
-  blue:    ["#2563EB", "#3B82F6", "#60A5FA", "#1D4ED8", "#1E3A8A", "#93C5FD", "#BFDBFE", "#DBEAFE"],
-  emerald: ["#2563EB", "#3B82F6", "#60A5FA", "#93C5FD", "#1D4ED8", "#BFDBFE", "#DBEAFE", "#EFF6FF"],
-  amber:   ["#3B82F6", "#2563EB", "#1D4ED8", "#60A5FA", "#1E3A8A", "#93C5FD", "#BFDBFE", "#DBEAFE"],
-  violet:  ["#60A5FA", "#3B82F6", "#2563EB", "#1D4ED8", "#1E3A8A", "#93C5FD", "#BFDBFE", "#DBEAFE"],
+  ink: CARBON_SERIES,
+  blue: CARBON_SERIES,
+  emerald: CARBON_SERIES,
+  amber: CARBON_SERIES,
+  violet: CARBON_SERIES,
 };
 
 export function SourceDonut({
@@ -111,8 +121,9 @@ export function SourceDonut({
               cy={center}
               r={radius}
               fill="none"
-              stroke="#F3F4F6"
+              stroke={CHART_COLORS.grid}
               strokeWidth={strokeWidth}
+              strokeOpacity={0.5}
             />
           </svg>
           <svg
@@ -173,7 +184,7 @@ export function SourceDonut({
                   <span className="flex items-center gap-2 min-w-0">
                     <span
                       aria-hidden="true"
-                      className="inline-block h-2.5 w-2.5 rounded-full shrink-0"
+                      className="inline-block h-2.5 w-2.5 shrink-0"
                       style={{ backgroundColor: color }}
                     />
                     <span className="truncate text-foreground font-medium">
@@ -187,9 +198,9 @@ export function SourceDonut({
                     </span>
                   </span>
                 </div>
-                <div className="h-1 rounded-full bg-muted overflow-hidden">
+                <div className="h-1 bg-muted overflow-hidden">
                   <div
-                    className="h-full rounded-full"
+                    className="h-full"
                     style={{
                       width: `${Math.max(2, pct)}%`,
                       backgroundColor: color,
@@ -215,7 +226,7 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-border bg-card p-4 transition-all hover:shadow-[0_2px_8px_rgba(15,23,42,0.04)]">
+    <section className="ls-card p-4">
       <div className="mb-3">
         <h3 className="text-sm font-semibold tracking-tight text-foreground">
           {title}

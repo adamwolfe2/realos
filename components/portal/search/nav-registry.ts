@@ -220,10 +220,12 @@ export const NAV_REGISTRY: NavRegistryItem[] = [
     group: "Settings",
   },
   {
-    href: "/portal/settings/integrations",
-    label: "Integrations",
+    href: "/portal/connect",
+    label: "Connect",
     description: "AppFolio, GA4, GSC, Google Ads, Meta Ads, Cursive pixel",
     keywords: [
+      "connect",
+      "integrations",
       "appfolio",
       "google analytics",
       "ga4",

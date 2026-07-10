@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { SourceLogo } from "@/components/portal/attribution/source-logo";
+import { CHART_COLORS } from "@/components/portal/ui/chart-theme";
 
 // ---------------------------------------------------------------------------
 // ReverseAttributionGraph — interactive 3-stage flow:
@@ -197,12 +198,14 @@ export function ReverseAttributionGraph({
             style={{ overflow: "visible" }}
           >
             <div
-              className={`flex h-full items-center gap-2 rounded-lg border px-2 ${
+              className={`flex h-full items-center gap-2 rounded-[2px] border px-2 ${
                 clickable ? "cursor-pointer" : "cursor-default"
               } ${isSel ? "ring-2 ring-primary" : ""}`}
               style={{
-                background: isSel ? "#EFF6FF" : "#fff",
-                borderColor: isSel ? "#2563EB" : "var(--color-border, #E5E7EB)",
+                background: isSel ? "#edf5ff" : "#fff",
+                borderColor: isSel
+                  ? CHART_COLORS.brand
+                  : `var(--color-border, ${CHART_COLORS.grid})`,
                 opacity: nodeDim(n.id) ? 0.35 : 1,
                 transition: "opacity 150ms ease",
               }}
@@ -248,5 +251,5 @@ function colorOf(sourceId: string, src: RvNode[], land: RvNode[]): string {
   const s = src.find((n) => n.id === sourceId);
   if (s) return s.color;
   const l = land.find((n) => n.id === sourceId);
-  return l?.color ?? "#94A3B8";
+  return l?.color ?? CHART_COLORS.silver;
 }

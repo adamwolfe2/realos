@@ -290,8 +290,8 @@ export default async function RenewalsPage({
       (rentRollTotal._sum.monthlyRentCents ?? 0) === 0 ? (
         <EmptyState
           title="No lease data yet"
-          body="Renewal KPIs populate as soon as AppFolio syncs your first active lease. Connect AppFolio from Settings → Integrations or wait for the next hourly sync."
-          action={{ label: "Manage integrations", href: "/portal/settings/integrations" }}
+          body="Renewal KPIs populate as soon as AppFolio syncs your first active lease. Connect AppFolio from the Connect hub or wait for the next hourly sync."
+          action={{ label: "Open Connect hub", href: "/portal/connect" }}
         />
       ) : (
         <section className="grid grid-cols-2 md:grid-cols-4 gap-3">

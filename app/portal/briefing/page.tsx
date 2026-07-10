@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
-import { Gauge, Phone, MessageSquare, Sparkles, TrendingUp, AlertTriangle, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Phone, MessageSquare, Sparkles, TrendingUp, AlertTriangle, ArrowRight, CheckCircle2 } from "lucide-react";
 // Removed Building2 + cn imports — only the deleted PropertyFilter
 // component used them.
 import { prisma } from "@/lib/db";
@@ -97,7 +97,8 @@ export default async function BriefingPage({
     metrics,
     insights,
     aging,
-    appfolioIntegration,
+    connectedSourceCount,
+    chatbotConfig,
   ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
@@ -112,9 +113,22 @@ export default async function BriefingPage({
     getBriefingMetrics(scope.orgId),
     getRecentInsightsForBriefing(scope.orgId, user?.lastBriefingViewedAt ?? null, 8),
     getAgingLeadsSummary(scope.orgId),
-    prisma.appFolioIntegration.findUnique({
+    // "Connect data sources" step — ANY connected source counts, mirroring
+    // the canonical CONNECT_DATA_SOURCE onboarding detector
+    // (lib/onboarding/step-detectors.ts). Previously AppFolio-only, which
+    // left GA4/GSC/pixel/ads customers with a permanently-open step.
+    Promise.all([
+      prisma.appFolioIntegration.count({ where: { orgId: scope.orgId } }),
+      prisma.seoIntegration.count({ where: { orgId: scope.orgId } }),
+      prisma.cursiveIntegration.count({ where: { orgId: scope.orgId } }),
+      prisma.adAccount.count({ where: { orgId: scope.orgId } }),
+    ]).then((counts) => counts.reduce((sum, n) => sum + n, 0)),
+    // Chatbot step detection — same signal as the canonical
+    // APPROVE_CHATBOT_PERSONA detector: enabled + persona named. This was
+    // previously hard-coded `done: false` (permanently uncompletable).
+    prisma.tenantSiteConfig.findUnique({
       where: { orgId: scope.orgId },
-      select: { id: true, lastSyncAt: true, syncStatus: true },
+      select: { chatbotEnabled: true, chatbotPersonaName: true },
     }),
   ]);
 
@@ -123,6 +137,9 @@ export default async function BriefingPage({
   // and the operator silently misses every inbound lead. Adding it as
   // a required step is the simplest way to keep new users from finding
   // out the hard way that their leads were quietly dropped.
+  const chatbotConfigured =
+    !!chatbotConfig?.chatbotEnabled &&
+    !!chatbotConfig?.chatbotPersonaName?.trim();
   const setupSteps = [
     {
       label: "Add your first property",
@@ -131,8 +148,8 @@ export default async function BriefingPage({
     },
     {
       label: "Connect data sources",
-      done: !!appfolioIntegration?.lastSyncAt,
-      href: "/portal/settings/integrations",
+      done: connectedSourceCount > 0,
+      href: "/portal/connect",
     },
     {
       label: "Set a notification email for new leads",
@@ -141,15 +158,11 @@ export default async function BriefingPage({
     },
     {
       label: "Configure the AI chatbot",
-      done: false,
+      done: chatbotConfigured,
       href: "/portal/chatbot",
     },
   ];
-  const allSetupDone = setupSteps.every((s) => s.done);
-  const setupComplete =
-    properties.length > 0 &&
-    !!appfolioIntegration?.lastSyncAt &&
-    !!org?.primaryContactEmail;
+  const setupComplete = setupSteps.every((s) => s.done);
 
   const insightCards: InsightCardData[] = insights.map((i) => ({
     id: i.id,
@@ -184,7 +197,7 @@ export default async function BriefingPage({
         title={greeting}
         description="Everything that moved since you last looked. Triage the call sheet, read the transcripts, and act on the insights before your next client touch."
         actions={
-          <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded" />}>
+          <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-muted rounded-[2px]" />}>
             <PropertyMultiSelect
               properties={visibleProperties(scope, properties)}
               orgId={scope.orgId}
@@ -307,10 +320,10 @@ export default async function BriefingPage({
           title="Briefing temporarily unavailable"
           description="Briefing data could not be loaded. This is usually temporary — try refreshing."
         />
-        <div className="rounded-xl border border-border bg-secondary px-4 py-3 text-sm text-foreground">
+        <div className="rounded-[2px] border border-border bg-secondary px-4 py-3 text-sm text-foreground">
           If the issue persists, check{" "}
           <a href="/portal/connect" className="underline font-medium">
-            Settings → Integrations
+            the Connect hub
           </a>
           .
         </div>
@@ -335,7 +348,7 @@ function ChecklistItem({
   return (
     <li className="flex items-start gap-2">
       <span
-        className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md ${
+        className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[2px] ${
           enabled
             ? "bg-primary/10 text-primary"
             : "bg-muted text-muted-foreground"
@@ -355,7 +368,7 @@ function SetupCard({
 }) {
   const remaining = steps.filter((s) => !s.done);
   return (
-    <div className="rounded-xl border border-border bg-card p-5">
+    <div className="rounded-[2px] border border-border bg-card p-5">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">
@@ -376,7 +389,7 @@ function SetupCard({
           <li key={step.href}>
             <Link
               href={step.href}
-              className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors ${
+              className={`flex items-center gap-3 rounded-[2px] px-3 py-2.5 text-sm transition-colors ${
                 step.done
                   ? "text-muted-foreground"
                   : "hover:bg-muted/50 text-foreground font-medium"
@@ -409,7 +422,7 @@ function AgingAlertBanner({
   stale: number;
 }) {
   return (
-    <div className="bg-secondary border border-border rounded-xl px-4 py-3 flex items-start gap-3">
+    <div className="bg-secondary border border-border rounded-[2px] px-4 py-3 flex items-start gap-3">
       <AlertTriangle className="h-4 w-4 text-primary mt-0.5 shrink-0" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground">

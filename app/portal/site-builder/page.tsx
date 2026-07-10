@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { Globe } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
 import { PageHeader } from "@/components/admin/page-header";
+import { EmptyState } from "@/components/portal/ui/empty-state";
 import { SiteBuilderForm } from "./site-builder-form";
 
 export const metadata: Metadata = { title: "Site Engine · Builder" };
@@ -30,11 +32,27 @@ export default async function SiteBuilderPage() {
   ]);
 
   if (!org?.moduleWebsite || org.bringYourOwnSite) {
+    const byo = Boolean(org?.bringYourOwnSite);
     return (
       <div className="max-w-2xl space-y-4">
         <PageHeader
           title="Site Engine · Builder"
-          description="This workspace is on a plan without the managed website module, or you selected bring-your-own-site during onboarding. Ping your account manager if that's not right."
+          description="Edit and publish your LeaseStack-managed marketing site."
+        />
+        <EmptyState
+          icon={<Globe className="h-4 w-4" aria-hidden="true" />}
+          title={
+            byo
+              ? "This workspace brings its own website"
+              : "The managed website module isn't on this plan"
+          }
+          body={
+            byo
+              ? "You selected bring-your-own-site during onboarding, so the builder is switched off. Manage the change from your workspace settings, or review plans if you'd like LeaseStack to host and manage your site."
+              : "Upgrade to a plan that includes the managed website module to design, publish, and host your marketing site from here."
+          }
+          action={{ label: "View plans & upgrade", href: "/portal/billing" }}
+          secondary={{ label: "Workspace settings", href: "/portal/settings" }}
         />
       </div>
     );

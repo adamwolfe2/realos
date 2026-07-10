@@ -155,7 +155,7 @@ export function LeadRoutingPanel({
   const recipientCount = recipients.length;
 
   return (
-    <section className="rounded-xl border border-border bg-card p-5">
+    <section className="rounded-[2px] border border-border bg-card p-5">
       <div className="flex items-start justify-between gap-4 mb-4">
         <div>
           <h2 className="text-sm font-semibold flex items-center gap-1.5">
@@ -183,7 +183,7 @@ export function LeadRoutingPanel({
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="jessica@telegraph-commons.com, leasing@..."
-            className="w-full h-10 px-3 rounded-md border border-border bg-background text-[13.5px] focus:outline-none focus:ring-1 focus:ring-foreground/30"
+            className="w-full h-10 px-3 rounded-[2px] border border-border bg-background text-[13.5px] focus:outline-none focus:ring-1 focus:ring-foreground/30"
           />
           <span className="block mt-1 text-[11.5px] text-muted-foreground">
             Comma-separate to add the leasing manager, asset team, or
@@ -227,7 +227,7 @@ export function LeadRoutingPanel({
           <button
             type="submit"
             disabled={pending}
-            className="inline-flex items-center justify-center h-9 px-4 rounded-md text-[13px] font-semibold text-white bg-primary hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center justify-center h-9 px-4 rounded-[2px] text-[13px] font-semibold text-white bg-primary hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {pending ? "Saving…" : "Save lead routing"}
           </button>
@@ -254,12 +254,12 @@ export function LeadRoutingPanel({
                 );
               });
             }}
-            className="inline-flex items-center justify-center h-9 px-4 rounded-md text-[13px] font-medium border border-border bg-background hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center justify-center h-9 px-4 rounded-[2px] text-[13px] font-medium border border-border bg-background hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {testPending ? "Sending…" : "Send test email"}
           </button>
           {recipientCount > 0 && enabled ? (
-            <span className="text-[11.5px] text-emerald-600 font-medium">
+            <span className="text-[11.5px] text-[#24a148] font-medium">
               ✓ Active for {recipientCount} recipient
               {recipientCount === 1 ? "" : "s"}
             </span>
@@ -270,7 +270,7 @@ export function LeadRoutingPanel({
           <pre
             className={`text-[11.5px] font-mono whitespace-pre-wrap leading-relaxed ${
               diagnostic.startsWith("✓")
-                ? "text-emerald-600"
+                ? "text-[#24a148]"
                 : "text-destructive"
             }`}
           >
@@ -311,7 +311,7 @@ export function LeadRoutingPanel({
                   Number(e.target.value) as 7 | 30 | 90,
                 )
               }
-              className="h-8 px-2 rounded-md border border-border bg-background text-[12.5px]"
+              className="h-8 px-2 rounded-[2px] border border-border bg-background text-[12.5px]"
             >
               <option value={7}>Last 7 days</option>
               <option value={30}>Last 30 days</option>

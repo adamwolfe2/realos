@@ -896,7 +896,7 @@ function EmptyLeadsState() {
       action={{ label: "Set up lead capture", href: "/portal/site-builder" }}
       secondary={{
         label: "Connect data sources",
-        href: "/portal/settings/integrations",
+        href: "/portal/connect",
       }}
     />
   );

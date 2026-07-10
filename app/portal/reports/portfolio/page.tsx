@@ -11,6 +11,10 @@ import { getPortfolioFunnel, sourceLabel } from "@/lib/reports/portfolio-funnel"
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { EmptyState } from "@/components/portal/ui/empty-state";
+import {
+  DataTable,
+  type DataTableColumn,
+} from "@/components/portal/ui/data-table";
 import { Users, UserPlus, CalendarCheck, FileText, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +34,11 @@ const STAGE_ICON = {
   applications: <FileText className="h-4 w-4" />,
 } as const;
 
+// Per-property table sort — the rows are already in memory (one aggregate
+// query), so sorting is a copy + compare, no extra reads.
+const SORT_KEYS = ["name", "traffic", "leads", "tours", "apps"] as const;
+type SortKey = (typeof SORT_KEYS)[number];
+
 function statusLabel(s: string): string {
   return s.charAt(0) + s.slice(1).toLowerCase().replace(/_/g, " ");
 }
@@ -37,7 +46,13 @@ function statusLabel(s: string): string {
 export default async function PortfolioFunnelPage({
   searchParams,
 }: {
-  searchParams: Promise<{ days?: string; property?: string; properties?: string }>;
+  searchParams: Promise<{
+    days?: string;
+    property?: string;
+    properties?: string;
+    sort?: string;
+    dir?: string;
+  }>;
 }) {
   const gate = await requireModule("moduleInsights");
   if (gate) return gate;
@@ -69,13 +84,107 @@ export default async function PortfolioFunnelPage({
   const maxSource = sources[0]?.count ?? 1;
   const hasData = stages.some((s) => s.value > 0);
 
-  const periodQS = (days: number) => {
+  type PropertyRow = (typeof byProperty)[number];
+  // DataTable keys rows by `id`; the funnel rows carry `propertyId`.
+  type PropertyTableRow = PropertyRow & { id: string };
+
+  const sortKey: SortKey | null = SORT_KEYS.includes(sp.sort as SortKey)
+    ? (sp.sort as SortKey)
+    : null;
+  const sortDir: "asc" | "desc" = sp.dir === "asc" ? "asc" : "desc";
+  const sortValue = (r: PropertyRow): string | number =>
+    sortKey === "name"
+      ? r.name.toLowerCase()
+      : sortKey === "traffic"
+        ? r.visitors
+        : sortKey === "leads"
+          ? r.leads
+          : sortKey === "tours"
+            ? r.tours
+            : r.applications;
+  const sortedByProperty: PropertyTableRow[] = (
+    sortKey
+      ? [...byProperty].sort((a, b) => {
+          const av = sortValue(a);
+          const bv = sortValue(b);
+          const cmp = av < bv ? -1 : av > bv ? 1 : 0;
+          return sortDir === "asc" ? cmp : -cmp;
+        })
+      : byProperty
+  ).map((row) => ({ ...row, id: row.propertyId }));
+
+  const withParams = (mutate: (params: URLSearchParams) => void): string => {
     const params = new URLSearchParams();
-    params.set("days", String(days));
+    params.set("days", String(periodDays));
     if (sp.property) params.set("property", sp.property);
     if (sp.properties) params.set("properties", sp.properties);
+    if (sp.sort) params.set("sort", sp.sort);
+    if (sp.dir) params.set("dir", sp.dir);
+    mutate(params);
     return `?${params.toString()}`;
   };
+  const periodQS = (days: number) =>
+    withParams((params) => params.set("days", String(days)));
+  const hrefForSort = (key: string) =>
+    withParams((params) => {
+      params.set("sort", key);
+      params.set("dir", key === sortKey && sortDir === "desc" ? "asc" : "desc");
+    });
+
+  const propertyColumns: DataTableColumn<PropertyTableRow>[] = [
+    {
+      key: "name",
+      header: "Property",
+      sortable: true,
+      accessor: (row) => (
+        <span className="text-xs font-semibold text-foreground truncate">
+          {row.name}
+        </span>
+      ),
+    },
+    {
+      key: "traffic",
+      header: "Traffic",
+      sortable: true,
+      align: "right",
+      width: "90px",
+      accessor: (row) => (
+        <span className="ls-metric text-muted-foreground">{row.visitors}</span>
+      ),
+    },
+    {
+      key: "leads",
+      header: "Leads",
+      sortable: true,
+      align: "right",
+      width: "80px",
+      accessor: (row) => (
+        <span className="ls-metric text-muted-foreground">{row.leads}</span>
+      ),
+    },
+    {
+      key: "tours",
+      header: "Tours",
+      sortable: true,
+      align: "right",
+      width: "80px",
+      accessor: (row) => (
+        <span className="ls-metric text-muted-foreground">{row.tours}</span>
+      ),
+    },
+    {
+      key: "apps",
+      header: "Apps",
+      sortable: true,
+      align: "right",
+      width: "80px",
+      accessor: (row) => (
+        <span className="ls-metric font-semibold text-foreground">
+          {row.applications}
+        </span>
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -95,7 +204,7 @@ export default async function PortfolioFunnelPage({
             key={p.days}
             href={periodQS(p.days)}
             className={cn(
-              "rounded-full px-3 py-1 text-[12px] font-semibold ring-1 ring-inset transition",
+              "rounded-[2px] px-3 py-1 text-[12px] font-semibold ring-1 ring-inset transition",
               p.days === periodDays
                 ? "bg-primary text-white ring-primary"
                 : "bg-white text-muted-foreground ring-border hover:ring-primary/40",
@@ -153,9 +262,9 @@ export default async function PortfolioFunnelPage({
                     <span className="w-28 shrink-0 truncate text-[13px] text-foreground">
                       {sourceLabel(s.source)}
                     </span>
-                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                    <div className="h-2 flex-1 overflow-hidden rounded-[2px] bg-muted">
                       <div
-                        className="h-full rounded-full bg-primary/80"
+                        className="h-full rounded-[2px] bg-primary/80"
                         style={{ width: `${Math.max(4, (s.count / maxSource) * 100)}%` }}
                       />
                     </div>
@@ -173,12 +282,9 @@ export default async function PortfolioFunnelPage({
                 </h2>
                 <div className="flex flex-wrap gap-1.5">
                   {appStatus.map((a) => (
-                    <span
-                      key={a.status}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-[12px] text-foreground"
-                    >
+                    <span key={a.status} className="ls-pill ls-pill-neutral">
                       {statusLabel(a.status)}
-                      <span className="ls-metric text-muted-foreground">{a.count}</span>
+                      <span className="ls-metric">{a.count}</span>
                     </span>
                   ))}
                 </div>
@@ -186,52 +292,26 @@ export default async function PortfolioFunnelPage({
             ) : null}
           </section>
 
-          {/* Per-property table */}
-          <section className="ls-card p-5">
-            <h2 className="mb-4 text-[13px] font-semibold text-foreground">By property</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-[13px]">
-                <thead>
-                  <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
-                    <th className="pb-2 pr-3 font-semibold">Property</th>
-                    <th className="pb-2 px-2 text-right font-semibold">Traffic</th>
-                    <th className="pb-2 px-2 text-right font-semibold">Leads</th>
-                    <th className="pb-2 px-2 text-right font-semibold">Tours</th>
-                    <th className="pb-2 pl-2 text-right font-semibold">Apps</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {byProperty.map((row) => (
-                    <tr key={row.propertyId} className="border-b border-border/60 last:border-0">
-                      <td className="py-2 pr-3 font-medium text-foreground">
-                        <Link
-                          href={`/portal/properties/${row.propertyId}`}
-                          className="hover:text-primary hover:underline"
-                        >
-                          {row.name}
-                        </Link>
-                      </td>
-                      <td className="ls-metric px-2 py-2 text-right text-muted-foreground">{row.visitors}</td>
-                      <td className="ls-metric px-2 py-2 text-right text-muted-foreground">{row.leads}</td>
-                      <td className="ls-metric px-2 py-2 text-right text-muted-foreground">{row.tours}</td>
-                      <td className="ls-metric py-2 pl-2 text-right font-semibold text-foreground">
-                        {row.applications}
-                      </td>
-                    </tr>
-                  ))}
-                  {byProperty.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="py-4 text-center text-[12px] text-muted-foreground">
-                        No per-property activity in this window.
-                      </td>
-                    </tr>
-                  ) : null}
-                </tbody>
-              </table>
-            </div>
-            <p className="mt-3 text-[11px] leading-snug text-muted-foreground">
-              Traffic is counted at the portfolio level; visits the pixel hasn’t
-              tied to a specific property aren’t split into the rows above, so
+          {/* Per-property table — DataTable v2 (dense, URL-driven sort) */}
+          <section className="space-y-3">
+            <h2 className="text-[13px] font-semibold text-foreground">By property</h2>
+            <DataTable<PropertyTableRow>
+              columns={propertyColumns}
+              rows={sortedByProperty}
+              getRowKey={(row) => row.propertyId}
+              getRowHref={(row) => `/portal/properties/${row.propertyId}`}
+              sort={{ by: sortKey ?? "", dir: sortDir, hrefForSort }}
+              density="compact"
+              emptyState={
+                <EmptyState
+                  variant="bare"
+                  title="No per-property activity in this window."
+                />
+              }
+            />
+            <p className="text-[11px] leading-snug text-muted-foreground">
+              Traffic is counted at the portfolio level; visits the pixel hasn&apos;t
+              tied to a specific property aren&apos;t split into the rows above, so
               per-property traffic can read lower than the headline total.
             </p>
           </section>

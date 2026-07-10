@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { SourceLogo } from "@/components/portal/attribution/source-logo";
+import { CHART_COLORS } from "@/components/portal/ui/chart-theme";
 
 // ---------------------------------------------------------------------------
 // LeadFlowDiagram — the attribution hero. Source logos on the left, their
@@ -50,7 +51,7 @@ export function LeadFlowDiagram({
     display.push({
       id: "__other__",
       label: `${rest.length} more sources`,
-      color: "#9CA3AF",
+      color: CHART_COLORS.silver,
       logo: "other",
       leads: rest.reduce((s, r) => s + r.leads, 0),
       sessions: rest.reduce((s, r) => s + r.sessions, 0),
@@ -109,7 +110,7 @@ export function LeadFlowDiagram({
       </div>
 
       {imported && imported.leads > 0 ? (
-        <div className="mb-3 flex items-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 px-3 py-1.5">
+        <div className="mb-3 flex items-center gap-2 rounded-[2px] border border-dashed border-border bg-muted/30 px-3 py-1.5">
           <span className="text-[11px] text-muted-foreground">
             <span className="font-mono font-semibold text-foreground">
               {imported.leads.toLocaleString()}
@@ -171,7 +172,7 @@ export function LeadFlowDiagram({
               key={`stage-${st.id}`}
               d={curve(HUB_X + HUB_R, midY, STAGE_ANCHOR_X, stageY(j))}
               fill="none"
-              stroke="#2563EB"
+              stroke={CHART_COLORS.brand}
               strokeWidth={strokeW(st.count, maxStage, 1.5, 14)}
               strokeLinecap="round"
               style={{ opacity: hovered ? 0.12 : 0.4, transition: "opacity 160ms ease" }}
@@ -215,20 +216,20 @@ export function LeadFlowDiagram({
             );
           })}
 
-          {/* Central Leads hub */}
+          {/* Central Leads hub — Carbon Blue 10 fill, Blue 60 stroke/ink. */}
           <circle
             cx={HUB_X}
             cy={midY}
             r={HUB_R}
-            fill="#EFF6FF"
-            stroke="#2563EB"
+            fill="#edf5ff"
+            stroke={CHART_COLORS.brand}
             strokeWidth={2}
           />
           <text
             x={HUB_X}
             y={midY - 6}
             textAnchor="middle"
-            className="fill-[#2563EB]"
+            fill={CHART_COLORS.brand}
             style={{ fontSize: 22, fontWeight: 700, fontFamily: "var(--font-mono)" }}
           >
             {totalLeads.toLocaleString()}
@@ -237,7 +238,7 @@ export function LeadFlowDiagram({
             x={HUB_X}
             y={midY + 14}
             textAnchor="middle"
-            className="fill-[#1D4ED8]"
+            fill={CHART_COLORS.brandDeep}
             style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}
           >
             LEADS
@@ -254,7 +255,7 @@ export function LeadFlowDiagram({
                 width={W - STAGE_X - 12}
                 height={48}
               >
-                <div className="flex h-full items-center justify-between rounded-xl border border-border bg-card px-3 shadow-[var(--shadow-xs)]">
+                <div className="flex h-full items-center justify-between rounded-[2px] border border-border bg-card px-3 shadow-[var(--shadow-xs)]">
                   <span className="text-xs font-semibold text-foreground">
                     {st.label}
                   </span>

@@ -6,7 +6,7 @@ export default function SiteBuilderLoading() {
         <div className="h-4 w-80 bg-muted/60 rounded" />
       </div>
       {Array.from({ length: 4 }).map((_, section) => (
-        <div key={section} className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <div key={section} className="rounded-[2px] border border-border bg-card p-5 space-y-4">
           <div className="h-5 w-40 bg-muted rounded" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {Array.from({ length: 4 }).map((_, i) => (

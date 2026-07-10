@@ -737,7 +737,7 @@ export async function getIntegrationHealth(
       key: "appfolio",
       label: "AppFolio",
       status: appfolioStatus(appfolio),
-      href: "/portal/settings/integrations",
+      href: "/portal/connect",
     },
     {
       key: "cursive",

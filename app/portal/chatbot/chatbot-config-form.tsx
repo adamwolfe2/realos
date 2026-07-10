@@ -46,7 +46,7 @@ const CAPTURE_OPTIONS: Array<{
 ];
 
 const INPUT_CLASS =
-  "rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 w-full";
+  "rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 w-full";
 const LABEL_CLASS = "text-[10px] tracking-widest uppercase font-semibold text-muted-foreground";
 
 export function ChatbotConfigForm({
@@ -106,7 +106,7 @@ export function ChatbotConfigForm({
       />
 
       {/* Persona */}
-      <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+      <section className="rounded-[2px] border border-border bg-card p-5 space-y-4">
         <h2 className="text-sm font-semibold text-foreground">Persona</h2>
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-5 items-start">
           <Field
@@ -175,7 +175,7 @@ export function ChatbotConfigForm({
       </section>
 
       {/* Appearance */}
-      <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+      <section className="rounded-[2px] border border-border bg-card p-5 space-y-4">
         <h2 className="text-sm font-semibold text-foreground">Appearance</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label className="flex flex-col gap-1.5">
@@ -185,7 +185,7 @@ export function ChatbotConfigForm({
                 type="color"
                 value={effectiveBrandColor}
                 onChange={(e) => update("chatbotBrandColor", e.target.value)}
-                className="h-9 w-12 rounded-md border border-border cursor-pointer bg-background"
+                className="h-9 w-12 rounded-[2px] border border-border cursor-pointer bg-background"
                 aria-label="Brand color picker"
               />
               <input
@@ -224,7 +224,7 @@ export function ChatbotConfigForm({
       </section>
 
       {/* Lead capture */}
-      <section className="rounded-xl border border-border bg-card p-5 space-y-3">
+      <section className="rounded-[2px] border border-border bg-card p-5 space-y-3">
         <h2 className="text-sm font-semibold text-foreground">Lead capture</h2>
         <p className="text-xs text-muted-foreground">
           Choose when the bot asks for a visitor&apos;s name and email.
@@ -235,7 +235,7 @@ export function ChatbotConfigForm({
             return (
               <label
                 key={opt.value}
-                className={`flex items-start gap-3 rounded-md border px-3 py-2.5 text-sm cursor-pointer transition-colors ${
+                className={`flex items-start gap-3 rounded-[2px] border px-3 py-2.5 text-sm cursor-pointer transition-colors ${
                   active
                     ? "border-primary bg-primary/5"
                     : "border-border hover:bg-secondary"
@@ -260,7 +260,7 @@ export function ChatbotConfigForm({
       </section>
 
       {/* Site analytics */}
-      <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+      <section className="rounded-[2px] border border-border bg-card p-5 space-y-4">
         <div>
           <h2 className="text-sm font-semibold text-foreground">
             Site analytics
@@ -296,7 +296,7 @@ export function ChatbotConfigForm({
       </section>
 
       {/* Knowledge base */}
-      <section className="rounded-xl border border-border bg-card p-5 space-y-3">
+      <section className="rounded-[2px] border border-border bg-card p-5 space-y-3">
         <h2 className="text-sm font-semibold text-foreground">Knowledge base</h2>
         <p className="text-xs text-muted-foreground">
           Plain-text facts, amenities, and policies injected into the system prompt. Write like
@@ -307,7 +307,7 @@ export function ChatbotConfigForm({
           rows={12}
           value={state.chatbotKnowledgeBase}
           onChange={(e) => update("chatbotKnowledgeBase", e.target.value)}
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-primary/30"
+          className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-primary/30"
           placeholder={
             "Rent includes utilities and WiFi.\nPet policy: cats OK, dogs under 40 lbs with $500 deposit.\nTours: Monday-Saturday 10am-6pm."
           }
@@ -318,7 +318,7 @@ export function ChatbotConfigForm({
               kbOver
                 ? "text-destructive"
                 : kbNear
-                  ? "text-amber-700"
+                  ? "text-[#8a6d00]"
                   : "text-muted-foreground"
             }`}
           >
@@ -332,7 +332,7 @@ export function ChatbotConfigForm({
           <button
             type="submit"
             disabled={pending || kbOver}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors px-4 py-2 text-sm font-medium rounded-md disabled:opacity-40"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors px-4 py-2 text-sm font-medium rounded-[2px] disabled:opacity-40"
           >
             {pending ? "Saving…" : "Save chatbot config"}
           </button>
@@ -352,7 +352,7 @@ export function ChatbotConfigForm({
 
         {/* Right column — sticky preview */}
         <div className="w-96 shrink-0 hidden lg:block">
-          <div className="sticky top-6 rounded-xl border border-border bg-card p-5 space-y-4">
+          <div className="sticky top-6 rounded-[2px] border border-border bg-card p-5 space-y-4">
             <div>
               <h2 className="text-sm font-semibold text-foreground">Preview</h2>
               <p className="text-xs text-muted-foreground mt-1">
@@ -486,7 +486,7 @@ function TextArea({
         maxLength={maxLength}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+        className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
       />
       {hint ? (
         <span className="text-[11px] text-muted-foreground">{hint}</span>
@@ -638,7 +638,7 @@ function AvatarPicker({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="inline-flex items-center justify-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-semibold hover:bg-muted/50 disabled:opacity-50 transition-colors"
+            className="inline-flex items-center justify-center gap-1.5 rounded-[2px] border border-border bg-card px-3 py-1.5 text-xs font-semibold hover:bg-muted/50 disabled:opacity-50 transition-colors"
           >
             <Upload className="h-3 w-3" />
             {value ? "Replace image" : "Upload image"}
@@ -648,7 +648,7 @@ function AvatarPicker({
               type="button"
               onClick={handleRemove}
               disabled={uploading}
-              className="inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-destructive disabled:opacity-50 transition-colors"
+              className="inline-flex items-center justify-center gap-1.5 rounded-[2px] px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-destructive disabled:opacity-50 transition-colors"
             >
               <Trash2 className="h-3 w-3" />
               Remove

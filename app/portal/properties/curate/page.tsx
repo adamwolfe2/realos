@@ -5,7 +5,9 @@ import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { ArrowLeft, Inbox } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
 import { EmptyState } from "@/components/portal/ui/empty-state";
+import { EntityToolbar } from "@/components/portal/ui/entity-toolbar";
 import { BillingImpactCallout } from "@/components/portal/properties/billing-impact-callout";
+import { TIERS, computeGraduatedMonthlyCents } from "@/lib/billing/catalog";
 import { CurationQueueClient } from "./curation-queue-client";
 import type { SubscriptionTier } from "@prisma/client";
 
@@ -98,6 +100,29 @@ export default async function PropertyCuratePage({
   const trialing =
     org?.subscriptionStatus === "TRIALING" || org?.subscriptionStatus == null;
 
+  // Billing delta for the "Activate all N" confirmation dialog. Display-only
+  // math from the billing catalog (same source as BillingImpactCallout):
+  // graduated per-property monthly rate at the tier's base price. Null when
+  // the tier is unknown — the dialog then shows the qualitative version.
+  const baseCents = tierId
+    ? (TIERS.find((t) => t.id === tierId)?.monthly.unitAmountCents ?? null)
+    : null;
+  const billingImpact =
+    baseCents != null
+      ? {
+          currentActive: activeCount,
+          currentMonthlyCents: computeGraduatedMonthlyCents(
+            baseCents,
+            activeCount,
+          ),
+          projectedMonthlyCents: computeGraduatedMonthlyCents(
+            baseCents,
+            activeCount + importedCount,
+          ),
+          trialing,
+        }
+      : { currentActive: activeCount, trialing };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -127,35 +152,23 @@ export default async function PropertyCuratePage({
         trialing={trialing}
       />
 
-      {/* View tabs */}
-      <div className="flex gap-2 flex-wrap border-b border-border pb-0">
-        <Link
-          href="?view=imported"
-          className={
-            view === "imported"
-              ? "px-3 py-1.5 text-sm font-medium border-b-2 border-foreground text-foreground -mb-px"
-              : "px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground"
-          }
-        >
-          Available to add
-          <span className="ml-1.5 text-xs text-muted-foreground">
-            {importedCount}
-          </span>
-        </Link>
-        <Link
-          href="?view=excluded"
-          className={
-            view === "excluded"
-              ? "px-3 py-1.5 text-sm font-medium border-b-2 border-foreground text-foreground -mb-px"
-              : "px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground"
-          }
-        >
-          Excluded
-          <span className="ml-1.5 text-xs text-muted-foreground">
-            {excludedCount}
-          </span>
-        </Link>
-      </div>
+      {/* View tabs — shared EntityToolbar, replacing the hand-rolled strip. */}
+      <EntityToolbar
+        views={[
+          {
+            label: "Available to add",
+            href: "?view=imported",
+            count: importedCount,
+            active: view === "imported",
+          },
+          {
+            label: "Excluded",
+            href: "?view=excluded",
+            count: excludedCount,
+            active: view === "excluded",
+          },
+        ]}
+      />
 
       {items.length === 0 ? (
         <EmptyState
@@ -186,6 +199,7 @@ export default async function PropertyCuratePage({
             websiteUrl: p.websiteUrl,
           }))}
           view={view}
+          billingImpact={billingImpact}
         />
       )}
     </div>
