@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, ArrowRight, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
@@ -32,8 +32,11 @@ export type KpiTileProps = {
   href?: string;
   live?: boolean;
   locked?: { reason: string; href: string };
-  /** "accent" gives the tile the brand glow (used for the hero KPI). */
+  /** "accent" marks the hero KPI (flat 2px blue left border post-Carbon). */
   variant?: "default" | "accent";
+  /** "dense" tightens padding, value size, and chart height for the
+   *  dashboard's 4-up strip. Default leaves every other caller unchanged. */
+  density?: "default" | "dense";
 };
 
 export function KpiTile(props: KpiTileProps) {
@@ -42,7 +45,7 @@ export function KpiTile(props: KpiTileProps) {
     return (
       <Link
         href={props.href}
-        className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 rounded-xl"
+        className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 rounded-[2px]"
       >
         {inner}
       </Link>
@@ -64,21 +67,24 @@ function KpiTileInner({
   live,
   locked,
   variant = "default",
+  density = "default",
 }: KpiTileProps) {
   // Pick the chart variant. Explicit `chart` prop wins; otherwise default
   // to sparkline whenever a spark array is supplied. A `gaugeValue` 0..1
   // automatically routes to the gauge dial even without an explicit prop.
   const chartVariant: KpiChartVariant =
     chart ?? (gaugeValue != null ? "gauge" : "sparkline");
+  const dense = density === "dense";
+  const chartHeight = dense ? 28 : 36;
 
   return (
     <div
       className={cn(
-        // Premium tile: floating white card with stacked depth shadow + inner
-        // highlight. Hover lifts 1px and deepens the shadow. The hero tile
-        // (variant="accent") adds the brand glow in the top-right corner so
-        // the eye lands on the headline metric first.
-        "ls-card group relative h-full p-5",
+        // Carbon-flat tile: border-first white card. The hero tile
+        // (variant="accent") carries a flat 2px blue left border so the
+        // eye lands on the headline metric first.
+        "ls-card group relative h-full",
+        dense ? "p-4" : "p-5",
         variant === "accent" && "ls-card-accent",
       )}
     >
@@ -86,13 +92,7 @@ function KpiTileInner({
         <div className="flex items-center gap-2 min-w-0">
           {icon ? (
             <span
-              className="inline-flex items-center justify-center h-7 w-7 rounded-lg shrink-0 ring-1 ring-inset"
-              style={{
-                background:
-                  "linear-gradient(180deg, rgba(37,99,235,0.10), rgba(37,99,235,0.04))",
-                color: "var(--terracotta)",
-                boxShadow: "0 1px 0 rgba(255,255,255,0.7) inset",
-              }}
+              className="inline-flex items-center justify-center h-7 w-7 rounded-[2px] shrink-0 bg-[#edf5ff] text-[#0f62fe]"
               aria-hidden="true"
             >
               {icon}
@@ -117,7 +117,7 @@ function KpiTileInner({
             href={locked.href}
             className="inline-flex items-center gap-0.5 text-[12px] font-semibold text-primary hover:underline"
           >
-            Connect <span aria-hidden="true">→</span>
+            Connect <ArrowRight className="h-3 w-3" aria-hidden="true" />
           </Link>
         </div>
       ) : (
@@ -128,7 +128,8 @@ function KpiTileInner({
           <div className="relative z-[1] mt-4 flex items-baseline justify-between gap-2 min-w-0">
             <div
               className={cn(
-                "ls-metric ls-metric-lg min-w-0 truncate",
+                "ls-metric min-w-0 truncate",
+                dense ? "ls-metric-md" : "ls-metric-lg",
                 loading && "text-transparent bg-muted rounded animate-pulse",
               )}
             >
@@ -146,11 +147,11 @@ function KpiTileInner({
           {!loading ? (
             <div className="relative z-[1] mt-4">
               {chartVariant === "gauge" && gaugeValue != null ? (
-                <Gauge value={gaugeValue} />
+                <Gauge value={gaugeValue} height={chartHeight} />
               ) : chartVariant === "bars" && spark && spark.length > 1 ? (
-                <BarMini data={spark} />
+                <BarMini data={spark} height={chartHeight} />
               ) : spark && spark.length > 1 ? (
-                <Sparkline data={spark} />
+                <Sparkline data={spark} height={chartHeight} />
               ) : null}
             </div>
           ) : null}
@@ -208,21 +209,21 @@ function Sparkline({ data, height = 36 }: { data: number[]; height?: number }) {
     >
       <defs>
         <linearGradient id="ls-spark-grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#2563EB" stopOpacity="0.18" />
-          <stop offset="100%" stopColor="#2563EB" stopOpacity="0" />
+          <stop offset="0%" stopColor="#0f62fe" stopOpacity="0.18" />
+          <stop offset="100%" stopColor="#0f62fe" stopOpacity="0" />
         </linearGradient>
       </defs>
       <path d={areaPath} fill="url(#ls-spark-grad)" />
       <polyline
         points={points}
         fill="none"
-        stroke="#2563EB"
+        stroke="#0f62fe"
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
         vectorEffect="non-scaling-stroke"
       />
-      <circle cx={lastX} cy={lastY} r="1.6" fill="#2563EB" vectorEffect="non-scaling-stroke" />
+      <circle cx={lastX} cy={lastY} r="1.6" fill="#0f62fe" vectorEffect="non-scaling-stroke" />
     </svg>
   );
 }
@@ -261,7 +262,7 @@ function BarMini({ data, height = 36 }: { data: number[]; height?: number }) {
             width={barW}
             height={barH}
             rx="0.6"
-            fill={isLast ? "#2563EB" : "#93C5FD"}
+            fill={isLast ? "#0f62fe" : "#a6c8ff"}
             opacity={isLast ? 1 : 0.55}
           />
         );
@@ -273,10 +274,10 @@ function BarMini({ data, height = 36 }: { data: number[]; height?: number }) {
 // Radial gauge — used for capacity-style ratios like occupancy. Renders
 // as a 180° arc from gray to brand blue with the percentage anchored at
 // the center. Mirrors the AeroStore conversion-rate dial.
-function Gauge({ value }: { value: number }) {
+function Gauge({ value, height = 36 }: { value: number; height?: number }) {
   const clamped = Math.max(0, Math.min(1, value));
   const w = 100;
-  const h = 36;
+  const h = height;
   const cx = w / 2;
   const cy = h - 2;
   const r = h - 6;
@@ -304,14 +305,14 @@ function Gauge({ value }: { value: number }) {
       <path
         d={arcPath(start, end)}
         fill="none"
-        stroke="#E5E7EB"
+        stroke="#e0e0e0"
         strokeWidth="3"
         strokeLinecap="round"
       />
       <path
         d={arcPath(start, angle)}
         fill="none"
-        stroke="#2563EB"
+        stroke="#0f62fe"
         strokeWidth="3"
         strokeLinecap="round"
       />
@@ -321,7 +322,7 @@ function Gauge({ value }: { value: number }) {
         cy={cy + r * Math.sin(angle)}
         r="2.4"
         fill="#FFFFFF"
-        stroke="#2563EB"
+        stroke="#0f62fe"
         strokeWidth="1.4"
       />
     </svg>

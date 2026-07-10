@@ -107,30 +107,25 @@ export function DashboardActionItems({
   return (
     <section
       aria-label="Recommended action items"
-      className="rounded-2xl border border-border bg-gradient-to-br from-card via-card to-primary/[0.04] overflow-hidden"
+      className="rounded-[2px] border border-[#e0e0e0] bg-white overflow-hidden"
     >
-      <header className="flex items-start justify-between gap-3 px-4 py-3 border-b border-border/60">
-        <div className="flex items-start gap-2.5 min-w-0">
-          <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0 mt-0.5">
-            <Sparkles className="h-3.5 w-3.5" />
-          </span>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-              <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
-                Action items
-              </p>
-            </div>
-            <h2 className="text-[13px] font-semibold text-foreground leading-tight">
-              {headlineCount} high-impact task{headlineCount === 1 ? "" : "s"} across your portfolio
-            </h2>
-            <p className="text-[10.5px] text-muted-foreground mt-0.5">
-              Synthesized from live signals. Sorted by impact × effort.
+      <header className="flex items-start justify-between gap-3 px-4 py-3 border-b border-[#e0e0e0]">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+            <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.12em] text-[#525252]">
+              Action items
             </p>
           </div>
+          <h2 className="text-[13px] font-semibold text-foreground leading-tight">
+            {headlineCount} high-impact task{headlineCount === 1 ? "" : "s"} across your portfolio
+          </h2>
+          <p className="text-[10.5px] text-muted-foreground mt-0.5">
+            Sorted by impact and effort.
+          </p>
         </div>
       </header>
 
-      <ol className="divide-y divide-border/60">
+      <ol className="divide-y divide-[#e0e0e0]">
         {visible.slice(0, 3).map((action) => {
           const Icon = ICON_MAP[action.icon] ?? Sparkles;
           return (
@@ -155,7 +150,7 @@ export function DashboardActionItems({
                 </div>
                 <Link
                   href={action.actionHref}
-                  className="shrink-0 inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-[10.5px] font-semibold text-foreground hover:bg-muted hover:border-primary/30 transition-all"
+                  className="shrink-0 inline-flex items-center gap-1 rounded-none border border-border bg-card px-2 py-1 text-[10.5px] font-semibold text-foreground hover:bg-muted hover:border-primary/30 transition-all"
                 >
                   {action.actionLabel}
                   <ArrowRight className="h-3 w-3" />
@@ -181,10 +176,11 @@ export function DashboardActionItems({
               ? `/portal/properties/${visible[3].propertyId}#intelligence`
               : "/portal/properties"
           }
-          className="block px-4 py-2 text-[11px] text-muted-foreground hover:text-foreground border-t border-border/60 hover:bg-muted/30 transition-colors text-center"
+          className="inline-flex w-full items-center justify-center gap-1 px-4 py-2 text-[11px] text-muted-foreground hover:text-foreground border-t border-[#e0e0e0] hover:bg-muted/30 transition-colors"
         >
           {visible.length - 3} more recommendation
-          {visible.length - 3 === 1 ? "" : "s"} →
+          {visible.length - 3 === 1 ? "" : "s"}
+          <ArrowRight className="h-3 w-3" aria-hidden="true" />
         </Link>
       ) : null}
     </section>

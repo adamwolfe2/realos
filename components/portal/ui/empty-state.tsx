@@ -33,7 +33,7 @@ export function EmptyState({
     <div
       className={cn(
         variant === "card"
-          ? "rounded-xl border border-dashed border-border bg-secondary/40"
+          ? "rounded-[2px] border border-solid border-[#e0e0e0] bg-secondary/40"
           : "",
         "px-4 py-8 text-center flex flex-col items-center gap-1.5",
         className,
