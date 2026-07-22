@@ -29,9 +29,16 @@ export function ProductFrame({
       className={className}
       style={{
         backgroundColor: "#FFFFFF",
-        border: "1px solid #e0e0e0",
+        border: "1px solid #d6d6d6",
         borderRadius: 2,
-        boxShadow: "0 24px 48px -24px rgba(22,22,22,0.18)",
+        // Physical shadow stack + top edge-light (depth addendum sec 2).
+        boxShadow: [
+          "inset 0 1px 0 rgba(255,255,255,0.9)",
+          "0 1px 2px rgba(22,22,22,0.06)",
+          "0 12px 24px -8px rgba(22,22,22,0.10)",
+          "0 32px 64px -16px rgba(15,98,254,0.14)",
+          "0 64px 128px -32px rgba(22,22,22,0.12)",
+        ].join(", "),
         overflow: "hidden",
       }}
     >
@@ -40,7 +47,7 @@ export function ProductFrame({
         className="flex items-center gap-3 px-4"
         style={{
           height: 40,
-          backgroundColor: "#f4f4f4",
+          backgroundImage: "linear-gradient(180deg, #fafafa 0%, #f1f1f1 100%)",
           borderBottom: "1px solid #e0e0e0",
         }}
       >

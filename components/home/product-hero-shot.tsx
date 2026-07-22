@@ -1,95 +1,117 @@
 import { ProductTour } from "@/components/product-tour";
 import { ProductFrame } from "./product-frame";
 import { BookDemoLink } from "@/components/marketing/book-demo-link";
-import { Reveal } from "@/components/platform/reveal";
+import { SectionShell, LabelChip } from "./section-shell";
+import { Atmosphere } from "./atmosphere";
+import { FrameSettle } from "./frame-settle";
 
 // ---------------------------------------------------------------------------
-// ProductHeroShot — the moment (2026-07-21 blueprint, section 2).
+// ProductHeroShot — [02] The system. The real operator portal shown large in
+// the physical browser frame (depth addendum sec 2 + 6; motion pass sec 2).
+// Atmosphere behind it, a blue contact glow beneath it so it sits ON
+// something, and a perspective settle as it enters view.
 //
-// The real, interactive operator portal shown large in a browser frame,
-// directly under the hero copy. The frame straddles the white -> #f4f4f4
-// seam: a white band covers the top of the section (continuing the hero),
-// the section base is #f4f4f4 (flowing into the trust band), and the frame
-// overlaps both.
+// The embedded ProductTour is a portal-shared client component; per scope we
+// do not edit its internals. Its "alive" staging is carried by the frame:
+// perspective settle + fade, on a cool #fbfcfe viewport ground.
 //
-// Desktop shows the live <ProductTour /> (built for >= 768px). Mobile
-// swaps to the committed screenshot + a "book a demo" line, since the
-// dense dashboard doesn't collapse to a phone.
-//
-// id="product-tour" preserves the existing #product-tour anchor used by
-// the final CTA's "See the portal" link.
+// id="product-tour" preserves the final CTA's "See the portal" anchor.
 // ---------------------------------------------------------------------------
 
 export function ProductHeroShot() {
   return (
-    <section
-      id="product-tour"
-      className="relative"
-      style={{ backgroundColor: "#f4f4f4" }}
-    >
-      {/* White upper band so the frame straddles the seam into #f4f4f4. */}
-      <div
-        className="absolute inset-x-0 top-0"
-        style={{ height: "56%", backgroundColor: "#FFFFFF" }}
-        aria-hidden
-      />
+    <SectionShell id="product-tour" index="02" indexLabel="The system" bg="#FFFFFF">
+      <div className="relative py-16 md:py-20">
+        <Atmosphere />
 
-      <div className="relative max-w-[1240px] mx-auto px-4 md:px-8 pt-14 md:pt-16 pb-16 md:pb-24">
-        <Reveal y={24}>
-          <ProductFrame
-            url="app.leasestack.co/portal"
-            contentStyle={{ backgroundColor: "#F1F5F9" }}
+        <div className="relative">
+          <LabelChip>Operator portal</LabelChip>
+          <h2
+            className="mt-4"
+            style={{
+              color: "#161616",
+              fontFamily: "var(--font-sans)",
+              fontSize: "clamp(28px, 3.4vw, 40px)",
+              fontWeight: 500,
+              lineHeight: 1.1,
+              letterSpacing: "-0.025em",
+            }}
           >
-            {/* Desktop: real interactive tour. */}
-            <div className="hidden md:block">
-              <ProductTour />
-            </div>
+            The system behind it.
+          </h2>
 
-            {/* Mobile: committed screenshot fallback. */}
-            <div className="md:hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/marketing/product-tour-preview.png"
-                alt="LeaseStack operator portal"
-                loading="lazy"
-                style={{ display: "block", width: "100%", height: "auto" }}
-              />
-              <div
-                style={{
-                  padding: "16px 18px",
-                  borderTop: "1px solid #e0e0e0",
-                  backgroundColor: "#FFFFFF",
-                }}
+          <div className="relative mt-10 md:mt-12">
+            {/* Under-frame contact glow. */}
+            <div
+              aria-hidden
+              className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
+              style={{
+                bottom: -28,
+                width: "78%",
+                height: 130,
+                background:
+                  "radial-gradient(50% 50% at 50% 50%, rgba(15,98,254,0.12), transparent 70%)",
+                filter: "blur(26px)",
+              }}
+            />
+
+            <FrameSettle className="relative">
+              <ProductFrame
+                url="app.leasestack.co/portal"
+                contentStyle={{ backgroundColor: "#fbfcfe" }}
               >
-                <p
-                  style={{
-                    fontFamily: "var(--font-sans)",
-                    fontSize: 14,
-                    lineHeight: 1.5,
-                    color: "#525252",
-                  }}
-                >
-                  Open this page on a laptop to click through the live operator
-                  portal.
-                </p>
-                <BookDemoLink
-                  className="mt-3 inline-flex items-center"
-                  style={{
-                    fontFamily: "var(--font-sans)",
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color: "#0f62fe",
-                    textDecoration: "underline",
-                    textUnderlineOffset: 3,
-                  }}
-                >
-                  Book a demo
-                </BookDemoLink>
-              </div>
-            </div>
-          </ProductFrame>
-        </Reveal>
+                {/* Desktop: real interactive tour. */}
+                <div className="hidden md:block">
+                  <ProductTour />
+                </div>
+
+                {/* Mobile: committed screenshot fallback. */}
+                <div className="md:hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/marketing/product-tour-preview.png"
+                    alt="LeaseStack operator portal"
+                    loading="lazy"
+                    style={{ display: "block", width: "100%", height: "auto" }}
+                  />
+                  <div
+                    style={{
+                      padding: "16px 18px",
+                      borderTop: "1px solid #e0e0e0",
+                      backgroundColor: "#FFFFFF",
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontFamily: "var(--font-sans)",
+                        fontSize: 14,
+                        lineHeight: 1.5,
+                        color: "#525252",
+                      }}
+                    >
+                      Open this page on a laptop to click through the live
+                      operator portal.
+                    </p>
+                    <BookDemoLink
+                      className="mt-3 inline-flex items-center"
+                      style={{
+                        fontFamily: "var(--font-sans)",
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: "#0f62fe",
+                        textDecoration: "underline",
+                        textUnderlineOffset: 3,
+                      }}
+                    >
+                      Book a demo
+                    </BookDemoLink>
+                  </div>
+                </div>
+              </ProductFrame>
+            </FrameSettle>
+          </div>
+        </div>
       </div>
-    </section>
+    </SectionShell>
   );
 }

@@ -1,69 +1,84 @@
 import Link from "next/link";
-import { SoftBlurIn } from "@/components/ui/animate-text";
 import { BookDemoLink } from "@/components/marketing/book-demo-link";
+import { SectionShell } from "./section-shell";
+import { Atmosphere } from "./atmosphere";
+import { Mark } from "./mark";
+import { SignalFlow } from "./signal-flow";
 
 // ---------------------------------------------------------------------------
-// Hero — product-forward rebuild (2026-07-21 blueprint, section 1).
-//
-// Full-width confident typography, no artifact beside it. The real product
-// is shown large directly underneath (see ProductHeroShot). No eyebrow.
-// Headline: two lines, second sentence in brand blue, weight 550 so it
-// reads SET, not typed. Subtext <= 20 words. Canonical CTA pair.
+// Hero — [01] Capture. Confident light typography over the signature signal-
+// flow diagram (cool pass M2 executed light per "no dark ever"; motion pass
+// sec 1). Headline keyword carries a marker highlight that sweeps in with a
+// drawn ruler. The real product appears in the next section.
 // ---------------------------------------------------------------------------
 
 export function Hero() {
   return (
-    <section style={{ backgroundColor: "#FFFFFF" }}>
-      <div className="max-w-[1240px] mx-auto px-4 md:px-8 pt-20 md:pt-24 pb-0">
-        <h1
+    <SectionShell index="01" indexLabel="Capture" bg="#FFFFFF">
+      <div className="relative pt-16 md:pt-20 pb-14 md:pb-16">
+        {/* Atmosphere + faint blue wash behind the diagram. */}
+        <div
+          aria-hidden
+          className="absolute inset-0 pointer-events-none"
           style={{
-            color: "#161616",
-            fontFamily: "var(--font-display)",
-            fontSize: "clamp(44px, 7vw, 76px)",
-            fontWeight: 550,
-            lineHeight: 1.02,
-            letterSpacing: "-0.04em",
-            maxWidth: "980px",
+            backgroundImage:
+              "linear-gradient(180deg, #ffffff 0%, #ffffff 40%, #f7f9fe 100%)",
           }}
-        >
-          <SoftBlurIn
-            segments={[
-              { text: "Every lead, tour, and lease." },
-              { text: "One system.", color: "#0f62fe" },
-            ]}
-          />
-        </h1>
+        />
+        <Atmosphere />
 
-        <p
-          className="mt-6 md:mt-7"
-          style={{
-            color: "#6f6f6f",
-            fontFamily: "var(--font-sans)",
-            fontSize: "18px",
-            lineHeight: 1.6,
-            maxWidth: "560px",
-          }}
-        >
-          LeaseStack unifies marketing, leasing, and reputation data into one
-          dashboard your whole team runs on.
-        </p>
+        <div className="relative">
+          <h1
+            style={{
+              color: "#161616",
+              fontFamily: "var(--font-display)",
+              fontSize: "clamp(40px, 6.2vw, 72px)",
+              fontWeight: 550,
+              lineHeight: 1.03,
+              letterSpacing: "-0.04em",
+              maxWidth: "900px",
+            }}
+          >
+            Every lead, tour, and lease.
+            <br />
+            <Mark ruler>One system.</Mark>
+          </h1>
 
-        <div className="mt-8 flex flex-col items-stretch sm:flex-row sm:items-center gap-3">
-          <Link
-            href="/sign-up"
-            className="btn-primary sm:w-auto"
-            style={{ display: "flex", justifyContent: "center" }}
+          <p
+            className="mt-6 md:mt-7"
+            style={{
+              color: "#6f6f6f",
+              fontFamily: "var(--font-sans)",
+              fontSize: "18px",
+              lineHeight: 1.6,
+              maxWidth: "560px",
+            }}
           >
-            Request pilot
-          </Link>
-          <BookDemoLink
-            className="btn-secondary sm:w-auto"
-            style={{ display: "flex", justifyContent: "center" }}
-          >
-            Book a demo
-          </BookDemoLink>
+            LeaseStack unifies marketing, leasing, and reputation data into one
+            dashboard your whole team runs on.
+          </p>
+
+          <div className="mt-8 flex flex-col items-stretch sm:flex-row sm:items-center gap-3">
+            <Link
+              href="/sign-up"
+              className="btn-primary sm:w-auto"
+              style={{ display: "flex", justifyContent: "center" }}
+            >
+              Request pilot
+            </Link>
+            <BookDemoLink
+              className="btn-secondary sm:w-auto"
+              style={{ display: "flex", justifyContent: "center" }}
+            >
+              Book a demo
+            </BookDemoLink>
+          </div>
+
+          <div className="mt-12 md:mt-14">
+            <SignalFlow />
+          </div>
         </div>
       </div>
-    </section>
+    </SectionShell>
   );
 }

@@ -61,11 +61,11 @@ export function PlatformFooter() {
             <div key={col.heading}>
               <p
                 style={{
-                  color: "#8d8d8d",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  letterSpacing: "0.04em",
+                  color: "#6f7a94",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "11px",
+                  fontWeight: 500,
+                  letterSpacing: "0.08em",
                   textTransform: "uppercase",
                   marginBottom: "12px",
                 }}
@@ -108,6 +108,40 @@ export function PlatformFooter() {
             &copy; {year} {BRAND_NAME}
           </p>
         </div>
+      </div>
+
+      {/* Statement wordmark (juicebox layer J3): giant outlined "LeaseStack"
+          clipped at the bottom, light only, with a couple of pixel-motif
+          square accents. Decorative; the real wordmark sits above. */}
+      <div
+        aria-hidden
+        className="relative overflow-hidden"
+        style={{ height: "clamp(84px, 13vw, 200px)" }}
+      >
+        <span
+          style={{
+            position: "absolute",
+            left: "50%",
+            bottom: 0,
+            transform: "translate(-50%, 22%)",
+            WebkitTextStroke: "1px #c9d4ea",
+            color: "transparent",
+            fontFamily: "var(--font-display)",
+            fontWeight: 700,
+            fontSize: "14vw",
+            lineHeight: 1,
+            whiteSpace: "nowrap",
+            letterSpacing: "-0.03em",
+          }}
+        >
+          LeaseStack
+        </span>
+        <span
+          style={{ position: "absolute", top: 18, left: "6%", width: 14, height: 14, border: "1px solid #c9d4ea" }}
+        />
+        <span
+          style={{ position: "absolute", top: 44, right: "9%", width: 10, height: 10, border: "1px solid #c9d4ea" }}
+        />
       </div>
     </footer>
   );

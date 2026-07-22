@@ -1,15 +1,14 @@
-import React from "react";
-import { Reveal } from "@/components/platform/reveal";
+"use client";
+
+import React, { useRef } from "react";
+import { motion, useInView, useReducedMotion } from "framer-motion";
+import { SectionShell, LabelChip } from "./section-shell";
 
 // ---------------------------------------------------------------------------
-// LaunchSteps — implementation, compacted (2026-07-21 blueprint, section
-// 6). Enterprise buyers want to know how it goes live. Three hairline-ruled
-// columns (connect / first report / decide), real substance per column, no
-// day-by-day pinned timeline. The bottom hairline separates this white
-// section from the white FAQ below it.
-//
-// Step markers are sentence-case blue (not mono-caps) to preserve the
-// page's single mono-caps moment in the trust band.
+// LaunchSteps — [05] Rollout. Three-step implementation. A connecting hairline
+// draws left-to-right across the columns and each column fades up as the line
+// reaches it (motion pass sec 7). Reduced-motion renders the line drawn and
+// the columns in place.
 // ---------------------------------------------------------------------------
 
 const INK = "#161616";
@@ -37,92 +36,137 @@ const STEPS: Step[] = [
 ];
 
 export function LaunchSteps() {
-  return (
-    <section
-      style={{ backgroundColor: "#FFFFFF", borderBottom: "1px solid #e0e0e0" }}
-    >
-      <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-24">
-        <Reveal>
-          <div className="max-w-[720px]">
-            <h2
-              style={{
-                color: INK,
-                fontFamily: "var(--font-sans)",
-                fontSize: "clamp(28px, 3.4vw, 40px)",
-                fontWeight: 500,
-                lineHeight: 1.1,
-                letterSpacing: "-0.025em",
-              }}
-            >
-              Live in fourteen days.
-            </h2>
-            <p
-              className="mt-4"
-              style={{
-                color: MUTED,
-                fontFamily: "var(--font-sans)",
-                fontSize: "17px",
-                lineHeight: 1.6,
-                maxWidth: "520px",
-              }}
-            >
-              A short, predictable path from intake call to a domain that is
-              firing on its own.
-            </p>
-          </div>
-        </Reveal>
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "0px 0px -12% 0px" });
+  const reduce = useReducedMotion();
+  const on = reduce ? true : inView;
 
-        <div className="mt-14 grid grid-cols-1 md:grid-cols-3">
-          {STEPS.map((step, i) => (
-            <Reveal
-              key={step.title}
-              delay={i * 80}
-              className={
-                i === 0
-                  ? "md:pr-10"
-                  : "mt-8 pt-8 md:mt-0 md:pt-0 md:pl-10 border-t md:border-t-0 md:border-l border-[#e0e0e0]"
+  return (
+    <SectionShell index="05" indexLabel="Rollout" bg="#FFFFFF">
+      <div className="py-24">
+        <div className="max-w-[720px]">
+          <LabelChip>Implementation</LabelChip>
+          <h2
+            className="mt-4"
+            style={{
+              color: INK,
+              fontFamily: "var(--font-sans)",
+              fontSize: "clamp(28px, 3.4vw, 40px)",
+              fontWeight: 500,
+              lineHeight: 1.1,
+              letterSpacing: "-0.025em",
+            }}
+          >
+            Live in fourteen days.
+          </h2>
+          <p
+            className="mt-4"
+            style={{
+              color: MUTED,
+              fontFamily: "var(--font-sans)",
+              fontSize: "17px",
+              lineHeight: 1.6,
+              maxWidth: "520px",
+            }}
+          >
+            A short, predictable path from intake call to a domain that is
+            firing on its own.
+          </p>
+        </div>
+
+        <div ref={ref} className="relative mt-16">
+          {/* Drawing connector line (desktop). */}
+          <div
+            className="hidden md:block absolute"
+            style={{ top: 5, left: 0, right: 0, height: 2 }}
+            aria-hidden
+          >
+            <div
+              className="absolute inset-0"
+              style={{ backgroundColor: "#e0e0e0" }}
+            />
+            <motion.div
+              className="absolute inset-y-0 left-0 right-0"
+              style={{ backgroundColor: ACCENT, transformOrigin: "left center" }}
+              initial={false}
+              animate={{ scaleX: on ? 1 : 0 }}
+              transition={
+                reduce ? { duration: 0 } : { duration: 0.9, ease: [0.2, 0.7, 0.2, 1] }
               }
-            >
-              <p
-                style={{
-                  color: ACCENT,
-                  fontFamily: "var(--font-sans)",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  letterSpacing: "-0.005em",
-                }}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3">
+            {STEPS.map((step, i) => (
+              <motion.div
+                key={step.title}
+                initial={false}
+                animate={{ opacity: on ? 1 : 0, y: on ? 0 : reduce ? 0 : 14 }}
+                transition={
+                  reduce
+                    ? { duration: 0 }
+                    : { duration: 0.5, delay: 0.15 + i * 0.26, ease: [0.2, 0.7, 0.2, 1] }
+                }
+                className={
+                  i === 0
+                    ? "md:pr-10"
+                    : "mt-10 pt-10 md:mt-0 md:pt-0 md:pl-10 border-t md:border-t-0 md:border-l border-[#e0e0e0]"
+                }
               >
-                {step.marker}
-              </p>
-              <p
-                className="mt-3"
-                style={{
-                  color: INK,
-                  fontFamily: "var(--font-sans)",
-                  fontSize: "19px",
-                  fontWeight: 500,
-                  letterSpacing: "-0.015em",
-                  lineHeight: 1.25,
-                }}
-              >
-                {step.title}
-              </p>
-              <p
-                className="mt-2.5"
-                style={{
-                  color: MUTED,
-                  fontFamily: "var(--font-sans)",
-                  fontSize: "15px",
-                  lineHeight: 1.6,
-                  maxWidth: "320px",
-                }}
-              >
-                {step.body}
-              </p>
-            </Reveal>
-          ))}
+                <span
+                  aria-hidden
+                  className="hidden md:block"
+                  style={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: "50%",
+                    backgroundColor: "#FFFFFF",
+                    border: `2px solid ${ACCENT}`,
+                    marginBottom: 20,
+                    marginTop: -6,
+                  }}
+                />
+                <p
+                  style={{
+                    color: ACCENT,
+                    fontFamily: "var(--font-sans)",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    letterSpacing: "-0.005em",
+                  }}
+                >
+                  {step.marker}
+                </p>
+                <p
+                  className="mt-3"
+                  style={{
+                    color: INK,
+                    fontFamily: "var(--font-sans)",
+                    fontSize: "19px",
+                    fontWeight: 500,
+                    letterSpacing: "-0.015em",
+                    lineHeight: 1.25,
+                  }}
+                >
+                  {step.title}
+                </p>
+                <p
+                  className="mt-2.5"
+                  style={{
+                    color: MUTED,
+                    fontFamily: "var(--font-sans)",
+                    fontSize: "15px",
+                    lineHeight: 1.6,
+                    maxWidth: "320px",
+                  }}
+                >
+                  {step.body}
+                </p>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </div>
-    </section>
+    </SectionShell>
   );
 }

@@ -1,20 +1,28 @@
+"use client";
+
 import Link from "next/link";
+import { useRef } from "react";
+import { motion, useInView, useReducedMotion } from "framer-motion";
 import { MARKETING } from "@/lib/copy/marketing";
+import { Mark } from "./mark";
 
 // ---------------------------------------------------------------------------
 // Proof — final CTA section.
 //
-// Light-mode treatment matching the rest of the homepage. Was a dark navy
-// slab with white text; that visual break dropped out of the page rhythm
-// at the very bottom. Now: same content, flat #f4f4f4 band, dark text,
-// closing the page's white/gray alternation.
+// Light #f4f4f4 band closing the page. Headline keyword carries a marker
+// sweep (cool pass M1) and the primary button gets a single sheen sweep when
+// the section enters view (motion pass sec 9). Reduced-motion: static.
 // ---------------------------------------------------------------------------
 
 export function Proof() {
   const { final } = MARKETING.home;
+  const ref = useRef<HTMLElement>(null);
+  const inView = useInView(ref, { once: true, margin: "0px 0px -10% 0px" });
+  const reduce = useReducedMotion();
 
   return (
     <section
+      ref={ref}
       style={{
         backgroundColor: "#f4f4f4",
         color: "#161616",
@@ -41,7 +49,7 @@ export function Proof() {
         >
           Free pilot.
           <br />
-          <span style={{ color: "#0f62fe" }}>No commitment.</span>
+          <Mark>No commitment.</Mark>
         </h2>
         <p
           className="mt-5 mx-auto max-w-[560px]"
@@ -57,6 +65,10 @@ export function Proof() {
 
         {/* CTAs — stacked-then-inline, centered as a group */}
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <span
+            className="relative inline-flex overflow-hidden"
+            style={{ borderRadius: "2px" }}
+          >
           <Link
             href={final.primaryHref}
             style={{
@@ -93,6 +105,20 @@ export function Proof() {
               />
             </svg>
           </Link>
+          {!reduce ? (
+            <motion.span
+              aria-hidden
+              className="absolute inset-0 pointer-events-none"
+              initial={{ x: "-120%" }}
+              animate={{ x: inView ? "120%" : "-120%" }}
+              transition={{ duration: 0.9, ease: "easeInOut", delay: 0.25 }}
+              style={{
+                background:
+                  "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.35) 50%, transparent 70%)",
+              }}
+            />
+          ) : null}
+          </span>
           <Link
             href="#product-tour"
             style={{
