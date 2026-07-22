@@ -104,16 +104,19 @@ const BEATS: Beat[] = [
   },
 ];
 
-function Intro() {
+function Intro({ compact = false }: { compact?: boolean }) {
+  // `compact` renders inside the pinned viewport so the section keeps its
+  // heading through all five beats (before this, the heading scrolled away
+  // the moment the runway pinned and the tabs floated context-free).
   return (
     <div className="max-w-[720px]">
       <LabelChip>Operator portal</LabelChip>
       <h2
-        className="mt-4"
+        className={compact ? "mt-3" : "mt-4"}
         style={{
           color: INK,
           fontFamily: "var(--font-sans)",
-          fontSize: "clamp(28px, 3.4vw, 40px)",
+          fontSize: compact ? "clamp(24px, 2.4vw, 30px)" : "clamp(28px, 3.4vw, 40px)",
           fontWeight: 500,
           lineHeight: 1.12,
           letterSpacing: "-0.025em",
@@ -122,8 +125,14 @@ function Intro() {
         The dashboard your team actually opens.
       </h2>
       <p
-        className="mt-3"
-        style={{ color: MUTED, fontFamily: "var(--font-sans)", fontSize: 17, lineHeight: 1.6, maxWidth: 560 }}
+        className={compact ? "mt-2" : "mt-3"}
+        style={{
+          color: MUTED,
+          fontFamily: "var(--font-sans)",
+          fontSize: compact ? 15.5 : 17,
+          lineHeight: 1.6,
+          maxWidth: 560,
+        }}
       >
         Five surfaces, one login. Scroll through the week: the brief, the
         numbers, the pipeline, the named visitors, and the overnight bookings.
@@ -307,6 +316,11 @@ function Pinned() {
     <div ref={wrapRef} className="hidden md:block relative mk-tour-wrap">
       <div className="mk-pin">
         <div className="w-full py-8">
+          {/* The section heading rides INSIDE the pin so every beat keeps its
+              context (Adam, 2026-07-22: tabs without a heading read unframed). */}
+          <div className="mb-6">
+            <Intro compact />
+          </div>
           {/* Hairline-framed section: tab strip + split panel. */}
           <div style={{ border: `1px solid ${BORDER}`, borderRadius: 2, overflow: "hidden" }}>
             <TabStrip active={active} onSelect={onSelect} />
@@ -387,11 +401,16 @@ export function ProductHeroShot() {
 
   return (
     <SectionShell id="product-tour" index="02" indexLabel="The system catches it" bg="#FFFFFF">
-      <div className="py-16 md:py-20">
-        <Intro />
-        <div className="mt-8">
+      <div className={pinned ? "pt-4 pb-16 md:pb-20" : "py-16 md:py-20"}>
+        {/* Desktop-pinned mode carries the heading inside the pin; only the
+            unpinned flows (mobile / reduced-motion / short viewports) need it
+            here at the top. */}
+        <div className={pinned ? "md:hidden" : ""}>
+          <Intro />
+        </div>
+        <div className={pinned ? "" : "mt-8"}>
           {pinned ? <Pinned /> : null}
-          <NormalFlow className={pinned ? "md:hidden" : "block"} />
+          <NormalFlow className={pinned ? "md:hidden mt-8" : "block"} />
         </div>
       </div>
     </SectionShell>
