@@ -337,8 +337,13 @@ function ScrollFlow() {
 
   return (
     <div className="hidden lg:grid grid-cols-[55%_45%] gap-x-8 items-start">
-      {/* LEFT — sticky visual: tab strip + the active screen crop. */}
-      <div className="sticky" style={{ top: 108 }}>
+      {/* LEFT — sticky visual: tab strip + the active screen crop. The sticky
+          box spans the viewport (minus nav) and the panel centers inside it,
+          so the visual harbors mid-screen instead of gluing to the top. */}
+      <div
+        className="sticky flex flex-col justify-center"
+        style={{ top: 84, height: "calc(100vh - 84px)" }}
+      >
         <div style={{ border: `1px solid ${BORDER}`, borderRadius: 2, overflow: "hidden" }}>
           <TabStrip active={active} onSelect={onSelect} />
           <div id="tour-panel" role="tabpanel" aria-labelledby={`tab-${BEATS[active].id}`}>
