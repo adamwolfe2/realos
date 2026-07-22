@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import React, { useEffect, useRef, useState } from "react";
+import { useInView, useReducedMotion } from "framer-motion";
 
 // ---------------------------------------------------------------------------
 // SignalFlow — the hero's signature diagram (cool pass M2, executed LIGHT per
@@ -35,7 +35,11 @@ type Cfg = {
 const LINE = "#dbe3f2";
 const LINE_ON = "#0f62fe";
 const DOT = "#c9d4ea";
-const LABEL = "#6f7a94";
+const LABEL = "#5a647d";
+
+// Illustrative outcome tallies that MATCH the dashboard funnel later on the
+// page (Tours / Applications / Signed leases). They count up once, then hold.
+const PILL_COUNTS = [31, 11, 4];
 
 const DESKTOP: Cfg = {
   viewBox: "0 0 1200 380",
@@ -93,24 +97,37 @@ const MOBILE: Cfg = {
 
 function Diagram({ cfg }: { cfg: Cfg }) {
   const reduce = useReducedMotion();
+  const svgRef = useRef<SVGSVGElement>(null);
+  const inView = useInView(svgRef, { once: true, margin: "0px 0px -10% 0px" });
   const [hoverSource, setHoverSource] = useState<number | null>(null);
   const [hoverPill, setHoverPill] = useState<number | null>(null);
-  const [counts, setCounts] = useState<number[]>(cfg.pills.map(() => 0));
-  const [pop, setPop] = useState<number | null>(null);
+  const [counts, setCounts] = useState<number[]>(
+    reduce ? PILL_COUNTS : cfg.pills.map(() => 0),
+  );
 
-  // The single continuous loop: pulses arriving advance the outcome tallies.
+  // Count up ONCE on first view to the fixed illustrative tallies, then hold.
+  // No interval, no continuous increment (punch-list item 4). The pill scale
+  // pop is CSS-driven off the pulse cadence and never changes the numbers.
   useEffect(() => {
-    if (reduce) return;
-    let i = 0;
-    const id = setInterval(() => {
-      const idx = i % cfg.pills.length;
-      i += 1;
-      setCounts((c) => c.map((n, j) => (j === idx ? n + 1 : n)));
-      setPop(idx);
-      setTimeout(() => setPop((p) => (p === idx ? null : p)), 320);
-    }, 2200);
-    return () => clearInterval(id);
-  }, [reduce, cfg.pills.length]);
+    if (reduce) {
+      setCounts(PILL_COUNTS);
+      return;
+    }
+    if (!inView) return;
+    let raf = 0;
+    const start = performance.now();
+    const ms = 700;
+    const ease = (t: number) => 1 - Math.pow(1 - t, 3);
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / ms);
+      const e = ease(t);
+      setCounts(PILL_COUNTS.map((v) => Math.round(v * e)));
+      if (t < 1) raf = requestAnimationFrame(tick);
+      else setCounts(PILL_COUNTS);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [inView, reduce]);
 
   const srcActive = (i: number) => hoverSource === i || hoverPill !== null;
   const pillActive = (j: number) => hoverPill === j || hoverSource !== null;
@@ -120,6 +137,7 @@ function Diagram({ cfg }: { cfg: Cfg }) {
 
   return (
     <svg
+      ref={svgRef}
       viewBox={cfg.viewBox}
       width="100%"
       role="img"
@@ -270,13 +288,17 @@ function Diagram({ cfg }: { cfg: Cfg }) {
         const y = p.cy - cfg.pillH / 2;
         const active = pillActive(j);
         return (
-          <motion.g
+          <g
             key={`p-${j}`}
             onMouseEnter={() => setHoverPill(j)}
             onMouseLeave={() => setHoverPill(null)}
-            animate={{ scale: pop === j ? 1.04 : 1 }}
-            transition={{ duration: 0.28, ease: [0.2, 0.7, 0.2, 1] }}
-            style={{ transformBox: "fill-box", transformOrigin: "center", cursor: "default" }}
+            className={reduce ? undefined : "mk-pillpop"}
+            style={{
+              transformBox: "fill-box",
+              transformOrigin: "center",
+              cursor: "default",
+              animationDelay: `${1.2 + j * 0.9}s`,
+            }}
           >
             <rect
               x={x}
@@ -317,7 +339,7 @@ function Diagram({ cfg }: { cfg: Cfg }) {
             >
               {counts[j]}
             </text>
-          </motion.g>
+          </g>
         );
       })}
     </svg>

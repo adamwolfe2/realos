@@ -4,19 +4,13 @@ import React, { useRef } from "react";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 
 // ---------------------------------------------------------------------------
-// Mark — signature marker-highlight on a headline keyword (cool pass M1 +
-// motion pass sec 1/9). A brand-tinted, lightly-textured highlighter block
-// sweeps in left->right behind the phrase (scaleX, origin left, once). With
-// `ruler`, a dashed measurement line + end ticks draw in underneath after.
-//
-// Restraint: max one Mark per section headline; at most two rulers on the
-// page. Reduced-motion renders the final state instantly.
+// Mark — signature marker-highlight on a headline keyword (cool pass M1;
+// punch-list items 1 + 6). A clean, flat brand-tint block, ZERO rotation,
+// tucked to the glyph's cap-height/baseline so it reads as a deliberate
+// highlight, not accidental text selection. It sweeps in left->right once in
+// view. `ruler` (used sparingly, deliberate annotations only) draws a dashed
+// measurement line beneath. Reduced-motion renders the final state instantly.
 // ---------------------------------------------------------------------------
-
-// Fractal-noise texture so the highlight reads like real marker ink, not a
-// flat rectangle. Inline data-URI keeps it dependency-free.
-const NOISE =
-  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E\")";
 
 export function Mark({
   children,
@@ -45,14 +39,14 @@ export function Mark({
         transition={reduce ? { duration: 0 } : { duration: 0.5, ease: [0.2, 0.7, 0.2, 1] }}
         style={{
           position: "absolute",
-          inset: "-1px -6px",
+          top: "0.09em",
+          right: "-0.05em",
+          bottom: "0.11em",
+          left: "-0.05em",
           zIndex: -1,
-          rotate: -1,
           scaleX: 0,
           transformOrigin: "left center",
-          backgroundColor: "rgba(214,228,255,0.85)",
-          backgroundImage: NOISE,
-          backgroundBlendMode: "multiply",
+          backgroundColor: "#d6e4ff",
           borderRadius: 1,
           willChange: "transform",
         }}
@@ -68,7 +62,7 @@ function Ruler({ on, reduce }: { on: boolean; reduce: boolean }) {
     <span
       aria-hidden
       className="absolute left-0 right-0"
-      style={{ bottom: "-0.32em", height: 6, pointerEvents: "none" }}
+      style={{ bottom: "-0.3em", height: 6, pointerEvents: "none" }}
     >
       <svg
         width="100%"
@@ -93,7 +87,6 @@ function Ruler({ on, reduce }: { on: boolean; reduce: boolean }) {
             reduce ? { duration: 0 } : { duration: 0.45, delay: 0.4, ease: "easeInOut" }
           }
         />
-        {/* End ticks */}
         {[0, 100].map((x) => (
           <motion.line
             key={x}

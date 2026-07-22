@@ -49,7 +49,6 @@ export default function PlatformHome() {
       <ReportFeature />
       <LaunchSteps />
       <Faq />
-      <PixelSeam color="#e6e6e6" />
       <Proof />
     </HomeThreadFrame>
   );

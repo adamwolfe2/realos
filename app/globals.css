@@ -378,6 +378,21 @@ body {
   .mk-pin { position: static; min-height: 0; display: block; }
 }
 
+/* Hero outcome pills: a subtle scale pop timed to the pulse cadence. Numbers
+   never change (punch-list item 4). Off under reduced-motion via class gate. */
+@keyframes mk-pillpop {
+  0%, 86%, 100% { transform: scale(1); }
+  92% { transform: scale(1.04); }
+}
+.mk-pillpop {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mk-pillpop 9s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mk-pillpop { animation: none; }
+}
+
 .btn-white {
   display: inline-flex; align-items: center; justify-content: center;
   min-height: 44px; padding: 10px 20px;

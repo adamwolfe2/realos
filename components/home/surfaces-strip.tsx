@@ -88,8 +88,8 @@ function MiniSurface({ surface }: { surface: Surface }) {
           className="truncate"
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 9.5,
-            color: "#8d8d8d",
+            fontSize: 10,
+            color: "#5a647d",
             letterSpacing: "0.02em",
           }}
         >

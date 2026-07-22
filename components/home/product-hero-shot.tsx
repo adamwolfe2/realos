@@ -174,61 +174,64 @@ function Pinned() {
                       opacity: ringOpacity,
                     }}
                   />
-                  {/* Beat c: identified-visitor toast slides in. */}
-                  <motion.div
-                    className="absolute pointer-events-none"
-                    style={{
-                      right: 20,
-                      bottom: 20,
-                      opacity: toastOpacity,
-                      y: toastY,
-                      backgroundColor: "#FFFFFF",
-                      border: "1px solid #e6ebf5",
-                      borderRadius: 6,
-                      padding: "10px 14px",
-                      boxShadow:
-                        "0 1px 2px rgba(22,22,22,0.06), 0 14px 28px -12px rgba(22,22,22,0.22)",
-                    }}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <span
-                        className="inline-flex items-center justify-center"
-                        style={{
-                          width: 26,
-                          height: 26,
-                          borderRadius: 6,
-                          backgroundColor: "rgba(15,98,254,0.10)",
-                          color: "#0f62fe",
-                        }}
-                      >
-                        <Eye className="w-3.5 h-3.5" strokeWidth={1.8} aria-hidden />
-                      </span>
-                      <div>
-                        <p
-                          style={{
-                            fontFamily: "var(--font-sans)",
-                            fontSize: 13,
-                            fontWeight: 600,
-                            color: "#161616",
-                            lineHeight: 1.2,
-                          }}
-                        >
-                          12 new identified visitors
-                        </p>
-                        <p
-                          style={{
-                            fontFamily: "var(--font-mono)",
-                            fontSize: 10.5,
-                            color: "#8d8d8d",
-                          }}
-                        >
-                          Named by the pixel just now
-                        </p>
-                      </div>
-                    </div>
-                  </motion.div>
                 </div>
               </ProductFrame>
+            </motion.div>
+
+            {/* Beat c: identified-visitor toast. Positioned OUTSIDE the frame
+                (hanging off the bottom-right corner) so it never covers the
+                activity feed or Quick actions inside the dashboard (item 7). */}
+            <motion.div
+              className="absolute pointer-events-none z-10"
+              style={{
+                right: 12,
+                bottom: -24,
+                opacity: toastOpacity,
+                y: toastY,
+                backgroundColor: "#FFFFFF",
+                border: "1px solid #e6ebf5",
+                borderRadius: 6,
+                padding: "10px 14px",
+                boxShadow:
+                  "0 1px 2px rgba(22,22,22,0.06), 0 18px 36px -14px rgba(22,22,22,0.28)",
+              }}
+            >
+              <div className="flex items-center gap-2.5">
+                <span
+                  className="inline-flex items-center justify-center"
+                  style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: 6,
+                    backgroundColor: "rgba(15,98,254,0.10)",
+                    color: "#0f62fe",
+                  }}
+                >
+                  <Eye className="w-3.5 h-3.5" strokeWidth={1.8} aria-hidden />
+                </span>
+                <div>
+                  <p
+                    style={{
+                      fontFamily: "var(--font-sans)",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: "#161616",
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    12 new identified visitors
+                  </p>
+                  <p
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 10.5,
+                      color: "#5a647d",
+                    }}
+                  >
+                    Named by the pixel just now
+                  </p>
+                </div>
+              </div>
             </motion.div>
           </div>
 

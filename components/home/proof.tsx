@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRef } from "react";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 import { MARKETING } from "@/lib/copy/marketing";
+import { BookDemoLink } from "@/components/marketing/book-demo-link";
 import { Mark } from "./mark";
 
 // ---------------------------------------------------------------------------
@@ -148,8 +149,7 @@ export function Proof() {
             />
           ) : null}
           </span>
-          <Link
-            href="#product-tour"
+          <BookDemoLink
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -168,8 +168,8 @@ export function Proof() {
               transition: "background-color 0.2s ease",
             }}
           >
-            See the portal
-          </Link>
+            Book a demo
+          </BookDemoLink>
         </div>
 
         {/* Trust strip, inline horizontal proof points, not a giant grid */}

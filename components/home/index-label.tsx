@@ -28,7 +28,9 @@ export function IndexLabel({
     <span
       ref={ref}
       className="absolute left-4 md:left-8"
-      style={{ top: -10, display: "inline-flex", alignItems: "center" }}
+      // Sits just below the top rule (not negative) so it never clips under
+      // the sticky nav on load (punch-list item 2). z above section atmosphere.
+      style={{ top: 14, zIndex: 2, display: "inline-flex", alignItems: "center" }}
     >
       {/* node ring, centered on the thread */}
       <span
@@ -36,7 +38,7 @@ export function IndexLabel({
         style={{
           position: "absolute",
           left: -5,
-          top: 1,
+          top: 2,
           width: 11,
           height: 11,
           borderRadius: 999,
@@ -52,8 +54,10 @@ export function IndexLabel({
           backgroundColor: bg,
           fontFamily: "var(--font-mono)",
           fontSize: 11,
-          letterSpacing: "0.08em",
-          color: on ? "#0f62fe" : "#6f7a94",
+          fontWeight: 600,
+          letterSpacing: "0.09em",
+          // Stronger wayfinding contrast (punch-list items 9 + 12).
+          color: on ? "#0f43b8" : "#5a647d",
           textTransform: "uppercase",
           transition: "color 450ms ease",
           whiteSpace: "nowrap",

@@ -96,7 +96,7 @@ export function VignetteCard({
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 10.5,
-                color: "#8d8d8d",
+                color: "#5a647d",
                 letterSpacing: "0.02em",
               }}
             >

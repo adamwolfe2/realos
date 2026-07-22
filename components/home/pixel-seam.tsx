@@ -14,7 +14,7 @@ import { useInView, useReducedMotion } from "framer-motion";
 // Placed at exactly three seams (hero -> system, tabs -> report, faq -> cta).
 // ---------------------------------------------------------------------------
 
-const COLS = 64;
+const COLS = 44;
 const ROWS = 6;
 const SQUARE = 8;
 
@@ -30,8 +30,10 @@ type Cell = { col: number; row: number };
 const CELLS: Cell[] = (() => {
   const out: Cell[] = [];
   for (let r = 0; r < ROWS; r++) {
-    // Density rises toward the bottom row (dense base, sparse top).
-    const density = 0.12 + (r / (ROWS - 1)) * 0.78;
+    // Density rises toward the bottom row (dense base, sparse top). Kept
+    // deliberately low (~40% lighter than before) so seams read as a subtle
+    // texture, not glitch/noise (punch-list item 10).
+    const density = 0.07 + (r / (ROWS - 1)) * 0.47;
     for (let c = 0; c < COLS; c++) {
       if (hash(c, r) < density) out.push({ col: c, row: r });
     }
@@ -71,7 +73,7 @@ export function PixelSeam({
               width: SQUARE,
               height: SQUARE,
               backgroundColor: color,
-              opacity: on ? 1 : 0,
+              opacity: on ? 0.55 : 0,
               transition: reduce
                 ? "none"
                 : `opacity 300ms ease ${delayMs}ms`,

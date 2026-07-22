@@ -36,7 +36,12 @@ export function SectionShell({
     <section
       id={id}
       className={`relative ${className ?? ""}`}
-      style={{ backgroundColor: bg, borderTop: "1px solid #e0e0e0" }}
+      style={{
+        backgroundColor: bg,
+        borderTop: "1px solid #e0e0e0",
+        // Clear the sticky nav (~68-80px) on hash-anchor jumps.
+        scrollMarginTop: 96,
+      }}
     >
       <div className="relative max-w-[1240px] mx-auto px-4 md:px-8">
         {vRules ? (

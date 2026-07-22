@@ -41,7 +41,7 @@ export function Hero() {
           >
             Every lead, tour, and lease.
             <br />
-            <Mark ruler>One system.</Mark>
+            <Mark>One system.</Mark>
           </h1>
 
           <p

@@ -116,19 +116,21 @@ export function PlatformFooter() {
       <div
         aria-hidden
         className="relative overflow-hidden"
-        style={{ height: "clamp(84px, 13vw, 200px)" }}
+        style={{ height: "clamp(72px, 11vw, 168px)" }}
       >
         <span
           style={{
             position: "absolute",
             left: "50%",
             bottom: 0,
-            transform: "translate(-50%, 22%)",
+            // Tighter crop: only the descender line dips below the fold, so the
+            // wordmark reads deliberate, not awkwardly cut (punch-list item 13).
+            transform: "translate(-50%, 12%)",
             WebkitTextStroke: "1px #c9d4ea",
             color: "transparent",
             fontFamily: "var(--font-display)",
             fontWeight: 700,
-            fontSize: "14vw",
+            fontSize: "13vw",
             lineHeight: 1,
             whiteSpace: "nowrap",
             letterSpacing: "-0.03em",
@@ -136,12 +138,6 @@ export function PlatformFooter() {
         >
           LeaseStack
         </span>
-        <span
-          style={{ position: "absolute", top: 18, left: "6%", width: 14, height: 14, border: "1px solid #c9d4ea" }}
-        />
-        <span
-          style={{ position: "absolute", top: 44, right: "9%", width: 10, height: 10, border: "1px solid #c9d4ea" }}
-        />
       </div>
     </footer>
   );

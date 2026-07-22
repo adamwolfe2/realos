@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BookDemoLink } from "@/components/marketing/book-demo-link";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -14,6 +14,8 @@ import {
   TrendingUp,
   Target,
   Globe,
+  Menu,
+  X,
 } from "lucide-react";
 
 // Tesla-inspired: a transparent sticky nav that floats over the hero, turning
@@ -206,6 +208,7 @@ export function PlatformNav() {
             open={productOpen}
             onOpenChange={setProductOpen}
             items={PRODUCT_LINKS}
+            segments={VERTICAL_LINKS}
             labelColor={labelColor}
           />
           <NavLink href="/pricing" active={isActive(pathname, "/pricing")}>
@@ -244,15 +247,13 @@ export function PlatformNav() {
             style={{ color: labelColor, transition: "color 0.33s" }}
             onClick={() => setMobileOpen((v) => !v)}
             aria-expanded={mobileOpen}
-            aria-label="Toggle navigation"
+            aria-label={mobileOpen ? "Close navigation" : "Open navigation"}
           >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              {mobileOpen ? (
-                <path d="M4 4l10 10M14 4L4 14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-              ) : (
-                <path d="M3 6h12M3 12h12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-              )}
-            </svg>
+            {mobileOpen ? (
+              <X size={20} strokeWidth={1.7} aria-hidden />
+            ) : (
+              <Menu size={20} strokeWidth={1.7} aria-hidden />
+            )}
           </button>
         </div>
       </div>
@@ -314,6 +315,7 @@ function Dropdown({
   btnClass,
   onOpenChange,
   items,
+  segments,
   labelColor,
 }: {
   label: string;
@@ -321,20 +323,36 @@ function Dropdown({
   open: boolean;
   onOpenChange: (v: boolean) => void;
   items: ProductLink[];
+  segments: Array<{ href: string; label: string }>;
   labelColor: string;
 }) {
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  // Keyboard a11y: Escape closes and returns focus to the trigger; the panel
+  // links are natively focusable/tabbable while open (punch-list item 3).
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape" && open) {
+      e.stopPropagation();
+      onOpenChange(false);
+      btnRef.current?.focus();
+    }
+  };
+
   return (
     <div
       className="relative"
       onMouseEnter={() => onOpenChange(true)}
       onMouseLeave={() => onOpenChange(false)}
+      onKeyDown={onKeyDown}
     >
       <button
+        ref={btnRef}
         type="button"
         className={btnClass}
         style={{ color: labelColor }}
         onClick={() => onOpenChange(!open)}
         aria-expanded={open}
+        aria-haspopup="menu"
       >
         {label}
       </button>
@@ -342,6 +360,8 @@ function Dropdown({
         <div className="absolute top-full left-1/2 -translate-x-1/2 pt-3 z-50">
           <div
             className="p-4"
+            role="menu"
+            aria-label="Features"
             style={{
               backgroundColor: "#FFFFFF",
               boxShadow:
@@ -352,11 +372,55 @@ function Dropdown({
           >
             <ul className="grid grid-cols-2 gap-1">
               {items.map((item) => (
-                <li key={item.href}>
+                <li key={item.href} role="none">
                   <DropdownCard item={item} onSelect={() => onOpenChange(false)} />
                 </li>
               ))}
             </ul>
+
+            {/* Segments group — surfaces the vertical pages that were only in
+                the mobile tree, reconciling desktop/mobile (item 3). */}
+            <div className="mt-3 pt-3" style={{ borderTop: "1px solid #e0e0e0" }}>
+              <p
+                className="px-3"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  letterSpacing: "0.09em",
+                  textTransform: "uppercase",
+                  color: "#5a647d",
+                }}
+              >
+                Segments
+              </p>
+              <ul className="mt-1 grid grid-cols-2 gap-1">
+                {segments.map((s) => (
+                  <li key={s.href} role="none">
+                    <Link
+                      href={s.href}
+                      role="menuitem"
+                      onClick={() => onOpenChange(false)}
+                      className="block rounded-[2px] px-3 py-2 transition-colors"
+                      style={{
+                        color: "#161616",
+                        fontFamily: "var(--font-sans)",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "#f4f4f4";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                      }}
+                    >
+                      {s.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       ) : null}
@@ -483,9 +547,7 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
               style={{ backgroundColor: "#e0e0e0", color: "#161616" }}
               aria-label="Close menu"
             >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M4 4l8 8M12 4L4 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-              </svg>
+              <X size={18} strokeWidth={1.8} aria-hidden />
             </button>
           </div>
 

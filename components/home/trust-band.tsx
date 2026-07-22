@@ -34,13 +34,13 @@ const valueStyle: React.CSSProperties = {
 };
 
 const labelStyle: React.CSSProperties = {
-  color: "#8d8d8d",
+  color: "#5a647d",
   fontFamily: "var(--font-mono)",
-  fontSize: "10px",
+  fontSize: "10.5px",
   lineHeight: 1.4,
   textTransform: "uppercase",
-  letterSpacing: "0.12em",
-  fontWeight: 500,
+  letterSpacing: "0.1em",
+  fontWeight: 600,
 };
 
 export function TrustBand() {
