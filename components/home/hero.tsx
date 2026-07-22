@@ -1,49 +1,69 @@
-import { SplitHero } from "@/components/platform/split-hero";
-import { ConfigTabs } from "@/components/platform/artifacts/config-tabs";
+import Link from "next/link";
 import { SoftBlurIn } from "@/components/ui/animate-text";
-import { SoftFramedArtifact } from "@/components/platform/soft-framed-artifact";
-import { MARKETING } from "@/lib/copy/marketing";
-import { getBookDemoHref } from "@/lib/marketing/book-demo";
+import { BookDemoLink } from "@/components/marketing/book-demo-link";
 
-// Hero — keeps the per-character SoftBlurIn animation, primary CTAs, and
-// the interactive ConfigTabs walkthrough as the right-column artifact.
-// The standalone PlatformWalkthrough section is no longer rendered below
-// — having the same widget twice on one page split the viewer's
-// attention without adding meaning.
+// ---------------------------------------------------------------------------
+// Hero — product-forward rebuild (2026-07-21 blueprint, section 1).
 //
-// Deslop pass (2026-07-21): hero discipline caps this section at four
-// text elements (eyebrow, headline, subhead, CTAs). The trust stat strip
-// that used to sit inside the hero column now renders as its own band,
-// <TrustStrip />, directly below (see app/(platform)/page.tsx).
+// Full-width confident typography, no artifact beside it. The real product
+// is shown large directly underneath (see ProductHeroShot). No eyebrow.
+// Headline: two lines, second sentence in brand blue, weight 550 so it
+// reads SET, not typed. Subtext <= 20 words. Canonical CTA pair.
+// ---------------------------------------------------------------------------
 
 export function Hero() {
-  const { hero } = MARKETING.home;
-
   return (
-    <SplitHero
-      eyebrow={hero.eyebrow}
-      headline={
-        <SoftBlurIn
-          segments={[
-            { text: "Take control of your" },
-            { text: "online leasing.", color: "#0f62fe" },
-          ]}
-        />
-      }
-      subhead={<>{hero.subhead}</>}
-      headlineSelfAnimated
-      ctas={[
-        { label: hero.primaryCta, href: hero.primaryHref },
-        { label: "Book a demo", href: getBookDemoHref(), variant: "secondary" },
-      ]}
-      // Frame around the interactive walkthrough. `bare` because
-      // ConfigTabs ships its own white card + shadow; the frame just
-      // provides the halo of padding.
-      artifact={
-        <SoftFramedArtifact tone="lavender" padding="md" bare>
-          <ConfigTabs />
-        </SoftFramedArtifact>
-      }
-    />
+    <section style={{ backgroundColor: "#FFFFFF" }}>
+      <div className="max-w-[1240px] mx-auto px-4 md:px-8 pt-20 md:pt-24 pb-0">
+        <h1
+          style={{
+            color: "#161616",
+            fontFamily: "var(--font-display)",
+            fontSize: "clamp(44px, 7vw, 76px)",
+            fontWeight: 550,
+            lineHeight: 1.02,
+            letterSpacing: "-0.04em",
+            maxWidth: "980px",
+          }}
+        >
+          <SoftBlurIn
+            segments={[
+              { text: "Every lead, tour, and lease." },
+              { text: "One system.", color: "#0f62fe" },
+            ]}
+          />
+        </h1>
+
+        <p
+          className="mt-6 md:mt-7"
+          style={{
+            color: "#6f6f6f",
+            fontFamily: "var(--font-sans)",
+            fontSize: "18px",
+            lineHeight: 1.6,
+            maxWidth: "560px",
+          }}
+        >
+          LeaseStack unifies marketing, leasing, and reputation data into one
+          dashboard your whole team runs on.
+        </p>
+
+        <div className="mt-8 flex flex-col items-stretch sm:flex-row sm:items-center gap-3">
+          <Link
+            href="/sign-up"
+            className="btn-primary sm:w-auto"
+            style={{ display: "flex", justifyContent: "center" }}
+          >
+            Request pilot
+          </Link>
+          <BookDemoLink
+            className="btn-secondary sm:w-auto"
+            style={{ display: "flex", justifyContent: "center" }}
+          >
+            Book a demo
+          </BookDemoLink>
+        </div>
+      </div>
+    </section>
   );
 }
