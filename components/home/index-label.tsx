@@ -63,7 +63,7 @@ export function IndexLabel({
           whiteSpace: "nowrap",
         }}
       >
-        [{index}] {label}
+        {index} — {label}
       </span>
     </span>
   );

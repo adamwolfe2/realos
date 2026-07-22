@@ -29,12 +29,17 @@ export const MARKETING = {
       headline: "Every lead, tour, and lease. One system.",
       highlight: "One system.",
       subhead:
-        "LeaseStack unifies marketing, leasing, and reputation data into one dashboard your whole team runs on.",
+        "Built for multifamily and student-housing operators: every ad dollar, website visitor, and after-hours lead traced to the signed lease, in one dashboard.",
       primaryCta: "Request pilot",
       primaryHref: "/sign-up",
       secondaryCta: "Book a demo",
       secondaryHref: "/demo",
-      microProof: "Live on a real student-housing lease-up. Built for multifamily, senior living, and commercial.",
+      microProof: "Running on a real property today",
+      proofStats: [
+        "3,007 residents synced",
+        "111 active leases tracked",
+        "Live on your domain in 14 days",
+      ],
     },
     comparison: {
       eyebrow: "Why operators switch",
