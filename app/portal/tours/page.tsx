@@ -9,8 +9,8 @@ import { requireModule } from "@/lib/portal/module-gate";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   isAccessDenied,
+  marketableScopedPropertyClause,
   parsePropertyFilter,
-  propertyWhereFragment,
   visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
@@ -68,7 +68,11 @@ export default async function ToursPage({
   // propertyClause filters tour rows by `propertyId` directly (Tour
   // has it on the row). The tenantWhere gate stays on `lead` so a
   // property without leads is still scoped to the org.
-  const propertyClause = propertyWhereFragment(scope, requestedIds);
+  // Default (no selection) scopes to enabled properties only.
+  const propertyClause = await marketableScopedPropertyClause(
+    scope,
+    requestedIds,
+  );
   try {
   const where = tenantWhere(scope);
   const now = new Date();

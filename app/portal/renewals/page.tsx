@@ -11,8 +11,8 @@ import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { requireModule } from "@/lib/portal/module-gate";
 import {
   isAccessDenied,
+  marketableScopedPropertyClause,
   parsePropertyFilter,
-  propertyWhereFragment,
   visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
@@ -90,7 +90,8 @@ export default async function RenewalsPage({
   // intersects URL selection with the user's allowed set).
   const where = {
     ...tenantWhere(scope),
-    ...propertyWhereFragment(scope, propertyIds),
+    // Default (no selection) scopes to enabled properties only.
+    ...(await marketableScopedPropertyClause(scope, propertyIds)),
   };
   const now = new Date();
   const next120 = new Date(now.getTime() + 120 * 24 * 60 * 60 * 1000);

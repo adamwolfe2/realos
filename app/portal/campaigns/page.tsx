@@ -4,8 +4,8 @@ import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
+  marketableScopedPropertyClause,
   parsePropertyFilter,
-  propertyWhereFragment,
   visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
@@ -81,7 +81,14 @@ export default async function CampaignsPage({
   const scope = await requireScope();
   const sp = await searchParams;
   const propertyIds = await parsePropertyFilter(sp, scope.orgId);
-  const propertyFilter = propertyWhereFragment(scope, propertyIds);
+  // Default (no selection) scopes to enabled properties; org-level
+  // campaigns (propertyId=null) stay visible.
+  const propertyFilter = await marketableScopedPropertyClause(
+    scope,
+    propertyIds,
+    "propertyId",
+    { defaultIncludesOrgRows: true },
+  );
 
   // 28-day rolling window — matches the Ads dashboard so the two pages
   // never disagree on spend totals (audit BUG-05).
@@ -109,7 +116,7 @@ export default async function CampaignsPage({
         date: { gte: since28d },
         // Restricted users would otherwise URL-hack their way to
         // campaigns they can't see — propertyFilter is the gated form.
-        ...("propertyId" in propertyFilter
+        ...(Object.keys(propertyFilter).length > 0
           ? { campaign: propertyFilter }
           : {}),
       },

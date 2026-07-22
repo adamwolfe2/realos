@@ -247,6 +247,81 @@ export function visibleProperties<T extends { id: string }>(
 }
 
 /**
+ * Like propertyWhereFragment, but when the user has NO explicit
+ * selection (and no access gate), the query defaults to the org's
+ * MARKETABLE (lifecycle=ACTIVE) property set instead of the entire
+ * synced portfolio.
+ *
+ * Why: AppFolio syncs every property_directory row into Property —
+ * including buildings the customer never enabled in LeaseStack. The
+ * bare propertyWhereFragment returns `{}` for "no selection," which
+ * silently widened every pipeline page (applications, renewals, work
+ * orders, leads…) to the full synced portfolio. SG Real Estate saw 704
+ * applications when only 72 belonged to Telegraph Commons, their one
+ * enabled building.
+ *
+ * Semantics:
+ *   - Explicit selection / restricted gate → identical to
+ *     propertyWhereFragment (selection already comes from the
+ *     marketable-only dropdown).
+ *   - No selection, unrestricted → { field: { in: <marketable ids> } }.
+ *   - Org has ZERO marketable properties → sentinel that matches no
+ *     rows. Rendering nothing is honest; widening to disabled
+ *     properties is not. (New orgs mid-curation see empty pipelines
+ *     until they promote properties to ACTIVE — same rule the count
+ *     tiles and sidebar already follow via marketablePropertyWhere.)
+ */
+export async function marketableScopedPropertyClause(
+  scope: ScopeWithGate & { orgId: string },
+  selectedIds: string[] | null,
+  field: string = "propertyId",
+  opts: {
+    /// Explicit-selection path: when true, delegate to
+    /// propertyOrOrgLevelWhereFragment (NULL-property rows stay visible
+    /// alongside the picked properties — Visitor pages). When false
+    /// (default), delegate to plain propertyWhereFragment — preserves
+    /// each page's existing explicit-filter behavior exactly.
+    selectedIncludesOrgRows?: boolean;
+    /// Default (no-selection) path: when true, org-level NULL-property
+    /// rows remain visible alongside the marketable set. Use for models
+    /// with a nullable propertyId (Lead, Visitor, ChatbotConversation,
+    /// AdCampaign, ClientReport) so unattributed rows don't vanish from
+    /// the default view. Irrelevant for models where propertyId is
+    /// required (Application, Tour, Resident, Lease, WorkOrder).
+    defaultIncludesOrgRows?: boolean;
+  } = {},
+): Promise<Record<string, unknown>> {
+  const base = opts.selectedIncludesOrgRows
+    ? propertyOrOrgLevelWhereFragment(scope, selectedIds, field)
+    : propertyWhereFragment(scope, selectedIds, field);
+  if (Object.keys(base).length > 0) return base;
+
+  const ids = await marketablePropertyIds(scope.orgId);
+  if (ids.length === 0) return { [field]: "__no_marketable_properties__" };
+  const inList = propertyIdsToWhere(ids, field);
+  return opts.defaultIncludesOrgRows
+    ? { OR: [inList, { [field]: null }] }
+    : inList;
+}
+
+/**
+ * The org's marketable (enabled) property id list. Dynamic imports keep
+ * this file importable in contexts without the Prisma client (unit
+ * tests exercise the pure helpers above without a DB).
+ */
+async function marketablePropertyIds(orgId: string): Promise<string[]> {
+  const { prisma } = await import("@/lib/db");
+  const { marketablePropertyWhere } = await import(
+    "@/lib/properties/marketable"
+  );
+  const rows = await prisma.property.findMany({
+    where: marketablePropertyWhere(orgId),
+    select: { id: true },
+  });
+  return rows.map((r) => r.id);
+}
+
+/**
  * Internal helper: build a Prisma `where` fragment from a *pre-gated*
  * list of property ids. Used inside library code (e.g. attribution
  * queries) where the page has already applied the access gate via

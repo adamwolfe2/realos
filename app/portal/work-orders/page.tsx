@@ -15,8 +15,8 @@ import { requireModule } from "@/lib/portal/module-gate";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   isAccessDenied,
+  marketableScopedPropertyClause,
   parsePropertyFilter,
-  propertyWhereFragment,
   visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
@@ -103,7 +103,11 @@ export default async function WorkOrdersPage({
   const sp = await searchParams;
   const requestedIds = await parsePropertyFilter(sp, scope.orgId);
   const accessDenied = isAccessDenied(scope, requestedIds);
-  const propertyClause = propertyWhereFragment(scope, requestedIds);
+  // Default (no selection) scopes to enabled properties only.
+  const propertyClause = await marketableScopedPropertyClause(
+    scope,
+    requestedIds,
+  );
   try {
   const where = { ...tenantWhere(scope), ...propertyClause };
   const last30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);

@@ -16,8 +16,8 @@ import { requireModule } from "@/lib/portal/module-gate";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   isAccessDenied,
+  marketableScopedPropertyClause,
   parsePropertyFilter,
-  propertyWhereFragment,
   visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
@@ -86,7 +86,8 @@ export default async function ResidentsPage({
   const propertyIds = await parsePropertyFilter(sp, scope.orgId);
   const where = {
     ...tenantWhere(scope),
-    ...propertyWhereFragment(scope, propertyIds),
+    // Default (no selection) scopes to enabled properties only.
+    ...(await marketableScopedPropertyClause(scope, propertyIds)),
   };
 
   const filterStatus = (Object.values(ResidentStatus) as string[]).includes(

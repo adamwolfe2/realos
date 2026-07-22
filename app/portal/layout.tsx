@@ -63,6 +63,28 @@ export default async function PortalLayout({
   const next7d = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   const next30d = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
+  // Marketable (enabled) property set — fetched once, reused by the scope
+  // switcher, the sidebar property count, and every pipeline badge below.
+  // Pipeline badges previously counted org-wide — the entire synced
+  // AppFolio portfolio, including EXCLUDED sub-records and buildings the
+  // customer never enabled. Scoping to the marketable set keeps sidebar
+  // numbers consistent with the pages they link to (SG Real Estate saw
+  // "Renewals 99+" from 127 disabled properties).
+  const marketableProps = await prisma.property
+    .findMany({
+      where: marketablePropertyWhere(scope.orgId),
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    })
+    .catch(() => [] as Array<{ id: string; name: string }>);
+  const marketableIds = marketableProps.map((p) => p.id);
+  // Prisma treats `in: []` as match-nothing — exactly right for an org
+  // with zero curated properties.
+  const inMarketable = { propertyId: { in: marketableIds } };
+  const inMarketableOrOrgLevel = {
+    OR: [{ propertyId: { in: marketableIds } }, { propertyId: null }],
+  };
+
   const [
     org,
     appfolioIntegration,
@@ -70,12 +92,10 @@ export default async function PortalLayout({
     reportCount,
     creativeCount,
     leadCount,
-    propertyCount,
     tourCount,
     applicationCount,
     appfolioStatus,
     pendingCurationCount,
-    rawScopeProperties,
     activePropertyIdFromCookie,
     newLeadsTodayCount,
     hotVisitors24hCount,
@@ -134,18 +154,15 @@ export default async function PortalLayout({
     prisma.creativeRequest
       .count({ where: { orgId: scope.orgId } })
       .catch(() => 0),
-    prisma.lead.count({ where: { orgId: scope.orgId } }).catch(() => 0),
-    // Sidebar count — must match the dashboard tile and the
-    // /portal/properties list. Marketable lifecycle only.
-    prisma.property
-      .count({ where: marketablePropertyWhere(scope.orgId) })
+    prisma.lead
+      .count({ where: { orgId: scope.orgId, ...inMarketableOrOrgLevel } })
       .catch(() => 0),
     // Tours come from the public booking form (/api/public/tours) and the
     // API-key tour ingestion endpoint (/api/ingest/tour) — NOT AppFolio
     // (showings is a v1 CRUD entity, not a v2 report). Hide the nav until
     // a real tour exists so brand-new tenants don't see a dead surface.
     prisma.tour
-      .count({ where: { lead: { orgId: scope.orgId } } })
+      .count({ where: { lead: { orgId: scope.orgId }, ...inMarketable } })
       .catch(() => 0),
     // Applications currently have no production write path. The page
     // hides until rows exist, which today only happens via demo seeding.
@@ -153,7 +170,7 @@ export default async function PortalLayout({
     // into runAppfolioSync, OR build a public application form, before
     // surfacing this to operators as a feature.
     prisma.application
-      .count({ where: { lead: { orgId: scope.orgId } } })
+      .count({ where: { lead: { orgId: scope.orgId }, ...inMarketable } })
       .catch(() => 0),
     // Portfolio-wide health probe — surfaced as a single banner below the
     // impersonation strip so users see staleness everywhere, not just on
@@ -168,16 +185,6 @@ export default async function PortalLayout({
     prisma.property
       .count({ where: { orgId: scope.orgId, lifecycle: "IMPORTED" } })
       .catch(() => 0),
-    // Per-property scope switcher feed. Marketable properties only — the
-    // switcher should never offer parking-lot sub-records or archived
-    // rows. Sorted by name so the dropdown is alphabetised.
-    prisma.property
-      .findMany({
-        where: marketablePropertyWhere(scope.orgId),
-        select: { id: true, name: true },
-        orderBy: { name: "asc" },
-      })
-      .catch(() => [] as Array<{ id: string; name: string }>),
     // Persisted property selection — read from the
     // portal_active_property_id cookie. null = "All properties".
     getActivePropertyId().catch(() => null),
@@ -185,7 +192,11 @@ export default async function PortalLayout({
     // today?" signal.
     prisma.lead
       .count({
-        where: { orgId: scope.orgId, createdAt: { gte: startOfToday } },
+        where: {
+          orgId: scope.orgId,
+          createdAt: { gte: startOfToday },
+          ...inMarketableOrOrgLevel,
+        },
       })
       .catch(() => 0),
     // 24h hot identified visitors (intentScore >= 70). Surfaces
@@ -197,6 +208,7 @@ export default async function PortalLayout({
           status: "IDENTIFIED",
           intentScore: { gte: 70 },
           firstSeenAt: { gte: now24h },
+          ...inMarketableOrOrgLevel,
         },
       })
       .catch(() => 0),
@@ -207,6 +219,7 @@ export default async function PortalLayout({
           lead: { orgId: scope.orgId },
           status: "SCHEDULED",
           scheduledAt: { gte: new Date(), lte: next7d },
+          ...inMarketable,
         },
       })
       .catch(() => 0),
@@ -218,6 +231,7 @@ export default async function PortalLayout({
           orgId: scope.orgId,
           status: { in: ["ACTIVE", "EXPIRING"] },
           endDate: { gte: new Date(), lte: next30d },
+          ...inMarketable,
         },
       })
       .catch(() => 0),
@@ -229,6 +243,7 @@ export default async function PortalLayout({
           orgId: scope.orgId,
           status: { in: ["NEW", "SCHEDULED", "IN_PROGRESS"] },
           priority: "URGENT",
+          ...inMarketable,
         },
       })
       .catch(() => 0),
@@ -244,6 +259,10 @@ export default async function PortalLayout({
       })
       .catch(() => 0),
   ]);
+
+  // Derived from the single marketable-properties fetch above.
+  const propertyCount = marketableProps.length;
+  const rawScopeProperties = marketableProps;
 
   if (!org) {
     if (scope.isAgency || scope.isAlPartner) redirect("/admin");

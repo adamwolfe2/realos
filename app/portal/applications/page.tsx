@@ -8,8 +8,8 @@ import { requireModule } from "@/lib/portal/module-gate";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   isAccessDenied,
+  marketableScopedPropertyClause,
   parsePropertyFilter,
-  propertyWhereFragment,
   visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
@@ -80,7 +80,12 @@ export default async function ApplicationsPage({
   const view = sp.view === "pipeline" ? "pipeline" : "units";
   const requestedIds = await parsePropertyFilter(sp, scope.orgId);
   const accessDenied = isAccessDenied(scope, requestedIds);
-  const propertyClause = propertyWhereFragment(scope, requestedIds);
+  // Default (no selection) scopes to the org's ENABLED properties — not
+  // the entire synced AppFolio portfolio. See marketableScopedPropertyClause.
+  const propertyClause = await marketableScopedPropertyClause(
+    scope,
+    requestedIds,
+  );
   // Preserve the active property filter when switching views.
   const filterQs =
     sp.properties != null

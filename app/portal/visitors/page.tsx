@@ -6,8 +6,8 @@ import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
+  marketableScopedPropertyClause,
   parsePropertyFilter,
-  propertyOrOrgLevelWhereFragment,
   visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
@@ -188,7 +188,12 @@ export default async function VisitorsPage({
   // doesn't hide every visitor.
   const baseWhere: Prisma.VisitorWhereInput = {
     ...tenant,
-    ...propertyOrOrgLevelWhereFragment(scope, propertyIds),
+    // Default (no selection) scopes to enabled properties; org-level pixel
+    // visitors (propertyId=null) stay visible in both modes.
+    ...(await marketableScopedPropertyClause(scope, propertyIds, "propertyId", {
+      selectedIncludesOrgRows: true,
+      defaultIncludesOrgRows: true,
+    })),
     ...(since ? { firstSeenAt: { gte: since } } : {}),
   };
 

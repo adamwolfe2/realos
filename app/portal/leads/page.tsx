@@ -18,9 +18,8 @@ import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   isAccessDenied,
+  marketableScopedPropertyClause,
   parsePropertyFilter,
-  propertyWhereFragment,
-  propertyOrOrgLevelWhereFragment,
   visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
@@ -88,9 +87,19 @@ export default async function LeadsKanbanPage({
     ? sp.signal
     : null;
 
+  // Default (no selection) scopes to enabled properties; org-level leads
+  // (propertyId=null — unattributed captures) stay visible. AND-wrapped
+  // because the search filter below assigns `where.OR` — a top-level OR
+  // from this clause would be clobbered.
+  const leadPropertyClause = await marketableScopedPropertyClause(
+    scope,
+    propertyIds,
+    "propertyId",
+    { defaultIncludesOrgRows: true },
+  );
   const where: Prisma.LeadWhereInput = {
     ...tenantWhere(scope),
-    ...propertyWhereFragment(scope, propertyIds),
+    AND: [leadPropertyClause],
   };
   if (sp.source && (SOURCES as string[]).includes(sp.source)) {
     where.source = sp.source as LeadSource;
@@ -137,17 +146,19 @@ export default async function LeadsKanbanPage({
   const since28d = new Date(Date.now() - 28 * DAY);
   const kpiWhere: Prisma.LeadWhereInput = {
     ...tenantWhere(scope),
-    ...propertyWhereFragment(scope, propertyIds),
+    AND: [leadPropertyClause],
   };
 
   // Property-filter fragment for non-Lead tables that have their own
   // propertyId column (ChatbotConversation, PopupEvent, Visitor,
   // Application). Reuses the same effective property set so KPIs move
   // with the operator's property filter.
-  const nonLeadPropertyFragment =
-    propertyIds && propertyIds.length > 0
-      ? { propertyId: { in: propertyIds } }
-      : {};
+  const nonLeadPropertyFragment = await marketableScopedPropertyClause(
+    scope,
+    propertyIds,
+    "propertyId",
+    { defaultIncludesOrgRows: true },
+  );
 
   const [
     leads,
@@ -386,7 +397,10 @@ export default async function LeadsKanbanPage({
   // ---------------------------------------------------------------------
   const visitorLeadWhere: Prisma.VisitorWhereInput = {
     ...tenantWhere(scope),
-    ...propertyOrOrgLevelWhereFragment(scope, propertyIds),
+    ...(await marketableScopedPropertyClause(scope, propertyIds, "propertyId", {
+      selectedIncludesOrgRows: true,
+      defaultIncludesOrgRows: true,
+    })),
     status: {
       in: [
         VisitorIdentificationStatus.IDENTIFIED,

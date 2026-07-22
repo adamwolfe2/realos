@@ -7,8 +7,8 @@ import { requireModule } from "@/lib/portal/module-gate";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   isAccessDenied,
+  marketableScopedPropertyClause,
   parsePropertyFilter,
-  propertyWhereFragment,
   visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
@@ -165,7 +165,11 @@ export default async function ConversationsList({
 
   const where: Prisma.ChatbotConversationWhereInput = {
     ...tenantWhere(scope),
-    ...propertyWhereFragment(scope, propertyIds),
+    // Default (no selection) scopes to enabled properties; org-level
+    // conversations (propertyId=null) stay visible.
+    ...(await marketableScopedPropertyClause(scope, propertyIds, "propertyId", {
+      defaultIncludesOrgRows: true,
+    })),
   };
   if (statusParam) where.status = statusParam;
   if (activeFlag) where.flags = { some: { flag: activeFlag } };

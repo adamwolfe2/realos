@@ -6,8 +6,8 @@ import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { requireModule } from "@/lib/portal/module-gate";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
+  marketableScopedPropertyClause,
   parsePropertyFilter,
-  propertyWhereFragment,
   visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
@@ -56,7 +56,11 @@ export default async function ReportsListPage({
   const propertyIds = await parsePropertyFilter(sp, scope.orgId);
   const where: Prisma.ClientReportWhereInput = {
     ...tenantWhere(scope),
-    ...propertyWhereFragment(scope, propertyIds),
+    // Default (no selection) scopes to enabled properties; org-wide
+    // reports (propertyId=null — portfolio/monthly rollups) stay visible.
+    ...(await marketableScopedPropertyClause(scope, propertyIds, "propertyId", {
+      defaultIncludesOrgRows: true,
+    })),
   };
   if (sp.kind === "weekly" || sp.kind === "monthly" || sp.kind === "custom") {
     where.kind = sp.kind;

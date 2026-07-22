@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { requireScope } from "@/lib/tenancy/scope";
 import { requireModule } from "@/lib/portal/module-gate";
-import { parsePropertyFilter, propertyWhereFragment } from "@/lib/tenancy/property-filter";
+import {
+  marketableScopedPropertyClause,
+  parsePropertyFilter,
+} from "@/lib/tenancy/property-filter";
 import { getChatbotAnalytics } from "@/lib/chatbot/conversation-analytics";
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
@@ -36,7 +39,12 @@ export default async function ChatbotInsightsPage({
 
   const analytics = await getChatbotAnalytics({
     orgId: scope.orgId,
-    propertyWhere: propertyWhereFragment(scope, propertyIds),
+    propertyWhere: await marketableScopedPropertyClause(
+      scope,
+      propertyIds,
+      "propertyId",
+      { defaultIncludesOrgRows: true },
+    ),
     periodDays,
   });
 

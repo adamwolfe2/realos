@@ -17,8 +17,8 @@ import {
 import {
   effectivePropertyIds,
   isAccessDenied,
+  marketableScopedPropertyClause,
   parsePropertyFilter,
-  propertyWhereFragment,
   visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
@@ -237,7 +237,14 @@ export default async function PortalHome({
   const requestedIds = await parsePropertyFilter(sp, scope.orgId);
   const accessDenied = isAccessDenied(scope, requestedIds);
   const effectiveIds = effectivePropertyIds(scope, requestedIds);
-  const propertyClause = propertyWhereFragment(scope, requestedIds);
+  // Default (no selection) scopes KPIs to enabled properties; org-level
+  // rows (null propertyId on nullable models) stay visible.
+  const propertyClause = await marketableScopedPropertyClause(
+    scope,
+    requestedIds,
+    "propertyId",
+    { defaultIncludesOrgRows: true },
+  );
   const isFiltered = effectiveIds !== null && effectiveIds.length > 0;
 
   try {

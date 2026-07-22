@@ -5,8 +5,8 @@ import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
+  marketableScopedPropertyClause,
   parsePropertyFilter,
-  propertyWhereFragment,
   visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
@@ -62,7 +62,14 @@ export default async function AdsPage({
     orderBy: { name: "asc" },
   });
   const properties = visibleProperties(scope, allProperties);
-  const propertyFilter = propertyWhereFragment(scope, propertyIds);
+  // Default (no selection) scopes to enabled properties; org-level
+  // campaigns (propertyId=null) stay visible.
+  const propertyFilter = await marketableScopedPropertyClause(
+    scope,
+    propertyIds,
+    "propertyId",
+    { defaultIncludesOrgRows: true },
+  );
 
   const now = new Date();
   // 28-day window. We compare to the prior 28-day window for delta arrows.
@@ -140,7 +147,7 @@ export default async function AdsPage({
         // Use propertyFilter (the gated, intersected fragment) so a
         // restricted user can't URL-hack into properties they don't
         // own. The campaign relation has its own propertyId column.
-        ...("propertyId" in propertyFilter
+        ...(Object.keys(propertyFilter).length > 0
           ? { campaign: propertyFilter }
           : {}),
       },
@@ -171,7 +178,7 @@ export default async function AdsPage({
         // Use propertyFilter (the gated, intersected fragment) so a
         // restricted user can't URL-hack into properties they don't
         // own. The campaign relation has its own propertyId column.
-        ...("propertyId" in propertyFilter
+        ...(Object.keys(propertyFilter).length > 0
           ? { campaign: propertyFilter }
           : {}),
       },
