@@ -2,13 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
-import {
-  motion,
-  AnimatePresence,
-  useScroll,
-  useMotionValueEvent,
-  useReducedMotion,
-} from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Gauge,
   LayoutDashboard,
@@ -283,82 +277,118 @@ function TabStrip({
   );
 }
 
-function Pinned() {
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: wrapRef, offset: ["start start", "end end"] });
+function ScrollFlow() {
+  // Juicebox pattern (Adam, 2026-07-22): the page NEVER pins. The right rail
+  // of beat texts scrolls in normal document flow; the left visual (tabs +
+  // crop) is position: sticky within the section and swaps as each text
+  // block crosses the viewport center. Scrolling always moves something.
   const reduce = useReducedMotion();
   const [active, setActive] = useState(0);
   const [dir, setDir] = useState(1);
+  const blockRefs = useRef<Array<HTMLDivElement | null>>([]);
 
-  useMotionValueEvent(scrollYProgress, "change", (p) => {
-    const b = p < 0.19 ? 0 : p < 0.39 ? 1 : p < 0.59 ? 2 : p < 0.79 ? 3 : 4;
+  const onActive = useCallback((i: number) => {
     setActive((prev) => {
-      if (prev === b) return prev;
-      setDir(b > prev ? 1 : -1);
-      return b;
+      if (prev === i) return prev;
+      setDir(i > prev ? 1 : -1);
+      return i;
     });
-  });
+  }, []);
+
+  // Active beat = the text block whose center is nearest the viewport center.
+  // Plain rAF-throttled scroll math: no IntersectionObserver dead zones, the
+  // visual always tracks whatever the reader is actually looking at.
+  useEffect(() => {
+    let raf = 0;
+    const measure = () => {
+      const mid = window.innerHeight / 2;
+      let best = 0;
+      let bestD = Infinity;
+      blockRefs.current.forEach((el, i) => {
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        const d = Math.abs(r.top + r.height / 2 - mid);
+        if (d < bestD) {
+          bestD = d;
+          best = i;
+        }
+      });
+      onActive(best);
+    };
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(measure);
+    };
+    measure();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, [onActive]);
 
   const onSelect = useCallback((i: number) => {
-    setDir(i > active ? 1 : -1);
-    setActive(i);
-    const el = wrapRef.current;
-    if (!el) return;
-    const rectTop = el.getBoundingClientRect().top + window.scrollY;
-    const scrollable = el.offsetHeight - window.innerHeight;
-    const y = rectTop + ((i + 0.5) / BEATS.length) * Math.max(0, scrollable);
-    window.scrollTo({ top: y, behavior: "smooth" });
-  }, [active]);
+    blockRefs.current[i]?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, []);
 
   const slide = reduce ? 0 : 24;
 
   return (
-    <div ref={wrapRef} className="hidden md:block relative mk-tour-wrap">
-      <div className="mk-pin">
-        <div className="w-full py-8">
-          {/* The section heading rides INSIDE the pin so every beat keeps its
-              context (Adam, 2026-07-22: tabs without a heading read unframed). */}
-          <div className="mb-6">
-            <Intro compact />
-          </div>
-          {/* Hairline-framed section: tab strip + split panel. */}
-          <div style={{ border: `1px solid ${BORDER}`, borderRadius: 2, overflow: "hidden" }}>
-            <TabStrip active={active} onSelect={onSelect} />
-            <div id="tour-panel" role="tabpanel" aria-labelledby={`tab-${BEATS[active].id}`}>
-              <AnimatePresence mode="wait" custom={dir}>
-                <motion.div
-                  key={active}
-                  custom={dir}
-                  initial={reduce ? false : { opacity: 0, x: dir * slide }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={reduce ? undefined : { opacity: 0, x: -dir * slide }}
-                  transition={{ duration: 0.3, ease: [0.2, 0.7, 0.2, 1] }}
-                  className="grid grid-cols-1 lg:grid-cols-[55%_45%]"
-                >
-                  <BeatPanel beat={active} />
-                  <BeatText beat={active} showCta={active === BEATS.length - 1} />
-                </motion.div>
-              </AnimatePresence>
-            </div>
-          </div>
-
-          {/* Progress rail. */}
-          <div className="mt-6 flex items-center gap-2">
-            {BEATS.map((b, i) => (
-              <span
-                key={b.id}
-                aria-hidden
-                style={{
-                  width: i === active ? 20 : 7,
-                  height: 4,
-                  borderRadius: 2,
-                  backgroundColor: i === active ? BRAND : "#d9dff0",
-                  transition: "all 300ms ease",
-                }}
-              />
-            ))}
+    <div className="hidden lg:grid grid-cols-[55%_45%] gap-x-8 items-start">
+      {/* LEFT — sticky visual: tab strip + the active screen crop. */}
+      <div className="sticky" style={{ top: 108 }}>
+        <div style={{ border: `1px solid ${BORDER}`, borderRadius: 2, overflow: "hidden" }}>
+          <TabStrip active={active} onSelect={onSelect} />
+          <div id="tour-panel" role="tabpanel" aria-labelledby={`tab-${BEATS[active].id}`}>
+            <AnimatePresence mode="wait" custom={dir}>
+              <motion.div
+                key={active}
+                custom={dir}
+                initial={reduce ? false : { opacity: 0, y: dir * slide }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduce ? undefined : { opacity: 0, y: -dir * slide }}
+                transition={{ duration: 0.3, ease: [0.2, 0.7, 0.2, 1] }}
+              >
+                <BeatPanel beat={active} />
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
+
+        {/* Progress rail. */}
+        <div className="mt-5 flex items-center gap-2">
+          {BEATS.map((b, i) => (
+            <span
+              key={b.id}
+              aria-hidden
+              style={{
+                width: i === active ? 20 : 7,
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: i === active ? BRAND : "#d9dff0",
+                transition: "all 300ms ease",
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* RIGHT — the story, scrolling freely. */}
+      <div>
+        {BEATS.map((b, i) => (
+          <div
+            key={b.id}
+            ref={(el) => {
+              blockRefs.current[i] = el;
+            }}
+            className="flex items-center"
+            style={{ minHeight: "68vh" }}
+          >
+            <BeatText beat={i} showCta={i === BEATS.length - 1} />
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -389,28 +419,16 @@ function NormalFlow({ className }: { className?: string }) {
 
 export function ProductHeroShot() {
   const reduce = useReducedMotion();
-  const [tall, setTall] = useState(true);
-  useEffect(() => {
-    const m = window.matchMedia("(min-height: 760px)");
-    const on = () => setTall(m.matches);
-    on();
-    m.addEventListener("change", on);
-    return () => m.removeEventListener("change", on);
-  }, []);
-  const pinned = !reduce && tall;
 
   return (
     <SectionShell id="product-tour" index="02" indexLabel="The system catches it" bg="#FFFFFF">
-      <div className={pinned ? "pt-4 pb-16 md:pb-20" : "py-16 md:py-20"}>
-        {/* Desktop-pinned mode carries the heading inside the pin; only the
-            unpinned flows (mobile / reduced-motion / short viewports) need it
-            here at the top. */}
-        <div className={pinned ? "md:hidden" : ""}>
-          <Intro />
-        </div>
-        <div className={pinned ? "" : "mt-8"}>
-          {pinned ? <Pinned /> : null}
-          <NormalFlow className={pinned ? "md:hidden mt-8" : "block"} />
+      <div className="py-16 md:py-20">
+        <Intro />
+        <div className="mt-8 md:mt-10">
+          {/* Desktop: sticky-visual scroll flow. Below lg / reduced-motion:
+              plain stacked beats. */}
+          {reduce ? null : <ScrollFlow />}
+          <NormalFlow className={reduce ? "block" : "lg:hidden"} />
         </div>
       </div>
     </SectionShell>

@@ -365,23 +365,10 @@ body {
 }
 .btn-secondary:active { transform: scale(0.98); }
 
-/* ── Cohesion pass: pinned scrollytelling ([02]) ─────────────────────────── */
-/* The dashboard beat pins on tall viewports; on short viewports (<760px) it
-   degrades to normal flow so nothing is trapped behind the pin. */
-.mk-pin-wrap { height: 200vh; }
-/* The tab-driven walkthrough needs runway for five screens that each hold.
-   Trimmed 340vh -> 300vh (2026-07-22 clarity pass): the longer runway left a
-   dead scroll band after the pin released that read as broken whitespace. */
-.mk-tour-wrap { height: 300vh; }
-.mk-pin {
-  position: sticky; top: 0; min-height: 100vh;
-  display: flex; align-items: center;
-}
-@media (max-height: 759px) {
-  .mk-pin-wrap { height: auto; }
-  .mk-tour-wrap { height: auto; }
-  .mk-pin { position: static; min-height: 0; display: block; }
-}
+/* ── [02] walkthrough ────────────────────────────────────────────────────── */
+/* 2026-07-22: the pinned-runway scrollytelling (.mk-pin/.mk-tour-wrap) is
+   gone per Adam — the section now uses a sticky left visual + free-scrolling
+   right rail (Juicebox pattern) implemented in product-hero-shot.tsx. */
 
 /* Hero outcome pills: a subtle scale pop timed to the pulse cadence. Numbers
    never change (punch-list item 4). Off under reduced-motion via class gate. */
