@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { MARKETING } from "@/lib/copy/marketing";
 import { BRAND_NAME } from "@/lib/brand";
-import { HomeThreadFrame } from "@/components/home/home-thread-frame";
 import { Hero } from "@/components/home/hero";
-import { TrustBand } from "@/components/home/trust-band";
 import { ProductHeroShot } from "@/components/home/product-hero-shot";
 import { Pillars } from "@/components/home/pillars";
 import { SurfacesStrip } from "@/components/home/surfaces-strip";
@@ -13,23 +11,20 @@ import { Faq } from "@/components/home/faq";
 import { Proof } from "@/components/home/proof";
 import { PixelSeam } from "@/components/home/pixel-seam";
 
-// Homepage — one story, one thread (blueprint + depth + cool + motion +
-// juicebox + cohesion passes, 2026-07-21). A single blue thread draws down
-// the left content rule with scroll; each [0N] index node fills as the story
-// arrives. We follow one renter (Priya V.) through the system:
+// Homepage — one continuous story (round-2 QA, 2026-07-21). The blue thread
+// spine and the trust band are gone; sections breathe. We follow a lead
+// through the system across [01]..[07]:
 //
-//   [01] A renter shows intent      signal-flow hero (the one animated loop)
-//        TrustBand                  four proof stats, count-up
+//   [01] Capture         centered signal-flow hero (the one animated loop)
 //   ~pixel seam~
-//   [02] The system catches it      pinned dashboard scrollytelling
-//   [03] It works every lead        tabbed switcher (attribution / pixel / ai / rep+seo)
-//   [04] Every surface, one login   product surfaces + integration row
-//   ~pixel seam (blue)~
-//   [05] Monday, it's in your report weekly report on a blue texture panel
-//   [06] Your first 14 days         rollout, thread-branch line-draw
-//   [07] Then you decide            FAQ
+//   [02] The system      pinned camera zoom over the dashboard
+//   [03] It works         four sequential capability parts (all shown)
+//   [04] Every surface    product surfaces + integration row
 //   ~pixel seam~
-//        Proof                      final CTA (thread terminus above the button)
+//   [05] The report       weekly report on a blue texture panel
+//   [06] Rollout          three-step implementation, drawing line
+//   [07] FAQ
+//        Proof            final CTA
 
 export const metadata: Metadata = {
   title: `${BRAND_NAME}: Leasing intelligence for real estate operators`,
@@ -38,10 +33,9 @@ export const metadata: Metadata = {
 
 export default function PlatformHome() {
   return (
-    <HomeThreadFrame>
+    <div style={{ backgroundColor: "#FFFFFF", color: "#161616" }}>
       <Hero />
       <PixelSeam color="#dbe3f2" />
-      <TrustBand />
       <ProductHeroShot />
       <Pillars />
       <SurfacesStrip />
@@ -50,6 +44,6 @@ export default function PlatformHome() {
       <LaunchSteps />
       <Faq />
       <Proof />
-    </HomeThreadFrame>
+    </div>
   );
 }

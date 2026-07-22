@@ -116,6 +116,9 @@ export function LaunchSteps() {
                 <span
                   aria-hidden
                   className="hidden md:block"
+                  // The connector line sits at top:5 height:2 (center y=6). A
+                  // 12px dot at marginTop:0 has center y=6 too, so it lands
+                  // exactly ON the line (punch-list item 4).
                   style={{
                     width: 12,
                     height: 12,
@@ -123,7 +126,7 @@ export function LaunchSteps() {
                     backgroundColor: "#FFFFFF",
                     border: `2px solid ${ACCENT}`,
                     marginBottom: 20,
-                    marginTop: -6,
+                    marginTop: 0,
                   }}
                 />
                 <p

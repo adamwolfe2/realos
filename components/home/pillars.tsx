@@ -1,7 +1,7 @@
 import React from "react";
 import { SectionShell, LabelChip } from "./section-shell";
 import { Mark } from "./mark";
-import { ProductTabs } from "./product-tabs";
+import { CapabilitiesSequence } from "./capabilities-sequence";
 
 // ---------------------------------------------------------------------------
 // Pillars — [03]. The three capabilities, now a tabbed product switcher
@@ -45,9 +45,7 @@ export function Pillars() {
           </p>
         </div>
 
-        <div className="mt-12 md:mt-16">
-          <ProductTabs />
-        </div>
+        <CapabilitiesSequence />
       </div>
     </SectionShell>
   );

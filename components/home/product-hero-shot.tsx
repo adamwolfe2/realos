@@ -5,7 +5,6 @@ import {
   motion,
   AnimatePresence,
   useScroll,
-  useTransform,
   useMotionValueEvent,
   useReducedMotion,
 } from "framer-motion";
@@ -17,18 +16,25 @@ import { SectionShell, LabelChip } from "./section-shell";
 import { Atmosphere } from "./atmosphere";
 
 // ---------------------------------------------------------------------------
-// ProductHeroShot — [02] The system catches it. A pinned scrollytelling beat
-// (cohesion pass C3): a 220vh runway, the ProductFrame pinned sticky, and
-// scroll progress driving three beats over an OVERLAY layer (never editing
-// ProductTour internals). Each caption answers the question a buyer is
-// silently asking at that moment. As the runway ends the frame scales down,
-// handing off to the capabilities tabs below (zoom-out).
+// ProductHeroShot — [02] The system catches it. A pinned CAMERA over the
+// dashboard (round-2 QA item 5). Scroll no longer drifts the frame; it drives
+// discrete beats that HOLD, so it reads stop -> zoom -> hold -> next:
 //
-// Reduced-motion and mobile: normal flow, frame + three stacked answer cards,
-// no pin. Nothing is ever trapped (sticky, not fixed; releases after 220vh).
+//   beat 0  full dashboard in view
+//   beat 1  camera zooms into the KPI row + conversion funnel
+//   beat 2  camera pans to the activity feed + identified-visitors moment
+//   release camera zooms back to the full frame, then unpins
+//
+// The zoom is a spring between fixed per-beat transforms on the dashboard
+// wrapper (never editing ProductTour internals); the frame content clips it.
+// Captions (buyer-question Q/A) sit BELOW the frame and swap per beat, never
+// over the zoomed content. No overlay scanning ring.
+//
+// Reduced-motion / mobile / short viewports: normal flow, full frame + three
+// stacked answer cards (mk-pin degrades under 760px tall).
 // ---------------------------------------------------------------------------
 
-const H2 = "Priya applied at 11:48pm. Nothing fell through.";
+const H2 = "Applied at 11:48pm. Nothing fell through.";
 
 const BEATS = [
   { q: "Where do my leads actually go?", a: "Every signal lands in one place." },
@@ -38,6 +44,15 @@ const BEATS = [
     a: "Even the anonymous ones get named.",
   },
 ];
+
+// Per-beat camera transforms on the dashboard wrapper (origin center).
+const CAM = [
+  { scale: 1, x: "0%", y: "0%" }, // full
+  { scale: 1.55, x: "0%", y: "15%" }, // zoom KPIs + funnel (upper area)
+  { scale: 1.5, x: "-16%", y: "-3%" }, // pan to activity feed (right)
+  { scale: 1, x: "0%", y: "0%" }, // release
+];
+const CAM_SPRING = { type: "spring" as const, stiffness: 110, damping: 24, mass: 0.9 };
 
 function FrameContent() {
   return (
@@ -53,23 +68,9 @@ function FrameContent() {
           loading="lazy"
           style={{ display: "block", width: "100%", height: "auto" }}
         />
-        <div
-          style={{
-            padding: "16px 18px",
-            borderTop: "1px solid #e0e0e0",
-            backgroundColor: "#FFFFFF",
-          }}
-        >
-          <p
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontSize: 14,
-              lineHeight: 1.5,
-              color: "#525252",
-            }}
-          >
-            Open this page on a laptop to click through the live operator
-            portal.
+        <div style={{ padding: "16px 18px", borderTop: "1px solid #e0e0e0", backgroundColor: "#FFFFFF" }}>
+          <p style={{ fontFamily: "var(--font-sans)", fontSize: 14, lineHeight: 1.5, color: "#525252" }}>
+            Open this page on a laptop to click through the live operator portal.
           </p>
           <BookDemoLink
             className="mt-3 inline-flex items-center"
@@ -90,7 +91,7 @@ function FrameContent() {
   );
 }
 
-function h2El() {
+function H2El() {
   return (
     <h2
       className="mt-4"
@@ -115,25 +116,19 @@ function Pinned() {
     target: wrapRef,
     offset: ["start start", "end end"],
   });
-  const [beat, setBeat] = useState(0);
-  useMotionValueEvent(scrollYProgress, "change", (v) => {
-    const b = v < 0.4 ? 0 : v < 0.72 ? 1 : 2;
-    setBeat((p) => (p === b ? p : b));
+  const [cam, setCam] = useState(0);
+  useMotionValueEvent(scrollYProgress, "change", (p) => {
+    const c = p < 0.3 ? 0 : p < 0.58 ? 1 : p < 0.86 ? 2 : 3;
+    setCam((prev) => (prev === c ? prev : c));
   });
-
-  const frameScale = useTransform(scrollYProgress, [0.85, 1], [1, 0.96]);
-  const ringLeft = useTransform(scrollYProgress, [0.4, 0.56, 0.72], ["16%", "48%", "80%"]);
-  const ringTop = useTransform(scrollYProgress, [0.4, 0.56, 0.72], ["26%", "58%", "44%"]);
-  const ringOpacity = useTransform(scrollYProgress, [0.36, 0.42, 0.7, 0.76], [0, 1, 1, 0]);
-  const toastOpacity = useTransform(scrollYProgress, [0.74, 0.82], [0, 1]);
-  const toastY = useTransform(scrollYProgress, [0.74, 0.82], [16, 0]);
+  const captionBeat = Math.min(2, cam);
 
   return (
     <div ref={wrapRef} className="hidden md:block relative mk-pin-wrap">
       <div className="mk-pin">
         <div className="w-full py-12">
           <LabelChip>Operator portal</LabelChip>
-          {h2El()}
+          <H2El />
 
           <div className="relative mt-8">
             <div
@@ -148,46 +143,29 @@ function Pinned() {
                 filter: "blur(26px)",
               }}
             />
-            <motion.div
-              style={{ scale: frameScale, transformOrigin: "center top" }}
+            <ProductFrame
+              url="app.leasestack.co/portal"
+              contentStyle={{ backgroundColor: "#fbfcfe", overflow: "hidden" }}
             >
-              <ProductFrame
-                url="app.leasestack.co/portal"
-                contentStyle={{ backgroundColor: "#fbfcfe" }}
+              <motion.div
+                animate={CAM[cam]}
+                transition={CAM_SPRING}
+                style={{ transformOrigin: "center center", willChange: "transform" }}
               >
-                <div className="relative">
-                  <ProductTour />
-                  {/* Beat b: scanning highlight ring travels the surfaces. */}
-                  <motion.div
-                    aria-hidden
-                    className="absolute pointer-events-none"
-                    style={{
-                      left: ringLeft,
-                      top: ringTop,
-                      x: "-50%",
-                      y: "-50%",
-                      width: 130,
-                      height: 92,
-                      borderRadius: 8,
-                      border: "2px solid #0f62fe",
-                      boxShadow: "0 0 0 4px rgba(15,98,254,0.12)",
-                      opacity: ringOpacity,
-                    }}
-                  />
-                </div>
-              </ProductFrame>
-            </motion.div>
+                <ProductTour />
+              </motion.div>
+            </ProductFrame>
 
-            {/* Beat c: identified-visitor toast. Positioned OUTSIDE the frame
-                (hanging off the bottom-right corner) so it never covers the
-                activity feed or Quick actions inside the dashboard (item 7). */}
+            {/* Identified-visitors moment: fades in on the activity beat,
+                OUTSIDE the frame so it never covers content (item 7). */}
             <motion.div
               className="absolute pointer-events-none z-10"
+              initial={false}
+              animate={{ opacity: cam === 2 ? 1 : 0, y: cam === 2 ? 0 : 12 }}
+              transition={{ duration: 0.35, ease: [0.2, 0.7, 0.2, 1] }}
               style={{
                 right: 12,
                 bottom: -24,
-                opacity: toastOpacity,
-                y: toastY,
                 backgroundColor: "#FFFFFF",
                 border: "1px solid #e6ebf5",
                 borderRadius: 6,
@@ -199,35 +177,15 @@ function Pinned() {
               <div className="flex items-center gap-2.5">
                 <span
                   className="inline-flex items-center justify-center"
-                  style={{
-                    width: 26,
-                    height: 26,
-                    borderRadius: 6,
-                    backgroundColor: "rgba(15,98,254,0.10)",
-                    color: "#0f62fe",
-                  }}
+                  style={{ width: 26, height: 26, borderRadius: 6, backgroundColor: "rgba(15,98,254,0.10)", color: "#0f62fe" }}
                 >
                   <Eye className="w-3.5 h-3.5" strokeWidth={1.8} aria-hidden />
                 </span>
                 <div>
-                  <p
-                    style={{
-                      fontFamily: "var(--font-sans)",
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: "#161616",
-                      lineHeight: 1.2,
-                    }}
-                  >
+                  <p style={{ fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 600, color: "#161616", lineHeight: 1.2 }}>
                     12 new identified visitors
                   </p>
-                  <p
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 10.5,
-                      color: "#5a647d",
-                    }}
-                  >
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: 10.5, color: "#5a647d" }}>
                     Named by the pixel just now
                   </p>
                 </div>
@@ -235,25 +193,18 @@ function Pinned() {
             </motion.div>
           </div>
 
-          {/* Buyer-question caption, crossfading per beat. */}
-          <div className="mt-8 min-h-[64px]">
+          {/* Buyer-question caption, below the frame, crossfading per beat. */}
+          <div className="mt-10 min-h-[64px]">
             <AnimatePresence mode="wait">
               <motion.div
-                key={beat}
+                key={captionBeat}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.3, ease: [0.2, 0.7, 0.2, 1] }}
               >
-                <p
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 12,
-                    letterSpacing: "0.04em",
-                    color: "#8d8d8d",
-                  }}
-                >
-                  {BEATS[beat].q}
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: "0.04em", color: "#5a647d" }}>
+                  {BEATS[captionBeat].q}
                 </p>
                 <p
                   className="mt-1.5"
@@ -265,7 +216,7 @@ function Pinned() {
                     letterSpacing: "-0.01em",
                   }}
                 >
-                  {BEATS[beat].a}
+                  {BEATS[captionBeat].a}
                 </p>
               </motion.div>
             </AnimatePresence>
@@ -280,7 +231,7 @@ function NormalFlow({ className }: { className?: string }) {
   return (
     <div className={`py-16 ${className ?? ""}`}>
       <LabelChip>Operator portal</LabelChip>
-      {h2El()}
+      <H2El />
       <div className="relative mt-8">
         <div
           aria-hidden
@@ -289,15 +240,11 @@ function NormalFlow({ className }: { className?: string }) {
             bottom: -24,
             width: "78%",
             height: 120,
-            background:
-              "radial-gradient(50% 50% at 50% 50%, rgba(15,98,254,0.12), transparent 70%)",
+            background: "radial-gradient(50% 50% at 50% 50%, rgba(15,98,254,0.12), transparent 70%)",
             filter: "blur(24px)",
           }}
         />
-        <ProductFrame
-          url="app.leasestack.co/portal"
-          contentStyle={{ backgroundColor: "#fbfcfe" }}
-        >
+        <ProductFrame url="app.leasestack.co/portal" contentStyle={{ backgroundColor: "#fbfcfe" }}>
           <FrameContent />
         </ProductFrame>
       </div>
@@ -305,32 +252,14 @@ function NormalFlow({ className }: { className?: string }) {
         {BEATS.map((b) => (
           <div
             key={b.q}
-            style={{
-              border: "1px solid #e0e6f4",
-              borderRadius: 2,
-              backgroundColor: "#f7f9fe",
-              padding: "16px 18px",
-            }}
+            style={{ border: "1px solid #e0e6f4", borderRadius: 2, backgroundColor: "#f7f9fe", padding: "16px 18px" }}
           >
-            <p
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                letterSpacing: "0.04em",
-                color: "#8d8d8d",
-              }}
-            >
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.04em", color: "#5a647d" }}>
               {b.q}
             </p>
             <p
               className="mt-1.5"
-              style={{
-                fontFamily: "var(--font-sans)",
-                fontSize: 16,
-                fontWeight: 500,
-                color: "#161616",
-                lineHeight: 1.3,
-              }}
+              style={{ fontFamily: "var(--font-sans)", fontSize: 16, fontWeight: 500, color: "#161616", lineHeight: 1.3 }}
             >
               {b.a}
             </p>

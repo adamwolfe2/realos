@@ -41,16 +41,16 @@ const SURFACES: Surface[] = [
 ];
 
 const INTEGRATIONS: Array<{ name: string; mark: React.ReactNode }> = [
-  { name: "AppFolio", mark: <AppFolioMark size={20} /> },
-  { name: "Google", mark: <GoogleMark size={20} /> },
-  { name: "Meta", mark: <MetaMark size={20} /> },
-  { name: "GA4", mark: <GA4Mark size={20} /> },
-  { name: "Slack", mark: <SlackMark size={20} /> },
-  { name: "Cal.com", mark: <CalcomMark size={20} /> },
-  { name: "ChatGPT", mark: <ChatGPTMark size={20} /> },
-  { name: "Perplexity", mark: <PerplexityMark size={20} /> },
-  { name: "Claude", mark: <ClaudeMark size={20} /> },
-  { name: "Gemini", mark: <GeminiMark size={20} /> },
+  { name: "AppFolio", mark: <AppFolioMark size={38} /> },
+  { name: "Google", mark: <GoogleMark size={38} /> },
+  { name: "Meta", mark: <MetaMark size={38} /> },
+  { name: "GA4", mark: <GA4Mark size={38} /> },
+  { name: "Slack", mark: <SlackMark size={38} /> },
+  { name: "Cal.com", mark: <CalcomMark size={38} /> },
+  { name: "ChatGPT", mark: <ChatGPTMark size={38} /> },
+  { name: "Perplexity", mark: <PerplexityMark size={38} /> },
+  { name: "Claude", mark: <ClaudeMark size={38} /> },
+  { name: "Gemini", mark: <GeminiMark size={38} /> },
 ];
 
 function MiniSurface({ surface }: { surface: Surface }) {
@@ -174,9 +174,9 @@ export function SurfacesStrip() {
           ))}
         </div>
 
-        {/* Integration row (one static row, real brand marks). */}
+        {/* Integration row (one static, centered row of real brand marks). */}
         <div
-          className="mt-16 pt-10"
+          className="mt-16 pt-12 text-center"
           style={{ borderTop: "1px solid #e0e0e0" }}
         >
           <p
@@ -201,15 +201,15 @@ export function SurfacesStrip() {
           >
             AppFolio, Google, Meta, and your reviews, synced continuously.
           </p>
-          <div className="mt-6 flex flex-wrap gap-2.5">
+          <div className="mt-8 flex flex-wrap justify-center gap-3 md:gap-3.5">
             {INTEGRATIONS.map((it) => (
               <span
                 key={it.name}
                 className="inline-flex items-center justify-center"
                 title={it.name}
                 style={{
-                  width: 46,
-                  height: 46,
+                  width: 76,
+                  height: 76,
                   border: "1px solid #e0e0e0",
                   borderRadius: 2,
                   backgroundColor: "#FFFFFF",

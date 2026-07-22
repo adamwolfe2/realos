@@ -35,23 +35,6 @@ export function ReportFeature() {
             padding: "56px 20px",
           }}
         >
-          {/* Oversize watermark behind the frame. */}
-          <span
-            aria-hidden
-            className="absolute left-1/2 -translate-x-1/2 pointer-events-none select-none"
-            style={{
-              top: 24,
-              whiteSpace: "nowrap",
-              fontFamily: "var(--font-mono)",
-              fontSize: "clamp(48px, 10vw, 132px)",
-              fontWeight: 700,
-              color: "rgba(22,22,22,0.04)",
-              letterSpacing: "-0.02em",
-            }}
-          >
-            7:00 AM Monday
-          </span>
-
           <div className="relative text-center">
             <Reveal>
               <div className="flex justify-center">

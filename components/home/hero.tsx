@@ -27,8 +27,9 @@ export function Hero() {
         />
         <Atmosphere />
 
-        <div className="relative">
+        <div className="relative text-center">
           <h1
+            className="mx-auto"
             style={{
               color: "#161616",
               fontFamily: "var(--font-display)",
@@ -45,7 +46,7 @@ export function Hero() {
           </h1>
 
           <p
-            className="mt-6 md:mt-7"
+            className="mt-6 md:mt-7 mx-auto"
             style={{
               color: "#6f6f6f",
               fontFamily: "var(--font-sans)",
@@ -58,7 +59,7 @@ export function Hero() {
             dashboard your whole team runs on.
           </p>
 
-          <div className="mt-8 flex flex-col items-stretch sm:flex-row sm:items-center gap-3">
+          <div className="mt-8 flex flex-col items-stretch sm:flex-row sm:items-center justify-center gap-3">
             <Link
               href="/sign-up"
               className="btn-primary sm:w-auto"

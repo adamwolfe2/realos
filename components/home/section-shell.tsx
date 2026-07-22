@@ -18,7 +18,6 @@ export function SectionShell({
   index,
   indexLabel,
   bg = "#FFFFFF",
-  vRules = true,
   className,
   contentClassName,
   children,
@@ -27,7 +26,6 @@ export function SectionShell({
   index?: string;
   indexLabel?: string;
   bg?: string;
-  vRules?: boolean;
   className?: string;
   contentClassName?: string;
   children: React.ReactNode;
@@ -44,16 +42,10 @@ export function SectionShell({
       }}
     >
       <div className="relative max-w-[1240px] mx-auto px-4 md:px-8">
-        {vRules ? (
-          // Right rule stays a static dashed spec-line; the LEFT rule is owned
-          // by the page thread (see PageThread) so it can draw with scroll.
-          <span
-            aria-hidden
-            className="hidden md:block absolute inset-y-0 right-4 md:right-8"
-            style={{ borderRight: "1px dashed #d9dff0" }}
-          />
-        ) : null}
-
+        {/* Round-2 QA item 2: the vertical rules (and the thread that used to
+            run the left one) are removed so sections breathe. The [0N] index
+            nodes stay as standalone wayfinding. `vRules` kept as a no-op prop
+            for call-site compatibility. */}
         {index ? (
           <IndexLabel index={index} label={indexLabel ?? ""} bg={bg} />
         ) : null}
