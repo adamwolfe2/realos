@@ -25,7 +25,7 @@ const BORDER = "#E2E8F0";
 const MUTED = "#64748B";
 
 export const metadata: Metadata = {
-  title: `Sample weekly report — ${BRAND_NAME}`,
+  title: `Sample weekly report | ${BRAND_NAME}`,
   description:
     "What lands in your inbox at 7am every Monday: leases attributed to source, channel ROI, anomaly flags, and three concrete actions for the week.",
 };
@@ -34,17 +34,17 @@ const ANNOTATIONS = [
   {
     eyebrow: "Header",
     title: "From your dashboard, not a marketing automation",
-    body: "Subject line names the property and the week. From-line is your portal, not a generic agency domain. Operators forward it to ownership without re-formatting — Norman Gensinger at SG asked for this specifically.",
+    body: "Subject line names the property and the week. From-line is your portal, not a generic agency domain. Operators forward it to ownership without re-formatting. Norman Gensinger at SG asked for this specifically.",
   },
   {
     eyebrow: "Leases attributed",
     title: "Every signed lease mapped to a source",
-    body: "Google Ads / Meta / organic search / referral / direct — drawn from the pixel + UTM + PMS join. No more guessing which channel paid for the renewal. Shares are shown by lease count, not by impression or click, because that's the only number ownership cares about.",
+    body: "Google Ads, Meta, organic search, referral, direct: drawn from the pixel, UTM, and PMS join. No more guessing which channel paid for the renewal. Shares are shown by lease count, not by impression or click, because that's the only number ownership cares about.",
   },
   {
     eyebrow: "Three actions",
     title: "The shortest possible action list",
-    body: "Three actions, ranked by dollar impact. \"Shift $600 from Meta to Google. Google CPL is $48; Meta is $112 this cycle.\" — exact dollar moves, not strategy bullets. The platform writes them; you approve or override.",
+    body: "Three actions, ranked by dollar impact. \"Shift $600 from Meta to Google. Google CPL is $48; Meta is $112 this cycle.\" Exact dollar moves, not strategy bullets. The platform writes them; you approve or override.",
   },
   {
     eyebrow: "Anomalies",
@@ -58,7 +58,7 @@ export default function SampleReportPage() {
     <div style={{ backgroundColor: "#FFFFFF", color: INK }}>
       {/* Hero — single column, mirrors /audit + /pricing rhythm */}
       <section style={{ borderBottom: `1px solid ${BORDER}` }}>
-        <div className="max-w-[1100px] mx-auto px-4 md:px-8 py-20 md:py-28 text-center">
+        <div className="max-w-[1100px] mx-auto px-4 md:px-8 py-20 md:py-24 text-center">
           <p
             style={{
               color: ACCENT,
@@ -93,10 +93,9 @@ export default function SampleReportPage() {
               lineHeight: 1.55,
             }}
           >
-            Leases attributed to source, channel ROI tracked, anomalies
-            surfaced, three concrete actions for the week. One page, read
-            over coffee — the same artifact every {BRAND_NAME} customer
-            gets every Monday.
+            Leases attributed to source, channel ROI, anomalies flagged,
+            three actions ranked by dollar impact. Read over coffee every
+            Monday.
           </p>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <Link
@@ -104,7 +103,7 @@ export default function SampleReportPage() {
               className="inline-flex items-center justify-center h-11 px-6 rounded-md text-sm font-semibold text-white"
               style={{ backgroundColor: ACCENT }}
             >
-              Run a free audit on your property
+              Run a free audit
             </Link>
             <Link
               href="/pricing"
@@ -124,8 +123,8 @@ export default function SampleReportPage() {
       {/* Live artifact — full-bleed render of the actual WeeklyReport
           component used in CapabilitiesRail. Wrapped in a SoftFramedArtifact
           for the same visual treatment customers see on the homepage. */}
-      <section style={{ backgroundColor: "#F8FAFC" }}>
-        <div className="max-w-[960px] mx-auto px-4 md:px-8 py-16 md:py-24">
+      <section style={{ backgroundColor: "#f4f4f4" }}>
+        <div className="max-w-[960px] mx-auto px-4 md:px-8 py-20 md:py-24">
           <SoftFramedArtifact tone="sky" padding="lg" bare>
             <WeeklyReport />
           </SoftFramedArtifact>
@@ -140,7 +139,7 @@ export default function SampleReportPage() {
               fontWeight: 600,
             }}
           >
-            The numbers in this sample are illustrative — your real report
+            The numbers in this sample are illustrative. Your real report
             is built from your live pixel, ad, and PMS data.
           </p>
         </div>
@@ -148,22 +147,9 @@ export default function SampleReportPage() {
 
       {/* Annotation grid — each section of the report explained */}
       <section>
-        <div className="max-w-[1100px] mx-auto px-4 md:px-8 py-20 md:py-28">
+        <div className="max-w-[1100px] mx-auto px-4 md:px-8 py-20 md:py-24">
           <div className="max-w-2xl">
-            <p
-              style={{
-                color: ACCENT,
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                letterSpacing: "0.22em",
-                textTransform: "uppercase",
-                fontWeight: 700,
-              }}
-            >
-              How it's assembled
-            </p>
             <h2
-              className="mt-4"
               style={{
                 color: INK,
                 fontFamily: "var(--font-sans)",
@@ -230,7 +216,7 @@ export default function SampleReportPage() {
       <section
         style={{
           borderTop: `1px solid ${BORDER}`,
-          backgroundColor: "#F8FAFC",
+          backgroundColor: "#f4f4f4",
         }}
       >
         <div className="max-w-[900px] mx-auto px-4 md:px-8 py-20 md:py-24 text-center">
@@ -255,7 +241,7 @@ export default function SampleReportPage() {
               lineHeight: 1.55,
             }}
           >
-            Start with a free audit — it runs against your live domain and
+            Start with a free audit. It runs against your live domain and
             comes back with the same kind of intelligence inside an hour.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -264,7 +250,7 @@ export default function SampleReportPage() {
               className="inline-flex items-center justify-center h-11 px-6 rounded-md text-sm font-semibold text-white"
               style={{ backgroundColor: ACCENT }}
             >
-              Run my free audit
+              Run a free audit
             </Link>
             <Link
               href="/"

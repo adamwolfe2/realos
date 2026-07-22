@@ -17,7 +17,7 @@ const CARDS = [
     body:
       "Pre-lease pacing, international applicants, parent co-signers. Live today on a real lease-up.",
     tag: "Live",
-    accent: "#2563EB",
+    accent: "#0f62fe",
   },
   {
     href: "/multifamily",
@@ -25,7 +25,7 @@ const CARDS = [
     body:
       "Portfolio pacing, source-to-lease attribution, per-property retargeting.",
     tag: "Live",
-    accent: "#2563EB",
+    accent: "#0f62fe",
   },
   {
     href: "/senior-living",
@@ -33,7 +33,7 @@ const CARDS = [
     body:
       "Family-first nurture, long decision cycles, compliance-aware creative.",
     tag: "Live",
-    accent: "#2563EB",
+    accent: "#0f62fe",
   },
   {
     href: "/audiences",
@@ -41,47 +41,34 @@ const CARDS = [
     body:
       "Same data engine, scaled to single-asset operators and BTR portfolios.",
     tag: "Same engine",
-    accent: "#2563EB",
+    accent: "#0f62fe",
   },
 ];
 
 export default function ResidentialHub() {
   return (
-    <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
+    <div style={{ backgroundColor: "#FFFFFF", color: "#161616" }}>
       <SplitHero
         eyebrow="Residential real estate"
         headline="Leasing data."
         headlineAccent="Every vertical."
-        subhead="One data engine for student housing, multifamily, senior living, SFR, and BTR. Same pacing models and source-to-lease attribution. Different playbooks, creative, and compliance per market."
+        subhead="One data engine for student housing, multifamily, senior living, SFR, and BTR. Same pacing models, different playbooks."
         ctas={[
           { label: "Request pilot", href: "/sign-up" },
-          { label: "See it on a live property", href: "/demo", variant: "secondary" },
+          { label: "Book a demo", href: "/onboarding", variant: "secondary" },
         ]}
         caption="Live today on a real lease-up. SFR and build-to-rent on the same engine."
         artifact={<PortfolioOccupancy label="Your residential portfolio" />}
       />
 
-      <section style={{ backgroundColor: "#F1F5F9" }}>
+      <section style={{ backgroundColor: "#f4f4f4" }}>
         <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
           <Reveal>
             <div className="text-center mb-14">
-              <p
-                className="mb-4"
-                style={{
-                  color: "#94A3B8",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "11px",
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
-                  fontWeight: 500,
-                }}
-              >
-                Pick your vertical
-              </p>
               <h2
                 className="mx-auto max-w-[720px]"
                 style={{
-                  color: "#1E2A3A",
+                  color: "#161616",
                   fontFamily: "var(--font-display)",
                   fontSize: "clamp(28px, 3.4vw, 40px)",
                   fontWeight: 500,
@@ -101,8 +88,8 @@ export default function ResidentialHub() {
                   className="group block p-7 h-full relative"
                   style={{
                     backgroundColor: "#ffffff",
-                    borderRadius: "16px",
-                    boxShadow: "0 0 0 1px #E2E8F0",
+                    borderRadius: "2px",
+                    boxShadow: "0 0 0 1px #e0e0e0",
                     transition: "transform 260ms ease, box-shadow 260ms ease",
                   }}
                 >
@@ -134,7 +121,7 @@ export default function ResidentialHub() {
                   <h3
                     className="mt-5"
                     style={{
-                      color: "#1E2A3A",
+                      color: "#161616",
                       fontFamily: "var(--font-display)",
                       fontSize: "24px",
                       fontWeight: 500,
@@ -146,7 +133,7 @@ export default function ResidentialHub() {
                   <p
                     className="mt-3"
                     style={{
-                      color: "#64748B",
+                      color: "#6f6f6f",
                       fontFamily: "var(--font-sans)",
                       fontSize: "14.5px",
                       lineHeight: 1.6,
@@ -161,28 +148,13 @@ export default function ResidentialHub() {
         </div>
       </section>
 
-      <section style={{ backgroundColor: "#F1F5F9", borderTop: "1px solid #E2E8F0" }}>
+      <section style={{ backgroundColor: "#FFFFFF" }}>
         <div className="max-w-[1000px] mx-auto px-4 md:px-8 py-20 md:py-24 text-center">
-          <Reveal>
-            <p
-              className="mb-6"
-              style={{
-                color: "#2563EB",
-                fontFamily: "var(--font-mono)",
-                fontSize: "11px",
-                letterSpacing: "0.22em",
-                textTransform: "uppercase",
-                fontWeight: 600,
-              }}
-            >
-              One codebase
-            </p>
-          </Reveal>
           <Reveal delay={60}>
             <h2
               className="mx-auto max-w-[760px]"
               style={{
-                color: "#1E2A3A",
+                color: "#161616",
                 fontFamily: "var(--font-display)",
                 fontSize: "clamp(26px, 3.6vw, 40px)",
                 fontWeight: 500,

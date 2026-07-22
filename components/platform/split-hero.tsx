@@ -1,8 +1,6 @@
 import React from "react";
 import Link from "next/link";
 import { Reveal } from "./reveal";
-import { PixelSwirl } from "./pixel-swirl";
-import { GlyphSwirl } from "./glyph-swirl";
 
 type CTA = { label: string; href: string; variant?: "primary" | "secondary" };
 
@@ -23,7 +21,7 @@ export function SplitHero({
   // multiply against each other.
   headlineSelfAnimated = false,
 }: {
-  eyebrow: string;
+  eyebrow?: string;
   headline: React.ReactNode;
   headlineAccent?: React.ReactNode;
   subhead: React.ReactNode;
@@ -38,20 +36,9 @@ export function SplitHero({
       className="relative overflow-hidden"
       style={{ backgroundColor: "#FFFFFF" }}
     >
-      {/* Ambient brand-pixel background. PixelSwirl renders a gradient
-          base + a faint 28px brand-blue grid + an animated field of
-          ~72 pixel motes that orbit slow elliptical paths around the
-          centre of the hero. Sits behind everything (pointer-events
-          none, aria-hidden) so CTAs and copy remain fully interactive.
-          See components/platform/pixel-swirl.tsx for the rendering
-          model + reduced-motion treatment. */}
-      <PixelSwirl />
-      {/* GlyphSwirl (Adam 2026-05-20): scatters the same 3x3 dot-grid
-          glyphs from CapabilitiesRail across the hero in a faint
-          spiral. Echoes the iconography users see later in the page
-          without competing with the artifact or copy. ≤6% brand-blue
-          opacity, static, aria-hidden. */}
-      <GlyphSwirl />
+      {/* Deslop pass (2026-07-21): dropped the PixelSwirl + GlyphSwirl
+          decorative canvas backgrounds. Clean white hero per DESIGN.md
+          (Carbon-forward, flat, no particle/swirl backgrounds). */}
       {/* Norman feedback (2026-05-21 mobile screenshot): the previous
           pt-20 / pb-16 + gap-10 between the text column and the artifact
           left ~80px of empty white between "PILOT. NO COMMITMENT." and
@@ -62,31 +49,33 @@ export function SplitHero({
       <div className="relative max-w-[1440px] mx-auto px-4 md:px-10 pt-12 md:pt-24 pb-10 md:pb-20">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-14 items-center">
           <div className="lg:col-span-6 text-left">
-            <Reveal>
-              <div className="flex items-center justify-start gap-3 mb-5">
-                <span
-                  aria-hidden
-                  className="hidden sm:inline-block"
-                  style={{
-                    width: "28px",
-                    height: "1px",
-                    backgroundColor: "#0f62fe",
-                  }}
-                />
-                <p
-                  style={{
-                    color: "#0f62fe",
-                    fontFamily: "var(--font-mono)",
-                    fontSize: "11px",
-                    letterSpacing: "0.12em",
-                    textTransform: "uppercase",
-                    fontWeight: 600,
-                  }}
-                >
-                  {eyebrow}
-                </p>
-              </div>
-            </Reveal>
+            {eyebrow ? (
+              <Reveal>
+                <div className="flex items-center justify-start gap-3 mb-5">
+                  <span
+                    aria-hidden
+                    className="hidden sm:inline-block"
+                    style={{
+                      width: "28px",
+                      height: "1px",
+                      backgroundColor: "#0f62fe",
+                    }}
+                  />
+                  <p
+                    style={{
+                      color: "#0f62fe",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "11px",
+                      letterSpacing: "0.12em",
+                      textTransform: "uppercase",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {eyebrow}
+                  </p>
+                </div>
+              </Reveal>
+            ) : null}
 
             {(() => {
               // Norman feedback (2026-05-21, third pass): bigger H1, same
@@ -235,7 +224,7 @@ export function SplitSection({
   side = "right",
   background,
 }: {
-  eyebrow: string;
+  eyebrow?: string;
   headline: string;
   body?: string;
   bullets?: string[];
@@ -249,21 +238,23 @@ export function SplitSection({
       <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-20 md:py-24">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
           <div className={`lg:col-span-6 ${textOnLeft ? "lg:order-1" : "lg:order-2"}`}>
-            <Reveal>
-              <p
-                className="mb-4"
-                style={{
-                  color: "#8d8d8d",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "11px",
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
-                  fontWeight: 500,
-                }}
-              >
-                {eyebrow}
-              </p>
-            </Reveal>
+            {eyebrow ? (
+              <Reveal>
+                <p
+                  className="mb-4"
+                  style={{
+                    color: "#8d8d8d",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "11px",
+                    letterSpacing: "0.18em",
+                    textTransform: "uppercase",
+                    fontWeight: 500,
+                  }}
+                >
+                  {eyebrow}
+                </p>
+              </Reveal>
+            ) : null}
 
             <Reveal delay={60}>
               <h2

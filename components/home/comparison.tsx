@@ -65,19 +65,16 @@ function useInViewOnce(threshold = 0.4) {
 }
 
 function ComparisonRow({
-  index,
   old,
   next,
   isFirst,
 }: {
-  index: number;
   old: string;
   next: string;
   isFirst: boolean;
 }) {
   const { ref, visible } = useInViewOnce(0.4);
   const reduce = useReducedMotion();
-  const label = String(index + 1).padStart(2, "0");
 
   return (
     <li
@@ -85,34 +82,17 @@ function ComparisonRow({
       // Norman bug (2026-05-21 mobile screenshot IMG_9549): the previous
       // mobile grid `grid-cols-[auto_1fr]` with a `hidden md:flex` arrow
       // forced "With LeaseStack" copy into the narrow `auto` index
-      // column on row 2, while "Today" copy stayed full-width on row 1
-      // — the two halves rendered as visually unrelated narrow strips
+      // column on row 2, while "Today" copy stayed full-width on row 1,
+      // and the two halves rendered as visually unrelated narrow strips
       // with the right-hand TODAY column clipping off the viewport.
-      // Mobile is now a single column where the label, Today, and With
-      // LeaseStack each take their own row at full width. Desktop
-      // 4-column layout (label · Today · arrow · WithLeaseStack)
-      // unchanged via the md: breakpoint.
-      className="grid grid-cols-1 md:grid-cols-[56px_1fr_28px_1fr] gap-x-4 md:gap-x-8 gap-y-2 py-6 md:py-10 items-start"
+      // Mobile is now a single column where Today and With LeaseStack
+      // each take their own row at full width. Desktop 3-column layout
+      // (Today, arrow, WithLeaseStack) unchanged via the md: breakpoint.
+      className="grid grid-cols-1 md:grid-cols-[1fr_28px_1fr] gap-x-4 md:gap-x-8 gap-y-2 py-6 md:py-10 items-start"
       style={{
         borderTop: isFirst ? "none" : `1px solid ${BORDER}`,
       }}
     >
-      {/* Numeric index */}
-      <div
-        aria-hidden="true"
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 12,
-          fontWeight: 700,
-          color: visible ? ACCENT : MUTED,
-          letterSpacing: "0.1em",
-          paddingTop: 2,
-          transition: "color 480ms ease",
-        }}
-      >
-        {label}
-      </div>
-
       {/* "Current stack" side, muted, slightly smaller. */}
       <div className="min-w-0">
         <p
@@ -252,12 +232,10 @@ export function Comparison() {
     <section
       style={{
         backgroundColor: "#FFFFFF",
-        borderTop: `1px solid ${BORDER}`,
       }}
     >
-      <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-12 md:py-20">
+      <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-20 md:py-24">
         <div className="max-w-3xl mb-8 md:mb-14">
-          <p className="eyebrow mb-3">{comparison.eyebrow}</p>
           <h2
             style={{
               color: INK,
@@ -287,10 +265,9 @@ export function Comparison() {
 
         {/* Desktop column headers, typographic anchor only, not pill chips. */}
         <div
-          className="hidden md:grid md:grid-cols-[56px_1fr_28px_1fr] gap-x-8 pb-4 mb-2"
+          className="hidden md:grid md:grid-cols-[1fr_28px_1fr] gap-x-8 pb-4 mb-2"
           style={{ borderBottom: `1px solid ${BORDER}` }}
         >
-          <span />
           <p
             style={{
               color: MUTED,
@@ -322,7 +299,6 @@ export function Comparison() {
           {comparison.rows.map((row, i) => (
             <ComparisonRow
               key={row.new}
-              index={i}
               old={row.old}
               next={row.new}
               isFirst={i === 0}

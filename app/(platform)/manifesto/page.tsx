@@ -60,7 +60,7 @@ function Hero() {
       className="relative overflow-hidden"
       style={{ backgroundColor: "#FFFFFF", borderBottom: "1px solid #E2E8F0" }}
     >
-      <div className="max-w-[1200px] mx-auto px-4 md:px-8 pt-24 md:pt-28 pb-14 md:pb-16">
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 pt-20 md:pt-24 pb-14 md:pb-16">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 lg:items-center">
           <div className="lg:col-span-7">
             <Reveal>

@@ -14,7 +14,7 @@ export default function AudiencesPage() {
       eyebrow="Audience Sync"
       headline="The audience layer for real estate."
       headlineAccent="One place to push every buyer and seller."
-      subhead="Verified segments of active home buyers, refinance shoppers, lease intent, and luxury prospects. We sync them to your ad accounts, your CRM, or any webhook. Filter by zip, state, or city. Managed onboarding. Book a demo to see it in action."
+      subhead="Verified buyer, seller, and lease-intent segments synced to your ad accounts, CRM, or any webhook. Book a demo."
       caption="Managed onboarding. Live segments and live destinations. Built for residential and commercial."
       artifact={<AudienceSyncStream />}
       ctaHref="/onboarding"

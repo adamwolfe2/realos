@@ -21,9 +21,9 @@ export const MARKETING = {
     //   month-to-month flexibility instead (H3).
     // Primary CTA: "Start a free pilot" → "Request pilot" (G1).
     // Carbon wave 2 (2026-07-10): canonical CTA pair across the buying
-    // spine — "Request pilot" → /sign-up (one destination; sign-up
-    // flows into onboarding + trial) and "Book intro call" → Cal.com
-    // via BookDemoLink.
+    // spine: "Request pilot" -> /sign-up (one destination; sign-up
+    // flows into onboarding + trial) and "Book a demo" -> Cal.com via
+    // getBookDemoHref() / BookDemoLink.
     hero: {
       eyebrow: "Data intelligence platform",
       headline: "Take control of your online leasing.",
@@ -32,7 +32,7 @@ export const MARKETING = {
         "Centralize your tech stack on one platform with one login. Month-to-month contract flexibility.",
       primaryCta: "Request pilot",
       primaryHref: "/sign-up",
-      secondaryCta: "See it on a real property",
+      secondaryCta: "Book a demo",
       secondaryHref: "/demo",
       microProof: "Live on a real student-housing lease-up. Built for multifamily, senior living, and commercial.",
     },
@@ -40,7 +40,7 @@ export const MARKETING = {
       eyebrow: "Why operators switch",
       headline: "Your current setup vs. full visibility.",
       body:
-        "Your digital infrastructure is your second most valuable asset after the physical real estate itself — online brand, reputation, website function, and traffic-to-lease conversion. Today it lives across five vendors and a spreadsheet. LeaseStack platform brings it under one dashboard.",
+        "Your digital infrastructure is your second most valuable asset after the physical real estate itself: online brand, reputation, website function, and traffic-to-lease conversion. Today it lives across five vendors and a spreadsheet. LeaseStack platform brings it under one dashboard.",
       leftLabel: "Your current setup",
       rightLabel: "Full visibility with LeaseStack platform",
       rows: [
@@ -114,7 +114,7 @@ export const MARKETING = {
         },
         {
           q: "Does LeaseStack replace our leasing team?",
-          a: "No. LeaseStack saves your team manual work for tasks that would otherwise fall off the table — reporting, channel reconciliation, after-hours lead capture. Your team gets back the hours.",
+          a: "No. LeaseStack saves your team manual work for tasks that would otherwise fall off the table: reporting, channel reconciliation, after-hours lead capture. Your team gets back the hours.",
         },
       ],
     },

@@ -27,10 +27,10 @@ export function VerticalLanding({
   subhead,
   pains,
   modules,
-  // Default routes through the centralized book-demo resolver
-  // (NEXT_PUBLIC_CAL_BOOK_URL → Cal.com link when set, /onboarding
-  // fallback). Per-vertical pages can still pass an explicit ctaHref
-  // when they want a non-default landing.
+  // "Book a demo" (secondary) routes through the centralized book-demo
+  // resolver (NEXT_PUBLIC_CAL_BOOK_URL → Cal.com link when set,
+  // /onboarding fallback). Per-vertical pages can still pass an
+  // explicit ctaHref when they want a non-default landing.
   ctaHref = getBookDemoHref(),
   artifact,
   painsHeading = "The three things that made them look.",
@@ -45,8 +45,8 @@ export function VerticalLanding({
         headlineAccent={headlineAccent}
         subhead={subhead}
         ctas={[
-          { label: "Book a demo", href: ctaHref },
-          { label: "See the data", href: "/demo", variant: "secondary" },
+          { label: "Request pilot", href: "/sign-up" },
+          { label: "Book a demo", href: ctaHref, variant: "secondary" },
         ]}
         caption={caption}
         artifact={artifact}
@@ -56,19 +56,6 @@ export function VerticalLanding({
         <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
           <Reveal>
             <div className="text-center mb-14">
-              <p
-                className="mb-4"
-                style={{
-                  color: "#8d8d8d",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "11px",
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
-                  fontWeight: 500,
-                }}
-              >
-                Operators tell us
-              </p>
               <h2
                 className="mx-auto max-w-[720px]"
                 style={{
@@ -96,19 +83,7 @@ export function VerticalLanding({
                     transition: "transform 260ms ease, box-shadow 260ms ease",
                   }}
                 >
-                  <span
-                    style={{
-                      color: "#0f62fe",
-                      fontFamily: "var(--font-mono)",
-                      fontSize: "11px",
-                      letterSpacing: "0.14em",
-                      fontWeight: 600,
-                    }}
-                  >
-                    0{i + 1}
-                  </span>
                   <h3
-                    className="mt-4"
                     style={{
                       color: "#161616",
                       fontFamily: "var(--font-display)",
@@ -141,19 +116,6 @@ export function VerticalLanding({
         <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
           <Reveal>
             <div className="text-center mb-14">
-              <p
-                className="mb-4"
-                style={{
-                  color: "#8d8d8d",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "11px",
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
-                  fontWeight: 500,
-                }}
-              >
-                What you get on day one
-              </p>
               <h2
                 className="mx-auto max-w-[720px]"
                 style={{
@@ -181,6 +143,7 @@ export function VerticalLanding({
                   }}
                 >
                   <span
+                    aria-hidden="true"
                     className="flex-shrink-0 inline-flex items-center justify-center"
                     style={{
                       width: "36px",
@@ -188,12 +151,17 @@ export function VerticalLanding({
                       borderRadius: "2px",
                       backgroundColor: "rgba(15,98,254,0.12)",
                       color: "#0f62fe",
-                      fontFamily: "var(--font-mono)",
-                      fontSize: "11px",
-                      fontWeight: 600,
                     }}
                   >
-                    0{i + 1}
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <path
+                        d="M2 9l3.5 3.5L12 4"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
                   </span>
                   <div className="flex-1">
                     <h3
@@ -226,23 +194,8 @@ export function VerticalLanding({
         </div>
       </section>
 
-      <section style={{ backgroundColor: "#f4f4f4", borderTop: "1px solid #e0e0e0" }}>
+      <section style={{ backgroundColor: "#f4f4f4" }}>
         <div className="max-w-[1100px] mx-auto px-4 md:px-8 py-24 md:py-28 text-center">
-          <Reveal>
-            <p
-              style={{
-                color: "#0f62fe",
-                fontFamily: "var(--font-mono)",
-                fontSize: "11px",
-                letterSpacing: "0.22em",
-                textTransform: "uppercase",
-                fontWeight: 600,
-                marginBottom: "16px",
-              }}
-            >
-              One platform
-            </p>
-          </Reveal>
           <Reveal delay={60}>
             <h2
               className="mx-auto max-w-[760px]"
@@ -275,12 +228,12 @@ export function VerticalLanding({
           </Reveal>
           <Reveal delay={220}>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <BookDemoLink className="btn-primary">
+              <Link href="/sign-up" className="btn-primary">
+                Request pilot
+              </Link>
+              <BookDemoLink className="btn-secondary">
                 Book a demo
               </BookDemoLink>
-              <Link href="/demo" className="btn-secondary">
-                See the data
-              </Link>
             </div>
           </Reveal>
         </div>

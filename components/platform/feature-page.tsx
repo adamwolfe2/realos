@@ -78,7 +78,6 @@ export function FeaturePage({
 
       <section style={{ backgroundColor: "#f4f4f4" }}>
         <div className="max-w-[920px] mx-auto px-4 md:px-8 py-16 text-center">
-          <p className="eyebrow mb-4">What it is</p>
           <p
             className="mx-auto max-w-[760px]"
             style={{
@@ -96,9 +95,20 @@ export function FeaturePage({
 
       <section style={{ backgroundColor: "#FFFFFF" }}>
         <div className="max-w-[920px] mx-auto px-4 md:px-8 py-20">
-          <p className="eyebrow text-center mb-10">How it works</p>
+          <h2
+            className="text-center mb-10"
+            style={{
+              color: "#161616",
+              fontFamily: "var(--font-display)",
+              fontSize: "clamp(22px, 2.4vw, 30px)",
+              fontWeight: 500,
+              lineHeight: 1.3,
+            }}
+          >
+            How it works
+          </h2>
           <ol className="space-y-3">
-            {howItWorks.map((step, i) => (
+            {howItWorks.map((step) => (
               <li
                 key={step}
                 className="p-6 flex gap-5"
@@ -109,17 +119,23 @@ export function FeaturePage({
                 }}
               >
                 <span
+                  aria-hidden="true"
+                  className="inline-flex items-center justify-center flex-shrink-0 mt-1 w-4 h-4 rounded-full"
                   style={{
-                    color: "#8d8d8d",
-                    fontFamily: "var(--font-mono)",
-                    fontSize: "12px",
-                    fontWeight: 500,
-                    letterSpacing: "0.1em",
-                    minWidth: "2ch",
-                    paddingTop: "3px",
+                    backgroundColor: "rgba(15,98,254,0.14)",
+                    color: "#0f62fe",
+                    marginTop: "3px",
                   }}
                 >
-                  0{i + 1}
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <path
+                      d="M1.5 5L4 7.5L8.5 2.5"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 </span>
                 <p
                   style={{
@@ -139,7 +155,18 @@ export function FeaturePage({
 
       <section style={{ backgroundColor: "#f4f4f4" }}>
         <div className="max-w-[920px] mx-auto px-4 md:px-8 py-16">
-          <p className="eyebrow text-center mb-10">What to expect</p>
+          <h2
+            className="text-center mb-10"
+            style={{
+              color: "#161616",
+              fontFamily: "var(--font-display)",
+              fontSize: "clamp(22px, 2.4vw, 30px)",
+              fontWeight: 500,
+              lineHeight: 1.3,
+            }}
+          >
+            What to expect
+          </h2>
           <ul className="mx-auto max-w-[680px] space-y-3">
             {results.map((r) => (
               <li
@@ -179,7 +206,6 @@ export function FeaturePage({
 
       <section style={{ backgroundColor: "#FFFFFF" }}>
         <div className="max-w-[920px] mx-auto px-4 md:px-8 py-20 text-center">
-          <p className="eyebrow mb-4">Best for</p>
           <p
             className="mx-auto max-w-[720px]"
             style={{
@@ -190,16 +216,16 @@ export function FeaturePage({
               lineHeight: 1.35,
             }}
           >
-            {bestFor}
+            Best for {bestFor}
           </p>
 
           <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <BookDemoLink className="btn-primary">
+            <Link href="/sign-up" className="btn-primary">
+              Request pilot
+            </Link>
+            <BookDemoLink className="btn-secondary">
               Book a demo
             </BookDemoLink>
-            <Link href="/demo" className="btn-secondary">
-              See it live
-            </Link>
           </div>
         </div>
       </section>

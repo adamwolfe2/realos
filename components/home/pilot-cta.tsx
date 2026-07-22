@@ -8,7 +8,7 @@ import { BookDemoLink } from "@/components/marketing/book-demo-link";
 //
 // Carbon wave 2 (2026-07-10): canonical CTA pair. "Request pilot" is
 // the self-serve pilot entry (/sign-up, one destination site-wide);
-// "Book intro call" opens the Cal.com modal via BookDemoLink for the
+// "Book a demo" opens the Cal.com modal via BookDemoLink for the
 // operator-conversation intent this card's copy describes.
 
 export function PilotCta() {
@@ -16,7 +16,6 @@ export function PilotCta() {
     <section
       style={{
         backgroundColor: "#FFFFFF",
-        borderTop: "1px solid #e0e0e0",
       }}
     >
       <div className="max-w-[1120px] mx-auto px-4 md:px-8 py-12 md:py-16">
@@ -30,12 +29,6 @@ export function PilotCta() {
         >
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 md:gap-10">
             <div className="max-w-2xl">
-              <p
-                className="eyebrow mb-3"
-                style={{ color: "#0f62fe" }}
-              >
-                Free pilot
-              </p>
               <h2
                 style={{
                   color: "#161616",
@@ -75,9 +68,9 @@ export function PilotCta() {
               <BookDemoLink
                 className="btn-secondary"
                 style={{ display: "inline-flex", justifyContent: "center" }}
-                ariaLabel="Book intro call (opens scheduling)"
+                ariaLabel="Book a demo (opens scheduling)"
               >
-                Book intro call
+                Book a demo
               </BookDemoLink>
             </div>
           </div>

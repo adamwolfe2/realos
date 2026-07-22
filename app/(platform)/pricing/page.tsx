@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { BRAND_NAME } from "@/lib/brand";
 import { PricingHero } from "@/components/platform/pricing/pricing-hero";
-import { PricingTiers } from "@/components/platform/pricing/pricing-tiers";
-import { AddonsGrid } from "@/components/platform/pricing/addons-grid";
-import { ComparisonTable } from "@/components/platform/pricing/comparison-table";
+import { PricingBuilder } from "@/components/platform/pricing/pricing-builder";
+import { EnterpriseBand } from "@/components/platform/pricing/enterprise-band";
 import { PricingFaq } from "@/components/platform/pricing/pricing-faq";
 import { PricingCta } from "@/components/platform/pricing/pricing-cta";
 import { getEffectiveFeatureCatalog } from "@/lib/billing/feature-prices";
@@ -11,33 +10,37 @@ import { getEffectiveFeatureCatalog } from "@/lib/billing/feature-prices";
 // ---------------------------------------------------------------------------
 // Pricing page — /pricing
 //
-// Page order (self-serve buying journey):
+// 2026-07-21 pricing rebuild (marketing-deslop spec, Group B): killed the
+// dual pricing story. The page used to show four tier cards (Foundation/
+// Growth/Scale/Enterprise) AND a separate à-la-carte grid, which read as
+// two competing prices for the same thing. Now there is ONE builder.
 //
-//   1. Hero        value frame plus trust strip
-//   2. Tiers       three published plans plus Enterprise, with billing
-//                  cycle toggle and per-property pricing as the headline
-//   3. Add-ons     capability and capacity add-ons that customers can
-//                  toggle on later inside the billing portal
-//   4. Comparison  feature-by-tier table for the detail-oriented buyer,
-//                  compact by default with a "show every detail"
-//                  disclosure for the long matrix
-//   5. FAQ         eight deal-breaker objections, accordion pattern
-//   6. CTA         last conversion push (demo or onboarding)
+// Page order:
 //
-// Style: matches the platform brand (white canvas, var(--color-primary)
-// accent, alternating section backgrounds, flat Carbon-forward cards).
-// Plan names/prices on Tiers + Comparison both derive from
-// lib/billing/catalog.ts via components/platform/pricing/plan-display.ts.
+//   1. Hero        "One platform fee. Add only what you need." CTA jumps
+//                   to the builder (#builder).
+//   2. Builder      the centerpiece: base platform + feature toggles +
+//                   property stepper + monthly/annual cycle, resolving to
+//                   a live total and a "Start free trial" CTA that deep-
+//                   links the selection into sign-up.
+//   3. Enterprise   single-row band for 20+ properties / multi-brand,
+//                   routes to Book a demo instead of self-serve checkout.
+//   4. FAQ          6 deal-breaker objections, accordion pattern.
+//   5. CTA          last conversion push, routes back to the builder.
+//
+// PricingTiers + ComparisonTable are no longer used on this page (they
+// rendered the old tier-card story) but their files stay on disk;
+// plan-display.ts stays since other surfaces still import it.
 // ---------------------------------------------------------------------------
 
 export const metadata: Metadata = {
   title: `Pricing | ${BRAND_NAME}`,
   description:
-    "Operator-built leasing intelligence platform — a more economical alternative to a traditional marketing-agency retainer, with more insights and control. Free pilot, month-to-month standard plan, portfolio pricing for owners.",
+    "One platform fee per property, plus only the features you turn on. Configure your platform, see the live total, and start a 14-day free trial. No card required.",
   openGraph: {
     title: `Pricing | ${BRAND_NAME}`,
     description:
-      "Operator-built. A more economical alternative to traditional marketing vendors, with more insights and control.",
+      "One platform fee per property, plus only the features you turn on. Configure your platform and start a free trial.",
     type: "website",
   },
 };
@@ -52,9 +55,9 @@ export default async function PricingPage() {
   return (
     <>
       <PricingHero />
-      <PricingTiers />
-      <AddonsGrid
+      <PricingBuilder
         features={features.map((f) => ({
+          key: f.key,
           name: f.name,
           copy: f.copy,
           monthlyCents: f.monthlyCents,
@@ -62,7 +65,7 @@ export default async function PricingPage() {
         }))}
         basePlatformCents={basePlatformCents}
       />
-      <ComparisonTable />
+      <EnterpriseBand />
       <PricingFaq />
       <PricingCta />
     </>

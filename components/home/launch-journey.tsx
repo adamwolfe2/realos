@@ -156,7 +156,6 @@ export function LaunchJourney() {
     <section
       style={{
         backgroundColor: PARCHMENT,
-        borderTop: `1px solid ${BORDER}`,
       }}
     >
       {/* Mobile fallback — per-milestone reveal, no pinning. Renders ABOVE
@@ -289,7 +288,6 @@ export function LaunchJourney() {
 function JourneyHeader() {
   return (
     <div className="max-w-3xl">
-      <p className="eyebrow mb-3">Your first 90 days</p>
       <h2
         style={{
           color: INK,

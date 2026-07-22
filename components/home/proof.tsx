@@ -6,8 +6,8 @@ import { MARKETING } from "@/lib/copy/marketing";
 //
 // Light-mode treatment matching the rest of the homepage. Was a dark navy
 // slab with white text; that visual break dropped out of the page rhythm
-// at the very bottom. Now: same content, white background, dark text,
-// blue + amber accents preserved.
+// at the very bottom. Now: same content, flat #f4f4f4 band, dark text,
+// closing the page's white/gray alternation.
 // ---------------------------------------------------------------------------
 
 export function Proof() {
@@ -16,46 +16,20 @@ export function Proof() {
   return (
     <section
       style={{
-        backgroundColor: "#FFFFFF",
+        backgroundColor: "#f4f4f4",
         color: "#161616",
-        borderTop: "1px solid #e0e0e0",
       }}
     >
       {/* Norman v2 (2026-06-01): was a two-column "offer left / CTAs
           right" layout. Adam asked to stack both vertically and center
           horizontally so the final CTA reads as a single focused
-          moment instead of a split scan. Eyebrow → headline → body →
-          CTAs, all centered. */}
+          moment instead of a split scan. Headline -> body -> CTAs, all
+          centered. Deslop pass (2026-07-21): dropped the "Pilot cohort
+          . open now" eyebrow (decorative dot + fake-urgency framing);
+          the headline carries the offer on its own. */}
       <div className="max-w-[820px] mx-auto px-4 md:px-8 py-20 md:py-24 text-center">
-        {/* Eyebrow — urgency cue. */}
-        <p
-          style={{
-            color: "#0f62fe",
-            fontFamily: "var(--font-mono)",
-            fontSize: "11px",
-            letterSpacing: "0.22em",
-            textTransform: "uppercase",
-            fontWeight: 700,
-          }}
-        >
-          <span
-            aria-hidden="true"
-            style={{
-              display: "inline-block",
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              backgroundColor: "#0f62fe",
-              marginRight: 8,
-              verticalAlign: "middle",
-            }}
-          />
-          Pilot cohort &middot; open now
-        </p>
-
         {/* Headline + body, centered */}
         <h2
-          className="mt-6"
           style={{
             color: "#161616",
             fontFamily: "var(--font-sans)",

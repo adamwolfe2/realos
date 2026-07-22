@@ -47,11 +47,8 @@ export default function AuditFormPage() {
               className="mt-4 sm:mt-5 text-base sm:text-lg md:text-xl leading-relaxed mx-auto max-w-2xl"
               style={{ color: "#4B5563" }}
             >
-              Answer 8 quick questions about your property. We&apos;ll combine
-              your answers with a live scan of your SEO, AI search visibility,
-              reputation, accessibility, and listing presence. And return a
-              personalized Digital Performance Score with a prioritized action
-              plan.
+              Answer 8 quick questions. We scan your SEO, reputation, and
+              accessibility, then return a personalized action plan.
             </p>
             <div className="mt-6 sm:mt-8 text-left">
               <DigitalScoreQuiz />

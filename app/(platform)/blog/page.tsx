@@ -36,7 +36,7 @@ export default function BlogIndex() {
       </header>
 
       <section>
-        <div className="max-w-3xl mx-auto px-4 md:px-8 py-16 space-y-8">
+        <div className="max-w-3xl mx-auto px-4 md:px-8 py-20 md:py-24 space-y-8">
           {BLOG_POSTS.map((post) => (
             <article
               key={post.slug}

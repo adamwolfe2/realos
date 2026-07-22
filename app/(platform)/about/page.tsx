@@ -26,7 +26,7 @@ export default function AboutPage() {
       />
 
       <SplitSection
-        eyebrow="Why we built it"
+        eyebrow=""
         headline="It started as a tool we wished existed during our own lease-ups."
         body="One of us spent Monday mornings as an asset manager running a real lease-up by hand. Every feature in LeaseStack is the answer to a question he asked himself on a Monday morning and could not find the data for. The other half is engineering, out of AM Collective."
         bullets={[
@@ -39,32 +39,53 @@ export default function AboutPage() {
         artifact={<VendorCollapse />}
       />
 
-      <SplitSection
-        eyebrow="How we are building it"
-        headline="In the open, on a live property, with other operators in the room."
-        body="LeaseStack is running today on a real lease-up with real pacing. We are building it operator-to-operator, with the people who will actually use it sitting in the room as we ship. That is why every recommendation reads like it came from someone who has done the job, because it did."
-        side="left"
-        background="#FFFFFF"
-        artifact={<OperatorWeek />}
-      />
+      {/* Vertical stack, not a split, so three text+artifact split
+          sections don't chain in a row (Hero + first SplitSection already
+          make two; this one breaks the pattern per the de-slop brief). */}
+      <section style={{ backgroundColor: "#FFFFFF" }}>
+        <div className="max-w-[760px] mx-auto px-4 md:px-8 py-20 md:py-24 text-center">
+          <Reveal>
+            <h2
+              style={{
+                color: "#161616",
+                fontFamily: "var(--font-display)",
+                fontSize: "clamp(28px, 3.6vw, 42px)",
+                fontWeight: 500,
+                lineHeight: 1.1,
+                letterSpacing: "-0.005em",
+              }}
+            >
+              In the open, on a live property, with other operators in the room.
+            </h2>
+          </Reveal>
+          <Reveal delay={80}>
+            <p
+              className="mt-5 mx-auto"
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: "17px",
+                lineHeight: 1.65,
+                color: "#6f6f6f",
+                maxWidth: "620px",
+              }}
+            >
+              LeaseStack is running today on a real lease-up with real pacing.
+              We are building it operator-to-operator, with the people who
+              will actually use it sitting in the room as we ship. That is
+              why every recommendation reads like it came from someone who
+              has done the job, because it did.
+            </p>
+          </Reveal>
+        </div>
+        <div className="max-w-[720px] mx-auto px-4 md:px-8 pb-20 md:pb-24">
+          <Reveal delay={140}>
+            <OperatorWeek />
+          </Reveal>
+        </div>
+      </section>
 
       <section style={{ backgroundColor: "#F1F5F9", borderTop: "1px solid #E2E8F0" }}>
         <div className="max-w-[1000px] mx-auto px-4 md:px-8 py-20 md:py-24 text-center">
-          <Reveal>
-            <p
-              className="mb-6"
-              style={{
-                color: "#2563EB",
-                fontFamily: "var(--font-mono)",
-                fontSize: "11px",
-                letterSpacing: "0.22em",
-                textTransform: "uppercase",
-                fontWeight: 600,
-              }}
-            >
-              Our belief
-            </p>
-          </Reveal>
           <Reveal delay={60}>
             <p
               className="mx-auto max-w-[780px]"
@@ -303,7 +324,7 @@ function VendorCollapse() {
             opacity: 0.85,
           }}
         >
-          Visible · analyzed · acted on
+          Visible, analyzed, acted on
         </p>
       </div>
     </div>

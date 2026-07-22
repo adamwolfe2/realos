@@ -6,20 +6,22 @@ import { BookDemoLink } from "@/components/marketing/book-demo-link";
 // split layout. Matches the /audit hero's centered rhythm so pricing
 // reads as a focused buying moment instead of a marketing wall.
 //
-// Structure mirrors app/(platform)/audit/page.tsx exactly:
+// Structure:
 //   max-w-[1100px] outer  ·  max-w-3xl mx-auto text-center inner
 //   centered eyebrow with mirroring blue lines
 //   centered headline + accent color on the second line
 //   centered subhead capped at max-w-2xl
 //   centered CTA row
-//   centered trust strip
+//
+// 2026-07-21 pricing rebuild: the page is now one builder, not a hero plus
+// tier cards plus a separate à-la-carte grid. "Start free trial" is the one
+// primary CTA on the page and always resolves to the builder below (#builder)
+// where the operator configures, then signs up with their exact selection.
+// The old trust-chip strip is gone; its facts (14-day trial, no card) live
+// in the subhead and again next to the builder's CTA.
 // ---------------------------------------------------------------------------
 
-// Canonical CTA pair (Carbon wave 2): "Request pilot" → /sign-up (the
-// one self-serve pilot entry; sign-up flows into onboarding with the
-// trial). "Book intro call" → BookDemoLink, which resolves to the
-// configured Cal.com URL (NEXT_PUBLIC_CAL_BOOK_URL).
-const PRIMARY_HREF = "/sign-up";
+const PRIMARY_HREF = "#builder";
 
 export function PricingHero() {
   return (
@@ -49,81 +51,48 @@ export function PricingHero() {
             />
           </div>
 
-          {/* Headline — black first line, brand-blue second line.
-              Norman v2 brief (PR1): "One platform. Every signal. One
-              price per property." Leads with the platform-first frame
-              instead of the displaced-retainer angle. */}
+          {/* Headline: one platform fee, add what you need. */}
           <h1
             className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.05] tracking-tight"
             style={{ color: "#1E2A3A" }}
           >
-            One platform. Every signal.
+            One platform fee.
             <br />
-            <span style={{ color: "var(--color-primary)" }}>One price per property.</span>
+            <span style={{ color: "var(--color-primary)" }}>Add only what you need.</span>
           </h1>
 
-          {/* Subhead — Norman v2 PR2. Lead with the intelligence platform
-              (connect existing stack, unified dashboard). Ad campaign
-              management is a real capability but no longer the headline:
-              acknowledged in a single follow-on sentence. No em dashes. */}
+          {/* Subhead, capped at 20 words. */}
           <p
             className="mt-5 text-lg md:text-xl leading-relaxed mx-auto max-w-2xl"
             style={{ color: "#525252" }}
           >
-            Connect your existing stack. Get one dashboard showing leads,
-            traffic, reputation, and AI visibility. When you run paid
-            campaigns, we track every dollar to a lease.
+            Turn on only the features each property needs, then start a
+            14-day free trial. No card required.
           </p>
 
-          {/* Primary + secondary CTA — the one canonical buying pair:
-              "Request pilot" and "Book intro call". */}
+          {/* Primary + secondary CTA — the one canonical buying pair on
+              this page: "Start free trial" and "Book a demo". */}
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
               href={PRIMARY_HREF}
-              className="inline-flex items-center justify-center h-11 px-6 rounded-md text-sm font-medium text-white transition-colors hover:opacity-90"
+              className="inline-flex items-center justify-center h-11 px-6 rounded-md text-sm font-medium text-white transition-colors hover:opacity-90 active:scale-[0.98]"
               style={{ backgroundColor: "var(--color-primary)" }}
             >
-              Request pilot
+              Start free trial
             </Link>
             <BookDemoLink
-              className="inline-flex items-center justify-center h-11 px-6 rounded-md text-sm font-medium transition-colors"
+              className="inline-flex items-center justify-center h-11 px-6 rounded-md text-sm font-medium transition-colors active:scale-[0.98]"
               style={{
                 border: "1px solid var(--hair)",
                 color: "#1E2A3A",
                 backgroundColor: "#FFFFFF",
               }}
             >
-              Book intro call
+              Book a demo
             </BookDemoLink>
           </div>
-
-          {/* Trust strip — 3 chips, centered, mirrors homepage rhythm */}
-          <ul className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
-            <TrustChip value="14 days" label="Live on your domain" />
-            <TrustChip value="100%" label="Ad spend tracked" />
-            <TrustChip value="$0" label="Pilot. Cancel anytime." />
-          </ul>
         </div>
       </div>
     </section>
-  );
-}
-
-function TrustChip({ value, label }: { value: string; label: string }) {
-  return (
-    <li className="text-center sm:text-left">
-      <p
-        className="text-xl font-semibold"
-        style={{ color: "#1E2A3A", letterSpacing: "-0.01em" }}
-      >
-        {value}
-      </p>
-      <p
-        className="mt-0.5 text-[11px] font-mono uppercase tracking-[0.16em]"
-        style={{ color: "var(--stone-gray)", fontFamily: "var(--font-mono)" }}
-      >
-        {label}
-      </p>
-    </li>
   );
 }

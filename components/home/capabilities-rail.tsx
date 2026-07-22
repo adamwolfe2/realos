@@ -33,11 +33,9 @@ import { MaskRevealUp } from "@/components/ui/animate-text";
 
 const ACCENT = "#0f62fe";
 const INK = "#161616";
-const MUTED = "#8d8d8d";
 const BORDER = "#e0e0e0";
 
 type Capability = {
-  num: string;
   title: string;
   body: string;
   href: string;
@@ -50,7 +48,6 @@ type Capability = {
 
 const CAPABILITIES: Capability[] = [
   {
-    num: "01",
     title: "Weekly report that writes itself",
     body: "Every Monday at 7am: leases by source, website traffic and trends, AI-driven actions flagged, three actions for the week. One page, read over coffee.",
     href: "/sample-report",
@@ -59,7 +56,6 @@ const CAPABILITIES: Capability[] = [
     glyph: "report",
   },
   {
-    num: "02",
     title: "Ad spend tracked to each lease",
     body: "Every dollar of Google and Meta ad spend mapped to a signed lease, not an impression. Blended cost per lease and campaign ROI, continuously.",
     href: "/features/ads",
@@ -68,7 +64,6 @@ const CAPABILITIES: Capability[] = [
     glyph: "attribution",
   },
   {
-    num: "03",
     title: "Names on anonymous visitors",
     body: "Names and emails on a meaningful share of your anonymous traffic, resolved in real time, routed to your CRM and your ad audiences.",
     href: "/features/pixel",
@@ -77,7 +72,6 @@ const CAPABILITIES: Capability[] = [
     glyph: "pixel",
   },
   {
-    num: "04",
     title: "AI assistant that books tours at 2am",
     body: "Trained on your property, brand, units, and workflow. Books tours, emails floor plans, captures contact info. Hot leads hit your team by morning.",
     href: "/features/chatbot",
@@ -86,16 +80,14 @@ const CAPABILITIES: Capability[] = [
     glyph: "chat",
   },
   {
-    num: "05",
     title: "Reputation across every review site",
-    body: "Reddit, Yelp, Google, BBB, ApartmentRatings, Facebook, and the open web — every public mention of your brand from the past 90 days, sentiment-classified, with one-click reply.",
+    body: "Reddit, Yelp, Google, BBB, ApartmentRatings, Facebook, and the open web: every public mention of your brand from the past 90 days, sentiment-classified, with one-click reply.",
     href: "/audit",
     linkLabel: "See a live audit",
     artifact: ReputationFeed,
     glyph: "alert",
   },
   {
-    num: "06",
     title: "Pages quoted by AI search",
     body: "Property pages written to rank in Google and to be cited by ChatGPT, Perplexity, Claude, and Gemini. Per-location coverage, refreshed weekly.",
     href: "/features/seo-aeo",
@@ -157,11 +149,10 @@ export function CapabilitiesRail() {
   return (
     <section
       style={{
-        backgroundColor: "#FFFFFF",
-        borderTop: `1px solid ${BORDER}`,
+        backgroundColor: "#f4f4f4",
       }}
     >
-      <div className="max-w-[1280px] mx-auto px-4 md:px-8 py-16 md:py-24">
+      <div className="max-w-[1280px] mx-auto px-4 md:px-8 py-20 md:py-24">
         {/* Section header */}
         <div className="max-w-3xl mb-12 md:mb-20">
           <p
@@ -201,7 +192,7 @@ export function CapabilitiesRail() {
               lineHeight: 1.55,
             }}
           >
-            Each one optimizes a specific area of your current digital infrastructure. All six run on your existing PMS, domain, and team — no replatform, no rip-and-replace.
+            Each one optimizes a specific area of your current digital infrastructure. All six run on your existing PMS, domain, and team. No replatform. No rip-and-replace.
           </p>
         </div>
 
@@ -211,7 +202,7 @@ export function CapabilitiesRail() {
           <ol className="lg:pt-2">
             {CAPABILITIES.map((cap, i) => (
               <li
-                key={cap.num}
+                key={cap.title}
                 ref={(el) => {
                   itemRefs.current[i] = el;
                 }}
@@ -233,32 +224,18 @@ export function CapabilitiesRail() {
                     active={i === active}
                   />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-baseline gap-3 flex-wrap">
-                      <span
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          fontSize: 11.5,
-                          color: i === active ? ACCENT : MUTED,
-                          fontWeight: 700,
-                          letterSpacing: "0.08em",
-                          transition: "color 240ms ease",
-                        }}
-                      >
-                        {cap.num}
-                      </span>
-                      <h3
-                        style={{
-                          color: INK,
-                          fontFamily: "var(--font-sans)",
-                          fontSize: "clamp(18px, 2vw, 22px)",
-                          fontWeight: 700,
-                          letterSpacing: "-0.015em",
-                          lineHeight: 1.25,
-                        }}
-                      >
-                        {cap.title}
-                      </h3>
-                    </div>
+                    <h3
+                      style={{
+                        color: INK,
+                        fontFamily: "var(--font-sans)",
+                        fontSize: "clamp(18px, 2vw, 22px)",
+                        fontWeight: 700,
+                        letterSpacing: "-0.015em",
+                        lineHeight: 1.25,
+                      }}
+                    >
+                      {cap.title}
+                    </h3>
                     <p
                       className="mt-3 max-w-[560px]"
                       style={{
@@ -324,7 +301,7 @@ export function CapabilitiesRail() {
                   const isActive = i === active;
                   return (
                     <div
-                      key={cap.num}
+                      key={cap.title}
                       aria-hidden={!isActive}
                       style={{
                         position: i === 0 ? "relative" : "absolute",
@@ -354,7 +331,7 @@ export function CapabilitiesRail() {
               <div className="mt-6 flex items-center justify-center gap-2">
                 {CAPABILITIES.map((cap, i) => (
                   <span
-                    key={cap.num}
+                    key={cap.title}
                     aria-hidden
                     style={{
                       width: i === active ? 18 : 6,

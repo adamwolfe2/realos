@@ -1,22 +1,19 @@
 // Skeleton frame rendered while /features hydrates. Mirrors the real
-// page's hero + alternating feature rows so the layout stays stable
-// when the artifacts are streaming in.
-
-const BORDER = "#E2E8F0";
-const SOFT_BG = "#F8FAFC";
+// page's hero + two spotlight splits so the layout stays stable while
+// the artifacts stream in.
 
 export default function FeaturesLoading() {
   return (
     <div style={{ backgroundColor: "#FFFFFF" }} aria-busy="true">
       {/* Hero skeleton */}
-      <section style={{ borderBottom: `1px solid ${BORDER}` }}>
-        <div className="max-w-[1100px] mx-auto px-4 md:px-8 py-20 md:py-28 text-center">
+      <section>
+        <div className="max-w-[900px] mx-auto px-4 md:px-8 pt-20 md:pt-24 pb-16 text-center">
           <Shimmer width={120} height={12} className="mx-auto" />
           <Shimmer
             width={520}
             height={56}
             className="mx-auto mt-5 max-w-full"
-            radius={12}
+            radius={4}
           />
           <Shimmer
             width={380}
@@ -26,24 +23,17 @@ export default function FeaturesLoading() {
         </div>
       </section>
 
-      {/* Three skeleton feature rows — the rest stream in. */}
-      {[0, 1, 2].map((i) => (
-        <section
-          key={i}
-          style={{
-            backgroundColor: i % 2 === 0 ? "#FFFFFF" : SOFT_BG,
-            borderBottom: `1px solid ${BORDER}`,
-          }}
-        >
+      {/* Two spotlight-split skeletons */}
+      {[0, 1].map((i) => (
+        <section key={i} style={{ backgroundColor: i % 2 === 0 ? "#FFFFFF" : "#f4f4f4" }}>
           <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-16 md:py-24">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
               <div className="max-w-xl">
-                <Shimmer width={180} height={12} />
                 <Shimmer
                   width={420}
                   height={36}
-                  className="mt-5 max-w-full"
-                  radius={8}
+                  className="max-w-full"
+                  radius={4}
                 />
                 <Shimmer
                   width={400}
@@ -115,11 +105,10 @@ function Shimmer({
         height,
         borderRadius: radius,
         background:
-          "linear-gradient(90deg, #F1F5F9 0%, #E2E8F0 50%, #F1F5F9 100%)",
+          "linear-gradient(90deg, #f4f4f4 0%, #e0e0e0 50%, #f4f4f4 100%)",
         backgroundSize: "200% 100%",
         animation: "leasestack-shimmer 1.4s ease-in-out infinite",
       }}
     />
   );
 }
-

@@ -13,7 +13,7 @@ export default function AdsFeaturePage() {
     <FeaturePage
       eyebrow="Managed ads"
       headline="Paid that pays back, audited every week."
-      subhead="Most real estate ad spend is poured into broad audiences with no retargeting. We flip that: tight audiences, identity-pixel retargeting, creative swapped weekly, and a weekly call where we defend every dollar."
+      subhead="Most ad spend goes to broad audiences with no retargeting. We flip that: tight audiences, pixel retargeting, defended every dollar."
       whatItIs="Managed Google, Meta, LinkedIn, and TikTok campaigns tailored to each property. Creative ships from our studio, campaigns optimize against lease-velocity targets, and everything rolls up in the same dashboard that shows your leads."
       howItWorks={[
         "Connect your ad accounts to your portal via OAuth, we don't move spend through us.",

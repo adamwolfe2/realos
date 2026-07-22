@@ -14,7 +14,7 @@ export default function SeniorLivingPage() {
       eyebrow="Senior living"
       headline="Marketing data."
       headlineAccent="Family-first."
-      subhead="Senior living decisions take 90 to 180 days, and the adult child is researching. Patient nurture across that window. Compliant creative at every step."
+      subhead="Senior living decisions take 90 to 180 days, and the adult child is researching. Patient nurture, compliant creative, every step."
       caption="One report the executive director and the family can both read."
       artifact={<NurtureTimeline />}
       painsHeading="What senior living operators tell us."

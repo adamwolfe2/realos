@@ -14,7 +14,7 @@ export default function StudentHousingPage() {
       eyebrow="Student housing"
       headline="Lease-up data."
       headlineAccent="Pacing alerts."
-      subhead="Which channels signed your last twelve leases. When pacing is falling behind the academic calendar. What to do about it. Daily, not quarterly."
+      subhead="Which channels signed your last twelve leases, and when pacing falls behind the academic calendar. Daily, not quarterly."
       caption="Built by an asset manager who ran a real student housing lease-up."
       artifact={<ChatDemo />}
       painsHeading="What student housing operators tell us."

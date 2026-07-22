@@ -452,20 +452,18 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
       >
         <style jsx>{`
           @keyframes menuSlideIn {
-            0%   { opacity: 0; transform: scale(0.94) translateY(-12px); }
-            60%  { opacity: 1; transform: scale(1.02) translateY(2px); }
-            80%  { transform: scale(0.99) translateY(-1px); }
-            100% { transform: scale(1) translateY(0); }
+            0%   { opacity: 0; transform: translateY(-8px); }
+            100% { opacity: 1; transform: translateY(0); }
           }
           .menu-panel {
-            animation: menuSlideIn 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+            animation: menuSlideIn 220ms ease-out both;
           }
           @keyframes linkPop {
-            0%   { opacity: 0; transform: translateX(-10px); }
+            0%   { opacity: 0; transform: translateX(-6px); }
             100% { opacity: 1; transform: translateX(0); }
           }
           .menu-link {
-            animation: linkPop 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+            animation: linkPop 200ms ease-out both;
           }
         `}</style>
 

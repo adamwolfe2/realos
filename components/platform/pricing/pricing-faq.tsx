@@ -2,29 +2,30 @@
 
 import * as React from "react";
 import { Plus, Minus } from "lucide-react";
-import { SectionEyebrow } from "@/components/platform/section-eyebrow";
 
-// Pricing FAQ. Self-serve framing. Norman brief (2026-05-28):
-//   - Renamed CLX → marketing-agency retainer (no named competitors).
-//   - Deleted the "What happens if pacing does not move?" item — pacing
-//     isn't a live feature so we no longer surface it as a promise.
-//   - Reworked the "replace leasing staff" answer to say "saves" not
-//     "replaces".
-//   - Reframed onboarding from "no required call" to "included 30-min
-//     strategy call, free, part of the service".
+// Pricing FAQ. Self-serve, à-la-carte framing (2026-07-21 pricing rebuild):
+//   - Pruned from 7 items to the 6 that matter most for the builder model.
+//   - Dropped references to named tiers (Standard, Portfolio) since the
+//     page no longer sells tiers; the base platform fee is $99/property.
+//   - Renamed "free pilot" to "free trial" to match the builder's CTA and
+//     hero copy.
+//   - Added "Do I have to buy every feature?" to answer the a-la-carte
+//     question directly instead of leaving it implicit.
+//   - Kept the ad-management/agency question out; it described a service
+//     outside the feature catalog this page now sells.
 
 const FAQS: Array<{ q: string; a: string }> = [
   {
     q: "How does this compare to a marketing-agency retainer?",
-    a: "A typical residential leasing-marketing retainer runs $3,500 to $8,000 per property per month and gives you a deck of impressions, clicks, and reach. LeaseStack runs $899 per month on Standard for the same single property, and you get a full read on every channel your spend is touching plus a written recommendation on what to do about it. The math is straightforward: we replace your retainer and give you more insights for a more economical monthly fee.",
+    a: "A typical residential leasing-marketing retainer runs $3,500 to $8,000 per property per month and gives you a deck of impressions, clicks, and reach. LeaseStack starts at $99 per property per month for the base platform, plus only the features you turn on, and you get a full read on every channel your spend is touching plus a written recommendation on what to do about it. The math is straightforward: we replace your retainer and give you more insights for a more economical monthly fee.",
   },
   {
-    q: "What is the free pilot, exactly?",
-    a: "Zero dollars. We connect to your existing stack (PMS, Google Ads, Meta, GSC, GA4, your site) and show you what your dashboard actually says. You get a weekly snapshot, the underlying insights, and one operator-written recommendation on what to fix first. No card on file, no commitment. If you like what you see, you upgrade to Standard. If you do not, you close the tab.",
+    q: "What is the free trial, exactly?",
+    a: "Zero dollars for 14 days. We connect to your existing stack (PMS, Google Ads, Meta, GSC, GA4, your site) and show you what your dashboard actually says. You get a weekly snapshot, the underlying insights, and one operator-written recommendation on what to fix first. No card on file, no commitment. If you like what you see, your selection carries over. If you do not, you close the tab.",
   },
   {
-    q: "What is included in the monthly fee?",
-    a: "On Standard: connections to your existing stack, identified-visitor pixel (5,000 per month), AI leasing chatbot (5,000 conversations per month), source-to-lease attribution across Google and Meta, reputation monitoring, and a weekly operator-written read on every channel. No setup fee. Onboarding call included: a 30-minute strategy session to connect your stack and align your team, free and part of the service. Ad spend is billed separately at a 15 percent management markup, only on months when we are actively running campaigns for you.",
+    q: "Do I have to buy every feature?",
+    a: "No. The base platform is the only required fee. Every feature on the builder above is optional, priced per property per month, and can be turned on or off any time from the billing portal. Pick the features each property actually needs instead of paying for a bundle built for someone else's portfolio.",
   },
   {
     q: "Does LeaseStack replace my leasing staff?",
@@ -32,15 +33,11 @@ const FAQS: Array<{ q: string; a: string }> = [
   },
   {
     q: "What integrates with LeaseStack today?",
-    a: "AppFolio is the direct PMS integration. Google Ads, Meta Ads, Google Search Console, GA4, Google Business Profile, Reddit, and the open web are all read live. If you run Yardi, Buildium, Entrata, or RealPage we have manual entry today and custom connectors quoted per project (typically 2 to 4 weeks). The pilot does not require a PMS connection at all; the marketing reads work without it.",
-  },
-  {
-    q: "Are you a marketing agency?",
-    a: "No. LeaseStack is a leasing intelligence platform. The core product is the dashboard, the data, and the recommendations: your team acts on them. When you want help executing, we can facilitate and manage paid ad campaigns on your behalf at a 15 percent management markup on monthly ad budget, with every dollar attributed back to signed leases. The platform is the product. Ad management is an optional capability you can turn on or off month to month.",
+    a: "AppFolio is the direct PMS integration. Google Ads, Meta Ads, Google Search Console, GA4, Google Business Profile, Reddit, and the open web are all read live. If you run Yardi, Buildium, Entrata, or RealPage we have manual entry today and custom connectors quoted per project (typically 2 to 4 weeks). The free trial does not require a PMS connection at all; the marketing reads work without it.",
   },
   {
     q: "Are there any contracts?",
-    a: "No long-term contracts. Every plan is month-to-month and flexible — flexible from the Stripe billing portal in two clicks. Annual prepay is optional and saves you about 17 percent. Portfolio and Enterprise plans can opt into annual or multi-year terms if it helps the asset-side accounting, but it is never required.",
+    a: "No long-term contracts. Every plan is month-to-month and flexible, managed from the Stripe billing portal in two clicks. Annual prepay is optional and saves you about 17 percent. Enterprise can opt into annual or multi-year terms if it helps the asset-side accounting, but it is never required.",
   },
 ];
 
@@ -56,9 +53,8 @@ export function PricingFaq() {
     >
       <div className="max-w-[1100px] mx-auto px-4 md:px-8 pt-16 md:pt-24 pb-16 md:pb-24">
         <div className="mb-8 md:mb-10 max-w-2xl">
-          <SectionEyebrow>Pricing FAQ</SectionEyebrow>
           <h2
-            className="heading-section mt-3"
+            className="heading-section"
             style={{ color: "#1E2A3A", fontSize: "clamp(24px, 3vw, 32px)" }}
           >
             The questions operators ask before they sign.
@@ -94,7 +90,7 @@ export function PricingFaq() {
                   type="button"
                   onClick={() => setOpenIdx(open ? null : idx)}
                   aria-expanded={open}
-                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-[#f4f4f4]"
+                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-[#f4f4f4] active:scale-[0.98]"
                 >
                   <span
                     style={{

@@ -14,10 +14,9 @@ import { BookDemoLink } from "@/components/marketing/book-demo-link";
 
 export function ProductTourSection() {
   return (
-    <section id="product-tour" style={{ backgroundColor: "#f4f4f4", borderTop: "1px solid #e0e0e0" }}>
+    <section id="product-tour" style={{ backgroundColor: "#f4f4f4" }}>
       <div className="max-w-[1280px] mx-auto px-4 md:px-8 pt-16 pb-16 md:pb-28 md:pt-24">
         <div className="max-w-3xl mb-8 md:mb-12">
-          <p className="eyebrow mb-3 md:mb-4">Interactive preview</p>
           <h2 className="heading-section" style={{ color: "#161616" }}>
             <span className="hidden md:inline">Click through the operator portal.</span>
             <span className="md:hidden">The operator portal.</span>
@@ -109,7 +108,7 @@ export function ProductTourSection() {
                   textUnderlineOffset: 3,
                 }}
               >
-                Book intro call
+                Book a demo
               </BookDemoLink>
             </div>
           </div>

@@ -1,22 +1,20 @@
 import React from "react";
 
 // ---------------------------------------------------------------------------
-// SoftFramedArtifact — the Cluely.ai-inspired "lavender soft outer card
-// framing a crisp white inner mockup" pattern Norman flagged on 2026-05-21.
+// SoftFramedArtifact — flat Carbon-forward frame around a product mockup.
 //
-// Two-layer rounded surface:
-//   - OUTER: soft lavender/blue gradient with generous rounded corners
-//     and a faint shadow. Acts as the "stage" — gives the inner content
-//     room to breathe and a brand-coloured frame.
-//   - INNER: pure white card with a soft drop shadow and tighter rounded
-//     corners. Holds the actual product mockup, transcript, dashboard
-//     snippet, whatever — totally agnostic about content.
+// Deslop pass (2026-07-21): dropped the lavender/sky/mint gradient stage
+// and the 28px rounded corners (Cluely-style "soft card" pattern) for a
+// flat single-tone frame with sharp 2px corners, matching DESIGN.md
+// (light-only, flat elevation, no glow/gradient). The `tone` prop stays
+// for API compatibility but every tone now resolves to a flat neutral or
+// brand-tint fill, never a gradient.
 //
-// Padding on the outer card is deliberately generous (32-56px) so the
-// inner card floats in a halo of lavender. The shadow on the inner card
-// is subtle and warm (rgba(15,23,42,0.06)) rather than the deep gray
-// shadow you get from default Tailwind shadow-lg — keeps it feeling
-// "lifted" rather than "boxed".
+// Two-layer surface:
+//   - OUTER: flat frame, 1px hairline border, sharp corners. Gives the
+//     inner content room to breathe.
+//   - INNER: white card with a flat 1px border + soft shadow. Holds the
+//     actual product mockup, transcript, dashboard snippet, whatever.
 //
 // Use cases:
 //   - Hero artifacts on marketing sections (large, max-w-xl+ children).
@@ -52,19 +50,16 @@ export type SoftFramedArtifactProps = {
   bare?: boolean;
 };
 
+// Flat single-tone fills, no gradients. `lavender` keeps a faint brand-blue
+// wash; `sky` and `mint` resolve to the same neutral Carbon gray so the
+// surface never introduces an off-palette accent color.
 const FRAME_TONES: Record<
   NonNullable<SoftFramedArtifactProps["tone"]>,
   string
 > = {
-  // Cluely-style lavender: top-left lighter wash → bottom-right slightly
-  // deeper. Reads as cool, premium, and unmistakably brand-blue without
-  // saturating the whole surface.
-  lavender:
-    "linear-gradient(135deg, #E8ECFF 0%, #DCE4FF 40%, #C9D5FF 100%)",
-  sky:
-    "linear-gradient(135deg, #E6F0FF 0%, #D6E4FF 50%, #B8CDFF 100%)",
-  mint:
-    "linear-gradient(135deg, #E8F4F0 0%, #D8EDE4 50%, #C0DCD0 100%)",
+  lavender: "#EEF3FF",
+  sky: "#f4f4f4",
+  mint: "#f4f4f4",
 };
 
 const PADDING_SCALE: Record<
@@ -85,17 +80,15 @@ export function SoftFramedArtifact({
 }: SoftFramedArtifactProps) {
   return (
     <div
-      className={`relative rounded-[28px] ${PADDING_SCALE[padding]} ${className ?? ""}`}
+      className={`relative rounded-[2px] ${PADDING_SCALE[padding]} ${className ?? ""}`}
       style={{
-        background: FRAME_TONES[tone],
-        // Soft outer shadow — a hint of depth, not a hard drop.
-        boxShadow:
-          "0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 32px rgba(37, 99, 235, 0.08)",
+        backgroundColor: FRAME_TONES[tone],
+        border: "1px solid #e0e0e0",
       }}
     >
       {pillLabel ? (
         <span
-          className="absolute top-6 right-6 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1"
+          className="absolute top-6 right-6 inline-flex items-center rounded-full bg-white px-3 py-1"
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,
@@ -103,14 +96,9 @@ export function SoftFramedArtifact({
             fontWeight: 600,
             color: "var(--color-muted-foreground)",
             textTransform: "uppercase",
-            boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05)",
+            border: "1px solid #e0e0e0",
           }}
         >
-          <span
-            aria-hidden="true"
-            className="inline-block h-1.5 w-1.5 rounded-full"
-            style={{ backgroundColor: "var(--color-muted-foreground)" }}
-          />
           {pillLabel}
         </span>
       ) : null}
@@ -120,11 +108,10 @@ export function SoftFramedArtifact({
         <>{children}</>
       ) : (
         <div
-          className="rounded-2xl bg-white overflow-hidden"
+          className="rounded-[2px] bg-white overflow-hidden"
           style={{
-            // Subtle warm shadow that reads as "lifted" not "boxed".
-            boxShadow:
-              "0 4px 12px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04)",
+            border: "1px solid #e0e0e0",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
           }}
         >
           {children}

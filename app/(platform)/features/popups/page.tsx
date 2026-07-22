@@ -35,12 +35,9 @@ export default function PopupsFeaturePage() {
       <PopupsDemoSection />
 
       {/* Why this matters */}
-      <section className="bg-[#F9FAFB] border-y border-border">
+      <section className="bg-[#f4f4f4] border-y border-border">
         <div className="max-w-6xl mx-auto px-6 py-16 md:py-24 grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
-            <p className="text-[11px] tracking-[0.18em] font-semibold uppercase text-primary mb-3">
-              Built for operators
-            </p>
             <h3 className="text-xl font-semibold tracking-tight mb-2">
               Works on any website
             </h3>
@@ -51,9 +48,6 @@ export default function PopupsFeaturePage() {
             </p>
           </div>
           <div>
-            <p className="text-[11px] tracking-[0.18em] font-semibold uppercase text-primary mb-3">
-              Real attribution
-            </p>
             <h3 className="text-xl font-semibold tracking-tight mb-2">
               Conversions hit your pipeline
             </h3>
@@ -64,9 +58,6 @@ export default function PopupsFeaturePage() {
             </p>
           </div>
           <div>
-            <p className="text-[11px] tracking-[0.18em] font-semibold uppercase text-primary mb-3">
-              Smart frequency
-            </p>
             <h3 className="text-xl font-semibold tracking-tight mb-2">
               No popup fatigue
             </h3>
@@ -90,16 +81,16 @@ export default function PopupsFeaturePage() {
         </p>
         <div className="mt-8 inline-flex items-center gap-3">
           <a
-            href="/onboarding"
-            className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-5 py-3 text-sm font-semibold hover:bg-primary/90 transition-colors"
+            href="/sign-up"
+            className="inline-flex items-center rounded-none bg-primary text-primary-foreground px-5 py-3 text-sm font-semibold hover:bg-primary/90 transition-colors"
           >
-            Book a demo
+            Request pilot
           </a>
           <a
-            href="/demo"
-            className="inline-flex items-center rounded-md border border-border bg-white px-5 py-3 text-sm font-semibold hover:bg-muted transition-colors"
+            href="/onboarding"
+            className="inline-flex items-center rounded-none border border-border bg-white px-5 py-3 text-sm font-semibold hover:bg-muted transition-colors"
           >
-            See the platform
+            Book a demo
           </a>
         </div>
       </section>

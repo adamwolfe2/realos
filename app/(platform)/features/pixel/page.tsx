@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { SplitHero, SplitSection } from "@/components/platform/split-hero";
 import { Reveal } from "@/components/platform/reveal";
 import { VisitorStream } from "@/components/platform/artifacts/visitor-stream";
@@ -12,17 +13,17 @@ export const metadata: Metadata = {
 
 export default function PixelFeaturePage() {
   return (
-    <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
+    <div style={{ backgroundColor: "#FFFFFF", color: "#161616" }}>
       <SplitHero
         eyebrow="Visitor identification"
         headline="Know who visited your website,"
         headlineAccent="not just how many."
-        subhead="Most analytics give you session counts. We give you the name and email behind a meaningful share of those sessions, which floor plan they viewed, and how long they spent on it, all before they fill out a form."
+        subhead="We give you the name and email behind a meaningful share of your sessions before they fill out a form."
         ctas={[
-          { label: "Book a demo", href: "/onboarding" },
-          { label: "See it live", href: "/demo", variant: "secondary" },
+          { label: "Request pilot", href: "/sign-up" },
+          { label: "Book a demo", href: "/onboarding", variant: "secondary" },
         ]}
-        caption="Live on your site · consented identity graph · fully compliant"
+        caption="Live on your site, consented identity graph, fully compliant"
         artifact={<VisitorStream />}
       />
 
@@ -40,17 +41,14 @@ export default function PixelFeaturePage() {
         artifact={<VisitorProfile />}
       />
 
-      <SplitSection
-        eyebrow="How it works"
+      <FullBand
         headline="Anonymous to named, with no work on your side."
         body="We install it, we run it, and we feed the results into your team's workflow. You read the Monday report and the named leads that drop into your CRM throughout the week."
-        side="left"
-        background="#FFFFFF"
         artifact={<PixelPipeline />}
       />
 
-      <SplitSection
-        eyebrow="What you get"
+      <FullBand
+        background="#f4f4f4"
         headline="A steady stream of named visitors, not session counts."
         bullets={[
           "Monday report: who visited, who was high intent, who converted last week.",
@@ -58,13 +56,99 @@ export default function PixelFeaturePage() {
           "Meta, Google, and TikTok audiences rebuilt weekly from the prospects who actually showed up.",
           "Attribution from ad to tour to lease. You stop guessing which channel drove the signing.",
         ]}
-        side="right"
-        background="#F1F5F9"
         artifact={<PixelResults />}
       />
 
       <FinalBand />
     </div>
+  );
+}
+
+function FullBand({
+  headline,
+  body,
+  bullets,
+  artifact,
+  background = "#FFFFFF",
+}: {
+  headline: string;
+  body?: string;
+  bullets?: string[];
+  artifact: ReactNode;
+  background?: string;
+}) {
+  return (
+    <section style={{ backgroundColor: background }}>
+      <div className="max-w-[860px] mx-auto px-4 md:px-8 py-20 md:py-24 text-center">
+        <Reveal>
+          <h2
+            style={{
+              color: "#161616",
+              fontFamily: "var(--font-display)",
+              fontSize: "clamp(26px, 3.2vw, 38px)",
+              fontWeight: 500,
+              lineHeight: 1.2,
+            }}
+          >
+            {headline}
+          </h2>
+        </Reveal>
+        {body ? (
+          <Reveal delay={60}>
+            <p
+              className="mx-auto mt-4 max-w-[620px]"
+              style={{
+                color: "#6f6f6f",
+                fontFamily: "var(--font-sans)",
+                fontSize: 16,
+                lineHeight: 1.6,
+              }}
+            >
+              {body}
+            </p>
+          </Reveal>
+        ) : null}
+        {bullets ? (
+          <ul className="mx-auto mt-6 max-w-[560px] text-left space-y-3">
+            {bullets.map((b) => (
+              <li
+                key={b}
+                className="flex items-start gap-3"
+                style={{
+                  color: "#161616",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 15,
+                  lineHeight: 1.55,
+                }}
+              >
+                <span
+                  aria-hidden
+                  className="inline-flex items-center justify-center flex-shrink-0 mt-1 w-4 h-4 rounded-full"
+                  style={{
+                    backgroundColor: "rgba(15,98,254,0.14)",
+                    color: "#0f62fe",
+                  }}
+                >
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <path
+                      d="M1.5 5L4 7.5L8.5 2.5"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+                <span>{b}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        <Reveal delay={120} y={24}>
+          <div className="mt-10">{artifact}</div>
+        </Reveal>
+      </div>
+    </section>
   );
 }
 
@@ -74,7 +158,7 @@ function VisitorProfile() {
     { label: "Email",         value: "marisol.reyes@example.edu" },
     { label: "Who she is",    value: "University student · sophomore" },
     { label: "Where she's from", value: "Sacramento, CA" },
-    { label: "What she looked at", value: "2-bed floor plan · pricing · tours" },
+    { label: "What she looked at", value: "2-bed floor plan, pricing, tours" },
     { label: "Time on site",  value: "4m 38s across 3 visits" },
     { label: "Intent",        value: "High. Viewed tours twice" },
   ];
@@ -83,14 +167,14 @@ function VisitorProfile() {
       className="w-full"
       style={{
         backgroundColor: "#ffffff",
-        borderRadius: "16px",
-        boxShadow: "0 0 0 1px #E2E8F0, 0 20px 60px rgba(30, 42, 58,0.06)",
+        borderRadius: "2px",
+        boxShadow: "0 0 0 1px #e0e0e0, 0 20px 60px rgba(15, 23, 42,0.06)",
         overflow: "hidden",
       }}
     >
       <div
         className="px-5 py-4 flex items-center gap-3"
-        style={{ borderBottom: "1px solid #E2E8F0", backgroundColor: "#F1F5F9" }}
+        style={{ borderBottom: "1px solid #e0e0e0", backgroundColor: "#f4f4f4" }}
       >
         <span
           className="inline-flex items-center justify-center"
@@ -98,7 +182,7 @@ function VisitorProfile() {
             width: "40px",
             height: "40px",
             borderRadius: "50%",
-            backgroundColor: "#2563EB",
+            backgroundColor: "#0f62fe",
             color: "#ffffff",
             fontFamily: "var(--font-mono)",
             fontSize: "13px",
@@ -112,7 +196,7 @@ function VisitorProfile() {
             style={{
               fontFamily: "var(--font-sans)",
               fontSize: "14px",
-              color: "#1E2A3A",
+              color: "#161616",
               fontWeight: 600,
               lineHeight: 1.2,
             }}
@@ -125,7 +209,7 @@ function VisitorProfile() {
               fontSize: "10px",
               letterSpacing: "0.1em",
               textTransform: "uppercase",
-              color: "#94A3B8",
+              color: "#8d8d8d",
               marginTop: "3px",
               fontWeight: 500,
             }}
@@ -139,7 +223,7 @@ function VisitorProfile() {
           <li
             key={f.label}
             className="grid grid-cols-[150px_1fr] gap-3 items-center px-5 py-3"
-            style={{ borderBottom: i < facts.length - 1 ? "1px solid #E2E8F0" : "none" }}
+            style={{ borderBottom: i < facts.length - 1 ? "1px solid #e0e0e0" : "none" }}
           >
             <span
               style={{
@@ -147,7 +231,7 @@ function VisitorProfile() {
                 fontSize: "11px",
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
-                color: "#94A3B8",
+                color: "#8d8d8d",
                 fontWeight: 500,
               }}
             >
@@ -158,7 +242,7 @@ function VisitorProfile() {
               style={{
                 fontFamily: "var(--font-sans)",
                 fontSize: "13.5px",
-                color: "#1E2A3A",
+                color: "#161616",
                 fontWeight: 500,
               }}
             >
@@ -169,7 +253,7 @@ function VisitorProfile() {
       </ul>
       <div
         className="px-5 py-3 flex items-center justify-between gap-3"
-        style={{ borderTop: "1px solid #E2E8F0", backgroundColor: "#F1F5F9" }}
+        style={{ borderTop: "1px solid #e0e0e0", backgroundColor: "#f4f4f4" }}
       >
         <span
           style={{
@@ -177,11 +261,11 @@ function VisitorProfile() {
             fontSize: "10px",
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#94A3B8",
+            color: "#8d8d8d",
             fontWeight: 500,
           }}
         >
-          Sent to your team · added to your ad audiences
+          Sent to your team, added to your ad audiences
         </span>
       </div>
     </div>
@@ -190,24 +274,24 @@ function VisitorProfile() {
 
 function PixelPipeline() {
   const stages = [
-    { num: "01", title: "A prospect visits your site",   body: "Every pageview is captured. Which units they looked at, how long they stayed, how they got there." },
-    { num: "02", title: "We match the visit to a person", body: "A consented identity graph returns a real name and email for a meaningful share of those visits." },
-    { num: "03", title: "We attach the rest of the profile",      body: "Role, organization, phone, and LinkedIn, attached to the visitor record so your team has context before they reach out." },
-    { num: "04", title: "It lands where your team works", body: "Your leasing inbox, your CRM, your ad audiences, and your Monday owner report. Nothing for you to wire up." },
+    { title: "A prospect visits your site",   body: "Every pageview is captured. Which units they looked at, how long they stayed, how they got there." },
+    { title: "We match the visit to a person", body: "A consented identity graph returns a real name and email for a meaningful share of those visits." },
+    { title: "We attach the rest of the profile",      body: "Role, organization, phone, and LinkedIn, attached to the visitor record so your team has context before they reach out." },
+    { title: "It lands where your team works", body: "Your leasing inbox, your CRM, your ad audiences, and your Monday owner report. Nothing for you to wire up." },
   ];
   return (
     <div
       className="w-full"
       style={{
         backgroundColor: "#ffffff",
-        borderRadius: "16px",
-        boxShadow: "0 0 0 1px #E2E8F0, 0 20px 60px rgba(30, 42, 58,0.06)",
+        borderRadius: "2px",
+        boxShadow: "0 0 0 1px #e0e0e0, 0 20px 60px rgba(15, 23, 42,0.06)",
         overflow: "hidden",
       }}
     >
       <div
         className="px-5 py-3"
-        style={{ borderBottom: "1px solid #E2E8F0", backgroundColor: "#F1F5F9" }}
+        style={{ borderBottom: "1px solid #e0e0e0", backgroundColor: "#f4f4f4" }}
       >
         <span
           style={{
@@ -215,7 +299,7 @@ function PixelPipeline() {
             fontSize: "10px",
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: "#94A3B8",
+            color: "#8d8d8d",
             fontWeight: 600,
           }}
         >
@@ -224,30 +308,35 @@ function PixelPipeline() {
       </div>
       <ol className="p-5 space-y-3">
         {stages.map((s, i) => (
-          <Reveal key={s.num} delay={i * 80}>
+          <Reveal key={s.title} delay={i * 80}>
             <li className="flex gap-4">
               <div
+                aria-hidden="true"
                 className="flex-shrink-0 inline-flex items-center justify-center"
                 style={{
                   width: "34px",
                   height: "34px",
-                  borderRadius: "10px",
-                  backgroundColor: "rgba(37,99,235,0.12)",
-                  color: "#2563EB",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "11px",
-                  fontWeight: 600,
-                  letterSpacing: "0.04em",
+                  borderRadius: "2px",
+                  backgroundColor: "rgba(15, 98, 254,0.12)",
+                  color: "#0f62fe",
                 }}
               >
-                {s.num}
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path
+                    d="M2 9l3.5 3.5L12 4"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </div>
               <div className="flex-1">
                 <p
                   style={{
                     fontFamily: "var(--font-sans)",
                     fontSize: "14.5px",
-                    color: "#1E2A3A",
+                    color: "#161616",
                     fontWeight: 600,
                   }}
                 >
@@ -258,7 +347,7 @@ function PixelPipeline() {
                   style={{
                     fontFamily: "var(--font-sans)",
                     fontSize: "13.5px",
-                    color: "#64748B",
+                    color: "#6f6f6f",
                     lineHeight: 1.55,
                   }}
                 >
@@ -306,8 +395,8 @@ function PixelResults() {
             className="p-5"
             style={{
               backgroundColor: "#ffffff",
-              borderRadius: "14px",
-              boxShadow: "0 0 0 1px #E2E8F0",
+              borderRadius: "2px",
+              boxShadow: "0 0 0 1px #e0e0e0",
             }}
           >
             <p
@@ -316,7 +405,7 @@ function PixelResults() {
                 fontSize: "10px",
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
-                color: "#94A3B8",
+                color: "#8d8d8d",
                 fontWeight: 500,
               }}
             >
@@ -327,7 +416,7 @@ function PixelResults() {
               style={{
                 fontFamily: "var(--font-display)",
                 fontSize: "32px",
-                color: "#1E2A3A",
+                color: "#161616",
                 fontWeight: 500,
                 lineHeight: 1.05,
               }}
@@ -339,7 +428,7 @@ function PixelResults() {
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: "11px",
-                color: "#2563EB",
+                color: "#0f62fe",
                 fontWeight: 600,
               }}
             >
@@ -355,44 +444,29 @@ function PixelResults() {
 
 function FinalBand() {
   return (
-    <section style={{ backgroundColor: "#FFFFFF" }}>
+    <section style={{ backgroundColor: "#f4f4f4" }}>
       <div className="max-w-[920px] mx-auto px-4 md:px-8 py-20 md:py-24 text-center">
-        <Reveal>
-          <p
-            className="eyebrow mb-4"
-            style={{
-              color: "#94A3B8",
-              fontFamily: "var(--font-mono)",
-              fontSize: "11px",
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              fontWeight: 500,
-            }}
-          >
-            Best for
-          </p>
-        </Reveal>
         <Reveal delay={60}>
           <p
             className="mx-auto max-w-[720px]"
             style={{
-              color: "#1E2A3A",
+              color: "#161616",
               fontFamily: "var(--font-display)",
               fontSize: "clamp(22px, 2.4vw, 30px)",
               fontWeight: 500,
               lineHeight: 1.35,
             }}
           >
-            Operators with a few hundred monthly site visitors and no visibility into who's behind the anonymous traffic. Student housing, multifamily, and senior living see the biggest lift.
+            Best for operators with a few hundred monthly site visitors and no visibility into who's behind the anonymous traffic. Student housing, multifamily, and senior living see the biggest lift.
           </p>
         </Reveal>
         <Reveal delay={140}>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/onboarding" className="btn-primary">
-              Book a demo
+            <Link href="/sign-up" className="btn-primary">
+              Request pilot
             </Link>
-            <Link href="/demo" className="btn-secondary">
-              See it live
+            <Link href="/onboarding" className="btn-secondary">
+              Book a demo
             </Link>
           </div>
         </Reveal>

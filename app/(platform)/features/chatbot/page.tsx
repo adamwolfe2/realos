@@ -16,17 +16,17 @@ export const metadata: Metadata = {
 
 export default function ChatbotFeaturePage() {
   return (
-    <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
+    <div style={{ backgroundColor: "#FFFFFF", color: "#161616" }}>
       <SplitHero
         eyebrow="Leasing assistant"
         headline="An assistant"
         headlineAccent="that captures leads at 2am."
-        subhead="Most leasing chatbots are a glorified FAQ. Ours is trained on your live units, pricing rules, and application process. It answers the questions a prospect would ask your leasing team, captures the lead, and lands the full thread in your inbox the next morning."
+        subhead="Trained on your live units and pricing rules. It answers like your team, captures the lead, and hands off overnight."
         ctas={[
-          { label: "Book a demo", href: "/onboarding" },
-          { label: "See it live", href: "/demo", variant: "secondary" },
+          { label: "Request pilot", href: "/sign-up" },
+          { label: "Book a demo", href: "/onboarding", variant: "secondary" },
         ]}
-        caption="Live 24/7 · trained on your units · captures leads to your CRM"
+        caption="Live 24/7, trained on your units, captures leads to your CRM"
         artifact={<ChatDemo />}
       />
 
@@ -44,17 +44,14 @@ export default function ChatbotFeaturePage() {
         artifact={<ChatConfig />}
       />
 
-      <SplitSection
-        eyebrow="How it works"
+      <FullBand
         headline="From first message to CRM record in four steps."
         body="Every conversation runs on a grounded prompt, captures contact details as the prospect warms up, then lands in your CRM with enough context for your leasing team to pick up mid-thread."
-        side="left"
-        background="#FFFFFF"
         artifact={<ChatPipeline />}
       />
 
-      <SplitSection
-        eyebrow="What to expect"
+      <FullBand
+        background="#f4f4f4"
         headline="Every chat is a lead with context attached."
         bullets={[
           "Covers the after-hours gap so international students and night-shift parents don't bounce waiting for morning.",
@@ -62,8 +59,6 @@ export default function ChatbotFeaturePage() {
           "One toggle on your organization disables the widget instantly during staffing changes.",
           "Weekly chat volume, capture rate, and top intents land in your Monday report.",
         ]}
-        side="right"
-        background="#F1F5F9"
         artifact={<ChatMetrics />}
       />
 
@@ -87,14 +82,14 @@ function ChatConfig() {
       className="w-full"
       style={{
         backgroundColor: "#ffffff",
-        borderRadius: "16px",
-        boxShadow: "0 0 0 1px #E2E8F0, 0 20px 60px rgba(30, 42, 58,0.06)",
+        borderRadius: "2px",
+        boxShadow: "0 0 0 1px #e0e0e0, 0 20px 60px rgba(15, 23, 42,0.06)",
         overflow: "hidden",
       }}
     >
       <div
         className="px-5 py-3 flex items-center gap-2"
-        style={{ borderBottom: "1px solid #E2E8F0", backgroundColor: "#F1F5F9" }}
+        style={{ borderBottom: "1px solid #e0e0e0", backgroundColor: "#f4f4f4" }}
       >
         <span
           style={{
@@ -102,7 +97,7 @@ function ChatConfig() {
             fontSize: "10px",
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: "#94A3B8",
+            color: "#8d8d8d",
             fontWeight: 600,
           }}
         >
@@ -114,13 +109,13 @@ function ChatConfig() {
           <li
             key={r.k}
             className="grid grid-cols-[160px_1fr_auto] gap-3 items-center px-3 py-2.5 rounded-lg"
-            style={{ backgroundColor: i % 2 === 0 ? "#F1F5F9" : "transparent" }}
+            style={{ backgroundColor: i % 2 === 0 ? "#f4f4f4" : "transparent" }}
           >
             <span
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: "11px",
-                color: "#94A3B8",
+                color: "#8d8d8d",
                 letterSpacing: "0.06em",
                 textTransform: "uppercase",
                 fontWeight: 600,
@@ -133,7 +128,7 @@ function ChatConfig() {
               style={{
                 fontFamily: "var(--font-sans)",
                 fontSize: "13.5px",
-                color: "#1E2A3A",
+                color: "#161616",
                 fontWeight: 500,
               }}
             >
@@ -153,24 +148,24 @@ function ChatConfig() {
 
 function ChatPipeline() {
   const stages = [
-    { num: "01", title: "Widget loads",    body: "Your persona, avatar, and brand color render on your domain. Five seconds of idle triggers a greeting." },
-    { num: "02", title: "Grounded reply", body: "Replies pull from your live unit list and knowledge base. Pricing is quoted from what you've approved, never invented." },
-    { num: "03", title: "Progressive capture", body: "As the conversation warms, the assistant asks for name, email, and phone. Conversationally, not robotically." },
-    { num: "04", title: "CRM and handoff",  body: "A lead lands in your CRM with the full transcript. Hot threads ping your leasing Slack so a human can step in." },
+    { title: "Widget loads",    body: "Your persona, avatar, and brand color render on your domain. Five seconds of idle triggers a greeting." },
+    { title: "Grounded reply", body: "Replies pull from your live unit list and knowledge base. Pricing is quoted from what you've approved, never invented." },
+    { title: "Progressive capture", body: "As the conversation warms, the assistant asks for name, email, and phone. Conversationally, not robotically." },
+    { title: "CRM and handoff",  body: "A lead lands in your CRM with the full transcript. Hot threads ping your leasing Slack so a human can step in." },
   ];
   return (
     <div
       className="w-full"
       style={{
         backgroundColor: "#ffffff",
-        borderRadius: "16px",
-        boxShadow: "0 0 0 1px #E2E8F0, 0 20px 60px rgba(30, 42, 58,0.06)",
+        borderRadius: "2px",
+        boxShadow: "0 0 0 1px #e0e0e0, 0 20px 60px rgba(15, 23, 42,0.06)",
         overflow: "hidden",
       }}
     >
       <div
         className="px-5 py-3"
-        style={{ borderBottom: "1px solid #E2E8F0", backgroundColor: "#F1F5F9" }}
+        style={{ borderBottom: "1px solid #e0e0e0", backgroundColor: "#f4f4f4" }}
       >
         <span
           style={{
@@ -178,7 +173,7 @@ function ChatPipeline() {
             fontSize: "10px",
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: "#94A3B8",
+            color: "#8d8d8d",
             fontWeight: 600,
           }}
         >
@@ -187,30 +182,35 @@ function ChatPipeline() {
       </div>
       <ol className="p-5 space-y-3">
         {stages.map((s, i) => (
-          <Reveal key={s.num} delay={i * 80}>
+          <Reveal key={s.title} delay={i * 80}>
             <li className="flex gap-4">
               <div
+                aria-hidden="true"
                 className="flex-shrink-0 inline-flex items-center justify-center"
                 style={{
                   width: "34px",
                   height: "34px",
-                  borderRadius: "10px",
-                  backgroundColor: "rgba(37,99,235,0.12)",
-                  color: "#2563EB",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "11px",
-                  fontWeight: 600,
-                  letterSpacing: "0.04em",
+                  borderRadius: "2px",
+                  backgroundColor: "rgba(15, 98, 254,0.12)",
+                  color: "#0f62fe",
                 }}
               >
-                {s.num}
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path
+                    d="M2 9l3.5 3.5L12 4"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </div>
               <div className="flex-1">
                 <p
                   style={{
                     fontFamily: "var(--font-sans)",
                     fontSize: "14.5px",
-                    color: "#1E2A3A",
+                    color: "#161616",
                     fontWeight: 600,
                   }}
                 >
@@ -221,7 +221,7 @@ function ChatPipeline() {
                   style={{
                     fontFamily: "var(--font-sans)",
                     fontSize: "13.5px",
-                    color: "#64748B",
+                    color: "#6f6f6f",
                     lineHeight: 1.55,
                   }}
                 >
@@ -241,7 +241,7 @@ function ChatMetrics() {
     { label: "Chats this week",      value: "284",   delta: "live on 4 domains" },
     { label: "Leads captured",       value: "96",    delta: "34% capture rate" },
     { label: "Tours scheduled",      value: "22",    delta: "from chat, last 7 days" },
-    { label: "Escalated to human",   value: "8",     delta: "hot threads · Slack" },
+    { label: "Escalated to human",   value: "8",     delta: "hot threads, Slack" },
   ];
   return (
     <div className="w-full">
@@ -251,12 +251,12 @@ function ChatMetrics() {
           fontSize: "10px",
           letterSpacing: "0.18em",
           textTransform: "uppercase",
-          color: "#94A3B8",
+          color: "#8d8d8d",
           fontWeight: 500,
           marginBottom: "10px",
         }}
       >
-        Sample dashboard · illustrative
+        Sample dashboard, illustrative
       </p>
     <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
       {deltas.map((d, i) => (
@@ -265,8 +265,8 @@ function ChatMetrics() {
             className="p-5"
             style={{
               backgroundColor: "#ffffff",
-              borderRadius: "14px",
-              boxShadow: "0 0 0 1px #E2E8F0",
+              borderRadius: "2px",
+              boxShadow: "0 0 0 1px #e0e0e0",
             }}
           >
             <p
@@ -275,7 +275,7 @@ function ChatMetrics() {
                 fontSize: "10px",
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
-                color: "#94A3B8",
+                color: "#8d8d8d",
                 fontWeight: 500,
               }}
             >
@@ -286,7 +286,7 @@ function ChatMetrics() {
               style={{
                 fontFamily: "var(--font-display)",
                 fontSize: "32px",
-                color: "#1E2A3A",
+                color: "#161616",
                 fontWeight: 500,
                 lineHeight: 1.05,
               }}
@@ -298,7 +298,7 @@ function ChatMetrics() {
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: "11px",
-                color: "#2563EB",
+                color: "#0f62fe",
                 fontWeight: 600,
               }}
             >
@@ -312,46 +312,119 @@ function ChatMetrics() {
   );
 }
 
+function FullBand({
+  headline,
+  body,
+  bullets,
+  artifact,
+  background = "#FFFFFF",
+}: {
+  headline: string;
+  body?: string;
+  bullets?: string[];
+  artifact: ReactNode;
+  background?: string;
+}) {
+  return (
+    <section style={{ backgroundColor: background }}>
+      <div className="max-w-[860px] mx-auto px-4 md:px-8 py-20 md:py-24 text-center">
+        <Reveal>
+          <h2
+            style={{
+              color: "#161616",
+              fontFamily: "var(--font-display)",
+              fontSize: "clamp(26px, 3.2vw, 38px)",
+              fontWeight: 500,
+              lineHeight: 1.2,
+            }}
+          >
+            {headline}
+          </h2>
+        </Reveal>
+        {body ? (
+          <Reveal delay={60}>
+            <p
+              className="mx-auto mt-4 max-w-[620px]"
+              style={{
+                color: "#6f6f6f",
+                fontFamily: "var(--font-sans)",
+                fontSize: 16,
+                lineHeight: 1.6,
+              }}
+            >
+              {body}
+            </p>
+          </Reveal>
+        ) : null}
+        {bullets ? (
+          <ul className="mx-auto mt-6 max-w-[560px] text-left space-y-3">
+            {bullets.map((b) => (
+              <li
+                key={b}
+                className="flex items-start gap-3"
+                style={{
+                  color: "#161616",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 15,
+                  lineHeight: 1.55,
+                }}
+              >
+                <span
+                  aria-hidden
+                  className="inline-flex items-center justify-center flex-shrink-0 mt-1 w-4 h-4 rounded-full"
+                  style={{
+                    backgroundColor: "rgba(15,98,254,0.14)",
+                    color: "#0f62fe",
+                  }}
+                >
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <path
+                      d="M1.5 5L4 7.5L8.5 2.5"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+                <span>{b}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        <Reveal delay={120} y={24}>
+          <div className="mt-10">{artifact}</div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
 function FinalBand() {
   return (
-    <section style={{ backgroundColor: "#FFFFFF" }}>
+    <section style={{ backgroundColor: "#f4f4f4" }}>
       <div className="max-w-[920px] mx-auto px-4 md:px-8 py-20 md:py-24 text-center">
         <Reveal>
           <p
-            style={{
-              color: "#94A3B8",
-              fontFamily: "var(--font-mono)",
-              fontSize: "11px",
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              fontWeight: 500,
-              marginBottom: "16px",
-            }}
-          >
-            Best for
-          </p>
-        </Reveal>
-        <Reveal delay={60}>
-          <p
             className="mx-auto max-w-[720px]"
             style={{
-              color: "#1E2A3A",
+              color: "#161616",
               fontFamily: "var(--font-display)",
               fontSize: "clamp(22px, 2.4vw, 30px)",
               fontWeight: 500,
               lineHeight: 1.35,
             }}
           >
-            Property sites with organic or paid traffic, especially student housing with international applicants and senior living with family decision makers in different time zones.
+            Best for property sites with organic or paid traffic, especially student housing with international applicants and senior living with family decision makers in different time zones.
           </p>
         </Reveal>
         <Reveal delay={140}>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/onboarding" className="btn-primary">
-              Book a demo
+            <Link href="/sign-up" className="btn-primary">
+              Request pilot
             </Link>
-            <Link href="/demo" className="btn-secondary">
-              See it live
+            <Link href="/onboarding" className="btn-secondary">
+              Book a demo
             </Link>
           </div>
         </Reveal>

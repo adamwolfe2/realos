@@ -49,12 +49,6 @@ export default function DemoPage() {
               backgroundColor: "white",
             }}
           >
-            <p
-              className="font-mono text-[11px] uppercase tracking-[0.12em] mb-4"
-              style={{ color: "var(--text-muted)" }}
-            >
-              Best on desktop
-            </p>
             <h2
               className="text-2xl font-semibold mb-4"
               style={{ color: "var(--text-headline)", fontFamily: "var(--font-display)" }}
@@ -66,7 +60,7 @@ export default function DemoPage() {
               style={{ color: "var(--text-body)" }}
             >
               Open this page on a desktop to click through the live walkthrough,
-              or book a 1:1 demo and we'll share screen with you.
+              or book a demo and we'll share screen with you.
             </p>
             <Link
               href="/onboarding"
@@ -78,7 +72,7 @@ export default function DemoPage() {
                 textTransform: "uppercase",
               }}
             >
-              Book a 1:1 demo
+              Book a demo
             </Link>
           </div>
 
@@ -113,7 +107,7 @@ export default function DemoPage() {
                 textTransform: "uppercase",
               }}
             >
-              Book a live demo
+              Book a demo
             </Link>
           </div>
         </div>

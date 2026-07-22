@@ -22,17 +22,17 @@ export const metadata: Metadata = {
 
 export default function SEOAEOFeaturePage() {
   return (
-    <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
+    <div style={{ backgroundColor: "#FFFFFF", color: "#161616" }}>
       <SplitHero
         eyebrow="Search and AI discovery"
         headline="Pages that rank in Google"
         headlineAccent="and get quoted by AI search."
-        subhead="A growing share of prospects ask ChatGPT or Perplexity for housing recommendations before they ever open Google. If you're not in Google's index and not cited by the AI engines, you're invisible. We build per-location pages that show up in both, using the same content."
+        subhead="Prospects ask ChatGPT and Perplexity before opening Google. We build per-location pages that rank in both, from the same content."
         ctas={[
-          { label: "Book a demo", href: "/onboarding" },
-          { label: "See the demo dashboard", href: "/demo/aeo", variant: "secondary" },
+          { label: "Request pilot", href: "/sign-up" },
+          { label: "Book a demo", href: "/onboarding", variant: "secondary" },
         ]}
-        caption="Per-location coverage · schema on every page · monthly AI-discovery audit"
+        caption="Per-location coverage, schema on every page, monthly AI-discovery audit"
         // Norman 2026-05-21: the static SeoAnswer card read flat.
         // Swapped for the new SEOTrendChart — animated ramp curve,
         // three floating stat-modal callouts pop in on scroll, soft
@@ -60,17 +60,14 @@ export default function SEOAEOFeaturePage() {
         artifact={<CitedByAI />}
       />
 
-      <SplitSection
-        eyebrow="The AI-discovery audit"
+      <FullBand
         headline="We ask the engines about you every month."
         body="Once a month we run a scripted set of prompts against ChatGPT, Perplexity, and Claude using the questions your prospects ask. We log who got cited, who didn't, and which of your pages were quoted. Then we close the gaps on the next page release."
-        side="left"
-        background="#FFFFFF"
         artifact={<AuditGrid />}
       />
 
-      <SplitSection
-        eyebrow="What to expect"
+      <FullBand
+        background="#f4f4f4"
         headline="Be the answer, not another blue link."
         bullets={[
           "Page one for the long-tail queries your leasing team already answers every day.",
@@ -78,13 +75,99 @@ export default function SEOAEOFeaturePage() {
           "Organic traffic and conversion, attributed end-to-end in your weekly report.",
           "A month-over-month record of AI citations. You see the gap close in writing.",
         ]}
-        side="right"
-        background="#F1F5F9"
         artifact={<RankProgress />}
       />
 
       <FinalBand />
     </div>
+  );
+}
+
+function FullBand({
+  headline,
+  body,
+  bullets,
+  artifact,
+  background = "#FFFFFF",
+}: {
+  headline: string;
+  body?: string;
+  bullets?: string[];
+  artifact: ReactNode;
+  background?: string;
+}) {
+  return (
+    <section style={{ backgroundColor: background }}>
+      <div className="max-w-[860px] mx-auto px-4 md:px-8 py-20 md:py-24 text-center">
+        <Reveal>
+          <h2
+            style={{
+              color: "#161616",
+              fontFamily: "var(--font-display)",
+              fontSize: "clamp(26px, 3.2vw, 38px)",
+              fontWeight: 500,
+              lineHeight: 1.2,
+            }}
+          >
+            {headline}
+          </h2>
+        </Reveal>
+        {body ? (
+          <Reveal delay={60}>
+            <p
+              className="mx-auto mt-4 max-w-[620px]"
+              style={{
+                color: "#6f6f6f",
+                fontFamily: "var(--font-sans)",
+                fontSize: 16,
+                lineHeight: 1.6,
+              }}
+            >
+              {body}
+            </p>
+          </Reveal>
+        ) : null}
+        {bullets ? (
+          <ul className="mx-auto mt-6 max-w-[560px] text-left space-y-3">
+            {bullets.map((b) => (
+              <li
+                key={b}
+                className="flex items-start gap-3"
+                style={{
+                  color: "#161616",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 15,
+                  lineHeight: 1.55,
+                }}
+              >
+                <span
+                  aria-hidden
+                  className="inline-flex items-center justify-center flex-shrink-0 mt-1 w-4 h-4 rounded-full"
+                  style={{
+                    backgroundColor: "rgba(15,98,254,0.14)",
+                    color: "#0f62fe",
+                  }}
+                >
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <path
+                      d="M1.5 5L4 7.5L8.5 2.5"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+                <span>{b}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        <Reveal delay={120} y={24}>
+          <div className="mt-10">{artifact}</div>
+        </Reveal>
+      </div>
+    </section>
   );
 }
 
@@ -101,14 +184,14 @@ function CitedByAI() {
       className="w-full"
       style={{
         backgroundColor: "#ffffff",
-        borderRadius: "16px",
-        boxShadow: "0 0 0 1px #E2E8F0, 0 20px 60px rgba(30, 42, 58,0.06)",
+        borderRadius: "2px",
+        boxShadow: "0 0 0 1px #e0e0e0, 0 20px 60px rgba(15, 23, 42,0.06)",
         overflow: "hidden",
       }}
     >
       <div
         className="px-5 py-4 flex items-center justify-between gap-3"
-        style={{ borderBottom: "1px solid #E2E8F0", backgroundColor: "#F1F5F9" }}
+        style={{ borderBottom: "1px solid #e0e0e0", backgroundColor: "#f4f4f4" }}
       >
         <span
           style={{
@@ -116,7 +199,7 @@ function CitedByAI() {
             fontSize: "10px",
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: "#94A3B8",
+            color: "#8d8d8d",
             fontWeight: 600,
           }}
         >
@@ -126,7 +209,7 @@ function CitedByAI() {
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "10px",
-            color: "#2563EB",
+            color: "#0f62fe",
             fontWeight: 600,
           }}
         >
@@ -138,7 +221,7 @@ function CitedByAI() {
           <li
             key={e.name}
             className="flex items-start gap-3 px-5 py-3.5"
-            style={{ borderBottom: i < engines.length - 1 ? "1px solid #E2E8F0" : "none" }}
+            style={{ borderBottom: i < engines.length - 1 ? "1px solid #e0e0e0" : "none" }}
           >
             <span className="flex-shrink-0 mt-0.5">{e.mark}</span>
             <div className="flex-1 min-w-0">
@@ -146,7 +229,7 @@ function CitedByAI() {
                 style={{
                   fontFamily: "var(--font-sans)",
                   fontSize: "13px",
-                  color: "#1E2A3A",
+                  color: "#161616",
                   fontWeight: 600,
                   lineHeight: 1.3,
                 }}
@@ -158,7 +241,7 @@ function CitedByAI() {
                 style={{
                   fontFamily: "var(--font-sans)",
                   fontSize: "13px",
-                  color: "#64748B",
+                  color: "#6f6f6f",
                   lineHeight: 1.5,
                   fontStyle: "italic",
                 }}
@@ -171,7 +254,7 @@ function CitedByAI() {
       </ul>
       <div
         className="px-5 py-3 flex items-center justify-between gap-3"
-        style={{ borderTop: "1px solid #E2E8F0", backgroundColor: "#F1F5F9" }}
+        style={{ borderTop: "1px solid #e0e0e0", backgroundColor: "#f4f4f4" }}
       >
         <span
           style={{
@@ -179,7 +262,7 @@ function CitedByAI() {
             fontSize: "10px",
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#94A3B8",
+            color: "#8d8d8d",
             fontWeight: 500,
           }}
         >
@@ -191,7 +274,7 @@ function CitedByAI() {
             fontSize: "9px",
             letterSpacing: "0.12em",
             textTransform: "uppercase",
-            color: "#94A3B8",
+            color: "#8d8d8d",
             fontWeight: 600,
             padding: "2px 6px",
             borderRadius: "4px",
@@ -219,14 +302,14 @@ function AuditGrid() {
       className="w-full"
       style={{
         backgroundColor: "#ffffff",
-        borderRadius: "16px",
-        boxShadow: "0 0 0 1px #E2E8F0, 0 20px 60px rgba(30, 42, 58,0.06)",
+        borderRadius: "2px",
+        boxShadow: "0 0 0 1px #e0e0e0, 0 20px 60px rgba(15, 23, 42,0.06)",
         overflow: "hidden",
       }}
     >
       <div
         className="px-5 py-3 flex items-center justify-between"
-        style={{ borderBottom: "1px solid #E2E8F0", backgroundColor: "#F1F5F9" }}
+        style={{ borderBottom: "1px solid #e0e0e0", backgroundColor: "#f4f4f4" }}
       >
         <span
           style={{
@@ -234,7 +317,7 @@ function AuditGrid() {
             fontSize: "10px",
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: "#94A3B8",
+            color: "#8d8d8d",
             fontWeight: 600,
           }}
         >
@@ -244,7 +327,7 @@ function AuditGrid() {
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "10px",
-            color: "#2563EB",
+            color: "#0f62fe",
             fontWeight: 600,
           }}
         >
@@ -259,9 +342,9 @@ function AuditGrid() {
             fontSize: "10px",
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#94A3B8",
+            color: "#8d8d8d",
             fontWeight: 500,
-            borderBottom: "1px solid #E2E8F0",
+            borderBottom: "1px solid #e0e0e0",
           }}
         >
           <span>Query</span>
@@ -274,10 +357,10 @@ function AuditGrid() {
             key={r.q}
             className="grid grid-cols-[1fr_70px_70px_60px] gap-3 items-center px-2 py-2.5"
             style={{
-              borderBottom: i < queries.length - 1 ? "1px solid #E2E8F0" : "none",
+              borderBottom: i < queries.length - 1 ? "1px solid #e0e0e0" : "none",
               fontFamily: "var(--font-sans)",
               fontSize: "12.5px",
-              color: "#1E2A3A",
+              color: "#161616",
             }}
           >
             <span className="truncate">"{r.q}"</span>
@@ -288,7 +371,7 @@ function AuditGrid() {
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: "12px",
-                color: "#1E2A3A",
+                color: "#161616",
                 fontWeight: 600,
               }}
             >
@@ -311,8 +394,8 @@ function AuditBadge({ value }: { value: string }) {
         fontSize: "10px",
         padding: "3px 8px",
         borderRadius: "5px",
-        backgroundColor: cited ? "rgba(37,99,235,0.12)" : "transparent",
-        color: cited ? "#2563EB" : "#94A3B8",
+        backgroundColor: cited ? "rgba(15, 98, 254,0.12)" : "transparent",
+        color: cited ? "#0f62fe" : "#8d8d8d",
         fontWeight: 600,
         letterSpacing: "0.04em",
         textTransform: cited ? "uppercase" : "none",
@@ -335,14 +418,14 @@ function RankProgress() {
       className="w-full"
       style={{
         backgroundColor: "#ffffff",
-        borderRadius: "16px",
-        boxShadow: "0 0 0 1px #E2E8F0, 0 20px 60px rgba(30, 42, 58,0.06)",
+        borderRadius: "2px",
+        boxShadow: "0 0 0 1px #e0e0e0, 0 20px 60px rgba(15, 23, 42,0.06)",
         overflow: "hidden",
       }}
     >
       <div
         className="px-5 py-3 flex items-center justify-between"
-        style={{ borderBottom: "1px solid #E2E8F0", backgroundColor: "#F1F5F9" }}
+        style={{ borderBottom: "1px solid #e0e0e0", backgroundColor: "#f4f4f4" }}
       >
         <span
           style={{
@@ -350,7 +433,7 @@ function RankProgress() {
             fontSize: "10px",
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: "#94A3B8",
+            color: "#8d8d8d",
             fontWeight: 600,
           }}
         >
@@ -364,14 +447,14 @@ function RankProgress() {
           const afterPct  = Math.min(it.after / maxRank, 1) * 100;
           return (
             <Reveal key={it.keyword} delay={i * 80}>
-              <li className="py-3" style={{ borderBottom: i < items.length - 1 ? "1px solid #E2E8F0" : "none" }}>
+              <li className="py-3" style={{ borderBottom: i < items.length - 1 ? "1px solid #e0e0e0" : "none" }}>
                 <div className="flex items-center justify-between mb-2">
                   <span
                     className="truncate"
                     style={{
                       fontFamily: "var(--font-sans)",
                       fontSize: "13px",
-                      color: "#1E2A3A",
+                      color: "#161616",
                       fontWeight: 500,
                     }}
                   >
@@ -382,7 +465,7 @@ function RankProgress() {
                     style={{
                       fontFamily: "var(--font-mono)",
                       fontSize: "11px",
-                      color: "#16A34A",
+                      color: "#24a148",
                       fontWeight: 600,
                     }}
                   >
@@ -391,7 +474,7 @@ function RankProgress() {
                 </div>
                 <div
                   className="relative"
-                  style={{ height: "6px", backgroundColor: "#E2E8F0", borderRadius: "3px", overflow: "hidden" }}
+                  style={{ height: "6px", backgroundColor: "#e0e0e0", borderRadius: "3px", overflow: "hidden" }}
                 >
                   <div
                     style={{
@@ -400,7 +483,7 @@ function RankProgress() {
                       top: 0,
                       height: "100%",
                       width: `${100 - afterPct}%`,
-                      backgroundColor: "#2563EB",
+                      backgroundColor: "#0f62fe",
                       borderRadius: "3px",
                       transition: "width 800ms ease",
                     }}
@@ -412,7 +495,7 @@ function RankProgress() {
                       top: 0,
                       height: "100%",
                       width: "2px",
-                      backgroundColor: "#94A3B8",
+                      backgroundColor: "#8d8d8d",
                     }}
                   />
                 </div>
@@ -427,44 +510,29 @@ function RankProgress() {
 
 function FinalBand() {
   return (
-    <section style={{ backgroundColor: "#FFFFFF" }}>
+    <section style={{ backgroundColor: "#f4f4f4" }}>
       <div className="max-w-[920px] mx-auto px-4 md:px-8 py-20 md:py-24 text-center">
-        <Reveal>
-          <p
-            style={{
-              color: "#94A3B8",
-              fontFamily: "var(--font-mono)",
-              fontSize: "11px",
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              fontWeight: 500,
-              marginBottom: "16px",
-            }}
-          >
-            Best for
-          </p>
-        </Reveal>
         <Reveal delay={60}>
           <p
             className="mx-auto max-w-[720px]"
             style={{
-              color: "#1E2A3A",
+              color: "#161616",
               fontFamily: "var(--font-display)",
               fontSize: "clamp(22px, 2.4vw, 30px)",
               fontWeight: 500,
               lineHeight: 1.35,
             }}
           >
-            Operators with multiple properties or markets who rely on organic traffic. Pairs with the managed ads module so organic volume and paid conversions show up in the same report.
+            Best for operators with multiple properties or markets who rely on organic traffic. Pairs with the managed ads module so organic volume and paid conversions show up in the same report.
           </p>
         </Reveal>
         <Reveal delay={140}>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/onboarding" className="btn-primary">
-              Book a demo
+            <Link href="/sign-up" className="btn-primary">
+              Request pilot
             </Link>
-            <Link href="/demo" className="btn-secondary">
-              See it live
+            <Link href="/onboarding" className="btn-secondary">
+              Book a demo
             </Link>
           </div>
         </Reveal>
