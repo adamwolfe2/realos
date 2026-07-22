@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import Link from "next/link";
 import {
   motion,
   AnimatePresence,
@@ -8,75 +9,104 @@ import {
   useMotionValueEvent,
   useReducedMotion,
 } from "framer-motion";
-import { ProductFrame } from "./product-frame";
+import {
+  Gauge,
+  LayoutDashboard,
+  Users,
+  Eye,
+  MessageSquare,
+  Sparkles,
+  CheckCircle2,
+  Fingerprint,
+  CalendarCheck,
+  type LucideIcon,
+} from "lucide-react";
 import { SectionShell, LabelChip } from "./section-shell";
-import { Atmosphere } from "./atmosphere";
-import { WalkthroughShell, APP_BG, BORDER, BRAND, INK, MUTED, FAINT } from "./walkthrough/shell";
-import { ScreenBriefing } from "./walkthrough/screen-briefing";
-import { ScreenDashboard } from "./walkthrough/screen-dashboard";
-import { ScreenLeads } from "./walkthrough/screen-leads";
-import { ScreenVisitors } from "./walkthrough/screen-visitors";
-import { ScreenChatbot } from "./walkthrough/screen-chatbot";
+import { VignetteCard } from "./vignette-card";
 import { MobileScreen } from "./walkthrough/mobile-screens";
+import { INK, MUTED, FAINT, BORDER, BRAND } from "./walkthrough/shell";
 
 // ---------------------------------------------------------------------------
-// ProductHeroShot — [02] The system behind it. A TAB-DRIVEN product tour
-// (round-2 redirect): the pinned portal frame advances through five real
-// portal screens as you scroll. The left sidebar highlight moves like a
-// click, the content pane crossfades, and each beat HOLDS on a scroll
-// plateau long enough to read a takeaway popup modal.
+// ProductHeroShot — [02] The dashboard your team actually opens. Juicebox
+// "how it works" pattern (final structural change): a horizontal TAB STRIP
+// over a split layout. LEFT = a saturated brand panel with a focused, readable
+// CROP of that portal screen + one overlapping detail card; RIGHT = a label
+// chip, the takeaway headline, a short body, and (last beat only) the CTA.
 //
-// Beats: Briefing -> Dashboard -> Leads -> Visitors -> Chatbot. Screens are
-// static marketing replicas of the live portal (components/home/walkthrough),
-// seeded with one internally-consistent week of demo data.
-//
-// Reduced-motion / mobile / short viewport: normal flow, five stacked screen
-// cards each with its takeaway as a static caption (mk-tour-wrap -> auto).
+// Desktop: pinned runway, scroll advances the active tab (panel + text
+// crossfade); tabs are clickable (jump the scroll). Mobile / reduced-motion /
+// short viewport: unpinned stacked beats, the tab label static above each,
+// reusing the compact mobile screen cards as the crops. Real tablist a11y.
 // ---------------------------------------------------------------------------
+
+const HATCH =
+  "repeating-linear-gradient(45deg, #eef1f8 0, #eef1f8 1px, transparent 1px, transparent 7px)";
+const PANEL_TEXTURE =
+  "repeating-linear-gradient(45deg, rgba(255,255,255,0.14) 0, rgba(255,255,255,0.14) 1px, transparent 1px, transparent 9px)";
+
+type Vignette = { icon: LucideIcon; title: string; meta: string };
 
 type Beat = {
   id: string;
-  url: string;
-  screen: React.ComponentType;
-  takeaway: string;
+  tab: string;
+  icon: LucideIcon;
+  chip: string;
+  headline: string;
+  body: string;
+  vignette: Vignette;
 };
 
 const BEATS: Beat[] = [
   {
     id: "briefing",
-    url: "app.leasestack.co/briefing",
-    screen: ScreenBriefing,
-    takeaway: "The Monday report writes itself. Three actions, ranked by revenue impact.",
+    tab: "Briefing",
+    icon: Gauge,
+    chip: "Monday, 7 AM",
+    headline: "Your Monday brief writes itself.",
+    body: "Every Monday the week that mattered lands in one place: what is ahead of pace, what has gone soft, and three actions ranked by revenue impact. Read it over coffee, act before your first call.",
+    vignette: { icon: Sparkles, title: "3 actions ready", meta: "Ranked by revenue" },
   },
   {
     id: "dashboard",
-    url: "app.leasestack.co/portal",
-    screen: ScreenDashboard,
-    takeaway: "No more guessing the channel. Every lead, tour, and lease traced to its source.",
+    tab: "Dashboard",
+    icon: LayoutDashboard,
+    chip: "Attribution",
+    headline: "Every lead, tour, and lease, attributed to source.",
+    body: "One dashboard ties spend to signed leases, not impressions. Watch the funnel from visitor to lease and see exactly which channel earned the outcome, in real time.",
+    vignette: { icon: CheckCircle2, title: "Attributed", meta: "Source to signed lease" },
   },
   {
     id: "leads",
-    url: "app.leasestack.co/leads",
-    screen: ScreenLeads,
-    takeaway: "Nothing slips through. 42 leads scored with source, budget, and next step.",
+    tab: "Leads",
+    icon: Users,
+    chip: "Pipeline",
+    headline: "42 scored leads, with the next step already written.",
+    body: "Source, budget, and the move that matters on every lead. The pipeline ranks who to call first, so nothing ages out and nothing slips.",
+    vignette: { icon: CheckCircle2, title: "Lead signed", meta: "Google Ads · $68 CPL" },
   },
   {
     id: "visitors",
-    url: "app.leasestack.co/visitors",
-    screen: ScreenVisitors,
-    takeaway: "312 visitors who never filled out a form, named and scored by intent.",
+    tab: "Visitors",
+    icon: Eye,
+    chip: "No form needed",
+    headline: "312 anonymous visitors, identified with intent.",
+    body: "The pixel resolves a meaningful share of your traffic to a name and email, with the pages they viewed, then routes them to your CRM and ad audiences automatically.",
+    vignette: { icon: Fingerprint, title: "Visitor identified", meta: "Anonymous, now named" },
   },
   {
     id: "chatbot",
-    url: "app.leasestack.co/chatbot",
-    screen: ScreenChatbot,
-    takeaway: "12 leads captured overnight, while the office was closed.",
+    tab: "Chatbot",
+    icon: MessageSquare,
+    chip: "After hours",
+    headline: "12 leads captured overnight, while the office was closed.",
+    body: "The assistant answers from your real unit data, books tours, and sends floor plans at 2am. Hot leads are waiting for your team by morning.",
+    vignette: { icon: CalendarCheck, title: "Tour booked", meta: "Sat 11:00 AM" },
   },
 ];
 
 function Intro() {
   return (
-    <>
+    <div className="max-w-[720px]">
       <LabelChip>Operator portal</LabelChip>
       <h2
         className="mt-4"
@@ -93,57 +123,153 @@ function Intro() {
       </h2>
       <p
         className="mt-3"
-        style={{ color: MUTED, fontFamily: "var(--font-sans)", fontSize: 17, lineHeight: 1.6, maxWidth: 540 }}
+        style={{ color: MUTED, fontFamily: "var(--font-sans)", fontSize: 17, lineHeight: 1.6, maxWidth: 560 }}
       >
-        Scroll through it screen by screen. This is the real product,
-        seeded with one live-shaped week of data.
+        Five surfaces, one login. Scroll through the week: the brief, the
+        numbers, the pipeline, the named visitors, and the overnight bookings.
       </p>
-    </>
+    </div>
   );
 }
 
-function TakeawayModal({ beat }: { beat: number }) {
+function BeatPanel({ beat }: { beat: number }) {
+  const v = BEATS[beat].vignette;
   return (
-    <div className="absolute z-20 pointer-events-none" style={{ right: -6, bottom: -18, maxWidth: 300 }}>
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={beat}
-          initial={{ opacity: 0, y: 16, scale: 0.96 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 8, scale: 0.98 }}
-          transition={{ type: "spring", stiffness: 210, damping: 22 }}
-          className="relative"
+    <div
+      className="relative overflow-hidden flex items-center justify-center"
+      style={{
+        backgroundColor: BRAND,
+        backgroundImage: PANEL_TEXTURE,
+        minHeight: 400,
+        padding: 26,
+      }}
+    >
+      <div className="relative w-full" style={{ maxWidth: 540 }}>
+        <div
+          className="md:max-h-[380px]"
           style={{
-            backgroundColor: "#FFFFFF",
-            border: `1px solid ${BORDER}`,
             borderRadius: 4,
-            padding: "13px 15px",
-            boxShadow: "0 1px 2px rgba(22,22,22,0.06), 0 22px 44px -16px rgba(22,22,22,0.30)",
+            overflow: "hidden",
+            boxShadow: "0 1px 2px rgba(22,22,22,0.08), 0 26px 52px -22px rgba(8,26,74,0.5)",
           }}
         >
-          {/* Arrow pointing up-left into the screen. */}
-          <span
-            aria-hidden
-            style={{
-              position: "absolute",
-              top: -5,
-              left: 22,
-              width: 10,
-              height: 10,
-              backgroundColor: "#FFFFFF",
-              borderLeft: `1px solid ${BORDER}`,
-              borderTop: `1px solid ${BORDER}`,
-              transform: "rotate(45deg)",
+          <MobileScreen beat={beat} />
+        </div>
+        <VignetteCard
+          icon={v.icon}
+          title={v.title}
+          meta={v.meta}
+          play={beat}
+          className="absolute right-3 bottom-3 w-[236px] max-w-[70%]"
+        />
+      </div>
+    </div>
+  );
+}
+
+function BeatText({ beat, showCta }: { beat: number; showCta: boolean }) {
+  const b = BEATS[beat];
+  return (
+    <div className="px-6 md:px-8 py-8 md:py-0 flex flex-col justify-center">
+      <LabelChip>{b.chip}</LabelChip>
+      <h3
+        className="mt-4"
+        style={{
+          color: INK,
+          fontFamily: "var(--font-sans)",
+          fontSize: "clamp(24px, 2.6vw, 32px)",
+          fontWeight: 500,
+          lineHeight: 1.18,
+          letterSpacing: "-0.02em",
+        }}
+      >
+        {b.headline}
+      </h3>
+      <p
+        className="mt-4"
+        style={{ color: MUTED, fontFamily: "var(--font-sans)", fontSize: 16.5, lineHeight: 1.6, maxWidth: 440 }}
+      >
+        {b.body}
+      </p>
+      {showCta ? (
+        <div className="mt-6">
+          <Link href="/sign-up" className="btn-primary" style={{ display: "inline-flex" }}>
+            Request pilot
+          </Link>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function TabStrip({
+  active,
+  onSelect,
+}: {
+  active: number;
+  onSelect: (i: number, focus?: boolean) => void;
+}) {
+  const refs = useRef<Array<HTMLButtonElement | null>>([]);
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    let next = active;
+    if (e.key === "ArrowRight") next = (active + 1) % BEATS.length;
+    else if (e.key === "ArrowLeft") next = (active - 1 + BEATS.length) % BEATS.length;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = BEATS.length - 1;
+    else return;
+    e.preventDefault();
+    onSelect(next, true);
+  };
+  return (
+    <div
+      role="tablist"
+      aria-label="Portal walkthrough"
+      onKeyDown={onKeyDown}
+      className="flex overflow-x-auto"
+      style={{ backgroundImage: HATCH, borderBottom: `1px solid ${BORDER}` }}
+    >
+      {BEATS.map((b, i) => {
+        const on = i === active;
+        const Icon = b.icon;
+        return (
+          <button
+            key={b.id}
+            ref={(el) => {
+              refs.current[i] = el;
             }}
-          />
-          <p style={{ fontFamily: "var(--font-mono)", fontSize: 9.5, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: BRAND }}>
-            Takeaway
-          </p>
-          <p className="mt-1.5" style={{ fontFamily: "var(--font-sans)", fontSize: 13.5, fontWeight: 500, color: INK, lineHeight: 1.4 }}>
-            {BEATS[beat].takeaway}
-          </p>
-        </motion.div>
-      </AnimatePresence>
+            role="tab"
+            id={`tab-${b.id}`}
+            aria-selected={on}
+            aria-controls="tour-panel"
+            tabIndex={on ? 0 : -1}
+            onClick={() => onSelect(i)}
+            className="relative flex items-center gap-2 flex-shrink-0"
+            style={{
+              padding: "13px 18px",
+              backgroundColor: on ? "#FFFFFF" : "transparent",
+              cursor: "pointer",
+              borderRight: i < BEATS.length - 1 ? `1px solid ${BORDER}` : "none",
+            }}
+          >
+            {on ? (
+              <span aria-hidden className="absolute left-0 right-0 top-0" style={{ height: 2, backgroundColor: BRAND }} />
+            ) : null}
+            <Icon className="w-4 h-4" strokeWidth={1.8} aria-hidden style={{ color: on ? BRAND : "#8d8d8d" }} />
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11.5,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                color: on ? INK : "#5a647d",
+                fontWeight: on ? 600 : 500,
+              }}
+            >
+              {b.tab}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -151,73 +277,72 @@ function TakeawayModal({ beat }: { beat: number }) {
 function Pinned() {
   const wrapRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: wrapRef, offset: ["start start", "end end"] });
-  const [beat, setBeat] = useState(0);
+  const reduce = useReducedMotion();
+  const [active, setActive] = useState(0);
+  const [dir, setDir] = useState(1);
+
   useMotionValueEvent(scrollYProgress, "change", (p) => {
     const b = p < 0.19 ? 0 : p < 0.39 ? 1 : p < 0.59 ? 2 : p < 0.79 ? 3 : 4;
-    setBeat((prev) => (prev === b ? prev : b));
+    setActive((prev) => {
+      if (prev === b) return prev;
+      setDir(b > prev ? 1 : -1);
+      return b;
+    });
   });
 
-  const Screen = BEATS[beat].screen;
+  const onSelect = useCallback((i: number) => {
+    setDir(i > active ? 1 : -1);
+    setActive(i);
+    const el = wrapRef.current;
+    if (!el) return;
+    const rectTop = el.getBoundingClientRect().top + window.scrollY;
+    const scrollable = el.offsetHeight - window.innerHeight;
+    const y = rectTop + ((i + 0.5) / BEATS.length) * Math.max(0, scrollable);
+    window.scrollTo({ top: y, behavior: "smooth" });
+  }, [active]);
+
+  const slide = reduce ? 0 : 24;
 
   return (
     <div ref={wrapRef} className="hidden md:block relative mk-tour-wrap">
       <div className="mk-pin">
-        <div className="w-full py-10">
-          <Intro />
-
-          <div className="relative mt-6">
-            <div
-              aria-hidden
-              className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
-              style={{
-                bottom: -26,
-                width: "78%",
-                height: 130,
-                background: "radial-gradient(50% 50% at 50% 50%, rgba(15,98,254,0.12), transparent 70%)",
-                filter: "blur(26px)",
-              }}
-            />
-            <ProductFrame
-              url={BEATS[beat].url}
-              contentStyle={{ backgroundColor: APP_BG, overflow: "hidden" }}
-            >
-              <WalkthroughShell active={beat}>
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={beat}
-                    className="h-full"
-                    initial={{ opacity: 0, x: 14 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -14 }}
-                    transition={{ duration: 0.3, ease: [0.2, 0.7, 0.2, 1] }}
-                  >
-                    <Screen />
-                  </motion.div>
-                </AnimatePresence>
-              </WalkthroughShell>
-            </ProductFrame>
-
-            <TakeawayModal beat={beat} />
+        <div className="w-full py-8">
+          {/* Hairline-framed section: tab strip + split panel. */}
+          <div style={{ border: `1px solid ${BORDER}`, borderRadius: 2, overflow: "hidden" }}>
+            <TabStrip active={active} onSelect={onSelect} />
+            <div id="tour-panel" role="tabpanel" aria-labelledby={`tab-${BEATS[active].id}`}>
+              <AnimatePresence mode="wait" custom={dir}>
+                <motion.div
+                  key={active}
+                  custom={dir}
+                  initial={reduce ? false : { opacity: 0, x: dir * slide }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={reduce ? undefined : { opacity: 0, x: -dir * slide }}
+                  transition={{ duration: 0.3, ease: [0.2, 0.7, 0.2, 1] }}
+                  className="grid grid-cols-1 lg:grid-cols-[55%_45%]"
+                >
+                  <BeatPanel beat={active} />
+                  <BeatText beat={active} showCta={active === BEATS.length - 1} />
+                </motion.div>
+              </AnimatePresence>
+            </div>
           </div>
 
-          {/* Tour progress: five dots for the five screens. */}
-          <div className="mt-8 flex items-center gap-2">
+          {/* Progress rail. */}
+          <div className="mt-6 flex items-center gap-2">
             {BEATS.map((b, i) => (
               <span
                 key={b.id}
                 aria-hidden
                 style={{
-                  width: i === beat ? 20 : 7,
+                  width: i === active ? 20 : 7,
                   height: 4,
                   borderRadius: 2,
-                  backgroundColor: i === beat ? BRAND : "#d9dff0",
+                  backgroundColor: i === active ? BRAND : "#d9dff0",
                   transition: "all 300ms ease",
                 }}
               />
             ))}
-            <span className="ml-2" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: FAINT, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              {BEATS[beat].id}
-            </span>
           </div>
         </div>
       </div>
@@ -227,39 +352,22 @@ function Pinned() {
 
 function NormalFlow({ className }: { className?: string }) {
   return (
-    <div className={`py-16 ${className ?? ""}`}>
-      <Intro />
-      <div className="mt-8 flex flex-col gap-10">
-        {BEATS.map((b, i) => {
-          const Screen = b.screen;
-          return (
-            <div key={b.id}>
-              <div
-                className="mb-3 inline-flex items-start gap-2"
-                style={{ maxWidth: 520 }}
-              >
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: BRAND }}>
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <span style={{ fontFamily: "var(--font-sans)", fontSize: 14.5, fontWeight: 500, color: INK, lineHeight: 1.4 }}>
-                  {b.takeaway}
-                </span>
-              </div>
-              {/* Mobile: purpose-built compact card (no cropped desktop UI). */}
-              <div className="md:hidden">
-                <MobileScreen beat={i} />
-              </div>
-              {/* Desktop fallback (reduced-motion / short viewport): full shell. */}
-              <div className="hidden md:block">
-                <ProductFrame url={b.url} contentStyle={{ backgroundColor: APP_BG, overflow: "hidden" }}>
-                  <WalkthroughShell active={i}>
-                    <Screen />
-                  </WalkthroughShell>
-                </ProductFrame>
-              </div>
+    <div className={`py-4 ${className ?? ""}`}>
+      <div className="flex flex-col gap-8">
+        {BEATS.map((b, i) => (
+          <div key={b.id} style={{ border: `1px solid ${BORDER}`, borderRadius: 2, overflow: "hidden" }}>
+            {/* Static tab label (the strip becomes a per-beat heading). */}
+            <div className="flex items-center gap-2" style={{ padding: "11px 16px", backgroundImage: HATCH, borderBottom: `1px solid ${BORDER}` }}>
+              <span aria-hidden style={{ width: 2, height: 14, backgroundColor: BRAND }} />
+              <b.icon className="w-4 h-4" strokeWidth={1.8} aria-hidden style={{ color: BRAND }} />
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 11.5, letterSpacing: "0.06em", textTransform: "uppercase", color: INK, fontWeight: 600 }}>
+                {b.tab}
+              </span>
             </div>
-          );
-        })}
+            <BeatPanel beat={i} />
+            <BeatText beat={i} showCta={i === BEATS.length - 1} />
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -267,9 +375,6 @@ function NormalFlow({ className }: { className?: string }) {
 
 export function ProductHeroShot() {
   const reduce = useReducedMotion();
-  // Only pin on tall viewports. On short ones the tour would show just its
-  // first screen (screens swap, they don't stack), so fall back to the
-  // stacked NormalFlow which shows all five. Defaults to tall for SSR.
   const [tall, setTall] = useState(true);
   useEffect(() => {
     const m = window.matchMedia("(min-height: 760px)");
@@ -282,9 +387,9 @@ export function ProductHeroShot() {
 
   return (
     <SectionShell id="product-tour" index="02" indexLabel="The system catches it" bg="#FFFFFF">
-      <div className="relative">
-        <Atmosphere />
-        <div className="relative">
+      <div className="py-16 md:py-20">
+        <Intro />
+        <div className="mt-8">
           {pinned ? <Pinned /> : null}
           <NormalFlow className={pinned ? "md:hidden" : "block"} />
         </div>
