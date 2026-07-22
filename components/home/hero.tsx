@@ -40,9 +40,9 @@ export function Hero() {
               maxWidth: "900px",
             }}
           >
-            See which ad produced
+            Every lead, tour, and lease.
             <br />
-            <Mark>the signed lease.</Mark>
+            <Mark>One system.</Mark>
           </h1>
 
           <p
@@ -55,9 +55,8 @@ export function Hero() {
               maxWidth: "560px",
             }}
           >
-            One dashboard tracks every lead, tour, and lease back to the ad,
-            page, or chat that produced it. No more guessing where the
-            budget went.
+            LeaseStack unifies marketing, leasing, and reputation data into one
+            dashboard your whole team runs on.
           </p>
 
           <div className="mt-8 flex flex-col items-stretch sm:flex-row sm:items-center justify-center gap-3">

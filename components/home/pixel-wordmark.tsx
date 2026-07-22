@@ -1,56 +1,43 @@
 "use client";
 
-import React, { useRef } from "react";
-import { motion, useInView, useReducedMotion } from "framer-motion";
+import React from "react";
+import { useReducedMotion } from "framer-motion";
 
 // ---------------------------------------------------------------------------
-// PixelWordmark — the footer's pixel wordmark (mobile-pass footer redo).
-// Adam: the old two-tone checkerboard read like a quilt. This is a FINE
-// mosaic grain (~10px tiles, 1px gaps) so the letters read as type first,
-// pixels second: a mostly-solid brand-blue fill with subtle, deterministic
-// tonal variation. Rendered as an SVG <pattern> (not thousands of DOM rects),
-// revealed once with a left-to-right mask wipe on scroll, then a single
-// signal-pulse sweep. Light theme; SVG scales to width, zero overflow.
+// PixelWordmark — the footer statement wordmark (attempt 3). Adam: no fill, no
+// tiles, no mosaic. OUTLINE-ONLY giant "LeaseStack" in a very light blue-gray
+// hairline on white, with a slow, low-contrast SHIMMER: a soft highlight glint
+// travels along the stroke left-to-right (~7s loop, Adam explicitly wants the
+// loop). It should whisper.
+//
+// The glint is an animated gradient stroke: a base hairline outline plus an
+// overlaid outline whose stroke is a moving linear gradient (transparent ->
+// brighter -> transparent), translated across via SMIL. Non-scaling stroke
+// keeps the hairline crisp at any width; SVG scales to width (zero overflow).
+// Reduced-motion: static outline only, no shimmer.
 // ---------------------------------------------------------------------------
 
 const VW = 1000;
 const VH = 165;
-const TILE = 10; // 9px fill + 1px gap = fine grain
 
-function frac(n: number): number {
-  return n - Math.floor(n);
-}
-
-// Deterministic per-cell tone: ~20% of tiles get a subtly different blue so
-// the fill reads as premium texture, never a repeating pattern.
-function tileColor(tx: number, ty: number): string {
-  const h = frac(Math.sin(tx * 12.9898 + ty * 78.233) * 43758.5453);
-  if (h < 0.05) return "#dbe7ff";
-  if (h < 0.13) return "#2d79ff";
-  if (h < 0.2) return "#0043ce";
-  return "#0f62fe";
-}
-
-// 5x5 pattern cell (50x50 user units) of 10px tiles.
-const CELL: Array<{ x: number; y: number; fill: string }> = (() => {
-  const out: Array<{ x: number; y: number; fill: string }> = [];
-  for (let ty = 0; ty < 5; ty++) {
-    for (let tx = 0; tx < 5; tx++) {
-      out.push({ x: tx * TILE, y: ty * TILE, fill: tileColor(tx, ty) });
-    }
-  }
-  return out;
-})();
+const TEXT_PROPS = {
+  x: VW / 2,
+  y: 132,
+  textAnchor: "middle" as const,
+  fill: "none",
+  style: {
+    fontFamily: "var(--font-display)",
+    fontSize: 150,
+    fontWeight: 700,
+    letterSpacing: "-0.04em",
+  },
+};
 
 export function PixelWordmark() {
-  const ref = useRef<SVGSVGElement>(null);
-  const inView = useInView(ref, { once: true, margin: "0px 0px -10% 0px" });
   const reduce = useReducedMotion();
-  const on = reduce ? true : inView;
 
   return (
     <svg
-      ref={ref}
       viewBox={`0 0 ${VW} ${VH}`}
       width="100%"
       role="img"
@@ -58,48 +45,51 @@ export function PixelWordmark() {
       style={{ display: "block", overflow: "hidden" }}
     >
       <defs>
-        <mask id="ls-wordmask">
-          <rect x="0" y="0" width={VW} height={VH} fill="black" />
-          <text
-            x={VW / 2}
-            y={132}
-            textAnchor="middle"
-            fill="#ffffff"
-            style={{ fontFamily: "var(--font-display)", fontSize: 150, fontWeight: 700, letterSpacing: "-0.04em" }}
-          >
-            LeaseStack
-          </text>
-        </mask>
-
-        <pattern id="ls-mosaic" width="50" height="50" patternUnits="userSpaceOnUse">
-          {/* Gap/grid colour: a hair darker than brand so the 1px seams read. */}
-          <rect width="50" height="50" fill="#0a4fc8" />
-          {CELL.map((c, i) => (
-            <rect key={i} x={c.x} y={c.y} width="9" height="9" fill={c.fill} />
-          ))}
-        </pattern>
-
-        <linearGradient id="ls-wordsweep" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="rgba(255,255,255,0)" />
-          <stop offset="50%" stopColor="rgba(255,255,255,0.5)" />
-          <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+        {/* A narrow bright band that slides across, transparent elsewhere. */}
+        <linearGradient
+          id="ls-shimmer"
+          gradientUnits="objectBoundingBox"
+          x1="0"
+          y1="0"
+          x2="0.28"
+          y2="0"
+        >
+          <stop offset="0" stopColor="rgba(148,173,214,0)" />
+          <stop offset="0.5" stopColor="rgba(120,150,205,0.85)" />
+          <stop offset="1" stopColor="rgba(148,173,214,0)" />
+          {!reduce ? (
+            <animateTransform
+              attributeName="gradientTransform"
+              type="translate"
+              from="-0.35 0"
+              to="1.05 0"
+              dur="7s"
+              repeatCount="indefinite"
+            />
+          ) : null}
         </linearGradient>
       </defs>
 
-      {/* Mosaic fill, masked to the wordmark, revealed left-to-right once. */}
-      <motion.g
-        initial={reduce ? false : { clipPath: "inset(0 100% 0 0)" }}
-        animate={{ clipPath: on ? "inset(0 0% 0 0)" : "inset(0 100% 0 0)" }}
-        transition={reduce ? { duration: 0 } : { duration: 0.9, ease: [0.2, 0.8, 0.3, 1] }}
+      {/* Base whisper outline. */}
+      <text
+        {...TEXT_PROPS}
+        stroke="#c9d4ea"
+        strokeWidth={1.25}
+        vectorEffect="non-scaling-stroke"
       >
-        <rect x="0" y="0" width={VW} height={VH} fill="url(#ls-mosaic)" mask="url(#ls-wordmask)" />
-      </motion.g>
+        LeaseStack
+      </text>
 
-      {/* One signal-pulse sweep after the reveal (masked to the letters). */}
-      {on && !reduce ? (
-        <g mask="url(#ls-wordmask)">
-          <rect className="mk-wordsweep" x={-VW * 0.35} y="0" width={VW * 0.35} height={VH} fill="url(#ls-wordsweep)" />
-        </g>
+      {/* Shimmer outline — only the moving band is visible. */}
+      {!reduce ? (
+        <text
+          {...TEXT_PROPS}
+          stroke="url(#ls-shimmer)"
+          strokeWidth={1.5}
+          vectorEffect="non-scaling-stroke"
+        >
+          LeaseStack
+        </text>
       ) : null}
     </svg>
   );

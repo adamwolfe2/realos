@@ -116,16 +116,6 @@ export function PlatformFooter() {
           signal-pulse sweeps it once. On-brand with the Visitor Pixel motif;
           scales to width (no overflow). See components/home/pixel-wordmark. */}
       <div className="max-w-[1240px] mx-auto px-4 md:px-8 pb-6">
-        <div className="flex justify-center mb-3" aria-hidden>
-          <span className="grid grid-cols-3 gap-[3px]">
-            {[1, 1, 1, 1, 0, 1, 0, 1, 0].map((n, i) => (
-              <span
-                key={i}
-                style={{ width: 6, height: 6, borderRadius: 1, backgroundColor: n ? "#0f62fe" : "transparent" }}
-              />
-            ))}
-          </span>
-        </div>
         <PixelWordmark />
       </div>
     </footer>

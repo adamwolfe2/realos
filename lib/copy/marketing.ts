@@ -26,10 +26,10 @@ export const MARKETING = {
     // getBookDemoHref() / BookDemoLink.
     hero: {
       eyebrow: "Leasing marketing dashboard",
-      headline: "See which ad produced the signed lease.",
-      highlight: "the signed lease.",
+      headline: "Every lead, tour, and lease. One system.",
+      highlight: "One system.",
       subhead:
-        "One dashboard tracks every visitor, lead, tour, and application through to the signed lease, so you always know which dollar produced it.",
+        "LeaseStack unifies marketing, leasing, and reputation data into one dashboard your whole team runs on.",
       primaryCta: "Request pilot",
       primaryHref: "/sign-up",
       secondaryCta: "Book a demo",
