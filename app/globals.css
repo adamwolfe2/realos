@@ -396,6 +396,18 @@ body {
   .mk-pillpop { animation: none; }
 }
 
+/* Footer wordmark: one signal-pulse sweep after the tiles assemble. */
+@keyframes mk-wordsweep {
+  from { transform: translateX(0); }
+  to { transform: translateX(400%); }
+}
+.mk-wordsweep {
+  animation: mk-wordsweep 1000ms ease-in-out 1150ms 1 both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mk-wordsweep { animation: none; opacity: 0; }
+}
+
 .btn-white {
   display: inline-flex; align-items: center; justify-content: center;
   min-height: 44px; padding: 10px 20px;

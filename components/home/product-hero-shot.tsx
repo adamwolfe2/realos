@@ -17,6 +17,7 @@ import { ScreenDashboard } from "./walkthrough/screen-dashboard";
 import { ScreenLeads } from "./walkthrough/screen-leads";
 import { ScreenVisitors } from "./walkthrough/screen-visitors";
 import { ScreenChatbot } from "./walkthrough/screen-chatbot";
+import { MobileScreen } from "./walkthrough/mobile-screens";
 
 // ---------------------------------------------------------------------------
 // ProductHeroShot — [02] The system behind it. A TAB-DRIVEN product tour
@@ -244,13 +245,18 @@ function NormalFlow({ className }: { className?: string }) {
                   {b.takeaway}
                 </span>
               </div>
-              <ProductFrame url={b.url} contentStyle={{ backgroundColor: APP_BG, overflow: "hidden" }}>
-                <div style={{ minWidth: 780 }}>
+              {/* Mobile: purpose-built compact card (no cropped desktop UI). */}
+              <div className="md:hidden">
+                <MobileScreen beat={i} />
+              </div>
+              {/* Desktop fallback (reduced-motion / short viewport): full shell. */}
+              <div className="hidden md:block">
+                <ProductFrame url={b.url} contentStyle={{ backgroundColor: APP_BG, overflow: "hidden" }}>
                   <WalkthroughShell active={i}>
                     <Screen />
                   </WalkthroughShell>
-                </div>
-              </ProductFrame>
+                </ProductFrame>
+              </div>
             </div>
           );
         })}

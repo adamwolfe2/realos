@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BRAND_NAME } from "@/lib/brand";
 import { getBookDemoHref, isExternalBookDemoHref } from "@/lib/marketing/book-demo";
+import { PixelWordmark } from "@/components/home/pixel-wordmark";
 
 // Flat, organized footer: wordmark + one link column per group, single
 // hairline divider from the content above, plain copyright row below.
@@ -110,34 +111,22 @@ export function PlatformFooter() {
         </div>
       </div>
 
-      {/* Statement wordmark (juicebox layer J3): giant outlined "LeaseStack"
-          clipped at the bottom, light only, with a couple of pixel-motif
-          square accents. Decorative; the real wordmark sits above. */}
-      <div
-        aria-hidden
-        className="relative overflow-hidden"
-        style={{ height: "clamp(72px, 11vw, 168px)" }}
-      >
-        <span
-          style={{
-            position: "absolute",
-            left: "50%",
-            bottom: 0,
-            // Tighter crop: only the descender line dips below the fold, so the
-            // wordmark reads deliberate, not awkwardly cut (punch-list item 13).
-            transform: "translate(-50%, 12%)",
-            WebkitTextStroke: "1px #c9d4ea",
-            color: "transparent",
-            fontFamily: "var(--font-display)",
-            fontWeight: 700,
-            fontSize: "13vw",
-            lineHeight: 1,
-            whiteSpace: "nowrap",
-            letterSpacing: "-0.03em",
-          }}
-        >
-          LeaseStack
-        </span>
+      {/* Statement wordmark: a pixel-assembly moment. A field of brand square
+          tiles converges into the "LeaseStack" wordmark on scroll, then a
+          signal-pulse sweeps it once. On-brand with the Visitor Pixel motif;
+          scales to width (no overflow). See components/home/pixel-wordmark. */}
+      <div className="max-w-[1240px] mx-auto px-4 md:px-8 pb-6">
+        <div className="flex justify-center mb-3" aria-hidden>
+          <span className="grid grid-cols-3 gap-[3px]">
+            {[1, 1, 1, 1, 0, 1, 0, 1, 0].map((n, i) => (
+              <span
+                key={i}
+                style={{ width: 6, height: 6, borderRadius: 1, backgroundColor: n ? "#0f62fe" : "transparent" }}
+              />
+            ))}
+          </span>
+        </div>
+        <PixelWordmark />
       </div>
     </footer>
   );
