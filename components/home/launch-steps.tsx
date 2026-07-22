@@ -42,8 +42,8 @@ export function LaunchSteps() {
   const on = reduce ? true : inView;
 
   return (
-    <SectionShell index="05" indexLabel="Rollout" bg="#FFFFFF">
-      <div className="py-24">
+    <SectionShell index="06" indexLabel="Your first 14 days" bg="#FFFFFF">
+      <div className="py-24 md:py-28">
         <div className="max-w-[720px]">
           <LabelChip>Implementation</LabelChip>
           <h2

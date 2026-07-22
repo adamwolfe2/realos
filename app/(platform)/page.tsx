@@ -1,35 +1,35 @@
 import type { Metadata } from "next";
 import { MARKETING } from "@/lib/copy/marketing";
 import { BRAND_NAME } from "@/lib/brand";
+import { HomeThreadFrame } from "@/components/home/home-thread-frame";
 import { Hero } from "@/components/home/hero";
 import { TrustBand } from "@/components/home/trust-band";
 import { ProductHeroShot } from "@/components/home/product-hero-shot";
 import { Pillars } from "@/components/home/pillars";
+import { SurfacesStrip } from "@/components/home/surfaces-strip";
 import { ReportFeature } from "@/components/home/report-feature";
 import { LaunchSteps } from "@/components/home/launch-steps";
 import { Faq } from "@/components/home/faq";
 import { Proof } from "@/components/home/proof";
 import { PixelSeam } from "@/components/home/pixel-seam";
 
-// Homepage — product-forward rebuild with the signature motif language
-// (blueprint + depth + cool + motion + juicebox passes, 2026-07-21). Light
-// only, single brand-blue accent. A ruled spec-sheet frame runs the length of
-// the page; sections carry a systematic mono index voice [01]..[06].
+// Homepage — one story, one thread (blueprint + depth + cool + motion +
+// juicebox + cohesion passes, 2026-07-21). A single blue thread draws down
+// the left content rule with scroll; each [0N] index node fills as the story
+// arrives. We follow one renter (Priya V.) through the system:
 //
-//   [01] Capture     signal-flow hero (the one animated loop)
-//        TrustBand   four proof stats, count-up
+//   [01] A renter shows intent      signal-flow hero (the one animated loop)
+//        TrustBand                  four proof stats, count-up
 //   ~pixel seam~
-//   [02] The system  the real portal in a physical frame
-//   [03] Pillars      tabbed product switcher (attribution / ai / reputation)
+//   [02] The system catches it      pinned dashboard scrollytelling
+//   [03] It works every lead        tabbed switcher (attribution / pixel / ai / rep+seo)
+//   [04] Every surface, one login   product surfaces + integration row
+//   ~pixel seam (blue)~
+//   [05] Monday, it's in your report weekly report on a blue texture panel
+//   [06] Your first 14 days         rollout, thread-branch line-draw
+//   [07] Then you decide            FAQ
 //   ~pixel seam~
-//   [04] The report   weekly report on a blue texture panel
-//   [05] Rollout      three-step implementation, drawing line
-//   [06] FAQ          objections
-//   ~pixel seam~
-//        Proof       final CTA
-//
-// Retired (files kept on disk): PilotCta, Comparison, CapabilitiesRail,
-// ProductTourSection, LaunchJourney, TrustStrip.
+//        Proof                      final CTA (thread terminus above the button)
 
 export const metadata: Metadata = {
   title: `${BRAND_NAME}: Leasing intelligence for real estate operators`,
@@ -38,18 +38,19 @@ export const metadata: Metadata = {
 
 export default function PlatformHome() {
   return (
-    <div style={{ backgroundColor: "#FFFFFF", color: "#161616" }}>
+    <HomeThreadFrame>
       <Hero />
       <PixelSeam color="#dbe3f2" />
       <TrustBand />
       <ProductHeroShot />
       <Pillars />
+      <SurfacesStrip />
       <PixelSeam color="#dbe6ff" />
       <ReportFeature />
       <LaunchSteps />
       <Faq />
       <PixelSeam color="#e6e6e6" />
       <Proof />
-    </div>
+    </HomeThreadFrame>
   );
 }

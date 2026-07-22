@@ -63,8 +63,37 @@ export function Proof() {
           {final.body}
         </p>
 
+        {/* Thread terminus: the story ends at the action. */}
+        <div className="mt-10 flex justify-center" aria-hidden>
+          <span
+            className="inline-flex items-center justify-center"
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: "50%",
+              backgroundColor: "#FFFFFF",
+              border: "1.5px solid rgba(15,98,254,0.35)",
+              boxShadow: "0 0 0 5px rgba(15,98,254,0.06)",
+            }}
+          >
+            <span className="grid grid-cols-3 gap-[2px]">
+              {[1, 1, 1, 1, 0, 1, 0, 1, 0].map((on, i) => (
+                <span
+                  key={i}
+                  style={{
+                    width: 3,
+                    height: 3,
+                    borderRadius: 1,
+                    backgroundColor: on ? "#0f62fe" : "transparent",
+                  }}
+                />
+              ))}
+            </span>
+          </span>
+        </div>
+
         {/* CTAs — stacked-then-inline, centered as a group */}
-        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+        <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
           <span
             className="relative inline-flex overflow-hidden"
             style={{ borderRadius: "2px" }}

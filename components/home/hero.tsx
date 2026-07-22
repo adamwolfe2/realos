@@ -14,7 +14,7 @@ import { SignalFlow } from "./signal-flow";
 
 export function Hero() {
   return (
-    <SectionShell index="01" indexLabel="Capture" bg="#FFFFFF">
+    <SectionShell index="01" indexLabel="A renter shows intent" bg="#FFFFFF">
       <div className="relative pt-16 md:pt-20 pb-14 md:pb-16">
         {/* Atmosphere + faint blue wash behind the diagram. */}
         <div

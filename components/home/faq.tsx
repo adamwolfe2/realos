@@ -18,8 +18,8 @@ export function Faq() {
   // two-column scan. Header + intro centered above, questions list
   // capped at max-w-3xl and centered below.
   return (
-    <SectionShell index="06" indexLabel="FAQ" bg="#FFFFFF">
-      <div className="max-w-[800px] mx-auto py-20 md:py-24">
+    <SectionShell index="07" indexLabel="Then you decide" bg="#FFFFFF">
+      <div className="max-w-[800px] mx-auto py-24 md:py-28">
         {/* Centered header block */}
         <div className="text-center mb-10 md:mb-12">
           <p className="eyebrow mb-3">{faq.eyebrow}</p>

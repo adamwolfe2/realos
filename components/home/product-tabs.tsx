@@ -12,11 +12,13 @@ import {
   BarChart3,
   MessageSquare,
   Star,
+  Fingerprint,
   CheckCircle2,
   CalendarCheck,
   type LucideIcon,
 } from "lucide-react";
 import { AttributionBreakdown } from "@/components/platform/artifacts/attribution-breakdown";
+import { VisitorStream } from "@/components/platform/artifacts/visitor-stream";
 import { ChatDemo } from "@/components/platform/artifacts/chat-demo";
 import { ReputationFeed } from "@/components/platform/artifacts/reputation-feed";
 import { LabelChip } from "./section-shell";
@@ -63,13 +65,29 @@ const TABS: Tab[] = [
     vignette: {
       icon: CheckCircle2,
       title: "Lead signed",
-      meta: "Google Ads · $48 CPL",
+      meta: "Priya V. · Google Ads, $68 CPL",
     },
     chip: "Capture to lease",
     headline: "Every dollar of ad spend, tracked to a signed lease.",
     body: "Google and Meta spend mapped to leases, not impressions. Blended cost per lease and campaign ROI, continuously.",
     linkLabel: "See it live",
     href: "/features/ads",
+  },
+  {
+    id: "visitor-pixel",
+    tab: "Visitor pixel",
+    icon: Fingerprint,
+    artifact: VisitorStream,
+    vignette: {
+      icon: Fingerprint,
+      title: "Visitor identified",
+      meta: "Anonymous, now Priya V.",
+    },
+    chip: "No form needed",
+    headline: "Names on the traffic that never fills a form.",
+    body: "A meaningful share of your anonymous visitors, resolved to a name and email in real time, routed to your CRM and audiences.",
+    linkLabel: "See the pixel firing",
+    href: "/features/pixel",
   },
   {
     id: "ai-leasing",
@@ -90,7 +108,7 @@ const TABS: Tab[] = [
   },
   {
     id: "reputation",
-    tab: "Reputation",
+    tab: "Reputation & SEO",
     icon: Star,
     artifact: ReputationFeed,
     vignette: {
@@ -99,8 +117,8 @@ const TABS: Tab[] = [
       meta: "Google review · 5 stars",
     },
     chip: "Every site",
-    headline: "Your reputation, watched across every site that matters.",
-    body: "Google, Reddit, Yelp, and the open web in one feed, sentiment-classified, with one-click reply. Reputation and AI-search visibility in one place.",
+    headline: "Your reputation and AI-search visibility, watched.",
+    body: "Google, Reddit, Yelp, and the open web in one feed, sentiment-classified. Plus the property pages AI search actually cites.",
     linkLabel: "See a live audit",
     href: "/audit",
   },

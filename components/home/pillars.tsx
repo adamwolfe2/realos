@@ -13,7 +13,7 @@ import { ProductTabs } from "./product-tabs";
 
 export function Pillars() {
   return (
-    <SectionShell index="03" indexLabel="Pillars" bg="#FFFFFF">
+    <SectionShell index="03" indexLabel="It works every lead" bg="#FFFFFF">
       <div className="py-24 md:py-28">
         <div className="max-w-[720px]">
           <LabelChip>The platform</LabelChip>

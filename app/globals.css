@@ -365,6 +365,19 @@ body {
 }
 .btn-secondary:active { transform: scale(0.98); }
 
+/* ── Cohesion pass: pinned scrollytelling ([02]) ─────────────────────────── */
+/* The dashboard beat pins on tall viewports; on short viewports (<760px) it
+   degrades to normal flow so nothing is trapped behind the pin. */
+.mk-pin-wrap { height: 220vh; }
+.mk-pin {
+  position: sticky; top: 0; min-height: 100vh;
+  display: flex; align-items: center;
+}
+@media (max-height: 759px) {
+  .mk-pin-wrap { height: auto; }
+  .mk-pin { position: static; min-height: 0; display: block; }
+}
+
 .btn-white {
   display: inline-flex; align-items: center; justify-content: center;
   min-height: 44px; padding: 10px 20px;

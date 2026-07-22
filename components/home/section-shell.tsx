@@ -1,4 +1,5 @@
 import React from "react";
+import { IndexLabel } from "./index-label";
 
 // ---------------------------------------------------------------------------
 // SectionShell — the ruled page frame (juicebox layer J1). Frames every major
@@ -39,37 +40,17 @@ export function SectionShell({
     >
       <div className="relative max-w-[1240px] mx-auto px-4 md:px-8">
         {vRules ? (
-          <>
-            <span
-              aria-hidden
-              className="hidden md:block absolute inset-y-0 left-4 md:left-8"
-              style={{ borderLeft: "1px dashed #d9dff0" }}
-            />
-            <span
-              aria-hidden
-              className="hidden md:block absolute inset-y-0 right-4 md:right-8"
-              style={{ borderRight: "1px dashed #d9dff0" }}
-            />
-          </>
+          // Right rule stays a static dashed spec-line; the LEFT rule is owned
+          // by the page thread (see PageThread) so it can draw with scroll.
+          <span
+            aria-hidden
+            className="hidden md:block absolute inset-y-0 right-4 md:right-8"
+            style={{ borderRight: "1px dashed #d9dff0" }}
+          />
         ) : null}
 
         {index ? (
-          <span
-            className="absolute left-4 md:left-8"
-            style={{
-              top: -9,
-              paddingLeft: 6,
-              paddingRight: 10,
-              backgroundColor: bg,
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              letterSpacing: "0.08em",
-              color: "#6f7a94",
-              textTransform: "uppercase",
-            }}
-          >
-            [{index}] {indexLabel}
-          </span>
+          <IndexLabel index={index} label={indexLabel ?? ""} bg={bg} />
         ) : null}
 
         <div className={contentClassName}>{children}</div>
