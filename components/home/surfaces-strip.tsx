@@ -188,7 +188,7 @@ export function SurfacesStrip() {
               letterSpacing: "-0.015em",
             }}
           >
-            Plugs into the stack you already run.
+            Works with the PMS, ads, and reviews you already have.
           </p>
           <p
             className="mt-2"

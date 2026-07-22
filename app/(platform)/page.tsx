@@ -27,7 +27,7 @@ import { PixelSeam } from "@/components/home/pixel-seam";
 //        Proof            final CTA
 
 export const metadata: Metadata = {
-  title: `${BRAND_NAME}: Leasing intelligence for real estate operators`,
+  title: `${BRAND_NAME}: See which ad produced the signed lease`,
   description: MARKETING.home.hero.subhead,
 };
 

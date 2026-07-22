@@ -7,7 +7,7 @@ import { BRAND_NAME } from "@/lib/brand";
 export const metadata: Metadata = {
   title: `Keyword trends · ${BRAND_NAME}`,
   description:
-    "Track how your property ranks for the queries your prospects actually search — week over week, across every keyword that matters in your market.",
+    "Track how your property ranks for the queries your prospects actually search, week over week, across every keyword that matters in your market.",
 };
 
 export default function KeywordTrendsFeaturePage() {

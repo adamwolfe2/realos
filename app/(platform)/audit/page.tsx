@@ -48,7 +48,8 @@ export default function AuditFormPage() {
               style={{ color: "#4B5563" }}
             >
               Answer 8 quick questions. We scan your SEO, reputation, and
-              accessibility, then return a personalized action plan.
+              accessibility, then return a personalized action plan. Free,
+              no card.
             </p>
             <div className="mt-6 sm:mt-8 text-left">
               <DigitalScoreQuiz />

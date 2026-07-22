@@ -383,8 +383,8 @@ export default function FeaturesIndexPage() {
               lineHeight: 1.55,
             }}
           >
-            Start with a free audit against your live domain. Real
-            intelligence back inside an hour, no call required.
+            Start with a free audit against your live domain. See what we
+            find inside an hour, no call required.
           </p>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <Link href="/sign-up" className="btn-primary">

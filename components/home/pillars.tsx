@@ -41,7 +41,7 @@ export function Pillars() {
             }}
           >
             Marketing spend, after-hours leads, and public reputation, each
-            tracked on the same platform your team already logs into.
+            tracked in the same dashboard your team already logs into.
           </p>
         </div>
 

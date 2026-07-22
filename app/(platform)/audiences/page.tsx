@@ -5,17 +5,17 @@ import { AudienceSyncStream } from "@/components/platform/artifacts/audience-syn
 export const metadata: Metadata = {
   title: "Audience Sync for residential and commercial real estate",
   description:
-    "Connect verified audience segments to every ad account, CRM, and webhook. Built for residential brokers and commercial owners who want one place to push live buyer and seller intent.",
+    "Push verified buyer, seller, and lease-intent segments to every ad account, CRM, and webhook from one place. Built for residential brokers and commercial owners.",
 };
 
 export default function AudiencesPage() {
   return (
     <VerticalLanding
       eyebrow="Audience Sync"
-      headline="The audience layer for real estate."
-      headlineAccent="One place to push every buyer and seller."
+      headline="Every buyer and seller segment,"
+      headlineAccent="pushed from one place."
       subhead="Verified buyer, seller, and lease-intent segments synced to your ad accounts, CRM, or any webhook. Book a demo."
-      caption="Managed onboarding. Live segments and live destinations. Built for residential and commercial."
+      caption="Managed onboarding. Live segments, live destinations. Built for residential and commercial."
       artifact={<AudienceSyncStream />}
       ctaHref="/onboarding"
       painsHeading="The three things operators ask us first."

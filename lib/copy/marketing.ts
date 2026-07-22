@@ -10,7 +10,7 @@
 
 export const MARKETING = {
   brand: {
-    tagline: "Leasing intelligence for real estate operators.",
+    tagline: "See which ad produced the signed lease.",
   },
   home: {
     // Norman brief v2 (2026-06-01) — repositioning pass.
@@ -25,11 +25,11 @@ export const MARKETING = {
     // flows into onboarding + trial) and "Book a demo" -> Cal.com via
     // getBookDemoHref() / BookDemoLink.
     hero: {
-      eyebrow: "Data intelligence platform",
-      headline: "Take control of your online leasing.",
-      highlight: "online leasing.",
+      eyebrow: "Leasing marketing dashboard",
+      headline: "See which ad produced the signed lease.",
+      highlight: "the signed lease.",
       subhead:
-        "Centralize your tech stack on one platform with one login. Month-to-month contract flexibility.",
+        "One dashboard tracks every visitor, lead, tour, and application through to the signed lease, so you always know which dollar produced it.",
       primaryCta: "Request pilot",
       primaryHref: "/sign-up",
       secondaryCta: "Book a demo",
@@ -38,11 +38,11 @@ export const MARKETING = {
     },
     comparison: {
       eyebrow: "Why operators switch",
-      headline: "Your current setup vs. full visibility.",
+      headline: "Your current setup vs. one dashboard.",
       body:
-        "Your digital infrastructure is your second most valuable asset after the physical real estate itself: online brand, reputation, website function, and traffic-to-lease conversion. Today it lives across five vendors and a spreadsheet. LeaseStack platform brings it under one dashboard.",
+        "Your leasing marketing (the website, the ads, the after-hours chatbot, your reviews) runs across five vendors and a spreadsheet today. LeaseStack ties all of it to one dashboard that shows which one actually produced a signed lease.",
       leftLabel: "Your current setup",
-      rightLabel: "Full visibility with LeaseStack platform",
+      rightLabel: "One dashboard with LeaseStack",
       rows: [
         {
           old: "Six vendors. Six invoices. A spreadsheet to tie it together.",
@@ -78,7 +78,7 @@ export const MARKETING = {
       portalLabel: "Operator dashboard",
       portalHref: "#product-tour",
       portalCaption:
-        "The dashboard your team logs into. Real tenant insights, real signals.",
+        "The dashboard your team logs into. Real leads, real tours, real leases.",
     },
     faq: {
       eyebrow: "Common questions",
@@ -121,7 +121,7 @@ export const MARKETING = {
     final: {
       heading: "Free pilot. No commitment.",
       body:
-        "We connect to your existing stack, show you what we see in your dashboard, and you decide if it's useful. No deck. No sales pitch.",
+        "Every week you wait, a competitor answers the leads you miss. Free 14-day pilot, no card required. We connect to your PMS and ad accounts and show you exactly what we see, then you decide. Keep everything if you walk away.",
       primaryCta: "Request pilot",
       primaryHref: "/sign-up",
     },
@@ -150,7 +150,7 @@ export const MARKETING = {
           day: "Thursday",
           time: "By EOD",
           title: "Optimization push.",
-          body: "Triggered by AI signals + operator input.",
+          body: "Triggered by performance data and your input.",
           outcome: "48-hour turnaround",
         },
         {

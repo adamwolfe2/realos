@@ -20,8 +20,8 @@ type Step = { marker: string; title: string; body: string };
 const STEPS: Step[] = [
   {
     marker: "Day 1",
-    title: "Connect your stack",
-    body: "A 30-minute intake call. We connect to your existing PMS, domain, and ad accounts, then lock the build plan.",
+    title: "Connect your PMS and ad accounts",
+    body: "A 30-minute intake call, no card required. We connect to your existing PMS, domain, and ad accounts, then lock the build plan.",
   },
   {
     marker: "By day 30",
@@ -31,7 +31,7 @@ const STEPS: Step[] = [
   {
     marker: "Month to month",
     title: "Decide on your terms",
-    body: "No long contract. Watch the cost per lease drop, read the reports, and keep going only if it earns its place.",
+    body: "No long contract, cancel anytime. Keep going only if it earns its place, and if you ever leave, you keep the site and every lead.",
   },
 ];
 

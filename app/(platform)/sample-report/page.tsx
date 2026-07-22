@@ -242,7 +242,8 @@ export default function SampleReportPage() {
             }}
           >
             Start with a free audit. It runs against your live domain and
-            comes back with the same kind of intelligence inside an hour.
+            comes back with the same kind of read inside an hour, no card
+            required.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link

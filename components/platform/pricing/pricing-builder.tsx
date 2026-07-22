@@ -114,8 +114,9 @@ export function PricingBuilder({
               lineHeight: 1.55,
             }}
           >
-            Every property starts with the base platform. Turn on the
-            features it needs and the total updates as you go.
+            Every property starts with the base platform. Turn on what it
+            needs now, the total updates as you go, and you can flip any
+            feature on or off later without calling anyone.
           </p>
         </div>
 
@@ -160,8 +161,9 @@ export function PricingBuilder({
                     lineHeight: 1.55,
                   }}
                 >
-                  Property dashboard, lead inbox, website, and team, the
-                  foundation every feature plugs into.
+                  Stop reconciling six vendor logins. One dashboard for
+                  leads, the site, and the team, every feature below plugs
+                  straight into it.
                 </p>
               </div>
               <div className="text-right shrink-0">

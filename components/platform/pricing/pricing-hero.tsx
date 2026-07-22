@@ -66,8 +66,8 @@ export function PricingHero() {
             className="mt-5 text-lg md:text-xl leading-relaxed mx-auto max-w-2xl"
             style={{ color: "#525252" }}
           >
-            Turn on only the features each property needs, then start a
-            14-day free trial. No card required.
+            See it running on your own property's data first. Pick the
+            features it needs, start a 14-day free trial, no card required.
           </p>
 
           {/* Primary + secondary CTA — the one canonical buying pair on

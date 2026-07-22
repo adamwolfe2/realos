@@ -7,7 +7,7 @@ import { PortfolioOccupancy } from "@/components/platform/artifacts/portfolio-oc
 export const metadata: Metadata = {
   title: "Residential leasing intelligence",
   description:
-    "Leasing intelligence platform for residential operators across student housing, multifamily, senior living, build-to-rent, and single-family rental.",
+    "One leasing-marketing engine for residential operators across student housing, multifamily, senior living, build-to-rent, and single-family rental.",
 };
 
 const CARDS = [

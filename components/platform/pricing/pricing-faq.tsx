@@ -39,6 +39,10 @@ const FAQS: Array<{ q: string; a: string }> = [
     q: "Are there any contracts?",
     a: "No long-term contracts. Every plan is month-to-month and flexible, managed from the Stripe billing portal in two clicks. Annual prepay is optional and saves you about 17 percent. Enterprise can opt into annual or multi-year terms if it helps the asset-side accounting, but it is never required.",
   },
+  {
+    q: "What happens if I leave?",
+    a: "You keep everything. Cancel from the billing portal and we hand you a static export of your site plus your full lead history, no transition fee, no negotiation. The domain was never ours to hold hostage; it stayed in your name the whole time. You walk away owning more than you started with.",
+  },
 ];
 
 export function PricingFaq() {

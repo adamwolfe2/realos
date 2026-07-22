@@ -30,7 +30,8 @@ export default function DemoPage() {
             className="mt-6 text-sm md:text-base leading-relaxed max-w-2xl"
             style={{ color: "var(--text-body)" }}
           >
-            Click around the actual portal. Same surfaces your team will use day-to-day.
+            Click around the actual dashboard: the same funnel, briefing, and
+            chatbot your team would use day-to-day. No sign-up to look.
           </p>
         </div>
       </header>
@@ -60,7 +61,7 @@ export default function DemoPage() {
               style={{ color: "var(--text-body)" }}
             >
               Open this page on a desktop to click through the live walkthrough,
-              or book a demo and we'll share screen with you.
+              or book a demo and we'll walk you through it, no cost, no card.
             </p>
             <Link
               href="/onboarding"
@@ -95,7 +96,8 @@ export default function DemoPage() {
               className="text-sm leading-relaxed mt-3 max-w-xl mx-auto"
               style={{ color: "#393939" }}
             >
-              30 minutes on Zoom. We audit your current marketing stack live on the call.
+              30 minutes on Zoom. We look at your property's marketing live
+              on the call. No cost, no card, no deck.
             </p>
             <Link
               href="/onboarding"

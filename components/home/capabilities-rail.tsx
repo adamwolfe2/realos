@@ -192,7 +192,7 @@ export function CapabilitiesRail() {
               lineHeight: 1.55,
             }}
           >
-            Each one optimizes a specific area of your current digital infrastructure. All six run on your existing PMS, domain, and team. No replatform. No rip-and-replace.
+            Each one solves a specific problem in how you market and lease. All six run on your existing PMS, domain, and team. No replatform. No rip-and-replace.
           </p>
         </div>
 

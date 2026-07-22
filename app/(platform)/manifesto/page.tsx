@@ -13,7 +13,7 @@ import { Reveal } from "@/components/platform/reveal";
 // ---------------------------------------------------------------------------
 
 const DESCRIPTION =
-  "Most operators are running a multi-billion-dollar industry on a patchwork of disconnected tools. We are opening the black box. A note from the team on why we built LeaseStack and who we are building it with.";
+  "Most operators are running a multi-billion-dollar industry on a patchwork of disconnected tools with no honest read on what any dollar produced. A note from the team on why we built LeaseStack, and the Berkeley lease-up we built it on.";
 
 export const metadata: Metadata = {
   title: `Why we built ${BRAND_NAME}`,
@@ -125,8 +125,8 @@ function FounderCard() {
   const facts = [
     { k: "Written",    v: "April 2026" },
     { k: "Read time",  v: "6 minutes" },
-    { k: "Stage",      v: "Live on a real lease-up" },
-    { k: "Partners",   v: "Operators in the room as we ship" },
+    { k: "Stage",      v: "Live at Telegraph Commons, Berkeley" },
+    { k: "Partners",   v: "SG Real Estate, in the room as we ship" },
     { k: "Pricing",    v: "Free pilot. Month-to-month after." },
   ];
   return (
@@ -265,16 +265,18 @@ function Body() {
           <Heading>The shift</Heading>
 
           <p>
-            We are moving from agency black boxes to operator intelligence.
-            That sentence sounds simple. The implications are not.
+            We are moving the read on your marketing out of the agency's
+            hands and into yours. That sentence sounds simple. The
+            implications are not.
           </p>
           <p>
             Most operators are running a multi-billion-dollar industry on a
-            patchwork of disconnected tools. Every dollar spent, every lead
-            captured, every signal: none of it is visible, analyzed, or acted
-            on at the asset level. The agency keeps the data. The PDF gets
-            mailed monthly. Nobody on the asset side can answer the question
-            that matters, which is whether the spend produced a lease.
+            patchwork of disconnected tools. Every dollar spent and every
+            lead captured sits in a different login, none of it visible,
+            analyzed, or acted on at the asset level. The agency keeps the
+            data. The PDF gets mailed monthly. Nobody on the asset side can
+            answer the question that matters, which is whether the spend
+            produced a lease.
           </p>
           <p>
             We have lived this from the asset-management seat. One of us ran a
@@ -292,10 +294,10 @@ function Body() {
           <p>
             That means a real read on every channel, in one place, run on the
             data you already produce. It means pacing-vs-plan that pulls from
-            the PMS, not the agency&apos;s creative deck. It means a written
-            recommendation on what to do next, in operator language, because
-            an operator wrote it. It means the asset-management seat finally
-            owns the marketing read.
+            the PMS, not the agency&apos;s creative deck. It means an AI
+            briefing every Monday with three specific actions, written in
+            plain operator language, not agency jargon. It means the
+            asset-management seat finally owns the marketing read.
           </p>
 
           <Heading>The principles</Heading>
@@ -317,8 +319,8 @@ function Body() {
           <p>
             <strong>Three: recommendations, not just reports.</strong> A
             dashboard that does not tell you what to do next is overhead.
-            Every weekly note ends with one specific recommendation, written
-            by an operator.
+            Every Monday briefing ends with three specific actions, ranked
+            by dollar impact, in plain operator language.
           </p>
           <p>
             <strong>Four: AI made digestible, never intimidating.</strong>
@@ -340,20 +342,21 @@ function Body() {
             With operators, on a live property, in public.
           </p>
           <p>
-            LeaseStack is running today on a real lease-up with real pacing.
-            We did not build a demo and
-            then sell it to someone. We built the version we wanted on our
-            own asset, and we are opening it to other operators one at a
+            LeaseStack is running today on Telegraph Commons, a
+            student-housing lease-up in Berkeley, built alongside the team
+            at SG Real Estate. We did not build a demo and then sell it to
+            someone. We built the version we wanted on a real asset, with
+            real pacing, and we are opening it to other operators one at a
             time. The pilot is free for that exact reason: we want operators
-            to see the data first, before anyone asks for a card.
+            to see their own data first, before anyone asks for a card.
           </p>
           <p>
             If you have run a lease-up and felt the gap between what your
             spend is doing and what your agency says it is doing, we want
             you in the room. The first cohort of operators is shaping the
-            roadmap. The product gets sharper every time an operator sits
-            with it and points at the part that does not match how they
-            think.
+            roadmap alongside SG Real Estate. The product gets sharper every
+            time an operator sits with it and points at the part that does
+            not match how they think.
           </p>
           <p
             style={{
@@ -427,9 +430,10 @@ function Close() {
             lineHeight: 1.6,
           }}
         >
-          The pilot is free. We connect to your stack, show you what your data
-          actually says, and write you one operator-to-operator recommendation.
-          If it lands, we keep going. If it does not, you close the tab.
+          The pilot is free, no card. We connect to your marketing, show you
+          your own numbers in a real dashboard, and write you one
+          operator-to-operator recommendation. If it lands, we keep going.
+          If it does not, you close the tab and keep what you saw.
         </p>
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link href="/sign-up" className="btn-primary">

@@ -6,7 +6,7 @@ import { Reveal } from "@/components/platform/reveal";
 
 export const metadata: Metadata = {
   title: `About ${BRAND_NAME}`,
-  description: `${BRAND_NAME} is the leasing intelligence platform for real estate operators. Built by operators who managed lease-ups, not vendors who sold software to them.`,
+  description: `${BRAND_NAME} is the dashboard that runs a property's online leasing and shows which ad produced every signed lease. Built alongside a real Berkeley student-housing operator, not sold to one.`,
 };
 
 export default function AboutPage() {
@@ -16,12 +16,12 @@ export default function AboutPage() {
         eyebrow={`About ${BRAND_NAME}`}
         headline="Built by operators,"
         headlineAccent="not by vendors."
-        subhead={`${BRAND_NAME} is the leasing intelligence platform that tells real estate operators exactly what their digital marketing is doing, and exactly what to do about it. Live today on a real lease-up.`}
+        subhead={`${BRAND_NAME} is the dashboard that runs a rental property's online leasing and shows which ad produced every signed lease. Built with operators running a live lease-up at Telegraph Commons in Berkeley.`}
         ctas={[
           { label: "Request pilot", href: "/sign-up" },
           { label: "Read the manifesto", href: "/manifesto", variant: "secondary" },
         ]}
-        caption="Live on a real lease-up · built operator-to-operator"
+        caption="Built with SG Real Estate at Telegraph Commons, Berkeley"
         artifact={<StackCard />}
       />
 
@@ -30,10 +30,10 @@ export default function AboutPage() {
         headline="It started as a tool we wished existed during our own lease-ups."
         body="One of us spent Monday mornings as an asset manager running a real lease-up by hand. Every feature in LeaseStack is the answer to a question he asked himself on a Monday morning and could not find the data for. The other half is engineering, out of AM Collective."
         bullets={[
-          "Every dollar spent, every lead captured, every signal: none of it was visible, analyzed, or acted on.",
+          "Every dollar spent and every lead captured: none of it was visible, analyzed, or acted on.",
           "Most operators are running a multi-billion-dollar industry on a patchwork of disconnected tools.",
-          "We built the version of the playbook we wanted on our own assets.",
-          "One read on every channel. One recommendation. One operator-written weekly note.",
+          "We built the tool we wanted for our own lease-up, then opened it to other operators.",
+          "One dashboard for every channel, and a Monday briefing with three specific actions.",
         ]}
         side="right"
         artifact={<VendorCollapse />}
@@ -69,11 +69,11 @@ export default function AboutPage() {
                 maxWidth: "620px",
               }}
             >
-              LeaseStack is running today on a real lease-up with real pacing.
-              We are building it operator-to-operator, with the people who
-              will actually use it sitting in the room as we ship. That is
-              why every recommendation reads like it came from someone who
-              has done the job, because it did.
+              LeaseStack runs today on a real lease-up: Telegraph Commons, a
+              student-housing property in Berkeley, built alongside the team
+              at SG Real Estate. We ship with the people who will use it
+              sitting in the room. That is why every recommendation reads
+              like it came from someone who has done the job, because it did.
             </p>
           </Reveal>
         </div>
@@ -98,8 +98,8 @@ export default function AboutPage() {
                 letterSpacing: "-0.008em",
               }}
             >
-              Your leasing data should finally work for you. Every dollar spent,
-              every lead captured, every signal: visible, analyzed, and acted on.
+              See every dollar spent and every lead captured, tied to whether
+              it produced a signed lease. Visible, analyzed, and acted on.
               That is the whole product.
             </p>
           </Reveal>
@@ -126,7 +126,7 @@ function StackCard() {
     { k: "Visitor pixel",     v: "Names on anonymous traffic" },
     { k: "AI chatbot",        v: "Trained on your listings" },
     { k: "Reputation scan",   v: "Google, Reddit, open web" },
-    { k: "Weekly note",       v: "Operator-written, Monday 7am" },
+    { k: "AI briefing",       v: "3 actions, every Monday 7am" },
   ];
   return (
     <div
@@ -225,7 +225,7 @@ function StackCard() {
             fontWeight: 500,
           }}
         >
-          One read on every channel · one operator-written weekly note
+          One read on every channel · one AI briefing every Monday
         </span>
       </div>
     </div>
@@ -333,7 +333,7 @@ function VendorCollapse() {
 
 function OperatorWeek() {
   const rows = [
-    { day: "Mon 7am",   item: "Weekly note arrives in your inbox",   tag: "auto"   },
+    { day: "Mon 7am",   item: "AI briefing arrives in your inbox",   tag: "auto"   },
     { day: "Mon 9am",   item: "10-minute read with your team",        tag: "you"    },
     { day: "Tue",       item: "Apply the one recommendation",         tag: "you"    },
     { day: "Ongoing",   item: "Channel reads run in the background",  tag: "us"     },

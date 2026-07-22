@@ -45,25 +45,25 @@ const PRODUCT_LINKS: ProductLink[] = [
   {
     href: "/features",
     label: "Core LeaseStack Platform",
-    description: "Every feature in one place",
+    description: "One dashboard instead of six vendor logins",
     icon: LayoutGrid,
   },
   {
     href: "/features/chatbot",
     label: "AI Chatbot",
-    description: "Books tours 24/7, hot leads by morning",
+    description: "Answers renters and books the tour at 2am",
     icon: MessageSquare,
   },
   {
     href: "/features/pixel",
     label: "Visitor Identification",
-    description: "Names + emails on anonymous traffic",
+    description: "Puts a name and email on the traffic your forms miss",
     icon: Fingerprint,
   },
   {
     href: "/features/seo-aeo",
     label: "SEO / AEO",
-    description: "Rank on Google, get cited by ChatGPT",
+    description: "Ranks on Google, gets cited when renters ask ChatGPT",
     icon: Search,
   },
   {
@@ -72,13 +72,13 @@ const PRODUCT_LINKS: ProductLink[] = [
     // lead-magnet quiz), which read as a broken menu link.
     href: "/features#reputation",
     label: "Reputation Management",
-    description: "Every public mention, every 90 days",
+    description: "Every review and mention, one inbox, one-click reply",
     icon: Star,
   },
   {
     href: "/features/keyword-trends",
     label: "Keyword Trends",
-    description: "Weekly rank tracking, every query",
+    description: "See where you rank before a renter searches",
     icon: TrendingUp,
   },
   {

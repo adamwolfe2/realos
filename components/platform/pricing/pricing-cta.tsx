@@ -38,8 +38,10 @@ export function PricingCta() {
             maxWidth: "620px",
           }}
         >
-          Connect your existing stack, pick the features each property needs,
-          and go live on a 14-day free trial. No card required.
+          Every week you wait is another week of after-hours leads touring
+          the competitor who answered at 2am. Connect your stack, pick what
+          each property needs, and go live on a 14-day free trial. No card
+          required.
         </p>
 
         <div className="mt-9 flex flex-col sm:flex-row gap-3 justify-center items-center">

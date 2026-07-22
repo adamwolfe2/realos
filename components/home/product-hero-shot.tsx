@@ -46,31 +46,31 @@ const BEATS: Beat[] = [
     id: "briefing",
     url: "app.leasestack.co/briefing",
     screen: ScreenBriefing,
-    takeaway: "Your Monday brief writes itself. Three actions, ranked by revenue impact.",
+    takeaway: "The Monday report writes itself. Three actions, ranked by revenue impact.",
   },
   {
     id: "dashboard",
     url: "app.leasestack.co/portal",
     screen: ScreenDashboard,
-    takeaway: "Every lead, tour, and lease attributed to source in real time.",
+    takeaway: "No more guessing the channel. Every lead, tour, and lease traced to its source.",
   },
   {
     id: "leads",
     url: "app.leasestack.co/leads",
     screen: ScreenLeads,
-    takeaway: "42 scored leads with source, budget, and next step. Nothing slips.",
+    takeaway: "Nothing slips through. 42 leads scored with source, budget, and next step.",
   },
   {
     id: "visitors",
     url: "app.leasestack.co/visitors",
     screen: ScreenVisitors,
-    takeaway: "312 anonymous website visitors, identified with name and intent.",
+    takeaway: "312 visitors who never filled out a form, named and scored by intent.",
   },
   {
     id: "chatbot",
     url: "app.leasestack.co/chatbot",
     screen: ScreenChatbot,
-    takeaway: "12 leads captured overnight while your office slept.",
+    takeaway: "12 leads captured overnight, while the office was closed.",
   },
 ];
 
@@ -89,14 +89,14 @@ function Intro() {
           letterSpacing: "-0.025em",
         }}
       >
-        The system behind it.
+        The dashboard your team actually opens.
       </h2>
       <p
         className="mt-3"
         style={{ color: MUTED, fontFamily: "var(--font-sans)", fontSize: 17, lineHeight: 1.6, maxWidth: 540 }}
       >
-        Scroll the portal your team runs on, screen by screen. This is the
-        actual product, seeded with one live-shaped week.
+        Scroll through it screen by screen. This is the real product,
+        seeded with one live-shaped week of data.
       </p>
     </>
   );
