@@ -50,6 +50,11 @@ export function FitScale({
           overflow: "hidden",
           display: "flex",
           justifyContent: "center",
+          // flex-start is load-bearing: default `stretch` would size the
+          // inner to THIS container's height, and since this height is
+          // innerH*scale the measurement loop collapses geometrically to 0
+          // whenever scale < 1. Content must own its height.
+          alignItems: "flex-start",
           opacity: scale === null ? 0 : 1,
           transition: "opacity 200ms ease",
         }}
