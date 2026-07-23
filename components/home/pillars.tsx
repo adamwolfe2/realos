@@ -13,7 +13,7 @@ import { CapabilitiesSequence } from "./capabilities-sequence";
 
 export function Pillars() {
   return (
-    <SectionShell index="03" indexLabel="It works every lead" bg="#FFFFFF">
+    <SectionShell bg="#FFFFFF">
       <div className="py-24 md:py-28">
         <div className="max-w-[720px]">
           <LabelChip>The platform</LabelChip>

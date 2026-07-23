@@ -134,7 +134,7 @@ function MiniSurface({ surface }: { surface: Surface }) {
 
 export function SurfacesStrip() {
   return (
-    <SectionShell index="04" indexLabel="Every surface, one login" bg="#FFFFFF">
+    <SectionShell bg="#FFFFFF">
       <div className="py-24 md:py-28">
         <div className="max-w-[720px]">
           <LabelChip>The product</LabelChip>

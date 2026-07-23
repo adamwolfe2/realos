@@ -426,7 +426,7 @@ export function ProductHeroShot() {
   const reduce = useReducedMotion();
 
   return (
-    <SectionShell id="product-tour" index="02" indexLabel="The system catches it" bg="#FFFFFF">
+    <SectionShell id="product-tour" bg="#FFFFFF">
       <div className="py-16 md:py-20">
         <Intro />
         <div className="mt-8 md:mt-10">

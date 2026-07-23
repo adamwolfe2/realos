@@ -23,7 +23,7 @@ const PANEL_TEXTURE =
 
 export function ReportFeature() {
   return (
-    <SectionShell index="05" indexLabel="Monday, it's in your report" bg="#FFFFFF">
+    <SectionShell bg="#FFFFFF">
       <div className="py-24 md:py-28">
         <div
           className="relative overflow-hidden"
