@@ -1,340 +1,280 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import React, { useRef } from "react";
+import { motion, useInView, useReducedMotion } from "framer-motion";
+import {
+  Globe,
+  MessageSquare,
+  Star,
+  Building2,
+  Table2,
+  FileSignature,
+  ArrowDown,
+  type LucideIcon,
+} from "lucide-react";
 import { MARKETING } from "@/lib/copy/marketing";
-import { PerWordCrossfade, MaskRevealUp } from "@/components/ui/animate-text";
+import { MaskRevealUp } from "@/components/ui/animate-text";
+import { GoogleMark } from "@/components/platform/artifacts/brand-logos";
+import { ProductFrame } from "./product-frame";
 
 // ---------------------------------------------------------------------------
-// Comparison — editorial "the shift" section.
-//
-// Was: plain two-column table, no visual signal that one side was better.
-// Now: each row is its own editorial moment. As the row scrolls into view,
-//   - both texts fade in with a per-word reveal
-//   - the LeaseStack ("new") line gets a cobalt underline that draws
-//     left-to-right underneath it (scaleX 0 → 1, origin left, 720ms,
-//     cubic-bezier 0.22, 1, 0.36, 1 — matches the pixel-point/animate-text
-//     signature easing used elsewhere on the site)
-//   - a numeric index pins each row visually
-//   - an arrow glyph in the gutter signals direction of change (old → new)
-//
-// The "current stack" side stays muted and slightly smaller; the LeaseStack
-// side is set bigger, in solid ink, with the animated cobalt underline. The
-// rhythm makes clear which side is the resolution.
+// Comparison — landing v3 item 2. The five text rows are gone; the picture
+// does the arguing. LEFT: the operator's actual today — six disconnected
+// vendor cards, muted, tilted, six-invoices vibe. MIDDLE: the same six
+// sources drawn as flow lines converging into one frame. RIGHT: a mini
+// LeaseStack dashboard — the funnel down to the signed lease and ONE bold
+// outcome line. Total section copy: the headline + that line.
 // ---------------------------------------------------------------------------
 
 const INK = "#161616";
-const MUTED = "#8d8d8d";
+const MUTED = "#6f6f6f";
+const FAINT = "#8d8d8d";
 const ACCENT = "#0f62fe";
 const BORDER = "#e0e0e0";
+const EASE = [0.22, 1, 0.36, 1] as const;
 
-// Drawing ease — matches `cubic-bezier(0.22, 1, 0.36, 1)` from the
-// soft-blur-in / mask-reveal-up specs we already use across the site.
-const EASE_DRAW = [0.22, 1, 0.36, 1] as const;
+type Vendor = {
+  name: string;
+  meta: string;
+  mark: React.ReactNode;
+  // scatter placement (desktop)
+  left: string;
+  top: number;
+  rotate: number;
+};
 
-function useInViewOnce(threshold = 0.4) {
-  const ref = useRef<HTMLLIElement | null>(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    if (typeof IntersectionObserver === "undefined") {
-      setVisible(true);
-      return;
-    }
-
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setVisible(true);
-            io.disconnect();
-            break;
-          }
-        }
-      },
-      { threshold, rootMargin: "0px 0px -10% 0px" },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [threshold]);
-
-  return { ref, visible };
+function LucideMark({ icon: Icon }: { icon: LucideIcon }) {
+  return <Icon className="w-3.5 h-3.5" strokeWidth={1.9} style={{ color: MUTED }} aria-hidden />;
 }
 
-function ComparisonRow({
-  old,
-  next,
-  isFirst,
-}: {
-  old: string;
-  next: string;
-  isFirst: boolean;
-}) {
-  const { ref, visible } = useInViewOnce(0.4);
+const VENDORS: Vendor[] = [
+  { name: "Website vendor", meta: "Login 1 · own invoice", mark: <LucideMark icon={Globe} />, left: "3%", top: 10, rotate: -2.4 },
+  { name: "Google Ads", meta: "Login 2 · own report", mark: <GoogleMark size={14} />, left: "51%", top: 0, rotate: 2 },
+  { name: "Chatbot vendor", meta: "Login 3 · own invoice", mark: <LucideMark icon={MessageSquare} />, left: "8%", top: 118, rotate: 1.6 },
+  { name: "Reviews tool", meta: "Login 4 · own report", mark: <LucideMark icon={Star} />, left: "55%", top: 128, rotate: -1.8 },
+  { name: "ILS listings", meta: "Login 5 · own invoice", mark: <LucideMark icon={Building2} />, left: "1%", top: 232, rotate: 2.2 },
+  { name: "The spreadsheet", meta: "The “integration”", mark: <LucideMark icon={Table2} />, left: "47%", top: 248, rotate: -2.6 },
+];
+
+const FUNNEL = [
+  { label: "Visitors", value: "12,480", w: 100 },
+  { label: "Leads", value: "168", w: 62 },
+  { label: "Tours", value: "31", w: 38 },
+  { label: "Applications", value: "11", w: 22 },
+  { label: "Signed leases", value: "4", w: 12 },
+];
+
+// Scattered "today" cards. Tilted + muted; hover straightens one out — the
+// card wants to be organized.
+function ScatterCards({ on }: { on: boolean }) {
   const reduce = useReducedMotion();
-
   return (
-    <li
-      ref={ref}
-      // Norman bug (2026-05-21 mobile screenshot IMG_9549): the previous
-      // mobile grid `grid-cols-[auto_1fr]` with a `hidden md:flex` arrow
-      // forced "With LeaseStack" copy into the narrow `auto` index
-      // column on row 2, while "Today" copy stayed full-width on row 1,
-      // and the two halves rendered as visually unrelated narrow strips
-      // with the right-hand TODAY column clipping off the viewport.
-      // Mobile is now a single column where Today and With LeaseStack
-      // each take their own row at full width. Desktop 3-column layout
-      // (Today, arrow, WithLeaseStack) unchanged via the md: breakpoint.
-      className="grid grid-cols-1 md:grid-cols-[1fr_28px_1fr] gap-x-4 md:gap-x-8 gap-y-2 py-6 md:py-10 items-start"
-      style={{
-        borderTop: isFirst ? "none" : `1px solid ${BORDER}`,
-      }}
-    >
-      {/* "Current stack" side, muted, slightly smaller. */}
-      <div className="min-w-0">
-        <p
-          className="md:hidden mb-2"
-          style={{
-            color: MUTED,
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            fontWeight: 600,
-          }}
-        >
-          Today
-        </p>
-        <p
-          style={{
-            color: MUTED,
-            fontFamily: "var(--font-sans)",
-            fontSize: "15px",
-            lineHeight: 1.55,
-            letterSpacing: "-0.005em",
-            fontWeight: 400,
-          }}
-        >
-          <PerWordCrossfade trigger={visible} staggerMs={45}>
-            {old}
-          </PerWordCrossfade>
-        </p>
-      </div>
-
-      {/* Gutter arrow, visual signal that the right side resolves the left. */}
-      <div
-        className="hidden md:flex items-start justify-center"
-        aria-hidden="true"
-        style={{ paddingTop: 6 }}
-      >
-        <motion.svg
-          width="20"
-          height="14"
-          viewBox="0 0 20 14"
-          fill="none"
+    <div className="relative mx-auto w-full max-w-[420px]" style={{ height: 330 }}>
+      {VENDORS.map((v, i) => (
+        <motion.div
+          key={v.name}
           initial={false}
           animate={
             reduce
-              ? { opacity: 1, x: 0 }
-              : { opacity: visible ? 1 : 0, x: visible ? 0 : -6 }
+              ? { opacity: 1, y: 0, rotate: v.rotate }
+              : { opacity: on ? 1 : 0, y: on ? 0 : 16, rotate: on ? v.rotate : 0 }
           }
-          transition={{ duration: 0.6, ease: EASE_DRAW, delay: 0.15 }}
-          style={{ display: "block" }}
+          whileHover={reduce ? undefined : { rotate: 0, scale: 1.02 }}
+          transition={{ duration: 0.5, ease: EASE, delay: reduce ? 0 : i * 0.07 }}
+          className="absolute"
+          style={{
+            left: v.left,
+            top: v.top,
+            width: "46%",
+            minWidth: 168,
+            backgroundColor: "#fbfbfb",
+            border: `1px solid ${BORDER}`,
+            borderRadius: 2,
+            padding: "12px 14px",
+            boxShadow: "0 1px 2px rgba(22,22,22,0.05), 0 10px 20px -12px rgba(22,22,22,0.12)",
+          }}
         >
-          <path
-            d="M1 7H18M18 7L12 1M18 7L12 13"
-            stroke={ACCENT}
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </motion.svg>
-      </div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center justify-center flex-shrink-0" style={{ width: 22, height: 22, borderRadius: 2, backgroundColor: "#f0f1f4" }} aria-hidden>
+              {v.mark}
+            </span>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 600, color: "#525252" }}>{v.name}</span>
+          </div>
+          <p className="mt-1.5" style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.05em", textTransform: "uppercase", color: FAINT }}>
+            {v.meta}
+          </p>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
 
-      {/* "With LeaseStack" side, solid ink, bigger, animated cobalt underline. */}
-      <div className="min-w-0">
-        <p
-          className="md:hidden mb-2"
-          style={{
-            color: ACCENT,
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            fontWeight: 700,
-          }}
-        >
-          With LeaseStack
-        </p>
-        <p
-          // Norman 2026-05-21: right column was at 16-18px / weight 600
-          // and wrapped to 2 lines while the left "current stack" copy
-          // sat on 1 line at 15px. Dropped to 15px / weight 600 +
-          // slightly tighter tracking so each row fits on one line at
-          // typical desktop widths. The underline still spans the line
-          // since it's a block-positioned child below.
-          style={{
-            position: "relative",
-            color: INK,
-            fontFamily: "var(--font-sans)",
-            fontSize: "15px",
-            lineHeight: 1.5,
-            letterSpacing: "-0.012em",
-            fontWeight: 600,
-            display: "inline-block",
-          }}
-        >
-          <PerWordCrossfade trigger={visible} staggerMs={55}>
-            {next}
-          </PerWordCrossfade>
-          {/* Animated cobalt underline — draws left-to-right when the row
-              becomes visible. transform-origin: left + scaleX 0→1 keeps
-              the draw motion crisp and GPU-accelerated. */}
-          <motion.span
-            aria-hidden="true"
+// Desktop-only converge lines: six paths flowing into one point, each tipped
+// with the vendor's mark. Draws once on view.
+function FlowLines({ on }: { on: boolean }) {
+  const reduce = useReducedMotion();
+  const ys = [28, 86, 144, 202, 260, 318];
+  return (
+    <div className="relative hidden lg:block" style={{ width: 96, height: 346 }} aria-hidden>
+      <svg width="96" height="346" viewBox="0 0 96 346" fill="none" style={{ position: "absolute", inset: 0 }}>
+        {ys.map((y, i) => (
+          <motion.path
+            key={y}
+            d={`M 14 ${y} C 56 ${y}, 56 173, 94 173`}
+            stroke={ACCENT}
+            strokeOpacity={0.45}
+            strokeWidth={1.5}
             initial={false}
-            animate={{
-              scaleX: reduce ? 1 : visible ? 1 : 0,
-            }}
-            transition={{
-              duration: reduce ? 0 : 0.72,
-              // Delay until the per-word reveal has mostly resolved, so
-              // the underline lands as the words settle into place.
-              delay: reduce ? 0 : 0.35,
-              ease: EASE_DRAW,
-            }}
-            style={{
-              display: "block",
-              position: "absolute",
-              left: 0,
-              right: 0,
-              bottom: -6,
-              height: 2,
-              backgroundColor: ACCENT,
-              transformOrigin: "left center",
-              willChange: "transform",
-              borderRadius: 1,
-            }}
+            animate={{ pathLength: reduce ? 1 : on ? 1 : 0 }}
+            transition={{ duration: 0.9, ease: EASE, delay: reduce ? 0 : 0.15 + i * 0.08 }}
           />
-        </p>
+        ))}
+      </svg>
+      {VENDORS.map((v, i) => (
+        <span
+          key={v.name}
+          className="absolute inline-flex items-center justify-center"
+          style={{
+            left: 2,
+            top: ys[i] - 12,
+            width: 24,
+            height: 24,
+            borderRadius: 999,
+            backgroundColor: "#FFFFFF",
+            border: `1px solid ${BORDER}`,
+          }}
+        >
+          {v.mark}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+// Mobile connector: the six marks in a row + a down arrow.
+function FlowRow() {
+  return (
+    <div className="lg:hidden flex flex-col items-center gap-2 py-6" aria-hidden>
+      <div className="flex items-center gap-2">
+        {VENDORS.map((v) => (
+          <span
+            key={v.name}
+            className="inline-flex items-center justify-center"
+            style={{ width: 26, height: 26, borderRadius: 999, backgroundColor: "#FFFFFF", border: `1px solid ${BORDER}` }}
+          >
+            {v.mark}
+          </span>
+        ))}
       </div>
-    </li>
+      <ArrowDown className="w-4 h-4" strokeWidth={1.8} style={{ color: ACCENT }} />
+    </div>
+  );
+}
+
+// The resolution: one mini dashboard frame — funnel to signed lease + the
+// single outcome line.
+function MiniDashboard({ on }: { on: boolean }) {
+  const reduce = useReducedMotion();
+  return (
+    <ProductFrame url="app.leasestack.co/portal">
+      <div style={{ padding: "16px 18px", backgroundColor: "#FFFFFF" }}>
+        <div className="flex items-center justify-between">
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 9.5, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: FAINT }}>
+            One dashboard · last 28 days
+          </p>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: FAINT, border: `1px solid ${BORDER}`, borderRadius: 2, padding: "1px 6px" }}>
+            Sample data
+          </span>
+        </div>
+        <div className="flex flex-col gap-2.5 mt-4">
+          {FUNNEL.map((f, i) => (
+            <div key={f.label} className="flex items-center gap-3">
+              <span style={{ width: 92, fontFamily: "var(--font-sans)", fontSize: 12, color: MUTED, flexShrink: 0 }}>{f.label}</span>
+              <div style={{ flex: 1, height: 14, backgroundColor: "#eef1f8", borderRadius: 2, overflow: "hidden" }}>
+                <motion.div
+                  initial={false}
+                  animate={{ width: reduce ? `${f.w}%` : on ? `${f.w}%` : "0%" }}
+                  transition={{ duration: 0.7, ease: EASE, delay: reduce ? 0 : 0.3 + i * 0.08 }}
+                  style={{ height: "100%", backgroundColor: ACCENT, borderRadius: 2 }}
+                />
+              </div>
+              <span style={{ width: 50, textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: INK, fontVariantNumeric: "tabular-nums" }}>
+                {f.value}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* THE outcome line — the whole argument in one sentence. */}
+        <motion.div
+          initial={false}
+          animate={reduce ? { opacity: 1, y: 0 } : { opacity: on ? 1 : 0, y: on ? 0 : 8 }}
+          transition={{ duration: 0.5, ease: EASE, delay: reduce ? 0 : 0.85 }}
+          className="flex items-center gap-2.5 mt-5"
+          style={{ padding: "11px 13px", borderRadius: 2, backgroundColor: "rgba(36,161,72,0.08)", border: "1px solid rgba(36,161,72,0.2)" }}
+        >
+          <FileSignature className="w-4 h-4 flex-shrink-0" strokeWidth={1.8} style={{ color: "#24a148" }} aria-hidden />
+          <p style={{ fontFamily: "var(--font-sans)", fontSize: 14.5, fontWeight: 600, color: INK, lineHeight: 1.35 }}>
+            This lease came from Google Ads.{" "}
+            <span style={{ fontWeight: 400, color: MUTED }}>You can see it.</span>
+          </p>
+        </motion.div>
+      </div>
+    </ProductFrame>
   );
 }
 
 export function Comparison() {
   const { comparison } = MARKETING.home;
+  const ref = useRef<HTMLDivElement>(null);
+  const on = useInView(ref, { once: true, margin: "0px 0px -18% 0px" });
 
   return (
-    <section
-      style={{
-        backgroundColor: "#FFFFFF",
-      }}
-    >
+    <section style={{ backgroundColor: "#FFFFFF" }}>
       <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-20 md:py-24">
-        <div className="max-w-3xl mb-8 md:mb-14">
+        <div className="max-w-3xl mb-10 md:mb-14">
           <h2
             style={{
               color: INK,
               fontFamily: "var(--font-sans)",
               fontSize: "clamp(28px, 3.6vw, 40px)",
-              fontWeight: 700,
+              fontWeight: 500,
               lineHeight: 1.1,
               letterSpacing: "-0.025em",
             }}
           >
-            {/* Per-line mask reveal — matches the rhythm used on the rest
-                of the homepage's section headlines. */}
-            <MaskRevealUp lines={splitHeadlineIntoLines(comparison.headline)} />
+            <MaskRevealUp lines={["Your current setup", "vs. one dashboard."]} />
           </h2>
-          <p
-            className="mt-5 max-w-2xl"
-            style={{
-              color: "#6f6f6f",
-              fontFamily: "var(--font-sans)",
-              fontSize: "16px",
-              lineHeight: 1.6,
-            }}
-          >
-            {comparison.body}
-          </p>
         </div>
 
-        {/* Desktop column headers, typographic anchor only, not pill chips. */}
-        <div
-          className="hidden md:grid md:grid-cols-[1fr_28px_1fr] gap-x-8 pb-4 mb-2"
-          style={{ borderBottom: `1px solid ${BORDER}` }}
-        >
-          <p
-            style={{
-              color: MUTED,
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              letterSpacing: "0.22em",
-              textTransform: "uppercase",
-              fontWeight: 600,
-            }}
-          >
-            {comparison.leftLabel}
-          </p>
-          <span />
-          <p
-            style={{
-              color: ACCENT,
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              letterSpacing: "0.22em",
-              textTransform: "uppercase",
-              fontWeight: 700,
-            }}
-          >
-            {comparison.rightLabel}
-          </p>
-        </div>
+        <div ref={ref} className="grid grid-cols-1 lg:grid-cols-[1fr_96px_1.1fr] gap-x-6 items-center">
+          {/* TODAY */}
+          <div>
+            <p
+              className="mb-5"
+              style={{ color: FAINT, fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", fontWeight: 600 }}
+            >
+              {comparison.leftLabel}
+            </p>
+            <ScatterCards on={on} />
+          </div>
 
-        <ol>
-          {comparison.rows.map((row, i) => (
-            <ComparisonRow
-              key={row.new}
-              old={row.old}
-              next={row.new}
-              isFirst={i === 0}
-            />
-          ))}
-        </ol>
+          {/* The same six sources, flowing into one place. */}
+          <FlowLines on={on} />
+          <FlowRow />
+
+          {/* WITH LEASESTACK */}
+          <div>
+            <p
+              className="mb-5"
+              style={{ color: ACCENT, fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", fontWeight: 700 }}
+            >
+              {comparison.rightLabel}
+            </p>
+            <MiniDashboard on={on} />
+          </div>
+        </div>
       </div>
     </section>
   );
-}
-
-// Split a single-sentence headline into ~two balanced lines on a sensible
-// word boundary so MaskRevealUp has clean per-line targets. Falls back to
-// the whole sentence as a single line if no good break point exists.
-function splitHeadlineIntoLines(headline: string): string[] {
-  const trimmed = headline.trim();
-  // Prefer breaking on " vs. " — the natural pivot point in the current copy.
-  const vsIdx = trimmed.toLowerCase().indexOf(" vs. ");
-  if (vsIdx > 0) {
-    return [
-      trimmed.slice(0, vsIdx + 4).trim(),
-      trimmed.slice(vsIdx + 4).trim(),
-    ];
-  }
-  // Otherwise split near the midpoint on the nearest space.
-  const mid = Math.floor(trimmed.length / 2);
-  const before = trimmed.lastIndexOf(" ", mid);
-  const after = trimmed.indexOf(" ", mid);
-  const cut =
-    before > 0 && after > 0
-      ? mid - before < after - mid
-        ? before
-        : after
-      : before > 0
-        ? before
-        : after;
-  if (cut <= 0) return [trimmed];
-  return [trimmed.slice(0, cut).trim(), trimmed.slice(cut).trim()];
 }
