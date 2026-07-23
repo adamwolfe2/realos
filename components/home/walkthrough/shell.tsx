@@ -88,22 +88,28 @@ export function WCard({
 }
 
 export function Delta({ value, dir }: { value: string; dir: "up" | "down" }) {
+  // Slim trend chip (Adam 2026-07-23: the fat ▲/▼ triangles ate the tiles).
+  // Thin mono arrows, tight padding, fixed 16px line so every KPI row aligns.
   const c = dir === "up" ? UP : DOWN;
   return (
     <span
-      className="inline-flex items-center gap-1"
+      className="inline-flex items-center"
       style={{
         fontFamily: "var(--font-mono)",
-        fontSize: 11,
+        fontSize: 10,
         fontWeight: 600,
+        lineHeight: "14px",
+        height: 16,
         color: c,
         backgroundColor: dir === "up" ? "rgba(36,161,72,0.10)" : "rgba(218,30,40,0.10)",
         borderRadius: 999,
-        padding: "1px 7px",
+        padding: "0 6px",
         fontVariantNumeric: "tabular-nums",
+        whiteSpace: "nowrap",
       }}
     >
-      {dir === "up" ? "▲" : "▼"} {value}
+      <span aria-hidden style={{ marginRight: 3 }}>{dir === "up" ? "↑" : "↓"}</span>
+      {value}
     </span>
   );
 }

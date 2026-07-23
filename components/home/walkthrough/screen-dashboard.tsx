@@ -2,9 +2,10 @@
 
 import React, { useRef } from "react";
 import { motion, useInView, useReducedMotion } from "framer-motion";
-import { CalendarCheck, Fingerprint, FileSignature } from "lucide-react";
+import { CalendarCheck, Fingerprint, FileSignature, Search, UserPlus, Globe } from "lucide-react";
 import { Eyebrow, WCard, Delta, INK, MUTED, FAINT, BORDER, BRAND, UP } from "./shell";
 import { CountUp } from "../count-up";
+import { GoogleMark, MetaMark } from "@/components/platform/artifacts/brand-logos";
 
 // Replica of the operator Dashboard (app/portal/page.tsx). KPI row uses the
 // real labels (Leads (28d), Ad spend (28d), Tours scheduled (28d), Organic
@@ -14,6 +15,9 @@ import { CountUp } from "../count-up";
 // the bars grow with a stagger on first view — a dashboard waking up, not a
 // static slide. Reduced-motion renders the final state immediately.
 
+// Labels are single-line by design (Adam 2026-07-23: wrapped labels pushed
+// values to different heights). Every tile shares an identical row skeleton:
+// 14px label line → value → 16px trend line.
 const KPIS: Array<{
   label: string;
   to: number;
@@ -22,9 +26,9 @@ const KPIS: Array<{
 }> = [
   { label: "Leads (28d)", to: 168, delta: { value: "14%", dir: "up" } },
   { label: "Ad spend (28d)", to: 18240, prefix: "$", delta: { value: "6%", dir: "down" } },
-  { label: "Tours scheduled (28d)", to: 31, delta: { value: "8%", dir: "up" } },
-  { label: "Organic visitors (28d)", to: 12480, delta: { value: "11%", dir: "up" } },
-  { label: "Active properties", to: 4 },
+  { label: "Tours (28d)", to: 31, delta: { value: "8%", dir: "up" } },
+  { label: "Organic (28d)", to: 12480, delta: { value: "11%", dir: "up" } },
+  { label: "Properties", to: 4 },
 ];
 
 const FUNNEL = [
@@ -36,13 +40,19 @@ const FUNNEL = [
 ];
 
 // Share of the 168 leads (28d) by source. Percentages sum to 100 — no
-// contradiction with the 4 signed leases in the funnel above.
-const SOURCES = [
-  { label: "Google Ads", share: 36, color: "#0043ce" },
-  { label: "Meta", share: 27, color: "#0f62fe" },
-  { label: "Organic search", share: 18, color: "#4589ff" },
-  { label: "Resident referral", share: 10, color: "#78a9ff" },
-  { label: "Direct / brand", share: 9, color: "#a6c8ff" },
+// contradiction with the 4 signed leases in the funnel above. Each source
+// carries its mark (brand SVG or lucide icon) per Adam 2026-07-23.
+const SOURCES: Array<{
+  label: string;
+  share: number;
+  color: string;
+  mark: React.ReactNode;
+}> = [
+  { label: "Google Ads", share: 36, color: "#0043ce", mark: <GoogleMark size={12} /> },
+  { label: "Meta", share: 27, color: "#0f62fe", mark: <MetaMark size={12} /> },
+  { label: "Organic search", share: 18, color: "#4589ff", mark: <Search className="w-3 h-3" strokeWidth={2} style={{ color: "#6f6f6f" }} aria-hidden /> },
+  { label: "Resident referral", share: 10, color: "#78a9ff", mark: <UserPlus className="w-3 h-3" strokeWidth={2} style={{ color: "#6f6f6f" }} aria-hidden /> },
+  { label: "Direct / brand", share: 9, color: "#a6c8ff", mark: <Globe className="w-3 h-3" strokeWidth={2} style={{ color: "#6f6f6f" }} aria-hidden /> },
 ];
 
 const ACTIVITY = [
@@ -126,19 +136,30 @@ export function ScreenDashboard() {
       <div className="grid grid-cols-5 gap-2.5 mt-3">
         {KPIS.map((k) => (
           <WCard key={k.label} style={{ padding: "11px 12px" }}>
-            <p style={{ fontFamily: "var(--font-mono)", fontSize: 9.5, fontWeight: 500, letterSpacing: "0.06em", textTransform: "uppercase", color: FAINT }}>
+            <p
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 9.5,
+                fontWeight: 500,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                color: FAINT,
+                // One line, always — no wrap-driven height drift between tiles.
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                lineHeight: "14px",
+                height: 14,
+              }}
+            >
               {k.label}
             </p>
-            <p className="mt-1.5" style={{ fontFamily: "var(--font-mono)", fontSize: 24, fontWeight: 500, color: INK, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>
+            <p className="mt-1.5" style={{ fontFamily: "var(--font-mono)", fontSize: 24, fontWeight: 500, color: INK, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", lineHeight: "28px" }}>
               <CountUp to={k.to} prefix={k.prefix ?? ""} locale duration={0.8} />
             </p>
-            {k.delta ? (
-              <div className="mt-1.5">
-                <Delta value={k.delta.value} dir={k.delta.dir} />
-              </div>
-            ) : (
-              <div className="mt-1.5" style={{ height: 18 }} />
-            )}
+            <div className="mt-1.5" style={{ height: 16 }}>
+              {k.delta ? <Delta value={k.delta.value} dir={k.delta.dir} /> : null}
+            </div>
           </WCard>
         ))}
       </div>
@@ -167,7 +188,12 @@ export function ScreenDashboard() {
             {SOURCES.map((s, i) => (
               <div key={s.label}>
                 <div className="flex items-center justify-between">
-                  <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: INK }}>{s.label}</span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="inline-flex items-center justify-center flex-shrink-0" style={{ width: 14, height: 14 }} aria-hidden>
+                      {s.mark}
+                    </span>
+                    <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: INK }}>{s.label}</span>
+                  </span>
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 11.5, color: MUTED, fontVariantNumeric: "tabular-nums" }}>{s.share}%</span>
                 </div>
                 <div className="mt-1 flex">
