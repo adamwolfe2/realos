@@ -15,6 +15,7 @@ export function CountUp({
   prefix = "",
   suffix = "",
   decimals = 0,
+  locale = false,
   className,
   style,
 }: {
@@ -23,6 +24,8 @@ export function CountUp({
   prefix?: string;
   suffix?: string;
   decimals?: number;
+  /** Format with thousands separators (12,480) while counting. */
+  locale?: boolean;
   className?: string;
   style?: React.CSSProperties;
 }) {
@@ -55,7 +58,11 @@ export function CountUp({
   }, [inView, reduce, to, duration]);
 
   const display =
-    decimals > 0 ? value.toFixed(decimals) : Math.round(value).toString();
+    decimals > 0
+      ? value.toFixed(decimals)
+      : locale
+        ? Math.round(value).toLocaleString("en-US")
+        : Math.round(value).toString();
 
   return (
     <span

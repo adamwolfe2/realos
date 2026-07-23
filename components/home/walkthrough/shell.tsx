@@ -265,6 +265,23 @@ export function WalkthroughShell({
             </span>
           </div>
           <div className="ml-auto flex items-center gap-2.5">
+            {/* Truth rule: demo numbers are always labeled as sample. */}
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 9,
+                fontWeight: 600,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "#8d8d8d",
+                border: `1px solid ${BORDER}`,
+                borderRadius: 2,
+                padding: "2px 6px",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Sample data
+            </span>
             <span
               className="inline-flex items-center justify-center"
               style={{ width: 26, height: 26, borderRadius: 999, backgroundColor: "#eef1f8", color: BRAND, fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 600 }}

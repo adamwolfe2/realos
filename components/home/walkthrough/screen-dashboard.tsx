@@ -1,17 +1,30 @@
-import React from "react";
-import { Eyebrow, WCard, Delta, INK, MUTED, FAINT, BORDER, BRAND } from "./shell";
+"use client";
+
+import React, { useRef } from "react";
+import { motion, useInView, useReducedMotion } from "framer-motion";
+import { CalendarCheck, Fingerprint, FileSignature } from "lucide-react";
+import { Eyebrow, WCard, Delta, INK, MUTED, FAINT, BORDER, BRAND, UP } from "./shell";
+import { CountUp } from "../count-up";
 
 // Replica of the operator Dashboard (app/portal/page.tsx). KPI row uses the
 // real labels (Leads (28d), Ad spend (28d), Tours scheduled (28d), Organic
-// visitors (28d), Active properties) + the Conversion funnel (Last 28 days)
-// and Lead sources. Numbers are the canonical funnel: 12,480 → 168 → 31 → 11 → 4.
+// visitors (28d), Active properties) + the Conversion funnel (Last 28 days),
+// Lead sources, and a recent-activity strip. Numbers are the canonical demo
+// funnel: 12,480 → 168 → 31 → 11 → 4. Landing v3: numbers count up once and
+// the bars grow with a stagger on first view — a dashboard waking up, not a
+// static slide. Reduced-motion renders the final state immediately.
 
-const KPIS = [
-  { label: "Leads (28d)", value: "168", delta: { value: "14%", dir: "up" as const } },
-  { label: "Ad spend (28d)", value: "$18,240", delta: { value: "6%", dir: "down" as const } },
-  { label: "Tours scheduled (28d)", value: "31", delta: { value: "8%", dir: "up" as const } },
-  { label: "Organic visitors (28d)", value: "12,480", delta: { value: "11%", dir: "up" as const } },
-  { label: "Active properties", value: "4" },
+const KPIS: Array<{
+  label: string;
+  to: number;
+  prefix?: string;
+  delta?: { value: string; dir: "up" | "down" };
+}> = [
+  { label: "Leads (28d)", to: 168, delta: { value: "14%", dir: "up" } },
+  { label: "Ad spend (28d)", to: 18240, prefix: "$", delta: { value: "6%", dir: "down" } },
+  { label: "Tours scheduled (28d)", to: 31, delta: { value: "8%", dir: "up" } },
+  { label: "Organic visitors (28d)", to: 12480, delta: { value: "11%", dir: "up" } },
+  { label: "Active properties", to: 4 },
 ];
 
 const FUNNEL = [
@@ -32,9 +45,56 @@ const SOURCES = [
   { label: "Direct / brand", share: 9, color: "#a6c8ff" },
 ];
 
-export function ScreenDashboard() {
+const ACTIVITY = [
+  { icon: CalendarCheck, color: UP, text: "Tour booked overnight · Marcus T.", meta: "2:14 AM" },
+  { icon: Fingerprint, color: BRAND, text: "Visitor identified · Taylor B.", meta: "6m ago" },
+  { icon: FileSignature, color: INK, text: "Lease signed · Google Ads · $68 CPL", meta: "Yesterday" },
+];
+
+// A horizontal bar that grows to its width once on first view.
+function GrowBar({
+  w,
+  color,
+  height,
+  radius = 2,
+  delay = 0,
+  grow,
+}: {
+  w: number;
+  color: string;
+  height: number;
+  radius?: number;
+  delay?: number;
+  grow: boolean;
+}) {
   return (
-    <div className="h-full flex flex-col">
+    <div
+      style={{
+        flex: 1,
+        height,
+        backgroundColor: "#eef1f8",
+        borderRadius: radius,
+        overflow: "hidden",
+      }}
+    >
+      <motion.div
+        initial={false}
+        animate={{ width: grow ? `${w}%` : "0%" }}
+        transition={{ duration: 0.7, ease: [0.2, 0.7, 0.2, 1], delay }}
+        style={{ height: "100%", backgroundColor: color, borderRadius: radius }}
+      />
+    </div>
+  );
+}
+
+export function ScreenDashboard() {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "0px 0px -10% 0px" });
+  const reduce = useReducedMotion();
+  const grow = reduce ? true : inView;
+
+  return (
+    <div ref={ref} className="h-full flex flex-col">
       <div className="flex items-center justify-between">
         <div>
           <Eyebrow>At a glance · last 28 days</Eyebrow>
@@ -70,7 +130,7 @@ export function ScreenDashboard() {
               {k.label}
             </p>
             <p className="mt-1.5" style={{ fontFamily: "var(--font-mono)", fontSize: 24, fontWeight: 500, color: INK, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>
-              {k.value}
+              <CountUp to={k.to} prefix={k.prefix ?? ""} locale duration={0.8} />
             </p>
             {k.delta ? (
               <div className="mt-1.5">
@@ -89,12 +149,10 @@ export function ScreenDashboard() {
           <Eyebrow>Last 28 days</Eyebrow>
           <p style={{ fontFamily: "var(--font-sans)", fontSize: 13.5, fontWeight: 600, color: INK, marginTop: 3 }}>Conversion funnel</p>
           <div className="flex flex-col gap-2.5 mt-3 flex-1 justify-center">
-            {FUNNEL.map((f) => (
+            {FUNNEL.map((f, i) => (
               <div key={f.label} className="flex items-center gap-3">
                 <span style={{ width: 108, fontFamily: "var(--font-sans)", fontSize: 12, color: MUTED, flexShrink: 0 }}>{f.label}</span>
-                <div style={{ flex: 1, height: 18, backgroundColor: "#eef1f8", borderRadius: 2, overflow: "hidden" }}>
-                  <div style={{ width: `${f.w}%`, height: "100%", backgroundColor: BRAND, borderRadius: 2 }} />
-                </div>
+                <GrowBar w={f.w} color={BRAND} height={18} delay={reduce ? 0 : 0.1 + i * 0.08} grow={grow} />
                 <span style={{ width: 54, textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 12.5, fontWeight: 600, color: INK, fontVariantNumeric: "tabular-nums" }}>
                   {f.value.toLocaleString()}
                 </span>
@@ -106,20 +164,47 @@ export function ScreenDashboard() {
         <WCard className="col-span-2" style={{ padding: 15, display: "flex", flexDirection: "column" }}>
           <Eyebrow>Lead sources · last 28 days</Eyebrow>
           <div className="flex flex-col gap-2.5 mt-3 flex-1 justify-center">
-            {SOURCES.map((s) => (
+            {SOURCES.map((s, i) => (
               <div key={s.label}>
                 <div className="flex items-center justify-between">
                   <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: INK }}>{s.label}</span>
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 11.5, color: MUTED, fontVariantNumeric: "tabular-nums" }}>{s.share}%</span>
                 </div>
-                <div className="mt-1" style={{ height: 6, backgroundColor: "#eef1f8", borderRadius: 999, overflow: "hidden" }}>
-                  <div style={{ width: `${s.share}%`, height: "100%", backgroundColor: s.color }} />
+                <div className="mt-1 flex">
+                  <GrowBar w={s.share} color={s.color} height={6} radius={999} delay={reduce ? 0 : 0.2 + i * 0.06} grow={grow} />
                 </div>
               </div>
             ))}
           </div>
         </WCard>
       </div>
+
+      {/* Recent activity strip — the system doing the work while you read. */}
+      <WCard className="mt-3" style={{ padding: 0, overflow: "hidden" }}>
+        <div className="grid grid-cols-3">
+          {ACTIVITY.map((a, i) => {
+            const Icon = a.icon;
+            return (
+              <motion.div
+                key={a.text}
+                className="flex items-center gap-2 min-w-0"
+                initial={false}
+                animate={{ opacity: grow ? 1 : 0, y: grow ? 0 : 6 }}
+                transition={{ duration: 0.4, ease: [0.2, 0.7, 0.2, 1], delay: reduce ? 0 : 0.5 + i * 0.12 }}
+                style={{ padding: "9px 13px", borderLeft: i === 0 ? "none" : `1px solid ${BORDER}` }}
+              >
+                <Icon className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.8} style={{ color: a.color }} aria-hidden />
+                <span className="truncate" style={{ fontFamily: "var(--font-sans)", fontSize: 11.5, fontWeight: 500, color: INK }}>
+                  {a.text}
+                </span>
+                <span className="ml-auto flex-shrink-0" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: FAINT, fontVariantNumeric: "tabular-nums" }}>
+                  {a.meta}
+                </span>
+              </motion.div>
+            );
+          })}
+        </div>
+      </WCard>
     </div>
   );
 }

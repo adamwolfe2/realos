@@ -4,13 +4,16 @@ import { BookDemoLink } from "@/components/marketing/book-demo-link";
 import { SectionShell } from "./section-shell";
 import { Atmosphere } from "./atmosphere";
 import { Mark } from "./mark";
-import { SignalFlow } from "./signal-flow";
+import { FrameSettle } from "./frame-settle";
+import { DashboardFrame, MobileFrame } from "./walkthrough/dashboard-frame";
 
 // ---------------------------------------------------------------------------
-// Hero — [01] Capture. Confident light typography over the signature signal-
-// flow diagram (cool pass M2 executed light per "no dark ever"; motion pass
-// sec 1). Headline keyword carries a marker highlight that sweeps in with a
-// drawn ruler. The real product appears in the next section.
+// Hero — landing v3 item 5: the abstract signal-flow diagram is gone. A
+// first-time visitor sees the ACTUAL dashboard in the first viewport — KPI
+// tiles, the visitor→lease funnel, lead sources, live activity — inside a
+// browser frame that settles into place once (no infinite loop). Numbers
+// count up and bars grow on first view; below md the readable phone-width
+// dashboard rides in the same chrome.
 // ---------------------------------------------------------------------------
 
 export function Hero() {
@@ -101,7 +104,10 @@ export function Hero() {
           </div>
 
           <div className="mt-9 md:mt-10">
-            <SignalFlow />
+            <FrameSettle>
+              <DashboardFrame beat={1} natural={1040} className="hidden md:block" />
+              <MobileFrame beat={1} className="md:hidden" />
+            </FrameSettle>
           </div>
         </div>
       </div>
