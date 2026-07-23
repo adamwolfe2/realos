@@ -1,21 +1,21 @@
 import Link from "next/link";
-import { WeeklyReport } from "@/components/platform/artifacts/weekly-report";
-import { ProductFrame } from "./product-frame";
+import { PropertyOnePager } from "@/components/portal/reports/property-one-pager";
 import { FrameSettle } from "./frame-settle";
+import { FitScale } from "./fit-scale";
 import { Reveal } from "@/components/platform/reveal";
 import { SectionShell, LabelChip } from "./section-shell";
 import { Mark } from "./mark";
+import { SAMPLE_SNAPSHOT, SAMPLE_PROPERTY } from "./report-sample-data";
 
 // ---------------------------------------------------------------------------
-// ReportFeature — [04] The report. The weekly report your owners actually
-// read, on a soft blue texture panel (juicebox J4) with a faint oversize
-// "7:00 AM Monday" watermark, shown in the physical frame with a perspective
-// settle and contact glow (depth addendum sec 5). Headline carries a marker +
-// ruler (cool pass M1; motion pass sec 5).
-//
-// The WeeklyReport artifact is a shared client component; per scope its
-// internal top-down "assemble" is carried by the frame settle + a spring/fade
-// "Delivered Monday 7:00 AM" chip rather than editing the artifact.
+// ReportFeature — landing v3 item 1. The email mock is gone; this renders the
+// REAL report artifact — the Marketing & Performance Snapshot one-pager the
+// product actually generates (components/portal/reports/property-one-pager),
+// fed a typed sample snapshot. KPI row, first-touch acquisition with honest
+// "not tracked" rows, leasing momentum, renewals-at-risk, reputation bars,
+// AI-search visibility, and the live/connecting/not-wired coverage footer —
+// all the exact design Adam screenshotted as the target, because it IS that
+// component. Monday-7am rides as a chip, not the headline.
 // ---------------------------------------------------------------------------
 
 const PANEL_TEXTURE =
@@ -51,7 +51,7 @@ export function ReportFeature() {
                   letterSpacing: "-0.025em",
                 }}
               >
-                It lands <Mark ruler>every Monday</Mark> at 7am.
+                The report your <Mark ruler>owners actually read</Mark>.
               </h2>
               <p
                 className="mt-4 mx-auto"
@@ -60,21 +60,47 @@ export function ReportFeature() {
                   fontFamily: "var(--font-sans)",
                   fontSize: "17px",
                   lineHeight: 1.6,
-                  maxWidth: "480px",
+                  maxWidth: "560px",
                 }}
               >
-                The report your owners actually read.
+                One page: leases attributed to source, renewals at risk,
+                reputation, AI-search visibility. Forward it to ownership
+                as-is. The deck-building hours come back.
               </p>
             </Reveal>
 
             <FrameSettle className="mt-12 mx-auto max-w-[880px]">
-              <ProductFrame url="app.leasestack.co/reports">
-                <WeeklyReport />
-              </ProductFrame>
+              <div
+                className="text-left"
+                style={{
+                  boxShadow:
+                    "0 1px 2px rgba(22,22,22,0.06), 0 24px 48px -16px rgba(15,98,254,0.16), 0 48px 96px -32px rgba(22,22,22,0.14)",
+                  borderRadius: 16,
+                }}
+              >
+                <FitScale natural={880}>
+                  <PropertyOnePager
+                    snapshot={SAMPLE_SNAPSHOT}
+                    property={SAMPLE_PROPERTY}
+                  />
+                </FitScale>
+              </div>
             </FrameSettle>
+            <p
+              className="mt-4"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10.5,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "#5a647d",
+              }}
+            >
+              Sample property · illustrative data
+            </p>
 
             <Reveal delay={200}>
-              <div className="mt-8 flex items-center justify-center gap-4 flex-wrap">
+              <div className="mt-7 flex items-center justify-center gap-4 flex-wrap">
                 <span
                   className="inline-flex items-center"
                   style={{
