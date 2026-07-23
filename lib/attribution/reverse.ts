@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { propertyIdsToWhere } from "@/lib/tenancy/property-filter";
+import { visitorPropertyWhere } from "@/lib/attribution/queries";
 import {
   classifySource,
   getSource,
@@ -85,8 +86,10 @@ export async function getReverseAttribution(
     where: {
       orgId: filters.orgId,
       startedAt: { gte: filters.fromDate, lte: filters.toDate },
+      // Widen to org-level (null-propertyId) pixel visitors — see
+      // visitorPropertyWhere (deep-audit P0, 2026-07-22).
       ...(filters.propertyIds && filters.propertyIds.length > 0
-        ? { visitor: propertyIdsToWhere(filters.propertyIds) }
+        ? { visitor: visitorPropertyWhere(filters.propertyIds) }
         : {}),
     },
     orderBy: { startedAt: "desc" },
@@ -351,7 +354,7 @@ export async function getChannelPipeline(
     prisma.visitor.findMany({
       where: {
         orgId: filters.orgId,
-        ...propertyIdsToWhere(filters.propertyIds ?? null),
+        ...visitorPropertyWhere(filters.propertyIds ?? null),
         email: { not: null },
       },
       select: {

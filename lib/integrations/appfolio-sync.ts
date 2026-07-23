@@ -1356,8 +1356,11 @@ async function markLeadSignedByTenant(
   tenant: MappedTenant
 ): Promise<boolean> {
   if (!tenant.email) return false;
+  // Case-insensitive: tenant emails are lowercased at map time, but legacy
+  // Lead rows store emails as-typed (deep-audit P0 — exact match left
+  // mixed-case leads permanently unlinked from their signed lease).
   const lead = await prisma.lead.findFirst({
-    where: { orgId, email: tenant.email },
+    where: { orgId, email: { equals: tenant.email, mode: "insensitive" } },
     select: { id: true, status: true },
   });
   if (!lead) return false;
@@ -1478,6 +1481,39 @@ async function upsertAppfolioShowing(
       },
     });
   }
+
+  // Roll the Lead status forward so the funnel reflects reality (deep-audit
+  // P0, 2026-07-22: AppFolio-synced tours previously never touched
+  // Lead.status, and the attribution funnel reads Lead.status — so synced
+  // tours were invisible to "Toured" counts). Mirrors the application
+  // phase's atomic monotonic promotion: updateMany over strictly
+  // lower-ranked statuses only, never demotes, race-safe across
+  // concurrent syncs. NO_SHOW / CANCELLED promote nothing.
+  const promoteTo: LeadStatus | null =
+    mapped.status === "COMPLETED"
+      ? ("TOURED" as LeadStatus)
+      : mapped.status === "SCHEDULED" || mapped.status === "REQUESTED"
+        ? ("TOUR_SCHEDULED" as LeadStatus)
+        : null;
+  if (promoteTo) {
+    const RANK: LeadStatus[] = [
+      "NEW",
+      "CONTACTED",
+      "TOUR_SCHEDULED",
+      "TOURED",
+      "APPLICATION_SENT",
+      "APPLIED",
+      "SIGNED",
+    ] as LeadStatus[];
+    const lowerRanked = RANK.slice(0, RANK.indexOf(promoteTo));
+    if (lowerRanked.length > 0) {
+      await prisma.lead.updateMany({
+        where: { id: lead.id, status: { in: lowerRanked } },
+        data: { status: promoteTo, lastActivityAt: new Date() },
+      });
+    }
+  }
+
   return "ok";
 }
 
@@ -1669,8 +1705,9 @@ async function upsertResident(
 ): Promise<string> {
   let leadId: string | null = null;
   if (mapped.email) {
+    // Case-insensitive for the same reason as markLeadSignedByTenant.
     const lead = await prisma.lead.findFirst({
-      where: { orgId, email: mapped.email },
+      where: { orgId, email: { equals: mapped.email, mode: "insensitive" } },
       select: { id: true },
     });
     if (lead) leadId = lead.id;

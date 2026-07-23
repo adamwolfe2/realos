@@ -4,7 +4,8 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { formatDistanceToNow, format } from "date-fns";
 import { prisma } from "@/lib/db";
-import { requireScope } from "@/lib/tenancy/scope";
+import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { propertyOrOrgLevelWhereFragment } from "@/lib/tenancy/property-filter";
 import { VisitorIdentificationStatus } from "@prisma/client";
 import {
   ArrowLeft,
@@ -48,8 +49,16 @@ export default async function VisitorDetailPage({
   const { id } = await params;
   const scope = await requireScope();
 
-  const visitor = await prisma.visitor.findUnique({
-    where: { id },
+  const visitor = await prisma.visitor.findFirst({
+    // Property-level RBAC: a scoped agent may view visitors on their own
+    // properties or org-level (null-property) pixel visitors — matching
+    // the convert/engage routes — but not a visitor tied to a property
+    // they can't access.
+    where: {
+      id,
+      ...tenantWhere(scope),
+      ...propertyOrOrgLevelWhereFragment(scope, null),
+    },
     include: {
       sessions: {
         orderBy: { startedAt: "desc" },
@@ -62,7 +71,7 @@ export default async function VisitorDetailPage({
     },
   });
 
-  if (!visitor || visitor.orgId !== scope.orgId) notFound();
+  if (!visitor) notFound();
 
   const identity = extractIdentity(visitor);
   const palette = avatarPaletteFor(

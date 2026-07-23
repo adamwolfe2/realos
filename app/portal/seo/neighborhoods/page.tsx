@@ -13,9 +13,17 @@ export const dynamic = "force-dynamic";
 export default async function NeighborhoodPagesIndex() {
   const scope = await requireScope();
 
+  // Property-level RBAC: match every other SEO route (drafts, recommendations,
+  // agent, properties) — a restricted user only sees pages/properties within
+  // their allowedPropertyIds set.
   const [pages, properties] = await Promise.all([
     prisma.neighborhoodPage.findMany({
-      where: { orgId: scope.orgId },
+      where: {
+        orgId: scope.orgId,
+        ...(scope.allowedPropertyIds
+          ? { propertyId: { in: scope.allowedPropertyIds } }
+          : {}),
+      },
       orderBy: { updatedAt: "desc" },
       select: {
         id: true,
@@ -31,7 +39,12 @@ export default async function NeighborhoodPagesIndex() {
       },
     }),
     prisma.property.findMany({
-      where: { orgId: scope.orgId },
+      where: {
+        orgId: scope.orgId,
+        ...(scope.allowedPropertyIds
+          ? { id: { in: scope.allowedPropertyIds } }
+          : {}),
+      },
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),

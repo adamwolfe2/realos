@@ -260,9 +260,23 @@
       renderGreeting();
     }
 
-    setTimeout(function () {
-      if (!state.open && !state.teaserDismissed) showTeaser();
-    }, 4500);
+    // Honor the operator-configured idle trigger (chatbotIdleTriggerSeconds,
+    // exposed as cfg.idleTriggerSeconds by /api/public/chatbot/config):
+    //   0         -> teaser disabled, never scheduled
+    //   >0        -> scheduled after that many seconds
+    //   undefined -> preserve the historical 4500ms default
+    var idleTriggerSeconds = state.config.idleTriggerSeconds;
+    if (idleTriggerSeconds === 0) {
+      // Teaser explicitly disabled by the operator.
+    } else {
+      var idleTriggerMs =
+        typeof idleTriggerSeconds === "number" && idleTriggerSeconds > 0
+          ? idleTriggerSeconds * 1000
+          : 4500;
+      setTimeout(function () {
+        if (!state.open && !state.teaserDismissed) showTeaser();
+      }, idleTriggerMs);
+    }
   }
 
   // --- Live inventory follow-up message ------------------------------------

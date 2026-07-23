@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { propertyWhereFragment } from "@/lib/tenancy/property-filter";
 import { avatarPaletteFor, extractIdentity } from "@/lib/visitors/enrichment";
 import { cn } from "@/lib/utils";
 import { AddNoteForm } from "./add-note-form";
@@ -78,7 +79,9 @@ export default async function LeadDetailPage({
   // page that operators hit dozens of times per session.
   const [lead, notes, leadInsights, popupEvents] = await Promise.all([
     prisma.lead.findFirst({
-      where: { id, ...tenantWhere(scope) },
+      // Property-level RBAC: block reads on leads outside the agent's
+      // scope, matching the status/notes/handoff routes.
+      where: { id, ...tenantWhere(scope), ...propertyWhereFragment(scope, null) },
       include: {
         property: {
           select: { id: true, name: true, googleReviewUrl: true },

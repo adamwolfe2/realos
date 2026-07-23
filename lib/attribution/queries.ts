@@ -15,6 +15,21 @@ import {
 // through every helper for no behavioral change.
 import { propertyIdsToWhere } from "@/lib/tenancy/property-filter";
 
+// Visitor rows are org-level (propertyId = null) because the Cursive pixel
+// is installed org-wide on the resident domain. A property filter therefore
+// must ALSO match null-propertyId rows or every pixel visitor and session
+// silently disappears from attribution the moment a property is selected
+// (deep-audit P0, 2026-07-22). Mirrors propertyOrOrgLevelWhereFragment and
+// the visitors page behaviour. Tenant safety is preserved: every caller
+// already constrains orgId in the same where-clause.
+export function visitorPropertyWhere(
+  ids: string[] | null,
+): Record<string, unknown> {
+  const base = propertyIdsToWhere(ids);
+  if (Object.keys(base).length === 0) return base;
+  return { OR: [base, { propertyId: null }] };
+}
+
 // ---------------------------------------------------------------------------
 // /portal/attribution data layer.
 //
@@ -86,7 +101,7 @@ export async function getSessionsPerSource(
       orgId: filters.orgId,
       startedAt: { gte: filters.fromDate, lte: filters.toDate },
       ...(filters.propertyIds && filters.propertyIds.length > 0
-        ? { visitor: propertyIdsToWhere(filters.propertyIds) }
+        ? { visitor: visitorPropertyWhere(filters.propertyIds) }
         : {}),
     },
     select: { utmSource: true, firstReferrer: true },
@@ -377,7 +392,7 @@ export async function getAttributionHeadline(
         where: {
           orgId: filters.orgId,
           ...(filters.propertyIds && filters.propertyIds.length > 0
-            ? { visitor: propertyIdsToWhere(filters.propertyIds) }
+            ? { visitor: visitorPropertyWhere(filters.propertyIds) }
             : {}),
           startedAt: { gte: filters.fromDate, lte: filters.toDate },
         },
@@ -385,7 +400,7 @@ export async function getAttributionHeadline(
       prisma.visitor.count({
         where: {
           orgId: filters.orgId,
-          ...propertyIdsToWhere(filters.propertyIds ?? null),
+          ...visitorPropertyWhere(filters.propertyIds ?? null),
           status: { in: ["IDENTIFIED", "ENRICHED", "MATCHED_TO_LEAD"] },
           firstSeenAt: { gte: filters.fromDate, lte: filters.toDate },
         },
@@ -464,7 +479,7 @@ export async function getLeadFlow(
         orgId: filters.orgId,
         startedAt: { gte: filters.fromDate, lte: filters.toDate },
         ...(filters.propertyIds && filters.propertyIds.length > 0
-          ? { visitor: propertyIdsToWhere(filters.propertyIds) }
+          ? { visitor: visitorPropertyWhere(filters.propertyIds) }
           : {}),
       },
       select: { utmSource: true, utmMedium: true, firstReferrer: true },

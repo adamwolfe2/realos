@@ -19,11 +19,15 @@ export const maxDuration = 300;
 // ---------------------------------------------------------------------------
 // GET /api/cron/weekly-digest
 //
-// Fires every Monday at 09:00 UTC (vercel.json). For every org that has real
-// data this week (at least one lead, ad spend, or organic session) it builds a
-// digest and emails every org member.
+// Fires every Monday at 09:00 UTC (vercel.json). For every org that has opted
+// into auto-send (reportAutoSend === true) AND has real data this week (at
+// least one lead, ad spend, or organic session) it builds a digest and emails
+// every org member.
 //
-// Orgs without activity are silently skipped — digest.hasData === false.
+// White-glove constraint: mirrors weekly-report's auto-send gate — an org
+// that hasn't opted in never gets an automated numbers email the operator
+// hasn't reviewed. Orgs without activity, or without reportAutoSend, are
+// skipped (counted + logged, not silently dropped).
 // Auth: Bearer CRON_SECRET.
 // ---------------------------------------------------------------------------
 
@@ -33,7 +37,7 @@ export async function GET(req: NextRequest) {
 
   return recordCronRun("weekly-digest", async () => {
     const orgs = await prisma.organization.findMany({
-      select: { id: true, name: true },
+      select: { id: true, name: true, reportAutoSend: true },
     });
 
     let sent = 0;
@@ -47,6 +51,14 @@ export async function GET(req: NextRequest) {
 
     for (const org of orgs) {
       try {
+        if (!org.reportAutoSend) {
+          skipped += 1;
+          console.warn(
+            `[cron/weekly-digest] skipping org ${org.id}: reportAutoSend is not enabled`
+          );
+          continue;
+        }
+
         const digest = await buildWeeklyDigest(org.id);
 
         if (!digest.hasData) {

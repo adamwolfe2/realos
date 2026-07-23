@@ -140,8 +140,17 @@ export async function createNeighborhoodPage(input: {
     }
     const { city, state, neighborhood, propertyId, quality } = parsed.data;
 
-    // Validate property belongs to the org if provided.
+    // Validate property belongs to the org — and, for property-restricted
+    // agents, that it's inside their allowedPropertyIds — before generating
+    // a page anchored on it. Matches the RBAC gate every sibling SEO route
+    // enforces.
     if (propertyId) {
+      if (
+        scope.allowedPropertyIds &&
+        !scope.allowedPropertyIds.includes(propertyId)
+      ) {
+        return { ok: false, error: "Property not found in your workspace" };
+      }
       const property = await prisma.property.findFirst({
         where: { id: propertyId, orgId: scope.orgId },
         select: { id: true },
@@ -215,7 +224,14 @@ export async function updateNeighborhoodPage(
     }
 
     const existing = await prisma.neighborhoodPage.findFirst({
-      where: { id, orgId: scope.orgId },
+      // Property-level RBAC: block edits on pages outside the agent's scope.
+      where: {
+        id,
+        orgId: scope.orgId,
+        ...(scope.allowedPropertyIds
+          ? { propertyId: { in: scope.allowedPropertyIds } }
+          : {}),
+      },
       select: { id: true, slug: true },
     });
     if (!existing) return { ok: false, error: "Page not found" };
@@ -224,6 +240,12 @@ export async function updateNeighborhoodPage(
       parsed.data.propertyId !== undefined &&
       parsed.data.propertyId !== null
     ) {
+      if (
+        scope.allowedPropertyIds &&
+        !scope.allowedPropertyIds.includes(parsed.data.propertyId)
+      ) {
+        return { ok: false, error: "Property not found in your workspace" };
+      }
       const property = await prisma.property.findFirst({
         where: { id: parsed.data.propertyId, orgId: scope.orgId },
         select: { id: true },

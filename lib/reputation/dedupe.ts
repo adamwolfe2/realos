@@ -1,5 +1,6 @@
 import "server-only";
 import { createHash } from "crypto";
+import { MentionSource } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
 // URL normalization + sha256 hashing for deduping mentions across sources.
@@ -95,4 +96,21 @@ export function normalizeUrl(raw: string): string {
 export function hashUrl(raw: string): string {
   const normalized = normalizeUrl(raw);
   return createHash("sha256").update(normalized).digest("hex");
+}
+
+// ---------------------------------------------------------------------------
+// Google reviews reuse the SAME place-level URL (placeUri) for every review
+// on a property — only a per-review fragment (`#<review resource name>`)
+// distinguishes them (see google-places.ts's toScannedMention). The fragment
+// is intentionally stripped by normalizeUrl() above for other sources (Tavily/
+// Reddit/Yelp share links, tracking params, etc.), so running Google review
+// URLs through hashUrl()/normalizeUrl() collapses all of a property's reviews
+// onto one hash. Hash Google reviews on the raw, un-normalized sourceUrl
+// (fragment preserved) instead, so each review keeps a distinct, stable hash
+// across scans while every other source's dedupe semantics are unchanged.
+export function hashMentionUrl(source: MentionSource, sourceUrl: string): string {
+  if (source === MentionSource.GOOGLE_REVIEW) {
+    return createHash("sha256").update(sourceUrl.trim()).digest("hex");
+  }
+  return hashUrl(sourceUrl);
 }

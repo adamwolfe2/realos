@@ -6,7 +6,7 @@ import {
   ReputationScanStatus,
   Sentiment,
 } from "@prisma/client";
-import { hashUrl } from "./dedupe";
+import { hashMentionUrl } from "./dedupe";
 import {
   searchTavily,
   TAVILY_COST_CENTS_PER_QUERY,
@@ -556,7 +556,7 @@ function dedupeByUrlHash(
   const seen = new Map<string, ScannedMention>();
   for (const m of mentions) {
     if (!m.sourceUrl) continue;
-    const hash = hashUrl(m.sourceUrl);
+    const hash = hashMentionUrl(m.source, m.sourceUrl);
     // If we see the same URL from two sources, prefer the entry with the
     // richer payload (author + rating + longer excerpt).
     const existing = seen.get(hash);
@@ -591,7 +591,7 @@ async function countNewMentions(
     new Set(
       mentions
         .filter((m) => !!m.sourceUrl)
-        .map((m) => hashUrl(m.sourceUrl))
+        .map((m) => hashMentionUrl(m.source, m.sourceUrl))
     )
   );
   if (hashes.length === 0) return { newCount: 0 };

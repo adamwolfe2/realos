@@ -29,12 +29,26 @@ export default async function NeighborhoodPageEditor({
   const scope = await requireScope();
   const { id } = await params;
 
+  // Property-level RBAC: match every other SEO route — a restricted user
+  // can't open/edit a page anchored on a property outside their scope, and
+  // the property dropdown only offers properties they're allowed to see.
   const [row, properties, checks] = await Promise.all([
     prisma.neighborhoodPage.findFirst({
-      where: { id, orgId: scope.orgId },
+      where: {
+        id,
+        orgId: scope.orgId,
+        ...(scope.allowedPropertyIds
+          ? { propertyId: { in: scope.allowedPropertyIds } }
+          : {}),
+      },
     }),
     prisma.property.findMany({
-      where: { orgId: scope.orgId },
+      where: {
+        orgId: scope.orgId,
+        ...(scope.allowedPropertyIds
+          ? { id: { in: scope.allowedPropertyIds } }
+          : {}),
+      },
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),

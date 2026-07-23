@@ -4,6 +4,7 @@ import { recordCronRun } from "@/lib/health/cron-run";
 import { generateReportSnapshot } from "@/lib/reports/generate";
 import { generateShareToken } from "@/lib/reports/token";
 import { sendReportEmail } from "@/lib/email/send-report";
+import { notifyReportDraftReady } from "@/lib/notifications/create";
 import { verifyCronAuth } from "@/lib/cron/auth";
 
 export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for unbounded loops
@@ -11,9 +12,13 @@ export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for u
 // GET /api/cron/monthly-report
 //
 // Runs on the 1st of each month at 08:00 UTC (see vercel.json). For every
-// active client with a primaryContactEmail, generates a monthly snapshot
-// and sends it directly — no draft stage, no operator review required.
-// This is the "AM never has to log in" flow — monthly auto-emailed report.
+// active client org, generates a monthly snapshot as a DRAFT and notifies
+// the operator to review it. It only auto-emails the client when the org
+// explicitly opted in via /portal/reports/settings (reportAutoSend=true AND
+// reportCadence="monthly" AND a configured recipient list) — mirroring the
+// weekly cron. 2026-07-22 deep-audit P0: the previous behaviour auto-sent
+// unreviewed numbers to primaryContactEmail with no draft stage, directly
+// contradicting the Reports UI promise "Nothing is sent automatically".
 //
 // Idempotency: skips orgs that already have a monthly ClientReport for
 // the current calendar month's period window.
@@ -54,23 +59,13 @@ export async function GET(req: NextRequest) {
 
     for (const org of orgs) {
       try {
-        // Pick the recipient list. If the operator configured an
-        // explicit reportRecipients list AND opted into the monthly
-        // cadence with auto-send, use that. Otherwise fall back to the
-        // legacy primaryContactEmail behaviour.
-        const useConfigured =
+        // Auto-send ONLY on explicit opt-in (matches weekly-report cron).
+        // Everyone else gets a draft + operator notification — the operator
+        // reviews and shares manually, exactly as the Reports UI promises.
+        const autoSend =
           org.reportAutoSend &&
           org.reportCadence === "monthly" &&
           (org.reportRecipients?.length ?? 0) > 0;
-        const recipients = useConfigured
-          ? (org.reportRecipients ?? [])
-          : org.primaryContactEmail
-            ? [org.primaryContactEmail]
-            : [];
-        if (recipients.length === 0) {
-          skipped += 1;
-          continue;
-        }
 
         const snapshot = await generateReportSnapshot(org.id, "monthly");
         const periodStart = new Date(snapshot.periodStart);
@@ -86,7 +81,7 @@ export async function GET(req: NextRequest) {
 
         const shareToken = generateShareToken();
 
-        await prisma.clientReport.create({
+        const report = await prisma.clientReport.create({
           data: {
             orgId: org.id,
             kind: "monthly",
@@ -94,21 +89,26 @@ export async function GET(req: NextRequest) {
             periodEnd: new Date(snapshot.periodEnd),
             snapshot: snapshot as object as never,
             shareToken,
-            status: "sent",
+            status: autoSend ? "sent" : "draft",
           },
         });
 
-        await sendReportEmail({
-          to: recipients,
-          orgName: org.name,
-          orgLogoUrl: org.logoUrl,
-          snapshot,
-          shareToken,
-          recipientName: useConfigured ? undefined : org.primaryContactName ?? undefined,
-          senderName: "LeaseStack",
-        });
-
-        sent += 1;
+        if (autoSend) {
+          await sendReportEmail({
+            to: org.reportRecipients ?? [],
+            orgName: org.name,
+            orgLogoUrl: org.logoUrl,
+            snapshot,
+            shareToken,
+            senderName: "LeaseStack",
+          });
+          sent += 1;
+        } else {
+          await notifyReportDraftReady(org.id, report.id, "monthly").catch(() => {
+            // Notification failure must not fail the run; the draft exists.
+          });
+          skipped += 1;
+        }
       } catch (err) {
         errors.push({
           orgId: org.id,
