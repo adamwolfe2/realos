@@ -146,7 +146,10 @@ export function WalkthroughShell({
   children: React.ReactNode;
 }) {
   return (
-    <div style={{ display: "flex", height: 560, backgroundColor: APP_BG }}>
+    // textAlign left is load-bearing: the frame gets mounted inside centered
+    // marketing wrappers (hero text-center) and would inherit centering into
+    // the sidebar/topbar otherwise.
+    <div style={{ display: "flex", height: 560, backgroundColor: APP_BG, textAlign: "left" }}>
       {/* Sidebar */}
       <aside
         className="hidden sm:flex"

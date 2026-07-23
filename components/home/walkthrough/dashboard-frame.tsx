@@ -153,7 +153,8 @@ export function MobileFrame({
   return (
     <div className={className}>
       <ProductFrame url={URLS[beat] ?? URLS[1]}>
-        <div style={{ padding: 12, backgroundColor: APP_BG }}>
+        {/* textAlign left: same inherited-centering guard as WalkthroughShell. */}
+        <div style={{ padding: 12, backgroundColor: APP_BG, textAlign: "left" }}>
           <MobileScreen beat={beat} />
         </div>
       </ProductFrame>
