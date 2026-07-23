@@ -2,43 +2,33 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { useReducedMotion } from "framer-motion";
 import {
   Gauge,
   LayoutDashboard,
   Users,
   Eye,
   MessageSquare,
-  Sparkles,
-  CheckCircle2,
-  Fingerprint,
-  CalendarCheck,
   type LucideIcon,
 } from "lucide-react";
 import { SectionShell, LabelChip } from "./section-shell";
-import { VignetteCard } from "./vignette-card";
-import { MobileScreen } from "./walkthrough/mobile-screens";
-import { INK, MUTED, FAINT, BORDER, BRAND } from "./walkthrough/shell";
+import { DashboardFrame, MobileFrame } from "./walkthrough/dashboard-frame";
+import { INK, MUTED, BORDER, BRAND } from "./walkthrough/shell";
 
 // ---------------------------------------------------------------------------
-// ProductHeroShot — [02] The dashboard your team actually opens. Juicebox
-// "how it works" pattern (final structural change): a horizontal TAB STRIP
-// over a split layout. LEFT = a saturated brand panel with a focused, readable
-// CROP of that portal screen + one overlapping detail card; RIGHT = a label
-// chip, the takeaway headline, a short body, and (last beat only) the CTA.
+// ProductHeroShot — the scroll walkthrough. Landing v3 item 3: every beat now
+// shows the FULL product — one persistent DashboardFrame (browser chrome +
+// sidebar + topbar) whose content pane and sidebar active state swap per
+// beat, like navigating the real app. No more floating crops.
 //
-// Desktop: pinned runway, scroll advances the active tab (panel + text
-// crossfade); tabs are clickable (jump the scroll). Mobile / reduced-motion /
-// short viewport: unpinned stacked beats, the tab label static above each,
-// reusing the compact mobile screen cards as the crops. Real tablist a11y.
+// Desktop (lg+): sticky-left visual, free-scrolling right rail, active beat =
+// text block nearest viewport center (Adam-approved pattern, unchanged).
+// Below lg / reduced-motion: stacked beats, full frame on tablet, the
+// readable phone-width frame on mobile.
 // ---------------------------------------------------------------------------
 
 const HATCH =
   "repeating-linear-gradient(45deg, #eef1f8 0, #eef1f8 1px, transparent 1px, transparent 7px)";
-const PANEL_TEXTURE =
-  "repeating-linear-gradient(45deg, rgba(255,255,255,0.14) 0, rgba(255,255,255,0.14) 1px, transparent 1px, transparent 9px)";
-
-type Vignette = { icon: LucideIcon; title: string; meta: string };
 
 type Beat = {
   id: string;
@@ -47,7 +37,6 @@ type Beat = {
   chip: string;
   headline: string;
   body: string;
-  vignette: Vignette;
 };
 
 const BEATS: Beat[] = [
@@ -58,7 +47,6 @@ const BEATS: Beat[] = [
     chip: "Monday, 7 AM",
     headline: "Your Monday brief writes itself.",
     body: "Every Monday the week that mattered lands in one place: what is ahead of pace, what has gone soft, and three actions ranked by revenue impact. Read it over coffee, act before your first call.",
-    vignette: { icon: Sparkles, title: "3 actions ready", meta: "Ranked by revenue" },
   },
   {
     id: "dashboard",
@@ -67,7 +55,6 @@ const BEATS: Beat[] = [
     chip: "Attribution",
     headline: "Every lead, tour, and lease, attributed to source.",
     body: "One dashboard ties spend to signed leases, not impressions. Watch the funnel from visitor to lease and see exactly which channel earned the outcome, in real time.",
-    vignette: { icon: CheckCircle2, title: "Attributed", meta: "Source to signed lease" },
   },
   {
     id: "leads",
@@ -76,7 +63,6 @@ const BEATS: Beat[] = [
     chip: "Pipeline",
     headline: "42 scored leads, with the next step already written.",
     body: "Source, budget, and the move that matters on every lead. The pipeline ranks who to call first, so nothing ages out and nothing slips.",
-    vignette: { icon: CheckCircle2, title: "Lead signed", meta: "Google Ads · $68 CPL" },
   },
   {
     id: "visitors",
@@ -85,7 +71,6 @@ const BEATS: Beat[] = [
     chip: "No form needed",
     headline: "312 anonymous visitors, identified with intent.",
     body: "The pixel resolves a meaningful share of your traffic to a name and email, with the pages they viewed, then routes them to your CRM and ad audiences automatically.",
-    vignette: { icon: Fingerprint, title: "Visitor identified", meta: "Anonymous, now named" },
   },
   {
     id: "chatbot",
@@ -94,23 +79,19 @@ const BEATS: Beat[] = [
     chip: "After hours",
     headline: "12 leads captured overnight, while the office was closed.",
     body: "The assistant answers from your real unit data, books tours, and sends floor plans at 2am. Hot leads are waiting for your team by morning.",
-    vignette: { icon: CalendarCheck, title: "Tour booked", meta: "Sat 11:00 AM" },
   },
 ];
 
-function Intro({ compact = false }: { compact?: boolean }) {
-  // `compact` renders inside the pinned viewport so the section keeps its
-  // heading through all five beats (before this, the heading scrolled away
-  // the moment the runway pinned and the tabs floated context-free).
+function Intro() {
   return (
     <div className="max-w-[720px]">
       <LabelChip>Operator portal</LabelChip>
       <h2
-        className={compact ? "mt-3" : "mt-4"}
+        className="mt-4"
         style={{
           color: INK,
           fontFamily: "var(--font-sans)",
-          fontSize: compact ? "clamp(24px, 2.4vw, 30px)" : "clamp(28px, 3.4vw, 40px)",
+          fontSize: "clamp(28px, 3.4vw, 40px)",
           fontWeight: 500,
           lineHeight: 1.12,
           letterSpacing: "-0.025em",
@@ -119,11 +100,11 @@ function Intro({ compact = false }: { compact?: boolean }) {
         The dashboard your team actually opens.
       </h2>
       <p
-        className={compact ? "mt-2" : "mt-3"}
+        className="mt-3"
         style={{
           color: MUTED,
           fontFamily: "var(--font-sans)",
-          fontSize: compact ? 15.5 : 17,
+          fontSize: 17,
           lineHeight: 1.6,
           maxWidth: 560,
         }}
@@ -135,45 +116,10 @@ function Intro({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function BeatPanel({ beat }: { beat: number }) {
-  const v = BEATS[beat].vignette;
-  return (
-    <div
-      className="relative overflow-hidden flex items-center justify-center"
-      style={{
-        backgroundColor: BRAND,
-        backgroundImage: PANEL_TEXTURE,
-        minHeight: 400,
-        padding: 26,
-      }}
-    >
-      <div className="relative w-full" style={{ maxWidth: 540 }}>
-        <div
-          className="md:max-h-[380px]"
-          style={{
-            borderRadius: 4,
-            overflow: "hidden",
-            boxShadow: "0 1px 2px rgba(22,22,22,0.08), 0 26px 52px -22px rgba(8,26,74,0.5)",
-          }}
-        >
-          <MobileScreen beat={beat} />
-        </div>
-        <VignetteCard
-          icon={v.icon}
-          title={v.title}
-          meta={v.meta}
-          play={beat}
-          className="absolute right-3 bottom-3 w-[236px] max-w-[70%]"
-        />
-      </div>
-    </div>
-  );
-}
-
 function BeatText({ beat, showCta }: { beat: number; showCta: boolean }) {
   const b = BEATS[beat];
   return (
-    <div className="px-6 md:px-8 py-8 md:py-0 flex flex-col justify-center">
+    <div className="px-6 md:px-8 py-8 lg:py-0 flex flex-col justify-center">
       <LabelChip>{b.chip}</LabelChip>
       <h3
         className="mt-4"
@@ -229,7 +175,11 @@ function TabStrip({
       aria-label="Portal walkthrough"
       onKeyDown={onKeyDown}
       className="flex overflow-x-auto"
-      style={{ backgroundImage: HATCH, borderBottom: `1px solid ${BORDER}` }}
+      style={{
+        backgroundImage: HATCH,
+        border: `1px solid ${BORDER}`,
+        borderRadius: 2,
+      }}
     >
       {BEATS.map((b, i) => {
         const on = i === active;
@@ -252,12 +202,18 @@ function TabStrip({
               backgroundColor: on ? "#FFFFFF" : "transparent",
               cursor: "pointer",
               borderRight: i < BEATS.length - 1 ? `1px solid ${BORDER}` : "none",
+              transition: "background-color 250ms ease",
             }}
           >
             {on ? (
               <span aria-hidden className="absolute left-0 right-0 top-0" style={{ height: 2, backgroundColor: BRAND }} />
             ) : null}
-            <Icon className="w-4 h-4" strokeWidth={1.8} aria-hidden style={{ color: on ? BRAND : "#8d8d8d" }} />
+            <Icon
+              className="w-4 h-4"
+              strokeWidth={1.8}
+              aria-hidden
+              style={{ color: on ? BRAND : "#8d8d8d", transition: "color 250ms ease" }}
+            />
             <span
               style={{
                 fontFamily: "var(--font-mono)",
@@ -266,6 +222,7 @@ function TabStrip({
                 textTransform: "uppercase",
                 color: on ? INK : "#5a647d",
                 fontWeight: on ? 600 : 500,
+                transition: "color 250ms ease",
               }}
             >
               {b.tab}
@@ -280,20 +237,11 @@ function TabStrip({
 function ScrollFlow() {
   // Juicebox pattern (Adam, 2026-07-22): the page NEVER pins. The right rail
   // of beat texts scrolls in normal document flow; the left visual (tabs +
-  // crop) is position: sticky within the section and swaps as each text
-  // block crosses the viewport center. Scrolling always moves something.
-  const reduce = useReducedMotion();
+  // full product frame) is position: sticky within the section and swaps as
+  // each text block crosses the viewport center. Scrolling always moves
+  // something.
   const [active, setActive] = useState(0);
-  const [dir, setDir] = useState(1);
   const blockRefs = useRef<Array<HTMLDivElement | null>>([]);
-
-  const onActive = useCallback((i: number) => {
-    setActive((prev) => {
-      if (prev === i) return prev;
-      setDir(i > prev ? 1 : -1);
-      return i;
-    });
-  }, []);
 
   // Active beat = the text block whose center is nearest the viewport center.
   // Plain rAF-throttled scroll math: no IntersectionObserver dead zones, the
@@ -313,7 +261,7 @@ function ScrollFlow() {
           best = i;
         }
       });
-      onActive(best);
+      setActive((prev) => (prev === best ? prev : best));
     };
     const onScroll = () => {
       cancelAnimationFrame(raf);
@@ -327,39 +275,29 @@ function ScrollFlow() {
       window.removeEventListener("resize", onScroll);
       cancelAnimationFrame(raf);
     };
-  }, [onActive]);
+  }, []);
 
   const onSelect = useCallback((i: number) => {
     blockRefs.current[i]?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, []);
 
-  const slide = reduce ? 0 : 24;
-
   return (
     <div className="hidden lg:grid grid-cols-[55%_45%] gap-x-8 items-start">
-      {/* LEFT — sticky visual: tab strip + the active screen crop. The sticky
-          box spans the viewport (minus nav) and the panel centers inside it,
-          so the visual harbors mid-screen instead of gluing to the top. */}
+      {/* LEFT — sticky visual: tab strip + the persistent product frame. The
+          sticky box spans the viewport (minus nav) and the frame centers
+          inside it, so the visual harbors mid-screen. */}
       <div
         className="sticky flex flex-col justify-center"
         style={{ top: 84, height: "calc(100vh - 84px)" }}
       >
-        <div style={{ border: `1px solid ${BORDER}`, borderRadius: 2, overflow: "hidden" }}>
-          <TabStrip active={active} onSelect={onSelect} />
-          <div id="tour-panel" role="tabpanel" aria-labelledby={`tab-${BEATS[active].id}`}>
-            <AnimatePresence mode="wait" custom={dir}>
-              <motion.div
-                key={active}
-                custom={dir}
-                initial={reduce ? false : { opacity: 0, y: dir * slide }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={reduce ? undefined : { opacity: 0, y: -dir * slide }}
-                transition={{ duration: 0.3, ease: [0.2, 0.7, 0.2, 1] }}
-              >
-                <BeatPanel beat={active} />
-              </motion.div>
-            </AnimatePresence>
-          </div>
+        <TabStrip active={active} onSelect={onSelect} />
+        <div
+          id="tour-panel"
+          role="tabpanel"
+          aria-labelledby={`tab-${BEATS[active].id}`}
+          className="mt-4"
+        >
+          <DashboardFrame beat={active} natural={920} />
         </div>
 
         {/* Progress rail. */}
@@ -402,18 +340,32 @@ function ScrollFlow() {
 function NormalFlow({ className }: { className?: string }) {
   return (
     <div className={`py-4 ${className ?? ""}`}>
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-10">
         {BEATS.map((b, i) => (
-          <div key={b.id} style={{ border: `1px solid ${BORDER}`, borderRadius: 2, overflow: "hidden" }}>
+          <div key={b.id}>
             {/* Static tab label (the strip becomes a per-beat heading). */}
-            <div className="flex items-center gap-2" style={{ padding: "11px 16px", backgroundImage: HATCH, borderBottom: `1px solid ${BORDER}` }}>
+            <div
+              className="flex items-center gap-2"
+              style={{
+                padding: "11px 16px",
+                backgroundImage: HATCH,
+                border: `1px solid ${BORDER}`,
+                borderBottom: "none",
+                borderRadius: "2px 2px 0 0",
+              }}
+            >
               <span aria-hidden style={{ width: 2, height: 14, backgroundColor: BRAND }} />
               <b.icon className="w-4 h-4" strokeWidth={1.8} aria-hidden style={{ color: BRAND }} />
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 11.5, letterSpacing: "0.06em", textTransform: "uppercase", color: INK, fontWeight: 600 }}>
                 {b.tab}
               </span>
             </div>
-            <BeatPanel beat={i} />
+            {/* Tablet gets the full desktop frame; phones get the readable
+                phone-width frame in the same browser chrome. */}
+            <div style={{ border: `1px solid ${BORDER}`, borderRadius: "0 0 2px 2px", padding: 14, backgroundColor: "#f7f8fa" }}>
+              <DashboardFrame beat={i} natural={880} className="hidden md:block" />
+              <MobileFrame beat={i} className="md:hidden" />
+            </div>
             <BeatText beat={i} showCta={i === BEATS.length - 1} />
           </div>
         ))}
