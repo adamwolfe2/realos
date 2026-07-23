@@ -78,32 +78,9 @@ export function Hero() {
             </BookDemoLink>
           </div>
 
-          {/* Proof strip — real production numbers, not marketing math. Fills
-              the former dead band between the CTAs and the diagram with the
-              single most credible thing we have: a live tenant. */}
-          <div
-            className="mt-8 flex flex-wrap items-center justify-center gap-x-3 gap-y-1"
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11.5,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-            }}
-          >
-            <span style={{ color: "#0f43b8", fontWeight: 600 }}>
-              {MARKETING.home.hero.microProof}
-            </span>
-            {MARKETING.home.hero.proofStats.map((stat) => (
-              <span key={stat} className="inline-flex items-center gap-x-3">
-                <span aria-hidden style={{ color: "#c9d4ea" }}>
-                  ·
-                </span>
-                <span style={{ color: "#5a647d", fontWeight: 500 }}>{stat}</span>
-              </span>
-            ))}
-          </div>
-
-          <div className="mt-9 md:mt-10">
+          {/* Proof strip removed per Adam 2026-07-23 (screenshot: "remove
+              this"). The dashboard frame below is the proof now. */}
+          <div className="mt-10 md:mt-12">
             <FrameSettle>
               <DashboardFrame beat={1} natural={1040} className="hidden md:block" />
               <MobileFrame beat={1} className="md:hidden" />
