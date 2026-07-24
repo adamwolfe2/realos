@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
-import { Star, Flag } from "lucide-react";
+import { Star, Flag, MessageSquare, AlertCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
@@ -21,6 +21,7 @@ import {
   type PortfolioReputationFeedItem,
 } from "@/lib/reputation/portfolio";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
+import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { PageHeader } from "@/components/admin/page-header";
 import { SourceLogo } from "@/components/portal/reputation/source-logo";
 import { sourceLabel } from "@/components/portal/reputation/source-label";
@@ -294,14 +295,18 @@ export default async function PortfolioReputationPage({
           />
         </Suspense>
 
-        {/* Compact metric strip — 4 essentials, half the size of the old
-          KpiTile grid. The audit called for dropping "Unreviewed" and
-          "Properties tracked" tiles since they're secondary signals. */}
+        {/* Compact metric strip — 4 essentials. Uses canonical KpiTile in
+          its dense variant (same density used on the main portal + chatbot
+          dashboards) instead of a bespoke half-weight tile, so this page
+          stays visually consistent with the rest of the product. The audit
+          called for dropping "Unreviewed" and "Properties tracked" tiles
+          since they're secondary signals. */}
         <section
           aria-label="Reputation KPIs"
           className="grid grid-cols-2 md:grid-cols-4 gap-3"
         >
-          <CompactStat
+          <KpiTile
+            density="dense"
             label="Google rating"
             value={fmtRating(metrics.googleAvgRating)}
             hint={
@@ -309,13 +314,17 @@ export default async function PortfolioReputationPage({
                 ? `${fmtInt(metrics.googleReviewCount)} reviews`
                 : "No reviews yet"
             }
+            icon={<Star className="h-3.5 w-3.5" />}
           />
-          <CompactStat
+          <KpiTile
+            density="dense"
             label="Total mentions"
             value={fmtInt(metrics.totalMentions)}
             hint={mentionsTrendHint(metrics)}
+            icon={<MessageSquare className="h-3.5 w-3.5" />}
           />
-          <CompactStat
+          <KpiTile
+            density="dense"
             label="Negative share"
             value={
               metrics.negativePct != null
@@ -323,11 +332,14 @@ export default async function PortfolioReputationPage({
                 : "—"
             }
             hint={`${fmtInt(negative)} negative`}
+            icon={<AlertCircle className="h-3.5 w-3.5" />}
           />
-          <CompactStat
+          <KpiTile
+            density="dense"
             label="Flagged"
             value={fmtInt(metrics.flaggedCount)}
             hint="Marked for follow-up"
+            icon={<Flag className="h-3.5 w-3.5" />}
           />
         </section>
 
@@ -525,35 +537,6 @@ export default async function PortfolioReputationPage({
       />
     );
   }
-}
-
-// Compact metric tile — half the visual weight of KpiTile. Built inline
-// rather than as a new export because it's specific to this page's
-// "dense, recent-first" treatment. ~80px tall vs KpiTile's ~140px.
-function CompactStat({
-  label,
-  value,
-  hint,
-}: {
-  label: string;
-  value: string;
-  hint?: string;
-}) {
-  return (
-    <div className="ls-card p-3.5">
-      <div className="text-[11px] uppercase tracking-[0.08em] font-semibold text-muted-foreground">
-        {label}
-      </div>
-      <div className="mt-1.5 text-[28px] font-semibold tabular-nums text-foreground leading-none tracking-tight">
-        {value}
-      </div>
-      {hint ? (
-        <div className="mt-1.5 text-[11px] text-muted-foreground truncate">
-          {hint}
-        </div>
-      ) : null}
-    </div>
-  );
 }
 
 // Single-line property row for the analytics drawer. Replaces the wide
