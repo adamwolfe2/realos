@@ -142,7 +142,7 @@ export function ReportEditorControls({
             <button
               type="button"
               onClick={handleCopyLink}
-              className="inline-flex items-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+              className="inline-flex items-center rounded-[2px] bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
               {copied ? "Link copied" : "Copy public link"}
             </button>
@@ -152,7 +152,7 @@ export function ReportEditorControls({
               type="button"
               onClick={handleMarkShared}
               disabled={pending}
-              className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-60"
+              className="inline-flex items-center rounded-[2px] bg-primary text-primary-foreground px-3 py-2 text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-60"
             >
               Mark as shared
             </button>
@@ -162,7 +162,7 @@ export function ReportEditorControls({
               type="button"
               onClick={handleArchive}
               disabled={pending}
-              className="inline-flex items-center rounded-md border border-border bg-white px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+              className="inline-flex items-center rounded-[2px] border border-border bg-card px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
             >
               Archive
             </button>
@@ -179,7 +179,7 @@ export function ReportEditorControls({
           value={headline}
           onChange={(e) => setHeadline(e.target.value)}
           placeholder="Top of mind this week: tour pipeline is strong and Google Ads CPL dropped 18%."
-          className="rounded-md border border-border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+          className="rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
           maxLength={200}
         />
       </label>
@@ -193,7 +193,7 @@ export function ReportEditorControls({
           onChange={(e) => setNotes(e.target.value)}
           rows={5}
           placeholder="A quick context-setting note from you — what's working, what to double down on next, anything the client should know before skimming the numbers."
-          className="rounded-md border border-border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+          className="rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
           maxLength={2000}
         />
       </label>
@@ -220,7 +220,7 @@ export function ReportEditorControls({
           type="button"
           onClick={handleSave}
           disabled={pending || saveState === "saving"}
-          className="inline-flex items-center rounded-md border border-border bg-white px-3 py-2 text-sm font-medium hover:bg-muted disabled:opacity-60"
+          className="inline-flex items-center rounded-[2px] border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-muted disabled:opacity-60"
         >
           Save draft
         </button>

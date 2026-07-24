@@ -47,7 +47,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
   );
 
   return (
-    <div className="mx-auto w-full max-w-[880px] rounded-2xl border border-border bg-card p-8 text-foreground shadow-sm print:border-0 print:shadow-none">
+    <div className="mx-auto w-full max-w-[880px] rounded-[2px] border border-border bg-card p-8 text-foreground shadow-sm print:border-0 print:shadow-none">
       {/* Header */}
       <header className="flex items-start justify-between border-b border-border pb-4">
         <div>
@@ -128,7 +128,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
                 <div key={src.source} className="flex items-center gap-2.5 font-medium">
                   <span className="h-2 w-2 flex-none rounded-sm bg-primary" />
                   <span>{src.source}</span>
-                  <span className="ml-auto font-semibold text-slate-600">
+                  <span className="ml-auto font-semibold text-muted-foreground">
                     {src.count} · {Math.round(src.pct)}%
                   </span>
                 </div>
@@ -136,7 +136,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
             )}
             {["Zillow", "Apartments.com"].map((s) => (
               <div key={s} className="flex items-center gap-2.5 font-medium text-muted-foreground">
-                <span className="h-2 w-2 flex-none rounded-sm bg-slate-300" />
+                <span className="h-2 w-2 flex-none rounded-sm bg-muted-foreground/30" />
                 <span>{s}</span>
                 <span className="ml-auto">not tracked</span>
               </div>
@@ -215,8 +215,8 @@ export function PropertyOnePager({ snapshot, property }: Props) {
                     <span className="flex h-4 w-4 flex-none items-center justify-center">
                       <SourceGlyph source={toMentionSource(row.source)} className="h-4 w-4" />
                     </span>
-                    <span className="w-[74px] font-medium text-slate-600">{row.source}</span>
-                    <span className="h-4 flex-1 overflow-hidden rounded bg-slate-100">
+                    <span className="w-[74px] font-medium text-muted-foreground">{row.source}</span>
+                    <span className="h-4 flex-1 overflow-hidden rounded bg-muted">
                       <span
                         className="block h-full rounded bg-primary"
                         style={{ width: `${Math.round((row.count / repMaxCount) * 100)}%` }}
@@ -232,7 +232,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
                     className={`rounded-full border px-2.5 py-1 text-[10.5px] font-medium ${
                       reputationStats.responseRatePct < 50
                         ? "border-destructive/30 bg-destructive/5 font-semibold text-destructive"
-                        : "border-border bg-elevated text-slate-600"
+                        : "border-border bg-elevated text-muted-foreground"
                     }`}
                   >
                     {Math.round(reputationStats.responseRatePct)}% response rate
@@ -248,7 +248,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
 
       {/* AI search visibility */}
       {aeoStats && aeoStats.totalChecks > 0 ? (
-        <section className="mt-6 rounded-2xl border border-border bg-elevated p-5">
+        <section className="mt-6 rounded-[2px] border border-border bg-elevated p-5">
           <h2 className="flex items-center gap-2 text-[12.5px] font-bold text-foreground">
             <span className="inline-block h-3.5 w-1 rounded-sm bg-primary" />
             AI search visibility
@@ -256,7 +256,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
               LeaseStack exclusive
             </span>
           </h2>
-          <p className="my-3.5 text-[11.5px] leading-relaxed text-slate-600">
+          <p className="my-3.5 text-[11.5px] leading-relaxed text-muted-foreground">
             {property.name} was cited in{" "}
             <b className="text-foreground">
               {aeoStats.cited} of {aeoStats.totalChecks}
@@ -272,13 +272,13 @@ export function PropertyOnePager({ snapshot, property }: Props) {
                       <EngineMark engine={row.engine} />
                     </span>
                     <span className="w-[74px] font-semibold text-foreground">{engineLabel(row.engine)}</span>
-                    <span className="flex h-3 flex-1 overflow-hidden rounded bg-slate-200">
+                    <span className="flex h-3 flex-1 overflow-hidden rounded bg-elevated">
                       <span
                         className="h-full bg-primary"
                         style={{ width: `${row.total ? Math.round((row.cited / row.total) * 100) : 0}%` }}
                       />
                     </span>
-                    <span className="w-12 text-right font-semibold text-slate-600">
+                    <span className="w-12 text-right font-semibold text-muted-foreground">
                       {row.cited} / {row.total}
                     </span>
                   </div>
@@ -289,7 +289,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
                   <i className="inline-block h-2 w-2 rounded-sm bg-primary" /> Times cited
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <i className="inline-block h-2 w-2 rounded-sm bg-slate-200" /> Total answers checked
+                  <i className="inline-block h-2 w-2 rounded-sm bg-elevated" /> Total answers checked
                 </span>
               </div>
             </div>
@@ -299,7 +299,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
               </div>
               <div className="flex flex-col gap-2 text-[11.5px]">
                 {aeoStats.topCompetitors.slice(0, 5).map((c) => (
-                  <div key={c.name} className="flex justify-between font-medium text-slate-600">
+                  <div key={c.name} className="flex justify-between font-medium text-muted-foreground">
                     <span>{c.name}</span>
                     <b className="font-bold text-foreground">{c.mentions}</b>
                   </div>
@@ -313,7 +313,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
       {/* Coverage */}
       <div className="mt-6 grid grid-cols-4 gap-x-4 gap-y-2.5 border-t border-border pt-4">
         {coverageRows(snapshot).map((row) => (
-          <div key={row.label} className="flex items-center gap-2 text-[10.5px] font-medium text-slate-600">
+          <div key={row.label} className="flex items-center gap-2 text-[10.5px] font-medium text-muted-foreground">
             <span className={`h-[7px] w-[7px] flex-none rounded-full ${COVERAGE_DOT[row.state]}`} />
             {row.label}
           </div>
@@ -322,9 +322,9 @@ export function PropertyOnePager({ snapshot, property }: Props) {
 
       <p className="mt-4 text-[10px] leading-relaxed text-muted-foreground">
         Cohort report. Reflects leads created in the window and any downstream activity for them, even if it occurs later.{" "}
-        <b className="font-semibold text-slate-500">Green</b> data flowing,{" "}
-        <b className="font-semibold text-slate-500">blue</b> connected and in progress,{" "}
-        <b className="font-semibold text-slate-500">grey</b> not yet integrated.
+        <b className="font-semibold text-muted-foreground">Green</b> data flowing,{" "}
+        <b className="font-semibold text-muted-foreground">blue</b> connected and in progress,{" "}
+        <b className="font-semibold text-muted-foreground">grey</b> not yet integrated.
       </p>
     </div>
   );

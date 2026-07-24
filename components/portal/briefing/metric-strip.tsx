@@ -104,7 +104,7 @@ function MetricRow({ metric, index }: { metric: Metric; index: number }) {
         </span>
         <motion.span
           className={cn(
-            "inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums shrink-0",
+            "inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums shrink-0",
             deltaTone,
           )}
           initial={reduce ? false : { scale: 0.6, opacity: 0 }}

@@ -311,7 +311,7 @@ export default async function ReportsListPage({
             </label>
             <button
               type="submit"
-              className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-3.5 py-2 text-sm font-medium hover:bg-primary/90 transition-colors"
+              className="inline-flex items-center rounded-[2px] bg-primary text-primary-foreground px-3.5 py-2 text-sm font-medium hover:bg-primary/90 transition-colors"
             >
               Generate report
             </button>
@@ -398,7 +398,7 @@ export default async function ReportsListPage({
           </label>
           <button
             type="submit"
-            className="inline-flex items-center rounded-md border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted"
+            className="inline-flex items-center rounded-[2px] border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted"
           >
             Apply filters
           </button>
