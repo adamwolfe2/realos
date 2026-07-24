@@ -69,16 +69,32 @@ export function MobileNavDrawer({
           <Link
             href="/portal"
             onClick={() => setOpen(false)}
-            aria-label={`${BRAND_NAME} portal home`}
+            aria-label={`${org.brand?.name ?? BRAND_NAME} portal home`}
+            className="min-w-0"
           >
-            <Image
-              src="/logos/leasestack-wordmark.png"
-              alt={BRAND_NAME}
-              width={110}
-              height={20}
-              className="h-5 w-auto"
-              priority
-            />
+            {org.brand?.isWhiteLabeled && org.brand.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={org.brand.logoUrl}
+                alt={org.brand.name}
+                className="h-5 w-auto max-w-[140px] object-contain"
+              />
+            ) : org.brand?.isWhiteLabeled ? (
+              // White-label on but logo missing — render text wordmark so
+              // the chrome reads as a real product instead of empty space.
+              <span className="text-sm font-semibold tracking-tight truncate max-w-[140px]">
+                {org.brand.name}
+              </span>
+            ) : (
+              <Image
+                src="/logos/leasestack-wordmark.png"
+                alt={BRAND_NAME}
+                width={110}
+                height={20}
+                className="h-5 w-auto"
+                priority
+              />
+            )}
           </Link>
           <button
             type="button"
@@ -132,6 +148,22 @@ export function MobileNavDrawer({
                       >
                         <item.icon className="h-4 w-4 shrink-0" />
                         <span className="flex-1 truncate">{item.label}</span>
+                        {(() => {
+                          const count = item.badge?.(org);
+                          if (!count) return null;
+                          return (
+                            <span
+                              className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full text-[10px] font-semibold tabular-nums"
+                              style={{
+                                background: "var(--brand-soft)",
+                                color: "var(--terracotta)",
+                              }}
+                              aria-label={`${count} pending`}
+                            >
+                              {count > 99 ? "99+" : count}
+                            </span>
+                          );
+                        })()}
                       </Link>
                     );
                   })}
