@@ -21,6 +21,8 @@ import {
   Clock,
   MousePointerClick,
   MessageSquare,
+  Radio,
+  Gauge,
 } from "lucide-react";
 import {
   avatarPaletteFor,
@@ -28,8 +30,10 @@ import {
 } from "@/lib/visitors/enrichment";
 import { cn } from "@/lib/utils";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
-import { StatCard } from "@/components/admin/stat-card";
+import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { StatusChip } from "@/components/portal/ui/status-chip";
+import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
+import { AlertBanner } from "@/components/portal/ui/alert-banner";
 import { EngageComposer } from "../engage-composer";
 import { ConvertToLeadButton } from "./convert-button";
 
@@ -61,10 +65,22 @@ export default async function VisitorDetailPage({
       ...propertyOrOrgLevelWhereFragment(scope, null),
     },
     include: {
+      // Capped to the 20 most recent sessions — this page previously
+      // fetched every session + every event with no limit, which was
+      // unbounded on a long-lived, high-traffic visitor. The "Sessions"
+      // KPI tile and timeline numbering use the real total from
+      // sessionAgg below, not this array's length, so the cap never
+      // makes the count lie.
       sessions: {
         orderBy: { startedAt: "desc" },
+        take: 20,
         include: {
           events: {
+            // Only the fields the timeline actually renders (top-pages
+            // list groups by type === "pageview" and displays path).
+            // occurredAt drives ordering only — Prisma can sort on it
+            // without it being selected.
+            select: { type: true, path: true },
             orderBy: { occurredAt: "asc" },
           },
         },
@@ -73,6 +89,16 @@ export default async function VisitorDetailPage({
   });
 
   if (!visitor) notFound();
+
+  // Real totals across ALL sessions for this visitor (not just the
+  // capped 20 above) so the Sessions/Pageviews/Time/Scroll KPI tiles and
+  // the "Session N" numbering stay truthful once the list is capped.
+  const sessionAgg = await prisma.visitorSession.aggregate({
+    where: { orgId: scope.orgId, visitorId: visitor.id },
+    _count: { _all: true },
+    _sum: { pageviewCount: true, totalTimeSeconds: true },
+    _max: { maxScrollDepth: true },
+  });
 
   const identity = extractIdentity(visitor);
   const palette = avatarPaletteFor(
@@ -124,19 +150,13 @@ export default async function VisitorDetailPage({
   // (set by the AL identify pipeline) so a visitor with intent score 70
   // doesn't display as "0 sessions / 0 pageviews / 0s on site" — the
   // audit caught this exact dead-end on Timothy Farris.
-  const sessionRowCount = visitor.sessions.length;
-  const sessionRowPageviews = visitor.sessions.reduce(
-    (acc, s) => acc + s.pageviewCount,
-    0
-  );
-  const sessionRowTime = visitor.sessions.reduce(
-    (acc, s) => acc + s.totalTimeSeconds,
-    0
-  );
-  const sessionRowScroll = visitor.sessions.reduce(
-    (acc, s) => Math.max(acc, s.maxScrollDepth),
-    0
-  );
+  const sessionRowCount = sessionAgg._count._all;
+  const sessionRowPageviews = sessionAgg._sum.pageviewCount ?? 0;
+  const sessionRowTime = sessionAgg._sum.totalTimeSeconds ?? 0;
+  const sessionRowScroll = sessionAgg._max.maxScrollDepth ?? 0;
+  // Session list is capped at 20 (most recent) — flag it so the timeline
+  // can disclose that older sessions exist but aren't listed.
+  const sessionsCapped = sessionRowCount > visitor.sessions.length;
 
   // Prefer first-party session data when present (it's per-event accurate),
   // fall back to the AL-supplied Visitor-row aggregates otherwise. This
@@ -163,8 +183,6 @@ export default async function VisitorDetailPage({
     visitor.sessions.some(
       (s) => s.lastEventAt.getTime() >= Date.now() - LIVE_WINDOW_MS
     );
-
-  const statusConfig = statusBadgeConfig(visitor.status);
 
   // UTM chip label
   const utmLabel = visitor.utmSource
@@ -202,16 +220,14 @@ export default async function VisitorDetailPage({
         }
         actions={
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Status pill */}
-            <span
-              className={cn(
-                "inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md border",
-                statusConfig.classes
-              )}
-            >
-              <span className={cn("h-1.5 w-1.5 rounded-full", statusConfig.dot)} />
-              {statusConfig.label}
-            </span>
+            {/* Identification status — routed through the shared StatusPill
+                primitive (components/portal/ui/status-pill.tsx) used by
+                every other list/detail surface in the portal, instead of a
+                bespoke pill. Label vocabulary unchanged. */}
+            <StatusPill
+              label={STATUS_LABEL[visitor.status]}
+              tone={STATUS_TONE[visitor.status]}
+            />
             {/* UTM chip */}
             {utmLabel ? (
               <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground bg-muted border border-border px-2 py-1 rounded-md">
@@ -384,9 +400,11 @@ export default async function VisitorDetailPage({
 
         {/* Right: Engagement + Sessions */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Engagement metrics */}
+          {/* Engagement metrics — canonical KpiTile (dense density) instead
+              of the legacy StatCard, matching the visitor list page. */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-            <StatCard
+            <KpiTile
+              density="dense"
               label="Sessions"
               value={totalSessions}
               hint={
@@ -394,8 +412,10 @@ export default async function VisitorDetailPage({
                   ? "From AL aggregate"
                   : "Unique visits"
               }
+              icon={<Radio className="h-3.5 w-3.5" />}
             />
-            <StatCard
+            <KpiTile
+              density="dense"
               label="Pageviews"
               value={totalPageviews}
               hint={
@@ -403,13 +423,17 @@ export default async function VisitorDetailPage({
                   ? "Pages tracked by AL"
                   : "Across all sessions"
               }
+              icon={<MousePointerClick className="h-3.5 w-3.5" />}
             />
-            <StatCard
+            <KpiTile
+              density="dense"
               label="Time on site"
               value={formatDuration(totalTimeSeconds)}
               hint="Total engaged time"
+              icon={<Clock className="h-3.5 w-3.5" />}
             />
-            <StatCard
+            <KpiTile
+              density="dense"
               label="Max scroll"
               value={maxScrollDepth > 0 ? `${maxScrollDepth}%` : "—"}
               hint={
@@ -417,7 +441,7 @@ export default async function VisitorDetailPage({
                   ? "Pixel detail required"
                   : "Deepest scroll depth"
               }
-              tone={maxScrollDepth >= 75 ? "success" : undefined}
+              icon={<Gauge className="h-3.5 w-3.5" />}
             />
           </div>
 
@@ -471,6 +495,17 @@ export default async function VisitorDetailPage({
 
           {/* Session timeline */}
           <SectionCard label="Session timeline" padded={false}>
+            {/* Session list is capped at 20 (most recent) for perf — the
+                real total comes from sessionAgg, mirroring the
+                residents-page count + capped-list + note pattern. */}
+            {sessionsCapped ? (
+              <div className="p-4 pb-0">
+                <AlertBanner severity="info">
+                  Showing the most recent {visitor.sessions.length} of{" "}
+                  {sessionRowCount.toLocaleString()} sessions.
+                </AlertBanner>
+              </div>
+            ) : null}
             {visitor.sessions.length === 0 ? (
               <p className="text-sm text-muted-foreground p-5">
                 No sessions recorded yet.
@@ -646,35 +681,21 @@ export default async function VisitorDetailPage({
 // Helpers
 // ---------------------------------------------------------------------------
 
-function statusBadgeConfig(status: VisitorIdentificationStatus) {
-  switch (status) {
-    case VisitorIdentificationStatus.MATCHED_TO_LEAD:
-      return {
-        label: "Matched to lead",
-        dot: "bg-primary",
-        classes: "text-primary bg-primary/10 border-primary/30",
-      };
-    case VisitorIdentificationStatus.ENRICHED:
-      return {
-        label: "Enriched",
-        dot: "bg-primary/60",
-        classes: "text-primary bg-primary/10 border-primary/30",
-      };
-    case VisitorIdentificationStatus.IDENTIFIED:
-      return {
-        label: "Identified",
-        dot: "bg-primary/50",
-        classes: "text-primary bg-primary/10 border-primary/30",
-      };
-    case VisitorIdentificationStatus.ANONYMOUS:
-    default:
-      return {
-        label: "Anonymous",
-        dot: "bg-neutral-400",
-        classes: "text-muted-foreground bg-muted border-border",
-      };
-  }
-}
+// Label vocabulary is unchanged from the previous bespoke pill — only the
+// rendering primitive (StatusPill) and color mechanism (tone token) changed.
+const STATUS_LABEL: Record<VisitorIdentificationStatus, string> = {
+  [VisitorIdentificationStatus.MATCHED_TO_LEAD]: "Matched to lead",
+  [VisitorIdentificationStatus.ENRICHED]: "Enriched",
+  [VisitorIdentificationStatus.IDENTIFIED]: "Identified",
+  [VisitorIdentificationStatus.ANONYMOUS]: "Anonymous",
+};
+
+const STATUS_TONE: Record<VisitorIdentificationStatus, StatusTone> = {
+  [VisitorIdentificationStatus.MATCHED_TO_LEAD]: "success",
+  [VisitorIdentificationStatus.ENRICHED]: "active",
+  [VisitorIdentificationStatus.IDENTIFIED]: "info",
+  [VisitorIdentificationStatus.ANONYMOUS]: "neutral",
+};
 
 function formatDuration(seconds: number): string {
   if (seconds < 60) return `${seconds}s`;
