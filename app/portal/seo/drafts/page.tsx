@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { DraftStatus } from "@prisma/client";
+import { PageHeader } from "@/components/admin/page-header";
 
 export const metadata: Metadata = { title: "Content drafts" };
 export const dynamic = "force-dynamic";
@@ -129,20 +130,11 @@ export default async function PortalDraftsListPage({
         </Link>
       </div>
 
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
-            Content drafts
-          </p>
-          <h1 className="text-2xl font-semibold text-foreground">
-            Your drafts inbox
-          </h1>
-          <p className="text-[12px] text-muted-foreground mt-1 max-w-2xl">
-            Every AI-generated draft across your portfolio. LeaseStack
-            reviews each one before anything ships.
-          </p>
-        </div>
-      </header>
+      <PageHeader
+        eyebrow="Content drafts"
+        title="Your drafts inbox"
+        description="Every AI-generated draft across your portfolio. LeaseStack reviews each one before anything ships."
+      />
 
       <div className="flex flex-wrap gap-2">
         {STATUS_OPTIONS.map((opt) => {

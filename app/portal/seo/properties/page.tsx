@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
+import { PageHeader } from "@/components/admin/page-header";
 
 export const metadata: Metadata = { title: "SEO portfolio" };
 export const dynamic = "force-dynamic";
@@ -83,14 +84,7 @@ export default async function SeoPortfolioPage({
         >
           &larr; SEO Agent
         </Link>
-        <header>
-          <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
-            Portfolio
-          </p>
-          <h1 className="text-2xl font-semibold text-foreground">
-            SEO across your properties
-          </h1>
-        </header>
+        <PageHeader eyebrow="Portfolio" title="SEO across your properties" />
         <p className="text-[12px] text-muted-foreground">
           No properties yet. Add one in{" "}
           <Link href="/portal/properties" className="text-primary hover:underline">
@@ -210,19 +204,11 @@ export default async function SeoPortfolioPage({
         &larr; SEO Agent
       </Link>
 
-      <header>
-        <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
-          Portfolio
-        </p>
-        <h1 className="text-2xl font-semibold text-foreground">
-          SEO across your properties
-        </h1>
-        <p className="text-[12px] text-muted-foreground mt-1 max-w-2xl">
-          One row per property with composite score, open recommendations,
-          top-10 ranking queries, drafts pending, and last sync. Click
-          any property to drill into its SEO Agent dashboard.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="Portfolio"
+        title="SEO across your properties"
+        description="One row per property with composite score, open recommendations, top-10 ranking queries, drafts pending, and last sync. Click any property to drill into its SEO Agent dashboard."
+      />
 
       {(() => {
         // Portfolio rollup. Computed inline against the maps already built

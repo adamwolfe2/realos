@@ -8,6 +8,7 @@ import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { getCachedOrGenerateRecommendations } from "@/lib/seo/agent";
 import { isDataforSeoConfigured } from "@/lib/seo/dataforseo";
 import { isGooglePlacesConfigured } from "@/lib/seo/google-places";
+import { PageHeader } from "@/components/admin/page-header";
 import { ConnectWebsiteCard } from "@/components/portal/seo/connect-website-card";
 import {
   IntegrationStatusRow,
@@ -106,7 +107,40 @@ export default async function SeoAgentPage({
   if (properties.length === 0) {
     return (
       <div className="space-y-6">
-        <PageHeader />
+        <PageHeader
+          eyebrow="SEO & AEO Agent"
+          title="Live search and AI visibility"
+          description="We pull live data from Google, your Search Console, Lighthouse, DataforSEO, and the four major AI engines, then surface specific actions that move your rank, reviews, and lease velocity. Updated daily."
+          actions={
+            <>
+              <a
+                href="/api/portal/seo/recommendations/export"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
+                title="Export open recommendations as CSV"
+              >
+                Export CSV
+              </a>
+              <Link
+                href="/portal/seo/properties"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                Portfolio →
+              </Link>
+              <Link
+                href="/portal/seo/recommendations"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                Archive →
+              </Link>
+              <Link
+                href="/portal/seo/drafts"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                Drafts inbox →
+              </Link>
+            </>
+          }
+        />
         <section className="rounded-2xl border border-border bg-card p-8 text-center">
           <p className="text-sm text-muted-foreground">
             Add a property in /portal/properties to start using the SEO Agent.
@@ -545,7 +579,40 @@ export default async function SeoAgentPage({
 
   return (
     <div className="space-y-5 ls-page-fade">
-      <PageHeader />
+      <PageHeader
+        eyebrow="SEO & AEO Agent"
+        title="Live search and AI visibility"
+        description="We pull live data from Google, your Search Console, Lighthouse, DataforSEO, and the four major AI engines, then surface specific actions that move your rank, reviews, and lease velocity. Updated daily."
+        actions={
+          <>
+            <a
+              href="/api/portal/seo/recommendations/export"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
+              title="Export open recommendations as CSV"
+            >
+              Export CSV
+            </a>
+            <Link
+              href="/portal/seo/properties"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
+            >
+              Portfolio →
+            </Link>
+            <Link
+              href="/portal/seo/recommendations"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
+            >
+              Archive →
+            </Link>
+            <Link
+              href="/portal/seo/drafts"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
+            >
+              Drafts inbox →
+            </Link>
+          </>
+        }
+      />
 
       <PropertySwitcher properties={properties} activeId={property.id} />
 
@@ -743,51 +810,6 @@ export default async function SeoAgentPage({
         domain={domain}
       />
     </div>
-  );
-}
-
-function PageHeader() {
-  return (
-    <header className="flex items-start justify-between gap-3 flex-wrap">
-      <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-1">
-          SEO &amp; AEO Agent
-        </p>
-        <h1 className="text-2xl font-semibold text-foreground leading-tight">
-          Live search and AI visibility
-        </h1>
-        <p className="text-[12px] text-muted-foreground mt-1 max-w-2xl">
-          We pull live data from Google, your Search Console, Lighthouse, DataforSEO, and the four major AI engines, then surface specific actions that move your rank, reviews, and lease velocity. Updated daily.
-        </p>
-      </div>
-      <div className="shrink-0 flex items-center gap-2 flex-wrap">
-        <a
-          href="/api/portal/seo/recommendations/export"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
-          title="Export open recommendations as CSV"
-        >
-          Export CSV
-        </a>
-        <Link
-          href="/portal/seo/properties"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
-        >
-          Portfolio →
-        </Link>
-        <Link
-          href="/portal/seo/recommendations"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
-        >
-          Archive →
-        </Link>
-        <Link
-          href="/portal/seo/drafts"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
-        >
-          Drafts inbox →
-        </Link>
-      </div>
-    </header>
   );
 }
 
