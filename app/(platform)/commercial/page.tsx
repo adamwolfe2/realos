@@ -4,7 +4,7 @@ import { SplitHero } from "@/components/platform/split-hero";
 import { Reveal } from "@/components/platform/reveal";
 
 export const metadata: Metadata = {
-  title: "Commercial real estate leasing intelligence and Audience Sync",
+  title: "Commercial real estate leasing data and Audience Sync",
   description:
     "Audience Sync for commercial is live today: verified office, retail, and industrial intent segments pushed to your ad accounts and CRM. Office, retail, industrial, flex, and medical leasing modules are in a limited design-partner pilot.",
 };

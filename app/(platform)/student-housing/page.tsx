@@ -3,7 +3,7 @@ import { VerticalLanding } from "@/components/platform/vertical-landing";
 import { ChatDemo } from "@/components/platform/artifacts/chat-demo";
 
 export const metadata: Metadata = {
-  title: "Student housing leasing intelligence: fill beds on schedule",
+  title: "Student housing leasing data: fill beds on schedule",
   description:
     "Know which channels signed your last 12 leases. Catch pacing slips 4-8 weeks before occupancy does. Built by an asset manager who ran a real lease-up.",
 };

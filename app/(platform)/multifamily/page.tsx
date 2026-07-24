@@ -3,7 +3,7 @@ import { VerticalLanding } from "@/components/platform/vertical-landing";
 import { PortfolioOccupancy } from "@/components/platform/artifacts/portfolio-occupancy";
 
 export const metadata: Metadata = {
-  title: "Multifamily leasing intelligence across the portfolio",
+  title: "Multifamily leasing data across the portfolio",
   description:
     "Per-property leasing data in one view. Signed leases attributed to source. Know which property is dragging the rollup before the GM does.",
 };
@@ -40,7 +40,7 @@ export default function MultifamilyPage() {
         },
         {
           title: "Unit-level attribution",
-          body: "Know which channel signed which lease at which property. Roll it up to the portfolio. Drill it down to a floor plan. Stop guessing.",
+          body: "Know which channel signed which lease at which property. Roll it up to the portfolio. Drill it down to a floor plan.",
         },
         {
           title: "Per-property retargeting pools",

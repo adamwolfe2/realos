@@ -50,7 +50,7 @@ const PAINS = [
 const MODULES = [
   {
     title: "Unified overflow inbox",
-    body: "Connect every listing source once: portals, DMs, forms, voicemail, email. Every inquiry lands in one inbox with property, market, and source attached. Nothing slips.",
+    body: "Connect every listing source once: portals, DMs, forms, voicemail, email. Every inquiry lands in one inbox with property, market, and source attached.",
   },
   {
     title: "Identity matched on every lead",

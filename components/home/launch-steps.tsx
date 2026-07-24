@@ -5,7 +5,7 @@ import { motion, useInView, useReducedMotion } from "framer-motion";
 import { SectionShell, LabelChip } from "./section-shell";
 
 // ---------------------------------------------------------------------------
-// LaunchSteps — [05] Rollout. Three-step implementation. A connecting hairline
+// LaunchSteps — [05] Rollout. Four-step implementation. A connecting hairline
 // draws left-to-right across the columns and each column fades up as the line
 // reaches it (motion pass sec 7). Reduced-motion renders the line drawn and
 // the columns in place.
@@ -24,14 +24,19 @@ const STEPS: Step[] = [
     body: "A 30-minute intake call, no card required. We connect to your existing PMS, domain, and ad accounts, then lock the build plan.",
   },
   {
-    marker: "By day 30",
-    title: "Read your first report",
-    body: "Live on your domain by day 14. Your first weekly report lands by day 30, with leases attributed to source.",
+    marker: "Days 2-13",
+    title: "We build",
+    body: "We build your leasing site, ad campaigns, after-hours chatbot, visitor pixel, and dashboard. You review the site preview and sign off before anything goes live.",
   },
   {
-    marker: "Month to month",
-    title: "Decide on your terms",
-    body: "No long contract, cancel anytime. Keep going only if it earns its place, and if you ever leave, you keep the site and every lead.",
+    marker: "Day 14",
+    title: "You're live",
+    body: "Site live on your domain. Ads running, chatbot answering, pixel firing. Your dashboard starts filling with real visitors and leads.",
+  },
+  {
+    marker: "Every week after",
+    title: "Reports and terms",
+    body: "Your first weekly report lands after your first full week live, leases attributed to source. No long contract, cancel anytime, and if you ever leave, you keep the site and every lead.",
   },
 ];
 
@@ -96,7 +101,7 @@ export function LaunchSteps() {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3">
+          <div className="grid grid-cols-1 md:grid-cols-4">
             {STEPS.map((step, i) => (
               <motion.div
                 key={step.title}

@@ -5,7 +5,7 @@ import { Reveal } from "@/components/platform/reveal";
 import { PortfolioOccupancy } from "@/components/platform/artifacts/portfolio-occupancy";
 
 export const metadata: Metadata = {
-  title: "Residential leasing intelligence",
+  title: "Residential leasing data",
   description:
     "One leasing-marketing engine for residential operators across student housing, multifamily, senior living, build-to-rent, and single-family rental.",
 };

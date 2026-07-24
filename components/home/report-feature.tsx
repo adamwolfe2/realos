@@ -33,7 +33,7 @@ export function ReportFeature() {
           <div className="relative text-center">
             <Reveal>
               <div className="flex justify-center">
-                <LabelChip>Operating rhythm</LabelChip>
+                <LabelChip>Weekly report</LabelChip>
               </div>
               <h2
                 className="mt-4"

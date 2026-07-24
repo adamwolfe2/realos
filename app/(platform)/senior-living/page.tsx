@@ -3,7 +3,7 @@ import { VerticalLanding } from "@/components/platform/vertical-landing";
 import { NurtureTimeline } from "@/components/platform/artifacts/nurture-timeline";
 
 export const metadata: Metadata = {
-  title: "Senior living leasing intelligence built for the family decision",
+  title: "Senior living leasing data built for the family decision",
   description:
     "Family-first nurture across 90-180 day decisions. Compliance-aware creative. A monthly report the executive director and the family can both read.",
 };

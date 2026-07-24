@@ -132,7 +132,7 @@ export const MARKETING = {
     },
     // Operating Rhythm — back on the homepage per Norman brief (2026-05-28).
     weekly: {
-      eyebrow: "Operating rhythm",
+      eyebrow: "Your week",
       headline: "What operating on LeaseStack platform actually feels like.",
       body:
         "No war rooms. No status meetings. A few purpose-built touchpoints that fit inside your existing workflow.",
