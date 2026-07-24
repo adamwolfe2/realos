@@ -82,7 +82,7 @@ export function PlatformShowcase() {
             className="mt-4 text-[40px] leading-[1.05] font-semibold tracking-tight text-foreground mx-auto max-w-lg"
             style={SERIF}
           >
-            Digital marketing and leasing intelligence in a single dashboard.
+            Every ad dollar, lead, tour, and signed lease in one dashboard.
           </h2>
           <p className="mt-3 text-sm text-foreground/65 mx-auto max-w-md leading-relaxed">
             Live data from AppFolio, GA4, Google Search Console, your
