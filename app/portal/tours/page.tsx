@@ -95,6 +95,7 @@ export default async function ToursPage({
         lead: where,
         ...propertyClause,
         status: TourStatus.REQUESTED,
+        createdAt: { gte: past30 },
       },
     }),
     prisma.tour.count({
@@ -227,6 +228,14 @@ export default async function ToursPage({
     cancelledCount > 0;
 
   if (!hasAnyTours) {
+    // Chatbot module status decides the empty-state copy: when it's already
+    // on, pushing the "set up booking chatbot" CTA is stale/wrong — the
+    // operator just hasn't had a prospect book yet.
+    const chatbotOrg = await prisma.organization.findUnique({
+      where: { id: scope.orgId },
+      select: { moduleChatbot: true },
+    });
+    const chatbotEnabled = !!chatbotOrg?.moduleChatbot;
     return (
       <div className="space-y-4">
         {accessDenied ? <PropertyAccessDeniedBanner /> : null}
@@ -244,8 +253,16 @@ export default async function ToursPage({
         <EmptyState
           icon={<Calendar className="h-4 w-4" />}
           title="No tours scheduled."
-          body="Tours booked via the chatbot or your web form will appear here. Set up your booking chatbot so prospects can self-schedule, then watch tours route back to this view."
-          action={{ label: "Set up booking chatbot", href: "/portal/chatbot" }}
+          body={
+            chatbotEnabled
+              ? "No tours yet — once a prospect books through your chatbot or web form, it'll show up here."
+              : "Tours booked via the chatbot or your web form will appear here. Set up your booking chatbot so prospects can self-schedule, then watch tours route back to this view."
+          }
+          action={
+            chatbotEnabled
+              ? undefined
+              : { label: "Set up booking chatbot", href: "/portal/chatbot" }
+          }
         />
       </div>
     );
@@ -269,7 +286,7 @@ export default async function ToursPage({
       {/* KPIs */}
       <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <KpiTile
-          label="Requested"
+          label="Requested (30d)"
           value={requestedCount.toLocaleString()}
           hint="Awaiting scheduling"
           icon={<Clock className="h-3.5 w-3.5" />}

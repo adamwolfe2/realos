@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
 import { OrgType, ProductLine, UserRole, Prisma } from "@prisma/client";
@@ -127,7 +128,14 @@ async function getDemoScope(): Promise<ScopedContext | null> {
   };
 }
 
-export async function getScope(): Promise<ScopedContext | null> {
+// Wrapped in React's cache() below: every require*() variant funnels
+// through getScope(), and portal pages routinely call it twice per
+// request (once via requireModule()'s gate, once directly for the org
+// context they need to render). cache() dedupes those into a single
+// resolution per request — safe here because getScope() takes no
+// arguments and is purely a function of the current request's auth
+// session, so every call within one request must resolve identically.
+async function getScopeUncached(): Promise<ScopedContext | null> {
   // Defensive: auth() throws if the request didn't pass through
   // clerkMiddleware (e.g. a route inadvertently added to a bypass list
   // in middleware.ts). Treat that as "no session" instead of bubbling
@@ -403,6 +411,8 @@ export async function getScope(): Promise<ScopedContext | null> {
     allowedPropertyIds,
   };
 }
+
+export const getScope = cache(getScopeUncached);
 
 export class ForbiddenError extends Error {
   status = 403;
