@@ -252,7 +252,9 @@ export default async function WorkOrdersPage({
           dedupeKey={`appfolio:work-orders:${scope.orgId}`}
         />
       ) : null}
-      {accessDenied ? <PropertyAccessDeniedBanner /> : null}
+      {accessDenied ? (
+        <PropertyAccessDeniedBanner pathname="/portal/work-orders" />
+      ) : null}
       <PageHeader
         title="Work orders"
         description="Maintenance pipeline mirrored from AppFolio. Operator fulfillment happens in AppFolio; this view keeps you ahead of property issues."

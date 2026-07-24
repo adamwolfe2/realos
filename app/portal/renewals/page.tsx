@@ -99,7 +99,6 @@ export default async function RenewalsPage({
   const [
     activeCount,
     expiringCount,
-    expiredCount,
     pastDueCount,
     pastDueBalance,
     upcoming,
@@ -112,12 +111,6 @@ export default async function RenewalsPage({
         ...where,
         status: { in: [LeaseStatus.ACTIVE, LeaseStatus.EXPIRING] },
         endDate: { gte: now, lte: next120 },
-      },
-    }),
-    prisma.lease.count({
-      where: {
-        ...where,
-        endDate: { lt: now, gte: new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000) },
       },
     }),
     prisma.lease.count({ where: { ...where, isPastDue: true } }),

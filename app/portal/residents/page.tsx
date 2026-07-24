@@ -193,7 +193,6 @@ export default async function ResidentsPage({
       appfolioStatus.state === "never_synced") &&
     (freshness?.shouldAutoTrigger ?? false);
 
-  const reachableActive = withEmailCount + withPhoneCount > 0 ? activeCount : 0;
   const emailCoveragePct =
     activeCount > 0 ? Math.round((withEmailCount / activeCount) * 100) : null;
 
