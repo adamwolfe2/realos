@@ -197,15 +197,12 @@ export default async function ToursPage({
     byStatus.get(t.status)!.push(t);
   }
 
-  const totalScheduled = byStatus.get(TourStatus.SCHEDULED)!.length;
+  // Completion rate must only weigh tours with a resolved outcome.
+  // SCHEDULED/REQUESTED tours haven't happened yet — including them in the
+  // denominator makes a healthy upcoming pipeline read as a bad rate.
+  const resolvedCount = completedCount + noShowCount + cancelledCount;
   const completionRate =
-    totalScheduled + (byStatus.get(TourStatus.COMPLETED)?.length ?? 0) > 0
-      ? Math.round(
-          ((byStatus.get(TourStatus.COMPLETED)?.length ?? 0) /
-            (totalScheduled + (byStatus.get(TourStatus.COMPLETED)?.length ?? 0))) *
-            100
-        )
-      : null;
+    resolvedCount > 0 ? Math.round((completedCount / resolvedCount) * 100) : null;
 
   // Load property list for the multi-select dropdown. Marketable filter
   // first (ACTIVE only, no IMPORTED curation rows), then layered with
@@ -304,7 +301,7 @@ export default async function ToursPage({
         <KpiTile
           label="Completion rate"
           value={completionRate != null ? `${completionRate}%` : "—"}
-          hint="Completed vs scheduled"
+          hint="Of resolved tours (30d)"
           icon={<CheckCircle2 className="h-3.5 w-3.5" />}
         />
       </section>
@@ -327,7 +324,7 @@ export default async function ToursPage({
               return (
                 <div
                   key={key}
-                  className={`rounded-xl border ${isToday ? "border-primary/40 bg-primary/[0.04]" : "border-border bg-card"} p-2.5 min-h-[120px] transition-all`}
+                  className={`rounded-[2px] border ${isToday ? "border-primary/40 bg-primary/[0.04]" : "border-border bg-card"} p-2.5 min-h-[120px] transition-all`}
                 >
                   <div className="flex items-baseline justify-between gap-2 mb-2">
                     <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
@@ -345,7 +342,7 @@ export default async function ToursPage({
                     <ul className="space-y-1.5">
                       {items.map((t) => (
                         <li key={t.id}>
-                          <div className="rounded-lg border border-border bg-card hover:border-primary/40 hover:bg-secondary hover:shadow-sm transition-all">
+                          <div className="rounded-[2px] border border-border bg-card hover:border-primary/40 hover:bg-secondary hover:shadow-sm transition-all">
                             <Link
                               href={`/portal/leads/${t.lead.id}`}
                               className="block px-2 pt-1.5 pb-1"
@@ -404,7 +401,7 @@ export default async function ToursPage({
               return (
                 <div
                   key={status}
-                  className="rounded-xl border border-border bg-muted/30 p-2.5"
+                  className="rounded-[2px] border border-border bg-muted/30 p-2.5"
                 >
                   <div className="flex items-center justify-between gap-2 mb-2 px-1">
                     <StatusPill
@@ -425,7 +422,7 @@ export default async function ToursPage({
                         <li key={t.id}>
                           <Link
                             href={`/portal/leads/${t.lead.id}`}
-                            className="block rounded-lg border border-border bg-card hover:border-primary/40 hover:shadow-sm px-2 py-1.5 transition-all"
+                            className="block rounded-[2px] border border-border bg-card hover:border-primary/40 hover:shadow-sm px-2 py-1.5 transition-all"
                           >
                             <p className="text-[11px] font-medium text-foreground truncate">
                               {[t.lead.firstName, t.lead.lastName]
