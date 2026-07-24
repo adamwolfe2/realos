@@ -28,6 +28,7 @@ import { DashboardSection } from "@/components/portal/dashboard/dashboard-sectio
 import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
 import { DataTable, EntityCell } from "@/components/portal/ui/data-table";
 import { EmptyState } from "@/components/portal/ui/empty-state";
+import { AlertBanner } from "@/components/portal/ui/alert-banner";
 import { getAppFolioStatus } from "@/lib/integrations/appfolio-status";
 import { AppFolioStatusBanner } from "@/components/portal/integrations/appfolio-status-banner";
 import { RunAppFolioSyncButton } from "@/components/portal/integrations/run-appfolio-sync-button";
@@ -119,6 +120,7 @@ export default async function ResidentsPage({
     withEmailCount,
     withPhoneCount,
     residents,
+    totalMatchingCount,
     properties,
     noticeBoard,
     appfolioStatus,
@@ -152,6 +154,10 @@ export default async function ResidentsPage({
         },
       },
     }),
+    // Real total for the "N of M" label below — the findMany above caps at
+    // 300 rows, so without this count the label silently lied for any
+    // portfolio over 300 residents.
+    prisma.resident.count({ where: baseFilter }),
     prisma.property.findMany({
       // Marketable filter: only ACTIVE properties (no IMPORTED curation
       // queue, no EXCLUDED sub-records). Layered with visibleProperties()
@@ -405,7 +411,7 @@ export default async function ResidentsPage({
         <div className="flex items-baseline justify-between mb-2 px-1">
           <div>
             <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
-              {residents.length} of all matching
+              {residents.length} of {totalMatchingCount.toLocaleString()}
             </p>
             <h2 className="text-[15px] font-medium tracking-tight text-foreground">
               Roster
@@ -415,6 +421,12 @@ export default async function ResidentsPage({
             Read-only mirror · edit in AppFolio
           </p>
         </div>
+        {totalMatchingCount > residents.length ? (
+          <AlertBanner severity="info" className="mb-2">
+            Showing first {residents.length} — narrow your filters to see the
+            rest.
+          </AlertBanner>
+        ) : null}
         {residents.length === 0 ? (
           <EmptyState
             title="No residents match these filters."
