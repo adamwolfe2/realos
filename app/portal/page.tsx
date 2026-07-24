@@ -237,6 +237,17 @@ export default async function PortalHome({
     "propertyId",
     { defaultIncludesOrgRows: true },
   );
+  // Tour + Application have a REQUIRED propertyId — spreading the
+  // org-rows clause ({ OR: [.., { propertyId: null }] }) into their
+  // counts makes Prisma 7 throw PrismaClientValidationError ("Argument
+  // `propertyId` is missing"), which blanked the ENTIRE dashboard with
+  // the amber error panel for every operator (prod, 2026-07-24). Models
+  // with a required propertyId get the plain marketable in-list.
+  const requiredModelPropertyClause = await marketableScopedPropertyClause(
+    scope,
+    requestedIds,
+    "propertyId",
+  );
   const isFiltered = effectiveIds !== null && effectiveIds.length > 0;
 
   try {
@@ -308,14 +319,14 @@ export default async function PortalHome({
         where: {
           status: TourStatus.SCHEDULED,
           lead: where,
-          ...propertyClause,
+          ...requiredModelPropertyClause,
         },
       }),
       prisma.tour.count({
         where: {
           status: TourStatus.SCHEDULED,
           lead: where,
-          ...propertyClause,
+          ...requiredModelPropertyClause,
           createdAt: {
             gte: new Date(Date.now() - 56 * DAY),
             lt: since28d,
@@ -326,14 +337,14 @@ export default async function PortalHome({
         where: {
           status: ApplicationStatus.SUBMITTED,
           lead: where,
-          ...propertyClause,
+          ...requiredModelPropertyClause,
           createdAt: { gte: since28d },
         },
       }),
       prisma.application.count({
         where: {
           lead: where,
-          ...propertyClause,
+          ...requiredModelPropertyClause,
           OR: [
             { status: ApplicationStatus.SUBMITTED },
             { status: ApplicationStatus.UNDER_REVIEW },
@@ -341,7 +352,11 @@ export default async function PortalHome({
         },
       }),
       prisma.tour.count({
-        where: { lead: where, ...propertyClause, status: TourStatus.REQUESTED },
+        where: {
+          lead: where,
+          ...requiredModelPropertyClause,
+          status: TourStatus.REQUESTED,
+        },
       }),
       prisma.property.findMany({
         // BUG fix (Norman 2026-05-21 screenshot): the "Top properties"
