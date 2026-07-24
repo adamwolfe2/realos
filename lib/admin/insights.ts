@@ -13,6 +13,46 @@ import { OrgType, TenantStatus } from "@prisma/client";
 const DAY = 24 * 60 * 60 * 1000;
 
 // ---------------------------------------------------------------------------
+// Internal-workspace heuristic — DISPLAY FILTER ONLY. Never deletes, never
+// excludes anything from the money/action-item math — it only decides what
+// shows up in tenant-facing lists (leaderboard, onboarding, attention queue).
+//
+// The agency's own team spins up CLIENT-type orgs while building/demoing:
+// Adam's personal test workspace, an un-renamed Clerk default ("x@y.com's
+// workspace") from someone poking the signup flow, seeded demo fixtures.
+// None of those are real prospects, but with them mixed in the tenant lists
+// were 5 rows of zeros. An org is treated as internal when ANY of:
+//   1. Its contact-email domain is one of the agency's own companies, the
+//      platform's own domain (demo/staging tenants), or the RFC 2606
+//      placeholder domain seed scripts use (example.com).
+//   2. Its name is an un-renamed Clerk default ("someone@x.com's workspace").
+//   3. Its name or slug contains "demo"/"test" as a whole word.
+// ---------------------------------------------------------------------------
+const KNOWN_INTERNAL_EMAIL_DOMAINS = new Set([
+  "leasestack.co", // the platform's own domain — demo/staging tenants
+  "amcollectivecapital.com", // Adam's other company, used as a test org
+  "modern-amenities.com", // Adam's other company
+  "mentor126.ai", // Adam's other company
+  "example.com", // RFC 2606 placeholder — seeded/dummy fixtures
+]);
+const WORKSPACE_DEFAULT_NAME_RE = /'s workspace$/i;
+const DEMO_OR_TEST_NAME_RE = /\b(demo|test)\b/i;
+
+export function isInternalWorkspaceOrg(org: {
+  name: string;
+  slug: string;
+  primaryContactEmail?: string | null;
+}): boolean {
+  const domain = org.primaryContactEmail?.split("@")[1]?.toLowerCase();
+  if (domain && KNOWN_INTERNAL_EMAIL_DOMAINS.has(domain)) return true;
+  if (WORKSPACE_DEFAULT_NAME_RE.test(org.name)) return true;
+  if (DEMO_OR_TEST_NAME_RE.test(org.name) || DEMO_OR_TEST_NAME_RE.test(org.slug)) {
+    return true;
+  }
+  return false;
+}
+
+// ---------------------------------------------------------------------------
 // Money — agency-wide revenue health
 // ---------------------------------------------------------------------------
 
@@ -121,7 +161,7 @@ export async function getAdminActionItems(
 ): Promise<AdminActionItem[]> {
   const now = Date.now();
 
-  const clients = await prisma.organization.findMany({
+  const allClients = await prisma.organization.findMany({
     where: { orgType: OrgType.CLIENT },
     include: {
       domains: { select: { id: true, hostname: true, sslStatus: true, dnsConfigured: true } },
@@ -145,6 +185,11 @@ export async function getAdminActionItems(
       _count: { select: { properties: true, users: true } },
     },
   });
+
+  // Internal/test workspaces don't need "AppFolio sync failing" or
+  // "flagged at-risk" surfaced to the operator — same display filter as
+  // the tenant lists (see isInternalWorkspaceOrg above).
+  const clients = allClients.filter((o) => !isInternalWorkspaceOrg(o));
 
   // Stale intake submissions (org-less rows waiting on agency review).
   const staleIntakes = await prisma.intakeSubmission.findMany({
@@ -329,7 +374,14 @@ export async function getAdminActionItems(
 }
 
 // ---------------------------------------------------------------------------
-// Tenant leaderboard — leads / visitors / activity over the last 7d
+// Tenant segments — replaces the old single "leaderboard" (which mixed live
+// tenants and pre-launch pipeline rows into one list, so anything not yet
+// launched showed up as 5 columns of zero). Split into:
+//   - active:     launched/live tenants, ranked by lead velocity + trend
+//   - onboarding: pre-launch pipeline tenants, shown by stage only — no
+//                 lead-velocity columns, because they have no live pixel
+//                 generating leads yet and a "0" column there is noise.
+// Both lists exclude internal/test workspaces (see isInternalWorkspaceOrg).
 // ---------------------------------------------------------------------------
 
 export type TenantLeaderRow = {
@@ -344,13 +396,42 @@ export type TenantLeaderRow = {
   velocityDelta: number;
 };
 
-export async function getTenantLeaderboard(
-  limit = 8,
-): Promise<TenantLeaderRow[]> {
+export type TenantOnboardingRow = {
+  orgId: string;
+  name: string;
+  slug: string;
+  status: TenantStatus;
+  /** ISO timestamp of the last status change — powers "in stage Nd". */
+  updatedAt: string;
+};
+
+export type TenantSegments = {
+  active: TenantLeaderRow[];
+  onboarding: TenantOnboardingRow[];
+  /** Internal/test CLIENT-type orgs hidden from both lists above. */
+  internalHiddenCount: number;
+};
+
+const ACTIVE_TENANT_STATUSES = new Set<TenantStatus>([
+  TenantStatus.ACTIVE,
+  TenantStatus.LAUNCHED,
+  TenantStatus.AT_RISK,
+  TenantStatus.PAUSED,
+]);
+const ONBOARDING_TENANT_STATUSES = new Set<TenantStatus>([
+  TenantStatus.INTAKE_RECEIVED,
+  TenantStatus.CONSULTATION_BOOKED,
+  TenantStatus.PROPOSAL_SENT,
+  TenantStatus.CONTRACT_SIGNED,
+  TenantStatus.BUILD_IN_PROGRESS,
+  TenantStatus.QA,
+]);
+
+export async function getTenantSegments(limit = 8): Promise<TenantSegments> {
   const since28 = new Date(Date.now() - 28 * DAY);
   const since7 = new Date(Date.now() - 7 * DAY);
 
-  const clients = await prisma.organization.findMany({
+  const allClients = await prisma.organization.findMany({
     where: { orgType: OrgType.CLIENT },
     select: {
       id: true,
@@ -358,29 +439,39 @@ export async function getTenantLeaderboard(
       slug: true,
       status: true,
       mrrCents: true,
+      primaryContactEmail: true,
+      updatedAt: true,
     },
   });
-  if (clients.length === 0) return [];
 
-  const ids = clients.map((c) => c.id);
+  const internalHiddenCount = allClients.filter(isInternalWorkspaceOrg).length;
+  const clients = allClients.filter((c) => !isInternalWorkspaceOrg(c));
 
-  const [leads28, leads7] = await Promise.all([
-    prisma.lead.groupBy({
-      by: ["orgId"],
-      where: { orgId: { in: ids }, createdAt: { gte: since28 } },
-      _count: { _all: true },
-    }),
-    prisma.lead.groupBy({
-      by: ["orgId"],
-      where: { orgId: { in: ids }, createdAt: { gte: since7 } },
-      _count: { _all: true },
-    }),
-  ]);
+  const activeClients = clients.filter((c) => ACTIVE_TENANT_STATUSES.has(c.status));
+  const onboardingClients = clients.filter((c) =>
+    ONBOARDING_TENANT_STATUSES.has(c.status),
+  );
+
+  const activeIds = activeClients.map((c) => c.id);
+  const [leads28, leads7] = activeIds.length
+    ? await Promise.all([
+        prisma.lead.groupBy({
+          by: ["orgId"],
+          where: { orgId: { in: activeIds }, createdAt: { gte: since28 } },
+          _count: { _all: true },
+        }),
+        prisma.lead.groupBy({
+          by: ["orgId"],
+          where: { orgId: { in: activeIds }, createdAt: { gte: since7 } },
+          _count: { _all: true },
+        }),
+      ])
+    : [[], []];
 
   const l28 = new Map(leads28.map((r) => [r.orgId, r._count._all]));
   const l7 = new Map(leads7.map((r) => [r.orgId, r._count._all]));
 
-  const rows = clients
+  const active = activeClients
     .map((c) => {
       const v7 = l7.get(c.id) ?? 0;
       const v28 = l28.get(c.id) ?? 0;
@@ -395,9 +486,23 @@ export async function getTenantLeaderboard(
         velocityDelta: v7 * 4 - v28,
       };
     })
-    .sort((a, b) => b.leads7d - a.leads7d || b.leads28d - a.leads28d);
+    .sort((a, b) => b.leads7d - a.leads7d || b.leads28d - a.leads28d)
+    .slice(0, limit);
 
-  return rows.slice(0, limit);
+  const onboarding = onboardingClients
+    .map((c) => ({
+      orgId: c.id,
+      name: c.name,
+      slug: c.slug,
+      status: c.status,
+      updatedAt: c.updatedAt.toISOString(),
+    }))
+    // Oldest-in-stage first — the one that's been sitting longest is the
+    // one most likely to need a nudge.
+    .sort((a, b) => a.updatedAt.localeCompare(b.updatedAt))
+    .slice(0, limit);
+
+  return { active, onboarding, internalHiddenCount };
 }
 
 // ---------------------------------------------------------------------------

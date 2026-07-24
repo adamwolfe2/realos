@@ -2,9 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowRight,
-  FileInput,
-  Activity,
-  Brush,
   AlertTriangle,
   AlertOctagon,
   Info,
@@ -20,14 +17,17 @@ import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import {
   getAgencyMoney,
   getAdminActionItems,
-  getTenantLeaderboard,
+  getTenantSegments,
   type AdminActionItem,
   type AdminActionSeverity,
   type TenantLeaderRow,
+  type TenantOnboardingRow,
+  type TenantSegments,
 } from "@/lib/admin/insights";
 import { StatusBadge } from "@/components/admin/status-badge";
 import { humanTenantStatus, tenantStatusTone } from "@/lib/format";
 import { formatDistanceToNow } from "date-fns";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Agency overview" };
 export const dynamic = "force-dynamic";
@@ -37,89 +37,77 @@ const DAY = 24 * 60 * 60 * 1000;
 // ---------------------------------------------------------------------------
 // /admin — Agency Overview
 //
-// Rebuilt around real signal after operator feedback that the previous
-// "Action inbox" + "Tenant funnel" + "Recent intakes" stack was a wall
-// of zeros. The new layout leads with money + a ranked list of CONCRETE
-// actions ("SG Real Estate: AppFolio sync failing") instead of abstract
-// counters ("3 at-risk clients").
+// Rebuilt 2026-07-24 after operator feedback that the previous layout was
+// "a lot of slop": duplicate MRR tiles, a buried attention queue, a 5-row
+// leaderboard of zeros (mostly internal test workspaces), a 3rd "Operations"
+// panel repeating the same leads number, and an empty "Recent intakes" card
+// with a stray loading sliver.
 //
 // Sections (top to bottom):
-//   1. MRR strip                 — total MRR, active count, at-risk MRR, MoM
-//   2. Needs your attention      — ranked AdminActionItem list (critical →
-//                                  warning → info), each row links straight
-//                                  to the actionable surface
-//   3. Live tenant leaderboard   — top tenants by 7d lead velocity, with a
-//                                  trend arrow vs the trailing 28d average
-//   4. Funnel + Recent + Jump-to — the legacy panels, now compact and below
-//                                  the fold so a calm "you're caught up"
-//                                  state still leaves the page useful
+//   1. MRR strip            — Total MRR · At-risk MRR · Churn(30d) · Launched(30d)
+//   2. Needs your attention — the SOUL of the page. Full width, directly
+//                             under the KPI strip, severity-grouped, each
+//                             row's age escalates in color, real button
+//                             affordance instead of a bare arrow. Pending
+//                             intakes / open creative live here as chips.
+//   3. Active tenants / Onboarding — split so a pre-launch tenant never
+//                             shows a fake "0 leads" column, and both lists
+//                             filter out internal/test workspaces.
+//   4. Recent intakes       — only renders when there's something to show.
 // ---------------------------------------------------------------------------
 
 export default async function AdminHome() {
   await requireAgency();
 
-  const since30d = new Date(Date.now() - 30 * DAY);
-
-  const [
-    money,
-    actionItems,
-    leaderboard,
-    pipelineCounts,
-    leadsThisMonth,
-    intakePending,
-    intakeNewToday,
-    openCreative,
-    recentSubmissions,
-  ] = await Promise.all([
-    getAgencyMoney().catch(() => ({
-      totalMrrCents: 0,
-      activeMrrCents: 0,
-      atRiskMrrCents: 0,
-      pausedMrrCents: 0,
-      activeCount: 0,
-      atRiskCount: 0,
-      pausedCount: 0,
-      launched30d: 0,
-      churned30d: 0,
-    })),
-    getAdminActionItems(10).catch(() => [] as AdminActionItem[]),
-    getTenantLeaderboard(6).catch(() => [] as TenantLeaderRow[]),
-    prisma.organization
-      .groupBy({
-        by: ["status"],
-        where: { orgType: OrgType.CLIENT },
-        _count: { id: true },
-      })
-      .catch(() => []),
-    prisma.lead.count({ where: { createdAt: { gte: since30d } } }).catch(() => 0),
-    prisma.intakeSubmission
-      .count({ where: { reviewedAt: null, convertedAt: null } })
-      .catch(() => 0),
-    prisma.intakeSubmission
-      .count({ where: { submittedAt: { gte: new Date(Date.now() - DAY) } } })
-      .catch(() => 0),
-    prisma.creativeRequest
-      .count({ where: { status: { in: ["SUBMITTED", "IN_REVIEW", "IN_PROGRESS"] } } })
-      .catch(() => 0),
-    prisma.intakeSubmission
-      .findMany({
-        orderBy: { submittedAt: "desc" },
-        take: 5,
-        // Explicit select keeps the dashboard payload tight — Intake
-        // submissions carry several large Text/Json columns this card
-        // never reads.
-        select: {
-          id: true,
-          companyName: true,
-          propertyType: true,
-          currentBackendPlatform: true,
-          submittedAt: true,
-          reviewedAt: true,
-          convertedAt: true,
-        },
-      })
-      .catch(() => []),
-  ]);
+  const [money, actionItems, segments, pipelineCounts, intakePending, openCreative, recentSubmissions] =
+    await Promise.all([
+      getAgencyMoney().catch(() => ({
+        totalMrrCents: 0,
+        activeMrrCents: 0,
+        atRiskMrrCents: 0,
+        pausedMrrCents: 0,
+        activeCount: 0,
+        atRiskCount: 0,
+        pausedCount: 0,
+        launched30d: 0,
+        churned30d: 0,
+      })),
+      getAdminActionItems(10).catch(() => [] as AdminActionItem[]),
+      getTenantSegments(6).catch(
+        () => ({ active: [], onboarding: [], internalHiddenCount: 0 }) as TenantSegments,
+      ),
+      prisma.organization
+        .groupBy({
+          by: ["status"],
+          where: { orgType: OrgType.CLIENT },
+          _count: { id: true },
+        })
+        .catch(() => []),
+      prisma.intakeSubmission
+        .count({ where: { reviewedAt: null, convertedAt: null } })
+        .catch(() => 0),
+      prisma.creativeRequest
+        .count({ where: { status: { in: ["SUBMITTED", "IN_REVIEW", "IN_PROGRESS"] } } })
+        .catch(() => 0),
+      prisma.intakeSubmission
+        .findMany({
+          orderBy: { submittedAt: "desc" },
+          take: 5,
+          // Explicit select keeps the dashboard payload tight — Intake
+          // submissions carry several large Text/Json columns this card
+          // never reads.
+          select: {
+            id: true,
+            companyName: true,
+            propertyType: true,
+            currentBackendPlatform: true,
+            submittedAt: true,
+            reviewedAt: true,
+            convertedAt: true,
+          },
+        })
+        .catch(() => []),
+    ]);
 
   const statusMap = new Map(
     pipelineCounts.map((r) => [r.status, r._count?.id ?? 0] as const),
@@ -133,8 +121,9 @@ export default async function AdminHome() {
     (statusMap.get(TenantStatus.CONTRACT_SIGNED) ?? 0) +
     (statusMap.get(TenantStatus.QA) ?? 0);
 
-  const criticalCount = actionItems.filter((i) => i.severity === "critical").length;
-  const warningCount = actionItems.filter((i) => i.severity === "warning").length;
+  const criticalItems = actionItems.filter((i) => i.severity === "critical");
+  const warningItems = actionItems.filter((i) => i.severity === "warning");
+  const infoItems = actionItems.filter((i) => i.severity === "info");
 
   return (
     <div className="space-y-5 max-w-7xl mx-auto w-full">
@@ -157,10 +146,11 @@ export default async function AdminHome() {
       />
 
       {/* ──────────────────────────────────────────────────────────────
-          1. MRR strip — leads with money. Each tile renders both the
-             value and a contextual sub-line (count, delta) so it's
-             actually decision-useful instead of a number floating
-             alone.
+          1. MRR strip — one consolidated set of 4 tiles. No more
+             Total MRR / Active MRR duplicates: Total MRR carries the
+             active+at-risk breakdown in its own subtitle, and At-risk
+             MRR reads coherently even when the flagged client hasn't
+             lost dollars yet ($0 MRR but 1 client flagged).
           ────────────────────────────────────────────────────────── */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <MoneyTile
@@ -170,20 +160,21 @@ export default async function AdminHome() {
           hint={`${money.activeCount} active${money.atRiskCount > 0 ? ` · ${money.atRiskCount} at-risk` : ""}`}
         />
         <MoneyTile
-          icon={<TrendingUp className="h-3.5 w-3.5" />}
-          label="Active MRR"
-          value={formatMoney(money.activeMrrCents)}
-          hint={`${money.launched30d} launched in 30d`}
-          tone="positive"
-        />
-        <MoneyTile
           icon={<AlertTriangle className="h-3.5 w-3.5" />}
           label="At-risk MRR"
-          value={formatMoney(money.atRiskMrrCents)}
+          value={
+            money.atRiskCount === 0
+              ? "$0"
+              : money.atRiskMrrCents > 0
+                ? formatMoney(money.atRiskMrrCents)
+                : `${money.atRiskCount} client${money.atRiskCount === 1 ? "" : "s"}`
+          }
           hint={
-            money.atRiskCount > 0
-              ? `${money.atRiskCount} client${money.atRiskCount === 1 ? "" : "s"} flagged`
-              : "Nothing flagged"
+            money.atRiskCount === 0
+              ? "Nothing flagged"
+              : money.atRiskMrrCents > 0
+                ? `${money.atRiskCount} client${money.atRiskCount === 1 ? "" : "s"} flagged`
+                : "flagged at-risk · $0 MRR"
           }
           tone={money.atRiskCount > 0 ? "warn" : undefined}
         />
@@ -194,35 +185,46 @@ export default async function AdminHome() {
           hint={money.pausedCount > 0 ? `${money.pausedCount} paused` : "Steady"}
           tone={money.churned30d > 0 ? "warn" : undefined}
         />
+        <MoneyTile
+          icon={<TrendingUp className="h-3.5 w-3.5" />}
+          label="Launched (30d)"
+          value={`${money.launched30d}`}
+          hint={`${money.activeCount} active total`}
+          tone={money.launched30d > 0 ? "positive" : undefined}
+        />
       </section>
 
       {/* ──────────────────────────────────────────────────────────────
-          2. Needs your attention — the heart of the page. Replaces the
-             old empty-by-default "Action inbox" tiles with concrete
-             rows like "SG Real Estate: AppFolio sync failing → fix".
-             Severity badge on the left, tenant tag inline, "X days ago"
-             on the right.
+          2. Needs your attention — the soul of the page. Full width,
+             directly under the KPI strip. Severity-grouped (critical
+             first), each row's age escalates in color, and pending
+             intakes / open creative surface as compact chips in the
+             header instead of their own duplicate "Operations" panel.
           ────────────────────────────────────────────────────────── */}
       <SectionCard
         label="Needs your attention"
         description={
           actionItems.length === 0
             ? "Nothing flagged — every tenant is green."
-            : `${criticalCount} critical · ${warningCount} warning${actionItems.length > criticalCount + warningCount ? ` · ${actionItems.length - criticalCount - warningCount} info` : ""}`
+            : `${criticalItems.length} critical · ${warningItems.length} warning${infoItems.length > 0 ? ` · ${infoItems.length} info` : ""}`
         }
         action={
-          actionItems.length > 0 ? (
-            <Link
-              href="/admin/insights"
-              className="text-xs font-semibold text-primary hover:underline"
-            >
-              View all →
-            </Link>
-          ) : null
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <OpsChip href="/admin/intakes" label="pending intakes" count={intakePending} />
+            <OpsChip href="/admin/creative-requests" label="open creative" count={openCreative} />
+            {actionItems.length > 0 ? (
+              <Link
+                href="/admin/insights"
+                className="text-xs font-semibold text-primary hover:underline ml-1"
+              >
+                View all →
+              </Link>
+            ) : null}
+          </div>
         }
       >
         {actionItems.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border bg-secondary px-4 py-6 text-center">
+          <div className="rounded-[2px] border border-dashed border-[var(--hair-strong)] bg-secondary px-4 py-6 text-center">
             <p className="text-sm font-medium text-foreground">All clear.</p>
             <p className="text-xs text-muted-foreground mt-1">
               No stale intakes, failed integrations, or at-risk clients. We'll
@@ -230,100 +232,100 @@ export default async function AdminHome() {
             </p>
           </div>
         ) : (
-          <ul className="divide-y divide-border">
-            {actionItems.map((item) => (
-              <ActionRow key={item.id} item={item} />
-            ))}
-          </ul>
+          <div>
+            <ActionGroup severity="critical" items={criticalItems} />
+            <ActionGroup severity="warning" items={warningItems} />
+            <ActionGroup severity="info" items={infoItems} />
+          </div>
         )}
       </SectionCard>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* ──────────────────────────────────────────────────────────
-            3. Live tenant leaderboard — who's growing, who's not.
-               7d lead count → trend arrow against the trailing 28d
-               weekly average so growth/decline is visible at a glance.
-            ────────────────────────────────────────────────────── */}
-        <div className="lg:col-span-2">
-          <SectionCard
-            label="Tenant leaderboard"
-            description="Lead velocity over the last 7 days vs the trailing 4-week average."
-            action={
-              <Link
-                href="/admin/clients"
-                className="text-xs font-semibold text-primary hover:underline"
-              >
-                All clients →
-              </Link>
-            }
-          >
-            {leaderboard.length === 0 ? (
-              <p className="text-xs text-muted-foreground py-4 text-center">
-                Leaderboard fills out once a tenant has at least one lead in
-                the last 28 days.
-              </p>
-            ) : (
-              <ul className="divide-y divide-border">
-                {leaderboard.map((row) => (
-                  <LeaderboardRow key={row.orgId} row={row} />
-                ))}
-              </ul>
-            )}
-          </SectionCard>
-        </div>
+      {/* ──────────────────────────────────────────────────────────────
+          3. Active tenants / Onboarding — replaces the old single
+             leaderboard (which mixed pre-launch pipeline rows in and
+             read as 5 columns of zeros). Active tenants get real lead
+             velocity + trend; Onboarding gets a stage badge only — no
+             fake zero-velocity columns for tenants with no live pixel
+             yet. Both filter out internal/test workspaces.
+          ────────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <SectionCard
+          label="Active tenants"
+          description="Lead velocity — last 7 days vs the trailing 4-week average."
+          action={
+            <Link
+              href="/admin/clients"
+              className="text-xs font-semibold text-primary hover:underline"
+            >
+              All clients →
+            </Link>
+          }
+        >
+          {segments.active.length === 0 ? (
+            <p className="text-xs text-muted-foreground py-4 text-center">
+              No live tenants yet — this fills out once a tenant launches.
+            </p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {segments.active.map((row) => (
+                <LeaderboardRow key={row.orgId} row={row} />
+              ))}
+            </ul>
+          )}
+        </SectionCard>
 
-        {/* Operations counters — Pending intakes, open creative, leads MTD.
-            Pre-cleanup (2026-06-04) this card also exposed Pipeline board,
-            All clients, Ad campaigns, and Support chat as bare quick-jump
-            rows. Those were duplicates of the left nav entries one level
-            up and added four count-less rows that diluted the numeric
-            content. The remaining three rows are real today-state
-            numbers an agency operator acts on. */}
-        <SectionCard label="Operations">
-          <ul className="space-y-2">
-            <OpsRow
-              href="/admin/intakes"
-              icon={<FileInput className="h-3.5 w-3.5" />}
-              label="Pending intakes"
-              count={intakePending}
-              subLabel={
-                intakeNewToday > 0 ? `${intakeNewToday} new today` : undefined
-              }
-            />
-            <OpsRow
-              href="/admin/creative-requests"
-              icon={<Brush className="h-3.5 w-3.5" />}
-              label="Open creative"
-              count={openCreative}
-            />
-            <OpsRow
-              href="/admin/leads"
-              icon={<Activity className="h-3.5 w-3.5" />}
-              label="Leads (30d)"
-              count={leadsThisMonth}
-            />
-          </ul>
+        <SectionCard
+          label="Onboarding"
+          description="Pipeline stage — clients not yet live."
+          action={
+            <Link
+              href="/admin/pipeline"
+              className="text-xs font-semibold text-primary hover:underline"
+            >
+              Pipeline →
+            </Link>
+          }
+        >
+          {segments.onboarding.length === 0 ? (
+            <p className="text-xs text-muted-foreground py-4 text-center">
+              Nothing in the onboarding pipeline right now.
+            </p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {segments.onboarding.map((row) => (
+                <OnboardingRow key={row.orgId} row={row} />
+              ))}
+            </ul>
+          )}
         </SectionCard>
       </div>
 
-      {/* Recent intakes — kept but compact, sits below the fold. */}
-      <SectionCard
-        label="Recent intakes"
-        action={
-          <Link
-            href="/admin/intakes"
-            className="text-xs font-semibold text-primary hover:underline"
-          >
-            View all →
+      {segments.internalHiddenCount > 0 ? (
+        <p className="text-[11px] text-muted-foreground px-1">
+          {segments.internalHiddenCount} internal workspace
+          {segments.internalHiddenCount === 1 ? "" : "s"} hidden ·{" "}
+          <Link href="/admin/clients" className="font-medium text-primary hover:underline">
+            View all clients →
           </Link>
-        }
-      >
-        {recentSubmissions.length === 0 ? (
-          <p className="text-xs text-muted-foreground py-4 text-center">
-            No intake submissions yet. Share your intake form to start filling
-            the pipeline.
-          </p>
-        ) : (
+        </p>
+      ) : null}
+
+      {/* ──────────────────────────────────────────────────────────────
+          4. Recent intakes — only renders when there's something to
+             show. No more empty card with a stray loading sliver.
+          ────────────────────────────────────────────────────────── */}
+      {recentSubmissions.length > 0 ? (
+        <SectionCard
+          label="Recent intakes"
+          action={
+            <Link
+              href="/admin/intakes"
+              className="text-xs font-semibold text-primary hover:underline"
+            >
+              View all →
+            </Link>
+          }
+        >
           <ul className="divide-y divide-border">
             {recentSubmissions.map((s) => {
               const isHot = !s.reviewedAt && !s.convertedAt;
@@ -332,7 +334,7 @@ export default async function AdminHome() {
                 <li key={s.id}>
                   <Link
                     href={`/admin/intakes/${s.id}`}
-                    className="flex items-center gap-3 py-2.5 px-1 -mx-1 rounded-md hover:bg-muted/20 transition-colors"
+                    className="flex items-center gap-3 py-2.5 px-1 -mx-1 rounded-[2px] hover:bg-muted/20 transition-colors"
                   >
                     <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold flex-shrink-0">
                       {initial}
@@ -349,7 +351,7 @@ export default async function AdminHome() {
                       </p>
                     </div>
                     {isHot ? (
-                      <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded text-primary bg-primary/10">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-[2px] text-primary bg-primary/10">
                         New
                       </span>
                     ) : null}
@@ -361,8 +363,15 @@ export default async function AdminHome() {
               );
             })}
           </ul>
-        )}
-      </SectionCard>
+        </SectionCard>
+      ) : (
+        <p className="text-xs text-muted-foreground px-1">
+          No intake submissions yet ·{" "}
+          <Link href="/admin/intakes" className="font-medium text-primary hover:underline">
+            Share your intake form →
+          </Link>
+        </p>
+      )}
     </div>
   );
 }
@@ -385,17 +394,17 @@ function MoneyTile({
   tone?: "positive" | "warn";
 }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
+    <div className="ls-card p-4">
       <div className="flex items-center gap-2 mb-2">
         <span
-          className={
-            "inline-flex h-6 w-6 items-center justify-center rounded-md " +
-            (tone === "warn"
-              ? "bg-amber-50 text-amber-700"
+          className={cn(
+            "inline-flex h-6 w-6 items-center justify-center rounded-[2px]",
+            tone === "warn"
+              ? "bg-[rgba(241,194,27,0.14)] text-[#8a6d00]"
               : tone === "positive"
-                ? "bg-emerald-50 text-emerald-700"
-                : "bg-primary/10 text-primary")
-          }
+                ? "bg-[rgba(36,161,72,0.10)] text-[#24a148]"
+                : "bg-primary/10 text-primary",
+          )}
           aria-hidden="true"
         >
           {icon}
@@ -416,12 +425,91 @@ function MoneyTile({
   );
 }
 
+// Compact operational counter used in the attention-queue header. Replaces
+// the old standalone "Operations" panel (3 floating rows, one of which
+// duplicated the leaderboard's lead count).
+function OpsChip({ href, label, count }: { href: string; label: string; count: number }) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex items-center gap-1.5 rounded-[2px] border border-[var(--hair)] px-2 py-1 text-[11px] font-medium text-muted-foreground hover:border-[var(--hair-strong)] hover:text-foreground transition-colors whitespace-nowrap"
+    >
+      <span
+        className={cn(
+          "tabular-nums font-semibold",
+          count > 0 ? "text-foreground" : "text-muted-foreground/50",
+        )}
+      >
+        {count}
+      </span>
+      {label}
+    </Link>
+  );
+}
+
+const SEVERITY_GROUP_LABEL: Record<AdminActionSeverity, { label: string; color: string }> = {
+  critical: { label: "Critical", color: "var(--error)" },
+  warning: { label: "Warning", color: "#8a6d00" },
+  info: { label: "Info", color: "var(--terracotta)" },
+};
+
+function ActionGroup({
+  severity,
+  items,
+}: {
+  severity: AdminActionSeverity;
+  items: AdminActionItem[];
+}) {
+  if (items.length === 0) return null;
+  const spec = SEVERITY_GROUP_LABEL[severity];
+  return (
+    <div>
+      <div className="flex items-center gap-1.5 px-1 pt-3 pb-1.5 first:pt-0">
+        <span
+          className="text-[10px] font-semibold uppercase tracking-[0.14em]"
+          style={{ color: spec.color }}
+        >
+          {spec.label}
+        </span>
+        <span className="text-[10px] text-muted-foreground tabular-nums">
+          · {items.length}
+        </span>
+      </div>
+      <ul className="divide-y divide-border">
+        {items.map((item) => (
+          <ActionRow key={item.id} item={item} />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// Age → color escalation: fresh flags stay quiet, but a critical or warning
+// row that's sat for weeks should visually shout louder than one from this
+// morning. Reuses the kit's own warning (#8a6d00 text on --warning wash)
+// and error (--error) tokens — no ad-hoc amber Tailwind classes.
+function ageBucket(occurredAt?: string): "fresh" | "aging" | "stale" {
+  if (!occurredAt) return "fresh";
+  const days = (Date.now() - new Date(occurredAt).getTime()) / DAY;
+  if (days > 30) return "stale";
+  if (days >= 7) return "aging";
+  return "fresh";
+}
+
+const AGE_COLOR: Record<ReturnType<typeof ageBucket>, string> = {
+  fresh: "var(--olive-gray)",
+  aging: "#8a6d00",
+  stale: "var(--error)",
+};
+
 function ActionRow({ item }: { item: AdminActionItem }) {
+  const age = ageBucket(item.occurredAt);
+  const verb = item.severity === "info" ? "View" : "Fix";
   return (
     <li>
       <Link
         href={item.href}
-        className="flex items-start gap-3 py-3 px-1 -mx-1 rounded-md hover:bg-muted/30 transition-colors group"
+        className="flex items-center gap-3 py-3 px-1 -mx-1 rounded-[2px] hover:bg-muted/30 transition-colors group"
       >
         <SeverityIcon severity={item.severity} />
         <div className="min-w-0 flex-1">
@@ -432,13 +520,19 @@ function ActionRow({ item }: { item: AdminActionItem }) {
             {item.detail}
           </p>
         </div>
-        <div className="flex flex-col items-end gap-1 shrink-0">
+        <div className="flex items-center gap-3 shrink-0">
           {item.occurredAt ? (
-            <span className="text-[10px] text-muted-foreground tabular-nums whitespace-nowrap">
+            <span
+              className="text-[10px] font-medium tabular-nums whitespace-nowrap"
+              style={{ color: AGE_COLOR[age] }}
+            >
               {formatDistanceToNow(new Date(item.occurredAt), { addSuffix: true })}
             </span>
           ) : null}
-          <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-primary transition-colors" />
+          <span className="ls-btn ls-btn-secondary h-7 px-2.5 text-[11px] gap-1">
+            {verb}
+            <ArrowRight className="h-3 w-3" aria-hidden="true" />
+          </span>
         </div>
       </Link>
     </li>
@@ -448,20 +542,23 @@ function ActionRow({ item }: { item: AdminActionItem }) {
 function SeverityIcon({ severity }: { severity: AdminActionSeverity }) {
   if (severity === "critical") {
     return (
-      <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-md bg-destructive/10 text-destructive shrink-0">
+      <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-[2px] bg-destructive/10 text-destructive shrink-0">
         <AlertOctagon className="h-3.5 w-3.5" aria-label="Critical" />
       </span>
     );
   }
   if (severity === "warning") {
     return (
-      <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-md bg-amber-50 text-amber-700 shrink-0">
+      <span
+        className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-[2px] shrink-0"
+        style={{ background: "rgba(241,194,27,0.14)", color: "#8a6d00" }}
+      >
         <AlertTriangle className="h-3.5 w-3.5" aria-label="Warning" />
       </span>
     );
   }
   return (
-    <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
+    <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-[2px] bg-primary/10 text-primary shrink-0">
       <Info className="h-3.5 w-3.5" aria-label="Info" />
     </span>
   );
@@ -476,7 +573,7 @@ function LeaderboardRow({ row }: { row: TenantLeaderRow }) {
         : Minus;
   const trendClass =
     row.velocityDelta > 0
-      ? "text-emerald-700"
+      ? "text-[#24a148]"
       : row.velocityDelta < 0
         ? "text-destructive"
         : "text-muted-foreground";
@@ -484,7 +581,7 @@ function LeaderboardRow({ row }: { row: TenantLeaderRow }) {
     <li>
       <Link
         href={`/admin/clients/${row.orgId}`}
-        className="flex items-center gap-3 py-2.5 px-1 -mx-1 rounded-md hover:bg-muted/30 transition-colors"
+        className="flex items-center gap-3 py-2.5 px-1 -mx-1 rounded-[2px] hover:bg-muted/30 transition-colors"
       >
         <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold flex-shrink-0">
           {row.name.slice(0, 1).toUpperCase()}
@@ -524,48 +621,30 @@ function LeaderboardRow({ row }: { row: TenantLeaderRow }) {
   );
 }
 
-function OpsRow({
-  href,
-  icon,
-  label,
-  count,
-  subLabel,
-}: {
-  href: string;
-  icon: React.ReactNode;
-  label: string;
-  count?: number;
-  subLabel?: string;
-}) {
+function OnboardingRow({ row }: { row: TenantOnboardingRow }) {
+  const days = Math.floor((Date.now() - new Date(row.updatedAt).getTime()) / DAY);
   return (
     <li>
       <Link
-        href={href}
-        className="flex items-center gap-2.5 py-1.5 px-2 -mx-1 rounded-md hover:bg-muted/20 transition-colors group"
+        href={`/admin/clients/${row.orgId}`}
+        className="flex items-center gap-3 py-2.5 px-1 -mx-1 rounded-[2px] hover:bg-muted/30 transition-colors"
       >
-        <span className="text-muted-foreground group-hover:text-primary transition-colors shrink-0">
-          {icon}
-        </span>
-        <div className="min-w-0 flex-1">
-          <span className="text-sm text-foreground">{label}</span>
-          {subLabel ? (
-            <span className="ml-1.5 text-[11px] text-muted-foreground">
-              · {subLabel}
-            </span>
-          ) : null}
+        <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold flex-shrink-0">
+          {row.name.slice(0, 1).toUpperCase()}
         </div>
-        {count != null ? (
-          <span
-            className={
-              "text-sm tabular-nums shrink-0 " +
-              (count > 0 ? "font-semibold text-foreground" : "text-muted-foreground/50")
-            }
-          >
-            {count}
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-foreground truncate">
+            {row.name}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <StatusBadge tone={tenantStatusTone(row.status)}>
+            {humanTenantStatus(row.status)}
+          </StatusBadge>
+          <span className="text-[10px] text-muted-foreground tabular-nums whitespace-nowrap">
+            {days <= 0 ? "today" : `${days}d in stage`}
           </span>
-        ) : (
-          <ArrowRight className="h-3 w-3 text-muted-foreground/40 group-hover:text-primary transition-colors shrink-0" />
-        )}
+        </div>
       </Link>
     </li>
   );
