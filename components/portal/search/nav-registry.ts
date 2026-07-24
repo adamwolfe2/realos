@@ -213,7 +213,11 @@ export const NAV_REGISTRY: NavRegistryItem[] = [
     group: "Settings",
   },
   {
-    href: "/portal/settings/team-panel",
+    // "/portal/settings/team-panel" is not a real route (the Team panel
+    // is a section embedded on the Settings page, not its own page) —
+    // was 404ing from Cmd+K. Point at Settings' `#team` anchor
+    // (app/portal/settings/page.tsx has `id="team" scroll-mt-24`).
+    href: "/portal/settings#team",
     label: "Team",
     description: "Invite teammates and manage roles",
     keywords: ["users", "invite", "roles", "permissions", "members"],

@@ -274,8 +274,11 @@ export function BugReportButton() {
           />
           <div
             className={cn(
+              // Modal shell — same 2px-radius card treatment as the Cmd+K
+              // dialog (components/portal/search/cmdk-search.tsx), not the
+              // generic rounded-lg shadcn default.
               "relative w-full md:w-[460px] max-h-[90vh] overflow-y-auto",
-              "rounded-lg bg-card border border-border shadow-2xl",
+              "rounded-[2px] bg-card border border-border shadow-2xl",
               dragActive && "ring-4 ring-primary/40",
             )}
           >
@@ -336,7 +339,7 @@ export function BugReportButton() {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Short summary of the issue"
-                    className="rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="rounded-none border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </label>
 
@@ -351,7 +354,7 @@ export function BugReportButton() {
                         type="button"
                         onClick={() => setSeverity(s.value)}
                         className={cn(
-                          "px-2 py-1.5 text-xs font-medium rounded border transition-colors",
+                          "px-2 py-1.5 text-xs font-medium rounded-none border transition-colors",
                           severity === s.value
                             ? "bg-primary text-primary-foreground border-foreground"
                             : "bg-card text-muted-foreground border-border hover:text-foreground",
@@ -375,7 +378,7 @@ export function BugReportButton() {
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Steps to reproduce, expected vs actual behavior, anything else that helps."
                     rows={5}
-                    className="rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y"
+                    className="rounded-none border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y"
                   />
                 </label>
 
@@ -394,7 +397,7 @@ export function BugReportButton() {
                       {images.map((img) => (
                         <li
                           key={img.id}
-                          className="relative aspect-video rounded-md border border-border overflow-hidden bg-muted group"
+                          className="relative aspect-video rounded-none border border-border overflow-hidden bg-muted group"
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
@@ -406,7 +409,7 @@ export function BugReportButton() {
                             type="button"
                             onClick={() => removeImage(img.id)}
                             aria-label={`Remove ${img.file.name}`}
-                            className="absolute top-1 right-1 bg-black/60 hover:bg-black/80 text-white rounded-md p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute top-1 right-1 bg-black/60 hover:bg-black/80 text-white rounded-none p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
@@ -422,7 +425,7 @@ export function BugReportButton() {
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       className={cn(
-                        "w-full rounded-md border-2 border-dashed transition-colors py-3 text-xs font-medium",
+                        "w-full rounded-none border-2 border-dashed transition-colors py-3 text-xs font-medium",
                         dragActive
                           ? "border-primary bg-primary/5 text-primary"
                           : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground hover:bg-secondary",
@@ -460,14 +463,14 @@ export function BugReportButton() {
                   <button
                     type="button"
                     onClick={() => setOpen(false)}
-                    className="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+                    className="rounded-none px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={state.kind === "sending"}
-                    className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold hover:bg-primary/90 disabled:opacity-40"
+                    className="inline-flex items-center gap-1.5 rounded-none bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold hover:bg-primary-dark disabled:opacity-40"
                   >
                     {state.kind === "sending" ? (
                       <>
