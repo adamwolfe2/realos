@@ -1,5 +1,6 @@
 import * as React from "react";
 import { SourceLogo } from "@/components/portal/attribution/source-logo";
+import { EmptyState } from "@/components/portal/ui/empty-state";
 import type { ChannelPipelineRow } from "@/lib/attribution/reverse";
 
 // ---------------------------------------------------------------------------
@@ -10,11 +11,7 @@ import type { ChannelPipelineRow } from "@/lib/attribution/reverse";
 
 export function ChannelPipelineTable({ rows }: { rows: ChannelPipelineRow[] }) {
   if (rows.length === 0) {
-    return (
-      <div className="py-10 text-center text-sm text-muted-foreground">
-        No leads in this window.
-      </div>
-    );
+    return <EmptyState variant="bare" title="No leads in this window." />;
   }
   const maxLeads = Math.max(1, ...rows.map((r) => r.leads));
 

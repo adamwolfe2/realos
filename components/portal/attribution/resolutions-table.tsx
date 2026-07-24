@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { SourceLogo } from "@/components/portal/attribution/source-logo";
+import { EmptyState } from "@/components/portal/ui/empty-state";
 import type { GraphFilter } from "@/components/portal/attribution/reverse-attribution-graph";
 
 // ---------------------------------------------------------------------------
@@ -40,10 +41,11 @@ export function ResolutionsTable({
 
   if (rows.length === 0) {
     return (
-      <div className="py-10 text-center text-sm text-muted-foreground">
-        No identified visits in this window yet. As the pixel resolves visitors,
-        each one appears here with the site they came from.
-      </div>
+      <EmptyState
+        variant="bare"
+        title="No identified visits in this window yet."
+        body="As the pixel resolves visitors, each one appears here with the site they came from."
+      />
     );
   }
 
@@ -105,9 +107,7 @@ export function ResolutionsTable({
         </tbody>
       </table>
       {filtered.length === 0 ? (
-        <div className="py-8 text-center text-xs text-muted-foreground">
-          No identified visits match this filter.
-        </div>
+        <EmptyState variant="bare" title="No identified visits match this filter." />
       ) : null}
     </div>
   );

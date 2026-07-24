@@ -1,5 +1,7 @@
 import * as React from "react";
 import { CHART_COLORS } from "@/components/portal/ui/chart-theme";
+import { SectionCard } from "@/components/admin/page-header";
+import { EmptyState } from "@/components/portal/ui/empty-state";
 
 // ---------------------------------------------------------------------------
 // SourceDonut — minimalist SVG donut chart for the attribution page.
@@ -67,11 +69,9 @@ export function SourceDonut({
 
   if (total === 0 || slices.length === 0) {
     return (
-      <Card title={title} description={description}>
-        <div className="h-32 flex items-center justify-center text-xs text-muted-foreground text-center px-6">
-          {emptyMessage}
-        </div>
-      </Card>
+      <SectionCard label={title} description={description}>
+        <EmptyState variant="bare" title={emptyMessage} />
+      </SectionCard>
     );
   }
 
@@ -104,7 +104,7 @@ export function SourceDonut({
   });
 
   return (
-    <Card title={title} description={description}>
+    <SectionCard label={title} description={description}>
       <div className="grid grid-cols-[auto,1fr] gap-5 items-center">
         <div className="relative shrink-0" style={{ width: size, height: size }}>
           {/* Background track ring — keeps the visual outline even when the
@@ -212,32 +212,6 @@ export function SourceDonut({
           })}
         </ul>
       </div>
-    </Card>
-  );
-}
-
-function Card({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="ls-card p-4">
-      <div className="mb-3">
-        <h3 className="text-sm font-semibold tracking-tight text-foreground">
-          {title}
-        </h3>
-        {description ? (
-          <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">
-            {description}
-          </p>
-        ) : null}
-      </div>
-      {children}
-    </section>
+    </SectionCard>
   );
 }

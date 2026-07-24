@@ -10,7 +10,7 @@ import {
   visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
-import { PageHeader } from "@/components/admin/page-header";
+import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { Users, Eye, MousePointerClick, BadgeCheck } from "lucide-react";
 import { getReverseAttribution, getChannelPipeline } from "@/lib/attribution/reverse";
@@ -189,20 +189,19 @@ export default async function ReverseAttributionPage({
         resolutions={reverse.resolutions}
       />
 
-      <section className="ls-card p-4">
-        <div className="mb-2">
-          <h3 className="text-sm font-semibold text-foreground">
-            Channel pipeline
-          </h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
+      <SectionCard
+        label="Channel pipeline"
+        description={
+          <>
             Every lead reverse-attributed to a channel (via referrer, then
-            email-matched pixel resolution), with the tour → apply → sign funnel
-            by channel. This is how the &ldquo;Other&rdquo; bucket gets broken
-            down.
-          </p>
-        </div>
+            email-matched pixel resolution), with the tour → apply → sign
+            funnel by channel. This is how the &ldquo;Other&rdquo; bucket gets
+            broken down.
+          </>
+        }
+      >
         <ChannelPipelineTable rows={pipeline} />
-      </section>
+      </SectionCard>
     </div>
   );
 }

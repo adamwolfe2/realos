@@ -10,7 +10,7 @@ import {
   visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
-import { PageHeader } from "@/components/admin/page-header";
+import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { SourceDonut } from "@/components/portal/attribution/donut";
 import { TrendChart } from "@/components/portal/attribution/trend-chart";
@@ -287,21 +287,15 @@ export default async function AttributionPage({
           logos, sessions blended from GA4 + pixel, leads, and conversion. This
           replaces the old wall of look-alike donuts. */}
       {leadFlow.sources.length > 0 ? (
-        <section className="ls-card p-4">
-          <div className="flex items-baseline justify-between mb-3">
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">
-                Traffic &amp; lead sources
-              </h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                The sites visitors came from before yours. Sessions blended from
-                GA4 + visitor pixel · conversion = leads ÷ sessions.
-              </p>
-            </div>
+        <SectionCard
+          label="Traffic & lead sources"
+          description="The sites visitors came from before yours. Sessions blended from GA4 + visitor pixel · conversion = leads ÷ sessions."
+          action={
             <span className="text-[10px] uppercase tracking-widest text-muted-foreground shrink-0 pl-3">
               {leadFlow.sources.length} channels
             </span>
-          </div>
+          }
+        >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-0.5">
             {leadFlow.sources.slice(0, 12).map((s) => {
               const max = Math.max(
@@ -350,7 +344,7 @@ export default async function AttributionPage({
               );
             })}
           </div>
-        </section>
+        </SectionCard>
       ) : null}
 
       {/* Capture surface + nurture depth — two purposeful breakdowns. */}

@@ -3,6 +3,7 @@
 import * as React from "react";
 import { SourceLogo } from "@/components/portal/attribution/source-logo";
 import { CHART_COLORS } from "@/components/portal/ui/chart-theme";
+import { EmptyState } from "@/components/portal/ui/empty-state";
 
 // ---------------------------------------------------------------------------
 // ReverseAttributionGraph — interactive 3-stage flow:
@@ -134,9 +135,10 @@ export function ReverseAttributionGraph({
 
   if (src.length === 0 && land.length === 0) {
     return (
-      <div className="py-12 text-center text-sm text-muted-foreground">
-        No tracked web traffic in this window yet.
-      </div>
+      <EmptyState
+        variant="bare"
+        title="No tracked web traffic in this window yet."
+      />
     );
   }
 

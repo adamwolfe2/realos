@@ -3,6 +3,7 @@
 import * as React from "react";
 import { SourceLogo } from "@/components/portal/attribution/source-logo";
 import { CHART_COLORS } from "@/components/portal/ui/chart-theme";
+import { EmptyState } from "@/components/portal/ui/empty-state";
 
 // ---------------------------------------------------------------------------
 // LeadFlowDiagram — the attribution hero. Source logos on the left, their
@@ -124,9 +125,10 @@ export function LeadFlowDiagram({
       ) : null}
 
       {display.length === 0 ? (
-        <div className="py-12 text-center text-sm text-muted-foreground">
-          No attributed sources in this window yet.
-        </div>
+        <EmptyState
+          variant="bare"
+          title="No attributed sources in this window yet."
+        />
       ) : (
         <svg
           viewBox={`0 0 ${W} ${H}`}

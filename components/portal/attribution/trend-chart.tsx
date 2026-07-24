@@ -1,5 +1,7 @@
 import * as React from "react";
 import { CHART_COLORS } from "@/components/portal/ui/chart-theme";
+import { SectionCard } from "@/components/admin/page-header";
+import { EmptyState } from "@/components/portal/ui/empty-state";
 
 // ---------------------------------------------------------------------------
 // TrendChart — multi-series line chart for the attribution page. Pure SVG
@@ -53,11 +55,9 @@ export function TrendChart({
 
   if (computedTotal === 0 || dates.length === 0) {
     return (
-      <Card title={title} description={description}>
-        <div className="h-32 flex items-center justify-center text-xs text-muted-foreground text-center px-6">
-          {emptyMessage}
-        </div>
-      </Card>
+      <SectionCard label={title} description={description}>
+        <EmptyState variant="bare" title={emptyMessage} />
+      </SectionCard>
     );
   }
 
@@ -90,7 +90,7 @@ export function TrendChart({
   const labelEvery = dates.length > 14 ? Math.ceil(dates.length / 8) : 1;
 
   return (
-    <Card title={title} description={description}>
+    <SectionCard label={title} description={description}>
       <div className="overflow-x-auto -mx-1 px-1">
         <svg
           viewBox={`0 0 ${W} ${H}`}
@@ -188,7 +188,7 @@ export function TrendChart({
           ))}
         </ul>
       ) : null}
-    </Card>
+    </SectionCard>
   );
 }
 
@@ -214,30 +214,4 @@ function formatTickLabel(yyyyMmDd: string): string {
   ];
   if (monthIdx < 0 || monthIdx > 11 || Number.isNaN(day)) return yyyyMmDd;
   return `${months[monthIdx]} ${day}`;
-}
-
-function Card({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="ls-card p-3">
-      <div className="mb-2">
-        <h3 className="text-xs font-semibold tracking-tight text-foreground">
-          {title}
-        </h3>
-        {description ? (
-          <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
-            {description}
-          </p>
-        ) : null}
-      </div>
-      {children}
-    </section>
-  );
 }
