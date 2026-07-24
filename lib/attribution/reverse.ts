@@ -3,9 +3,9 @@ import { prisma } from "@/lib/db";
 import { propertyIdsToWhere } from "@/lib/tenancy/property-filter";
 import { visitorPropertyWhere } from "@/lib/attribution/queries";
 import {
+  classifyLeadChannel,
   classifySource,
   getSource,
-  sourceFromLeadEnum,
 } from "@/lib/attribution/source-taxonomy";
 import type { Ga4SourceLanding } from "@/lib/attribution/ga4-sources";
 import type { AttributionFilters } from "@/lib/attribution/queries";
@@ -374,28 +374,15 @@ export async function getChannelPipeline(
     if (v.email && s) emailMap.set(v.email.toLowerCase(), s);
   }
 
-  const classifyFromSignal = (sig?: SessionSignal | null) =>
-    sig ? classifySource(sig.utmSource, sig.firstReferrer, sig.utmMedium) : null;
-
   const rows = new Map<string, ChannelPipelineRow>();
   for (const lead of leads) {
-    // 1. own session
-    let src = classifyFromSignal(lead.visitor?.sessions[0]);
-    // 2. email match when the own session is missing or only Direct/Other
-    if ((!src || src.id === "direct" || src.id === "other") && lead.email) {
-      const matched = classifyFromSignal(emailMap.get(lead.email.toLowerCase()));
-      if (matched && matched.id !== "other" && matched.id !== "direct") {
-        src = matched;
-      }
-    }
-    // 3. source enum, 4. unattributed
-    if (!src || src.id === "other" || src.id === "manual") {
-      const fromEnum = sourceFromLeadEnum(lead.source);
-      src =
-        fromEnum.id !== "other" && fromEnum.id !== "manual"
-          ? fromEnum
-          : (src ?? getSource("other"));
-    }
+    // Own session → email-matched visitor's session → source enum →
+    // unattributed. Shared with forward attribution (getLeadFlow) via
+    // classifyLeadChannel so the same lead can't classify to a different
+    // channel depending on which attribution surface you're looking at
+    // (2026-07-22 audit).
+    const emailMatch = lead.email ? emailMap.get(lead.email.toLowerCase()) : null;
+    const src = classifyLeadChannel(lead.source, lead.visitor?.sessions[0], emailMatch);
 
     const row =
       rows.get(src.id) ??

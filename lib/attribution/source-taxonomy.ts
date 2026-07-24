@@ -212,6 +212,57 @@ export function classifySource(
   return DIRECT;
 }
 
+/** Raw per-session referral signal, as selected off VisitorSession. */
+export type SessionSignal = {
+  utmSource: string | null;
+  utmMedium: string | null;
+  firstReferrer: string | null;
+};
+
+/**
+ * Canonical lead → channel resolver. Both forward attribution
+ * (getLeadFlow, queries.ts) and reverse attribution (getChannelPipeline,
+ * reverse.ts) used to run their own copies of this waterfall and could
+ * disagree on the same lead for the same date range (2026-07-22 audit).
+ * This is the single source of truth for that decision. Precedence:
+ *
+ *   1. The lead's own last session, if it resolves to something more
+ *      specific than "Direct".
+ *   2. An email-matched visitor's last session (a different visitor
+ *      record linked by email — used when the lead has no session of its
+ *      own, or its own session only resolved to Direct), if it resolves
+ *      to something more specific than Direct/Other. Pass `null` here
+ *      when the caller doesn't do email-linking (see getLeadFlow).
+ *   3. The lead's captured-surface enum (chatbot/form/ads/etc).
+ *   4. Unattributed: if the enum itself is generic "Other", keep whichever
+ *      real Direct session evidence tiers 1–2 turned up instead of
+ *      collapsing to "Other" — otherwise the enum result stands as-is
+ *      (this exact tie-break is forward attribution's original behavior,
+ *      kept as canonical since forward attribution is the primary surface).
+ */
+export function classifyLeadChannel(
+  leadSource: LeadSource,
+  ownSession?: SessionSignal | null,
+  emailMatchSession?: SessionSignal | null,
+): CanonicalSource {
+  const fromOwnSession = ownSession
+    ? classifySource(ownSession.utmSource, ownSession.firstReferrer, ownSession.utmMedium)
+    : null;
+  if (fromOwnSession && fromOwnSession.id !== "direct") return fromOwnSession;
+
+  const fromEmailMatch = emailMatchSession
+    ? classifySource(emailMatchSession.utmSource, emailMatchSession.firstReferrer, emailMatchSession.utmMedium)
+    : null;
+  if (fromEmailMatch && fromEmailMatch.id !== "direct" && fromEmailMatch.id !== "other") {
+    return fromEmailMatch;
+  }
+
+  const fromEnum = sourceFromLeadEnum(leadSource);
+  const directSignal = fromOwnSession ?? fromEmailMatch;
+  if (directSignal && fromEnum.id === "other") return directSignal; // keep Direct
+  return fromEnum;
+}
+
 function hostOf(referrer: string | null | undefined): string | null {
   if (!referrer || !referrer.trim()) return null;
   try {

@@ -2,6 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { LeadSource } from "@prisma/client";
 import {
+  classifyLeadChannel,
   classifySource,
   getSource,
   sourceFromLeadEnum,
@@ -543,7 +544,7 @@ export async function getLeadFlow(
   const stageCounts = { toured: 0, applied: 0, signed: 0 };
   let importedLeads = 0;
   for (const lead of leads) {
-    const src = attributedSource(lead.source, lead.visitor?.sessions[0]);
+    const src = classifyLeadChannel(lead.source, lead.visitor?.sessions[0]);
     const noMarketingChannel =
       UNATTRIBUTED_IDS.has(src.id) ||
       (lead.externalSystem != null && src.id === "direct");
@@ -613,32 +614,6 @@ export async function getLeadFlow(
     totalSessions,
     imported: { leads: importedLeads, sessions: importedSessions },
   };
-}
-
-// Best last-touch attribution for one lead: prefer the converting session's
-// referrer/UTM (finer ILS detail — Zillow vs "Referral"), fall back to the
-// lead's source enum (the capture-surface truth — chatbot/form — when the
-// referrer was blank or only resolved to Direct).
-function attributedSource(
-  leadEnum: LeadSource,
-  lastSession?: {
-    utmSource: string | null;
-    utmMedium: string | null;
-    firstReferrer: string | null;
-  } | null,
-): CanonicalSource {
-  const fromSession = lastSession
-    ? classifySource(
-        lastSession.utmSource,
-        lastSession.firstReferrer,
-        lastSession.utmMedium,
-      )
-    : null;
-  if (fromSession && fromSession.id !== "direct") return fromSession;
-
-  const fromEnum = sourceFromLeadEnum(leadEnum);
-  if (fromSession && fromEnum.id === "other") return fromSession; // keep Direct
-  return fromEnum;
 }
 
 // ---------------------------------------------------------------------------
