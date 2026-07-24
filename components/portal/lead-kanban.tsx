@@ -409,7 +409,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
       <AlertDialog
         open={confirmAction === "delete"}
         title={`Permanently delete ${selected.size} ${selected.size === 1 ? "lead" : "leads"}?`}
-        body="This cannot be undone — tours, applications, and conversations will be cascade-deleted."
+        body="This cannot be undone — tours and applications will be cascade-deleted. Conversations are kept but unlinked from the lead."
         confirmLabel="Delete"
         destructive
         pending={pending}

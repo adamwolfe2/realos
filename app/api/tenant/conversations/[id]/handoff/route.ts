@@ -55,13 +55,22 @@ export async function POST(
       },
     });
 
+    // The lead's Notes list (app/portal/leads/[id]/page.tsx) matches
+    // ClientNote rows by a `[lead:${leadId}]` prefix convention (ClientNote
+    // has no leadId column). Use that prefix when this conversation is
+    // linked to a lead so the handoff note actually renders there;
+    // otherwise fall back to the conversation-id prefix since there's no
+    // lead page for it to appear on.
     await prisma.clientNote.create({
       data: {
         orgId: scope.orgId,
         authorUserId: scope.userId,
         noteType: NoteType.LEAD_INTERACTION,
         body:
-          `[conversation:${id}] Handed off chatbot conversation to the team` +
+          (convo.leadId
+            ? `[lead:${convo.leadId}] `
+            : `[conversation:${id}] `) +
+          "Handed off chatbot conversation to the team" +
           (convo.capturedEmail ? `, contact ${convo.capturedEmail}` : ""),
       },
     });
