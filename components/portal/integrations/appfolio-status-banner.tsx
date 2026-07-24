@@ -34,7 +34,7 @@ type Tone = "info" | "ok" | "warn" | "error" | "muted";
 const TONES: Record<Tone, string> = {
   info: "border-primary/30 bg-primary/10 text-primary",
   ok: "border-primary/30 bg-primary/10 text-primary",
-  warn: "border-amber-200 bg-amber-50 text-amber-900",
+  warn: "border-[rgba(241,194,27,0.30)] bg-[rgba(241,194,27,0.10)] text-[#8a6d00]",
   error: "border-destructive/30 bg-destructive/10 text-destructive",
   muted: "border-border bg-muted/30 text-foreground",
 };
@@ -269,7 +269,7 @@ export function AppFolioStatusBanner({
         action={<RunAppFolioSyncButton label="Sync now" subtle />}
       />
       {hasWarnings ? (
-        <details className="rounded-xl border border-border bg-secondary px-4 py-2.5 text-xs text-amber-900">
+        <details className="rounded-xl border border-border bg-secondary px-4 py-2.5 text-xs text-[#8a6d00]">
           <summary className="cursor-pointer font-semibold">
             {warnings.length} sync warning{warnings.length === 1 ? "" : "s"}
             {" · "}

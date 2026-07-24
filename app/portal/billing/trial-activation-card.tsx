@@ -111,7 +111,7 @@ export function TrialActivationCard({
           <div
             className="inline-flex items-center gap-2 mb-1.5"
             style={{
-              color: expired ? "#92400e" : "#2563EB",
+              color: expired ? "#8a6d00" : "#0f62fe",
               fontFamily: "var(--font-mono)",
               fontSize: "10.5px",
               letterSpacing: "0.16em",
@@ -195,9 +195,9 @@ export function TrialActivationCard({
           type="button"
           onClick={handle}
           disabled={submitting}
-          className="inline-flex items-center gap-2 rounded-full transition-colors disabled:opacity-60 disabled:cursor-progress"
+          className="inline-flex items-center gap-2 rounded-none transition-colors disabled:opacity-60 disabled:cursor-progress"
           style={{
-            backgroundColor: expired ? "#92400e" : "#2563EB",
+            backgroundColor: expired ? "#8a6d00" : "#0f62fe",
             color: "#ffffff",
             padding: "9px 18px",
             fontFamily: "var(--font-sans)",

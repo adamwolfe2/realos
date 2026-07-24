@@ -48,9 +48,10 @@ const SEVERITY_TOKENS: Record<
   },
   warning: {
     icon: AlertTriangle,
-    container: "bg-amber-50 border-amber-200 text-amber-900",
-    iconClass: "text-amber-500",
-    actionClass: "text-amber-700 hover:text-amber-900",
+    container:
+      "bg-[rgba(241,194,27,0.10)] border-[rgba(241,194,27,0.30)] text-[#8a6d00]",
+    iconClass: "text-[#8a6d00]",
+    actionClass: "text-[#8a6d00] hover:text-[#6f5800]",
     cardClass: "ls-alert ls-alert-warning text-slate-800",
   },
   critical: {

@@ -304,7 +304,7 @@ export default async function BillingPage() {
       ) : null}
 
       {billingStatusPending ? (
-        <section className="rounded-xl border border-primary/20 bg-primary/[0.03] p-5">
+        <section className="rounded-[2px] border border-primary/20 bg-primary/[0.03] p-5">
           <p className="text-[10px] tracking-widest uppercase font-semibold text-primary">
             Action needed
           </p>
@@ -334,7 +334,7 @@ export default async function BillingPage() {
       ) : null}
 
       {billingNotConfigured ? (
-        <section className="rounded-xl border border-dashed border-border bg-muted/30 p-6">
+        <section className="rounded-[2px] border border-dashed border-border bg-muted/30 p-6">
           <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
             Onboarding
           </p>
@@ -422,7 +422,7 @@ export default async function BillingPage() {
           (tier, additional properties, add-ons) so the operator never
           has to dig into Stripe to see what they're paying for. */}
       {lineItems.length > 0 ? (
-        <section className="rounded-xl border border-border bg-card p-5 space-y-3">
+        <section className="ls-card ls-card-pad space-y-3">
           <div className="flex items-baseline justify-between">
             <h2 className="text-sm font-semibold">Subscription line items</h2>
             <p className="text-xs text-muted-foreground">
@@ -495,7 +495,7 @@ export default async function BillingPage() {
           (components/billing/website-build-card.tsx) is unchanged for
           surfaces where the full pitch belongs (marketplace,
           onboarding). */}
-      <section className="rounded-xl border border-border bg-card p-4 flex flex-wrap items-center justify-between gap-3">
+      <section className="ls-card p-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-foreground">
             Want a custom marketing site built for you?
@@ -507,14 +507,14 @@ export default async function BillingPage() {
         </div>
         <a
           href="/portal/marketplace"
-          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-[12.5px] font-medium text-foreground hover:bg-muted/50 transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-none border border-border bg-background px-3 py-1.5 text-[12.5px] font-medium text-foreground hover:bg-muted/50 transition-colors"
         >
           View options
           <span aria-hidden="true">→</span>
         </a>
       </section>
 
-      <section className="rounded-xl border border-border bg-card p-5 space-y-3">
+      <section className="ls-card ls-card-pad space-y-3">
         <h2 className="text-sm font-semibold">Stripe Customer Portal</h2>
         <p className="text-sm text-muted-foreground">
           Update payment method, download invoices, and view upcoming charges.
