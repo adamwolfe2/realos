@@ -40,11 +40,11 @@ export default function PlatformHome() {
   return (
     <div style={{ backgroundColor: "#FFFFFF", color: "#161616" }}>
       <Hero />
+      <PixelSeam color="#dbe6ff" />
       <ProductHeroShot />
       <Pillars />
       <Comparison />
       <SurfacesStrip />
-      <PixelSeam color="#dbe6ff" />
       <ReportFeature />
       <LaunchSteps />
       <Faq />

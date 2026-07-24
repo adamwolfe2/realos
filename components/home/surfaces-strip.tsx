@@ -8,26 +8,12 @@ import {
   Star,
   type LucideIcon,
 } from "lucide-react";
-import {
-  AppFolioMark,
-  GoogleMark,
-  MetaMark,
-  GA4Mark,
-  SlackMark,
-  CalcomMark,
-  ChatGPTMark,
-  PerplexityMark,
-  ClaudeMark,
-  GeminiMark,
-} from "@/components/platform/artifacts/brand-logos";
 import { SectionShell, LabelChip } from "./section-shell";
 
 // ---------------------------------------------------------------------------
-// SurfacesStrip — [04] Every surface, one login. Answers "how much product is
-// actually here?" without bloating the page: one compact row of the real
-// pages as mini frame cards (linking to /features), then a single static
-// integration logo row (real repo brand marks, no fake screenshots, no deps)
-// answering "will it work with the stack I already run?".
+// SurfacesStrip — Every surface, one login. One compact row of the real
+// pages as mini frame cards (linking to /features). The integrations logo
+// row moved into the hero (integrations-strip.tsx, Adam 2026-07-23).
 // ---------------------------------------------------------------------------
 
 type Surface = { label: string; url: string; icon: LucideIcon };
@@ -38,19 +24,6 @@ const SURFACES: Surface[] = [
   { label: "Reports", url: "app.leasestack.co/reports", icon: FileText },
   { label: "SEO", url: "app.leasestack.co/seo", icon: Search },
   { label: "Reputation", url: "app.leasestack.co/reputation", icon: Star },
-];
-
-const INTEGRATIONS: Array<{ name: string; mark: React.ReactNode }> = [
-  { name: "AppFolio", mark: <AppFolioMark size={38} /> },
-  { name: "Google", mark: <GoogleMark size={38} /> },
-  { name: "Meta", mark: <MetaMark size={38} /> },
-  { name: "GA4", mark: <GA4Mark size={38} /> },
-  { name: "Slack", mark: <SlackMark size={38} /> },
-  { name: "Cal.com", mark: <CalcomMark size={38} /> },
-  { name: "ChatGPT", mark: <ChatGPTMark size={38} /> },
-  { name: "Perplexity", mark: <PerplexityMark size={38} /> },
-  { name: "Claude", mark: <ClaudeMark size={38} /> },
-  { name: "Gemini", mark: <GeminiMark size={38} /> },
 ];
 
 function MiniSurface({ surface }: { surface: Surface }) {
@@ -172,53 +145,6 @@ export function SurfacesStrip() {
               <MiniSurface surface={s} />
             </Link>
           ))}
-        </div>
-
-        {/* Integration row (one static, centered row of real brand marks). */}
-        <div
-          className="mt-16 pt-12 text-center"
-          style={{ borderTop: "1px solid #e0e0e0" }}
-        >
-          <p
-            style={{
-              color: "#161616",
-              fontFamily: "var(--font-sans)",
-              fontSize: "19px",
-              fontWeight: 500,
-              letterSpacing: "-0.015em",
-            }}
-          >
-            Works with the PMS, ads, and reviews you already have.
-          </p>
-          <p
-            className="mt-2"
-            style={{
-              color: "#6f6f6f",
-              fontFamily: "var(--font-sans)",
-              fontSize: "15px",
-              lineHeight: 1.6,
-            }}
-          >
-            AppFolio, Google, Meta, and your reviews, synced continuously.
-          </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3 md:gap-3.5">
-            {INTEGRATIONS.map((it) => (
-              <span
-                key={it.name}
-                className="inline-flex items-center justify-center"
-                title={it.name}
-                style={{
-                  width: 76,
-                  height: 76,
-                  border: "1px solid #e0e0e0",
-                  borderRadius: 2,
-                  backgroundColor: "#FFFFFF",
-                }}
-              >
-                {it.mark}
-              </span>
-            ))}
-          </div>
         </div>
       </div>
     </SectionShell>

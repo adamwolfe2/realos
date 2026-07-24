@@ -6,6 +6,7 @@ import { Atmosphere } from "./atmosphere";
 import { Mark } from "./mark";
 import { FrameSettle } from "./frame-settle";
 import { DashboardFrame, MobileFrame } from "./walkthrough/dashboard-frame";
+import { IntegrationsStrip } from "./integrations-strip";
 
 // ---------------------------------------------------------------------------
 // Hero — landing v3 item 5: the abstract signal-flow diagram is gone. A
@@ -85,6 +86,13 @@ export function Hero() {
               <DashboardFrame beat={1} natural={1040} className="hidden md:block" />
               <MobileFrame beat={1} className="md:hidden" />
             </FrameSettle>
+          </div>
+
+          {/* Integrations — directly under the hero dashboard (Adam
+              2026-07-23): right after seeing the product, prove it speaks
+              to the stack they already run. */}
+          <div className="mt-14 md:mt-16">
+            <IntegrationsStrip />
           </div>
         </div>
       </div>
