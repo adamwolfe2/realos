@@ -361,11 +361,20 @@ export function ChatbotConfigForm({
             </div>
             <div className="flex flex-col gap-3">
               <div className="flex items-end gap-2">
-                <div
-                  aria-hidden
-                  className="h-8 w-8 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: effectiveBrandColor }}
-                />
+                {state.chatbotAvatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={state.chatbotAvatarUrl}
+                    alt=""
+                    className="h-8 w-8 rounded-full flex-shrink-0 object-cover"
+                  />
+                ) : (
+                  <div
+                    aria-hidden
+                    className="h-8 w-8 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: effectiveBrandColor }}
+                  />
+                )}
                 <div className="flex-1 rounded-xl rounded-bl-none border border-border bg-muted/30 px-3 py-2.5 text-sm">
                   <div className={`${LABEL_CLASS} mb-1`}>
                     {state.chatbotPersonaName || "Leasing"}
