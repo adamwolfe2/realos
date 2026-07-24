@@ -417,7 +417,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
         onConfirm={performDelete}
       />
 
-      <div className="rounded-xl border border-border bg-card overflow-x-auto">
+      <div className="rounded-[2px] border border-border bg-card overflow-x-auto">
         <table ref={tableRef} className="w-full text-sm min-w-[680px]">
           <thead>
             <tr className="border-b border-border bg-secondary">

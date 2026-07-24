@@ -139,7 +139,7 @@ export function VisitorTable({ rows }: Props) {
         </span>
       </BulkActionBar>
 
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="rounded-[2px] border border-border bg-card overflow-hidden">
         <div className="overflow-x-auto">
           <table ref={tableRef} className="w-full text-xs border-collapse">
             <thead>

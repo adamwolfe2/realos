@@ -137,7 +137,7 @@ export default async function ConversationDetail({
       {/* Two-column layout: transcript + sidebar. On mobile sidebar stacks
           below the transcript. */}
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6">
-        <section className="rounded-xl border border-border bg-card p-5">
+        <section className="rounded-[2px] border border-border bg-card p-5">
           <div className="flex items-baseline justify-between mb-4">
             <h2 className="text-sm font-semibold text-foreground">
               Transcript

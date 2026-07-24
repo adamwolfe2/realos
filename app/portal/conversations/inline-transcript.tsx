@@ -184,7 +184,7 @@ function CaptureOnlyPanel({
 }) {
   const hasAnyContact = Boolean(capturedName || capturedEmail || capturedPhone);
   return (
-    <div className="max-w-md mx-auto rounded-xl border border-border bg-muted/30 px-4 py-4">
+    <div className="max-w-md mx-auto rounded-[2px] border border-border bg-muted/30 px-4 py-4">
       <p className="text-sm font-semibold text-foreground">
         {hasAnyContact
           ? "Capture-only conversation"
