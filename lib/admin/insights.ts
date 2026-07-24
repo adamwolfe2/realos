@@ -64,43 +64,48 @@ export type AgencyMoney = {
   activeCount: number;
   atRiskCount: number;
   pausedCount: number;
+  /** BUILD_IN_PROGRESS + CONTRACT_SIGNED + QA, same set the page header
+   *  adds to activeCount/atRiskCount/pausedCount for "N tenants live". */
+  onboardingCount: number;
   /** New tenants launched in the last 30d (a soft "growth" signal). */
   launched30d: number;
   /** Tenants that churned in the last 30d (a "shrink" signal). */
   churned30d: number;
 };
 
+/**
+ * Every KPI on the agency-overview page must come from the same filtered
+ * tenant set as the lists below (active/onboarding/attention queue) — see
+ * isInternalWorkspaceOrg. Previously this ran a DB-side groupBy over ALL
+ * CLIENT orgs, so an un-renamed Clerk workspace or demo fixture could show
+ * up as "1 client flagged at-risk" in the KPI strip while the attention
+ * queue (which does filter) reported all-clear. Aggregating in JS over the
+ * same filtered rows the other helpers use keeps the whole page honest.
+ */
 export async function getAgencyMoney(): Promise<AgencyMoney> {
   const since30d = new Date(Date.now() - 30 * DAY);
 
-  const [grouped, launched30d, churned30d] = await Promise.all([
-    prisma.organization.groupBy({
-      by: ["status"],
-      where: { orgType: OrgType.CLIENT },
-      _sum: { mrrCents: true },
-      _count: { _all: true },
-    }),
-    prisma.organization.count({
-      where: {
-        orgType: OrgType.CLIENT,
-        launchedAt: { gte: since30d },
-      },
-    }),
-    prisma.organization.count({
-      where: {
-        orgType: OrgType.CLIENT,
-        status: TenantStatus.CHURNED,
-        updatedAt: { gte: since30d },
-      },
-    }),
-  ]);
+  const allClients = await prisma.organization.findMany({
+    where: { orgType: OrgType.CLIENT },
+    select: {
+      name: true,
+      slug: true,
+      primaryContactEmail: true,
+      status: true,
+      mrrCents: true,
+      launchedAt: true,
+      updatedAt: true,
+    },
+  });
+
+  const clients = allClients.filter((o) => !isInternalWorkspaceOrg(o));
 
   const byStatus = new Map<TenantStatus, { mrr: number; count: number }>();
-  for (const row of grouped) {
-    byStatus.set(row.status, {
-      mrr: row._sum.mrrCents ?? 0,
-      count: row._count._all,
-    });
+  for (const c of clients) {
+    const bucket = byStatus.get(c.status) ?? { mrr: 0, count: 0 };
+    bucket.mrr += c.mrrCents ?? 0;
+    bucket.count += 1;
+    byStatus.set(c.status, bucket);
   }
 
   const get = (s: TenantStatus) => byStatus.get(s) ?? { mrr: 0, count: 0 };
@@ -108,6 +113,18 @@ export async function getAgencyMoney(): Promise<AgencyMoney> {
   const launched = get(TenantStatus.LAUNCHED);
   const atRisk = get(TenantStatus.AT_RISK);
   const paused = get(TenantStatus.PAUSED);
+  const buildInProgress = get(TenantStatus.BUILD_IN_PROGRESS);
+  const contractSigned = get(TenantStatus.CONTRACT_SIGNED);
+  const qa = get(TenantStatus.QA);
+
+  const launched30d = clients.filter(
+    (c) => c.launchedAt && c.launchedAt.getTime() >= since30d.getTime(),
+  ).length;
+  const churned30d = clients.filter(
+    (c) =>
+      c.status === TenantStatus.CHURNED &&
+      c.updatedAt.getTime() >= since30d.getTime(),
+  ).length;
 
   return {
     totalMrrCents: active.mrr + launched.mrr + atRisk.mrr,
@@ -117,6 +134,7 @@ export async function getAgencyMoney(): Promise<AgencyMoney> {
     activeCount: active.count + launched.count,
     atRiskCount: atRisk.count,
     pausedCount: paused.count,
+    onboardingCount: buildInProgress.count + contractSigned.count + qa.count,
     launched30d,
     churned30d,
   };
