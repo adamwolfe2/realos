@@ -127,7 +127,7 @@ export function InstallSnippet({
   }
 
   return (
-    <section className="rounded-[2px] border border-border bg-card p-5 space-y-4">
+    <section className="ls-card p-5 space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="text-sm font-semibold text-foreground">

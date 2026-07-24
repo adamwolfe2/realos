@@ -9,6 +9,7 @@ import { MasterToggle } from "./master-toggle";
 import { LeadRoutingPanel } from "./lead-routing-panel";
 import { InstallSnippet } from "./install-snippet";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
+import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import type { ConnectionStatus } from "@/components/portal/ui/status-chip";
 
 export const metadata: Metadata = { title: "Chatbot" };
@@ -234,20 +235,33 @@ export default async function ChatbotPage() {
           label="Performance"
           description="Conversation volume and intake capture over the last day, week, and month."
         >
-          <dl className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-            <ChatbotStatTile label="Conversations · 1d" value={stats.d1} />
-            <ChatbotStatTile label="Conversations · 7d" value={stats.d7} />
-            <ChatbotStatTile label="Conversations · 30d" value={stats.d30} />
-            <ChatbotStatTile
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+            <KpiTile
+              density="dense"
+              label="Conversations · 1d"
+              value={stats.d1.toLocaleString()}
+            />
+            <KpiTile
+              density="dense"
+              label="Conversations · 7d"
+              value={stats.d7.toLocaleString()}
+            />
+            <KpiTile
+              density="dense"
+              label="Conversations · 30d"
+              value={stats.d30.toLocaleString()}
+            />
+            <KpiTile
+              density="dense"
               label="Intakes captured · 30d"
-              value={stats.intakes30d}
+              value={stats.intakes30d.toLocaleString()}
               hint={
                 stats.d30 > 0
                   ? `${Math.round((stats.intakes30d / stats.d30) * 100)}% capture rate`
                   : undefined
               }
             />
-          </dl>
+          </div>
         </SectionCard>
       ) : null}
 
@@ -271,35 +285,6 @@ export default async function ChatbotPage() {
         orgPrimaryColor={org.primaryColor}
         moduleActive={org.moduleChatbot}
       />
-    </div>
-  );
-}
-
-// Small stat tile used only on this page. Mirrors the dashboard
-// KpiTile shape without pulling the heavier component in — keeps the
-// chatbot config bundle slim.
-function ChatbotStatTile({
-  label,
-  value,
-  hint,
-}: {
-  label: string;
-  value: number;
-  hint?: string;
-}) {
-  return (
-    <div className="rounded-[2px] border border-border bg-muted/20 p-3">
-      <dt className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground truncate">
-        {label}
-      </dt>
-      <dd className="mt-1 text-2xl font-semibold text-foreground tabular-nums leading-none">
-        {value.toLocaleString()}
-      </dd>
-      {hint ? (
-        <p className="mt-1.5 text-[11px] text-muted-foreground leading-snug">
-          {hint}
-        </p>
-      ) : null}
     </div>
   );
 }

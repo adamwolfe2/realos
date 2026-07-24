@@ -155,7 +155,7 @@ export function LeadRoutingPanel({
   const recipientCount = recipients.length;
 
   return (
-    <section className="rounded-[2px] border border-border bg-card p-5">
+    <section className="ls-card p-5">
       <div className="flex items-start justify-between gap-4 mb-4">
         <div>
           <h2 className="text-sm font-semibold flex items-center gap-1.5">
