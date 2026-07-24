@@ -464,6 +464,41 @@ export async function getPropertyMetrics(
 }
 
 // ---------------------------------------------------------------------------
+// Portfolio-wide 28d leads sparkline only — the dashboard header tile only
+// ever needs the summed daily-leads shape, not the full per-property
+// leads/campaigns/reputation rollup that getPropertyMetrics computes (6
+// queries). This mirrors just the leadsSpark half of that function (1
+// query) for callers that don't need the per-property breakdown. Keep
+// getPropertyMetrics intact — the property cards may want the full shape.
+// ---------------------------------------------------------------------------
+
+export async function getPortfolioLeadsSpark(
+  orgId: string,
+  propertyIds: string[],
+): Promise<number[]> {
+  const spark = new Array<number>(WINDOW_DAYS).fill(0);
+  if (propertyIds.length === 0) return spark;
+
+  const since28d = new Date(Date.now() - WINDOW_DAYS * DAY_MS);
+
+  const leadDates = await prisma.lead.findMany({
+    where: {
+      orgId,
+      createdAt: { gte: since28d },
+      propertyId: { in: propertyIds },
+    },
+    select: { createdAt: true },
+  });
+
+  for (const row of leadDates) {
+    const idx = dayBucketIndex(row.createdAt, WINDOW_DAYS);
+    if (idx >= 0 && idx < WINDOW_DAYS) spark[idx] += 1;
+  }
+
+  return spark;
+}
+
+// ---------------------------------------------------------------------------
 // Activity feed
 //
 // Union the most recent items across leads, tours, engaged visitor sessions,

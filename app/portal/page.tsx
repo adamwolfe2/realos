@@ -43,14 +43,9 @@ import {
   getHotVisitors,
   getIntegrationHealth,
   getLeadSourceBreakdown,
-  getLeasingVelocityTrend,
   getOrganicSessionsKpi,
   getPerformanceOverTime,
-  getPropertyMetrics,
-  getRecentIdentifiedVisitors,
-  getReputationPulse,
-  getReputationSummary,
-  getChatbotSummary,
+  getPortfolioLeadsSpark,
   getTopPropertiesByLeads,
   type PerformancePoint,
   type LeaderboardPropertyRow,
@@ -273,11 +268,6 @@ export default async function PortalHome({
       openInsights,
       insightCounts,
       connectStatus,
-      velocityData,
-      recentIdentified,
-      reputationPulse,
-      reputationSummary,
-      chatbotSummary,
       orgModules,
       currentUser,
       performancePoints,
@@ -446,24 +436,6 @@ export default async function PortalHome({
         connected: 0,
         total: 7,
       })),
-      getLeasingVelocityTrend(scope.orgId).catch(() => []),
-      getRecentIdentifiedVisitors(scope.orgId, 6).catch(() => []),
-      getReputationPulse(scope.orgId, 5).catch(() => []),
-      getReputationSummary(scope.orgId).catch(() => ({
-        avgGoogleRating: null as number | null,
-        googleReviewCount: 0,
-        totalMentions: 0,
-        newLast30d: 0,
-        negativeCount: 0,
-        unreviewedCount: 0,
-      })),
-      getChatbotSummary(scope.orgId).catch(() => ({
-        conversations28d: 0,
-        leadsCaptured28d: 0,
-        captureRatePct: null as number | null,
-        prev28dConversations: 0,
-        deltaPct: null as number | null,
-      })),
       prisma.organization
         .findUnique({
           where: { id: scope.orgId },
@@ -511,8 +483,11 @@ export default async function PortalHome({
       ).catch(() => [] as LeaderboardPropertyRow[]),
     ]);
 
-    // 28d leads + active campaigns + sparkline per property.
-    const propertyMetrics = await getPropertyMetrics(
+    // 28d leads sparkline, summed across the visible properties. Only the
+    // spark shape is consumed on this page (see getPortfolioLeadsSpark) —
+    // the full per-property leads/campaigns/reputation rollup from
+    // getPropertyMetrics isn't rendered here.
+    const totalLeadsSpark = await getPortfolioLeadsSpark(
       scope.orgId,
       properties.map((p) => p.id),
     );
@@ -555,19 +530,6 @@ export default async function PortalHome({
     const costPerLead = leadsNew28d > 0 ? adSpend.spendUsd / leadsNew28d : null;
     const costPerLeadDisplay =
       costPerLead != null ? `$${costPerLead.toFixed(2)}` : "\u2014";
-
-    // Build a 28d daily-leads sparkline from the per-property buckets so the
-    // top KPI shows the same shape the per-property cards add up to.
-    const totalLeadsSpark = new Array<number>(28).fill(0);
-    for (const m of propertyMetrics.values()) {
-      for (
-        let i = 0;
-        i < totalLeadsSpark.length && i < m.leadsSpark.length;
-        i++
-      ) {
-        totalLeadsSpark[i] += m.leadsSpark[i];
-      }
-    }
 
     // Portfolio occupancy: weighted by units. Some properties may not have
     // unit-count metadata yet, so we filter to those that do for accuracy.

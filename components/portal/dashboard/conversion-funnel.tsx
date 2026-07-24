@@ -189,9 +189,21 @@ export function ConversionFunnel({ stages }: { stages: FunnelStage[] }) {
           // Computing 0% against an em-dash predecessor would be wrong.
           const naConversion =
             s.notApplicable === true || prevStage?.notApplicable === true;
-          const conversion =
+          // Stages are independent cohorts (e.g. "Visitors" counts anyone
+          // seen in 28d, "Leads" counts leads created in 28d) — they aren't
+          // drawn from one another, so value can exceed prev and the ratio
+          // would read as a nonsensical >100% "conversion". When that
+          // happens, don't clamp-and-lie with a percentage; drop the %
+          // label and show the stage's absolute count instead.
+          const rawConversion =
             !naConversion && prev && prev > 0
-              ? Math.round((s.value / prev) * 100)
+              ? (s.value / prev) * 100
+              : null;
+          const conversionExceedsRange =
+            rawConversion != null && rawConversion > 100;
+          const conversion =
+            rawConversion != null && !conversionExceedsRange
+              ? Math.round(Math.min(100, Math.max(0, rawConversion)))
               : null;
           const delay = reduce ? 0 : 0.42 + i * 0.09;
           return (
@@ -222,6 +234,17 @@ export function ConversionFunnel({ stages }: { stages: FunnelStage[] }) {
                   style={{ fontVariantNumeric: "tabular-nums" }}
                 >
                   {conversion}% conv.
+                </text>
+              ) : conversionExceedsRange ? (
+                <text
+                  x={cx}
+                  y={FUNNEL_H + 52}
+                  textAnchor="middle"
+                  fontSize={16}
+                  fill="#525252"
+                  style={{ fontVariantNumeric: "tabular-nums" }}
+                >
+                  {s.value.toLocaleString()} total
                 </text>
               ) : naConversion ? (
                 <text
