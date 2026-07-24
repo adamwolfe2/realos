@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { Download, MapPin, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { motion, useInView, useReducedMotion } from "framer-motion";
 import { SideDrawer } from "@/components/portal/ui/side-drawer";
 import { BulkActionBar } from "@/components/portal/ui/bulk-action-bar";
+import { EASE_OUT } from "@/components/portal/ui/motion";
 
 // ---------------------------------------------------------------------------
 // VisitorTable
@@ -41,6 +43,13 @@ type Props = {
 };
 
 export function VisitorTable({ rows }: Props) {
+  // Row wave on first paint (motion pass 2026-07-24), capped stagger so a
+  // 50-row page doesn't take seconds to finish. Mirrors the marketing
+  // walkthrough's ScreenVisitors reveal wave.
+  const tableRef = useRef<HTMLTableElement>(null);
+  const tableInView = useInView(tableRef, { once: true, margin: "0px 0px -10% 0px" });
+  const reduceMotion = useReducedMotion();
+  const rowsOn = reduceMotion ? true : tableInView;
   const [selected, setSelected] = useState<Set<string>>(new Set());
   // openId drives the SideDrawer — surface a quick-look summary without
   // navigating away from the feed. The full /portal/visitors/[id] page
@@ -132,7 +141,7 @@ export function VisitorTable({ rows }: Props) {
 
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-xs border-collapse">
+          <table ref={tableRef} className="w-full text-xs border-collapse">
             <thead>
               <tr className="border-b border-border bg-secondary/40">
                 <th className="px-3 py-2 w-[36px]">
@@ -156,11 +165,15 @@ export function VisitorTable({ rows }: Props) {
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => {
+              {rows.map((r, rowIndex) => {
                 const isSelected = selected.has(r.id);
+                const rowDelay = reduceMotion ? 0 : Math.min(rowIndex, 12) * 0.05;
                 return (
-                  <tr
+                  <motion.tr
                     key={r.id}
+                    initial={false}
+                    animate={{ opacity: rowsOn ? 1 : 0, y: rowsOn ? 0 : 8 }}
+                    transition={{ duration: 0.4, ease: EASE_OUT, delay: rowDelay }}
                     onClick={(e) => {
                       // Skip when the click came from an interactive element
                       // (checkbox, link) so we don't double-fire.
@@ -248,7 +261,7 @@ export function VisitorTable({ rows }: Props) {
                         </span>
                       ) : null}
                     </td>
-                  </tr>
+                  </motion.tr>
                 );
               })}
             </tbody>
