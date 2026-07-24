@@ -172,32 +172,7 @@ export function Proof() {
           </BookDemoLink>
         </div>
 
-        {/* Trust strip, inline horizontal proof points, not a giant grid */}
-        <div
-          className="mt-12 md:mt-14 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-0"
-          style={{
-            borderTop: "1px solid #e0e0e0",
-            paddingTop: 28,
-          }}
-        >
-          <TrustPoint
-            label="Time to live"
-            value="14 days"
-            body="From intake call to your domain firing."
-            divider
-          />
-          <TrustPoint
-            label="What you log into"
-            value="1 portal"
-            body="Not six vendors, six invoices, six dashboards."
-            divider
-          />
-          <TrustPoint
-            label="Lock-in"
-            value="Month-to-month"
-            body="No long-term contracts. Leave anytime."
-          />
-        </div>
+        {/* Trust strip removed 2026-07-24 (Adam: cut the 3-stat row). */}
       </div>
     </section>
   );

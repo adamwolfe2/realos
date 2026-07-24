@@ -14,21 +14,6 @@ export default function AdsFeaturePage() {
       eyebrow="Managed ads"
       headline="Paid that pays back, audited every week."
       subhead="Most ad spend goes to broad audiences with no retargeting. We flip that: tight audiences, pixel retargeting, defended every dollar."
-      whatItIs="Managed Google, Meta, LinkedIn, and TikTok campaigns tailored to each property. Creative ships from our studio, campaigns optimize against lease-velocity targets, and everything rolls up in the same dashboard that shows your leads."
-      howItWorks={[
-        "Connect your ad accounts to your portal via OAuth, we don't move spend through us.",
-        "We set up geo-fenced, audience-targeted campaigns per property.",
-        "Creative studio supplies fresh assets on a weekly cadence, stories, feed, search copy, display banners.",
-        "Identity-pixel audiences from our own pixel fuel retargeting at warmer ID rates than any platform audience.",
-        "Weekly review call: spend, CPL, conversion, next test to run.",
-      ]}
-      results={[
-        "Cost per lead defended on a weekly call, not buried in a quarterly report.",
-        "Attribution through to leased units in the portal dashboard.",
-        "No agency markup on creative, no minimums, pause or kill any campaign from the portal.",
-        "Creative refreshed weekly out of the Creative Studio, no separate production retainer.",
-      ]}
-      bestFor="Operators who want paid performance defended every week, not explained every quarter. Most powerful once the pixel is running, so retargeting audiences exist."
       artifact={<ConfigTabs />}
     />
   );

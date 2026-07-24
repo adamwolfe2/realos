@@ -28,72 +28,25 @@ export default function PopupsFeaturePage() {
             and every conversion attributes back to your lead pipeline. Try the
             full editor below.
           </p>
+          <div className="mt-8 inline-flex items-center gap-3">
+            <a
+              href="/sign-up"
+              className="inline-flex items-center rounded-none bg-primary text-primary-foreground px-5 py-3 text-sm font-semibold hover:bg-primary/90 transition-colors"
+            >
+              Request pilot
+            </a>
+            <a
+              href="/onboarding"
+              className="inline-flex items-center rounded-none border border-border bg-white px-5 py-3 text-sm font-semibold hover:bg-muted transition-colors"
+            >
+              Book a demo
+            </a>
+          </div>
         </div>
       </section>
 
-      {/* Interactive demo */}
+      {/* Interactive demo — the page IS the hero + this demo (Adam 2026-07-24) */}
       <PopupsDemoSection />
-
-      {/* Why this matters */}
-      <section className="bg-[#f4f4f4] border-y border-border">
-        <div className="max-w-6xl mx-auto px-6 py-16 md:py-24 grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div>
-            <h3 className="text-xl font-semibold tracking-tight mb-2">
-              Works on any website
-            </h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Wix, WordPress, Webflow, Squarespace, custom, anywhere you can
-              paste a script tag. The popup loads asynchronously so it never
-              blocks your page render.
-            </p>
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold tracking-tight mb-2">
-              Conversions hit your pipeline
-            </h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Every email captured becomes a lead in /portal/leads with source
-              tagged. Every dismiss, click, and conversion writes an event so
-              you can A/B test headlines with real numbers.
-            </p>
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold tracking-tight mb-2">
-              No popup fatigue
-            </h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Once-per-session by default. Per-page allowlist. Mobile-aware
-              triggers. The visitor sees one well-timed offer, not five
-              competing modals.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="max-w-4xl mx-auto px-6 py-20 md:py-28 text-center">
-        <h2 className="text-3xl md:text-5xl font-bold tracking-tight leading-tight">
-          Live on your site in 5 minutes.
-        </h2>
-        <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-          The Popups module is included in the {BRAND_NAME} platform. Design
-          your first campaign during the intake call.
-        </p>
-        <div className="mt-8 inline-flex items-center gap-3">
-          <a
-            href="/sign-up"
-            className="inline-flex items-center rounded-none bg-primary text-primary-foreground px-5 py-3 text-sm font-semibold hover:bg-primary/90 transition-colors"
-          >
-            Request pilot
-          </a>
-          <a
-            href="/onboarding"
-            className="inline-flex items-center rounded-none border border-border bg-white px-5 py-3 text-sm font-semibold hover:bg-muted transition-colors"
-          >
-            Book a demo
-          </a>
-        </div>
-      </section>
     </div>
   );
 }

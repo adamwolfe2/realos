@@ -5,7 +5,6 @@ import { Hero } from "@/components/home/hero";
 import { ProductHeroShot } from "@/components/home/product-hero-shot";
 import { Pillars } from "@/components/home/pillars";
 import { Comparison } from "@/components/home/comparison";
-import { SurfacesStrip } from "@/components/home/surfaces-strip";
 import { ReportFeature } from "@/components/home/report-feature";
 import { LaunchSteps } from "@/components/home/launch-steps";
 import { Faq } from "@/components/home/faq";
@@ -24,10 +23,10 @@ import { PixelSeam } from "@/components/home/pixel-seam";
 //   02 The system        pinned camera zoom over the dashboard
 //   03 It works          four sequential capability parts (all shown)
 //      Comparison        why operators switch (unnumbered aside)
-//   04 Every surface     product surfaces + integration row
+//   (removed 2026-07-24, Adam: "Every surface" strip — placeholder mini-cards)
 //   ~pixel seam~
 //   05 The report        weekly report on a blue texture panel
-//   06 Rollout           three-step implementation, drawing line
+//   06 Rollout           four-step implementation, drawing line
 //   07 FAQ
 //      Proof             final CTA
 
@@ -44,7 +43,6 @@ export default function PlatformHome() {
       <ProductHeroShot />
       <Pillars />
       <Comparison />
-      <SurfacesStrip />
       <ReportFeature />
       <LaunchSteps />
       <Faq />
