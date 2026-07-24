@@ -5,7 +5,7 @@ import { SectionShell } from "./section-shell";
 import { Atmosphere } from "./atmosphere";
 import { Mark } from "./mark";
 import { FrameSettle } from "./frame-settle";
-import { DashboardFrame, MobileFrame } from "./walkthrough/dashboard-frame";
+import { ReportSnapshotMock } from "./report-snapshot-mock";
 import { IntegrationsStrip } from "./integrations-strip";
 
 // ---------------------------------------------------------------------------
@@ -38,11 +38,12 @@ export function Hero() {
             style={{
               color: "#161616",
               fontFamily: "var(--font-display)",
-              fontSize: "clamp(40px, 6.2vw, 72px)",
+              // Landing v3 phone QA (Adam 2026-07-23): H1 fills the hero.
+              fontSize: "clamp(46px, 7.4vw, 92px)",
               fontWeight: 550,
-              lineHeight: 1.03,
+              lineHeight: 1.02,
               letterSpacing: "-0.04em",
-              maxWidth: "900px",
+              maxWidth: "1020px",
             }}
           >
             Every lead, tour, and lease.
@@ -81,10 +82,13 @@ export function Hero() {
 
           {/* Proof strip removed per Adam 2026-07-23 (screenshot: "remove
               this"). The dashboard frame below is the proof now. */}
+          {/* Hero visual = the Marketing & Performance Snapshot (Adam
+              2026-07-23: "use that report as the main HERO dashboard").
+              Same artifact closes the page in ReportFeature — top and
+              bottom bookend on one consistent shot. */}
           <div className="mt-10 md:mt-12">
             <FrameSettle>
-              <DashboardFrame beat={1} natural={1040} className="hidden md:block" />
-              <MobileFrame beat={1} className="md:hidden" />
+              <ReportSnapshotMock />
             </FrameSettle>
           </div>
 

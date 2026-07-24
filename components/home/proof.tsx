@@ -215,8 +215,10 @@ function TrustPoint({
   divider?: boolean;
 }) {
   return (
+    // text-center on mobile (stacked); the md 3-col row keeps it too so all
+    // three stats read as one centered system (Adam 2026-07-23 phone QA).
     <div
-      className="md:px-8 md:first:pl-0 md:last:pr-0"
+      className="text-center md:px-8 md:first:pl-0 md:last:pr-0"
       style={{
         borderRight: divider ? "1px solid #e0e0e0" : "none",
       }}
@@ -248,7 +250,7 @@ function TrustPoint({
         {value}
       </p>
       <p
-        className="mt-2 max-w-[260px]"
+        className="mt-2 max-w-[260px] mx-auto"
         style={{
           color: "#6f6f6f",
           fontFamily: "var(--font-sans)",

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { BRAND_NAME } from "@/lib/brand";
 import { DigitalScoreQuiz } from "@/components/audit/digital-score-quiz";
+import { ReportSnapshotMock } from "@/components/home/report-snapshot-mock";
 
 export const metadata: Metadata = {
   title: `Digital Performance Score | ${BRAND_NAME}`,
@@ -54,6 +55,25 @@ export default function AuditFormPage() {
             <div className="mt-6 sm:mt-8 text-left">
               <DigitalScoreQuiz />
             </div>
+          </div>
+
+          {/* The same snapshot artifact as the homepage hero/report — no
+              inconsistencies between what the audit promises and what the
+              product shows (Adam 2026-07-23). */}
+          <div className="mt-12 md:mt-16 max-w-[860px] mx-auto">
+            <p
+              className="text-center mb-5"
+              style={{
+                color: "#1E2A3A",
+                fontFamily: "var(--font-sans)",
+                fontSize: 18,
+                fontWeight: 600,
+                letterSpacing: "-0.015em",
+              }}
+            >
+              The snapshot your score turns into, every Monday.
+            </p>
+            <ReportSnapshotMock />
           </div>
 
           <ul className="mt-10 md:mt-12 grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 max-w-3xl mx-auto">

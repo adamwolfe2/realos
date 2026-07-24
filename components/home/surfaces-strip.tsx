@@ -3,6 +3,7 @@ import Link from "next/link";
 import {
   BarChart3,
   Users,
+  Eye,
   FileText,
   Search,
   Star,
@@ -18,9 +19,11 @@ import { SectionShell, LabelChip } from "./section-shell";
 
 type Surface = { label: string; url: string; icon: LucideIcon };
 
+// Six surfaces — even grid (Adam 2026-07-23: 2×3 mobile, 6-up desktop).
 const SURFACES: Surface[] = [
   { label: "Dashboard", url: "app.leasestack.co/portal", icon: BarChart3 },
   { label: "Leads", url: "app.leasestack.co/leads", icon: Users },
+  { label: "Visitors", url: "app.leasestack.co/visitors", icon: Eye },
   { label: "Reports", url: "app.leasestack.co/reports", icon: FileText },
   { label: "SEO", url: "app.leasestack.co/seo", icon: Search },
   { label: "Reputation", url: "app.leasestack.co/reputation", icon: Star },
@@ -139,7 +142,7 @@ export function SurfacesStrip() {
           </p>
         </div>
 
-        <div className="mt-12 grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="mt-12 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {SURFACES.map((s) => (
             <Link key={s.label} href="/features" className="group block">
               <MiniSurface surface={s} />

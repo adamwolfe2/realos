@@ -14,6 +14,7 @@ import {
   ClaudeMark,
   GeminiMark,
 } from "@/components/platform/artifacts/brand-logos";
+import { SourceGlyph } from "@/components/portal/reports/snapshot-shared";
 
 // ---------------------------------------------------------------------------
 // IntegrationsStrip — the "works with your stack" logo row. Landing v3
@@ -33,6 +34,9 @@ const INTEGRATIONS: Array<{ name: string; mark: React.ReactNode }> = [
   { name: "Perplexity", mark: <PerplexityMark size={34} /> },
   { name: "Claude", mark: <ClaudeMark size={34} /> },
   { name: "Gemini", mark: <GeminiMark size={34} /> },
+  // Review sources we monitor — rounds the grid to 12 (3×4 on mobile).
+  { name: "Reddit", mark: <SourceGlyph source="REDDIT" className="h-8 w-8" /> },
+  { name: "Yelp", mark: <SourceGlyph source="YELP" className="h-8 w-8" /> },
 ];
 
 export function IntegrationsStrip() {
@@ -71,7 +75,8 @@ export function IntegrationsStrip() {
       >
         AppFolio, Google, Meta, and your reviews, synced continuously.
       </motion.p>
-      <div className="mt-7 flex flex-wrap justify-center gap-2.5 md:gap-3">
+      {/* 12 tiles: clean 3×4 on mobile, 6×2 from md up. */}
+      <div className="mt-7 mx-auto grid grid-cols-3 md:grid-cols-6 gap-2.5 md:gap-3 max-w-[300px] md:max-w-[560px]">
         {INTEGRATIONS.map((it, i) => (
           <motion.span
             key={it.name}
@@ -79,11 +84,9 @@ export function IntegrationsStrip() {
             animate={{ opacity: on ? 1 : 0, y: on ? 0 : 10, scale: on ? 1 : 0.92 }}
             transition={{ type: "spring", stiffness: 360, damping: 24, delay: reduce ? 0 : 0.15 + i * 0.05 }}
             whileHover={reduce ? undefined : { y: -3 }}
-            className="inline-flex items-center justify-center"
+            className="inline-flex items-center justify-center aspect-square w-full"
             title={it.name}
             style={{
-              width: 68,
-              height: 68,
               border: "1px solid #e0e0e0",
               borderRadius: 2,
               backgroundColor: "#FFFFFF",
