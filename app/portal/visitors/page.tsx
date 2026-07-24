@@ -25,6 +25,10 @@ import {
   type VisitorRow,
 } from "@/components/portal/visitors/visitor-table";
 import { DataPlaceholder } from "@/components/portal/ui/data-placeholder";
+import {
+  StatusChip,
+  type ConnectionStatus,
+} from "@/components/portal/ui/status-chip";
 import { Radio, UserCheck, Mail, Users } from "lucide-react";
 import { parseTimeWindow, timeWindowGte, type TimeWindow } from "@/lib/recency";
 
@@ -443,23 +447,20 @@ export default async function VisitorsPage({
             </Suspense>
             {hasPixel ? (
               <p className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
-                {/* Real-time freshness dot — green when an event landed in
-                    the last 5 minutes (webhook path is healthy), amber
-                    5-30 min (probably segment-cron only), rose when
-                    stale > 30 min OR never (webhook URL likely not
-                    pasted into the AL pixel config). Lets the operator
-                    see at-a-glance whether to chase up wiring. */}
+                {/* Real-time freshness chip — live (green) when an event
+                    landed in the last 5 minutes (webhook path is healthy),
+                    stale (amber) 5-30 min (probably segment-cron only),
+                    error (red) when stale > 30 min OR never (webhook URL
+                    likely not pasted into the AL pixel config). Lets the
+                    operator see at-a-glance whether to chase up wiring.
+                    Canonical StatusChip — see components/portal/ui/status-chip.tsx. */}
                 {(() => {
                   const last = integration?.lastEventAt
                     ? new Date(integration.lastEventAt).getTime()
                     : 0;
                   const ageMin = last ? (Date.now() - last) / 60_000 : Infinity;
-                  const tone =
-                    ageMin <= 5
-                      ? "bg-emerald-500"
-                      : ageMin <= 30
-                        ? "bg-amber-500"
-                        : "bg-rose-500";
+                  const status: ConnectionStatus =
+                    ageMin <= 5 ? "live" : ageMin <= 30 ? "stale" : "error";
                   const label =
                     ageMin <= 5
                       ? "Webhook live"
@@ -468,7 +469,6 @@ export default async function VisitorsPage({
                         : "Stale";
                   return (
                     <span
-                      className={`inline-block h-1.5 w-1.5 rounded-full ${tone}`}
                       title={`${label} — last event ${
                         integration?.lastEventAt
                           ? formatDistanceToNow(integration.lastEventAt, {
@@ -476,7 +476,9 @@ export default async function VisitorsPage({
                             })
                           : "never"
                       }`}
-                    />
+                    >
+                      <StatusChip status={status} label={label} />
+                    </span>
                   );
                 })()}
                 Pixel on{" "}

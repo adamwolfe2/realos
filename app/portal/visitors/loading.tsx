@@ -4,8 +4,9 @@ import {
   SkeletonRow,
 } from "@/components/portal/ui/skeleton";
 
-// Loading state for /portal/visitors. Matches DataTable footprint plus
-// the 3 KPI tiles above it.
+// Loading state for /portal/visitors. Matches the Window/Status/Sort
+// filter bar, the 4 KPI tiles (Total visits / Identified / With email /
+// Matched to a lead), and the DataTable footprint below them.
 export default function VisitorsLoading() {
   return (
     <div className="space-y-3">
@@ -18,8 +19,18 @@ export default function VisitorsLoading() {
         <Skeleton className="h-5 w-48" />
         <Skeleton className="h-5 w-36" />
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+      {/* Window / Status / Sort filter bar — same rounded-xl card + 3
+          legend/pill-group footprint as the real page's TabGroup row. */}
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-border bg-card px-3 py-2.5">
         {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <Skeleton className="h-2.5 w-12" />
+            <Skeleton className="h-7 w-40 rounded-lg" />
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
+        {Array.from({ length: 4 }).map((_, i) => (
           <SkeletonKpi key={i} />
         ))}
       </div>

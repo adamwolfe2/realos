@@ -29,6 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import { StatCard } from "@/components/admin/stat-card";
+import { StatusChip } from "@/components/portal/ui/status-chip";
 import { EngageComposer } from "../engage-composer";
 import { ConvertToLeadButton } from "./convert-button";
 
@@ -189,12 +190,7 @@ export default async function VisitorDetailPage({
           <span className="flex items-center gap-3 flex-wrap">
             <VisitorAvatar identity={identity} visitorId={visitor.id} palette={palette} />
             <span>{identity.displayName}</span>
-            {isLive ? (
-              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary bg-primary/10 border border-primary/30 px-2 py-0.5 rounded-md">
-                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                Live now
-              </span>
-            ) : null}
+            {isLive ? <StatusChip status="live" label="Live now" /> : null}
           </span>
         }
         description={
