@@ -81,6 +81,12 @@ export type ConnectSourceVM = {
       pixel is bound). Survives refresh — unlike the local `pending` click
       state — so the requested→provisioning moment is never silently lost. */
   provisioning?: boolean;
+  /** True when the source's most recent sync errored (bad creds, quota,
+      API failure). Sourced from lib/connect/status.ts, which computes this
+      with the same RED-classification logic as the Integrations status
+      page (lib/integrations/status.ts classifyHealth) — so this chip and
+      the Integrations marketplace pill can never disagree. */
+  hasError?: boolean;
 };
 
 const SOURCE_META: Record<
@@ -278,14 +284,18 @@ function formatSyncDate(iso: string): string {
 }
 
 // Status ladder — every state is derivable from data the hub already
-// receives. Deliberately unreachable this wave (do not fake them):
-// `provisioning` (PixelProvisionRequest is not in the payload) and `error`
-// (no failure signal is passed for any source).
+// receives. `error` is sourced from lib/connect/status.ts's `hasError`
+// flag (GA4/GSC/ads/AppFolio only, mirroring classifyHealth in
+// lib/integrations/status.ts) — error beats every other connected state,
+// same priority order as deriveSyncChip in trust-footer.tsx.
 function deriveChipState(
   source: ConnectSourceVM,
   isPending: boolean,
 ): { status: ConnectionStatus; label?: string } {
   if (source.connected) {
+    if (source.hasError) {
+      return { status: "error" };
+    }
     if (source.lastSyncAt === null) {
       // Honest post-OAuth-return state: bound, but no data has landed yet.
       return { status: "connecting", label: "Connected — first sync running" };

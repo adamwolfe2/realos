@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { PageHeader } from "@/components/admin/page-header";
 import { StatusChip } from "@/components/portal/ui/status-chip";
 import {
@@ -168,9 +169,13 @@ export default async function IntegrationsPage({
     // property tenants can pick which LeaseStack property each new
     // GA4 / GSC / Pixel connection scopes to. Empty list (single-
     // property org) means the connect forms render without a picker
-    // and connections land on the legacy org-wide row.
+    // and connections land on the legacy org-wide row. Scoped to
+    // marketable properties (ACTIVE) so parking lots / storage /
+    // pending-IMPORTED sub-records never show up in the pixel picker
+    // or the per-property integrations matrix — same filter every
+    // other property-selector surface uses.
     prisma.property.findMany({
-      where: { orgId: scope.orgId },
+      where: marketablePropertyWhere(scope.orgId),
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),

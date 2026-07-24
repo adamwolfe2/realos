@@ -84,6 +84,7 @@ export default async function ConnectPage() {
           lastSyncAt: s.lastSyncAt ? s.lastSyncAt.toISOString() : null,
           accountLabel: s.accountLabel,
           healthNote: s.healthNote ?? null,
+          hasError: s.hasError ?? false,
           provisioning:
             s.id === "cursive_pixel" && !s.connected ? pixelRequested : false,
         }))}

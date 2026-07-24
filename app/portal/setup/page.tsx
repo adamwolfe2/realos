@@ -182,6 +182,7 @@ export default async function SetupHubPage() {
             lastSyncAt: s.lastSyncAt ? s.lastSyncAt.toISOString() : null,
             accountLabel: s.accountLabel,
             healthNote: s.healthNote ?? null,
+            hasError: s.hasError ?? false,
           }))}
         />
       </section>

@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { classifyHealth } from "@/lib/integrations/status";
 
 // ---------------------------------------------------------------------------
 // Connect Hub status
@@ -40,6 +41,12 @@ export type ConnectSourceStatus = {
       the per-integration settings page rather than implying the source is
       fully green. */
   healthNote?: { label: string; href: string } | null;
+  /** True when the most recent sync errored (bad creds, quota, API
+      failure). Computed with the exact same RED-classification logic as
+      the Integrations status page (lib/integrations/status.ts) so the
+      Connect hub chip and the Integrations marketplace pill can never
+      disagree about whether a source is broken. */
+  hasError?: boolean;
 };
 
 export async function getConnectStatusForOrg(
@@ -54,6 +61,12 @@ export async function getConnectStatusForOrg(
             instanceSubdomain: true,
             lastSyncAt: true,
             autoSyncEnabled: true,
+            // Sync-error signal — same fields the Integrations status page
+            // reads (lib/integrations/status.ts resolveOne) so this hub's
+            // chip can flip to "error" instead of staying stuck on
+            // stale/live when every recent AppFolio cron tick failed.
+            syncStatus: true,
+            lastError: true,
           },
         })
         .catch(() => null),
@@ -65,6 +78,11 @@ export async function getConnectStatusForOrg(
             lastSyncAt: true,
             propertyIdentifier: true,
             propertyId: true,
+            // Same error signal the Integrations status page ORs across
+            // every per-property row (lib/integrations/status.ts
+            // seoBySlug) — read here for the identical honest RED check.
+            status: true,
+            lastSyncError: true,
           },
         })
         .catch(() => [] as Array<{
@@ -72,6 +90,8 @@ export async function getConnectStatusForOrg(
           lastSyncAt: Date | null;
           propertyIdentifier: string | null;
           propertyId: string | null;
+          status: string | null;
+          lastSyncError: string | null;
         }>),
       prisma.adAccount
         .findMany({
@@ -80,12 +100,14 @@ export async function getConnectStatusForOrg(
             platform: true,
             externalAccountId: true,
             lastSyncAt: true,
+            lastSyncError: true,
           },
         })
         .catch(() => [] as Array<{
           platform: string;
           externalAccountId: string;
           lastSyncAt: Date | null;
+          lastSyncError: string | null;
         }>),
       prisma.cursiveIntegration
         .findMany({
@@ -125,6 +147,26 @@ export async function getConnectStatusForOrg(
   const metaAds = adAccounts.find((a) => a.platform === "META_ADS");
   const installedCursive = cursive.filter((c) => !!c.cursivePixelId);
 
+  // Error aggregation — a multi-property tenant can have several GA4/GSC
+  // rows (one per property) or several ad accounts per platform. ANY row
+  // erroring must flip the source to "error", same OR-across-rows rule
+  // lib/integrations/status.ts uses (seoBySlug/adsBySlug) — picking only
+  // the first row here would hide a broken second property/account.
+  const ga4HasError = seoIntegrations
+    .filter((s) => s.provider === "GA4")
+    .some((s) => s.status === "ERROR" || !!s.lastSyncError);
+  const gscHasError = seoIntegrations
+    .filter((s) => s.provider === "GSC")
+    .some((s) => s.status === "ERROR" || !!s.lastSyncError);
+  const googleAdsHasError = adAccounts
+    .filter((a) => a.platform === "GOOGLE_ADS")
+    .some((a) => !!a.lastSyncError);
+  const metaAdsHasError = adAccounts
+    .filter((a) => a.platform === "META_ADS")
+    .some((a) => !!a.lastSyncError);
+  const appfolioHasError =
+    !!appfolio && (appfolio.syncStatus === "error" || !!appfolio.lastError);
+
   return [
     {
       id: "appfolio",
@@ -144,6 +186,7 @@ export async function getConnectStatusForOrg(
               href: "/portal/settings/integrations#appfolio",
             }
           : null,
+      hasError: appfolioHasError,
     },
     {
       id: "ga4",
@@ -152,12 +195,18 @@ export async function getConnectStatusForOrg(
       accountLabel: ga4?.propertyIdentifier
         ? `Property ${ga4.propertyIdentifier}`
         : null,
+      // classifyHealth is the exact function the Integrations status page
+      // uses for GA4/GSC (lib/integrations/status.ts) — reused here rather
+      // than a hand-rolled RED check so the two surfaces are structurally
+      // incapable of disagreeing on whether GA4 is erroring.
+      hasError: classifyHealth("ga4", ga4?.lastSyncAt ?? null, ga4HasError) === "error",
     },
     {
       id: "gsc",
       connected: !!gsc,
       lastSyncAt: gsc?.lastSyncAt ?? null,
       accountLabel: gsc?.propertyIdentifier ?? null,
+      hasError: classifyHealth("gsc", gsc?.lastSyncAt ?? null, gscHasError) === "error",
     },
     {
       id: "google_ads",
@@ -166,6 +215,7 @@ export async function getConnectStatusForOrg(
       accountLabel: googleAds?.externalAccountId
         ? `Account ${googleAds.externalAccountId}`
         : null,
+      hasError: googleAdsHasError,
     },
     {
       id: "meta_ads",
@@ -174,6 +224,7 @@ export async function getConnectStatusForOrg(
       accountLabel: metaAds?.externalAccountId
         ? `Account ${metaAds.externalAccountId}`
         : null,
+      hasError: metaAdsHasError,
     },
     {
       id: "cursive_pixel",

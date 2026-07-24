@@ -37,7 +37,7 @@ export type IntegrationState =
 // only learned the integration was broken by opening the page and noticing
 // no fresh data. This helper unifies the three signals so every connected
 // integration goes through the same RED/YELLOW/GREEN gate.
-function classifyHealth(
+export function classifyHealth(
   key: IntegrationKey,
   lastSyncAt: Date | null,
   hasError: boolean,
