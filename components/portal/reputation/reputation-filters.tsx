@@ -61,6 +61,17 @@ export function ReputationFilters({
   const activeSource = (params.get("source") ?? "all") as SourceFilter;
   const activeSentiment = (params.get("sentiment") ?? "all") as SentimentFilter;
 
+  const sourceOptions: Array<SourceChip> = SOURCE_OPTIONS.map((opt) =>
+    opt.value === "all"
+      ? opt
+      : { ...opt, count: sourceCounts?.[opt.value] },
+  );
+  const sentimentOptions: Array<SentimentChip> = SENTIMENT_OPTIONS.map((opt) =>
+    opt.value === "all"
+      ? opt
+      : { ...opt, count: sentimentCounts?.[opt.value] },
+  );
+
   function setParam(key: string, value: string) {
     const next = new URLSearchParams(params.toString());
     if (value === "all") {
@@ -86,13 +97,13 @@ export function ReputationFilters({
     <div className="flex flex-col gap-1.5">
       <FilterRow
         label="Source"
-        options={SOURCE_OPTIONS}
+        options={sourceOptions}
         active={activeSource}
         onChange={(v) => setParam("source", v)}
       />
       <FilterRow
         label="Sentiment"
-        options={SENTIMENT_OPTIONS}
+        options={sentimentOptions}
         active={activeSentiment}
         onChange={(v) => setParam("sentiment", v)}
         trailing={
@@ -144,6 +155,17 @@ function FilterRow<T extends string>({
             aria-pressed={isActive}
           >
             {opt.label}
+            {typeof opt.count === "number" ? (
+              <span
+                className={
+                  isActive
+                    ? "ml-1 text-muted-foreground"
+                    : "ml-1 text-muted-foreground/70"
+                }
+              >
+                ({opt.count})
+              </span>
+            ) : null}
           </button>
         );
       })}

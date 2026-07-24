@@ -119,11 +119,13 @@ function shortUrl(url: string): string {
 // every other source ("Google", "Facebook", "ApartmentRatings",
 // "OCH", "NEWS") showed a generic "View post" with no action path.
 // We now classify into three response modes:
-//   1. "reply"  — platform has an in-product reply UX (Google
-//      Business Profile, Yelp, Facebook). CTA: "Reply on X".
+//   1. "reply"  — platform has an in-product reply surface (Google
+//      Business Profile, Yelp, Facebook), but we only deep-link to the
+//      PUBLIC listing/review page — there is no in-place reply here, so
+//      the CTA is honest about that: "View on X →".
 //   2. "comment" — discussion thread where the operator posts as a
-//      participant (Reddit, College Confidential, Quora). CTA:
-//      "Comment on X".
+//      participant (Reddit, College Confidential, Quora). Same
+//      external-link-only behavior. CTA: "View on X →".
 //   3. "draft"  — no native reply UX (ApartmentRatings, Niche,
 //      BBB, news, .edu, generic web). CTA: "Draft response" opens
 //      a templated reply the operator can copy + paste into an
@@ -151,13 +153,13 @@ function getResponseTarget(
   }
 
   if (source === "GOOGLE_REVIEW" || /google\.com$/.test(host)) {
-    return { mode: "reply", cta: "Reply on Google", platform: "Google" };
+    return { mode: "reply", cta: "View on Google", platform: "Google" };
   }
   if (source === "YELP" || /yelp\.com$/.test(host)) {
-    return { mode: "reply", cta: "Reply on Yelp", platform: "Yelp" };
+    return { mode: "reply", cta: "View on Yelp", platform: "Yelp" };
   }
   if (source === "FACEBOOK_PUBLIC" || /facebook\.com$/.test(host)) {
-    return { mode: "reply", cta: "Reply on Facebook", platform: "Facebook" };
+    return { mode: "reply", cta: "View on Facebook", platform: "Facebook" };
   }
   if (source === "REDDIT" || /reddit\.com$/.test(host)) {
     return { mode: "comment", cta: "Comment on Reddit", platform: "Reddit" };

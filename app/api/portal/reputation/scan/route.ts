@@ -156,18 +156,25 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Run each scan to completion. We deliberately serialize across
-  // properties — Tavily's free tier rate-limits concurrent calls, and a
-  // parallel fan-out could trigger 429s mid-batch.
-  const results: Array<{
+  // Run scans with a small concurrency cap rather than fully serial or
+  // fully parallel. Each per-property scan fans out to the SAME external
+  // APIs (Tavily, Google, Reddit, Yelp — see lib/reputation/orchestrate.ts),
+  // so running all N properties at once would multiply concurrent calls to
+  // those rate-limited APIs by N. A cap of 2 keeps us within a safe margin
+  // of Tavily's free-tier concurrency limit while still finishing well
+  // inside maxDuration for multi-property orgs (MAX_PROPERTIES_PER_RUN=5
+  // serialized could otherwise approach/exceed the 60s route budget).
+  const SCAN_CONCURRENCY = 2;
+  type ScanResult = {
     propertyId: string;
     status: string;
     error?: string;
     /** Per-source failures the orchestrator yielded — populated so the
      * UI can surface "Yelp rate-limited" instead of swallowing it. */
     sourceErrors?: Array<{ source: string; error: string }>;
-  }> = [];
-  for (const property of propertyTargets) {
+  };
+
+  async function runScan(property: PropertySeed): Promise<ScanResult> {
     const sourceErrors: Array<{ source: string; error: string }> = [];
     try {
       // Drive the async generator to completion. We only care about the
@@ -186,21 +193,39 @@ export async function POST(req: NextRequest) {
           sourceErrors.push({ source: evt.source, error: evt.error });
         }
       }
-      results.push({
+      return {
         propertyId: property.id,
         status: finalStatus,
         ...(sourceErrors.length > 0 ? { sourceErrors } : {}),
-      });
+      };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      results.push({
+      return {
         propertyId: property.id,
         status: "FAILED",
         error: message,
         ...(sourceErrors.length > 0 ? { sourceErrors } : {}),
-      });
+      };
     }
   }
+
+  // Simple fixed-size worker pool — no new deps. Each worker pulls the
+  // next property off the shared queue until it's drained, so results
+  // preserve slot order but scans overlap up to SCAN_CONCURRENCY at once.
+  const results: Array<ScanResult> = new Array(propertyTargets.length);
+  let nextIndex = 0;
+  async function worker() {
+    while (true) {
+      const i = nextIndex++;
+      if (i >= propertyTargets.length) return;
+      results[i] = await runScan(propertyTargets[i]);
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(SCAN_CONCURRENCY, propertyTargets.length) }, () =>
+      worker(),
+    ),
+  );
 
   // Backfill sentiment on any rows the orchestrator persisted without a
   // sentiment label (e.g. due to a transient Claude error during the scan).
