@@ -1,21 +1,16 @@
 import Link from "next/link";
-import { PropertyOnePager } from "@/components/portal/reports/property-one-pager";
 import { FrameSettle } from "./frame-settle";
-import { FitScale } from "./fit-scale";
 import { Reveal } from "@/components/platform/reveal";
 import { SectionShell, LabelChip } from "./section-shell";
 import { Mark } from "./mark";
-import { SAMPLE_SNAPSHOT, SAMPLE_PROPERTY } from "./report-sample-data";
+import { ReportSnapshotMock } from "./report-snapshot-mock";
 
 // ---------------------------------------------------------------------------
-// ReportFeature — landing v3 item 1. The email mock is gone; this renders the
-// REAL report artifact — the Marketing & Performance Snapshot one-pager the
-// product actually generates (components/portal/reports/property-one-pager),
-// fed a typed sample snapshot. KPI row, first-touch acquisition with honest
-// "not tracked" rows, leasing momentum, renewals-at-risk, reputation bars,
-// AI-search visibility, and the live/connecting/not-wired coverage footer —
-// all the exact design Adam screenshotted as the target, because it IS that
-// component. Monday-7am rides as a chip, not the headline.
+// ReportFeature — landing v3 item 1, condensed pass (Adam 2026-07-23: the
+// full one-pager render was way too tall). The artifact is now a COMPACT
+// snapshot mock in the same frame language as the hero/walkthrough
+// dashboards — maximum data per pixel, filling itself in on view. Monday-7am
+// rides as a chip, not the headline.
 // ---------------------------------------------------------------------------
 
 const PANEL_TEXTURE =
@@ -69,22 +64,8 @@ export function ReportFeature() {
               </p>
             </Reveal>
 
-            <FrameSettle className="mt-12 mx-auto max-w-[880px]">
-              <div
-                className="text-left"
-                style={{
-                  boxShadow:
-                    "0 1px 2px rgba(22,22,22,0.06), 0 24px 48px -16px rgba(15,98,254,0.16), 0 48px 96px -32px rgba(22,22,22,0.14)",
-                  borderRadius: 16,
-                }}
-              >
-                <FitScale natural={880}>
-                  <PropertyOnePager
-                    snapshot={SAMPLE_SNAPSHOT}
-                    property={SAMPLE_PROPERTY}
-                  />
-                </FitScale>
-              </div>
+            <FrameSettle className="mt-12 mx-auto max-w-[860px]">
+              <ReportSnapshotMock />
             </FrameSettle>
             <p
               className="mt-4"
