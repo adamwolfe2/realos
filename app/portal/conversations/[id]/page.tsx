@@ -8,6 +8,8 @@ import { PageHeader } from "@/components/admin/page-header";
 import { HandoffButton } from "./handoff-button";
 import { ConversationSidebar } from "./conversation-sidebar";
 import { humanChatbotStatus } from "@/lib/format";
+import { MessageBubbleList } from "@/components/portal/conversations/message-bubble-list";
+import { SpringIn } from "@/components/portal/ui/motion";
 
 export const metadata: Metadata = { title: "Conversation" };
 export const dynamic = "force-dynamic";
@@ -150,22 +152,20 @@ export default async function ConversationDetail({
             // when a visitor submitted contact info via PRE_CHAT
             // capture but never sent a message. Operators were
             // assuming this was a broken record.
-            <CaptureOnlyDetails
-              capturedName={convo.capturedName}
-              capturedEmail={convo.capturedEmail}
-              capturedPhone={convo.capturedPhone}
-              pageUrl={convo.pageUrl}
-              userAgent={convo.userAgent}
-              ipAddress={convo.ipAddress}
-              createdAt={convo.createdAt}
-              hasVisitorLink={Boolean(convo.visitorHash)}
-            />
+            <SpringIn>
+              <CaptureOnlyDetails
+                capturedName={convo.capturedName}
+                capturedEmail={convo.capturedEmail}
+                capturedPhone={convo.capturedPhone}
+                pageUrl={convo.pageUrl}
+                userAgent={convo.userAgent}
+                ipAddress={convo.ipAddress}
+                createdAt={convo.createdAt}
+                hasVisitorLink={Boolean(convo.visitorHash)}
+              />
+            </SpringIn>
           ) : (
-            <div className="space-y-3">
-              {messages.map((m, i) => (
-                <MessageBubble key={i} message={m} />
-              ))}
-            </div>
+            <MessageBubbleList messages={messages} />
           )}
         </section>
 
@@ -201,31 +201,6 @@ export default async function ConversationDetail({
 // ---------------------------------------------------------------------------
 // Local UI helpers
 // ---------------------------------------------------------------------------
-
-function MessageBubble({ message }: { message: SerializedMessage }) {
-  const isUser = message.role === "user";
-  return (
-    <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
-      <div
-        className={`max-w-[85%] text-sm px-4 py-2.5 rounded-[10px] whitespace-pre-wrap ${
-          isUser
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted text-foreground"
-        }`}
-      >
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">
-          {isUser ? "Visitor" : "Assistant"}
-        </div>
-        {message.content}
-        {message.ts ? (
-          <div className="text-[10px] text-muted-foreground mt-1 tabular-nums">
-            {format(new Date(message.ts), "MMM d, p")}
-          </div>
-        ) : null}
-      </div>
-    </div>
-  );
-}
 
 function MetaChip({
   label,

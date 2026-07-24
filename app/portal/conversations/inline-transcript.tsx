@@ -5,6 +5,8 @@ import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { humanChatbotStatus } from "@/lib/format";
 import { FlagPill, isFlagType, FLAG_TYPES, type FlagType } from "@/components/portal/conversations/flag-pill";
+import { MessageBubbleList } from "@/components/portal/conversations/message-bubble-list";
+import { SpringIn } from "@/components/portal/ui/motion";
 import type { Prisma } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
@@ -150,53 +152,18 @@ export async function InlineTranscript({
       {/* Scrollable transcript body */}
       <div className="flex-1 min-h-0 overflow-y-auto px-5 py-5 bg-card">
         {messages.length === 0 ? (
-          <CaptureOnlyPanel
-            capturedName={convo.capturedName}
-            capturedEmail={convo.capturedEmail}
-            capturedPhone={convo.capturedPhone}
-            pageUrl={convo.pageUrl}
-            createdAt={convo.createdAt}
-          />
+          <SpringIn>
+            <CaptureOnlyPanel
+              capturedName={convo.capturedName}
+              capturedEmail={convo.capturedEmail}
+              capturedPhone={convo.capturedPhone}
+              pageUrl={convo.pageUrl}
+              createdAt={convo.createdAt}
+            />
+          </SpringIn>
         ) : (
-          <div className="space-y-3 max-w-3xl mx-auto">
-            {messages.map((m, i) => (
-              <MessageBubble key={i} message={m} />
-            ))}
-          </div>
+          <MessageBubbleList messages={messages} />
         )}
-      </div>
-    </div>
-  );
-}
-
-function MessageBubble({ message }: { message: SerializedMessage }) {
-  const isUser = message.role === "user";
-  return (
-    <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
-      <div
-        className={`max-w-[78%] text-sm px-4 py-2.5 rounded-[10px] whitespace-pre-wrap leading-relaxed ${
-          isUser
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted text-foreground"
-        }`}
-      >
-        <div
-          className={`text-[10px] uppercase tracking-widest mb-1 ${
-            isUser ? "text-primary-foreground/70" : "text-muted-foreground"
-          }`}
-        >
-          {isUser ? "Visitor" : "Assistant"}
-        </div>
-        {message.content}
-        {message.ts ? (
-          <div
-            className={`text-[10px] mt-1 tabular-nums ${
-              isUser ? "text-primary-foreground/70" : "text-muted-foreground"
-            }`}
-          >
-            {format(new Date(message.ts), "MMM d, p")}
-          </div>
-        ) : null}
       </div>
     </div>
   );
