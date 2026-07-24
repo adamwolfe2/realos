@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { requireAgency } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
-import { OrgType, TenantStatus } from "@prisma/client";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import {
   getAgencyMoney,
@@ -59,7 +58,7 @@ const DAY = 24 * 60 * 60 * 1000;
 export default async function AdminHome() {
   await requireAgency();
 
-  const [money, actionItems, segments, pipelineCounts, intakePending, openCreative, recentSubmissions] =
+  const [money, actionItems, segments, intakePending, openCreative, recentSubmissions] =
     await Promise.all([
       getAgencyMoney().catch(() => ({
         totalMrrCents: 0,
@@ -69,6 +68,7 @@ export default async function AdminHome() {
         activeCount: 0,
         atRiskCount: 0,
         pausedCount: 0,
+        onboardingCount: 0,
         launched30d: 0,
         churned30d: 0,
       })),
@@ -76,13 +76,6 @@ export default async function AdminHome() {
       getTenantSegments(6).catch(
         () => ({ active: [], onboarding: [], internalHiddenCount: 0 }) as TenantSegments,
       ),
-      prisma.organization
-        .groupBy({
-          by: ["status"],
-          where: { orgType: OrgType.CLIENT },
-          _count: { id: true },
-        })
-        .catch(() => []),
       prisma.intakeSubmission
         .count({ where: { reviewedAt: null, convertedAt: null } })
         .catch(() => 0),
@@ -109,17 +102,8 @@ export default async function AdminHome() {
         .catch(() => []),
     ]);
 
-  const statusMap = new Map(
-    pipelineCounts.map((r) => [r.status, r._count?.id ?? 0] as const),
-  );
-
   const totalTenants =
-    money.activeCount +
-    money.atRiskCount +
-    money.pausedCount +
-    (statusMap.get(TenantStatus.BUILD_IN_PROGRESS) ?? 0) +
-    (statusMap.get(TenantStatus.CONTRACT_SIGNED) ?? 0) +
-    (statusMap.get(TenantStatus.QA) ?? 0);
+    money.activeCount + money.atRiskCount + money.pausedCount + money.onboardingCount;
 
   const criticalItems = actionItems.filter((i) => i.severity === "critical");
   const warningItems = actionItems.filter((i) => i.severity === "warning");
