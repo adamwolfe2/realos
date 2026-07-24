@@ -367,7 +367,7 @@ export default async function WorkOrdersPage({
         description="Tickets grouped by status. Click any to open the property."
       >
         {pipelineRows.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center">
+          <div className="rounded-[2px] border border-dashed border-border bg-card p-8 text-center">
             <p className="text-sm text-muted-foreground">
               No work orders synced yet. Run AppFolio sync to populate this
               view.
@@ -381,7 +381,7 @@ export default async function WorkOrdersPage({
                 return (
                   <div
                     key={status}
-                    className="rounded-xl border border-border bg-muted/30 p-2.5"
+                    className="rounded-[2px] border border-border bg-muted/30 p-2.5"
                   >
                     <div className="flex items-center justify-between gap-2 mb-2 px-1">
                       <StatusPill
@@ -402,7 +402,7 @@ export default async function WorkOrdersPage({
                           <li key={w.id}>
                             <Link
                               href={`/portal/properties/${w.property.id}`}
-                              className="block rounded-md border border-border bg-card hover:border-primary/40 px-2 py-1.5"
+                              className="block rounded-[2px] border border-border bg-card hover:border-primary/40 px-2 py-1.5"
                             >
                               <div className="flex items-center justify-between gap-1.5">
                                 <span className="text-[10px] tabular-nums text-muted-foreground">
@@ -460,7 +460,7 @@ export default async function WorkOrdersPage({
           title="Work orders"
           description="Maintenance pipeline mirrored from AppFolio. Operator fulfillment happens in AppFolio; this view keeps you ahead of property issues."
         />
-        <div className="rounded-xl border border-border bg-secondary px-4 py-3 text-sm text-foreground">
+        <div className="rounded-[2px] border border-border bg-secondary px-4 py-3 text-sm text-foreground">
           Work order data could not be loaded.{" "}
           {err instanceof Error ? err.message : ""}
         </div>

@@ -297,7 +297,7 @@ export default async function ResidentsPage({
       {/* Filters */}
       <form
         action="/portal/residents"
-        className="rounded-xl border border-border bg-card p-3 grid grid-cols-1 md:grid-cols-4 gap-3"
+        className="ls-card p-3 grid grid-cols-1 md:grid-cols-4 gap-3"
       >
         <select
           name="status"
@@ -321,18 +321,18 @@ export default async function ResidentsPage({
           name="q"
           defaultValue={sp.q ?? ""}
           placeholder="Name, email, phone, unit"
-          className="rounded-md border border-border bg-background px-3 py-2 text-sm md:col-span-3"
+          className="rounded-none border border-border bg-background px-3 py-2 text-sm md:col-span-3"
         />
         <div className="md:col-span-4 flex gap-2">
           <button
             type="submit"
-            className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark"
+            className="inline-flex items-center rounded-none bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark"
           >
             Apply
           </button>
           <Link
             href="/portal/residents"
-            className="inline-flex items-center rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50"
+            className="inline-flex items-center rounded-none border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50"
           >
             Reset
           </Link>
@@ -538,7 +538,7 @@ export default async function ResidentsPage({
           title="Residents"
           description="Active roster mirrored from AppFolio. Source of truth for resident records remains AppFolio; this view is read-only."
         />
-        <div className="rounded-xl border border-border bg-secondary px-4 py-3 text-sm text-foreground">
+        <div className="rounded-[2px] border border-border bg-secondary px-4 py-3 text-sm text-foreground">
           Resident data could not be loaded.{" "}
           {err instanceof Error ? err.message : ""}
         </div>
