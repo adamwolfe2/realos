@@ -104,12 +104,6 @@ export function GroupedInsights({ items }: { items: InsightItem[] }) {
   );
 }
 
-function severityTone(severity: string): string {
-  if (severity === "critical") return "bg-primary text-primary-foreground";
-  if (severity === "warning") return "bg-muted text-foreground";
-  return "bg-primary/10 text-primary";
-}
-
 // ---------------------------------------------------------------------------
 // ContentSection — published blog posts + neighborhood landing pages.
 // Norman feedback (May 22): make the SEO content pipeline visible in

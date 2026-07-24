@@ -42,11 +42,6 @@ function fmtMoney(cents: number | null | undefined) {
   return `$${dollars.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 }
 
-function fmtPct(num: number | null) {
-  if (num == null) return "—";
-  return `${Math.round(num)}%`;
-}
-
 export default async function ComparePropertiesPage({
   searchParams,
 }: {

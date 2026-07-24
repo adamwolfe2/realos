@@ -23,7 +23,6 @@ import {
 const FIELD =
   "w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40";
 const LABEL = "block text-xs font-medium text-foreground mb-1";
-const HINT = "mt-1 text-[11px] text-muted-foreground";
 
 // Floor-plan rows hold strings while editing (controlled inputs); we parse to
 // numbers/cents only on submit. Prices are entered in whole dollars.

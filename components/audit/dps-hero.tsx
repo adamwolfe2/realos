@@ -36,7 +36,6 @@ function tonalHeadline(score: number): string {
 }
 
 export function DpsHero({
-  subject,
   score,
   recommendationCount,
 }: {

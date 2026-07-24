@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
-import { format, formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import {
   Wrench,
   AlertTriangle,
   Clock,
   CheckCircle2,
-  X,
 } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";

@@ -12,7 +12,7 @@ import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import type { EngineCallContext, EngineModule, EngineResult } from "./types";
 import { logUsage } from "@/lib/cost-tracker/log";
-import { tokenCostUsd, estimateTokens } from "./pricing";
+import { tokenCostUsd } from "./pricing";
 
 const SYSTEM_PROMPT = `You are a helpful assistant answering a prospective renter's question.
 Recommend specific apartment buildings, neighborhoods, and properties when

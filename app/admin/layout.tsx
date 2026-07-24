@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
 import { unstable_cache } from "next/cache";

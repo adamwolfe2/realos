@@ -63,7 +63,7 @@ export function AcceptButton({
       // returns the prospect to this proposal page (not to a half-loaded
       // intermediate state).
       window.location.assign(body.redirectUrl);
-    } catch (_err) {
+    } catch {
       setError(
         "We couldn't reach checkout. Check your connection and try again.",
       );

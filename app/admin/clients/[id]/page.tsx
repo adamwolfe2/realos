@@ -16,7 +16,7 @@ import { TeamPanel } from "./team-panel";
 import type { ToggleableModule } from "@/lib/actions/admin-modules";
 import { headers } from "next/headers";
 import { StatCard } from "@/components/admin/stat-card";
-import { StatusBadge, ToggleIndicator } from "@/components/admin/status-badge";
+import { StatusBadge } from "@/components/admin/status-badge";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import {
   humanTenantStatus,

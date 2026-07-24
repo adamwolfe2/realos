@@ -60,7 +60,6 @@ import { PerformanceOverTime } from "@/components/portal/dashboard/performance-o
 import { TopPropertiesLeaderboard } from "@/components/portal/dashboard/top-properties-leaderboard";
 import { getOpenInsights, getInsightCounts } from "@/lib/insights/queries";
 import {
-  InsightCard,
   type InsightCardData,
 } from "@/components/portal/insights/insight-card";
 import { InsightsHero } from "@/components/portal/dashboard/insights-hero";
@@ -127,8 +126,6 @@ export default async function PortalHome({
   }
 
   const sp = await searchParams;
-  const { showSetup } = sp;
-  const forceShowSetup = showSetup === "1";
   const forceDashboard = sp.dashboard === "1";
 
   // Self-serve onboarding sync — lazily initialize progress on the first
@@ -248,17 +245,17 @@ export default async function PortalHome({
 
     const [
       org,
-      propertiesCount,
+      ,
       leadsTotal,
       leadsNew28d,
       leadsPrev28d,
       toursScheduled,
-      toursPrev28d,
-      applicationsSubmitted28d,
-      applicationsAwaitingReview,
-      toursRequestedCount,
+      ,
+      ,
+      ,
+      ,
       properties,
-      hotVisitors,
+      ,
       adSpend,
       organic,
       leadSourceSlices,
@@ -268,8 +265,8 @@ export default async function PortalHome({
       openInsights,
       insightCounts,
       connectStatus,
-      orgModules,
-      currentUser,
+      ,
+      ,
       performancePoints,
       topPropertiesByLeads,
     ] = await Promise.all([
@@ -520,41 +517,12 @@ export default async function PortalHome({
         ? Math.round(((leadsNew28d - leadsPrev28d) / leadsPrev28d) * 100)
         : null;
 
-    const toursDeltaPct =
-      toursPrev28d >= LOW_SAMPLE_FLOOR
-        ? Math.round(((toursScheduled - toursPrev28d) / toursPrev28d) * 100)
-        : null;
-
     // Cost per lead. Show "—" when there are no leads in the window so the tile
     // doesn't render an infinity-shaped number.
     const costPerLead = leadsNew28d > 0 ? adSpend.spendUsd / leadsNew28d : null;
     const costPerLeadDisplay =
       costPerLead != null ? `$${costPerLead.toFixed(2)}` : "\u2014";
 
-    // Portfolio occupancy: weighted by units. Some properties may not have
-    // unit-count metadata yet, so we filter to those that do for accuracy.
-    let portfolioTotalUnits = 0;
-    let portfolioAvailableUnits = 0;
-    for (const p of properties) {
-      if (p.totalUnits && p.totalUnits > 0) {
-        portfolioTotalUnits += p.totalUnits;
-        portfolioAvailableUnits += p.availableCount ?? 0;
-      }
-    }
-    const portfolioOccupancyPct =
-      portfolioTotalUnits > 0
-        ? Math.round(
-            ((portfolioTotalUnits - portfolioAvailableUnits) /
-              portfolioTotalUnits) *
-              100,
-          )
-        : null;
-
-    const cursiveOff =
-      integrationChips.find((c) => c.key === "cursive")?.status === "off";
-    const appfolioChip = integrationChips.find((c) => c.key === "appfolio");
-    const appfolioOff = appfolioChip?.status === "off";
-    const appfolioDegraded = appfolioChip?.status === "degraded";
     // AppFolio integration row — used to surface "Auto-sync paused" as a
     // subtle chip on the dashboard Operations teaser. Cheap probe (a few
     // boolean fields) and only renders when the operator has connected

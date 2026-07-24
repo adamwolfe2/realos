@@ -36,17 +36,6 @@ function startOfUtcDay(d: Date): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
 }
 
-function deriveDomain(url: string | null): string | null {
-  if (!url) return null;
-  try {
-    return new URL(url.startsWith("http") ? url : `https://${url}`).hostname.replace(
-      /^www\./,
-      "",
-    );
-  } catch {
-    return null;
-  }
-}
 
 /**
  * Branded-query heuristic: case-insensitive match of any token from

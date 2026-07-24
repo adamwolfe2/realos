@@ -779,16 +779,6 @@ function asDate(v: unknown): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-function asStringArray(v: unknown): string[] {
-  if (Array.isArray(v)) {
-    return v.filter((x) => typeof x === "string") as string[];
-  }
-  if (typeof v === "string" && v.length) {
-    return v.split(",").map((s) => s.trim()).filter(Boolean);
-  }
-  return [];
-}
-
 const LEAD_SOURCE_LOOKUP: Record<string, LeadSource> = {
   google: LeadSource.GOOGLE_ADS,
   "google ads": LeadSource.GOOGLE_ADS,

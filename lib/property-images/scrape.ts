@@ -1,10 +1,6 @@
 import "server-only";
 import { isAllowedUrlWithDns } from "@/lib/utils/ssrf-protection";
 
-// Defense-in-depth body cap. CDNs reasonably stay under a few MB for the
-// marketing-page HTML we actually want. Anything larger is almost certainly
-// not a property site and could DoS our memory; we abort the stream early.
-const MAX_BODY_BYTES = 4 * 1024 * 1024; // 4 MB
 // Max redirects we'll re-validate against the SSRF allowlist before giving
 // up. Three is enough for marketing-site `www → bare → https` chains.
 const MAX_REDIRECTS = 3;

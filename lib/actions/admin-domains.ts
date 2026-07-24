@@ -148,9 +148,8 @@ export type VerifyResult =
   | { ok: false; error: string };
 
 export async function verifyClientDomain(raw: unknown): Promise<VerifyResult> {
-  let scope;
   try {
-    scope = await requireAgency();
+    await requireAgency();
   } catch (err) {
     if (err instanceof ForbiddenError) return { ok: false, error: err.message };
     throw err;

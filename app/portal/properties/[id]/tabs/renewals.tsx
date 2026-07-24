@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { format, differenceInDays } from "date-fns";
 import { prisma } from "@/lib/db";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
@@ -35,7 +34,7 @@ export async function RenewalsTab({
   const now = new Date();
   const next120 = new Date(now.getTime() + 120 * 24 * 60 * 60 * 1000);
 
-  const [activeCount, expiredCount, pastDueCount, pastDueBalance, rentRoll, upcoming] =
+  const [activeCount, , pastDueCount, pastDueBalance, rentRoll, upcoming] =
     await Promise.all([
       prisma.lease.count({ where: { orgId, propertyId, status: LeaseStatus.ACTIVE } }),
       prisma.lease.count({

@@ -1849,7 +1849,7 @@ async function sendTrialEndingSoonEmail(input: {
   trialEnd: number | null;
   subscriptionId: string;
 }): Promise<void> {
-  const { getResend, BRAND_EMAIL } = await import("@/lib/email/shared");
+  const { getResend } = await import("@/lib/email/shared");
   const resend = getResend();
   if (!resend) return;
 
@@ -1859,11 +1859,6 @@ async function sendTrialEndingSoonEmail(input: {
   const trialEndDate = input.trialEnd
     ? new Date(input.trialEnd * 1000).toLocaleDateString()
     : "soon";
-  const opsTo =
-    process.env.BUG_REPORT_EMAIL?.trim() ||
-    process.env.ADMIN_EMAIL?.trim() ||
-    BRAND_EMAIL ||
-    "team@leasestack.co";
 
   const text = [
     `Hi ${input.orgName},`,

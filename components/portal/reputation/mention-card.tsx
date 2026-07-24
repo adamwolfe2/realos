@@ -102,19 +102,6 @@ function getHost(url: string): string {
   }
 }
 
-// Show the host + a shortened path so the operator can see WHERE the mention
-// lives at a glance (e.g. "reddit.com/r/city/thread_title") without visiting
-// it. Truncated to 70 chars to stay in one line on mobile.
-function shortUrl(url: string): string {
-  try {
-    const u = new URL(url);
-    const full = `${u.host.replace(/^www\./, "")}${u.pathname}`;
-    return full.length > 70 ? `${full.slice(0, 67)}…` : full;
-  } catch {
-    return url;
-  }
-}
-
 // Bug #43 — Norman flagged that only Reddit + Yelp had reply CTAs;
 // every other source ("Google", "Facebook", "ApartmentRatings",
 // "OCH", "NEWS") showed a generic "View post" with no action path.

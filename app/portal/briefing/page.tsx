@@ -421,7 +421,6 @@ function SetupCard({
 }
 
 function AgingAlertBanner({
-  fresh,
   aging,
   stale,
 }: {

@@ -276,7 +276,7 @@ export function buildWeeklyDigestEmail(
 
   // Last KPI card shouldn't have right padding
   const kpiCards = kpis
-    .map((k, i) => kpiCard({ ...k }))
+    .map((k) => kpiCard({ ...k }))
     .join("")
     .replace(/padding:0 8px 0 0;[^"]*"[^>]*>$/, (m) =>
       m.replace("padding:0 8px 0 0;", "padding:0;")

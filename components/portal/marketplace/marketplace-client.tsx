@@ -146,7 +146,6 @@ function formatPrice(cents: number): string {
 }
 
 export function MarketplaceClient({
-  orgName,
   isTrialing,
   trialDaysLeft,
   initialEnabled,

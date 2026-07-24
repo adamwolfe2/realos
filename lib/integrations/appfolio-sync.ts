@@ -1100,13 +1100,6 @@ export async function runAppfolioSync(
   // rows) — the integration goes back to idle. lastSyncAt advances on
   // any successful phase; warnings persist in lastSyncStats.
   //
-  // `allPhasesCompleted` now treats SKIPPED phases as "ran cleanly for
-  // this tenant" — the operator either acknowledged the skip with
-  // retrySkipped:true (which clears the skip flag) or the cron will
-  // auto-retry on a weekly schedule. Either way, a tenant whose plan
-  // genuinely doesn't include guest_cards can have a steady-state of
-  // "phasesCompleted: 7, phasesSkipped: 1" without false-alarm UI.
-  const allPhasesCompleted = phasesCompleted + phasesSkipped === totalPhases;
   const anyPhaseCompleted = phasesCompleted > 0;
 
   // Bug #16/#25 — Property.lastSyncedAt was only being updated by the

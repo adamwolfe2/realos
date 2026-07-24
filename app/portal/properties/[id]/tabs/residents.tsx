@@ -1,4 +1,4 @@
-import { format, differenceInDays } from "date-fns";
+import { differenceInDays } from "date-fns";
 import { prisma } from "@/lib/db";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";

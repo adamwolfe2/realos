@@ -604,41 +604,6 @@ function TextArea({
   );
 }
 
-function NumberField({
-  label,
-  value,
-  onChange,
-  min,
-  max,
-  help,
-}: {
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-  min?: number;
-  max?: number;
-  help?: string;
-}) {
-  return (
-    <label className="flex flex-col gap-1 text-sm">
-      <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
-        {label}
-      </span>
-      <input
-        type="number"
-        value={value}
-        min={min}
-        max={max}
-        onChange={(e) => onChange(parseInt(e.target.value, 10) || 0)}
-        className="rounded-md border border-border bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      />
-      {help ? (
-        <span className="text-[11px] text-muted-foreground">{help}</span>
-      ) : null}
-    </label>
-  );
-}
-
 function Toggle({
   label,
   checked,

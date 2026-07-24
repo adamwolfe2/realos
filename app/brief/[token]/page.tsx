@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Check, X, ExternalLink, ArrowRight, Sparkles } from "lucide-react";
+import { Check, X, ExternalLink, ArrowRight } from "lucide-react";
 import {
   ChatGPTMark,
   PerplexityMark,
@@ -1262,75 +1262,6 @@ function StackSection({ data }: { data: BriefJson }) {
   );
 }
 
-// ─── NARRATIVE ────────────────────────────────────────────────────────
-
-function NarrativeSection({ data }: { data: BriefJson }) {
-  return (
-    <section
-      style={{
-        padding: "64px 0",
-        borderBottom: "1px solid #F1F5F9",
-        backgroundColor: "#EFF6FF",
-      }}
-    >
-      <div className="max-w-[920px] mx-auto px-6">
-        <SectionEyebrow>What this means</SectionEyebrow>
-        <h2
-          className="mt-3 text-2xl md:text-[34px] font-semibold leading-snug tracking-tight"
-          style={{
-            color: "#1E2A3A",
-            letterSpacing: "-0.018em",
-            fontFamily: "var(--font-display)",
-          }}
-        >
-          You own one of the most prestigious office addresses in San
-          Francisco. AI search engines do not know that yet.
-        </h2>
-        <div
-          className="mt-6 space-y-4"
-          style={{
-            fontSize: 16,
-            lineHeight: 1.65,
-            color: "#1E2A3A",
-            borderLeft: "3px solid #2563EB",
-            paddingLeft: 22,
-          }}
-        >
-          <p>
-            255 California Street is a flagship Class-A asset. The
-            building anchors one of the most-walked corridors in
-            FiDi. Decision-makers know it by sight. But corporate
-            real-estate searches now start in ChatGPT and Perplexity, not
-            CoStar — and in those conversations, your building doesn&apos;t
-            exist.{" "}
-            <strong style={{ color: "#2563EB" }}>
-              555 California Street is named in every one of our four AI
-              conversations about top California Street office towers.{" "}
-              {data.brand} is named in none of the unbranded ones.
-            </strong>
-          </p>
-          <p>
-            The cause is not the building. The cause is that your
-            homepage ships 164 words of body copy, zero JSON-LD
-            structured data, no canonical URL, no meta description, no
-            FAQ markup, and no detectable analytics, chatbot, popup,
-            pixel, or CRM. AI engines need those signals to attribute
-            citations to a real entity. Without them they have no entity
-            to cite.
-          </p>
-          <p>
-            The corporate tenants choosing between 255 Cal, 555
-            California, and 101 California in 2026 will not call all
-            three brokers. They will ask Perplexity, paste the answer
-            into Slack, and shortlist the buildings AI named. That gap
-            is closeable in 30 days. We do it for a living.
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 // ─── ACTION PLAN ──────────────────────────────────────────────────────
 
 const ACTIONS: Array<{ no: number; title: string; body: string; days: string }> = [
@@ -1527,143 +1458,6 @@ function CtaSection({ prospectName }: { prospectName: string }) {
   );
 }
 
-// ─── SOURCES ──────────────────────────────────────────────────────────
-
-function SourcesSection({ data }: { data: BriefJson }) {
-  // Roll up every data source the brief touched, with a clickable
-  // reference each. Adam's intent: every reader can trace any number
-  // on this page back to a live API or a documented standard.
-  // JSON static import narrows googleAiOverview to literal null for
-  // the 255 Cal brief — widen via local for general access.
-  const aio = data.googleAiOverview as
-    | { query: string; summary: string; citedUrls: string[]; cited: boolean }
-    | null;
-  const sources: Array<{
-    label: string;
-    description: string;
-    href: string;
-    icon: React.ReactNode;
-  }> = [
-    {
-      label: "Firecrawl",
-      description: `Rendered ${data.firecrawl.htmlBytes.toLocaleString()} bytes of HTML from ${data.url}`,
-      href: "https://firecrawl.dev",
-      icon: <SourceBullet inner="#2563EB" />,
-    },
-    {
-      label: "ChatGPT (OpenAI)",
-      description: `${data.aeo.perEngineTotal.CHATGPT} live API calls`,
-      href: "https://chatgpt.com",
-      icon: <ChatGPTMark size={18} />,
-    },
-    {
-      label: "Perplexity",
-      description: `${data.aeo.perEngineTotal.PERPLEXITY} live API calls`,
-      href: "https://www.perplexity.ai",
-      icon: <PerplexityMark size={18} />,
-    },
-    {
-      label: "Gemini",
-      description: `${data.aeo.perEngineTotal.GEMINI} live API calls`,
-      href: "https://gemini.google.com",
-      icon: <GeminiMark size={18} />,
-    },
-    {
-      label: "Claude (Anthropic)",
-      description:
-        data.aeo.perEngineTotal.CLAUDE > 0
-          ? `${data.aeo.perEngineTotal.CLAUDE} live API calls`
-          : "Available in production · key configured per environment",
-      href: "https://claude.ai",
-      icon: <ClaudeMark size={18} />,
-    },
-    {
-      label: "Google AI Overview · DataForSEO",
-      description: aio
-        ? `Captured verbatim AI Overview for "${aio.query.slice(0, 64)}"`
-        : "Queried for an unbranded SF FiDi search · Google returned no AI Overview block",
-      href: "https://dataforseo.com",
-      icon: <GoogleMark size={18} />,
-    },
-    {
-      label: "schema.org",
-      description: "Reference vocabulary for AI-readable structured data",
-      href: "https://schema.org",
-      icon: <SourceBullet inner="#475569" />,
-    },
-    {
-      label: `${data.resolvedUrl ?? data.url}`,
-      description: data.firecrawl.title ?? "Live homepage we audited",
-      href: data.resolvedUrl ?? data.url,
-      icon: <SourceBullet inner="#2563EB" />,
-    },
-  ];
-  return (
-    <section
-      style={{
-        padding: "56px 0",
-        borderTop: "1px solid #E5E7EB",
-        backgroundColor: "#F9FAFB",
-      }}
-    >
-      <div className="max-w-[1080px] mx-auto px-6">
-        <SectionEyebrow>How this brief was built</SectionEyebrow>
-        <SectionHeading>
-          Every number here is traceable. Click any source to verify.
-        </SectionHeading>
-        <p
-          className="mt-2 max-w-2xl"
-          style={{ fontSize: 15, lineHeight: 1.6, color: "#475569" }}
-        >
-          This brief was produced from live API calls, not stock copy.
-          Below: each data source we touched, with a link to the live
-          surface so you can confirm any finding yourself.
-        </p>
-
-        <ul className="mt-7 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-          {sources.map((s) => (
-            <li key={s.label}>
-              <a
-                href={s.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-xl flex items-center gap-3 hover:border-[#CFE2FF] transition-colors"
-                style={{
-                  backgroundColor: "#FFFFFF",
-                  border: "1px solid #E5E7EB",
-                  padding: "12px 16px",
-                  textDecoration: "none",
-                }}
-              >
-                <span className="shrink-0">{s.icon}</span>
-                <span className="min-w-0 flex-1">
-                  <span
-                    className="block text-[13px] truncate"
-                    style={{ color: "#1E2A3A", fontWeight: 600 }}
-                  >
-                    {s.label}
-                  </span>
-                  <span
-                    className="block mt-0.5 text-[11.5px] truncate"
-                    style={{ color: "#6B7280" }}
-                  >
-                    {s.description}
-                  </span>
-                </span>
-                <ExternalLink
-                  className="w-3.5 h-3.5 shrink-0"
-                  style={{ color: "#94A3B8" }}
-                  aria-hidden
-                />
-              </a>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </section>
-  );
-}
-
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function _legacySourceBullet_DO_NOT_USE({ color, inner }: { color: string; inner: string }) {
   return (
@@ -1683,44 +1477,6 @@ function _legacySourceBullet_DO_NOT_USE({ color, inner }: { color: string; inner
         }}
       />
     </span>
-  );
-}
-
-// ─── FOOTER ───────────────────────────────────────────────────────────
-
-function Footer({ token, data }: { token: string; data: BriefJson }) {
-  return (
-    <footer
-      style={{
-        backgroundColor: "#F9FAFB",
-        borderTop: "1px solid #E5E7EB",
-        padding: "32px 0",
-      }}
-    >
-      <div className="max-w-[1080px] mx-auto px-6 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
-        <Link href="/" aria-label="LeaseStack home" className="block">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logos/leasestack-wordmark.png"
-            alt="LeaseStack"
-            className="h-6 w-auto block"
-            style={{ opacity: 0.7 }}
-          />
-        </Link>
-        <div className="flex flex-col md:flex-row gap-1 md:gap-3 md:items-center text-[11px]"
-          style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.04em", color: "#6B7280" }}>
-          <span>
-            Brief id <span style={{ color: "#1E2A3A", fontWeight: 600 }}>{token.slice(0, 12)}</span>
-          </span>
-          <span aria-hidden style={{ color: "#CBD5E1" }} className="hidden md:inline">·</span>
-          <span>generated {formatDate(data.generatedAtIso)}</span>
-          <span aria-hidden style={{ color: "#CBD5E1" }} className="hidden md:inline">·</span>
-          <span>{data.aeo.rows.filter((r) => !r.skipped).length} live API calls</span>
-          <span aria-hidden style={{ color: "#CBD5E1" }} className="hidden md:inline">·</span>
-          <span>Confidential</span>
-        </div>
-      </div>
-    </footer>
   );
 }
 

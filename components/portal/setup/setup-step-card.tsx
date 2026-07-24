@@ -66,7 +66,6 @@ export function SetupStepCard({ step }: Props) {
   const Icon = resolveIcon(step.icon);
   const isLocked = step.status === "locked";
   const isDone = step.status === "done";
-  const isCurrent = step.status === "current";
 
   return (
     <div className="relative flex items-stretch gap-4 md:gap-5">

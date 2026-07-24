@@ -410,17 +410,6 @@ export default async function AuditViewerPage({
 // Subcomponents
 // ---------------------------------------------------------------------------
 
-function SectionEyebrow({ children }: { children: React.ReactNode }) {
-  return (
-    <p
-      className="text-[11px] font-mono uppercase tracking-[0.18em]"
-      style={{ color: "#2563EB", fontFamily: "var(--font-mono)" }}
-    >
-      {children}
-    </p>
-  );
-}
-
 // Staged progress copy for the pending screen. The pipeline runs
 // crawl → AI-engine fan-out → scoring; we don't get granular progress
 // events, so the active stage is estimated from elapsed time since the
@@ -542,14 +531,6 @@ function PendingState({
       </div>
     </>
   );
-}
-
-function formatDate(d: Date): string {
-  return d.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
 }
 
 // ---------------------------------------------------------------------------

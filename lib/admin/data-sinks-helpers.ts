@@ -14,7 +14,6 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import {
   maxDate,
-  EMPTY_AGG,
   type IntegrationAggregate,
 } from "./data-sinks-aggregators";
 import {

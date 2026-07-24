@@ -9,7 +9,6 @@ import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { sourceLabel } from "./source-logo";
 import { cn } from "@/lib/utils";
-import type { DonutDatum } from "./donut-with-legend";
 
 // Lazy-load the recharts-backed donut so the ~95-110KB recharts chunk
 // no longer ships in the reputation-tab first-paint bundle. ssr: false

@@ -3,7 +3,6 @@ import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { ProductLine } from "@prisma/client";
 import { getScope } from "@/lib/tenancy/scope";
-import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
@@ -17,7 +16,6 @@ import {
   MapPin,
   Mail,
   Phone,
-  Send,
   Calendar,
 } from "lucide-react";
 

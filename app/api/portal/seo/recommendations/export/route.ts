@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import {
   requireScope,
@@ -46,7 +46,7 @@ function csvEscape(value: unknown): string {
   return str;
 }
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
   let scope;
   try {
     scope = await requireScope();

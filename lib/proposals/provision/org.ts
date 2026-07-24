@@ -8,7 +8,6 @@ import {
   type Prisma,
   type PrismaClient,
 } from "@prisma/client";
-import { prisma } from "@/lib/db";
 
 // ---------------------------------------------------------------------------
 // Org provisioning for an accepted Proposal.

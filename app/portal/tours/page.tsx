@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
-import { Calendar, MapPin, User, Clock, CheckCircle2, X } from "lucide-react";
+import { Calendar, MapPin, Clock, CheckCircle2, X } from "lucide-react";
 import { format, formatDistanceToNow, startOfWeek, addDays } from "date-fns";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";

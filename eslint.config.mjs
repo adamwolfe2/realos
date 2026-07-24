@@ -26,6 +26,12 @@ const config = [
       "react-hooks/refs": "off",
       // Stylistic noise, not correctness:
       "react/no-unescaped-entities": "off",
+      // Underscore prefix = intentionally unused (exclusion destructures,
+      // future-API stubs, signature-preserving params):
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
       // Real tech debt — keep visible as warnings, not blocking:
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unsafe-function-type": "warn",

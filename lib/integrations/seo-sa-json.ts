@@ -74,7 +74,6 @@ function escapeControlCharsInStrings(input: string): string {
 
 export function parseServiceAccountJson(input: string): ParsedServiceAccount {
   let parsed = tryParse(input);
-  let canonicalRaw = input;
 
   if (!parsed) {
     // Fallback: JSON likely contains raw newlines inside the private_key
@@ -85,7 +84,6 @@ export function parseServiceAccountJson(input: string): ParsedServiceAccount {
     if (!parsed) {
       throw new Error("Service account JSON is not valid JSON.");
     }
-    canonicalRaw = sanitised;
   }
 
   if (!parsed.client_email || !parsed.project_id) {

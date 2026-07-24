@@ -27,7 +27,6 @@ type InviteResult = {
 
 export function InviteUserButton({
   orgId,
-  clerkOrgId,
   suggestedEmail,
   suggestedName,
 }: Props) {

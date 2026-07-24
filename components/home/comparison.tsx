@@ -11,7 +11,6 @@ import {
   FileSignature,
   ArrowDown,
   Mail,
-  Search,
   type LucideIcon,
 } from "lucide-react";
 import { MARKETING } from "@/lib/copy/marketing";

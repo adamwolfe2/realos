@@ -1,7 +1,6 @@
 import * as React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { formatDistanceToNow } from "date-fns";
 import { KeyRound, Plus, Upload, Lock } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";

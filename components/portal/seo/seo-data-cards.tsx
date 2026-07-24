@@ -2,15 +2,8 @@ import * as React from "react";
 import {
   ArrowDown,
   ArrowUp,
-  CheckCircle2,
-  Circle,
   ExternalLink,
-  Gauge,
-  Link2,
   Minus,
-  Search,
-  Sparkles,
-  TrendingUp,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------

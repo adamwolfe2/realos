@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { generateSeoRecommendations } from "@/lib/seo/agent";
@@ -22,7 +22,7 @@ export const maxDuration = 60;
 // propertyId, kind).
 // ---------------------------------------------------------------------------
 
-export async function POST(_req: NextRequest) {
+export async function POST() {
   const { userId, error } = await requireAdmin();
   if (error) return error;
 

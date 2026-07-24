@@ -2,7 +2,6 @@ import { prisma } from "@/lib/db";
 import {
   getPropertyOverviewKpis,
   centsToUsdShort,
-  pctChange,
 } from "@/lib/properties/queries";
 import {
   LeaseStatus,
@@ -32,7 +31,6 @@ import type {
   ActivityLeaseRow,
   ActivityMentionRow,
 } from "@/components/portal/properties/overview/types";
-import { buildAiInsight } from "@/components/portal/properties/overview/ai-insight-card";
 import {
   ActivityTimeline,
   buildActivityEvents,
@@ -102,15 +100,15 @@ export async function OverviewTab({
     kpis,
     listingCounts,
     expiringLeases,
-    noticeResidents,
-    rentRoll,
+    ,
+    ,
     cursiveIntegration,
     seoIntegrations,
     googleAdCampaign,
     metaAdCampaign,
     tenantSiteConfig,
-    propertyInsights,
-    propertyInsightCounts,
+    ,
+    ,
     recentLeads,
     recentTours,
     recentLeases,
@@ -299,32 +297,6 @@ export async function OverviewTab({
   // Occupancy reflects CURRENT leased reality: prefer active lease count
   // (rent roll), cap at totalUnits; fall back to listings only when no
   // lease signal exists. Mirrors getPropertyOccupancy + reports/generate.
-  const activeLeaseCount = rentRoll._count._all;
-  const leasedUnits =
-    totalUnits != null
-      ? activeLeaseCount > 0
-        ? Math.min(totalUnits, activeLeaseCount)
-        : Math.max(0, totalUnits - availableUnits)
-      : null;
-  const occupancyPct =
-    totalUnits != null && totalUnits > 0 && leasedUnits != null
-      ? Math.max(0, Math.min(100, Math.round((leasedUnits / totalUnits) * 100)))
-      : null;
-
-  const leadsDeltaPct = pctChange(kpis.leads28d, kpis.leadsPrev28d);
-  const leadsDelta =
-    leadsDeltaPct == null
-      ? undefined
-      : {
-          value: `${leadsDeltaPct > 0 ? "+" : ""}${leadsDeltaPct}%`,
-          trend:
-            leadsDeltaPct > 0
-              ? ("up" as const)
-              : leadsDeltaPct < 0
-                ? ("down" as const)
-                : ("flat" as const),
-        };
-
   // Renewal buckets — 0-30 / 31-60 / 61-90 / 91-120
   const now = Date.now();
   const buckets = [
@@ -344,36 +316,11 @@ export async function OverviewTab({
     buckets[idx].count += 1;
     buckets[idx].rentCents += l.monthlyRentCents ?? 0;
   }
-  const expiringTotal = buckets.reduce((s, b) => s + b.count, 0);
-  const renewalsNext30Rent = buckets[0].rentCents;
-
-  // AI insight fallback — deterministic, used only when no detector-based
-  // insights exist (first hour after data lands).
-  const aiInsight = buildAiInsight({
-    occupancyPct,
-    leasedUnits,
-    totalUnits,
-    availableUnits,
-    leads28d: kpis.leads28d,
-    leadsPrev28d: kpis.leadsPrev28d,
-    tours28d: kpis.tours28d,
-    applications28d: kpis.applications28d,
-    expiringNext30: buckets[0].count,
-    expiringNext60: buckets[1].count,
-    noticeGiven: noticeResidents,
-    propertyName: propertyMeta.name,
-  });
 
   const priceRange =
     property.priceMinCents || property.priceMaxCents
       ? `${centsToUsdShort(property.priceMinCents)}${"–"}${centsToUsdShort(property.priceMaxCents)}`
       : null;
-
-  const monthlyRentRoll = (rentRoll._sum.monthlyRentCents ?? 0) / 100;
-  const monthlyRentRollDisplay =
-    monthlyRentRoll > 0
-      ? `$${(monthlyRentRoll / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })}K`
-      : "—";
 
   // Onboarding-shell + empty-state detection.
   const appfolioConnected =
@@ -397,21 +344,6 @@ export async function OverviewTab({
     !googleAdCampaign &&
     !metaAdCampaign &&
     (seoIntegrations?.length ?? 0) === 0;
-
-  // Leads KPI hint
-  const leadsHint =
-    kpis.leads28d === 0
-      ? "First lead lands here"
-      : !property.orgHasAdsModule
-        ? "No paid spend"
-        : `${kpis.tours28d} tours · ${kpis.applications28d} apps`;
-
-  const renewalsHint =
-    expiringTotal === 0
-      ? "No leases up in 120d"
-      : renewalsNext30Rent > 0
-        ? `$${Math.round(renewalsNext30Rent / 100 / 1000).toLocaleString()}K of monthly rent`
-        : `${expiringTotal} in next 120d`;
 
   // Build the unified activity timeline.
   const activity = buildActivityEvents({

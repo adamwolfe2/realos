@@ -731,7 +731,6 @@ function linkedinUrl(enrichedData: unknown): string | null {
 
 function VisitorAvatar({
   identity,
-  visitorId,
   palette,
 }: {
   identity: ReturnType<typeof extractIdentity>;

@@ -7,7 +7,6 @@ import {
   CalendarCheck,
   DollarSign,
   Sparkles,
-  Building2,
   Activity,
   Star,
   ArrowRight,

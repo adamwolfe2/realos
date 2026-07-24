@@ -83,12 +83,6 @@ function readParam<T extends string>(
   return fallback;
 }
 
-// Bug #125: keep `?window=…` URL string and active-tab state in sync via
-// lib/recency.ts. The page-level branch (parseTimeWindow + timeWindowGte)
-// is also wired through this so a single source of truth governs both the
-// query cutoff and the rendered active tab.
-const WINDOW_KEYS = ["24h", "7d", "30d", "90d", "all"] as const;
-
 function parsePage(value: string | string[] | undefined): number {
   const raw = Array.isArray(value) ? value[0] : value;
   const parsed = raw ? Number.parseInt(raw, 10) : 1;
@@ -360,20 +354,6 @@ export default async function VisitorsPage({
 
   const hasPixel = Boolean(integration?.cursivePixelId);
   const noVisitorsAtAll = totalInView === 0 && totalEverCount === 0;
-
-  // Pixel freshness — operators have been burned by silent pixel failures
-  // (CSP regressions, ad blockers, removed snippet). Surface staleness any
-  // time the pixel exists but no events have fired recently. Two thresholds:
-  // > 24h shows an amber warning, > 7d shows a red one. Don't block the
-  // page; the visitor feed is still useful for historical review.
-  const pixelLastEventAt = integration?.lastEventAt ?? null;
-  const pixelAgeMs = pixelLastEventAt
-    ? Date.now() - pixelLastEventAt.getTime()
-    : null;
-  const pixelStale =
-    hasPixel && (pixelAgeMs == null || pixelAgeMs > 24 * 60 * 60 * 1000);
-  const pixelDormant =
-    hasPixel && (pixelAgeMs == null || pixelAgeMs > 7 * 24 * 60 * 60 * 1000);
 
   // Most-recent chatbot conversation per visitor lookup. Lets each visitor
   // row surface an Engage button if that visitor (matched by visitorHash) has
@@ -845,16 +825,4 @@ function EmptyNoVisitors({ setupHref }: { setupHref: string }) {
       action={{ label: "Verify pixel install", href: setupHref }}
     />
   );
-}
-
-// ---------------------------------------------------------------------------
-// Small helpers
-// ---------------------------------------------------------------------------
-
-function hostFromUrl(url: string): string | null {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return url.length < 40 ? url : null;
-  }
 }

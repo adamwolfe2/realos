@@ -264,7 +264,6 @@ export function AeoSection({ stats }: { stats: ReportAeoStats }) {
           // prompt set on every engine, so duplicates are expected — group by
           // prompt and show each prompt once with the engines + competitors it
           // lost on. Label also adapts when a single query is the only row.
-          type Sample = (typeof stats.sampleCompetitorQueries)[number];
           const grouped = new Map<
             string,
             { prompt: string; engines: string[]; competitors: string[] }

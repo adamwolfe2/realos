@@ -504,36 +504,6 @@ const FUNNEL: Array<{ label: string; count: number }> = [
 // product's <LeadSourceDonut /> (recharts) imported at the top of this
 // file so the demo and the live portal render the same primitive.
 
-function MiniPropStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: "9px",
-          color: TOKENS.stone,
-          letterSpacing: "0.1em",
-          textTransform: "uppercase",
-          fontWeight: 500,
-        }}
-      >
-        {label}
-      </p>
-      <p
-        className="mt-0.5"
-        style={{
-          fontFamily: "var(--font-display)",
-          fontSize: "15px",
-          fontWeight: 500,
-          color: TOKENS.nearBlack,
-          lineHeight: 1.2,
-        }}
-      >
-        {value}
-      </p>
-    </div>
-  );
-}
 
 function Dashboard() {
   const [period, setPeriod] = useState<"7d" | "30d" | "90d">("7d");

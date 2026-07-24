@@ -58,12 +58,6 @@ const SENTIMENT_LABEL: Record<Sentiment, string> = {
   MIXED: "Mixed",
 };
 
-function truncate(input: string | null | undefined, max = 220): string {
-  if (!input) return "";
-  const s = String(input).trim().replace(/\s+/g, " ");
-  return s.length > max ? `${s.slice(0, max - 1)}…` : s;
-}
-
 // Defensive number → display helper. Catches Decimal-typed values from
 // Prisma (which lack `.toLocaleString` formatting consistent with Number)
 // and stray nulls so a single bad row can't blank the whole page.

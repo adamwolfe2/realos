@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Bot, Gauge, LineChart, Link2, Search } from "lucide-react";
+import { Bot, Gauge, LineChart, Search } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";

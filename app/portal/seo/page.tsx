@@ -229,8 +229,6 @@ export default async function SeoPage({
   const now = new Date();
   const yesterday = startOfUtcDay(new Date(now.getTime() - DAY_MS));
   const start30 = startOfUtcDay(new Date(yesterday.getTime() - 29 * DAY_MS));
-  const startPrior = startOfUtcDay(new Date(start30.getTime() - 30 * DAY_MS));
-  const endPrior = new Date(start30.getTime() - DAY_MS);
   const start365 = startOfUtcDay(new Date(yesterday.getTime() - 364 * DAY_MS));
 
   // Property list for the selector dropdown, gated to user's allowed set.

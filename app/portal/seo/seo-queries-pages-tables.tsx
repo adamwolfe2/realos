@@ -50,7 +50,6 @@ function RankedTable({
   title,
   rows,
   emptyHint,
-  labelHeading,
   mono = false,
 }: {
   title: string;

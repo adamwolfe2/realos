@@ -17,7 +17,6 @@
 import type { SubscriptionTier } from "@prisma/client";
 import {
   ADDONS,
-  TIERS,
   type AddOnDefinition,
   type ModuleFlags,
   type TierDefinition,

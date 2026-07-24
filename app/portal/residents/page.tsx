@@ -4,7 +4,6 @@ import Link from "next/link";
 import { format, formatDistanceToNow, differenceInDays } from "date-fns";
 import {
   Users,
-  Home,
   AlertTriangle,
   CheckCircle2,
   Mail,

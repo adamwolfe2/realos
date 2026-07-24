@@ -90,7 +90,7 @@ export function SellerImportWizard() {
 
   // CSV-path state.
   const [file, setFile] = React.useState<File | null>(null);
-  const [rawHeaders, setRawHeaders] = React.useState<string[]>([]);
+  const [, setRawHeaders] = React.useState<string[]>([]);
   const [rawRows, setRawRows] = React.useState<string[][]>([]);
   const [mappings, setMappings] = React.useState<ColumnMapping[]>([]);
   const [parseError, setParseError] = React.useState<string | null>(null);

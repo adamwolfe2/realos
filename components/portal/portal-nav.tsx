@@ -446,7 +446,7 @@ export function PortalNav({
 }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [, setMounted] = useState(false);
 
   useEffect(() => {
     try {
