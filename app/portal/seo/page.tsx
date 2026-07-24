@@ -26,8 +26,7 @@ import {
   DisconnectSeoForm,
 } from "./seo-connect-forms";
 import { StaleOnLoadTrigger } from "@/components/portal/sync/stale-on-load-trigger";
-import { SeoOverviewClient } from "./seo-overview-client";
-import type { KpiDelta } from "./seo-kpi-card";
+import { SeoOverviewClient, type KpiDelta } from "./seo-overview-client";
 import type { SeoAnnotation } from "./seo-annotations-panel";
 import type { RankedRow } from "./seo-queries-pages-tables";
 import type { TimeseriesPoint } from "./seo-timeseries-chart";

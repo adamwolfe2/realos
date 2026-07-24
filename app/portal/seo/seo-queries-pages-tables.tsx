@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { ArrowRight } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // SeoQueriesPagesTables — the dense, side-by-side "Queries" + "Pages" tables
@@ -9,9 +8,10 @@ import { ArrowRight } from "lucide-react";
 // label on the left, click count right-aligned. Matches the Searchable
 // reference layout.
 //
-// "View All" is a soft link to the agent view where the full tables live.
-// If routes change in the future the anchor still won't error — it just
-// lands on the agent index.
+// No "View All" affordance: the SEO Agent page (/portal/seo/agent) doesn't
+// read a tab/section param and has no equivalent per-query or per-page
+// breakdown to deep-link into, so a link here would be a dead click. Add it
+// back once a real deep-dive view exists.
 // ---------------------------------------------------------------------------
 
 export type RankedRow = {
@@ -33,14 +33,12 @@ export function SeoQueriesPagesTables({
         title="Queries"
         rows={queries}
         emptyHint="No query data yet. Run a Search Console sync to populate."
-        viewAllHref="/portal/seo/agent?tab=queries"
         labelHeading="Query"
       />
       <RankedTable
         title="Pages"
         rows={pages}
         emptyHint="No page data yet. Connect Analytics 4 to populate."
-        viewAllHref="/portal/seo/agent?tab=pages"
         labelHeading="Page"
         mono
       />
@@ -52,14 +50,12 @@ function RankedTable({
   title,
   rows,
   emptyHint,
-  viewAllHref,
   labelHeading,
   mono = false,
 }: {
   title: string;
   rows: RankedRow[];
   emptyHint: string;
-  viewAllHref: string;
   labelHeading: string;
   mono?: boolean;
 }) {
@@ -104,16 +100,6 @@ function RankedTable({
           ))}
         </ul>
       )}
-
-      <div className="mt-3 pt-3 border-t border-border">
-        <a
-          href={viewAllHref}
-          className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
-        >
-          View All
-          <ArrowRight className="h-3 w-3" />
-        </a>
-      </div>
     </div>
   );
 }

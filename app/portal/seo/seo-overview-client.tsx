@@ -1,13 +1,29 @@
 "use client";
 
 import * as React from "react";
-import { SeoKpiCard, type KpiDelta } from "./seo-kpi-card";
+import { KpiTile, type Trend } from "@/components/portal/dashboard/kpi-tile";
 import { SeoTimeseriesChart, type TimeseriesPoint } from "./seo-timeseries-chart";
 import { SeoAnnotationsPanel, type SeoAnnotation } from "./seo-annotations-panel";
 import {
   SeoQueriesPagesTables,
   type RankedRow,
 } from "./seo-queries-pages-tables";
+
+// Pre-formatted delta produced by page.tsx's buildDelta/buildPositionDelta.
+// "positive" is already brand-aware (true only for a genuine improvement);
+// everything else collapses to muted/flat in the old hand-rolled card. The
+// canonical KpiTile wants an explicit up/down/flat trend, so `toTrend` below
+// derives it from the same two fields without touching the server-side
+// delta builders.
+export type KpiDelta = {
+  label: string; // pre-formatted "+12%", "-3%", "+0.4", "—"
+  positive: boolean;
+};
+
+function toTrend(delta: KpiDelta): Trend {
+  if (delta.label === "—") return "flat";
+  return delta.positive ? "up" : "down";
+}
 
 // ---------------------------------------------------------------------------
 // SeoOverviewClient — the assembled client view for /portal/seo. The server
@@ -72,30 +88,38 @@ export function SeoOverviewClient(props: SeoOverviewClientProps) {
 
       {/* KPI strip — 2 cols on mobile, 4 on md+ */}
       <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-        <SeoKpiCard
+        <KpiTile
           label="Clicks"
           value={fmtNumber(props.kpis.clicks.value)}
-          delta={props.kpis.clicks.delta}
-          sparkline={props.kpis.clicks.spark}
+          delta={{ value: props.kpis.clicks.delta.label, trend: toTrend(props.kpis.clicks.delta) }}
+          spark={props.kpis.clicks.spark}
+          chart="sparkline"
         />
-        <SeoKpiCard
+        <KpiTile
           label="Impressions"
           value={fmtNumber(props.kpis.impressions.value)}
-          delta={props.kpis.impressions.delta}
-          sparkline={props.kpis.impressions.spark}
+          delta={{ value: props.kpis.impressions.delta.label, trend: toTrend(props.kpis.impressions.delta) }}
+          spark={props.kpis.impressions.spark}
+          chart="sparkline"
         />
-        <SeoKpiCard
+        <KpiTile
           label="Avg CTR"
           value={fmtPercent(props.kpis.ctr.value)}
-          delta={props.kpis.ctr.delta}
-          sparkline={props.kpis.ctr.spark}
+          delta={{ value: props.kpis.ctr.delta.label, trend: toTrend(props.kpis.ctr.delta) }}
+          spark={props.kpis.ctr.spark}
+          chart="sparkline"
         />
-        <SeoKpiCard
+        <KpiTile
           label="Avg Position"
           value={fmtPosition(props.kpis.position.value)}
-          delta={props.kpis.position.delta}
-          sparkline={props.kpis.position.spark}
-          invertSparkline
+          delta={{ value: props.kpis.position.delta.label, trend: toTrend(props.kpis.position.delta) }}
+          // Position is lower-is-better. KpiTile's sparkline has no invert
+          // option, so flip the sign here (data transform only) to keep the
+          // "line climbs = improving" convention from the old hand-rolled
+          // sparkline. Only the line shape is affected — no axis/labels are
+          // rendered, so negating doesn't change anything visible.
+          spark={props.kpis.position.spark.map((v) => -v)}
+          chart="sparkline"
         />
       </section>
 

@@ -4,6 +4,7 @@ import * as React from "react";
 import { formatDistanceToNow } from "date-fns";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
+import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { AeoScanButton } from "./aeo-scan-button";
 import {
   AeoEngineCards,
@@ -76,92 +77,13 @@ function fmtNumber(value: number): string {
   return value.toLocaleString();
 }
 
-// Visibility Score hero card — the page's single most-prominent surface.
-// Renders the composite 0-100 as a big number with a 5-step bar gauge,
-// plus a one-line explanation pulled from the score band.
-function VisibilityScoreCard({
-  score,
-  total,
-}: {
-  score: number;
-  total: number;
-}) {
-  const band: { label: string; tone: "good" | "ok" | "low" | "empty" } =
-    total === 0
-      ? { label: "No data yet — run your first scan", tone: "empty" }
-      : score >= 60
-        ? { label: "Strong — you're regularly named and cited", tone: "good" }
-        : score >= 30
-          ? { label: "Emerging — being named, room to be cited more", tone: "ok" }
-          : { label: "Low visibility — see the actions below", tone: "low" };
-
-  // 10 segments, fills proportional to score/10.
-  const segments = 10;
-  const filled = Math.min(segments, Math.round((score / 100) * segments));
-
-  return (
-    <div className="ls-card px-4 py-3 flex flex-col sm:flex-row gap-3 sm:items-center">
-      <div className="flex items-baseline gap-2 sm:min-w-[150px] shrink-0">
-        <div className="text-[10px] font-mono uppercase tracking-[0.14em] text-muted-foreground">
-          AI Visibility
-        </div>
-        <div className="text-2xl font-semibold tabular-nums tracking-tight text-foreground leading-none">
-          {total === 0 ? "—" : score}
-          {total > 0 ? (
-            <span className="text-sm text-muted-foreground"> / 100</span>
-          ) : null}
-        </div>
-      </div>
-      <div className="flex-1 space-y-1.5 min-w-0">
-        {/* Segmented bar */}
-        <div className="flex items-center gap-1">
-          {Array.from({ length: segments }).map((_, i) => (
-            <div
-              key={i}
-              className={
-                "flex-1 h-1.5 rounded-sm " +
-                (i < filled ? "bg-primary" : "bg-muted")
-              }
-            />
-          ))}
-        </div>
-        <p className="text-[12px] text-muted-foreground">
-          {band.label}
-          {total > 0 ? (
-            <span className="text-muted-foreground/70">
-              {" "}
-              · {fmtNumber(total)} AI responses (30d)
-            </span>
-          ) : null}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// Compact 3-up KPI row that complements the score card. Mention rate +
-// citation rate + competitors named — the three numbers that actually
-// matter once you've read the score.
-function MicroStat({
-  label,
-  value,
-  hint,
-}: {
-  label: string;
-  value: string;
-  hint: string;
-}) {
-  return (
-    <div className="ls-card p-4">
-      <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-muted-foreground">
-        {label}
-      </div>
-      <div className="text-2xl font-semibold tabular-nums tracking-tight text-foreground mt-1.5 leading-none">
-        {value}
-      </div>
-      <p className="text-[11px] text-muted-foreground mt-2">{hint}</p>
-    </div>
-  );
+// Visibility Score band — one-line plain-English read of the composite
+// 0-100 score, same copy the old hand-rolled VisibilityScoreCard used.
+function visibilityBandLabel(score: number, total: number): string {
+  if (total === 0) return "No data yet — run your first scan";
+  if (score >= 60) return "Strong — you're regularly named and cited";
+  if (score >= 30) return "Emerging — being named, room to be cited more";
+  return "Low visibility — see the actions below";
 }
 
 function NextActions({
@@ -254,15 +176,34 @@ export function AeoClient({
         actions={<AeoScanButton />}
       />
 
-      {/* Visibility Score hero */}
-      <VisibilityScoreCard
-        score={kpis.visibilityScore}
-        total={kpis.last30Total}
-      />
-
-      {/* 3-up micro KPIs underneath */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <MicroStat
+      {/* Visibility Score hero + 3-up micro KPIs — consolidated onto the
+          canonical KpiTile (was two hand-rolled cards). The composite score
+          drives the gauge; band copy + response count move into `hint`. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+        <KpiTile
+          label="AI Visibility"
+          value={
+            kpis.last30Total === 0 ? (
+              "—"
+            ) : (
+              <>
+                {kpis.visibilityScore}
+                <span className="text-[13px] font-normal text-muted-foreground">
+                  {" "}
+                  / 100
+                </span>
+              </>
+            )
+          }
+          hint={
+            kpis.last30Total > 0
+              ? `${visibilityBandLabel(kpis.visibilityScore, kpis.last30Total)} · ${fmtNumber(kpis.last30Total)} AI responses (30d)`
+              : visibilityBandLabel(kpis.visibilityScore, kpis.last30Total)
+          }
+          gaugeValue={kpis.last30Total === 0 ? undefined : kpis.visibilityScore / 100}
+          variant="accent"
+        />
+        <KpiTile
           label="Mention rate (30d)"
           value={fmtPercent(kpis.mentionRate30)}
           hint={
@@ -271,7 +212,7 @@ export function AeoClient({
               : "No AI responses yet"
           }
         />
-        <MicroStat
+        <KpiTile
           label="Citation rate (30d)"
           value={fmtPercent(kpis.citationRate30)}
           hint={
@@ -280,7 +221,7 @@ export function AeoClient({
               : "Citation rate measures linked URLs only"
           }
         />
-        <MicroStat
+        <KpiTile
           label="Competitors named (30d)"
           value={fmtNumber(kpis.competitorsNamed)}
           hint="Unique buildings the AI named instead of you"
