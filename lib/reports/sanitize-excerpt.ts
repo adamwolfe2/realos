@@ -105,7 +105,7 @@ export function sanitizeMentionExcerpt(
 
   // 1. Strip markdown control syntax. We keep the content (link labels,
   //    bold body, etc.) but lose the punctuation that frames it.
-  let text = raw
+  const text = raw
     // images
     .replace(/!\[[^\]]*\]\([^)]+\)/g, "")
     // links — keep label

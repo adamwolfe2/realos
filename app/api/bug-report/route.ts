@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
   // pipeline below.
   const contentType = req.headers.get("content-type") ?? "";
   let parsed: z.infer<typeof inputSchema>;
-  let imageFiles: File[] = [];
+  const imageFiles: File[] = [];
 
   if (contentType.startsWith("multipart/form-data")) {
     let form: FormData;

@@ -1,4 +1,5 @@
 import "server-only";
+import { randomBytes } from "node:crypto";
 import QRCode from "qrcode";
 import { runOnPageAuditChecks } from "@/lib/aeo/onpage-audit";
 
@@ -775,7 +776,7 @@ export async function collectBriefData(
  *  /brief/[token] convention — hex-only so messaging apps / autolinkers
  *  can't clip it). */
 export function generateBriefToken(): string {
-  const bytes = require("node:crypto").randomBytes(20).toString("hex");
+  const bytes = randomBytes(20).toString("hex");
   return bytes.slice(0, 24);
 }
 

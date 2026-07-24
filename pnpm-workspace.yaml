@@ -1,0 +1,3 @@
+allowBuilds:
+  # eslint resolver's optional native build — lint verified working without it
+  unrs-resolver: false
