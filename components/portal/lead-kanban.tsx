@@ -4,6 +4,7 @@ import * as React from "react";
 import { useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { motion, useInView, useReducedMotion } from "framer-motion";
 import {
   CheckSquare,
   Square,
@@ -17,6 +18,7 @@ import {
 import { LeadStatus } from "@prisma/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { EASE_OUT } from "@/components/portal/ui/motion";
 import { humanLeadSource } from "@/lib/format";
 import {
   bulkUpdateLeadStatus,
@@ -127,6 +129,13 @@ function relativeTime(iso: string): string {
 
 export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
   const router = useRouter();
+  // Row-wave entrance (motion pass 2026-07-24): the table fills in with a
+  // capped stagger on first paint, mirroring the marketing walkthrough's
+  // ScreenLeads. Plays once; reduced-motion renders every row immediately.
+  const tableRef = React.useRef<HTMLTableElement>(null);
+  const tableInView = useInView(tableRef, { once: true, margin: "0px 0px -10% 0px" });
+  const reduceMotion = useReducedMotion();
+  const rowsOn = reduceMotion ? true : tableInView;
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
   const [pending, startTransition] = useTransition();
   const [error, setError] = React.useState<string | null>(null);
@@ -409,7 +418,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
       />
 
       <div className="rounded-xl border border-border bg-card overflow-x-auto">
-        <table className="w-full text-sm min-w-[680px]">
+        <table ref={tableRef} className="w-full text-sm min-w-[680px]">
           <thead>
             <tr className="border-b border-border bg-secondary">
               <th className="w-10 px-3 py-3">
@@ -454,16 +463,22 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {items.map((item) => {
+            {items.map((item, rowIndex) => {
               const name =
                 [item.firstName, item.lastName].filter(Boolean).join(" ") ||
                 item.email ||
                 "Anonymous";
               const meta = STATUS_META[item.status];
               const isSelected = selected.has(item.id);
+              // Cap the stagger at 12 rows so long lists don't feel slow to
+              // finish rolling in.
+              const rowDelay = reduceMotion ? 0 : Math.min(rowIndex, 12) * 0.05;
               return (
-                <tr
+                <motion.tr
                   key={item.id}
+                  initial={false}
+                  animate={{ opacity: rowsOn ? 1 : 0, y: rowsOn ? 0 : 8 }}
+                  transition={{ duration: 0.4, ease: EASE_OUT, delay: rowDelay }}
                   onClick={(e) => {
                     // Ignore clicks that originated inside an interactive
                     // element so the checkbox / explicit "open full page"
@@ -571,7 +586,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
                       </span>
                     </span>
                   </td>
-                </tr>
+                </motion.tr>
               );
             })}
           </tbody>
