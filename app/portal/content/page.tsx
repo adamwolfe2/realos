@@ -3,6 +3,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { ContentFormat, DraftStatus } from "@prisma/client";
+import { PageHeader } from "@/components/admin/page-header";
+import { EmptyState } from "@/components/portal/ui/empty-state";
 
 export const metadata: Metadata = { title: "Content" };
 export const dynamic = "force-dynamic";
@@ -134,36 +136,22 @@ export default async function ContentPage() {
 
   return (
     <div className="space-y-8 ls-page-fade">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
-            Content
-          </p>
-          <h1 className="text-2xl font-semibold text-foreground">
-            Drafts & shipped pieces
-          </h1>
-          <p className="text-[12px] text-muted-foreground mt-1 max-w-2xl">
-            Open a draft to edit it inline with the AI assistant, or
-            scaffold a new piece from scratch.
-          </p>
-        </div>
-        <NewDraftMenu />
-      </header>
+      <PageHeader
+        eyebrow="Content"
+        title="Drafts & shipped pieces"
+        description="Open a draft to edit it inline with the AI assistant, or scaffold a new piece from scratch."
+        actions={<NewDraftMenu />}
+      />
 
       <section className="space-y-3">
         <h2 className="text-[11px] font-mono font-semibold uppercase tracking-[0.14em] text-muted-foreground">
           Drafts
         </h2>
         {drafts.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
-            <p className="text-[13px] font-medium text-foreground">
-              No drafts yet.
-            </p>
-            <p className="text-[12px] text-muted-foreground mt-1">
-              Click <span className="font-medium">New Draft</span> to
-              scaffold your first piece.
-            </p>
-          </div>
+          <EmptyState
+            title="No drafts yet"
+            body="Click New Draft to scaffold your first piece."
+          />
         ) : (
           <ul className="space-y-2">
             {drafts.map((d) => {

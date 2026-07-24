@@ -128,12 +128,7 @@ export function MobileNavDrawer({
                         key={item.href}
                         href={item.href}
                         onClick={() => setOpen(false)}
-                        className={cn(
-                          "flex items-center gap-3 rounded-lg py-2 text-sm font-medium transition-all duration-150",
-                          active
-                            ? "border-l-2 border-primary pl-[10px] pr-3 bg-accent text-primary"
-                            : "border-l-2 border-transparent pl-[10px] pr-3 text-muted-foreground hover:text-foreground hover:bg-muted/60"
-                        )}
+                        className={cn("ls-sidebar-item", active && "is-active")}
                       >
                         <item.icon className="h-4 w-4 shrink-0" />
                         <span className="flex-1 truncate">{item.label}</span>

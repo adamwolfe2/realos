@@ -264,7 +264,7 @@ export function CmdKSearch() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="hidden md:inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
+        className="hidden md:inline-flex items-center gap-2 rounded-none border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
         aria-label="Search (⌘K)"
       >
         <SearchIcon className="h-3.5 w-3.5" />
@@ -280,7 +280,7 @@ export function CmdKSearch() {
           onClick={() => setOpen(false)}
         >
           <div
-            className="w-full max-w-xl rounded-xl border border-border bg-card shadow-2xl overflow-hidden"
+            className="w-full max-w-xl rounded-[2px] border border-border bg-card shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
