@@ -57,6 +57,45 @@ function dedupeAudits(events: AuditRow[]): DedupedRow[] {
   return out;
 }
 
+// Background sync jobs (lib/integrations/appfolio-sync.ts, ads-sync.ts,
+// lib/actions/admin-appfolio.ts) log their outcome as a SETTING_CHANGE audit
+// action — AuditEvent has no dedicated status column, so there's nothing
+// more "structured" to key off of than the description each job writes.
+// Those descriptions are fixed, server-generated templates (never free-form
+// user text), so matching them here is a stable lookup, not string-guessing.
+// This turns "Changed a setting · AppFolio sync" into "AppFolio sync
+// completed" / "…completed with warnings" / "…failed" — whichever actually
+// happened. Anything that doesn't match one of these templates (a genuine
+// settings edit, or the Cursive resync line, which already reads fine) falls
+// through untouched.
+type SyncTone = "warning" | "danger" | null;
+
+function syncRunLabel(
+  description: string | null,
+): { label: string; tone: SyncTone } | null {
+  if (!description) return null;
+
+  const failed = description.match(
+    /^(.+?) sync (?:triggered by agency staff )?\(?failed/i,
+  );
+  if (failed) return { label: `${failed[1]} sync failed`, tone: "danger" };
+
+  const warnings = description.match(/^(.+?) sync completed with warnings:/i);
+  if (warnings) {
+    return {
+      label: `${warnings[1]} sync completed with warnings`,
+      tone: "warning",
+    };
+  }
+
+  const completed = description.match(
+    /^(.+?) sync (?:completed|triggered by agency staff)\b/i,
+  );
+  if (completed) return { label: `${completed[1]} sync completed`, tone: null };
+
+  return null;
+}
+
 export function ActivityTab({ events }: { events: AuditRow[] }) {
   const rows = dedupeAudits(events);
 
@@ -67,24 +106,32 @@ export function ActivityTab({ events }: { events: AuditRow[] }) {
       ) : (
         <ul className="space-y-3">
           {rows.map((a) => {
-            // Warnings (e.g. "AppFolio sync completed with warnings: …
-            // timeout") get the warning token instead of blending into the
-            // same gray as every other row.
-            const isWarning =
-              a.description?.toLowerCase().includes("warning") ?? false;
+            const sync =
+              a.action === "SETTING_CHANGE" ? syncRunLabel(a.description) : null;
+            const label = sync?.label ?? humanAuditAction(a.action);
+            // Non-sync descriptions keep the old "warning" substring sniff
+            // (e.g. any future free-text note that happens to say
+            // "warning") so nothing that worked before regresses.
+            const tone: SyncTone =
+              sync?.tone ??
+              (a.description?.toLowerCase().includes("warning")
+                ? "warning"
+                : null);
+
             return (
               <li key={a.id} className="text-sm flex items-start gap-3 min-w-0">
                 <span
                   aria-hidden="true"
                   className={cn(
                     "mt-1.5 inline-block h-1.5 w-1.5 rounded-full shrink-0",
-                    !isWarning && "bg-muted-foreground/40",
+                    tone === null && "bg-muted-foreground/40",
+                    tone === "danger" && "bg-destructive",
                   )}
-                  style={isWarning ? { background: "var(--warning)" } : undefined}
+                  style={tone === "warning" ? { background: "var(--warning)" } : undefined}
                 />
                 <div className="min-w-0 flex-1">
                   <div className="text-foreground flex items-center gap-1.5 flex-wrap">
-                    <span>{humanAuditAction(a.action)}</span>
+                    <span>{label}</span>
                     {humanEntity(a.entityType) ? (
                       <span className="text-muted-foreground">
                         · {humanEntity(a.entityType)}
@@ -100,9 +147,10 @@ export function ActivityTab({ events }: { events: AuditRow[] }) {
                     <div
                       className={cn(
                         "text-[11px] mt-0.5 truncate",
-                        !isWarning && "text-muted-foreground",
+                        tone === null && "text-muted-foreground",
+                        tone === "danger" && "text-destructive",
                       )}
-                      style={isWarning ? { color: "#8a6d00" } : undefined}
+                      style={tone === "warning" ? { color: "#8a6d00" } : undefined}
                     >
                       {a.description}
                     </div>
