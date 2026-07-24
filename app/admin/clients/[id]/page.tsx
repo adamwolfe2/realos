@@ -1,51 +1,65 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { requireAgency } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { OrgType, VisitorIdentificationStatus } from "@prisma/client";
 import { ImpersonateButton } from "./impersonate-button";
-import { ModuleToggle } from "./module-toggle";
-import { RentCastUsageRow } from "./rentcast-usage-row";
-import { CursivePanel } from "./cursive-panel";
-import { getUsageSummary } from "@/lib/rentcast/budget";
-import { DomainsPanel } from "./domains-panel";
 import { InviteUserButton } from "./invite-user-button";
-import { LaunchReadiness } from "./launch-readiness";
-import { TeamPanel } from "./team-panel";
+import { getUsageSummary } from "@/lib/rentcast/budget";
 import type { ToggleableModule } from "@/lib/actions/admin-modules";
-import { headers } from "next/headers";
-import { StatCard } from "@/components/admin/stat-card";
+import { PageHeader } from "@/components/admin/page-header";
 import { StatusBadge } from "@/components/admin/status-badge";
-import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import {
   humanTenantStatus,
   tenantStatusTone,
-  humanLeadStatus,
-  leadStatusTone,
-  humanLeadSource,
   humanPropertyType,
   humanResidentialSubtype,
   humanCommercialSubtype,
   humanSubscriptionTier,
-  humanAuditAction,
 } from "@/lib/format";
-import { formatDistanceToNow } from "date-fns";
 import { getClientActionItems } from "@/lib/admin/insights";
-import { AlertOctagon, AlertTriangle, Info } from "lucide-react";
 import { getTenantDataSinks } from "@/lib/admin/data-sinks";
-import { DataSinksBoard } from "@/components/admin/data-sinks-board";
+import {
+  ClientDetailTabs,
+  CLIENT_TAB_KEYS,
+  type ClientTabKey,
+} from "./client-detail-tabs";
+import { OverviewTab } from "./overview-tab";
+import { IntegrationsTab } from "./integrations-tab";
+import { TeamTab } from "./team-tab";
+import { ModulesDomainsTab } from "./modules-domains-tab";
+import { PropertiesTab } from "./properties-tab";
+import { ActivityTab } from "./activity-tab";
 
 export const metadata: Metadata = { title: "Client detail" };
 export const dynamic = "force-dynamic";
 
+// ---------------------------------------------------------------------------
+// Client detail page — restructured 2026-07-24 from a single 700-line
+// endless scroll into a `?tab=` driven tabbed layout. Every data query
+// below is UNCHANGED from the prior version (same semantics, same
+// filters, same take/orderBy) — this file only decides how the results
+// get composed into tab panels. Per-tab presentation lives in the
+// sibling *-tab.tsx files; the persistent header (name, status, contact,
+// Invite/Impersonate) renders above the tab nav on every tab since those
+// actions are useful regardless of which panel is open.
+// ---------------------------------------------------------------------------
+
 export default async function ClientDetail({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
   await requireAgency();
   const { id } = await params;
+  const sp = await searchParams;
+  const tab: ClientTabKey = CLIENT_TAB_KEYS.includes(sp.tab as ClientTabKey)
+    ? (sp.tab as ClientTabKey)
+    : "overview";
 
   const org = await prisma.organization.findUnique({
     where: { id },
@@ -218,9 +232,7 @@ export default async function ClientDetail({
   });
 
   // "Needs attention" — agency-level integration + lifecycle alerts
-  // scoped to this client. Surfaces concrete issues (AppFolio 404, stale
-  // build, silent pixel) at the top of the page so the admin doesn't
-  // have to scroll to find what's broken.
+  // scoped to this client. Feeds the Overview tab's "Fires" summary.
   const actionItems = await getClientActionItems(org.id).catch(() => []);
 
   // RentCast usage breadcrumb — lazily upserts an OrgRentCastUsage row
@@ -234,6 +246,9 @@ export default async function ClientDetail({
   // tenant's GA4 hasn't run in 4 days while the platform-wide cron looks
   // fine" failure mode the audit flagged.
   const tenantDataSinks = await getTenantDataSinks(org.id).catch(() => []);
+  const failingSinks = tenantDataSinks.filter(
+    (s) => s.status === "erroring" || s.status === "dead",
+  );
 
   const propertyTypeLabel = [
     humanPropertyType(org.propertyType),
@@ -245,6 +260,118 @@ export default async function ClientDetail({
   ]
     .filter(Boolean)
     .join(" · ");
+
+  // Cursive webhook URLs — computed once here (server-only headers()
+  // call) and handed down to the Integrations tab.
+  const hdrs = await headers();
+  const proto = hdrs.get("x-forwarded-proto") ?? "https";
+  const host = hdrs.get("host") ?? "leasestack.co";
+  const sharedWebhookUrl = `${proto}://${host}/api/webhooks/cursive`;
+  const tenantWebhookUrl = cursiveLegacy?.webhookToken
+    ? `${proto}://${host}/api/webhooks/cursive/${cursiveLegacy.webhookToken}`
+    : null;
+
+  const readinessItems = [
+    {
+      label: "Clerk org linked",
+      // Informational only — inviting users does NOT require a Clerk
+      // Organization (the invite route creates a standalone Clerk
+      // invitation + DB User directly). "warn" not "missing": this
+      // never blocks sending invites. See the Overview "Fires" band
+      // for the actual Clerk provisioning error when AT_RISK.
+      status: (org.clerkOrgId ? "ok" : "warn") as "ok" | "warn" | "missing",
+      hint: org.clerkOrgId
+        ? undefined
+        : "No Clerk Organization on file — doesn't block invites. Only affects Clerk-side org membership bookkeeping.",
+    },
+    {
+      label: "Primary contact email",
+      status: (org.primaryContactEmail ? "ok" : "missing") as
+        | "ok"
+        | "warn"
+        | "missing",
+      hint: org.primaryContactEmail ?? "Add a primary contact before inviting.",
+    },
+    {
+      label: "At least one team member",
+      status: (org._count.users > 0 ? "ok" : "warn") as "ok" | "warn" | "missing",
+      hint:
+        org._count.users > 0
+          ? `${org._count.users} user${org._count.users === 1 ? "" : "s"}`
+          : "No users yet. Sending an invite counts.",
+    },
+    {
+      label: "Primary property added",
+      status: (org._count.properties > 0 ? "ok" : "missing") as
+        | "ok"
+        | "warn"
+        | "missing",
+      href: "/admin/clients/" + org.id,
+      hint:
+        org._count.properties > 0
+          ? `${org._count.properties} propert${org._count.properties === 1 ? "y" : "ies"}`
+          : "At least one Property is required for listings.",
+    },
+    {
+      label: "Custom domain attached",
+      status: (org.domains.length > 0 ? "ok" : "warn") as "ok" | "warn" | "missing",
+      hint:
+        org.domains.length > 0
+          ? org.domains.map((d) => d.hostname).join(", ")
+          : "Fallback is {slug}.leasestack.co — configure a real hostname soon.",
+    },
+    {
+      label: "Cursive pixel provisioned",
+      status: (cursiveLegacy?.cursivePixelId ? "ok" : "missing") as
+        | "ok"
+        | "warn"
+        | "missing",
+      hint: cursiveLegacy?.cursivePixelId
+        ? `Pixel ${cursiveLegacy.cursivePixelId}`
+        : "Provision a pixel from the Integrations tab.",
+    },
+    {
+      label: "Pixel enabled on tenant site",
+      status: (org.tenantSiteConfig?.enablePixel ? "ok" : "warn") as
+        | "ok"
+        | "warn"
+        | "missing",
+      hint: org.tenantSiteConfig?.enablePixel
+        ? "Rendering on the live site."
+        : "Client toggles this in Site builder — we can pre-enable.",
+    },
+    {
+      label: "Chatbot enabled on tenant site",
+      status: (org.tenantSiteConfig?.chatbotEnabled ? "ok" : "warn") as
+        | "ok"
+        | "warn"
+        | "missing",
+      hint: org.tenantSiteConfig?.chatbotEnabled
+        ? "Loader renders on the live site."
+        : "Client toggles this from /portal/chatbot.",
+    },
+    {
+      label: "AppFolio connected",
+      status: (org.appfolioIntegration?.lastSyncAt ? "ok" : "warn") as
+        | "ok"
+        | "warn"
+        | "missing",
+      hint: org.appfolioIntegration?.lastSyncAt
+        ? `Last sync ${org.appfolioIntegration.lastSyncAt.toISOString().slice(0, 10)}`
+        : "Client pastes credentials in /portal/settings/integrations.",
+    },
+    {
+      label: "Brand colors + logo",
+      status: (org.logoUrl && org.primaryColor ? "ok" : "warn") as
+        | "ok"
+        | "warn"
+        | "missing",
+      hint:
+        org.logoUrl && org.primaryColor
+          ? "Portal is branded."
+          : "Client sets these in /portal/settings.",
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -296,418 +423,77 @@ export default async function ClientDetail({
         </p>
       ) : null}
 
-      <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <StatCard label="Properties" value={org._count.properties} />
-        <StatCard label="Leads" value={org._count.leads} />
-        <StatCard label="Visitors" value={org._count.visitors} />
-        <StatCard label="Chats" value={org._count.chatbotConversations} />
-        <StatCard label="Ad campaigns" value={org._count.adCampaigns} />
-        <StatCard label="Domains" value={org._count.domains} />
-      </section>
-
-      {/* Needs attention — concrete, ranked action items derived from
-          integration state + lifecycle staleness. Critical issues
-          (AppFolio errors, at-risk flag) render with a destructive band;
-          warnings (stale syncs, unverified domains) render amber. */}
-      {actionItems.length > 0 ? (
-        <SectionCard
-          label="Needs attention"
-          description={`${actionItems.length} issue${actionItems.length === 1 ? "" : "s"} to resolve on this client.`}
-        >
-          <ul className="space-y-1.5">
-            {actionItems.map((item) => {
-              const SeverityGlyph =
-                item.severity === "critical"
-                  ? AlertOctagon
-                  : item.severity === "warning"
-                    ? AlertTriangle
-                    : Info;
-              const tone =
-                item.severity === "critical"
-                  ? "bg-destructive/10 text-destructive border-destructive/30"
-                  : item.severity === "warning"
-                    ? "bg-amber-50 text-amber-700 border-amber-200"
-                    : "bg-primary/10 text-primary border-primary/30";
-              return (
-                <li
-                  key={item.id}
-                  className={`flex items-start gap-3 rounded-md border px-3 py-2 ${tone}`}
-                >
-                  <SeverityGlyph
-                    className="h-4 w-4 mt-0.5 shrink-0"
-                    aria-hidden="true"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold leading-snug text-foreground">
-                      {item.title.replace(`${org.name}: `, "")}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
-                      {item.detail}
-                    </p>
-                  </div>
-                  {item.occurredAt ? (
-                    <span className="text-[10px] text-muted-foreground tabular-nums shrink-0 whitespace-nowrap">
-                      {formatDistanceToNow(new Date(item.occurredAt), {
-                        addSuffix: true,
-                      })}
-                    </span>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ul>
-        </SectionCard>
-      ) : null}
-
-      <LaunchReadiness
-        items={[
-          {
-            label: "Clerk org linked",
-            // Informational only — inviting users does NOT require a Clerk
-            // Organization (the invite route creates a standalone Clerk
-            // invitation + DB User directly). "warn" not "missing": this
-            // never blocks sending invites. See the "Needs attention" band
-            // above for the actual Clerk provisioning error when AT_RISK.
-            status: org.clerkOrgId ? "ok" : "warn",
-            hint: org.clerkOrgId
-              ? undefined
-              : "No Clerk Organization on file — doesn't block invites. Only affects Clerk-side org membership bookkeeping.",
-          },
-          {
-            label: "Primary contact email",
-            status: org.primaryContactEmail ? "ok" : "missing",
-            hint: org.primaryContactEmail ?? "Add a primary contact before inviting.",
-          },
-          {
-            label: "At least one team member",
-            status: org._count.users > 0 ? "ok" : "warn",
-            hint:
-              org._count.users > 0
-                ? `${org._count.users} user${org._count.users === 1 ? "" : "s"}`
-                : "No users yet. Sending an invite counts.",
-          },
-          {
-            label: "Primary property added",
-            status: org._count.properties > 0 ? "ok" : "missing",
-            href: "/admin/clients/" + org.id,
-            hint:
-              org._count.properties > 0
-                ? `${org._count.properties} propert${org._count.properties === 1 ? "y" : "ies"}`
-                : "At least one Property is required for listings.",
-          },
-          {
-            label: "Custom domain attached",
-            status: org.domains.length > 0 ? "ok" : "warn",
-            hint:
-              org.domains.length > 0
-                ? org.domains.map((d) => d.hostname).join(", ")
-                : "Fallback is {slug}.leasestack.co — configure a real hostname soon.",
-          },
-          {
-            label: "Cursive pixel provisioned",
-            status: cursiveLegacy?.cursivePixelId ? "ok" : "missing",
-            hint: cursiveLegacy?.cursivePixelId
-              ? `Pixel ${cursiveLegacy.cursivePixelId}`
-              : "Click 'Provision pixel' above.",
-          },
-          {
-            label: "Pixel enabled on tenant site",
-            status: org.tenantSiteConfig?.enablePixel ? "ok" : "warn",
-            hint: org.tenantSiteConfig?.enablePixel
-              ? "Rendering on the live site."
-              : "Client toggles this in Site builder — we can pre-enable.",
-          },
-          {
-            label: "Chatbot enabled on tenant site",
-            status: org.tenantSiteConfig?.chatbotEnabled ? "ok" : "warn",
-            hint: org.tenantSiteConfig?.chatbotEnabled
-              ? "Loader renders on the live site."
-              : "Client toggles this from /portal/chatbot.",
-          },
-          {
-            label: "AppFolio connected",
-            status: org.appfolioIntegration?.lastSyncAt ? "ok" : "warn",
-            hint: org.appfolioIntegration?.lastSyncAt
-              ? `Last sync ${org.appfolioIntegration.lastSyncAt.toISOString().slice(0, 10)}`
-              : "Client pastes credentials in /portal/settings/integrations.",
-          },
-          {
-            label: "Brand colors + logo",
-            status:
-              org.logoUrl && org.primaryColor ? "ok" : org.logoUrl || org.primaryColor ? "warn" : "warn",
-            hint:
-              org.logoUrl && org.primaryColor
-                ? "Portal is branded."
-                : "Client sets these in /portal/settings.",
-          },
-        ]}
+      <ClientDetailTabs
+        orgId={org.id}
+        active={tab}
+        propertiesCount={org.properties.length}
+        failingSyncCount={failingSinks.length}
       />
 
-      <SectionCard
-        label="Data sinks · this tenant"
-        description="Freshness, error streaks, and 24h throughput for every sync scoped to this client."
-      >
-        <DataSinksBoard
-          sinks={tenantDataSinks}
-          scope="tenant"
+      {tab === "overview" ? (
+        <OverviewTab
           orgId={org.id}
+          counts={org._count}
+          readinessItems={readinessItems}
+          actionItems={actionItems}
+          failingSinks={failingSinks}
+          recentLeads={recentLeads}
+          appfolio={org.appfolioIntegration}
+          activeProjects={org.projects}
         />
-      </SectionCard>
+      ) : null}
 
-      <SectionCard
-        label="Team members"
-        description="Roles are enforced immediately. Removing a user revokes their Clerk session and any pending invites for that email."
-      >
-        <TeamPanel members={teamMembers} properties={teamProperties} />
-      </SectionCard>
+      {tab === "integrations" ? (
+        <IntegrationsTab
+          orgId={org.id}
+          tenantDataSinks={tenantDataSinks}
+          sharedWebhookUrl={sharedWebhookUrl}
+          tenantWebhookUrl={tenantWebhookUrl}
+          cursiveInitial={{
+            cursivePixelId: cursiveLegacy?.cursivePixelId ?? null,
+            cursiveSegmentId: cursiveLegacy?.cursiveSegmentId ?? null,
+            installedOnDomain: cursiveLegacy?.installedOnDomain ?? null,
+            lastEventAt: cursiveLegacy?.lastEventAt
+              ? cursiveLegacy.lastEventAt.toISOString()
+              : null,
+            lastSegmentSyncAt: cursiveLegacy?.lastSegmentSyncAt
+              ? cursiveLegacy.lastSegmentSyncAt.toISOString()
+              : null,
+            totalEventsCount: cursiveLegacy?.totalEventsCount ?? 0,
+            lastPixelHitAt: cursiveLegacy?.lastPixelHitAt
+              ? cursiveLegacy.lastPixelHitAt.toISOString()
+              : null,
+            totalPixelHitsCount: cursiveLegacy?.totalPixelHitsCount ?? 0,
+            identifiedVisitorCount,
+          }}
+        />
+      ) : null}
 
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <SectionCard
-          label="Modules"
-          description="Toggles save instantly and are mirrored to the audit log."
-        >
-          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-6">
-            {moduleRows.map(([key, label, enabled]) => (
-              <ModuleToggle
-                key={key}
-                orgId={org.id}
-                module={key}
-                label={label}
-                initialEnabled={enabled}
-              />
-            ))}
-          </ul>
-          {rentCastUsage ? (
-            <div className="mt-4 pt-3 border-t border-[var(--hair)]">
-              <RentCastUsageRow
-                orgId={org.id}
-                used={rentCastUsage.used}
-                initialBudget={rentCastUsage.budget}
-                monthKey={rentCastUsage.monthKey}
-              />
-            </div>
-          ) : null}
-        </SectionCard>
+      {tab === "team" ? (
+        <TeamTab members={teamMembers} properties={teamProperties} />
+      ) : null}
 
-        <SectionCard label="Domains">
-          <DomainsPanel
-            orgId={org.id}
-            fallbackSlug={org.slug}
-            initial={org.domains.map((d) => ({
-              id: d.id,
-              hostname: d.hostname,
-              isPrimary: d.isPrimary,
-              sslStatus: d.sslStatus,
-              dnsConfigured: d.dnsConfigured,
-            }))}
-          />
-        </SectionCard>
+      {tab === "modules" ? (
+        <ModulesDomainsTab
+          orgId={org.id}
+          moduleRows={moduleRows}
+          rentCastUsage={rentCastUsage}
+          fallbackSlug={org.slug}
+          domains={org.domains.map((d) => ({
+            id: d.id,
+            hostname: d.hostname,
+            isPrimary: d.isPrimary,
+            sslStatus: d.sslStatus,
+            dnsConfigured: d.dnsConfigured,
+          }))}
+        />
+      ) : null}
 
-        <SectionCard
-          label="Cursive (visitor identification)"
-          description="Bind the V4 pixel and segment IDs from Cursive. The webhook URL below is what they need in their pixel settings."
-          className="lg:col-span-2"
-        >
-          {await (async () => {
-            const hdrs = await headers();
-            const proto = hdrs.get("x-forwarded-proto") ?? "https";
-            const host = hdrs.get("host") ?? "leasestack.co";
-            const sharedWebhookUrl = `${proto}://${host}/api/webhooks/cursive`;
-            const tenantWebhookUrl = cursiveLegacy?.webhookToken
-              ? `${proto}://${host}/api/webhooks/cursive/${cursiveLegacy.webhookToken}`
-              : null;
-            return (
-              <CursivePanel
-                orgId={org.id}
-                webhookUrl={sharedWebhookUrl}
-                tenantWebhookUrl={tenantWebhookUrl}
-                initial={{
-                  cursivePixelId: cursiveLegacy?.cursivePixelId ?? null,
-                  cursiveSegmentId:
-                    cursiveLegacy?.cursiveSegmentId ?? null,
-                  installedOnDomain:
-                    cursiveLegacy?.installedOnDomain ?? null,
-                  lastEventAt: cursiveLegacy?.lastEventAt
-                    ? cursiveLegacy.lastEventAt.toISOString()
-                    : null,
-                  lastSegmentSyncAt: cursiveLegacy?.lastSegmentSyncAt
-                    ? cursiveLegacy.lastSegmentSyncAt.toISOString()
-                    : null,
-                  totalEventsCount:
-                    cursiveLegacy?.totalEventsCount ?? 0,
-                  lastPixelHitAt: cursiveLegacy?.lastPixelHitAt
-                    ? cursiveLegacy.lastPixelHitAt.toISOString()
-                    : null,
-                  totalPixelHitsCount:
-                    cursiveLegacy?.totalPixelHitsCount ?? 0,
-                  identifiedVisitorCount,
-                }}
-              />
-            );
-          })()}
-        </SectionCard>
+      {tab === "properties" ? (
+        <PropertiesTab properties={org.properties} />
+      ) : null}
 
-        <SectionCard label="Properties">
-          {org.properties.length === 0 ? (
-            <p className="text-xs text-muted-foreground">
-              No properties set up yet.
-            </p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {org.properties.map((p) => (
-                <li
-                  key={p.id}
-                  className="flex items-center justify-between gap-3 py-2.5 text-sm"
-                >
-                  <div className="min-w-0">
-                    <div className="font-medium text-foreground truncate">
-                      {p.name}
-                    </div>
-                    <div className="text-[11px] text-muted-foreground truncate">
-                      /{p.slug}
-                    </div>
-                  </div>
-                  <span className="text-xs text-muted-foreground shrink-0">
-                    {p._count.listings} listing
-                    {p._count.listings === 1 ? "" : "s"}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </SectionCard>
-
-        {org.appfolioIntegration ? (
-          <SectionCard label="AppFolio sync">
-            <dl className="space-y-2 text-sm">
-              <div className="flex items-center justify-between gap-3">
-                <dt className="text-xs font-medium text-muted-foreground">
-                  Subdomain
-                </dt>
-                <dd className="font-mono text-[12px] text-foreground">
-                  {org.appfolioIntegration.instanceSubdomain}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <dt className="text-xs font-medium text-muted-foreground">
-                  Status
-                </dt>
-                <dd className="text-foreground">
-                  {org.appfolioIntegration.syncStatus ?? "idle"}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <dt className="text-xs font-medium text-muted-foreground">
-                  Last sync
-                </dt>
-                <dd className="text-foreground">
-                  {org.appfolioIntegration.lastSyncAt
-                    ? formatDistanceToNow(org.appfolioIntegration.lastSyncAt, {
-                        addSuffix: true,
-                      })
-                    : "Never"}
-                </dd>
-              </div>
-            </dl>
-            {org.appfolioIntegration.lastError ? (
-              <p className="mt-3 text-[11px] text-destructive rounded-md border border-destructive/30 bg-destructive/5 p-2 break-words">
-                {org.appfolioIntegration.lastError}
-              </p>
-            ) : null}
-          </SectionCard>
-        ) : null}
-
-        <SectionCard label="Active project">
-          {org.projects.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No active project.</p>
-          ) : (
-            <ul className="space-y-2">
-              {org.projects.map((p) => (
-                <li
-                  key={p.id}
-                  className="flex items-center justify-between gap-3 py-1 text-sm"
-                >
-                  <span className="text-foreground truncate">{p.name}</span>
-                  <span className="text-xs text-muted-foreground shrink-0">
-                    {p._count.tasks} task
-                    {p._count.tasks === 1 ? "" : "s"}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </SectionCard>
-
-        <SectionCard label="Recent leads">
-          {recentLeads.length === 0 ? (
-            <p className="text-xs text-muted-foreground">
-              No leads captured yet.
-            </p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {recentLeads.map((l) => (
-                <li
-                  key={l.id}
-                  className="flex items-center justify-between gap-3 py-2.5 text-sm"
-                >
-                  <div className="min-w-0">
-                    <div className="font-medium text-foreground truncate">
-                      {l.firstName
-                        ? `${l.firstName}${l.lastName ? " " + l.lastName : ""}`
-                        : (l.email ?? "Anonymous")}
-                    </div>
-                    <div className="text-[11px] text-muted-foreground">
-                      {humanLeadSource(l.source)}
-                    </div>
-                  </div>
-                  <StatusBadge tone={leadStatusTone(l.status)}>
-                    {humanLeadStatus(l.status)}
-                  </StatusBadge>
-                </li>
-              ))}
-            </ul>
-          )}
-        </SectionCard>
-
-        <SectionCard label="Recent activity">
-          {recentAudits.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No activity yet.</p>
-          ) : (
-            <ul className="space-y-3">
-              {recentAudits.map((a) => (
-                <li
-                  key={a.id}
-                  className="text-sm flex items-start gap-3 min-w-0"
-                >
-                  <span
-                    aria-hidden="true"
-                    className="mt-1.5 inline-block h-1.5 w-1.5 rounded-full bg-muted-foreground/40 shrink-0"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="text-foreground">
-                      {humanAuditAction(a.action)}
-                      {a.entityType ? (
-                        <span className="text-muted-foreground">
-                          {" · "}
-                          {a.entityType}
-                        </span>
-                      ) : null}
-                    </div>
-                    {a.description ? (
-                      <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                        {a.description}
-                      </div>
-                    ) : null}
-                  </div>
-                  <span className="text-[11px] text-muted-foreground shrink-0">
-                    {formatDistanceToNow(a.createdAt, { addSuffix: true })}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </SectionCard>
-      </section>
+      {tab === "activity" ? <ActivityTab events={recentAudits} /> : null}
     </div>
   );
 }
