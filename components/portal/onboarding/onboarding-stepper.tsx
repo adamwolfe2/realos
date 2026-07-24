@@ -337,3 +337,96 @@ export function OnboardingStepper({ progress, connectStatus }: Props) {
     </section>
   );
 }
+
+// ---------------------------------------------------------------------------
+// SetupSlimBar — the demoted setup surface. Carbon rebuild put the full
+// horizontal step rail front-and-center on the dashboard; the Carbon-forward
+// design pass demotes it to a single quiet line at the very bottom of the
+// page, above the AppFolio status strip. Same underlying state (progress,
+// active step, skip action) as OnboardingStepper — just one line instead of
+// a rail of step boxes.
+// ---------------------------------------------------------------------------
+
+export function SetupSlimBar({ progress }: { progress: ProgressSnapshot }) {
+  const router = useRouter();
+  const [busy, setBusy] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const phase = progress.currentPhase;
+
+  if (phase === OnboardingPhase.COMPLETED) return null;
+
+  const activePhase = phase as Exclude<OnboardingPhase, "COMPLETED">;
+  const phaseProg = getPhaseProgress(progress, phase);
+  const orderedKeys = PHASE_STEPS[activePhase];
+  const stepsByKey = new Map(progress.steps.map((s) => [s.stepKey, s]));
+
+  const activeIndex = orderedKeys.findIndex((key) => {
+    const step = stepsByKey.get(key);
+    return (
+      !step ||
+      (step.status !== OnboardingStepStatus.COMPLETED &&
+        step.status !== OnboardingStepStatus.SKIPPED)
+    );
+  });
+  const activeStepKey =
+    activeIndex === -1 ? null : orderedKeys[activeIndex];
+  const activeMeta = activeStepKey ? STEP_META[activeStepKey] : null;
+
+  async function skipActiveStep() {
+    if (!activeStepKey) return;
+    setError(null);
+    setBusy(true);
+    try {
+      const res = await fetch(
+        `/api/portal/onboarding/steps/${activeStepKey}/skip`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reason: "Marked not applicable by operator" }),
+        },
+      );
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error || `Request failed (${res.status})`);
+      }
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Action failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-[2px] border border-[#e0e0e0] bg-white px-3 py-2">
+      <Link
+        href={activeMeta?.href ?? "/portal/settings"}
+        className="inline-flex items-center gap-1.5 text-[12px] text-[#525252] hover:text-[#161616] transition-colors min-w-0"
+      >
+        <span className="font-medium text-[#161616]">
+          Setup {phaseProg.completed} of {phaseProg.total}
+        </span>
+        {activeMeta ? (
+          <>
+            <span aria-hidden="true">&middot;</span>
+            <span className="truncate">{activeMeta.label}</span>
+          </>
+        ) : null}
+        <ArrowRight className="h-3 w-3 shrink-0" aria-hidden="true" />
+      </Link>
+      {activeStepKey ? (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={skipActiveStep}
+          className="text-[11px] text-[#6f6f6f] hover:text-[#161616] transition-colors disabled:opacity-50"
+        >
+          Skip
+        </button>
+      ) : null}
+      {error ? (
+        <p className="w-full text-[11px] text-[#da1e28]">{error}</p>
+      ) : null}
+    </div>
+  );
+}

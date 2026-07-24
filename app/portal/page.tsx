@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import {
   Users,
   CalendarCheck,
-  DollarSign,
+  FileText,
   Search,
-  Building2,
   ArrowRight,
 } from "lucide-react";
 import { redirect } from "next/navigation";
@@ -33,12 +32,12 @@ import { AutoRefresh } from "@/components/portal/sync/auto-refresh";
 
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
-import { LeadSourceDonut } from "@/components/portal/dashboard/lead-source-donut";
-import { ConversionFunnel } from "@/components/portal/dashboard/conversion-funnel";
-import { ActivityFeed } from "@/components/portal/dashboard/activity-feed";
+import { SourceBars } from "@/components/portal/dashboard/source-bars";
+import { PipelineStrip } from "@/components/portal/dashboard/pipeline-strip";
+import { AttentionQueue } from "@/components/portal/dashboard/attention-queue";
+import { QuietActivityRows } from "@/components/portal/dashboard/quiet-activity-rows";
 import {
   getActivityFeed,
-  getAdSpendKpi,
   getFunnel,
   getHotVisitors,
   getIntegrationHealth,
@@ -58,22 +57,18 @@ import {
 } from "@/lib/dashboard/range";
 import { PerformanceOverTime } from "@/components/portal/dashboard/performance-over-time";
 import { TopPropertiesLeaderboard } from "@/components/portal/dashboard/top-properties-leaderboard";
-import { getOpenInsights, getInsightCounts } from "@/lib/insights/queries";
+import { getOpenInsights } from "@/lib/insights/queries";
 import {
   type InsightCardData,
 } from "@/components/portal/insights/insight-card";
-import { InsightsHero } from "@/components/portal/dashboard/insights-hero";
-import { countConnectedSources } from "@/lib/connect/status";
 import Link from "next/link";
 import { PageHeader } from "@/components/admin/page-header";
 import { getFirstRunSignal } from "@/lib/portal/first-run";
 import { WelcomeLanding } from "@/components/portal/welcome-landing";
 import { syncOnboardingProgress } from "@/lib/onboarding/step-detectors";
-import { OnboardingStepper } from "@/components/portal/onboarding/onboarding-stepper";
+import { SetupSlimBar } from "@/components/portal/onboarding/onboarding-stepper";
 import { VerificationRow } from "@/components/portal/ui/status-chip";
 import { PropertyHeroBanner } from "@/components/portal/properties/property-hero-banner";
-import { DashboardActionItems } from "@/components/portal/dashboard/dashboard-action-items";
-import { PortfolioSeoActions } from "@/components/portal/dashboard/portfolio-seo-actions";
 import { getPortfolioRecommendations } from "@/lib/intelligence/property-recommendations";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -84,9 +79,10 @@ const DAY = 24 * 60 * 60 * 1000;
 // ---------------------------------------------------------------------------
 // /portal — Operator Dashboard
 //
-// Single-screen consolidation of KPIs, lead source mix, conversion funnel,
-// per-property cards, live activity feed, and integration health. Every tile
-// is now backed by real Prisma queries (see /lib/dashboard/queries.ts).
+// Carbon-forward recompose (2026-07-24): KPI strip -> chart + pipeline
+// strip (left) / attention queue + lead source + activity (right) ->
+// setup line -> AppFolio status. Every tile is backed by real Prisma
+// queries (see /lib/dashboard/queries.ts).
 // ---------------------------------------------------------------------------
 
 export default async function PortalHome({
@@ -256,26 +252,22 @@ export default async function PortalHome({
 
     const [
       org,
-      ,
+      marketablePropertyCount,
       leadsTotal,
       leadsNew28d,
       leadsPrev28d,
-      toursScheduled,
       ,
-      ,
-      ,
+      applicationsSubmitted28d,
+      applicationsActive,
       ,
       properties,
       ,
-      adSpend,
       organic,
       leadSourceSlices,
       funnelStages,
       activity,
       integrationChips,
       openInsights,
-      insightCounts,
-      connectStatus,
       ,
       ,
       performancePoints,
@@ -313,13 +305,6 @@ export default async function PortalHome({
             gte: new Date(Date.now() - 56 * DAY),
             lt: since28d,
           },
-        },
-      }),
-      prisma.tour.count({
-        where: {
-          status: TourStatus.SCHEDULED,
-          lead: where,
-          ...requiredModelPropertyClause,
         },
       }),
       prisma.tour.count({
@@ -413,12 +398,6 @@ export default async function PortalHome({
         count: 0,
         sparkline: new Array<number>(28).fill(0),
       })),
-      getAdSpendKpi(scope.orgId).catch(() => ({
-        spendUsd: 0,
-        previousSpendUsd: 0,
-        deltaPct: null as number | null,
-        sparkline: new Array<number>(28).fill(0),
-      })),
       getOrganicSessionsKpi(scope.orgId).catch(() => ({
         sessions: 0,
         previousSessions: 0,
@@ -427,7 +406,12 @@ export default async function PortalHome({
       })),
       getLeadSourceBreakdown(scope.orgId).catch(() => []),
       getFunnel(scope.orgId).catch(
-        () => [] as Array<{ label: string; value: number }>,
+        () =>
+          [] as Array<{
+            label: string;
+            value: number;
+            notApplicable?: boolean;
+          }>,
       ),
       getActivityFeed(scope.orgId, 10).catch(() => []),
       getIntegrationHealth(scope.orgId).catch(() => []),
@@ -437,17 +421,6 @@ export default async function PortalHome({
       getOpenInsights(scope.orgId, { propertyIds: effectiveIds, limit: 3 }).catch(
         () => [],
       ),
-      getInsightCounts(scope.orgId, { propertyIds: effectiveIds }).catch(() => ({
-        total: 0,
-        critical: 0,
-        warning: 0,
-        info: 0,
-        open: 0,
-      })),
-      countConnectedSources(scope.orgId).catch(() => ({
-        connected: 0,
-        total: 7,
-      })),
       prisma.organization
         .findUnique({
           where: { id: scope.orgId },
@@ -532,12 +505,6 @@ export default async function PortalHome({
         ? Math.round(((leadsNew28d - leadsPrev28d) / leadsPrev28d) * 100)
         : null;
 
-    // Cost per lead. Show "—" when there are no leads in the window so the tile
-    // doesn't render an infinity-shaped number.
-    const costPerLead = leadsNew28d > 0 ? adSpend.spendUsd / leadsNew28d : null;
-    const costPerLeadDisplay =
-      costPerLead != null ? `$${costPerLead.toFixed(2)}` : "\u2014";
-
     // AppFolio integration row — used to surface "Auto-sync paused" as a
     // subtle chip on the dashboard Operations teaser. Cheap probe (a few
     // boolean fields) and only renders when the operator has connected
@@ -551,9 +518,6 @@ export default async function PortalHome({
     const appfolioConnected = !!appfolioRow?.instanceSubdomain;
     const appfolioAutoSyncPaused =
       appfolioConnected && appfolioRow?.autoSyncEnabled === false;
-    const adsOff =
-      integrationChips.find((c) => c.key === "google-ads")?.status === "off" &&
-      integrationChips.find((c) => c.key === "meta-ads")?.status === "off";
     const organicOff =
       integrationChips.find((c) => c.key === "gsc")?.status === "off" &&
       integrationChips.find((c) => c.key === "ga4")?.status === "off";
@@ -958,6 +922,30 @@ export default async function PortalHome({
           .join(" · ")
       : null;
 
+    // Single-property orgs (the common case today) get the building's
+    // identity folded into the PageHeader meta line instead of a
+    // dedicated hero card, and skip the portfolio leaderboard + per-row
+    // property tags entirely — there's nothing to rank or disambiguate
+    // with exactly one marketable property.
+    const hasMultipleProperties = marketablePropertyCount >= 2;
+    const propertyIdentityLabel =
+      !hasMultipleProperties && featuredProperty
+        ? [featuredProperty.name, featuredSubtitle].filter(Boolean).join(" · ")
+        : null;
+    const pageHeaderMeta = [
+      `as of ${asOfLabel} · last ${rangeDaysCount} days`,
+      propertyIdentityLabel,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+
+    // Pipeline strip — tracked stages only. Engaged (on-site behavior) and
+    // Tours are excluded outright rather than shown as a fake zero; see
+    // PipelineStrip's own doc comment for the "untracked ≠ zero" rule.
+    const pipelineStages = funnelStages.filter((s) =>
+      ["Visitors", "Leads", "Applications"].includes(s.label),
+    );
+
     return (
       <div className="space-y-2 ls-page-fade">
         {/* Auto-refresh dashboard data every 45s. Cheap — just re-runs the
@@ -974,7 +962,7 @@ export default async function PortalHome({
         <PageHeader
           title="Dashboard"
           eyebrow={org?.name ?? undefined}
-          meta={`as of ${asOfLabel} · last ${rangeDaysCount} days`}
+          meta={pageHeaderMeta}
           description={
             selectorProperties.length > 1
               ? isFiltered
@@ -1016,49 +1004,16 @@ export default async function PortalHome({
 
         {accessDenied ? <PropertyAccessDeniedBanner /> : null}
 
-        {/* The single setup surface — Carbon horizontal stepper. Absorbs
-          FirstRunOverlay, OnboardingChecklistFloating, SetupWizardGate,
-          and SetupBanner. Server state hides it once currentPhase
-          reaches COMPLETED; no dismissal, no localStorage. */}
-        {showChecklist && onboardingProgress ? (
-          <OnboardingStepper
-            progress={onboardingProgress}
-            connectStatus={connectStatus}
-          />
-        ) : null}
-
-        {/* Removed three legacy alert banners (past-due leases, urgent work
-          orders, unreviewed reputation) and the IntegrationHealth chip
-          row. Past-due / urgent / unreviewed conditions now surface as
-          ranked insights inside <InsightsHero /> via the new detector
-          library; integration health lives on /portal/connect, pinned
-          to the sidebar Overview group. The dashboard should feel calm,
-          not like a wall of competing CTAs. */}
-
-        {/* Removed the "Quick access — Jump in" tile section. Per design
-          audit, those tiles duplicated entries already in the left nav
-          and added a wall of competing CTAs above the KPI strip. The
-          dead QuickAccessTile component was deleted in the Carbon
-          rebuild (2026-07-09). */}
-
-        {/* Insights now live in <InsightsHero /> at the top of the dashboard
-          (above the property selector). Removed the duplicated mid-page
-          strip so insights have a single, prominent surface. */}
-
-        {/* At-a-glance KPI strip — TRIMMED to 4 daily-decision metrics.
-          Was 8 tiles + 6-tile AppFolio mirror + 4-tile portfolio summary
-          (= 18 raw numbers competing for attention). Now: leads, ad
-          spend, organic, occupancy. Everything else lives on its
-          subpage where the operator goes when they actually need detail. */}
+        {/* At-a-glance KPI strip — 4 daily-decision metrics. Leads and
+          Organic carry a 28d spark + delta; Applications surfaces the
+          submitted-application count already fetched for the pipeline
+          strip below; Tours renders the kit's locked-tile state rather
+          than a dead "0" — LeaseStack doesn't have a tour data source
+          wired up yet, and untracked isn't the same thing as zero. */}
         <section
           aria-label="At a glance"
-          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 ls-stagger"
+          className="grid grid-cols-2 lg:grid-cols-4 gap-2 ls-stagger"
         >
-          {/* Norman bug #101: tiles needed explicit time windows, an honest
-            empty-state for ad spend when no campaigns are active, an
-            "Organic = unique website visitors" clarification, and the
-            rent-roll occupancy tile removed (same theme as the property
-            detail and dashboard rent-roll cleanup). */}
           <KpiTile
             density="dense"
             label="Leads (28d)"
@@ -1082,53 +1037,6 @@ export default async function PortalHome({
             }
             href="/portal/leads"
           />
-          {/* Ad spend tile renders only when an ad account exists AND has
-            real spend in the window. When ad modules are off, no
-            campaigns exist, OR spend is zero, swap in the Tours tile so
-            the row never reads as broken/inactive. */}
-          {!adsOff && adSpend.spendUsd > 0 ? (
-            <KpiTile
-              density="dense"
-              label="Ad spend (28d)"
-              value={`$${adSpend.spendUsd.toLocaleString()}`}
-              hint={
-                costPerLeadDisplay !== "—"
-                  ? `${costPerLeadDisplay} per lead`
-                  : "Blended Google + Meta"
-              }
-              spark={adSpend.sparkline}
-              icon={<DollarSign className="h-3.5 w-3.5" />}
-              delta={
-                adSpend.deltaPct != null
-                  ? {
-                      value: `${adSpend.deltaPct >= 0 ? "+" : ""}${adSpend.deltaPct}%`,
-                      trend:
-                        adSpend.deltaPct > 0
-                          ? "up"
-                          : adSpend.deltaPct < 0
-                            ? "down"
-                            : "flat",
-                    }
-                  : undefined
-              }
-              href="/portal/campaigns"
-            />
-          ) : (
-            <KpiTile
-              density="dense"
-              label="Tours scheduled (28d)"
-              value={
-                toursScheduled === 0 ? "—" : toursScheduled.toLocaleString()
-              }
-              hint={
-                toursScheduled === 0
-                  ? "Not tracked yet — connect a PMS tour feed"
-                  : "Last 28 days"
-              }
-              icon={<CalendarCheck className="h-3.5 w-3.5" />}
-              href="/portal/tours"
-            />
-          )}
           <KpiTile
             density="dense"
             label="Organic visitors (28d)"
@@ -1161,115 +1069,31 @@ export default async function PortalHome({
                 : undefined
             }
           />
-          {/* Occupancy tile dropped per Norman feedback (#101) — rent-roll
-            content is not the dashboard's focus. Properties tile takes
-            the slot: total active properties + a link into the curate
-            view. */}
           <KpiTile
             density="dense"
-            label="Active properties"
-            value={properties.length.toLocaleString()}
+            label="Applications (28d)"
+            value={applicationsSubmitted28d.toLocaleString()}
             hint={
-              properties.length === 0
-                ? "Add your first property"
-                : "Click to view portfolio"
+              applicationsActive > 0
+                ? `${applicationsActive.toLocaleString()} active in pipeline`
+                : undefined
             }
-            icon={<Building2 className="h-3.5 w-3.5" />}
-            href="/portal/properties"
+            icon={<FileText className="h-3.5 w-3.5" />}
+            href="/portal/applications"
+          />
+          <KpiTile
+            density="dense"
+            label="Tours"
+            value="—"
+            icon={<CalendarCheck className="h-3.5 w-3.5" />}
+            locked={{ reason: "Not tracked yet", href: "/portal/connect" }}
           />
         </section>
 
-        {/* Headline interactive chart + top-properties leaderboard. The
-          chart is the centerpiece — soft blue area chart with optional
-          prior-period overlay (matches the AeroStore reference pattern)
-          — and the leaderboard ranks properties by lead volume in the
-          same window so the operator can drill from "are we trending
-          up" to "which buildings are carrying the trend." Both react
-          to the range pills + compare toggle in the header. */}
-        <section className="grid grid-cols-1 lg:grid-cols-5 gap-2">
-          <DashboardSection
-            eyebrow={compare ? "Current vs prior period" : "Daily volume"}
-            title="Lead performance over time"
-            description={`Leads created per day, last ${rangeDaysCount} days. Hover any point for the exact count.`}
-            href="/portal/leads"
-            hrefLabel="Open leads"
-            className="lg:col-span-3"
-          >
-            <PerformanceOverTime points={performancePoints} compare={compare} />
-          </DashboardSection>
-          <DashboardSection
-            eyebrow="Portfolio leaderboard"
-            title="Top properties"
-            description={`Ranked by leads in the last ${rangeDaysCount} days.`}
-            href="/portal/properties"
-            hrefLabel="See all"
-            className="lg:col-span-2"
-          >
-            <TopPropertiesLeaderboard rows={topPropertiesByLeads} />
-            {propertiesInOnboarding > 0 ? (
-              <Link
-                href="/portal/properties?launch=ONBOARDING"
-                className="mt-3 inline-flex items-center gap-1.5 rounded-[2px] border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors"
-              >
-                <span
-                  aria-hidden="true"
-                  className="inline-block h-1.5 w-1.5 rounded-full bg-[#f1c21b]"
-                />
-                {propertiesInOnboarding.toLocaleString()}{" "}
-                {propertiesInOnboarding === 1 ? "property" : "properties"} in
-                onboarding
-                <ArrowRight className="h-3 w-3" aria-hidden="true" />
-              </Link>
-            ) : null}
-          </DashboardSection>
-        </section>
-
-        {/* Performance row — Restored after operator feedback that the
-          portal lacked the same at-a-glance visualization shown on the
-          /sign-in marketing showcase. The conversion funnel + lead
-          source donut deliver the "marketing → leasing" story in one
-          glance, and both pull from queries we were already running
-          (getFunnel, getLeadSourceBreakdown). Detailed drill-downs
-          still live on /portal/leads, /portal/visitors, etc.; this
-          surface is the summary header that motivates the click. */}
-        {funnelStages.length > 0 || leadSourceSlices.length > 0 ? (
-          <section className="grid grid-cols-1 lg:grid-cols-5 gap-2">
-            <DashboardSection
-              eyebrow="Last 28 days"
-              title="Conversion funnel"
-              description="Visitors → leads → tours → applications → leases."
-              href="/portal/leads"
-              hrefLabel="Open leads"
-              className="lg:col-span-3"
-            >
-              {funnelStages.length > 0 ? (
-                <ConversionFunnel stages={funnelStages} />
-              ) : (
-                <p className="text-xs text-muted-foreground">
-                  Funnel fills out as visitors, leads, tours, and applications
-                  accumulate. Install the pixel and connect AppFolio to start
-                  tracking end-to-end.
-                </p>
-              )}
-            </DashboardSection>
-            <DashboardSection
-              eyebrow="Channel mix"
-              title="Lead source"
-              description="Where this month's leads are coming from."
-              href="/portal/attribution"
-              hrefLabel="Open attribution"
-              className="lg:col-span-2"
-            >
-              <LeadSourceDonut slices={leadSourceSlices} />
-            </DashboardSection>
-          </section>
-        ) : null}
-
-        {/* Featured-property band — demoted below the funnel row per the
-          Carbon rebuild: identity chrome → setup → numbers → tables come
-          first; the building photo is context, not the headline. Renders
-          only when the operator has a LIVE featured property. */}
-        {featuredProperty ? (
+        {/* Featured-property band — only for multi-property orgs. A
+          single-property org's identity already moved into the
+          PageHeader meta line above. */}
+        {hasMultipleProperties && featuredProperty ? (
           <PropertyHeroBanner
             propertyId={featuredProperty.id}
             propertyName={featuredProperty.name}
@@ -1283,59 +1107,93 @@ export default async function PortalHome({
           />
         ) : null}
 
-        {/* Activity feed — single full-width section. Previously this
-              row had a "Top properties" inline list on the left that
-              duplicated TopPropertiesLeaderboard above (same data, same
-              ranking, different rendering). Removed the dup so the
-              activity feed gets the breathing room it actually needs to
-              read like a feed. */}
-        <DashboardSection
-          eyebrow="Recent"
-          title="Activity feed"
-          description="Latest events from leads, tours, ads, and your chatbot. Updates automatically."
-          href="/portal/leads"
-          hrefLabel="Open leads"
-        >
-          <ActivityFeed items={activity} />
-        </DashboardSection>
+        {/* Main content grid — chart + pipeline on the left (2fr), the
+          "Needs your attention" queue anchoring the right column (1fr)
+          followed by lead source bars and a quiet activity summary. */}
+        <section className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-2 items-start">
+          <div className="space-y-2 min-w-0">
+            <DashboardSection
+              title="Lead performance over time"
+              description={`Leads created per day, last ${rangeDaysCount} days. Hover any point for the exact count.`}
+              href="/portal/leads"
+              hrefLabel="Open leads"
+            >
+              <PerformanceOverTime
+                points={performancePoints}
+                compare={compare}
+              />
+            </DashboardSection>
 
-        {/* --- Text rollup zone --------------------------------------
-              Reordered 2026-06-03 per operator feedback: charts +
-              metrics anchor the dashboard, and the three text-heavy
-              recommendation stacks (Action items, SEO Agent, Insights
-              hero) now follow Activity feed so the page reads as
-              "here's what's happening" → "here's what to do next".
-              --------------------------------------------------------- */}
+            {hasMultipleProperties ? (
+              <DashboardSection
+                eyebrow="Portfolio leaderboard"
+                title="Top properties"
+                description={`Ranked by leads in the last ${rangeDaysCount} days.`}
+                href="/portal/properties"
+                hrefLabel="See all"
+              >
+                <TopPropertiesLeaderboard rows={topPropertiesByLeads} />
+                {propertiesInOnboarding > 0 ? (
+                  <Link
+                    href="/portal/properties?launch=ONBOARDING"
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-[2px] border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="inline-block h-1.5 w-1.5 rounded-full bg-[#f1c21b]"
+                    />
+                    {propertiesInOnboarding.toLocaleString()}{" "}
+                    {propertiesInOnboarding === 1 ? "property" : "properties"}{" "}
+                    in onboarding
+                    <ArrowRight className="h-3 w-3" aria-hidden="true" />
+                  </Link>
+                ) : null}
+              </DashboardSection>
+            ) : null}
 
-        {/* Action items — top portfolio-wide recommendations from the
-              Intelligence engine. */}
-        {portfolioActions.length > 0 ? (
-          <DashboardActionItems actions={portfolioActions} />
+            <PipelineStrip stages={pipelineStages} />
+          </div>
+
+          <div className="space-y-2 min-w-0">
+            <AttentionQueue
+              actions={portfolioActions}
+              seoActions={portfolioSeoActions}
+              insights={openInsights as InsightCardData[]}
+              showPropertyTag={hasMultipleProperties}
+            />
+
+            <DashboardSection
+              title="Lead source"
+              description="Where this month's leads are coming from."
+              href="/portal/attribution"
+              hrefLabel="Open attribution"
+            >
+              <SourceBars
+                rows={leadSourceSlices.map((s) => ({
+                  label: s.source,
+                  value: s.count,
+                }))}
+                limit={4}
+                emptyMessage="Lead source fills out once leads start coming in."
+              />
+            </DashboardSection>
+
+            <QuietActivityRows items={activity} />
+          </div>
+        </section>
+
+        {/* Setup — demoted to a single quiet line above the AppFolio
+          status strip. Same underlying state as the old horizontal
+          stepper; dismiss/skip behavior preserved via SetupSlimBar. */}
+        {showChecklist && onboardingProgress ? (
+          <SetupSlimBar progress={onboardingProgress} />
         ) : null}
-
-        {/* SEO Agent rollup — sourced from the SEO recommendation
-              engine. Only renders when there are open OPEN recs on
-              LIVE properties. */}
-        <PortfolioSeoActions actions={portfolioSeoActions} />
-
-        {/* Insights hero — top 3 open insights with severity rollup. */}
-        <InsightsHero
-          insights={openInsights as InsightCardData[]}
-          counts={{
-            critical: insightCounts.critical,
-            warning: insightCounts.warning,
-            info: insightCounts.info,
-            total: insightCounts.total,
-          }}
-          sourcesConnected={connectStatus.connected}
-          totalSources={connectStatus.total}
-        />
 
         {/* AppFolio status — Carbon rebuild: the three hand-rolled branches
               (amber wash / emerald dot / blue-wash CTA card) collapse into
               one flat VerificationRow strip. The connect action is a ghost
-              link, never a filled CTA — the onboarding stepper owns the
-              single primary connect surface. */}
+              link, never a filled CTA — the setup line owns the single
+              primary connect surface. */}
         <section className="rounded-[2px] border border-[#e0e0e0] bg-white p-3">
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
             <VerificationRow

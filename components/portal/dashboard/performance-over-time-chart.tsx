@@ -20,6 +20,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { BRAND_BLUE } from "@/lib/charts/palette";
+import { CHART_AXIS_TICK } from "@/components/portal/ui/chart-theme";
 
 export type PerformancePoint = {
   date: string;
@@ -63,10 +64,11 @@ export default function PerformanceOverTimeChart({
           padding={{ left: 8, right: 8 }}
         />
         <YAxis
-          tick={{ fontSize: 10, fill: "#94A3B8" }}
+          tick={CHART_AXIS_TICK}
           tickLine={false}
           axisLine={false}
-          width={32}
+          width={40}
+          tickMargin={8}
           allowDecimals={false}
         />
         <Tooltip
