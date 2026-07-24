@@ -499,7 +499,10 @@ export default async function VisitorsPage({
                 hasSegment={Boolean(integration?.cursiveSegmentId)}
               />
             ) : null}
-            <ExportButton href="/api/tenant/visitors/export" />
+            <ExportButton
+              href="/api/tenant/visitors/export"
+              label="Export CSV (hashed emails)"
+            />
           </div>
         }
       />

@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     });
 
     const header =
-      "email,first_name,last_name,utm_source,utm_campaign,intent_score";
+      "hashed_email,first_name,last_name,utm_source,utm_campaign,intent_score";
     const lines = [header];
     for (const v of visitors) {
       lines.push(
