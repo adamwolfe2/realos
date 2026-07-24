@@ -122,7 +122,7 @@ export function SidebarCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-[12px] border border-border bg-card p-4">
+    <div className="rounded-[2px] border border-border bg-card p-4">
       <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-muted-foreground mb-3">
         {label}
       </p>

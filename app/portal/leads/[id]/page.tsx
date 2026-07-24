@@ -325,7 +325,7 @@ export default async function LeadDetailPage({
       {/* B. Hero identity card */}
       <section
         className={cn(
-          "rounded-[12px] border border-border bg-card",
+          "rounded-[2px] border border-border bg-card",
           "p-6 md:p-7",
           "grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,auto)] gap-6"
         )}
@@ -482,7 +482,7 @@ export default async function LeadDetailPage({
               {timeline.length} {timeline.length === 1 ? "event" : "events"}
             </p>
           </div>
-          <div className="rounded-[12px] border border-border bg-card p-4">
+          <div className="rounded-[2px] border border-border bg-card p-4">
             <Timeline events={timeline} />
           </div>
           {timeline.length === 1 ? (
@@ -535,7 +535,7 @@ export default async function LeadDetailPage({
                 {notes.map((n) => (
                   <li
                     key={n.id}
-                    className="rounded-[10px] bg-card ring-1 ring-border p-3"
+                    className="rounded-[2px] bg-card ring-1 ring-border p-3"
                   >
                     <p className="text-xs text-foreground whitespace-pre-wrap leading-relaxed">
                       {n.body.replace(/^\[lead:[^\]]+\]\s*/, "")}
@@ -736,7 +736,7 @@ function Tile({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-[10px] border border-border bg-card p-4">
+    <div className="rounded-[2px] border border-border bg-card p-4">
       <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-muted-foreground mb-2">
         {label}
       </p>

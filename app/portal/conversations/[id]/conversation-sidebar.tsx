@@ -95,7 +95,7 @@ export function ConversationSidebar({
   return (
     <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
       {/* Flag toggles */}
-      <section className="rounded-xl border border-border bg-card p-4">
+      <section className="rounded-[2px] border border-border bg-card p-4">
         <header className="mb-3">
           <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
             Review
@@ -115,7 +115,7 @@ export function ConversationSidebar({
       </section>
 
       {/* Notes */}
-      <section className="rounded-xl border border-border bg-card p-4">
+      <section className="rounded-[2px] border border-border bg-card p-4">
         <header className="mb-2">
           <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
             Notes
@@ -178,7 +178,7 @@ export function ConversationSidebar({
       </section>
 
       {/* Context */}
-      <section className="rounded-xl border border-border bg-card p-4">
+      <section className="rounded-[2px] border border-border bg-card p-4">
         <header className="mb-3">
           <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
             Context
