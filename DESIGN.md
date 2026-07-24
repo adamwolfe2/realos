@@ -114,13 +114,13 @@ Setup in `app/layout.tsx` → mapped to `@theme` variables in `app/globals.css` 
 ### Radius
 | Context | Value | Source |
 |---|---|---|
-| `ls-card` (default card) | `14px` | `globals.css` `.ls-card` |
-| `ls-select`, sidebar item, primary buttons | `8px` | `globals.css` |
-| `ls-alert` | `12px` | `globals.css` |
-| KpiTile focus ring wrapper, icon tiles | `rounded-xl` / `rounded-lg` | `kpi-tile.tsx` |
-| `EmptyState` card | `rounded-xl` | `empty-state.tsx` |
-| shadcn `.input` | `0.375rem` (`6px`) | `globals.css` |
-| Pills / deltas | `999px` | `globals.css` |
+| `ls-card` (default card), `ls-alert`, `EmptyState`, KpiTile | `2px` | `globals.css` `.ls-card` (Carbon retarget) |
+| Buttons, inputs, `ls-select`, sidebar items | `0` | `globals.css` |
+| Icon tiles / avatars (not card wrappers) | `rounded-lg`/`rounded-xl` OK | e.g. lead detail logo tiles |
+| Pills / deltas / status chips | `999px` | `globals.css` |
+| Loading skeleton placeholder blocks | `rounded-xl` (established idiom, pending review) | `app/portal/**/loading.tsx` |
+
+> The 14px/8px/12px values previously listed here predate the Carbon sharp-shape retarget — `globals.css` is the source of truth (cards 2px, controls 0).
 
 ### Shadow (`globals.css` `:root`)
 | Token | Value | Use |
