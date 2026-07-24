@@ -31,7 +31,12 @@ export default function SignInPage() {
           Forcing each column to min-h-screen guarantees vertical
           centering at any zoom level. */}
       <main className="w-full lg:w-[42%] xl:w-[38%] 2xl:w-[34%] lg:min-h-screen flex flex-col bg-white border-r border-border border-t-[3px] border-t-primary">
-        <header className="px-6 lg:px-10 py-5 lg:py-6 flex items-center justify-between">
+        {/* Adam 2026-07-24: the top-right "Create account →" link used to
+            float here, orphaned above the whole form — it had nothing to
+            do with the logo next to it and competed with the real footer
+            action below the form. Header is now logo-only; the sign-up
+            path lives as a proper footer line under the primary action. */}
+        <header className="px-6 lg:px-10 py-5 lg:py-6 flex items-center">
           <Link
             href="/"
             aria-label={BRAND_NAME}
@@ -45,12 +50,6 @@ export default function SignInPage() {
               priority
               className="h-9 w-auto"
             />
-          </Link>
-          <Link
-            href="/sign-up"
-            className="text-xs font-semibold text-primary hover:underline underline-offset-4"
-          >
-            Create account →
           </Link>
         </header>
 
@@ -128,7 +127,10 @@ export default function SignInPage() {
               }}
             />
 
-            <p className="mt-5 text-center text-[11px] text-muted-foreground">
+            {/* Terms sits directly under the primary action — it belongs
+                to the form, not floating between the form and unrelated
+                content below it. */}
+            <p className="mt-4 text-center text-[11px] text-muted-foreground">
               By continuing you agree to our{" "}
               <Link
                 href="/terms"
@@ -146,28 +148,40 @@ export default function SignInPage() {
               .
             </p>
 
-            {/* Invitee recovery hint. Clerk's "Couldn't find your account"
-                message is a dead-end for invitees who arrive here instead
-                of clicking the email's Accept Invitation button — they
-                have a pending DB row but no Clerk account yet. */}
-            <div className="mt-5 rounded-lg border border-border bg-secondary px-4 py-3">
-              <p className="text-xs font-semibold text-foreground">
-                Were you invited to {BRAND_NAME}?
-              </p>
-              <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">
-                Click the{" "}
-                <span className="font-semibold">Accept invitation</span>{" "}
-                button in your invitation email — or{" "}
-                <Link
-                  href="/sign-up"
-                  className="font-semibold text-foreground underline underline-offset-2 hover:no-underline"
-                >
-                  create an account
-                </Link>{" "}
-                with the same email. We&apos;ll route you to the right portal
-                automatically.
-              </p>
-            </div>
+            {/* Primary footer action — the "Create account" path that used
+                to float orphaned at the top now lives here, directly under
+                the form it relates to. */}
+            <p className="mt-5 text-center text-[12.5px] text-muted-foreground">
+              New here?{" "}
+              <Link
+                href="/sign-up"
+                className="font-semibold text-primary hover:underline underline-offset-4"
+              >
+                Create an account →
+              </Link>
+            </p>
+
+            {/* Invitee recovery hint, collapsed to one subtle line instead
+                of a boxed slab — it's a secondary note, not a competing
+                action. Content/link unchanged, just de-weighted visually.
+                Clerk's "Couldn't find your account" message is a dead-end
+                for invitees who arrive here instead of clicking the
+                email's Accept Invitation button — they have a pending DB
+                row but no Clerk account yet. */}
+            <p className="mt-3 text-center text-[11px] text-muted-foreground leading-snug">
+              Invited to {BRAND_NAME}? Use the{" "}
+              <span className="font-medium text-foreground">
+                Accept invitation
+              </span>{" "}
+              button in your email, or{" "}
+              <Link
+                href="/sign-up"
+                className="font-medium text-foreground underline underline-offset-2 hover:no-underline"
+              >
+                create an account
+              </Link>{" "}
+              with the same address.
+            </p>
           </div>
         </div>
 

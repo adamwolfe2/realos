@@ -70,8 +70,17 @@ export function PlatformShowcase() {
           centered container. Wrap everything in a single max-w +
           mx-auto column so the KPI strip, funnel/donut grid, and
           activity feed line up under the centered headline rather
-          than drifting to the left third of the panel. */}
-      <div className="relative z-10 mx-auto max-w-[640px] px-6 pt-16 pb-8">
+          than drifting to the left third of the panel.
+
+          Adam 2026-07-24: was top-anchored (pt-16/pb-8), which left a
+          block of dead gradient below the composition on tall
+          viewports — nothing shared the left column's vertical
+          center. `min-h-full` + `justify-center` (this div's parent
+          chain resolves a real height via the sign-in/sign-up page's
+          `lg:min-h-screen` + `items-stretch` row, same trick as the
+          left column) centers the whole composition in the column so
+          both sides land on the same vertical axis. */}
+      <div className="relative z-10 mx-auto flex min-h-full max-w-[640px] flex-col justify-center px-6 py-12">
         {/* Header marketing copy — centered to match the chart column */}
         <div className="text-center">
           <p className="text-[11px] tracking-[0.18em] uppercase font-semibold text-foreground/60">
@@ -372,7 +381,7 @@ function LeadSourceDonut() {
 
   return (
     <div className="rounded-xl border border-black/[0.06] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04),0_8px_24px_rgba(0,0,0,0.04)] p-4 h-full">
-      <div className="flex items-center gap-1.5 mb-2">
+      <div className="flex items-center gap-1.5 mb-3">
         <Sparkles
           className="w-3 h-3 text-muted-foreground/80"
           aria-hidden="true"
@@ -381,7 +390,13 @@ function LeadSourceDonut() {
           Lead source
         </h3>
       </div>
-      <div className="flex items-center gap-3">
+      {/* Adam 2026-07-24: legend used to sit beside the fixed 120px donut
+          in this narrow (2-of-5-column) card, leaving so little width
+          that labels clipped ("Go…", "Dir…", "M…", "Re…"). Stacking the
+          donut on top and laying the legend out as a 2-column grid below
+          gives every label the full card width regardless of how narrow
+          the card gets — no truncation needed at any breakpoint. */}
+      <div className="flex flex-col items-center gap-3">
         <svg width="120" height="120" viewBox="0 0 120 120" className="shrink-0">
           {/* Track — cool blue-tinted gray so it sits behind the blue slices
               rather than reading as a separate neutral ring. */}
@@ -435,14 +450,14 @@ function LeadSourceDonut() {
             LEADS
           </text>
         </svg>
-        <ul className="flex-1 space-y-1 min-w-0">
+        <ul className="grid w-full grid-cols-2 gap-x-3 gap-y-1.5">
           {SOURCES.map((s) => (
             <li key={s.label} className="flex items-center gap-1.5 text-[10px]">
               <span
                 className="h-2 w-2 rounded-full shrink-0"
                 style={{ backgroundColor: s.color }}
               />
-              <span className="text-muted-foreground truncate">{s.label}</span>
+              <span className="text-muted-foreground">{s.label}</span>
               <span
                 className="ml-auto font-semibold text-foreground tabular-nums"
                 style={NUMBER_FONT}

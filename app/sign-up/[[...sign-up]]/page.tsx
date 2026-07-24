@@ -49,7 +49,10 @@ export default async function SignUpPage({
           column collapses to content height and the form sits at the
           top with dead space below at low zoom. */}
       <main className="w-full lg:w-[42%] xl:w-[38%] 2xl:w-[34%] lg:min-h-screen flex flex-col bg-white border-r border-border border-t-[3px] border-t-primary">
-        <header className="px-6 lg:px-10 py-5 lg:py-6 flex items-center justify-between">
+        {/* Adam 2026-07-24: mirrors /sign-in — header is logo-only, the
+            "Sign in →" path now lives as a footer line under the primary
+            action instead of floating orphaned next to the logo. */}
+        <header className="px-6 lg:px-10 py-5 lg:py-6 flex items-center">
           <Link
             href="/"
             aria-label={BRAND_NAME}
@@ -63,12 +66,6 @@ export default async function SignUpPage({
               priority
               className="h-9 w-auto"
             />
-          </Link>
-          <Link
-            href="/sign-in"
-            className="text-xs font-semibold text-primary hover:underline underline-offset-4"
-          >
-            Sign in →
           </Link>
         </header>
 
@@ -162,7 +159,8 @@ export default async function SignUpPage({
               }}
             />
 
-            <p className="mt-5 text-center text-[11px] text-muted-foreground">
+            {/* Terms directly under the primary action, matching /sign-in. */}
+            <p className="mt-4 text-center text-[11px] text-muted-foreground">
               By creating an account you agree to our{" "}
               <Link
                 href="/terms"
@@ -178,6 +176,19 @@ export default async function SignUpPage({
                 Privacy
               </Link>
               .
+            </p>
+
+            {/* Primary footer action — the "Sign in" path that used to
+                float orphaned at the top now lives here, directly under
+                the form it relates to. */}
+            <p className="mt-5 text-center text-[12.5px] text-muted-foreground">
+              Already have an account?{" "}
+              <Link
+                href="/sign-in"
+                className="font-semibold text-primary hover:underline underline-offset-4"
+              >
+                Sign in →
+              </Link>
             </p>
           </div>
         </div>
