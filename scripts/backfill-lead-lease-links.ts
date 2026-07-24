@@ -20,9 +20,12 @@
 // (updateMany over lower-ranked statuses only — never demotes, mirrors the
 // sync-path rule).
 
-import { PrismaClient, LeadStatus } from "@prisma/client";
+import { LeadStatus } from "@prisma/client";
+import { getPrisma } from "../lib/db";
 
-const prisma = new PrismaClient();
+// Prisma 7 + Neon adapter: bare `new PrismaClient()` no longer works —
+// route through the canonical adapter-backed client.
+const prisma = getPrisma();
 
 const APPLY = process.argv.includes("--apply");
 const orgFlag = process.argv.indexOf("--org");
