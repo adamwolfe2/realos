@@ -51,7 +51,7 @@ export default async function ApiKeysPage() {
         description="Push leads, visitors, tours, and chatbot events into your CRM from any external system (Zapier, Typeform, Make, custom forms). Each key is scoped and auditable."
       />
 
-      <section className="rounded-xl border border-border bg-card p-5 space-y-5">
+      <section className="ls-card p-5 space-y-5">
         <div>
           <h2 className="text-sm font-semibold">Create a key</h2>
           <p className="text-xs text-muted-foreground mt-1">
@@ -62,7 +62,7 @@ export default async function ApiKeysPage() {
         <CreateApiKeyForm />
       </section>
 
-      <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+      <section className="ls-card p-5 space-y-4">
         <div className="flex items-baseline justify-between gap-3">
           <h2 className="text-sm font-semibold">Active keys</h2>
           <span className="text-[11px] text-muted-foreground">
@@ -95,7 +95,7 @@ export default async function ApiKeysPage() {
       </section>
 
       {revoked.length > 0 ? (
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <section className="ls-card p-5 space-y-4">
           <div className="flex items-baseline justify-between gap-3">
             <h2 className="text-sm font-semibold text-muted-foreground">
               Revoked keys
@@ -124,7 +124,7 @@ export default async function ApiKeysPage() {
         </section>
       ) : null}
 
-      <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+      <section className="ls-card p-5 space-y-4">
         <div className="flex items-baseline justify-between gap-3 flex-wrap">
           <h2 className="text-sm font-semibold">How to use</h2>
           <a
@@ -189,7 +189,7 @@ export default async function ApiKeysPage() {
               or updated
             </li>
             <li>
-              <code className="font-mono text-amber-700">400</code> · validation
+              <code className="font-mono text-[#8a6d00]">400</code> · validation
               failed (missing required field, malformed email, etc.) — body
               includes <code className="font-mono">{`{ "error": ..., "details": [...] }`}</code>
             </li>
@@ -202,7 +202,7 @@ export default async function ApiKeysPage() {
               but lacks the required scope
             </li>
             <li>
-              <code className="font-mono text-amber-700">429</code> · rate limit
+              <code className="font-mono text-[#8a6d00]">429</code> · rate limit
               hit
             </li>
             <li>
@@ -299,7 +299,7 @@ function ApiKeyRow({
     expiryBucket === "expired"
       ? "bg-destructive/10 text-destructive"
       : expiryBucket === "soon"
-        ? "bg-amber-50 text-amber-800"
+        ? "bg-[rgba(241,194,27,0.16)] text-[#8a6d00]"
         : expiryBucket === "healthy"
           ? "bg-muted text-muted-foreground"
           : "bg-slate-50 text-muted-foreground";

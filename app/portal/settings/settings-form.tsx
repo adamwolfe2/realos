@@ -274,7 +274,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-border bg-card p-6 shadow-sm">
+    <section className="ls-card p-6">
       <header className="flex items-start justify-between gap-3 mb-5">
         <div className="flex items-start gap-2.5">
           {icon ? (

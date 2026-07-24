@@ -288,8 +288,8 @@ export default async function BillingPage() {
       org.subscriptionStatus !== "CANCELED" &&
       org.subscriptionStatus !== null &&
       new Date(currentPeriodEnd) > new Date() ? (
-        <section className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-          <p className="text-sm font-semibold text-amber-800">
+        <section className="ls-alert ls-alert-warning">
+          <p className="text-sm font-semibold text-foreground">
             Cancels on{" "}
             {new Date(currentPeriodEnd).toLocaleDateString("en-US", {
               year: "numeric",
@@ -297,7 +297,7 @@ export default async function BillingPage() {
               day: "numeric",
             })}
           </p>
-          <p className="text-xs text-amber-700 mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             Your subscription will not renew after this date. Reactivate from the Stripe portal if this was unintended.
           </p>
         </section>
@@ -539,10 +539,10 @@ function Mini({
     tone === "success"
       ? "text-primary"
       : tone === "warn"
-        ? "text-amber-700"
+        ? "text-[#8a6d00]"
         : "text-foreground";
   return (
-    <div className="rounded-xl border border-border bg-card p-4 hover:shadow-[0_2px_8px_rgba(15,23,42,0.04)] transition-all">
+    <div className="ls-card p-4">
       <div className="text-xs tracking-widest uppercase text-muted-foreground">
         {label}
       </div>

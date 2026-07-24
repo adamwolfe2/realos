@@ -161,7 +161,7 @@ export default async function SettingsPage() {
         />
       </div>
 
-      <section className="rounded-xl border border-border bg-card p-5">
+      <section className="ls-card p-5">
         <header className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-start gap-2.5">
             <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted text-muted-foreground">
@@ -182,9 +182,9 @@ export default async function SettingsPage() {
           {modules.map(([k, v]) => (
             <li
               key={k}
-              className={`flex items-center gap-2.5 rounded-md border px-3 py-2 text-xs ${
+              className={`flex items-center gap-2.5 rounded-[2px] border px-3 py-2 text-xs ${
                 v
-                  ? "border-primary/30 bg-primary/10 text-foreground"
+                  ? "border-primary/30 bg-[#edf5ff] text-foreground"
                   : "border-border bg-background text-muted-foreground"
               }`}
             >
@@ -211,7 +211,7 @@ export default async function SettingsPage() {
 
       <section
         id="team"
-        className="rounded-xl border border-border bg-card p-5 scroll-mt-24"
+        className="ls-card p-5 scroll-mt-24"
       >
         <header className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-start gap-2.5">
@@ -258,10 +258,10 @@ function NavCard({
   return (
     <Link
       href={href}
-      className="group rounded-xl border border-border bg-card p-5 shadow-sm transition-colors hover:border-primary/30 hover:bg-primary/[0.02]"
+      className="group ls-card p-5 transition-colors hover:border-primary/30 hover:bg-primary/[0.02]"
     >
       <div className="flex items-start gap-3">
-        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary transition-colors">
+        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[2px] bg-[#edf5ff] text-[#0f62fe] transition-colors">
           {icon}
         </span>
         <div className="min-w-0 flex-1">

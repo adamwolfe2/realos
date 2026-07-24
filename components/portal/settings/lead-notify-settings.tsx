@@ -152,7 +152,7 @@ export function LeadNotifySettings({
   }
 
   return (
-    <section className="rounded-xl border border-border bg-card p-6 shadow-sm">
+    <section className="ls-card p-6">
       <header className="flex items-start gap-2.5 mb-5">
         <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted text-muted-foreground">
           <Bell className="size-4" aria-hidden="true" />

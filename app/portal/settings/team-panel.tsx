@@ -201,11 +201,11 @@ function MemberRow({
               Agency
             </span>
           ) : isPending ? (
-            <span className="inline-flex items-center rounded-full bg-amber-50 text-amber-900 border border-amber-200 px-1.5 py-0.5 text-[10px] font-medium">
+            <span className="ls-pill ls-pill-warning">
               Pending
             </span>
           ) : (
-            <span className="inline-flex items-center rounded-full bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] font-medium">
+            <span className="ls-pill ls-pill-success">
               Active
             </span>
           )}
