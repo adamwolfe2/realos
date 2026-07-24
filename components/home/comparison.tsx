@@ -10,6 +10,8 @@ import {
   Table2,
   FileSignature,
   ArrowDown,
+  Mail,
+  Search,
   type LucideIcon,
 } from "lucide-react";
 import { MARKETING } from "@/lib/copy/marketing";
@@ -18,6 +20,9 @@ import {
   GoogleMark,
   MetaMark,
   GA4Mark,
+  AppFolioMark,
+  TikTokMark,
+  CalcomMark,
   ChatGPTMark,
   ClaudeMark,
   PerplexityMark,
@@ -46,26 +51,34 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 
 type Vendor = {
   name: string;
-  meta: string;
   mark: React.ReactNode;
-  left: string;
-  top: number;
   rotate: number;
 };
 
 function LucideMark({ icon: Icon }: { icon: LucideIcon }) {
-  return <Icon className="w-3.5 h-3.5" strokeWidth={1.9} style={{ color: MUTED }} aria-hidden />;
+  return <Icon className="w-[22px] h-[22px]" strokeWidth={1.7} style={{ color: MUTED }} aria-hidden />;
 }
 
+// Logos only, no card chrome (Adam 2026-07-24): a denser wall of the tools
+// an operator juggles today — every one of them integrates. Real marks where
+// we have them; neutral glyphs for the generic vendor categories.
 const VENDORS: Vendor[] = [
-  { name: "Website vendor", meta: "Login 1 · own invoice", mark: <LucideMark icon={Globe} />, left: "2%", top: 6, rotate: -2.4 },
-  { name: "Google Ads", meta: "Login 2 · own report", mark: <GoogleMark size={14} />, left: "51%", top: 0, rotate: 2 },
-  { name: "Meta Ads", meta: "Login 3 · own report", mark: <MetaMark size={14} />, left: "6%", top: 96, rotate: 1.6 },
-  { name: "Chatbot vendor", meta: "Login 4 · own invoice", mark: <LucideMark icon={MessageSquare} />, left: "54%", top: 102, rotate: -1.8 },
-  { name: "Reviews tool", meta: "Login 5 · own report", mark: <LucideMark icon={Star} />, left: "1%", top: 190, rotate: 2.2 },
-  { name: "Analytics", meta: "Login 6 · own charts", mark: <GA4Mark size={14} />, left: "49%", top: 200, rotate: -1.5 },
-  { name: "ILS listings", meta: "Login 7 · own invoice", mark: <LucideMark icon={Building2} />, left: "5%", top: 286, rotate: -2.1 },
-  { name: "The spreadsheet", meta: "The “integration”", mark: <LucideMark icon={Table2} />, left: "52%", top: 296, rotate: 2.5 },
+  { name: "Google Ads", mark: <GoogleMark size={22} />, rotate: -2.4 },
+  { name: "Meta Ads", mark: <MetaMark size={22} />, rotate: 2 },
+  { name: "Google Analytics", mark: <GA4Mark size={22} />, rotate: 1.6 },
+  { name: "AppFolio", mark: <AppFolioMark size={22} />, rotate: -1.8 },
+  { name: "Google reviews", mark: <SourceGlyph source={toMentionSource("Google")} className="h-[22px] w-[22px]" />, rotate: 2.2 },
+  { name: "Yelp", mark: <SourceGlyph source={toMentionSource("Yelp")} className="h-[22px] w-[22px]" />, rotate: -1.5 },
+  { name: "Facebook", mark: <SourceGlyph source={toMentionSource("Facebook")} className="h-[22px] w-[22px]" />, rotate: -2.1 },
+  { name: "Reddit", mark: <SourceGlyph source={toMentionSource("Reddit")} className="h-[22px] w-[22px]" />, rotate: 2.5 },
+  { name: "TikTok", mark: <TikTokMark size={22} />, rotate: 1.9 },
+  { name: "Tour scheduling", mark: <CalcomMark size={22} />, rotate: -2.2 },
+  { name: "Website vendor", mark: <LucideMark icon={Globe} />, rotate: 2.3 },
+  { name: "Chatbot vendor", mark: <LucideMark icon={MessageSquare} />, rotate: -1.6 },
+  { name: "Reviews tool", mark: <LucideMark icon={Star} />, rotate: 1.7 },
+  { name: "ILS listings", mark: <LucideMark icon={Building2} />, rotate: -2.5 },
+  { name: "Email tool", mark: <LucideMark icon={Mail} />, rotate: 2.1 },
+  { name: "The spreadsheet", mark: <LucideMark icon={Table2} />, rotate: -1.9 },
 ];
 
 const FUNNEL = [
@@ -99,11 +112,11 @@ const ENGINES = [
 
 const REP_MAX = 74;
 
-// Scattered "today" cards. Tilted + muted; hover straightens one out.
+// Logos-only wall. Tilted + muted tiles; hover straightens one out.
 function ScatterCards({ on }: { on: boolean }) {
   const reduce = useReducedMotion();
   return (
-    <div className="relative mx-auto w-full max-w-[440px]" style={{ height: 372 }}>
+    <div className="mx-auto grid w-full max-w-[400px] grid-cols-4 gap-3.5">
       {VENDORS.map((v, i) => (
         <motion.div
           key={v.name}
@@ -113,30 +126,20 @@ function ScatterCards({ on }: { on: boolean }) {
               ? { opacity: 1, y: 0, rotate: v.rotate }
               : { opacity: on ? 1 : 0, y: on ? 0 : 16, rotate: on ? v.rotate : 0 }
           }
-          whileHover={reduce ? undefined : { rotate: 0, scale: 1.02 }}
-          transition={{ duration: 0.5, ease: EASE, delay: reduce ? 0 : i * 0.06 }}
-          className="absolute"
+          whileHover={reduce ? undefined : { rotate: 0, scale: 1.06 }}
+          transition={{ duration: 0.5, ease: EASE, delay: reduce ? 0 : i * 0.045 }}
+          className="flex items-center justify-center"
+          title={v.name}
+          aria-label={v.name}
           style={{
-            left: v.left,
-            top: v.top,
-            width: "46%",
-            minWidth: 164,
+            aspectRatio: "1 / 1",
             backgroundColor: "#fbfbfb",
             border: `1px solid ${BORDER}`,
             borderRadius: 2,
-            padding: "11px 13px",
             boxShadow: "0 1px 2px rgba(22,22,22,0.05), 0 10px 20px -12px rgba(22,22,22,0.12)",
           }}
         >
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center justify-center flex-shrink-0" style={{ width: 22, height: 22, borderRadius: 2, backgroundColor: "#f0f1f4" }} aria-hidden>
-              {v.mark}
-            </span>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 600, color: "#525252" }}>{v.name}</span>
-          </div>
-          <p className="mt-1.5" style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.05em", textTransform: "uppercase", color: FAINT }}>
-            {v.meta}
-          </p>
+          {v.mark}
         </motion.div>
       ))}
     </div>
@@ -350,7 +353,9 @@ function FullDashboard({ on }: { on: boolean }) {
           <FileSignature className="w-4 h-4 flex-shrink-0" strokeWidth={1.8} style={{ color: "#24a148" }} aria-hidden />
           <p style={{ fontFamily: "var(--font-sans)", fontSize: 13.5, fontWeight: 600, color: INK, lineHeight: 1.35 }}>
             This lease came from Google Ads.{" "}
-            <span style={{ fontWeight: 400, color: MUTED }}>You can see it.</span>
+            <span style={{ fontWeight: 400, color: MUTED }}>
+              Campaign → click → tour → signed, one traced line.
+            </span>
           </p>
         </motion.div>
       </div>
