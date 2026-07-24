@@ -20,6 +20,7 @@ import { CallSheet } from "@/components/portal/briefing/call-sheet";
 import { TranscriptList } from "@/components/portal/briefing/transcript-list";
 import { SinceBanner } from "@/components/portal/briefing/since-banner";
 import { MetricStrip } from "@/components/portal/briefing/metric-strip";
+import { StaggerGroup, StaggerItem } from "@/components/portal/ui/motion";
 import {
   getBriefingMetrics,
   getCallPriorityLeads,
@@ -255,9 +256,16 @@ export default async function BriefingPage({
                 Detectors are quiet this session. Nothing anomalous.
               </p>
             ) : (
-              insightCards.slice(0, 4).map((insight) => (
-                <InsightCard key={insight.id} insight={insight} dense />
-              ))
+              // Insight rows roll in from the left, staggered — mirrors the
+              // marketing walkthrough's ScreenBriefing (motion pass
+              // 2026-07-24). Presentation only.
+              <StaggerGroup className="space-y-2">
+                {insightCards.slice(0, 4).map((insight, i) => (
+                  <StaggerItem key={insight.id} index={i} direction="left">
+                    <InsightCard insight={insight} dense />
+                  </StaggerItem>
+                ))}
+              </StaggerGroup>
             )}
           </DashboardSection>
         </div>

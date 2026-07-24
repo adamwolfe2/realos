@@ -1,5 +1,9 @@
+"use client";
+
 import { ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { StaggerGroup, StaggerItem, SPRING_POP } from "@/components/portal/ui/motion";
+import { motion, useReducedMotion } from "framer-motion";
 
 type Metric = {
   label: string;
@@ -63,16 +67,22 @@ export function MetricStrip({
   // now renders with bigger typography + a delta chip below the value
   // so the morning briefing feels like a real KPI surface rather than
   // a "label · value · pct" inline row.
+  // Rows roll in staggered, each delta chip springing in just after
+  // (motion pass 2026-07-24, mirrors the marketing walkthrough's insight
+  // delta pop). Presentation only — values/deltas are unchanged.
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-3">
-      {rows.map((r) => (
-        <MetricRow key={r.label} metric={r} />
+    <StaggerGroup className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-3">
+      {rows.map((r, i) => (
+        <StaggerItem key={r.label} index={i}>
+          <MetricRow metric={r} index={i} />
+        </StaggerItem>
       ))}
-    </div>
+    </StaggerGroup>
   );
 }
 
-function MetricRow({ metric }: { metric: Metric }) {
+function MetricRow({ metric, index }: { metric: Metric; index: number }) {
+  const reduce = useReducedMotion();
   const deltaTone = toneFor(metric.deltaPct, metric.good);
   const Icon =
     metric.deltaPct === null
@@ -92,17 +102,20 @@ function MetricRow({ metric }: { metric: Metric }) {
         <span className="text-xl font-semibold tabular-nums tracking-tight text-foreground leading-none">
           {metric.value}
         </span>
-        <span
+        <motion.span
           className={cn(
             "inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums shrink-0",
             deltaTone,
           )}
+          initial={reduce ? false : { scale: 0.6, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ ...SPRING_POP, delay: reduce ? 0 : 0.15 + Math.min(index, 12) * 0.06 }}
         >
           <Icon className="h-2.5 w-2.5" />
           {metric.deltaPct === null
             ? "new"
             : `${metric.deltaPct >= 0 ? "+" : ""}${metric.deltaPct}%`}
-        </span>
+        </motion.span>
       </div>
     </div>
   );
