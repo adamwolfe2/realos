@@ -12,6 +12,7 @@ import {
   FROM_EMAIL,
 } from "@/lib/email/shared";
 import { verifyCronAuth } from "@/lib/cron/auth";
+import { AGENCY_ROLES } from "@/lib/agency/role-rank";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -22,7 +23,7 @@ export const maxDuration = 300;
 // Fires every Monday at 09:00 UTC (vercel.json). For every org that has opted
 // into auto-send (reportAutoSend === true) AND has real data this week (at
 // least one lead, ad spend, or organic session) it builds a digest and emails
-// every org member.
+// the org's agency-side operator/admin members (see recipient query below).
 //
 // White-glove constraint: mirrors weekly-report's auto-send gate — an org
 // that hasn't opted in never gets an automated numbers email the operator
@@ -66,9 +67,12 @@ export async function GET(req: NextRequest) {
           continue;
         }
 
-        // Resolve recipient emails from org members
+        // Resolve recipient emails from org members. White-glove: these
+        // are unreviewed live numbers, so only agency-side operator/admin
+        // roles get them — client-role users always see numbers through
+        // the reviewed weekly-report draft/share flow instead.
         const members = await prisma.user.findMany({
-          where: { orgId: org.id },
+          where: { orgId: org.id, role: { in: [...AGENCY_ROLES] } },
           select: { email: true },
         });
 

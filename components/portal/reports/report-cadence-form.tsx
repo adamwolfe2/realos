@@ -13,9 +13,19 @@ import { LocalTime } from "@/components/portal/reports/schedule-times";
 // per line), and auto-send toggle. Auto-send is force-disabled in the
 // UI when there are no valid recipients OR cadence is "none" — keeps
 // the operator from silently configuring a non-functional state.
+//
+// "Daily" is intentionally NOT offered as a selectable cadence — no cron
+// consumes it (vercel.json only schedules weekly-report / weekly-digest /
+// monthly-report), so selecting it would silently never fire. It stays in
+// the `Cadence` type so a previously-persisted "daily" value renders
+// truthfully as an inert, disabled option instead of being coerced away —
+// selecting it is not possible, but we never rewrite the stored value out
+// from under the operator without their explicit save.
 // ---------------------------------------------------------------------------
 
 type Cadence = "none" | "daily" | "weekly" | "monthly";
+
+const VALID_CADENCES: readonly Cadence[] = ["none", "daily", "weekly", "monthly"];
 
 // Schedule times render with the viewer's local equivalent appended
 // (LocalTime) — UTC-only labels invite misconfigured sends.
@@ -28,16 +38,6 @@ const CADENCE_OPTIONS: Array<{
     value: "none",
     label: "Off",
     hint: "Draft only — reports are reviewed and shared manually",
-  },
-  {
-    value: "daily",
-    label: "Daily",
-    hint: (
-      <>
-        Every day at 07:30 UTC
-        <LocalTime hourUtc={7} minuteUtc={30} />
-      </>
-    ),
   },
   {
     value: "weekly",
@@ -69,8 +69,9 @@ export function ReportCadenceForm({
   initial: { cadence: string; recipients: string[]; autoSend: boolean };
 }) {
   const [cadence, setCadence] = useState<Cadence>(
-    (CADENCE_OPTIONS.find((o) => o.value === initial.cadence)?.value ??
-      "none") as Cadence,
+    VALID_CADENCES.includes(initial.cadence as Cadence)
+      ? (initial.cadence as Cadence)
+      : "none",
   );
   const [recipientText, setRecipientText] = useState(
     initial.recipients.join("\n"),
@@ -95,7 +96,10 @@ export function ReportCadenceForm({
     return out;
   }, [recipientText]);
 
-  const canAutoSend = cadence !== "none" && parsedRecipients.length > 0;
+  // "daily" is an inert, non-selectable holdover (see Cadence comment
+  // above) — never functional, so it can never enable auto-send either.
+  const canAutoSend =
+    cadence !== "none" && cadence !== "daily" && parsedRecipients.length > 0;
   // Force the toggle off whenever the upstream conditions don't allow
   // auto-send, but preserve the operator's intent by keeping the local
   // state — so flipping recipients back on restores autoSend without
@@ -132,6 +136,27 @@ export function ReportCadenceForm({
           Cadence
         </legend>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {cadence === "daily" ? (
+            <label className="flex flex-col gap-0.5 rounded-lg border border-border bg-muted/30 p-3 opacity-70 cursor-not-allowed">
+              <span className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="cadence"
+                  checked
+                  disabled
+                  readOnly
+                  className="h-3.5 w-3.5"
+                />
+                <span className="text-sm font-semibold text-foreground">
+                  Daily (not yet available)
+                </span>
+              </span>
+              <span className="text-[11.5px] text-muted-foreground pl-[22px]">
+                Daily sends aren&apos;t supported — pick Weekly or Monthly
+                to replace this.
+              </span>
+            </label>
+          ) : null}
           {CADENCE_OPTIONS.map((opt) => {
             const checked = cadence === opt.value;
             return (
@@ -209,7 +234,9 @@ export function ReportCadenceForm({
             <p className="text-[11.5px] text-amber-700 mt-1.5">
               {cadence === "none"
                 ? "Select a cadence other than Off to enable automatic sending."
-                : "Add at least one valid recipient email to enable automatic sending."}
+                : cadence === "daily"
+                  ? "Daily isn't available — switch to Weekly or Monthly to enable automatic sending."
+                  : "Add at least one valid recipient email to enable automatic sending."}
             </p>
           ) : null}
         </div>

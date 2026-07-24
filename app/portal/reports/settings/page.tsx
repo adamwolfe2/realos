@@ -35,10 +35,9 @@ function nextScheduledRunUtc(cadence: string, now: Date): Date | null {
   const y = now.getUTCFullYear();
   const m = now.getUTCMonth();
   const d = now.getUTCDate();
-  if (cadence === "daily") {
-    const today = Date.UTC(y, m, d, 7, 30);
-    return new Date(today > now.getTime() ? today : today + DAY_MS);
-  }
+  // "daily" is a legacy-persisted value only — no cron consumes it (see
+  // ReportCadenceForm), so it must never claim a real next-run time.
+  if (cadence === "daily") return null;
   if (cadence === "weekly") {
     const todayRun = Date.UTC(y, m, d, 7, 0);
     const daysToMonday = (1 - new Date(todayRun).getUTCDay() + 7) % 7;
@@ -134,12 +133,6 @@ export default async function ReportCadenceSettingsPage() {
             <span className="font-semibold text-foreground">Monthly</span>:
             reports generate on the 1st of each month at 07:00 UTC
             <LocalTime hourUtc={7} />.
-          </li>
-          <li>
-            <span className="font-semibold text-foreground">Daily</span>:
-            reports generate every day at 07:30 UTC
-            <LocalTime hourUtc={7} minuteUtc={30} />. Weekly is the
-            recommended cadence for most portfolios.
           </li>
           <li>
             <span className="font-semibold text-foreground">Off</span>{" "}
