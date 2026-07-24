@@ -1,4 +1,7 @@
+"use client";
+
 import * as React from "react";
+import { GrowBar, StaggerGroup, StaggerItem } from "@/components/portal/ui/motion";
 
 // ---------------------------------------------------------------------------
 // SourceBars — visual ranking list. Per the premium-dashboard pass the
@@ -68,8 +71,8 @@ export function SourceBars({
   }
 
   return (
-    <ul className="space-y-2.5">
-      {visible.map((row) => {
+    <StaggerGroup as="ul" className="space-y-2.5">
+      {visible.map((row, i) => {
         const pct = reference > 0 ? (row.value / reference) * 100 : 0;
         const Content = (
           <>
@@ -95,17 +98,21 @@ export function SourceBars({
                 ) : null}
               </span>
             </div>
-            <div className="h-1.5 rounded-none bg-muted overflow-hidden">
-              <div
-                className="h-full rounded-none bg-primary transition-[width] duration-300"
-                style={{ width: `${Math.max(2, Math.min(100, pct))}%` }}
-              />
-            </div>
+            {/* Bar grows to its share once on first view (motion pass
+                2026-07-24), same GrowBar used by the marketing dashboard
+                mock's lead-source rows. */}
+            <GrowBar
+              percent={Math.max(2, Math.min(100, pct))}
+              height={6}
+              radius={0}
+              trackColor="var(--color-muted, #F3F4F6)"
+              delay={0.05 + i * 0.06}
+            />
           </>
         );
 
         return (
-          <li key={row.id ?? row.label} className="min-w-0">
+          <StaggerItem as="li" index={i} key={row.id ?? row.label} className="min-w-0">
             {row.href ? (
               <a
                 href={row.href}
@@ -116,9 +123,9 @@ export function SourceBars({
             ) : (
               Content
             )}
-          </li>
+          </StaggerItem>
         );
       })}
-    </ul>
+    </StaggerGroup>
   );
 }

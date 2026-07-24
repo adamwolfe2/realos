@@ -1,4 +1,8 @@
+"use client";
+
 import * as React from "react";
+import { motion, useInView, useReducedMotion } from "framer-motion";
+import { EASE_OUT } from "@/components/portal/ui/motion";
 
 export type FunnelStage = {
   label: string;
@@ -61,6 +65,11 @@ function fillFor(i: number, total: number): string {
 }
 
 export function ConversionFunnel({ stages }: { stages: FunnelStage[] }) {
+  const ref = React.useRef<SVGSVGElement>(null);
+  const inView = useInView(ref, { once: true, margin: "0px 0px -10% 0px" });
+  const reduce = useReducedMotion();
+  const on = reduce ? true : inView;
+
   if (stages.length === 0) return null;
 
   const n = stages.length;
@@ -85,6 +94,7 @@ export function ConversionFunnel({ stages }: { stages: FunnelStage[] }) {
   return (
     <div className="w-full">
       <svg
+        ref={ref}
         viewBox={`0 0 ${VIEW_W} ${TOTAL_H}`}
         preserveAspectRatio="none"
         className="w-full h-auto"
@@ -111,26 +121,35 @@ export function ConversionFunnel({ stages }: { stages: FunnelStage[] }) {
           strokeWidth={1}
         />
 
-        {/* The funnel slices. */}
+        {/* The funnel slices — grow up from the baseline with a stagger on
+            first view (motion pass 2026-07-24), mirroring the marketing
+            walkthrough's GrowBar. transform-box: fill-box scales each
+            slice from its own bottom edge instead of the SVG origin. */}
         {stages.map((s, i) => {
           const x1 = i * stageW;
           const x2 = (i + 1) * stageW;
           const pts = `${x1},${yTopAt(i)} ${x2},${yTopAt(i + 1)} ${x2},${yBotAt(i + 1)} ${x1},${yBotAt(i)}`;
+          const delay = reduce ? 0 : 0.1 + i * 0.09;
           // Hairline gap between slices reads as polished, like Sankey
           // segments. 2px stroke in the slice fill color tightens edges.
           return (
-            <polygon
+            <motion.polygon
               key={s.label}
               points={pts}
               fill={fillFor(i, n)}
               stroke="white"
               strokeWidth={2}
               strokeLinejoin="round"
+              initial={false}
+              animate={{ scaleY: on ? 1 : 0, opacity: on ? 1 : 0 }}
+              transition={{ duration: 0.55, ease: EASE_OUT, delay }}
+              style={{ transformBox: "fill-box", transformOrigin: "50% 100%" }}
             />
           );
         })}
 
-        {/* Number inside each slice — vertically centered. */}
+        {/* Number inside each slice — vertically centered. Fades in just
+            after its slice finishes growing. */}
         {stages.map((s, i) => {
           const cx = i * stageW + stageW / 2;
           const cy = FUNNEL_H / 2 + 8;
@@ -140,8 +159,9 @@ export function ConversionFunnel({ stages }: { stages: FunnelStage[] }) {
           const sliceMidH =
             (sliceHeightAt(i) + sliceHeightAt(i + 1)) / 2;
           if (sliceMidH < 36) return null;
+          const delay = reduce ? 0 : 0.35 + i * 0.09;
           return (
-            <text
+            <motion.text
               key={`v-${s.label}`}
               x={cx}
               y={cy}
@@ -150,9 +170,12 @@ export function ConversionFunnel({ stages }: { stages: FunnelStage[] }) {
               fontWeight={600}
               fill="white"
               style={{ fontVariantNumeric: "tabular-nums" }}
+              initial={false}
+              animate={{ opacity: on ? 1 : 0 }}
+              transition={{ duration: 0.3, ease: EASE_OUT, delay }}
             >
               {s.notApplicable ? "—" : s.value.toLocaleString()}
-            </text>
+            </motion.text>
           );
         })}
 
@@ -170,8 +193,14 @@ export function ConversionFunnel({ stages }: { stages: FunnelStage[] }) {
             !naConversion && prev && prev > 0
               ? Math.round((s.value / prev) * 100)
               : null;
+          const delay = reduce ? 0 : 0.42 + i * 0.09;
           return (
-            <g key={`l-${s.label}`}>
+            <motion.g
+              key={`l-${s.label}`}
+              initial={false}
+              animate={{ opacity: on ? 1 : 0, y: on ? 0 : 6 }}
+              transition={{ duration: 0.35, ease: EASE_OUT, delay }}
+            >
               <text
                 x={cx}
                 y={FUNNEL_H + 26}
@@ -216,7 +245,7 @@ export function ConversionFunnel({ stages }: { stages: FunnelStage[] }) {
                   top of funnel
                 </text>
               ) : null}
-            </g>
+            </motion.g>
           );
         })}
       </svg>

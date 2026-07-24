@@ -4,6 +4,7 @@ import * as React from "react";
 import dynamic from "next/dynamic";
 import type { LeadSourceDonutChartDatum } from "./lead-source-donut-chart";
 import { SourceBars } from "./source-bars";
+import { StaggerGroup, StaggerItem } from "@/components/portal/ui/motion";
 
 // Defer the recharts-bearing inner chart so the dashboard initial bundle
 // doesn't ship recharts. The legend below the chart renders immediately
@@ -86,13 +87,16 @@ export function LeadSourceDonut({ slices }: { slices: LeadSourceSlice[] }) {
         </div>
       </div>
 
-      <ul className="space-y-1.5">
-        {data.map((d) => {
+      <StaggerGroup as="ul" className="space-y-1.5">
+        {data.map((d, i) => {
           const pct = total ? Math.round((d.value / total) * 100) : 0;
           return (
-            <li
+            <StaggerItem
+              as="li"
+              index={i}
               key={d.name}
               className="grid grid-cols-[12px_1fr_auto_42px] items-center gap-2.5 text-xs"
+              direction="left"
             >
               <span
                 aria-hidden="true"
@@ -104,10 +108,10 @@ export function LeadSourceDonut({ slices }: { slices: LeadSourceSlice[] }) {
               <span className="text-right tabular-nums text-muted-foreground">
                 {pct}%
               </span>
-            </li>
+            </StaggerItem>
           );
         })}
-      </ul>
+      </StaggerGroup>
     </div>
   );
 }
