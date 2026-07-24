@@ -401,8 +401,22 @@ export async function fetchAppfolioV1Showings(
 //   - everything else: returned as-is for the caller to decide
 const RETRY_DELAY_MS = 2000;
 /** Per-request AppFolio fetch timeout. A hung report request otherwise leaves
- *  the sync stuck in syncStatus='syncing' until the Vercel function is killed. */
-const APPFOLIO_FETCH_TIMEOUT_MS = 15000;
+ *  the sync stuck in syncStatus='syncing' until the Vercel function is killed.
+ *
+ *  Was 15000. For large multi-hundred-resident portfolios (Telegraph Commons
+ *  + SG Real Estate both >500 residents — see the STUCK_THRESHOLD_MS comment
+ *  in app/api/cron/appfolio-sync/route.ts), AppFolio's v2 report endpoint can
+ *  legitimately take longer than 15s to generate the FIRST page of
+ *  tenant_directory / unit_directory / lease-adjacent reports server-side.
+ *  Unlike 429/5xx, a client-side timeout is NOT retried (shouldRetryStatus
+ *  never runs — fetch rejects before a Response exists), so every report that
+ *  crosses 15s hard-fails that phase immediately with "The operation was
+ *  aborted due to timeout" and no second attempt. Doubling the budget gives
+ *  slow-but-successful report generations room to finish instead of getting
+ *  killed mid-flight; the existing 8-10 min stuck-run self-heal (both here
+ *  and in appfolio-sync.ts) already tolerates multi-minute total run times,
+ *  so this stays well inside that budget. */
+const APPFOLIO_FETCH_TIMEOUT_MS = 30000;
 
 function shouldRetryStatus(status: number): boolean {
   if (status === 429) return true;

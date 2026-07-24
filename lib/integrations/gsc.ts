@@ -42,9 +42,43 @@ function jwtFromJson(json: string): JWT {
   });
 }
 
-function jwtFromEncrypted(encrypted: string): JWT {
+// The self-serve /api/oauth/gsc/connect flow (lib/integrations/oauth-handler.ts
+// persistTokens) writes a DIFFERENT JSON shape into the same
+// serviceAccountJsonEncrypted column: { kind: "oauth", access_token,
+// refresh_token, expires_at }. jwtFromJson above expects client_email +
+// private_key — fed an oauth blob, credentials.client_email/private_key are
+// undefined and the JWT signer throws on every single call. Detect the oauth
+// shape here and build a refreshable OAuth2Client instead, so tenants who
+// connected via the OAuth button (rather than pasting a service-account key)
+// actually sync. GOOGLE_OAUTH_CLIENT_ID/SECRET are guaranteed present here —
+// they gate the connect flow itself (oauth-config.ts), so if a row has an
+// oauth blob those env vars were already required to create it.
+function authFromDecryptedJson(json: string): GoogleAuth {
+  const parsed = JSON.parse(json) as
+    | { kind: "oauth"; access_token: string; refresh_token: string | null; expires_at: string | null }
+    | { client_email: string; private_key: string };
+  if ("kind" in parsed && parsed.kind === "oauth") {
+    const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+    if (!clientId || !clientSecret) {
+      throw new Error(
+        "GSC: stored credentials are an OAuth token but GOOGLE_OAUTH_CLIENT_ID/GOOGLE_OAUTH_CLIENT_SECRET are not configured — cannot refresh the access token.",
+      );
+    }
+    const client = new google.auth.OAuth2(clientId, clientSecret);
+    client.setCredentials({
+      access_token: parsed.access_token,
+      refresh_token: parsed.refresh_token ?? undefined,
+      expiry_date: parsed.expires_at ? new Date(parsed.expires_at).getTime() : undefined,
+    });
+    return client;
+  }
+  return jwtFromJson(json);
+}
+
+function jwtFromEncrypted(encrypted: string): GoogleAuth {
   const decrypted = decrypt(encrypted);
-  return jwtFromJson(decrypted);
+  return authFromDecryptedJson(decrypted);
 }
 
 /**
