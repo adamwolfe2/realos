@@ -283,7 +283,7 @@ export default async function PortalWelcomePage() {
             description="A per-property site goes live as soon as you pick a style and add basics."
           />
           <NextStepLink
-            href={`mailto:hello@leasestack.co?subject=Walkthrough%20for%20${encodeURIComponent(org.name)}`}
+            href={`mailto:team@leasestack.co?subject=Walkthrough%20for%20${encodeURIComponent(org.name)}`}
             icon={Calendar}
             label="Book a 30-min walkthrough"
             description="Our team walks you through what's most valuable for your portfolio."

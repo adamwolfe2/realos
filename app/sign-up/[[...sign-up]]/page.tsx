@@ -187,10 +187,10 @@ export default async function SignUpPage({
             &copy; {new Date().getFullYear()} {BRAND_NAME}
           </span>
           <a
-            href="mailto:hello@leasestack.co"
+            href="mailto:team@leasestack.co"
             className="hover:text-foreground"
           >
-            hello@leasestack.co
+            team@leasestack.co
           </a>
         </footer>
       </main>

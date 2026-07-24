@@ -81,7 +81,7 @@ export function SourceLogo({
   const domain = SOURCE_DOMAIN[src.id];
   const [imgFailed, setImgFailed] = React.useState(false);
 
-  const radius = Math.round(size * 0.26);
+  const radius = 2; // matches .ls-card token — fixed radius, not proportional
   const Glyph = GLYPH[src.logo];
 
   // 1. Real brand logo (local asset) on a white tile.

@@ -679,9 +679,7 @@ body {
 
 /* ── Sidebar premium polish ────────────────────────────────────────────── */
 .ls-sidebar {
-  background:
-    radial-gradient(ellipse at 0% 0%, var(--brand-wash) 0%, transparent 55%),
-    var(--white);
+  background: var(--white);
   border-right: 1px solid var(--hair);
 }
 .ls-sidebar-section-label {
@@ -722,7 +720,6 @@ body {
   height: 18px;
   background: var(--terracotta);
   border-radius: 0 2px 2px 0;
-  box-shadow: 0 0 8px var(--brand-glow);
 }
 
 /* ── Status pill polish ────────────────────────────────────────────────── */
