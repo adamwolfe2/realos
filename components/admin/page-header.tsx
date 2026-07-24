@@ -112,7 +112,7 @@ export function SectionCard({
         className,
       )}
     >
-      <div className="flex items-baseline justify-between gap-3 mb-3">
+      <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-3 mb-3">
         <div className="min-w-0">
           <h2
             className="text-[14px] font-semibold tracking-tight text-foreground leading-tight"
