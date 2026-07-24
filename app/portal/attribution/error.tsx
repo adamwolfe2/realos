@@ -29,8 +29,8 @@ export default function AttributionError({
           Attribution view temporarily unavailable.
         </p>
         <p className="mt-1 text-xs leading-snug">
-          The data may be partially seeded. Refresh in a moment, or check the
-          dashboard for the rolled-up version.
+          Some of this data may still be loading. Refresh in a moment, or
+          check the dashboard for the rolled-up view.
         </p>
         <div className="mt-2 flex items-center gap-3">
           <button

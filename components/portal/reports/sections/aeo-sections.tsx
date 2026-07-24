@@ -382,8 +382,9 @@ export function AiVisibilitySection({
         ) : null}
         <p className="text-[11px] text-muted-foreground leading-relaxed">
           Branded search clicks reflect how often people search for the
-          property by name. Growing this also improves visibility in
-          AI-powered recommendations.
+          property by name. Growing this also improves how often ChatGPT,
+          Claude, and Perplexity cite the property when people ask about
+          the area.
         </p>
       </div>
     </Section>

@@ -508,7 +508,7 @@ function SeoEmptyShell({
             <Search className="h-6 w-6" />
           </div>
           <h2 className="text-xl font-semibold text-foreground tracking-tight">
-            Your SEO command center
+            Clicks, top queries, and page rankings
           </h2>
           <p className="mt-2 text-[13px] text-muted-foreground max-w-sm leading-relaxed">
             Connect Google Search Console and Analytics 4. See exactly which

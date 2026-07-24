@@ -74,7 +74,7 @@ export default async function CreativePage() {
       {requests.length === 0 ? (
         <EmptyState
           title="No creative requests yet"
-          body="Start one from the button above — the studio takes it from there."
+          body="Submit a request and the agency team delivers a draft for your review."
           action={{ label: "New request", href: "/portal/creative/new" }}
         />
       ) : (

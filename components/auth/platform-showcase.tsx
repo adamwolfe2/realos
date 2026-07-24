@@ -519,12 +519,12 @@ function ActivityFeed() {
         <div className="flex items-center gap-1.5">
           <Activity className="w-3 h-3 text-muted-foreground/80" aria-hidden="true" />
           <h3 className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground/90">
-            Live activity
+            Activity feed
           </h3>
         </div>
         <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-emerald-700">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          Real-time
+          Sample feed
         </span>
       </div>
       <ul className="space-y-1.5">

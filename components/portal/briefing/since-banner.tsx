@@ -56,7 +56,7 @@ export function SinceBanner({
       <div className="min-w-0">
         <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
           <Gauge className="h-3 w-3" />
-          Command Center
+          Since Last Briefing
         </div>
         <p className="mt-0.5 text-[13px] tracking-tight text-foreground font-medium leading-snug">
           {sinceLabel}

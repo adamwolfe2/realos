@@ -434,7 +434,7 @@ function AgingAlertBanner({
       <AlertTriangle className="h-4 w-4 text-primary mt-0.5 shrink-0" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground">
-          {stale} lead{stale === 1 ? "" : "s"} {stale === 1 ? "is" : "are"} 15+ days old — conversion drops sharply after 14 days. Contact today.
+          {stale} lead{stale === 1 ? "" : "s"} {stale === 1 ? "is" : "are"} 15+ days old — the longer they sit, the colder they get. Contact today.
         </p>
         {aging > 0 && (
           <p className="text-xs text-muted-foreground mt-0.5">

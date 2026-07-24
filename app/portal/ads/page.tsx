@@ -352,7 +352,7 @@ export default async function AdsPage({
       <DashboardSection
         eyebrow="28-day attribution"
         title="Marketing ROI by channel"
-        description="Spend, leads, applications, and signed leases per source. The funnel breakdown that tells you what's working."
+        description="Spend, leads, applications, and signed leases per source."
       >
         <MarketingRoiTable rows={roiRows} />
       </DashboardSection>

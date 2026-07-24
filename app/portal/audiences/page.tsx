@@ -308,7 +308,7 @@ export default async function AudiencesPage() {
         title="Available segments"
         description={
           segments.length === 0
-            ? "Click Add segment to paste a segment ID. We validate it on save and unlock everything else from there."
+            ? "Click Add segment to paste a segment ID. We validate it on save; once it's valid you can sync it to destinations and put it on a schedule."
             : `${segments.length} segment${segments.length === 1 ? "" : "s"} ready to push. Search, filter, and push inline without leaving the page.`
         }
         href="/portal/audiences/destinations"

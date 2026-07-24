@@ -217,7 +217,7 @@ export default async function ResidentsPage({
 
       <PageHeader
         title="Residents"
-        description="Active roster mirrored from AppFolio. Source of truth for resident records remains AppFolio; this view is read-only."
+        description="Mirrored from AppFolio — read-only here; edit residents in AppFolio."
         actions={
           <div className="flex items-center gap-3 flex-wrap justify-end">
             <span className="text-[11px] text-muted-foreground hidden md:inline-block">
@@ -547,7 +547,7 @@ export default async function ResidentsPage({
       <div className="space-y-4">
         <PageHeader
           title="Residents"
-          description="Active roster mirrored from AppFolio. Source of truth for resident records remains AppFolio; this view is read-only."
+          description="Mirrored from AppFolio — read-only here; edit residents in AppFolio."
         />
         <div className="rounded-[2px] border border-border bg-secondary px-4 py-3 text-sm text-foreground">
           Resident data could not be loaded.{" "}

@@ -88,7 +88,7 @@ export default async function SchedulesPage({
           </Link>
         }
         title="Scheduled syncs"
-        description="Push a segment to a destination on a daily or weekly cadence. The system handles the runs while you focus on the campaign."
+        description="Push a segment to a destination on a daily or weekly cadence. Every run and its result is logged in Sync history."
       />
 
       <section

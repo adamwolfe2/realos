@@ -71,7 +71,7 @@ export function AppFolioStatusBanner({
         tone="muted"
         icon={<Plug className="h-4 w-4" />}
         title={`Connect AppFolio to mirror ${resourceLabel}.`}
-        body={`AppFolio remains your source of truth. Once connected, LeaseStack pulls ${resourceLabel} on an hourly schedule so you never have to leave AppFolio for routine reporting.`}
+        body={`Keep managing records in AppFolio as usual. Once connected, LeaseStack pulls ${resourceLabel} on an hourly schedule so you never have to leave AppFolio for routine reporting.`}
         action={
           <Link
             href="/portal/connect"
@@ -263,8 +263,8 @@ export function AppFolioStatusBanner({
         )}`}
         body={
           statsSummary
-            ? `${statsSummary} AppFolio remains the source of truth.`
-            : `AppFolio remains the source of truth for ${resourceLabel}. This view is read-only.`
+            ? `${statsSummary} Mirrored from AppFolio — edit records there.`
+            : `Mirrored from AppFolio — read-only here; edit ${resourceLabel} in AppFolio.`
         }
         action={<RunAppFolioSyncButton label="Sync now" subtle />}
       />
