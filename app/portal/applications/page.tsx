@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { FileText, CheckCircle2, X, Clock, Inbox } from "lucide-react";
-import { format, formatDistanceToNow } from "date-fns";
+import { Inbox, Clock, CheckCircle2, Timer } from "lucide-react";
+import { differenceInCalendarDays } from "date-fns";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { requireModule } from "@/lib/portal/module-gate";
@@ -16,12 +16,11 @@ import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-banner";
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
-import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
-import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
 import { EmptyState } from "@/components/portal/ui/empty-state";
 import { ApplicationStatus } from "@prisma/client";
 import { getApplicationsByUnit } from "@/lib/applications/queries";
 import { UnitApplicationsBoard } from "@/components/portal/applications/unit-applications-board";
+import { ApplicationsPipelineTable } from "@/components/portal/applications/applications-pipeline-table";
 
 export const metadata: Metadata = { title: "Applications" };
 export const dynamic = "force-dynamic";
@@ -31,37 +30,15 @@ export const dynamic = "force-dynamic";
 //
 // Applications are stored in the schema (Application + ApplicationStatus enum)
 // but had no client-facing UI. Operators had to drop into AppFolio to review.
-// This page exposes the pipeline as a kanban so the agency + client can see
-// every application from started through approval/denial — and click into the
-// originating lead.
+// This page exposes the pipeline as a single dense table (by unit, or flat
+// pipeline order) so the agency + client can see every application from
+// started through approval/denial — and click into the originating lead.
 // ---------------------------------------------------------------------------
 
-const STATUS_LABEL: Record<ApplicationStatus, string> = {
-  STARTED: "Started",
-  SUBMITTED: "Submitted",
-  UNDER_REVIEW: "Under review",
-  APPROVED: "Approved",
-  DENIED: "Denied",
-  WITHDRAWN: "Withdrawn",
-};
-
-const STATUS_TONE: Record<ApplicationStatus, StatusTone> = {
-  STARTED: "info",
-  SUBMITTED: "active",
-  UNDER_REVIEW: "warning",
-  APPROVED: "success",
-  DENIED: "danger",
-  WITHDRAWN: "neutral",
-};
-
-const STATUS_COLUMN_ORDER: ApplicationStatus[] = [
-  ApplicationStatus.STARTED,
+const PENDING_STATUSES = new Set<ApplicationStatus>([
   ApplicationStatus.SUBMITTED,
   ApplicationStatus.UNDER_REVIEW,
-  ApplicationStatus.APPROVED,
-  ApplicationStatus.DENIED,
-  ApplicationStatus.WITHDRAWN,
-];
+]);
 
 export default async function ApplicationsPage({
   searchParams,
@@ -98,14 +75,8 @@ export default async function ApplicationsPage({
   const last90 = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
   const last30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-  const [
-    submittedCount,
-    underReviewCount,
-    approved30dCount,
-    denied30dCount,
-    totalAll,
-    apps,
-  ] = await Promise.all([
+  const [submittedCount, underReviewCount, approved30dCount, apps] =
+    await Promise.all([
     prisma.application.count({
       where: { lead: where, ...propertyClause,status: ApplicationStatus.SUBMITTED },
     }),
@@ -120,15 +91,6 @@ export default async function ApplicationsPage({
         decidedAt: { gte: last30 },
       },
     }),
-    prisma.application.count({
-      where: {
-        lead: where,
-        ...propertyClause,
-        status: ApplicationStatus.DENIED,
-        decidedAt: { gte: last30 },
-      },
-    }),
-    prisma.application.count({ where: { lead: where, ...propertyClause } }),
     prisma.application.findMany({
       where: { lead: where, ...propertyClause,createdAt: { gte: last90 } },
       orderBy: [{ createdAt: "desc" }],
@@ -153,16 +115,21 @@ export default async function ApplicationsPage({
     }),
   ]);
 
-  const totalDecided30d = approved30dCount + denied30dCount;
-  const approvalRatePct =
-    totalDecided30d > 0
-      ? Math.round((approved30dCount / totalDecided30d) * 100)
+  // Oldest-waiting age: derived from the already-fetched `apps` rows, not a
+  // new query. Note this only sees applications created within the last 90
+  // days (the `apps` window) — a pending application older than that would
+  // undercount here, but that's an acceptable approximation for an at-a-
+  // glance KPI rather than justifying another query.
+  const oldestPendingAt = apps.reduce<Date | null>((oldest, a) => {
+    if (!PENDING_STATUSES.has(a.status)) return oldest;
+    const ts = a.appliedAt ?? a.createdAt;
+    if (!oldest || ts < oldest) return ts;
+    return oldest;
+  }, null);
+  const oldestWaitingDays =
+    oldestPendingAt != null
+      ? Math.max(0, differenceInCalendarDays(new Date(), oldestPendingAt))
       : null;
-
-  type AppItem = (typeof apps)[number];
-  const byStatus = new Map<ApplicationStatus, AppItem[]>();
-  for (const s of Object.values(ApplicationStatus)) byStatus.set(s, []);
-  for (const app of apps) byStatus.get(app.status)!.push(app);
 
   const allProperties = await prisma.property.findMany({
     where: marketablePropertyWhere(scope.orgId),
@@ -175,170 +142,112 @@ export default async function ApplicationsPage({
     view === "units"
       ? await getApplicationsByUnit(where, propertyClause)
       : [];
+  const unitGroupCount = unitGroups.reduce((n, u) => n + u.groups.length, 0);
 
   return (
-    <div className="space-y-4">
-      {accessDenied ? <PropertyAccessDeniedBanner /> : null}
+    <div className="space-y-3 ls-page-fade">
       <PageHeader
         title="Applications"
-        description="Every lease application from started through decision. Click any card to open the lead and act on it."
+        description="Every lease application, from started through decision."
         actions={
-          properties.length > 1 ? (
-            <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
-          ) : null
+          <div className="flex items-center gap-2 flex-wrap">
+            <div
+              className="inline-flex items-center rounded-none border border-[#e0e0e0] bg-white p-0"
+              role="group"
+              aria-label="View"
+            >
+              <Link
+                href={`/portal/applications?view=units${filterQs}`}
+                className={
+                  view === "units"
+                    ? "px-3 py-1 text-[12px] font-semibold rounded-none bg-[#0f62fe] text-white transition-colors"
+                    : "px-3 py-1 text-[12px] font-semibold rounded-none text-[#525252] hover:bg-[#f4f4f4] transition-colors"
+                }
+              >
+                By unit
+              </Link>
+              <Link
+                href={`/portal/applications?view=pipeline${filterQs}`}
+                className={
+                  view === "pipeline"
+                    ? "px-3 py-1 text-[12px] font-semibold rounded-none bg-[#0f62fe] text-white transition-colors"
+                    : "px-3 py-1 text-[12px] font-semibold rounded-none text-[#525252] hover:bg-[#f4f4f4] transition-colors"
+                }
+              >
+                Pipeline
+              </Link>
+            </div>
+            {properties.length > 1 ? (
+              <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+            ) : null}
+          </div>
         }
       />
 
-      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+      {accessDenied ? <PropertyAccessDeniedBanner /> : null}
+
+      <section
+        aria-label="Application pipeline at a glance"
+        className="grid grid-cols-2 lg:grid-cols-4 gap-2 ls-stagger"
+      >
         <KpiTile
+          density="dense"
           label="Submitted"
           value={submittedCount.toLocaleString()}
-          hint="Need review"
+          hint="Awaiting review"
           icon={<Inbox className="h-3.5 w-3.5" />}
         />
         <KpiTile
+          density="dense"
           label="Under review"
           value={underReviewCount.toLocaleString()}
           hint="Pending decision"
           icon={<Clock className="h-3.5 w-3.5" />}
         />
         <KpiTile
+          density="dense"
           label="Approved (30d)"
           value={approved30dCount.toLocaleString()}
           hint="Last 30 days"
           icon={<CheckCircle2 className="h-3.5 w-3.5" />}
         />
         <KpiTile
-          label="Denied (30d)"
-          value={denied30dCount.toLocaleString()}
-          hint="Last 30 days"
-          icon={<X className="h-3.5 w-3.5" />}
-        />
-        <KpiTile
-          label="Approval rate (30d)"
-          value={approvalRatePct != null ? `${approvalRatePct}%` : "—"}
-          hint={`${totalAll.toLocaleString()} all-time`}
-          icon={<FileText className="h-3.5 w-3.5" />}
+          density="dense"
+          label="Oldest waiting"
+          value={oldestWaitingDays != null ? `${oldestWaitingDays}d` : "—"}
+          hint={
+            oldestWaitingDays != null
+              ? "Submitted or under review"
+              : "Nothing pending"
+          }
+          icon={<Timer className="h-3.5 w-3.5" />}
         />
       </section>
 
-      <div className="flex items-center gap-1 rounded-lg border border-border bg-secondary p-0.5 w-fit">
-        <Link
-          href={`/portal/applications?view=units${filterQs}`}
-          className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
-            view === "units"
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          By unit
-        </Link>
-        <Link
-          href={`/portal/applications?view=pipeline${filterQs}`}
-          className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
-            view === "pipeline"
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Pipeline
-        </Link>
-      </div>
-
       {view === "units" ? (
-        <DashboardSection
-          title="Applications by unit"
-          eyebrow="Last 120 days"
-          description="Every application grouped by the unit it's for — co-signers fold into the primary applicant. Click any row for full detail."
-        >
-          {unitGroups.length === 0 ? (
-            <EmptyState
-              title="Once leads start applying, they'll show up here."
-              body="Applications come in via your tenant marketing site, AppFolio sync, or manual entry from a lead detail page."
-              action={{ label: "Open leads", href: "/portal/leads" }}
-            />
-          ) : (
-            <UnitApplicationsBoard units={unitGroups} />
-          )}
-        </DashboardSection>
-      ) : (
-      <DashboardSection
-        title="Pipeline"
-        eyebrow="Last 90 days"
-        description="Drag-free kanban — click any application to open the lead it came from"
-      >
-        {apps.length === 0 ? (
+        unitGroups.length === 0 ? (
           <EmptyState
             title="Once leads start applying, they'll show up here."
             body="Applications come in via your tenant marketing site, AppFolio sync, or manual entry from a lead detail page."
             action={{ label: "Open leads", href: "/portal/leads" }}
           />
         ) : (
-          <div className="overflow-x-auto -mx-4 md:mx-0">
-            <div className="grid grid-cols-6 gap-3 min-w-[1080px] md:min-w-0">
-              {STATUS_COLUMN_ORDER.map((status) => {
-                const items = byStatus.get(status) ?? [];
-                return (
-                  <div
-                    key={status}
-                    className="rounded-xl border border-border bg-muted/30 p-2.5"
-                  >
-                    <div className="flex items-center justify-between gap-2 mb-2 px-1">
-                      <StatusPill
-                        label={STATUS_LABEL[status]}
-                        tone={STATUS_TONE[status]}
-                      />
-                      <span className="text-xs font-semibold tabular-nums text-muted-foreground">
-                        {items.length}
-                      </span>
-                    </div>
-                    {items.length === 0 ? (
-                      <p className="text-[10px] text-muted-foreground italic px-1 py-2">
-                        None
-                      </p>
-                    ) : (
-                      <ul className="space-y-1.5 max-h-[480px] overflow-y-auto">
-                        {items.slice(0, 50).map((a) => {
-                          const name =
-                            [a.lead.firstName, a.lead.lastName]
-                              .filter(Boolean)
-                              .join(" ") || a.lead.email || "Anonymous";
-                          const ts =
-                            a.decidedAt ?? a.appliedAt ?? a.createdAt;
-                          return (
-                            <li key={a.id}>
-                              <Link
-                                href={`/portal/leads/${a.lead.id}`}
-                                className="block rounded-lg border border-border bg-card hover:border-primary/40 hover:shadow-sm px-2 py-1.5 transition-all"
-                              >
-                                <p className="text-[11px] font-medium text-foreground truncate">
-                                  {name}
-                                </p>
-                                <p className="text-[10px] text-muted-foreground truncate">
-                                  {a.property.name}
-                                </p>
-                                <p className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">
-                                  {format(ts, "MMM d")} ·{" "}
-                                  {formatDistanceToNow(ts, { addSuffix: true })}
-                                </p>
-                              </Link>
-                            </li>
-                          );
-                        })}
-                        {items.length > 50 ? (
-                          <li className="px-1 text-[10px] text-muted-foreground text-center">
-                            +{items.length - 50} more
-                          </li>
-                        ) : null}
-                      </ul>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </DashboardSection>
+          <UnitApplicationsBoard
+            units={unitGroups}
+            caption={`By unit · last 120 days · ${unitGroupCount.toLocaleString()} ${unitGroupCount === 1 ? "application" : "applications"}`}
+          />
+        )
+      ) : apps.length === 0 ? (
+        <EmptyState
+          title="Once leads start applying, they'll show up here."
+          body="Applications come in via your tenant marketing site, AppFolio sync, or manual entry from a lead detail page."
+          action={{ label: "Open leads", href: "/portal/leads" }}
+        />
+      ) : (
+        <ApplicationsPipelineTable
+          apps={apps}
+          caption={`Pipeline · last 90 days · ${apps.length.toLocaleString()} ${apps.length === 1 ? "application" : "applications"}`}
+        />
       )}
     </div>
   );
