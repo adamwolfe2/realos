@@ -28,6 +28,11 @@ export type AdRetentionPanelProps = {
   /** True if the current user is allowed to write the override. */
   canEdit: boolean;
   summary: string;
+  /** "card" (default) renders the full bordered panel. "inline" renders a
+   *  single muted footnote line — same actions (export, override), no card
+   *  chrome — for pages that already have a primary surface and don't need
+   *  a second stacked card just for retention info. */
+  variant?: "card" | "inline";
 };
 
 const TIER_LABEL: Record<AdRetentionPanelProps["tier"], string> = {
@@ -76,6 +81,59 @@ export function AdRetentionPanel(props: AdRetentionPanelProps) {
         );
       }
     });
+  }
+
+  if (props.variant === "inline") {
+    return (
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[11px] text-muted-foreground">
+        <span>{props.summary}</span>
+        <span aria-hidden="true">·</span>
+        <Link
+          href="/api/portal/ads/export"
+          prefetch={false}
+          className="inline-flex items-center gap-1 font-medium text-foreground hover:text-primary transition-colors"
+        >
+          <Download className="h-3 w-3" aria-hidden="true" />
+          Export CSV
+        </Link>
+        {supportsOverride ? (
+          <>
+            <span aria-hidden="true">·</span>
+            <span className="inline-flex items-center gap-1.5">
+              <label htmlFor="ad-retention-months" className="sr-only">
+                Daily window (months)
+              </label>
+              <Input
+                id="ad-retention-months"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={120}
+                step={1}
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                placeholder={placeholder}
+                disabled={!props.canEdit || isPending}
+                className="h-6 w-16 px-1.5 text-[11px]"
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={handleSave}
+                disabled={!props.canEdit || isPending}
+                className="h-6 px-2 text-[11px]"
+              >
+                {isPending ? "Saving…" : "Save"}
+              </Button>
+              {props.customOverride != null ? (
+                <span className="text-[10px]">override active</span>
+              ) : null}
+            </span>
+          </>
+        ) : null}
+      </p>
+    );
   }
 
   return (

@@ -208,17 +208,21 @@ export function AnimatedGauge({
   const end = 0;
   const angle = start + clamped * (end - start);
 
+  // SVG's y-axis points DOWN, so an upward semicircle needs y = cy - r*sin.
+  // The previous `cy + r*sin` put every intermediate point BELOW the
+  // baseline: the track looked fine (its endpoints have sin=0) but any
+  // partial fill + tick dot drooped under the gauge (prod bug, 2026-07-24).
   const arcPath = (from: number, to: number) => {
     const x1 = cx + r * Math.cos(from);
-    const y1 = cy + r * Math.sin(from);
+    const y1 = cy - r * Math.sin(from);
     const x2 = cx + r * Math.cos(to);
-    const y2 = cy + r * Math.sin(to);
+    const y2 = cy - r * Math.sin(to);
     const largeArc = Math.abs(to - from) > Math.PI ? 1 : 0;
     return `M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${largeArc} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;
   };
 
   const tickX = cx + r * Math.cos(draw ? angle : start);
-  const tickY = cy + r * Math.sin(draw ? angle : start);
+  const tickY = cy - r * Math.sin(draw ? angle : start);
 
   return (
     <svg

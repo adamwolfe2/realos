@@ -12,7 +12,8 @@ import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PageHeader } from "@/components/admin/page-header";
 import { EmptyState } from "@/components/portal/ui/empty-state";
 import { DataPlaceholder } from "@/components/portal/ui/data-placeholder";
-import { Megaphone, Clock } from "lucide-react";
+import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
+import { Megaphone, Clock, DollarSign, MousePointerClick, Target } from "lucide-react";
 
 export const metadata: Metadata = { title: "Campaigns" };
 export const dynamic = "force-dynamic";
@@ -190,26 +191,29 @@ export default async function CampaignsPage({
           body="Spend, clicks, and conversions for the last 28 days will appear here within 24 hours of the first nightly sync."
         />
       ) : campaigns.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-          {[
-            { label: "Active campaigns", value: activeCampaigns },
-            {
-              label: "Total spend",
-              value: totalSpend ? `$${Math.round(totalSpend / 100).toLocaleString()}` : "—",
-            },
-            { label: "Total clicks", value: totalClicks.toLocaleString() },
-            { label: "Conversions", value: totalConv.toLocaleString() },
-          ].map((s) => (
-            <div key={s.label} className="rounded-xl border border-border bg-card px-4 py-3 hover:shadow-[0_2px_8px_rgba(15,23,42,0.04)] transition-all">
-              <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
-                {s.label}
-              </div>
-              <div className="mt-1 text-xl font-semibold tabular-nums text-foreground">
-                {s.value}
-              </div>
-            </div>
-          ))}
-        </div>
+        <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+          <KpiTile
+            label="Active campaigns"
+            value={activeCampaigns.toLocaleString()}
+            icon={<Megaphone className="h-3.5 w-3.5" />}
+          />
+          <KpiTile
+            label="Total spend"
+            value={totalSpend ? `$${Math.round(totalSpend / 100).toLocaleString()}` : "—"}
+            hint="Last 28 days"
+            icon={<DollarSign className="h-3.5 w-3.5" />}
+          />
+          <KpiTile
+            label="Total clicks"
+            value={totalClicks.toLocaleString()}
+            icon={<MousePointerClick className="h-3.5 w-3.5" />}
+          />
+          <KpiTile
+            label="Conversions"
+            value={totalConv.toLocaleString()}
+            icon={<Target className="h-3.5 w-3.5" />}
+          />
+        </section>
       ) : null}
 
       {properties.length === 0 ? (

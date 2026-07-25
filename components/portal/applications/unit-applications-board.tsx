@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { format, formatDistanceToNow } from "date-fns";
-import { Building2, Users, ChevronRight } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { ChevronRight } from "lucide-react";
 import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
 import { ApplicationStatus } from "@prisma/client";
 import type { UnitGroup, ApplicationGroup } from "@/lib/applications/queries";
@@ -41,79 +41,100 @@ function toDate(v: Date | string | null): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-export function UnitApplicationsBoard({ units }: { units: UnitGroup[] }) {
+// ---------------------------------------------------------------------------
+// One dense table, not a grid of per-unit cards. Unit + property are columns
+// on the row rather than a separate nested-card header — "one main surface"
+// per DESIGN.md. Units + groups arrive pre-sorted by recency from
+// getApplicationsByUnit; flattening here preserves that order.
+// ---------------------------------------------------------------------------
+export function UnitApplicationsBoard({
+  units,
+  caption,
+}: {
+  units: UnitGroup[];
+  caption?: string;
+}) {
   const [selected, setSelected] = useState<Selected>(null);
+
+  const rows = units.flatMap((unit) =>
+    unit.groups.map((group) => ({ unit, group })),
+  );
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        {units.map((unit) => (
-          <section
-            key={unit.unitKey}
-            className="rounded-xl border border-border bg-card overflow-hidden"
-          >
-            <header className="flex items-center justify-between gap-2 border-b border-border bg-muted/30 px-3.5 py-2.5">
-              <div className="min-w-0">
-                <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground truncate">
-                  <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                  {unit.unitName}
-                </h3>
-                <p className="text-[11px] text-muted-foreground truncate">
-                  {unit.propertyName}
-                </p>
-              </div>
-              <span className="inline-flex items-center gap-1 rounded-full bg-background px-2 py-0.5 text-[11px] font-medium text-muted-foreground tabular-nums">
-                <Users className="h-3 w-3" />
-                {unit.applicantCount}
-              </span>
-            </header>
-
-            <ul className="divide-y divide-border">
-              {unit.groups.map((group) => {
+      <div className="ls-card overflow-hidden">
+        {caption ? (
+          <div className="border-b border-[var(--hair)] px-4 py-2.5 text-[11px] font-medium text-muted-foreground">
+            {caption}
+          </div>
+        ) : null}
+        <div className="max-h-[560px] overflow-y-auto overflow-x-auto">
+          <table className="w-full min-w-[680px] text-sm">
+            <thead className="sticky top-0 z-[1]">
+              <tr className="border-b border-[var(--hair-strong)] bg-secondary text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <th className="px-4 py-2.5 text-left">Applicant</th>
+                <th className="px-4 py-2.5 text-left">Unit</th>
+                <th className="hidden px-4 py-2.5 text-left sm:table-cell">
+                  Property
+                </th>
+                <th className="px-4 py-2.5 text-left">Status</th>
+                <th className="hidden px-4 py-2.5 text-right sm:table-cell">
+                  Received
+                </th>
+                <th className="w-8 px-2 py-2.5" aria-hidden="true" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--hair)]">
+              {rows.map(({ unit, group }) => {
                 const ts = toDate(group.receivedAt);
                 const coCount = group.applicants.length - 1;
                 return (
-                  <li key={group.groupId}>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSelected({
-                          group,
-                          unitName: unit.unitName,
-                          propertyName: unit.propertyName,
-                        })
-                      }
-                      className="flex w-full items-center gap-3 px-3.5 py-2.5 text-left transition-colors hover:bg-secondary"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[13px] font-medium text-foreground truncate">
-                          {group.primaryName}
-                          {coCount > 0 ? (
-                            <span className="ml-1 text-[11px] font-normal text-muted-foreground">
-                              +{coCount} co-applicant{coCount === 1 ? "" : "s"}
-                            </span>
-                          ) : null}
-                        </p>
-                        <p className="text-[11px] text-muted-foreground tabular-nums">
-                          {ts
-                            ? `${format(ts, "MMM d")} · ${formatDistanceToNow(ts, {
-                                addSuffix: true,
-                              })}`
-                            : "No received date"}
-                        </p>
-                      </div>
+                  <tr
+                    key={group.groupId}
+                    onClick={() =>
+                      setSelected({
+                        group,
+                        unitName: unit.unitName,
+                        propertyName: unit.propertyName,
+                      })
+                    }
+                    className="h-11 cursor-pointer transition-colors hover:bg-muted/30"
+                  >
+                    <td className="max-w-[220px] truncate px-4 font-medium text-foreground">
+                      {group.primaryName}
+                      {coCount > 0 ? (
+                        <span className="ml-1.5 font-mono text-[11px] font-normal text-muted-foreground">
+                          +{coCount}
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="max-w-[160px] truncate px-4 text-muted-foreground">
+                      {unit.unitName}
+                    </td>
+                    <td className="hidden max-w-[200px] truncate px-4 text-muted-foreground sm:table-cell">
+                      {unit.propertyName}
+                    </td>
+                    <td className="px-4">
                       <StatusPill
                         label={STATUS_LABEL[group.status]}
                         tone={STATUS_TONE[group.status]}
                       />
-                      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    </button>
-                  </li>
+                    </td>
+                    <td className="hidden whitespace-nowrap px-4 text-right font-mono text-[12px] text-muted-foreground tabular-nums sm:table-cell">
+                      {ts ? formatDistanceToNow(ts, { addSuffix: true }) : "—"}
+                    </td>
+                    <td className="px-2 text-right">
+                      <ChevronRight
+                        className="ml-auto h-4 w-4 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                    </td>
+                  </tr>
                 );
               })}
-            </ul>
-          </section>
-        ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <ApplicantDetailDrawer

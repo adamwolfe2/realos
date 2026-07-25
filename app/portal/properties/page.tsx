@@ -12,8 +12,9 @@ import {
 } from "@/lib/tenancy/property-filter";
 import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-banner";
 import { formatDistanceToNow } from "date-fns";
-import { Building2, MapPin } from "lucide-react";
+import { Building2, MapPin, Users, RefreshCw, Inbox } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
+import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 // PropertyFormDialog hidden in the actions row — see issue #69. Import
 // kept commented so re-enabling is one line when the backend lands.
 // import { PropertyFormDialog } from "@/components/properties/property-form-dialog";
@@ -403,6 +404,33 @@ export default async function PropertiesList({
           </div>
         }
       />
+
+      {countAll > 0 ? (
+        <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+          <KpiTile
+            label="Properties"
+            value={countAll.toLocaleString()}
+            icon={<Building2 className="h-3.5 w-3.5" />}
+          />
+          <KpiTile
+            label="Total leads"
+            value={totalLeads.toLocaleString()}
+            icon={<Users className="h-3.5 w-3.5" />}
+          />
+          <KpiTile
+            label="Recently synced"
+            value={countSynced.toLocaleString()}
+            hint="Last 7 days"
+            icon={<RefreshCw className="h-3.5 w-3.5" />}
+          />
+          <KpiTile
+            label="Pending review"
+            value={importedCount.toLocaleString()}
+            hint="Awaiting curation"
+            icon={<Inbox className="h-3.5 w-3.5" />}
+          />
+        </section>
+      ) : null}
 
       {countAll === 0 ? (
         // Distinguish three empty-state shapes so the operator never
