@@ -10,6 +10,7 @@
 
 ## 1. Principles
 
+- **One screen, one story (Adam, 2026-07-24).** Every portal/admin page composes as a single dense view: `PageHeader` + KPI strip + ONE main surface. No endless scroll, no stacked card pile, minimal explanatory text. When in doubt: simplify, cut copy, compact. The reference register is the dashboard, leads, chatbot conversations, and insights pages — every other page must look like it shipped from the same hand.
 - **Light theme only.** No dark mode, no dark backgrounds. Page background is white (`#FFFFFF`); chrome is cool-gray. There is no `prefers-color-scheme` / `.dark` block. Dark text on dark = bug.
 - **No emojis, ever.** Use `lucide-react` icons (see `kpi-tile.tsx`: `ArrowUpRight`, `ArrowDownRight`, `Minus`). Icons render in brand blue or muted gray.
 - **Reuse, don't reinvent.** Use `KpiTile`, `PageHeader`, `SectionCard`, `EmptyState`, and the `ls-*` utilities. Hand-rolling a header / metric / card is the thing these primitives were built to kill.
