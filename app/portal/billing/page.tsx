@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
-import { PageHeader } from "@/components/admin/page-header";
+import { PageHeader, SectionCard } from "@/components/admin/page-header";
+import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
+import { DollarSign, Receipt, Wallet, Percent } from "lucide-react";
 import { BillingPortalButton } from "./billing-portal-button";
 import { getStripeClient, isStripeConfigured } from "@/lib/stripe/config";
 import { ADDONS, TIERS } from "@/lib/billing/plans";
@@ -304,8 +306,8 @@ export default async function BillingPage() {
       ) : null}
 
       {billingStatusPending ? (
-        <section className="rounded-[2px] border border-primary/20 bg-primary/[0.03] p-5">
-          <p className="text-[10px] tracking-widest uppercase font-semibold text-primary">
+        <section className="ls-alert ls-alert-warning">
+          <p className="text-[10px] tracking-widest uppercase font-semibold" style={{ color: "#8a6d00" }}>
             Action needed
           </p>
           <h2 className="text-base font-semibold mt-1.5">
@@ -358,109 +360,128 @@ export default async function BillingPage() {
           </p>
         </section>
       ) : (
-        <section className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <Mini
-            label="Subscription tier"
-            value={humanizeEnum(org.subscriptionTier)}
-          />
-          <Mini
-            label="Subscription status"
-            value={
-              org.subscriptionStatus
-                ? humanizeEnum(org.subscriptionStatus)
-                : "Pending"
-            }
-            tone={
-              org.subscriptionStatus === "ACTIVE"
-                ? "success"
-                : org.subscriptionStatus === "PAST_DUE"
-                  ? "warn"
-                  : undefined
-            }
-          />
-          <Mini
-            label="Subscription started"
-            value={
-              org.subscriptionStartedAt
-                ? new Date(org.subscriptionStartedAt).toLocaleDateString()
-                : "Not yet"
-            }
-          />
-          <Mini
+        <>
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <KpiTile
             label="Monthly retainer"
             value={
               org.mrrCents != null && org.mrrCents > 0
                 ? `$${Math.round(org.mrrCents / 100).toLocaleString()}`
                 : "—"
             }
+            icon={<DollarSign className="h-3.5 w-3.5" />}
           />
-          <Mini
-            label="One-time build fee paid"
+          <KpiTile
+            label="Build fee paid"
             value={
               org.buildFeePaidCents != null && org.buildFeePaidCents > 0
                 ? `$${Math.round(org.buildFeePaidCents / 100).toLocaleString()}`
                 : "—"
             }
+            hint="One-time"
+            icon={<Receipt className="h-3.5 w-3.5" />}
           />
-          <Mini
+          <KpiTile
+            label="Active ad budgets"
+            value={`$${Math.round(monthlySpendCents / 100).toLocaleString()}`}
+            hint="Per month"
+            icon={<Wallet className="h-3.5 w-3.5" />}
+          />
+          <KpiTile
             label="Ad spend markup"
             value={`${Math.round((org.adSpendMarkupPct ?? 0) * 100)}%`}
-          />
-          <Mini
-            label="Active ad budgets"
-            value={`$${Math.round(monthlySpendCents / 100).toLocaleString()}/mo`}
-          />
-          <Mini
-            label="Stripe customer"
-            value={org.stripeCustomerId ? "Connected" : "Not connected"}
-            tone={org.stripeCustomerId ? "success" : undefined}
+            icon={<Percent className="h-3.5 w-3.5" />}
           />
         </section>
-      )}
 
-      {/* Line items panel — shows exactly what's on the subscription
-          (tier, additional properties, add-ons) so the operator never
-          has to dig into Stripe to see what they're paying for. */}
-      {lineItems.length > 0 ? (
-        <section className="ls-card ls-card-pad space-y-3">
-          <div className="flex items-baseline justify-between">
-            <h2 className="text-sm font-semibold">Subscription line items</h2>
-            <p className="text-xs text-muted-foreground">
-              ${(subscriptionMrrCents / 100).toLocaleString()} /mo
-            </p>
+        {/* Single plan/invoice surface — subscription meta as
+            hairline-divided rows, with the Stripe line items folded in
+            below rather than stacked as a second card. */}
+        <SectionCard label="Plan & invoice">
+          <div className="divide-y divide-[var(--hair)]">
+            <PlanRow
+              label="Subscription tier"
+              value={humanizeEnum(org.subscriptionTier)}
+            />
+            <PlanRow
+              label="Subscription status"
+              value={
+                org.subscriptionStatus
+                  ? humanizeEnum(org.subscriptionStatus)
+                  : "Pending"
+              }
+              tone={
+                org.subscriptionStatus === "ACTIVE"
+                  ? "success"
+                  : org.subscriptionStatus === "PAST_DUE"
+                    ? "warn"
+                    : undefined
+              }
+            />
+            <PlanRow
+              label="Subscription started"
+              value={
+                org.subscriptionStartedAt
+                  ? new Date(org.subscriptionStartedAt).toLocaleDateString()
+                  : "Not yet"
+              }
+            />
+            <PlanRow
+              label="Stripe customer"
+              value={org.stripeCustomerId ? "Connected" : "Not connected"}
+              tone={org.stripeCustomerId ? "success" : undefined}
+            />
           </div>
-          <ul className="divide-y divide-border">
-            {lineItems.map((item, idx) => (
-              <li
-                key={idx}
-                className="py-2.5 flex items-start justify-between gap-3"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">
-                    {item.label}
-                    {item.isAddon ? (
-                      <span className="ml-2 text-[10px] font-mono tracking-widest uppercase text-muted-foreground">
-                        add-on
-                      </span>
-                    ) : null}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{item.detail}</p>
-                </div>
-                <p className="text-sm font-semibold tabular-nums text-foreground shrink-0">
-                  {item.isMetered
-                    ? "usage-based"
-                    : `$${(Math.round(item.monthlyCents) / 100).toLocaleString()}`}
+
+          {/* Line items — shows exactly what's on the subscription
+              (tier, additional properties, add-ons) so the operator
+              never has to dig into Stripe to see what they're paying
+              for. */}
+          {lineItems.length > 0 ? (
+            <div className="mt-4 pt-4 border-t border-[var(--hair)]">
+              <div className="flex items-baseline justify-between mb-1">
+                <h3 className="text-[12px] font-semibold text-foreground">
+                  Subscription line items
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  ${(subscriptionMrrCents / 100).toLocaleString()} /mo
                 </p>
-              </li>
-            ))}
-          </ul>
-          <p className="text-[11px] text-muted-foreground">
-            Metered items (pixel overage, email overage, ad spend
-            management) are billed in arrears against your actual usage —
-            not included in the recurring subtotal above.
-          </p>
-        </section>
-      ) : null}
+              </div>
+              <ul className="divide-y divide-[var(--hair)]">
+                {lineItems.map((item, idx) => (
+                  <li
+                    key={idx}
+                    className="py-2.5 flex items-start justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {item.label}
+                        {item.isAddon ? (
+                          <span className="ml-2 text-[10px] font-mono tracking-widest uppercase text-muted-foreground">
+                            add-on
+                          </span>
+                        ) : null}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{item.detail}</p>
+                    </div>
+                    <p className="text-sm font-semibold tabular-nums text-foreground shrink-0">
+                      {item.isMetered
+                        ? "usage-based"
+                        : `$${(Math.round(item.monthlyCents) / 100).toLocaleString()}`}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-[11px] text-muted-foreground mt-2">
+                Metered items (pixel overage, email overage, ad spend
+                management) are billed in arrears against your actual usage —
+                not included in the recurring subtotal above.
+              </p>
+            </div>
+          ) : null}
+        </SectionCard>
+        </>
+      )}
 
       {/* Customer's live website build queue. Hidden when they
           haven't purchased one yet. */}
@@ -526,7 +547,7 @@ export default async function BillingPage() {
   );
 }
 
-function Mini({
+function PlanRow({
   label,
   value,
   tone,
@@ -542,13 +563,9 @@ function Mini({
         ? "text-[#8a6d00]"
         : "text-foreground";
   return (
-    <div className="ls-card p-4">
-      <div className="text-xs tracking-widest uppercase text-muted-foreground">
-        {label}
-      </div>
-      <div className={`text-sm font-semibold mt-2 truncate ${valueClass}`}>
-        {value}
-      </div>
+    <div className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
+      <span className="text-[12px] text-muted-foreground">{label}</span>
+      <span className={`text-[13px] font-medium ${valueClass}`}>{value}</span>
     </div>
   );
 }

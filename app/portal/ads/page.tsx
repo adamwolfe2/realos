@@ -11,8 +11,9 @@ import {
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PageHeader } from "@/components/admin/page-header";
-import { DataPlaceholder } from "@/components/portal/ui/data-placeholder";
-import { Megaphone } from "lucide-react";
+import { EmptyState } from "@/components/portal/ui/empty-state";
+import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
+import { Megaphone, Link2, DollarSign, Users, CheckCircle2 } from "lucide-react";
 import { ExportButton } from "@/components/ui/export-button";
 import { AdPlatform, LeadSource, LeadStatus, UserRole } from "@prisma/client";
 import { AdsDashboard } from "./ads-dashboard";
@@ -274,6 +275,15 @@ export default async function AdsPage({
     }))
     .sort((a, b) => b.leads - a.leads);
 
+  // KPI strip totals — derived from the same currentMetrics/roiRows
+  // already fetched above for the dashboard + ROI table. No new queries.
+  const totalSpendCents = currentMetrics.reduce(
+    (sum, m) => sum + m.spendCents,
+    0,
+  );
+  const totalLeadsAttributed = roiRows.reduce((sum, r) => sum + r.leads, 0);
+  const totalSignedAttributed = roiRows.reduce((sum, r) => sum + r.signed, 0);
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -299,14 +309,43 @@ export default async function AdsPage({
       />
 
       {accounts.length === 0 ? (
-        <DataPlaceholder
-          intent="connect"
+        <EmptyState
           icon={<Megaphone className="h-4 w-4" />}
           title="Connect an ad account to see spend"
           body="Connect Google Ads or Meta Ads to start pulling daily spend, clicks, and conversions into your dashboard. Read-only for now — no campaign edits."
           action={{ label: "Connect ad accounts", href: "/portal/connect" }}
         />
       ) : (
+        <>
+        <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+          <KpiTile
+            label="Connected accounts"
+            value={accounts.length.toLocaleString()}
+            icon={<Link2 className="h-3.5 w-3.5" />}
+          />
+          <KpiTile
+            label="Spend"
+            value={
+              totalSpendCents
+                ? `$${Math.round(totalSpendCents / 100).toLocaleString()}`
+                : "—"
+            }
+            hint="Last 28 days"
+            icon={<DollarSign className="h-3.5 w-3.5" />}
+          />
+          <KpiTile
+            label="Leads attributed"
+            value={totalLeadsAttributed.toLocaleString()}
+            hint="Last 28 days"
+            icon={<Users className="h-3.5 w-3.5" />}
+          />
+          <KpiTile
+            label="Signed leases"
+            value={totalSignedAttributed.toLocaleString()}
+            hint="Last 28 days"
+            icon={<CheckCircle2 className="h-3.5 w-3.5" />}
+          />
+        </section>
         <AdsDashboard
           accounts={accounts.map((a) => ({
             id: a.id,
@@ -347,6 +386,7 @@ export default async function AdsPage({
             conversions: m._sum.conversions ?? 0,
           }))}
         />
+        </>
       )}
 
       <DashboardSection
@@ -355,10 +395,7 @@ export default async function AdsPage({
         description="Spend, leads, applications, and signed leases per source."
       >
         <MarketingRoiTable rows={roiRows} />
-      </DashboardSection>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="md:col-span-1">
+        <div className="mt-4 pt-3 border-t border-[var(--hair)]">
           <AdRetentionPanel
             tier={retentionPolicy.tier}
             dailyWindowMonths={retentionPolicy.dailyWindowMonths}
@@ -366,9 +403,10 @@ export default async function AdsPage({
             customOverride={retentionPolicy.customOverride}
             canEdit={canEditRetention}
             summary={retentionSummary}
+            variant="inline"
           />
         </div>
-      </div>
+      </DashboardSection>
     </div>
   );
 }
