@@ -8,6 +8,8 @@ import { parsePropertyFilter, visibleProperties } from "@/lib/tenancy/property-f
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { getPortfolioFunnel, sourceLabel } from "@/lib/reports/portfolio-funnel";
+import { getLeadJourney } from "@/lib/reports/lead-journey";
+import { ConversionFunnel } from "@/components/portal/dashboard/conversion-funnel";
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { EmptyState } from "@/components/portal/ui/empty-state";
@@ -79,7 +81,10 @@ export default async function PortfolioFunnelPage({
       ? null
       : (filter ?? visibleIds).filter((id) => visibleIds.includes(id));
 
-  const funnel = await getPortfolioFunnel({ orgId: scope.orgId, propertyIds, periodDays });
+  const [funnel, journey] = await Promise.all([
+    getPortfolioFunnel({ orgId: scope.orgId, propertyIds, periodDays }),
+    getLeadJourney({ orgId: scope.orgId, propertyIds, periodDays }),
+  ]);
   const { stages, toursCompleted, sources, appStatus, byProperty } = funnel;
   const maxSource = sources[0]?.count ?? 1;
   const hasData = stages.some((s) => s.value > 0);
@@ -241,6 +246,74 @@ export default async function PortfolioFunnelPage({
           </div>
         ))}
       </div>
+
+      {/* Lead journey — one cohort followed end to end, cut by source */}
+      <section className="ls-card p-5">
+        <div className="mb-1 flex items-baseline justify-between gap-3">
+          <h2 className="text-[13px] font-semibold text-foreground">Lead journey</h2>
+          <span className="text-[11px] text-muted-foreground">
+            Leads created in the last {journey.periodDays} days, followed to their
+            furthest stage
+          </span>
+        </div>
+        <ConversionFunnel
+          stages={journey.stages.map((s) => ({
+            label: s.label,
+            value: s.count,
+            notApplicable: !s.tracked,
+          }))}
+        />
+        {!journey.stages.every((s) => s.tracked) ? (
+          <p className="mt-2 text-[11px] leading-snug text-muted-foreground">
+            Tours aren&apos;t tracked yet — your AppFolio plan doesn&apos;t include the
+            showings report.{" "}
+            <Link href="/portal/integrations" className="underline underline-offset-2">
+              Connect Cal.com
+            </Link>{" "}
+            to fill this stage in.
+          </p>
+        ) : null}
+        {journey.lost + journey.unqualified > 0 ? (
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Off-ramps in this cohort: {journey.lost.toLocaleString()} lost,{" "}
+            {journey.unqualified.toLocaleString()} unqualified.
+          </p>
+        ) : null}
+
+        {journey.bySource.length > 0 ? (
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-[12px]">
+              <thead>
+                <tr className="border-b border-border text-left text-muted-foreground">
+                  <th className="py-1.5 pr-3 font-medium">Source</th>
+                  {journey.stages.map((s) => (
+                    <th key={s.key} className="px-2 py-1.5 text-right font-medium">
+                      {s.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {journey.bySource.map((row) => (
+                  <tr key={row.source} className="border-b border-border/50">
+                    <td className="py-1.5 pr-3 font-semibold text-foreground">
+                      {sourceLabel(row.source)}
+                    </td>
+                    {row.counts.map((count, i) => (
+                      <td
+                        key={journey.stages[i].key}
+                        className="ls-metric px-2 py-1.5 text-right text-muted-foreground"
+                      >
+                        {journey.stages[i].tracked ? count.toLocaleString() : "—"}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+      </section>
 
       {!hasData ? (
         <EmptyState
