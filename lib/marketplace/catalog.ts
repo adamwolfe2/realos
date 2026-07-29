@@ -34,10 +34,8 @@ import {
   Eye,
   Bot,
   TrendingUp,
-  BarChart3,
   Send,
   Share2,
-  Brush,
   Globe,
   Mail,
   Star,
@@ -192,46 +190,10 @@ export const MARKETPLACE_ENTRIES: CatalogEntry[] = [
     setupEffort: "Already on",
     brandLogoKeys: ["appfolio", "resend"],
   },
-  {
-    key: "moduleGoogleAds",
-    kind: "concierge",
-    slug: "google-ads",
-    name: "Google Ads (Managed)",
-    tagline:
-      "We build, launch, and run your Google Search and Performance Max campaigns. Concierge service, not a self-serve toggle.",
-    bullets: [
-      "Campaigns built and launched by our team",
-      "Live spend + ROAS reporting back to your portal",
-      "Lead to tour to lease attribution",
-      "Weekly creative refresh + bid optimization",
-    ],
-    monthlyPriceCents: 19900,
-    setupHref: "/portal/marketplace?request=google-ads",
-    icon: BarChart3,
-    category: "Acquisition",
-    setupEffort: "Kickoff call · we set up campaigns",
-    brandLogoKeys: ["google"],
-  },
-  {
-    key: "moduleMetaAds",
-    kind: "concierge",
-    slug: "meta-ads",
-    name: "Meta Ads (Managed)",
-    tagline:
-      "We build, launch, and run your Facebook and Instagram ads with first-party pixel retargeting. Concierge service.",
-    bullets: [
-      "Campaigns built and launched by our team",
-      "Cursive pixel powers Custom Audiences",
-      "Lead to tour to lease attribution",
-      "Weekly creative refresh + scale rules",
-    ],
-    monthlyPriceCents: 19900,
-    setupHref: "/portal/marketplace?request=meta-ads",
-    icon: BarChart3,
-    category: "Acquisition",
-    setupEffort: "Kickoff call · we set up campaigns",
-    brandLogoKeys: ["meta"],
-  },
+  // Managed-service SKUs (Google Ads, Meta Ads, Creative Studio) were
+  // removed from the storefront 2026-07-29 (Adam): LeaseStack sells
+  // software, not an agency. The org module columns + feature gates stay —
+  // orgs that already have them enabled keep their surfaces.
 
   // ============== Engagement ==============
   {
@@ -254,7 +216,7 @@ export const MARKETPLACE_ENTRIES: CatalogEntry[] = [
     category: "Engagement",
     popular: true,
     setupEffort: "Configure persona · 10 min",
-    brandLogoKeys: ["claude", "cal", "resend"],
+    brandLogoKeys: ["claude", "resend"],
   },
   {
     key: "modulePopups",
@@ -277,37 +239,16 @@ export const MARKETPLACE_ENTRIES: CatalogEntry[] = [
     category: "Engagement",
     setupEffort: "Design + embed · 5 min",
   },
-  {
-    key: "moduleCreativeStudio",
-    kind: "concierge",
-    slug: "creative-studio",
-    name: "Creative Studio (Managed)",
-    tagline:
-      "On-demand brand-consistent creative for ads, social, and email. Designed and shipped by our team in 48 hours.",
-    bullets: [
-      "Static + motion ad creative produced by our designers",
-      "Brand kit + creative library kept in sync",
-      "Unlimited revisions per request",
-      "48-hour turnaround on every brief",
-    ],
-    monthlyPriceCents: 49900,
-    setupHref: "/portal/creative",
-    icon: Brush,
-    category: "Engagement",
-    setupEffort: "Submit a brief · we produce",
-    brandLogoKeys: ["figma"],
-  },
-
   // ============== Discovery ==============
   {
     key: "moduleSEO",
     kind: "concierge",
     slug: "seo-aeo",
-    name: "Search + AI Discovery (Managed)",
+    name: "Search + AI Discovery",
     tagline:
-      "Per-neighborhood landing pages built to rank in Google AND get cited by ChatGPT, Perplexity, Claude, and Gemini. Our team builds and maintains the pages.",
+      "LeaseStack generates and maintains per-neighborhood landing pages built to rank in Google AND get cited by ChatGPT, Perplexity, Claude, and Gemini.",
     bullets: [
-      "Per-neighborhood + per-unit-type pages built for you",
+      "Pages generated from your property + neighborhood data",
       "Schema markup + sitemap automation",
       "Monthly AI-citation audit across 5 engines",
       "Search Console + GA4 reporting wired in",
@@ -317,19 +258,19 @@ export const MARKETPLACE_ENTRIES: CatalogEntry[] = [
     icon: TrendingUp,
     category: "Discovery",
     popular: true,
-    setupEffort: "Kickoff call · we build pages",
+    setupEffort: "Guided setup",
     brandLogoKeys: ["google", "chatgpt", "perplexity", "claude", "gemini"],
   },
   {
     key: "moduleWebsite",
     kind: "concierge",
     slug: "marketing-site",
-    name: "Hosted Marketing Site (Managed)",
+    name: "Hosted Marketing Site",
     tagline:
-      "Per-property marketing site we design and host on your domain. Lead capture, tour booking, and CRM sync built in.",
+      "A per-property marketing site generated from your property data and hosted on your domain. Lead capture, tour booking, and CRM sync built in.",
     bullets: [
-      "Our team designs and builds the site",
-      "Hosted on your domain (we handle DNS)",
+      "Generated from your property data + brand kit",
+      "Hosted on your domain",
       "Lead capture + tour booking wired into the CRM",
       "Live AppFolio listing sync where available",
     ],
@@ -337,7 +278,7 @@ export const MARKETPLACE_ENTRIES: CatalogEntry[] = [
     setupHref: "/portal/marketplace?request=hosted-site",
     icon: Globe,
     category: "Discovery",
-    setupEffort: "Kickoff call · we build the site",
+    setupEffort: "Guided setup",
     brandLogoKeys: ["vercel", "appfolio", "figma"],
   },
 
@@ -409,7 +350,7 @@ export const MARKETPLACE_ENTRIES: CatalogEntry[] = [
     slug: "white-label",
     name: "White-label Workspace",
     tagline:
-      "Removes LeaseStack branding from the tenant portal, public marketing site, and outbound emails. Our team configures the brand kit.",
+      "Removes LeaseStack branding from the tenant portal, public marketing site, and outbound emails — your brand kit applied everywhere.",
     bullets: [
       "Your logo + brand on the portal",
       "Tenant sites carry no LeaseStack mark",
@@ -420,7 +361,7 @@ export const MARKETPLACE_ENTRIES: CatalogEntry[] = [
     setupHref: "/portal/marketplace?request=white-label",
     icon: Sparkles,
     category: "Pro Add-ons",
-    setupEffort: "Kickoff call · we set up branding",
+    setupEffort: "Guided setup",
   },
 
   // ============== Coming soon (honest about what's not built yet) ==============

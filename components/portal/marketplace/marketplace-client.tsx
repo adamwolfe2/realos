@@ -539,9 +539,8 @@ function StatusPill({
     return (
       <span className="flex items-center gap-1.5 shrink-0">
         <StatusChip status="not_connected" label="Not active" />
-        <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground whitespace-nowrap">
-          <Sparkles className="w-2.5 h-2.5" />
-          Concierge
+        <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+          Guided setup
         </span>
       </span>
     );

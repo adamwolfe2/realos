@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 // ---------------------------------------------------------------------------
 // PipelineStrip — compact replacement for the old blue-chevron conversion
 // funnel. Renders ONLY the stages LeaseStack actually tracks end-to-end
@@ -57,12 +55,6 @@ export function PipelineStrip({ stages }: Props) {
           );
         })}
       </div>
-      <p className="mt-3 text-[11px] text-muted-foreground">
-        Tours and engagement are not tracked yet.{" "}
-        <Link href="/portal/connect" className="text-primary hover:underline">
-          Connect a PMS tour feed.
-        </Link>
-      </p>
     </div>
   );
 }

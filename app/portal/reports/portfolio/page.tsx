@@ -278,14 +278,6 @@ export default async function PortfolioFunnelPage({
             </div>
           ))}
         </div>
-        {trackedStages.length < journey.stages.length ? (
-          <p className="mt-2 text-[11px] leading-snug text-muted-foreground">
-            Tour stages appear here once tour booking is connected.{" "}
-            <Link href="/portal/connect" className="underline underline-offset-2">
-              Connect Cal.com
-            </Link>
-          </p>
-        ) : null}
         {journey.lost + journey.unqualified > 0 ? (
           <p className="mt-2 text-[11px] text-muted-foreground">
             Off-ramps in this cohort: {journey.lost.toLocaleString()} lost,{" "}

@@ -268,33 +268,10 @@ export const INTEGRATIONS: IntegrationDefinition[] = [
     comingSoon: true,
   },
 
-  // ----------------------------- Scheduling ------------------------------
-  {
-    slug: "calendly",
-    name: "Calendly",
-    category: "scheduling",
-    tagline: "Tour bookings from Calendly into the portal.",
-    description:
-      "Connect Calendly to auto-create Tour rows in the portal whenever someone books a property tour. Lead dedupe on email.",
-    landsIn: ["Tours", "Leads"],
-    brandColor: "#006BFF",
-    initials: "Ca",
-    auth: "request",
-    comingSoon: true,
-  },
-  {
-    slug: "cal-com",
-    name: "Cal.com",
-    category: "scheduling",
-    tagline: "Open-source scheduling → Tour rows.",
-    description:
-      "Same as Calendly but for operators using Cal.com. Event webhooks create Tour rows with source attribution.",
-    landsIn: ["Tours", "Leads"],
-    brandColor: "#111111",
-    initials: "Cl",
-    auth: "request",
-    comingSoon: true,
-  },
+  // Scheduling connectors (Calendly / Cal.com) removed 2026-07-29 (Adam):
+  // every client uses a different scheduler and we won't do per-client
+  // webhook setup. Tour tracking comes from LeaseStack's own booking
+  // surfaces (chatbot + public tours API). Webhook ingest routes remain.
 
   // ----------------------------- Automation ------------------------------
   {
