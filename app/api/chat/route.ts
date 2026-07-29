@@ -22,6 +22,7 @@ import { buildSystemPrompt, type ChatbotTenant } from "@/lib/chatbot/build-syste
 import { parseFloorPlans } from "@/lib/properties/kb-completeness";
 import { stripChatbotMarkdown } from "@/lib/chatbot/strip-markdown";
 import { extractLeadCapture } from "@/lib/chatbot/extract-lead";
+import { resolvePropertyForChatPage } from "@/lib/chatbot/property-attribution";
 import { requireMatchingOrigin } from "@/lib/tenancy/origin-guard";
 import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
 import { LeadNotifyChannel } from "@prisma/client";
@@ -124,11 +125,18 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Ground the prompt with the default property's structured knowledge base
-  // (slice "Property Knowledge Base" S1). This legacy endpoint serves the
-  // org's first property; scope the KB lookup by orgId via the relation for
-  // tenant isolation. Best-effort — a miss yields null and the bot deflects.
-  const defaultProperty = org.properties[0] ?? null;
+  // Resolve which building this chat is actually about, from the host page
+  // URL — the same helper the public chatbot routes use. This used to take
+  // org.properties[0] (most-recently-updated), which on a multi-property
+  // portfolio grounded the prompt in the WRONG building's facts and filed
+  // every captured lead onto that building. Returns null rather than guess
+  // when the URL is ambiguous, so the bot deflects instead of inventing.
+  const resolvedPropertyId = resolvePropertyForChatPage(
+    pageUrl,
+    org.properties,
+  );
+  const defaultProperty =
+    org.properties.find((p) => p.id === resolvedPropertyId) ?? null;
   const kbRow = defaultProperty
     ? await prisma.propertyKnowledgeBase
         .findFirst({
@@ -168,7 +176,7 @@ export async function POST(req: NextRequest) {
           pageUrl,
           userAgent,
           ipAddress: ip,
-          propertyId: org.properties[0]?.id,
+          propertyId: resolvedPropertyId,
         });
       } catch (err) {
         console.error("[chatbot] persistence error:", err);

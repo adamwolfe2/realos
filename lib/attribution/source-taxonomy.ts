@@ -231,8 +231,12 @@ export type SessionSignal = {
  *   2. An email-matched visitor's last session (a different visitor
  *      record linked by email — used when the lead has no session of its
  *      own, or its own session only resolved to Direct), if it resolves
- *      to something more specific than Direct/Other. Pass `null` here
- *      when the caller doesn't do email-linking (see getLeadFlow).
+ *      to something more specific than Direct/Other. BOTH callers must
+ *      pass this, built from the shared buildEmailSignalMap(); forward
+ *      attribution used to pass null, so the same lead classified
+ *      differently on /portal/attribution vs /portal/reverse-attribution
+ *      (fixed 2026-07-29). Sharing the classifier was not enough — the
+ *      inputs have to match too.
  *   3. The lead's captured-surface enum (chatbot/form/ads/etc).
  *   4. Unattributed: if the enum itself is generic "Other", keep whichever
  *      real Direct session evidence tiers 1–2 turned up instead of

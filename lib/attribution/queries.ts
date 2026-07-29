@@ -7,6 +7,7 @@ import {
   getSource,
   sourceFromLeadEnum,
   type CanonicalSource,
+  type SessionSignal,
   type SourceCategory,
 } from "@/lib/attribution/source-taxonomy";
 // queries.ts is called BY the attribution page, which has already
@@ -16,12 +17,13 @@ import {
 // through every helper for no behavioral change.
 import { propertyIdsToWhere } from "@/lib/tenancy/property-filter";
 
-// Visitor rows are org-level (propertyId = null) because the Cursive pixel
-// is installed org-wide on the resident domain. A property filter therefore
-// must ALSO match null-propertyId rows or every pixel visitor and session
-// silently disappears from attribution the moment a property is selected
-// (deep-audit P0, 2026-07-22). Mirrors propertyOrOrgLevelWhereFragment and
-// the visitors page behaviour. Tenant safety is preserved: every caller
+// A property filter must ALSO match null-propertyId visitor rows, or pixel
+// visitors silently disappear from attribution the moment a property is
+// selected (deep-audit P0, 2026-07-22). Two sources of null remain legitimate:
+// legacy rows written before per-property pixels, and orgs running a single
+// org-wide pixel (CursiveIntegration with propertyId = null). Pixel writes DO
+// now stamp the building when the matched integration has one — see
+// lib/webhooks/cursive-process.ts. Tenant safety is preserved: every caller
 // already constrains orgId in the same where-clause.
 export function visitorPropertyWhere(
   ids: string[] | null,
@@ -29,6 +31,47 @@ export function visitorPropertyWhere(
   const base = propertyIdsToWhere(ids);
   if (Object.keys(base).length === 0) return base;
   return { OR: [base, { propertyId: null }] };
+}
+
+/**
+ * email → that person's most recent session signal, across identified visitors
+ * in scope.
+ *
+ * A lead often has no visitor of its own (a form/chatbot capture that was never
+ * stitched to a pixel identity) while a SEPARATE visitor row with the same email
+ * does carry the referral signal. Tier 2 of classifyLeadChannel consumes this.
+ *
+ * Shared by forward (getLeadFlow) and reverse (getChannelPipeline) attribution:
+ * both must feed classifyLeadChannel the SAME inputs, or the same lead lands in
+ * different channels depending on which page you open. Sharing the classifier
+ * alone was not enough — that was the 2026-07-29 defect.
+ */
+export async function buildEmailSignalMap(
+  orgId: string,
+  propertyIds: string[] | null,
+): Promise<Map<string, SessionSignal>> {
+  const identifiedVisitors = await prisma.visitor.findMany({
+    where: {
+      orgId,
+      ...visitorPropertyWhere(propertyIds),
+      email: { not: null },
+    },
+    select: {
+      email: true,
+      sessions: {
+        orderBy: { startedAt: "desc" },
+        take: 1,
+        select: { utmSource: true, utmMedium: true, firstReferrer: true },
+      },
+    },
+  });
+
+  const map = new Map<string, SessionSignal>();
+  for (const v of identifiedVisitors) {
+    const s = v.sessions[0];
+    if (v.email && s) map.set(v.email.toLowerCase(), s);
+  }
+  return map;
 }
 
 // ---------------------------------------------------------------------------
@@ -474,7 +517,7 @@ export async function getLeadFlow(
   filters: AttributionFilters,
   ga4Sessions?: Map<string, number> | null,
 ): Promise<LeadFlow> {
-  const [sessions, leads] = await Promise.all([
+  const [sessions, leads, emailSignals] = await Promise.all([
     prisma.visitorSession.findMany({
       where: {
         orgId: filters.orgId,
@@ -494,6 +537,7 @@ export async function getLeadFlow(
       select: {
         source: true,
         status: true,
+        email: true,
         externalSystem: true,
         visitor: {
           select: {
@@ -510,6 +554,8 @@ export async function getLeadFlow(
         },
       },
     }),
+    // Same tier-2 input reverse attribution uses, so both surfaces agree.
+    buildEmailSignalMap(filters.orgId, filters.propertyIds ?? null),
   ]);
 
   // Aggregate per canonical source id. We keep the CanonicalSource meta so the
@@ -544,7 +590,14 @@ export async function getLeadFlow(
   const stageCounts = { toured: 0, applied: 0, signed: 0 };
   let importedLeads = 0;
   for (const lead of leads) {
-    const src = classifyLeadChannel(lead.source, lead.visitor?.sessions[0]);
+    const emailMatch = lead.email
+      ? emailSignals.get(lead.email.toLowerCase())
+      : null;
+    const src = classifyLeadChannel(
+      lead.source,
+      lead.visitor?.sessions[0],
+      emailMatch,
+    );
     const noMarketingChannel =
       UNATTRIBUTED_IDS.has(src.id) ||
       (lead.externalSystem != null && src.id === "direct");

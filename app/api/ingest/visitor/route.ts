@@ -17,6 +17,7 @@ export const dynamic = "force-dynamic";
 
 const schema = z.object({
   externalId: z.string().trim().min(1).max(200),
+  propertyId: z.string().trim().min(1).max(64).optional(),
   email: z.string().trim().email().max(320).optional(),
   firstName: z.string().trim().max(100).optional(),
   lastName: z.string().trim().max(100).optional(),
@@ -61,6 +62,21 @@ export async function POST(req: NextRequest) {
   }
   const data = parsed.data;
 
+  // Attribute to a building when the caller names one. Validated against the
+  // key's own org so a tenant can't file a visitor onto someone else's property.
+  if (data.propertyId) {
+    const property = await prisma.property.findFirst({
+      where: { id: data.propertyId, orgId },
+      select: { id: true },
+    });
+    if (!property) {
+      return NextResponse.json(
+        { error: "Property not part of this tenant" },
+        { status: 400 }
+      );
+    }
+  }
+
   const email = data.email ? data.email.toLowerCase() : null;
   const hashedEmail = email ? sha256(email.trim()) : null;
 
@@ -73,7 +89,7 @@ export async function POST(req: NextRequest) {
 
   const existing = await prisma.visitor.findFirst({
     where: { orgId, cursiveVisitorId: data.externalId },
-    select: { id: true, sessionCount: true },
+    select: { id: true, sessionCount: true, propertyId: true },
   });
 
   let visitorId: string;
@@ -88,6 +104,10 @@ export async function POST(req: NextRequest) {
       lastSeenAt: now,
       sessionCount: { increment: 1 },
     };
+    // Backfill only — never re-file an existing visitor onto another building.
+    if (!existing.propertyId && data.propertyId) {
+      update.property = { connect: { id: data.propertyId } };
+    }
     if (data.firstName) update.firstName = data.firstName;
     if (data.lastName) update.lastName = data.lastName;
     if (email) update.email = email;
@@ -114,6 +134,7 @@ export async function POST(req: NextRequest) {
     const created = await prisma.visitor.create({
       data: {
         orgId,
+        propertyId: data.propertyId ?? null,
         cursiveVisitorId: data.externalId,
         status,
         firstName: data.firstName ?? null,

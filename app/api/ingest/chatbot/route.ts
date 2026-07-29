@@ -9,6 +9,7 @@ import {
   Prisma,
 } from "@prisma/client";
 import { guardIngest } from "@/lib/api-keys/ingest-shared";
+import { resolvePropertyForChatPage } from "@/lib/chatbot/property-attribution";
 import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
 import { LeadNotifyChannel } from "@prisma/client";
 
@@ -30,6 +31,7 @@ const messageSchema = z.object({
 
 const schema = z.object({
   sessionId: z.string().trim().min(1).max(200).optional(),
+  propertyId: z.string().trim().min(1).max(64).optional(),
   firstName: z.string().trim().max(100).optional(),
   email: z.string().trim().email().max(320).optional(),
   phone: z.string().trim().max(40).optional(),
@@ -88,6 +90,30 @@ export async function POST(req: NextRequest) {
   const now = new Date();
   const email = data.email ? data.email.toLowerCase() : null;
 
+  // Attribute the conversation to a building. An explicit propertyId wins;
+  // otherwise fall back to the same page-URL resolution the public chatbot
+  // uses, which returns null rather than guessing in a multi-property org.
+  let resolvedPropertyId: string | null = null;
+  if (data.propertyId) {
+    const property = await prisma.property.findFirst({
+      where: { id: data.propertyId, orgId },
+      select: { id: true },
+    });
+    if (!property) {
+      return NextResponse.json(
+        { error: "Property not part of this tenant" },
+        { status: 400 }
+      );
+    }
+    resolvedPropertyId = property.id;
+  } else {
+    const properties = await prisma.property.findMany({
+      where: { orgId },
+      select: { id: true, slug: true, name: true },
+    });
+    resolvedPropertyId = resolvePropertyForChatPage(data.pageUrl, properties);
+  }
+
   const incomingMessages: PersistedMessage[] = data.messages.map((m) => ({
     role: m.role,
     content: m.content,
@@ -100,6 +126,7 @@ export async function POST(req: NextRequest) {
       id: true,
       orgId: true,
       leadId: true,
+      propertyId: true,
       messages: true,
       capturedName: true,
       capturedEmail: true,
@@ -132,6 +159,10 @@ export async function POST(req: NextRequest) {
     ? await prisma.chatbotConversation.update({
         where: { id: existing.id },
         data: {
+          // Backfill only — never move a conversation between buildings.
+          ...(!existing.propertyId && resolvedPropertyId
+            ? { property: { connect: { id: resolvedPropertyId } } }
+            : {}),
           messages: serialized,
           messageCount: mergedMessages.length,
           lastMessageAt: now,
@@ -146,6 +177,7 @@ export async function POST(req: NextRequest) {
     : await prisma.chatbotConversation.create({
         data: {
           orgId,
+          propertyId: resolvedPropertyId,
           sessionId,
           messages: serialized,
           messageCount: mergedMessages.length,
@@ -171,6 +203,7 @@ export async function POST(req: NextRequest) {
           await prisma.lead.create({
             data: {
               orgId,
+              propertyId: resolvedPropertyId,
               email,
               firstName: data.firstName ?? null,
               phone: data.phone ?? null,
@@ -196,7 +229,7 @@ export async function POST(req: NextRequest) {
       void notifyLeadCaptured({
         orgId,
         leadId,
-        propertyId: null,
+        propertyId: resolvedPropertyId,
         channel: LeadNotifyChannel.CHATBOT,
         lead: {
           name: data.firstName ?? null,

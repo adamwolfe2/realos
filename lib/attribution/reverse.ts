@@ -1,7 +1,10 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { propertyIdsToWhere } from "@/lib/tenancy/property-filter";
-import { visitorPropertyWhere } from "@/lib/attribution/queries";
+import {
+  buildEmailSignalMap,
+  visitorPropertyWhere,
+} from "@/lib/attribution/queries";
 import {
   classifyLeadChannel,
   classifySource,
@@ -315,16 +318,10 @@ const FUNNEL_RANK: Record<string, number> = {
   UNQUALIFIED: -1,
 };
 
-type SessionSignal = {
-  utmSource: string | null;
-  utmMedium: string | null;
-  firstReferrer: string | null;
-};
-
 export async function getChannelPipeline(
   filters: AttributionFilters,
 ): Promise<ChannelPipelineRow[]> {
-  const [leads, identifiedVisitors] = await Promise.all([
+  const [leads, emailMap] = await Promise.all([
     prisma.lead.findMany({
       where: {
         orgId: filters.orgId,
@@ -351,28 +348,9 @@ export async function getChannelPipeline(
       },
     }),
     // Email → referral signal lookup, for leads with no linked visitor.
-    prisma.visitor.findMany({
-      where: {
-        orgId: filters.orgId,
-        ...visitorPropertyWhere(filters.propertyIds ?? null),
-        email: { not: null },
-      },
-      select: {
-        email: true,
-        sessions: {
-          orderBy: { startedAt: "desc" },
-          take: 1,
-          select: { utmSource: true, utmMedium: true, firstReferrer: true },
-        },
-      },
-    }),
+    // Shared with forward attribution so both classify identically.
+    buildEmailSignalMap(filters.orgId, filters.propertyIds ?? null),
   ]);
-
-  const emailMap = new Map<string, SessionSignal>();
-  for (const v of identifiedVisitors) {
-    const s = v.sessions[0];
-    if (v.email && s) emailMap.set(v.email.toLowerCase(), s);
-  }
 
   const rows = new Map<string, ChannelPipelineRow>();
   for (const lead of leads) {

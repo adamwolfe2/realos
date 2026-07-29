@@ -8,6 +8,7 @@ import {
   LeadNotifyChannel,
 } from "@prisma/client";
 import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
+import { backfillPropertyId } from "@/lib/tenancy/property-filter";
 
 // the upstream pixel provider event-processing core. Extracted from the shared
 // /api/webhooks/cursive route so the per-tenant path-token route
@@ -184,8 +185,17 @@ export async function processCursiveEvent(
   const uid = pickString(flat, "uid");
   const cookieId = pickString(flat, "cookie_id");
 
+  // The upstream provider asserts its OWN verification via
+  // PERSONAL_VERIFIED_EMAILS (empty string when it can't verify). On the feed
+  // we actually receive this is the only deliverability signal present, so it
+  // is both the preferred address to store and the quality gate below.
+  const verifiedEmail =
+    firstEmail(flat["resolution.PERSONAL_VERIFIED_EMAILS"]) ??
+    firstEmail(flat["PERSONAL_VERIFIED_EMAILS"]);
+
   const emailRaw =
     pickString(flat, "email_raw") ??
+    verifiedEmail ??
     firstEmail(flat["resolution.PERSONAL_EMAILS"]) ??
     firstEmail(flat["PERSONAL_EMAILS"]) ??
     pickString(flat, "resolution.BUSINESS_EMAIL", "BUSINESS_EMAIL");
@@ -284,7 +294,28 @@ export async function processCursiveEvent(
   });
 
   const identified = Boolean(normalizedEmail && firstName && lastName);
-  const leadWorthy = identified && deliverability >= DELIVERABILITY_FLOOR;
+
+  // Lead gate. TWO regimes, because the provider ships two payload shapes:
+  //
+  //  1. Rich feed — carries validation status, skiptrace, company domain,
+  //     phone, ESP last-seen. computeDeliverabilityScore was written for this
+  //     and the 60 floor is calibrated against its five signals.
+  //  2. Basic feed — what we ACTUALLY receive today. Across every resolution
+  //     blob ever stored (276/276 on the live tenant) the payload is exactly:
+  //     FIRST_NAME, LAST_NAME, GENDER, AGE_RANGE, HEM_SHA256, PERSONAL_CITY,
+  //     PERSONAL_STATE, PERSONAL_ZIP, PERSONAL_EMAILS,
+  //     PERSONAL_VERIFIED_EMAILS, REFERRER_URL. NOT ONE scoring field is
+  //     present, and no visitor has ever had a phone — so every event scored
+  //     0/100 against a floor of 60 and the pixel could never produce a lead.
+  //     Zero pixel leads existed in production before this fix (2026-07-29).
+  //
+  // So: honor the provider's own verification assertion when that's all we
+  // get, and keep the score path intact for richer payloads.
+  const leadWorthy = evaluateLeadGate({
+    identified,
+    hasVerifiedEmail: Boolean(verifiedEmail),
+    deliverability,
+  });
 
   const status = identified
     ? VisitorIdentificationStatus.IDENTIFIED
@@ -369,6 +400,11 @@ export async function processCursiveEvent(
     visitor = await prisma.visitor.update({
       where: { id: existing.id },
       data: {
+        // First-write-wins: backfill the building only when this visitor has
+        // none yet. A person can browse two buildings' sites; re-filing them
+        // on every event would make the row flap and would change which
+        // operator sees them under per-property access.
+        propertyId: backfillPropertyId(existing.propertyId, integration.propertyId),
         cursiveVisitorId: pickHighestPriorityIdentity(
           existing.cursiveVisitorId,
           profileId,
@@ -410,6 +446,9 @@ export async function processCursiveEvent(
       visitor = await prisma.visitor.create({
         data: {
           orgId: integration.orgId,
+          // Per-property pixels are a first-class setup (CursiveIntegration is
+          // unique on (orgId, propertyId)). Null only for legacy org-wide rows.
+          propertyId: integration.propertyId ?? null,
           cursiveVisitorId: identityKey,
           hashedEmail: hemSha256,
           status,
@@ -446,6 +485,7 @@ export async function processCursiveEvent(
         visitor = await prisma.visitor.update({
           where: { id: winner.id },
           data: {
+            propertyId: backfillPropertyId(winner.propertyId, integration.propertyId),
             lastSeenAt:
               eventTime > winner.lastSeenAt ? eventTime : winner.lastSeenAt,
             sessionCount:
@@ -470,6 +510,7 @@ export async function processCursiveEvent(
   if (leadWorthy && normalizedEmail) {
     const upserted = await upsertLead({
       orgId: integration.orgId,
+      propertyId: integration.propertyId ?? null,
       email: normalizedEmail,
       firstName: firstName ?? null,
       lastName: lastName ?? null,
@@ -642,6 +683,8 @@ function pathFromUrl(url: string): string | null {
 
 async function upsertLead(args: {
   orgId: string;
+  /** Building this pixel belongs to; null for legacy org-wide pixels. */
+  propertyId: string | null;
   email: string;
   firstName: string | null;
   lastName: string | null;
@@ -654,12 +697,15 @@ async function upsertLead(args: {
 }): Promise<{ id: string; isNew: boolean }> {
   const existing = await prisma.lead.findFirst({
     where: { orgId: args.orgId, email: args.email },
-    select: { id: true },
+    select: { id: true, propertyId: true },
   });
   if (existing) {
     await prisma.lead.update({
       where: { id: existing.id },
       data: {
+        // Backfill only. Never re-file an existing lead onto another building:
+        // that would move it between operators' views mid-pipeline.
+        propertyId: backfillPropertyId(existing.propertyId, args.propertyId),
         visitorId: args.visitorId,
         firstName: args.firstName ?? undefined,
         lastName: args.lastName ?? undefined,
@@ -677,6 +723,7 @@ async function upsertLead(args: {
     const lead = await prisma.lead.create({
       data: {
         orgId: args.orgId,
+        propertyId: args.propertyId,
         source: LeadSource.PIXEL_OUTREACH,
         sourceDetail: args.sourceDetail,
         status: LeadStatus.NEW,
@@ -698,12 +745,13 @@ async function upsertLead(args: {
     ) {
       const winner = await prisma.lead.findFirst({
         where: { orgId: args.orgId, email: args.email },
-        select: { id: true },
+        select: { id: true, propertyId: true },
       });
       if (!winner) throw err;
       await prisma.lead.update({
         where: { id: winner.id },
         data: {
+          propertyId: backfillPropertyId(winner.propertyId, args.propertyId),
           visitorId: args.visitorId,
           firstName: args.firstName ?? undefined,
           lastName: args.lastName ?? undefined,
@@ -821,7 +869,23 @@ function pickValidationStatus(v: unknown): ValidationStatus {
   return null;
 }
 
-function computeDeliverabilityScore(args: {
+/**
+ * Should this resolved identity become a Lead?
+ *
+ * Exported for test: the basic feed scores 0/100 on computeDeliverabilityScore
+ * because it carries none of that function's inputs, so before 2026-07-29 the
+ * `deliverability >= FLOOR` arm alone made lead creation unreachable.
+ */
+export function evaluateLeadGate(args: {
+  identified: boolean;
+  hasVerifiedEmail: boolean;
+  deliverability: number;
+}): boolean {
+  if (!args.identified) return false;
+  return args.hasVerifiedEmail || args.deliverability >= DELIVERABILITY_FLOOR;
+}
+
+export function computeDeliverabilityScore(args: {
   personalValidation: ValidationStatus;
   businessValidation: ValidationStatus;
   hasPhone: boolean;

@@ -345,3 +345,24 @@ function firstString(value: string | string[] | undefined): string | undefined {
   if (Array.isArray(value)) return value[0];
   return value;
 }
+
+/**
+ * The building-attribution write rule: BACKFILL ONLY, NEVER RE-FILE.
+ *
+ * Returns what a Prisma update should write to a nullable `propertyId`:
+ *   - row already has a building  → that same value (no-op write)
+ *   - row has none, we know one   → the new value (the backfill)
+ *   - neither                     → undefined (Prisma omits the field)
+ *
+ * Why not last-touch: a person can browse two buildings' sites, and pixel
+ * events arrive repeatedly for the same identity. Overwriting on each event
+ * would make the row flap between buildings, move a lead out of the operator
+ * who is working it, and can silently cross a per-property access boundary
+ * (UserPropertyAccess). First real attribution wins and then stays put.
+ */
+export function backfillPropertyId(
+  existing: string | null | undefined,
+  incoming: string | null | undefined,
+): string | undefined {
+  return existing ?? incoming ?? undefined;
+}
