@@ -68,6 +68,11 @@ const body = z.object({
   // when present — keeps the chat's property in lockstep with the config that
   // was served, instead of re-guessing from pageUrl. (Codex tenant-isolation.)
   property: z.string().min(1).max(120).optional(),
+  // First-party per-browser id from our own cookie (public/embed/chatbot.js).
+  // Client-supplied and therefore NOT trusted as proof of identity — it is
+  // always scoped by orgId on read, so a guessed value can only ever reach
+  // this tenant's own prior conversations. See the lookup below.
+  visitorHash: z.string().min(8).max(120).optional(),
 });
 
 export function OPTIONS() {
@@ -102,7 +107,7 @@ export async function POST(req: NextRequest) {
       { status: 400, headers: CORS_HEADERS }
     );
   }
-  const { slug, sessionId, messages, pageUrl, property: propertySlug } =
+  const { slug, sessionId, messages, pageUrl, property: propertySlug, visitorHash } =
     parsed.data;
 
   // Denial-of-Wallet: cap aggregate input size per request (each message is
@@ -225,6 +230,52 @@ export async function POST(req: NextRequest) {
     })
     .catch(() => null);
 
+  // Returning visitor. sessionId is minted fresh on every widget load, so a
+  // person who chatted last week arrives as a stranger and gets asked for an
+  // email we already have. visitorHash is our own first-party cookie and does
+  // persist, so carry forward what THEY told US in an earlier conversation.
+  //
+  // Only self-reported data is reused — capturedEmail/Phone/Name are values
+  // the visitor typed into this chatbot themselves. Nothing vendor-inferred
+  // is involved, so this cannot surface a household member's details the way
+  // a pixel identity can.
+  //
+  // ALWAYS scoped by orgId: visitorHash is client-supplied, so without the
+  // org filter a guessed cookie value could pull another tenant's captured
+  // contact info into this prompt (and be read back out of the bot). Same
+  // isolation rule as the sessionId lookup above.
+  const returning =
+    !captured?.capturedEmail && !captured?.capturedPhone && visitorHash
+      ? await prisma.chatbotConversation
+          .findFirst({
+            where: {
+              orgId,
+              visitorHash,
+              sessionId: { not: sessionId },
+              OR: [
+                { capturedEmail: { not: null } },
+                { capturedPhone: { not: null } },
+              ],
+            },
+            orderBy: { createdAt: "desc" },
+            select: { capturedName: true, capturedEmail: true, capturedPhone: true },
+          })
+          .catch(() => null)
+      : null;
+
+  // The NAME is deliberately not carried across from a previous conversation,
+  // only the email/phone. A cookie proves the same BROWSER, not the same
+  // PERSON — shared laptops and family devices are common, and student
+  // housing especially so. Email/phone are used only to suppress re-asking
+  // (the bot never says them out loud), whereas the name gets spoken in a
+  // greeting, so a wrong one is immediately visible to the visitor. Same rule
+  // that governs pixel identities: an inferred link never names anyone.
+  const knownVisitor = {
+    name: captured?.capturedName ?? null,
+    email: captured?.capturedEmail ?? returning?.capturedEmail ?? null,
+    phone: captured?.capturedPhone ?? returning?.capturedPhone ?? null,
+  };
+
   // Resolve WHICH property this chat is for, most-authoritative first:
   //  1. the explicit property slug the widget loaded its config with,
   //  2. inference from the host pageUrl,
@@ -279,11 +330,7 @@ export async function POST(req: NextRequest) {
 
   const systemPrompt = buildSystemPrompt(
     org as ChatbotTenant,
-    {
-      name: captured?.capturedName ?? null,
-      email: captured?.capturedEmail ?? null,
-      phone: captured?.capturedPhone ?? null,
-    },
+    knownVisitor,
     {
       property: promptProperty,
       config: resolvedConfig,
@@ -322,6 +369,7 @@ export async function POST(req: NextRequest) {
           // Resolved property only — null when genuinely ambiguous, so a lead
           // is never mis-attributed to an arbitrary property. (Codex.)
           propertyId: resolvedPropertyId,
+          visitorHash: visitorHash ?? null,
         });
       } catch (err) {
         console.error("[public/chatbot/chat] persistence error:", err);
@@ -343,6 +391,7 @@ async function persistConversation(args: {
   userAgent?: string;
   ipAddress?: string;
   propertyId?: string | null;
+  visitorHash?: string | null;
 }) {
   const full = [
     ...args.messages,
@@ -392,6 +441,10 @@ async function persistConversation(args: {
         capturedName: extracted.name ?? undefined,
         capturedEmail: extracted.email ?? undefined,
         capturedPhone: extracted.phone ?? undefined,
+        // Stamp the browser id if we didn't have one yet (older row, or the
+        // visitor accepted cookies mid-conversation). Never overwrite an
+        // existing value with null.
+        visitorHash: args.visitorHash ?? undefined,
       },
     });
   } else {
@@ -411,6 +464,7 @@ async function persistConversation(args: {
         pageUrl: args.pageUrl ?? null,
         userAgent: args.userAgent ?? null,
         ipAddress: args.ipAddress ?? null,
+        visitorHash: args.visitorHash ?? null,
       },
     });
   }

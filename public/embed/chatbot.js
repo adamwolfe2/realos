@@ -491,6 +491,60 @@
     return nodes[nodes.length - 1].textContent || null;
   }
 
+  // --- First-party visitor id ----------------------------------------------
+  // A LeaseStack-owned cookie set on the TENANT's own domain. Deliberately
+  // not a third-party/vendor id: we removed the first-party pixel in April,
+  // and the remaining vendor pixel resolves households rather than people, so
+  // nothing it returns can be trusted to name someone. This id claims only
+  // one thing — "the same browser was here before" — which is enough to stop
+  // re-asking a returning visitor for contact info they already gave us.
+  //
+  // `ls_vid` is the same cookie name popup.js has been reading since April
+  // (it has been sending null ever since the pixel that wrote it was
+  // removed), so writing it here revives that path too.
+  //
+  // NOT an identity. Any name or email reached through this must be treated
+  // as inferred, and must never be dropped into an email greeting.
+  var VISITOR_COOKIE = "ls_vid";
+  var VISITOR_COOKIE_DAYS = 180;
+
+  function readCookie(name) {
+    try {
+      var pairs = document.cookie ? document.cookie.split(";") : [];
+      for (var i = 0; i < pairs.length; i++) {
+        var idx = pairs[i].indexOf("=");
+        var k = idx === -1 ? pairs[i].trim() : pairs[i].slice(0, idx).trim();
+        if (k === name) {
+          return idx === -1 ? "" : decodeURIComponent(pairs[i].slice(idx + 1));
+        }
+      }
+    } catch (_) { /* ignore */ }
+    return undefined;
+  }
+
+  function readOrCreateVisitorId() {
+    try {
+      var existing = readCookie(VISITOR_COOKIE);
+      if (existing) return existing;
+      var id = randomUuid();
+      var expires = new Date(
+        Date.now() + VISITOR_COOKIE_DAYS * 24 * 60 * 60 * 1000,
+      ).toUTCString();
+      // Lax so it survives a normal click-through from Google or an ad.
+      // Secure only on https, otherwise a local http page can't set it.
+      var secure = location.protocol === "https:" ? "; Secure" : "";
+      document.cookie =
+        VISITOR_COOKIE + "=" + encodeURIComponent(id) +
+        "; expires=" + expires + "; path=/; SameSite=Lax" + secure;
+      // Only claim the id if the write actually stuck. A visitor with cookies
+      // blocked should stay anonymous rather than get a fresh "returning"
+      // id on every single page load, which would poison the join.
+      return readCookie(VISITOR_COOKIE) ? id : undefined;
+    } catch (_) {
+      return undefined;
+    }
+  }
+
   // --- Inline lead capture bubble ------------------------------------------
   function maybeInjectInlineLeadCapture() {
     if (state.inlineLeadShown) return;
@@ -612,6 +666,11 @@
         messages: state.history,
         pageUrl: window.location.href,
         property: propertySlug || undefined,
+        // Stable per-browser id so a returning visitor's new conversation can
+        // be joined to their previous ones. sessionId is minted fresh on every
+        // widget load, so without this a person who chatted last week comes
+        // back as a total stranger and gets asked for an email we already have.
+        visitorHash: readOrCreateVisitorId(),
       }),
     })
       .then(function (res) {
