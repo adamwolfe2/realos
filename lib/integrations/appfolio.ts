@@ -1003,6 +1003,15 @@ function firstEmail(raw: unknown): string | null {
   return first ? first.toLowerCase() : null;
 }
 
+// Same comma/semicolon-separated shape as `emails`, but for values that must
+// NOT be lowercased or assumed to contain "@" — currently `phone_numbers`.
+function firstOfList(raw: unknown): string | null {
+  const s = asString(raw);
+  if (!s) return null;
+  const first = s.split(/[,;]/)[0]?.trim();
+  return first ? first : null;
+}
+
 // Mapper for the `tenant_directory` v2 report. Each row represents a
 // tenant-occupancy pairing, so the stable identifier is the occupancy
 // (a tenant can have multiple occupancies over time).
@@ -1359,6 +1368,16 @@ function residentStatusFromRaw(raw: RawRow): MappedResident["status"] {
 // tried two forms, so any tenant on a different shape landed with
 // null email/phone — which then breaks downstream chatbot, review
 // requests, renewal outreach, and referrals. Expanded fallbacks below.
+//
+// 2026-07-29: the #17 fix guessed at key names and still landed 0 of 3,125
+// residents with an email. The actual keys are PLURAL — `emails` and
+// `phone_numbers`, comma-separated when a tenant has several on file —
+// which is what mapTenantPayload above has been reading successfully off
+// THIS SAME REPORT the whole time. Verified against 400 stored raw
+// payloads: 388 carry an address under `emails`. The data was always in
+// the feed; only this mapper was looking in the wrong place. Both plural
+// keys are checked FIRST now, ahead of the speculative fallbacks, which
+// are kept only because no live payload disproves them.
 export function mapResidentPayload(raw: RawRow): MappedResident | null {
   const externalId = asString(
     raw.tenant_id ??
@@ -1372,28 +1391,34 @@ export function mapResidentPayload(raw: RawRow): MappedResident | null {
 
   const firstName = asString(raw.first_name ?? raw.FirstName) ?? null;
   const lastName = asString(raw.last_name ?? raw.LastName) ?? null;
-  const email = asString(
-    raw.email_address ??
-      raw.email ??
-      raw.primary_email ??
-      raw.PrimaryEmail ??
-      raw.Email ??
-      raw.EmailAddress,
-  )?.toLowerCase() ?? null;
-  const phone = asString(
-    raw.phone_number ??
-      raw.phone ??
-      raw.phone1 ??
-      raw.primary_phone ??
-      raw.PrimaryPhone ??
-      raw.Phone ??
-      raw.PhoneNumber ??
-      raw.Phone1 ??
-      raw.cell_phone ??
-      raw.mobile_phone ??
-      raw.CellPhone ??
-      raw.MobilePhone,
-  ) ?? null;
+  const email =
+    firstEmail(raw.emails) ??
+    asString(
+      raw.email_address ??
+        raw.email ??
+        raw.primary_email ??
+        raw.PrimaryEmail ??
+        raw.Email ??
+        raw.EmailAddress,
+    )?.toLowerCase() ??
+    null;
+  const phone =
+    firstOfList(raw.phone_numbers) ??
+    asString(
+      raw.phone_number ??
+        raw.phone ??
+        raw.phone1 ??
+        raw.primary_phone ??
+        raw.PrimaryPhone ??
+        raw.Phone ??
+        raw.PhoneNumber ??
+        raw.Phone1 ??
+        raw.cell_phone ??
+        raw.mobile_phone ??
+        raw.CellPhone ??
+        raw.MobilePhone,
+    ) ??
+    null;
 
   const unitExternalId =
     asString(raw.unit_id ?? raw.UnitId) ?? null;
