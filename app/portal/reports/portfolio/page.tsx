@@ -85,6 +85,7 @@ export default async function PortfolioFunnelPage({
     getLeadJourney({ orgId: scope.orgId, propertyIds, periodDays }),
   ]);
   const { stages, toursCompleted, sources, appStatus, byProperty } = funnel;
+  const trackedStages = journey.stages.filter((s) => s.tracked);
   const maxSource = sources[0]?.count ?? 1;
   const hasData = stages.some((s) => s.value > 0);
 
@@ -256,10 +257,12 @@ export default async function PortfolioFunnelPage({
           </span>
         </div>
         {/* Stage strip — same inline metric-group style as PipelineStrip.
-            An SVG funnel stretched across 6 full-width stages read as a
-            giant wedge (Adam, 2026-07-29); dense mono columns don't. */}
+            Untracked stages are OMITTED entirely, not rendered as dashes
+            (Adam, 2026-07-29 + the PipelineStrip precedent): the report
+            should read as complete, and conversion math already skips
+            untracked stages so the step-down %s are unchanged. */}
         <div className="mt-3 flex items-stretch divide-x divide-[var(--hair)]">
-          {journey.stages.map((stage, i) => (
+          {trackedStages.map((stage, i) => (
             <div key={stage.key} className="flex-1 min-w-0 px-4 first:pl-0 last:pr-0">
               {stage.conversionFromPrev != null && i > 0 ? (
                 <div className="mb-1 font-mono text-[10px] tabular-nums text-muted-foreground">
@@ -271,23 +274,16 @@ export default async function PortfolioFunnelPage({
                 </div>
               )}
               <div className="ls-eyebrow">{stage.label}</div>
-              <div className="ls-metric ls-metric-md mt-1">
-                {stage.tracked ? stage.count.toLocaleString() : "—"}
-              </div>
-              {!stage.tracked ? (
-                <div className="mt-0.5 text-[10px] text-muted-foreground">not tracked</div>
-              ) : null}
+              <div className="ls-metric ls-metric-md mt-1">{stage.count.toLocaleString()}</div>
             </div>
           ))}
         </div>
-        {!journey.stages.every((s) => s.tracked) ? (
+        {trackedStages.length < journey.stages.length ? (
           <p className="mt-2 text-[11px] leading-snug text-muted-foreground">
-            Tours aren&apos;t tracked yet — your AppFolio plan doesn&apos;t include the
-            showings report.{" "}
-            <Link href="/portal/integrations" className="underline underline-offset-2">
+            Tour stages appear here once tour booking is connected.{" "}
+            <Link href="/portal/connect" className="underline underline-offset-2">
               Connect Cal.com
-            </Link>{" "}
-            to fill this stage in.
+            </Link>
           </p>
         ) : null}
         {journey.lost + journey.unqualified > 0 ? (
@@ -303,7 +299,7 @@ export default async function PortfolioFunnelPage({
               <thead>
                 <tr className="border-b border-border text-left text-muted-foreground">
                   <th className="py-1.5 pr-3 font-medium">Source</th>
-                  {journey.stages.map((s) => (
+                  {trackedStages.map((s) => (
                     <th key={s.key} className="px-2 py-1.5 text-right font-medium">
                       {s.label}
                     </th>
@@ -316,14 +312,16 @@ export default async function PortfolioFunnelPage({
                     <td className="py-1.5 pr-3 font-semibold text-foreground">
                       {sourceLabel(row.source)}
                     </td>
-                    {row.counts.map((count, i) => (
-                      <td
-                        key={journey.stages[i].key}
-                        className="ls-metric px-2 py-1.5 text-right text-muted-foreground"
-                      >
-                        {journey.stages[i].tracked ? count.toLocaleString() : "—"}
-                      </td>
-                    ))}
+                    {row.counts.map((count, i) =>
+                      journey.stages[i].tracked ? (
+                        <td
+                          key={journey.stages[i].key}
+                          className="ls-metric px-2 py-1.5 text-right text-muted-foreground"
+                        >
+                          {count.toLocaleString()}
+                        </td>
+                      ) : null,
+                    )}
                   </tr>
                 ))}
               </tbody>
