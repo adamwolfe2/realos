@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
 import { SectionLabel } from "@/components/portal/ui/section-label";
+import { StatusChip } from "@/components/portal/ui/status-chip";
 import {
   MetaMark,
   GoogleMark,
@@ -257,7 +258,7 @@ export function MarketplaceClient({
         }
         actions={
           <div className="flex items-center gap-3">
-            <div className="hidden md:flex items-center gap-2 rounded-md border border-border bg-card px-3 py-1.5">
+            <div className="hidden md:flex items-center gap-2 rounded-[2px] border border-border bg-card px-3 py-1.5">
               <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
                 Active
               </span>
@@ -270,7 +271,7 @@ export function MarketplaceClient({
               type="button"
               onClick={activateAll}
               disabled={bulkPending || enabledCount === totalToggleable}
-              className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="inline-flex items-center gap-2 h-9 px-4 rounded-[2px] bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {bulkPending
                 ? "Activating…"
@@ -283,7 +284,7 @@ export function MarketplaceClient({
       />
 
       {error ? (
-        <div className="mb-6 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-2.5 text-sm text-destructive">
+        <div className="mb-6 rounded-[2px] border border-destructive/30 bg-destructive/10 px-4 py-2.5 text-sm text-destructive">
           {error}
         </div>
       ) : null}
@@ -349,7 +350,6 @@ function ModuleCard({
   const isIncluded = m.kind === "included";
   const isAddon = m.kind === "addon";
   const isToggle = m.kind === "toggle";
-  const isConcierge = m.kind === "concierge";
   // Bug #123 (was Norman bug #2): operators couldn't click into a module to
   // read the full pitch — tagline was truncated with "..." and there was no
   // expand. Fix (b) from spec: kept line-clamp-2 on the tagline and added a
@@ -358,50 +358,33 @@ function ModuleCard({
   // target so toggle/activate behavior is unchanged.
   const [expanded, setExpanded] = useState(false);
 
-  // Single-accent design: every card uses the LeaseStack blue stripe. We
-  // signal state with stripe *opacity*, not hue — active is the boldest
-  // blue, included/addon/concierge sit one step down, available toggles
-  // are a soft hairline, coming-soon is invisible. This keeps the page
-  // visually cohesive: one color, one brand, no per-tier rainbow. State
-  // still reads clearly through the status pill + CTA, where it belongs.
-  const stripeColor = isComing
-    ? "transparent"
-    : isEnabled
-      ? "linear-gradient(90deg, var(--color-primary), #60A5FA)"
-      : isIncluded || isAddon || isConcierge
-        ? "linear-gradient(90deg, rgba(37,99,235,0.85), rgba(96,165,250,0.85))"
-        : "linear-gradient(90deg, rgba(37,99,235,0.35), rgba(96,165,250,0.35))";
+  // Visual language matches the Connection status cards (Adam, 2026-07-29):
+  // flat rounded-[2px] hairline frames, StatusChip vocabulary, neutral
+  // bordered icon tiles. Active cards get the same darker #c6c6c6 border;
+  // coming-soon gets the dashed muted frame. No gradient stripes.
+  const isOn = isEnabled || isIncluded;
 
   return (
     <article
-      className={[
-        "ls-card relative p-4 flex flex-col overflow-hidden",
-        isComing ? "opacity-80" : "",
-      ].join(" ")}
-      style={{ minHeight: 144 }}
+      className={`rounded-[2px] border p-4 flex flex-col ${
+        isOn
+          ? "border-[#c6c6c6] bg-card"
+          : isComing
+            ? "border-dashed border-border bg-muted/30"
+            : "border-border bg-card"
+      }`}
     >
-      {/* Top accent stripe — pure CSS so it survives hover and never shifts. */}
-      <span
-        aria-hidden="true"
-        className="absolute top-0 left-0 right-0 h-[2px]"
-        style={{ background: stripeColor }}
-      />
-      {/* Header — icon + title + status pill */}
+      {/* Header — icon + title + status chip */}
       <div className="flex items-start gap-3">
         <div
-          className="inline-flex items-center justify-center w-9 h-9 rounded-lg shrink-0 ring-1 ring-inset text-primary"
-          style={{
-            background:
-              "linear-gradient(180deg, rgba(37,99,235,0.10), rgba(37,99,235,0.04))",
-            boxShadow: "0 1px 0 rgba(255,255,255,0.7) inset",
-            opacity: isComing ? 0.6 : 1,
-          }}
+          className="inline-flex items-center justify-center h-10 w-10 p-2 rounded-lg shrink-0 bg-card border border-border text-primary"
+          style={{ opacity: isComing ? 0.6 : 1 }}
         >
           <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="text-[14px] font-semibold tracking-tight text-foreground truncate">
+            <h3 className="text-[13px] font-semibold tracking-tight text-foreground truncate">
               {m.name}
             </h3>
             <StatusPill kind={m.kind} isEnabled={isEnabled} popular={m.popular} />
@@ -460,10 +443,10 @@ function ModuleCard({
         </div>
       </div>
 
-      {/* Footer — flex-end aligned. Logos + price on the left, CTA on the
-          right. No bullets, no separators, no "INTEGRATES WITH" label —
-          the logos speak for themselves at this size. */}
-      <div className="mt-auto pt-3 flex items-center justify-between gap-2">
+      {/* Footer — hairline divider then logos + price left, CTA right.
+          Divider matches the integration cards' #e0e0e0 section rule. */}
+      <div className="mt-auto pt-3">
+        <div className="border-t border-[#e0e0e0] pt-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           {m.brandLogoKeys && m.brandLogoKeys.length > 0 ? (
             <div className="flex items-center gap-1 shrink-0">
@@ -510,11 +493,16 @@ function ModuleCard({
             onNotifyMe={onNotifyMe}
           />
         </div>
+        </div>
       </div>
     </article>
   );
 }
 
+// Chip vocabulary now matches the Connection status cards exactly: green
+// Live-family chip for anything that's on, neutral "Not connected"-family
+// chip otherwise, with the tier rendered as a small plain-text note beside
+// the chip (same pattern integrations use for "Coming soon").
 function StatusPill({
   kind,
   isEnabled,
@@ -525,51 +513,52 @@ function StatusPill({
   popular: boolean;
 }) {
   if (kind === "included") {
-    return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary shrink-0">
-        <Check className="w-2.5 h-2.5" />
-        Included
-      </span>
-    );
+    return <StatusChip status="live" label="Included" className="shrink-0" />;
   }
   if (kind === "coming") {
     return (
-      <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground shrink-0">
-        Coming soon
+      <span className="flex items-center gap-1.5 shrink-0">
+        <StatusChip status="not_connected" label="Not active" />
+        <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+          Coming soon
+        </span>
       </span>
     );
   }
   if (kind === "addon") {
     return (
-      <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-[0.12em] text-primary shrink-0">
-        Pro add-on
+      <span className="flex items-center gap-1.5 shrink-0">
+        <StatusChip status="not_connected" label="Not active" />
+        <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+          Pro add-on
+        </span>
       </span>
     );
   }
   if (kind === "concierge") {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground shrink-0">
-        <Sparkles className="w-2.5 h-2.5" />
-        Concierge
+      <span className="flex items-center gap-1.5 shrink-0">
+        <StatusChip status="not_connected" label="Not active" />
+        <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground whitespace-nowrap">
+          <Sparkles className="w-2.5 h-2.5" />
+          Concierge
+        </span>
       </span>
     );
   }
   if (isEnabled) {
-    return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary shrink-0">
-        <Check className="w-2.5 h-2.5" />
-        Active
-      </span>
-    );
+    return <StatusChip status="live" label="Active" className="shrink-0" />;
   }
-  if (popular) {
-    return (
-      <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground shrink-0">
-        Popular
-      </span>
-    );
-  }
-  return null;
+  return (
+    <span className="flex items-center gap-1.5 shrink-0">
+      <StatusChip status="not_connected" label="Not active" />
+      {popular ? (
+        <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+          Popular
+        </span>
+      ) : null}
+    </span>
+  );
 }
 
 function PriceLine({
@@ -668,7 +657,7 @@ function CtaRow({
         type="button"
         onClick={onNotifyMe}
         disabled={isNotified}
-        className="inline-flex items-center justify-center h-7 px-3 rounded-md border border-border bg-card text-muted-foreground text-[12px] font-medium hover:border-primary hover:text-primary disabled:opacity-60 disabled:cursor-default transition-colors"
+        className="inline-flex items-center justify-center h-7 px-3 rounded-[2px] border border-border bg-card text-muted-foreground text-[12px] font-medium hover:border-primary hover:text-primary disabled:opacity-60 disabled:cursor-default transition-colors"
       >
         {isNotified ? "Notified" : "Notify me"}
       </button>
@@ -679,7 +668,7 @@ function CtaRow({
     return (
       <Link
         href={setupHref}
-        className="inline-flex items-center gap-1 h-7 px-3 rounded-md bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary-dark transition-colors"
+        className="inline-flex items-center gap-1 h-7 px-3 rounded-[2px] bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary-dark transition-colors"
       >
         Open <ArrowRight className="w-3 h-3" />
       </Link>
@@ -690,7 +679,7 @@ function CtaRow({
     return (
       <Link
         href={setupHref}
-        className="inline-flex items-center gap-1 h-7 px-3 rounded-md bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary-dark transition-colors"
+        className="inline-flex items-center gap-1 h-7 px-3 rounded-[2px] bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary-dark transition-colors"
       >
         Add <ArrowRight className="w-3 h-3" />
       </Link>
@@ -703,7 +692,7 @@ function CtaRow({
     return (
       <Link
         href={setupHref}
-        className="inline-flex items-center gap-1 h-7 px-3 rounded-md border border-primary text-primary text-[12px] font-semibold hover:bg-primary hover:text-primary-foreground transition-colors"
+        className="inline-flex items-center gap-1 h-7 px-3 rounded-[2px] border border-primary text-primary text-[12px] font-semibold hover:bg-primary hover:text-primary-foreground transition-colors"
       >
         Request setup <ArrowRight className="w-3 h-3" />
       </Link>
@@ -715,7 +704,7 @@ function CtaRow({
       <div className="flex items-center gap-1.5">
         <Link
           href={setupHref}
-          className="inline-flex items-center gap-1 h-7 px-3 rounded-md bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary-dark transition-colors"
+          className="inline-flex items-center gap-1 h-7 px-3 rounded-[2px] bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary-dark transition-colors"
         >
           Set up <ArrowRight className="w-3 h-3" />
         </Link>
@@ -737,7 +726,7 @@ function CtaRow({
       type="button"
       onClick={onActivate}
       disabled={isPending}
-      className="inline-flex items-center justify-center h-7 px-3 rounded-md bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary-dark disabled:opacity-40 transition-colors"
+      className="inline-flex items-center justify-center h-7 px-3 rounded-[2px] bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary-dark disabled:opacity-40 transition-colors"
     >
       {isPending ? "…" : isTrialing ? "Activate" : "Unlock"}
     </button>
