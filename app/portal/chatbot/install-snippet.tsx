@@ -79,6 +79,7 @@ export function InstallSnippet({
   snippet,
   status,
   lastActivityLabel,
+  defaultCollapsed = false,
 }: {
   snippet: string;
   /**
@@ -90,8 +91,12 @@ export function InstallSnippet({
   status?: ConnectionStatus;
   /** Pre-formatted "last activity …" string (format upstream — hydration-safe). */
   lastActivityLabel?: string | null;
+  /** Collapse to a one-line summary (used once the widget is live —
+   *  installation is a done step, not daily reading). */
+  defaultCollapsed?: boolean;
 }) {
   const router = useRouter();
+  const [collapsed, setCollapsed] = React.useState(defaultCollapsed);
   const [copied, setCopied] = React.useState(false);
   const [everCopied, setEverCopied] = React.useState(false);
   const [copyFailed, setCopyFailed] = React.useState(false);
@@ -124,6 +129,27 @@ export function InstallSnippet({
     startVerify(() => {
       router.refresh();
     });
+  }
+
+  if (collapsed) {
+    return (
+      <section className="ls-card px-5 py-3 flex flex-wrap items-center gap-3">
+        <h2 className="text-sm font-semibold text-foreground">Installation</h2>
+        {hasHeartbeat ? <StatusChip status={status ?? "not_connected"} /> : null}
+        {lastActivityLabel ? (
+          <span className="text-[11px] text-muted-foreground tabular-nums">
+            {lastActivityLabel}
+          </span>
+        ) : null}
+        <button
+          type="button"
+          onClick={() => setCollapsed(false)}
+          className="ml-auto text-[11px] font-semibold text-primary hover:underline"
+        >
+          Show install instructions
+        </button>
+      </section>
+    );
   }
 
   return (

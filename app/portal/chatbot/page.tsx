@@ -10,7 +10,14 @@ import { LeadRoutingPanel } from "./lead-routing-panel";
 import { InstallSnippet } from "./install-snippet";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
-import type { ConnectionStatus } from "@/components/portal/ui/status-chip";
+import {
+  StatusChip,
+  type ConnectionStatus,
+} from "@/components/portal/ui/status-chip";
+import {
+  PerformanceOverTime,
+  type PerformancePoint,
+} from "@/components/portal/dashboard/performance-over-time";
 
 export const metadata: Metadata = { title: "Chatbot" };
 export const dynamic = "force-dynamic";
@@ -60,6 +67,7 @@ export default async function ChatbotPage() {
     existingConfig,
     appUrl,
     convStats,
+    convDays,
     latestConversation,
   ] = await Promise.all([
     prisma.organization.findUnique({
@@ -118,6 +126,18 @@ export default async function ChatbotPage() {
     ])
       .then(([d1, d7, d30, intakes30d]) => ({ d1, d7, d30, intakes30d }))
       .catch(() => ({ d1: 0, d7: 0, d30: 0, intakes30d: 0 })),
+    // Per-day conversation volume, current 30d + prior 30d, for the
+    // performance chart. Tiny result set (SG: ~166 rows / 60d) — bucket
+    // in JS, same approach as getPerformanceOverTime.
+    prisma.chatbotConversation
+      .findMany({
+        where: {
+          orgId: scope.orgId,
+          lastMessageAt: { gte: new Date(now - 60 * 24 * 60 * 60 * 1000) },
+        },
+        select: { lastMessageAt: true },
+      })
+      .catch(() => [] as Array<{ lastMessageAt: Date }>),
     // Install heartbeat. There is no dedicated lastSeenAt / installVerifiedAt
     // column and the widget's config fetch is edge-cached (can't be logged),
     // so the strongest install proof is the most recent conversation the
@@ -171,6 +191,28 @@ export default async function ChatbotPage() {
   const stats = convStats;
   const hasAnyConversations = stats.d30 > 0;
 
+  // Bucket conversations into per-day points, current 30d with the prior
+  // 30d as the comparison series (same shape the dashboard chart uses).
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const dayKey = (d: Date) => d.toISOString().slice(0, 10);
+  const buckets = new Map<string, number>();
+  for (const c of convDays) buckets.set(dayKey(c.lastMessageAt), (buckets.get(dayKey(c.lastMessageAt)) ?? 0) + 1);
+  const chartPoints: PerformancePoint[] = Array.from({ length: 30 }, (_, i) => {
+    const cur = new Date(now - (29 - i) * DAY_MS);
+    const prior = new Date(cur.getTime() - 30 * DAY_MS);
+    return {
+      date: dayKey(cur),
+      label: cur.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      current: buckets.get(dayKey(cur)) ?? 0,
+      comparison: buckets.get(dayKey(prior)) ?? 0,
+    };
+  });
+  const prior30Total = chartPoints.reduce((s, p) => s + (p.comparison ?? 0), 0);
+  const d30DeltaPct =
+    prior30Total > 0
+      ? Math.round(((stats.d30 - prior30Total) / prior30Total) * 100)
+      : null;
+
   // Heartbeat chip state: Live if the widget reported activity in the last
   // 7 days, Stale if it has ever reported but has gone quiet, otherwise
   // Not connected. Rendered from last-known server state — no live probe.
@@ -192,9 +234,29 @@ export default async function ChatbotPage() {
 
   return (
     <div className="space-y-6">
+      {/* Redesign 2026-07-29 (Adam): analytics lead, configuration follows,
+          install verification collapsed at the bottom once the widget is
+          live. Status + master switch live in the header, not in cards. */}
       <PageHeader
         title="Chatbot"
-        description="Install the AI leasing assistant on your site and verify it's live, then tune persona, knowledge, and capture rules below."
+        description="How your AI leasing assistant is performing, and how it behaves."
+        actions={
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-2">
+              <StatusChip status={installStatus} />
+              {lastActivityLabel ? (
+                <span className="hidden md:inline text-[11px] text-muted-foreground tabular-nums">
+                  {lastActivityLabel}
+                </span>
+              ) : null}
+            </span>
+            <MasterToggle
+              enabled={initial.chatbotEnabled}
+              moduleActive={org.moduleChatbot}
+              variant="inline"
+            />
+          </div>
+        }
       />
 
       {!org.moduleChatbot ? (
@@ -219,62 +281,56 @@ export default async function ChatbotPage() {
         </div>
       ) : null}
 
-      {/* ── INSTALL (top of page — Carbon Wave 4) ──────────────────────
-          The install prerequisite leads: Copy → Paste → Verify stepper +
-          heartbeat chip. Everything below is tuning; none of it matters
-          until the widget is on the operator's site. */}
-      <InstallSnippet
-        snippet={snippet}
-        status={installStatus}
-        lastActivityLabel={lastActivityLabel}
-      />
-
-      {/* ── INSIGHT (below install, above config per #91) ──────────── */}
+      {/* ── PERFORMANCE (leads the page) ─────────────────────────────── */}
       {hasAnyConversations ? (
         <SectionCard
           label="Performance"
-          description="Conversation volume and intake capture over the last day, week, and month."
+          description="Conversations per day over the last 30 days, with the prior 30 days for comparison."
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-            <KpiTile
-              density="dense"
-              label="Conversations · 1d"
-              value={stats.d1.toLocaleString()}
-            />
-            <KpiTile
-              density="dense"
-              label="Conversations · 7d"
-              value={stats.d7.toLocaleString()}
-            />
-            <KpiTile
-              density="dense"
-              label="Conversations · 30d"
-              value={stats.d30.toLocaleString()}
-            />
-            <KpiTile
-              density="dense"
-              label="Intakes captured · 30d"
-              value={stats.intakes30d.toLocaleString()}
-              hint={
-                stats.d30 > 0
-                  ? `${Math.round((stats.intakes30d / stats.d30) * 100)}% capture rate`
-                  : undefined
-              }
-            />
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <KpiTile
+                density="dense"
+                label="Conversations · 30d"
+                value={stats.d30.toLocaleString()}
+                delta={
+                  d30DeltaPct != null
+                    ? {
+                        value: `${d30DeltaPct >= 0 ? "+" : ""}${d30DeltaPct}%`,
+                        trend:
+                          d30DeltaPct > 0 ? "up" : d30DeltaPct < 0 ? "down" : "flat",
+                      }
+                    : undefined
+                }
+                hint="vs prior 30 days"
+              />
+              <KpiTile
+                density="dense"
+                label="Conversations · 7d"
+                value={stats.d7.toLocaleString()}
+              />
+              <KpiTile
+                density="dense"
+                label="Leads captured · 30d"
+                value={stats.intakes30d.toLocaleString()}
+              />
+              <KpiTile
+                density="dense"
+                label="Capture rate · 30d"
+                value={
+                  stats.d30 > 0
+                    ? `${Math.round((stats.intakes30d / stats.d30) * 100)}%`
+                    : "—"
+                }
+                hint="conversations that left contact info"
+              />
+            </div>
+            <PerformanceOverTime points={chartPoints} compare />
           </div>
         </SectionCard>
       ) : null}
 
-      {/* ── CONFIGURATION (below insight per #91) ──────────────────── */}
-      <MasterToggle
-        enabled={initial.chatbotEnabled}
-        moduleActive={org.moduleChatbot}
-      />
-
-      {/* Lead routing — sets Organization.notifyLeadEmail +
-          notifyOnChatbotLead. Same address is used by popup / form /
-          tour channels too; surfaced here because operators look at the
-          chatbot page first when figuring out where leads go. */}
+      {/* ── BEHAVIOR ─────────────────────────────────────────────────── */}
       <LeadRoutingPanel
         notifyLeadEmail={org.notifyLeadEmail}
         notifyOnChatbotLead={org.notifyOnChatbotLead}
@@ -284,6 +340,14 @@ export default async function ChatbotPage() {
         initial={initial}
         orgPrimaryColor={org.primaryColor}
         moduleActive={org.moduleChatbot}
+      />
+
+      {/* ── INSTALLATION (bottom; collapsed once the widget is live) ── */}
+      <InstallSnippet
+        snippet={snippet}
+        status={installStatus}
+        lastActivityLabel={lastActivityLabel}
+        defaultCollapsed={installStatus === "live"}
       />
     </div>
   );

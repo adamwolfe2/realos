@@ -148,17 +148,10 @@ export function ChatbotConfigForm({
           onChange={(v) => update("chatbotFollowUpMessage", v)}
           hint={
             <>
-              Optional second message sent right after the greeting on first
-              open. Leave empty to send only the greeting. Supports
-              placeholders that the widget interpolates against live
-              inventory data:{" "}
-              <code className="font-mono text-[10px]">{"{property_name}"}</code>
-              ,{" "}
-              <code className="font-mono text-[10px]">{"{starting_rent}"}</code>
-              ,{" "}
-              <code className="font-mono text-[10px]">{"{open_count}"}</code>,{" "}
-              <code className="font-mono text-[10px]">{"{next_available}"}</code>
-              .
+              Optional. Placeholders fill from live inventory:{" "}
+              <code className="font-mono text-[10px]">
+                {"{property_name} {starting_rent} {open_count} {next_available}"}
+              </code>
             </>
           }
           maxLength={500}
@@ -172,13 +165,10 @@ export function ChatbotConfigForm({
           maxLength={200}
           hint="Short proactive bubble — keep it under 80 characters."
         />
-      </section>
-
-      {/* Appearance */}
-      <section className="ls-card p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-foreground">Appearance</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <label className="flex flex-col gap-1.5">
+        {/* Appearance folded into Persona (2026-07-29): two fields never
+            deserved their own card. */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1 border-t border-border/60">
+          <label className="flex flex-col gap-1.5 pt-3">
             <span className={LABEL_CLASS}>Brand color</span>
             <div className="flex items-center gap-2">
               <input
@@ -198,13 +188,12 @@ export function ChatbotConfigForm({
               />
             </div>
             <span className="text-[11px] text-muted-foreground">
-              Leave blank to inherit your brand primary color
-              {orgPrimaryColor ? ` (${orgPrimaryColor}).` : "."}
+              Blank inherits your brand primary
+              {orgPrimaryColor ? ` (${orgPrimaryColor})` : ""}.
             </span>
           </label>
-
-          <label className="flex flex-col gap-1.5">
-            <span className={LABEL_CLASS}>Idle trigger (seconds)</span>
+          <label className="flex flex-col gap-1.5 pt-3">
+            <span className={LABEL_CLASS}>Teaser delay (seconds)</span>
             <input
               type="number"
               name="chatbotIdleTriggerSeconds"
@@ -217,28 +206,35 @@ export function ChatbotConfigForm({
               className={INPUT_CLASS}
             />
             <span className="text-[11px] text-muted-foreground">
-              Seconds before the proactive teaser bubble pops up. 0 disables the teaser.
+              0 disables the proactive teaser.
             </span>
           </label>
         </div>
       </section>
 
-      {/* Lead capture */}
+      {/* Lead capture — segmented control: three options on one row, the
+          active option's explanation below (was three stacked radio cards). */}
       <section className="ls-card p-5 space-y-3">
-        <h2 className="text-sm font-semibold text-foreground">Lead capture</h2>
-        <p className="text-xs text-muted-foreground">
-          Choose when the bot asks for a visitor&apos;s name and email.
-        </p>
-        <div className="space-y-2">
+        <div className="flex flex-wrap items-baseline gap-x-2">
+          <h2 className="text-sm font-semibold text-foreground">Lead capture</h2>
+          <p className="text-xs text-muted-foreground">
+            When the bot asks for name + email.
+          </p>
+        </div>
+        <div
+          role="radiogroup"
+          aria-label="Lead capture mode"
+          className="inline-flex rounded-[2px] border border-border overflow-hidden"
+        >
           {CAPTURE_OPTIONS.map((opt) => {
             const active = state.chatbotCaptureMode === opt.value;
             return (
               <label
                 key={opt.value}
-                className={`flex items-start gap-3 rounded-[2px] border px-3 py-2.5 text-sm cursor-pointer transition-colors ${
+                className={`px-4 py-2 text-[13px] font-medium cursor-pointer transition-colors border-r border-border last:border-r-0 ${
                   active
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:bg-secondary"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-background text-foreground hover:bg-secondary"
                 }`}
               >
                 <input
@@ -247,53 +243,65 @@ export function ChatbotConfigForm({
                   value={opt.value}
                   checked={active}
                   onChange={() => update("chatbotCaptureMode", opt.value)}
-                  className="mt-1"
+                  className="sr-only"
                 />
-                <span className="flex flex-col gap-0.5">
-                  <span className="font-medium text-foreground">{opt.label}</span>
-                  <span className="text-[11px] text-muted-foreground">{opt.hint}</span>
-                </span>
+                {opt.label}
               </label>
             );
           })}
         </div>
+        <p className="text-[11.5px] text-muted-foreground">
+          {
+            CAPTURE_OPTIONS.find((o) => o.value === state.chatbotCaptureMode)
+              ?.hint
+          }
+        </p>
       </section>
 
-      {/* Site analytics */}
-      <section className="ls-card p-5 space-y-4">
-        <div>
-          <h2 className="text-sm font-semibold text-foreground">
-            Site analytics
-          </h2>
-          <p className="text-xs text-muted-foreground mt-1">
-            We inject GTM and GA4 on your tenant site so pageviews,{" "}
-            <code className="font-mono text-[11px]">apply_clicked</code>,{" "}
-            <code className="font-mono text-[11px]">tour_scheduled</code>,{" "}
-            <code className="font-mono text-[11px]">chatbot_opened</code>, and{" "}
-            <code className="font-mono text-[11px]">chatbot_lead_captured</code>{" "}
-            land in the customer&apos;s real Google accounts. If GTM is set,
-            GA4 routes through it. Otherwise GA4 loads directly via gtag.js.
+      {/* Site analytics — set-once IDs, collapsed by default (Advanced). */}
+      <details className="ls-card group">
+        <summary className="cursor-pointer list-none p-5 flex items-center justify-between">
+          <span className="flex flex-wrap items-baseline gap-x-2">
+            <h2 className="text-sm font-semibold text-foreground inline">
+              Advanced · Site analytics
+            </h2>
+            <span className="text-xs text-muted-foreground">
+              GTM / GA4 IDs — set once, rarely touched
+            </span>
+          </span>
+          <span className="text-[11px] font-semibold text-primary group-open:hidden">
+            Show
+          </span>
+          <span className="hidden text-[11px] font-semibold text-primary group-open:inline">
+            Hide
+          </span>
+        </summary>
+        <div className="px-5 pb-5 space-y-4">
+          <p className="text-xs text-muted-foreground">
+            We inject GTM and GA4 on your tenant site so pageviews and chatbot
+            events land in your real Google accounts. If GTM is set, GA4
+            routes through it.
           </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Field
+              label="GTM container ID"
+              name="gtmContainerId"
+              value={state.gtmContainerId}
+              onChange={(v) => update("gtmContainerId", v)}
+              placeholder="GTM-XXXXXXX"
+              hint="tagmanager.google.com → Workspace top-bar."
+            />
+            <Field
+              label="GA4 measurement ID"
+              name="ga4MeasurementId"
+              value={state.ga4MeasurementId}
+              onChange={(v) => update("ga4MeasurementId", v)}
+              placeholder="G-XXXXXXXXXX"
+              hint="GA4 Admin → Data Streams → Web → Measurement ID."
+            />
+          </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field
-            label="GTM container ID"
-            name="gtmContainerId"
-            value={state.gtmContainerId}
-            onChange={(v) => update("gtmContainerId", v)}
-            placeholder="GTM-XXXXXXX"
-            hint="Found in tagmanager.google.com → Workspace top-bar."
-          />
-          <Field
-            label="GA4 measurement ID"
-            name="ga4MeasurementId"
-            value={state.ga4MeasurementId}
-            onChange={(v) => update("ga4MeasurementId", v)}
-            placeholder="G-XXXXXXXXXX"
-            hint="GA4 Admin → Data Streams → Web → Measurement ID."
-          />
-        </div>
-      </section>
+      </details>
 
       {/* Knowledge base */}
       <section className="ls-card p-5 space-y-3">

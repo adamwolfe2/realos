@@ -7,9 +7,12 @@ import { toggleChatbotEnabled } from "@/lib/actions/chatbot-config";
 export function MasterToggle({
   enabled,
   moduleActive,
+  variant = "card",
 }: {
   enabled: boolean;
   moduleActive: boolean;
+  /** "inline" renders just the switch + On/Off label for the page header. */
+  variant?: "card" | "inline";
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -33,6 +36,37 @@ export function MasterToggle({
   }
 
   const live = optimistic && moduleActive;
+
+  if (variant === "inline") {
+    return (
+      <span className="flex items-center gap-2" title={error ?? undefined}>
+        <span
+          className={`text-xs font-semibold ${
+            live ? "text-primary" : "text-muted-foreground"
+          }`}
+        >
+          {live ? "On" : "Off"}
+        </span>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={live}
+          aria-label="Toggle chatbot"
+          disabled={!moduleActive || pending}
+          onClick={flip}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+            live ? "bg-primary" : "bg-muted"
+          }`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-background shadow transition-transform ${
+              live ? "translate-x-6" : "translate-x-1"
+            }`}
+          />
+        </button>
+      </span>
+    );
+  }
 
   return (
     <section className="ls-card p-5 flex items-center justify-between gap-4">
