@@ -284,7 +284,17 @@ export async function POST(req: NextRequest) {
       email: captured?.capturedEmail ?? null,
       phone: captured?.capturedPhone ?? null,
     },
-    { property: promptProperty, config: resolvedConfig, knowledgeBase },
+    {
+      property: promptProperty,
+      config: resolvedConfig,
+      knowledgeBase,
+      // Capture-rate slice A: the first reply must not ask for contact info.
+      // Counted from the client-supplied history, which is the same list the
+      // model is about to answer, so turn 1 here == the visitor's opening
+      // message. A replayed/padded history only makes the bot MORE willing to
+      // ask, never less, so this can't be abused into suppressing capture.
+      userTurnCount: messages.filter((m) => m.role === "user").length,
+    },
   );
   const userAgent = req.headers.get("user-agent") ?? undefined;
 

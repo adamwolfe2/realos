@@ -110,7 +110,9 @@
     inlineLeadShown: false,
     leadCaptured: false,
     leadSubmitting: false,
-    firstReplyDone: false,
+    // Assistant replies completed this session. The inline lead card waits
+    // for the second one — see the send handler for why.
+    assistantReplies: 0,
   };
 
   var shadow = null;
@@ -640,10 +642,15 @@
         // markdown HTML so **bold**, line breaks, and links render.
         if (acc) assistantEl.innerHTML = renderMarkdown(acc);
         state.history.push({ role: "assistant", content: acc });
-        // 800ms after the first assistant reply completes, consider the
-        // inline lead capture card. Skipped if leadCaptured or OFF mode.
-        if (!state.firstReplyDone) {
-          state.firstReplyDone = true;
+        // Consider the inline lead capture card once the visitor has come
+        // back for a SECOND exchange. It used to fire 800ms after the FIRST
+        // reply, which put a 3-field form in front of someone who had asked
+        // exactly one question — prod capture rate in that bucket was 1.9%
+        // (1 of 54), versus 100% for anyone who reached a fourth turn. The
+        // card isn't the problem, its timing was: it now lands on visitors
+        // who have shown they're staying. Skipped if leadCaptured or OFF.
+        state.assistantReplies += 1;
+        if (state.assistantReplies === 2) {
           setTimeout(maybeInjectInlineLeadCapture, 800);
         }
       })

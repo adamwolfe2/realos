@@ -154,6 +154,8 @@ export async function POST(req: NextRequest) {
   const systemPrompt = buildSystemPrompt(org as ChatbotTenant, undefined, {
     property: defaultProperty,
     knowledgeBase,
+    // Capture-rate slice A: no contact ask on the visitor's first turn.
+    userTurnCount: messages.filter((m) => m.role === "user").length,
   });
   const userAgent = req.headers.get("user-agent") ?? undefined;
 

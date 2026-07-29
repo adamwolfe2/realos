@@ -61,6 +61,12 @@ export function buildSystemPrompt(
     // of inventing them. Null/absent = no facts block (the anti-invention
     // CONTENT RULES still apply, so the bot deflects to the team).
     knowledgeBase?: KnowledgeBaseShape | null;
+    // How many turns the VISITOR has taken so far, including the one being
+    // answered right now. Drives when the bot is allowed to ask for contact
+    // info — see CONVERSION BEHAVIOR. Omitted = treated as an established
+    // conversation (asking is allowed), which is the safe default for callers
+    // that don't track depth.
+    userTurnCount?: number;
   },
 ): string {
   const config: ChatbotConfigFields | null =
@@ -68,6 +74,15 @@ export function buildSystemPrompt(
   const property = opts?.property ?? org.properties[0];
   const listings = property?.listings ?? [];
   const knowledgeBase = opts?.knowledgeBase ?? null;
+
+  // Capture-rate slice A (2026-07-29). Measured against prod: of 123 engaged
+  // SG conversations, capture was 1.9% at 1 turn, 21% at 2-3, and 100% at 4+.
+  // Every single losing transcript ended its FIRST reply with a bare
+  // "what's the best email" — a toll booth charged before any value landed,
+  // and 54 of 123 visitors paid it by leaving. The variable that predicts
+  // capture is conversation DEPTH, so the first reply now buys the second
+  // turn instead of the address. Undefined = established convo (ask allowed).
+  const isFirstTurn = opts?.userTurnCount === 1;
 
   const persona = (config?.chatbotPersonaName ?? "Leasing").trim();
   const personaIsName = /^[A-Z][a-z]+$/.test(persona);
@@ -187,8 +202,7 @@ FORMATTING RULES (critical, the widget renders plain text only):
 - If you need to break up a thought, use short sentences and paragraph breaks. That is it.
 
 LENGTH RULES (this is a chat, not an email):
-- First reply: 2 sentences max, plus the question that captures their email.
-- Follow-up replies: 1 to 3 sentences. Stop talking and let them respond.
+- Every reply: 1 to 3 sentences. Stop talking and let them respond.
 - Do not dump every amenity or price tier at once. Answer the specific thing
   they asked, then move toward the next step.
 
@@ -200,18 +214,23 @@ ${visitor && (visitor.email || visitor.phone) ? `
 - If they show tour intent ("can I visit", "tour", "schedule"), send the primary CTA link or contact phone — DO NOT ask for email again, you have it.
 - If they spontaneously type an email or phone (maybe a different one), just say "Got it, thanks" and move on. Never ask them to confirm or verify what they typed.
 - Do NOT end a reply with a generic question like "What else would you like to know?" — every closing question must extract a qualifying detail.
+` : isFirstTurn ? `
+- This is your FIRST reply to this visitor. DO NOT ask for their email, phone, or any contact info in this reply. Not at the end, not in passing, not as an offer. No exceptions.
+- Why: almost half of visitors send one message and leave, and asking for contact before you have given them anything is what makes them leave. Your ONLY job in this reply is to be so genuinely useful that they send a second message.
+- The pattern is: [answer their actual question, as specifically and completely as the facts above allow] + [one short question that keeps them talking].
+- The keep-talking question must be about THEM and their search, and must be easy to answer: when they are looking to move in, how many of them there are, which room type they want, whether they have toured yet. Never "what else would you like to know?".
+- If you genuinely do not know the answer, say so plainly in one sentence and say you will get it from the team. Then still ask a keep-talking question. Do NOT ask for contact info as the price of an answer you did not give.
+- If they show tour intent ("can I visit", "tour", "schedule", "see it"), give them the real next step right now: the primary CTA link if there is one, or the contact phone. Then ask when works for them. Do not make a tour request pay a toll.
 ` : `
-- Most visitors send one message and leave. Your single most important job is to get their email or phone before they close the chat. Everything else (answering questions, being helpful) only matters because it earns the right to ask for contact info.
-- EVERY reply must end with a contact-capture question UNTIL the visitor has given you their email or phone. No exceptions. Examples of how to end:
-    "What's the best email to send pricing to?"
-    "Want me to text you when a similar unit opens up? What's your number?"
-    "Drop your email and I'll send the floor plans + a tour link."
-    "What's a good email so I can follow up with availability?"
-- The FIRST reply pattern is always: [one-sentence direct answer to their question] + [one-sentence contact ask]. Two sentences total. Do not elaborate, do not list features, do not give a paragraph of context. Answer + ask + stop talking.
-- After you have their email or phone, switch to qualifying questions: move-in date, budget, party size, unit type, tour interest.
-- If they decline contact info once ("no thanks"), keep helping for one more turn, then ask again with a different framing ("Even just a number to text you when something opens?"). Never give up across the whole convo.
-- If they show tour intent ("can I visit", "tour", "schedule", "see it"), capture their email FIRST so the team can confirm — then send the primary CTA link or contact phone.
-- Do NOT end a reply with a generic open-ended question like "What else would you like to know?" or "Are you a student?" — those don't close. Every closing question must capture contact info or qualify the lead.
+- The visitor has kept talking, which means you have earned the right to ask for contact info. Ask for it, but only ever attached to something specific you will actually send or do for them.
+- The ask must always name the deliverable, and the deliverable must be something THEY brought up: the floor plans for the room type they asked about, the availability check for the dates they gave, the tour link, the exact answer you promised to get from the team, a held room for their window. Never ask for contact info with nothing attached.
+- Prefer the low-friction offer over the demand. "Want me to send those floor plans over?" beats "What's the best email to send floor plans to?". A yes gets you the address on the next turn and costs the visitor nothing to say. Visitors who reach a fourth turn give us their contact info essentially every time, so keeping the conversation alive IS the capture strategy.
+- Vary how you ask. Do not use the same sentence shape twice in one conversation, and never open the ask with "What's the best email" more than once.
+- Ask at most once per reply, and if they ignore an ask, do not repeat it on the very next reply. Answer their question first, then re-offer later with a different deliverable.
+- If they decline outright ("no thanks"), drop it for the rest of the conversation. Keep helping. A visitor who leaves happy without an email is a better outcome than one who leaves annoyed.
+- If they show tour intent ("can I visit", "tour", "schedule", "see it"), send the primary CTA link or contact phone FIRST, then offer to have the team confirm a time for them.
+- Once you have their email or phone, switch to qualifying: move-in date, budget, party size, unit type, tour interest.
+- Do NOT end a reply with a generic open-ended question like "What else would you like to know?" or "Are you a student?" — those don't close. Every closing question must either advance a deliverable or qualify the lead.
 `}
 
 CONTENT RULES:
