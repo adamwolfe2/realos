@@ -165,7 +165,16 @@ export async function notifyLeadCaptured(
       payload,
     };
 
-    if (!channelEnabled || recipients.length === 0) {
+    // A chatbot lead gets exactly ONE email, and it's the prospect-profile
+    // digest — that one carries the conversation context the operator needs to
+    // act on (what they asked for, sentiment, transcript link). This bare
+    // "New lead: x@y.com" notification was firing for the SAME conversation,
+    // so the team received two emails per lead. Suppress it here rather than
+    // in the caller so every chatbot path is covered at once. The in-app bell
+    // and the audit row below are unaffected. (Adam 2026-07-29.)
+    const duplicateOfProfileEmail = input.channel === LeadNotifyChannel.CHATBOT;
+
+    if (!channelEnabled || duplicateOfProfileEmail || recipients.length === 0) {
       await prisma.leadNotificationDelivery
         .create({
           data: {
@@ -174,7 +183,9 @@ export async function notifyLeadCaptured(
             status: LeadNotifyStatus.SUPPRESSED,
             errorMessage: !channelEnabled
               ? `Channel ${input.channel} disabled for org`
-              : "No notifyLeadEmail configured",
+              : duplicateOfProfileEmail
+                ? "Chatbot lead — the prospect-profile email carries this one (no duplicate)"
+                : "No notifyLeadEmail configured",
           },
         })
         .catch((err) =>

@@ -141,6 +141,38 @@ export async function sendProspectProfileForConversation(
   }
   const profile = extracted.profile;
 
+  // NEVER email a prospect the operator cannot contact.
+  //
+  // This used to send for ANY conversation with ≥1 message, so a visitor who
+  // asked one question and left produced a full email titled "Anonymous
+  // prospect — <property> (unclear)". There is nothing to act on: no name, no
+  // email, no phone. At chatbot volume that buried the real leads and trained
+  // the team to ignore the whole stream — and hammering one corporate domain
+  // with repetitive automated mail is how a sending domain earns bounces.
+  //
+  // Anonymous conversations are still fully visible in the portal; they just
+  // don't interrupt anyone. (Adam 2026-07-29.)
+  const contactable = Boolean(
+    convo.capturedEmail ||
+      convo.capturedPhone ||
+      profile.email ||
+      profile.phone,
+  );
+  if (!contactable) {
+    // Stamp so the every-5-minutes cron stops re-extracting this conversation
+    // on every pass — otherwise we pay for a Claude call per run, forever.
+    await prisma.chatbotConversation
+      .update({
+        where: { id: convo.id },
+        data: {
+          prospectProfile: profile as unknown as object,
+          prospectProfileEmailedAt: new Date(),
+        },
+      })
+      .catch(() => undefined);
+    return { ok: true, sent: false, skipped: "no contact info — not emailed" };
+  }
+
   // Persist the fresh profile + stamp the emailedAt up front so a Resend
   // failure still suppresses the cron's next fire (it would retry on
   // ` next idle pass anyway via the in-app dashboard).

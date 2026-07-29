@@ -130,8 +130,14 @@ describe("notifyLeadCaptured — CHATBOT leads are NOT pushed inline", () => {
     // A chatbot lead is captured before / partway through the conversation, so
     // an inline push would send Funnel an empty/partial transcript — and
     // Funnel's POST /clients has no upsert, so we can't re-push. Chatbot leads
-    // must therefore be pushed ONCE by the idle cron, never inline here. The
-    // operator's email notification still fires immediately.
+    // must therefore be pushed ONCE by the idle cron, never inline here.
+    //
+    // The email assertion below FLIPPED on 2026-07-29. It used to require the
+    // bare "New lead: …" email to fire immediately. It no longer does: the
+    // prospect-profile digest is now the single chatbot email and it carries
+    // the conversation transcript, so sending both meant the operator got two
+    // emails per lead. The Funnel assertion — the actual subject of this test —
+    // is unchanged.
     h.push.mockResolvedValue({ ok: true });
 
     await expect(
@@ -145,7 +151,8 @@ describe("notifyLeadCaptured — CHATBOT leads are NOT pushed inline", () => {
 
     // No inline CRM push for chatbot...
     expect(h.push).not.toHaveBeenCalled();
-    // ...but the operator email still went out.
-    expect(h.sendBrandedEmail).toHaveBeenCalledTimes(1);
+    // ...and no bare email either — the prospect-profile digest is the one
+    // chatbot email, so this path must stay silent to avoid a duplicate.
+    expect(h.sendBrandedEmail).not.toHaveBeenCalled();
   });
 });
