@@ -127,13 +127,30 @@ describe("Cursive module — auto-bind from first event", () => {
   });
 });
 
-describe("Cursive module — verification gates fulfillment outreach", () => {
-  it("visitor-outreach cron skips orgs whose cursive integration has not received an event", () => {
-    const src = readFile("app/api/cron/visitor-outreach/route.ts");
-    // Must filter visitor query by orgIds that have a CursiveIntegration
-    // with lastEventAt set — otherwise outreach can fire against a
-    // half-configured pipeline.
-    expect(src).toContain("lastEventAt: { not: null }");
-    expect(src).toMatch(/orgId:\s*\{\s*in:\s*verifiedOrgIds/);
+describe("Cursive module — no automated outreach to visitors", () => {
+  // This block used to assert that the visitor-outreach cron was correctly
+  // GATED. The whole feature was removed on 2026-07-29: it cold-emailed
+  // pixel-identified people who never opted in, from the LeaseStack domain,
+  // greeting ~41% of them by the wrong name (identity resolution attached a
+  // different person's address), for housing — a protected advertising
+  // category. 65 sent, 0 leads, 0 tours. The guard is now the inverse.
+  it("has no visitor-outreach cron route", () => {
+    expect(
+      fs.existsSync(
+        path.resolve(__dirname, "..", "app/api/cron/visitor-outreach/route.ts"),
+      ),
+    ).toBe(false);
+  });
+
+  it("is not scheduled in vercel.json", () => {
+    const crons: Array<{ path: string }> =
+      JSON.parse(readFile("vercel.json")).crons ?? [];
+    expect(crons.map((c) => c.path)).not.toContain("/api/cron/visitor-outreach");
+  });
+
+  it("no longer ships an outreach email sender", () => {
+    expect(readFile("lib/email/visitor-emails.ts")).not.toContain(
+      "export async function sendVisitorOutreachEmail",
+    );
   });
 });

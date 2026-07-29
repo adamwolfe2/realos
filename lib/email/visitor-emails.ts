@@ -62,56 +62,17 @@ async function safeSend(opts: {
   }
 }
 
-export async function sendVisitorOutreachEmail(input: {
-  to: string;
-  firstName?: string | null;
-  orgName: string;
-  applyUrl?: string | null;
-}): Promise<SendResult> {
-  if (!isValidEmail(input.to)) return { ok: false, error: "Invalid recipient" };
-  const greeting = input.firstName?.trim()
-    ? `Hi ${escape(input.firstName.trim())},`
-    : "Hi,";
-  const bodyHtml = `
-    <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">${greeting}</p>
-    <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
-      Saw you browsing ${escape(input.orgName)}. If you'd like, grab a tour time
-      and we'll show you the available units in person (or do it virtually).
-    </p>
-    <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
-      Any questions before you decide? Just reply to this email, a real person
-      reads every response.
-    </p>
-  `;
-  const html = buildBaseHtml({
-    headline: `Quick hello from ${input.orgName}`,
-    bodyHtml,
-    ctaText: "Book a tour",
-    ctaUrl: input.applyUrl ?? "#",
-    includeUnsubscribe: true,
-  });
-
-  const greetingText = input.firstName?.trim()
-    ? `Hi ${input.firstName.trim()},`
-    : "Hi,";
-  const text = [
-    greetingText,
-    "",
-    `Saw you browsing ${input.orgName}. If you'd like, grab a tour time and we'll show you the available units in person (or do it virtually).`,
-    "",
-    "Any questions before you decide? Just reply to this email, a real person reads every response.",
-    ...(input.applyUrl ? ["", `Book a tour: ${input.applyUrl}`] : []),
-    "",
-    input.orgName,
-  ].join("\n");
-
-  return safeSend({
-    to: input.to,
-    subject: `Following up from ${input.orgName}`,
-    html,
-    text,
-  });
-}
+// sendVisitorOutreachEmail was REMOVED 2026-07-29.
+//
+// It cold-emailed pixel-identified visitors on the operator's behalf from the
+// LeaseStack sending domain ("Saw you browsing <org>..."), driven by a cron
+// every 15 minutes. Nobody in that audience opted in, the identity resolution
+// attached the wrong name to the address roughly 41% of the time (so it
+// greeted people by a stranger's name), and housing is a protected
+// advertising category. It sent to 65 people and produced zero leads and zero
+// tours. Do not reintroduce automated outreach to visitors who did not ask to
+// be contacted. Visitor.outreachSent / outreachSentAt are deliberately KEPT as
+// the record of what was sent.
 
 export async function sendVisitorWeeklyDigest(input: {
   to: string;

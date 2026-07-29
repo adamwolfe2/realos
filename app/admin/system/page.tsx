@@ -53,7 +53,6 @@ const CRON_SCHEDULE: Array<{ jobName: string; schedule: string; description: str
   { jobName: "review-requests", schedule: "0 15 * * *", description: "Daily — Google review requests to signed residents" },
   { jobName: "lead-score-refresh", schedule: "*/30 * * * *", description: "Every 30 min — recompute lead intent scores" },
   { jobName: "insight-detector", schedule: "*/30 * * * *", description: "Every 30 min — anomaly detection across all orgs" },
-  { jobName: "visitor-outreach", schedule: "*/15 * * * *", description: "Every 15 min — high-intent visitor outreach" },
   { jobName: "weekly-report", schedule: "0 7 * * 1", description: "Mondays — client weekly performance report" },
   { jobName: "weekly-digest", schedule: "0 8 * * 1", description: "Mondays — tenant weekly digest email" },
   { jobName: "pixel-weekly-digest", schedule: "0 9 * * 1", description: "Mondays — visitor pixel digest summary" },

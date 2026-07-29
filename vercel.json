@@ -33,10 +33,6 @@
       "schedule": "*/30 * * * *"
     },
     {
-      "path": "/api/cron/visitor-outreach",
-      "schedule": "*/15 * * * *"
-    },
-    {
       "path": "/api/cron/weekly-report",
       "schedule": "0 7 * * 1"
     },

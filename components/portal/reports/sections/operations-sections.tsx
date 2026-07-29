@@ -173,7 +173,6 @@ export function VisitorIntelligenceSection({
   stats: ReportVisitorStats;
 }) {
   const hot = stats.hotCount ?? 0;
-  const outreach = stats.outreachSentCount ?? 0;
   const google = stats.syncedToGoogleAds ?? 0;
   const meta = stats.syncedToMetaAds ?? 0;
   const headlineTiles: Array<{ label: string; value: string; hint?: string }> = [];
@@ -183,12 +182,10 @@ export function VisitorIntelligenceSection({
       value: hot.toLocaleString(),
       hint: "Intent score ≥ 70",
     });
-  if (outreach > 0)
-    headlineTiles.push({
-      label: "Outreach sent",
-      value: outreach.toLocaleString(),
-      hint: "Email/SMS engaged",
-    });
+  // "Outreach sent" tile removed 2026-07-29 with the visitor-outreach cron.
+  // The underlying rows still exist for the 65 people it emailed, so leaving
+  // the tile would show a client a frozen count for a capability the product
+  // no longer has.
   if (google > 0)
     headlineTiles.push({
       label: "Synced · Google Ads",
