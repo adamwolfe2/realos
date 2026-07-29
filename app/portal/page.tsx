@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import {
   Users,
-  CalendarCheck,
+
   FileText,
   Search,
   ArrowRight,
@@ -318,9 +318,13 @@ export default async function PortalHome({
           },
         },
       }),
+      // All applications created in the window, ANY status. Was filtered to
+      // status=SUBMITTED, which read 0 for AppFolio orgs (synced apps sit at
+      // APPROVED/UNDER_REVIEW/etc.) while the pipeline strip right below
+      // showed hundreds — the tile and the strip now share one definition
+      // (matches getFunnel in lib/dashboard/queries.ts).
       prisma.application.count({
         where: {
-          status: ApplicationStatus.SUBMITTED,
           lead: where,
           ...requiredModelPropertyClause,
           createdAt: { gte: since28d },
@@ -1081,13 +1085,9 @@ export default async function PortalHome({
             icon={<FileText className="h-3.5 w-3.5" />}
             href="/portal/applications"
           />
-          <KpiTile
-            density="dense"
-            label="Tours"
-            value="—"
-            icon={<CalendarCheck className="h-3.5 w-3.5" />}
-            locked={{ reason: "Not tracked yet", href: "/portal/connect" }}
-          />
+          {/* Tours tile removed 2026-07-29 (Adam): an untracked stage is
+              omitted, never rendered as a dash with a Connect ask. It
+              returns when real Tour rows exist for the org. */}
         </section>
 
         {/* Featured-property band — only for multi-property orgs. A

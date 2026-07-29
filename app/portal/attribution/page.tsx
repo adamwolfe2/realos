@@ -23,7 +23,6 @@ import {
   type AttributionFilters,
 } from "@/lib/attribution/queries";
 import { fetchGa4SourceVolumes } from "@/lib/attribution/ga4-sources";
-import { LeadFlowDiagram } from "@/components/portal/attribution/lead-flow-diagram";
 import { SourceLogo } from "@/components/portal/attribution/source-logo";
 import { RangePresetControl } from "@/components/portal/attribution/range-preset-control";
 import { StatusChip } from "@/components/portal/ui/status-chip";
@@ -274,14 +273,34 @@ export default async function AttributionPage({
         />
       </section>
 
-      {/* Flow hero — the headline visualization: where leads flow in from. */}
-      <LeadFlowDiagram
-        sources={leadFlow.sources}
-        stages={leadFlow.stages}
-        totalLeads={leadFlow.totalLeads}
-        totalSessions={leadFlow.totalSessions}
-        imported={leadFlow.imported}
-      />
+      {/* Pipeline outcomes — replaced the Sankey flow diagram (Adam,
+          2026-07-29: "we'd rather see a list"). Same stage-strip style as
+          the portfolio funnel. Stages carry real evidence only — Toured
+          was removed at the source (lib/attribution/queries.ts). */}
+      <div className="ls-card p-4">
+        <div className="flex items-stretch divide-x divide-[var(--hair)]">
+          <div className="flex-1 min-w-0 px-4 first:pl-0">
+            <div className="ls-eyebrow">Attributed leads</div>
+            <div className="ls-metric ls-metric-md mt-1">
+              {leadFlow.totalLeads.toLocaleString()}
+            </div>
+          </div>
+          {leadFlow.stages.map((st) => (
+            <div key={st.id} className="flex-1 min-w-0 px-4 last:pr-0">
+              <div className="ls-eyebrow">{st.label}</div>
+              <div className="ls-metric ls-metric-md mt-1">
+                {st.count.toLocaleString()}
+              </div>
+            </div>
+          ))}
+        </div>
+        {leadFlow.imported.leads > 0 ? (
+          <p className="mt-3 text-[11px] text-muted-foreground">
+            {leadFlow.imported.leads.toLocaleString()} leads without a known
+            channel are excluded from source attribution.
+          </p>
+        ) : null}
+      </div>
 
       {/* Traffic & lead sources — the GA4-driven logo board. Real platform
           logos, sessions blended from GA4 + pixel, leads, and conversion. This

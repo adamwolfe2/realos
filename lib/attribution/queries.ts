@@ -587,7 +587,12 @@ export async function getLeadFlow(
   // "AppFolio / Leasing" lane: they get their own channel stream AND flow
   // through the funnel stages. Only genuinely unknown, NON-external leads
   // (source Other/Manual with no PMS origin) remain in the excluded bucket.
-  const stageCounts = { toured: 0, applied: 0, signed: 0 };
+  // "Toured" was removed from the stage list 2026-07-29: it was inferred
+  // from status rank (rank >= TOURED), which counts every APPLIED/SIGNED
+  // lead as toured even though the Tour table has zero rows for this org —
+  // AppFolio leads jump straight past the tour statuses. An inferred stage
+  // is a lie; a stage renders only with real evidence behind it.
+  const stageCounts = { applied: 0, signed: 0 };
   let importedLeads = 0;
   for (const lead of leads) {
     const emailMatch = lead.email
@@ -617,7 +622,6 @@ export async function getLeadFlow(
 
     bump(leadCounts, channel);
     const rank = STATUS_RANK[lead.status] ?? 0;
-    if (rank >= STATUS_RANK.TOURED) stageCounts.toured += 1;
     if (rank >= STATUS_RANK.APPLIED) stageCounts.applied += 1;
     if (rank >= STATUS_RANK.SIGNED) stageCounts.signed += 1;
   }
@@ -655,7 +659,6 @@ export async function getLeadFlow(
   sources.sort((a, b) => b.leads - a.leads || b.sessions - a.sessions);
 
   const stages: FlowStage[] = [
-    { id: "toured", label: "Toured", count: stageCounts.toured },
     { id: "applied", label: "Applied", count: stageCounts.applied },
     { id: "signed", label: "Signed", count: stageCounts.signed },
   ];
