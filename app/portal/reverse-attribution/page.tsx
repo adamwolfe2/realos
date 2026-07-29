@@ -181,13 +181,7 @@ export default async function ReverseAttributionPage({
         </div>
       ) : null}
 
-      <ReverseAttributionView
-        sources={reverse.graph.sources}
-        landings={reverse.graph.landings}
-        outcomes={reverse.graph.outcomes}
-        links={reverse.graph.links}
-        resolutions={reverse.resolutions}
-      />
+      <ReverseAttributionView resolutions={reverse.resolutions} />
 
       <SectionCard
         label="Channel pipeline"

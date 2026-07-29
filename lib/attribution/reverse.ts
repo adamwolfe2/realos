@@ -299,7 +299,6 @@ export type ChannelPipelineRow = {
   color: string;
   logo: string;
   leads: number;
-  toured: number;
   applied: number;
   signed: number;
   signedRate: number | null; // signed / leads
@@ -370,15 +369,15 @@ export async function getChannelPipeline(
         color: src.color,
         logo: src.id,
         leads: 0,
-        toured: 0,
         applied: 0,
         signed: 0,
         signedRate: null,
       } satisfies ChannelPipelineRow);
 
     row.leads += 1;
+    // No inferred "toured" bucket — status rank counts every applied lead
+    // as toured while the Tour table is empty (removed 2026-07-29).
     const rank = FUNNEL_RANK[lead.status] ?? 0;
-    if (rank >= FUNNEL_RANK.TOURED) row.toured += 1;
     if (rank >= FUNNEL_RANK.APPLIED) row.applied += 1;
     if (rank >= FUNNEL_RANK.SIGNED) row.signed += 1;
     rows.set(src.id, row);

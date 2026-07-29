@@ -22,7 +22,9 @@ export function ChannelPipelineTable({ rows }: { rows: ChannelPipelineRow[] }) {
           <tr className="border-b border-border text-[10px] uppercase tracking-wider text-muted-foreground">
             <th className="px-2 py-2 font-semibold">Channel</th>
             <th className="px-2 py-2 font-semibold text-right">Leads</th>
-            <th className="px-2 py-2 font-semibold text-right">Toured</th>
+            {/* "Toured" column removed 2026-07-29: it was inferred from
+                status rank and over-counted (every applied lead read as
+                toured with zero real Tour rows). Returns with real data. */}
             <th className="px-2 py-2 font-semibold text-right">Applied</th>
             <th className="px-2 py-2 font-semibold text-right">Signed</th>
             <th className="px-2 py-2 font-semibold text-right">Signed %</th>
@@ -55,9 +57,6 @@ export function ChannelPipelineTable({ rows }: { rows: ChannelPipelineRow[] }) {
               </td>
               <td className="px-2 py-2 text-right font-mono tabular-nums text-foreground">
                 {r.leads.toLocaleString()}
-              </td>
-              <td className="px-2 py-2 text-right font-mono tabular-nums text-muted-foreground">
-                {r.toured.toLocaleString()}
               </td>
               <td className="px-2 py-2 text-right font-mono tabular-nums text-muted-foreground">
                 {r.applied.toLocaleString()}

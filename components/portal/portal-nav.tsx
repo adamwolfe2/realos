@@ -39,7 +39,6 @@ import {
   Plug,
   KeyRound,
   Globe,
-  Calculator,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -375,29 +374,23 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Share2,
         show: (o) => o.moduleReferrals,
       },
-      // Site Engine — canonical user-facing label for the managed
-      // marketing-site workflow (TASK D consolidation).
+      // Site Engine — only when the org's site is OURS to manage. An org
+      // that brought its own site has no use for this surface (Adam,
+      // 2026-07-29: nav shows only what the org actually uses).
       {
         href: "/portal/sites/request",
         label: "Site Engine",
         icon: Globe,
-        show: ALWAYS,
+        show: (o) => o.moduleWebsite && !o.bringYourOwnSite,
       },
     ],
   },
   {
     label: "Account",
     items: [
-      // Acquisitions tool — paste an address, get cap rate / cash-on-cash
-      // / comps via RentCast. Lives under Account because it's about
-      // evaluating buildings the operator might add to their portfolio,
-      // not about the existing pipeline.
-      {
-        href: "/portal/tools/value",
-        label: "Evaluator",
-        icon: Calculator,
-        show: ALWAYS,
-      },
+      // Evaluator (acquisitions tool) removed from client nav 2026-07-29
+      // (Adam): no module flag exists for it and no client org uses it.
+      // The page stays reachable at /portal/tools/value.
       {
         href: "/portal/integrations",
         label: "Integrations",
