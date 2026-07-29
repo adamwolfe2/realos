@@ -9,7 +9,6 @@ import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { getPortfolioFunnel, sourceLabel } from "@/lib/reports/portfolio-funnel";
 import { getLeadJourney } from "@/lib/reports/lead-journey";
-import { ConversionFunnel } from "@/components/portal/dashboard/conversion-funnel";
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { EmptyState } from "@/components/portal/ui/empty-state";
@@ -256,13 +255,31 @@ export default async function PortfolioFunnelPage({
             furthest stage
           </span>
         </div>
-        <ConversionFunnel
-          stages={journey.stages.map((s) => ({
-            label: s.label,
-            value: s.count,
-            notApplicable: !s.tracked,
-          }))}
-        />
+        {/* Stage strip — same inline metric-group style as PipelineStrip.
+            An SVG funnel stretched across 6 full-width stages read as a
+            giant wedge (Adam, 2026-07-29); dense mono columns don't. */}
+        <div className="mt-3 flex items-stretch divide-x divide-[var(--hair)]">
+          {journey.stages.map((stage, i) => (
+            <div key={stage.key} className="flex-1 min-w-0 px-4 first:pl-0 last:pr-0">
+              {stage.conversionFromPrev != null && i > 0 ? (
+                <div className="mb-1 font-mono text-[10px] tabular-nums text-muted-foreground">
+                  {stage.conversionFromPrev}% conv.
+                </div>
+              ) : (
+                <div className="mb-1 font-mono text-[10px]" aria-hidden="true">
+                  &nbsp;
+                </div>
+              )}
+              <div className="ls-eyebrow">{stage.label}</div>
+              <div className="ls-metric ls-metric-md mt-1">
+                {stage.tracked ? stage.count.toLocaleString() : "—"}
+              </div>
+              {!stage.tracked ? (
+                <div className="mt-0.5 text-[10px] text-muted-foreground">not tracked</div>
+              ) : null}
+            </div>
+          ))}
+        </div>
         {!journey.stages.every((s) => s.tracked) ? (
           <p className="mt-2 text-[11px] leading-snug text-muted-foreground">
             Tours aren&apos;t tracked yet — your AppFolio plan doesn&apos;t include the
