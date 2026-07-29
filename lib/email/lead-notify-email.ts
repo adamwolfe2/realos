@@ -14,6 +14,7 @@ const CHANNEL_LABEL: Record<LeadNotifyChannel, string> = {
   POPUP: "Popup",
   FORM: "Website form",
   INGEST: "Integration webhook",
+  PIXEL: "Pixel identification",
   TOUR: "Tour request",
   VISITOR_CONVERT: "Visitor converted",
   MANUAL: "Manual portal add",

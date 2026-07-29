@@ -462,6 +462,11 @@ model Organization {
   notifyOnPopupLead      Boolean @default(true)
   notifyOnFormLead       Boolean @default(true)
   notifyOnIngestLead     Boolean @default(true)
+  // Pixel identifications are NOT inbound enquiries — nobody raised a hand,
+  // we resolved an anonymous browser to an identity. Emailing one per
+  // resolution is noise, so this defaults OFF while every genuine
+  // hand-raise channel above defaults ON. They still land in the dashboard.
+  notifyOnPixelLead      Boolean @default(false)
   notifyOnTourRequest    Boolean @default(true)
   notifyOnVisitorConvert Boolean @default(true)
   notifyOnManualLead     Boolean @default(true)
@@ -5792,6 +5797,9 @@ enum LeadNotifyChannel {
   POPUP
   FORM
   INGEST
+  // Pixel identity resolution. Split from INGEST so a genuine Zapier/webhook
+  // lead can still notify while pixel resolutions stay quiet.
+  PIXEL
   TOUR
   VISITOR_CONVERT
   MANUAL

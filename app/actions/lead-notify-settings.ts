@@ -48,6 +48,7 @@ const schema = z.object({
   notifyOnPopupLead: z.boolean(),
   notifyOnFormLead: z.boolean(),
   notifyOnIngestLead: z.boolean(),
+  notifyOnPixelLead: z.boolean(),
   notifyOnTourRequest: z.boolean(),
   notifyOnVisitorConvert: z.boolean(),
   notifyOnManualLead: z.boolean(),

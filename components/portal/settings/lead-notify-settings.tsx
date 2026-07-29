@@ -22,6 +22,7 @@ export type LeadNotifyInitial = {
   notifyOnPopupLead: boolean;
   notifyOnFormLead: boolean;
   notifyOnIngestLead: boolean;
+  notifyOnPixelLead: boolean;
   notifyOnTourRequest: boolean;
   notifyOnVisitorConvert: boolean;
   notifyOnManualLead: boolean;
@@ -52,7 +53,13 @@ const TOGGLES: Array<{ key: ToggleKey; label: string; description: string }> = [
   {
     key: "notifyOnIngestLead",
     label: "Integration webhooks",
-    description: "Leads pushed in via API key, Cursive pixel, or Zapier.",
+    description: "Leads pushed in via API key or Zapier.",
+  },
+  {
+    key: "notifyOnPixelLead",
+    label: "Pixel identifications",
+    description:
+      "Anonymous visitors the pixel resolves to a person. Off by default — these are not enquiries, and they arrive in volume. They always appear in your dashboard either way.",
   },
   {
     key: "notifyOnTourRequest",
@@ -93,6 +100,7 @@ export function LeadNotifySettings({
     notifyOnPopupLead: initial.notifyOnPopupLead,
     notifyOnFormLead: initial.notifyOnFormLead,
     notifyOnIngestLead: initial.notifyOnIngestLead,
+    notifyOnPixelLead: initial.notifyOnPixelLead,
     notifyOnTourRequest: initial.notifyOnTourRequest,
     notifyOnVisitorConvert: initial.notifyOnVisitorConvert,
     notifyOnManualLead: initial.notifyOnManualLead,

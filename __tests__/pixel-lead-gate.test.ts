@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import {
   evaluateLeadGate,
   computeDeliverabilityScore,
@@ -102,5 +104,25 @@ describe("evaluateLeadGate", () => {
         deliverability: 100,
       }),
     ).toBe(false);
+  });
+});
+
+describe("pixel leads must not email the operator by default", () => {
+  const root = path.resolve(__dirname, "..");
+  const read = (p: string) => readFileSync(path.join(root, p), "utf8");
+
+  it("routes pixel leads to their own channel, not INGEST", () => {
+    // Sharing INGEST would mean silencing pixel noise also silences genuine
+    // Zapier/webhook leads, which operators do want.
+    const src = read("lib/webhooks/cursive-process.ts");
+    expect(src).toContain("channel: LeadNotifyChannel.PIXEL");
+    expect(src).not.toContain("channel: LeadNotifyChannel.INGEST");
+  });
+
+  it("defaults the pixel toggle OFF while hand-raise channels stay ON", () => {
+    const schema = read("prisma/schema.prisma");
+    expect(schema).toMatch(/notifyOnPixelLead\s+Boolean @default\(false\)/);
+    expect(schema).toMatch(/notifyOnChatbotLead\s+Boolean @default\(true\)/);
+    expect(schema).toMatch(/notifyOnIngestLead\s+Boolean @default\(true\)/);
   });
 });

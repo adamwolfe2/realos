@@ -123,6 +123,7 @@ export default async function SettingsPage() {
             notifyOnPopupLead: org.notifyOnPopupLead,
             notifyOnFormLead: org.notifyOnFormLead,
             notifyOnIngestLead: org.notifyOnIngestLead,
+            notifyOnPixelLead: org.notifyOnPixelLead,
             notifyOnTourRequest: org.notifyOnTourRequest,
             notifyOnVisitorConvert: org.notifyOnVisitorConvert,
             notifyOnManualLead: org.notifyOnManualLead,

@@ -531,7 +531,10 @@ export async function processCursiveEvent(
         orgId: integration.orgId,
         leadId,
         propertyId: integration.propertyId ?? null,
-        channel: LeadNotifyChannel.INGEST,
+        // PIXEL, not INGEST: this is a resolved anonymous browser, not an
+        // inbound enquiry. Defaults to no email; the lead still appears in
+        // the dashboard. Operators can opt in per workspace.
+        channel: LeadNotifyChannel.PIXEL,
         lead: {
           name:
             [firstName, lastName].filter(Boolean).join(" ") || normalizedEmail,
