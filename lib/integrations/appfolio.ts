@@ -418,6 +418,34 @@ const RETRY_DELAY_MS = 2000;
  *  so this stays well inside that budget. */
 const APPFOLIO_FETCH_TIMEOUT_MS = 30000;
 
+// Some v2 reports are generated on demand and take far longer than the rest
+// to return their FIRST page. `rent_roll` is the known offender: it timed out
+// on every run for the largest live tenant, which is why leasesUpserted sat
+// at 0 and signed-lease attribution had no data at all. Give those reports a
+// longer clock instead of raising it globally, which would let a genuinely
+// hung request eat the whole 300s function budget.
+const SLOW_REPORT_TIMEOUT_MS: Record<string, number> = {
+  rent_roll: 90_000,
+};
+
+export function timeoutForReport(reportName?: string): number {
+  return (
+    (reportName ? SLOW_REPORT_TIMEOUT_MS[reportName] : undefined) ??
+    APPFOLIO_FETCH_TIMEOUT_MS
+  );
+}
+
+// A timeout is transient — the report was still being generated upstream, not
+// broken. It was previously the ONLY transient failure treated as fatal on
+// first occurrence: 429s and 5xx retry, an expired pagination cursor restarts
+// the whole walk, but an abort threw straight out of fetchAllPages. That is
+// what turned "rent_roll is slow today" into "this tenant has no leases".
+export function isTimeout(err: unknown): boolean {
+  if (err instanceof DOMException && err.name === "TimeoutError") return true;
+  const msg = err instanceof Error ? err.message : String(err);
+  return /aborted due to timeout|timeouterror|the operation was aborted/i.test(msg);
+}
+
 function shouldRetryStatus(status: number): boolean {
   if (status === 429) return true;
   if (status >= 500 && status < 600) return true;
@@ -445,13 +473,14 @@ async function doAppFolioPost(
   // rejects and leaves the sync stuck in syncStatus='syncing' until Vercel
   // kills the function. AbortSignal.timeout is created per fetch so the retry
   // gets its own full budget rather than sharing the first attempt's clock.
-  let response = await fetch(url, { ...opts, signal: AbortSignal.timeout(APPFOLIO_FETCH_TIMEOUT_MS) });
+  const timeoutMs = timeoutForReport(reportName);
+  let response = await fetch(url, { ...opts, signal: AbortSignal.timeout(timeoutMs) });
   if (shouldRetryStatus(response.status)) {
     console.warn(
       `[appfolio] POST ${reportName ?? "report"} returned ${response.status}, retrying once in ${RETRY_DELAY_MS}ms`
     );
     await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
-    response = await fetch(url, { ...opts, signal: AbortSignal.timeout(APPFOLIO_FETCH_TIMEOUT_MS) });
+    response = await fetch(url, { ...opts, signal: AbortSignal.timeout(timeoutMs) });
   } else if (response.status === 404) {
     // Skip silently — caller wraps this in a per-phase try/catch that
     // logs the warning. Don't retry, don't escalate, don't pollute the
@@ -479,14 +508,17 @@ async function doAppFolioGet(
     },
   };
   // Fresh per-attempt timeout — see doAppFolioPost. Prevents a hung GET
-  // (report fetch or pagination page) from wedging the sync open.
-  let response = await fetch(url, { ...opts, signal: AbortSignal.timeout(APPFOLIO_FETCH_TIMEOUT_MS) });
+  // (report fetch or pagination page) from wedging the sync open. Uses the
+  // same per-report budget as the POST: a slow report's later pages are slow
+  // for the same reason its first one is.
+  const timeoutMs = timeoutForReport(reportName);
+  let response = await fetch(url, { ...opts, signal: AbortSignal.timeout(timeoutMs) });
   if (shouldRetryStatus(response.status)) {
     console.warn(
       `[appfolio] GET ${reportName ?? "page"} returned ${response.status}, retrying once in ${RETRY_DELAY_MS}ms`
     );
     await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
-    response = await fetch(url, { ...opts, signal: AbortSignal.timeout(APPFOLIO_FETCH_TIMEOUT_MS) });
+    response = await fetch(url, { ...opts, signal: AbortSignal.timeout(timeoutMs) });
   } else if (response.status === 404) {
     // Pagination cursor 404s are common when AppFolio's metadata_id TTL
     // expires between pages. fetchAllPages already restarts the full
@@ -626,6 +658,10 @@ function isCursorExpired(err: unknown): boolean {
 
 const PAGE_RETRY_DELAY_MS = 1500;
 const MAX_FULL_RETRIES = 1;
+// Ceiling on total wall-clock one report may consume across all its attempts.
+// Sized so even the slowest report (rent_roll at 90s) can make two attempts
+// and still leave over half the 300s function budget for the other phases.
+const FETCH_ALL_PAGES_BUDGET_MS = 185_000;
 
 // fetchAllPages — pulls a full v2 report by walking next_page_url cursors.
 //
@@ -644,6 +680,13 @@ export async function fetchAllPages(
 ): Promise<RawRow[]> {
   let attempt = 0;
   let lastErr: unknown = null;
+  // The whole sync shares one 300s function budget across 10 phases. A slow
+  // report is allowed to retry, but not to eat the budget of every phase
+  // after it — failing this one report is recoverable, starving the rest of
+  // the sync is not.
+  const startedAt = Date.now();
+  const canAffordAnotherAttempt = () =>
+    Date.now() - startedAt + timeoutForReport(reportName) <= FETCH_ALL_PAGES_BUDGET_MS;
 
   while (attempt <= MAX_FULL_RETRIES) {
     const out: RawRow[] = [];
@@ -681,6 +724,18 @@ export async function fetchAllPages(
         const phase = pages > 0 ? `after ${pages} page(s)` : "before first page";
         console.warn(
           `[appfolio] fetchAllPages(${reportName}) pagination cursor expired ${phase} — restarting from page 1 in ${PAGE_RETRY_DELAY_MS}ms`
+        );
+        await new Promise((r) => setTimeout(r, PAGE_RETRY_DELAY_MS));
+        attempt += 1;
+        continue;
+      }
+      // A timeout means the report was still generating upstream, not that it
+      // is broken. Retrying costs one more attempt; NOT retrying cost this
+      // tenant every lease row it has ever had.
+      if (isTimeout(err) && attempt < MAX_FULL_RETRIES && canAffordAnotherAttempt()) {
+        const phase = pages > 0 ? `after ${pages} page(s)` : "on the first page";
+        console.warn(
+          `[appfolio] fetchAllPages(${reportName}) timed out ${phase} after ${timeoutForReport(reportName)}ms — retrying once in ${PAGE_RETRY_DELAY_MS}ms`
         );
         await new Promise((r) => setTimeout(r, PAGE_RETRY_DELAY_MS));
         attempt += 1;
