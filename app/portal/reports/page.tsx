@@ -309,7 +309,7 @@ export default async function ReportsListPage({
       <PageHeader
         eyebrow="Client reports"
         title="Weekly and monthly reviews"
-        description="Generate a frozen snapshot of the numbers, add a note, then share a clean link with your client. Nothing is sent automatically — every report is reviewed before it is shared."
+        description="Freeze the numbers, add a note, share a clean link. Nothing sends without your review."
         actions={
           <form
             action={generateReport}
@@ -320,13 +320,20 @@ export default async function ReportsListPage({
                 <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
                   Scope
                 </span>
+                {/* Property-restricted users can't generate portfolio-wide
+                    reports (createReport enforces it), so the "Whole
+                    portfolio" option is hidden and the first granted
+                    property is preselected — the always-failing choice is
+                    unreachable. */}
                 <select
                   name="propertyId"
-                  defaultValue=""
+                  defaultValue={scope.allowedPropertyIds ? properties[0].id : ""}
                   className="ls-select px-3 py-2 text-sm min-w-[200px]"
                   aria-label="Property scope"
                 >
-                  <option value="">Whole portfolio · all properties</option>
+                  {scope.allowedPropertyIds ? null : (
+                    <option value="">Whole portfolio · all properties</option>
+                  )}
                   {properties.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
@@ -334,6 +341,11 @@ export default async function ReportsListPage({
                   ))}
                 </select>
               </label>
+            ) : properties.length === 1 && scope.allowedPropertyIds ? (
+              // Single granted property: no select renders, so emit the
+              // propertyId explicitly — otherwise the form submits an
+              // org-wide request createReport must reject.
+              <input type="hidden" name="propertyId" value={properties[0].id} />
             ) : null}
             <label className="flex flex-col gap-1">
               <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
@@ -372,7 +384,7 @@ export default async function ReportsListPage({
           <div>
             <div className="text-[13.5px] font-semibold text-foreground">Portfolio funnel</div>
             <div className="text-[12px] text-muted-foreground">
-              Traffic → leads → tours → applications across every property — one page for managers.
+              Traffic → leads → tours → applications across every property, one page for managers.
             </div>
           </div>
         </div>
@@ -389,7 +401,7 @@ export default async function ReportsListPage({
       <div className="grid items-start gap-4 lg:grid-cols-[1fr_1.1fr]">
         {previewProperty ? (
           <div className="order-last lg:sticky lg:top-4 ls-card overflow-hidden p-0">
-            <div className="flex items-center justify-between gap-3 border-b border-border p-4">
+            <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
               <div className="min-w-0">
                 <div className="text-[13px] font-semibold text-foreground">
                   Live report preview
@@ -427,24 +439,24 @@ export default async function ReportsListPage({
               </div>
             </div>
 
-            <div className="border-b border-border p-4">
-              <form action={generateReport} className="flex flex-col gap-1.5">
+            <div className="border-b border-border px-4 py-3">
+              <form action={generateReport} className="flex items-center justify-between gap-3">
                 <input type="hidden" name="kind" value={previewKind} />
                 <input type="hidden" name="propertyId" value={previewProperty.id} />
-                <button
-                  type="submit"
-                  className="inline-flex items-center justify-center gap-1.5 rounded-[2px] bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-                >
-                  Generate &amp; share this view
-                  <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-                </button>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-[11px] text-muted-foreground">
                   Freezes this exact view into a shareable report.
                 </p>
+                <button
+                  type="submit"
+                  className="inline-flex flex-none items-center gap-1.5 rounded-[2px] bg-primary px-3 py-1.5 text-[13px] font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  Generate &amp; share
+                  <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
               </form>
             </div>
 
-            <div className="p-4">
+            <div className="p-3">
               <Suspense fallback={<PreviewSkeleton />}>
                 <LivePreviewBody
                   orgId={scope.orgId}

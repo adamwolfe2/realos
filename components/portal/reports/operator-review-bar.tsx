@@ -81,7 +81,7 @@ export function OperatorReviewBar({
   return (
     <section
       data-no-print
-      className="ls-operator-bar rounded-xl border border-border bg-card overflow-hidden"
+      className="ls-operator-bar rounded-[2px] border border-border bg-card overflow-hidden"
     >
       <button
         type="button"

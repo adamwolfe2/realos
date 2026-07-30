@@ -200,7 +200,7 @@ function OverviewSection(s: ReportSnapshot, p: PropertyMeta, navTo: NavTo): Reac
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-[11px] font-medium text-muted-foreground">{c.label}</span>
-                  <span className={`block text-[19px] font-bold leading-tight ${c.danger ? "text-destructive" : "text-foreground"}`}>
+                  <span className={`block font-mono text-[16px] font-semibold leading-tight tabular-nums ${c.danger ? "text-destructive" : "text-foreground"}`}>
                     {c.value}
                   </span>
                   <span className="block truncate text-[11px] text-slate-600">{c.context}</span>
@@ -253,11 +253,11 @@ function HeroStat({
   delta?: number | null;
 }) {
   return (
-    <div className="rounded-[2px] border border-border bg-elevated px-4 py-3.5">
-      <div className="text-[26px] font-bold leading-none tracking-tight text-foreground">{value}</div>
-      <div className="mt-1.5 text-[11px] font-medium text-slate-600">{label}</div>
+    <div className="rounded-[2px] border border-border bg-card px-3 py-2.5">
+      <div className="font-mono text-[20px] font-semibold leading-none tracking-tight tabular-nums text-foreground">{value}</div>
+      <div className="mt-1 text-[10.5px] font-medium text-muted-foreground">{label}</div>
       {delta != null ? (
-        <div className={`mt-1.5 text-[10px] font-semibold ${delta >= 0 ? "text-green-600" : "text-destructive"}`}>
+        <div className={`mt-1 text-[10px] font-semibold ${delta >= 0 ? "text-green-600" : "text-destructive"}`}>
           {delta >= 0 ? "▲" : "▼"} {Math.abs(delta)}% vs prior
         </div>
       ) : null}
@@ -507,7 +507,7 @@ function ReputationSection(s: ReportSnapshot): React.ReactNode {
     <Panel>
       <Card>
         <div className="flex items-baseline gap-2.5">
-          <span className="text-[34px] font-bold leading-none text-foreground">
+          <span className="font-mono text-[26px] font-semibold leading-none tracking-tight tabular-nums text-foreground">
             {r.overallRating != null ? r.overallRating.toFixed(1) : "—"}
           </span>
           <span className="text-[15px] tracking-wide text-primary">★★★★★</span>
@@ -515,7 +515,7 @@ function ReputationSection(s: ReportSnapshot): React.ReactNode {
             {num(r.totalReviews)} reviews · {num(r.positiveCount)} positive, {num(r.negativeCount)} negative
           </span>
           {r.responseRatePct != null ? (
-            <span className={`ml-auto rounded-full border px-2.5 py-1 text-[10.5px] font-medium ${r.responseRatePct < 50 ? "border-destructive/30 bg-destructive/5 font-semibold text-destructive" : "border-border bg-elevated text-slate-600"}`}>
+            <span className={`ml-auto rounded-full border px-2.5 py-1 text-[10.5px] font-medium ${r.responseRatePct < 50 ? "border-destructive/30 bg-destructive/5 font-semibold text-destructive" : "border-border bg-card text-slate-600"}`}>
               {Math.round(r.responseRatePct)}% response rate
             </span>
           ) : null}
@@ -653,7 +653,7 @@ function AiVisibilitySection(s: ReportSnapshot, p: PropertyMeta): React.ReactNod
 const PRIORITY_STYLE: Record<string, string> = {
   high: "border-destructive/30 bg-destructive/5 text-destructive",
   medium: "border-amber-500/30 bg-amber-500/5 text-amber-600",
-  low: "border-border bg-elevated text-slate-600",
+  low: "border-border bg-card text-slate-600",
 };
 
 function InsightsSection(s: ReportSnapshot): React.ReactNode {
@@ -673,7 +673,7 @@ function InsightsSection(s: ReportSnapshot): React.ReactNode {
           <SectionHeading>Recommended actions</SectionHeading>
           <div className="flex flex-col gap-3">
             {ai.actions.map((act, i) => (
-              <div key={i} className="rounded-[2px] border border-border bg-elevated p-4">
+              <div key={i} className="rounded-[2px] border border-border bg-card p-3.5">
                 <div className="mb-1.5 flex items-center gap-2">
                   <span className={`rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide ${PRIORITY_STYLE[act.priority] ?? PRIORITY_STYLE.low}`}>
                     {act.priority}

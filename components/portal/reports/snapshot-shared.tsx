@@ -129,13 +129,13 @@ export function Stat({
   flag?: boolean;
 }) {
   return (
-    <div className="rounded-[10px] border border-border bg-elevated px-3 py-2.5">
+    <div className="rounded-[2px] border border-border bg-card px-3 py-2">
       <div
-        className={`text-[19px] font-bold leading-none ${flag ? "text-destructive" : "text-foreground"}`}
+        className={`font-mono text-[16px] font-semibold leading-none tracking-tight tabular-nums ${flag ? "text-destructive" : "text-foreground"}`}
       >
         {value}
       </div>
-      <div className="mt-1.5 text-[10px] font-medium leading-tight text-muted-foreground">
+      <div className="mt-1 text-[10px] font-medium leading-tight text-muted-foreground">
         {label}
       </div>
     </div>
@@ -149,7 +149,7 @@ export function Sparkline({ values }: { values: number[] }) {
       {values.map((v, i) => (
         <span
           key={i}
-          className={`min-h-[2px] flex-1 rounded-t-sm ${v === max ? "bg-primary" : "bg-primary/25"}`}
+          className={`min-h-[2px] flex-1 ${v === max ? "bg-primary" : "bg-primary/25"}`}
           style={{ height: `${Math.max(2, Math.round((v / max) * 100))}%` }}
         />
       ))}
@@ -172,17 +172,17 @@ export function KpiCard({
   deltaNeutral?: string;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-elevated px-4 py-3.5">
-      <div className="text-[26px] font-bold leading-none tracking-tight">{value}</div>
-      <div className="mt-1.5 text-[11px] font-medium text-slate-600">{label}</div>
+    <div className="rounded-[2px] border border-border bg-card px-3 py-2.5">
+      <div className="font-mono text-[20px] font-semibold leading-none tracking-tight tabular-nums">{value}</div>
+      <div className="mt-1 text-[10.5px] font-medium text-muted-foreground">{label}</div>
       {delta ? (
-        <div className={`mt-1.5 text-[10px] font-semibold ${delta.up ? "text-green-600" : "text-destructive"}`}>
+        <div className={`mt-1 text-[10px] font-semibold ${delta.up ? "text-green-600" : "text-destructive"}`}>
           {delta.up ? "▲" : "▼"} {delta.text}
         </div>
       ) : deltaRed ? (
-        <div className="mt-1.5 text-[10px] font-semibold text-destructive">{deltaRed}</div>
+        <div className="mt-1 text-[10px] font-semibold text-destructive">{deltaRed}</div>
       ) : deltaNeutral ? (
-        <div className="mt-1.5 text-[10px] font-medium text-muted-foreground">{deltaNeutral}</div>
+        <div className="mt-1 text-[10px] font-medium text-muted-foreground">{deltaNeutral}</div>
       ) : null}
     </div>
   );

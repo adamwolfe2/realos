@@ -44,7 +44,7 @@ export default async function PropertySnapshotPage({
     return (
       <div className="space-y-6">
         <BackBar propertyId={property.id} showPrint={false} />
-        <div className="mx-auto max-w-[880px] rounded-2xl border border-border bg-card p-10 text-center text-sm text-muted-foreground">
+        <div className="mx-auto max-w-[880px] rounded-[2px] border border-border bg-card p-10 text-center text-sm text-muted-foreground">
           We could not generate this snapshot right now. Please try again shortly.
         </div>
       </div>

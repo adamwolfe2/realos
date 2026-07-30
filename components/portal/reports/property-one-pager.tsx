@@ -47,14 +47,14 @@ export function PropertyOnePager({ snapshot, property }: Props) {
   );
 
   return (
-    <div className="mx-auto w-full max-w-[880px] rounded-[2px] border border-border bg-card p-8 text-foreground shadow-sm print:border-0 print:shadow-none">
+    <div className="mx-auto w-full max-w-[880px] rounded-[2px] border border-border bg-card p-6 text-foreground shadow-sm print:border-0 print:shadow-none">
       {/* Header */}
       <header className="flex items-start justify-between border-b border-border pb-4">
         <div>
-          <h1 className="text-[26px] font-bold leading-[1.05] tracking-tight">
+          <h1 className="text-[21px] font-semibold leading-[1.05] tracking-tight">
             Marketing &amp; Performance Snapshot
           </h1>
-          <p className="mt-2 text-[12.5px] font-medium leading-relaxed text-muted-foreground">
+          <p className="mt-1.5 text-[12px] font-medium leading-relaxed text-muted-foreground">
             {property.name}
             {addr ? ` · ${addr}` : ""}
             <br />
@@ -75,7 +75,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
       </header>
 
       {/* Headline KPIs */}
-      <div className="mt-5 grid grid-cols-4 gap-3">
+      <div className="mt-4 grid grid-cols-4 gap-2.5">
         <KpiCard
           value={num(kpis.leads)}
           label="New leads"
@@ -117,7 +117,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
       </div>
 
       {/* Acquisition + Leasing momentum */}
-      <div className="mt-6 grid grid-cols-[1.1fr_0.9fr] gap-7">
+      <div className="mt-5 grid grid-cols-[1.1fr_0.9fr] gap-6">
         <section>
           <SectionHeading meta="first-touch">Lead acquisition</SectionHeading>
           <div className="mb-4 flex flex-col gap-2.5 text-[12.5px]">
@@ -180,7 +180,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
       </div>
 
       {/* Renewals + Reputation */}
-      <div className="mt-6 grid grid-cols-2 gap-7">
+      <div className="mt-5 grid grid-cols-2 gap-6">
         <section>
           <SectionHeading>Renewals at risk</SectionHeading>
           <div className="grid grid-cols-3 gap-2.5">
@@ -201,7 +201,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
           {reputationStats ? (
             <>
               <div className="mb-3 flex items-baseline gap-2.5">
-                <span className="text-[28px] font-bold leading-none">
+                <span className="font-mono text-[22px] font-semibold leading-none tracking-tight tabular-nums">
                   {reputationStats.overallRating != null ? reputationStats.overallRating.toFixed(1) : "—"}
                 </span>
                 <span className="text-[13px] tracking-wide text-primary">★★★★★</span>
@@ -232,7 +232,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
                     className={`rounded-full border px-2.5 py-1 text-[10.5px] font-medium ${
                       reputationStats.responseRatePct < 50
                         ? "border-destructive/30 bg-destructive/5 font-semibold text-destructive"
-                        : "border-border bg-elevated text-muted-foreground"
+                        : "border-border bg-card text-muted-foreground"
                     }`}
                   >
                     {Math.round(reputationStats.responseRatePct)}% response rate
@@ -248,7 +248,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
 
       {/* AI search visibility */}
       {aeoStats && aeoStats.totalChecks > 0 ? (
-        <section className="mt-6 rounded-[2px] border border-border bg-elevated p-5">
+        <section className="mt-5 rounded-[2px] border border-border bg-card p-4">
           <h2 className="flex items-center gap-2 text-[12.5px] font-bold text-foreground">
             <span className="inline-block h-3.5 w-1 rounded-sm bg-primary" />
             AI search visibility
@@ -311,7 +311,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
       ) : null}
 
       {/* Coverage */}
-      <div className="mt-6 grid grid-cols-4 gap-x-4 gap-y-2.5 border-t border-border pt-4">
+      <div className="mt-5 grid grid-cols-4 gap-x-4 gap-y-2 border-t border-border pt-3.5">
         {coverageRows(snapshot).map((row) => (
           <div key={row.label} className="flex items-center gap-2 text-[10.5px] font-medium text-muted-foreground">
             <span className={`h-[7px] w-[7px] flex-none rounded-full ${COVERAGE_DOT[row.state]}`} />
