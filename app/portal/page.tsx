@@ -35,6 +35,8 @@ import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { SourceBars } from "@/components/portal/dashboard/source-bars";
 import { PipelineStrip } from "@/components/portal/dashboard/pipeline-strip";
+import { StageFunnel } from "@/components/portal/dashboard/stage-funnel";
+import { ConversationsTrend } from "@/components/portal/dashboard/conversations-trend";
 import { AttentionQueue } from "@/components/portal/dashboard/attention-queue";
 import { QuietActivityRows } from "@/components/portal/dashboard/quiet-activity-rows";
 import {
@@ -43,6 +45,8 @@ import {
   getHotVisitors,
   getIntegrationHealth,
   getLeadSourceBreakdown,
+  getConversationsOverTime,
+  type ConversationTrendPoint,
   getOrganicSessionsKpi,
   getPerformanceOverTime,
   getPortfolioLeadsSpark,
@@ -290,6 +294,7 @@ export default async function PortalHome({
       ,
       performancePoints,
       topPropertiesByLeads,
+      conversationTrend,
     ] = await Promise.all([
       prisma.organization.findUnique({
         where: { id: scope.orgId },
@@ -571,6 +576,11 @@ export default async function PortalHome({
         5,
         isFiltered ? effectiveIds : null,
       ).catch(() => [] as LeaderboardPropertyRow[]),
+      // Conversations card trend — same clause + range as the other blocks.
+      getConversationsOverTime(scope.orgId, {
+        periodDays: rangeDaysCount,
+        propertyClause,
+      }).catch(() => [] as ConversationTrendPoint[]),
     ]);
 
     // 28d leads sparkline, summed across the visible properties. Only the
@@ -1320,37 +1330,13 @@ export default async function PortalHome({
                 href="/portal/reports/portfolio"
                 hrefLabel="Full report"
               >
-                <div className="flex items-stretch">
-                  {journeyStages.map((stage, i) => (
-                    <div key={stage.key} className="contents">
-                      {i > 0 ? (
-                        // The marker sits BETWEEN the two cells it relates to
-                        // (the transition from the previous stage into this
-                        // one), not stacked above this stage's own number.
-                        <div
-                          className="flex items-center shrink-0 px-2 font-mono text-[10px] tabular-nums text-muted-foreground"
-                          aria-hidden={stage.conversionFromPrev == null}
-                        >
-                          {stage.conversionFromPrev != null
-                            ? `→${stage.conversionFromPrev}%`
-                            : "→"}
-                        </div>
-                      ) : null}
-                      <div
-                        className={
-                          i > 0
-                            ? "flex-1 min-w-0 pr-3 border-l border-[var(--hair)] pl-3"
-                            : "flex-1 min-w-0 pr-3"
-                        }
-                      >
-                        <div className="ls-eyebrow">{stage.label}</div>
-                        <div className="ls-metric ls-metric-md mt-1">
-                          {stage.count.toLocaleString()}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <StageFunnel
+                  stages={journeyStages.map((stage) => ({
+                    label: stage.label,
+                    value: stage.count,
+                    conversionFromPrev: stage.conversionFromPrev ?? null,
+                  }))}
+                />
                 {journey.lost + journey.unqualified > 0 ? (
                   <p className="mt-2 text-[11px] text-muted-foreground">
                     Off-ramps: {journey.lost.toLocaleString()} lost,{" "}
@@ -1392,6 +1378,9 @@ export default async function PortalHome({
                     </div>
                   ) : null}
                 </div>
+                {/* Daily volume over the selected range — the bare 7d count
+                  said "13" with no shape; the trend shows when they land. */}
+                <ConversationsTrend points={conversationTrend} />
               </DashboardSection>
             ) : null}
           </div>
@@ -1416,6 +1405,10 @@ export default async function PortalHome({
                   value: s.count,
                 }))}
                 limit={4}
+                // Share of ALL leads in the window — without this the bars
+                // print "% of the largest source" and the top row always
+                // reads a misleading 100%.
+                total={leadSourceSlices.reduce((acc, s) => acc + s.count, 0)}
                 emptyMessage="Lead source fills out once leads start coming in."
               />
             </DashboardSection>

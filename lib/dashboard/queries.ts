@@ -274,6 +274,43 @@ export async function getLeadSourceBreakdown(
 }
 
 // ---------------------------------------------------------------------------
+// Conversations over time — daily conversation counts for the dashboard's
+// Conversations card. lastMessageAt (indexed on [orgId, lastMessageAt]) so
+// the trend matches the card's 7d KPI semantics.
+// ---------------------------------------------------------------------------
+
+export type ConversationTrendPoint = { label: string; count: number };
+
+export async function getConversationsOverTime(
+  orgId: string,
+  scope: DashboardScope = {},
+): Promise<ConversationTrendPoint[]> {
+  const days = scope.periodDays ?? WINDOW_DAYS;
+  const since = new Date(Date.now() - days * DAY_MS);
+  const rows = await prisma.chatbotConversation.findMany({
+    where: {
+      orgId,
+      lastMessageAt: { gte: since },
+      ...(scope.propertyClause ?? {}),
+    },
+    select: { lastMessageAt: true },
+  });
+  const buckets = bucketDailyTotals(
+    rows.map((r) => ({ date: r.lastMessageAt, value: 1 })),
+    days,
+  );
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "America/Los_Angeles",
+  });
+  return buckets.map((count, i) => ({
+    label: fmt.format(new Date(Date.now() - (days - 1 - i) * DAY_MS)),
+    count,
+  }));
+}
+
+// ---------------------------------------------------------------------------
 // Conversion funnel (28d)
 //
 // Visitors  -> distinct VisitorSession.anonymousId
