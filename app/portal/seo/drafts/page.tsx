@@ -6,6 +6,11 @@ import { DraftStatus } from "@prisma/client";
 import { PageHeader } from "@/components/admin/page-header";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { TargetQueryManager } from "@/components/portal/seo/target-query-manager";
+import { StatusChipStrip } from "@/components/portal/ui/status-chip-strip";
+import {
+  DataTable,
+  type DataTableColumn,
+} from "@/components/portal/ui/data-table";
 
 export const metadata: Metadata = { title: "Content drafts" };
 export const dynamic = "force-dynamic";
@@ -122,6 +127,97 @@ export default async function PortalDraftsListPage({
     (countMap.get("PENDING_REVIEW") ?? 0) +
     (countMap.get("CHANGES_REQUESTED") ?? 0);
 
+  type DraftRow = (typeof drafts)[number];
+  const columns: DataTableColumn<DraftRow>[] = [
+    {
+      key: "draft",
+      header: "Draft",
+      // max-w cap + line-clamp (not truncate): `truncate` = nowrap, and with
+      // table-layout:auto a 200-char brief pins the column at its min-content
+      // width, shoving Status/Score/Age off-screen (the known grid-item
+      // min-content overflow trap).
+      accessor: (d) => (
+        <div className="min-w-0 max-w-[420px]">
+          <p className="text-xs font-semibold text-foreground line-clamp-2 leading-tight">
+            {d.brief}
+          </p>
+          {d.targetQuery ? (
+            <p className="text-[10px] font-mono text-muted-foreground truncate leading-tight mt-0.5">
+              target: {d.targetQuery}
+            </p>
+          ) : null}
+          {d.reviewNotes ? (
+            <p className="text-[11px] text-foreground line-clamp-2 leading-tight mt-0.5">
+              <span className="font-medium text-primary">Notes:</span>{" "}
+              {d.reviewNotes}
+            </p>
+          ) : null}
+        </div>
+      ),
+    },
+    {
+      key: "format",
+      header: "Format",
+      width: "140px",
+      hideOnMobile: true,
+      accessor: (d) => (
+        <span className="rounded-[2px] bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wide text-primary">
+          {d.format.replace(/_/g, " ").toLowerCase()}
+        </span>
+      ),
+    },
+    {
+      key: "property",
+      header: "Property",
+      width: "160px",
+      hideOnMobile: true,
+      accessor: (d) =>
+        d.property?.name ? (
+          <span className="text-[11px] text-muted-foreground">
+            {d.property.name}
+          </span>
+        ) : null,
+    },
+    {
+      key: "status",
+      header: "Status",
+      width: "150px",
+      accessor: (d) => {
+        const tone = STATUS_TONE[d.status] ?? STATUS_TONE.GENERATING;
+        return (
+          <span
+            className={`rounded-[2px] px-1.5 py-0.5 text-[10px] font-mono uppercase ${tone}`}
+          >
+            {d.status.replace(/_/g, " ").toLowerCase()}
+          </span>
+        );
+      },
+    },
+    {
+      key: "score",
+      header: "Score",
+      width: "70px",
+      align: "right",
+      accessor: (d) =>
+        d.estimatedScore != null ? (
+          <span className="font-mono text-muted-foreground">
+            {d.estimatedScore}
+          </span>
+        ) : null,
+    },
+    {
+      key: "age",
+      header: "Age",
+      width: "60px",
+      align: "right",
+      accessor: (d) => (
+        <span className="text-muted-foreground">
+          {fmtAge(d.submittedAt ?? d.createdAt)}
+        </span>
+      ),
+    },
+  ];
+
   // Target-query CRUD is per-property; this cross-property drafts inbox has
   // no single property in context, so — same featured-property rule as
   // /portal/seo/agent — scope it to the first LIVE marketable property,
@@ -161,110 +257,40 @@ export default async function PortalDraftsListPage({
         description="Every AI-generated draft across your portfolio. LeaseStack reviews each one before anything ships."
       />
 
-      <div className="flex flex-wrap gap-2">
-        {STATUS_OPTIONS.map((opt) => {
-          const isActive = opt.value === filter;
-          const count =
-            opt.value === "ACTIVE" ? activeCount : (countMap.get(opt.value) ?? 0);
-          return (
-            <Link
-              key={opt.value}
-              href={`/portal/seo/drafts?status=${opt.value}`}
-              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] font-medium transition-colors ${
-                isActive
-                  ? "border-primary bg-primary/10 text-foreground"
-                  : "border-border bg-background text-foreground hover:bg-muted"
-              }`}
-            >
-              {opt.label}
-              <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
-                {count}
-              </span>
-            </Link>
-          );
-        })}
-      </div>
+      <StatusChipStrip
+        items={STATUS_OPTIONS.map((opt) => ({
+          label: opt.label,
+          href: `/portal/seo/drafts?status=${opt.value}`,
+          count:
+            opt.value === "ACTIVE" ? activeCount : (countMap.get(opt.value) ?? 0),
+          active: opt.value === filter,
+        }))}
+      />
 
-      {drafts.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
-          <p className="text-[13px] font-medium text-foreground">
-            {filter === "ACTIVE"
-              ? "No drafts in flight."
-              : `No ${STATUS_OPTIONS.find((o) => o.value === filter)?.label.toLowerCase()} drafts.`}
-          </p>
-          <p className="text-[12px] text-muted-foreground mt-1">
-            Open the SEO Agent for a property and click <span className="font-medium">Generate draft</span>.
-          </p>
-          <Link
-            href="/portal/seo/agent"
-            className="mt-3 inline-flex items-center gap-1 text-[12px] font-medium text-primary hover:underline"
-          >
-            Open SEO Agent →
-          </Link>
-        </div>
-      ) : (
-        <ul className="space-y-2">
-          {drafts.map((d) => {
-            const fmt = d.format.replace(/_/g, " ").toLowerCase();
-            const tone = STATUS_TONE[d.status] ?? STATUS_TONE.GENERATING;
-            return (
-              <li
-                key={d.id}
-                className="rounded-2xl border border-border bg-card hover:border-primary/40 transition-colors"
-              >
-                <Link
-                  href={`/portal/seo/agent/drafts/${d.id}`}
-                  className="block p-4"
-                >
-                  <div className="flex items-start justify-between gap-3 mb-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wide text-primary">
-                        {fmt}
-                      </span>
-                      <span
-                        className={`rounded-md px-1.5 py-0.5 text-[10px] font-mono uppercase ${tone}`}
-                      >
-                        {d.status.replace(/_/g, " ").toLowerCase()}
-                      </span>
-                      {d.property?.name ? (
-                        <span className="text-[11px] text-muted-foreground">
-                          {d.property.name}
-                        </span>
-                      ) : null}
-                      {d.estimatedScore != null ? (
-                        <span className="text-[10px] font-mono text-muted-foreground">
-                          est. {d.estimatedScore}
-                        </span>
-                      ) : null}
-                    </div>
-                    <span className="text-[10px] text-muted-foreground shrink-0">
-                      {fmtAge(d.submittedAt ?? d.createdAt)}
-                    </span>
-                  </div>
-                  <p className="text-[13px] text-foreground line-clamp-2 leading-snug">
-                    {d.brief}
-                  </p>
-                  {d.targetQuery ? (
-                    <p className="mt-1 text-[11px] font-mono text-muted-foreground">
-                      target: {d.targetQuery}
-                    </p>
-                  ) : null}
-                  {d.reviewNotes ? (
-                    <div className="mt-2 rounded-md bg-primary/10 px-2.5 py-1.5 border border-primary/20">
-                      <p className="text-[10px] font-mono uppercase tracking-wide text-primary mb-0.5">
-                        Notes from LeaseStack
-                      </p>
-                      <p className="text-[12px] text-foreground whitespace-pre-wrap leading-snug">
-                        {d.reviewNotes}
-                      </p>
-                    </div>
-                  ) : null}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      <DataTable<DraftRow>
+        columns={columns}
+        rows={drafts}
+        getRowHref={(d) => `/portal/seo/agent/drafts/${d.id}`}
+        density="compact"
+        emptyState={
+          <div className="rounded-[2px] border border-dashed border-border bg-card p-8 text-center">
+            <p className="text-[13px] font-medium text-foreground">
+              {filter === "ACTIVE"
+                ? "No drafts in flight."
+                : `No ${STATUS_OPTIONS.find((o) => o.value === filter)?.label.toLowerCase()} drafts.`}
+            </p>
+            <p className="text-[12px] text-muted-foreground mt-1">
+              Open the SEO Agent for a property and click <span className="font-medium">Generate draft</span>.
+            </p>
+            <Link
+              href="/portal/seo/agent"
+              className="mt-3 inline-flex items-center gap-1 text-[12px] font-medium text-primary hover:underline"
+            >
+              Open SEO Agent →
+            </Link>
+          </div>
+        }
+      />
 
       {featuredProperty ? (
         <div className="space-y-1.5">
