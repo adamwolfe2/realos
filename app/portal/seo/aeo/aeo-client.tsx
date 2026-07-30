@@ -2,9 +2,10 @@
 
 import * as React from "react";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
+import { TabbedCard } from "@/components/portal/ui/tabbed-card";
 import { AeoScanButton } from "./aeo-scan-button";
 import {
   AeoEngineCards,
@@ -14,10 +15,7 @@ import {
   AeoResponsesTable,
   type ResponseRow,
 } from "./aeo-responses-table";
-import {
-  ShareOfVoiceCard,
-  type ShareOfVoiceProps,
-} from "@/components/portal/aeo/share-of-voice-card";
+import type { ShareOfVoiceProps } from "@/components/portal/aeo/share-of-voice-card";
 import {
   OpportunityScoreCard,
   type OpportunityScoreProps,
@@ -30,6 +28,7 @@ import {
   OnPageAuditCard,
   type OnPageAuditProps,
 } from "@/components/portal/aeo/onpage-audit-card";
+import { mergeEntities, type MergedEntity } from "@/lib/aeo/merge-entities";
 
 // All interactive UI for /portal/seo/aeo. The page.tsx server component
 // does the data fetch + tenant scope, then hands fully-shaped view props
@@ -143,6 +142,150 @@ function NextActions({
   );
 }
 
+// --- Share of Voice tab: merges the old ShareOfVoiceCard top-entities list
+// with the bottom-of-page competitor rollup. NOTE: these are DIFFERENT
+// tables counting overlapping events (aeoMentionSnapshot mentions vs
+// aeoCitationCheck competitorsCited — one DataForSEO response writes both),
+// so counts must never be summed across them. Merge semantics (max, self
+// wins, "other" dropped) live in lib/aeo/merge-entities.ts (unit tested).
+
+function engineLabel(e: ShareOfVoiceProps["perEngine"][number]["engine"]): string {
+  switch (e) {
+    case "CHATGPT":
+      return "ChatGPT";
+    case "CLAUDE":
+      return "Claude";
+    case "GEMINI":
+      return "Gemini";
+    case "PERPLEXITY":
+      return "Perplexity";
+    default:
+      return String(e);
+  }
+}
+
+// Per-engine SoV bars — copied from share-of-voice-card.tsx since that
+// component's own render also draws the top-entities list we no longer
+// want duplicated; simplest to re-render just the bars here.
+function SovBars({ perEngine }: { perEngine: ShareOfVoiceProps["perEngine"] }) {
+  const maxSov = perEngine.reduce(
+    (m, row) => (row.avgSov > m ? row.avgSov : m),
+    0,
+  );
+  function barWidth(v: number): string {
+    if (maxSov <= 0) return "0%";
+    const ratio = v / maxSov;
+    if (ratio <= 0) return "0%";
+    return `${Math.max(ratio * 100, 5)}%`;
+  }
+  return (
+    <div>
+      <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-3">
+        Per engine (30d avg)
+      </div>
+      <ul className="space-y-2.5">
+        {perEngine.map((row) => (
+          <li key={row.engine} className="space-y-1">
+            <div className="flex items-center justify-between gap-2 text-[13px]">
+              <span className="text-foreground">{engineLabel(row.engine)}</span>
+              <span className="tabular-nums text-muted-foreground">
+                {fmtPercent(row.avgSov)}
+                <span className="text-[10px] ml-2 text-muted-foreground/70">
+                  n={row.snapshotCount}
+                </span>
+              </span>
+            </div>
+            <div className="h-1.5 bg-[var(--hair)] rounded-full overflow-hidden">
+              <div
+                className="h-full bg-foreground/80"
+                style={{ width: barWidth(row.avgSov) }}
+                aria-hidden
+              />
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function MergedEntityList({ entities }: { entities: MergedEntity[] }) {
+  return (
+    <div>
+      <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-3">
+        Who the AI engines mention (30d)
+      </div>
+      {entities.length === 0 ? (
+        <div className="text-[13px] text-muted-foreground">
+          No entities classified yet.
+        </div>
+      ) : (
+        <ul className="space-y-1.5">
+          {entities.map((e) => (
+            <li
+              key={`${e.name}-${e.kind}`}
+              className="flex items-center justify-between gap-2 text-[13px] border-b border-[var(--hair)] last:border-b-0 py-1.5"
+            >
+              <span className="truncate text-foreground" title={e.name}>
+                {e.name}
+              </span>
+              <div className="flex items-center gap-3 shrink-0">
+                <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  {e.kind === "self" ? "You" : "Competitor"}
+                </span>
+                <span className="tabular-nums text-[11px] text-muted-foreground">
+                  {e.count}×
+                </span>
+                {e.kind === "competitor" ? (
+                  <a
+                    href={`/portal/content/new?format=BLOG_POST&target=${encodeURIComponent(e.name)}`}
+                    className="text-[11px] font-medium text-primary hover:underline"
+                    title={`Draft a counter-page targeting ${e.name}`}
+                  >
+                    Counter →
+                  </a>
+                ) : null}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function ShareOfVoiceTab({
+  shareOfVoice,
+  competitorRollup,
+}: {
+  shareOfVoice: ShareOfVoiceProps;
+  competitorRollup: { name: string; count: number }[];
+}) {
+  const isEmpty =
+    shareOfVoice.totalSnapshots === 0 &&
+    shareOfVoice.topEntities.length === 0 &&
+    competitorRollup.length === 0;
+  if (isEmpty) {
+    // Same one-line status copy as share-of-voice-card.tsx's own empty
+    // branch — no empty grid, no duplicated "No entities classified yet."
+    return (
+      <p className="text-[13px] text-muted-foreground py-2">
+        {shareOfVoice.engineSource === "dataforseo"
+          ? "Share of voice populates after your next weekly scan."
+          : "AI search visibility is being activated for your account. Your first share-of-voice report lands within 24 hours."}
+      </p>
+    );
+  }
+  const merged = mergeEntities(shareOfVoice.topEntities, competitorRollup);
+  const showBars = shareOfVoice.totalSnapshots > 0;
+  return (
+    <div className={showBars ? "grid grid-cols-1 lg:grid-cols-2 gap-6" : ""}>
+      {showBars ? <SovBars perEngine={shareOfVoice.perEngine} /> : null}
+      <MergedEntityList entities={merged} />
+    </div>
+  );
+}
+
 export function AeoClient({
   engineCards,
   responses,
@@ -155,6 +298,81 @@ export function AeoClient({
   aiOverview,
   onPageAudit,
 }: AeoClientProps) {
+  // Whole-card activation gate only — once ANY signal exists anywhere on
+  // this page, all four tabs render unconditionally. Per-tab presence
+  // gating previously hid each card's own empty state, which carries real
+  // value: OpportunityScoreCard's dataforseo empty state links the GSC
+  // connect remedy, and OnPageAuditCard's GatedView carries the AEO Boost
+  // upgrade CTA for non-addon tenants — that purchase path must stay
+  // reachable even when no other AEO v2 data exists yet.
+  const anyData =
+    opportunityScore.rows.length > 0 ||
+    aiOverview.rows.length > 0 ||
+    onPageAudit.hasAddon ||
+    shareOfVoice.totalSnapshots > 0 ||
+    shareOfVoice.topEntities.length > 0 ||
+    competitorRollup.length > 0;
+
+  const tabs: Array<{
+    key: string;
+    label: string;
+    description?: string;
+    content: React.ReactNode;
+  }> = [
+    {
+      key: "opportunities",
+      label: "Opportunities",
+      description:
+        "Keywords where the gap between AI demand and your AI presence is largest.",
+      content: (
+        <OpportunityScoreCard
+          bare
+          rows={opportunityScore.rows}
+          engineSource={opportunityScore.engineSource}
+        />
+      ),
+    },
+    {
+      key: "overview",
+      label: "Overview citations",
+      description:
+        "Google AI Overview — where you're cited and where competitors are.",
+      content: (
+        <AiOverviewCard
+          bare
+          rows={aiOverview.rows}
+          engineSource={aiOverview.engineSource}
+        />
+      ),
+    },
+    {
+      key: "pageHealth",
+      label: "Page health",
+      description: "How ready your pages are to be cited by AI engines.",
+      content: (
+        <OnPageAuditCard
+          bare
+          hasAddon={onPageAudit.hasAddon}
+          defaultUrl={onPageAudit.defaultUrl}
+          latest={onPageAudit.latest}
+          history={onPageAudit.history}
+        />
+      ),
+    },
+    {
+      key: "sov",
+      label: "Share of voice",
+      description:
+        "Your share of the AI conversation, and every rival the engines name.",
+      content: (
+        <ShareOfVoiceTab
+          shareOfVoice={shareOfVoice}
+          competitorRollup={competitorRollup}
+        />
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -228,6 +446,10 @@ export function AeoClient({
         />
       </div>
 
+      {/* What to do next — derived recommendations, hoisted directly under
+          the KPI row since it's the most actionable summary on the page. */}
+      <NextActions recs={recommendations} />
+
       {/* The actual AI prompts + responses — the most useful thing on the
           page, so it leads right under the score instead of being buried at
           the bottom. */}
@@ -238,77 +460,26 @@ export function AeoClient({
       {/* Per-engine cards — now show BOTH mention + citation per engine */}
       <AeoEngineCards rows={engineCards} />
 
-      {/* AEO v2 W1: AI Share of Voice — populated when AEO_ENGINE_SOURCE=dataforseo */}
-      <ShareOfVoiceCard
-        perEngine={shareOfVoice.perEngine}
-        topEntities={shareOfVoice.topEntities}
-        totalSnapshots={shareOfVoice.totalSnapshots}
-        engineSource={shareOfVoice.engineSource}
-      />
-
-      {/* AEO v2 W2: Opportunity Score — keywords ranked by gap */}
-      <OpportunityScoreCard
-        rows={opportunityScore.rows}
-        engineSource={opportunityScore.engineSource}
-      />
-
-      {/* AEO v2 W2: Google AI Overview row */}
-      <AiOverviewCard
-        rows={aiOverview.rows}
-        engineSource={aiOverview.engineSource}
-      />
-
-      {/* AEO v2 W3: AEO Page Health (gated behind AEO Boost addon) */}
-      <OnPageAuditCard
-        hasAddon={onPageAudit.hasAddon}
-        defaultUrl={onPageAudit.defaultUrl}
-        latest={onPageAudit.latest}
-        history={onPageAudit.history}
-      />
-
-      {/* What to do next — derived recommendations */}
-      <NextActions recs={recommendations} />
-
-      {/* Competitors rollup — hoisted above the table since it's the
-          single most actionable data on the page. Each row links to a
-          counter-page draft pre-filled with the competitor's name. */}
-      <SectionCard
-        label="Competitors cited"
-        description="Buildings the AI surfaced when your properties weren't (last 30 days). Click a row to draft a counter-page that names both."
-      >
-        {competitorRollup.length === 0 ? (
-          <div className="text-[13px] text-muted-foreground py-2 inline-flex items-center gap-2">
-            <Sparkles className="w-3 h-3" />
-            No competitor names extracted yet. The scanner will populate this
-            list as AI engines start mentioning rivals.
-          </div>
-        ) : (
-          <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
-            {competitorRollup.map(({ name, count }) => (
-              <li
-                key={name}
-                className="flex items-center justify-between gap-2 text-[13px] border-b border-[var(--hair)] last:border-b-0 py-1.5"
-              >
-                <span className="truncate text-foreground" title={name}>
-                  {name}
-                </span>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[11px] tabular-nums text-muted-foreground">
-                    {count}×
-                  </span>
-                  <a
-                    href={`/portal/content/new?format=BLOG_POST&target=${encodeURIComponent(name)}`}
-                    className="text-[11px] font-medium text-primary hover:underline"
-                    title={`Draft a counter-page targeting ${name}`}
-                  >
-                    Counter →
-                  </a>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </SectionCard>
+      {/* AEO v2: deeper AI-search intelligence, consolidated into one
+          tabbed card. All four tabs always render once any signal exists
+          anywhere on the page — each card owns its own empty/gated state
+          (see anyData comment above). If nothing has ever populated, a
+          single activation banner replaces the whole card instead. */}
+      {anyData ? (
+        <TabbedCard
+          title="AI search intelligence"
+          tabs={tabs}
+          minHeightClass="min-h-[280px]"
+        />
+      ) : (
+        <SectionCard label="Deeper AI-search intelligence">
+          <p className="text-[13px] text-muted-foreground py-2">
+            {shareOfVoice.engineSource === "dataforseo"
+              ? "Opportunities, AI Overview citations, page health, and share of voice populate after your next weekly scan."
+              : "AI search intelligence is being activated for your account. Your first report lands within 24 hours."}
+          </p>
+        </SectionCard>
+      )}
     </div>
   );
 }

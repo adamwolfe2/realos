@@ -34,6 +34,7 @@ export type OpportunityRow = {
 export type OpportunityScoreProps = {
   rows: OpportunityRow[];
   engineSource: "direct" | "dataforseo";
+  bare?: boolean;
 };
 
 function fmtNum(n: number): string {
@@ -92,9 +93,11 @@ function StackedBar({ row }: { row: OpportunityRow }) {
 export function OpportunityScoreCard({
   rows,
   engineSource,
+  bare = false,
 }: OpportunityScoreProps) {
   return (
     <SectionCard
+      bare={bare}
       label="AEO Opportunity Score"
       description="Keywords ranked by where the gap between AI demand and your AI presence is largest. Composite of AI volume, mention gap, GSC potential, competitor density, and OnPage health."
     >

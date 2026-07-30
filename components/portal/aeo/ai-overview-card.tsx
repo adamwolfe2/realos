@@ -19,6 +19,7 @@ export type AiOverviewRow = {
 export type AiOverviewProps = {
   rows: AiOverviewRow[];
   engineSource: "direct" | "dataforseo";
+  bare?: boolean;
 };
 
 function formatDate(iso: string): string {
@@ -107,9 +108,14 @@ function OverviewItem({ row }: { row: AiOverviewRow }) {
   );
 }
 
-export function AiOverviewCard({ rows, engineSource }: AiOverviewProps) {
+export function AiOverviewCard({
+  rows,
+  engineSource,
+  bare = false,
+}: AiOverviewProps) {
   return (
     <SectionCard
+      bare={bare}
       label="Google AI Overview"
       description="What Google's AI Overview is saying for your top-ranked queries over the last 28 days."
     >

@@ -96,6 +96,7 @@ export function SectionCard({
   children,
   className,
   padded = true,
+  bare = false,
 }: {
   label: React.ReactNode;
   description?: React.ReactNode;
@@ -103,7 +104,14 @@ export function SectionCard({
   children: React.ReactNode;
   className?: string;
   padded?: boolean;
+  /** Render only `children` — no ls-card chrome, no label/description
+   *  header, no action slot. For use inside a parent that already
+   *  provides its own card chrome (e.g. TabbedCard tab panels). */
+  bare?: boolean;
 }) {
+  if (bare) {
+    return <div className={className}>{children}</div>;
+  }
   return (
     <section
       className={cn(

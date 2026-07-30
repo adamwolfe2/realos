@@ -41,6 +41,7 @@ export type OnPageAuditProps = {
       }
     | null;
   history: OnPageAuditHistoryRow[];
+  bare?: boolean;
 };
 
 function formatDate(iso: string): string {
@@ -275,9 +276,11 @@ export function OnPageAuditCard({
   defaultUrl,
   latest,
   history,
+  bare = false,
 }: OnPageAuditProps) {
   return (
     <SectionCard
+      bare={bare}
       label="AEO Page Health"
       description={
         hasAddon
