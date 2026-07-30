@@ -1,21 +1,22 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Search, SlidersHorizontal } from "lucide-react";
 import {
   bucketCountsForRecommendations,
   categorizeRecommendation,
+  TOP_CATEGORY_ORDER,
   type BucketCounts,
   type TopCategory,
 } from "@/lib/seo/categorize-recommendation";
+import { OpportunitiesCategoryChips } from "./opportunities-sidebar";
 import {
-  OpportunitiesSidebar,
-  type SelectedBucket,
-} from "./opportunities-sidebar";
-import {
-  OpportunityCard,
-  type OpportunityCardData,
+  SeverityChip,
+  OpportunityRowActions,
+  type Severity,
 } from "./opportunity-card";
+import { DataTable, type DataTableColumn } from "@/components/portal/ui/data-table";
 
 // ---------------------------------------------------------------------------
 // OpportunitiesClient — owns the entire interactivity surface of the
@@ -25,13 +26,16 @@ import {
 // the initial bucket counts (cheaper to compute server-side than ship a
 // raw list of all open recs without context). We still recompute counts on
 // the client whenever the resolved-set changes, so optimistic resolves
-// also decrement the sidebar.
+// also decrement the category chips.
 //
 // State:
-//   - selected     : which bucket is active (All / Top / Sub)
-//   - search       : free-text filter against title + detail
-//   - resolvedIds  : ids removed via Done / Decline; never come back this
-//                    render. Server refresh re-fetches.
+//   - category/sub  : URL-driven (?category=&sub=) via the shared
+//                      StatusChipStrip — was local useState, converted so
+//                      the chip strip's Link-based API works.
+//   - search        : free-text filter against title + detail (unchanged,
+//                      stays client-local — not part of the chip pattern).
+//   - resolvedIds   : ids removed via Done / Decline; never come back this
+//                      render. Server refresh re-fetches.
 //
 // Filtering is a single pass: O(n) per render where n = open recs for the
 // org. Memoised so typing in the search box stays smooth at hundreds of
@@ -41,9 +45,10 @@ import {
 type ServerRec = {
   id: string;
   category: string;
-  severity: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
+  severity: Severity;
   title: string;
   detail: string;
+  score: number;
   propertyName: string | null;
 };
 
@@ -58,12 +63,19 @@ export function OpportunitiesClient({
   initialCounts,
   initialTotal,
 }: Props) {
-  const [selected, setSelected] = useState<SelectedBucket>({ kind: "all" });
+  const searchParams = useSearchParams();
+  const category = (TOP_CATEGORY_ORDER as readonly string[]).includes(
+    searchParams.get("category") ?? "",
+  )
+    ? (searchParams.get("category") as TopCategory)
+    : undefined;
+  const sub = category ? searchParams.get("sub") ?? undefined : undefined;
+
   const [search, setSearch] = useState("");
   const [resolvedIds, setResolvedIds] = useState<Set<string>>(new Set());
 
-  // Annotate each rec with its bucket once — used by both the sidebar
-  // recount and the filter step.
+  // Annotate each rec with its bucket once — used by both the chip recount
+  // and the filter step.
   const annotated = useMemo(
     () =>
       recommendations.map((r) => {
@@ -94,20 +106,15 @@ export function OpportunitiesClient({
   const filtered = useMemo(() => {
     const needle = search.trim().toLowerCase();
     return liveRecs.filter((r) => {
-      if (selected.kind === "top" && r.topCategory !== selected.topCategory) {
-        return false;
-      }
-      if (selected.kind === "sub") {
-        if (r.topCategory !== selected.topCategory) return false;
-        if (r.subBucket !== selected.subBucket) return false;
-      }
+      if (category && r.topCategory !== category) return false;
+      if (sub && r.subBucket !== sub) return false;
       if (needle.length > 0) {
         const hay = `${r.title} ${r.detail}`.toLowerCase();
         if (!hay.includes(needle)) return false;
       }
       return true;
     });
-  }, [liveRecs, selected, search]);
+  }, [liveRecs, category, sub, search]);
 
   function handleResolved(id: string) {
     setResolvedIds((prev) => {
@@ -117,62 +124,121 @@ export function OpportunitiesClient({
     });
   }
 
+  type Row = (typeof filtered)[number];
+
+  const columns: DataTableColumn<Row>[] = [
+    {
+      key: "title",
+      header: "Opportunity",
+      accessor: (r) => (
+        <div className="min-w-0 max-w-[440px]">
+          <p className="text-[13px] font-semibold text-foreground leading-snug line-clamp-1">
+            {r.title}
+          </p>
+          <p className="mt-0.5 text-[11.5px] text-muted-foreground leading-snug line-clamp-2">
+            {r.detail}
+          </p>
+          {r.propertyName ? (
+            <p className="mt-1 text-[10.5px] text-muted-foreground truncate">
+              {r.propertyName}
+            </p>
+          ) : null}
+        </div>
+      ),
+    },
+    {
+      key: "category",
+      header: "Category",
+      width: "170px",
+      accessor: (r) => (
+        <span className="inline-flex items-center rounded-[2px] border border-border bg-muted/60 px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wide text-muted-foreground whitespace-nowrap">
+          {r.subBucket}
+        </span>
+      ),
+    },
+    {
+      key: "severity",
+      header: "Severity",
+      width: "110px",
+      accessor: (r) => <SeverityChip severity={r.severity} />,
+    },
+    {
+      key: "score",
+      header: "Score",
+      width: "64px",
+      align: "right",
+      accessor: (r) => (
+        <span className="tabular-nums text-foreground">
+          {Math.round(r.score)}
+        </span>
+      ),
+    },
+    {
+      key: "actions",
+      header: "",
+      width: "190px",
+      accessor: (r) => (
+        <OpportunityRowActions id={r.id} onResolved={handleResolved} />
+      ),
+    },
+  ];
+
   return (
-    <div className="flex flex-col md:flex-row gap-6">
-      <OpportunitiesSidebar
+    <div className="space-y-4">
+      <OpportunitiesCategoryChips
         counts={counts}
         total={total}
-        selected={selected}
-        onSelect={setSelected}
+        category={category}
+        sub={sub}
       />
 
-      <div className="min-w-0 flex-1 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <p className="text-[13px] text-foreground">
-            <span className="font-semibold tabular-nums">
-              {filtered.length}
-            </span>{" "}
-            <span className="text-muted-foreground">
-              {filtered.length === 1 ? "opportunity" : "opportunities"}
-              {selected.kind !== "all" ? (
-                <>
-                  {" "}
-                  in{" "}
-                  <span className="text-foreground font-medium">
-                    {labelForSelection(selected)}
-                  </span>
-                </>
-              ) : null}
-            </span>
-          </p>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              disabled
-              title="Coming soon"
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-[12px] font-medium text-muted-foreground hover:bg-muted disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              <SlidersHorizontal size={12} />
-              Filter
-            </button>
-            <div className="relative">
-              <Search
-                size={12}
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
-                aria-hidden
-              />
-              <input
-                type="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search opportunities"
-                className="w-full sm:w-64 rounded-md border border-border bg-background pl-7 pr-2.5 py-1.5 text-[12px] focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
-            </div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <p className="text-[13px] text-foreground">
+          <span className="font-semibold tabular-nums">{filtered.length}</span>{" "}
+          <span className="text-muted-foreground">
+            {filtered.length === 1 ? "opportunity" : "opportunities"}
+            {category ? (
+              <>
+                {" "}
+                in{" "}
+                <span className="text-foreground font-medium">
+                  {sub ? `${category} · ${sub}` : category}
+                </span>
+              </>
+            ) : null}
+          </span>
+        </p>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled
+            title="Coming soon"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-[12px] font-medium text-muted-foreground hover:bg-muted disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <SlidersHorizontal size={12} />
+            Filter
+          </button>
+          <div className="relative">
+            <Search
+              size={12}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+              aria-hidden
+            />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search opportunities"
+              className="w-full sm:w-64 rounded-md border border-border bg-background pl-7 pr-2.5 py-1.5 text-[12px] focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
           </div>
         </div>
+      </div>
 
-        {filtered.length === 0 ? (
+      <DataTable
+        columns={columns}
+        rows={filtered}
+        emptyState={
           <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
             <p className="text-[13px] font-medium text-foreground">
               {liveRecs.length === 0
@@ -185,36 +251,10 @@ export function OpportunitiesClient({
                 : "Try a different category or clear your search."}
             </p>
           </div>
-        ) : (
-          <ul className="space-y-3">
-            {filtered.map((r) => {
-              const card: OpportunityCardData = {
-                id: r.id,
-                title: r.title,
-                detail: r.detail,
-                severity: r.severity,
-                category: r.category,
-                topCategory: r.topCategory,
-                subBucket: r.subBucket,
-                propertyName: r.propertyName,
-              };
-              return (
-                <li key={r.id}>
-                  <OpportunityCard rec={card} onResolved={handleResolved} />
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
+        }
+      />
     </div>
   );
-}
-
-function labelForSelection(sel: SelectedBucket): string {
-  if (sel.kind === "all") return "All";
-  if (sel.kind === "top") return sel.topCategory;
-  return `${sel.topCategory} · ${sel.subBucket}`;
 }
 
 // Re-export for the server file so it can pass through the right type without

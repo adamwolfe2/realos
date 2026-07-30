@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { PageHeader } from "@/components/admin/page-header";
@@ -11,17 +12,18 @@ export const dynamic = "force-dynamic";
 // ---------------------------------------------------------------------------
 // /portal/seo/recommendations — "Opportunities" feed.
 //
-// Searchable.ai-style two-column layout: categories tree on the left, list
-// of opportunity cards on the right. Surfaces every OPEN + IN_PROGRESS rec
-// for the operator's org, grouped into Setup / On Page / Off Page via the
-// pure mapper in lib/seo/categorize-recommendation.ts.
+// Category chip strip up top (?category=&sub=, shared StatusChipStrip),
+// dense DataTable below. Surfaces every OPEN + IN_PROGRESS rec for the
+// operator's org, grouped into Setup / On Page / Off Page via the pure
+// mapper in lib/seo/categorize-recommendation.ts.
 //
 // This file stays a server component — it does the auth-scoped read, sorts
 // recs by score, and hands the result off to OpportunitiesClient (which
-// owns filtering, search, and the optimistic Done / Decline mutations).
+// owns category/search filtering and the optimistic Done / Decline
+// mutations).
 //
 // We intentionally do not paginate here. In practice an active org has
-// dozens — not thousands — of open recs, and the sidebar tree breaks the
+// dozens — not thousands — of open recs, and the category chips break the
 // list down small enough that no row is more than a couple of scrolls
 // away. If we ever need pagination, the server-component boundary is the
 // right place to add it.
@@ -51,6 +53,7 @@ export default async function OpportunitiesPage() {
       severity: true,
       title: true,
       detail: true,
+      score: true,
       property: { select: { name: true } },
     },
   });
@@ -61,6 +64,7 @@ export default async function OpportunitiesPage() {
     severity: r.severity,
     title: r.title,
     detail: r.detail,
+    score: r.score,
     propertyName: r.property?.name ?? null,
   }));
 
@@ -76,11 +80,13 @@ export default async function OpportunitiesPage() {
         meta={`${initialTotal} open`}
       />
 
-      <OpportunitiesClient
-        recommendations={recommendations}
-        initialCounts={initialCounts}
-        initialTotal={initialTotal}
-      />
+      <Suspense fallback={null}>
+        <OpportunitiesClient
+          recommendations={recommendations}
+          initialCounts={initialCounts}
+          initialTotal={initialTotal}
+        />
+      </Suspense>
     </div>
   );
 }

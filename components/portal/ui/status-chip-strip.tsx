@@ -24,6 +24,9 @@ export function StatusChipStrip({ items }: { items: StatusChipStripItem[] }) {
         <Link
           key={item.label}
           href={item.href}
+          // Filter chips must not jump the window to top on every click —
+          // same as DataTable's own sort headers.
+          scroll={false}
           className={`inline-flex items-center gap-1.5 rounded-[2px] border px-3 py-1.5 text-[12px] font-medium transition-colors ${
             item.active
               ? "border-primary bg-primary/10 text-foreground"
