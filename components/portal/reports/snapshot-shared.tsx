@@ -42,8 +42,11 @@ export function pct(n: number | null | undefined): string {
 }
 
 export function periodLabel(snapshot: ReportSnapshot): string {
-  const end = new Date(snapshot.periodEnd);
   const days = snapshot.kind === "weekly" ? 7 : 28;
+  // Defensive: some legacy/stub snapshots predate periodEnd entirely. Don't
+  // let a missing or unparseable date surface as "Invalid Date" in the UI.
+  const end = snapshot.periodEnd ? new Date(snapshot.periodEnd) : null;
+  if (!end || Number.isNaN(end.getTime())) return `Trailing ${days} days`;
   const endLabel = end.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
