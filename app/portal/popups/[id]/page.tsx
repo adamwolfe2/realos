@@ -163,10 +163,10 @@ export default async function PopupEditorPage({
       {showTroubleshoot ? (
         <div
           role="status"
-          className="rounded-xl border border-amber-500/30 bg-amber-50/60 p-4 text-[12.5px] text-foreground space-y-2"
+          className="rounded-[2px] border border-[#f1c21b]/40 bg-[rgba(241,194,27,0.16)] p-4 text-[12.5px] text-foreground space-y-2"
         >
           <p className="font-semibold flex items-center gap-2">
-            <AlertTriangle aria-hidden="true" className="w-4 h-4 text-amber-700" strokeWidth={1.5} />
+            <AlertTriangle aria-hidden="true" className="w-4 h-4 text-[#8a6d00]" strokeWidth={1.5} />
             This popup is active but hasn&apos;t recorded any impressions.
           </p>
           <p className="text-muted-foreground leading-snug">

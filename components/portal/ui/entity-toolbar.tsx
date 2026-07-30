@@ -87,7 +87,7 @@ export function EntityToolbar({
   return (
     <div
       className={cn(
-        "rounded-xl border border-border bg-card overflow-hidden",
+        "rounded-[2px] border border-border bg-card overflow-hidden",
         className,
       )}
     >
@@ -127,7 +127,7 @@ export function EntityToolbar({
             <Link
               href={addFilterHref!}
               scroll={false}
-              className="inline-flex items-center gap-1 rounded-md border border-dashed border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors"
+              className="inline-flex items-center gap-1 rounded-[2px] border border-dashed border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors"
             >
               <Plus className="h-3 w-3" aria-hidden="true" />
               Add filter
@@ -156,7 +156,7 @@ export function EntityToolbar({
                 name={search.name ?? "q"}
                 defaultValue={search.defaultValue ?? ""}
                 placeholder={search.placeholder ?? "Search…"}
-                className="h-7 w-44 rounded-md border border-border bg-background px-2 text-[11px] placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="h-7 w-44 rounded-[2px] border border-border bg-background px-2 text-[11px] placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </form>
           ) : null}
@@ -177,7 +177,7 @@ function ViewTab({ view }: { view: ToolbarView }) {
       href={view.href}
       scroll={false}
       className={cn(
-        "group inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[12px] font-medium whitespace-nowrap transition-colors",
+        "group inline-flex items-center gap-1.5 rounded-[2px] px-2 py-1 text-[12px] font-medium whitespace-nowrap transition-colors",
         view.active
           ? "text-foreground bg-primary/10"
           : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
@@ -209,7 +209,7 @@ function ViewTab({ view }: { view: ToolbarView }) {
 
 function FilterChip({ filter }: { filter: ToolbarFilter }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 border border-primary/20 pl-1.5 pr-0.5 py-0.5 text-[11px] font-medium text-primary whitespace-nowrap">
+    <span className="inline-flex items-center gap-1 rounded-[2px] bg-primary/10 border border-primary/20 pl-1.5 pr-0.5 py-0.5 text-[11px] font-medium text-primary whitespace-nowrap">
       {filter.icon ? (
         <span className="opacity-70" aria-hidden="true">
           {filter.icon}
@@ -248,7 +248,7 @@ function ToolbarIconButton({
       scroll={false}
       title={label}
       aria-label={label}
-      className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+      className="inline-flex items-center gap-1 rounded-[2px] px-2 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
     >
       {icon}
       <span className="hidden sm:inline">{label}</span>

@@ -30,15 +30,16 @@ const STATUS_OPTIONS: Array<{
   { value: DraftStatus.REJECTED, label: "Rejected" },
 ];
 
-// Single-blue cohesion across draft statuses. Matches /portal/content
-// list + admin queue. No amber/green/red status pills.
+// Draft status tones. Matches /portal/content list + admin queue.
+// Terminal states (approved/shipped) use the success-green family, never
+// blue-as-success.
 const STATUS_TONE: Record<string, string> = {
   GENERATING:        "bg-muted text-muted-foreground",
   PENDING_REVIEW:    "bg-primary/10 text-primary",
-  APPROVED:          "bg-primary/15 text-primary font-semibold",
+  APPROVED:          "bg-success/15 text-success font-semibold",
   CHANGES_REQUESTED: "bg-muted text-foreground",
   REJECTED:          "bg-muted text-muted-foreground line-through",
-  SHIPPED:           "bg-primary text-primary-foreground",
+  SHIPPED:           "bg-success text-success-foreground",
   EXPIRED:           "bg-muted text-muted-foreground/70",
 };
 

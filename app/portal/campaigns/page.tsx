@@ -58,9 +58,9 @@ function platformManageUrl(args: {
 function statusBadge(status: string | null) {
   const s = (status ?? "").toUpperCase();
   if (s === "ENABLED" || s === "ACTIVE")
-    return "bg-primary/10 text-primary border-primary/30";
+    return "bg-[rgba(36,161,72,0.10)] text-[#24a148] border-[#24a148]/30";
   if (s === "PAUSED")
-    return "bg-amber-50 text-amber-700 border-amber-200";
+    return "bg-muted text-muted-foreground border-border";
   if (s === "REMOVED" || s === "DELETED")
     return "bg-muted text-muted-foreground border-border";
   return "bg-muted text-muted-foreground border-border";
@@ -174,7 +174,7 @@ export default async function CampaignsPage({
             />
             <Link
               href="/portal/creative"
-              className="inline-flex items-center rounded-md border border-border bg-card px-3 py-2 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
+              className="inline-flex items-center rounded-[2px] border border-border bg-card px-3 py-2 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
             >
               Request creative
             </Link>
@@ -230,7 +230,7 @@ export default async function CampaignsPage({
           action={{ label: "Connect ad accounts", href: "/portal/connect" }}
         />
       ) : (
-        <div className="rounded-xl border border-border bg-card overflow-x-auto">
+        <div className="rounded-[2px] border border-border bg-card overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border">
@@ -313,7 +313,7 @@ export default async function CampaignsPage({
                   </td>
                   <td className="px-4 py-3 text-center">
                     <span
-                      className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${statusBadge(c.status)}`}
+                      className={`inline-flex items-center rounded-[2px] border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${statusBadge(c.status)}`}
                     >
                       {statusLabel(c.status)}
                     </span>

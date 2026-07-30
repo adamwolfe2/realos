@@ -124,7 +124,7 @@ export function DraftLauncher({ propertyId, propertyName, prefill }: Props) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-[12px] font-medium text-primary hover:bg-primary/15 transition-colors"
+        className="inline-flex items-center gap-1.5 rounded-[2px] border border-primary/30 bg-primary/10 px-3 py-1.5 text-[12px] font-medium text-primary hover:bg-primary/15 transition-colors"
       >
         Generate draft
       </button>
@@ -138,7 +138,7 @@ export function DraftLauncher({ propertyId, propertyName, prefill }: Props) {
             if (e.target === e.currentTarget) setOpen(false);
           }}
         >
-          <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-border bg-card shadow-xl">
+          <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-[2px] border border-border bg-card shadow-xl">
             <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
               <div>
                 <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.12em] text-primary">
@@ -169,7 +169,7 @@ export function DraftLauncher({ propertyId, propertyName, prefill }: Props) {
                       key={f.id}
                       type="button"
                       onClick={() => setFormat(f.id)}
-                      className={`rounded-lg border p-2.5 text-left text-[12px] transition-colors ${
+                      className={`rounded-[2px] border p-2.5 text-left text-[12px] transition-colors ${
                         format === f.id
                           ? "border-primary bg-primary/10 text-foreground"
                           : "border-border bg-background hover:border-primary/40"
@@ -197,7 +197,7 @@ export function DraftLauncher({ propertyId, propertyName, prefill }: Props) {
                   onChange={(e) => setBrief(e.target.value)}
                   rows={4}
                   placeholder="What should this draft do? E.g. Counter Acme Apartments' AI citation for 'best amenities in downtown.'"
-                  className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                  className="mt-1.5 w-full rounded-[2px] border border-border bg-background px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
                 />
               </div>
 
@@ -214,7 +214,7 @@ export function DraftLauncher({ propertyId, propertyName, prefill }: Props) {
                   value={targetQuery}
                   onChange={(e) => setTargetQuery(e.target.value)}
                   placeholder="e.g. apartments near Marquette University"
-                  className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  className="mt-1.5 w-full rounded-[2px] border border-border bg-background px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
               </div>
 
@@ -232,7 +232,7 @@ export function DraftLauncher({ propertyId, propertyName, prefill }: Props) {
                     value={audience}
                     onChange={(e) => setAudience(e.target.value)}
                     placeholder="students, young professionals…"
-                    className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px]"
+                    className="mt-1.5 w-full rounded-[2px] border border-border bg-background px-3 py-2 text-[13px]"
                   />
                 </div>
                 <div>
@@ -248,7 +248,7 @@ export function DraftLauncher({ propertyId, propertyName, prefill }: Props) {
                     value={voice}
                     onChange={(e) => setVoice(e.target.value)}
                     placeholder="warm + casual, professional…"
-                    className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px]"
+                    className="mt-1.5 w-full rounded-[2px] border border-border bg-background px-3 py-2 text-[13px]"
                   />
                 </div>
               </div>
@@ -262,7 +262,7 @@ export function DraftLauncher({ propertyId, propertyName, prefill }: Props) {
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted"
+                  className="rounded-[2px] border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted"
                 >
                   Cancel
                 </button>
@@ -270,7 +270,7 @@ export function DraftLauncher({ propertyId, propertyName, prefill }: Props) {
                   type="button"
                   onClick={submit}
                   disabled={submitting}
-                  className="rounded-lg bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                  className="rounded-[2px] bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                 >
                   {submitting ? "Generating…" : "Generate"}
                 </button>

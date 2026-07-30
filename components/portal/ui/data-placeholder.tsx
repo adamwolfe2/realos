@@ -61,7 +61,7 @@ export function DataPlaceholder({
     return (
       <div
         className={cn(
-          "flex items-center justify-between gap-3 rounded-md border bg-card/50 px-3 py-2",
+          "flex items-center justify-between gap-3 rounded-[2px] border bg-card/50 px-3 py-2",
           INTENT_BORDER[intent],
           className,
         )}
@@ -86,7 +86,7 @@ export function DataPlaceholder({
   return (
     <div
       className={cn(
-        "rounded-xl border bg-card/40 px-4 py-6 text-center flex flex-col items-center gap-2",
+        "rounded-[2px] border bg-card/40 px-4 py-6 text-center flex flex-col items-center gap-2",
         INTENT_BORDER[intent],
         className,
       )}
@@ -94,7 +94,7 @@ export function DataPlaceholder({
       {icon ? (
         <div
           className={cn(
-            "mb-1 inline-flex h-9 w-9 items-center justify-center rounded-md",
+            "mb-1 inline-flex h-9 w-9 items-center justify-center rounded-[2px]",
             INTENT_ICON_TONE[intent],
           )}
         >
@@ -110,7 +110,7 @@ export function DataPlaceholder({
       {action ? (
         <Link
           href={action.href}
-          className="mt-2 inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-[12px] font-semibold text-primary-foreground hover:bg-primary-dark transition-colors"
+          className="mt-2 inline-flex items-center gap-1 rounded-[2px] bg-primary px-3 py-1.5 text-[12px] font-semibold text-primary-foreground hover:bg-primary-dark transition-colors"
         >
           {action.label}
         </Link>

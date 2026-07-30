@@ -125,7 +125,7 @@ export default async function NewContentDraftPage(props: {
 
       <form
         action={createDraftAction}
-        className="space-y-5 rounded-2xl border border-border bg-card p-6"
+        className="space-y-5 rounded-[2px] border border-border bg-card p-6"
       >
         <div className="space-y-2">
           <label className="text-[11px] font-mono font-semibold uppercase tracking-wide text-muted-foreground">
@@ -134,7 +134,7 @@ export default async function NewContentDraftPage(props: {
           <select
             name="format"
             defaultValue={selected}
-            className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-[14px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            className="block w-full rounded-[2px] border border-input bg-background px-3 py-2 text-[14px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           >
             {FORMAT_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
@@ -153,7 +153,7 @@ export default async function NewContentDraftPage(props: {
             required
             maxLength={140}
             placeholder="e.g. 9 questions to ask on your first apartment tour"
-            className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            className="block w-full rounded-[2px] border border-input bg-background px-3 py-2 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
 
@@ -168,7 +168,7 @@ export default async function NewContentDraftPage(props: {
             maxLength={2000}
             rows={5}
             placeholder="What should this piece accomplish? Who is the audience? Anything the AI MUST or MUST NOT say."
-            className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            className="block w-full rounded-[2px] border border-input bg-background px-3 py-2 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
 
@@ -181,7 +181,7 @@ export default async function NewContentDraftPage(props: {
               name="targetQuery"
               maxLength={200}
               placeholder="apartments in midtown"
-              className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="block w-full rounded-[2px] border border-input bg-background px-3 py-2 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
           <div className="space-y-2">
@@ -194,7 +194,7 @@ export default async function NewContentDraftPage(props: {
               min={0}
               max={5000}
               defaultValue={DEFAULT_WORD_COUNT[selected]}
-              className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-[14px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="block w-full rounded-[2px] border border-input bg-background px-3 py-2 text-[14px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
         </div>
@@ -207,7 +207,7 @@ export default async function NewContentDraftPage(props: {
             <select
               name="propertyId"
               defaultValue=""
-              className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-[14px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="block w-full rounded-[2px] border border-input bg-background px-3 py-2 text-[14px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="">— none —</option>
               {properties.map((p) => (
@@ -222,13 +222,13 @@ export default async function NewContentDraftPage(props: {
         <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
           <Link
             href="/portal/content"
-            className="rounded-lg border border-border bg-background px-3.5 py-2 text-[13px] font-medium text-foreground hover:bg-muted"
+            className="rounded-[2px] border border-border bg-background px-3.5 py-2 text-[13px] font-medium text-foreground hover:bg-muted"
           >
             Cancel
           </Link>
           <button
             type="submit"
-            className="rounded-lg bg-primary px-3.5 py-2 text-[13px] font-medium text-primary-foreground hover:bg-primary/90"
+            className="rounded-[2px] bg-primary px-3.5 py-2 text-[13px] font-medium text-primary-foreground hover:bg-primary/90"
           >
             Generate draft
           </button>

@@ -12,7 +12,6 @@ import {
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
-import { SourceDonut } from "@/components/portal/attribution/donut";
 import { TrendChart } from "@/components/portal/attribution/trend-chart";
 import {
   getAttributionHeadline,
@@ -26,6 +25,7 @@ import { fetchGa4SourceVolumes } from "@/lib/attribution/ga4-sources";
 import { SourceLogo } from "@/components/portal/attribution/source-logo";
 import { RangePresetControl } from "@/components/portal/attribution/range-preset-control";
 import { StatusChip } from "@/components/portal/ui/status-chip";
+import { EmptyState } from "@/components/portal/ui/empty-state";
 import { getConnectStatusForOrg } from "@/lib/connect/status";
 import { Users, Eye, MousePointerClick, BarChart3 } from "lucide-react";
 
@@ -297,7 +297,7 @@ export default async function AttributionPage({
         {leadFlow.imported.leads > 0 ? (
           <p className="mt-3 text-[11px] text-muted-foreground">
             {leadFlow.imported.leads.toLocaleString()} leads without a known
-            channel are excluded from source attribution.
+            channel are excluded from source attribution. AppFolio-synced leads appear as their own leasing lane above.
           </p>
         ) : null}
       </div>
@@ -368,32 +368,31 @@ export default async function AttributionPage({
 
       {/* Capture surface + nurture depth — two purposeful breakdowns. */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <SourceDonut
-          title="Leads by capture surface"
-          description="Which LeaseStack surface created each lead — chatbot, form, ads, referral. Imported/unattributed excluded."
-          palette="emerald"
-          slices={headline.modules
-            .filter((m) => !["Other", "Manual entry"].includes(m.label))
-            .map((m) => ({
-              label: m.label,
-              value: m.count,
-            }))}
-          totalLabel={`${leadFlow.totalLeads.toLocaleString()} leads`}
-          emptyMessage="No attributed leads in this window."
-        />
-        <SourceDonut
-          title="Touch frequency"
-          description="How many sessions each lead had before converting. Higher = more nurture needed."
-          palette="amber"
-          slices={touchFreq
-            .filter((b) => b.count > 0)
-            .map((b) => ({
-              label: `${b.bucket} ${b.bucket === "1" ? "touch" : "touches"}`,
-              value: b.count,
-            }))}
-          totalLabel={`${headline.totalLeads.toLocaleString()} leads`}
-          emptyMessage="No leads in this window."
-        />
+        <SectionCard
+          label="Leads by capture surface"
+          description={`Which LeaseStack surface created each lead — chatbot, form, ads, referral. Imported/unattributed excluded. ${leadFlow.totalLeads.toLocaleString()} leads total.`}
+        >
+          <AttributionBarList
+            slices={headline.modules
+              .filter((m) => !["Other", "Manual entry"].includes(m.label))
+              .map((m) => ({ label: m.label, value: m.count }))}
+            emptyMessage="No attributed leads in this window."
+          />
+        </SectionCard>
+        <SectionCard
+          label="Touch frequency"
+          description={`How many sessions each lead had before converting. Higher = more nurture needed. ${headline.totalLeads.toLocaleString()} leads total.`}
+        >
+          <AttributionBarList
+            slices={touchFreq
+              .filter((b) => b.count > 0)
+              .map((b) => ({
+                label: `${b.bucket} ${b.bucket === "1" ? "touch" : "touches"}`,
+                value: b.count,
+              }))}
+            emptyMessage="No leads in this window."
+          />
+        </SectionCard>
       </section>
 
       {/* Trends + geography. */}
@@ -406,17 +405,18 @@ export default async function AttributionPage({
           totalEntries={headline.totalLeads}
           emptyMessage="No leads in this window."
         />
-        <SourceDonut
-          title="Leads by city"
-          description="Lead's resolved city from pixel enrichment (when available)."
-          palette="violet"
-          slices={citySplit.slice(0, 8).map((c) => ({
-            label: c.city,
-            value: c.count,
-          }))}
-          totalLabel={`${citySplit.reduce((s, c) => s + c.count, 0).toLocaleString()} located`}
-          emptyMessage="No city-resolved leads yet. Enrichment fills this in as visitors are identified."
-        />
+        <SectionCard
+          label="Leads by city"
+          description={`Lead's resolved city from pixel enrichment (when available). ${citySplit.reduce((s, c) => s + c.count, 0).toLocaleString()} located.`}
+        >
+          <AttributionBarList
+            slices={citySplit.slice(0, 8).map((c) => ({
+              label: c.city,
+              value: c.count,
+            }))}
+            emptyMessage="No city-resolved leads yet. Enrichment fills this in as visitors are identified."
+          />
+        </SectionCard>
       </section>
 
     </div>
@@ -510,4 +510,49 @@ function toIsoDay(d: Date): string {
   const month = String(d.getUTCMonth() + 1).padStart(2, "0");
   const day = String(d.getUTCDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+// Compact horizontal bar list — replaces the oversized donut charts (Adam,
+// 2026-07-29: "why are those dials so big?"). Each row = label · bar ·
+// count/pct, sorted descending by value.
+function AttributionBarList({
+  slices,
+  emptyMessage,
+}: {
+  slices: Array<{ label: string; value: number }>;
+  emptyMessage: string;
+}) {
+  const sorted = [...slices].sort((a, b) => b.value - a.value);
+  const total = sorted.reduce((s, x) => s + x.value, 0);
+  const max = Math.max(1, ...sorted.map((s) => s.value));
+
+  if (total === 0 || sorted.length === 0) {
+    return <EmptyState variant="bare" title={emptyMessage} />;
+  }
+
+  return (
+    <ul className="space-y-2">
+      {sorted.map((s) => {
+        const pct = total > 0 ? Math.round((s.value / total) * 100) : 0;
+        return (
+          <li key={s.label} className="flex items-center gap-3">
+            <span className="w-32 shrink-0 truncate text-xs font-medium text-foreground">
+              {s.label}
+            </span>
+            <span className="h-2 flex-1 bg-muted overflow-hidden">
+              <span
+                className="block h-full bg-primary/80"
+                style={{
+                  width: `${Math.max((s.value / max) * 100, s.value > 0 ? 2 : 0)}%`,
+                }}
+              />
+            </span>
+            <span className="w-24 shrink-0 text-right font-mono text-[11px] tabular-nums text-muted-foreground">
+              {s.value.toLocaleString()} · {pct}%
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
 }

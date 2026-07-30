@@ -14,15 +14,16 @@ export const dynamic = "force-dynamic";
 // submissions and see admin notes.
 // ---------------------------------------------------------------------------
 
-// Single-blue cohesion across draft statuses. Matches /portal/content
-// list, drafts inbox, and admin queue.
+// Draft status tones. Matches /portal/content list, drafts inbox, and
+// admin queue. Terminal states (approved/shipped) use the success-green
+// family, never blue-as-success.
 const STATUS_TONE: Record<string, string> = {
   GENERATING:        "bg-muted text-muted-foreground",
   PENDING_REVIEW:    "bg-primary/10 text-primary",
-  APPROVED:          "bg-primary/15 text-primary font-semibold",
+  APPROVED:          "bg-success/15 text-success font-semibold",
   CHANGES_REQUESTED: "bg-muted text-foreground",
   REJECTED:          "bg-muted text-muted-foreground line-through",
-  SHIPPED:           "bg-primary text-primary-foreground",
+  SHIPPED:           "bg-success text-success-foreground",
   EXPIRED:           "bg-muted text-muted-foreground/70",
 };
 
@@ -65,15 +66,15 @@ export default async function PortalDraftViewer({
         </Link>
       </div>
 
-      <header className="rounded-2xl border border-border bg-card p-5">
+      <header className="rounded-[2px] border border-border bg-card p-5">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wide text-primary">
+              <span className="rounded-[2px] bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wide text-primary">
                 {fmt}
               </span>
               <span
-                className={`rounded-md px-1.5 py-0.5 text-[10px] font-mono uppercase ${statusTone}`}
+                className={`rounded-[2px] px-1.5 py-0.5 text-[10px] font-mono uppercase ${statusTone}`}
               >
                 {statusLabel}
               </span>
@@ -110,7 +111,7 @@ export default async function PortalDraftViewer({
       </header>
 
       {draft.reviewNotes ? (
-        <div className="rounded-2xl border border-primary/20 bg-primary/[0.06] p-4">
+        <div className="rounded-[2px] border border-primary/20 bg-primary/[0.06] p-4">
           <p className="text-[11px] font-mono uppercase tracking-wide text-primary mb-1">
             Notes from LeaseStack
           </p>
@@ -122,7 +123,7 @@ export default async function PortalDraftViewer({
 
       {/* Status-specific call to action */}
       {draft.status === "GENERATING" ? (
-        <div className="rounded-xl border border-dashed border-border bg-card p-6 text-center">
+        <div className="rounded-[2px] border border-dashed border-border bg-card p-6 text-center">
           <p className="text-[13px] font-medium text-foreground">
             Drafting…
           </p>
@@ -134,7 +135,7 @@ export default async function PortalDraftViewer({
 
       {draft.status === "CHANGES_REQUESTED" && draft.propertyId ? (
         <div className="space-y-3">
-          <div className="rounded-xl border border-primary/20 bg-primary/[0.04] p-4">
+          <div className="rounded-[2px] border border-primary/20 bg-primary/[0.04] p-4">
             <p className="text-[12px] font-medium text-foreground">
               Changes requested. Apply the notes above and re-submit
               below — we&apos;ll review again.
@@ -153,7 +154,7 @@ export default async function PortalDraftViewer({
 
       {/* Generated content */}
       {draft.outputMarkdown ? (
-        <article className="rounded-2xl border border-border bg-card p-6">
+        <article className="rounded-[2px] border border-border bg-card p-6">
           <h2 className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground mb-3">
             Generated draft
           </h2>

@@ -77,7 +77,7 @@ export default function PerformanceOverTimeChart({
             fontSize: 12,
             background: "white",
             border: "1px solid #E5E7EB",
-            borderRadius: 8,
+            borderRadius: 2,
             boxShadow: "0 4px 24px rgba(15,23,42,0.06)",
             padding: "8px 10px",
           }}

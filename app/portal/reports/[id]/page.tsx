@@ -325,7 +325,7 @@ export default async function ReportDetailPage({
       {status === "shared" && report.viewCount > 0 ? (
         <div
           data-no-print
-          className="rounded-md border border-primary/30 bg-primary/10 px-4 py-2 text-xs text-primary"
+          className="rounded-[2px] border border-primary/30 bg-primary/10 px-4 py-2 text-xs text-primary"
         >
           Client has opened this report {report.viewCount} time
           {report.viewCount === 1 ? "" : "s"}

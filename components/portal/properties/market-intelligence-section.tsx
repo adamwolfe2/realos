@@ -241,9 +241,9 @@ function RentGapBar({
 
   const directionTone =
     gap.direction === "below"
-      ? "text-emerald-700"
+      ? "text-[#24a148]"
       : gap.direction === "above"
-        ? "text-rose-700"
+        ? "text-[#da1e28]"
         : "text-muted-foreground";
 
   return (
@@ -256,7 +256,7 @@ function RentGapBar({
       </div>
       <div className="relative h-3 rounded-full bg-muted/50 overflow-hidden">
         <div
-          className="absolute top-0 bottom-0 w-[2px] bg-amber-400"
+          className="absolute top-0 bottom-0 w-[2px] bg-foreground/40"
           style={{ left: `${midPct}%` }}
           aria-hidden
         />
@@ -298,10 +298,10 @@ function MarketTemperatureRow({
   const temp = marketTemperature(dom);
   const styles =
     temp === "HOT"
-      ? "bg-gradient-to-r from-rose-500 to-orange-400 text-white"
+      ? "bg-primary text-white"
       : temp === "WARM"
-        ? "bg-amber-100 text-amber-900 border border-amber-200"
-        : "bg-blue-100 text-blue-900 border border-blue-200";
+        ? "bg-primary/15 text-primary"
+        : "bg-muted text-muted-foreground";
   const label =
     temp === "HOT"
       ? "Hot market"
@@ -387,8 +387,8 @@ function ComparablesStrip({
 function UpsellCard({ used, budget }: { used: number; budget: number }) {
   return (
     <SectionCard label="Market intelligence">
-      <div className="rounded-xl border border-[var(--hair)] bg-gradient-to-br from-amber-50 to-orange-50 p-6">
-        <div className="ls-eyebrow text-[11px] font-semibold uppercase tracking-[0.12em] text-amber-700">
+      <div className="rounded-[2px] border border-[var(--hair)] bg-card p-6">
+        <div className="ls-eyebrow text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
           Upgrade to keep refreshing
         </div>
         <p className="mt-2 text-[20px] md:text-[22px] font-semibold tracking-tight text-foreground">
@@ -399,7 +399,7 @@ function UpsellCard({ used, budget }: { used: number; budget: number }) {
         </p>
         <a
           href="/portal/billing?intent=upgrade"
-          className="mt-4 inline-flex items-center gap-2 rounded-md bg-foreground px-4 py-2 text-[13px] font-medium text-background hover:opacity-90 transition-opacity"
+          className="mt-4 inline-flex items-center gap-2 rounded-[2px] bg-foreground px-4 py-2 text-[13px] font-medium text-background hover:opacity-90 transition-opacity"
         >
           Upgrade plan
         </a>

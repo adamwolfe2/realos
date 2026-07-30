@@ -189,7 +189,7 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
               onChange={(v) => update("logoUrl", v)}
               placeholder="https://cdn.example.com/logo.svg"
             />
-            <div className="flex items-center justify-center h-9 w-28 rounded-md border border-border bg-background overflow-hidden">
+            <div className="flex items-center justify-center h-9 w-28 rounded-[2px] border border-border bg-background overflow-hidden">
               {logoOk ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
@@ -278,7 +278,7 @@ function Section({
       <header className="flex items-start justify-between gap-3 mb-5">
         <div className="flex items-start gap-2.5">
           {icon ? (
-            <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted text-muted-foreground">
+            <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-[2px] bg-muted text-muted-foreground">
               {icon}
             </span>
           ) : null}
@@ -370,7 +370,7 @@ function ColorField({
       </Label>
       <div className="flex items-center gap-2">
         <span
-          className="size-9 shrink-0 rounded-md border border-border"
+          className="size-9 shrink-0 rounded-[2px] border border-border"
           style={{
             background: preview ?? "transparent",
             backgroundImage: preview

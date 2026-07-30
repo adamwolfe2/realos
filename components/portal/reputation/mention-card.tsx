@@ -55,7 +55,7 @@ function sentimentBadge(s: Sentiment | null, confidence?: number | null) {
       : undefined;
   if (!s) {
     return (
-      <Badge variant="outline" title={tip}>
+      <Badge variant="secondary" title={tip} className="rounded-[2px]">
         unclassified
       </Badge>
     );
@@ -63,7 +63,8 @@ function sentimentBadge(s: Sentiment | null, confidence?: number | null) {
   if (s === "POSITIVE") {
     return (
       <Badge
-        className="bg-primary text-primary-foreground hover:bg-primary"
+        variant="secondary"
+        className="bg-[rgba(36,161,72,0.10)] text-[#24a148] hover:bg-[rgba(36,161,72,0.10)] rounded-[2px]"
         title={tip}
       >
         positive
@@ -72,7 +73,11 @@ function sentimentBadge(s: Sentiment | null, confidence?: number | null) {
   }
   if (s === "NEGATIVE") {
     return (
-      <Badge variant="destructive" title={tip}>
+      <Badge
+        variant="secondary"
+        className="bg-[rgba(218,30,40,0.10)] text-[#da1e28] hover:bg-[rgba(218,30,40,0.10)] rounded-[2px]"
+        title={tip}
+      >
         negative
       </Badge>
     );
@@ -80,7 +85,8 @@ function sentimentBadge(s: Sentiment | null, confidence?: number | null) {
   if (s === "MIXED") {
     return (
       <Badge
-        className="bg-amber-500 text-white hover:bg-amber-500"
+        variant="secondary"
+        className="bg-[rgba(241,194,27,0.16)] text-[#8a6d00] hover:bg-[rgba(241,194,27,0.16)] rounded-[2px]"
         title={tip}
       >
         mixed
@@ -88,7 +94,7 @@ function sentimentBadge(s: Sentiment | null, confidence?: number | null) {
     );
   }
   return (
-    <Badge variant="secondary" title={tip}>
+    <Badge variant="secondary" title={tip} className="rounded-[2px]">
       neutral
     </Badge>
   );
@@ -392,7 +398,7 @@ export function MentionCard({
   return (
     <article
       className={cn(
-        "rounded-xl border bg-card p-4",
+        "rounded-[2px] border bg-card p-4",
         reviewed
           ? "border-border/70 opacity-70"
           : mention.sentiment === "NEGATIVE"
@@ -556,7 +562,7 @@ export function MentionCard({
             if (e.target === e.currentTarget) setDraftOpen(false);
           }}
         >
-          <div className="w-full max-w-lg rounded-xl border border-border bg-card shadow-lg">
+          <div className="w-full max-w-lg rounded-[2px] border border-border bg-card shadow-lg">
             <header className="flex items-center justify-between border-b border-border px-4 py-3">
               <div>
                 <p className="text-sm font-semibold text-foreground">

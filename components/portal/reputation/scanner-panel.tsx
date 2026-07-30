@@ -596,7 +596,7 @@ export function ScannerPanel({
             If the cause is a missing API key we phrase it as a fix
             step rather than a generic error. */}
         {analysisSkip ? (
-          <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-[12px] text-amber-900 flex items-start gap-2">
+          <div className="mt-4 rounded-[2px] border border-[#f1c21b]/40 bg-[rgba(241,194,27,0.16)] p-3 text-[12px] text-[#8a6d00] flex items-start gap-2">
             <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" aria-hidden="true" />
             <div className="min-w-0">
               <p className="font-semibold">
@@ -605,7 +605,7 @@ export function ScannerPanel({
               <p className="mt-0.5 leading-snug">{analysisSkip.message}</p>
               {analysisSkip.reason === "no_api_key" ? (
                 <p className="mt-1 leading-snug">
-                  Set <code className="rounded bg-amber-100 px-1 py-0.5 font-mono text-[11px]">ANTHROPIC_API_KEY</code>{" "}
+                  Set <code className="rounded-[2px] bg-[rgba(241,194,27,0.16)] px-1 py-0.5 font-mono text-[11px]">ANTHROPIC_API_KEY</code>{" "}
                   in your Vercel env vars, redeploy, then click{" "}
                   <span className="font-semibold">Classify unclassified</span>{" "}
                   below to backfill existing mentions.

@@ -363,16 +363,16 @@ function CompletenessBanner({
       className={cn(
         "rounded-xl border p-4",
         complete
-          ? "border-emerald-500/30 bg-emerald-500/5"
-          : "border-amber-500/30 bg-amber-500/5",
+          ? "border-[rgba(36,161,72,0.3)] bg-[rgba(36,161,72,0.05)]"
+          : "border-[rgba(241,194,27,0.3)] bg-[rgba(241,194,27,0.08)]",
       )}
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           {complete ? (
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" aria-hidden="true" />
+            <CheckCircle2 className="h-4 w-4 text-[#24a148]" aria-hidden="true" />
           ) : (
-            <AlertTriangle className="h-4 w-4 text-amber-600" aria-hidden="true" />
+            <AlertTriangle className="h-4 w-4 text-[#8a6d00]" aria-hidden="true" />
           )}
           <span className="text-sm font-semibold text-foreground">
             Knowledge base {score}% complete
@@ -396,12 +396,12 @@ function CompletenessBanner({
         {items.map((it) => (
           <li key={it.key} className="flex items-center gap-1.5 text-[11px]">
             {it.done ? (
-              <CheckCircle2 className="h-3 w-3 text-emerald-600 shrink-0" aria-hidden="true" />
+              <CheckCircle2 className="h-3 w-3 text-[#24a148] shrink-0" aria-hidden="true" />
             ) : (
               <Circle
                 className={cn(
                   "h-3 w-3 shrink-0",
-                  it.critical ? "text-amber-600" : "text-muted-foreground/50",
+                  it.critical ? "text-[#8a6d00]" : "text-muted-foreground/50",
                 )}
                 aria-hidden="true"
               />

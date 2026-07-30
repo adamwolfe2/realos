@@ -19,7 +19,7 @@ export async function OccupancyTab({
   if (!data) {
     return (
       <div className="space-y-4">
-        <div className="rounded-xl border border-border bg-card p-6">
+        <div className="rounded-[2px] border border-border bg-card p-6">
           <p className="text-sm font-semibold text-foreground">
             Occupancy not tracked
           </p>
@@ -110,7 +110,7 @@ export async function OccupancyTab({
               return (
                 <div
                   key={b.label}
-                  className="rounded-xl border border-border bg-card p-3 space-y-2"
+                  className="rounded-[2px] border border-border bg-card p-3 space-y-2"
                 >
                   <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
                     {b.label}

@@ -26,7 +26,7 @@ export default async function ReferralsPage() {
 
   if (!org) {
     return (
-      <div className="rounded-xl border border-dashed border-border bg-card p-12 text-center">
+      <div className="rounded-[2px] border border-dashed border-border bg-card p-12 text-center">
         <h2 className="text-base font-semibold text-foreground">
           Organization not found
         </h2>
@@ -201,7 +201,7 @@ export default async function ReferralsPage() {
       )}
 
       {/* How it works */}
-      <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+      <div className="rounded-[2px] border border-border bg-card p-5 space-y-3">
         <div className="text-xs uppercase tracking-widest font-semibold text-muted-foreground">
           How it works
         </div>
@@ -240,7 +240,7 @@ function Chip({
   return (
     <div
       className={
-        "min-w-16 rounded-xl border px-3 py-2 " +
+        "min-w-16 rounded-[2px] border px-3 py-2 " +
         (accent
           ? "border-primary bg-primary/5"
           : "border-border bg-card")

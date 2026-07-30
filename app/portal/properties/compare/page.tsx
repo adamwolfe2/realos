@@ -498,7 +498,7 @@ export default async function ComparePropertiesPage({
         actions={
           <Link
             href="/portal/properties/compare"
-            className="inline-flex items-center rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
+            className="inline-flex items-center rounded-[2px] border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
           >
             Pick different properties
           </Link>
@@ -526,7 +526,7 @@ export default async function ComparePropertiesPage({
                       <img
                         src={p.heroImageUrl}
                         alt=""
-                        className="h-12 w-full object-cover rounded-md mb-2"
+                        className="h-12 w-full object-cover rounded-[2px] mb-2"
                       />
                     ) : null}
                     <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
@@ -636,7 +636,7 @@ function PropertyPicker({
             href={href ?? "#"}
             scroll={false}
             aria-disabled={disabled}
-            className={`block rounded-md border px-3 py-2 transition-colors ${
+            className={`block rounded-[2px] border px-3 py-2 transition-colors ${
               selected
                 ? "border-primary bg-primary/10 text-primary"
                 : disabled

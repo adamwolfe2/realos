@@ -62,9 +62,9 @@ type Props = {
 export function PropertyIntelligencePanel({ propertyName, actions }: Props) {
   if (actions.length === 0) {
     return (
-      <section className="rounded-2xl border border-border bg-gradient-to-br from-card to-primary/[0.04] p-5">
+      <section className="ls-card p-5">
         <header className="flex items-center gap-2.5 mb-1">
-          <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary">
+          <span className="inline-flex h-6 w-6 items-center justify-center rounded-[2px] bg-primary/10 text-primary">
             <Sparkles className="h-3.5 w-3.5" />
           </span>
           <h2 className="text-sm font-semibold text-foreground">
@@ -101,10 +101,10 @@ export function PropertyIntelligencePanel({ propertyName, actions }: Props) {
   );
 
   return (
-    <section className="rounded-xl border border-border bg-card overflow-hidden">
+    <section className="rounded-[2px] border border-border bg-card overflow-hidden">
       <header className="flex items-center justify-between gap-3 px-3.5 py-2 border-b border-border bg-gradient-to-br from-card to-primary/[0.04]">
         <div className="min-w-0 flex items-center gap-2">
-          <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
+          <span className="inline-flex h-5 w-5 items-center justify-center rounded-[2px] bg-primary/10 text-primary shrink-0">
             <Sparkles className="h-3 w-3" />
           </span>
           <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.12em] text-primary shrink-0">
@@ -181,7 +181,7 @@ function SeverityChip({
   const styles = SEVERITY_STYLES[severity];
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ${styles.pill}`}
+      className={`inline-flex items-center gap-1.5 rounded-[2px] px-2 py-0.5 text-[10px] font-semibold ${styles.pill}`}
     >
       <span
         aria-hidden="true"
@@ -206,7 +206,7 @@ function ActionRow({
       <li>
         <Link
           href={action.actionHref}
-          className={`flex items-center gap-3 rounded-lg border border-border/60 bg-card px-3 py-2 ring-1 ${styles.ring}`}
+          className={`flex items-center gap-3 rounded-[2px] border border-border/60 bg-card px-3 py-2 ring-1 ${styles.ring}`}
         >
           <span
             aria-hidden="true"
@@ -230,7 +230,7 @@ function ActionRow({
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-1.5 flex-wrap leading-none mb-0.5">
             <span
-              className={`inline-flex items-center rounded-full px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide ${styles.pill}`}
+              className={`inline-flex items-center rounded-[2px] px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide ${styles.pill}`}
             >
               {action.severity}
             </span>
@@ -247,7 +247,7 @@ function ActionRow({
         </div>
         <Link
           href={action.actionHref}
-          className="shrink-0 inline-flex items-center gap-1 rounded-md bg-primary text-primary-foreground px-2 py-1 text-[10.5px] font-semibold hover:bg-primary-dark transition-colors"
+          className="shrink-0 inline-flex items-center gap-1 rounded-[2px] bg-primary text-primary-foreground px-2 py-1 text-[10.5px] font-semibold hover:bg-primary-dark transition-colors"
         >
           {action.actionLabel}
           <ArrowRight className="h-3 w-3" />

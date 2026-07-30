@@ -51,14 +51,14 @@ export function BulkActionBar({
       role="toolbar"
       aria-label={`${count} ${noun}${count === 1 ? "" : "s"} selected — bulk actions`}
       className={cn(
-        "z-30 flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 shadow-md",
+        "z-30 flex items-center gap-2 rounded-[2px] border border-border bg-card px-3 py-2 shadow-md",
         floating
           ? "fixed left-1/2 -translate-x-1/2 bottom-6 max-w-[min(92vw,720px)]"
           : "sticky top-2",
         className,
       )}
     >
-      <div className="inline-flex items-center gap-1.5 rounded-md bg-primary/10 px-2 py-1">
+      <div className="inline-flex items-center gap-1.5 rounded-[2px] bg-primary/10 px-2 py-1">
         <span className="text-xs font-semibold tabular-nums text-primary">
           {count}
         </span>
@@ -77,7 +77,7 @@ export function BulkActionBar({
           type="button"
           onClick={onClear}
           aria-label="Clear selection"
-          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-[2px] text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
         >
           <X className="h-3.5 w-3.5" aria-hidden="true" />
         </button>

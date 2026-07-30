@@ -15,17 +15,17 @@ export function SeverityPill({ severity, size = "md" }: Props) {
     critical: {
       label: "Critical",
       icon: AlertCircle,
-      cls: "bg-white text-red-700 border-red-400",
+      cls: "bg-white text-[#da1e28] border-[#da1e28]/50",
     },
     high: {
       label: "High",
       icon: AlertCircle,
-      cls: "bg-white text-amber-700 border-amber-400",
+      cls: "bg-white text-[#8a6d00] border-[#f1c21b]/60",
     },
     warning: {
       label: "Warning",
       icon: AlertTriangle,
-      cls: "bg-white text-amber-700 border-amber-400",
+      cls: "bg-white text-[#8a6d00] border-[#f1c21b]/60",
     },
     info: {
       label: "Info",
@@ -48,7 +48,7 @@ export function SeverityPill({ severity, size = "md" }: Props) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-md font-bold uppercase tracking-wider border",
+        "inline-flex items-center rounded-[2px] font-bold uppercase tracking-wider border",
         gap,
         config.cls,
       )}
@@ -61,7 +61,7 @@ export function SeverityPill({ severity, size = "md" }: Props) {
 
 export function CategoryBadge({ category }: { category: string }) {
   return (
-    <span className="inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+    <span className="inline-flex items-center rounded-[2px] bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
       {category}
     </span>
   );

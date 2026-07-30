@@ -28,6 +28,7 @@ import {
 import { SideDrawer } from "@/components/portal/ui/side-drawer";
 import { BulkActionBar } from "@/components/portal/ui/bulk-action-bar";
 import { AlertDialog } from "@/components/portal/ui/alert-dialog";
+import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
 
 export type LeadKanbanItem = {
   id: string;
@@ -51,50 +52,30 @@ export type LeadKanbanItem = {
   visitCount: number;
 };
 
-const STATUS_META: Record<
-  LeadStatus,
-  { label: string; className: string }
-> = {
-  NEW: {
-    label: "New",
-    className: "bg-primary/10 text-primary border-primary/30",
-  },
-  CONTACTED: {
-    label: "Contacted",
-    className: "bg-muted text-muted-foreground border-border",
-  },
-  TOUR_SCHEDULED: {
-    label: "Tour scheduled",
-    className: "bg-muted text-muted-foreground border-border",
-  },
-  TOURED: {
-    label: "Toured",
-    className: "bg-muted text-muted-foreground border-border",
-  },
-  APPLICATION_SENT: {
-    label: "App sent",
-    className: "bg-muted text-muted-foreground border-border",
-  },
-  APPLIED: {
-    label: "Applied",
-    className: "bg-primary/10 text-primary border-primary/30",
-  },
-  APPROVED: {
-    label: "Approved",
-    className: "bg-primary/10 text-primary border-primary/30",
-  },
-  SIGNED: {
-    label: "Signed",
-    className: "bg-primary/15 text-primary border-primary/30",
-  },
-  LOST: {
-    label: "Lost",
-    className: "bg-muted text-muted-foreground border-border",
-  },
-  UNQUALIFIED: {
-    label: "Unqualified",
-    className: "bg-muted text-muted-foreground border-border",
-  },
+const STATUS_LABEL: Record<LeadStatus, string> = {
+  NEW: "New",
+  CONTACTED: "Contacted",
+  TOUR_SCHEDULED: "Tour scheduled",
+  TOURED: "Toured",
+  APPLICATION_SENT: "App sent",
+  APPLIED: "Applied",
+  APPROVED: "Approved",
+  SIGNED: "Signed",
+  LOST: "Lost",
+  UNQUALIFIED: "Unqualified",
+};
+
+const STATUS_TONE: Record<LeadStatus, StatusTone> = {
+  NEW: "info",
+  CONTACTED: "active",
+  TOUR_SCHEDULED: "active",
+  TOURED: "active",
+  APPLICATION_SENT: "active",
+  APPLIED: "active",
+  APPROVED: "active",
+  SIGNED: "success",
+  LOST: "danger",
+  UNQUALIFIED: "neutral",
 };
 
 const TERMINAL_STATUSES = new Set<LeadStatus>([
@@ -112,8 +93,8 @@ function ageTier(iso: string): "fresh" | "aging" | "stale" {
 
 const AGE_DOT_CLASS: Record<ReturnType<typeof ageTier>, string> = {
   fresh: "bg-primary",
-  aging: "bg-amber-400",
-  stale: "bg-amber-600",
+  aging: "bg-primary/40",
+  stale: "bg-primary",
 };
 
 function relativeTime(iso: string): string {
@@ -317,7 +298,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
           type="button"
           onClick={markContacted}
           disabled={pending}
-          className="inline-flex items-center rounded-md bg-primary text-primary-foreground hover:bg-primary-dark px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50"
+          className="inline-flex items-center rounded-[2px] bg-primary text-primary-foreground hover:bg-primary-dark px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50"
         >
           {pending ? (
             <Loader2 className="h-3 w-3 animate-spin mr-1" aria-hidden="true" />
@@ -328,7 +309,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
           <button
             type="button"
             disabled
-            className="inline-flex items-center rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium opacity-50 cursor-not-allowed"
+            className="inline-flex items-center rounded-[2px] border border-border bg-background px-2.5 py-1 text-xs font-medium opacity-50 cursor-not-allowed"
           >
             Tag
           </button>
@@ -337,7 +318,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
           <button
             type="button"
             disabled
-            className="inline-flex items-center rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium opacity-50 cursor-not-allowed"
+            className="inline-flex items-center rounded-[2px] border border-border bg-background px-2.5 py-1 text-xs font-medium opacity-50 cursor-not-allowed"
           >
             Assign to me
           </button>
@@ -346,7 +327,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
           type="button"
           onClick={exportCsv}
           disabled={pending}
-          className="inline-flex items-center rounded-md border border-border bg-background hover:bg-muted px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50"
+          className="inline-flex items-center rounded-[2px] border border-border bg-background hover:bg-muted px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50"
         >
           Export CSV
         </button>
@@ -361,7 +342,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
           <option value="">Set status…</option>
           {Object.values(LeadStatus).map((s) => (
             <option key={s} value={s}>
-              {STATUS_META[s].label}
+              {STATUS_LABEL[s]}
             </option>
           ))}
         </select>
@@ -369,7 +350,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
           type="button"
           onClick={applyStatus}
           disabled={pending || !statusToApply}
-          className="inline-flex items-center gap-1 rounded-md bg-foreground text-background px-2.5 py-1 text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+          className="inline-flex items-center gap-1 rounded-[2px] bg-foreground text-background px-2.5 py-1 text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
         >
           {pending ? <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" /> : null}
           Apply
@@ -455,8 +436,8 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
                   Added
                   <span className="inline-flex items-center gap-1 font-normal normal-case tracking-normal text-[10px] text-muted-foreground">
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" title="0-6 days" />
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-400" title="7-14 days" />
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-600" title="15+ days" />
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary/40" title="7-14 days" />
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" title="15+ days" />
                   </span>
                 </span>
               </th>
@@ -468,7 +449,6 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
                 [item.firstName, item.lastName].filter(Boolean).join(" ") ||
                 item.email ||
                 "Anonymous";
-              const meta = STATUS_META[item.status];
               const isSelected = selected.has(item.id);
               // Cap the stagger at 12 rows so long lists don't feel slow to
               // finish rolling in.
@@ -544,14 +524,10 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <span
-                      className={cn(
-                        "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium",
-                        meta.className
-                      )}
-                    >
-                      {meta.label}
-                    </span>
+                    <StatusPill
+                      label={STATUS_LABEL[item.status]}
+                      tone={STATUS_TONE[item.status]}
+                    />
                   </td>
                   <td className="px-4 py-3 text-right hidden lg:table-cell">
                     {item.score > 0 ? (
@@ -606,7 +582,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
           openLead ? (
             <Link
               href={`/portal/leads/${openLead.id}`}
-              className="inline-flex items-center gap-1 rounded-md border border-border bg-background hover:bg-muted px-2 py-1 text-[11px] font-medium text-foreground transition-colors"
+              className="inline-flex items-center gap-1 rounded-[2px] border border-border bg-background hover:bg-muted px-2 py-1 text-[11px] font-medium text-foreground transition-colors"
             >
               Open full page
               <ExternalLink className="h-3 w-3" aria-hidden="true" />
@@ -638,7 +614,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
                     }
                   });
                 }}
-                className="inline-flex items-center rounded-md border border-border bg-background hover:bg-muted px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50"
+                className="inline-flex items-center rounded-[2px] border border-border bg-background hover:bg-muted px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50"
               >
                 {pending ? (
                   <Loader2 className="h-3 w-3 animate-spin mr-1" aria-hidden="true" />
@@ -647,7 +623,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
               </button>
               <Link
                 href={`/portal/leads/${openLead.id}`}
-                className="inline-flex items-center rounded-md bg-primary text-primary-foreground hover:bg-primary-dark px-3 py-1.5 text-xs font-medium transition-colors"
+                className="inline-flex items-center rounded-[2px] bg-primary text-primary-foreground hover:bg-primary-dark px-3 py-1.5 text-xs font-medium transition-colors"
               >
                 Open full page
               </Link>
@@ -727,21 +703,16 @@ function leadDisplayName(item: LeadKanbanItem): string {
 // page remains the canonical "everything about this lead" view.
 // ---------------------------------------------------------------------------
 function LeadDrawerBody({ item }: { item: LeadKanbanItem }) {
-  const meta = STATUS_META[item.status];
   return (
     <div className="space-y-4 text-sm">
       <section className="space-y-2">
         <h3 className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
           Status
         </h3>
-        <span
-          className={cn(
-            "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium",
-            meta.className,
-          )}
-        >
-          {meta.label}
-        </span>
+        <StatusPill
+          label={STATUS_LABEL[item.status]}
+          tone={STATUS_TONE[item.status]}
+        />
       </section>
 
       <section className="space-y-1.5">
@@ -787,7 +758,7 @@ function LeadDrawerBody({ item }: { item: LeadKanbanItem }) {
           page (we don't pre-fetch the messages here to keep the kanban
           query light). */}
       {item.source === "CHATBOT" ? (
-        <section className="space-y-1.5 rounded-md border border-primary/20 bg-primary/5 px-3 py-2.5">
+        <section className="space-y-1.5 rounded-[2px] border border-primary/20 bg-primary/5 px-3 py-2.5">
           <div className="flex items-center gap-1.5">
             <Bot className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
             <h3 className="text-[10px] tracking-widest uppercase font-semibold text-primary">

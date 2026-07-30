@@ -159,7 +159,7 @@ export function DashboardActionItems({
                   type="button"
                   onClick={() => dismiss(action.id)}
                   aria-label="Dismiss"
-                  className="shrink-0 inline-flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground/60 hover:text-foreground hover:bg-muted transition-colors"
+                  className="shrink-0 inline-flex items-center justify-center h-6 w-6 rounded-none text-muted-foreground/60 hover:text-foreground hover:bg-muted transition-colors"
                 >
                   <XIcon className="h-3 w-3" />
                 </button>

@@ -79,7 +79,7 @@ export function SnoozedRecsPanel({ recommendations }: Props) {
 
   return (
     <details
-      className="rounded-2xl border border-border bg-card overflow-hidden"
+      className="rounded-[2px] border border-border bg-card overflow-hidden"
       open={expanded}
       onToggle={(e) => setExpanded((e.target as HTMLDetailsElement).open)}
     >
@@ -104,7 +104,7 @@ export function SnoozedRecsPanel({ recommendations }: Props) {
             className="flex items-start gap-3 px-4 py-2.5"
           >
             <span
-              className={`mt-0.5 inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wide shrink-0 ${SEV_TONE[r.severity]}`}
+              className={`mt-0.5 inline-flex items-center rounded-[2px] px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wide shrink-0 ${SEV_TONE[r.severity]}`}
             >
               {r.severity.toLowerCase()}
             </span>
@@ -125,7 +125,7 @@ export function SnoozedRecsPanel({ recommendations }: Props) {
               type="button"
               disabled={pending}
               onClick={() => wake(r.id)}
-              className="shrink-0 rounded-md border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
+              className="shrink-0 rounded-[2px] border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
             >
               Wake now
             </button>

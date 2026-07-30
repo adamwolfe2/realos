@@ -267,7 +267,7 @@ function CaptureOnlyDetails({
   const hasAnyContact = Boolean(capturedName || capturedEmail || capturedPhone);
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-border bg-secondary px-4 py-3">
+      <div className="rounded-[2px] border border-border bg-secondary px-4 py-3">
         <p className="text-sm font-semibold text-foreground">
           {hasAnyContact
             ? "Capture-only conversation"
@@ -281,7 +281,7 @@ function CaptureOnlyDetails({
       </div>
 
       {hasAnyContact ? (
-        <dl className="rounded-xl border border-border bg-muted/30 divide-y divide-border">
+        <dl className="rounded-[2px] border border-border bg-muted/30 divide-y divide-border">
           {capturedName ? (
             <DetailRow label="Name" value={capturedName} />
           ) : null}

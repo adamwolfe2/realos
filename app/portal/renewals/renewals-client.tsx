@@ -75,7 +75,7 @@ export function RenewalsClient({ buckets, upcoming }: Props) {
         description="Leases grouped by days-until-expiration. Closest first."
       >
         {upcoming.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center">
+          <div className="rounded-[2px] border border-dashed border-border bg-card p-8 text-center">
             <p className="text-sm text-muted-foreground">
               No leases expiring in the next 120 days.
             </p>
@@ -86,7 +86,7 @@ export function RenewalsClient({ buckets, upcoming }: Props) {
               {buckets.map((b) => (
                 <div
                   key={b.label}
-                  className="rounded-xl border border-border bg-card p-2.5"
+                  className="rounded-[2px] border border-border bg-card p-2.5"
                 >
                   <div className="flex items-center justify-between gap-2 mb-2 px-1">
                     <StatusPill label={b.label} tone={b.tone} />
@@ -105,7 +105,7 @@ export function RenewalsClient({ buckets, upcoming }: Props) {
                           <button
                             type="button"
                             onClick={() => setOpenId(l.id)}
-                            className="block w-full text-left rounded-md border border-border bg-card hover:border-primary/40 hover:bg-muted/30 px-2 py-1.5 transition-colors"
+                            className="block w-full text-left rounded-[2px] border border-border bg-card hover:border-primary/40 hover:bg-muted/30 px-2 py-1.5 transition-colors"
                           >
                             <p className="text-[11px] font-medium text-foreground truncate">
                               {l.residentName}
@@ -244,7 +244,7 @@ export function RenewalsClient({ buckets, upcoming }: Props) {
           openLease ? (
             <Link
               href={`/portal/properties/${openLease.propertyId}`}
-              className="inline-flex items-center gap-1 rounded-md border border-border bg-background hover:bg-muted px-2 py-1 text-[11px] font-medium text-foreground transition-colors"
+              className="inline-flex items-center gap-1 rounded-[2px] border border-border bg-background hover:bg-muted px-2 py-1 text-[11px] font-medium text-foreground transition-colors"
             >
               Open property
               <ExternalLink className="h-3 w-3" aria-hidden="true" />
@@ -262,7 +262,7 @@ export function RenewalsClient({ buckets, upcoming }: Props) {
                 disabled
                 aria-disabled="true"
                 title="Coming soon — offers ship from LeaseStack in Q3"
-                className="inline-flex cursor-not-allowed items-center rounded-md border border-border bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground"
+                className="inline-flex cursor-not-allowed items-center rounded-[2px] border border-border bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground"
               >
                 Mark contacted
               </button>
@@ -271,7 +271,7 @@ export function RenewalsClient({ buckets, upcoming }: Props) {
                 disabled
                 aria-disabled="true"
                 title="Coming soon — offers ship from LeaseStack in Q3"
-                className="inline-flex cursor-not-allowed items-center rounded-md border border-border bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground"
+                className="inline-flex cursor-not-allowed items-center rounded-[2px] border border-border bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground"
               >
                 Send renewal offer
               </button>

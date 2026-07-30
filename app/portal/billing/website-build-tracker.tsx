@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Calendar, ExternalLink, CheckCircle2, Check } from "lucide-react";
+import { Calendar, ExternalLink, Check } from "lucide-react";
+import { StatusChip } from "@/components/portal/ui/status-chip";
 
 // ---------------------------------------------------------------------------
 // WebsiteBuildTracker
@@ -47,7 +48,7 @@ function stageIndex(status: BuildStatus): number {
 
 export function WebsiteBuildTracker({ builds }: { builds: Build[] }) {
   return (
-    <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+    <section className="rounded-[2px] border border-border bg-card p-5 space-y-4">
       <div>
         <h2 className="text-sm font-semibold">Your custom website builds</h2>
         <p className="text-xs text-muted-foreground mt-1">
@@ -63,7 +64,7 @@ export function WebsiteBuildTracker({ builds }: { builds: Build[] }) {
           return (
             <li
               key={b.id}
-              className="rounded-xl border border-border bg-background p-4 space-y-3"
+              className="rounded-[2px] border border-border bg-background p-4 space-y-3"
             >
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div className="min-w-0">
@@ -78,14 +79,9 @@ export function WebsiteBuildTracker({ builds }: { builds: Build[] }) {
                   </p>
                 </div>
                 {cancelled ? (
-                  <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground px-2 py-0.5 text-[11px] font-semibold">
-                    Cancelled
-                  </span>
+                  <StatusChip status="not_connected" label="Cancelled" />
                 ) : b.status === "live" ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[11px] font-semibold">
-                    <CheckCircle2 size={11} strokeWidth={2.5} />
-                    Live
-                  </span>
+                  <StatusChip status="live" />
                 ) : null}
               </div>
 
@@ -100,17 +96,18 @@ export function WebsiteBuildTracker({ builds }: { builds: Build[] }) {
                         className="flex-1 flex flex-col items-center text-center"
                       >
                         <span
-                          className="inline-flex items-center justify-center rounded-full text-[10px] font-bold"
+                          className={`inline-flex items-center justify-center rounded-full text-[10px] font-bold ${
+                            active ? "border border-border" : ""
+                          }`}
                           style={{
                             width: 22,
                             height: 22,
                             backgroundColor: done
-                              ? "#2563EB"
+                              ? "var(--color-primary)"
                               : active
-                                ? "#1E2A3A"
+                                ? "transparent"
                                 : "#E2E8F0",
-                            color:
-                              done || active ? "#ffffff" : "#88867f",
+                            color: done ? "#ffffff" : active ? "#1E2A3A" : "#88867f",
                           }}
                           aria-hidden="true"
                         >
@@ -147,7 +144,7 @@ export function WebsiteBuildTracker({ builds }: { builds: Build[] }) {
                       href={b.calBookingUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-full bg-amber-800 text-white text-[11px] font-semibold px-3 py-1.5 shrink-0"
+                      className="inline-flex items-center gap-1.5 rounded-[2px] bg-primary text-primary-foreground hover:bg-primary-dark transition-colors text-[11px] font-semibold px-3 py-1.5 shrink-0"
                     >
                       <Calendar size={12} strokeWidth={2.5} />
                       Book call

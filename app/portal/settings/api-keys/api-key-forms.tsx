@@ -51,7 +51,7 @@ export function CreateApiKeyForm() {
           Create new key
         </button>
       ) : (
-        <form action={formAction} className="space-y-4 border rounded-md p-4">
+        <form action={formAction} className="space-y-4 border rounded-[2px] p-4">
           <label className="flex flex-col gap-1 text-sm">
             <span className="text-xs tracking-widest uppercase text-muted-foreground">
               Name
@@ -174,7 +174,7 @@ function NewKeyBanner({
   }
 
   return (
-    <div className="border-2 border-amber-500/60 bg-amber-500/10 rounded-md p-4 space-y-3">
+    <div className="border-2 border-[#8a6d00]/40 bg-[rgba(241,194,27,0.16)] rounded-[2px] p-4 space-y-3">
       <div className="flex items-baseline justify-between gap-3">
         <div>
           <p className="text-sm font-semibold">

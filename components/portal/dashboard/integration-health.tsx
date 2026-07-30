@@ -1,7 +1,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Plug } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { StatusChip, type ConnectionStatus } from "@/components/portal/ui/status-chip";
 
 export type IntegrationStatus = "connected" | "degraded" | "error" | "off";
 
@@ -13,11 +13,14 @@ export type IntegrationChip = {
   glyph?: string;
 };
 
-const DOT: Record<IntegrationStatus, string> = {
-  connected: "bg-primary",
-  degraded: "bg-amber-500",
-  error: "bg-destructive",
-  off: "bg-muted-foreground/30",
+// Maps this widget's local status vocabulary onto the canonical
+// StatusChip vocabulary so this surface can't drift from the rest of
+// the product's "what does connected look like?" answer.
+const STATUS_MAP: Record<IntegrationStatus, ConnectionStatus> = {
+  connected: "live",
+  degraded: "stale",
+  error: "error",
+  off: "not_connected",
 };
 
 // One spine: connect CTAs route through the canonical hub at /portal/connect
@@ -28,37 +31,20 @@ export function IntegrationHealth({ chips }: { chips: IntegrationChip[] }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       {chips.map((c) => {
-        const dot = (
-          <span
-            className={cn("h-1.5 w-1.5 rounded-full shrink-0", DOT[c.status])}
-            aria-hidden="true"
-          />
-        );
-
         if (c.status === "connected" || c.status === "degraded") {
           return (
-            <span
-              key={c.key}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground"
-            >
-              {dot}
-              {c.label}
-            </span>
+            <StatusChip key={c.key} status={STATUS_MAP[c.status]} label={c.label} />
           );
         }
 
         const actionLabel = c.status === "error" ? "Fix →" : "Connect →";
 
         return (
-          <span
-            key={c.key}
-            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground"
-          >
-            {dot}
-            {c.label}
+          <span key={c.key} className="inline-flex items-center gap-1.5">
+            <StatusChip status={STATUS_MAP[c.status]} label={c.label} />
             <Link
               href={c.href ?? CONNECT_HREF}
-              className="font-semibold text-primary hover:underline"
+              className="text-xs font-semibold text-primary hover:underline"
             >
               {actionLabel}
             </Link>

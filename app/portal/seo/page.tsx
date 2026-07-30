@@ -390,7 +390,7 @@ export default async function SeoPage({
           actionable work happens. */}
       <a
         href="/portal/seo/agent"
-        className="block rounded-xl border border-primary/30 bg-gradient-to-r from-primary/[0.08] via-primary/[0.04] to-transparent px-4 py-3 hover:border-primary/50 transition-colors group"
+        className="block rounded-[2px] border border-primary/30 bg-primary/[0.04] px-4 py-3 hover:border-primary/50 transition-colors group"
       >
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -500,9 +500,9 @@ function SeoEmptyShell({
         }
       />
 
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
-        <div className="px-6 py-9 flex flex-col items-center text-center border-b border-border bg-gradient-to-b from-primary/[0.04] to-transparent">
-          <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
+      <div className="rounded-[2px] border border-border bg-card overflow-hidden">
+        <div className="px-6 py-9 flex flex-col items-center text-center border-b border-border bg-primary/[0.04]">
+          <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-[2px] bg-primary/10 text-primary ring-1 ring-primary/20">
             <Search className="h-6 w-6" />
           </div>
           <h2 className="text-xl font-semibold text-foreground tracking-tight">
@@ -539,7 +539,7 @@ function SeoEmptyShell({
         description="Both providers use the same paste-the-JSON flow and never require OAuth. Setup takes under 5 minutes."
       >
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+          <div className="rounded-[2px] border border-border bg-muted/20 p-4 space-y-3">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h3 className="text-sm font-semibold text-foreground">
@@ -549,14 +549,14 @@ function SeoEmptyShell({
                   Queries · Impressions · CTR · Position
                 </p>
               </div>
-              <span className="shrink-0 inline-flex items-center gap-1 rounded-md bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+              <span className="shrink-0 inline-flex items-center gap-1 rounded-[2px] bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
                 <TrendingUp className="h-2.5 w-2.5" />
                 Recommended
               </span>
             </div>
             <ConnectSeoForm provider="GSC" properties={properties} defaultPropertyId={defaultPropertyId} />
           </div>
-          <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+          <div className="rounded-[2px] border border-border bg-muted/20 p-4 space-y-3">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h3 className="text-sm font-semibold text-foreground">
@@ -566,7 +566,7 @@ function SeoEmptyShell({
                   Organic sessions · Users · Top pages
                 </p>
               </div>
-              <span className="shrink-0 inline-flex items-center gap-1 rounded-md bg-muted text-muted-foreground px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+              <span className="shrink-0 inline-flex items-center gap-1 rounded-[2px] bg-muted text-muted-foreground px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
                 <BarChart3 className="h-2.5 w-2.5" />
                 Optional
               </span>
@@ -656,7 +656,7 @@ function ProviderManageCard({
   status: string | null;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+    <div className="rounded-[2px] border border-border bg-muted/20 p-4 space-y-3">
       <div className="flex items-baseline justify-between gap-3">
         <h3 className="text-sm font-semibold text-foreground">{title}</h3>
         <span
@@ -689,7 +689,7 @@ function ProviderManageCard({
             <Detail label="Status" value={status ?? "Idle"} />
           </dl>
           {lastSyncError ? (
-            <p className="text-[11px] text-destructive rounded-md border border-destructive/30 bg-destructive/10 p-3">
+            <p className="text-[11px] text-destructive rounded-[2px] border border-destructive/30 bg-destructive/10 p-3">
               {lastSyncError}
             </p>
           ) : null}
@@ -740,7 +740,7 @@ function SeoValueProp({
 }) {
   return (
     <div className="flex items-start gap-3 px-5 py-4">
-      <div className="shrink-0 mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+      <div className="shrink-0 mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-[2px] bg-primary/10 text-primary">
         {icon}
       </div>
       <div className="min-w-0">
@@ -757,7 +757,7 @@ function SeoValueProp({
 
 function SetupHelp() {
   return (
-    <div className="mt-5 rounded-xl border border-border bg-muted/20 p-4 text-xs leading-relaxed text-muted-foreground space-y-2">
+    <div className="mt-5 rounded-[2px] border border-border bg-muted/20 p-4 text-xs leading-relaxed text-muted-foreground space-y-2">
       <p className="font-semibold text-foreground">
         How to create a Google service account
       </p>

@@ -71,7 +71,7 @@ export function PageHeader({
               </p>
             ) : null}
             {meta ? (
-              <span className="text-[11px] font-medium tabular-nums px-2 py-0.5 rounded-full" style={{ background: "var(--color-elevated)", color: "var(--olive-gray)", fontFamily: "var(--font-mono)" }}>
+              <span className="text-[11px] font-medium tabular-nums px-2 py-0.5 rounded-[2px]" style={{ background: "var(--color-elevated)", color: "var(--olive-gray)", fontFamily: "var(--font-mono)" }}>
                 {meta}
               </span>
             ) : null}

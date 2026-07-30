@@ -112,7 +112,9 @@ function HeatCell({
   day: string;
   hour: number;
 }) {
-  // 5 intensity steps. 0 = empty (neutral grey), 1-4 escalating sage-green.
+  // 5 intensity steps, brand-blue ramp (Carbon Blue 10/30/50/60/80). No
+  // green here — green is reserved for the success/positive semantic tone
+  // elsewhere in the portal, and lead volume isn't a "good/bad" signal.
   const intensity = count === 0 ? 0 : Math.min(4, Math.ceil((count / max) * 4));
   const cls = INTENSITY_CLASSES[intensity];
   const hourLabel = formatHour(hour);
@@ -126,11 +128,11 @@ function HeatCell({
 }
 
 const INTENSITY_CLASSES = [
-  "bg-neutral-100",
-  "bg-emerald-100",
-  "bg-emerald-200",
-  "bg-emerald-400",
-  "bg-emerald-600",
+  "bg-[#edf5ff]",
+  "bg-[#a6c8ff]",
+  "bg-[#4589ff]",
+  "bg-[#0f62fe]",
+  "bg-[#002d9c]",
 ];
 
 function Legend({ max }: { max: number }) {

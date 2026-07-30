@@ -96,15 +96,11 @@ export function TrialActivationCard({
 
   return (
     <section
-      className="rounded-xl p-5 space-y-4"
-      style={{
-        backgroundColor: expired
-          ? "rgba(217,119,6,0.08)"
-          : "rgba(37,99,235,0.04)",
-        border: expired
-          ? "1px solid rgba(217,119,6,0.30)"
-          : "1px solid rgba(37,99,235,0.30)",
-      }}
+      className={`rounded-[2px] p-5 space-y-4 border ${
+        expired
+          ? "bg-[rgba(241,194,27,0.16)] border-[#8a6d00]/30"
+          : "bg-primary/5 border-primary/30"
+      }`}
     >
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="min-w-0">

@@ -133,7 +133,7 @@ export async function InlineTranscript({
           </span>
         </span>
         {convo.handedOffAt ? (
-          <span className="text-amber-700">
+          <span className="inline-flex items-center gap-1 rounded-[2px] bg-[rgba(241,194,27,0.16)] px-1.5 py-0.5 text-[#8a6d00]">
             <span className="uppercase tracking-widest font-semibold mr-1">
               Handoff
             </span>

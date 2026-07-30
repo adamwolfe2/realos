@@ -176,9 +176,9 @@ export function ConnectWebsiteCard({
   // ─── Pre-state (no URL on file) ──────────────────────────────────────────
   if (!websiteUrl) {
     return (
-      <section className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/[0.04] via-card to-card p-5 md:p-6">
+      <section className="relative overflow-hidden rounded-[2px] border border-border bg-gradient-to-br from-primary/[0.04] via-card to-card p-5 md:p-6">
         <div className="flex items-start gap-3 mb-4">
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-[2px] bg-primary/10 text-primary shrink-0">
             <Sparkles className="h-4 w-4" />
           </span>
           <div>
@@ -203,14 +203,14 @@ export function ConnectWebsiteCard({
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://yourdomain.com"
               disabled={scanning}
-              className="w-full h-10 pl-10 pr-3 rounded-lg border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-50"
+              className="w-full h-10 pl-10 pr-3 rounded-[2px] border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-50"
               aria-label="Website URL"
             />
           </div>
           <button
             type="submit"
             disabled={scanning || !url.trim()}
-            className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-dark transition-colors disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-[2px] bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-dark transition-colors disabled:opacity-50"
           >
             {scanning ? (
               <>
@@ -236,10 +236,10 @@ export function ConnectWebsiteCard({
 
   // ─── Post-state (URL connected — slim summary + re-scan) ────────────────
   return (
-    <section className="rounded-2xl border border-border bg-card p-4 md:p-5">
+    <section className="rounded-[2px] border border-border bg-card p-4 md:p-5">
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="flex items-start gap-3 min-w-0">
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+          <span className="inline-flex h-8 w-8 items-center justify-center rounded-[2px] bg-primary/10 text-primary shrink-0">
             <Globe className="h-4 w-4" />
           </span>
           <div className="min-w-0">
@@ -261,7 +261,7 @@ export function ConnectWebsiteCard({
           type="button"
           onClick={() => void startScan()}
           disabled={scanning}
-          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-border bg-card text-[11.5px] font-semibold text-foreground hover:bg-muted hover:border-primary/40 transition-all disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[2px] border border-border bg-card text-[11.5px] font-semibold text-foreground hover:bg-muted hover:border-primary/40 transition-all disabled:opacity-50"
         >
           {scanning ? (
             <>
@@ -357,7 +357,7 @@ function ScanProgress({
           return (
             <div
               key={p.label}
-              className={`flex items-center gap-2 rounded-md border px-2.5 py-1.5 ${
+              className={`flex items-center gap-2 rounded-[2px] border px-2.5 py-1.5 ${
                 done
                   ? "border-primary/30 bg-primary/5"
                   : "border-border/60 bg-muted/30"

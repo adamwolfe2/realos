@@ -612,7 +612,7 @@ function Chip({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs",
+        "inline-flex items-center gap-1 rounded-[2px] px-2.5 py-1 text-xs",
         "bg-card text-foreground",
         "ring-1 ring-border"
       )}
@@ -635,7 +635,7 @@ function MissingFieldsChip({ missing }: { missing: string[] }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs",
+        "inline-flex items-center gap-1 rounded-[2px] px-2.5 py-1 text-xs",
         "bg-secondary text-muted-foreground",
         "ring-1 ring-border"
       )}

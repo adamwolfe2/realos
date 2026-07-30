@@ -86,7 +86,7 @@ export function ApplicantDetailDrawer({
               {group.applicants.map((a) => (
                 <div
                   key={a.applicationId}
-                  className="rounded-xl border border-border bg-card p-3"
+                  className="rounded-[2px] border border-border bg-card p-3"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
@@ -147,7 +147,7 @@ export function ApplicantDetailDrawer({
                     {a.email ? (
                       <a
                         href={`mailto:${encodeURIComponent(a.email)}`}
-                        className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-[11px] text-foreground hover:border-primary/40"
+                        className="inline-flex items-center gap-1 rounded-[2px] border border-border px-2 py-1 text-[11px] text-foreground hover:border-primary/40"
                       >
                         <Mail className="h-3 w-3" /> {a.email}
                       </a>
@@ -155,7 +155,7 @@ export function ApplicantDetailDrawer({
                     {a.phone ? (
                       <a
                         href={`tel:${encodeURIComponent(a.phone)}`}
-                        className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-[11px] text-foreground hover:border-primary/40"
+                        className="inline-flex items-center gap-1 rounded-[2px] border border-border px-2 py-1 text-[11px] text-foreground hover:border-primary/40"
                       >
                         <Phone className="h-3 w-3" /> {a.phone}
                       </a>

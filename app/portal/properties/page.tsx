@@ -384,7 +384,7 @@ export default async function PropertiesList({
             {importedCount > 0 ? (
               <Link
                 href="/portal/properties/curate"
-                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-[2px] border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                 title="View your full AppFolio portfolio and add properties to LeaseStack"
               >
                 + {importedCount} more in AppFolio
@@ -393,7 +393,7 @@ export default async function PropertiesList({
             {countAll >= 2 ? (
               <Link
                 href="/portal/properties/compare"
-                className="inline-flex items-center rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
+                className="inline-flex items-center rounded-[2px] border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
               >
                 Compare
               </Link>
@@ -481,7 +481,7 @@ export default async function PropertiesList({
               shareable links preserve the active query. */}
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
             <EntityToolbar views={views} />
-            <Suspense fallback={<div className="h-9 w-56 rounded-md border border-border bg-secondary" />}>
+            <Suspense fallback={<div className="h-9 w-56 rounded-[2px] border border-border bg-secondary" />}>
               <PropertiesSearch initialValue={searchQuery} />
             </Suspense>
           </div>
@@ -616,14 +616,14 @@ export default async function PropertiesList({
                     }
                     const tone =
                       score >= 75
-                        ? "bg-green-50 text-green-700"
+                        ? "text-[#24a148] bg-[rgba(36,161,72,0.1)]"
                         : score >= 50
-                          ? "bg-amber-50 text-amber-800"
-                          : "bg-red-50 text-red-700";
+                          ? "text-[#8a6d00] bg-[rgba(241,194,27,0.16)]"
+                          : "text-[#da1e28] bg-[rgba(218,30,40,0.1)]";
                     return (
                       <Link
                         href={`/portal/seo/agent?propertyId=${p.id}`}
-                        className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-mono font-semibold tabular-nums hover:opacity-80 transition-opacity ${tone}`}
+                        className={`inline-flex items-center rounded-[2px] px-1.5 py-0.5 text-[11px] font-mono font-semibold tabular-nums hover:opacity-80 transition-opacity ${tone}`}
                         title="Open SEO Agent for this property"
                       >
                         {score}
@@ -707,7 +707,7 @@ function ActiveFilterChips({
     <Link
       key={key}
       href={buildHref(key)}
-      className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/15 transition-colors"
+      className="inline-flex items-center gap-1 rounded-[2px] border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/15 transition-colors"
       title={`Clear ${label}`}
     >
       <span>{label}</span>
@@ -797,12 +797,12 @@ function PropertiesPagination({
         {page > 1 ? (
           <Link
             href={buildHref(page - 1)}
-            className="inline-flex items-center rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground hover:bg-secondary transition-colors"
+            className="inline-flex items-center rounded-[2px] border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground hover:bg-secondary transition-colors"
           >
             ← Previous
           </Link>
         ) : (
-          <span className="inline-flex items-center rounded-md border border-border bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground/60">
+          <span className="inline-flex items-center rounded-[2px] border border-border bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground/60">
             ← Previous
           </span>
         )}
@@ -812,12 +812,12 @@ function PropertiesPagination({
         {page < totalPages ? (
           <Link
             href={buildHref(page + 1)}
-            className="inline-flex items-center rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground hover:bg-secondary transition-colors"
+            className="inline-flex items-center rounded-[2px] border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground hover:bg-secondary transition-colors"
           >
             Next →
           </Link>
         ) : (
-          <span className="inline-flex items-center rounded-md border border-border bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground/60">
+          <span className="inline-flex items-center rounded-[2px] border border-border bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground/60">
             Next →
           </span>
         )}

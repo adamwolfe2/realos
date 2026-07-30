@@ -165,7 +165,7 @@ export default async function SettingsPage() {
       <section className="ls-card p-5">
         <header className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-start gap-2.5">
-            <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted text-muted-foreground">
+            <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-[2px] bg-muted text-muted-foreground">
               <Boxes className="size-4" aria-hidden="true" />
             </span>
             <div>
@@ -216,7 +216,7 @@ export default async function SettingsPage() {
       >
         <header className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-start gap-2.5">
-            <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted text-muted-foreground">
+            <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-[2px] bg-muted text-muted-foreground">
               <Users className="size-4" aria-hidden="true" />
             </span>
             <div>

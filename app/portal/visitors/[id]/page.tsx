@@ -241,7 +241,7 @@ export default async function VisitorDetailPage({
 
       {/* Engage button (live only) */}
       {isLive && liveSession ? (
-        <div className="rounded-xl border border-primary/30 bg-primary/10 p-4">
+        <div className="rounded-[2px] border border-primary/30 bg-primary/10 p-4">
           <div className="text-sm font-medium text-primary mb-3">
             This visitor is active right now. Send them a message and it will
             appear in the chatbot widget within seconds.
@@ -354,7 +354,7 @@ export default async function VisitorDetailPage({
                 </div>
                 <Link
                   href={`/portal/leads/${linkedLead.id}`}
-                  className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 hover:bg-muted transition-colors text-sm"
+                  className="flex items-center justify-between gap-3 rounded-[2px] border border-border px-3 py-2 hover:bg-muted transition-colors text-sm"
                 >
                   <div>
                     <div className="font-medium">
@@ -377,7 +377,7 @@ export default async function VisitorDetailPage({
                 <div className="text-xs text-muted-foreground mb-2">
                   No tracked lead yet
                 </div>
-                <div className="flex items-center justify-between gap-2 rounded-md border border-dashed border-border px-3 py-2.5 text-xs">
+                <div className="flex items-center justify-between gap-2 rounded-[2px] border border-dashed border-border px-3 py-2.5 text-xs">
                   <span className="text-muted-foreground leading-snug">
                     {visitor.email
                       ? "Convert this pixel-identified person into a Lead row to start tracking outreach + status."
@@ -451,7 +451,7 @@ export default async function VisitorDetailPage({
               at "0% max scroll" on a 70-intent visitor would assume the
               data is broken when it's actually just unavailable. */}
           {usingAggregateFallback ? (
-            <div className="rounded-xl border border-border bg-muted/30 px-4 py-2.5 text-xs text-muted-foreground">
+            <div className="rounded-[2px] border border-border bg-muted/30 px-4 py-2.5 text-xs text-muted-foreground">
               <span className="font-semibold text-foreground">
                 Engagement detail limited.
               </span>{" "}
@@ -463,10 +463,10 @@ export default async function VisitorDetailPage({
           ) : null}
 
           {/* Intent score */}
-          <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
+          <div className="flex items-center gap-3 rounded-[2px] border border-border bg-card px-4 py-3">
             <div
               className={cn(
-                "text-4xl font-semibold tabular-nums",
+                "text-2xl font-semibold tabular-nums",
                 visitor.intentScore >= 80
                   ? "text-primary"
                   : visitor.intentScore >= 60
@@ -644,7 +644,7 @@ export default async function VisitorDetailPage({
                 {(linkedConversation.capturedName ||
                   linkedConversation.capturedEmail ||
                   linkedConversation.capturedPhone) ? (
-                  <div className="rounded-md bg-muted/50 border border-border px-3 py-2 space-y-1">
+                  <div className="rounded-[2px] bg-muted/50 border border-border px-3 py-2 space-y-1">
                     <div className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">
                       Captured
                     </div>
@@ -800,7 +800,7 @@ function ConversationPreview({ messages }: { messages: unknown }) {
           <div
             key={idx}
             className={cn(
-              "text-xs px-3 py-2 rounded-md max-w-[90%]",
+              "text-xs px-3 py-2 rounded-[2px] max-w-[90%]",
               isUser
                 ? "bg-primary/10 text-foreground ml-auto text-right"
                 : "bg-muted text-foreground"

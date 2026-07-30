@@ -58,7 +58,7 @@ export function InsightCard({
     return (
       <article
         className={cn(
-          "group relative rounded-xl border border-border bg-card p-3 transition-shadow duration-150 hover:shadow-[0_2px_12px_rgba(0,0,0,0.03)]",
+          "group relative rounded-[2px] border border-border bg-card p-3 transition-shadow duration-150 hover:shadow-[0_2px_12px_rgba(0,0,0,0.03)]",
           pending && "opacity-60",
         )}
       >
@@ -103,7 +103,7 @@ export function InsightCard({
   return (
     <article
       className={cn(
-        "group relative rounded-xl border border-border bg-card transition-shadow duration-150",
+        "group relative rounded-[2px] border border-border bg-card transition-shadow duration-150",
         "hover:shadow-[0_4px_24px_rgba(0,0,0,0.04)]",
         // No severity-based card tinting — neutral border on every card.
         // Order conveys urgency; the operator's eye lands on the top card.
@@ -162,7 +162,7 @@ export function InsightCard({
         // Upgraded from a plain bordered box to a primary-tinted "recommendation
         // chip" — the Lightbulb icon + blue wash makes it read instantly as an
         // AI-generated suggestion rather than a continuation of body copy.
-        <div className="mt-2.5 flex items-start gap-2 rounded-xl border border-primary/25 bg-primary/[0.04] px-3 py-2.5">
+        <div className="mt-2.5 flex items-start gap-2 rounded-[2px] border border-primary/25 bg-primary/[0.04] px-3 py-2.5">
           <Lightbulb className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" aria-hidden="true" />
           <p className="text-[12px] leading-relaxed text-foreground/80">
             <span className="font-semibold text-foreground">Next step. </span>

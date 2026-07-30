@@ -4,7 +4,8 @@ import * as React from "react";
 import dynamic from "next/dynamic";
 import { formatDistanceToNow } from "date-fns";
 import { AdPlatform } from "@prisma/client";
-import { StatCard } from "@/components/admin/stat-card";
+import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
+import { StatusChip } from "@/components/portal/ui/status-chip";
 import { cn } from "@/lib/utils";
 import { DataPlaceholder } from "@/components/portal/ui/data-placeholder";
 import { Clock } from "lucide-react";
@@ -165,7 +166,7 @@ export function AdsDashboard({
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-        <StatCard
+        <KpiTile
           label="Spend (28d)"
           value={formatCents(totals.spendCents)}
           hint={
@@ -174,7 +175,7 @@ export function AdsDashboard({
               : undefined
           }
         />
-        <StatCard
+        <KpiTile
           label="Clicks"
           value={totals.clicks.toLocaleString()}
           hint={
@@ -183,7 +184,7 @@ export function AdsDashboard({
               : undefined
           }
         />
-        <StatCard
+        <KpiTile
           label="Conversions"
           value={totals.conversions.toLocaleString(undefined, {
             maximumFractionDigits: 1,
@@ -194,19 +195,19 @@ export function AdsDashboard({
               : undefined
           }
         />
-        <StatCard
+        <KpiTile
           label="CPC"
           value={formatCents(cpcCents)}
           hint="Avg cost per click"
         />
-        <StatCard
+        <KpiTile
           label="Cost / conv."
           value={formatCents(costPerConversionCents)}
           hint="Avg cost per conversion"
         />
       </div>
 
-      <section className="rounded-xl border border-border bg-card p-5">
+      <section className="rounded-[2px] border border-border bg-card p-5">
         <div className="flex items-baseline justify-between mb-4">
           <h2 className="text-sm font-semibold text-foreground">
             Daily spend vs conversions
@@ -224,7 +225,7 @@ export function AdsDashboard({
         )}
       </section>
 
-      <section className="rounded-xl border border-border bg-card overflow-x-auto">
+      <section className="rounded-[2px] border border-border bg-card overflow-x-auto">
         <div className="px-5 py-4 border-b border-border flex items-baseline justify-between">
           <h2 className="text-sm font-semibold text-foreground">Campaigns</h2>
           <span className="text-[11px] text-muted-foreground">
@@ -366,7 +367,7 @@ export function AdsDashboard({
         )}
       </section>
 
-      <section className="rounded-xl border border-border bg-card p-5">
+      <section className="rounded-[2px] border border-border bg-card p-5">
         <h2 className="text-sm font-semibold text-foreground mb-3">
           Connected accounts
         </h2>
@@ -397,18 +398,16 @@ export function AdsDashboard({
                   ) : null}
                 </div>
               </div>
-              <span
-                className={cn(
-                  "text-[11px] font-medium px-2 py-0.5 rounded-md",
+              <StatusChip
+                status={
                   a.accessStatus === "active"
-                    ? "bg-primary/10 text-primary border border-primary/30"
+                    ? "live"
                     : a.accessStatus === "error"
-                      ? "bg-destructive/10 text-destructive border border-destructive/30"
-                      : "bg-muted text-muted-foreground border border-border"
-                )}
-              >
-                {a.accessStatus}
-              </span>
+                      ? "error"
+                      : "not_connected"
+                }
+                label={a.accessStatus}
+              />
             </li>
           ))}
         </ul>
@@ -457,7 +456,7 @@ function Segment({
           type="button"
           onClick={() => onChange(o.key)}
           className={cn(
-            "rounded-md px-2.5 py-1 text-xs font-medium border transition-colors",
+            "rounded-[2px] px-2.5 py-1 text-xs font-medium border transition-colors",
             filter === o.key
               ? "bg-primary text-primary-foreground border-primary"
               : "bg-card text-foreground border-border hover:bg-muted/50"
@@ -529,7 +528,7 @@ function StatusPill({ status }: { status: string }) {
   return (
     <span
       className={cn(
-        "inline-block text-[10px] font-medium px-2 py-0.5 rounded-md border",
+        "inline-block text-[10px] font-medium px-2 py-0.5 rounded-[2px] border",
         tone
       )}
     >

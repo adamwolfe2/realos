@@ -118,7 +118,7 @@ export function RecommendationManager({ recommendations }: Props) {
   const someSelected = selected.size > 0 && !allSelected;
 
   return (
-    <div className="rounded-2xl border border-border bg-card overflow-hidden">
+    <div className="rounded-[2px] border border-border bg-card overflow-hidden">
       <header className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-border/60">
         <label className="inline-flex items-center gap-2 cursor-pointer">
           <input
@@ -147,7 +147,7 @@ export function RecommendationManager({ recommendations }: Props) {
               type="button"
               disabled={bulkPending}
               onClick={() => callBulk("completed")}
-              className="rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary hover:bg-primary/15 hover:border-primary/40 disabled:opacity-50 transition-colors"
+              className="rounded-[2px] border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary hover:bg-primary/15 hover:border-primary/40 disabled:opacity-50 transition-colors"
             >
               Mark done
             </button>
@@ -155,7 +155,7 @@ export function RecommendationManager({ recommendations }: Props) {
               type="button"
               disabled={bulkPending}
               onClick={() => setBulkMode("snooze")}
-              className="rounded-md border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
+              className="rounded-[2px] border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
             >
               Snooze
             </button>
@@ -163,7 +163,7 @@ export function RecommendationManager({ recommendations }: Props) {
               type="button"
               disabled={bulkPending}
               onClick={() => setBulkMode("dismiss")}
-              className="rounded-md border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+              className="rounded-[2px] border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
             >
               Dismiss
             </button>
@@ -191,7 +191,7 @@ export function RecommendationManager({ recommendations }: Props) {
               type="button"
               disabled={bulkPending}
               onClick={() => bulkSnooze(opt.days)}
-              className="rounded-md border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
+              className="rounded-[2px] border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
             >
               {opt.label}
             </button>
@@ -213,7 +213,7 @@ export function RecommendationManager({ recommendations }: Props) {
             value={bulkReason}
             onChange={(e) => setBulkReason(e.target.value)}
             placeholder={`Reason for dismissing ${selected.size} rec${selected.size === 1 ? "" : "s"}`}
-            className="flex-1 rounded-md border border-border bg-background px-2 py-1 text-[12px] focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="flex-1 rounded-[2px] border border-border bg-background px-2 py-1 text-[12px] focus:outline-none focus:ring-2 focus:ring-primary/30"
             onKeyDown={(e) => {
               if (e.key === "Enter" && bulkReason.trim().length >= 4) {
                 callBulk("dismissed", { reason: bulkReason.trim() });
@@ -227,7 +227,7 @@ export function RecommendationManager({ recommendations }: Props) {
               onClick={() =>
                 callBulk("dismissed", { reason: bulkReason.trim() })
               }
-              className="rounded-md bg-foreground px-2.5 py-1 text-[11.5px] font-medium text-background hover:opacity-90 disabled:opacity-50"
+              className="rounded-[2px] bg-foreground px-2.5 py-1 text-[11.5px] font-medium text-background hover:opacity-90 disabled:opacity-50"
             >
               Confirm dismiss
             </button>
@@ -323,7 +323,7 @@ function RecommendationRow({
           aria-label="Select this recommendation"
         />
         <span
-          className={`mt-0.5 inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wide shrink-0 ${tone}`}
+          className={`mt-0.5 inline-flex items-center gap-1 rounded-[2px] border px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wide shrink-0 ${tone}`}
         >
           {rec.severity.toLowerCase()}
         </span>
@@ -366,7 +366,7 @@ function RecommendationRow({
             type="button"
             disabled={pending}
             onClick={() => patchStatus("IN_PROGRESS")}
-            className="rounded-md border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
+            className="rounded-[2px] border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
           >
             In progress
           </button>
@@ -375,7 +375,7 @@ function RecommendationRow({
           type="button"
           disabled={pending}
           onClick={() => patchStatus("COMPLETED")}
-          className="rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary hover:bg-primary/15 hover:border-primary/40 disabled:opacity-50 transition-colors"
+          className="rounded-[2px] border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary hover:bg-primary/15 hover:border-primary/40 disabled:opacity-50 transition-colors"
         >
           Done
         </button>
@@ -383,7 +383,7 @@ function RecommendationRow({
           type="button"
           disabled={pending}
           onClick={() => setShowSnooze((v) => !v)}
-          className="rounded-md border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+          className="rounded-[2px] border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
         >
           Snooze
         </button>
@@ -391,7 +391,7 @@ function RecommendationRow({
           type="button"
           disabled={pending}
           onClick={() => setShowDismiss((v) => !v)}
-          className="rounded-md border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+          className="rounded-[2px] border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
         >
           Dismiss
         </button>
@@ -417,7 +417,7 @@ function RecommendationRow({
                 );
                 patchStatus("SNOOZED", { snoozeUntil: date.toISOString() });
               }}
-              className="rounded-md border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
+              className="rounded-[2px] border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
             >
               {opt.label}
             </button>
@@ -425,7 +425,7 @@ function RecommendationRow({
           <button
             type="button"
             onClick={() => setShowSnooze(false)}
-            className="rounded-md px-2 py-0.5 text-[11px] text-muted-foreground hover:text-foreground"
+            className="rounded-[2px] px-2 py-0.5 text-[11px] text-muted-foreground hover:text-foreground"
           >
             Cancel
           </button>
@@ -439,7 +439,7 @@ function RecommendationRow({
             value={dismissReason}
             onChange={(e) => setDismissReason(e.target.value)}
             placeholder="Reason (not relevant, already done outside LeaseStack, etc.)"
-            className="flex-1 rounded-md border border-border bg-background px-2 py-1 text-[12px] focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="flex-1 rounded-[2px] border border-border bg-background px-2 py-1 text-[12px] focus:outline-none focus:ring-2 focus:ring-primary/30"
             onKeyDown={(e) => {
               if (e.key === "Enter" && dismissReason.trim().length >= 4) {
                 patchStatus("DISMISSED", { reason: dismissReason.trim() });
@@ -452,7 +452,7 @@ function RecommendationRow({
             onClick={() =>
               patchStatus("DISMISSED", { reason: dismissReason.trim() })
             }
-            className="rounded-md bg-foreground px-2.5 py-1 text-[12px] font-medium text-background hover:opacity-90 disabled:opacity-50"
+            className="rounded-[2px] bg-foreground px-2.5 py-1 text-[12px] font-medium text-background hover:opacity-90 disabled:opacity-50"
           >
             Confirm
           </button>

@@ -68,7 +68,7 @@ export function ClientTeamPanel(props: Props) {
           <button
             type="button"
             onClick={() => setInviteOpen((v) => !v)}
-            className="rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold hover:bg-primary/90 transition-colors"
+            className="rounded-[2px] bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold hover:bg-primary/90 transition-colors"
           >
             {inviteOpen ? "Close" : "Invite teammate"}
           </button>
@@ -84,7 +84,7 @@ export function ClientTeamPanel(props: Props) {
       ) : null}
 
       {members.length === 0 ? (
-        <div className="rounded-md border border-dashed border-border bg-muted/20 px-4 py-5 text-center">
+        <div className="rounded-[2px] border border-dashed border-border bg-muted/20 px-4 py-5 text-center">
           <p className="text-sm text-foreground font-medium">
             Just you so far.
           </p>
@@ -93,7 +93,7 @@ export function ClientTeamPanel(props: Props) {
           </p>
         </div>
       ) : (
-        <ul className="divide-y divide-border rounded-md border border-border bg-card">
+        <ul className="divide-y divide-border rounded-[2px] border border-border bg-card">
           {members.map((m) => (
             <li key={m.id}>
               <MemberRow
@@ -224,7 +224,7 @@ function MemberRow({
         value={role}
         onChange={(e) => onRoleSelect(e.target.value as UserRole)}
         disabled={pending || disableControls}
-        className="rounded-md border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50"
+        className="rounded-[2px] border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50"
       >
         {CLIENT_ROLES.map((opt) => (
           <option key={opt.value} value={opt.value}>
@@ -331,7 +331,7 @@ function PropertyAccessEditor({
   }
 
   return (
-    <div className="mt-3 rounded-md border border-border bg-muted/20 p-3">
+    <div className="mt-3 rounded-[2px] border border-border bg-muted/20 p-3">
       <div className="flex items-baseline justify-between gap-2 mb-2">
         <p className="text-xs font-medium text-foreground">
           Property access — {email}
@@ -375,7 +375,7 @@ function PropertyAccessEditor({
           type="button"
           onClick={save}
           disabled={pending}
-          className="rounded-md bg-primary text-primary-foreground px-3 py-1 text-[11px] font-semibold disabled:opacity-60"
+          className="rounded-[2px] bg-primary text-primary-foreground px-3 py-1 text-[11px] font-semibold disabled:opacity-60"
         >
           {pending ? "Saving…" : "Save"}
         </button>
@@ -483,7 +483,7 @@ function InviteForm({
   return (
     <form
       onSubmit={submit}
-      className="rounded-md border border-border bg-muted/20 p-4 space-y-3"
+      className="rounded-[2px] border border-border bg-muted/20 p-4 space-y-3"
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <label className="flex flex-col gap-1 text-sm">
@@ -496,7 +496,7 @@ function InviteForm({
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="name@company.com"
-            className="rounded-md border border-border bg-background px-2.5 py-1.5 text-sm"
+            className="rounded-[2px] border border-border bg-background px-2.5 py-1.5 text-sm"
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
@@ -508,7 +508,7 @@ function InviteForm({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="First Last"
-            className="rounded-md border border-border bg-background px-2.5 py-1.5 text-sm"
+            className="rounded-[2px] border border-border bg-background px-2.5 py-1.5 text-sm"
           />
         </label>
       </div>
@@ -519,7 +519,7 @@ function InviteForm({
         <select
           value={role}
           onChange={(e) => setRole(e.target.value as UserRole)}
-          className="rounded-md border border-border bg-background px-2.5 py-1.5 text-sm"
+          className="rounded-[2px] border border-border bg-background px-2.5 py-1.5 text-sm"
         >
           {CLIENT_ROLES.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -535,7 +535,7 @@ function InviteForm({
           checklist — important so we don't intimidate single-property
           orgs with a feature they don't need. */}
       {showPropertyControls ? (
-        <div className="rounded-md border border-border bg-background px-3 py-2.5">
+        <div className="rounded-[2px] border border-border bg-background px-3 py-2.5">
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
               type="checkbox"
@@ -589,7 +589,7 @@ function InviteForm({
         <button
           type="submit"
           disabled={state.kind === "sending" || !email}
-          className="rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold hover:bg-primary/90 disabled:opacity-40"
+          className="rounded-[2px] bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold hover:bg-primary/90 disabled:opacity-40"
         >
           {state.kind === "sending" ? "Sending…" : "Send invite"}
         </button>
@@ -631,7 +631,7 @@ function CopyInviteLink({ link }: { link: string }) {
     }
   }
   return (
-    <div className="rounded-md border border-border bg-background p-3 space-y-2">
+    <div className="rounded-[2px] border border-border bg-background p-3 space-y-2">
       <div className="flex items-center justify-between gap-2">
         <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
           Manual invite link

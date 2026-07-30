@@ -106,7 +106,7 @@ export default async function VaultPage() {
         />
         <SectionCard label="" padded={false}>
           <div className="px-6 py-12 flex flex-col items-center text-center">
-            <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
+            <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-[2px] bg-primary/10 text-primary ring-1 ring-primary/20">
               <KeyRound className="h-6 w-6" />
             </div>
             <h2 className="text-xl font-semibold text-foreground tracking-tight">
@@ -124,7 +124,7 @@ export default async function VaultPage() {
             </div>
             <Link
               href="/portal/billing"
-              className="mt-6 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              className="mt-6 inline-flex items-center justify-center rounded-[2px] bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
               Enable Vault
             </Link>
@@ -199,7 +199,7 @@ function VaultNewButton({
       // Properties prop is passed via the parent client component; this
       // button just dispatches a custom event the parent listens to.
       data-properties-count={properties.length}
-      className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+      className="inline-flex items-center gap-1.5 rounded-[2px] bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
     >
       <Plus className="h-3 w-3" />
       New credential
@@ -217,7 +217,7 @@ function VaultImportButton({
       type="button"
       data-vault-action="import"
       data-properties-count={properties.length}
-      className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary"
+      className="inline-flex items-center gap-1.5 rounded-[2px] border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary"
     >
       <Upload className="h-3 w-3" />
       Import CSV

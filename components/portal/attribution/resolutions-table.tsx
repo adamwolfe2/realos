@@ -3,13 +3,16 @@
 import * as React from "react";
 import { SourceLogo } from "@/components/portal/attribution/source-logo";
 import { EmptyState } from "@/components/portal/ui/empty-state";
-import type { GraphFilter } from "@/components/portal/attribution/reverse-attribution-graph";
 
 // ---------------------------------------------------------------------------
 // ResolutionsTable — Cursive-style per-visit feed: every identified visit with
 // its referrer, landing page, identity, location, and age. Filters live to the
 // node selected in the graph above.
 // ---------------------------------------------------------------------------
+
+// Was imported from the deleted reverse-attribution-graph.tsx (removed
+// 2026-07-29 — donut/graph sweep); this is the only surviving reference.
+export type GraphFilter = { type: "source" | "landing"; value: string } | null;
 
 export type ResolutionRow = {
   id: string;

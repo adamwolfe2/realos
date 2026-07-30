@@ -804,13 +804,13 @@ export default async function LeadsKanbanPage({
             {page > 1 ? (
               <Link
                 href={pageHref(page - 1)}
-                className="px-3 py-2 border border-border rounded-md hover:bg-muted transition-colors"
+                className="px-3 py-2 border border-border rounded-[2px] hover:bg-muted transition-colors"
               >
                 Previous
               </Link>
             ) : (
               <span
-                className="px-3 py-2 border border-border rounded-md opacity-40 cursor-not-allowed select-none"
+                className="px-3 py-2 border border-border rounded-[2px] opacity-40 cursor-not-allowed select-none"
                 aria-disabled="true"
               >
                 Previous
@@ -819,13 +819,13 @@ export default async function LeadsKanbanPage({
             {page < totalPages ? (
               <Link
                 href={pageHref(page + 1)}
-                className="px-3 py-2 border border-border rounded-md hover:bg-muted transition-colors"
+                className="px-3 py-2 border border-border rounded-[2px] hover:bg-muted transition-colors"
               >
                 Next
               </Link>
             ) : (
               <span
-                className="px-3 py-2 border border-border rounded-md opacity-40 cursor-not-allowed select-none"
+                className="px-3 py-2 border border-border rounded-[2px] opacity-40 cursor-not-allowed select-none"
                 aria-disabled="true"
               >
                 Next
@@ -891,7 +891,7 @@ function SourcePill({
     <Link
       href={href}
       className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors",
+        "inline-flex items-center rounded-[2px] px-2.5 py-0.5 text-[11px] font-medium transition-colors",
         active
           ? "bg-primary text-primary-foreground"
           : "bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-secondary",

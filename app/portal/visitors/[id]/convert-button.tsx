@@ -59,7 +59,7 @@ export function ConvertToLeadButton({
         type="button"
         disabled
         title={disabledReason}
-        className="px-3 py-1.5 text-xs font-medium border border-border rounded-md text-muted-foreground cursor-not-allowed"
+        className="px-3 py-1.5 text-xs font-medium border border-border rounded-[2px] text-muted-foreground cursor-not-allowed"
       >
         Convert to lead
       </button>
@@ -71,7 +71,7 @@ export function ConvertToLeadButton({
       type="button"
       onClick={convert}
       disabled={pending || done}
-      className="px-3 py-1.5 text-xs font-semibold bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-60"
+      className="px-3 py-1.5 text-xs font-semibold bg-primary text-primary-foreground rounded-[2px] hover:bg-primary/90 transition-colors disabled:opacity-60"
     >
       {pending ? "Converting…" : done ? "Converted" : "Convert to lead"}
     </button>

@@ -115,12 +115,12 @@ export function VaultClient({
           placeholder="Search by name, platform, username, tag…"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          className="flex-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary"
+          className="flex-1 rounded-[2px] border border-border bg-card px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary"
         />
         <select
           value={propertyFilter}
           onChange={(e) => setPropertyFilter(e.target.value)}
-          className="rounded-md border border-border bg-card px-2 py-1.5 text-xs text-foreground"
+          className="rounded-[2px] border border-border bg-card px-2 py-1.5 text-xs text-foreground"
         >
           <option value="">All properties</option>
           <option value="__org">Org-wide only</option>
@@ -202,7 +202,7 @@ export function VaultClient({
                       type="button"
                       onClick={() => setRevealing(entry)}
                       title="Reveal password"
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-[2px] text-muted-foreground hover:bg-primary/10 hover:text-primary"
                     >
                       <Eye className="h-3.5 w-3.5" />
                     </button>
@@ -210,7 +210,7 @@ export function VaultClient({
                       type="button"
                       onClick={() => setEditing(entry)}
                       title="Edit"
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground"
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-[2px] text-muted-foreground hover:bg-secondary hover:text-foreground"
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </button>
@@ -362,7 +362,7 @@ function RevealModal({
             Decrypting…
           </div>
         ) : state.kind === "error" ? (
-          <div className="flex items-center gap-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+          <div className="flex items-center gap-2 rounded-[2px] border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             <AlertTriangle className="h-4 w-4" />
             {state.message}
           </div>
@@ -373,12 +373,12 @@ function RevealModal({
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
                   Username
                 </p>
-                <div className="mt-1 flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 font-mono text-sm">
+                <div className="mt-1 flex items-center gap-2 rounded-[2px] border border-border bg-muted/30 px-3 py-2 font-mono text-sm">
                   <span className="flex-1 break-all">{state.username}</span>
                   <button
                     type="button"
                     onClick={() => copy(state.username!, "username")}
-                    className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+                    className="inline-flex items-center gap-1 rounded-[2px] px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
                   >
                     {copied === "username" ? (
                       <Check className="h-3 w-3" />
@@ -394,12 +394,12 @@ function RevealModal({
               <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
                 Password
               </p>
-              <div className="mt-1 flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 font-mono text-sm">
+              <div className="mt-1 flex items-center gap-2 rounded-[2px] border border-border bg-muted/30 px-3 py-2 font-mono text-sm">
                 <span className="flex-1 break-all">{state.password}</span>
                 <button
                   type="button"
                   onClick={() => copy(state.password, "password")}
-                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+                  className="inline-flex items-center gap-1 rounded-[2px] px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
                 >
                   {copied === "password" ? (
                     <Check className="h-3 w-3" />
@@ -422,7 +422,7 @@ function RevealModal({
         <button
           type="button"
           onClick={onClose}
-          className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary"
+          className="rounded-[2px] border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary"
         >
           Close
         </button>
@@ -507,7 +507,7 @@ function EditorModal({
 
         <div className="px-6 py-5 space-y-3">
           {error ? (
-            <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+            <div className="rounded-[2px] border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs text-destructive">
               {error}
             </div>
           ) : null}
@@ -586,7 +586,7 @@ function EditorModal({
               <button
                 type="button"
                 onClick={() => setShowPassword((s) => !s)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-card text-muted-foreground hover:bg-secondary"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-[2px] border border-border bg-card text-muted-foreground hover:bg-secondary"
                 title={showPassword ? "Hide" : "Show"}
               >
                 {showPassword ? (
@@ -598,7 +598,7 @@ function EditorModal({
               <button
                 type="button"
                 onClick={onGenerate}
-                className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary"
+                className="rounded-[2px] border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary"
               >
                 Generate
               </button>
@@ -620,14 +620,14 @@ function EditorModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary"
+            className="rounded-[2px] border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={pending}
-            className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+            className="rounded-[2px] bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
           >
             {pending
               ? "Saving…"
@@ -702,12 +702,12 @@ function ImportModal({
 
         <div className="px-6 py-5 space-y-3">
           {error ? (
-            <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+            <div className="rounded-[2px] border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs text-destructive">
               {error}
             </div>
           ) : null}
           {result ? (
-            <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
+            <div className="rounded-[2px] border border-success/20 bg-success/10 px-3 py-2 text-xs text-success">
               <p className="font-medium">
                 Imported {result.created} credentials · skipped{" "}
                 {result.skipped}
@@ -762,7 +762,7 @@ function ImportModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary"
+              className="rounded-[2px] border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary"
             >
               {result ? "Done" : "Cancel"}
             </button>
@@ -770,7 +770,7 @@ function ImportModal({
               <button
                 type="submit"
                 disabled={pending || !csvText.trim()}
-                className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+                className="rounded-[2px] bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
               >
                 {pending ? "Importing…" : "Import"}
               </button>
@@ -813,7 +813,7 @@ function DeleteButton({
       onClick={onDelete}
       disabled={pending}
       title="Delete"
-      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-rose-50 hover:text-rose-700 disabled:opacity-60"
+      className="inline-flex h-7 w-7 items-center justify-center rounded-[2px] text-muted-foreground hover:bg-rose-50 hover:text-rose-700 disabled:opacity-60"
     >
       <Trash2 className="h-3.5 w-3.5" />
     </button>
@@ -864,7 +864,7 @@ function Modal({
       onClick={onClose}
     >
       <div
-        className={`relative w-full ${maxWidth} rounded-xl border border-border bg-card shadow-xl overflow-hidden`}
+        className={`relative w-full ${maxWidth} rounded-[2px] border border-border bg-card shadow-xl overflow-hidden`}
         onClick={(e) => e.stopPropagation()}
       >
         {children}

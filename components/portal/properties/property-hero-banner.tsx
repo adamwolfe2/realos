@@ -395,7 +395,7 @@ export function PropertyHeroBanner({
                     onClick={startReposition}
                     disabled={uploading}
                     aria-label="Reposition image"
-                    className="inline-flex items-center gap-1 rounded-md bg-white/90 backdrop-blur px-2 py-1 text-[10px] font-semibold text-foreground border border-border shadow-sm hover:bg-white transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-[2px] bg-white/90 backdrop-blur px-2 py-1 text-[10px] font-semibold text-foreground border border-border shadow-sm hover:bg-white transition-colors disabled:opacity-50"
                   >
                     <Move className="h-3 w-3" />
                     Reposition
@@ -404,7 +404,7 @@ export function PropertyHeroBanner({
                     type="button"
                     onClick={() => fileRef.current?.click()}
                     disabled={uploading}
-                    className="inline-flex items-center gap-1 rounded-md bg-white/90 backdrop-blur px-2 py-1 text-[10px] font-semibold text-foreground border border-border shadow-sm hover:bg-white transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-[2px] bg-white/90 backdrop-blur px-2 py-1 text-[10px] font-semibold text-foreground border border-border shadow-sm hover:bg-white transition-colors disabled:opacity-50"
                   >
                     {uploading ? (
                       <Loader2 className="h-3 w-3 animate-spin" />
@@ -418,7 +418,7 @@ export function PropertyHeroBanner({
                     onClick={handleRemove}
                     disabled={uploading}
                     aria-label="Remove image"
-                    className="inline-flex items-center justify-center h-6 w-6 rounded-md bg-white/90 backdrop-blur text-muted-foreground hover:text-destructive border border-border shadow-sm hover:bg-white transition-colors disabled:opacity-50"
+                    className="inline-flex items-center justify-center h-6 w-6 rounded-[2px] bg-white/90 backdrop-blur text-muted-foreground hover:text-destructive border border-border shadow-sm hover:bg-white transition-colors disabled:opacity-50"
                   >
                     <XIcon className="h-3 w-3" />
                   </button>
@@ -429,14 +429,14 @@ export function PropertyHeroBanner({
                 /* Reposition controls — pinned bottom-center so they
                    stay out of the way of the building image. */
                 <div className="absolute left-1/2 -translate-x-1/2 bottom-[-44px] flex items-center gap-1.5 z-10">
-                  <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-[10px] font-mono font-semibold text-primary border border-primary/20">
+                  <span className="inline-flex items-center gap-1 rounded-[2px] bg-primary/10 px-2 py-1 text-[10px] font-mono font-semibold text-primary border border-primary/20">
                     Drag to move · scroll to zoom · {Math.round(scaleVal * 100)}%
                   </span>
                   <button
                     type="button"
                     onClick={resetReposition}
                     aria-label="Reset position"
-                    className="inline-flex items-center gap-1 rounded-md bg-white px-2 py-1 text-[10px] font-semibold text-muted-foreground border border-border shadow-sm hover:bg-muted transition-colors"
+                    className="inline-flex items-center gap-1 rounded-[2px] bg-white px-2 py-1 text-[10px] font-semibold text-muted-foreground border border-border shadow-sm hover:bg-muted transition-colors"
                   >
                     <RotateCcw className="h-3 w-3" />
                     Reset
@@ -444,7 +444,7 @@ export function PropertyHeroBanner({
                   <button
                     type="button"
                     onClick={cancelReposition}
-                    className="inline-flex items-center gap-1 rounded-md bg-white px-2 py-1 text-[10px] font-semibold text-foreground border border-border shadow-sm hover:bg-muted transition-colors"
+                    className="inline-flex items-center gap-1 rounded-[2px] bg-white px-2 py-1 text-[10px] font-semibold text-foreground border border-border shadow-sm hover:bg-muted transition-colors"
                   >
                     Cancel
                   </button>
@@ -452,7 +452,7 @@ export function PropertyHeroBanner({
                     type="button"
                     onClick={saveReposition}
                     disabled={saving}
-                    className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-[10px] font-semibold text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-[2px] bg-primary px-2.5 py-1 text-[10px] font-semibold text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
                   >
                     {saving ? (
                       <Loader2 className="h-3 w-3 animate-spin" />

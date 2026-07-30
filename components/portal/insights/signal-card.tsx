@@ -50,7 +50,7 @@ export function SignalCard({
     <Link
       href={href}
       className={cn(
-        "group relative block rounded-xl border border-border bg-card",
+        "group relative block rounded-[2px] border border-border bg-card",
         "px-4 pt-3 pb-2 transition-all overflow-hidden",
         "hover:shadow-[0_2px_12px_rgba(15,23,42,0.06)] hover:-translate-y-0.5",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
@@ -132,7 +132,7 @@ function DeltaChip({
  */
 export function SignalCardSkeleton({ label }: { label: string }) {
   return (
-    <div className="rounded-xl border border-border bg-card px-4 pt-3 pb-2 overflow-hidden">
+    <div className="rounded-[2px] border border-border bg-card px-4 pt-3 pb-2 overflow-hidden">
       <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
         {label}
       </div>

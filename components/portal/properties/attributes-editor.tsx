@@ -87,7 +87,7 @@ export function AttributesEditor({
   ).slice(0, 6);
 
   return (
-    <section className="rounded-xl border border-border bg-card p-4 md:p-5">
+    <section className="rounded-[2px] border border-border bg-card p-4 md:p-5">
       <header className="flex items-baseline justify-between gap-3 mb-3">
         <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
           Attributes
@@ -115,7 +115,7 @@ export function AttributesEditor({
             }}
             placeholder="e.g. dorm-style, apartment-style, warehouse"
             maxLength={80}
-            className="w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-[12.5px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="w-full rounded-[2px] border border-border bg-background px-2.5 py-1.5 text-[12.5px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </label>
 
@@ -160,13 +160,13 @@ export function AttributesEditor({
               }}
               placeholder="Add a tag…"
               maxLength={40}
-              className="flex-1 rounded-md border border-border bg-background px-2.5 py-1.5 text-[12px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="flex-1 rounded-[2px] border border-border bg-background px-2.5 py-1.5 text-[12px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
             <button
               type="button"
               onClick={() => addTag(pendingTag)}
               disabled={!pendingTag.trim()}
-              className="inline-flex items-center justify-center rounded-md border border-border bg-card px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="inline-flex items-center justify-center rounded-[2px] border border-border bg-card px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               aria-label="Add tag"
             >
               <Plus className="h-3 w-3" />

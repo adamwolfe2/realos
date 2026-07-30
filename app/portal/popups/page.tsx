@@ -140,12 +140,12 @@ export default async function PopupsListPage({
               <li key={p.id}>
                 <Link
                   href={`/portal/popups/${p.id}`}
-                  className="group flex items-center gap-3 px-1 py-3 -mx-0.5 rounded-md hover:bg-muted/30 transition-colors"
+                  className="group flex items-center gap-3 px-1 py-3 -mx-0.5 rounded-[2px] hover:bg-muted/30 transition-colors"
                 >
                   {/* Color swatch */}
                   <span
                     aria-hidden="true"
-                    className="shrink-0 h-9 w-9 rounded-lg border border-black/5 flex items-center justify-center text-white text-xs font-bold uppercase"
+                    className="shrink-0 h-9 w-9 rounded-[2px] border border-black/5 flex items-center justify-center text-white text-xs font-bold uppercase"
                     style={{ backgroundColor: p.primaryColor }}
                   >
                     {p.name.slice(0, 2)}
@@ -199,7 +199,7 @@ export default async function PopupsListPage({
           <div className="mt-3 pt-3 border-t border-border flex justify-end">
             <Link
               href="/portal/popups/new"
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-[2px] border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary transition-colors"
             >
               <Plus className="h-3 w-3" />
               Create another
@@ -217,7 +217,7 @@ function StatusBadge({ status }: { status: string }) {
   // brand-primary vs neutral instead).
   const tone =
     status === "ACTIVE"
-      ? "bg-primary/10 text-primary"
+      ? "bg-[rgba(36,161,72,0.10)] text-[#24a148]"
       : status === "PAUSED"
         ? "bg-muted text-muted-foreground border border-border"
         : status === "ARCHIVED"
@@ -226,7 +226,7 @@ function StatusBadge({ status }: { status: string }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium lowercase",
+        "inline-flex items-center rounded-[2px] px-1.5 py-0.5 text-[11px] font-medium lowercase",
         tone,
       )}
     >

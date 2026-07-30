@@ -227,7 +227,7 @@ function Pager({
   const next = page + delta;
   if (next < 1 || next > totalPages) {
     return (
-      <span className="px-3 py-1.5 border border-border rounded-md opacity-40 cursor-not-allowed select-none">
+      <span className="px-3 py-1.5 border border-border rounded-[2px] opacity-40 cursor-not-allowed select-none">
         {label}
       </span>
     );
@@ -238,7 +238,7 @@ function Pager({
   return (
     <Link
       href={`/portal/settings/audit-log?${params.toString()}`}
-      className="px-3 py-1.5 border border-border rounded-md hover:bg-muted transition-colors"
+      className="px-3 py-1.5 border border-border rounded-[2px] hover:bg-muted transition-colors"
     >
       {label}
     </Link>

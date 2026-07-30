@@ -195,7 +195,7 @@ body {
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: var(--parchment); }
-::-webkit-scrollbar-thumb { background: var(--ring-warm); border: 2px solid var(--parchment); border-radius: 999px; }
+::-webkit-scrollbar-thumb { background: var(--ring-warm); border: 2px solid var(--parchment); border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--stone-gray); }
 
 /* Hide scrollbar for scroll-snap nav on mobile */
@@ -669,7 +669,7 @@ body {
   font-size: 11px;
   font-weight: 600;
   padding: 2px 7px;
-  border-radius: 999px;
+  border-radius: 2px;
   letter-spacing: 0.005em;
   line-height: 1;
 }
@@ -730,7 +730,7 @@ body {
   font-size: 11px;
   font-weight: 600;
   padding: 3px 9px;
-  border-radius: 999px;
+  border-radius: 2px;
   letter-spacing: 0.01em;
   line-height: 1.1;
   white-space: nowrap;
@@ -821,14 +821,14 @@ body {
 .ls-progress {
   height: 6px;
   background: var(--color-elevated);
-  border-radius: 999px;
+  border-radius: 2px;
   overflow: hidden;
   position: relative;
 }
 .ls-progress > span {
   display: block;
   height: 100%;
-  border-radius: 999px;
+  border-radius: 2px;
   background: linear-gradient(90deg, var(--terracotta), var(--coral));
   transition: width 800ms var(--ease-spring);
 }
@@ -922,7 +922,7 @@ body {
 .portal-shell ::-webkit-scrollbar-track { background: transparent; }
 .portal-shell ::-webkit-scrollbar-thumb {
   background: var(--warm-silver);
-  border-radius: 999px;
+  border-radius: 2px;
   border: none;
 }
 .portal-shell ::-webkit-scrollbar-thumb:hover { background: var(--stone-gray); }

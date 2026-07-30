@@ -59,7 +59,7 @@ export function StatusPill({
   return (
     <span
       className={cn(
-        hideDot ? "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap" : "ls-pill",
+        hideDot ? "inline-flex items-center rounded-[2px] px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap" : "ls-pill",
         TONE_CLASS[tone],
         className,
       )}

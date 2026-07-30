@@ -35,7 +35,7 @@ import { cn } from "@/lib/utils";
 // ---------------------------------------------------------------------------
 
 const baseChip =
-  "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-medium leading-tight whitespace-nowrap max-w-full";
+  "inline-flex items-center gap-1 rounded-[2px] border px-1.5 py-0.5 text-[11px] font-medium leading-tight whitespace-nowrap max-w-full";
 
 // Tones map to semantic intent. Defaults stay quiet (neutral chrome). Active
 // + success collapse onto brand blue. Warning + danger reserved for genuinely

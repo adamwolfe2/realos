@@ -409,7 +409,7 @@ export function EditorClient(props: Props) {
       <header className="flex items-center gap-3 border-b border-border bg-card px-4 py-2.5">
         <Link
           href="/portal/content"
-          className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="rounded-[2px] p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
           aria-label="Back to content"
         >
           <svg viewBox="0 0 16 16" className="w-4 h-4" fill="none" aria-hidden>
@@ -423,7 +423,7 @@ export function EditorClient(props: Props) {
           </svg>
         </Link>
 
-        <span className="inline-flex items-center gap-1.5 rounded-md bg-primary/10 px-2 py-1 text-[10px] font-mono uppercase tracking-wide text-primary">
+        <span className="inline-flex items-center gap-1.5 rounded-[2px] bg-primary/10 px-2 py-1 text-[10px] font-mono uppercase tracking-wide text-primary">
           {FORMAT_LABEL[props.format]}
         </span>
 
@@ -445,7 +445,7 @@ export function EditorClient(props: Props) {
           {wordCount.toLocaleString()} words
         </span>
         <span
-          className="rounded-md bg-muted px-2 py-1 text-[10px] font-mono uppercase tracking-wide text-muted-foreground"
+          className="rounded-[2px] bg-muted px-2 py-1 text-[10px] font-mono uppercase tracking-wide text-muted-foreground"
           title={STATUS_LABEL[props.status]}
         >
           {STATUS_LABEL[props.status]}
@@ -460,7 +460,7 @@ export function EditorClient(props: Props) {
             props.status === "PENDING_REVIEW" ||
             props.status === "APPROVED"
           }
-          className="rounded-lg bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded-[2px] bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitState === "submitting"
             ? "Submitting…"
@@ -479,7 +479,7 @@ export function EditorClient(props: Props) {
             className="flex-1 overflow-y-auto px-4 py-4 space-y-4"
           >
             {messages.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border bg-secondary p-4">
+              <div className="rounded-[2px] border border-dashed border-border bg-secondary p-4">
                 <p className="text-[12px] text-foreground font-medium">
                   Ask the assistant for help.
                 </p>
@@ -508,12 +508,12 @@ export function EditorClient(props: Props) {
               }}
               placeholder="Reply to the assistant…"
               rows={3}
-              className="block w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="block w-full resize-none rounded-[2px] border border-input bg-background px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                className="rounded-md border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-muted"
+                className="rounded-[2px] border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-muted"
                 onClick={() =>
                   setChatInput((c) =>
                     c ? `${c}\n\nWrite ` : "Write ",
@@ -524,7 +524,7 @@ export function EditorClient(props: Props) {
               </button>
               <button
                 type="button"
-                className="rounded-md border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-muted"
+                className="rounded-[2px] border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-muted"
                 onClick={() =>
                   setChatInput((c) =>
                     c ? `${c}\n\nConnectors: ` : "Connectors: ",
@@ -539,7 +539,7 @@ export function EditorClient(props: Props) {
                 onClick={() => void sendChat()}
                 disabled={isStreaming || !chatInput.trim()}
                 aria-label="Send"
-                className="rounded-md bg-primary p-1.5 text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="rounded-[2px] bg-primary p-1.5 text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <svg
                   viewBox="0 0 16 16"
@@ -729,7 +729,7 @@ function ChatBubble({ message }: { message: ChatMessage }) {
   if (message.role === "user") {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-muted px-3 py-2 text-[13px] text-foreground whitespace-pre-wrap leading-relaxed">
+        <div className="max-w-[85%] rounded-[2px] rounded-br-sm bg-muted px-3 py-2 text-[13px] text-foreground whitespace-pre-wrap leading-relaxed">
           {message.content}
         </div>
       </div>

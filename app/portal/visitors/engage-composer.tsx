@@ -74,7 +74,7 @@ export function EngageComposer({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="px-3 py-1.5 text-xs font-medium border border-border rounded-md hover:bg-muted transition-colors"
+        className="px-3 py-1.5 text-xs font-medium border border-border rounded-[2px] hover:bg-muted transition-colors"
       >
         Engage
       </button>
@@ -82,7 +82,7 @@ export function EngageComposer({
   }
 
   return (
-    <div className="rounded-md border border-border bg-card p-3 space-y-2 w-full max-w-md">
+    <div className="rounded-[2px] border border-border bg-card p-3 space-y-2 w-full max-w-md">
       <textarea
         value={message}
         onChange={(e) => setMessage(e.target.value)}
@@ -93,7 +93,7 @@ export function EngageComposer({
           "Hi, I noticed you were checking out floor plans. Anything I can help with?"
         }
         aria-label="Message to send to visitor"
-        className="w-full text-sm border border-border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-primary"
+        className="w-full text-sm border border-border rounded-[2px] p-2 focus:outline-none focus:ring-2 focus:ring-primary"
         disabled={pending}
         autoFocus
       />
@@ -131,7 +131,7 @@ export function EngageComposer({
             type="button"
             onClick={send}
             disabled={pending || !message.trim()}
-            className="bg-primary text-primary-foreground px-4 py-1.5 text-xs font-semibold rounded-md hover:opacity-90 disabled:opacity-40 transition-opacity"
+            className="bg-primary text-primary-foreground px-4 py-1.5 text-xs font-semibold rounded-[2px] hover:opacity-90 disabled:opacity-40 transition-opacity"
           >
             {pending ? "Sending..." : "Send to chat"}
           </button>

@@ -25,7 +25,7 @@ export function TopMovers({
 }) {
   if (!hasData) {
     return (
-      <div className="rounded-xl border border-border bg-card px-5 py-8 text-center">
+      <div className="rounded-[2px] border border-border bg-card px-5 py-8 text-center">
         <Search className="h-5 w-5 mx-auto text-muted-foreground" />
         <div className="mt-2 text-sm font-medium text-foreground">
           Connect SEO data to see ranking movements
@@ -46,7 +46,7 @@ export function TopMovers({
 
   if (movers.length === 0) {
     return (
-      <div className="rounded-xl border border-border bg-card px-5 py-8 text-center">
+      <div className="rounded-[2px] border border-border bg-card px-5 py-8 text-center">
         <Search className="h-5 w-5 mx-auto text-muted-foreground" />
         <div className="mt-2 text-sm font-medium text-foreground">
           No notable ranking moves this week
@@ -60,7 +60,7 @@ export function TopMovers({
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
+    <div className="rounded-[2px] border border-border bg-card overflow-hidden">
       <div className="flex items-center justify-between px-5 py-3 border-b border-border">
         <div>
           <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">

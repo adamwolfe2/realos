@@ -33,14 +33,14 @@ export function EmptyState({
     <div
       className={cn(
         variant === "card"
-          ? "rounded-[2px] border border-solid border-[#e0e0e0] bg-secondary/40"
+          ? "rounded-[2px] border border-solid border-border bg-secondary/40"
           : "",
         "px-4 py-8 text-center flex flex-col items-center gap-1.5",
         className,
       )}
     >
       {icon ? (
-        <div className="mb-1 inline-flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
+        <div className="mb-1 inline-flex h-9 w-9 items-center justify-center rounded-[2px] bg-primary/10 text-primary">
           {icon}
         </div>
       ) : null}
@@ -55,7 +55,7 @@ export function EmptyState({
           {action ? (
             <Link
               href={action.href}
-              className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold hover:bg-primary-dark transition-colors"
+              className="inline-flex items-center rounded-[2px] bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold hover:bg-primary-dark transition-colors"
             >
               {action.label}
             </Link>
@@ -63,7 +63,7 @@ export function EmptyState({
           {secondary ? (
             <Link
               href={secondary.href}
-              className="inline-flex items-center rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
+              className="inline-flex items-center rounded-[2px] border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
             >
               {secondary.label}
             </Link>

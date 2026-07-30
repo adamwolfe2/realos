@@ -1,28 +1,14 @@
 "use client";
 
 import * as React from "react";
-import nextDynamic from "next/dynamic";
 import { Star, AlertCircle, MessageSquare, Flag } from "lucide-react";
 import type { MentionSource, Sentiment } from "@prisma/client";
 import type { ReputationMetrics } from "@/lib/reputation/aggregate";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
-import { sourceLabel } from "./source-logo";
+import { SourceLogo, sourceLabel } from "./source-logo";
+import { CHART_COLORS } from "@/components/portal/ui/chart-theme";
 import { cn } from "@/lib/utils";
-
-// Lazy-load the recharts-backed donut so the ~95-110KB recharts chunk
-// no longer ships in the reputation-tab first-paint bundle. ssr: false
-// because the chart paints client-side anyway; skeleton matches the
-// 120px donut footprint so there's no CLS.
-const DonutWithLegend = nextDynamic(
-  () => import("./donut-with-legend").then((m) => m.DonutWithLegend),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-[120px] w-full rounded-md border border-dashed border-border bg-card animate-pulse" />
-    ),
-  },
-);
 
 // ---------------------------------------------------------------------------
 // Metrics panel — all numbers are real, computed server-side from the
@@ -30,24 +16,31 @@ const DonutWithLegend = nextDynamic(
 // is mocked. The panel renders above the mention feed and refreshes on each
 // full page load (i.e. after every Scan Now completes and the stream closes,
 // the server-component parent re-queries).
+//
+// Sentiment + source breakdowns render as horizontal bar lists (design
+// cohesion pass — charts are bar lists only, no donuts) using CHART_COLORS
+// so every chart in the portal reads as one visual system.
 // ---------------------------------------------------------------------------
 
-const SENTIMENT_COLORS: Record<string, string> = {
-  POSITIVE: "#10b981", // emerald
-  NEGATIVE: "#ef4444", // rose
-  MIXED: "#f59e0b", // amber
-  NEUTRAL: "#94A3B8", // gray
-  UNCLASSIFIED: "#d1d5db", // light gray
+const SENTIMENT_BAR_COLOR: Record<string, string> = {
+  POSITIVE: CHART_COLORS.success,
+  NEGATIVE: CHART_COLORS.danger,
+  MIXED: CHART_COLORS.warning,
+  NEUTRAL: CHART_COLORS.muted,
+  UNCLASSIFIED: CHART_COLORS.silver,
 };
 
-const SOURCE_COLORS: Record<string, string> = {
-  GOOGLE_REVIEW: "#4285F4",
-  REDDIT: "#FF4500",
-  YELP: "#AF0606",
-  FACEBOOK_PUBLIC: "#1877F2",
-  TAVILY_WEB: "#2563EB",
-  OTHER: "#94A3B8",
-};
+// Rotating blue series for the source breakdown — no per-platform brand
+// colors (Google red, Reddit orange, etc.) so the chart stays inside the
+// portal's chart-color system instead of importing every platform's brand.
+const SOURCE_BAR_SERIES = [
+  CHART_COLORS.brand,
+  CHART_COLORS.brandSoft,
+  CHART_COLORS.brandDeep,
+  CHART_COLORS.brandFog,
+  CHART_COLORS.muted,
+  CHART_COLORS.silver,
+];
 
 export function MetricsPanel({ metrics }: { metrics: ReputationMetrics }) {
   const hasAnyData = metrics.totalMentions > 0;
@@ -173,12 +166,12 @@ export function MetricsPanel({ metrics }: { metrics: ReputationMetrics }) {
         }
       >
         <DashboardSection title="Sentiment" eyebrow="Classified">
-          <SentimentDonut data={metrics.sentimentBreakdown} />
+          <SentimentBars data={metrics.sentimentBreakdown} />
         </DashboardSection>
         <DashboardSection title="Platforms" eyebrow="By source">
-          <SourceDonut data={metrics.sourceBreakdown} />
+          <SourceCountBars data={metrics.sourceBreakdown} />
           {/* Bug #15/#22 — operators kept asking why "5 Google reviews"
-              showed in the donut while the rating tile showed 49.
+              showed in the chart while the rating tile showed 49.
               Honest explanation: the Google Places API hard-caps the
               individual-reviews response at 5 most-helpful per place.
               The aggregate rating + count are accurate; the per-review
@@ -264,10 +257,10 @@ export function MetricsPanel({ metrics }: { metrics: ReputationMetrics }) {
 }
 
 // ---------------------------------------------------------------------------
-// Sentiment donut.
+// Sentiment breakdown — horizontal bar list, one row per sentiment tone.
 // ---------------------------------------------------------------------------
 
-function SentimentDonut({
+function SentimentBars({
   data,
 }: {
   data: Array<{ sentiment: Sentiment | "UNCLASSIFIED"; count: number }>;
@@ -286,15 +279,34 @@ function SentimentDonut({
   const sorted = [...data].sort(
     (a, b) => order.indexOf(a.sentiment) - order.indexOf(b.sentiment),
   );
-  const pieData = sorted.map((d) => ({
-    name: labelForSentiment(d.sentiment),
-    value: d.count,
-    color: SENTIMENT_COLORS[d.sentiment] ?? "#d1d5db",
-    key: d.sentiment,
-  }));
+  const max = Math.max(...sorted.map((d) => d.count), 1);
 
   return (
-    <DonutWithLegend total={total} data={pieData} centerLabel="Classified" />
+    <ul className="space-y-2.5">
+      {sorted.map((d) => {
+        const pct = total > 0 ? Math.round((d.count / total) * 100) : 0;
+        return (
+          <li key={d.sentiment} className="flex items-center gap-3">
+            <span className="w-16 shrink-0 truncate text-xs text-foreground">
+              {labelForSentiment(d.sentiment)}
+            </span>
+            <div className="h-2 flex-1 overflow-hidden rounded-[2px] bg-muted">
+              <div
+                className="h-full rounded-[2px]"
+                style={{
+                  width: `${Math.max(4, (d.count / max) * 100)}%`,
+                  backgroundColor:
+                    SENTIMENT_BAR_COLOR[d.sentiment] ?? CHART_COLORS.silver,
+                }}
+              />
+            </div>
+            <span className="w-16 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+              {d.count} <span className="text-muted-foreground/70">({pct}%)</span>
+            </span>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -314,10 +326,10 @@ function labelForSentiment(s: Sentiment | "UNCLASSIFIED"): string {
 }
 
 // ---------------------------------------------------------------------------
-// Source donut.
+// Source breakdown — horizontal bar list, one row per platform.
 // ---------------------------------------------------------------------------
 
-function SourceDonut({
+function SourceCountBars({
   data,
 }: {
   data: Array<{ source: MentionSource; count: number }>;
@@ -325,9 +337,9 @@ function SourceDonut({
   const total = data.reduce((a, d) => a + d.count, 0);
   if (total === 0) return <EmptyChart />;
 
-  // Build a representative URL per source for SourceLogo resolution in the
-  // legend. The logo component does hostname inference, so we pass a
-  // matching hostname even when we don't have a real URL at hand.
+  // Build a representative URL per source for SourceLogo resolution. The
+  // logo component does hostname inference, so we pass a matching
+  // hostname even when we don't have a real URL at hand.
   const sampleUrl: Record<MentionSource, string> = {
     GOOGLE_REVIEW: "https://google.com",
     REDDIT: "https://reddit.com",
@@ -337,21 +349,41 @@ function SourceDonut({
     OTHER: "https://example.com",
   };
 
-  const pieData = data.map((d) => ({
-    name: sourceLabel(d.source, sampleUrl[d.source]),
-    value: d.count,
-    color: SOURCE_COLORS[d.source] ?? "#94A3B8",
-    key: d.source,
-    logoSource: d.source as MentionSource,
-    logoUrl: sampleUrl[d.source],
-  }));
+  const sorted = [...data].sort((a, b) => b.count - a.count);
+  const max = Math.max(...sorted.map((d) => d.count), 1);
 
-  return <DonutWithLegend total={total} data={pieData} centerLabel="Total" />;
+  return (
+    <ul className="space-y-2.5">
+      {sorted.map((d, i) => {
+        const pct = total > 0 ? Math.round((d.count / total) * 100) : 0;
+        return (
+          <li key={d.source} className="flex items-center gap-2">
+            <SourceLogo
+              source={d.source}
+              url={sampleUrl[d.source]}
+              className="h-3.5 w-3.5 shrink-0"
+            />
+            <span className="w-20 shrink-0 truncate text-xs text-foreground">
+              {sourceLabel(d.source, sampleUrl[d.source])}
+            </span>
+            <div className="h-2 flex-1 overflow-hidden rounded-[2px] bg-muted">
+              <div
+                className="h-full rounded-[2px]"
+                style={{
+                  width: `${Math.max(4, (d.count / max) * 100)}%`,
+                  backgroundColor: SOURCE_BAR_SERIES[i % SOURCE_BAR_SERIES.length],
+                }}
+              />
+            </div>
+            <span className="w-16 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+              {d.count} <span className="text-muted-foreground/70">({pct}%)</span>
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
 }
-
-// DonutWithLegend extracted to ./donut-with-legend.tsx (2026-06-04 bundle
-// pass) so the recharts chunk lazy-loads. DonutDatum re-imported above as
-// a type so the SentimentDonut + SourceDonut callsites stay tight.
 
 // ---------------------------------------------------------------------------
 // Topic bar chart — horizontal bars with count + percentage.

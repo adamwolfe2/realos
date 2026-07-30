@@ -347,7 +347,7 @@ export default async function WorkOrdersPage({
                 </Link>
                 <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden max-w-[300px]">
                   <div
-                    className="h-full bg-amber-500"
+                    className="h-full bg-primary/80"
                     style={{
                       width: `${Math.min(100, (h.open / Math.max(...hotspots.map((x) => x.open))) * 100)}%`,
                     }}

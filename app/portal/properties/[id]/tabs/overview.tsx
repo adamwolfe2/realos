@@ -392,7 +392,7 @@ export async function OverviewTab({
           lastSyncedAt={property.lastSyncedAt}
         />
       ) : isEmpty ? (
-        <section className="rounded-xl border border-border bg-card p-4 md:p-6">
+        <section className="rounded-[2px] border border-border bg-card p-4 md:p-6">
           <div className="mb-4">
             <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
               Get this property reporting

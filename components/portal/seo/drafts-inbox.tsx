@@ -92,9 +92,9 @@ export function DraftsInbox({ propertyId }: Props) {
 
   if (!drafts) {
     return (
-      <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="rounded-[2px] border border-border bg-card p-5">
         <h3 className="text-sm font-semibold text-foreground">Drafts inbox</h3>
-        <div className="mt-3 h-16 rounded-md bg-muted/30 animate-pulse" />
+        <div className="mt-3 h-16 rounded-[2px] bg-muted/30 animate-pulse" />
       </div>
     );
   }
@@ -106,7 +106,7 @@ export function DraftsInbox({ propertyId }: Props) {
   const visible = showAll ? drafts : drafts.slice(0, 4);
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
+    <div className="rounded-[2px] border border-border bg-card p-5">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
           <h3 className="text-sm font-semibold text-foreground">
@@ -131,7 +131,7 @@ export function DraftsInbox({ propertyId }: Props) {
           return (
             <li
               key={d.id}
-              className="rounded-lg border border-border bg-background hover:border-primary/40 transition-colors"
+              className="rounded-[2px] border border-border bg-background hover:border-primary/40 transition-colors"
             >
               <Link
                 href={`/portal/seo/agent/drafts/${d.id}`}
@@ -139,11 +139,11 @@ export function DraftsInbox({ propertyId }: Props) {
               >
               <div className="flex items-start justify-between gap-2 mb-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wide text-primary">
+                  <span className="rounded-[2px] bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wide text-primary">
                     {fmt}
                   </span>
                   <span
-                    className={`rounded-md px-1.5 py-0.5 text-[10px] font-mono ${meta.tone}`}
+                    className={`rounded-[2px] px-1.5 py-0.5 text-[10px] font-mono ${meta.tone}`}
                   >
                     {meta.label}
                   </span>
@@ -161,7 +161,7 @@ export function DraftsInbox({ propertyId }: Props) {
                 {d.brief}
               </p>
               {d.reviewNotes ? (
-                <div className="mt-2 rounded-md bg-primary/10 px-2.5 py-1.5 border border-primary/20">
+                <div className="mt-2 rounded-[2px] bg-primary/10 px-2.5 py-1.5 border border-primary/20">
                   <p className="text-[10px] font-mono uppercase tracking-wide text-primary mb-0.5">
                     Admin notes
                   </p>

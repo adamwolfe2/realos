@@ -102,7 +102,7 @@ export function ReportTabs({
           data-no-print
           role="tablist"
           aria-label="Report sections"
-          className="ls-report-tab-strip sticky top-0 z-10 flex items-center gap-1 overflow-x-auto rounded-xl border border-border bg-card/95 px-1.5 py-1.5 backdrop-blur"
+          className="ls-report-tab-strip sticky top-0 z-10 flex items-center gap-1 overflow-x-auto rounded-[2px] border border-border bg-card/95 px-1.5 py-1.5 backdrop-blur"
         >
           {REPORT_TABS.map((t) => {
             const isActive = (hydrated ? active : "overview") === t.id;
@@ -115,7 +115,7 @@ export function ReportTabs({
                 aria-controls={`report-tab-panel-${t.id}`}
                 onClick={() => selectTab(t.id)}
                 className={
-                  "shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors " +
+                  "shrink-0 rounded-[2px] px-3 py-1.5 text-xs font-semibold transition-colors " +
                   (isActive
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground")

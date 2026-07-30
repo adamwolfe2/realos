@@ -57,7 +57,7 @@ export function WeeklyChangesPanel({ changes }: Props) {
   );
 
   return (
-    <section className="rounded-2xl border border-border bg-card overflow-hidden">
+    <section className="rounded-[2px] border border-border bg-card overflow-hidden">
       <header className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-border/60">
         <div>
           <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
@@ -69,17 +69,17 @@ export function WeeklyChangesPanel({ changes }: Props) {
         </div>
         <div className="flex items-center gap-2 text-[11px] font-mono shrink-0">
           {wins.length > 0 ? (
-            <span className="rounded-md bg-primary text-primary-foreground px-1.5 py-0.5">
+            <span className="rounded-[2px] bg-primary text-primary-foreground px-1.5 py-0.5">
               {wins.length} win{wins.length === 1 ? "" : "s"}
             </span>
           ) : null}
           {losses.length > 0 ? (
-            <span className="rounded-md bg-muted text-foreground px-1.5 py-0.5">
+            <span className="rounded-[2px] bg-muted text-foreground px-1.5 py-0.5">
               {losses.length} loss{losses.length === 1 ? "" : "es"}
             </span>
           ) : null}
           {competitors.length > 0 ? (
-            <span className="rounded-md bg-primary/10 text-primary px-1.5 py-0.5">
+            <span className="rounded-[2px] bg-primary/10 text-primary px-1.5 py-0.5">
               {competitors.length} compet{competitors.length === 1 ? "itor" : "itors"}
             </span>
           ) : null}

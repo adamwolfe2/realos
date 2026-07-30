@@ -45,7 +45,7 @@ export const dynamic = "force-dynamic";
 // ---------------------------------------------------------------------------
 
 const SENTIMENT_TONE: Record<Sentiment, string> = {
-  POSITIVE: "bg-primary/10 text-primary border-primary/30",
+  POSITIVE: "bg-[rgba(36,161,72,0.10)] text-[#24a148] border-[#24a148]/30",
   NEUTRAL: "bg-muted text-muted-foreground border-border",
   NEGATIVE: "bg-muted text-muted-foreground border-border",
   MIXED: "bg-secondary text-foreground border-border",
@@ -232,7 +232,7 @@ export default async function PortfolioReputationPage({
       <div className="space-y-4">
         {accessDenied ? <PropertyAccessDeniedBanner /> : null}
         {loadError ? (
-          <div className="rounded-xl border border-border bg-secondary px-4 py-3 text-sm text-foreground">
+          <div className="rounded-[2px] border border-border bg-secondary px-4 py-3 text-sm text-foreground">
             <strong>Reputation data unavailable.</strong> The scanner tables may
             still be initializing — run a reputation scan from any property to
             seed the data. This page will display results once the first scan
@@ -249,7 +249,7 @@ export default async function PortfolioReputationPage({
               {properties.length > 1 ? (
                 <Suspense
                   fallback={
-                    <div className="h-9 w-48 rounded-md border border-border bg-secondary" />
+                    <div className="h-9 w-48 rounded-[2px] border border-border bg-secondary" />
                   }
                 >
                   <PropertyMultiSelect
@@ -274,7 +274,7 @@ export default async function PortfolioReputationPage({
           (e.g. /portal/reputation?source=REDDIT&sentiment=NEGATIVE). */}
         <Suspense
           fallback={
-            <div className="h-8 w-full rounded-md bg-secondary animate-pulse" />
+            <div className="h-8 w-full rounded-[2px] bg-secondary animate-pulse" />
           }
         >
           <ReputationFilters
@@ -377,7 +377,7 @@ export default async function PortfolioReputationPage({
 
         {/* Analytics drawer — historical charts + property health table.
           Collapsed by default so Recent Mentions stays the focus. */}
-        <details className="group rounded-xl border border-border bg-card">
+        <details className="group rounded-[2px] border border-border bg-card">
           <summary className="flex items-center justify-between gap-3 px-5 py-3 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
             <div className="min-w-0">
               <div className="text-[10px] tracking-[0.14em] uppercase font-semibold text-muted-foreground mb-0.5">
@@ -443,7 +443,7 @@ export default async function PortfolioReputationPage({
                       label="Positive"
                       count={positive}
                       total={metrics.totalMentions}
-                      tone="bg-primary"
+                      tone="bg-[#24a148]"
                     />
                     <SentimentBar
                       label="Negative"
@@ -546,7 +546,7 @@ function PropertySummaryRow({
     <li>
       <Link
         href={`/portal/properties/${p.propertyId}?tab=reputation`}
-        className="flex items-center gap-2 rounded-md px-2 py-1.5 -mx-2 text-xs hover:bg-secondary transition-colors"
+        className="flex items-center gap-2 rounded-[2px] px-2 py-1.5 -mx-2 text-xs hover:bg-secondary transition-colors"
       >
         <span className="font-medium text-foreground truncate">
           {p.propertyName ?? "Property"}
@@ -701,7 +701,7 @@ function ReputationFallback({
   return (
     <div className="space-y-4">
       <PageHeader eyebrow="Brand health" title="Reputation" />
-      <div className="rounded-xl border border-border bg-secondary px-4 py-3 text-sm text-foreground">
+      <div className="rounded-[2px] border border-border bg-secondary px-4 py-3 text-sm text-foreground">
         <p className="font-semibold">
           Reputation view temporarily unavailable.
         </p>
@@ -721,7 +721,7 @@ function ReputationFallback({
       {diagnostic && process.env.NODE_ENV !== "production" ? (
         <details
           open
-          className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-xs text-destructive"
+          className="rounded-[2px] border border-destructive/30 bg-destructive/10 px-4 py-3 text-xs text-destructive"
         >
           <summary className="cursor-pointer font-semibold">
             Diagnostic — share with engineering
@@ -878,7 +878,7 @@ function FeedRow({ mention }: { mention: PortfolioReputationFeedItem }) {
   return (
     <li className="py-2.5 px-3 -mx-3 hover:bg-muted/30 transition-colors">
       <div className="flex items-start gap-2.5">
-        <div className="shrink-0 inline-flex items-center justify-center h-9 w-9 rounded-lg bg-card border border-border shadow-sm">
+        <div className="shrink-0 inline-flex items-center justify-center h-9 w-9 rounded-[2px] bg-card border border-border shadow-sm">
           <SourceLogo
             source={mention.source}
             url={safeUrl}
@@ -922,7 +922,7 @@ function FeedRow({ mention }: { mention: PortfolioReputationFeedItem }) {
               {themes.map((t) => (
                 <span
                   key={t}
-                  className="inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+                  className="inline-flex items-center rounded-[2px] bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
                 >
                   {t}
                 </span>

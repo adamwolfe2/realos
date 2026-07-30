@@ -299,7 +299,7 @@ function shortenUrl(u: string): string {
 
 function EmptyTab({ title, body }: { title: string; body: string }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-6">
+    <div className="rounded-[2px] border border-border bg-card p-6">
       <p className="text-sm font-semibold text-foreground">{title}</p>
       <p className="mt-1 text-xs text-muted-foreground">{body}</p>
     </div>

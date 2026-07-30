@@ -38,10 +38,10 @@ export const FLAG_TONE: Record<
   { bg: string; text: string; dot: string; ring: string }
 > = {
   quality_good: {
-    bg: "bg-primary/10",
-    text: "text-primary",
-    dot: "bg-primary",
-    ring: "ring-primary/30",
+    bg: "bg-[rgba(36,161,72,0.10)]",
+    text: "text-[#24a148]",
+    dot: "bg-[#24a148]",
+    ring: "ring-[#24a148]/30",
   },
   quality_bad: {
     bg: "bg-destructive/10",
@@ -56,13 +56,12 @@ export const FLAG_TONE: Record<
     ring: "ring-amber-200",
   },
   lead_high_intent: {
-    // Terracotta is the brand accent; use it for the high-intent signal so it
-    // visually pops against the parchment page background. Opacity utilities
-    // on the brand var give us a soft tint without authoring a new token.
-    bg: "bg-primary/10",
-    text: "text-primary",
-    dot: "bg-primary",
-    ring: "ring-primary/25",
+    // High-intent is a success signal, not a brand/neutral one — green
+    // family, same as quality_good, so the operator reads both as "good".
+    bg: "bg-[rgba(36,161,72,0.10)]",
+    text: "text-[#24a148]",
+    dot: "bg-[#24a148]",
+    ring: "ring-[#24a148]/25",
   },
   lead_low_intent: {
     bg: "bg-muted",
@@ -104,7 +103,7 @@ export function FlagPill({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-[6px] font-semibold uppercase whitespace-nowrap",
+        "inline-flex items-center gap-1.5 rounded-[2px] font-semibold uppercase whitespace-nowrap",
         "tracking-[0.08em] ring-1 ring-inset",
         size === "sm" ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-1 text-[11px]",
         tone.bg,

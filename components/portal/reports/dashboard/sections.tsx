@@ -72,7 +72,7 @@ function Panel({ children }: { children: React.ReactNode }) {
 
 function Card({ children }: { children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border border-border bg-card p-5">{children}</section>
+    <section className="rounded-[2px] border border-border bg-card p-5">{children}</section>
   );
 }
 
@@ -193,9 +193,9 @@ function OverviewSection(s: ReportSnapshot, p: PropertyMeta, navTo: NavTo): Reac
                 key={c.id}
                 type="button"
                 onClick={() => navTo(c.id)}
-                className="group flex items-center gap-3.5 rounded-xl border border-border bg-card px-4 py-3.5 text-left transition-colors hover:border-primary/40 hover:bg-elevated"
+                className="group flex items-center gap-3.5 rounded-[2px] border border-border bg-card px-4 py-3.5 text-left transition-colors hover:border-primary/40 hover:bg-elevated"
               >
-                <span className="flex h-9 w-9 flex-none items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <span className="flex h-9 w-9 flex-none items-center justify-center rounded-[2px] bg-primary/10 text-primary">
                   <Icon className="h-4.5 w-4.5" aria-hidden="true" />
                 </span>
                 <span className="min-w-0 flex-1">
@@ -253,7 +253,7 @@ function HeroStat({
   delta?: number | null;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-elevated px-4 py-3.5">
+    <div className="rounded-[2px] border border-border bg-elevated px-4 py-3.5">
       <div className="text-[26px] font-bold leading-none tracking-tight text-foreground">{value}</div>
       <div className="mt-1.5 text-[11px] font-medium text-slate-600">{label}</div>
       {delta != null ? (
@@ -316,7 +316,7 @@ function AcquisitionSection(s: ReportSnapshot): React.ReactNode {
       {attribution.length ? (
         <Card>
           <SectionHeading>Attribution by source</SectionHeading>
-          <div className="overflow-hidden rounded-lg border border-border">
+          <div className="overflow-hidden rounded-[2px] border border-border">
             <table className="w-full text-[12px]">
               <thead className="bg-elevated text-[10px] uppercase tracking-wide text-muted-foreground">
                 <tr>
@@ -377,7 +377,7 @@ function TrafficSection(s: ReportSnapshot): React.ReactNode {
           {queries.length === 0 ? (
             <Empty>No query data yet.</Empty>
           ) : (
-            <div className="overflow-hidden rounded-lg border border-border">
+            <div className="overflow-hidden rounded-[2px] border border-border">
               <table className="w-full text-[12px]">
                 <thead className="bg-elevated text-[10px] uppercase tracking-wide text-muted-foreground">
                   <tr><Th left>Query</Th><Th>Clicks</Th><Th>Impr.</Th><Th>Pos.</Th></tr>
@@ -416,7 +416,7 @@ function AdsSection(s: ReportSnapshot): React.ReactNode {
         {ads.length === 0 ? (
           <Empty>No ad spend in period.</Empty>
         ) : (
-          <div className="overflow-hidden rounded-lg border border-border">
+          <div className="overflow-hidden rounded-[2px] border border-border">
             <table className="w-full text-[12px]">
               <thead className="bg-elevated text-[10px] uppercase tracking-wide text-muted-foreground">
                 <tr><Th left>Platform</Th><Th>Spend</Th><Th>Leads</Th><Th>CPL</Th><Th>Conv.</Th></tr>
@@ -673,7 +673,7 @@ function InsightsSection(s: ReportSnapshot): React.ReactNode {
           <SectionHeading>Recommended actions</SectionHeading>
           <div className="flex flex-col gap-3">
             {ai.actions.map((act, i) => (
-              <div key={i} className="rounded-xl border border-border bg-elevated p-4">
+              <div key={i} className="rounded-[2px] border border-border bg-elevated p-4">
                 <div className="mb-1.5 flex items-center gap-2">
                   <span className={`rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide ${PRIORITY_STYLE[act.priority] ?? PRIORITY_STYLE.low}`}>
                     {act.priority}

@@ -183,7 +183,7 @@ export function CurationQueueClient({
             type="button"
             onClick={() => setConfirmAllOpen(true)}
             disabled={pending}
-            className="ml-auto shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
+            className="ml-auto shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-[2px] border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
             title="Activate every imported building in your portfolio — counts toward billing"
           >
             {pending ? (
@@ -275,7 +275,7 @@ export function CurationQueueClient({
                   type="button"
                   onClick={() => actBulk("activate")}
                   disabled={pending}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-[2px] border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
                   title="Activate selected — these will count toward your marketable property total and billing"
                 >
                   <Check className="w-3.5 h-3.5" aria-hidden="true" />
@@ -285,7 +285,7 @@ export function CurationQueueClient({
                   type="button"
                   onClick={() => actBulk("exclude")}
                   disabled={pending}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-border bg-card hover:bg-secondary disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-[2px] border border-border bg-card hover:bg-secondary disabled:opacity-50"
                   title="Exclude — keep in AppFolio mirror but do not bill or surface in dashboards"
                 >
                   <X className="w-3.5 h-3.5" aria-hidden="true" />
@@ -298,7 +298,7 @@ export function CurationQueueClient({
                 type="button"
                 onClick={() => actBulk("activate")}
                 disabled={pending}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-[2px] border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
               >
                 <Check className="w-3.5 h-3.5" aria-hidden="true" />
                 Restore as active
@@ -369,7 +369,7 @@ export function CurationQueueClient({
                       </span>
                     )}
                     {item.lifecycleSetBy === "AUTO_CLASSIFIER" && (
-                      <span className="text-[11px] text-amber-700 px-1.5 py-0.5 rounded bg-amber-500/10">
+                      <span className="text-[11px] text-[#8a6d00] px-1.5 py-0.5 rounded-[2px] bg-[rgba(241,194,27,0.16)]">
                         auto-classified
                       </span>
                     )}
@@ -612,7 +612,7 @@ function ImageActionsPanel({
   const anyBusy = scraping || savingUrl || uploading;
 
   return (
-    <div className="mt-3 ml-10 rounded-md border border-border bg-muted/20 p-3 space-y-2">
+    <div className="mt-3 ml-10 rounded-[2px] border border-border bg-muted/20 p-3 space-y-2">
       <div className="flex items-center gap-2 flex-wrap">
         {property.websiteUrl ? (
           <button

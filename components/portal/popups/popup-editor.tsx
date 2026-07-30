@@ -202,7 +202,7 @@ export function PopupEditor({
       {/* LEFT — controls */}
       <div className="space-y-3">
         {/* Header + actions */}
-        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+        <div className="rounded-[2px] border border-border bg-card p-4 space-y-3">
           <div className="flex items-center justify-between gap-3">
             <input
               value={state.name}
@@ -217,7 +217,7 @@ export function PopupEditor({
               type="button"
               onClick={save}
               disabled={pending}
-              className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-3.5 py-2 text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors"
+              className="inline-flex items-center rounded-[2px] bg-primary text-primary-foreground px-3.5 py-2 text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors"
             >
               {pending ? "Saving…" : savedAt ? "Saved" : "Save changes"}
             </button>
@@ -226,7 +226,7 @@ export function PopupEditor({
                 type="button"
                 onClick={() => toggleStatus(PopupStatus.ACTIVE)}
                 disabled={pending}
-                className="inline-flex items-center rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+                className="inline-flex items-center rounded-[2px] border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
               >
                 Publish live
               </button>
@@ -235,7 +235,7 @@ export function PopupEditor({
                 type="button"
                 onClick={() => toggleStatus(PopupStatus.PAUSED)}
                 disabled={pending}
-                className="inline-flex items-center rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+                className="inline-flex items-center rounded-[2px] border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
               >
                 Pause
               </button>
@@ -268,7 +268,7 @@ export function PopupEditor({
         </div>
 
         {/* Tab bar */}
-        <div className="flex flex-wrap items-center gap-1 rounded-xl border border-border bg-card p-1">
+        <div className="flex flex-wrap items-center gap-1 rounded-[2px] border border-border bg-card p-1">
           {(
             [
               ["copy", "Copy"],
@@ -284,7 +284,7 @@ export function PopupEditor({
               type="button"
               onClick={() => setTab(key)}
               className={cn(
-                "flex-1 rounded-lg px-2.5 py-1.5 text-[12px] font-semibold transition-colors",
+                "flex-1 rounded-[2px] px-2.5 py-1.5 text-[12px] font-semibold transition-colors",
                 tab === key
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground hover:bg-secondary",
@@ -296,7 +296,7 @@ export function PopupEditor({
         </div>
 
         {/* Tab body */}
-        <div className="rounded-xl border border-border bg-card p-4 space-y-3.5">
+        <div className="rounded-[2px] border border-border bg-card p-4 space-y-3.5">
           {tab === "copy" ? <CopyTab state={state} set={set} /> : null}
           {tab === "design" ? <DesignTab state={state} set={set} /> : null}
           {tab === "featured" ? <FeaturedTab state={state} set={set} /> : null}
@@ -313,7 +313,7 @@ export function PopupEditor({
         <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           Live preview · updates as you type
         </div>
-        <div className="relative h-[640px] rounded-xl border border-dashed border-border bg-gradient-to-br from-[#F9FAFB] to-[#EFF6FF] overflow-hidden">
+        <div className="relative h-[640px] rounded-[2px] border border-dashed border-border bg-card overflow-hidden">
           <div className="absolute top-0 inset-x-0 h-8 bg-white/70 border-b border-border flex items-center gap-1.5 px-3">
             <span className="h-2.5 w-2.5 rounded-full bg-[#EF4444]/70" />
             <span className="h-2.5 w-2.5 rounded-full bg-[#F59E0B]/70" />
@@ -381,7 +381,7 @@ function CopyTab({
           onChange={(e) => set("eyebrowText", e.target.value || null)}
           maxLength={60}
           placeholder="LIMITED AVAILABILITY"
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm tracking-widest"
+          className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm tracking-widest"
         />
       </Field>
       <Field label="Headline">
@@ -389,7 +389,7 @@ function CopyTab({
           value={state.headline}
           onChange={(e) => set("headline", e.target.value)}
           maxLength={120}
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+          className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm"
         />
       </Field>
       <Field label="Body">
@@ -398,7 +398,7 @@ function CopyTab({
           onChange={(e) => set("body", e.target.value)}
           maxLength={600}
           rows={4}
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm resize-none"
+          className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm resize-none"
         />
       </Field>
 
@@ -408,7 +408,7 @@ function CopyTab({
             value={state.ctaText}
             onChange={(e) => set("ctaText", e.target.value)}
             maxLength={40}
-            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+            className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm"
           />
         </Field>
         <Field label="Primary CTA url">
@@ -417,7 +417,7 @@ function CopyTab({
             onChange={(e) => set("ctaUrl", e.target.value)}
             maxLength={500}
             placeholder="/apply or https://…"
-            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+            className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm"
           />
         </Field>
       </div>
@@ -434,7 +434,7 @@ function CopyTab({
             onChange={(e) => set("secondaryCtaText", e.target.value || null)}
             maxLength={40}
             placeholder="Schedule Tour"
-            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+            className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm"
           />
         </Field>
         <Field label="Secondary CTA url">
@@ -443,7 +443,7 @@ function CopyTab({
             onChange={(e) => set("secondaryCtaUrl", e.target.value || null)}
             maxLength={500}
             placeholder="/tour"
-            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+            className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm"
           />
         </Field>
       </div>
@@ -459,7 +459,7 @@ function CopyTab({
           onChange={(e) => set("offerCode", e.target.value || null)}
           maxLength={40}
           placeholder="FALL300"
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-mono"
+          className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm font-mono"
         />
       </Field>
       <Field label="Dismiss link text" hint='Tertiary text link below the CTAs. e.g. "Not yet, thanks".'>
@@ -468,7 +468,7 @@ function CopyTab({
           onChange={(e) => set("dismissText", e.target.value || null)}
           maxLength={60}
           placeholder="Not yet, thanks"
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+          className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm"
         />
       </Field>
     </>
@@ -498,7 +498,7 @@ function DesignTab({
               type="button"
               onClick={() => set("theme", value)}
               className={cn(
-                "rounded-md border px-2 py-2 text-xs font-semibold transition-colors",
+                "rounded-[2px] border px-2 py-2 text-xs font-semibold transition-colors",
                 state.theme === value
                   ? "border-primary bg-primary/10 text-primary"
                   : "border-border bg-background text-muted-foreground hover:text-foreground",
@@ -514,7 +514,7 @@ function DesignTab({
         <select
           value={state.position}
           onChange={(e) => set("position", e.target.value as PopupPosition)}
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+          className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm"
         >
           <option value="CENTER">Center modal</option>
           <option value="BOTTOM_RIGHT">Bottom right toast</option>
@@ -560,7 +560,7 @@ function DesignTab({
           value={state.heroImageUrl ?? ""}
           onChange={(e) => set("heroImageUrl", e.target.value || null)}
           placeholder="https://cdn.your-property.com/hero.jpg"
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-mono"
+          className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm font-mono"
         />
       </Field>
     </>
@@ -586,7 +586,7 @@ function FeaturedTab({
           onChange={(e) => set("featuredLabel", e.target.value || null)}
           maxLength={60}
           placeholder="RATES AS LOW AS"
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm tracking-widest"
+          className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm tracking-widest"
         />
       </Field>
       <div className="grid grid-cols-[2fr_1fr] gap-3">
@@ -596,7 +596,7 @@ function FeaturedTab({
             onChange={(e) => set("featuredValue", e.target.value || null)}
             maxLength={40}
             placeholder="$765"
-            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-bold"
+            className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm font-bold"
           />
         </Field>
         <Field label="Unit">
@@ -605,7 +605,7 @@ function FeaturedTab({
             onChange={(e) => set("featuredUnit", e.target.value || null)}
             maxLength={20}
             placeholder="/mo"
-            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+            className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm"
           />
         </Field>
       </div>
@@ -615,7 +615,7 @@ function FeaturedTab({
           onChange={(e) => set("featuredCaption", e.target.value || null)}
           maxLength={120}
           placeholder="+ $85/mo amenity fee"
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+          className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm"
         />
       </Field>
     </>
@@ -635,7 +635,7 @@ function TriggersTab({
         <select
           value={state.trigger}
           onChange={(e) => set("trigger", e.target.value as PopupTrigger)}
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+          className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm"
         >
           <option value="EXIT_INTENT">Exit intent (mouse leaves top)</option>
           <option value="SCROLL_DEPTH">Scroll depth (% of page)</option>
@@ -662,7 +662,7 @@ function TriggersTab({
             max={state.trigger === "SCROLL_DEPTH" ? 100 : 600}
             value={state.triggerThreshold}
             onChange={(e) => set("triggerThreshold", Number(e.target.value) || 0)}
-            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+            className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm"
           />
         </Field>
       ) : null}
@@ -670,7 +670,7 @@ function TriggersTab({
         <select
           value={state.frequency}
           onChange={(e) => set("frequency", e.target.value)}
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+          className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm"
         >
           <option value="session">Once per browser session</option>
           <option value="once_per_day">Once per day</option>
@@ -730,7 +730,7 @@ function TargetingTab({
         <select
           value={state.propertyId ?? ""}
           onChange={(e) => set("propertyId", e.target.value || null)}
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+          className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm"
         >
           <option value="">Portfolio — every property</option>
           {properties.map((p) => (
@@ -757,7 +757,7 @@ function TargetingTab({
           }
           rows={4}
           placeholder="/floor-plans&#10;/apply"
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-mono resize-none"
+          className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm font-mono resize-none"
         />
       </Field>
     </>
@@ -808,12 +808,12 @@ function ColorField({
           type="color"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="h-9 w-9 rounded-md border border-border cursor-pointer"
+          className="h-9 w-9 rounded-[2px] border border-border cursor-pointer"
         />
         <input
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="flex-1 min-w-0 rounded-md border border-border bg-background px-2 py-1.5 text-xs font-mono"
+          className="flex-1 min-w-0 rounded-[2px] border border-border bg-background px-2 py-1.5 text-xs font-mono"
         />
       </span>
     </label>
@@ -863,12 +863,12 @@ function GradientStopsField({
               type="color"
               value={stop}
               onChange={(e) => setAt(i, e.target.value)}
-              className="h-8 w-8 rounded-md border border-border cursor-pointer"
+              className="h-8 w-8 rounded-[2px] border border-border cursor-pointer"
             />
             <input
               value={stop}
               onChange={(e) => setAt(i, e.target.value)}
-              className="flex-1 min-w-0 rounded-md border border-border bg-background px-2 py-1.5 text-xs font-mono"
+              className="flex-1 min-w-0 rounded-[2px] border border-border bg-background px-2 py-1.5 text-xs font-mono"
             />
             <button
               type="button"
@@ -910,7 +910,7 @@ function IconField({
           const raw = e.target.value;
           onChange((raw || null) as IconValue);
         }}
-        className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+        className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm"
       >
         {ICON_OPTIONS.map((o) => (
           <option key={o.value ?? "none"} value={o.value ?? ""}>
@@ -938,7 +938,7 @@ function CheckRow({
   return (
     <label
       className={cn(
-        "flex items-start gap-2.5 rounded-md border border-border bg-background p-3 cursor-pointer",
+        "flex items-start gap-2.5 rounded-[2px] border border-border bg-background p-3 cursor-pointer",
         disabled && "opacity-50 cursor-not-allowed",
       )}
     >
@@ -962,9 +962,9 @@ function CheckRow({
 function StatusPill({ status }: { status: PopupStatus }) {
   const tone =
     status === PopupStatus.ACTIVE
-      ? "bg-emerald-50 text-emerald-700"
+      ? "bg-[rgba(36,161,72,0.10)] text-[#24a148]"
       : status === PopupStatus.PAUSED
-        ? "bg-amber-50 text-amber-700"
+        ? "bg-[rgba(241,194,27,0.16)] text-[#8a6d00]"
         : status === PopupStatus.ARCHIVED
           ? "bg-muted text-muted-foreground"
           : "bg-primary/10 text-primary";

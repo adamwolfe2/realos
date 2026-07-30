@@ -11,9 +11,12 @@ import path from "path";
 
 const taxPath = path.resolve(__dirname, "../lib/attribution/source-taxonomy.ts");
 const qPath = path.resolve(__dirname, "../lib/attribution/queries.ts");
+// lead-flow-diagram.tsx (the original hero) was deleted 2026-07-29 as part
+// of the donut/graph design-cohesion sweep — its funnel is now the inline
+// stage-strip in the attribution page itself, so the guard moved there.
 const diagramPath = path.resolve(
   __dirname,
-  "../components/portal/attribution/lead-flow-diagram.tsx",
+  "../app/portal/attribution/page.tsx",
 );
 const revPath = path.resolve(
   __dirname,
@@ -38,8 +41,12 @@ describe("attribution — AppFolio first-class leasing lane", () => {
     expect(content).toContain("channel = APPFOLIO_SOURCE;");
   });
 
-  it("no longer claims AppFolio leads are excluded from attribution", () => {
+  it("frames AppFolio leads as their own leasing lane, not an excluded bucket", () => {
     const content = read(diagramPath);
+    // Positive assertions so this can actually fail (Opus review 2026-07-29:
+    // the prior not.toContain matched a string that never existed).
+    expect(content).toContain("leadFlow.imported.leads > 0");
+    expect(content).toContain("AppFolio-synced leads appear as their own leasing lane");
     expect(content).not.toContain(
       "imported leads (AppFolio sync, no marketing channel) are excluded",
     );

@@ -3,14 +3,10 @@
 import * as React from "react";
 import { EmptyStateBody } from "./charts/shared";
 import {
-  Cell,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Scatter,
   ScatterChart,
   Tooltip,
-  Treemap,
   XAxis,
   YAxis,
   ZAxis,
@@ -70,40 +66,28 @@ function StrikingDistancePreview() {
 }
 
 function ShareOfVoicePreview() {
-  // Faded donut with five wedges in brand-blue ramp.
-  const segments = [
-    { dasharray: "120 380", color: BRAND, op: 0.85 },
-    { dasharray: "85 380", color: BRAND, op: 0.55, offset: -120 },
-    { dasharray: "60 380", color: BRAND_LIGHT, op: 0.75, offset: -205 },
-    { dasharray: "45 380", color: BRAND_LIGHTER, op: 0.9, offset: -265 },
-    { dasharray: "70 380", color: MUTED, op: 0.4, offset: -310 },
+  // Faded sample rows — engine label + proportional bar, brand-blue ramp.
+  const rows = [
+    { label: "you", pct: 28, color: BRAND },
+    { label: "competitor a", pct: 22, color: BRAND_LIGHT },
+    { label: "competitor b", pct: 18, color: BRAND_LIGHT },
+    { label: "competitor c", pct: 14, color: MUTED },
+    { label: "other", pct: 18, color: MUTED },
   ];
-  const C = 2 * Math.PI * 30;
   return (
-    <svg viewBox="0 0 96 96" className="w-full h-auto" role="img" aria-hidden="true">
-      <circle cx="48" cy="48" r="30" fill="none" stroke={BORDER} strokeWidth="14" />
-      {segments.map((s, i) => (
-        <circle
-          key={i}
-          cx="48"
-          cy="48"
-          r="30"
-          fill="none"
-          stroke={s.color}
-          strokeOpacity={s.op}
-          strokeWidth="14"
-          strokeDasharray={s.dasharray}
-          strokeDashoffset={s.offset ?? 0}
-          transform="rotate(-90 48 48)"
-        />
-      ))}
-      <text x="48" y="46" fontSize="6" fontFamily="var(--font-mono)" fill={BRAND} textAnchor="middle">
-        YOU
-      </text>
-      <text x="48" y="55" fontSize="9" fontFamily="var(--font-display)" fill={INK} textAnchor="middle">
-        28%
-      </text>
-      {void C}
+    <svg viewBox="0 0 160 92" className="w-full h-auto" role="img" aria-hidden="true">
+      {rows.map((r, i) => {
+        const y = 6 + i * 17;
+        return (
+          <g key={i} opacity="0.75">
+            <text x="4" y={y + 6} fontSize="6" fontFamily="var(--font-mono)" fill={INK}>
+              {r.label}
+            </text>
+            <rect x="66" y={y} width="90" height="8" rx="2" fill={BORDER} />
+            <rect x="66" y={y} width={r.pct * 0.9} height="8" rx="2" fill={r.color} fillOpacity="0.7" />
+          </g>
+        );
+      })}
     </svg>
   );
 }
@@ -138,7 +122,7 @@ const TONE_DOT: Record<"good" | "ok" | "bad", string> = {
 
 export function ExecSummaryRow({ stats }: { stats: ExecSummaryStat[] }) {
   return (
-    <section className="rounded-xl border border-border bg-card overflow-hidden">
+    <section className="rounded-[2px] border border-border bg-card overflow-hidden">
       <header className="flex items-center justify-between gap-3 px-4 py-2 border-b border-border/60 bg-gradient-to-r from-primary/[0.04] via-card to-card">
         <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
           Executive summary
@@ -266,7 +250,7 @@ export function StrikingDistanceTable({
   rows: StrikingDistanceRow[];
 }) {
   return (
-    <section className="rounded-xl border border-border bg-card overflow-hidden">
+    <section className="rounded-[2px] border border-border bg-card overflow-hidden">
       <header className="flex items-baseline justify-between gap-3 px-5 py-3 border-b border-border bg-gradient-to-r from-primary/[0.04] via-card to-card">
         <div>
           <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
@@ -353,7 +337,7 @@ export function ShareOfVoiceDonut({
 }) {
   if (slices.length === 0) {
     return (
-      <section className="rounded-xl border border-border bg-card p-5">
+      <section className="rounded-[2px] border border-border bg-card p-5">
         <SectionHeader
           eyebrow="Competitive"
           title="Share of voice"
@@ -361,8 +345,8 @@ export function ShareOfVoiceDonut({
         />
         <EmptyStateBody
           preview={<ShareOfVoicePreview />}
-          body="A donut showing how the SERP-impression pie splits across you and your top five competitors for every keyword you track. Your slice is always brand-blue and labelled — competitors fade into the ramp behind."
-          example={`If you sit at 28% and the next two competitors hold 22% and 18%, you'll see a chunky blue wedge against two lighter ones — the visual cue that you're leading but not running away with it.`}
+          body="A ranked bar list showing how SERP impressions split across you and your top five competitors for every keyword you track. Your bar is always brand-blue and labelled."
+          example={`If you sit at 28% and the next two competitors hold 22% and 18%, you'll see your bar clearly ahead of two shorter ones — the visual cue that you're leading but not running away with it.`}
         />
       </section>
     );
@@ -371,75 +355,41 @@ export function ShareOfVoiceDonut({
   // gets the full brand color; competitors get progressively lighter
   // shades so the operator's eye still finds their bar first.
   const palette = [BRAND, "#3B82F6", "#60A5FA", BRAND_LIGHT, "#BFDBFE", BRAND_LIGHTER];
+  const ranked = [...slices].sort((a, b) => b.shareOfVoice - a.shareOfVoice);
+  const max = Math.max(0.0001, ...ranked.map((s) => s.shareOfVoice));
   return (
-    <section className="rounded-xl border border-border bg-card p-5">
+    <section className="rounded-[2px] border border-border bg-card p-5">
       <SectionHeader
         eyebrow="Competitive"
         title="Share of voice"
         hint="% of total impressions across your tracked queries"
       />
-      <div className="grid grid-cols-[180px_minmax(0,1fr)] gap-4 items-center">
-        <div className="h-[180px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={slices}
-                dataKey="shareOfVoice"
-                nameKey="domain"
-                innerRadius={48}
-                outerRadius={78}
-                paddingAngle={2}
-                strokeWidth={0}
-              >
-                {slices.map((s, i) => (
-                  <Cell
-                    key={s.domain}
-                    fill={s.isUs ? BRAND : palette[i % palette.length]}
-                  />
-                ))}
-              </Pie>
-              <Tooltip
-                formatter={(v: number | string) =>
-                  typeof v === "number" ? `${(v * 100).toFixed(1)}%` : v
-                }
-                contentStyle={{
-                  background: "#fff",
-                  border: `1px solid ${BORDER}`,
-                  borderRadius: 8,
-                  fontSize: 11,
-                }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-        <ul className="space-y-1.5">
-          {slices.slice(0, 6).map((s, i) => (
-            <li
-              key={s.domain}
-              className="flex items-center gap-2.5 text-[12px]"
+      <ul className="space-y-2">
+        {ranked.slice(0, 6).map((s, i) => (
+          <li key={s.domain} className="flex items-center gap-3 text-[12px]">
+            <span
+              className={`w-32 shrink-0 truncate ${
+                s.isUs ? "font-semibold text-foreground" : "text-foreground"
+              }`}
             >
+              {s.domain}
+              {s.isUs ? " (you)" : ""}
+            </span>
+            <span className="h-2 flex-1 bg-muted overflow-hidden">
               <span
-                aria-hidden="true"
-                className="h-2 w-2 rounded-full"
+                className="block h-full"
                 style={{
+                  width: `${Math.max((s.shareOfVoice / max) * 100, 2)}%`,
                   backgroundColor: s.isUs ? BRAND : palette[i % palette.length],
                 }}
               />
-              <span
-                className={`truncate flex-1 ${
-                  s.isUs ? "font-semibold text-foreground" : "text-foreground"
-                }`}
-              >
-                {s.domain}
-                {s.isUs ? " (you)" : ""}
-              </span>
-              <span className="tabular-nums text-muted-foreground">
-                {(s.shareOfVoice * 100).toFixed(1)}%
-              </span>
-            </li>
-          ))}
-        </ul>
-      </div>
+            </span>
+            <span className="w-14 shrink-0 text-right tabular-nums text-muted-foreground">
+              {(s.shareOfVoice * 100).toFixed(1)}%
+            </span>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -462,7 +412,7 @@ export function OpportunityMatrix({
 }) {
   if (points.length === 0) {
     return (
-      <section className="rounded-xl border border-border bg-card p-5">
+      <section className="rounded-[2px] border border-border bg-card p-5">
         <SectionHeader
           eyebrow="Strategy"
           title="Opportunity matrix"
@@ -474,7 +424,7 @@ export function OpportunityMatrix({
     );
   }
   return (
-    <section className="rounded-xl border border-border bg-card p-5">
+    <section className="rounded-[2px] border border-border bg-card p-5">
       <SectionHeader
         eyebrow="Strategy"
         title="Opportunity matrix"
@@ -562,7 +512,7 @@ export type ContentRoiNode = {
 export function ContentRoiTreemap({ nodes }: { nodes: ContentRoiNode[] }) {
   if (nodes.length === 0) {
     return (
-      <section className="rounded-xl border border-border bg-card p-5">
+      <section className="rounded-[2px] border border-border bg-card p-5">
         <SectionHeader
           eyebrow="Content ROI"
           title="Per-URL performance"
@@ -573,72 +523,43 @@ export function ContentRoiTreemap({ nodes }: { nodes: ContentRoiNode[] }) {
       </section>
     );
   }
-  const data = nodes.map((n) => ({
-    name: n.url.replace(/^https?:\/\//, "").slice(0, 48),
-    size: Math.max(1, n.clicks),
-    roiScore: n.roiScore,
-    clicks: n.clicks,
-    rankCount: n.rankCount,
-  }));
+  // Ranked bar list, sorted by clicks (the value the old treemap sized
+  // cells by). ROI score shown as a right-aligned badge instead of fill
+  // saturation.
+  const ranked = [...nodes].sort((a, b) => b.clicks - a.clicks);
+  const max = Math.max(1, ...ranked.map((n) => n.clicks));
   return (
-    <section className="rounded-xl border border-border bg-card p-5">
+    <section className="rounded-[2px] border border-border bg-card p-5">
       <SectionHeader
         eyebrow="Content ROI"
         title="Per-URL performance"
-        hint="Cell size = clicks · saturation = composite ROI score (0–100)"
+        hint="Sorted by clicks · ROI score is a composite 0–100"
       />
-      <div className="w-full h-[320px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <Treemap
-            data={data}
-            dataKey="size"
-            stroke="#fff"
-            // Recharts' Treemap content slot expects a ReactElement; pass
-            // the component directly and Recharts injects the cell props.
-            content={<RoiTreemapCell />}
-          />
-        </ResponsiveContainer>
-      </div>
+      <ul className="space-y-2">
+        {ranked.slice(0, 10).map((n) => (
+          <li key={n.url} className="flex items-center gap-3 text-[12px]">
+            <span className="w-40 shrink-0 truncate font-mono text-foreground">
+              {n.url.replace(/^https?:\/\//, "")}
+            </span>
+            <span className="h-2 flex-1 bg-muted overflow-hidden">
+              <span
+                className="block h-full"
+                style={{
+                  width: `${Math.max((n.clicks / max) * 100, 2)}%`,
+                  backgroundColor: BRAND,
+                }}
+              />
+            </span>
+            <span className="w-16 shrink-0 text-right tabular-nums text-muted-foreground">
+              {n.clicks.toLocaleString()} clk
+            </span>
+            <span className="w-10 shrink-0 text-right tabular-nums font-semibold text-foreground">
+              {Math.round(n.roiScore)}
+            </span>
+          </li>
+        ))}
+      </ul>
     </section>
-  );
-}
-
-type TreemapCellProps = {
-  x?: number;
-  y?: number;
-  width?: number;
-  height?: number;
-  name?: string;
-  roiScore?: number;
-};
-
-function RoiTreemapCell(props: TreemapCellProps = {}) {
-  const { x = 0, y = 0, width = 0, height = 0, name, roiScore = 0 } = props;
-  if (!width || !height) return null;
-  // Color: brand blue at full ROI, fading to brand-lighter at low ROI.
-  const opacity = 0.25 + (roiScore / 100) * 0.7;
-  return (
-    <g>
-      <rect
-        x={x}
-        y={y}
-        width={width}
-        height={height}
-        fill={BRAND}
-        fillOpacity={opacity}
-      />
-      {width > 60 && height > 24 ? (
-        <text
-          x={x + 6}
-          y={y + 14}
-          fontSize={10}
-          fill="#fff"
-          fontFamily="var(--font-mono)"
-        >
-          {(name ?? "").slice(0, Math.max(8, width / 7))}
-        </text>
-      ) : null}
-    </g>
   );
 }
 
@@ -657,38 +578,25 @@ export function SiteHealthGauge({
   warning: number;
   notice: number;
 }) {
-  const data = [{ name: "score", value: score, fill: BRAND }];
-  void data;
   const color = score >= 75 ? SUCCESS : score >= 50 ? BRAND : score >= 25 ? "#F59E0B" : DANGER;
-  const ringR = 36;
-  const ringC = 2 * Math.PI * ringR;
-  const dash = (score / 100) * ringC;
   return (
-    <section className="rounded-xl border border-border bg-card p-5">
+    <section className="rounded-[2px] border border-border bg-card p-5">
       <SectionHeader eyebrow="Technical" title="Site health" />
-      <div className="grid grid-cols-[100px_minmax(0,1fr)] gap-4 items-center mt-2">
-        <div className="relative h-[100px] w-[100px]">
-          <svg viewBox="0 0 80 80" className="absolute inset-0">
-            <circle cx="40" cy="40" r={ringR} fill="none" stroke={BORDER} strokeWidth="6" />
-            <circle
-              cx="40"
-              cy="40"
-              r={ringR}
-              fill="none"
-              stroke={color}
-              strokeWidth="6"
-              strokeLinecap="round"
-              strokeDasharray={`${dash} ${ringC}`}
-              transform="rotate(-90 40 40)"
-            />
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-[24px] font-display font-medium tabular-nums leading-none">
+      <div className="mt-2 space-y-4">
+        <div>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-2xl font-display font-medium tabular-nums leading-none text-foreground">
               {Math.round(score)}
             </span>
             <span className="text-[10px] font-mono uppercase tracking-[0.08em] text-muted-foreground">
               / 100
             </span>
+          </div>
+          <div className="mt-2 h-2 bg-muted overflow-hidden">
+            <div
+              className="h-full"
+              style={{ width: `${Math.max(Math.min(score, 100), 0)}%`, backgroundColor: color }}
+            />
           </div>
         </div>
         <div className="space-y-1">
@@ -736,7 +644,7 @@ export type LocalPackRow = {
 export function LocalPackCard({ rows }: { rows: LocalPackRow[] }) {
   if (rows.length === 0) {
     return (
-      <section className="rounded-xl border border-border bg-card p-5">
+      <section className="rounded-[2px] border border-border bg-card p-5">
         <SectionHeader
           eyebrow="Google Maps"
           title="Local pack tracker"
@@ -748,7 +656,7 @@ export function LocalPackCard({ rows }: { rows: LocalPackRow[] }) {
     );
   }
   return (
-    <section className="rounded-xl border border-border bg-card overflow-hidden">
+    <section className="rounded-[2px] border border-border bg-card overflow-hidden">
       <header className="px-5 py-3 border-b border-border">
         <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
           Google Maps

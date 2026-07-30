@@ -24,7 +24,7 @@ export type MentionRow = {
 export function MentionFeed({ mentions }: { mentions: MentionRow[] }) {
   if (mentions.length === 0) {
     return (
-      <div className="rounded-xl border border-border bg-card px-5 py-8 text-center">
+      <div className="rounded-[2px] border border-border bg-card px-5 py-8 text-center">
         <MessageSquare className="h-5 w-5 mx-auto text-muted-foreground" />
         <div className="mt-2 text-sm font-medium text-foreground">
           No fresh mentions yet
@@ -38,7 +38,7 @@ export function MentionFeed({ mentions }: { mentions: MentionRow[] }) {
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
+    <div className="rounded-[2px] border border-border bg-card overflow-hidden">
       <div className="flex items-center justify-between px-5 py-3 border-b border-border">
         <div>
           <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">

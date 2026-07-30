@@ -2,7 +2,7 @@ import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { ConversionFunnel } from "@/components/portal/dashboard/conversion-funnel";
-import { LeadSourceDonut } from "@/components/portal/dashboard/lead-source-donut";
+import { SourceBars } from "@/components/portal/dashboard/source-bars";
 import { getPropertyLeads } from "@/lib/properties/queries";
 import { prisma } from "@/lib/db";
 import { LeadStatus, ApplicationStatus, type Lead } from "@prisma/client";
@@ -117,7 +117,7 @@ export async function LeadsTab({
           separators — operator reads it as a funnel left-to-right
           instead of a grid. */}
       <section className="rounded-xl border border-border bg-card overflow-hidden">
-        <header className="flex items-baseline justify-between gap-3 px-4 py-2 border-b border-border/60 bg-gradient-to-r from-primary/[0.04] via-card to-card">
+        <header className="flex items-baseline justify-between gap-3 px-4 py-2 border-b border-border/60 bg-card">
           <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
             Acquisition · last 28 days
           </p>
@@ -144,7 +144,7 @@ export async function LeadsTab({
           separators between stages. Brand-blue pill on non-zero
           stages so the operator's eye lands on where the work is. */}
       <section className="rounded-xl border border-border bg-card overflow-hidden">
-        <header className="flex items-baseline justify-between gap-3 px-4 py-2 border-b border-border/60 bg-gradient-to-r from-primary/[0.04] via-card to-card">
+        <header className="flex items-baseline justify-between gap-3 px-4 py-2 border-b border-border/60 bg-card">
           <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
             Active pipeline · {totalActive} in flight
           </p>
@@ -274,7 +274,12 @@ export async function LeadsTab({
           eyebrow="Last 28 days"
           description="Where this property's leads originate"
         >
-          <LeadSourceDonut slices={data.sourceBreakdown} />
+          <SourceBars
+            rows={data.sourceBreakdown.map((s) => ({
+              label: s.source,
+              value: s.count,
+            }))}
+          />
         </DashboardSection>
       </div>
 

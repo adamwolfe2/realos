@@ -58,7 +58,7 @@ export function AlertDialog({
         if (e.target === e.currentTarget) onCancel();
       }}
     >
-      <div className="w-full max-w-sm rounded-xl border border-border bg-card shadow-lg">
+      <div className="w-full max-w-sm rounded-[2px] border border-border bg-card shadow-lg">
         <header className="border-b border-border px-4 py-3">
           <p className="text-sm font-semibold text-foreground">{title}</p>
           {body ? (
@@ -71,7 +71,7 @@ export function AlertDialog({
           <button
             type="button"
             onClick={onCancel}
-            className="inline-flex items-center rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:border-foreground/40 transition-colors"
+            className="inline-flex items-center rounded-[2px] border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:border-foreground/40 transition-colors"
           >
             {cancelLabel}
           </button>
@@ -80,7 +80,7 @@ export function AlertDialog({
             disabled={pending}
             onClick={onConfirm}
             className={cn(
-              "inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50",
+              "inline-flex items-center rounded-[2px] px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50",
               destructive
                 ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 : "bg-primary text-primary-foreground hover:bg-primary-dark",

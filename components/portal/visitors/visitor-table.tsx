@@ -9,6 +9,7 @@ import { motion, useInView, useReducedMotion } from "framer-motion";
 import { SideDrawer } from "@/components/portal/ui/side-drawer";
 import { BulkActionBar } from "@/components/portal/ui/bulk-action-bar";
 import { EASE_OUT } from "@/components/portal/ui/motion";
+import { StatusChip } from "@/components/portal/ui/status-chip";
 
 // ---------------------------------------------------------------------------
 // VisitorTable
@@ -184,7 +185,7 @@ export function VisitorTable({ rows }: Props) {
                     }}
                     className={
                       "border-b border-border last:border-0 transition-colors group cursor-pointer " +
-                      (isSelected ? "bg-blue-50/40 " : "hover:bg-secondary")
+                      (isSelected ? "bg-primary/5 " : "hover:bg-secondary")
                     }
                   >
                     <td className="px-3 py-2 align-middle">
@@ -255,9 +256,8 @@ export function VisitorTable({ rows }: Props) {
                         })}
                       </span>
                       {r.liveChat ? (
-                        <span className="ml-2 inline-flex items-center gap-1 text-[10px] text-emerald-700 font-semibold">
-                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                          Live
+                        <span className="ml-2 inline-block align-middle">
+                          <StatusChip status="live" label="Live" />
                         </span>
                       ) : null}
                     </td>
@@ -366,7 +366,7 @@ function VisitorDrawerBody({ row }: { row: VisitorRow }) {
       </section>
 
       {row.liveChat ? (
-        <section className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px] text-emerald-800">
+        <section className="rounded-[2px] border border-border bg-[rgba(36,161,72,0.08)] px-3 py-2 text-[11px] text-[#24a148]">
           This visitor is in a live chat right now.
         </section>
       ) : null}

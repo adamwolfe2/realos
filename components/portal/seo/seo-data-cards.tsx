@@ -42,10 +42,10 @@ export function IntegrationStatusRow({
         return (
           <div
             key={i.label}
-            className={`flex items-center gap-2.5 rounded-lg border ${SUBTLE_BORDER} bg-card px-3 py-2.5`}
+            className={`flex items-center gap-2.5 rounded-[2px] border ${SUBTLE_BORDER} bg-card px-3 py-2.5`}
           >
             <span
-              className={`inline-flex h-7 w-7 items-center justify-center rounded-md shrink-0 ${
+              className={`inline-flex h-7 w-7 items-center justify-center rounded-[2px] shrink-0 ${
                 connected
                   ? "bg-primary/10 text-primary"
                   : "bg-muted text-muted-foreground"
@@ -116,7 +116,7 @@ export function HealthScoreCard({
 
   return (
     <section
-      className={`rounded-2xl border ${SUBTLE_BORDER} bg-card p-5 grid grid-cols-[auto_minmax(0,1fr)] gap-5 items-center`}
+      className={`rounded-[2px] border ${SUBTLE_BORDER} bg-card p-5 grid grid-cols-[auto_minmax(0,1fr)] gap-5 items-center`}
     >
       <div className="relative h-20 w-20">
         <svg viewBox="0 0 64 64" className="absolute inset-0">
@@ -191,7 +191,7 @@ export function HealthScoreCard({
             return (
               <div
                 key={p.label}
-                className="rounded-md border border-border/60 bg-muted/20 px-2 py-1.5"
+                className="rounded-[2px] border border-border/60 bg-muted/20 px-2 py-1.5"
                 title={sub}
               >
                 <div className="flex items-center gap-1">
@@ -251,7 +251,7 @@ export function SerpRankingsCard({
   totalQueries: number;
 }) {
   return (
-    <section className={`rounded-2xl border ${SUBTLE_BORDER} bg-card overflow-hidden`}>
+    <section className={`rounded-[2px] border ${SUBTLE_BORDER} bg-card overflow-hidden`}>
       <header className="flex items-baseline justify-between gap-3 px-5 py-3 border-b border-border">
         <div>
           <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-0.5">
@@ -377,7 +377,7 @@ export function LighthouseCard({
     { label: "PWA", value: scores.pwa },
   ];
   return (
-    <section className={`rounded-2xl border ${SUBTLE_BORDER} bg-card p-5`}>
+    <section className={`rounded-[2px] border ${SUBTLE_BORDER} bg-card p-5`}>
       <header className="flex items-baseline justify-between gap-3 mb-4">
         <div>
           <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-0.5">
@@ -491,7 +491,7 @@ function VitalCell({
 }) {
   const ok = value != null && value <= goodMax;
   return (
-    <div className="rounded-md border border-border/60 bg-muted/20 px-2.5 py-1.5">
+    <div className="rounded-[2px] border border-border/60 bg-muted/20 px-2.5 py-1.5">
       <p className="text-[9.5px] font-mono uppercase tracking-[0.08em] text-muted-foreground leading-tight">
         {label}
       </p>
@@ -529,7 +529,7 @@ export function BacklinksCard({
 }) {
   if (!summary) {
     return (
-      <section className={`rounded-2xl border ${SUBTLE_BORDER} bg-card p-5`}>
+      <section className={`rounded-[2px] border ${SUBTLE_BORDER} bg-card p-5`}>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-1">
@@ -555,7 +555,7 @@ export function BacklinksCard({
     );
   }
   return (
-    <section className={`rounded-2xl border ${SUBTLE_BORDER} bg-card p-5`}>
+    <section className={`rounded-[2px] border ${SUBTLE_BORDER} bg-card p-5`}>
       <header className="mb-3">
         <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-0.5">
           Backlinks · {summary.target}
@@ -620,7 +620,7 @@ export type CompetitorRow = {
 
 export function CompetitorsCard({ rows }: { rows: CompetitorRow[] }) {
   return (
-    <section className={`rounded-2xl border ${SUBTLE_BORDER} bg-card overflow-hidden`}>
+    <section className={`rounded-[2px] border ${SUBTLE_BORDER} bg-card overflow-hidden`}>
       <header className="px-5 py-3 border-b border-border">
         <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-0.5">
           Competitors
@@ -705,7 +705,7 @@ export function AeoCard({
   totalChecks: number;
 }) {
   return (
-    <section className={`rounded-2xl border ${SUBTLE_BORDER} bg-card p-5`}>
+    <section className={`rounded-[2px] border ${SUBTLE_BORDER} bg-card p-5`}>
       <header className="mb-3">
         <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-0.5">
           AEO · AI search visibility
