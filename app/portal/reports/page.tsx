@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 import { ArrowRight, BarChart3 } from "lucide-react";
 import { prisma } from "@/lib/db";
@@ -18,6 +19,10 @@ import {
   type DataTableColumn,
 } from "@/components/portal/ui/data-table";
 import { createReport } from "@/lib/actions/reports";
+import {
+  LivePreviewBody,
+  PreviewSkeleton,
+} from "@/components/portal/reports/live-preview-body";
 import { cn } from "@/lib/utils";
 import { Prisma } from "@prisma/client";
 
@@ -31,6 +36,7 @@ type Search = {
   properties?: string;
   sort?: string;
   dir?: string;
+  preview?: string;
 };
 
 // Sortable columns map straight onto indexed-ish scalar fields, so the sort
@@ -86,6 +92,7 @@ export default async function ReportsListPage({
     if (sp.status) params.set("status", sp.status);
     if (sp.property) params.set("property", sp.property);
     if (sp.properties) params.set("properties", sp.properties);
+    if (sp.preview) params.set("preview", sp.preview);
     params.set("sort", key);
     params.set("dir", key === sortKey && sortDir === "desc" ? "asc" : "desc");
     return `/portal/reports?${params.toString()}`;
@@ -97,9 +104,42 @@ export default async function ReportsListPage({
   const allProperties = await prisma.property.findMany({
     where: marketablePropertyWhere(scope.orgId),
     orderBy: { name: "asc" },
-    select: { id: true, name: true },
+    select: {
+      id: true,
+      name: true,
+      addressLine1: true,
+      city: true,
+      state: true,
+      launchStatus: true,
+    },
   });
   const properties = visibleProperties(scope, allProperties);
+
+  // Live preview panel: resolve which property it renders for. Prefer the
+  // operator's existing `?properties=` selection (if it points at a
+  // property this scope can actually see), then the first LIVE property
+  // (the ones actually onboarded onto the marketing dashboards), then
+  // just the first property. Zero properties → no panel, no empty-state
+  // theater — the page renders exactly as it did before this feature.
+  const previewProperty =
+    properties.length === 0
+      ? null
+      : (propertyIds && properties.find((p) => propertyIds.includes(p.id))) ||
+        properties.find((p) => p.launchStatus === "LIVE") ||
+        properties[0];
+  const previewKind: "weekly" | "monthly" =
+    sp.preview === "weekly" ? "weekly" : "monthly";
+  const hrefForPreview = (period: "weekly" | "monthly"): string => {
+    const params = new URLSearchParams();
+    if (sp.kind) params.set("kind", sp.kind);
+    if (sp.status) params.set("status", sp.status);
+    if (sp.property) params.set("property", sp.property);
+    if (sp.properties) params.set("properties", sp.properties);
+    if (sp.sort) params.set("sort", sp.sort);
+    if (sp.dir) params.set("dir", sp.dir);
+    params.set("preview", period);
+    return `/portal/reports?${params.toString()}`;
+  };
 
   const reports = await prisma.clientReport.findMany({
     where,
@@ -342,90 +382,171 @@ export default async function ReportsListPage({
         </span>
       </Link>
 
-      {/* Filters: property scope sits beside the kind/status filters so
-          the operator picks "which properties" + "which kinds of reports"
-          at the same level. The multi-select lives outside the form (it
-          drives the URL directly) and the hidden field below preserves
-          the property selection across kind/status submits. */}
-      <div className="ls-card p-4 flex flex-wrap items-end gap-3">
-        <div className="flex flex-col gap-1.5">
-          <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
-            Properties
-          </span>
-          <PropertyMultiSelect
-            properties={properties}
-            orgId={scope.orgId}
+      {/* Two-pane: filters + list on the left, the live report preview on
+          the right. On mobile the LIST leads (order-last on the panel) —
+          the list is why the page exists; a ~78vh preview above it would
+          bury it below the fold. */}
+      <div className="grid items-start gap-4 lg:grid-cols-[1fr_1.1fr]">
+        {previewProperty ? (
+          <div className="order-last lg:sticky lg:top-4 ls-card overflow-hidden p-0">
+            <div className="flex items-center justify-between gap-3 border-b border-border p-4">
+              <div className="min-w-0">
+                <div className="text-[13px] font-semibold text-foreground">
+                  Live report preview
+                </div>
+                <div className="truncate text-[11px] text-muted-foreground">
+                  {previewProperty.name} ·{" "}
+                  {previewKind === "weekly" ? "Trailing 7 days" : "Trailing 28 days"}
+                </div>
+              </div>
+              <div className="flex flex-none items-center gap-1.5">
+                <Link
+                  href={hrefForPreview("weekly")}
+                  aria-current={previewKind === "weekly" ? "page" : undefined}
+                  className={cn(
+                    "inline-flex items-center rounded-[2px] px-2.5 py-1 text-[11px] font-medium transition-colors",
+                    previewKind === "weekly"
+                      ? "bg-primary text-primary-foreground"
+                      : "border border-border text-muted-foreground hover:bg-muted",
+                  )}
+                >
+                  Weekly · 7d
+                </Link>
+                <Link
+                  href={hrefForPreview("monthly")}
+                  aria-current={previewKind === "monthly" ? "page" : undefined}
+                  className={cn(
+                    "inline-flex items-center rounded-[2px] px-2.5 py-1 text-[11px] font-medium transition-colors",
+                    previewKind === "monthly"
+                      ? "bg-primary text-primary-foreground"
+                      : "border border-border text-muted-foreground hover:bg-muted",
+                  )}
+                >
+                  Monthly · 28d
+                </Link>
+              </div>
+            </div>
+
+            <div className="border-b border-border p-4">
+              <form action={generateReport} className="flex flex-col gap-1.5">
+                <input type="hidden" name="kind" value={previewKind} />
+                <input type="hidden" name="propertyId" value={previewProperty.id} />
+                <button
+                  type="submit"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-[2px] bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  Generate &amp; share this view
+                  <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+                <p className="text-[10px] text-muted-foreground">
+                  Freezes this exact view into a shareable report.
+                </p>
+              </form>
+            </div>
+
+            <div className="p-4">
+              <Suspense fallback={<PreviewSkeleton />}>
+                <LivePreviewBody
+                  orgId={scope.orgId}
+                  kind={previewKind}
+                  propertyId={previewProperty.id}
+                  property={previewProperty}
+                />
+              </Suspense>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="space-y-4">
+          {/* Filters: property scope sits beside the kind/status filters so
+              the operator picks "which properties" + "which kinds of reports"
+              at the same level. The multi-select lives outside the form (it
+              drives the URL directly) and the hidden field below preserves
+              the property selection across kind/status submits. */}
+          <div className="ls-card p-4 flex flex-wrap items-end gap-3">
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+                Properties
+              </span>
+              <PropertyMultiSelect
+                properties={properties}
+                orgId={scope.orgId}
+              />
+            </div>
+            <form
+              action="/portal/reports"
+              className="flex flex-wrap items-end gap-3"
+            >
+              {sp.properties ? (
+                <input type="hidden" name="properties" value={sp.properties} />
+              ) : null}
+              {sp.sort ? <input type="hidden" name="sort" value={sp.sort} /> : null}
+              {sp.dir ? <input type="hidden" name="dir" value={sp.dir} /> : null}
+              {sp.preview ? (
+                <input type="hidden" name="preview" value={sp.preview} />
+              ) : null}
+              <label className="flex flex-col gap-1.5">
+                <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+                  Kind
+                </span>
+                <select
+                  name="kind"
+                  defaultValue={sp.kind ?? ""}
+                  className="ls-select px-3 py-2 text-sm"
+                >
+                  <option value="">All</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+                  Status
+                </span>
+                <select
+                  name="status"
+                  defaultValue={sp.status ?? ""}
+                  className="ls-select px-3 py-2 text-sm"
+                >
+                  <option value="">All</option>
+                  <option value="draft">Draft</option>
+                  <option value="shared">Shared</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </label>
+              <button
+                type="submit"
+                className="inline-flex items-center rounded-[2px] border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted"
+              >
+                Apply filters
+              </button>
+              <Link
+                href="/portal/reports"
+                className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+              >
+                Reset
+              </Link>
+            </form>
+          </div>
+
+          {/* List — DataTable v2 (dense rows, URL-driven sort) replaces the
+              rounded-xl card list. */}
+          <DataTable<ReportRow>
+            columns={columns}
+            rows={reports}
+            getRowHref={(r) => `/portal/reports/${r.id}`}
+            sort={{ by: sortKey, dir: sortDir, hrefForSort }}
+            density="compact"
+            emptyState={
+              <EmptyState
+                title="Generate your first report"
+                body="Use the Generate report button up top to capture this period's leads, tours, ad spend, and organic traffic as a frozen snapshot. Add a note, then copy a shareable link for your client. Nothing is sent automatically."
+              />
+            }
           />
         </div>
-        <form
-          action="/portal/reports"
-          className="flex flex-wrap items-end gap-3"
-        >
-          {sp.properties ? (
-            <input type="hidden" name="properties" value={sp.properties} />
-          ) : null}
-          {sp.sort ? <input type="hidden" name="sort" value={sp.sort} /> : null}
-          {sp.dir ? <input type="hidden" name="dir" value={sp.dir} /> : null}
-          <label className="flex flex-col gap-1.5">
-            <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
-              Kind
-            </span>
-            <select
-              name="kind"
-              defaultValue={sp.kind ?? ""}
-              className="ls-select px-3 py-2 text-sm"
-            >
-              <option value="">All</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="custom">Custom</option>
-            </select>
-          </label>
-          <label className="flex flex-col gap-1.5">
-            <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
-              Status
-            </span>
-            <select
-              name="status"
-              defaultValue={sp.status ?? ""}
-              className="ls-select px-3 py-2 text-sm"
-            >
-              <option value="">All</option>
-              <option value="draft">Draft</option>
-              <option value="shared">Shared</option>
-              <option value="archived">Archived</option>
-            </select>
-          </label>
-          <button
-            type="submit"
-            className="inline-flex items-center rounded-[2px] border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted"
-          >
-            Apply filters
-          </button>
-          <Link
-            href="/portal/reports"
-            className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
-          >
-            Reset
-          </Link>
-        </form>
       </div>
-
-      {/* List — DataTable v2 (dense rows, URL-driven sort) replaces the
-          rounded-xl card list. */}
-      <DataTable<ReportRow>
-        columns={columns}
-        rows={reports}
-        getRowHref={(r) => `/portal/reports/${r.id}`}
-        sort={{ by: sortKey, dir: sortDir, hrefForSort }}
-        density="compact"
-        emptyState={
-          <EmptyState
-            title="Generate your first report"
-            body="Use the Generate report button up top to capture this period's leads, tours, ad spend, and organic traffic as a frozen snapshot. Add a note, then copy a shareable link for your client. Nothing is sent automatically."
-          />
-        }
-      />
     </div>
   );
 }

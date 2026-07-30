@@ -631,6 +631,13 @@ export type GenerateReportOptions = {
   // calendar-month client report. The prior window used for deltas is the
   // immediately-preceding range of equal length. periodEnd is exclusive.
   period?: { periodStart: Date; periodEnd: Date };
+  // Skip the generateAiAnalysis() Claude call. Default false — zero
+  // behavior change for every existing caller. Added for the live report
+  // preview on /portal/reports, which re-generates a snapshot on every
+  // page load; an LLM call per load is unnecessary cost + latency for a
+  // view nobody has asked to freeze yet. Reuses the exact "no aiAnalysis"
+  // shape the no-ANTHROPIC_API_KEY path already produces in prod.
+  skipAi?: boolean;
 };
 
 // Internal scoped data resolved at the top of the function so every query
@@ -1772,7 +1779,7 @@ export async function generateReportSnapshot(
     dataSources,
   };
 
-  const aiAnalysis = await generateAiAnalysis(baseSnapshot);
+  const aiAnalysis = options.skipAi ? null : await generateAiAnalysis(baseSnapshot);
 
   return {
     ...baseSnapshot,
