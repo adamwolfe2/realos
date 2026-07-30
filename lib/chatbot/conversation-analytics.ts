@@ -123,6 +123,129 @@ function dayKey(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
+// ---------------------------------------------------------------------------
+// Prospect intel — aggregates over the ALREADY-EXTRACTED ProspectProfile JSON
+// (Haiku extraction, lib/chatbot/extract-prospect-profile.ts). Zero new AI
+// calls: this reads what the digest cron already produced. Powers the
+// "Prospects" tab of the chatbot Performance panel (Adam, 2026-07-29).
+// ---------------------------------------------------------------------------
+
+export type DistRow = { label: string; count: number };
+
+export type ProspectIntel = {
+  profiles: number;
+  medianBudget: number | null;
+  followUpsNeeded: number;
+  sentiment: { positive: number; neutral: number; negative: number };
+  roomTypes: DistRow[];
+  moveIn: DistRow[];
+  competitors: DistRow[];
+};
+
+function topDist(counts: Map<string, number>, limit: number): DistRow[] {
+  return [...counts.entries()]
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+    .slice(0, limit);
+}
+
+export async function getProspectIntel(params: {
+  orgId: string;
+  periodDays?: number;
+}): Promise<ProspectIntel> {
+  const periodDays = params.periodDays ?? 30;
+  const since = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000);
+  const rows = await prisma.chatbotConversation.findMany({
+    where: {
+      orgId: params.orgId,
+      lastMessageAt: { gte: since },
+      prospectProfile: { not: Prisma.JsonNull },
+    },
+    select: { prospectProfile: true },
+    orderBy: { lastMessageAt: "desc" },
+    take: 2000,
+  });
+
+  const budgets: number[] = [];
+  const roomTypes = new Map<string, number>();
+  const moveIn = new Map<string, number>();
+  const competitors = new Map<string, number>();
+  const sentiment = { positive: 0, neutral: 0, negative: 0 };
+  let profiles = 0;
+  let followUpsNeeded = 0;
+
+  for (const row of rows) {
+    const p = row.prospectProfile as Record<string, unknown> | null;
+    if (!p || typeof p !== "object") continue;
+    profiles += 1;
+
+    // budgetMonthly is verbatim text ("$850", "800-900/mo") — first 3-5
+    // digit run is the number that matters for a median.
+    const m = String(p.budgetMonthly ?? "").replace(/,/g, "").match(/\d{3,5}/);
+    if (m) budgets.push(Number(m[0]));
+
+    // Normalize verbatim room-type text into the 5 buckets that matter —
+    // live data has 37 distinct verbatim strings over 101 profiles.
+    const room = String(p.roomType ?? "").trim().toLowerCase();
+    if (room) {
+      const bucket = room.includes("studio")
+        ? "studio"
+        : room.includes("triple") || room.includes("3")
+          ? "triple"
+          : room.includes("double") || room.includes("2") || room.includes("shared")
+            ? "double / shared"
+            : room.includes("single") || room.includes("1") || room.includes("private")
+              ? "single / private"
+              : "other";
+      roomTypes.set(bucket, (roomTypes.get(bucket) ?? 0) + 1);
+    }
+
+    // Bucket move-in text to month (or ASAP) — verbatim dates are noise.
+    const move = String(p.moveInDate ?? "").trim().toLowerCase();
+    if (move) {
+      const MONTHS = ["january","february","march","april","may","june","july","august","september","october","november","december"];
+      const month = MONTHS.find((mo) => move.includes(mo) || move.includes(mo.slice(0, 3)));
+      const bucket = month ?? (move.includes("asap") || move.includes("now") ? "asap" : "other");
+      moveIn.set(bucket, (moveIn.get(bucket) ?? 0) + 1);
+    }
+
+    const comp = p.competitorsConsidering;
+    const compList = Array.isArray(comp)
+      ? comp.map(String)
+      : typeof comp === "string" && comp.trim()
+        ? [comp]
+        : [];
+    for (const c of compList) {
+      const key = c.trim().toLowerCase();
+      if (key) competitors.set(key, (competitors.get(key) ?? 0) + 1);
+    }
+
+    // sentiment is the extraction enum: hot|warm|lukewarm|cold|unclear
+    // (extract-prospect-profile.ts). Bucket on the REAL domain values.
+    const s = String(p.sentiment ?? "").toLowerCase();
+    if (s === "hot" || s === "warm") sentiment.positive += 1;
+    else if (s === "cold") sentiment.negative += 1;
+    else if (s) sentiment.neutral += 1;
+
+    // followUpNeeded is a next-action SENTENCE ("Schedule a tour Friday"),
+    // not a boolean — non-empty means the bot flagged a follow-up.
+    if (String(p.followUpNeeded ?? "").trim()) followUpsNeeded += 1;
+  }
+
+  budgets.sort((a, b) => a - b);
+  return {
+    profiles,
+    medianBudget: budgets.length > 0 ? budgets[Math.floor(budgets.length / 2)] : null,
+    followUpsNeeded,
+    sentiment,
+    roomTypes: topDist(roomTypes, 5),
+    moveIn: topDist(moveIn, 5),
+    // A competitor mentioned once is anecdote, not signal — one lone row
+    // renders as a misleading full-width 100% bar.
+    competitors: topDist(competitors, 5).filter((r) => r.count >= 2),
+  };
+}
+
 export async function getChatbotAnalytics(params: {
   orgId: string;
   propertyWhere?: Prisma.ChatbotConversationWhereInput;

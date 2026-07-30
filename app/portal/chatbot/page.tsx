@@ -8,16 +8,17 @@ import { readGtmContainerId } from "@/components/tenant-site/tenant-analytics";
 import { MasterToggle } from "./master-toggle";
 import { LeadRoutingPanel } from "./lead-routing-panel";
 import { InstallSnippet } from "./install-snippet";
-import { PageHeader, SectionCard } from "@/components/admin/page-header";
-import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
+import { PageHeader } from "@/components/admin/page-header";
 import {
   StatusChip,
   type ConnectionStatus,
 } from "@/components/portal/ui/status-chip";
+import type { PerformancePoint } from "@/components/portal/dashboard/performance-over-time";
+import { ChatbotPerformancePanel } from "./performance-panel";
 import {
-  PerformanceOverTime,
-  type PerformancePoint,
-} from "@/components/portal/dashboard/performance-over-time";
+  getChatbotAnalytics,
+  getProspectIntel,
+} from "@/lib/chatbot/conversation-analytics";
 
 export const metadata: Metadata = { title: "Chatbot" };
 export const dynamic = "force-dynamic";
@@ -69,6 +70,8 @@ export default async function ChatbotPage() {
     convStats,
     convDays,
     latestConversation,
+    analytics,
+    prospects,
   ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
@@ -150,6 +153,11 @@ export default async function ChatbotPage() {
         select: { lastMessageAt: true },
       })
       .catch(() => null),
+    // Questions tab — top opening questions + topic keywords (heuristic,
+    // no AI cost). Prospects tab — aggregates over the Haiku-extracted
+    // profiles the digest cron already produced.
+    getChatbotAnalytics({ orgId: scope.orgId, periodDays: 30 }).catch(() => null),
+    getProspectIntel({ orgId: scope.orgId, periodDays: 30 }).catch(() => null),
   ]);
 
   if (!org) return null;
@@ -281,53 +289,18 @@ export default async function ChatbotPage() {
         </div>
       ) : null}
 
-      {/* ── PERFORMANCE (leads the page) ─────────────────────────────── */}
+      {/* ── PERFORMANCE (leads the page) — one card, three tabbed views:
+          Volume / Questions / Prospects. Same footprint, more data. */}
       {hasAnyConversations ? (
-        <SectionCard
-          label="Performance"
-          description="Conversations per day over the last 30 days, with the prior 30 days for comparison."
-        >
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <KpiTile
-                density="dense"
-                label="Conversations · 30d"
-                value={stats.d30.toLocaleString()}
-                delta={
-                  d30DeltaPct != null
-                    ? {
-                        value: `${d30DeltaPct >= 0 ? "+" : ""}${d30DeltaPct}%`,
-                        trend:
-                          d30DeltaPct > 0 ? "up" : d30DeltaPct < 0 ? "down" : "flat",
-                      }
-                    : undefined
-                }
-                hint="vs prior 30 days"
-              />
-              <KpiTile
-                density="dense"
-                label="Conversations · 7d"
-                value={stats.d7.toLocaleString()}
-              />
-              <KpiTile
-                density="dense"
-                label="Leads captured · 30d"
-                value={stats.intakes30d.toLocaleString()}
-              />
-              <KpiTile
-                density="dense"
-                label="Capture rate · 30d"
-                value={
-                  stats.d30 > 0
-                    ? `${Math.round((stats.intakes30d / stats.d30) * 100)}%`
-                    : "—"
-                }
-                hint="conversations that left contact info"
-              />
-            </div>
-            <PerformanceOverTime points={chartPoints} compare />
-          </div>
-        </SectionCard>
+        <ChatbotPerformancePanel
+          points={chartPoints}
+          d30={stats.d30}
+          d7={stats.d7}
+          intakes30d={stats.intakes30d}
+          d30DeltaPct={d30DeltaPct}
+          analytics={analytics}
+          prospects={prospects}
+        />
       ) : null}
 
       {/* ── BEHAVIOR ─────────────────────────────────────────────────── */}
