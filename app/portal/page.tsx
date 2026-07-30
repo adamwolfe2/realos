@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import {
   Users,
-
+  FileSignature,
   FileText,
   Search,
   ArrowRight,
@@ -24,6 +24,7 @@ import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-banner";
 import {
   ApplicationStatus,
+  LeadStatus,
   OnboardingPhase,
   ProductLine,
   TourStatus,
@@ -61,6 +62,7 @@ import { getOpenInsights } from "@/lib/insights/queries";
 import {
   type InsightCardData,
 } from "@/components/portal/insights/insight-card";
+import { getLeadJourney } from "@/lib/reports/lead-journey";
 import Link from "next/link";
 import { PageHeader } from "@/components/admin/page-header";
 import { getFirstRunSignal } from "@/lib/portal/first-run";
@@ -248,7 +250,17 @@ export default async function PortalHome({
 
   try {
     const since28d = new Date(Date.now() - 28 * DAY);
+    const since7d = new Date(Date.now() - 7 * DAY);
     const where = tenantWhere<{ orgId?: string }>(scope);
+
+    // Hoisted above the batch below: getLeadJourney's unfiltered path needs
+    // this same marketable-ids source (see fix comment on that call) — one
+    // query, reused, instead of a second query fetching the same rows.
+    const allPropertiesForSelector = await prisma.property.findMany({
+      where: marketablePropertyWhere(scope.orgId),
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    });
 
     const [
       org,
@@ -256,6 +268,12 @@ export default async function PortalHome({
       leadsTotal,
       leadsNew28d,
       leadsPrev28d,
+      signedLeases28d,
+      signedLeasesPrev28d,
+      signedLeasesAllTime,
+      leadJourney,
+      conversations7d,
+      conversationsCaptured7d,
       ,
       applicationsSubmitted28d,
       applicationsActive,
@@ -307,6 +325,78 @@ export default async function PortalHome({
           },
         },
       }),
+      // Signed leases (28d) — the money KPI. Anchored on convertedAt (the
+      // signed date), not createdAt — createdAt measured "leads first seen
+      // in the window that have since signed," which structurally favors
+      // the newer window since the prior cohort had 28-56 extra days to
+      // mature into SIGNED, making the delta always look negative.
+      prisma.lead.count({
+        where: {
+          ...where,
+          ...propertyClause,
+          status: LeadStatus.SIGNED,
+          convertedAt: { gte: since28d },
+        },
+      }),
+      prisma.lead.count({
+        where: {
+          ...where,
+          ...propertyClause,
+          status: LeadStatus.SIGNED,
+          convertedAt: {
+            gte: new Date(Date.now() - 56 * DAY),
+            lt: since28d,
+          },
+        },
+      }),
+      // All-time signed count — distinguishes "never tracked signings"
+      // (omit the tile) from "tracked but zero this period" (render 0).
+      prisma.lead.count({
+        where: { ...where, ...propertyClause, status: LeadStatus.SIGNED },
+      }),
+      // Lead journey strip — same cohort semantics as the portfolio funnel
+      // report, scoped to the dashboard's own range window.
+      getLeadJourney({
+        orgId: scope.orgId,
+        // Unfiltered path passes the org's marketable property ids (same
+        // scope as propertyClause / the "Leads (28d)" tile) instead of null
+        // (org-wide) — previously disagreed with every other KPI on this
+        // screen. Known residual: this in-array filter excludes org-level
+        // leads with propertyId = null that the tile's OR-clause still
+        // includes (acceptable drift, documented here).
+        // `??` (not isFiltered) so a restricted user whose selection was
+        // fully denied (effectiveIds = []) gets an empty journey, never the
+        // org-wide one — [] must mean "matches nothing", null means
+        // "unrestricted → all marketable".
+        propertyIds: effectiveIds ?? allPropertiesForSelector.map((p) => p.id),
+        periodDays: rangeDaysCount,
+      }).catch(() => null),
+      // Conversations mini-card — same d7/intake shape as the chatbot page
+      // (app/portal/chatbot/page.tsx), scoped to the dashboard's property
+      // filter. ChatbotConversation.propertyId is nullable so propertyClause
+      // (defaultIncludesOrgRows) applies unchanged.
+      prisma.chatbotConversation
+        .count({
+          where: { orgId: scope.orgId, ...propertyClause, lastMessageAt: { gte: since7d } },
+        })
+        .catch(() => 0),
+      prisma.chatbotConversation
+        .count({
+          where: {
+            orgId: scope.orgId,
+            ...propertyClause,
+            lastMessageAt: { gte: since7d },
+            // AND-wrapped: propertyClause's default (unfiltered) shape is
+            // itself `{ OR: [...] }` — a sibling literal `OR:` key here
+            // clobbers it, widening the numerator to org-wide (including
+            // EXCLUDED/IMPORTED/ARCHIVED properties) while the denominator
+            // above stayed scoped, so the rate could exceed 100%.
+            AND: [
+              { OR: [{ capturedEmail: { not: null } }, { capturedPhone: { not: null } }] },
+            ],
+          },
+        })
+        .catch(() => 0),
       prisma.tour.count({
         where: {
           status: TourStatus.SCHEDULED,
@@ -509,6 +599,34 @@ export default async function PortalHome({
         ? Math.round(((leadsNew28d - leadsPrev28d) / leadsPrev28d) * 100)
         : null;
 
+    // Signed leases (28d) delta — untracked orgs (never had a single SIGNED
+    // lead) omit the tile entirely rather than showing a dead "0".
+    const signedLeasesTracked = signedLeasesAllTime > 0;
+    const signedLeasesDeltaPct =
+      signedLeasesPrev28d >= LOW_SAMPLE_FLOOR
+        ? Math.round(
+            ((signedLeases28d - signedLeasesPrev28d) / signedLeasesPrev28d) * 100,
+          )
+        : null;
+
+    // Lead journey strip — tracked stages only, and only worth rendering
+    // once there's an actual cohort to follow (2+ tracked stages, some
+    // leads in the window).
+    const journeyStages = leadJourney?.stages.filter((s) => s.tracked) ?? [];
+    const showJourney = journeyStages.length >= 2 && journeyStages[0].count > 0;
+    // Single assertion, only ever dereferenced under the showJourney guard
+    // below (where leadJourney is in fact non-null) — replaces three
+    // separate `leadJourney!` reads in the off-ramps line.
+    const journey = leadJourney!;
+
+    // Conversations mini-card — omit when there's nothing to show (no
+    // chatbot activity this week), same "untracked/quiet is omitted, never
+    // a dead zero" rule as the rest of the dashboard.
+    const conversationCaptureRate =
+      conversations7d > 0
+        ? Math.round((conversationsCaptured7d / conversations7d) * 100)
+        : null;
+
     // AppFolio integration row — used to surface "Auto-sync paused" as a
     // subtle chip on the dashboard Operations teaser. Cheap probe (a few
     // boolean fields) and only renders when the operator has connected
@@ -526,12 +644,8 @@ export default async function PortalHome({
       integrationChips.find((c) => c.key === "gsc")?.status === "off" &&
       integrationChips.find((c) => c.key === "ga4")?.status === "off";
 
-    // Visible-property list for the multi-select dropdown.
-    const allPropertiesForSelector = await prisma.property.findMany({
-      where: marketablePropertyWhere(scope.orgId),
-      select: { id: true, name: true },
-      orderBy: { name: "asc" },
-    });
+    // Visible-property list for the multi-select dropdown (fetched above,
+    // ahead of the batch, so getLeadJourney can reuse the same query).
     const selectorProperties = visibleProperties(
       scope,
       allPropertiesForSelector,
@@ -1087,7 +1201,36 @@ export default async function PortalHome({
           />
           {/* Tours tile removed 2026-07-29 (Adam): an untracked stage is
               omitted, never rendered as a dash with a Connect ask. It
-              returns when real Tour rows exist for the org. */}
+              returns when real Tour rows exist for the org.
+              Signed leases (28d) fills the 4th slot instead — the money
+              metric, and the only one of the four with real KPI-worthy
+              stakes. Omitted entirely (not rendered as 0) when the org
+              has never tracked a single signed lease. leads/page.tsx has
+              no `status` searchParam, so this links to the plain kanban
+              rather than a filtered view. */}
+          {signedLeasesTracked ? (
+            <KpiTile
+              density="dense"
+              label="Signed leases (28d)"
+              value={signedLeases28d.toLocaleString()}
+              hint={`${signedLeasesAllTime.toLocaleString()} all-time`}
+              icon={<FileSignature className="h-3.5 w-3.5" />}
+              delta={
+                signedLeasesDeltaPct != null
+                  ? {
+                      value: `${signedLeasesDeltaPct >= 0 ? "+" : ""}${signedLeasesDeltaPct}%`,
+                      trend:
+                        signedLeasesDeltaPct > 0
+                          ? "up"
+                          : signedLeasesDeltaPct < 0
+                            ? "down"
+                            : "flat",
+                    }
+                  : undefined
+              }
+              href="/portal/leads"
+            />
+          ) : null}
         </section>
 
         {/* Featured-property band — only for multi-property orgs. A
@@ -1152,6 +1295,94 @@ export default async function PortalHome({
             ) : null}
 
             <PipelineStrip stages={pipelineStages} />
+
+            {/* Lead journey — same cohort/tracked-stage semantics as the
+              portfolio funnel report (lib/reports/lead-journey.ts), denser:
+              no per-source table, just the stage strip + off-ramps line.
+              Fills the dead space Adam flagged under the pipeline strip on
+              single-property orgs. Omitted (not a 0-row strip) when there's
+              no real cohort to show yet. */}
+            {showJourney ? (
+              <DashboardSection
+                title="Lead journey"
+                description={`Leads created in the last ${rangeDaysCount} days, followed through to signing.`}
+                href="/portal/reports/portfolio"
+                hrefLabel="Full report"
+              >
+                <div className="flex items-stretch">
+                  {journeyStages.map((stage, i) => (
+                    <div key={stage.key} className="contents">
+                      {i > 0 ? (
+                        // The marker sits BETWEEN the two cells it relates to
+                        // (the transition from the previous stage into this
+                        // one), not stacked above this stage's own number.
+                        <div
+                          className="flex items-center shrink-0 px-2 font-mono text-[10px] tabular-nums text-muted-foreground"
+                          aria-hidden={stage.conversionFromPrev == null}
+                        >
+                          {stage.conversionFromPrev != null
+                            ? `→${stage.conversionFromPrev}%`
+                            : "→"}
+                        </div>
+                      ) : null}
+                      <div
+                        className={
+                          i > 0
+                            ? "flex-1 min-w-0 pr-3 border-l border-[var(--hair)] pl-3"
+                            : "flex-1 min-w-0 pr-3"
+                        }
+                      >
+                        <div className="ls-eyebrow">{stage.label}</div>
+                        <div className="ls-metric ls-metric-md mt-1">
+                          {stage.count.toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {journey.lost + journey.unqualified > 0 ? (
+                  <p className="mt-2 text-[11px] text-muted-foreground">
+                    Off-ramps: {journey.lost.toLocaleString()} lost,{" "}
+                    {journey.unqualified.toLocaleString()} unqualified.
+                  </p>
+                ) : null}
+              </DashboardSection>
+            ) : null}
+
+            {/* Conversations — balance check (Adam, whitespace pass
+              2026-07-29): once the journey strip above still leaves the
+              left column shorter than the AttentionQueue-anchored right
+              column, this closes the gap with a fact the chatbot page
+              already computes (d7 count + captured-contact rate). Omitted
+              when there's no chatbot activity this week. */}
+            {conversations7d > 0 ? (
+              <DashboardSection
+                title="Conversations"
+                description="Chatbot conversations this week."
+                href="/portal/chatbot"
+                hrefLabel="Open chatbot"
+              >
+                <div className="flex items-baseline gap-6">
+                  <div>
+                    <div className="ls-eyebrow">Conversations · 7d</div>
+                    <div className="ls-metric ls-metric-md mt-1">
+                      {conversations7d.toLocaleString()}
+                    </div>
+                  </div>
+                  {conversationCaptureRate != null ? (
+                    <div>
+                      {/* /portal/chatbot computes its capture rate over 30d;
+                        this card's window is 7d — label it explicitly so the
+                        two numbers never silently disagree. */}
+                      <div className="ls-eyebrow">Capture rate · 7d</div>
+                      <div className="ls-metric ls-metric-md mt-1">
+                        {conversationCaptureRate}%
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              </DashboardSection>
+            ) : null}
           </div>
 
           <div className="space-y-2 min-w-0">
