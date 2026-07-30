@@ -4,6 +4,8 @@ import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { DraftStatus } from "@prisma/client";
 import { PageHeader } from "@/components/admin/page-header";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
+import { TargetQueryManager } from "@/components/portal/seo/target-query-manager";
 
 export const metadata: Metadata = { title: "Content drafts" };
 export const dynamic = "force-dynamic";
@@ -119,6 +121,28 @@ export default async function PortalDraftsListPage({
     (countMap.get("GENERATING") ?? 0) +
     (countMap.get("PENDING_REVIEW") ?? 0) +
     (countMap.get("CHANGES_REQUESTED") ?? 0);
+
+  // Target-query CRUD is per-property; this cross-property drafts inbox has
+  // no single property in context, so — same featured-property rule as
+  // /portal/seo/agent — scope it to the first LIVE marketable property,
+  // falling back to the first marketable property.
+  const marketableWhere = {
+    ...marketablePropertyWhere(scope.orgId),
+    ...(scope.allowedPropertyIds
+      ? { id: { in: scope.allowedPropertyIds } }
+      : {}),
+  };
+  const featuredProperty =
+    (await prisma.property.findFirst({
+      where: { ...marketableWhere, launchStatus: "LIVE" },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    })) ??
+    (await prisma.property.findFirst({
+      where: marketableWhere,
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }));
 
   return (
     <div className="space-y-5">
@@ -241,6 +265,25 @@ export default async function PortalDraftsListPage({
           })}
         </ul>
       )}
+
+      {featuredProperty ? (
+        <div className="space-y-1.5">
+          {/* Codex review 2026-07-29: never silently bind CRUD to an
+              unnamed property — say which one this manages. */}
+          <p className="text-[11px] text-muted-foreground">
+            Target queries for{" "}
+            <span className="font-semibold text-foreground">
+              {featuredProperty.name}
+            </span>
+            {" — "}switch properties from the{" "}
+            <Link href="/portal/seo/agent" className="underline">
+              SEO Agent
+            </Link>
+            .
+          </p>
+          <TargetQueryManager propertyId={featuredProperty.id} />
+        </div>
+      ) : null}
     </div>
   );
 }

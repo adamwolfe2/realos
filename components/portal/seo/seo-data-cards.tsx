@@ -103,9 +103,11 @@ const PILLAR_SUBLABEL: Record<string, string> = {
 export function HealthScoreCard({
   composite,
   pillars,
+  bare = false,
 }: {
   composite: number | null;
   pillars: Array<{ label: string; value: number | null; max?: number }>;
+  bare?: boolean;
 }) {
   const score = composite ?? 0;
   const ringR = 28;
@@ -116,7 +118,11 @@ export function HealthScoreCard({
 
   return (
     <section
-      className={`rounded-[2px] border ${SUBTLE_BORDER} bg-card p-5 grid grid-cols-[auto_minmax(0,1fr)] gap-5 items-center`}
+      className={
+        bare
+          ? "grid grid-cols-[auto_minmax(0,1fr)] gap-5 items-center"
+          : `rounded-[2px] border ${SUBTLE_BORDER} bg-card p-5 grid grid-cols-[auto_minmax(0,1fr)] gap-5 items-center`
+      }
     >
       <div className="relative h-20 w-20">
         <svg viewBox="0 0 64 64" className="absolute inset-0">
@@ -246,13 +252,20 @@ export type SerpRow = {
 export function SerpRankingsCard({
   rows,
   totalQueries,
+  bare = false,
 }: {
   rows: SerpRow[];
   totalQueries: number;
+  bare?: boolean;
 }) {
+  const sidePad = bare ? "px-0" : "px-5";
   return (
-    <section className={`rounded-[2px] border ${SUBTLE_BORDER} bg-card overflow-hidden`}>
-      <header className="flex items-baseline justify-between gap-3 px-5 py-3 border-b border-border">
+    <section
+      className={
+        bare ? "overflow-hidden" : `rounded-[2px] border ${SUBTLE_BORDER} bg-card overflow-hidden`
+      }
+    >
+      <header className={`flex items-baseline justify-between gap-3 ${sidePad} py-3 border-b border-border`}>
         <div>
           <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-0.5">
             SERP rankings · live
@@ -266,7 +279,7 @@ export function SerpRankingsCard({
         </span>
       </header>
       {rows.length === 0 ? (
-        <p className="text-[12px] text-muted-foreground py-8 text-center px-5">
+        <p className={`text-[12px] text-muted-foreground py-8 text-center ${sidePad}`}>
           Rankings appear after the first DataforSEO scan completes.
         </p>
       ) : (
@@ -277,7 +290,7 @@ export function SerpRankingsCard({
             return (
               <li
                 key={r.query}
-                className="grid grid-cols-[1fr_72px_120px] items-center gap-3 px-5 py-3 hover:bg-muted/30 transition-colors"
+                className={`grid grid-cols-[1fr_72px_120px] items-center gap-3 ${sidePad} py-3 hover:bg-muted/30 transition-colors`}
               >
                 <div className="min-w-0">
                   <p className="text-[13px] font-semibold text-foreground truncate">
@@ -518,6 +531,7 @@ function VitalCell({
 
 export function BacklinksCard({
   summary,
+  bare = false,
 }: {
   summary: {
     target: string;
@@ -526,10 +540,12 @@ export function BacklinksCard({
     referringDomains: number;
     referringMainDomains: number;
   } | null;
+  bare?: boolean;
 }) {
+  const cardClass = bare ? "" : `rounded-[2px] border ${SUBTLE_BORDER} bg-card p-5`;
   if (!summary) {
     return (
-      <section className={`rounded-[2px] border ${SUBTLE_BORDER} bg-card p-5`}>
+      <section className={cardClass}>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-1">
@@ -555,7 +571,7 @@ export function BacklinksCard({
     );
   }
   return (
-    <section className={`rounded-[2px] border ${SUBTLE_BORDER} bg-card p-5`}>
+    <section className={cardClass}>
       <header className="mb-3">
         <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-0.5">
           Backlinks · {summary.target}
@@ -618,10 +634,21 @@ export type CompetitorRow = {
   intersections?: number; // for DataforSEO competitors
 };
 
-export function CompetitorsCard({ rows }: { rows: CompetitorRow[] }) {
+export function CompetitorsCard({
+  rows,
+  bare = false,
+}: {
+  rows: CompetitorRow[];
+  bare?: boolean;
+}) {
+  const sidePad = bare ? "px-0" : "px-5";
   return (
-    <section className={`rounded-[2px] border ${SUBTLE_BORDER} bg-card overflow-hidden`}>
-      <header className="px-5 py-3 border-b border-border">
+    <section
+      className={
+        bare ? "overflow-hidden" : `rounded-[2px] border ${SUBTLE_BORDER} bg-card overflow-hidden`
+      }
+    >
+      <header className={`${sidePad} py-3 border-b border-border`}>
         <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-0.5">
           Competitors
         </p>
@@ -630,7 +657,7 @@ export function CompetitorsCard({ rows }: { rows: CompetitorRow[] }) {
         </h3>
       </header>
       {rows.length === 0 ? (
-        <p className="text-[12px] text-muted-foreground py-8 text-center px-5">
+        <p className={`text-[12px] text-muted-foreground py-8 text-center ${sidePad}`}>
           Competitors appear after the nightly scan or your first scan
           completes.
         </p>
@@ -639,7 +666,7 @@ export function CompetitorsCard({ rows }: { rows: CompetitorRow[] }) {
           {rows.slice(0, 8).map((c, i) => (
             <li
               key={`${c.source}-${c.name}-${i}`}
-              className="grid grid-cols-[1fr_72px_72px] items-center gap-3 px-5 py-2.5"
+              className={`grid grid-cols-[1fr_72px_72px] items-center gap-3 ${sidePad} py-2.5`}
             >
               <div className="min-w-0">
                 <p className="text-[13px] font-semibold text-foreground truncate">

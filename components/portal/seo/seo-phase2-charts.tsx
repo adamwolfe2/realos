@@ -246,12 +246,23 @@ export type StrikingDistanceRow = {
 
 export function StrikingDistanceTable({
   rows,
+  bare = false,
 }: {
   rows: StrikingDistanceRow[];
+  bare?: boolean;
 }) {
+  const sidePad = bare ? "px-0" : "px-5";
   return (
-    <section className="rounded-[2px] border border-border bg-card overflow-hidden">
-      <header className="flex items-baseline justify-between gap-3 px-5 py-3 border-b border-border bg-gradient-to-r from-primary/[0.04] via-card to-card">
+    <section
+      className={
+        bare
+          ? "overflow-hidden"
+          : "rounded-[2px] border border-border bg-card overflow-hidden"
+      }
+    >
+      <header
+        className={`flex items-baseline justify-between gap-3 ${sidePad} py-3 border-b border-border bg-gradient-to-r from-primary/[0.04] via-card to-card`}
+      >
         <div>
           <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
             Striking distance
@@ -265,7 +276,7 @@ export function StrikingDistanceTable({
         </span>
       </header>
       {rows.length === 0 ? (
-        <div className="px-5 py-5">
+        <div className={`${sidePad} py-5`}>
           <EmptyStateBody
             preview={<StrikingDistancePreview />}
             body="A ranked list of queries already showing in positions #4–20 with real impression volume — the closest-to-the-money keywords. Each row links to the URL ranking for it, so you know exactly which page to optimize first."
@@ -276,7 +287,7 @@ export function StrikingDistanceTable({
         <table className="w-full text-[12px]">
           <thead>
             <tr className="text-left text-[9.5px] font-mono uppercase tracking-[0.08em] text-muted-foreground border-b border-border/60">
-              <th className="px-5 py-2 font-semibold">Query</th>
+              <th className={`${sidePad} py-2 font-semibold`}>Query</th>
               <th className="px-3 py-2 font-semibold text-right">Position</th>
               <th className="px-3 py-2 font-semibold text-right">Impressions</th>
               <th className="px-3 py-2 font-semibold text-right">Clicks</th>
@@ -289,7 +300,7 @@ export function StrikingDistanceTable({
                 key={`${r.query}-${i}`}
                 className="border-b border-border/40 last:border-b-0 hover:bg-muted/30 transition-colors"
               >
-                <td className="px-5 py-2 min-w-0">
+                <td className={`${sidePad} py-2 min-w-0`}>
                   <p className="font-medium text-foreground truncate max-w-[260px]">
                     {r.query}
                   </p>
@@ -641,10 +652,17 @@ export type LocalPackRow = {
   topResults: Array<{ position: number; title: string; rating: number | null; reviewCount: number }>;
 };
 
-export function LocalPackCard({ rows }: { rows: LocalPackRow[] }) {
+export function LocalPackCard({
+  rows,
+  bare = false,
+}: {
+  rows: LocalPackRow[];
+  bare?: boolean;
+}) {
+  const sidePad = bare ? "px-0" : "px-5";
   if (rows.length === 0) {
     return (
-      <section className="rounded-[2px] border border-border bg-card p-5">
+      <section className={bare ? "" : "rounded-[2px] border border-border bg-card p-5"}>
         <SectionHeader
           eyebrow="Google Maps"
           title="Local pack tracker"
@@ -656,8 +674,12 @@ export function LocalPackCard({ rows }: { rows: LocalPackRow[] }) {
     );
   }
   return (
-    <section className="rounded-[2px] border border-border bg-card overflow-hidden">
-      <header className="px-5 py-3 border-b border-border">
+    <section
+      className={
+        bare ? "overflow-hidden" : "rounded-[2px] border border-border bg-card overflow-hidden"
+      }
+    >
+      <header className={`${sidePad} py-3 border-b border-border`}>
         <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
           Google Maps
         </p>
@@ -669,7 +691,7 @@ export function LocalPackCard({ rows }: { rows: LocalPackRow[] }) {
         {rows.slice(0, 6).map((r) => (
           <li
             key={r.query}
-            className="grid grid-cols-[1fr_72px_120px] items-center gap-3 px-5 py-2.5"
+            className={`grid grid-cols-[1fr_72px_120px] items-center gap-3 ${sidePad} py-2.5`}
           >
             <p className="text-[12.5px] font-medium text-foreground truncate">
               "{r.query}"

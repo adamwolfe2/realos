@@ -14,10 +14,8 @@ import {
   IntegrationStatusRow,
   HealthScoreCard,
   SerpRankingsCard,
-  LighthouseCard,
   BacklinksCard,
   CompetitorsCard,
-  AeoCard,
   type SerpRow,
   type CompetitorRow,
   type IntegrationState,
@@ -25,27 +23,23 @@ import {
 import {
   ExecSummaryRow,
   StrikingDistanceTable,
-  ShareOfVoiceDonut,
-  SiteHealthGauge,
   LocalPackCard,
   type RangeKey,
 } from "@/components/portal/seo/seo-phase2-charts";
 import {
   getExecSummary,
   getStrikingDistance,
-  getShareOfVoice,
   getSiteHealth,
   getLocalPackRows,
   getWeeklyChanges,
 } from "@/lib/seo/agent-charts-data";
 import { DraftLauncher } from "@/components/portal/seo/draft-launcher";
-import { TargetQueryManager } from "@/components/portal/seo/target-query-manager";
 import { RefreshRecommendationsButton } from "@/components/portal/seo/refresh-recommendations-button";
-import { DraftsInbox } from "@/components/portal/seo/drafts-inbox";
 import { PropertySwitcher } from "@/components/portal/seo/property-switcher";
 import { RecommendationManager } from "@/components/portal/seo/recommendation-manager";
 import { SnoozedRecsPanel } from "@/components/portal/seo/snoozed-recs-panel";
 import { WeeklyChangesPanel } from "@/components/portal/seo/weekly-changes-panel";
+import { TabbedCard } from "@/components/portal/ui/tabbed-card";
 
 export const metadata: Metadata = { title: "SEO Agent" };
 export const dynamic = "force-dynamic";
@@ -368,10 +362,6 @@ export default async function SeoAgentPage({
   const accessibility = lighthouseToday?.accessibility ?? null;
   const aeoTotal = aeoRecent.length;
   const aeoCited = aeoRecent.filter((a) => a.status === "CITED").length;
-  const aeoNotCited = aeoRecent.filter((a) => a.status === "NOT_CITED").length;
-  const aeoCompetitorCited = aeoRecent.filter(
-    (a) => a.status === "COMPETITOR_CITED",
-  ).length;
   const citationRate = aeoTotal > 0 ? aeoCited / aeoTotal : 0;
   const ranksTop10 = serpToday.filter(
     (s) => s.ourRank != null && s.ourRank <= 10,
@@ -430,18 +420,12 @@ export default async function SeoAgentPage({
   const [
     execSummary,
     strikingDistance,
-    shareOfVoice,
     siteHealth,
     localPackRows,
     weeklyChanges,
   ] = await Promise.all([
     getExecSummary({ orgId: scope.orgId, propertyId: property.id, range }),
     getStrikingDistance({ orgId: scope.orgId, propertyId: property.id }),
-    getShareOfVoice({
-      orgId: scope.orgId,
-      propertyId: property.id,
-      ourDomain: domain,
-    }),
     getSiteHealth({ orgId: scope.orgId, propertyId: property.id }),
     getLocalPackRows({ orgId: scope.orgId, propertyId: property.id }),
     getWeeklyChanges({ orgId: scope.orgId, propertyId: property.id }),
@@ -610,6 +594,12 @@ export default async function SeoAgentPage({
             >
               Drafts inbox →
             </Link>
+            <Link
+              href="/portal/seo/aeo"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
+            >
+              AI search →
+            </Link>
           </>
         }
       />
@@ -632,177 +622,154 @@ export default async function SeoAgentPage({
 
       <IntegrationStatusRow integrations={integrations} />
 
-      {/* ── ACTION PLAN — leads the page (refactor 2026-06-10). The
-          prioritized recommendations queue is the single most useful thing
-          here, so it sits directly under the header instead of below a wall
-          of metrics. The "Take action" controls ride on top of it. */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-base font-semibold text-foreground">
-            Your action plan
-          </h2>
-          <p className="text-[12px] text-muted-foreground mt-0.5">
-            Ranked most-impactful first. Each item has the time it takes and the
-            expected lift. Generated from your live search + AI data.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <RefreshRecommendationsButton propertyId={property.id} />
-          <DraftLauncher
-            propertyId={property.id}
-            propertyName={property.name}
-          />
-        </div>
-      </div>
-
-      {/* Recommendation workflow — OPEN + IN_PROGRESS only. SNOOZED
-          rows render in the SnoozedRecsPanel below so the active queue
-          stays focused on what needs work right now. */}
-      <RecommendationManager
-        recommendations={persistedRecs
-          .filter((r) => r.status === "OPEN" || r.status === "IN_PROGRESS")
-          .map((r) => ({
-            id: r.id,
-            category: r.category,
-            severity: r.severity,
-            title: r.title,
-            detail: r.detail,
-            estimateMinutes: r.estimateMinutes,
-            score: r.score,
-            actionHref: r.actionHref,
-            actionLabel: r.actionLabel,
-            status: r.status as "OPEN" | "IN_PROGRESS",
-          }))}
-      />
-
-      {/* Snoozed recs — collapsed-by-default panel showing what's
-          coming back and when. Wake-now buttons let operators flip
-          back to OPEN before the auto-revive date. */}
-      <SnoozedRecsPanel
-        recommendations={persistedRecs
-          .filter((r) => r.status === "SNOOZED" && r.snoozedUntil)
-          .map((r) => ({
-            id: r.id,
-            title: r.title,
-            severity: r.severity,
-            category: r.category,
-            snoozedUntil: r.snoozedUntil!.toISOString(),
-            snoozedReason: r.snoozedReason,
-          }))}
-      />
-
-      {/* ── HOW YOU'RE DOING — the health score + the numbers, now BELOW the
-          action plan (refactor 2026-06-10). The PropertyIntelligencePanel was
-          removed here: it was a strict subset of the queue above, so it just
-          duplicated the same recommendations. */}
-      <HealthScoreCard
-        composite={composite}
-        pillars={[
-          { label: "Perf.", value: performance },
-          { label: "SEO", value: seoScore },
-          { label: "A11y", value: accessibility },
-          {
-            label: "Top 10",
-            value: targetQueryCountTotal > 0 ? rankCoverage * 100 : null,
-          },
-          {
-            label: "AEO",
-            value: aeoTotal > 0 ? citationRate * 100 : null,
-          },
-          {
-            label: "Domain",
-            value:
-              backlinksLatest?.domainRank != null
-                ? backlinksLatest.domainRank / 10
-                : null,
-          },
-        ]}
-      />
-
       {/* The numbers — Search Console + DataForSEO KPIs with WoW deltas +
           plain-English sublabels + a benchmark dot. */}
       <ExecSummaryRow stats={execStatsEnriched} />
 
-      {/* Weekly changes — what moved (rank up/down, top-10 entries, new
-          competitor citations). Hidden when there's no notable signal. */}
-      <WeeklyChangesPanel changes={weeklyChanges} />
+      <TabbedCard
+        title="Your SEO workspace"
+        tabs={[
+          {
+            key: "action-plan",
+            label: "Action Plan",
+            description:
+              "Ranked most-impactful first — time to do and expected lift, from your live search + AI data.",
+            content: (
+              <div className="space-y-5">
+                <div className="flex items-center justify-end gap-2">
+                  <RefreshRecommendationsButton propertyId={property.id} />
+                  <DraftLauncher
+                    propertyId={property.id}
+                    propertyName={property.name}
+                  />
+                </div>
 
-      {/* Declutter (2026-06-10): removed the non-actionable data-viz here —
-          the Search→revenue funnel, Search-path flow, position-bucket area,
-          CTR-vs-position + opportunity scatters, branded-vs-non-branded bar,
-          per-URL ROI list, and the score-history line. They were vanity charts
-          that didn't drive a decision. Kept the genuinely actionable surfaces:
-          the striking-distance queries, Share of Voice, site health, local
-          pack, SERP rankings, and the recommendations queue. */}
+                <WeeklyChangesPanel changes={weeklyChanges} />
 
-      {/* Striking distance — queries ranking #4-20: the closest-to-page-1
-          wins, with the exact URL to optimize. Actionable. */}
-      <StrikingDistanceTable rows={strikingDistance} />
+                {/* Recommendation workflow — OPEN + IN_PROGRESS only.
+                    SNOOZED rows render in SnoozedRecsPanel below so the
+                    active queue stays focused on what needs work now. */}
+                <RecommendationManager
+                  recommendations={persistedRecs
+                    .filter(
+                      (r) => r.status === "OPEN" || r.status === "IN_PROGRESS",
+                    )
+                    .map((r) => ({
+                      id: r.id,
+                      category: r.category,
+                      severity: r.severity,
+                      title: r.title,
+                      detail: r.detail,
+                      estimateMinutes: r.estimateMinutes,
+                      score: r.score,
+                      actionHref: r.actionHref,
+                      actionLabel: r.actionLabel,
+                      status: r.status as "OPEN" | "IN_PROGRESS",
+                    }))}
+                />
 
-      {/* Share of Voice — who owns the AI/search conversation in your market. */}
-      <ShareOfVoiceDonut slices={shareOfVoice} />
+                <SnoozedRecsPanel
+                  recommendations={persistedRecs
+                    .filter((r) => r.status === "SNOOZED" && r.snoozedUntil)
+                    .map((r) => ({
+                      id: r.id,
+                      title: r.title,
+                      severity: r.severity,
+                      category: r.category,
+                      snoozedUntil: r.snoozedUntil!.toISOString(),
+                      snoozedReason: r.snoozedReason,
+                    }))}
+                />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <SiteHealthGauge
-          score={siteHealth.score}
-          critical={siteHealth.critical}
-          warning={siteHealth.warning}
-          notice={siteHealth.notice}
-        />
-        <LocalPackCard rows={localPackRows} />
-      </div>
-
-      {/* Drafts inbox — shows what the operator has sent for review,
-          including admin notes when changes are requested. Hidden when
-          the operator has zero drafts. */}
-      <DraftsInbox propertyId={property.id} />
-
-      {/* Target queries — operators add/remove their own queries here. */}
-      <TargetQueryManager propertyId={property.id} />
-
-      <SerpRankingsCard rows={serpRows} totalQueries={targetQueryCountTotal} />
-
-      <LighthouseCard
-        scores={{
-          performance: lighthouseToday?.performance ?? null,
-          accessibility: lighthouseToday?.accessibility ?? null,
-          bestPractices: lighthouseToday?.bestPractices ?? null,
-          seo: lighthouseToday?.seo ?? null,
-          pwa: lighthouseToday?.pwa ?? null,
-        }}
-        vitals={{
-          fcpMs: lighthouseToday?.fcpMs ?? null,
-          lcpMs: lighthouseToday?.lcpMs ?? null,
-          cls: lighthouseToday?.cls ?? null,
-          tbtMs: lighthouseToday?.tbtMs ?? null,
-        }}
-        url={property.websiteUrl}
+                <p className="text-[11px] text-muted-foreground">
+                  Drafts and target queries live in the{" "}
+                  <Link className="underline" href="/portal/seo/drafts">
+                    Drafts inbox →
+                  </Link>
+                </p>
+              </div>
+            ),
+          },
+          {
+            key: "health",
+            label: "Health",
+            description:
+              "Composite score, site health, and Lighthouse in one place.",
+            content: (
+              <div className="space-y-5">
+                <HealthScoreCard
+                  bare
+                  composite={composite}
+                  pillars={[
+                    { label: "Perf.", value: performance },
+                    { label: "SEO", value: seoScore },
+                    { label: "A11y", value: accessibility },
+                    {
+                      label: "Top 10",
+                      value:
+                        targetQueryCountTotal > 0 ? rankCoverage * 100 : null,
+                    },
+                    {
+                      label: "AEO",
+                      value: aeoTotal > 0 ? citationRate * 100 : null,
+                    },
+                    {
+                      label: "Domain",
+                      value:
+                        backlinksLatest?.domainRank != null
+                          ? backlinksLatest.domainRank / 10
+                          : null,
+                    },
+                  ]}
+                />
+                <ScoreStrip siteHealth={siteHealth} lighthouse={lighthouseToday} />
+              </div>
+            ),
+          },
+          {
+            key: "rankings",
+            label: "Rankings",
+            description:
+              "Target queries, striking-distance wins, and the local pack.",
+            content: (
+              <div className="space-y-5">
+                <StrikingDistanceTable bare rows={strikingDistance} />
+                <SerpRankingsCard
+                  bare
+                  rows={serpRows}
+                  totalQueries={targetQueryCountTotal}
+                />
+                <LocalPackCard bare rows={localPackRows} />
+              </div>
+            ),
+          },
+          {
+            key: "backlinks-competitors",
+            label: "Backlinks & Competitors",
+            description: "Domain authority and who you're up against.",
+            content: (
+              <div className="space-y-5">
+                <BacklinksCard
+                  bare
+                  summary={
+                    backlinksLatest
+                      ? {
+                          target: backlinksLatest.target,
+                          domainRank: backlinksLatest.domainRank,
+                          backlinks: backlinksLatest.backlinks,
+                          referringDomains: backlinksLatest.referringDomains,
+                          referringMainDomains:
+                            backlinksLatest.referringMainDomains,
+                        }
+                      : null
+                  }
+                />
+                <CompetitorsCard bare rows={competitorRows} />
+              </div>
+            ),
+          },
+        ]}
       />
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <BacklinksCard
-          summary={
-            backlinksLatest
-              ? {
-                  target: backlinksLatest.target,
-                  domainRank: backlinksLatest.domainRank,
-                  backlinks: backlinksLatest.backlinks,
-                  referringDomains: backlinksLatest.referringDomains,
-                  referringMainDomains: backlinksLatest.referringMainDomains,
-                }
-              : null
-          }
-        />
-        <AeoCard
-          citationRate={citationRate}
-          cited={aeoCited}
-          notCited={aeoNotCited}
-          competitorCited={aeoCompetitorCited}
-          totalChecks={aeoTotal}
-        />
-      </div>
-
-      <CompetitorsCard rows={competitorRows} />
 
       <FooterNote
         dataforSeoOn={isDataforSeoConfigured()}
@@ -847,5 +814,96 @@ function FooterNote({
         ) : null}
       </p>
     </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ScoreStrip — merges SiteHealthGauge + LighthouseCard (refactor 2026-07-29)
+// into one row of compact stat cells. Cells whose value is unavailable are
+// OMITTED entirely, never rendered as 0 or an em-dash. The site-health four
+// (score/critical/warning/notice) are also omitted as a group when there's
+// no audit row at all — getSiteHealth returns all-zero in that case, and
+// "0/100 · 0 critical" reads as a clean bill of health rather than "no
+// data yet." Perf/A11y/SEO pillars live in HealthScoreCard above this
+// strip in the same tab, so they aren't duplicated here.
+// ---------------------------------------------------------------------------
+
+function normalizeScore(value: number | null | undefined): number | null {
+  if (value == null) return null;
+  // Lighthouse scores are stored 0-100 on disk (dataforseo.ts rounds
+  // score*100 before write) — no 0-1 heuristic needed.
+  return Math.round(value);
+}
+
+function ScoreStrip({
+  siteHealth,
+  lighthouse,
+}: {
+  siteHealth: { score: number; critical: number; warning: number; notice: number };
+  lighthouse: {
+    bestPractices: number | null;
+    fcpMs: number | null;
+    lcpMs: number | null;
+    cls: number | null;
+    tbtMs: number | null;
+  } | null;
+}) {
+  const cells: Array<{ label: string; value: string; color?: string }> = [];
+
+  // Perf/A11y/SEO pillars already render in HealthScoreCard above this
+  // strip in the same tab — omit the whole site-health block here only
+  // when there's no audit row at all (all four fields 0), never show a
+  // misleading "0/100 · 0 critical".
+  const siteHealthAllZero =
+    siteHealth.score === 0 &&
+    siteHealth.critical === 0 &&
+    siteHealth.warning === 0 &&
+    siteHealth.notice === 0;
+  if (!siteHealthAllZero) {
+    cells.push(
+      { label: "Site health", value: `${Math.round(siteHealth.score)}/100` },
+      {
+        label: "Critical issues",
+        value: `${siteHealth.critical}`,
+        color: siteHealth.critical > 0 ? "#da1e28" : undefined,
+      },
+      {
+        label: "Warnings",
+        value: `${siteHealth.warning}`,
+        color: siteHealth.warning > 0 ? "#8a6d00" : undefined,
+      },
+      { label: "Notices", value: `${siteHealth.notice}` },
+    );
+  }
+
+  const bestPractices = normalizeScore(lighthouse?.bestPractices ?? null);
+  if (bestPractices != null)
+    cells.push({ label: "Best practices", value: `${bestPractices}` });
+
+  if (lighthouse?.fcpMs != null)
+    cells.push({ label: "FCP", value: `${(lighthouse.fcpMs / 1000).toFixed(1)}s` });
+  if (lighthouse?.lcpMs != null)
+    cells.push({ label: "LCP", value: `${(lighthouse.lcpMs / 1000).toFixed(1)}s` });
+  if (lighthouse?.cls != null)
+    cells.push({ label: "CLS", value: lighthouse.cls.toFixed(2) });
+  if (lighthouse?.tbtMs != null)
+    cells.push({ label: "TBT", value: `${lighthouse.tbtMs}ms` });
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+      {cells.map((c) => (
+        <div key={c.label} className="rounded-[2px] border border-border p-3">
+          <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-muted-foreground">
+            {c.label}
+          </p>
+          <p
+            className="text-[13px] font-semibold tabular-nums mt-0.5"
+            style={c.color ? { color: c.color } : undefined}
+          >
+            {c.value}
+          </p>
+        </div>
+      ))}
+    </div>
   );
 }
