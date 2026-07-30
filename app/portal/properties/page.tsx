@@ -12,7 +12,7 @@ import {
 } from "@/lib/tenancy/property-filter";
 import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-banner";
 import { formatDistanceToNow } from "date-fns";
-import { Building2, MapPin, Users, RefreshCw, Inbox } from "lucide-react";
+import { Building2, MapPin, Users } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 // PropertyFormDialog hidden in the actions row — see issue #69. Import
@@ -27,6 +27,7 @@ import {
 import { PillCell, NumberCell, EmptyCell } from "@/components/portal/ui/cells";
 import { PropertiesSearch } from "@/components/portal/properties/properties-search";
 import { PropertyAvatar } from "@/components/portal/properties/property-avatar";
+import { PortfolioStrip } from "@/components/portal/properties/portfolio-strip";
 import {
   ASSET_CLASS_LABEL,
   SIZE_BAND_LABEL,
@@ -406,7 +407,13 @@ export default async function PropertiesList({
       />
 
       {countAll > 0 ? (
-        <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+        // Trimmed from 4 tiles to 2 (2026-07-29): "Recently synced" and
+        // "Pending review" read as dead zeros for most orgs and gave the
+        // page no visual anchor. Replaced with the PortfolioStrip (real
+        // building photos) above the table — see below. Both dropped
+        // counts (countSynced, importedCount) are still surfaced via the
+        // "Recently synced" view tab and the "+N more in AppFolio" link.
+        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <KpiTile
             label="Properties"
             value={countAll.toLocaleString()}
@@ -416,18 +423,6 @@ export default async function PropertiesList({
             label="Total leads"
             value={totalLeads.toLocaleString()}
             icon={<Users className="h-3.5 w-3.5" />}
-          />
-          <KpiTile
-            label="Recently synced"
-            value={countSynced.toLocaleString()}
-            hint="Last 7 days"
-            icon={<RefreshCw className="h-3.5 w-3.5" />}
-          />
-          <KpiTile
-            label="Pending review"
-            value={importedCount.toLocaleString()}
-            hint="Awaiting curation"
-            icon={<Inbox className="h-3.5 w-3.5" />}
           />
         </section>
       ) : null}
@@ -512,7 +507,13 @@ export default async function PropertiesList({
               variant="bare"
             />
           ) : (
-            <DataTable<PropertyRow>
+            <>
+              {/* Portfolio strip — building photos for the current page's
+                  properties (up to 8, "+N more" tail beyond that). Reuses
+                  the same heroImageUrl/photoUrls cascade as the table's
+                  avatar and the dashboard's Featured Property card. */}
+              <PortfolioStrip properties={properties} total={filteredTotal} />
+              <DataTable<PropertyRow>
               rows={properties as PropertyRow[]}
               getRowHref={(p) => `/portal/properties/${p.id}`}
               columns={[
@@ -649,7 +650,8 @@ export default async function PropertiesList({
                     ),
                 },
               ]}
-            />
+              />
+            </>
           )}
 
           {/* Pagination — only renders when there's more than one page worth

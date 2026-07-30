@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { prisma } from "@/lib/db";
+import { bucketDailyCounts } from "@/lib/visitors/pulse";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
@@ -184,14 +185,17 @@ export default async function VisitorsPage({
   // installed on the org's resident domain, not per property. Use the
   // org-level-inclusive fragment so selecting a property in the switcher
   // doesn't hide every visitor.
+  const propertyClause = await marketableScopedPropertyClause(
+    scope,
+    propertyIds,
+    "propertyId",
+    { selectedIncludesOrgRows: true, defaultIncludesOrgRows: true },
+  );
   const baseWhere: Prisma.VisitorWhereInput = {
     ...tenant,
     // Default (no selection) scopes to enabled properties; org-level pixel
     // visitors (propertyId=null) stay visible in both modes.
-    ...(await marketableScopedPropertyClause(scope, propertyIds, "propertyId", {
-      selectedIncludesOrgRows: true,
-      defaultIncludesOrgRows: true,
-    })),
+    ...propertyClause,
     ...(since ? { firstSeenAt: { gte: since } } : {}),
   };
 
@@ -236,6 +240,14 @@ export default async function VisitorsPage({
   const LIVE_WINDOW_MS = 5 * 60 * 1000;
   const liveSince = new Date(Date.now() - LIVE_WINDOW_MS);
 
+  // Visit pulse — daily visit counts for the last 30 days, independent of
+  // the window/status tabs above (always the full 30-day picture) so the
+  // strip reads as a stable trend line rather than jumping around as the
+  // operator flips filters. Only `firstSeenAt` is selected — cheap even at
+  // a few thousand rows since it's a single Date column per row.
+  const PULSE_DAYS = 30;
+  const pulseSince = new Date(Date.now() - PULSE_DAYS * 24 * 60 * 60 * 1000);
+
   const [
     visitors,
     totalInView,
@@ -243,6 +255,7 @@ export default async function VisitorsPage({
     summary,
     liveChats,
     totalEverCount,
+    pulseRows,
   ] = await Promise.all([
     prisma.visitor.findMany({
       where,
@@ -350,7 +363,26 @@ export default async function VisitorsPage({
     // value when totalInView === 0 so the count is effectively a no-op
     // for the common case.
     prisma.visitor.count({ where: tenant as Prisma.VisitorWhereInput }),
+    // ponytail: soft cap at 20k rows — bucketing only needs the date, and
+    // no org in this product is anywhere near that visit volume in 30
+    // days. If that ever changes, replace with a grouped SQL count-by-day.
+    prisma.visitor.findMany({
+      where: { ...tenant, ...propertyClause, firstSeenAt: { gte: pulseSince } },
+      select: { firstSeenAt: true },
+      // Newest-first so the 20k cap degrades to "most recent days complete"
+      // instead of an arbitrary sample producing wrong-shaped bars.
+      orderBy: { firstSeenAt: "desc" },
+      take: 20_000,
+    }),
   ]);
+
+  const pulseDaily = bucketDailyCounts(
+    pulseRows.map((r) => r.firstSeenAt),
+    PULSE_DAYS,
+  );
+  // Sum the BUCKETS, not the raw rows: rows on the oldest partial UTC day
+  // fall outside the 30 buckets and must not inflate the headline number.
+  const pulseTotal = pulseDaily.reduce((a, b) => a + b, 0);
 
   const hasPixel = Boolean(integration?.cursivePixelId);
   const noVisitorsAtAll = totalInView === 0 && totalEverCount === 0;
@@ -414,19 +446,48 @@ export default async function VisitorsPage({
         title="Visitor feed"
         description="Real people who visited your site, resolved to a name + email via the Cursive identity graph. Every row is outreach-ready. New identifications land every ~5 minutes; this list refreshes every 60 seconds. Click Sync now to pull fresh data immediately."
         actions={
-          <div className="flex items-center gap-3 flex-wrap">
-            <Suspense
-              fallback={
-                <div className="h-9 w-64 animate-pulse bg-neutral-100 rounded" />
-              }
-            >
-              <PropertyMultiSelect
-                properties={properties}
-                orgId={scope.orgId}
+          // Bug fix (2026-07-29): this slot renders inside PageHeader's
+          // `shrink-0` actions column, which sizes itself off this block's
+          // max-content width. The old markup was a single `flex-wrap` row
+          // whose pixel-status <p> was itself a no-wrap inline-flex run
+          // (icon + "Pixel on" + domain + "last event ..."), so the row's
+          // effective width was the SUM of every control unwrapped — often
+          // 900px+. flex-wrap never got a chance to kick in because CSS
+          // computes a flex container's max-content size assuming a single
+          // line unless something gives it an explicit width. That reserved
+          // width squeezed PageHeader's `flex-1 min-w-0` title column down
+          // to a sliver, wrapping "Visitor feed" mid-word and turning the
+          // description into a one-word-per-line column.
+          //
+          // Fix: give this block an explicit bounded width (`md:max-w-*`)
+          // so the browser has something concrete to wrap against, and
+          // split controls (row 1) from the pixel-status caption (row 2)
+          // so neither row's content can grow the whole block unbounded.
+          <div className="flex flex-col gap-2 w-full md:w-auto md:max-w-[520px] md:items-end">
+            <div className="flex items-center gap-2 flex-wrap md:justify-end w-full">
+              <Suspense
+                fallback={
+                  <div className="h-9 w-64 animate-pulse bg-neutral-100 rounded" />
+                }
+              >
+                <PropertyMultiSelect
+                  properties={properties}
+                  orgId={scope.orgId}
+                />
+              </Suspense>
+              {hasPixel ? (
+                <PixelSyncButton
+                  lastEventAt={integration?.lastEventAt ?? null}
+                  hasSegment={Boolean(integration?.cursiveSegmentId)}
+                />
+              ) : null}
+              <ExportButton
+                href="/api/tenant/visitors/export"
+                label="Export CSV (hashed emails)"
               />
-            </Suspense>
+            </div>
             {hasPixel ? (
-              <p className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap justify-end w-full">
                 {/* Real-time freshness chip — live (green) when an event
                     landed in the last 5 minutes (webhook path is healthy),
                     stale (amber) 5-30 min (probably segment-cron only),
@@ -461,28 +522,20 @@ export default async function VisitorsPage({
                     </span>
                   );
                 })()}
-                Pixel on{" "}
-                <span className="font-medium text-foreground">
-                  {integration?.installedOnDomain ?? "unknown host"}
+                <span className="truncate max-w-[320px]">
+                  Pixel on{" "}
+                  <span className="font-medium text-foreground">
+                    {integration?.installedOnDomain ?? "unknown host"}
+                  </span>
+                  {integration?.lastEventAt
+                    ? ` · last event ${formatDistanceToNow(
+                        integration.lastEventAt,
+                        { addSuffix: true },
+                      )}`
+                    : " · no events yet"}
                 </span>
-                {integration?.lastEventAt
-                  ? ` · last event ${formatDistanceToNow(
-                      integration.lastEventAt,
-                      { addSuffix: true },
-                    )}`
-                  : " · no events yet"}
               </p>
             ) : null}
-            {hasPixel ? (
-              <PixelSyncButton
-                lastEventAt={integration?.lastEventAt ?? null}
-                hasSegment={Boolean(integration?.cursiveSegmentId)}
-              />
-            ) : null}
-            <ExportButton
-              href="/api/tenant/visitors/export"
-              label="Export CSV (hashed emails)"
-            />
           </div>
         }
       />
@@ -561,6 +614,25 @@ export default async function VisitorsPage({
           hint="In your pipeline"
           icon={<Users className="h-3.5 w-3.5" />}
         />
+      </section>
+
+      {/* Visit pulse — compact 30-day daily-visits strip. Built entirely
+          from `pulseRows` (a lightweight firstSeenAt-only query already
+          fetched above in the same Promise.all as everything else on this
+          page), bucketed server-side. No client fetch. */}
+      <section aria-label="Visit pulse" className="ls-card p-4 flex items-center gap-4">
+        <div className="shrink-0">
+          <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+            Visit pulse
+          </div>
+          <div className="font-mono text-[20px] font-semibold tabular-nums text-foreground mt-0.5">
+            {pulseTotal.toLocaleString()}
+          </div>
+          <div className="text-[10px] text-muted-foreground">last 30 days</div>
+        </div>
+        <div className="flex-1 min-w-0">
+          <VisitPulseBars data={pulseDaily} />
+        </div>
       </section>
 
       {/* Pixel staleness banner removed per UX feedback — the new
@@ -718,6 +790,28 @@ function pathFromUrl(url: string): string {
   } catch {
     return url;
   }
+}
+
+// Flat square bars — same visual language as the reports snapshot Sparkline
+// (components/portal/reports/snapshot-shared.tsx), inlined locally per the
+// "visitors page owns its own components" rule rather than importing across
+// the reports/visitors boundary.
+function VisitPulseBars({ data }: { data: number[] }) {
+  const max = Math.max(1, ...data);
+  return (
+    <div className="flex h-9 items-end gap-[2px]" aria-hidden="true">
+      {data.map((v, i) => (
+        <span
+          key={i}
+          className={cn(
+            "min-h-[2px] flex-1 rounded-[1px]",
+            v === max ? "bg-primary" : "bg-primary/25",
+          )}
+          style={{ height: `${Math.max(4, Math.round((v / max) * 100))}%` }}
+        />
+      ))}
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------------------

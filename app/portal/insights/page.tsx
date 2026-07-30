@@ -303,11 +303,12 @@ function SignalsTab({
         <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <SignalCard
             label="Overall score"
-            value={`${latest.overallScore}`}
+            value={latest.overallScore != null ? `${latest.overallScore}` : "—"}
             caption="out of 100"
             deltaPct={numOrNull(wow.overallScore)}
             series={overallSeries}
             href="/portal/insights"
+            ring
           />
           <SignalCard
             label="SEO rank"

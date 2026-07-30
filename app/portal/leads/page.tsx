@@ -40,6 +40,7 @@ import { EmptyState } from "@/components/portal/ui/empty-state";
 import { ExportButton } from "@/components/ui/export-button";
 import { humanLeadSource } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { CHART_COLORS } from "@/components/portal/ui/chart-theme";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -627,9 +628,10 @@ export default async function LeadsKanbanPage({
         </p>
       ) : null}
 
-      {/* Source-mix one-liner. Renders only when at least one lead
+      {/* Source-mix segmented bar. Renders only when at least one lead
           exists and at least one source has data so it doesn't echo
-          "0 leads from no sources" on day-one tenants.
+          an empty bar on day-one tenants. Same sourceCounts data the
+          old text one-liner used — no new queries.
 
           Defensive dedupe (2026-06-04): two LeadSource enum values
           can render to the same human label ("Chatbot" appeared twice
@@ -638,21 +640,13 @@ export default async function LeadsKanbanPage({
           label and sum counts before formatting so the operator sees
           one entry per source name. */}
       {totalCount > 0 && sourceCounts.length > 0 ? (
-        <p className="text-[11.5px] text-muted-foreground">
-          {totalCount.toLocaleString()} {totalCount === 1 ? "lead" : "leads"}
-          {" · "}
-          {(() => {
-            const byLabel = new Map<string, number>();
-            for (const r of sourceCounts) {
-              const label = humanLeadSource(r.source);
-              byLabel.set(label, (byLabel.get(label) ?? 0) + r._count._all);
-            }
-            return Array.from(byLabel.entries())
-              .sort((a, b) => b[1] - a[1])
-              .map(([label, count]) => `${count} from ${label}`)
-              .join(" · ");
-          })()}
-        </p>
+        <SourceMixBar
+          totalCount={totalCount}
+          sourceCounts={sourceCounts}
+          signalFilter={signalFilter}
+          q={sp.q}
+          properties={sp.properties}
+        />
       ) : null}
 
       {/* Premium filter bar — search + pill-based source tabs */}
@@ -899,6 +893,114 @@ function SourcePill({
     >
       {label}
     </Link>
+  );
+}
+
+// Segment colors, brand-first then muted greys for the tail. Cycles the
+// grey pair if there are ever more than 6 distinct source labels.
+const MIX_BAR_PALETTE = [
+  CHART_COLORS.brand,
+  CHART_COLORS.brandDeep,
+  CHART_COLORS.brandSoft,
+  CHART_COLORS.brandFog,
+  CHART_COLORS.muted,
+  CHART_COLORS.silver,
+];
+
+/** Segmented source-mix bar + legend, replacing the old text one-liner.
+ * Buckets sourceCounts by human label (same dedupe as the old line),
+ * then renders one proportional-width segment per label. Legend items
+ * link through buildHref — the same href mechanism the source filter
+ * pills above use — so clicking a legend entry applies that source
+ * filter.
+ * ponytail: when 2+ enum values share a label, the legend link picks
+ * the first enum value seen for that label; the `source` query param
+ * only supports one value at a time so a true multi-value filter isn't
+ * possible here. Upgrade if that collision starts mattering in practice. */
+function SourceMixBar({
+  totalCount,
+  sourceCounts,
+  signalFilter,
+  q,
+  properties,
+}: {
+  totalCount: number;
+  sourceCounts: Array<{ source: LeadSource; _count: { _all: number } }>;
+  signalFilter: SignalKey | null;
+  q: string | undefined;
+  properties: string | undefined;
+}) {
+  const byLabel = new Map<string, { source: LeadSource; count: number }>();
+  for (const r of sourceCounts) {
+    const label = humanLeadSource(r.source);
+    const existing = byLabel.get(label);
+    byLabel.set(label, {
+      source: existing?.source ?? r.source,
+      count: (existing?.count ?? 0) + r._count._all,
+    });
+  }
+  const entries = Array.from(byLabel.entries())
+    .map(([label, v]) => ({ label, ...v }))
+    .sort((a, b) => b.count - a.count);
+  const sumEntries = entries.reduce((sum, e) => sum + e.count, 0);
+  if (sumEntries === 0) return null;
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <span className="text-[9px] uppercase tracking-[0.14em] font-semibold text-muted-foreground">
+          Source mix
+        </span>
+        <span className="text-[11px] font-mono tabular-nums text-muted-foreground">
+          {totalCount.toLocaleString()} {totalCount === 1 ? "lead" : "leads"}
+        </span>
+      </div>
+      <div className="flex h-4 w-full overflow-hidden rounded-[2px]">
+        {entries.map((e, i) => (
+          <Link
+            key={e.label}
+            href={buildHref({
+              source: e.source,
+              signal: signalFilter,
+              q,
+              properties,
+            })}
+            title={`${e.label}: ${e.count.toLocaleString()}`}
+            style={{
+              width: `${(e.count / sumEntries) * 100}%`,
+              backgroundColor: MIX_BAR_PALETTE[i % MIX_BAR_PALETTE.length],
+            }}
+            className="h-full transition-opacity hover:opacity-80"
+          />
+        ))}
+      </div>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        {entries.map((e, i) => (
+          <Link
+            key={e.label}
+            href={buildHref({
+              source: e.source,
+              signal: signalFilter,
+              q,
+              properties,
+            })}
+            className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <span
+              className="h-2 w-2 shrink-0 rounded-[1px]"
+              style={{
+                backgroundColor: MIX_BAR_PALETTE[i % MIX_BAR_PALETTE.length],
+              }}
+              aria-hidden="true"
+            />
+            {e.label}{" "}
+            <span className="font-mono tabular-nums text-foreground">
+              {e.count.toLocaleString()}
+            </span>
+          </Link>
+        ))}
+      </div>
+    </div>
   );
 }
 

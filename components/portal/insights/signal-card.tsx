@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sparkline } from "./sparkline";
+import { ScoreRing } from "./score-ring";
 
 // ----------------------------------------------------------------------------
 // SignalCard — the hero strip's atomic unit. Six of these line up at the top
@@ -25,6 +26,10 @@ export type SignalCardProps = {
   tone?: "positive" | "negative" | "neutral";
   /** Optional one-line caption rendered under the value. */
   caption?: string;
+  /** Renders `value` as a filled donut ring instead of bare digits — the
+   *  page's one hero tile (Overall score) gets a visual anchor the other
+   *  five signal cards don't need. */
+  ring?: boolean;
 };
 
 export function SignalCard({
@@ -35,6 +40,7 @@ export function SignalCard({
   href,
   tone,
   caption,
+  ring,
 }: SignalCardProps) {
   const inferredTone: "positive" | "negative" | "neutral" =
     tone ??
@@ -59,10 +65,19 @@ export function SignalCard({
       <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
         {label}
       </div>
-      <div className="mt-1 flex items-baseline justify-between gap-2">
-        <div className="text-2xl sm:text-3xl font-semibold tabular-nums text-foreground leading-none">
-          {value}
-        </div>
+      <div
+        className={cn(
+          "mt-1 flex gap-2",
+          ring ? "items-center justify-between" : "items-baseline justify-between",
+        )}
+      >
+        {ring && Number.isFinite(Number.parseFloat(value)) ? (
+          <ScoreRing value={Number.parseFloat(value)} />
+        ) : (
+          <div className="font-mono text-2xl sm:text-3xl font-semibold tabular-nums text-foreground leading-none">
+            {value}
+          </div>
+        )}
         <DeltaChip deltaPct={deltaPct} tone={inferredTone} />
       </div>
       {caption ? (

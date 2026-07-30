@@ -215,6 +215,11 @@ export default async function PortfolioReputationPage({
   const negative = sentimentByKey.get("NEGATIVE") ?? 0;
   const mixed = sentimentByKey.get("MIXED") ?? 0;
   const neutral = sentimentByKey.get("NEUTRAL") ?? 0;
+  // Denominator for the sentiment split bar. Deliberately the sum of the
+  // four classified buckets rather than metrics.totalMentions — a handful
+  // of UNCLASSIFIED mentions (not yet scored) would otherwise leave a gap
+  // in the bar that reads as a bug.
+  const sentimentTotal = positive + negative + mixed + neutral;
 
   const propertyHealthSorted = [...(metrics.propertyHealth ?? [])].sort(
     (a, b) => {
@@ -302,7 +307,19 @@ export default async function PortfolioReputationPage({
           <KpiTile
             density="dense"
             label="Google rating"
-            value={fmtRating(metrics.googleAvgRating)}
+            value={
+              metrics.googleAvgRating != null &&
+              safeNum(metrics.googleAvgRating) > 0 ? (
+                <span className="inline-flex items-baseline gap-2">
+                  <span className="font-semibold">
+                    {fmtRating(metrics.googleAvgRating)}
+                  </span>
+                  <RatingStars rating={safeNum(metrics.googleAvgRating)} />
+                </span>
+              ) : (
+                "—"
+              )
+            }
             hint={
               safeNum(metrics.googleReviewCount) > 0
                 ? `${fmtInt(metrics.googleReviewCount)} reviews`
@@ -336,6 +353,28 @@ export default async function PortfolioReputationPage({
             icon={<Flag className="h-3.5 w-3.5" />}
           />
         </section>
+
+        {/* Sentiment split — one glanceable bar showing how mentions break
+          down by sentiment, so the page reads as "brand health" instead of
+          a wall of neutral numbers. Legend doubles as a shortcut into the
+          same ?sentiment= filter the chips above drive, so clicking
+          "Negative" jumps straight to the negative feed. */}
+        {sentimentTotal > 0 ? (
+          <SentimentSplitBar
+            positive={positive}
+            neutral={neutral}
+            mixed={mixed}
+            negative={negative}
+            total={sentimentTotal}
+            activeSentiment={sentimentFilter}
+            currentParams={{
+              property: sp.property,
+              properties: sp.properties,
+              source: sp.source,
+              showOlder: sp.showOlder,
+            }}
+          />
+        ) : null}
 
         {/* Recent mentions — the centerpiece. Hoisted above the analytics
           drawer so the operator sees today's signal first. Sort order is
@@ -684,6 +723,156 @@ function SentimentBar({
       </div>
     </div>
   );
+}
+
+// Five-star glyph row with a fractional fill (e.g. 4.5 → 90% width overlay).
+// Base row is a muted outline; a colored, fill-current row is layered on
+// top and clipped to the rating's percentage of 5, giving partial-star
+// precision without needing a half-star icon.
+const STAR_INDICES = [0, 1, 2, 3, 4];
+
+function RatingStars({ rating }: { rating: number }) {
+  const pct = Math.max(0, Math.min(1, rating / 5)) * 100;
+  return (
+    <span className="inline-flex items-center">
+      <span className="relative inline-flex" aria-hidden="true">
+        <span className="flex gap-0.5 text-muted-foreground/40">
+          {STAR_INDICES.map((i) => (
+            <Star key={i} className="h-3.5 w-3.5" />
+          ))}
+        </span>
+        <span
+          className="absolute inset-0 flex gap-0.5 overflow-hidden text-primary"
+          style={{ width: `${pct}%` }}
+        >
+          {STAR_INDICES.map((i) => (
+            <Star key={i} className="h-3.5 w-3.5 shrink-0 fill-current" />
+          ))}
+        </span>
+      </span>
+      <span className="sr-only">{rating.toFixed(1)} out of 5 stars</span>
+    </span>
+  );
+}
+
+// Sentiment split bar segment order + coloring. Negative uses the
+// destructive/error token (not the muted-black treatment used elsewhere on
+// this page) so a bad stretch actually reads as a warning at a glance.
+const SENTIMENT_BAR_SEGMENTS: Array<{
+  key: Sentiment;
+  label: string;
+  swatchClass: string;
+}> = [
+  { key: "POSITIVE", label: "Positive", swatchClass: "bg-success" },
+  { key: "NEUTRAL", label: "Neutral", swatchClass: "bg-muted-foreground/30" },
+  { key: "MIXED", label: "Mixed", swatchClass: "bg-primary/50" },
+  { key: "NEGATIVE", label: "Negative", swatchClass: "bg-destructive" },
+];
+
+// One full-width flat segmented bar (deliberately square, not the rounded
+// pill bars used in the analytics drawer below) + a legend that reuses the
+// page's existing ?sentiment= filter mechanism — clicking a legend item
+// navigates straight into that sentiment's filtered feed, same as the
+// chips in <ReputationFilters />.
+function SentimentSplitBar({
+  positive,
+  neutral,
+  mixed,
+  negative,
+  total,
+  activeSentiment,
+  currentParams,
+}: {
+  positive: number;
+  neutral: number;
+  mixed: number;
+  negative: number;
+  total: number;
+  activeSentiment: Sentiment | null;
+  currentParams: {
+    property?: string;
+    properties?: string;
+    source?: string;
+    showOlder?: string;
+  };
+}) {
+  const counts: Record<Sentiment, number> = {
+    POSITIVE: positive,
+    NEUTRAL: neutral,
+    MIXED: mixed,
+    NEGATIVE: negative,
+  };
+
+  return (
+    <section aria-label="Sentiment split" className="space-y-2">
+      <div className="flex h-3.5 w-full gap-px overflow-hidden border border-border bg-muted">
+        {SENTIMENT_BAR_SEGMENTS.map((seg) => {
+          const count = counts[seg.key];
+          if (count <= 0) return null;
+          const pct = (count / total) * 100;
+          return (
+            <div
+              key={seg.key}
+              className={seg.swatchClass}
+              style={{ width: `${pct}%` }}
+              title={`${seg.label}: ${count.toLocaleString()} (${Math.round(pct)}%)`}
+            />
+          );
+        })}
+      </div>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        {SENTIMENT_BAR_SEGMENTS.map((seg) => {
+          const count = counts[seg.key];
+          const isActive = activeSentiment === seg.key;
+          return (
+            <Link
+              key={seg.key}
+              href={sentimentFilterHref(seg.key, activeSentiment, currentParams)}
+              className={`flex items-center gap-1.5 text-xs transition-colors hover:text-foreground ${
+                isActive ? "text-foreground font-medium" : "text-muted-foreground"
+              }`}
+            >
+              <span
+                className={`h-2.5 w-2.5 shrink-0 ${seg.swatchClass}`}
+                aria-hidden="true"
+              />
+              {seg.label}
+              <span className="font-mono tabular-nums">
+                {count.toLocaleString()}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+// Builds the sentiment-filter href for a legend item, preserving the
+// property/properties/source params already on the URL — same toggle
+// semantics as <RecentToggleLink />: clicking the already-active sentiment
+// clears the filter back to "all".
+function sentimentFilterHref(
+  sentiment: Sentiment,
+  activeSentiment: Sentiment | null,
+  currentParams: {
+    property?: string;
+    properties?: string;
+    source?: string;
+    showOlder?: string;
+  },
+): string {
+  const next = new URLSearchParams();
+  if (currentParams.property) next.set("property", currentParams.property);
+  if (currentParams.properties)
+    next.set("properties", currentParams.properties);
+  if (currentParams.source) next.set("source", currentParams.source);
+  // Preserve the "Show older" window like ReputationFilters does — dropping
+  // it would snap the feed back to 90 days on a legend click.
+  if (currentParams.showOlder) next.set("showOlder", currentParams.showOlder);
+  if (activeSentiment !== sentiment) next.set("sentiment", sentiment);
+  const qs = next.toString();
+  return `/portal/reputation${qs ? `?${qs}` : ""}`;
 }
 
 function ReputationFallback({
