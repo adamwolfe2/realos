@@ -61,6 +61,18 @@ type Entry = {
 
 type Property = { id: string; name: string };
 
+// "__org" is the sentinel value for the "Org-wide only" filter option — it
+// is never a real propertyId. Org-wide entries are the ones with
+// propertyId === null.
+export function matchesPropertyFilter(
+  entryPropertyId: string | null,
+  propertyFilter: string,
+): boolean {
+  if (!propertyFilter) return true;
+  if (propertyFilter === "__org") return entryPropertyId === null;
+  return entryPropertyId === propertyFilter;
+}
+
 export function VaultClient({
   entries,
   properties,
@@ -94,7 +106,7 @@ export function VaultClient({
   }, []);
 
   const filtered = entries.filter((e) => {
-    if (propertyFilter && e.propertyId !== propertyFilter) return false;
+    if (!matchesPropertyFilter(e.propertyId, propertyFilter)) return false;
     if (!filter) return true;
     const q = filter.toLowerCase();
     return (

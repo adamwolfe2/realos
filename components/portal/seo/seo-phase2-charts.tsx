@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { EmptyStateBody } from "./charts/shared";
 import {
   ResponsiveContainer,
@@ -229,6 +230,22 @@ export function RangeSelector({
       })}
     </div>
   );
+}
+
+// RangeSelector wired to the ?range= URL param (RISK-055). Reads the
+// active value from the current URL and pushes the rest of the query
+// string forward unchanged (propertyId, etc.) on change.
+export function RangeSelectorBar({ value }: { value: RangeKey }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  function onChange(next: RangeKey) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("range", next);
+    router.push(`/portal/seo/agent?${params.toString()}`);
+  }
+
+  return <RangeSelector value={value} onChange={onChange} />;
 }
 
 // ============================================================================

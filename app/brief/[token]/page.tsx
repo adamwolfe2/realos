@@ -227,31 +227,48 @@ export default async function BriefPage({ params }: RouteContext) {
       <SchemaSection data={data} />
       <StackSection data={data} />
       <BriefNarrativePanel
-        heading="You own one of the most prestigious office addresses in San Francisco. AI search engines do not know that yet."
+        heading={`You own a real asset in ${data.vertical}. AI search engines do not know that yet.`}
       >
         <p>
-          255 California Street is a flagship Class-A asset. The building
-          anchors one of the most-walked corridors in FiDi.
-          Decision-makers know it by sight. But corporate real-estate
+          {data.brand} is a real asset in a competitive market.
+          Decision-makers may know it by name. But corporate real-estate
           searches now start in ChatGPT and Perplexity, not CoStar — and
           in those conversations, your building doesn&apos;t exist.{" "}
           <strong style={{ color: "#2563EB" }}>
-            555 California Street is named in every one of our four AI
-            conversations about top California Street office towers.{" "}
+            {data.aeo.competitorCounts.length > 0 ? (
+              <>
+                {data.aeo.competitorCounts[0].name} is named in{" "}
+                {data.aeo.competitorCounts[0].count} of our{" "}
+                {data.aeo.rows.filter((r) => !r.skipped).length} AI
+                conversations about buildings like yours.{" "}
+              </>
+            ) : null}
             {data.brand} is named in none of the unbranded ones.
           </strong>
         </p>
         <p>
-          The cause is not the building. The cause is that your homepage
-          ships 164 words of body copy, zero JSON-LD structured data, no
-          canonical URL, no meta description, no FAQ markup, and no
-          detectable analytics, chatbot, popup, pixel, or CRM. AI engines
-          need those signals to attribute citations to a real entity.
-          Without them they have no entity to cite.
+          The cause is not the building. The cause is that AI engines need
+          structured data, deep quotable content, and detectable analytics
+          infrastructure to attribute citations to a real entity — and
+          today those signals are incomplete. Without them they have no
+          entity to cite.
         </p>
         <p>
-          The corporate tenants choosing between 255 Cal, 555 California,
-          and 101 California in 2026 will not call all three brokers.
+          {data.aeo.competitorCounts.length > 0 ? (
+            <>
+              The corporate tenants choosing between {data.brand} and{" "}
+              {data.aeo.competitorCounts
+                .slice(0, 2)
+                .map((c) => c.name)
+                .join(" and ")}{" "}
+              in 2026 will not call every broker.
+            </>
+          ) : (
+            <>
+              The corporate tenants evaluating your market in 2026 will
+              not call every broker.
+            </>
+          )}{" "}
           They will ask Perplexity, paste the answer into Slack, and
           shortlist the buildings AI named. That gap is closeable in 30
           days. We do it for a living.
@@ -1264,46 +1281,68 @@ function StackSection({ data }: { data: BriefJson }) {
 
 // ─── ACTION PLAN ──────────────────────────────────────────────────────
 
-const ACTIONS: Array<{ no: number; title: string; body: string; days: string }> = [
-  {
-    no: 1,
-    title: "Ship Organization + LocalBusiness + Place JSON-LD",
-    body: "Add structured data declaring the building's name, address, geo, owner, parking, square footage, year built, and amenities. This is the entity AI engines attribute citations to. ~1 day of dev work; ships once, runs forever.",
-    days: "Days 1–2",
-  },
-  {
-    no: 2,
-    title: "Rewrite the homepage to 1,200+ quotable words",
-    body: "The current homepage is 164 words. AI engines rarely cite pages too short to host a quotable answer. Target: who occupies the building, transit, amenities, recent capital improvements, sustainability stats, broker contact — all in scannable Q&A structure.",
-    days: "Days 3–7",
-  },
-  {
-    no: 3,
-    title: "Add FAQPage JSON-LD around the top 12 tenant questions",
-    body: "Floor plates, parking ratio, LEED rating, base rent direction, sublease availability, building hours, security desk, EV charging, bike storage, conference center, fitness, rooftop. FAQPage markup is the strongest AEO signal short of a hand-built knowledge graph.",
-    days: "Days 8–12",
-  },
-  {
-    no: 4,
-    title: "Install a visitor identification pixel + GA4 + a chatbot",
-    body: "Today, a tenant exec who lands on the homepage leaves anonymous. Cursive Pixel resolves the company. GA4 tracks where they came from. An AI chatbot trained on the building's spec sheet books tours 24/7. Three integrations, one day.",
-    days: "Days 13–17",
-  },
-  {
-    no: 5,
-    title: "Publish a comparison page that names the competitive set",
-    body: '"255 California Street vs 555 California Street vs 101 California Street" — written for the corporate-tenant decision and structured with H2 questions ("Which has the best floor plates?"). AI engines disproportionately surface side-by-side comparison pages that name the competitors.',
-    days: "Days 18–25",
-  },
-  {
-    no: 6,
-    title: "Run the AI scan weekly. Watch the gap close.",
-    body: "After the above ships, we ask the engines the same five prompts every Monday. The score climbs as JSON-LD is indexed and the new pages are crawled. Most LeaseStack customers see meaningful AI engine citations within 3–4 weeks of go-live.",
-    days: "Day 26+",
-  },
-];
+// Comparison-page action title names the prospect's actual top competitors
+// (from the live AEO scan) instead of one hardcoded pilot building. Falls
+// back to a neutral sentence when the scan found no named competitors.
+// Exported (and structurally typed narrower than BriefJson) so it's unit
+// testable without constructing a full brief payload.
+export function buildComparisonPageBody(data: {
+  brand: string;
+  aeo: { competitorCounts: Array<{ name: string; count: number }> };
+}): string {
+  const names = data.aeo.competitorCounts.slice(0, 3).map((c) => c.name);
+  if (names.length === 0) {
+    return `A page comparing ${data.brand} against its closest market alternatives, written for the corporate-tenant decision and structured with H2 questions ("Which has the best floor plates?"). AI engines disproportionately surface side-by-side comparison pages that name the competitors.`;
+  }
+  const set = names.length === 1 ? names[0] : names.join(" vs ");
+  return `"${data.brand} vs ${set}" — written for the corporate-tenant decision and structured with H2 questions ("Which has the best floor plates?"). AI engines disproportionately surface side-by-side comparison pages that name the competitors.`;
+}
+
+function buildActions(
+  data: BriefJson,
+): Array<{ no: number; title: string; body: string; days: string }> {
+  return [
+    {
+      no: 1,
+      title: "Ship Organization + LocalBusiness + Place JSON-LD",
+      body: "Add structured data declaring the building's name, address, geo, owner, parking, square footage, year built, and amenities. This is the entity AI engines attribute citations to. ~1 day of dev work; ships once, runs forever.",
+      days: "Days 1–2",
+    },
+    {
+      no: 2,
+      title: "Rewrite the homepage to 1,200+ quotable words",
+      body: "AI engines rarely cite pages too short to host a quotable answer. Target: who occupies the building, transit, amenities, recent capital improvements, sustainability stats, broker contact — all in scannable Q&A structure.",
+      days: "Days 3–7",
+    },
+    {
+      no: 3,
+      title: "Add FAQPage JSON-LD around the top 12 tenant questions",
+      body: "Floor plates, parking ratio, LEED rating, base rent direction, sublease availability, building hours, security desk, EV charging, bike storage, conference center, fitness, rooftop. FAQPage markup is the strongest AEO signal short of a hand-built knowledge graph.",
+      days: "Days 8–12",
+    },
+    {
+      no: 4,
+      title: "Install a visitor identification pixel + GA4 + a chatbot",
+      body: "Today, a tenant exec who lands on the homepage leaves anonymous. Cursive Pixel resolves the company. GA4 tracks where they came from. An AI chatbot trained on the building's spec sheet books tours 24/7. Three integrations, one day.",
+      days: "Days 13–17",
+    },
+    {
+      no: 5,
+      title: "Publish a comparison page that names the competitive set",
+      body: buildComparisonPageBody(data),
+      days: "Days 18–25",
+    },
+    {
+      no: 6,
+      title: "Run the AI scan weekly. Watch the gap close.",
+      body: "After the above ships, we ask the engines the same five prompts every Monday. The score climbs as JSON-LD is indexed and the new pages are crawled. Most LeaseStack customers see meaningful AI engine citations within 3–4 weeks of go-live.",
+      days: "Day 26+",
+    },
+  ];
+}
 
 function ActionPlanSection({ data }: { data: BriefJson }) {
+  const actions = buildActions(data);
   return (
     <section style={{ padding: "72px 0", borderBottom: "1px solid #F1F5F9" }}>
       <div className="max-w-[1080px] mx-auto px-6">
@@ -1319,7 +1358,7 @@ function ActionPlanSection({ data }: { data: BriefJson }) {
         </p>
 
         <ol className="mt-8 space-y-3">
-          {ACTIONS.map((a) => (
+          {actions.map((a) => (
             <li
               key={a.no}
               className="rounded-2xl flex flex-col md:flex-row gap-4 md:gap-7"

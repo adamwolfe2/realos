@@ -180,7 +180,7 @@ function ChecklistRow({ item }: { item: Awaited<ReturnType<typeof getLaunchCheck
             {item.label}
           </span>
           {!item.done && item.required ? (
-            <span className="inline-flex items-center gap-1 text-[10px] text-foreground px-1.5 py-0.5 rounded bg-secondary/10">
+            <span className="inline-flex items-center gap-1 text-[10px] text-destructive px-1.5 py-0.5 rounded bg-destructive/10">
               <AlertCircle className="w-2.5 h-2.5" aria-hidden="true" />
               required
             </span>

@@ -9,6 +9,7 @@ import {
   auditPayload,
   type ScopedContext,
 } from "@/lib/tenancy/scope";
+import { propertyWhereFragment } from "@/lib/tenancy/property-filter";
 import { AuditAction, Prisma } from "@prisma/client";
 import { isSmsConfigured, sendSms } from "@/lib/sms/twilio";
 
@@ -52,8 +53,14 @@ export async function sendLeadSms(input: unknown): Promise<Result> {
     };
   }
 
+  // Tenant scope + property-level RBAC (mirrors sendLeadEmail and the
+  // sibling lead routes). Unrestricted scope adds no constraint.
   const lead = await prisma.lead.findFirst({
-    where: { id: leadId, orgId: scope.orgId },
+    where: {
+      id: leadId,
+      orgId: scope.orgId,
+      ...propertyWhereFragment(scope, null),
+    },
     select: {
       id: true,
       phone: true,

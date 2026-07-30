@@ -43,7 +43,7 @@ function startOfMonthUtc(): Date {
   );
 }
 
-function readUsdCap(key: string, fallback: number | null): number | null {
+export function readUsdCap(key: string, fallback: number | null): number | null {
   const raw = process.env[key];
   if (!raw) return fallback;
   const parsed = Number(raw);
@@ -157,7 +157,7 @@ export default async function AdminCostsPage() {
   const auditsById = new Map(audits.map((a) => [a.id, a]));
 
   // Cap configuration.
-  const globalCap = readUsdCap("COST_MONTHLY_CAP_USD", 200);
+  const globalCap = readUsdCap("COST_MONTHLY_CAP_USD", null);
   const perProviderCaps: Array<{ provider: string; cap: number | null }> = [
     "dataforseo",
     "tavily",

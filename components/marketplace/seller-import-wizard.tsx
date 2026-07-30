@@ -73,6 +73,20 @@ interface ImportSummary {
   errors: string[];
 }
 
+// The sync API (/api/marketplace/seller/import-cursive) starts the actual
+// pull in the background via `after()` and only ever responds with
+// { ok, note } — never fetched/upserted/new counts. Render that note (or a
+// safe fallback) instead of reaching into a `summary` field that no longer
+// exists on the response.
+export function cursiveSyncMessage(
+  cursiveSummary: { ok: boolean; note?: string } | null,
+): string {
+  return (
+    cursiveSummary?.note ??
+    "The source is connected. Syncing runs in the background — refresh your dashboard in 1-3 minutes to see the leads land."
+  );
+}
+
 const STEPS: { id: Step; label: string }[] = [
   { id: "source", label: "Choose source" },
   { id: "upload", label: "Upload file" },
@@ -114,9 +128,13 @@ export function SellerImportWizard() {
     defaultPropertyType: "SALE" as "RENTAL" | "SALE" | "INVESTMENT" | "COMMERCIAL",
     defaultMarket: "United States",
   });
+  // The sync API kicks off the actual pull in the background (see
+  // /api/marketplace/seller/import-cursive) and only ever responds with
+  // { ok, note } — never a fetched/upserted/new summary. Match that shape
+  // here instead of assuming counts that don't exist yet.
   const [cursiveResult, setCursiveResult] = React.useState<{
-    sourceId: string;
-    summary: { fetchedCount: number; upsertedCount: number; newCount: number };
+    ok: boolean;
+    note?: string;
   } | null>(null);
 
   // -------------------------------------------------------------------------
@@ -891,10 +909,7 @@ function StepImportSummary({
   error,
 }: {
   csvSummary: ImportSummary | null;
-  cursiveSummary: {
-    sourceId: string;
-    summary: { fetchedCount: number; upsertedCount: number; newCount: number };
-  } | null;
+  cursiveSummary: { ok: boolean; note?: string } | null;
   error: string | null;
 }) {
   if (error) {
@@ -958,13 +973,8 @@ function StepImportSummary({
           Audience wired
         </h2>
         <p className="mt-1 text-sm text-slate-600">
-          The source is connected and the first batch has been pulled.
+          {cursiveSyncMessage(cursiveSummary)}
         </p>
-        <dl className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Stat label="Fetched" value={cursiveSummary.summary.fetchedCount} color="slate" />
-          <Stat label="Upserted" value={cursiveSummary.summary.upsertedCount} color="blue" />
-          <Stat label="New" value={cursiveSummary.summary.newCount} color="blue" />
-        </dl>
         <div className="mt-6">
           <a
             href="/marketplace/seller"

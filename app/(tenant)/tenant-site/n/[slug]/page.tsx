@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { serializeJsonLd } from "@/lib/seo/serialize-json-ld";
-import { getTenantFromHeaders } from "@/lib/tenancy/tenant-context";
+import { getTenantFromHeaders, tenantPrimaryHost } from "@/lib/tenancy/tenant-context";
 import { getEffectiveBrand } from "@/lib/brand/effective";
 import { NeighborhoodPageStatus } from "@prisma/client";
 import { parseStored } from "@/lib/actions/neighborhood-pages-helpers";
@@ -54,6 +54,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const page = await loadPublishedPage(tenant.id, slug);
   if (!page) return { title: "Not found" };
+  const host = tenantPrimaryHost(tenant);
   return {
     title: page.title,
     description: page.metaDescription,
@@ -62,7 +63,7 @@ export async function generateMetadata({
       description: page.metaDescription,
       siteName: tenant.name,
     },
-    alternates: { canonical: `/n/${page.slug}` },
+    alternates: { canonical: `https://${host}/n/${page.slug}` },
   };
 }
 

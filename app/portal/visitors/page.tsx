@@ -339,10 +339,16 @@ export default async function VisitorsPage({
     // Live chats — any chatbot conversation with activity in the last 5
     // minutes. Hoisted into the main Promise.all so it runs in parallel
     // with the visitor list query instead of a sequential await below.
+    // Property-level RBAC: reuse the SAME propertyClause the visitor feed
+    // uses. ChatbotConversation.propertyId is nullable (widget lives on the
+    // org's site), so the clause's org-level-inclusive form is what keeps
+    // unattributed chats visible while a restricted operator never sees a
+    // sibling property's conversation. Unrestricted scope is unaffected.
     prisma.chatbotConversation
       .findMany({
         where: {
           ...tenant,
+          ...propertyClause,
           lastMessageAt: { gte: liveSince },
         },
         orderBy: { lastMessageAt: "desc" },

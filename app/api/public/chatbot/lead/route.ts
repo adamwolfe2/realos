@@ -147,8 +147,12 @@ export async function POST(req: NextRequest) {
   // pre-chat capture, consistent with the config + chat endpoints. (Codex.)
   const resolvedConfig = await resolveChatbotConfig(orgId, propertyId);
   if (!resolvedConfig.chatbotEnabled) {
+    // Same message + status as the org-not-found/module-off branch above —
+    // a distinct message here ("Chatbot disabled") would let a caller
+    // enumerate which slugs correspond to a real org by comparing error
+    // text, since this branch only fires when the org DOES exist.
     return NextResponse.json(
-      { error: "Chatbot disabled" },
+      { error: "Chatbot not enabled for this tenant" },
       { status: 403, headers: CORS_HEADERS }
     );
   }

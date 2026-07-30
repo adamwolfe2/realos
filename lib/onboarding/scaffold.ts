@@ -41,23 +41,32 @@ export async function scaffoldPropertyIntegrations(
 ): Promise<void> {
   if (properties.length === 0) return;
 
+  // Collect (rather than swallow) per-step failures. Scaffolding stays
+  // best-effort — one property's failure never stops the rest from being
+  // provisioned — but every failure must survive to the end so the caller's
+  // Sentry capture (see app/api/onboarding/wizard/properties/route.ts) can
+  // actually see it. Swallowing here made that outer .catch() dead code.
+  const failures: string[] = [];
+
   // --- Chatbot baseline (org-level) so per-property bots can serve. -------
   if (features.chatbot) {
-    await prisma.tenantSiteConfig
-      .upsert({
+    try {
+      await prisma.tenantSiteConfig.upsert({
         where: { orgId },
         // Don't stomp an operator's existing greeting/persona on resume — only
         // ensure the row exists + the master toggle is on.
         update: { chatbotEnabled: true },
         create: { orgId, chatbotEnabled: true },
-      })
-      .catch(() => undefined);
+      });
+    } catch (err) {
+      failures.push(`org tenant site config: ${(err as Error).message}`);
+    }
   }
 
   for (const property of properties) {
     if (features.chatbot) {
-      await prisma.propertyChatbotConfig
-        .upsert({
+      try {
+        await prisma.propertyChatbotConfig.upsert({
           where: { propertyId: property.id },
           update: {}, // leave any existing per-property config untouched
           create: {
@@ -68,30 +77,42 @@ export async function scaffoldPropertyIntegrations(
             chatbotEnabled: true,
             chatbotPersonaName: property.name,
           },
-        })
-        .catch(() => undefined);
+        });
+      } catch (err) {
+        failures.push(
+          `chatbot config for property ${property.id}: ${(err as Error).message}`,
+        );
+      }
     }
 
     if (features.pixel) {
       const marker = `${PIXEL_NOTE_PREFIX}${property.id}`;
-      const already = await prisma.pixelProvisionRequest
-        .findFirst({
+      try {
+        const already = await prisma.pixelProvisionRequest.findFirst({
           where: { orgId, notes: { contains: marker } },
           select: { id: true },
-        })
-        .catch(() => null);
-      if (!already) {
-        await prisma.pixelProvisionRequest
-          .create({
+        });
+        if (!already) {
+          await prisma.pixelProvisionRequest.create({
             data: {
               orgId,
               websiteName: property.name,
               websiteUrl: property.websiteUrl ?? "",
               notes: `Auto-requested at onboarding for ${property.name} (${marker})`,
             },
-          })
-          .catch(() => undefined);
+          });
+        }
+      } catch (err) {
+        failures.push(
+          `pixel request for property ${property.id}: ${(err as Error).message}`,
+        );
       }
     }
+  }
+
+  if (failures.length > 0) {
+    throw new Error(
+      `scaffoldPropertyIntegrations: ${failures.length} scaffold step(s) failed for org ${orgId}: ${failures.join("; ")}`,
+    );
   }
 }

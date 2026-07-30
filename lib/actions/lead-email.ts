@@ -9,6 +9,7 @@ import {
   auditPayload,
   type ScopedContext,
 } from "@/lib/tenancy/scope";
+import { propertyWhereFragment } from "@/lib/tenancy/property-filter";
 import { AuditAction, Prisma } from "@prisma/client";
 import {
   buildBaseHtml,
@@ -54,9 +55,17 @@ export async function sendLeadEmail(input: unknown): Promise<SendResult> {
   }
   const { leadId, subject, body } = parsed.data;
 
-  // Tenant scope: only allow sending to leads in the caller's org.
+  // Tenant scope: only allow sending to leads in the caller's org, AND
+  // property-level RBAC — same gate the sibling lead routes apply (see
+  // app/api/tenant/leads/[id]/route.ts). An unrestricted scope
+  // (allowedPropertyIds === null) yields an empty fragment, so normal
+  // operators keep portfolio-wide reach.
   const lead = await prisma.lead.findFirst({
-    where: { id: leadId, orgId: scope.orgId },
+    where: {
+      id: leadId,
+      orgId: scope.orgId,
+      ...propertyWhereFragment(scope, null),
+    },
     select: {
       id: true,
       orgId: true,

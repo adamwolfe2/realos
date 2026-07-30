@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 import { putPublic } from "@/lib/blob-public";
+import { checkRateLimit, getIp, rateLimited } from "@/lib/rate-limit";
 
 // ---------------------------------------------------------------------------
 // POST /api/site-requests/upload
@@ -8,8 +11,8 @@ import { putPublic } from "@/lib/blob-public";
 // here as it's selected so the user gets immediate feedback (and the
 // final POST /api/site-requests payload only carries blob URLs, never
 // raw binary). We don't gate this with auth — uploads are short-lived
-// and tied to a not-yet-created SiteRequest. A 50MB cap + mime allowlist
-// keeps the abuse surface small.
+// and tied to a not-yet-created SiteRequest. A 25MB cap + mime allowlist
+// + per-IP rate limit keeps the abuse surface small.
 //
 // Returns: { ok, url, pathname, size, mimeType, filename }
 // ---------------------------------------------------------------------------
@@ -20,7 +23,40 @@ export const dynamic = "force-dynamic";
 const MAX_BYTES = 25 * 1024 * 1024; // 25MB per file
 const ALLOWED_MIME_PREFIXES = ["image/", "application/pdf"];
 
+// 15 uploads per IP per hour. Mirrors the checkRateLimit + softFallback
+// pattern in lib/rate-limit.ts, built locally rather than added there so
+// this route stays the only file that changes. Soft-fallback (in-memory)
+// so a Vercel deploy missing Upstash env doesn't hard-block the intake
+// form's screenshot/asset uploads — just degrades to single-instance
+// limiting like the other low-stakes public endpoints (tours, zillow).
+let uploadLimiter: Ratelimit | null | undefined;
+function getUploadLimiter(): Ratelimit | null {
+  if (uploadLimiter !== undefined) return uploadLimiter;
+  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) {
+    uploadLimiter = null;
+    return uploadLimiter;
+  }
+  uploadLimiter = new Ratelimit({
+    redis: new Redis({ url, token }),
+    limiter: Ratelimit.slidingWindow(15, "1 h"),
+    analytics: false,
+    prefix: "site-upload",
+  });
+  return uploadLimiter;
+}
+const UPLOAD_SOFT_FALLBACK = { requests: 15, windowMs: 60 * 60_000 };
+
 export async function POST(req: Request) {
+  const ip = getIp(req);
+  const { allowed } = await checkRateLimit(getUploadLimiter(), ip, {
+    softFallback: UPLOAD_SOFT_FALLBACK,
+  });
+  if (!allowed) {
+    return rateLimited("Too many uploads. Try again later.", 3600);
+  }
+
   let form: FormData;
   try {
     form = await req.formData();

@@ -25,6 +25,19 @@ export const dynamic = "force-dynamic";
 
 const SEVERITY_RANK = { critical: 0, warning: 1, info: 2 } as const;
 
+// The set of org ids whose names must be fetched for the "most on fire"
+// ranking list. Deliberately independent of the (possibly severity/org
+// filtered, 200-row-capped) `insights` list — an org can rank highly on
+// total insight count while having zero rows in that filtered list.
+export function orgIdsNeedingNameLookup(
+  orgRankings: Array<{ orgId: string }>,
+  orgFilter: string | undefined,
+): string[] {
+  const ids = new Set<string>(orgRankings.map((o) => o.orgId));
+  if (orgFilter) ids.add(orgFilter);
+  return Array.from(ids);
+}
+
 export default async function AdminInsightsPage({
   searchParams,
 }: {
@@ -105,8 +118,22 @@ export default async function AdminInsightsPage({
     .sort((a, b) => b._count._all - a._count._all)
     .slice(0, 8);
 
-  const orgNameLookup = new Map(
-    insights.map((i) => [i.orgId, i.org.name]),
+  // Org names for the ranking list must come from a dedicated lookup.
+  // `orgRankings` counts insights across ALL severities/orgs, but the
+  // `insights` array below is capped at 200 rows and can be narrowed by
+  // `severityFilter`/`orgFilter`. An org that ranks highly on total count
+  // can easily have zero rows in that filtered list, which previously
+  // left it with no name to show ("Unknown") even though the org clearly
+  // exists. Fetch names directly for exactly the orgs we need.
+  const nameLookupIds = orgIdsNeedingNameLookup(orgRankings, orgFilter);
+  const namedOrgs = nameLookupIds.length
+    ? await prisma.organization.findMany({
+        where: { id: { in: nameLookupIds } },
+        select: { id: true, name: true },
+      })
+    : [];
+  const orgNameLookup = new Map<string, string>(
+    namedOrgs.map((o) => [o.id, o.name]),
   );
 
   // ──────────────────────────────────────────────────────────────────────

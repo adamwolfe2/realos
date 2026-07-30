@@ -186,11 +186,16 @@ export function PushPanel({
           className="rounded-md"
         >
           {currentTypeIs(destinationId, destinations, "CSV_DOWNLOAD") ? (
-            <Download />
+            <>
+              <Download />
+              {pending ? "Downloading…" : "Download"}
+            </>
           ) : (
-            <Send />
+            <>
+              <Send />
+              {pending ? "Pushing…" : "Push now"}
+            </>
           )}
-          {pending ? "Pushing…" : "Push now"}
         </Button>
         {success ? (
           <span className="text-xs text-emerald-700">{success}</span>
@@ -207,7 +212,7 @@ function prettyType(t: string): string {
   return t.toLowerCase().replace(/_/g, " ");
 }
 
-function currentTypeIs(
+export function currentTypeIs(
   id: string,
   destinations: Destination[],
   type: string,

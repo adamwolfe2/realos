@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { z } from "zod";
 import type { TenantSiteConfig } from "@prisma/client";
 import { SectionCard } from "@/components/admin/page-header";
 
@@ -77,9 +78,13 @@ function isValidUrl(v: string): boolean {
   }
 }
 
+// Matches the server's z.string().email() (see PATCH /api/tenant/site-config)
+// so the client never shows "valid" for an address the server will 422 on.
+const emailSchema = z.string().email();
+
 function isValidEmail(v: string): boolean {
   if (!v) return true;
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  return emailSchema.safeParse(v).success;
 }
 
 export function SiteBuilderForm({

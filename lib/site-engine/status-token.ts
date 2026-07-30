@@ -6,9 +6,12 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 //
 // A public submitter (no LeaseStack account) gets a URL like:
 //   /sites/status/{slug}?token={signed}
-// The token is an HMAC-SHA256 of `{slug}.{expiresAt}` using SITE_ENGINE_SECRET
-// (falls back to NEXTAUTH_SECRET / a derived value if unset). Embedded
-// alongside is the expiry timestamp so we don't need DB lookups to validate.
+// The token is an HMAC-SHA256 of `{slug}.{expiresAt}` using the dedicated
+// SITE_ENGINE_SECRET env var. There is deliberately NO fallback to another
+// service's secret (e.g. Clerk's) — a leaked/rotated status token must never
+// be able to compromise (or be compromised by) an unrelated auth secret.
+// Embedded alongside is the expiry timestamp so we don't need DB lookups to
+// validate.
 //
 // Format: `${expiresAtMs}.${base64UrlSig}`
 // ---------------------------------------------------------------------------
@@ -16,13 +19,10 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 function getSecret(): string {
-  const s =
-    process.env.SITE_ENGINE_SECRET?.trim() ||
-    process.env.NEXTAUTH_SECRET?.trim() ||
-    process.env.CLERK_SECRET_KEY?.trim();
+  const s = process.env.SITE_ENGINE_SECRET?.trim();
   if (!s) {
     throw new Error(
-      "SITE_ENGINE_SECRET (or NEXTAUTH_SECRET / CLERK_SECRET_KEY) is not set; cannot sign status tokens",
+      "SITE_ENGINE_SECRET is not set; cannot sign or verify status tokens",
     );
   }
   return s;

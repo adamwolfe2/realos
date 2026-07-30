@@ -81,6 +81,11 @@ export async function GET(req: NextRequest) {
 
         const shareToken = generateShareToken();
 
+        // Always create as "draft" first — mirrors weekly-report. "sent" is
+        // not a real status the rest of the app understands: /r/[token]
+        // 404s and the portal share link stays null unless status is
+        // "shared". Only flip to "shared" (+ sharedAt) once the email
+        // actually goes out.
         const report = await prisma.clientReport.create({
           data: {
             orgId: org.id,
@@ -89,12 +94,12 @@ export async function GET(req: NextRequest) {
             periodEnd: new Date(snapshot.periodEnd),
             snapshot: snapshot as object as never,
             shareToken,
-            status: autoSend ? "sent" : "draft",
+            status: "draft",
           },
         });
 
         if (autoSend) {
-          await sendReportEmail({
+          const result = await sendReportEmail({
             to: org.reportRecipients ?? [],
             orgName: org.name,
             orgLogoUrl: org.logoUrl,
@@ -102,7 +107,26 @@ export async function GET(req: NextRequest) {
             shareToken,
             senderName: "LeaseStack",
           });
-          sent += 1;
+          if (result.ok) {
+            await prisma.clientReport.update({
+              where: { id: report.id },
+              data: { status: "shared", sharedAt: new Date() },
+            });
+            sent += 1;
+          } else {
+            await notifyReportDraftReady(org.id, report.id, "monthly").catch(() => {
+              // Notification failure must not fail the run; the draft exists.
+            });
+            errors.push({
+              orgId: org.id,
+              error:
+                result.error ??
+                (result.skipped === "no_resend_key"
+                  ? "RESEND_API_KEY not configured"
+                  : "send failed"),
+            });
+            skipped += 1;
+          }
         } else {
           await notifyReportDraftReady(org.id, report.id, "monthly").catch(() => {
             // Notification failure must not fail the run; the draft exists.

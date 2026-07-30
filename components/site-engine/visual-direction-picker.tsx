@@ -319,29 +319,35 @@ function ScreenshotsPanel({
     }
     setError(null);
     setUploading(true);
+    // Upload each file independently so one failure doesn't discard the
+    // screenshots that already succeeded earlier in the same batch.
+    const next = [...uploads];
+    const errors: string[] = [];
     try {
-      const next = [...uploads];
       for (const file of Array.from(files)) {
-        const body = new FormData();
-        body.append("file", file);
-        const res = await fetch("/api/site-requests/upload", {
-          method: "POST",
-          body,
-        });
-        const json = await res.json();
-        if (!res.ok || !json.ok) {
-          throw new Error(json.error || `Upload failed: ${file.name}`);
+        try {
+          const body = new FormData();
+          body.append("file", file);
+          const res = await fetch("/api/site-requests/upload", {
+            method: "POST",
+            body,
+          });
+          const json = await res.json();
+          if (!res.ok || !json.ok) {
+            throw new Error(json.error || `Upload failed: ${file.name}`);
+          }
+          next.push({
+            blobUrl: json.url,
+            filename: json.filename,
+            mimeType: json.mimeType,
+            size: json.size,
+          });
+        } catch (err) {
+          errors.push(err instanceof Error ? err.message : `Upload failed: ${file.name}`);
         }
-        next.push({
-          blobUrl: json.url,
-          filename: json.filename,
-          mimeType: json.mimeType,
-          size: json.size,
-        });
       }
-      onChange(next);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
+      if (next.length !== uploads.length) onChange(next);
+      if (errors.length) setError(errors.join("; "));
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";

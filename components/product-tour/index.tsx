@@ -1081,7 +1081,7 @@ function LeadsView() {
             />
           </div>
           <SourceFilter value={source} onChange={setSource} />
-          <button type="button" className="btn-secondary" style={{ minHeight: "36px", padding: "6px 14px", fontSize: "13px", borderRadius: "10px" }}>
+          <button type="button" disabled className="btn-secondary" style={{ minHeight: "36px", padding: "6px 14px", fontSize: "13px", borderRadius: "10px" }}>
             Export CSV
           </button>
         </div>

@@ -83,6 +83,42 @@ type Status =
   | { kind: "ok"; msg: string }
   | { kind: "err"; msg: string };
 
+export type NotifyTestResponse = {
+  deliveryId?: string;
+  status?: "PENDING" | "SENT" | "FAILED" | "SUPPRESSED" | null;
+  errorMessage?: string | null;
+};
+
+// /api/portal/settings/notify-test always responds 200 with `ok: true` —
+// even when the underlying send FAILED or was SUPPRESSED (bounced/complained
+// address). The real outcome lives in `status`/`errorMessage`; read those
+// before ever reporting success.
+export function resolveNotifyTestStatus(
+  body: NotifyTestResponse,
+  email: string,
+): { kind: "ok" | "err"; msg: string } {
+  if (body.status === "FAILED") {
+    return {
+      kind: "err",
+      msg: body.errorMessage ?? "Delivery failed — check the address.",
+    };
+  }
+  if (body.status === "SUPPRESSED") {
+    return {
+      kind: "err",
+      msg:
+        body.errorMessage ??
+        "Delivery suppressed — this address previously bounced or complained.",
+    };
+  }
+  return {
+    kind: "ok",
+    msg: body.deliveryId
+      ? `Test sent — check ${email || "inbox"}`
+      : "Test fired — check inbox",
+  };
+}
+
 export function LeadNotifySettings({
   initial,
 }: {
@@ -142,13 +178,8 @@ export function LeadNotifySettings({
         const body = await res.json().catch(() => ({}));
         throw new Error(body?.error ?? `Test failed (${res.status})`);
       }
-      const body = (await res.json()) as { deliveryId?: string };
-      setStatus({
-        kind: "ok",
-        msg: body.deliveryId
-          ? `Test sent — check ${email || "inbox"}`
-          : "Test fired — check inbox",
-      });
+      const body = (await res.json()) as NotifyTestResponse;
+      setStatus(resolveNotifyTestStatus(body, email));
     } catch (err) {
       setStatus({
         kind: "err",

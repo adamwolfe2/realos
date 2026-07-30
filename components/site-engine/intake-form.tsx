@@ -350,7 +350,10 @@ export function IntakeForm({
             <button
               key={id}
               type="button"
-              onClick={() => setCurrentSection(id)}
+              onClick={() => {
+                setCurrentSection(id);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
               className={cn(
                 "shrink-0 px-2.5 py-1 rounded-md text-[11px] font-medium border transition-colors whitespace-nowrap",
                 active
@@ -751,31 +754,37 @@ function AssetsSection({ form, update }: SectionProps) {
     if (!files || !files.length) return;
     setUploading(true);
     setUploadError(null);
+    // Upload each file independently so one failure doesn't discard the
+    // assets that already succeeded earlier in the same batch.
+    const next: Asset[] = [...form.assets];
+    const errors: string[] = [];
     try {
-      const next: Asset[] = [...form.assets];
       for (const file of Array.from(files)) {
-        const body = new FormData();
-        body.append("file", file);
-        const res = await fetch("/api/site-requests/upload", {
-          method: "POST",
-          body,
-        });
-        const json = await res.json();
-        if (!res.ok || !json.ok) {
-          throw new Error(json.error || `Upload failed: ${file.name}`);
+        try {
+          const body = new FormData();
+          body.append("file", file);
+          const res = await fetch("/api/site-requests/upload", {
+            method: "POST",
+            body,
+          });
+          const json = await res.json();
+          if (!res.ok || !json.ok) {
+            throw new Error(json.error || `Upload failed: ${file.name}`);
+          }
+          next.push({
+            type: nextType,
+            filename: json.filename,
+            mimeType: json.mimeType,
+            size: json.size,
+            blobUrl: json.url,
+            pathname: json.pathname,
+          });
+        } catch (err) {
+          errors.push(err instanceof Error ? err.message : `Upload failed: ${file.name}`);
         }
-        next.push({
-          type: nextType,
-          filename: json.filename,
-          mimeType: json.mimeType,
-          size: json.size,
-          blobUrl: json.url,
-          pathname: json.pathname,
-        });
       }
-      update("assets", next);
-    } catch (err) {
-      setUploadError(err instanceof Error ? err.message : "Upload failed");
+      if (next.length !== form.assets.length) update("assets", next);
+      if (errors.length) setUploadError(errors.join("; "));
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";

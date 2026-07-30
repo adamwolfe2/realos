@@ -27,8 +27,12 @@ export async function requireAdmin(): Promise<
     };
   }
 
+  // auth() returns the CLERK user id. Our internal User.id is a cuid, so the
+  // lookup must key on User.clerkUserId (@unique) — the same field getScope()
+  // in lib/tenancy/scope.ts uses. Keying on `id` never matches, which made
+  // every route behind this helper return 403 for real admins.
   const user = await prisma.user.findUnique({
-    where: { id: userId },
+    where: { clerkUserId: userId },
     select: { role: true },
   });
 
@@ -56,8 +60,9 @@ export async function requireAdminOrRep(): Promise<
     };
   }
 
+  // Same Clerk-id-vs-internal-id correction as requireAdmin above.
   const user = await prisma.user.findUnique({
-    where: { id: userId },
+    where: { clerkUserId: userId },
     select: { role: true },
   });
 

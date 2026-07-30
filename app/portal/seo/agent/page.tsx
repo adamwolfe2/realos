@@ -22,6 +22,7 @@ import {
 } from "@/components/portal/seo/seo-data-cards";
 import {
   ExecSummaryRow,
+  RangeSelectorBar,
   StrikingDistanceTable,
   LocalPackCard,
   type RangeKey,
@@ -49,6 +50,50 @@ function todayUtcStart(): Date {
   return new Date(
     Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
   );
+}
+
+// Weighted composite health score — 30% technical (perf+seo+a11y), 25% rank
+// coverage, 25% AEO citation rate, 20% backlink presence. Each pillar is only
+// included once its underlying data actually exists (regression
+// PORTAL-SEO-D001: a property with zero target queries and zero AEO scans
+// must show "no data" — not a fake 0/100 — so rankCoverage/citationRate
+// defaulting to 0 must not masquerade as real signal).
+export function computeCompositeHealthScore(input: {
+  performance: number | null;
+  seoScore: number | null;
+  accessibility: number | null;
+  targetQueryCountTotal: number;
+  rankCoverage: number;
+  aeoTotal: number;
+  citationRate: number;
+  backlinkDomainRank: number | null;
+}): number | null {
+  const parts: number[] = [];
+  if (
+    input.performance != null &&
+    input.seoScore != null &&
+    input.accessibility != null
+  ) {
+    const techNorm =
+      ((input.performance <= 1 ? input.performance * 100 : input.performance) +
+        (input.seoScore <= 1 ? input.seoScore * 100 : input.seoScore) +
+        (input.accessibility <= 1
+          ? input.accessibility * 100
+          : input.accessibility)) /
+      3;
+    parts.push(0.3 * techNorm);
+  }
+  if (input.targetQueryCountTotal > 0) {
+    parts.push(0.25 * (input.rankCoverage * 100));
+  }
+  if (input.aeoTotal > 0) {
+    parts.push(0.25 * (input.citationRate * 100));
+  }
+  if (input.backlinkDomainRank != null) {
+    parts.push(0.2 * (input.backlinkDomainRank / 10));
+  }
+  if (parts.length < 2) return null;
+  return Math.max(0, Math.min(100, Math.round(parts.reduce((a, b) => a + b, 0))));
 }
 
 function deriveDomain(url: string | null): string | null {
@@ -369,27 +414,16 @@ export default async function SeoAgentPage({
   const rankCoverage =
     targetQueryCountTotal > 0 ? ranksTop10 / targetQueryCountTotal : 0;
 
-  // Weighted composite — 30% technical (perf+seo+a11y), 25% rank coverage,
-  // 25% AEO citation rate, 20% backlink presence.
-  let composite: number | null = null;
-  const parts: number[] = [];
-  if (performance != null && seoScore != null && accessibility != null) {
-    const techNorm =
-      ((performance <= 1 ? performance * 100 : performance) +
-        (seoScore <= 1 ? seoScore * 100 : seoScore) +
-        (accessibility <= 1 ? accessibility * 100 : accessibility)) /
-      3;
-    parts.push(0.3 * techNorm);
-  }
-  parts.push(0.25 * (rankCoverage * 100));
-  parts.push(0.25 * (citationRate * 100));
-  if (backlinksLatest?.domainRank != null) {
-    parts.push(0.2 * (backlinksLatest.domainRank / 10));
-  }
-  if (parts.length >= 2) {
-    composite = Math.round(parts.reduce((a, b) => a + b, 0));
-    composite = Math.max(0, Math.min(100, composite));
-  }
+  const composite = computeCompositeHealthScore({
+    performance,
+    seoScore,
+    accessibility,
+    targetQueryCountTotal,
+    rankCoverage,
+    aeoTotal,
+    citationRate,
+    backlinkDomainRank: backlinksLatest?.domainRank ?? null,
+  });
 
   // SERP rankings table — join targetQueries with serpToday + delta.
   const serpRows: SerpRow[] = targetQueries.map((tq) => {
@@ -624,6 +658,9 @@ export default async function SeoAgentPage({
 
       {/* The numbers — Search Console + DataForSEO KPIs with WoW deltas +
           plain-English sublabels + a benchmark dot. */}
+      <div className="flex items-center justify-end">
+        <RangeSelectorBar value={range} />
+      </div>
       <ExecSummaryRow stats={execStatsEnriched} />
 
       <TabbedCard

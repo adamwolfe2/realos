@@ -418,6 +418,11 @@ export default async function WorkOrdersPage({
                               <p className="text-[11px] font-medium text-foreground truncate mt-0.5">
                                 {w.title || w.category || "Maintenance"}
                               </p>
+                              {w.description ? (
+                                <p className="text-[10px] text-muted-foreground line-clamp-2 mt-0.5 leading-relaxed">
+                                  {w.description}
+                                </p>
+                              ) : null}
                               <p className="text-[10px] text-muted-foreground truncate">
                                 {w.property.name}
                                 {w.unitNumber || w.listing?.unitNumber

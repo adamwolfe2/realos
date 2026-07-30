@@ -35,6 +35,16 @@ export async function GET(req: NextRequest) {
   const authError = verifyCronAuth(req);
   if (authError) return authError;
 
+  // Manual "Run sync now" triggers hit this same endpoint (see
+  // app/api/admin/data-sinks/[provider]/run/route.ts) so they share
+  // observability with the scheduled runs. Without `force=true` a manual
+  // trigger inside the cadence window would silently no-op (skipped:true
+  // in `results`) while still returning ok:true — indistinguishable from
+  // an actual run to whoever clicked the button. `force=true` bypasses the
+  // per-integration cadence check below so an explicit manual trigger
+  // always does real work.
+  const force = new URL(req.url).searchParams.get("force") === "true";
+
   return recordCronRun("appfolio-sync", () => trackCronDuration("appfolio-sync", async () => {
     // Self-heal stuck rows BEFORE pulling the queue. A row left in
     // syncStatus='syncing' with a syncStartedAt older than the Vercel
@@ -107,7 +117,11 @@ export async function GET(req: NextRequest) {
       // custom syncFrequencyMinutes still honor their explicit value.
       const minutes = integration.syncFrequencyMinutes ?? 30;
       const cutoff = Date.now() - minutes * 60 * 1000;
-      if (integration.lastSyncAt && integration.lastSyncAt.getTime() > cutoff) {
+      if (
+        !force &&
+        integration.lastSyncAt &&
+        integration.lastSyncAt.getTime() > cutoff
+      ) {
         return { orgId: integration.orgId, ok: true, skipped: true };
       }
 

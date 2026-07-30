@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere, ForbiddenError } from "@/lib/tenancy/scope";
 import {
   parsePropertyFilter,
-  propertyWhereFragment,
+  propertyOrOrgLevelWhereFragment,
 } from "@/lib/tenancy/property-filter";
 
 // GET /api/tenant/visitors/export
@@ -16,6 +16,13 @@ export async function GET(req: NextRequest) {
     // Property-RBAC gate. Same logic as /api/tenant/leads/export:
     // pre-fix any restricted user could pull the full org-wide list
     // of identified visitors (incl. hashedEmails) as a permanent CSV.
+    //
+    // Org-level-inclusive form, matching what /portal/visitors renders:
+    // the Cursive pixel is installed on the org's resident domain, so
+    // identified visitors carry propertyId = null. The plain fragment
+    // silently dropped every one of those rows from a restricted
+    // operator's CSV even though the feed shows them. The deny sentinel
+    // for an out-of-bounds selection is preserved by the helper.
     const url = new URL(req.url);
     const propertyIds = await parsePropertyFilter(
       {
@@ -27,7 +34,7 @@ export async function GET(req: NextRequest) {
     const visitors = await prisma.visitor.findMany({
       where: {
         ...tenantWhere(scope),
-        ...propertyWhereFragment(scope, propertyIds),
+        ...propertyOrOrgLevelWhereFragment(scope, propertyIds),
         hashedEmail: { not: null },
       },
       select: {

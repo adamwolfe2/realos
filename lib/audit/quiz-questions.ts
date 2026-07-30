@@ -226,6 +226,7 @@ export const QUIZ_QUESTIONS: Question[] = [
       { id: "phone_calls", label: "Phone calls" },
       { id: "not_sure", label: "Honestly, we don't know" },
       { id: "other", label: "Other" },
+      { id: "none_of_these", label: "None of these" },
     ],
   },
   {

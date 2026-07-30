@@ -71,7 +71,12 @@ export async function POST(
     );
   }
 
-  const target = `${getSiteUrl().replace(/\/$/, "")}/api/cron/${jobName}`;
+  // `force=true` marks this as an explicit operator action rather than the
+  // scheduled fire. Cron jobs that skip work when they already ran inside
+  // their cadence window (e.g. appfolio-sync) honor it and run anyway —
+  // otherwise "Run sync now" reports success while silently doing nothing.
+  // Jobs that don't implement it simply ignore the unknown query param.
+  const target = `${getSiteUrl().replace(/\/$/, "")}/api/cron/${jobName}?force=true`;
 
   // Fire-and-forget kickoff. We deliberately do NOT await the full cron
   // duration — they can take minutes. We DO await the initial connection

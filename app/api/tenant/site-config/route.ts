@@ -49,7 +49,7 @@ export async function PATCH(req: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: "Validation failed", details: parsed.error.flatten() },
-        { status: 400 }
+        { status: 422 }
       );
     }
 

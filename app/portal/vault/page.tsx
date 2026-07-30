@@ -37,6 +37,46 @@ export default async function VaultPage() {
   });
   const moduleEnabled = !!org?.moduleVault;
 
+  if (!moduleEnabled) {
+    return (
+      <div className="space-y-3">
+        <PageHeader
+          title="Vault"
+          description="Encrypted credentials for every platform your team logs into."
+        />
+        <SectionCard label="" padded={false}>
+          <div className="px-6 py-12 flex flex-col items-center text-center">
+            <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-[2px] bg-primary/10 text-primary ring-1 ring-primary/20">
+              <KeyRound className="h-6 w-6" />
+            </div>
+            <h2 className="text-xl font-semibold text-foreground tracking-tight">
+              Credentials Vault
+            </h2>
+            <p className="mt-2 max-w-md text-sm text-muted-foreground">
+              Stop chasing logins across Word docs and sticky notes. Store
+              every platform credential (GA4, Meta Ads, AppFolio, banking,
+              vendor portals) encrypted at rest, scoped per property,
+              accessible to anyone you authorize. Every reveal is logged.
+            </p>
+            <div className="mt-4 flex items-center gap-3 text-xs text-muted-foreground">
+              <Lock className="h-3 w-3" />
+              AES-256-GCM · envelope encryption · audit log on every read
+            </div>
+            <Link
+              href="/portal/billing"
+              className="mt-6 inline-flex items-center justify-center rounded-[2px] bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Enable Vault
+            </Link>
+            <p className="mt-3 text-[11px] text-muted-foreground">
+              Or contact your account manager to add it to your plan.
+            </p>
+          </div>
+        </SectionCard>
+      </div>
+    );
+  }
+
   // Build the where clause with both tenant scope + property RBAC. A
   // restricted user with allowedPropertyIds=[a,b] sees org-wide rows
   // (propertyId=null) PLUS rows on properties a or b. An unrestricted
@@ -96,46 +136,6 @@ export default async function VaultPage() {
     createdAt: e.createdAt.toISOString(),
     updatedAt: e.updatedAt.toISOString(),
   }));
-
-  if (!moduleEnabled) {
-    return (
-      <div className="space-y-3">
-        <PageHeader
-          title="Vault"
-          description="Encrypted credentials for every platform your team logs into."
-        />
-        <SectionCard label="" padded={false}>
-          <div className="px-6 py-12 flex flex-col items-center text-center">
-            <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-[2px] bg-primary/10 text-primary ring-1 ring-primary/20">
-              <KeyRound className="h-6 w-6" />
-            </div>
-            <h2 className="text-xl font-semibold text-foreground tracking-tight">
-              Credentials Vault
-            </h2>
-            <p className="mt-2 max-w-md text-sm text-muted-foreground">
-              Stop chasing logins across Word docs and sticky notes. Store
-              every platform credential (GA4, Meta Ads, AppFolio, banking,
-              vendor portals) encrypted at rest, scoped per property,
-              accessible to anyone you authorize. Every reveal is logged.
-            </p>
-            <div className="mt-4 flex items-center gap-3 text-xs text-muted-foreground">
-              <Lock className="h-3 w-3" />
-              AES-256-GCM · envelope encryption · audit log on every read
-            </div>
-            <Link
-              href="/portal/billing"
-              className="mt-6 inline-flex items-center justify-center rounded-[2px] bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              Enable Vault
-            </Link>
-            <p className="mt-3 text-[11px] text-muted-foreground">
-              Or contact your account manager to add it to your plan.
-            </p>
-          </div>
-        </SectionCard>
-      </div>
-    );
-  }
 
   const propertyOptions = properties.filter((p) =>
     scope.allowedPropertyIds ? scope.allowedPropertyIds.includes(p.id) : true,

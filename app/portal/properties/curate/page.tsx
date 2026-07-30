@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { propertyWhereFragment } from "@/lib/tenancy/property-filter";
 import { ArrowLeft, Inbox } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
 import { EmptyState } from "@/components/portal/ui/empty-state";
@@ -42,10 +43,19 @@ export default async function PropertyCuratePage({
 
   const lifecycle = view === "imported" ? "IMPORTED" : "EXCLUDED";
 
+  // Property-level RBAC. The queue lists (and the client bulk-selects) raw
+  // Property rows, so a restricted operator must only ever see the buildings
+  // their UserPropertyAccess grant covers — otherwise this page is a
+  // read window onto the whole portfolio. `{}` for unrestricted scope
+  // (allowedPropertyIds === null), so a normal operator sees everything as
+  // before. The write side (setPropertyLifecycle*, activateAllImported*)
+  // already gates on the same grant.
+  const accessGate = propertyWhereFragment(scope, null, "id");
+
   const [items, importedCount, excludedCount, activeCount, org] =
     await Promise.all([
       prisma.property.findMany({
-        where: { ...tenantWhere(scope), lifecycle },
+        where: { ...tenantWhere(scope), ...accessGate, lifecycle },
         orderBy: [{ createdAt: "desc" }],
         select: {
           id: true,
@@ -67,13 +77,13 @@ export default async function PropertyCuratePage({
         },
       }),
       prisma.property.count({
-        where: { ...tenantWhere(scope), lifecycle: "IMPORTED" },
+        where: { ...tenantWhere(scope), ...accessGate, lifecycle: "IMPORTED" },
       }),
       prisma.property.count({
-        where: { ...tenantWhere(scope), lifecycle: "EXCLUDED" },
+        where: { ...tenantWhere(scope), ...accessGate, lifecycle: "EXCLUDED" },
       }),
       prisma.property.count({
-        where: { ...tenantWhere(scope), lifecycle: "ACTIVE" },
+        where: { ...tenantWhere(scope), ...accessGate, lifecycle: "ACTIVE" },
       }),
       // Tier + trial state for the billing-impact callout. Pulled here
       // (not in the client) so the callout can server-render real numbers.

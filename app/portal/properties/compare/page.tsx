@@ -14,6 +14,10 @@ import {
 } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import {
+  effectivePropertyIds,
+  propertyWhereFragment,
+} from "@/lib/tenancy/property-filter";
 import { PageHeader } from "@/components/admin/page-header";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import {
@@ -50,13 +54,19 @@ export default async function ComparePropertiesPage({
   const scope = await requireScope();
   const sp = await searchParams;
   const idsParam = sp.ids?.trim() ?? "";
-  const requestedIds = idsParam
+  const urlIds = idsParam
     ? idsParam.split(",").map((s) => s.trim()).filter(Boolean).slice(0, MAX_COMPARE)
     : [];
+  // Property-level RBAC: intersect the ?ids= selection with the caller's
+  // UserPropertyAccess grant, so a restricted operator can't pull a sibling
+  // property's full metric column by hand-editing the URL. Unrestricted
+  // scope (allowedPropertyIds === null) passes the selection through
+  // untouched. Every aggregate below keys off this gated list.
+  const requestedIds = effectivePropertyIds(scope, urlIds) ?? [];
 
-  // Always show all properties as picker options.
+  // Picker options — org properties the caller is allowed to see.
   const allProperties = await prisma.property.findMany({
-    where: tenantWhere(scope),
+    where: { ...tenantWhere(scope), ...propertyWhereFragment(scope, null, "id") },
     orderBy: { name: "asc" },
     select: { id: true, name: true, city: true, state: true },
   });

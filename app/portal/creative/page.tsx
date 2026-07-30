@@ -33,6 +33,10 @@ export default async function CreativePage() {
 
   const countsByStatus = new Map<CreativeRequestStatus, number>();
   for (const r of counts) countsByStatus.set(r.status, r._count._all);
+  // Total must come from the ungated groupBy count, not requests.length —
+  // the list query is capped at take:200, so requests.length silently
+  // undercounts once an org passes 200 requests.
+  const totalRequests = counts.reduce((sum, r) => sum + r._count._all, 0);
   const open =
     (countsByStatus.get(CreativeRequestStatus.SUBMITTED) ?? 0) +
     (countsByStatus.get(CreativeRequestStatus.IN_REVIEW) ?? 0) +
@@ -68,7 +72,7 @@ export default async function CreativePage() {
           tone={delivered > 0 ? "success" : undefined}
         />
         <StatCard label="Approved" value={approved} />
-        <StatCard label="Total" value={requests.length} />
+        <StatCard label="Total" value={totalRequests} />
       </section>
 
       {requests.length === 0 ? (

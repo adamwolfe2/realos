@@ -94,7 +94,7 @@ function ageTier(iso: string): "fresh" | "aging" | "stale" {
 const AGE_DOT_CLASS: Record<ReturnType<typeof ageTier>, string> = {
   fresh: "bg-primary",
   aging: "bg-primary/40",
-  stale: "bg-primary",
+  stale: "bg-muted-foreground/50",
 };
 
 function relativeTime(iso: string): string {

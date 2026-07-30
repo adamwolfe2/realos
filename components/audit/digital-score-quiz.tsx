@@ -748,17 +748,16 @@ function ScanProgress({ scannedDomain }: { scannedDomain: string | null }) {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function stepHasValidAnswer(
+export function stepHasValidAnswer(
   question: Question,
   value: string | string[] | undefined,
 ): boolean {
   if (!question.required) {
-    // Non-required steps still need *some* signal of intent so the
-    // Next button stays disabled until the operator interacts. Multi-
-    // select counts an empty array as "explicitly chose none, with
-    // the 'None' option". See toggle() in QuestionBody. So we just
-    // require the answer key to exist.
-    return value !== undefined;
+    // Optional steps can always advance, touched or not — that's what
+    // "optional" means. Requiring the visitor to interact first (e.g. via
+    // `value !== undefined`) just adds friction with no signal gained: an
+    // untouched optional multi-select is equivalent to "none selected".
+    return true;
   }
   if (value === undefined || value === null) return false;
   if (typeof value === "string") return value.trim() !== "";

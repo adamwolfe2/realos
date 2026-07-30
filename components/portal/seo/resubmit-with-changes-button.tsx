@@ -69,13 +69,20 @@ export function ResubmitWithChangesButton({
         return;
       }
 
-      // 2. Mark original as cancelled. Best-effort — even if this fails
-      //    the operator's view shows the new one as the live draft.
-      await fetch(`/api/portal/seo/drafts/${draftId}`, {
+      // 2. Mark original as cancelled so there's only one active draft
+      //    per brief. If this fails, surface it — silently swallowing
+      //    it leaves two active drafts (the new one + the stale
+      //    CHANGES_REQUESTED original) with no operator-visible signal.
+      const cancelRes = await fetch(`/api/portal/seo/drafts/${draftId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ cancel: true }),
-      }).catch(() => undefined);
+      }).catch(() => null);
+      if (!cancelRes || !cancelRes.ok) {
+        toast.warning(
+          "New draft created, but the original couldn't be cancelled — cancel it manually so you don't have two active drafts.",
+        );
+      }
 
       // 3. Hop to the new draft
       toast.success("Resubmitted. Admin will review.");
