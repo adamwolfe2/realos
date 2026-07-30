@@ -9,6 +9,37 @@ import { TEST_TENANT } from "../fixtures/test-tenant";
 // mysteriously.
 
 export default async function globalSetup(): Promise<void> {
+  // reuseExistingServer trap: if a dev server is already up on :3000 its
+  // auth mode wins, not this run's env. Fail loudly on a mismatch instead
+  // of letting half the suite fail with confusing redirects.
+  const wantDemo = process.env.E2E_DEMO !== "false";
+  try {
+    const res = await fetch("http://localhost:3000/portal", {
+      redirect: "manual",
+    });
+    const redirected =
+      res.status >= 300 &&
+      res.status < 400 &&
+      (res.headers.get("location") ?? "").includes("/sign-in");
+    if (wantDemo && redirected) {
+      throw new Error(
+        "A dev server WITHOUT demo mode is already running on :3000. " +
+          "Stop it (or restart it with DEMO_MODE=true DEMO_TARGET=client) " +
+          "before running the authed e2e suite."
+      );
+    }
+    if (!wantDemo && !redirected) {
+      throw new Error(
+        "A dev server WITH demo mode is already running on :3000, but " +
+          "E2E_DEMO=false was requested. Stop it first."
+      );
+    }
+  } catch (error) {
+    // Connection refused = no existing server; Playwright will start one
+    // with the right env. Anything else (incl. our mismatch errors) rethrows.
+    if (!(error instanceof TypeError)) throw error;
+  }
+
   const dbUrl = process.env.DATABASE_URL;
   if (!dbUrl) {
     throw new Error(

@@ -1,27 +1,32 @@
-// Auth helper stub.
+// Demo-mode auth for E2E.
 //
-// The portal and admin surfaces sit behind Clerk middleware (see
-// /middleware.ts). Programmatic sign-in for E2E requires either:
-//   1. Clerk Testing Tokens (preferred) — see
-//      https://clerk.com/docs/testing/playwright/overview
-//   2. A dedicated test-mode bypass added to middleware that accepts a
-//      signed header instead of a Clerk session cookie.
+// The Playwright dev server runs with DEMO_MODE=true DEMO_TARGET=client
+// (set in playwright.config.ts), which makes middleware pass /portal
+// through without a Clerk session and getScope() resolve the seeded demo
+// client org. Same bypass prospects use; hard-disabled when
+// VERCEL_ENV/NODE_ENV is production (lib/tenancy/scope.ts). No new auth
+// path was added for tests.
 //
-// Neither is wired up yet. For now, authenticated tests assert the redirect
-// behavior only (unauth -> /sign-in) and leave the deep-flow tests skipped
-// with a TODO. When option 1 lands, fill in `signIn()` below and remove the
-// `test.skip` calls in e2e/portal/*.
-//
-// Keeping the helper in place so tests can switch over with a one-liner.
+// Set E2E_DEMO=false to run the server in normal auth mode instead —
+// authed specs then skip and the auth-redirect guard specs run.
 
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
-export async function signInAsOperator(_page: Page): Promise<void> {
-  throw new Error(
-    "signInAsOperator() is not implemented. Wire up @clerk/testing tokens or " +
-      "add a test-mode bypass to middleware before un-skipping authed tests."
-  );
+export const DEMO_AUTH = process.env.E2E_DEMO !== "false";
+
+export const NEEDS_DEMO_SERVER =
+  "Needs the demo-mode server. Run e2e without E2E_DEMO=false.";
+
+export const NEEDS_REAL_AUTH_SERVER =
+  "Auth redirects can't be observed on a demo-mode server. " +
+  "Run `E2E_DEMO=false pnpm test:e2e` to exercise this guard.";
+
+export const NEEDS_ADMIN_SERVER =
+  "Admin surface needs a DEMO_TARGET=admin server; this run targets the " +
+  "client portal. One dev server resolves one org.";
+
+/** Navigate to /portal and assert we were NOT bounced to /sign-in. */
+export async function signInAsOperator(page: Page): Promise<void> {
+  await page.goto("/portal");
+  await expect(page).not.toHaveURL(/\/sign-in/);
 }
-
-export const AUTH_NOT_WIRED_MESSAGE =
-  "Clerk test sign-in helper not wired yet. Asserting auth-redirect behavior only.";

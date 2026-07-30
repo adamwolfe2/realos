@@ -1,13 +1,13 @@
 import { test, expect } from "@playwright/test";
+import { DEMO_AUTH, NEEDS_REAL_AUTH_SERVER } from "../helpers/auth-stub";
 
 // @critical
 // Portal and admin must redirect unauthenticated users to /sign-in.
 // If this guard breaks, every operator-only surface leaks publicly.
 //
-// We don't programmatically sign in here — that requires Clerk testing
-// tokens which aren't wired yet (see e2e/helpers/auth-stub.ts). The
-// deep-flow tests below are skipped with a clear TODO so they're easy to
-// turn on once auth is hooked up.
+// The default e2e server runs in demo mode (middleware passes /portal and
+// /admin through by design), so these guard specs only run against a
+// normal-auth server: `E2E_DEMO=false pnpm test:e2e`.
 
 const PROTECTED_ROUTES = [
   "/portal",
@@ -19,6 +19,8 @@ const PROTECTED_ROUTES = [
 ];
 
 test.describe("Auth redirect smoke @critical", () => {
+  test.skip(DEMO_AUTH, NEEDS_REAL_AUTH_SERVER);
+
   for (const route of PROTECTED_ROUTES) {
     test(`unauthenticated GET ${route} -> /sign-in`, async ({ page }) => {
       await page.goto(route);

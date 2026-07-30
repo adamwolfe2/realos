@@ -29,6 +29,24 @@ if (
     "test-only-marketplace-auth-secret-32-bytes-min-do-not-use-in-prod";
 }
 
+// One server, one auth mode. Default: demo mode (DEMO_MODE=true,
+// DEMO_TARGET=client) so authed /portal specs exercise the seeded demo org
+// through the same bypass prospects use — hard-disabled in production
+// (lib/tenancy/scope.ts). Set E2E_DEMO=false to start a normal server
+// instead: the auth-redirect guard specs run, authed portal specs skip.
+// The spawned dev server inherits this process's env (see dotenv note above).
+export const E2E_DEMO_AUTH = process.env.E2E_DEMO !== "false";
+if (E2E_DEMO_AUTH) {
+  process.env.DEMO_MODE = "true";
+  process.env.DEMO_TARGET = "client";
+  // .env.production.local (vercel env pull) carries VERCEL_ENV=production,
+  // which trips getDemoScope()'s production hard-disable in the spawned dev
+  // server: middleware passes the request through, then getScope() returns
+  // null and every portal page 403s. The guard is correct — this local test
+  // server just must not masquerade as production.
+  delete process.env.VERCEL_ENV;
+}
+
 export default defineConfig({
   testDir: "./e2e",
   // Skip the helper / fixture / .cache directories.
