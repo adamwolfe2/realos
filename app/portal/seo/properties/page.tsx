@@ -4,6 +4,11 @@ import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { PageHeader } from "@/components/admin/page-header";
+import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
+import {
+  DataTable,
+  type DataTableColumn,
+} from "@/components/portal/ui/data-table";
 
 export const metadata: Metadata = { title: "SEO portfolio" };
 export const dynamic = "force-dynamic";
@@ -237,53 +242,45 @@ export default async function SeoPortfolioPage({
         );
 
         return (
-          <div className="rounded-2xl border border-border bg-card overflow-hidden">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-border/60">
-              <KpiCell
-                label="Properties"
-                value={String(properties.length)}
-                hint={`${scoresArr.length} with score`}
-              />
-              <KpiCell
-                label="Avg score"
-                value={avgScore != null ? String(avgScore) : "—"}
-                hint={
-                  avgScore != null
-                    ? avgScore >= 75
-                      ? "Healthy"
-                      : avgScore >= 50
-                        ? "Mixed"
-                        : "Needs work"
-                    : "Pending first snapshot"
-                }
-                tone={
-                  avgScore == null
-                    ? undefined
-                    : avgScore >= 75
-                      ? "positive"
-                      : avgScore < 50
-                        ? "danger"
-                        : undefined
-                }
-              />
-              <KpiCell
-                label="Open recs"
-                value={String(totalCritical + totalHigh + totalOther)}
-                hint={`${totalCritical} crit · ${totalHigh} high · ${totalOther} other`}
-                tone={totalCritical > 0 ? "danger" : undefined}
-              />
-              <KpiCell
-                label="Top-10 queries"
-                value={String(totalTop10)}
-                hint="Across portfolio, 7d"
-              />
-              <KpiCell
-                label="Pending drafts"
-                value={String(totalDrafts)}
-                hint={totalDrafts > 0 ? "Admin reviewing" : "All clear"}
-                tone={totalDrafts > 0 ? "warning" : undefined}
-              />
-            </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            <KpiTile
+              density="dense"
+              label="Properties"
+              value={String(properties.length)}
+              hint={`${scoresArr.length} with score`}
+            />
+            <KpiTile
+              density="dense"
+              label="Avg score"
+              value={avgScore != null ? String(avgScore) : "—"}
+              hint={
+                avgScore != null
+                  ? avgScore >= 75
+                    ? "Healthy"
+                    : avgScore >= 50
+                      ? "Mixed"
+                      : "Needs work"
+                  : "Pending first snapshot"
+              }
+            />
+            <KpiTile
+              density="dense"
+              label="Open recs"
+              value={String(totalCritical + totalHigh + totalOther)}
+              hint={`${totalCritical} crit · ${totalHigh} high · ${totalOther} other`}
+            />
+            <KpiTile
+              density="dense"
+              label="Top-10 queries"
+              value={String(totalTop10)}
+              hint="Across portfolio, 7d"
+            />
+            <KpiTile
+              density="dense"
+              label="Pending drafts"
+              value={String(totalDrafts)}
+              hint={totalDrafts > 0 ? "Admin reviewing" : "All clear"}
+            />
           </div>
         );
       })()}
@@ -338,212 +335,188 @@ export default async function SeoPortfolioPage({
         </Link>
       </div>
 
-      <div className="rounded-2xl border border-border bg-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-[13px] min-w-[760px]">
-            <thead className="bg-muted/30 text-[11px] font-mono uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="px-4 py-2.5 text-left font-medium">Property</th>
-                <th className="px-4 py-2.5 text-right font-medium">Score</th>
-                <th className="px-4 py-2.5 text-right font-medium">
-                  Open recs
-                </th>
-                <th className="px-4 py-2.5 text-right font-medium">
-                  Top 10
-                </th>
-                <th className="px-4 py-2.5 text-right font-medium">
-                  Pending drafts
-                </th>
-                <th className="px-4 py-2.5 text-right font-medium">
-                  Last sync
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/60">
-              {(() => {
-                // Apply URL-driven sort + filter without re-querying Prisma.
-                // recsTotal computed inline so the sort key matches what
-                // operators see in the chip cluster.
-                const recsTotalFor = (id: string): number => {
-                  const r = recsByProperty.get(id);
-                  if (!r) return 0;
-                  return r.critical + r.high + r.medium + r.low;
-                };
-                let working = properties.slice();
-                if (filter === "open") {
-                  working = working.filter((p) => recsTotalFor(p.id) > 0);
-                }
-                if (sort === "score") {
-                  working.sort(
-                    (a, b) =>
-                      (scoreByProperty.get(b.id) ?? -1) -
-                      (scoreByProperty.get(a.id) ?? -1),
-                  );
-                } else if (sort === "recs") {
-                  working.sort((a, b) => {
-                    const ar = recsByProperty.get(a.id);
-                    const br = recsByProperty.get(b.id);
-                    const aw = (ar?.critical ?? 0) * 3 + (ar?.high ?? 0);
-                    const bw = (br?.critical ?? 0) * 3 + (br?.high ?? 0);
-                    return bw - aw;
-                  });
-                } else if (sort === "sync") {
-                  working.sort((a, b) => {
-                    const at = lastSyncByProperty.get(a.id)?.getTime() ?? 0;
-                    const bt = lastSyncByProperty.get(b.id)?.getTime() ?? 0;
-                    return bt - at;
-                  });
-                } else {
-                  working.sort((a, b) => a.name.localeCompare(b.name));
-                }
-                if (working.length === 0) {
-                  return (
-                    <tr>
-                      <td
-                        colSpan={6}
-                        className="px-4 py-8 text-center text-[12px] text-muted-foreground"
-                      >
-                        No properties match this filter.
-                      </td>
-                    </tr>
-                  );
-                }
-                return working.map((p) => {
-                const score = scoreByProperty.get(p.id);
-                const recs = recsByProperty.get(p.id) ?? {
-                  critical: 0,
-                  high: 0,
-                  medium: 0,
-                  low: 0,
-                };
-                const top10 = top10ByProperty.get(p.id) ?? 0;
-                const drafts = draftsByProperty.get(p.id) ?? 0;
-                const lastSync = lastSyncByProperty.get(p.id) ?? null;
-                return (
-                  <tr key={p.id} className="hover:bg-muted/20">
-                    <td className="px-4 py-2.5">
-                      <Link
-                        href={`/portal/seo/agent?propertyId=${p.id}`}
-                        className="block group"
-                      >
-                        <p className="font-medium text-foreground group-hover:text-primary truncate">
-                          {p.name}
-                        </p>
-                        <p className="mt-0.5 text-[11px] text-muted-foreground truncate">
-                          {[p.city, p.state].filter(Boolean).join(", ") || "—"}
-                          {p.launchStatus !== "LIVE" ? (
-                            <span className="ml-1.5 rounded px-1 py-0.5 bg-muted text-[9.5px] font-mono uppercase">
-                              {p.launchStatus.toLowerCase()}
-                            </span>
-                          ) : null}
-                        </p>
-                      </Link>
-                    </td>
-                    <td className="px-4 py-2.5 text-right">
-                      <span
-                        className={`text-[15px] font-mono font-semibold tabular-nums ${scoreTone(score ?? null)}`}
-                      >
-                        {score ?? "—"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2.5 text-right">
-                      {recs.critical + recs.high + recs.medium + recs.low > 0 ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-mono">
-                          {recs.critical > 0 ? (
-                            <span className="rounded bg-primary px-1.5 py-0.5 text-primary-foreground font-semibold">
-                              {recs.critical}
-                            </span>
-                          ) : null}
-                          {recs.high > 0 ? (
-                            <span className="rounded bg-primary/15 px-1.5 py-0.5 text-primary">
-                              {recs.high}
-                            </span>
-                          ) : null}
-                          {recs.medium + recs.low > 0 ? (
-                            <span className="rounded bg-muted px-1.5 py-0.5 text-muted-foreground">
-                              {recs.medium + recs.low}
-                            </span>
-                          ) : null}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-2.5 text-right tabular-nums text-foreground">
-                      {top10 > 0 ? top10 : "—"}
-                    </td>
-                    <td className="px-4 py-2.5 text-right tabular-nums">
-                      {drafts > 0 ? (
-                        <Link
-                          href="/portal/seo/drafts"
-                          className="text-primary hover:underline font-medium"
-                        >
-                          {drafts}
-                        </Link>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-2.5 text-right text-[11px] text-muted-foreground whitespace-nowrap">
-                      {fmtAge(lastSync)}
-                    </td>
-                  </tr>
-                );
-              });
-              })()}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {(() => {
+        // Apply URL-driven sort + filter without re-querying Prisma.
+        // recsTotal computed inline so the sort key matches what operators
+        // see in the chip cluster above.
+        const recsTotalFor = (id: string): number => {
+          const r = recsByProperty.get(id);
+          if (!r) return 0;
+          return r.critical + r.high + r.medium + r.low;
+        };
+        let working = properties.slice();
+        if (filter === "open") {
+          working = working.filter((p) => recsTotalFor(p.id) > 0);
+        }
+        if (sort === "score") {
+          working.sort(
+            (a, b) =>
+              (scoreByProperty.get(b.id) ?? -1) -
+              (scoreByProperty.get(a.id) ?? -1),
+          );
+        } else if (sort === "recs") {
+          working.sort((a, b) => {
+            const ar = recsByProperty.get(a.id);
+            const br = recsByProperty.get(b.id);
+            const aw = (ar?.critical ?? 0) * 3 + (ar?.high ?? 0);
+            const bw = (br?.critical ?? 0) * 3 + (br?.high ?? 0);
+            return bw - aw;
+          });
+        } else if (sort === "sync") {
+          working.sort((a, b) => {
+            const at = lastSyncByProperty.get(a.id)?.getTime() ?? 0;
+            const bt = lastSyncByProperty.get(b.id)?.getTime() ?? 0;
+            return bt - at;
+          });
+        } else {
+          working.sort((a, b) => a.name.localeCompare(b.name));
+        }
+
+        type PropertyRow = (typeof properties)[number];
+        const columns: DataTableColumn<PropertyRow>[] = [
+          {
+            key: "name",
+            header: "Property",
+            sortable: true,
+            // max-w cap + truncate: property names are a single token
+            // (no free-text risk), so truncate (not line-clamp) is safe here.
+            accessor: (p) => (
+              <div className="min-w-0 max-w-[320px]">
+                <p className="font-medium text-foreground truncate">
+                  {p.name}
+                </p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground truncate">
+                  {[p.city, p.state].filter(Boolean).join(", ") || "—"}
+                  {p.launchStatus !== "LIVE" ? (
+                    <span className="ml-1.5 rounded px-1 py-0.5 bg-muted text-[9.5px] font-mono uppercase">
+                      {p.launchStatus.toLowerCase()}
+                    </span>
+                  ) : null}
+                </p>
+              </div>
+            ),
+          },
+          {
+            key: "score",
+            header: "Score",
+            align: "right",
+            sortable: true,
+            accessor: (p) => {
+              const score = scoreByProperty.get(p.id);
+              return (
+                <span
+                  className={`text-[15px] font-mono font-semibold tabular-nums ${scoreTone(score ?? null)}`}
+                >
+                  {score ?? "—"}
+                </span>
+              );
+            },
+          },
+          {
+            key: "recs",
+            header: "Open recs",
+            align: "right",
+            sortable: true,
+            accessor: (p) => {
+              const recs = recsByProperty.get(p.id) ?? {
+                critical: 0,
+                high: 0,
+                medium: 0,
+                low: 0,
+              };
+              return recs.critical + recs.high + recs.medium + recs.low > 0 ? (
+                <span className="inline-flex items-center gap-1 text-[11px] font-mono">
+                  {recs.critical > 0 ? (
+                    <span className="rounded bg-primary px-1.5 py-0.5 text-primary-foreground font-semibold">
+                      {recs.critical}
+                    </span>
+                  ) : null}
+                  {recs.high > 0 ? (
+                    <span className="rounded bg-primary/15 px-1.5 py-0.5 text-primary">
+                      {recs.high}
+                    </span>
+                  ) : null}
+                  {recs.medium + recs.low > 0 ? (
+                    <span className="rounded bg-muted px-1.5 py-0.5 text-muted-foreground">
+                      {recs.medium + recs.low}
+                    </span>
+                  ) : null}
+                </span>
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              );
+            },
+          },
+          {
+            key: "top10",
+            header: "Top 10",
+            align: "right",
+            hideOnMobile: true,
+            accessor: (p) => {
+              const top10 = top10ByProperty.get(p.id) ?? 0;
+              return top10 > 0 ? top10 : "—";
+            },
+          },
+          {
+            key: "drafts",
+            header: "Pending drafts",
+            align: "right",
+            hideOnMobile: true,
+            accessor: (p) => {
+              const drafts = draftsByProperty.get(p.id) ?? 0;
+              return drafts > 0 ? (
+                <Link
+                  href="/portal/seo/drafts"
+                  className="text-primary hover:underline font-medium"
+                >
+                  {drafts}
+                </Link>
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              );
+            },
+          },
+          {
+            key: "sync",
+            header: "Last sync",
+            align: "right",
+            sortable: true,
+            accessor: (p) => (
+              <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                {fmtAge(lastSyncByProperty.get(p.id) ?? null)}
+              </span>
+            ),
+          },
+        ];
+
+        return (
+          <DataTable<PropertyRow>
+            columns={columns}
+            rows={working}
+            getRowHref={(p) => `/portal/seo/agent?propertyId=${p.id}`}
+            sort={{
+              by: sort,
+              dir: sort === "name" ? "asc" : "desc",
+              hrefForSort: (key) => {
+                const params = new URLSearchParams();
+                params.set("sort", key);
+                if (filter !== "all") params.set("filter", filter);
+                return `/portal/seo/properties?${params.toString()}`;
+              },
+            }}
+            emptyState={
+              <div className="ls-card overflow-hidden px-4 py-8 text-center text-[12px] text-muted-foreground">
+                No properties match this filter.
+              </div>
+            }
+          />
+        );
+      })()}
 
       <p className="text-[11px] text-muted-foreground">
         Score lives weekly via the Monday 05:00 UTC snapshot. Recs and ranks
         refresh daily via the 04:00 UTC sync.
       </p>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// KpiCell — small stat cell for the portfolio KPI strip. Tone tints the
-// value color so wins/losses scan in two seconds.
-// ---------------------------------------------------------------------------
-function KpiCell({
-  label,
-  value,
-  hint,
-  tone,
-}: {
-  label: string;
-  value: string;
-  hint?: string;
-  tone?: "positive" | "danger" | "warning";
-}) {
-  // Tone reads from primary saturation + weight, not from hue. Keeps
-  // the portfolio KPI strip cohesive with the rest of the portal.
-  const valueClass =
-    tone === "positive"
-      ? "text-primary font-semibold"
-      : tone === "danger"
-        ? "text-destructive"
-        : tone === "warning"
-          ? "text-primary/70"
-          : "text-foreground";
-  return (
-    <div className="px-4 py-3 first:rounded-l-2xl last:rounded-r-2xl">
-      <p className="text-[9.5px] font-mono font-semibold uppercase tracking-[0.1em] text-muted-foreground leading-tight">
-        {label}
-      </p>
-      <p
-        className={`mt-1 text-[20px] font-display font-medium tabular-nums leading-none ${valueClass}`}
-      >
-        {value}
-      </p>
-      {hint ? (
-        <p className="mt-1.5 text-[10.5px] text-muted-foreground leading-snug">
-          {hint}
-        </p>
-      ) : null}
     </div>
   );
 }
