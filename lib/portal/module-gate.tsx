@@ -54,99 +54,99 @@ const MODULE_COPY: Record<PortalModuleKey, ModuleCopy> = {
   moduleWebsite: {
     pageTitle: "Website",
     title: "Website module not active",
-    body: "The hosted marketing site is part of the Website module. Contact your account manager to activate this module.",
+    body: "The hosted marketing site is part of the Website module. Activate it from the Marketplace, free during your trial.",
   },
   moduleLeadCapture: {
     pageTitle: "Leads",
     title: "Lead capture module not active",
-    body: "Public lead capture forms are part of the Lead Capture module. Contact your account manager to activate this module.",
+    body: "Public lead capture forms are part of the Lead Capture module. Activate it from the Marketplace, free during your trial.",
   },
   modulePixel: {
     pageTitle: "Visitors",
     title: "Visitor pixel not active",
-    body: "The site visitor identity pixel is a paid add-on. Contact your account manager to activate this module.",
+    body: "The site visitor identity pixel is a paid add-on. Activate it from the Marketplace, free during your trial.",
   },
   moduleChatbot: {
     pageTitle: "Chatbot",
     title: "Chatbot module not active",
-    body: "The on-site AI leasing assistant is a paid add-on. Contact your account manager to activate this module.",
+    body: "The on-site AI leasing assistant is a paid add-on. Activate it from the Marketplace, free during your trial.",
   },
   moduleGoogleAds: {
     pageTitle: "Google Ads",
     title: "Google Ads module not active",
-    body: "Google Ads management is a paid add-on. Contact your account manager to activate this module.",
+    body: "Google Ads management is a paid add-on. Activate it from the Marketplace, free during your trial.",
   },
   moduleMetaAds: {
     pageTitle: "Meta Ads",
     title: "Meta Ads module not active",
-    body: "Meta Ads management is a paid add-on. Contact your account manager to activate this module.",
+    body: "Meta Ads management is a paid add-on. Activate it from the Marketplace, free during your trial.",
   },
   moduleSEO: {
     pageTitle: "SEO",
     title: "SEO module not active",
-    body: "Local + neighborhood SEO is a paid add-on. Contact your account manager to activate this module.",
+    body: "Local + neighborhood SEO is a paid add-on. Activate it from the Marketplace, free during your trial.",
   },
   moduleEmail: {
     pageTitle: "Email",
     title: "Email nurture module not active",
-    body: "Email nurture sequences are a paid add-on. Contact your account manager to activate this module.",
+    body: "Email nurture sequences are a paid add-on. Activate it from the Marketplace, free during your trial.",
   },
   moduleOutboundEmail: {
     pageTitle: "Outbound email",
     title: "Outbound email module not active",
-    body: "Outbound email campaigns are a paid add-on. Contact your account manager to activate this module.",
+    body: "Outbound email campaigns are a paid add-on. Activate it from the Marketplace, free during your trial.",
   },
   moduleReferrals: {
     eyebrow: "Resident program",
     pageTitle: "Referrals",
     title: "Referrals module not active",
-    body: "The resident referral program lets current residents share a unique link that tags incoming leads as referrals. Contact your account manager to activate this module.",
+    body: "The resident referral program lets current residents share a unique link that tags incoming leads as referrals. Activate it from the Marketplace, free during your trial.",
   },
   moduleCreativeStudio: {
     pageTitle: "Creative studio",
     title: "Creative studio not active",
-    body: "Creative studio lets you file ad, email, and flyer requests and review deliveries. Contact your account manager to activate this module.",
+    body: "Creative studio lets you file ad, email, and flyer requests and review deliveries. Activate it from the Marketplace, free during your trial.",
   },
   modulePopups: {
     pageTitle: "Popups",
     title: "Popups module not active",
-    body: "Embeddable promo, referral, and discount popups are a paid add-on. Contact your account manager to activate this module.",
+    body: "Embeddable promo, referral, and discount popups are a paid add-on. Activate it from the Marketplace, free during your trial.",
   },
   moduleVault: {
     pageTitle: "Vault",
     title: "Vault module not active",
-    body: "The encrypted credentials vault is a paid add-on. Contact your account manager to activate this module.",
+    body: "The encrypted credentials vault is a paid add-on. Activate it from the Marketplace, free during your trial.",
   },
   moduleReputation: {
     pageTitle: "Reputation",
     title: "Reputation module not active",
-    body: "Reputation aggregates reviews across Google, Apartments.com, and Yelp into a single inbox with sentiment scoring and reply workflows. Contact your account manager to activate this module.",
+    body: "Reputation aggregates reviews across Google, Apartments.com, and Yelp into a single inbox with sentiment scoring and reply workflows. Activate it from the Marketplace, free during your trial.",
   },
   moduleInsights: {
     pageTitle: "Insights",
     title: "Insights module not active",
-    body: "Insights, the morning briefing, and weekly intelligence reports run on the same signal pipeline. Contact your account manager to activate this module.",
+    body: "Insights, the morning briefing, and weekly intelligence reports run on the same signal pipeline. Activate it from the Marketplace, free during your trial.",
   },
   moduleAttribution: {
     pageTitle: "Attribution",
     title: "Attribution module not active",
-    body: "Multi-touch attribution stitches every lead back to the source channel, campaign, and creative. Contact your account manager to activate this module.",
+    body: "Multi-touch attribution stitches every lead back to the source channel, campaign, and creative. Activate it from the Marketplace, free during your trial.",
   },
   moduleResidents: {
     eyebrow: "Operations",
     pageTitle: "Residents",
     title: "Resident operations not active",
-    body: "Residents, renewals, work orders, and applications hang off the AppFolio sync. Contact your account manager to activate this module.",
+    body: "Residents, renewals, work orders, and applications hang off the AppFolio sync. Activate it from the Marketplace, free during your trial.",
   },
   moduleTours: {
     pageTitle: "Tours",
     title: "Tours module not active",
-    body: "Tour bookings collected from the public booking form or API-key ingest. Contact your account manager to activate this module.",
+    body: "Tour bookings collected from the public booking form or API-key ingest. Activate it from the Marketplace, free during your trial.",
   },
   moduleConversations: {
     pageTitle: "Conversations",
     title: "Conversations module not active",
-    body: "The unified conversation inbox surfaces every chatbot, SMS, and email thread. Contact your account manager to activate this module.",
+    body: "The unified conversation inbox surfaces every chatbot, SMS, and email thread. Activate it from the Marketplace, free during your trial.",
   },
 };
 
@@ -182,7 +182,11 @@ function ModuleInactiveSurface({ module }: { module: PortalModuleKey }) {
   return (
     <div className="space-y-5">
       <PageHeader eyebrow={copy.eyebrow} title={copy.pageTitle} />
-      <EmptyState title={copy.title} body={copy.body} />
+      <EmptyState
+        title={copy.title}
+        body={copy.body}
+        action={{ label: "Open Marketplace", href: "/portal/marketplace" }}
+      />
     </div>
   );
 }

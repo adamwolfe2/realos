@@ -216,5 +216,10 @@ export function buildModuleStateFromSelection(
   for (const f of FEATURE_CATALOG) {
     state[f.key] = selected.includes(f.key);
   }
+  // Companion module: Chatbot writes transcripts, Conversations is where the
+  // operator READS them (separate gate + nav item, not in the catalog). A
+  // chatbot you can't read is broken, so they flip on together — mirrors the
+  // schema comment on moduleConversations and the Clerk-webhook defaults.
+  if (state.moduleChatbot) state.moduleConversations = true;
   return state;
 }

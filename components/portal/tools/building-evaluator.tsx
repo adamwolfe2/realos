@@ -33,7 +33,7 @@ import type { CalculationOutputs } from "@/lib/zillow/calculations";
 // terracotta (#2563EB by default, white-label-safe via the css var).
 // ---------------------------------------------------------------------------
 
-const SAMPLE_ADDRESS = "2410 Telegraph Ave, Berkeley, CA 94704";
+const SAMPLE_ADDRESS = "500 Main St, Austin, TX 78701";
 
 type RecentRow = {
   id: string;

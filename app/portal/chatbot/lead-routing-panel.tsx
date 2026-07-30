@@ -175,7 +175,7 @@ export function LeadRoutingPanel({
             type="text"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="jessica@telegraph-commons.com, leasing@…"
+            placeholder="leasing@yourcompany.com, manager@…"
             aria-label="Send leads to"
             className="h-9 flex-1 min-w-[260px] px-3 rounded-[2px] border border-border bg-background text-[13px] focus:outline-none focus:ring-1 focus:ring-foreground/30"
           />

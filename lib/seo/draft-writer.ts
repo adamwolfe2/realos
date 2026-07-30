@@ -216,8 +216,8 @@ ABSOLUTE RULES (these override anything else):
 AEO RULES:
 - AI engines cite text that reads as factual statements with concrete
   numbers, named places, and named amenities. Write atomic, citable
-  claims ("Telegraph Commons sits 2 blocks from UC Berkeley campus,
-  a 3-minute walk to Sproul Plaza").
+  claims ("Example Apartments sits 2 blocks from Main Street Station,
+  a 3-minute walk to the university quad").
 - Avoid hedging ("might be", "could offer", "we believe"). State
   facts directly.
 
@@ -321,7 +321,7 @@ export async function draftFaqBlock(ctx: DrafterContext): Promise<{
   const { object } = await generateObject({
     model: anthropic(MODEL),
     schema: faqBlockSchema,
-    system: `${BASE_SYSTEM}\n\nFORMAT: FAQ_BLOCK\n5-8 Q&A pairs answering the specific questions prospects ask. Each Q is conversational ("How close is Telegraph Commons to BART?"), each A is a citable answer with concrete numbers. The schemaMarkup field returns valid JSON-LD for a FAQPage, ready to drop into the page's <head>.`,
+    system: `${BASE_SYSTEM}\n\nFORMAT: FAQ_BLOCK\n5-8 Q&A pairs answering the specific questions prospects ask. Each Q is conversational ("How close is Example Apartments to the train station?"), each A is a citable answer with concrete numbers. The schemaMarkup field returns valid JSON-LD for a FAQPage, ready to drop into the page's <head>.`,
     prompt: formatContext(ctx),
   });
 

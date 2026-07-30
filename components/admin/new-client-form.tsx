@@ -147,7 +147,7 @@ export function NewClientForm() {
             <Input
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
-              placeholder="Telegraph Commons LLC"
+              placeholder="Acme Apartments LLC"
               required
             />
           </Field>
@@ -155,7 +155,7 @@ export function NewClientForm() {
             <Input
               value={shortName}
               onChange={(e) => setShortName(e.target.value)}
-              placeholder="Telegraph"
+              placeholder="Acme"
             />
           </Field>
           <Field label="Property type" required>
@@ -216,7 +216,7 @@ export function NewClientForm() {
             <Input
               value={contactName}
               onChange={(e) => setContactName(e.target.value)}
-              placeholder="Norman Gensinger"
+              placeholder="Jane Smith"
               required
             />
           </Field>
@@ -333,7 +333,7 @@ export function NewClientForm() {
             <Input
               value={propName}
               onChange={(e) => setPropName(e.target.value)}
-              placeholder="Telegraph Commons"
+              placeholder="Acme Apartments"
             />
           </Field>
           <Field label="City">

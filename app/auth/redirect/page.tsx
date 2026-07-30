@@ -115,11 +115,11 @@ export default function AuthRedirectPage() {
         if (agencyRoles.includes(role) || orgType === "AGENCY") {
           window.location.assign("/admin");
         } else if (clientRoles.includes(role) || orgType === "CLIENT") {
-          // Fresh self-provisioned org → drop them into the marketplace
-          // so they can pick which modules to activate (every module is
-          // free during the trial). Returning users go straight to the
-          // dashboard; the marketplace is always reachable from the nav.
-          window.location.assign(created ? "/portal/marketplace" : "/portal");
+          // Fresh self-provisioned org → straight to the onboarding
+          // wizard (the portal layout would redirect there anyway since
+          // onboardingStep !== "done"; going direct saves the extra
+          // full-page hop). Returning users go straight to the dashboard.
+          window.location.assign(created ? "/onboarding" : "/portal");
         } else {
           setError("no-role");
         }

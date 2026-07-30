@@ -15,9 +15,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Building2, MapPin, Users } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
-// PropertyFormDialog hidden in the actions row — see issue #69. Import
-// kept commented so re-enabling is one line when the backend lands.
-// import { PropertyFormDialog } from "@/components/properties/property-form-dialog";
+import { PropertyFormDialog } from "@/components/properties/property-form-dialog";
 import { EmptyState } from "@/components/portal/ui/empty-state";
 import { DataTable, EntityCell } from "@/components/portal/ui/data-table";
 import {
@@ -399,9 +397,21 @@ export default async function PropertiesList({
                 Compare
               </Link>
             ) : null}
-            {/* Add-property dialog hidden (issue #69) until the add-property
-                backend is fully built out; properties currently flow in
-                from AppFolio sync so the manual path is misleading. */}
+            {/* Re-enabled 2026-07-30 (was issue #69): createProperty in
+                lib/actions/properties.ts is fully built + writable-workspace
+                gated, and four surfaces (referrals, campaigns, seo/agent,
+                onboarding-drip email) already send operators here to "add a
+                property". Non-AppFolio orgs need this for property #2. */}
+            <PropertyFormDialog
+              trigger={
+                <button
+                  type="button"
+                  className="inline-flex items-center rounded-[2px] bg-primary text-primary-foreground px-3.5 py-2 text-sm font-medium hover:bg-primary/90 transition-colors"
+                >
+                  Add property
+                </button>
+              }
+            />
           </div>
         }
       />

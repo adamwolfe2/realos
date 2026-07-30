@@ -235,21 +235,18 @@ export function BugReportButton() {
         aria-label="Report a bug"
         title="Report a bug"
         className={cn(
-          // Norman 2026-05-21: bug button moves to bottom-LEFT so the
-          // top-right is free for the user icon next to the bell, and
-          // the bottom-right stays clear for the floating onboarding
-          // checklist widget.
-          "fixed z-40 bottom-4 left-4 md:bottom-6 md:left-6",
-          "inline-flex items-center gap-2 rounded-full",
-          "bg-foreground text-background",
-          "px-4 py-2.5 text-xs font-semibold tracking-wide",
-          "shadow-lg shadow-black/20 hover:shadow-xl",
-          "hover:bg-foreground/90 transition-all",
-          "border border-foreground/10",
+          // Adam 2026-07-29: icon-only. The labeled black pill read as a
+          // sticky modal; a bare black bug glyph in the bottom-left corner
+          // (diagonal counterpart to the top-right notification bell) keeps
+          // the affordance without the visual weight.
+          "fixed z-40 bottom-4 left-4 md:bottom-5 md:left-5",
+          "inline-flex h-9 w-9 items-center justify-center rounded-full",
+          "text-foreground/80 hover:text-foreground",
+          "hover:bg-foreground/5 transition-colors",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
         )}
       >
-        <Bug className="w-4 h-4" aria-hidden="true" />
-        <span>Report bug</span>
+        <Bug className="w-4.5 h-4.5" aria-hidden="true" />
       </button>
 
       {open ? (

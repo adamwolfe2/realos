@@ -564,7 +564,7 @@ function EditorModal({
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="hello@telegraphcommons.com"
+              placeholder="hello@yourcompany.com"
               className="input"
             />
           </Field>
@@ -748,7 +748,7 @@ function ImportModal({
               onChange={(e) => setCsvText(e.target.value)}
               rows={10}
               required
-              placeholder={`name,platform,url,username,password,notes\nGA4 Telegraph,google-analytics,https://analytics.google.com,hello@example.com,super-secret,MFA via authy`}
+              placeholder={`name,platform,url,username,password,notes\nGA4 Main,google-analytics,https://analytics.google.com,hello@example.com,super-secret,MFA via authy`}
               className="input font-mono text-xs"
             />
           </Field>
