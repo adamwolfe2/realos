@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { canAccessReport } from "@/lib/reports/access";
 import { getSiteUrl } from "@/lib/brand";
 import { ReportView } from "@/components/portal/reports/report-view";
 import { loadPropertyHero } from "@/lib/reports/load-property-hero";
@@ -31,6 +32,7 @@ export default async function ReportDetailPage({
       kind: true,
       status: true,
       orgId: true,
+      propertyId: true,
       snapshot: true,
       headline: true,
       notes: true,
@@ -51,6 +53,10 @@ export default async function ReportDetailPage({
   });
 
   if (!report) notFound();
+  // Property-restricted users must not open org-wide or out-of-scope
+  // reports: the snapshot is the full portfolio and the page renders the
+  // world-readable /r/<token> share link. Same 404 as a wrong org id.
+  if (!canAccessReport(scope, report.propertyId)) notFound();
 
   const snapshot = report.snapshot as unknown as ReportSnapshot;
   const status = (report.status as "draft" | "shared" | "archived") ?? "draft";

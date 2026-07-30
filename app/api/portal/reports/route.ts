@@ -3,6 +3,7 @@ import { requireScope, requireWritableWorkspace, ForbiddenError } from "@/lib/te
 import { prisma } from "@/lib/db";
 import { generateReportSnapshot, type ReportKind } from "@/lib/reports/generate";
 import { generateShareToken } from "@/lib/reports/token";
+import { REPORT_PORTFOLIO_ACCESS_ERROR } from "@/lib/reports/access";
 import { aiCallLimiter, checkRateLimit, rateLimited } from "@/lib/rate-limit";
 import {
   checkAiBillingGate,
@@ -31,10 +32,7 @@ export async function POST(req: NextRequest) {
     // Listing existing reports is similarly restricted in GET below.
     if (scope.allowedPropertyIds) {
       return NextResponse.json(
-        {
-          error:
-            "Report generation requires portfolio-wide access. Ask an admin to remove the property restriction on your account.",
-        },
+        { error: REPORT_PORTFOLIO_ACCESS_ERROR },
         { status: 403 },
       );
     }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireWritableWorkspace, ForbiddenError } from "@/lib/tenancy/scope";
+import { canAccessReport } from "@/lib/reports/access";
 import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -22,9 +23,15 @@ export async function PATCH(
 
     const existing = await prisma.clientReport.findFirst({
       where: { id, orgId: scope.orgId },
-      select: { id: true, sharedAt: true },
+      select: { id: true, sharedAt: true, propertyId: true },
     });
     if (!existing) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    // Restricted users must not mutate (esp. share — the response returns
+    // shareToken) an org-wide or out-of-scope report. Same 404 as an org
+    // miss so the response doesn't leak which check fired.
+    if (!canAccessReport(scope, existing.propertyId)) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
@@ -85,14 +92,20 @@ export async function DELETE(
     const scope = await requireWritableWorkspace();
     const { id } = await context.params;
 
-    const result = await prisma.clientReport.updateMany({
+    const existing = await prisma.clientReport.findFirst({
+      where: { id, orgId: scope.orgId },
+      select: { propertyId: true },
+    });
+    // Missing, org-wide (for a restricted scope), and out-of-scope all
+    // return the same 404 so the response doesn't leak which check fired.
+    if (!existing || !canAccessReport(scope, existing.propertyId)) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    await prisma.clientReport.updateMany({
       where: { id, orgId: scope.orgId },
       data: { status: "archived" },
     });
-
-    if (result.count === 0) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
     return NextResponse.json({ ok: true });
   } catch (err) {
     if (err instanceof ForbiddenError) {

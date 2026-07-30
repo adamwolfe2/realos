@@ -4,6 +4,9 @@ import { prisma } from "@/lib/db";
 import { requireWritableWorkspace } from "@/lib/tenancy/scope";
 import { generateReportSnapshot, type ReportKind, type ReportSnapshot } from "@/lib/reports/generate";
 import { generateShareToken } from "@/lib/reports/token";
+import { canAccessReport, REPORT_PORTFOLIO_ACCESS_ERROR } from "@/lib/reports/access";
+import { checkAiBillingGate, aiBillingDeniedResponseBody } from "@/lib/billing/gate";
+import { aiCallLimiter, notifyLimiter, checkRateLimit } from "@/lib/rate-limit";
 import { sendReportEmail } from "@/lib/email/send-report";
 import { revalidatePath } from "next/cache";
 
@@ -31,7 +34,34 @@ export async function createReport(
       select: { id: true },
     });
     if (!owned) throw new Error("Property not found in this workspace");
+    // Property-restricted users may only snapshot properties they're granted
+    // (mirrors /portal/properties/[id]/snapshot). Same error as the org miss
+    // so the response doesn't reveal which check fired.
+    if (!canAccessReport(scope, owned.id)) {
+      throw new Error("Property not found in this workspace");
+    }
     validPropertyId = owned.id;
+  } else if (!canAccessReport(scope, null)) {
+    // No propertyId means an org-wide snapshot rolling up every property.
+    // Mirrors POST /api/portal/reports, which 403s restricted users for the
+    // same reason: the snapshot would include buildings they can't see and
+    // the shareToken makes it world-readable.
+    throw new Error(REPORT_PORTFOLIO_ACCESS_ERROR);
+  }
+
+  // Snapshot generation invokes the LLM polish helper (Claude Haiku), so
+  // this server action enforces the same two spend controls as the API
+  // route: the billing gate (delinquent orgs must not burn Anthropic
+  // budget) and the per-user hourly AI rate limit.
+  const billingGate = await checkAiBillingGate(scope.orgId, {
+    isImpersonating: scope.isImpersonating,
+  });
+  if (!billingGate.allowed) {
+    throw new Error(aiBillingDeniedResponseBody(billingGate).error);
+  }
+  const rl = await checkRateLimit(aiCallLimiter, `ai-call:${scope.userId}`);
+  if (!rl.allowed) {
+    throw new Error("AI rate limit hit (10 calls per hour). Try again soon.");
   }
 
   const snapshot = await generateReportSnapshot(scope.orgId, kind, {
@@ -66,9 +96,15 @@ export async function updateReport(
   // Load for ownership + transition logic.
   const existing = await prisma.clientReport.findFirst({
     where: { id, orgId: scope.orgId },
-    select: { id: true, status: true, shareToken: true, sharedAt: true },
+    select: { id: true, status: true, shareToken: true, sharedAt: true, propertyId: true },
   });
   if (!existing) throw new Error("Report not found");
+  // Same error as the org miss so the response doesn't leak which check
+  // fired. Blocks a restricted user from mutating (esp. sharing) an
+  // org-wide or out-of-scope report.
+  if (!canAccessReport(scope, existing.propertyId)) {
+    throw new Error("Report not found");
+  }
 
   const data: Record<string, unknown> = {};
   if (input.headline !== undefined) data.headline = input.headline;
@@ -91,6 +127,14 @@ export async function updateReport(
 
 export async function archiveReport(id: string): Promise<void> {
   const scope = await requireWritableWorkspace();
+  const existing = await prisma.clientReport.findFirst({
+    where: { id, orgId: scope.orgId },
+    select: { propertyId: true },
+  });
+  if (!existing) return; // preserve prior updateMany no-op on missing id
+  if (!canAccessReport(scope, existing.propertyId)) {
+    throw new Error("Report not found");
+  }
   await prisma.clientReport.updateMany({
     where: { id, orgId: scope.orgId },
     data: { status: "archived" },
@@ -121,9 +165,17 @@ export async function sendReportToRecipients(
 }> {
   const scope = await requireWritableWorkspace();
 
+  // Per-user send throttle: an authenticated account must not be usable
+  // as a bulk relay on the org's sending domain.
+  const sendRl = await checkRateLimit(notifyLimiter, `report-send:${scope.userId}`);
+  if (!sendRl.allowed) {
+    throw new Error("Sending too quickly. Try again in a minute.");
+  }
+
   const recipients = (input.to ?? [])
     .map((r) => r.trim())
-    .filter((r) => r.includes("@"));
+    .filter((r) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r))
+    .slice(0, 10); // cap batch size; report emails are 1:1 client sends
   if (recipients.length === 0) {
     throw new Error("At least one valid recipient email is required");
   }
@@ -133,6 +185,7 @@ export async function sendReportToRecipients(
     select: {
       id: true,
       kind: true,
+      propertyId: true,
       snapshot: true,
       shareToken: true,
       headline: true,
@@ -144,6 +197,11 @@ export async function sendReportToRecipients(
     },
   });
   if (!report) throw new Error("Report not found");
+  // Restricted users must not email an org-wide or out-of-scope snapshot
+  // (emailing also flips draft → shared, activating the public link).
+  if (!canAccessReport(scope, report.propertyId)) {
+    throw new Error("Report not found");
+  }
 
   const sender = await prisma.user.findUnique({
     where: { id: scope.userId },
