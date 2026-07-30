@@ -1,8 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import type { ReportSnapshot } from "@/lib/reports/generate";
-import type { ComponentProps } from "react";
-import type { ReportView } from "@/components/portal/reports/report-view";
 
 // ---------------------------------------------------------------------------
 // loadPropertyHero — resolves the building image + stats shown above the
@@ -26,12 +24,22 @@ import type { ReportView } from "@/components/portal/reports/report-view";
 //   5. any ACTIVE property               → last resort
 //
 // Returns null only when the org has zero properties at all — in which
-// case ReportView gracefully falls through to the text-only header.
+// case the report header gracefully falls through to the text-only variant.
 // ---------------------------------------------------------------------------
 
-type PropertyHero = NonNullable<
-  ComponentProps<typeof ReportView>["propertyHero"]
->;
+// Owned here now: this shape used to be derived from the deleted
+// ReportView component's props (report-view.tsx, 712 dead lines whose only
+// live reference was this type). Consumers feed it to PropertyHeroBanner.
+export type PropertyHero = {
+  propertyId: string;
+  propertyName: string;
+  subtitle: string | null;
+  heroImageUrl: string | null;
+  imageOffsetX?: number;
+  imageOffsetY?: number;
+  imageScale?: number;
+  googleAggRating?: number | null;
+};
 
 export async function loadPropertyHero(
   snapshot: ReportSnapshot,

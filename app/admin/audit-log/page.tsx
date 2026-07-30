@@ -32,10 +32,12 @@ export default async function AuditLogPage({
     action?: string;
     orgId?: string;
     entityType?: string;
+    /** Keyset cursor: id of the last event on the previous page. */
+    before?: string;
   }>;
 }) {
   await requireAgency();
-  const { action, orgId, entityType } = await searchParams;
+  const { action, orgId, entityType, before } = await searchParams;
 
   const where: {
     action?: AuditAction;
@@ -48,15 +50,32 @@ export default async function AuditLogPage({
   if (orgId) where.orgId = orgId;
   if (entityType) where.entityType = entityType;
 
-  const events = await prisma.auditEvent.findMany({
+  // Keyset pagination: `before` carries the id of the previous page's last
+  // row. take +1 so we know whether an "Older" page exists without a count
+  // query. Tie-break on id so events sharing a createdAt paginate stably.
+  const eventsPlusOne = await prisma.auditEvent.findMany({
     where,
-    orderBy: { createdAt: "desc" },
-    take: PAGE_SIZE,
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: PAGE_SIZE + 1,
+    ...(before ? { cursor: { id: before }, skip: 1 } : {}),
     include: {
       org: { select: { name: true, slug: true } },
       user: { select: { email: true, firstName: true, lastName: true } },
     },
   });
+  const hasOlder = eventsPlusOne.length > PAGE_SIZE;
+  const events = hasOlder ? eventsPlusOne.slice(0, PAGE_SIZE) : eventsPlusOne;
+
+  // Preserve active filters on the pagination links.
+  const pageHref = (cursor: string | null) => {
+    const params = new URLSearchParams();
+    if (action) params.set("action", action);
+    if (orgId) params.set("orgId", orgId);
+    if (entityType) params.set("entityType", entityType);
+    if (cursor) params.set("before", cursor);
+    const qs = params.toString();
+    return qs ? `/admin/audit-log?${qs}` : "/admin/audit-log";
+  };
 
   const actionCounts = await prisma.auditEvent.groupBy({
     by: ["action"],
@@ -255,10 +274,31 @@ export default async function AuditLogPage({
         </div>
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        Showing the most recent {PAGE_SIZE} events. Older events live in the
-        database; cursor-based pagination is a follow-up.
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">
+          {before
+            ? `Events older than the previous page · ${events.length} shown`
+            : `Most recent ${events.length} events`}
+        </p>
+        <div className="flex items-center gap-2">
+          {before ? (
+            <Link
+              href={pageHref(null)}
+              className="rounded-[2px] border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+            >
+              ← Latest
+            </Link>
+          ) : null}
+          {hasOlder ? (
+            <Link
+              href={pageHref(events[events.length - 1]!.id)}
+              className="rounded-[2px] border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+            >
+              Older →
+            </Link>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }
