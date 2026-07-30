@@ -3,7 +3,8 @@
 import * as React from "react";
 import {
   ResponsiveContainer,
-  LineChart,
+  ComposedChart,
+  Area,
   Line,
   XAxis,
   YAxis,
@@ -76,6 +77,30 @@ export function SeoTimeseriesChart({
   // the first real day doesn't slam against the left axis.
   const trimmed = React.useMemo(() => trimLeadingZeros(data, 7), [data]);
 
+  // Daily GSC data reads jagged — the 7-day trailing average is the line
+  // the eye should follow; raw daily values sit behind it as a faint area
+  // (Adam, 2026-07-29: "smooth/simplify" the overview chart). Window
+  // shrinks at the series head so early days still plot.
+  const smoothed = React.useMemo(
+    () =>
+      trimmed.map((d, i) => {
+        const window = trimmed.slice(Math.max(0, i - 6), i + 1);
+        return {
+          ...d,
+          clicksAvg:
+            Math.round(
+              (window.reduce((s, w) => s + w.clicks, 0) / window.length) * 10,
+            ) / 10,
+          impressionsAvg:
+            Math.round(
+              (window.reduce((s, w) => s + w.impressions, 0) / window.length) *
+                10,
+            ) / 10,
+        };
+      }),
+    [trimmed],
+  );
+
   if (trimmed.length === 0) {
     return (
       <div className="text-sm text-muted-foreground py-16 text-center">
@@ -129,8 +154,8 @@ export function SeoTimeseriesChart({
       </div>
       <div className="w-full h-72">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart
-            data={trimmed}
+          <ComposedChart
+            data={smoothed}
             margin={{ top: 8, right: 24, left: 0, bottom: 0 }}
           >
             <CartesianGrid {...CHART_GRID_PROPS} />
@@ -172,11 +197,30 @@ export function SeoTimeseriesChart({
               }}
               formatter={(v: number, name: string) => [v.toLocaleString(), name]}
             />
+            {/* Faint daily areas behind, smoothed 7d-average lines on top.
+                Same series color per metric so the pairing is obvious. */}
+            {/* One background band only — clicks daily. A second area on the
+                independently-scaled right axis composites into a muddy wash
+                (both auto-scale to their own max), and the daily values are
+                context, not tooltip data (tooltipType="none"). */}
+            {visible.clicks ? (
+              <Area
+                yAxisId="left"
+                type="monotone"
+                dataKey="clicks"
+                name="Clicks (daily)"
+                stroke="none"
+                fill={CHART_COLORS.brand}
+                fillOpacity={0.1}
+                activeDot={false}
+                tooltipType="none"
+              />
+            ) : null}
             {visible.clicks ? (
               <Line
                 yAxisId="left"
                 type="monotone"
-                dataKey="clicks"
+                dataKey="clicksAvg"
                 name="Clicks"
                 stroke={CHART_COLORS.brand}
                 strokeWidth={2}
@@ -193,7 +237,7 @@ export function SeoTimeseriesChart({
               <Line
                 yAxisId="right"
                 type="monotone"
-                dataKey="impressions"
+                dataKey="impressionsAvg"
                 name="Impressions"
                 stroke={CHART_COLORS.brandFog}
                 strokeWidth={2}
@@ -206,7 +250,7 @@ export function SeoTimeseriesChart({
                 }}
               />
             ) : null}
-          </LineChart>
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
     </div>
