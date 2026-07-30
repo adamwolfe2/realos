@@ -1,11 +1,13 @@
-import * as React from "react";
-import Link from "next/link";
 import type { Metadata } from "next";
 import { formatDistanceToNow } from "date-fns";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
-import { CreateNeighborhoodForm } from "./create-form";
+import {
+  DataTable,
+  type DataTableColumn,
+} from "@/components/portal/ui/data-table";
+import { GenerateNeighborhoodDrawer } from "./generate-drawer";
 
 export const metadata: Metadata = { title: "Neighborhood pages" };
 export const dynamic = "force-dynamic";
@@ -50,65 +52,80 @@ export default async function NeighborhoodPagesIndex() {
     }),
   ]);
 
+  type PageRow = (typeof pages)[number];
+  const columns: DataTableColumn<PageRow>[] = [
+    {
+      key: "page",
+      header: "Page",
+      // max-w cap + line-clamp (not truncate): title is free text and can
+      // run long enough to pin the column at min-content width and shove
+      // Status/Updated off-screen.
+      accessor: (p) => (
+        <div className="min-w-0 max-w-[420px]">
+          <p className="text-xs font-semibold text-foreground line-clamp-1 leading-tight">
+            {p.title || `${p.neighborhood}, ${p.city}`}
+          </p>
+          <p className="text-[10px] text-muted-foreground truncate leading-tight mt-0.5">
+            /n/{p.slug} · {p.neighborhood}
+            {p.state ? `, ${p.state}` : ""}
+          </p>
+        </div>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      width: "110px",
+      accessor: (p) => <StatusPill status={p.status} />,
+    },
+    {
+      key: "updated",
+      header: "Updated",
+      width: "110px",
+      align: "right",
+      accessor: (p) => (
+        <span className="text-[11px] text-muted-foreground">
+          {formatDistanceToNow(p.updatedAt, { addSuffix: true })}
+        </span>
+      ),
+    },
+  ];
+
   return (
     <div className="w-full">
       <PageHeader
         eyebrow="SEO"
         title="Neighborhood pages"
         description="Generate per-neighborhood landing pages designed to rank in Google and get cited by AI answer engines. Each page is published to your marketing site at /n/<slug>."
+        actions={<GenerateNeighborhoodDrawer properties={properties} />}
       />
-
-      <SectionCard
-        label="Generate a new page"
-        description="Pick a neighborhood and (optionally) the property it should anchor on. Claude drafts the page; you edit before publishing."
-        className="mb-8"
-      >
-        <CreateNeighborhoodForm properties={properties} />
-      </SectionCard>
 
       <SectionCard
         label="Existing pages"
         description={
           pages.length === 0
-            ? "Generate your first neighborhood page above. Each page is published to your marketing site at /n/<slug>."
+            ? "Generate your first neighborhood page using the button above. Each page is published to your marketing site at /n/<slug>."
             : `${pages.length} page${pages.length === 1 ? "" : "s"} in this workspace.`
         }
       >
-        {pages.length === 0 ? (
-          <div className="px-2 py-6 text-center">
-            <p className="text-[13px] font-semibold text-foreground">
-              No neighborhood pages yet.
-            </p>
-            <p className="mt-1 text-[11.5px] text-muted-foreground leading-snug max-w-md mx-auto">
-              Start with the neighborhood your flagship property anchors —
-              that page tends to rank fastest because Google already sees
-              you cited there.
-            </p>
-          </div>
-        ) : (
-          <ul className="divide-y divide-[var(--hair)]">
-            {pages.map((p) => (
-              <li key={p.id} className="py-3 flex items-center gap-3">
-                <div className="min-w-0 flex-1">
-                  <Link
-                    href={`/portal/seo/neighborhoods/${p.id}`}
-                    className="text-sm font-medium hover:underline"
-                  >
-                    {p.title || `${p.neighborhood}, ${p.city}`}
-                  </Link>
-                  <p className="text-[12px] text-muted-foreground mt-0.5 truncate">
-                    /n/{p.slug} · {p.neighborhood}
-                    {p.state ? `, ${p.state}` : ""}
-                  </p>
-                </div>
-                <StatusPill status={p.status} />
-                <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
-                  {formatDistanceToNow(p.updatedAt, { addSuffix: true })}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
+        <DataTable<PageRow>
+          columns={columns}
+          rows={pages}
+          getRowHref={(p) => `/portal/seo/neighborhoods/${p.id}`}
+          density="compact"
+          emptyState={
+            <div className="px-2 py-6 text-center">
+              <p className="text-[13px] font-semibold text-foreground">
+                No neighborhood pages yet.
+              </p>
+              <p className="mt-1 text-[11.5px] text-muted-foreground leading-snug max-w-md mx-auto">
+                Start with the neighborhood your flagship property anchors —
+                that page tends to rank fastest because Google already sees
+                you cited there.
+              </p>
+            </div>
+          }
+        />
       </SectionCard>
     </div>
   );
