@@ -7,6 +7,7 @@ import { DollarSign, Receipt, Wallet, Percent } from "lucide-react";
 import { BillingPortalButton } from "./billing-portal-button";
 import { getStripeClient, isStripeConfigured } from "@/lib/stripe/config";
 import { ADDONS, TIERS } from "@/lib/billing/plans";
+import { subscriptionItemMonthlyCents } from "@/lib/billing/catalog";
 import { getEffectiveFeatureCatalog } from "@/lib/billing/feature-prices";
 import type Stripe from "stripe";
 import { TrialActivationCard } from "./trial-activation-card";
@@ -174,15 +175,18 @@ export default async function BillingPage() {
             ? `${tier.productName} (${qty} ${qty === 1 ? "property" : "properties"})`
             : tier.productName,
           detail: `${cycleLabel}${isGraduated ? " · graduated pricing" : ""}`,
-          // For tiered prices `price.unit_amount` is null (Stripe
-          // computes from the tiers array). Best-effort show the
-          // headline base rate × quantity here, knowing the real
-          // invoice will reflect bracket discounts. Falls back to 0
-          // for tiered until we fetch the upcoming invoice.
+          // Domain math (lib/billing/catalog.ts): graduated prices return
+          // unit_amount = null from Stripe, so the bracket math computes
+          // the real monthly cost — previously this line rendered $0 MRR
+          // for every graduated subscription.
           monthlyCents:
-            (price.unit_amount ?? 0) *
-            qty *
-            (price.recurring?.interval === "year" ? 1 / 12 : 1),
+            subscriptionItemMonthlyCents({
+              lookupKey: price.lookup_key,
+              unitAmountCents: price.unit_amount,
+              interval:
+                price.recurring?.interval === "year" ? "year" : "month",
+              quantity: qty,
+            }) ?? 0,
           quantity: qty,
           isAddon: false,
           isMetered: false,

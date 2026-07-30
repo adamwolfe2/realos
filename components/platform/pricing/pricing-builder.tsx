@@ -9,13 +9,12 @@ import { BookDemoLink } from "@/components/marketing/book-demo-link";
 // PricingBuilder — the centerpiece of the pricing page. Replaces the old
 // tier-cards + separate à-la-carte grid dual story with ONE configurator:
 // base platform fee (always on) + toggleable features + a property-count
-// stepper + a monthly/annual cycle, resolving to a single live total.
+// stepper, resolving to a single live monthly total.
 //
 // Prices come from the live admin catalog (getEffectiveFeatureCatalog),
 // passed down from the server component in page.tsx. Math is intentionally
 // simple and literal to what's on screen: (base + selected features) times
-// property count, with the annual cycle applying the same 17% prepay
-// discount quoted elsewhere on the site (lib/billing/catalog.ts TIERS).
+// property count — exactly what à-la-carte checkout charges.
 //
 // At 20+ properties self-serve stops making sense (that's squarely
 // Enterprise territory below), so the CTA swaps from "Start free trial" to
@@ -31,12 +30,17 @@ export type BuilderFeature = {
   recommended?: boolean;
 };
 
-type BillingCycle = "monthly" | "annual";
-
 const MAX_PROPERTIES = 20;
-// Matches the "Save 17%" prepay discount quoted on the annual toggle
-// elsewhere on the site (lib/billing/catalog.ts TIERS annual pricing).
-const ANNUAL_MULTIPLIER = 0.83;
+
+// MONEY DECISION (2026-07-30): the builder quotes MONTHLY ONLY. The à-la-
+// carte charge path it feeds (/api/billing/checkout à-la-carte mode) has no
+// annual Stripe prices and the sign-up flow never carried the cycle, so the
+// old client-side ×0.83 annual toggle promised a 17% discount that checkout
+// could not honor — the displayed quote drifted from the actual charge.
+// Annual prepay stays available on the tier cards (pricing-tiers.tsx),
+// which price it from the catalog's real annual rates. Restore a toggle
+// here ONLY once annual per-feature prices exist in Stripe and the cycle
+// flows through sign-up → checkout.
 
 function dollars(cents: number): string {
   return `$${Math.round(cents / 100).toLocaleString()}`;
@@ -53,7 +57,6 @@ export function PricingBuilder({
     () => new Set(features.filter((f) => f.recommended).map((f) => f.key)),
   );
   const [propertyCount, setPropertyCount] = React.useState(1);
-  const [cycle, setCycle] = React.useState<BillingCycle>("monthly");
 
   const toggleFeature = React.useCallback((key: string) => {
     setSelected((prev) => {
@@ -70,15 +73,10 @@ export function PricingBuilder({
     0,
   );
   const perPropertyCents = basePlatformCents + featuresPerPropertyCents;
-  const monthlyTotalCents = perPropertyCents * propertyCount;
-  const displayTotalCents =
-    cycle === "annual"
-      ? Math.round(monthlyTotalCents * ANNUAL_MULTIPLIER)
-      : monthlyTotalCents;
-  const annualSavingsCents =
-    cycle === "annual"
-      ? Math.round(monthlyTotalCents * (1 - ANNUAL_MULTIPLIER) * 12)
-      : 0;
+  // Linear × propertyCount is CORRECT for this configurator: à-la-carte
+  // checkout bills each feature price at quantity = N with no graduated
+  // brackets (brackets apply only to the legacy tier prices).
+  const displayTotalCents = perPropertyCents * propertyCount;
 
   const isVolume = propertyCount >= MAX_PROPERTIES;
 
@@ -356,63 +354,6 @@ export function PricingBuilder({
               </div>
             </div>
 
-            {/* Billing cycle toggle */}
-            <div>
-              <p
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "10px",
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
-                  color: "var(--stone-gray)",
-                  fontWeight: 600,
-                  marginBottom: "8px",
-                }}
-              >
-                Billing
-              </p>
-              <div
-                role="tablist"
-                aria-label="Billing cycle"
-                className="inline-flex items-center p-1 rounded-full w-full"
-                style={{ border: "1px solid var(--hair)" }}
-              >
-                {(["monthly", "annual"] as const).map((c) => {
-                  const active = cycle === c;
-                  return (
-                    <button
-                      key={c}
-                      type="button"
-                      role="tab"
-                      aria-selected={active}
-                      onClick={() => setCycle(c)}
-                      className="relative flex-1 inline-flex items-center justify-center gap-2 px-3 py-1.5 text-sm rounded-full transition-colors active:scale-[0.98]"
-                      style={{
-                        backgroundColor: active ? "#1E2A3A" : "transparent",
-                        color: active ? "#ffffff" : "var(--olive-gray)",
-                        fontWeight: active ? 600 : 500,
-                      }}
-                    >
-                      <span>{c === "monthly" ? "Monthly" : "Annual"}</span>
-                      {c === "annual" ? (
-                        <span
-                          className="inline-flex items-center rounded-full px-1.5 text-[10px] font-semibold"
-                          style={{
-                            backgroundColor: active
-                              ? "rgba(255,255,255,0.16)"
-                              : "var(--brand-soft, #eff6ff)",
-                            color: active ? "#ffffff" : "var(--color-primary)",
-                          }}
-                        >
-                          Save 17%
-                        </span>
-                      ) : null}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
             <div style={{ borderTop: "1px solid var(--hair)" }} />
 
             {/* Live total */}
@@ -452,19 +393,6 @@ export function PricingBuilder({
                   {isVolume ? "+" : ""} {propertyCount === 1 ? "property" : "properties"}
                 </span>
               </p>
-              {cycle === "annual" && annualSavingsCents > 0 ? (
-                <p
-                  className="mt-1"
-                  style={{
-                    color: "var(--color-primary)",
-                    fontFamily: "var(--font-sans)",
-                    fontSize: "12px",
-                    fontWeight: 500,
-                  }}
-                >
-                  Billed annually, saves {dollars(annualSavingsCents)}/yr
-                </p>
-              ) : null}
             </div>
 
             {isVolume ? (

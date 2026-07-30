@@ -132,6 +132,48 @@ export function computeGraduatedMonthlyCents(
   return total;
 }
 
+// Monthly-equivalent cents for one Stripe subscription item, resolved
+// against the tier catalog by lookup key. THE MRR rule for /portal/billing —
+// kept here (not in the page) because it's money math:
+//   - Graduated prices (billing_scheme: "tiers") return unit_amount = null
+//     from Stripe; their monthly cost is the bracket math over the cycle's
+//     base rate. annual.unitAmountCents is ALREADY a monthly-equivalent
+//     rate, so no ÷12 on the graduated-annual path.
+//   - Legacy flat prices bill unit_amount × quantity; flat annual prices
+//     carry a YEARLY unit_amount, so those divide by 12.
+// Returns null when the lookup key doesn't match any tier price — the
+// caller decides how to render an unrecognized item (never a silent $0).
+export function subscriptionItemMonthlyCents(item: {
+  lookupKey: string | null;
+  unitAmountCents: number | null;
+  interval: "month" | "year" | null;
+  quantity: number;
+}): number | null {
+  const tier = TIERS.find(
+    (t) =>
+      t.monthly.lookupKey === item.lookupKey ||
+      t.annual.lookupKey === item.lookupKey ||
+      t.graduatedMonthly.lookupKey === item.lookupKey ||
+      t.graduatedAnnual.lookupKey === item.lookupKey,
+  );
+  if (!tier) return null;
+
+  if (item.lookupKey === tier.graduatedMonthly.lookupKey) {
+    return computeGraduatedMonthlyCents(
+      tier.monthly.unitAmountCents,
+      item.quantity,
+    );
+  }
+  if (item.lookupKey === tier.graduatedAnnual.lookupKey) {
+    return computeGraduatedMonthlyCents(
+      tier.annual.unitAmountCents,
+      item.quantity,
+    );
+  }
+  const flat = (item.unitAmountCents ?? 0) * Math.max(0, item.quantity);
+  return item.interval === "year" ? Math.round(flat / 12) : flat;
+}
+
 // Effective per-property cents at a given property count. Used to show
 // "you're paying $X per property" in the UI without exposing the full
 // bracket structure.
