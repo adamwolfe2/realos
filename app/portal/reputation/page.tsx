@@ -61,6 +61,19 @@ const SENTIMENT_LABEL: Record<Sentiment, string> = {
 // Defensive number → display helper. Catches Decimal-typed values from
 // Prisma (which lack `.toLocaleString` formatting consistent with Number)
 // and stray nulls so a single bad row can't blank the whole page.
+// Scraped post titles arrive with attention-grab emoji prefixes ("\u203c\ufe0f
+// Lease takeover..."). The feed is a professional digest, so decorative
+// pictographs at the head of a title are stripped for display only — the
+// original text is untouched at the source link.
+function stripLeadingPictographs(title: string): string {
+  const stripped = title.replace(
+    /^[\p{Extended_Pictographic}\u{FE0F}\u{200D}\s]+/u,
+    "",
+  );
+  // If the title was ONLY emoji, keep the original rather than render blank.
+  return stripped.trim().length > 0 ? stripped : title;
+}
+
 function safeNum(v: unknown): number {
   if (typeof v === "number" && Number.isFinite(v)) return v;
   if (typeof v === "string") {
@@ -494,7 +507,7 @@ export default async function PortfolioReputationPage({
                       label="Mixed"
                       count={mixed}
                       total={metrics.totalMentions}
-                      tone="bg-primary/50"
+                      tone="bg-muted-foreground/50"
                     />
                     <SentimentBar
                       label="Neutral"
@@ -765,7 +778,7 @@ const SENTIMENT_BAR_SEGMENTS: Array<{
 }> = [
   { key: "POSITIVE", label: "Positive", swatchClass: "bg-success" },
   { key: "NEUTRAL", label: "Neutral", swatchClass: "bg-muted-foreground/30" },
-  { key: "MIXED", label: "Mixed", swatchClass: "bg-primary/50" },
+  { key: "MIXED", label: "Mixed", swatchClass: "bg-muted-foreground/50" },
   { key: "NEGATIVE", label: "Negative", swatchClass: "bg-destructive" },
 ];
 
@@ -1067,7 +1080,10 @@ function FeedRow({ mention }: { mention: PortfolioReputationFeedItem }) {
   return (
     <li className="py-2.5 px-3 -mx-3 hover:bg-muted/30 transition-colors">
       <div className="flex items-start gap-2.5">
-        <div className="shrink-0 inline-flex items-center justify-center h-9 w-9 rounded-[2px] bg-card border border-border shadow-sm">
+        {/* Grayscale: nine full-color brand marks per screen read as confetti.
+            The source name sits right next to it, so the logo only needs to
+            aid recognition, not shout. */}
+        <div className="shrink-0 inline-flex items-center justify-center h-9 w-9 rounded-[2px] bg-card border border-border shadow-sm grayscale opacity-70">
           <SourceLogo
             source={mention.source}
             url={safeUrl}
@@ -1094,7 +1110,7 @@ function FeedRow({ mention }: { mention: PortfolioReputationFeedItem }) {
               className="text-sm font-medium text-foreground mb-0.5 truncate"
               dir="auto"
             >
-              {String(mention.title)}
+              {stripLeadingPictographs(String(mention.title))}
             </p>
           ) : null}
           {/* Full mention body. whitespace-pre-line preserves Reddit-style

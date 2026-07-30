@@ -111,8 +111,11 @@ export function ReputationScanButton() {
         onClick={onClick}
         disabled={state.kind === "busy"}
         className={
-          "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold border transition-colors " +
-          "border-foreground bg-foreground text-background hover:bg-foreground/90 " +
+          // Neutral secondary control: the filled-black pill outweighed every
+          // real signal on the page (system buttons are blue primary or
+          // bordered neutral).
+          "inline-flex items-center gap-1.5 rounded-[2px] px-3 py-1.5 text-xs font-semibold border transition-colors " +
+          "border-border bg-background text-foreground hover:bg-muted " +
           "disabled:opacity-60 disabled:cursor-wait"
         }
       >
