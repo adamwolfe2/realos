@@ -124,24 +124,3 @@ function DeltaChip({
     </span>
   );
 }
-
-/**
- * Skeleton placeholder used by the hero strip on the first-scan empty state.
- * Keeps the same visual footprint as the real card so layout doesn't jump
- * when the cron computes the first snapshot.
- */
-export function SignalCardSkeleton({ label }: { label: string }) {
-  return (
-    <div className="rounded-[2px] border border-border bg-card px-4 pt-3 pb-2 overflow-hidden">
-      <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
-        {label}
-      </div>
-      <div className="mt-1 flex items-baseline justify-between gap-2">
-        <div className="h-7 w-12 rounded bg-neutral-100 animate-pulse" />
-        <div className="h-3 w-8 rounded bg-neutral-100 animate-pulse" />
-      </div>
-      <div className="mt-1 h-3 w-24 rounded bg-neutral-50 animate-pulse" />
-      <div className="mt-2 h-6 rounded bg-neutral-50 animate-pulse" />
-    </div>
-  );
-}

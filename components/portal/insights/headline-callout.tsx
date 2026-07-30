@@ -11,12 +11,17 @@ import type { HeadlineSignal } from "@/lib/signals/today";
 
 export type HeadlineCalloutProps = {
   signal: HeadlineSignal | null;
+  /** Render without the outer bordered box — for use inside a parent that
+   *  already provides its own card chrome (e.g. TabbedCard tab panels). */
+  bare?: boolean;
 };
 
-export function HeadlineCallout({ signal }: HeadlineCalloutProps) {
+export function HeadlineCallout({ signal, bare = false }: HeadlineCalloutProps) {
   if (!signal) {
     return (
-      <div className="rounded-[2px] border border-border bg-card px-5 py-4 flex items-center gap-3">
+      <div
+        className={`${bare ? "" : "rounded-[2px] border border-border bg-card px-5 py-4 "}flex items-center gap-3`}
+      >
         <Sparkles className="h-5 w-5 text-muted-foreground shrink-0" />
         <div className="text-sm text-muted-foreground">
           No standout signal yet — your first daily scan will surface the
@@ -53,9 +58,10 @@ export function HeadlineCallout({ signal }: HeadlineCalloutProps) {
     <Link
       href={signal.href}
       className={cn(
-        "group block rounded-[2px] border px-5 py-4 transition-all",
-        accent,
-        "hover:shadow-[0_2px_12px_rgba(15,23,42,0.06)]",
+        "group block transition-all",
+        !bare && "rounded-[2px] border px-5 py-4",
+        accent, // tone tint is signal, not chrome — keep it in bare mode
+        !bare && "hover:shadow-[0_2px_12px_rgba(15,23,42,0.06)]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
       )}
     >

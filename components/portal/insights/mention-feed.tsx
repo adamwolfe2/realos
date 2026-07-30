@@ -21,10 +21,24 @@ export type MentionRow = {
   property?: { id: string; name: string } | null;
 };
 
-export function MentionFeed({ mentions }: { mentions: MentionRow[] }) {
+export function MentionFeed({
+  mentions,
+  bare = false,
+}: {
+  mentions: MentionRow[];
+  /** Render without the outer bordered box — for use inside a parent that
+   *  already provides its own card chrome (e.g. TabbedCard tab panels). */
+  bare?: boolean;
+}) {
   if (mentions.length === 0) {
     return (
-      <div className="rounded-[2px] border border-border bg-card px-5 py-8 text-center">
+      <div
+        className={
+          bare
+            ? "px-5 py-8 text-center"
+            : "rounded-[2px] border border-border bg-card px-5 py-8 text-center"
+        }
+      >
         <MessageSquare className="h-5 w-5 mx-auto text-muted-foreground" />
         <div className="mt-2 text-sm font-medium text-foreground">
           No fresh mentions yet
@@ -38,7 +52,11 @@ export function MentionFeed({ mentions }: { mentions: MentionRow[] }) {
   }
 
   return (
-    <div className="rounded-[2px] border border-border bg-card overflow-hidden">
+    <div
+      className={
+        bare ? "overflow-hidden" : "rounded-[2px] border border-border bg-card overflow-hidden"
+      }
+    >
       <div className="flex items-center justify-between px-5 py-3 border-b border-border">
         <div>
           <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">

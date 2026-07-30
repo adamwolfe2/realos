@@ -14,12 +14,16 @@ export type LeadHeatmapProps = {
   leadCreatedAt: Date[];
   /** Now() in the user's timezone — defaults to UTC if omitted. */
   now?: Date;
+  /** Render without the outer bordered box — for use inside a parent that
+   *  already provides its own card chrome (e.g. TabbedCard tab panels).
+   *  Drops the outer box only; grid/legend/day-label internals untouched. */
+  bare?: boolean;
 };
 
 const DAYS = 7;
 const HOURS = 24;
 
-export function LeadHeatmap({ leadCreatedAt, now = new Date() }: LeadHeatmapProps) {
+export function LeadHeatmap({ leadCreatedAt, now = new Date(), bare = false }: LeadHeatmapProps) {
   const grid = bucketLeads(leadCreatedAt, now);
   const max = grid.reduce(
     (m, row) => row.reduce((rm, v) => Math.max(rm, v), m),
@@ -31,7 +35,13 @@ export function LeadHeatmap({ leadCreatedAt, now = new Date() }: LeadHeatmapProp
 
   if (total === 0) {
     return (
-      <div className="rounded-xl border border-border bg-card px-5 py-8 text-center">
+      <div
+        className={
+          bare
+            ? "px-5 py-8 text-center"
+            : "rounded-[2px] border border-border bg-card px-5 py-8 text-center"
+        }
+      >
         <div className="text-sm font-medium text-foreground">
           No lead activity in the last 7 days
         </div>
@@ -43,7 +53,7 @@ export function LeadHeatmap({ leadCreatedAt, now = new Date() }: LeadHeatmapProp
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5">
+    <div className={bare ? "" : "rounded-[2px] border border-border bg-card p-5"}>
       <div className="flex items-baseline justify-between mb-3">
         <div>
           <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">

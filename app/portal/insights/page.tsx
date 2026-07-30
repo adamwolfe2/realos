@@ -19,12 +19,10 @@ import { type InsightCardData } from "@/components/portal/insights/insight-card"
 import { RunDetectorsButton } from "@/components/portal/insights/run-detectors-button";
 import { PageHeader } from "@/components/admin/page-header";
 import { EmptyState } from "@/components/portal/ui/empty-state";
+import { TabbedCard } from "@/components/portal/ui/tabbed-card";
 import { getLatestSnapshot, getSnapshotSeries } from "@/lib/signals/read";
 import { pickHeadlineSignal } from "@/lib/signals/today";
-import {
-  SignalCard,
-  SignalCardSkeleton,
-} from "@/components/portal/insights/signal-card";
+import { SignalCard } from "@/components/portal/insights/signal-card";
 import { HeadlineCallout } from "@/components/portal/insights/headline-callout";
 import {
   MentionFeed,
@@ -171,21 +169,6 @@ export default async function InsightsPage({
   const mentionRows: MentionRow[] = mentions;
   const totalCounts = counts.critical + counts.warning + counts.info;
 
-  // First-load state. When NO daily signal has computed yet AND we
-  // also have nothing else to show (no mentions, no movers, no leads),
-  // collapse the page to a single focused "first scan coming overnight"
-  // card instead of stacking six empty sections (skeleton + headline
-  // callout + mention feed + movers + heatmap + recommendations =
-  // wall of emptiness, the exact UX issue this audit cycle is fixing).
-  // The page restores its full layout the moment ANY one of those
-  // surfaces has data.
-  const isFirstLoad =
-    !latest &&
-    mentionRows.length === 0 &&
-    movers.length === 0 &&
-    leadRows.length === 0 &&
-    openInsights.length === 0;
-
   return (
     <div className="space-y-5">
       {accessDenied ? <PropertyAccessDeniedBanner /> : null}
@@ -205,17 +188,118 @@ export default async function InsightsPage({
         }
       />
 
-      {isFirstLoad ? (
-        <EmptyState
-          icon={<Sparkles className="h-5 w-5" />}
-          title="First scan coming overnight"
-          body="Your daily signal snapshot computes during off-hours. You'll see ranking, citation, reputation, chatbot, and lead activity here as soon as the first pass finishes — usually before the next morning."
-          action={{ label: "Connect more data sources", href: "/portal/connect" }}
-        />
-      ) : null}
+      <TabbedCard
+        title="Portfolio insights"
+        tabs={[
+          {
+            key: "signals",
+            label: "Signals",
+            description:
+              "Score cards, today's standout signal, and fresh mentions + ranking moves.",
+            content: (
+              <SignalsTab
+                latest={latest}
+                wow={wow}
+                overallSeries={overallSeries}
+                seoSeries={seoSeries}
+                aeoSeries={aeoSeries}
+                repSeries={repSeries}
+                chatbotSeries={chatbotSeries}
+                leadsSeries={leadsSeries}
+                headline={headline}
+                mentionRows={mentionRows}
+                movers={movers}
+                hasSeoData={hasSeoData}
+              />
+            ),
+          },
+          {
+            key: "activity",
+            label: "Activity",
+            // No `description` here — LeadHeatmap renders its own "Last 7
+            // days · by hour / Lead activity" header inline; a tab
+            // description would just repeat it above the card.
+            content: (
+              <LeadHeatmap
+                leadCreatedAt={leadRows.map((r) => r.createdAt)}
+                bare
+              />
+            ),
+          },
+          {
+            key: "recommendations",
+            label: "Recommendations",
+            description: "Detector-generated housekeeping and config suggestions.",
+            content:
+              openInsights.length > 0 ? (
+                <RecommendationsDrawer
+                  insights={openInsights}
+                  defaultOpen
+                  bare
+                />
+              ) : totalCounts === 0 && !latest ? (
+                <EmptyState
+                  icon={<Sparkles className="h-5 w-5" />}
+                  title="Recommendations coming soon"
+                  body="Connect AppFolio, Google Analytics, your ad accounts, and the pixel — each unlocks a new family of detectors that run continuously in the background."
+                  action={{ label: "Connect your data", href: "/portal/connect" }}
+                />
+              ) : totalCounts > 0 ? (
+                // getOpenInsights excludes snoozed rows but getInsightCounts
+                // doesn't — totalCounts > 0 here can only mean every
+                // matching row is currently snoozed, not that none exist.
+                <div className="flex h-[300px] items-center justify-center text-[11px] text-muted-foreground">
+                  You&rsquo;re all caught up.
+                </div>
+              ) : (
+                <div className="flex h-[300px] items-center justify-center text-[11px] text-muted-foreground">
+                  Recommendations appear as your data accumulates.
+                </div>
+              ),
+          },
+        ]}
+      />
+    </div>
+  );
+}
 
-      {/* A. Hero strip — 6 signal cards */}
-      {!isFirstLoad && latest ? (
+/**
+ * Signals tab body — hero strip when a snapshot exists (else the same
+ * "first scan coming overnight" copy the old full-page empty state used),
+ * today's standout signal, and the mention/mover feeds. HeadlineCallout,
+ * MentionFeed, and TopMovers each already render honest copy in their own
+ * empty state, so nothing else here needs a fallback quiet-line of its own.
+ */
+function SignalsTab({
+  latest,
+  wow,
+  overallSeries,
+  seoSeries,
+  aeoSeries,
+  repSeries,
+  chatbotSeries,
+  leadsSeries,
+  headline,
+  mentionRows,
+  movers,
+  hasSeoData,
+}: {
+  latest: Awaited<ReturnType<typeof getLatestSnapshot>>;
+  wow: Record<string, number | undefined>;
+  overallSeries: number[];
+  seoSeries: number[];
+  aeoSeries: number[];
+  repSeries: number[];
+  chatbotSeries: number[];
+  leadsSeries: number[];
+  headline: ReturnType<typeof pickHeadlineSignal>;
+  mentionRows: MentionRow[];
+  movers: TopMoverRow[];
+  hasSeoData: boolean;
+}) {
+  return (
+    <div className="space-y-5">
+      {latest ? (
         <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <SignalCard
             label="Overall score"
@@ -278,60 +362,22 @@ export default async function InsightsPage({
             href="/portal/leads"
           />
         </section>
-      ) : !isFirstLoad ? (
-        <FirstScanEmpty />
-      ) : null}
+      ) : (
+        <EmptyState
+          icon={<Sparkles className="h-5 w-5" />}
+          title="First scan coming overnight"
+          body="Your daily signal snapshot computes during off-hours. You'll see ranking, citation, reputation, chatbot, and lead activity here as soon as the first pass finishes — usually before the next morning."
+          action={{ label: "Connect more data sources", href: "/portal/connect" }}
+        />
+      )}
 
-      {!isFirstLoad ? (
-        <>
-          {/* B. Today's signal callout */}
-          <HeadlineCallout signal={headline} />
+      <HeadlineCallout signal={headline} bare />
 
-          {/* C + D. Mention feed + Top movers, side-by-side on lg+ */}
-          <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <MentionFeed mentions={mentionRows} />
-            <TopMovers movers={movers} hasData={hasSeoData} />
-          </section>
-
-          {/* E. Lead activity heatmap — the flashy centerpiece */}
-          <section>
-            <LeadHeatmap leadCreatedAt={leadRows.map((r) => r.createdAt)} />
-          </section>
-
-          {/* F. Existing recommendations, behind a drawer */}
-          {openInsights.length > 0 ? (
-            <RecommendationsDrawer insights={openInsights} />
-          ) : totalCounts === 0 && !latest ? (
-            <EmptyState
-              icon={<Sparkles className="h-5 w-5" />}
-              title="Recommendations coming soon"
-              body="Connect AppFolio, Google Analytics, your ad accounts, and the pixel — each unlocks a new family of detectors that run continuously in the background."
-              action={{ label: "Connect your data", href: "/portal/connect" }}
-            />
-          ) : null}
-        </>
-      ) : null}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <MentionFeed mentions={mentionRows} bare />
+        <TopMovers movers={movers} hasData={hasSeoData} bare />
+      </section>
     </div>
-  );
-}
-
-function FirstScanEmpty() {
-  return (
-    <section className="space-y-3">
-      <div className="rounded-xl border border-dashed border-border bg-card px-5 py-3 text-sm text-muted-foreground">
-        <span className="font-medium text-foreground">First scan coming overnight.</span>{" "}
-        Your daily signal snapshot computes during off-hours — the strip below
-        fills in as soon as the cron finishes its first pass.
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <SignalCardSkeleton label="Overall score" />
-        <SignalCardSkeleton label="SEO rank" />
-        <SignalCardSkeleton label="AEO citations" />
-        <SignalCardSkeleton label="Reputation" />
-        <SignalCardSkeleton label="Chatbot" />
-        <SignalCardSkeleton label="New leads" />
-      </div>
-    </section>
   );
 }
 

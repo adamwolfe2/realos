@@ -15,9 +15,13 @@ import { InsightCard, type InsightCardData } from "./insight-card";
 export function RecommendationsDrawer({
   insights,
   defaultOpen = false,
+  bare = false,
 }: {
   insights: InsightCardData[];
   defaultOpen?: boolean;
+  /** Render without the outer bordered box — for use inside a parent that
+   *  already provides its own card chrome (e.g. TabbedCard tab panels). */
+  bare?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const count = insights.length;
@@ -25,7 +29,11 @@ export function RecommendationsDrawer({
   if (count === 0) return null;
 
   return (
-    <div className="rounded-[2px] border border-border bg-card overflow-hidden">
+    <div
+      className={
+        bare ? "overflow-hidden" : "rounded-[2px] border border-border bg-card overflow-hidden"
+      }
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
