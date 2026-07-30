@@ -218,21 +218,58 @@ const LEAD_SOURCE_LABELS: Record<LeadSource, string> = {
   OTHER: "Other",
 };
 
+// Scoping options shared by the funnel + lead-source helpers.
+//
+// Root cause of the "Pipeline says 488 leads, Lead journey says 76" defect:
+// these two helpers counted org-wide — every AppFolio-synced sub-record
+// property, curated or not — while the KPI tiles and lead journey scope to
+// the marketable set (same class as the SG "704 applications when only 72
+// belonged to Telegraph Commons" bug, see marketableScopedPropertyClause).
+// The caller passes the SAME clauses it uses for the tiles so every block
+// on the dashboard counts one population.
+export type DashboardScope = {
+  /** Days back from now — the dashboard's range selector. Default 28. */
+  periodDays?: number;
+  /** Clause for models with a NULLABLE propertyId (Lead, Visitor):
+   *  marketableScopedPropertyClause(..., { defaultIncludesOrgRows: true }). */
+  propertyClause?: Record<string, unknown>;
+  /** Clause for models with a REQUIRED propertyId (Application, Tour):
+   *  the plain marketable in-list. */
+  requiredPropertyClause?: Record<string, unknown>;
+};
+
 export async function getLeadSourceBreakdown(
   orgId: string,
+  scope: DashboardScope = {},
 ): Promise<LeadSourceSlice[]> {
-  const since28d = new Date(Date.now() - WINDOW_DAYS * DAY_MS);
+  const since = new Date(
+    Date.now() - (scope.periodDays ?? WINDOW_DAYS) * DAY_MS,
+  );
   const grouped = await prisma.lead.groupBy({
-    by: ["source"],
-    where: { orgId, createdAt: { gte: since28d } },
+    by: ["source", "sourceDetail"],
+    where: {
+      orgId,
+      createdAt: { gte: since },
+      ...(scope.propertyClause ?? {}),
+    },
     _count: { _all: true },
   });
 
-  return grouped
-    .map((row) => ({
-      source: LEAD_SOURCE_LABELS[row.source] ?? row.source,
-      count: row._count._all,
-    }))
+  // OTHER is a catch-all enum, but the ingest paths preserve the real
+  // origin string in sourceDetail ("AppFolio application", "Zillow", …).
+  // Surface that instead of a meaningless "Other" bucket — pre-fix the
+  // card read "Other 443 (100%)" while attribution data sat unused.
+  const byLabel = new Map<string, number>();
+  for (const row of grouped) {
+    const label =
+      row.source === LeadSource.OTHER && row.sourceDetail
+        ? row.sourceDetail
+        : (LEAD_SOURCE_LABELS[row.source] ?? row.source);
+    byLabel.set(label, (byLabel.get(label) ?? 0) + row._count._all);
+  }
+
+  return [...byLabel.entries()]
+    .map(([source, count]) => ({ source, count }))
     .sort((a, b) => b.count - a.count);
 }
 
@@ -246,8 +283,12 @@ export async function getLeadSourceBreakdown(
 // Apps      -> Application where lead.orgId matches
 // ---------------------------------------------------------------------------
 
-export async function getFunnel(orgId: string) {
-  const since28d = new Date(Date.now() - WINDOW_DAYS * DAY_MS);
+export async function getFunnel(orgId: string, scope: DashboardScope = {}) {
+  const since28d = new Date(
+    Date.now() - (scope.periodDays ?? WINDOW_DAYS) * DAY_MS,
+  );
+  const propertyClause = scope.propertyClause ?? {};
+  const requiredPropertyClause = scope.requiredPropertyClause ?? {};
 
   const [
     visitorsCount,
@@ -270,8 +311,12 @@ export async function getFunnel(orgId: string) {
       where: {
         orgId,
         lastSeenAt: { gte: since28d },
+        ...propertyClause,
       },
     }),
+    // Engaged stays org-wide: VisitorSession has no propertyId (sessions
+    // precede property attribution) and the pipeline strip doesn't render
+    // this stage anyway.
     prisma.visitorSession.count({
       where: {
         orgId,
@@ -283,7 +328,7 @@ export async function getFunnel(orgId: string) {
       },
     }),
     prisma.lead.count({
-      where: { orgId, createdAt: { gte: since28d } },
+      where: { orgId, createdAt: { gte: since28d }, ...propertyClause },
     }),
     prisma.tour.count({
       where: {
@@ -292,12 +337,14 @@ export async function getFunnel(orgId: string) {
           in: [TourStatus.SCHEDULED, TourStatus.COMPLETED],
         },
         lead: { orgId },
+        ...requiredPropertyClause,
       },
     }),
     prisma.application.count({
       where: {
         createdAt: { gte: since28d },
         lead: { orgId },
+        ...requiredPropertyClause,
       },
     }),
     // Norman 2026-06-04: detect whether the org has ANY property with a

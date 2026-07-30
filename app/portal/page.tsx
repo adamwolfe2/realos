@@ -498,8 +498,19 @@ export default async function PortalHome({
         deltaPct: null as number | null,
         sparkline: new Array<number>(28).fill(0),
       })),
-      getLeadSourceBreakdown(scope.orgId).catch(() => []),
-      getFunnel(scope.orgId).catch(
+      // Both scoped with the SAME clauses as the KPI tiles above, so the
+      // pipeline strip, lead-source card, and tiles count one population.
+      // Previously org-wide (full synced portfolio) — the "Pipeline 488 vs
+      // Lead journey 76" contradiction.
+      getLeadSourceBreakdown(scope.orgId, {
+        periodDays: rangeDaysCount,
+        propertyClause,
+      }).catch(() => []),
+      getFunnel(scope.orgId, {
+        periodDays: rangeDaysCount,
+        propertyClause,
+        requiredPropertyClause: requiredModelPropertyClause,
+      }).catch(
         () =>
           [] as Array<{
             label: string;
@@ -1294,7 +1305,7 @@ export default async function PortalHome({
               </DashboardSection>
             ) : null}
 
-            <PipelineStrip stages={pipelineStages} />
+            <PipelineStrip stages={pipelineStages} periodDays={rangeDaysCount} />
 
             {/* Lead journey — same cohort/tracked-stage semantics as the
               portfolio funnel report (lib/reports/lead-journey.ts), denser:
@@ -1395,7 +1406,7 @@ export default async function PortalHome({
 
             <DashboardSection
               title="Lead source"
-              description="Where this month's leads are coming from."
+              description={`Where the last ${rangeDaysCount} days' leads came from.`}
               href="/portal/attribution"
               hrefLabel="Open attribution"
             >

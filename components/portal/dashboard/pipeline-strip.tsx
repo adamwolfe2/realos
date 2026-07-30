@@ -18,14 +18,17 @@ export type PipelineStage = {
 type Props = {
   /** Only tracked stages — Visitors, Leads, Applications. */
   stages: PipelineStage[];
+  /** The dashboard's selected range — keeps the label honest when the
+   *  operator picks 7d/90d. */
+  periodDays?: number;
 };
 
-export function PipelineStrip({ stages }: Props) {
+export function PipelineStrip({ stages, periodDays = 28 }: Props) {
   if (stages.length === 0) return null;
 
   return (
     <div className="ls-card p-4">
-      <div className="ls-eyebrow mb-3">Pipeline (28d)</div>
+      <div className="ls-eyebrow mb-3">Pipeline ({periodDays}d)</div>
       <div className="flex items-stretch divide-x divide-[var(--hair)]">
         {stages.map((stage, i) => {
           const prev = i > 0 ? stages[i - 1] : null;
