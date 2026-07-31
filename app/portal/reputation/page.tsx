@@ -22,9 +22,7 @@ import {
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { PageHeader } from "@/components/admin/page-header";
-import { SourceLogo } from "@/components/portal/reputation/source-logo";
-import { sourceLabel } from "@/components/portal/reputation/source-label";
-import { SourceBars } from "@/components/portal/dashboard/source-bars";
+import { SourceScoreboard } from "@/components/portal/reputation/source-scoreboard";
 import { ReputationFilters } from "@/components/portal/reputation/reputation-filters";
 import { ReputationScanButton } from "@/components/portal/reputation/reputation-scan-button";
 import { SentimentSparkline } from "@/components/portal/reputation/sentiment-sparkline";
@@ -65,6 +63,8 @@ const EMPTY_METRICS: PortfolioReputationMetrics = {
   propertyHealth: [],
   monthlyVolume: [],
   weeklySentiment: [],
+  sourceScoreboard: [],
+  lastScanAt: null,
 };
 
 // Whitelisted enum parsers — we never trust raw searchParams. Returning
@@ -341,6 +341,21 @@ export default async function PortfolioReputationPage({
           />
         </section>
 
+        {/* Per-source scoreboard — one card per channel with count,
+          positive share, 12-week trend sparkline, and scan recency.
+          Cards double as ?source= filters (active card clears). */}
+        <SourceScoreboard
+          scoreboard={metrics.sourceScoreboard ?? []}
+          lastScanAt={metrics.lastScanAt ?? null}
+          activeSource={sourceFilter}
+          currentParams={{
+            property: sp.property,
+            properties: sp.properties,
+            sentiment: sp.sentiment,
+            showOlder: sp.showOlder,
+          }}
+        />
+
         {/* Sentiment split — one glanceable bar showing how mentions break
           down by sentiment, so the page reads as "brand health" instead of
           a wall of neutral numbers. Legend doubles as a shortcut into the
@@ -456,8 +471,9 @@ export default async function PortfolioReputationPage({
               </div>
             </div>
 
-            {/* Sentiment + sources + monthly volume — tightened grid */}
-            <section className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+            {/* Sentiment + monthly volume — sources moved to the
+              scoreboard card row at the top of the page. */}
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
               <AnalyticsBlock title="Sentiment" eyebrow="Across all mentions">
                 {metrics.totalMentions === 0 ? (
                   <p className="text-xs text-muted-foreground">
@@ -491,25 +507,6 @@ export default async function PortfolioReputationPage({
                     />
                   </div>
                 )}
-              </AnalyticsBlock>
-
-              <AnalyticsBlock title="By source" eyebrow="Volume by platform">
-                <SourceBars
-                  emptyMessage="No mentions yet."
-                  limit={6}
-                  rows={(metrics.sourceBreakdown ?? []).map((row) => ({
-                    id: String(row.source),
-                    label: sourceLabel(row.source as MentionSource, ""),
-                    value: safeNum(row.count),
-                    leading: (
-                      <SourceLogo
-                        source={row.source as MentionSource}
-                        url=""
-                        className="h-4 w-4"
-                      />
-                    ),
-                  }))}
-                />
               </AnalyticsBlock>
 
               <AnalyticsBlock title="Monthly volume" eyebrow="Last 6 months">

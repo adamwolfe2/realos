@@ -40,22 +40,22 @@ function OverviewItem({ row }: { row: AiOverviewRow }) {
   const displayText = expanded || !isLong ? trimmed : `${trimmed.slice(0, 220).trimEnd()}…`;
 
   return (
-    <li className="py-3.5 border-b border-[var(--hair)] last:border-b-0 space-y-2">
+    <li className="py-3.5 border-b border-border last:border-b-0 space-y-2">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-[13px] text-foreground" title={row.query}>
+          <div className="text-[13px] font-medium text-foreground" title={row.query}>
             {row.query}
           </div>
-          <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5">
+          <div className="text-[10px] uppercase tracking-[0.12em] font-semibold text-muted-foreground mt-0.5">
             captured {formatDate(row.capturedAt)}
           </div>
         </div>
         <span
           className={
-            "text-[10px] uppercase tracking-wide px-1.5 py-0.5 border rounded " +
+            "inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold border " +
             (row.cited
-              ? "border-foreground/30 text-foreground"
-              : "border-[var(--hair)] text-muted-foreground")
+              ? "bg-[rgba(36,161,72,0.10)] text-[#24a148] border-[#24a148]/30"
+              : "bg-muted text-muted-foreground border-border")
           }
         >
           {row.cited ? "Cited" : "Not cited"}
@@ -82,15 +82,15 @@ function OverviewItem({ row }: { row: AiOverviewRow }) {
         </>
       )}
       {row.citedUrls.length > 0 && (
-        <div className="text-[11px] text-muted-foreground space-x-2">
-          <span>Sources:</span>
+        <div className="flex items-center gap-1 flex-wrap text-[11px] text-muted-foreground">
+          <span className="mr-0.5">Sources:</span>
           {row.citedUrls.slice(0, 5).map((u) => (
             <a
               key={u}
               href={u}
               target="_blank"
               rel="noopener noreferrer"
-              className="underline underline-offset-2 hover:text-foreground"
+              className="inline-flex items-center rounded-[2px] bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground hover:text-foreground"
               title={u}
             >
               {(() => {
@@ -126,11 +126,34 @@ export function AiOverviewCard({
             : "AI search intelligence is being activated for your account. Your first AI Overview report lands within 24 hours."}
         </div>
       ) : (
-        <ul>
-          {rows.map((row) => (
-            <OverviewItem key={`${row.query}-${row.capturedAt}`} row={row} />
-          ))}
-        </ul>
+        <>
+          {/* Context strip — the headline read before the per-query list. */}
+          {(() => {
+            const cited = rows.filter((r) => r.cited).length;
+            return (
+              <div className="mb-3 rounded-[2px] border border-border bg-secondary px-3 py-2 text-[12px] text-foreground">
+                Google&apos;s AI Overview cites you in{" "}
+                <span
+                  className={
+                    "font-semibold " +
+                    (cited > 0 ? "text-[#24a148]" : "text-[#da1e28]")
+                  }
+                >
+                  {cited} of {rows.length}
+                </span>{" "}
+                of your top queries.{" "}
+                {cited < rows.length
+                  ? "Uncited queries are where competitors get the click instead."
+                  : "Every tracked query currently links back to you."}
+              </div>
+            );
+          })()}
+          <ul>
+            {rows.map((row) => (
+              <OverviewItem key={`${row.query}-${row.capturedAt}`} row={row} />
+            ))}
+          </ul>
+        </>
       )}
     </SectionCard>
   );

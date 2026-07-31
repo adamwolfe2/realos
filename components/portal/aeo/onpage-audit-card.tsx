@@ -57,12 +57,12 @@ function formatDate(iso: string): string {
 
 function ChecklistRow({ check }: { check: OnPageAuditCheck }) {
   return (
-    <li className="flex items-start gap-2.5 py-2 border-b border-[var(--hair)] last:border-b-0">
+    <li className="flex items-start gap-2.5 py-2 border-b border-border last:border-b-0">
       <div className="mt-0.5 shrink-0">
         {check.pass ? (
-          <Check className="w-3.5 h-3.5 text-foreground" />
+          <Check className="w-3.5 h-3.5 text-[#24a148]" />
         ) : (
-          <X className="w-3.5 h-3.5 text-muted-foreground" />
+          <X className="w-3.5 h-3.5 text-[#da1e28]" />
         )}
       </div>
       <div className="min-w-0 flex-1">
@@ -71,19 +71,34 @@ function ChecklistRow({ check }: { check: OnPageAuditCheck }) {
           {check.reason}
         </div>
       </div>
-      <div className="text-[10px] tabular-nums text-muted-foreground uppercase tracking-wide">
+      <span
+        className={
+          "inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold border " +
+          (check.pass
+            ? "bg-[rgba(36,161,72,0.10)] text-[#24a148] border-[#24a148]/30"
+            : "bg-[rgba(218,30,40,0.10)] text-[#da1e28] border-[#da1e28]/30")
+        }
+      >
         {check.pass ? "Pass" : "Fail"}
-      </div>
+      </span>
     </li>
   );
 }
 
+// Banded score ring: green ≥ 70, blue 40-69, red < 40 — same read the
+// KPI tiles give elsewhere instead of the old neutral gray ring.
 function ScoreRing({ score }: { score: number }) {
+  const band =
+    score >= 70
+      ? "border-[#24a148] text-[#24a148]"
+      : score >= 40
+        ? "border-[#0f62fe] text-[#0f62fe]"
+        : "border-[#da1e28] text-[#da1e28]";
   return (
-    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full border-2 border-foreground/30 bg-background">
-      <span className="text-[14px] font-semibold tabular-nums text-foreground">
-        {score}
-      </span>
+    <div
+      className={`inline-flex items-center justify-center w-12 h-12 rounded-full border-2 bg-background ${band}`}
+    >
+      <span className="text-[14px] font-semibold tabular-nums">{score}</span>
     </div>
   );
 }
@@ -194,20 +209,20 @@ function ActiveView({
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://your-property.com/about"
-            className="w-full px-3 py-2 text-[13px] bg-background border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-foreground/30"
+            className="w-full px-3 py-2 text-[13px] bg-background border border-border rounded-[2px] focus:outline-none focus:ring-2 focus:ring-primary/40"
           />
         </label>
         <button
           type="submit"
           disabled={pending || url.trim().length === 0}
-          className="inline-flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-background bg-foreground hover:bg-foreground/90 disabled:opacity-50 disabled:cursor-not-allowed rounded-md"
+          className="inline-flex items-center gap-1.5 px-3 py-2 text-[13px] font-semibold text-primary-foreground bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed rounded-[2px]"
         >
           <Play className="w-3 h-3" />
           {pending ? "Auditing…" : "Run audit"}
         </button>
       </form>
       {error && (
-        <div className="text-[12px] text-foreground bg-[var(--hair)] px-2.5 py-2 rounded">
+        <div className="text-[12px] text-foreground rounded-[2px] border border-border bg-secondary px-3 py-2">
           {error}
         </div>
       )}
@@ -242,8 +257,8 @@ function ActiveView({
         </div>
       )}
       {history.length > 0 && (
-        <div className="pt-2 border-t border-[var(--hair)]">
-          <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">
+        <div className="pt-2 border-t border-border">
+          <div className="text-[10px] uppercase tracking-[0.12em] font-semibold text-muted-foreground mb-2">
             Recent audits
           </div>
           <ul className="space-y-1.5">

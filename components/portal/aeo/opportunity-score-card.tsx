@@ -54,11 +54,22 @@ const COMPONENT_LABELS: Array<{
   { key: "onPageHealth", label: "OnPage", weight: 10 },
 ];
 
+// Single-hue sequential ramp (Carbon blue, dark→light in weight order) —
+// one magnitude, one hue. Matches the portal's #0f62fe accent system
+// instead of the old grayscale foreground mixes.
+const COMPONENT_COLORS: Record<keyof OpportunityRow["breakdown"], string> = {
+  aiVolumeBand: "#0f62fe",
+  mentionGap: "color-mix(in srgb, #0f62fe 75%, white)",
+  gscPotential: "color-mix(in srgb, #0f62fe 55%, white)",
+  competitorPresence: "color-mix(in srgb, #0f62fe 38%, white)",
+  onPageHealth: "color-mix(in srgb, #0f62fe 22%, white)",
+};
+
 function StackedBar({ row }: { row: OpportunityRow }) {
   // Each component contributes (value × weight) points out of 100.
   return (
     <div
-      className="flex h-1.5 w-full overflow-hidden rounded-full bg-[var(--hair)]"
+      className="flex h-1.5 w-full overflow-hidden rounded-full bg-secondary"
       aria-label={`Score breakdown: ${row.score} of 100`}
     >
       {COMPONENT_LABELS.map((c) => {
@@ -69,23 +80,32 @@ function StackedBar({ row }: { row: OpportunityRow }) {
           <div
             key={c.key}
             className="h-full"
-            style={{
-              width: `${pct}%`,
-              background:
-                c.key === "aiVolumeBand"
-                  ? "var(--foreground)"
-                  : c.key === "mentionGap"
-                    ? "color-mix(in srgb, var(--foreground) 75%, transparent)"
-                    : c.key === "gscPotential"
-                      ? "color-mix(in srgb, var(--foreground) 55%, transparent)"
-                      : c.key === "competitorPresence"
-                        ? "color-mix(in srgb, var(--foreground) 35%, transparent)"
-                        : "color-mix(in srgb, var(--foreground) 20%, transparent)",
-            }}
+            style={{ width: `${pct}%`, background: COMPONENT_COLORS[c.key] }}
             title={`${c.label}: ${pts.toFixed(1)} pts`}
           />
         );
       })}
+    </div>
+  );
+}
+
+// Legend for the stacked bar — the old bar shipped with zero explanation
+// of what its segments meant.
+function BreakdownLegend() {
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-2">
+      {COMPONENT_LABELS.map((c) => (
+        <span
+          key={c.key}
+          className="inline-flex items-center gap-1 text-[10px] text-muted-foreground"
+        >
+          <span
+            className="inline-block h-2 w-2 rounded-full"
+            style={{ background: COMPONENT_COLORS[c.key] }}
+          />
+          {c.label} · {c.weight}pts
+        </span>
+      ))}
     </div>
   );
 }
@@ -121,7 +141,18 @@ export function OpportunityScoreCard({
           </div>
         )
       ) : (
-        <ul className="divide-y divide-[var(--hair)]">
+        <>
+          {/* Context strip — plain-English read of what the list means,
+              so the tab answers "so what?" before the operator parses rows. */}
+          <div className="mb-3 rounded-[2px] border border-border bg-secondary px-3 py-2 text-[12px] text-foreground">
+            <span className="font-semibold">
+              {rows.length} keyword{rows.length === 1 ? "" : "s"} ranked.
+            </span>{" "}
+            Biggest gap: <span className="font-semibold">“{rows[0].keyword}”</span>{" "}
+            (score {rows[0].score}/100) — high AI demand, low presence for you.
+            Higher score = bigger win from publishing targeted content.
+          </div>
+        <ul className="divide-y divide-border">
           {rows.slice(0, 10).map((row) => (
             <li
               key={row.keyword}
@@ -144,8 +175,10 @@ export function OpportunityScoreCard({
               <div className="col-span-5">
                 <StackedBar row={row} />
               </div>
-              <div className="col-span-1 text-right tabular-nums text-[14px] text-foreground font-semibold">
-                {row.score}
+              <div className="col-span-1 text-right">
+                <span className="inline-flex items-center justify-center min-w-[2rem] px-1.5 py-0.5 rounded-[2px] bg-[#edf5ff] text-[#0f62fe] tabular-nums text-[13px] font-semibold">
+                  {row.score}
+                </span>
               </div>
               <div className="col-span-1 text-right">
                 <a
@@ -160,6 +193,8 @@ export function OpportunityScoreCard({
             </li>
           ))}
         </ul>
+          <BreakdownLegend />
+        </>
       )}
     </SectionCard>
   );

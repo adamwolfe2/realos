@@ -178,26 +178,30 @@ function SovBars({ perEngine }: { perEngine: ShareOfVoiceProps["perEngine"] }) {
     if (ratio <= 0) return "0%";
     return `${Math.max(ratio * 100, 5)}%`;
   }
+  const avgAcross =
+    perEngine.length > 0
+      ? perEngine.reduce((s, r) => s + r.avgSov, 0) / perEngine.length
+      : 0;
   return (
     <div>
-      <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-3">
+      <div className="text-[10px] uppercase tracking-[0.12em] font-semibold text-muted-foreground mb-3">
         Per engine (30d avg)
       </div>
       <ul className="space-y-2.5">
         {perEngine.map((row) => (
           <li key={row.engine} className="space-y-1">
             <div className="flex items-center justify-between gap-2 text-[13px]">
-              <span className="text-foreground">{engineLabel(row.engine)}</span>
-              <span className="tabular-nums text-muted-foreground">
+              <span className="font-medium text-foreground">{engineLabel(row.engine)}</span>
+              <span className="tabular-nums text-foreground font-semibold">
                 {fmtPercent(row.avgSov)}
-                <span className="text-[10px] ml-2 text-muted-foreground/70">
+                <span className="text-[10px] ml-2 font-normal text-muted-foreground">
                   n={row.snapshotCount}
                 </span>
               </span>
             </div>
-            <div className="h-1.5 bg-[var(--hair)] rounded-full overflow-hidden">
+            <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
               <div
-                className="h-full bg-foreground/80"
+                className="h-full bg-primary"
                 style={{ width: barWidth(row.avgSov) }}
                 aria-hidden
               />
@@ -205,6 +209,13 @@ function SovBars({ perEngine }: { perEngine: ShareOfVoiceProps["perEngine"] }) {
           </li>
         ))}
       </ul>
+      <p className="mt-3 text-[12px] text-muted-foreground">
+        You hold{" "}
+        <span className="font-semibold text-foreground">
+          {fmtPercent(avgAcross)}
+        </span>{" "}
+        of the AI conversation in your market, averaged across engines.
+      </p>
     </div>
   );
 }
@@ -212,7 +223,7 @@ function SovBars({ perEngine }: { perEngine: ShareOfVoiceProps["perEngine"] }) {
 function MergedEntityList({ entities }: { entities: MergedEntity[] }) {
   return (
     <div>
-      <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-3">
+      <div className="text-[10px] uppercase tracking-[0.12em] font-semibold text-muted-foreground mb-3">
         Who the AI engines mention (30d)
       </div>
       {entities.length === 0 ? (
@@ -224,13 +235,24 @@ function MergedEntityList({ entities }: { entities: MergedEntity[] }) {
           {entities.map((e) => (
             <li
               key={`${e.name}-${e.kind}`}
-              className="flex items-center justify-between gap-2 text-[13px] border-b border-[var(--hair)] last:border-b-0 py-1.5"
+              className={`flex items-center justify-between gap-2 text-[13px] border-b border-border last:border-b-0 py-1.5 px-2 -mx-2 ${
+                e.kind === "self" ? "bg-[#edf5ff]/60 rounded-[2px]" : ""
+              }`}
             >
-              <span className="truncate text-foreground" title={e.name}>
+              <span
+                className={`truncate ${e.kind === "self" ? "font-semibold" : ""} text-foreground`}
+                title={e.name}
+              >
                 {e.name}
               </span>
               <div className="flex items-center gap-3 shrink-0">
-                <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                <span
+                  className={
+                    e.kind === "self"
+                      ? "inline-flex items-center rounded-[2px] bg-[#edf5ff] px-1.5 py-0.5 text-[10px] font-semibold text-[#0f62fe] uppercase tracking-wide"
+                      : "text-[10px] uppercase tracking-wide text-muted-foreground"
+                  }
+                >
                   {e.kind === "self" ? "You" : "Competitor"}
                 </span>
                 <span className="tabular-nums text-[11px] text-muted-foreground">
@@ -446,19 +468,18 @@ export function AeoClient({
         />
       </div>
 
-      {/* What to do next — derived recommendations, hoisted directly under
-          the KPI row since it's the most actionable summary on the page. */}
+      {/* Per-engine cards — directly under the KPI strip (Adam 2026-07-31:
+          the four engine results are the most important glance after the
+          headline KPIs). Each shows mention + citation rate per engine. */}
+      <AeoEngineCards rows={engineCards} />
+
+      {/* What to do next — derived recommendations. */}
       <NextActions recs={recommendations} />
 
-      {/* The actual AI prompts + responses — the most useful thing on the
-          page, so it leads right under the score instead of being buried at
-          the bottom. */}
+      {/* The actual AI prompts + responses. */}
       <div id="all-responses">
         <AeoResponsesTable rows={responses} />
       </div>
-
-      {/* Per-engine cards — now show BOTH mention + citation per engine */}
-      <AeoEngineCards rows={engineCards} />
 
       {/* AEO v2: deeper AI-search intelligence, consolidated into one
           tabbed card. All four tabs always render once any signal exists

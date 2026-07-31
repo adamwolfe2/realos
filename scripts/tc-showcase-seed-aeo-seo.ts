@@ -30,6 +30,22 @@ import {
 
 const SHOWCASE_ORG = "cmp76brh80000nt3lxg5epqzt";
 
+// ---------------------------------------------------------------------------
+// Production safety — mirrored from tc-showcase-seed-aeo-v2.ts. This script
+// writes fabricated AeoCitationCheck rows into the SAME table the live
+// /portal/seo/aeo page reads; it must never run against prod. Set
+// I_KNOW_THIS_IS_NOT_PROD=true only after verifying the connection URL.
+// ---------------------------------------------------------------------------
+if (
+  process.env.VERCEL_ENV === "production" &&
+  process.env.I_KNOW_THIS_IS_NOT_PROD !== "true"
+) {
+  throw new Error(
+    "[tc-showcase-seed-aeo-seo] Refusing to run against VERCEL_ENV=production. " +
+      "Override with I_KNOW_THIS_IS_NOT_PROD=true only after verifying the connection.",
+  );
+}
+
 const ENGINES: AeoEngine[] = [
   AeoEngine.CHATGPT,
   AeoEngine.PERPLEXITY,

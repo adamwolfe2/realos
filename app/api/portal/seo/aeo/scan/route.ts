@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "No AI engines are configured on the server. Set at least ANTHROPIC_API_KEY (Claude), and optionally OPENAI_API_KEY / PERPLEXITY_API_KEY / GOOGLE_GEMINI_API_KEY.",
+          "No AI engines are configured on the server. Set at least ANTHROPIC_API_KEY (Claude), and optionally OPENAI_API_KEY / PERPLEXITY_API_KEY / GEMINI_API_KEY.",
       },
       { status: 503 },
     );

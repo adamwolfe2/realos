@@ -59,6 +59,24 @@ export type PortfolioReputationMetrics = {
     negative: number;
     mixed: number;
   }>;
+
+  // Per-source scoreboard — one card per channel (Google, Reddit, Yelp,
+  // open web, …) with lifetime count, positive share, and a 12-week
+  // volume trend. Powers the AEO-tracker-style card row at the top of
+  // /portal/reputation.
+  sourceScoreboard: Array<{
+    source: MentionSource;
+    count: number;
+    positive: number;
+    // Denominator for the positive share — mentions with a classified
+    // sentiment. Unclassified rows are excluded so the % is honest.
+    classified: number;
+    weeklyCounts: number[]; // 12 buckets, oldest → newest
+  }>;
+
+  // Most recent completed scan (SUCCEEDED or PARTIAL) across the scoped
+  // properties. ISO string, null when no scan has ever run.
+  lastScanAt: string | null;
 };
 
 export async function loadPortfolioReputationMetrics(
@@ -121,6 +139,8 @@ export async function loadPortfolioReputationMetrics(
     propertyMentions,
     monthlyRaw,
     weeklyRaw,
+    sourceSentimentRows,
+    latestScan,
   ] = await Promise.all([
     prisma.propertyMention.count({ where }),
     prisma.propertyMention.count({
@@ -190,7 +210,19 @@ export async function loadPortfolioReputationMetrics(
           { publishedAt: null, createdAt: { gte: twelveWeeksAgo } },
         ],
       },
-      select: { publishedAt: true, createdAt: true, sentiment: true },
+      select: { publishedAt: true, createdAt: true, sentiment: true, source: true },
+    }),
+    // Positive share per source for the scoreboard cards.
+    prisma.propertyMention.groupBy({
+      by: ["source", "sentiment"],
+      where,
+      _count: { _all: true },
+    }),
+    // "Last scan N ago" — newest completed run across the scoped set.
+    prisma.reputationScan.findFirst({
+      where: { orgId, ...propertyClause, status: { in: ["SUCCEEDED", "PARTIAL"] } },
+      orderBy: { createdAt: "desc" },
+      select: { completedAt: true, createdAt: true },
     }),
   ]);
 
@@ -327,6 +359,47 @@ export async function loadPortfolioReputationMetrics(
     ([weekStart, b]) => ({ weekStart, ...b }),
   );
 
+  // Per-source scoreboard: lifetime count + positive share + 12-week
+  // volume trend, all from queries we already ran.
+  const positiveBySource = new Map<MentionSource, number>();
+  const classifiedBySource = new Map<MentionSource, number>();
+  for (const r of sourceSentimentRows) {
+    if (!r.sentiment) continue;
+    classifiedBySource.set(
+      r.source,
+      (classifiedBySource.get(r.source) ?? 0) + r._count._all,
+    );
+    if (r.sentiment === "POSITIVE") {
+      positiveBySource.set(
+        r.source,
+        (positiveBySource.get(r.source) ?? 0) + r._count._all,
+      );
+    }
+  }
+  const weekKeys = Array.from(weeklyBuckets.keys());
+  const weeklyBySource = new Map<MentionSource, Map<string, number>>();
+  for (const r of weeklyRaw) {
+    const key = mondayKey(r.publishedAt ?? r.createdAt);
+    if (!weeklyBuckets.has(key)) continue;
+    let m = weeklyBySource.get(r.source);
+    if (!m) {
+      m = new Map();
+      weeklyBySource.set(r.source, m);
+    }
+    m.set(key, (m.get(key) ?? 0) + 1);
+  }
+  const sourceScoreboard = sourceRows.map((r) => ({
+    source: r.source,
+    count: r._count._all,
+    positive: positiveBySource.get(r.source) ?? 0,
+    classified: classifiedBySource.get(r.source) ?? 0,
+    weeklyCounts: weekKeys.map(
+      (k) => weeklyBySource.get(r.source)?.get(k) ?? 0,
+    ),
+  }));
+  const lastScanAt =
+    (latestScan?.completedAt ?? latestScan?.createdAt)?.toISOString() ?? null;
+
   return {
     totalMentions,
     newLast30d,
@@ -341,6 +414,8 @@ export async function loadPortfolioReputationMetrics(
     propertyHealth,
     monthlyVolume,
     weeklySentiment,
+    sourceScoreboard,
+    lastScanAt,
   };
 }
 

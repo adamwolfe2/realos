@@ -67,10 +67,9 @@ export function FeedRow({ mention }: { mention: PortfolioReputationFeedItem }) {
   return (
     <li className="py-2.5 px-3 -mx-3 hover:bg-muted/30 transition-colors">
       <div className="flex items-start gap-2.5">
-        {/* Grayscale: nine full-color brand marks per screen read as confetti.
-            The source name sits right next to it, so the logo only needs to
-            aid recognition, not shout. */}
-        <div className="shrink-0 inline-flex items-center justify-center h-9 w-9 rounded-[2px] bg-card border border-border shadow-sm grayscale opacity-70">
+        {/* Full-color brand marks — instant source recognition (Adam
+            2026-07-31: logos must render in color, not grayscale). */}
+        <div className="shrink-0 inline-flex items-center justify-center h-9 w-9 rounded-[2px] bg-card border border-border shadow-sm">
           <SourceLogo
             source={mention.source}
             url={safeUrl}
