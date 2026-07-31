@@ -25,6 +25,10 @@ export function AutoRefresh({ intervalMs = 30_000 }: { intervalMs?: number }) {
   const router = useRouter();
   useEffect(() => {
     const id = setInterval(() => {
+      // Audit P1-5: background tabs were re-running 30-40+ Prisma queries
+      // per tick forever. Skip while hidden; the next visible tick catches
+      // up naturally.
+      if (document.hidden) return;
       router.refresh();
     }, intervalMs);
     return () => clearInterval(id);

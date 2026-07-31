@@ -29,7 +29,7 @@ export function RunDetectorsButton() {
         type="button"
         onClick={handleClick}
         disabled={state === "running"}
-        className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="inline-flex items-center gap-1.5 rounded-[2px] border border-border bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <RefreshCw className={`h-3.5 w-3.5 ${state === "running" ? "animate-spin" : ""}`} />
         {state === "running" ? "Running…" : "Run detectors"}

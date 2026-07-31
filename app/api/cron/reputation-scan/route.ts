@@ -85,7 +85,32 @@ export async function GET(req: NextRequest) {
             },
           });
 
-      const propertiesByOrg = allProperties.reduce<Map<string, typeof allProperties>>(
+      // Audit P0-6: unbounded org×property fan-out with external API
+      // orchestration inside a 300s window. Cap per tick (same 25 cap the
+      // dataforseo-sync sibling uses) and rotate oldest-scanned-first so
+      // every property still refreshes across successive weekly ticks.
+      // ponytail: at ~500 orgs the weekly cadence needs a more frequent
+      // schedule in vercel.json, not a bigger batch.
+      const BATCH_SIZE = 25;
+      const lastScans = allProperties.length === 0
+        ? []
+        : await prisma.reputationScan.groupBy({
+            by: ["propertyId"],
+            where: { propertyId: { in: allProperties.map((p) => p.id) } },
+            _max: { createdAt: true },
+          });
+      const lastScanByProperty = new Map(
+        lastScans.map((s) => [s.propertyId, s._max.createdAt?.getTime() ?? 0]),
+      );
+      const batchedProperties = [...allProperties]
+        .sort(
+          (a, b) =>
+            (lastScanByProperty.get(a.id) ?? 0) -
+            (lastScanByProperty.get(b.id) ?? 0),
+        )
+        .slice(0, BATCH_SIZE);
+
+      const propertiesByOrg = batchedProperties.reduce<Map<string, typeof allProperties>>(
         (acc, p) => {
           const list = acc.get(p.orgId);
           if (list) {
@@ -151,6 +176,8 @@ export async function GET(req: NextRequest) {
         result: NextResponse.json({
           ok: true,
           orgsConsidered: orgs.length,
+          propertiesEligible: allProperties.length,
+          batchSize: BATCH_SIZE,
           propertiesScanned,
           propertiesFailed,
           // Cap the error list so a catastrophic outage doesn't return a

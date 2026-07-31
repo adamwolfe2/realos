@@ -549,7 +549,7 @@ export default async function VisitorsPage({
       {/* Filter controls — single inline row. Window / Status / Sort sit
           side-by-side instead of stacking, with each group flowing to the
           next line only when the viewport actually runs out of width. */}
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-border bg-card px-3 py-2.5">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-[2px] border border-border bg-card px-3 py-2.5">
         <TabGroup
           legend="Window"
           items={WINDOWS.map((w) => ({
@@ -655,7 +655,7 @@ export default async function VisitorsPage({
       ) : noVisitorsAtAll ? (
         <EmptyNoVisitors setupHref={pixelSetupHref} />
       ) : visitors.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-8 text-sm text-muted-foreground text-center">
+        <div className="rounded-[2px] border border-border bg-card p-8 text-sm text-muted-foreground text-center">
           No visitors match these filters. Try widening the time window or the
           status filter.
         </div>
@@ -716,7 +716,7 @@ function LiveChatsPanel({
   }>;
 }) {
   return (
-    <section className="rounded-xl border border-primary/30 bg-primary/[0.03] p-4 space-y-3">
+    <section className="rounded-[2px] border border-primary/30 bg-primary/[0.03] p-4 space-y-3">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <div className="flex items-center gap-1.5 mb-0.5">
@@ -836,17 +836,17 @@ function TabGroup({
       <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground shrink-0">
         {legend}
       </span>
-      <div className="inline-flex items-center rounded-lg border border-border bg-muted/30 p-0.5 overflow-x-auto max-w-full">
+      <div className="inline-flex items-center rounded-[2px] border border-border overflow-x-auto max-w-full">
         {items.map((item) => (
           <Link
             key={item.key}
             href={item.href || "?"}
             scroll={false}
             className={cn(
-              "text-[11px] px-2.5 py-1 rounded-md transition-colors whitespace-nowrap font-medium",
+              "text-[11px] px-2.5 py-1 transition-colors whitespace-nowrap font-medium",
               item.active
-                ? "bg-card shadow-sm text-foreground"
-                : "text-muted-foreground hover:text-foreground",
+                ? "bg-primary text-primary-foreground"
+                : "bg-background text-muted-foreground hover:bg-secondary hover:text-foreground",
             )}
           >
             {item.label}
@@ -890,7 +890,7 @@ function Pager({
       {hasMore ? (
         <Link
           href={`/portal/visitors${buildQuery(selection, { page: page + 1 })}`}
-          className="px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors"
+          className="px-4 py-2 border border-border rounded-[2px] hover:bg-muted transition-colors"
         >
           Load more
         </Link>

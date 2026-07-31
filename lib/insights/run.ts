@@ -163,5 +163,24 @@ export async function runInsightDetectorsForAll(): Promise<InsightsRunSummary[]>
     select: { id: true },
   });
 
-  return Promise.all(orgs.map((org) => runInsightDetectors(org.id)));
+  // Audit P0-7: Promise.all over every org = N concurrent DB bursts + N
+  // concurrent LLM calls per tick. Bounded worker pool instead; one org's
+  // failure no longer rejects the whole run.
+  const CONCURRENCY = 8;
+  const results: InsightsRunSummary[] = [];
+  let next = 0;
+  async function worker(): Promise<void> {
+    while (next < orgs.length) {
+      const org = orgs[next++];
+      try {
+        results.push(await runInsightDetectors(org.id));
+      } catch (err) {
+        console.error(`[insights] run failed for org ${org.id}:`, err);
+      }
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(CONCURRENCY, orgs.length) }, worker),
+  );
+  return results;
 }

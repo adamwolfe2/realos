@@ -228,8 +228,8 @@ export default async function ApplicationsPage({
         unitGroups.length === 0 ? (
           <EmptyState
             title="Once leads start applying, they'll show up here."
-            body="Applications come in via your tenant marketing site, AppFolio sync, or manual entry from a lead detail page."
-            action={{ label: "Open leads", href: "/portal/leads" }}
+            body="Applications sync in from AppFolio. Connect it from the Connect hub to populate this view."
+            action={{ label: "Open Connect hub", href: "/portal/connect" }}
           />
         ) : (
           <UnitApplicationsBoard
@@ -240,8 +240,8 @@ export default async function ApplicationsPage({
       ) : apps.length === 0 ? (
         <EmptyState
           title="Once leads start applying, they'll show up here."
-          body="Applications come in via your tenant marketing site, AppFolio sync, or manual entry from a lead detail page."
-          action={{ label: "Open leads", href: "/portal/leads" }}
+          body="Applications sync in from AppFolio. Connect it from the Connect hub to populate this view."
+          action={{ label: "Open Connect hub", href: "/portal/connect" }}
         />
       ) : (
         <ApplicationsPipelineTable

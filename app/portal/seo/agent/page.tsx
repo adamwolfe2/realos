@@ -154,33 +154,33 @@ export default async function SeoAgentPage({
             <>
               <a
                 href="/api/portal/seo/recommendations/export"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-[2px] border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
                 title="Export open recommendations as CSV"
               >
                 Export CSV
               </a>
               <Link
                 href="/portal/seo/properties"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-[2px] border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
               >
                 Portfolio →
               </Link>
               <Link
                 href="/portal/seo/recommendations"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-[2px] border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
               >
                 Archive →
               </Link>
               <Link
                 href="/portal/seo/drafts"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-[2px] border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
               >
                 Drafts inbox →
               </Link>
             </>
           }
         />
-        <section className="rounded-2xl border border-border bg-card p-8 text-center">
+        <section className="rounded-[2px] border border-border bg-card p-8 text-center">
           <p className="text-sm text-muted-foreground">
             Add a property in /portal/properties to start using the SEO Agent.
           </p>
@@ -605,32 +605,32 @@ export default async function SeoAgentPage({
           <>
             <a
               href="/api/portal/seo/recommendations/export"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-[2px] border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
               title="Export open recommendations as CSV"
             >
               Export CSV
             </a>
             <Link
               href="/portal/seo/properties"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-[2px] border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
             >
               Portfolio →
             </Link>
             <Link
               href="/portal/seo/recommendations"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-[2px] border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
             >
               Archive →
             </Link>
             <Link
               href="/portal/seo/drafts"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-[2px] border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
             >
               Drafts inbox →
             </Link>
             <Link
               href="/portal/seo/aeo"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-[2px] border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
             >
               AI search →
             </Link>
@@ -828,7 +828,7 @@ function FooterNote({
 }) {
   if (dataforSeoOn && googlePlacesOn) return null;
   return (
-    <section className="rounded-xl border border-primary/20 bg-primary/[0.04] p-4">
+    <section className="rounded-[2px] border border-primary/20 bg-primary/[0.04] p-4">
       <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-1">
         Setup pending
       </p>

@@ -63,7 +63,7 @@ export default async function PortalSiteStatusPage({
               href={sr.vercelPreviewUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium"
+              className="rounded-[2px] bg-primary text-primary-foreground px-4 py-2 text-sm font-medium"
             >
               View preview →
             </a>
@@ -73,7 +73,7 @@ export default async function PortalSiteStatusPage({
               href={sr.productionUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-md bg-foreground text-background px-4 py-2 text-sm font-medium"
+              className="rounded-[2px] bg-foreground text-background px-4 py-2 text-sm font-medium"
             >
               Open live site →
             </a>
@@ -89,17 +89,17 @@ export default async function PortalSiteStatusPage({
             {sr.assets.map((a) => (
               <li
                 key={a.id}
-                className="rounded-md border border-border p-2 bg-background"
+                className="rounded-[2px] border border-border p-2 bg-background"
               >
                 {a.mimeType.startsWith("image/") ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={a.blobUrl}
                     alt={a.filename}
-                    className="w-full h-24 object-cover rounded"
+                    className="w-full h-24 object-cover rounded-[2px]"
                   />
                 ) : (
-                  <div className="w-full h-24 rounded bg-muted flex items-center justify-center text-xs font-semibold text-muted-foreground">
+                  <div className="w-full h-24 rounded-[2px] bg-muted flex items-center justify-center text-xs font-semibold text-muted-foreground">
                     {a.mimeType.split("/")[1]?.toUpperCase() ?? "FILE"}
                   </div>
                 )}

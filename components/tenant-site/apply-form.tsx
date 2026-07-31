@@ -16,17 +16,29 @@ export function ApplyForm({
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
+    // Referral attribution (audit P0-3): resident referral links append
+    // ?ref=<propertySlug>. Read at submit time from the live URL — this
+    // component is the single submit path for both apply + contact pages,
+    // so one guard covers every page that renders the form (and avoids
+    // the useSearchParams Suspense requirement on static tenant pages).
+    // Without this the Referrals module could never attribute a lead.
+    const ref =
+      new URLSearchParams(window.location.search).get("ref")?.slice(0, 100) ??
+      "";
     const fd = new FormData(e.currentTarget);
     const payload = {
       orgId,
       propertyId,
-      source: "FORM",
-      sourceDetail: context === "apply" ? "apply_page" : "contact_page",
+      source: ref ? "REFERRAL" : "FORM",
+      sourceDetail: ref
+        ? `referral:${ref}`
+        : context === "apply"
+          ? "apply_page"
+          : "contact_page",
       firstName: str(fd.get("firstName")),
       lastName: str(fd.get("lastName")),
       email: str(fd.get("email")),

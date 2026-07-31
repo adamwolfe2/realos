@@ -119,7 +119,7 @@ export default async function PopupEditorPage({
           etc.) so this whole block is safe to render unconditionally. */}
       <section
         aria-label="Test this popup"
-        className="rounded-xl border border-border bg-background p-4 space-y-3"
+        className="rounded-[2px] border border-border bg-background p-4 space-y-3"
       >
         <header className="flex flex-wrap items-baseline justify-between gap-2">
           <div>

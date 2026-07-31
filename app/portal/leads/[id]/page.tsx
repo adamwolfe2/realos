@@ -333,7 +333,7 @@ export default async function LeadDetailPage({
         {/* Identity block */}
         <div className="flex items-start gap-5 min-w-0">
           {logoUrl ? (
-            <div className="h-14 w-14 shrink-0 rounded-[12px] bg-card ring-1 ring-border overflow-hidden flex items-center justify-center">
+            <div className="h-14 w-14 shrink-0 rounded-[2px] bg-card ring-1 ring-border overflow-hidden flex items-center justify-center">
               <Image
                 src={logoUrl}
                 alt={visitorIdentity?.companyName ?? displayName}
@@ -346,7 +346,7 @@ export default async function LeadDetailPage({
           ) : (
             <div
               className={cn(
-                "h-14 w-14 shrink-0 rounded-[12px] flex items-center justify-center",
+                "h-14 w-14 shrink-0 rounded-[2px] flex items-center justify-center",
                 "text-lg font-semibold",
                 palette
               )}
@@ -843,7 +843,7 @@ function ActionLink({
   icon: React.ReactNode;
 }) {
   const base = cn(
-    "flex items-center gap-2 rounded-[10px] px-3 py-2 text-xs font-medium",
+    "flex items-center gap-2 rounded-[2px] px-3 py-2 text-xs font-medium",
     "bg-card ring-1 ring-border",
     "transition-colors duration-200"
   );

@@ -213,7 +213,7 @@ export function RenewalsClient({ buckets, upcoming }: Props) {
                         </td>
                         <td className="px-2 py-2 text-right">
                           <Link
-                            href={`/portal/properties/${l.propertyId}`}
+                            href={`/portal/properties/${l.propertyId}?tab=renewals`}
                             className="text-[11px] font-medium text-foreground hover:text-primary"
                           >
                             Open →
@@ -243,7 +243,7 @@ export function RenewalsClient({ buckets, upcoming }: Props) {
         headerActions={
           openLease ? (
             <Link
-              href={`/portal/properties/${openLease.propertyId}`}
+              href={`/portal/properties/${openLease.propertyId}?tab=renewals`}
               className="inline-flex items-center gap-1 rounded-[2px] border border-border bg-background hover:bg-muted px-2 py-1 text-[11px] font-medium text-foreground transition-colors"
             >
               Open property

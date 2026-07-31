@@ -312,9 +312,16 @@ export function MarketplaceClient({
                     isNotified={notified.has(m.key)}
                     onActivate={() => toggleModule(m.key, true)}
                     onDeactivate={() => toggleModule(m.key, false)}
-                    onNotifyMe={() =>
-                      setNotified((n) => new Set(n).add(m.key))
-                    }
+                    onNotifyMe={() => {
+                      // Optimistic UI + real persistence (audit: this
+                      // button previously wrote nothing anywhere).
+                      setNotified((n) => new Set(n).add(m.key));
+                      void fetch("/api/portal/marketplace/interest", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ moduleKey: m.key }),
+                      }).catch(() => {});
+                    }}
                   />
                 ))}
               </div>

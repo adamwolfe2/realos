@@ -40,16 +40,16 @@ export function HeadlineCallout({ signal, bare = false }: HeadlineCalloutProps) 
 
   const accent =
     signal.tone === "positive"
-      ? "border-emerald-200 bg-emerald-50/40"
+      ? "border-[#24a148]/30 bg-[rgba(36,161,72,0.10)]"
       : signal.tone === "negative"
-        ? "border-rose-200 bg-rose-50/40"
+        ? "border-[#da1e28]/30 bg-[rgba(218,30,40,0.10)]"
         : "border-border bg-card";
 
   const iconColor =
     signal.tone === "positive"
-      ? "text-emerald-600"
+      ? "text-[#24a148]"
       : signal.tone === "negative"
-        ? "text-rose-600"
+        ? "text-[#da1e28]"
         : "text-muted-foreground";
 
   const kindLabel = KIND_LABELS[signal.kind] ?? "Signal";

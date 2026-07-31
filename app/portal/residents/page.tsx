@@ -378,7 +378,7 @@ export default async function ResidentsPage({
                       <td className="px-4 md:px-2 py-2 text-foreground">{name}</td>
                       <td className="px-2 py-2 text-foreground">
                         <Link
-                          href={`/portal/properties/${r.property.id}`}
+                          href={`/portal/properties/${r.property.id}?tab=residents`}
                           className="hover:text-primary"
                         >
                           {r.property.name}
@@ -437,7 +437,7 @@ export default async function ResidentsPage({
             getRowHref={(r) =>
               r.leadId
                 ? `/portal/leads/${r.leadId}`
-                : `/portal/properties/${r.property.id}`
+                : `/portal/properties/${r.property.id}?tab=residents`
             }
             columns={[
               {

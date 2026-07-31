@@ -316,7 +316,7 @@ export default async function PropertyDetail({
         </Link>
         <Link
           href={`/portal/properties/${property.id}/snapshot`}
-          className="inline-flex items-center rounded-md border border-border bg-card px-3 py-1.5 text-[12px] font-medium text-foreground transition-colors hover:bg-muted"
+          className="inline-flex items-center rounded-[2px] border border-border bg-card px-3 py-1.5 text-[12px] font-medium text-foreground transition-colors hover:bg-muted"
         >
           Marketing snapshot →
         </Link>
@@ -502,7 +502,7 @@ function MarketIntelligenceSkeleton() {
   return (
     <div className="ls-card p-5 animate-pulse" aria-label="Loading market intelligence">
       <div className="h-3 w-32 bg-muted/60 rounded mb-4" />
-      <div className="rounded-xl border border-[var(--hair)] p-5 space-y-3">
+      <div className="rounded-[2px] border border-[var(--hair)] p-5 space-y-3">
         <div className="h-2.5 w-28 bg-muted/60 rounded" />
         <div className="h-10 w-44 bg-muted rounded" />
         <div className="h-3 w-56 bg-secondary rounded" />
@@ -523,7 +523,7 @@ function PropertyTabsSkeleton() {
         {Array.from({ length: 5 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-xl border border-border bg-card p-4 space-y-2"
+            className="rounded-[2px] border border-border bg-card p-4 space-y-2"
           >
             <div className="h-3 w-20 bg-muted/60 rounded" />
             <div className="h-7 w-16 bg-muted rounded" />
@@ -535,7 +535,7 @@ function PropertyTabsSkeleton() {
         {Array.from({ length: 2 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-xl border border-border bg-card p-5 space-y-3"
+            className="rounded-[2px] border border-border bg-card p-5 space-y-3"
           >
             <div className="h-4 w-32 bg-muted rounded" />
             {Array.from({ length: 4 }).map((_, j) => (
@@ -648,18 +648,18 @@ async function IntelligenceSection({
 
 function IntelligenceSkeleton() {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 animate-pulse">
+    <div className="rounded-[2px] border border-border bg-card p-5 animate-pulse">
       <div className="flex items-center gap-2.5 mb-3">
-        <div className="h-6 w-6 rounded-md bg-muted" />
+        <div className="h-6 w-6 rounded-[2px] bg-muted" />
         <div className="h-4 w-48 bg-muted rounded" />
       </div>
       <div className="space-y-2">
         {Array.from({ length: 3 }).map((_, i) => (
           <div
             key={i}
-            className="flex items-center gap-3 rounded-lg border border-border/60 p-3"
+            className="flex items-center gap-3 rounded-[2px] border border-border/60 p-3"
           >
-            <div className="h-9 w-9 rounded-lg bg-muted shrink-0" />
+            <div className="h-9 w-9 rounded-[2px] bg-muted shrink-0" />
             <div className="flex-1 space-y-1.5">
               <div className="h-3 w-3/4 bg-muted rounded" />
               <div className="h-2.5 w-1/2 bg-muted/60 rounded" />

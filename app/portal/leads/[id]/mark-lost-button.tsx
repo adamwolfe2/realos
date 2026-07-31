@@ -33,7 +33,7 @@ export function MarkLostButton({ leadId }: { leadId: string }) {
         onClick={handleClick}
         disabled={pending}
         className={cn(
-          "w-full text-left rounded-[10px] px-3 py-2 text-xs font-medium",
+          "w-full text-left rounded-[2px] px-3 py-2 text-xs font-medium",
           "text-[var(--error)] bg-card ring-1 ring-border",
           "hover:bg-[var(--error)]/8 transition-colors",
           pending && "opacity-60 cursor-not-allowed"

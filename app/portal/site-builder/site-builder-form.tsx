@@ -394,7 +394,7 @@ export function SiteBuilderForm({
       >
         <a
           href="/portal/chatbot"
-          className="inline-flex items-center gap-1.5 rounded-[8px] border border-border bg-card px-3 py-2 text-sm font-medium text-foreground hover:border-primary/40"
+          className="inline-flex items-center gap-1.5 rounded-[2px] border border-border bg-card px-3 py-2 text-sm font-medium text-foreground hover:border-primary/40"
         >
           Open chatbot settings
         </a>
@@ -468,7 +468,7 @@ export function SiteBuilderForm({
               href={previewUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs px-3 py-1.5 border border-border rounded-md hover:bg-secondary"
+              className="text-xs px-3 py-1.5 border border-border rounded-[2px] hover:bg-secondary"
             >
               Preview site
             </a>
@@ -476,14 +476,14 @@ export function SiteBuilderForm({
               type="button"
               onClick={discard}
               disabled={!isDirty || pending}
-              className="text-xs px-3 py-1.5 border border-border rounded-md hover:bg-secondary disabled:opacity-40"
+              className="text-xs px-3 py-1.5 border border-border rounded-[2px] hover:bg-secondary disabled:opacity-40"
             >
               Discard
             </button>
             <button
               type="submit"
               disabled={pending || !isDirty || hasValidationErrors}
-              className="text-xs px-3 py-1.5 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-40"
+              className="text-xs px-3 py-1.5 bg-primary text-primary-foreground rounded-[2px] hover:bg-primary/90 disabled:opacity-40"
             >
               {pending ? "Saving..." : hasValidationErrors ? "Fix errors first" : "Save changes"}
             </button>
@@ -554,7 +554,7 @@ function Field({
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`rounded-md border bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+        className={`rounded-[2px] border bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
           error ? "border-destructive" : "border-border"
         }`}
       />
@@ -596,7 +596,7 @@ function TextArea({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={rows}
-        className={`rounded-md border bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+        className={`rounded-[2px] border bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
           error ? "border-destructive" : "border-border"
         }`}
       />
@@ -622,7 +622,7 @@ function Toggle({
 }) {
   return (
     <label
-      className={`flex items-center justify-between gap-3 border border-border bg-card rounded-md px-3 py-2 text-sm ${
+      className={`flex items-center justify-between gap-3 border border-border bg-card rounded-[2px] px-3 py-2 text-sm ${
         disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-muted/30"
       }`}
     >

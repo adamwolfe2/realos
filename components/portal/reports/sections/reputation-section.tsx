@@ -253,7 +253,7 @@ function ReportMentionCard({
     m.sentiment === "POSITIVE"
       ? "bg-primary/10 text-primary border-primary/20"
       : m.sentiment === "NEGATIVE"
-        ? "bg-primary text-primary-foreground border-primary"
+        ? "bg-[rgba(218,30,40,0.10)] text-[#da1e28] border-[#da1e28]/30"
         : m.sentiment === "MIXED"
           ? "bg-muted text-foreground border-border"
           : "bg-muted text-muted-foreground border-border";
@@ -292,7 +292,7 @@ function ReportMentionCard({
               </span>
             ) : null}
             {m.flagged ? (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[10px] font-semibold uppercase tracking-wider border bg-primary text-primary-foreground border-primary">
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[10px] font-semibold uppercase tracking-wider border bg-[rgba(218,30,40,0.10)] text-[#da1e28] border-[#da1e28]/30">
                 Flagged
               </span>
             ) : null}

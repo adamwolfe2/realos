@@ -50,9 +50,9 @@ export default async function NewPopupPage() {
             <input type="hidden" name="name" value={t.defaults.name} />
             <button
               type="submit"
-              className="group text-left rounded-xl border border-border bg-card overflow-hidden hover:border-primary/40 hover:shadow-[0_8px_24px_-12px_rgba(15,23,42,0.18)] transition-all focus:outline-none focus:ring-2 focus:ring-primary/40"
+              className="group text-left rounded-[2px] border border-border bg-card overflow-hidden hover:border-primary/40 hover:shadow-[0_8px_24px_-12px_rgba(15,23,42,0.18)] transition-all focus:outline-none focus:ring-2 focus:ring-primary/40"
             >
-              <div className="aspect-[16/10] bg-gradient-to-br from-[#F8FAFC] to-[#EFF6FF] border-b border-border relative overflow-hidden">
+              <div className="aspect-[16/10] bg-secondary border-b border-border relative overflow-hidden">
                 <PopupTemplateThumbnail template={t} />
               </div>
               <div className="p-4 space-y-1.5">

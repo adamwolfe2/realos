@@ -38,7 +38,7 @@ export function AddNoteForm({ leadId }: { leadId: string }) {
         rows={3}
         placeholder="Log a call, email, or context about this lead."
         className={cn(
-          "w-full resize-none rounded-[10px] bg-card px-3 py-2 text-sm",
+          "w-full resize-none rounded-[2px] bg-card px-3 py-2 text-sm",
           "text-foreground placeholder:text-muted-foreground",
           "ring-1 ring-border",
           "focus:outline-none focus:ring-primary",
@@ -50,7 +50,7 @@ export function AddNoteForm({ leadId }: { leadId: string }) {
           type="submit"
           disabled={pending || !body.trim()}
           className={cn(
-            "rounded-[10px] bg-primary px-3 py-1.5 text-xs font-medium",
+            "rounded-[2px] bg-primary px-3 py-1.5 text-xs font-medium",
             "text-background",
             "transition-colors duration-200",
             "hover:bg-[hsl(var(--primary)/0.9)]",

@@ -311,6 +311,16 @@ export default async function ReportsListPage({
         title="Weekly and monthly reviews"
         description="Freeze the numbers, add a note, share a clean link. Nothing sends without your review."
         actions={
+          <>
+            {/* Persistent entry to cadence/auto-send (audit P1-11: the
+                automation pitch was invisible — the settings page existed
+                with no nav path from here). */}
+            <Link
+              href="/portal/reports/settings"
+              className="inline-flex items-center gap-1 self-end rounded-[2px] border border-border bg-background hover:bg-muted px-2.5 py-1.5 text-[12px] font-medium text-foreground transition-colors"
+            >
+              Cadence &amp; auto-send
+            </Link>
           <form
             action={generateReport}
             className="flex flex-wrap items-end gap-2"
@@ -368,6 +378,7 @@ export default async function ReportsListPage({
               Generate report
             </button>
           </form>
+          </>
         }
       />
 

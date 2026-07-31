@@ -322,9 +322,9 @@ export default async function BillingPage() {
             <span className="font-semibold text-foreground">
               {humanizeEnum(org.subscriptionTier)}
             </span>{" "}
-            tier is provisioned, but your account manager still needs to
-            activate the Stripe subscription before billing runs. The
-            portal is fully usable in the meantime.
+            tier is provisioned — billing activates once your Stripe
+            subscription starts. The portal is fully usable in the
+            meantime.
           </p>
           <p className="text-xs text-muted-foreground mt-3">
             Contact{" "}
@@ -348,10 +348,9 @@ export default async function BillingPage() {
             Billing isn&apos;t set up yet
           </h2>
           <p className="text-sm text-muted-foreground mt-2 max-w-lg leading-snug">
-            Your account manager will provision your Stripe subscription
-            when your contract is countersigned. Once that&apos;s done,
-            this page will show your tier, retainer, and let you manage
-            payment methods directly from Stripe.
+            Pick a plan to start your subscription. Once active, this
+            page shows your tier, invoices, and lets you manage payment
+            methods directly from Stripe.
           </p>
           <p className="text-xs text-muted-foreground mt-3">
             Questions?{" "}

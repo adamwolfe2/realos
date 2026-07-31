@@ -340,7 +340,7 @@ export default async function WorkOrdersPage({
             {hotspots.map((h) => (
               <li key={h.propertyId} className="flex items-center gap-2">
                 <Link
-                  href={`/portal/properties/${h.propertyId}`}
+                  href={`/portal/properties/${h.propertyId}?tab=work-orders`}
                   className="flex-1 text-xs text-foreground hover:text-primary truncate"
                 >
                   {h.name}
@@ -402,7 +402,7 @@ export default async function WorkOrdersPage({
                         {items.slice(0, 50).map((w) => (
                           <li key={w.id}>
                             <Link
-                              href={`/portal/properties/${w.property.id}`}
+                              href={`/portal/properties/${w.property.id}?tab=work-orders`}
                               className="block rounded-[2px] border border-border bg-card hover:border-primary/40 px-2 py-1.5"
                             >
                               <div className="flex items-center justify-between gap-1.5">

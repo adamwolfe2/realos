@@ -12,6 +12,10 @@ import {
   MessageSquare,
   Star,
   BookOpen,
+  Building2,
+  CalendarClock,
+  UserCheck,
+  Wrench,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -61,11 +65,17 @@ const CATEGORIES: Category[] = [
   { id: "chatbot", label: "Chatbot", icon: MessageSquare },
   { id: "knowledge-base", label: "Knowledge Base", icon: BookOpen },
   { id: "reputation", label: "Reputation", icon: Star },
+  // Operations tabs — fully built panels that were previously unreachable
+  // (2026-07-31 production-readiness audit P0-2: finished features had no
+  // nav entry). Occupancy stays gated by showOccupancy.
+  { id: "residents", label: "Residents", icon: UserCheck },
+  { id: "renewals", label: "Renewals", icon: CalendarClock },
+  { id: "work-orders", label: "Work Orders", icon: Wrench },
+  { id: "occupancy", label: "Occupancy", icon: Building2 },
 ];
 
-// Map every TabKey → the top-level tab it belongs to. Visible tabs map to
-// themselves; hidden Operations-group tabs (residents/renewals/occupancy/
-// work-orders) fall back to overview so deep links don't 404.
+// Map every TabKey → the top-level tab it belongs to. Every tab now maps
+// to itself — the Operations tabs are first-class nav items.
 const TAB_TO_CATEGORY: Record<TabKey, TabKey> = {
   overview: "overview",
   onboarding: "onboarding",
@@ -75,10 +85,10 @@ const TAB_TO_CATEGORY: Record<TabKey, TabKey> = {
   chatbot: "chatbot",
   "knowledge-base": "knowledge-base",
   reputation: "reputation",
-  residents: "overview",
-  renewals: "overview",
-  occupancy: "overview",
-  "work-orders": "overview",
+  residents: "residents",
+  renewals: "renewals",
+  occupancy: "occupancy",
+  "work-orders": "work-orders",
 };
 
 function PropertyTabsInner({
@@ -115,13 +125,17 @@ function PropertyTabsInner({
     setActive(all.includes(t) ? t : "overview");
   }, [searchParams]);
 
-  // Hide the Ads tab when both ad modules are off org-wide — an empty Ads
-  // tab reads as broken. showOccupancy is retained for API compatibility
-  // with the (currently hidden) Operations tabs.
-  void showOccupancy;
+  // Hide the Ads tab when both ad modules are off org-wide, and the
+  // Occupancy tab when the org doesn't track occupancy — an empty tab
+  // reads as broken.
   const categories = React.useMemo<Category[]>(
-    () => (showAds ? CATEGORIES : CATEGORIES.filter((c) => c.id !== "ads")),
-    [showAds],
+    () =>
+      CATEGORIES.filter(
+        (c) =>
+          (c.id !== "ads" || showAds) &&
+          (c.id !== "occupancy" || showOccupancy),
+      ),
+    [showAds, showOccupancy],
   );
 
   const activeCategoryId = TAB_TO_CATEGORY[active];

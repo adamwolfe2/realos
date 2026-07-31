@@ -280,7 +280,7 @@ export default function NotificationsPage() {
             type="button"
             onClick={() => setFilter(f.value)}
             className={cn(
-              "px-3 py-1.5 text-xs font-medium rounded-md border transition-colors",
+              "px-3 py-1.5 text-xs font-medium rounded-[2px] border transition-colors",
               filter === f.value
                 ? "bg-primary text-primary-foreground border-foreground"
                 : "bg-card text-muted-foreground border-border hover:text-foreground hover:border-foreground/40",
@@ -291,7 +291,7 @@ export default function NotificationsPage() {
         ))}
       </div>
 
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="ls-card overflow-hidden">
         {loading ? (
           <div className="animate-pulse divide-y divide-border">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -317,14 +317,14 @@ export default function NotificationsPage() {
             <button
               type="button"
               onClick={() => setReloadKey((k) => k + 1)}
-              className="mt-2 inline-flex items-center rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:border-foreground/40 transition-colors"
+              className="mt-2 inline-flex items-center rounded-[2px] border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:border-foreground/40 transition-colors"
             >
               Retry
             </button>
           </div>
         ) : visible.length === 0 ? (
           <div className="px-6 py-12 text-center flex flex-col items-center gap-1.5">
-            <div className="mb-1 inline-flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
+            <div className="mb-1 inline-flex h-9 w-9 items-center justify-center rounded-[2px] bg-[#edf5ff] text-[#0f62fe]">
               <CheckCheck className="h-4 w-4" aria-hidden="true" />
             </div>
             <p className="text-sm font-semibold text-foreground">

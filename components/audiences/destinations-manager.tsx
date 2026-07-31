@@ -103,7 +103,7 @@ export function DestinationsManager({
           variant={adding ? "outline" : "default"}
           size="sm"
           onClick={() => setAdding((v) => !v)}
-          className="rounded-md"
+          className="rounded-[2px]"
         >
           <Plus />
           {adding ? "Cancel" : "Add destination"}
@@ -118,7 +118,7 @@ export function DestinationsManager({
       ) : null}
 
       {destinations.length === 0 && !adding ? (
-        <div className="text-sm text-muted-foreground py-8 text-center border border-dashed border-border rounded-md">
+        <div className="text-sm text-muted-foreground py-8 text-center border border-dashed border-border rounded-[2px]">
           No destinations yet. Add a webhook URL or pick a connected ad
           account to start pushing.
         </div>
@@ -188,7 +188,7 @@ function DestinationRow({
         <div className="flex items-center gap-2.5 min-w-0">
           <span
             className={cn(
-              "inline-flex h-8 w-8 items-center justify-center rounded-md shrink-0",
+              "inline-flex h-8 w-8 items-center justify-center rounded-[2px] shrink-0",
               kind.accent,
             )}
           >
@@ -232,7 +232,7 @@ function DestinationRow({
           onClick={handleDelete}
           disabled={pending}
           aria-label="Delete destination"
-          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-rose-50 hover:text-rose-700 transition-colors"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-[2px] text-muted-foreground hover:bg-rose-50 hover:text-rose-700 transition-colors"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>
@@ -326,7 +326,7 @@ function RunDestinationButton({
           setOpen((v) => !v);
         }}
         className={cn(
-          "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors",
+          "inline-flex items-center gap-1 rounded-[2px] px-2 py-1 text-xs font-medium transition-colors",
           open
             ? "bg-primary text-primary-foreground"
             : "text-foreground bg-muted hover:bg-primary/10 hover:text-primary",
@@ -352,7 +352,7 @@ function RunDestinationButton({
           role="listbox"
           aria-label={`Segments for ${destination.name}`}
           className={cn(
-            "absolute right-0 top-full mt-1 z-30 w-72 rounded-md border border-border bg-card shadow-lg",
+            "absolute right-0 top-full mt-1 z-30 w-72 rounded-[2px] border border-border bg-card shadow-lg",
             "py-1",
           )}
         >
@@ -481,7 +481,7 @@ function AddDestinationForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-muted/30 border border-border rounded-md p-5 space-y-4"
+      className="bg-muted/30 border border-border rounded-[2px] p-5 space-y-4"
     >
       <div>
         <Label className="text-xs">Pick a destination</Label>
@@ -494,7 +494,7 @@ function AddDestinationForm({
                 type="button"
                 onClick={() => setType(kind.id)}
                 className={cn(
-                  "text-left p-4 rounded-md border transition-all",
+                  "text-left p-4 rounded-[2px] border transition-all",
                   active
                     ? "border-primary bg-primary/5 ring-2 ring-primary/20"
                     : "border-border bg-card hover:border-foreground/30",
@@ -503,7 +503,7 @@ function AddDestinationForm({
                 <div className="flex items-start justify-between gap-2">
                   <span
                     className={cn(
-                      "inline-flex h-9 w-9 items-center justify-center rounded-md",
+                      "inline-flex h-9 w-9 items-center justify-center rounded-[2px]",
                       kind.accent,
                     )}
                   >
@@ -511,10 +511,10 @@ function AddDestinationForm({
                   </span>
                   <span
                     className={cn(
-                      "inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold tracking-wide",
+                      "inline-flex items-center rounded-[2px] px-1.5 py-0.5 text-[10px] font-semibold tracking-wide",
                       kind.badge === "Live"
-                        ? "text-emerald-700 bg-emerald-50"
-                        : "text-amber-700 bg-amber-50",
+                        ? "text-[#24a148] bg-[rgba(36,161,72,0.10)]"
+                        : "text-[#8a6d00] bg-[rgba(241,194,27,0.16)]",
                     )}
                   >
                     {kind.badge}
@@ -603,7 +603,7 @@ function AddDestinationForm({
               id="d-acct"
               value={adAccountId}
               onChange={(e) => setAdAccountId(e.target.value)}
-              className="mt-1 flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-xs"
+              className="mt-1 flex h-9 w-full rounded-[2px] border border-input bg-background px-3 text-sm shadow-xs"
               required
             >
               <option value="">Choose…</option>
@@ -624,7 +624,7 @@ function AddDestinationForm({
           type="submit"
           disabled={pending}
           size="sm"
-          className="rounded-md"
+          className="rounded-[2px]"
         >
           {pending ? "Saving…" : "Save destination"}
         </Button>
@@ -633,7 +633,7 @@ function AddDestinationForm({
           variant="ghost"
           size="sm"
           onClick={onDone}
-          className="rounded-md"
+          className="rounded-[2px]"
         >
           Cancel
         </Button>

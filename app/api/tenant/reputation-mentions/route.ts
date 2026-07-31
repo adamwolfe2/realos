@@ -63,7 +63,16 @@ export async function GET(req: NextRequest) {
   const { propertyId, cursor, limit, sentiment, source, unreviewed, flagged } =
     parsed.data;
 
-  // Verify the property belongs to the scope.
+  // Verify the property belongs to the scope — including per-user property
+  // restrictions (audit P1-2: allowedPropertyIds was skipped here, letting
+  // a property-restricted user read mentions on other properties). 404,
+  // not 403, so restricted users can't probe property existence.
+  if (
+    scope.allowedPropertyIds &&
+    !scope.allowedPropertyIds.includes(propertyId)
+  ) {
+    return NextResponse.json({ error: "Property not found" }, { status: 404 });
+  }
   const property = await prisma.property.findFirst({
     where: { id: propertyId, ...tenantWhere(scope) },
     select: { id: true },

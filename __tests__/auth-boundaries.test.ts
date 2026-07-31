@@ -37,9 +37,9 @@ describe("auth boundaries", () => {
       expect(body.error).toBe("Unauthorized");
     });
 
-    it("returns 403 when user is not ADMIN or OPS", async () => {
+    it("returns 403 when user is not an agency admin role", async () => {
       mockAuth.mockResolvedValue({ userId: "user-1" });
-      mockPrisma.user.findUnique.mockResolvedValue({ role: "CLIENT" });
+      mockPrisma.user.findUnique.mockResolvedValue({ role: "CLIENT_OWNER" });
 
       const result = await requireAdmin();
 
@@ -60,9 +60,12 @@ describe("auth boundaries", () => {
       expect(body.error).toBe("Forbidden");
     });
 
-    it("returns userId and null error for ADMIN role", async () => {
+    // Audit P1-1 (2026-07-31): these tests previously mocked "ADMIN"/"OPS"
+    // — role strings that don't exist in the UserRole enum — which masked
+    // the fact that every real user was 403'd. Real enum values only.
+    it("returns userId and null error for AGENCY_OWNER role", async () => {
       mockAuth.mockResolvedValue({ userId: "admin-1" });
-      mockPrisma.user.findUnique.mockResolvedValue({ role: "ADMIN" });
+      mockPrisma.user.findUnique.mockResolvedValue({ role: "AGENCY_OWNER" });
 
       const result = await requireAdmin();
 
@@ -70,9 +73,9 @@ describe("auth boundaries", () => {
       expect(result.userId).toBe("admin-1");
     });
 
-    it("returns userId and null error for OPS role", async () => {
+    it("returns userId and null error for AGENCY_ADMIN role", async () => {
       mockAuth.mockResolvedValue({ userId: "ops-1" });
-      mockPrisma.user.findUnique.mockResolvedValue({ role: "OPS" });
+      mockPrisma.user.findUnique.mockResolvedValue({ role: "AGENCY_ADMIN" });
 
       const result = await requireAdmin();
 
@@ -80,9 +83,9 @@ describe("auth boundaries", () => {
       expect(result.userId).toBe("ops-1");
     });
 
-    it("rejects SALES_REP role", async () => {
+    it("rejects AGENCY_OPERATOR role", async () => {
       mockAuth.mockResolvedValue({ userId: "rep-1" });
-      mockPrisma.user.findUnique.mockResolvedValue({ role: "SALES_REP" });
+      mockPrisma.user.findUnique.mockResolvedValue({ role: "AGENCY_OPERATOR" });
 
       const result = await requireAdmin();
 
@@ -104,9 +107,9 @@ describe("auth boundaries", () => {
       expect(body.error).toBe("Unauthorized");
     });
 
-    it("allows ADMIN role", async () => {
+    it("allows AGENCY_OWNER role", async () => {
       mockAuth.mockResolvedValue({ userId: "admin-1" });
-      mockPrisma.user.findUnique.mockResolvedValue({ role: "ADMIN" });
+      mockPrisma.user.findUnique.mockResolvedValue({ role: "AGENCY_OWNER" });
 
       const result = await requireAdminOrRep();
 
@@ -114,9 +117,9 @@ describe("auth boundaries", () => {
       expect(result.userId).toBe("admin-1");
     });
 
-    it("allows OPS role", async () => {
+    it("allows AGENCY_ADMIN role", async () => {
       mockAuth.mockResolvedValue({ userId: "ops-1" });
-      mockPrisma.user.findUnique.mockResolvedValue({ role: "OPS" });
+      mockPrisma.user.findUnique.mockResolvedValue({ role: "AGENCY_ADMIN" });
 
       const result = await requireAdminOrRep();
 
@@ -124,9 +127,9 @@ describe("auth boundaries", () => {
       expect(result.userId).toBe("ops-1");
     });
 
-    it("allows SALES_REP role", async () => {
+    it("allows AGENCY_OPERATOR role", async () => {
       mockAuth.mockResolvedValue({ userId: "rep-1" });
-      mockPrisma.user.findUnique.mockResolvedValue({ role: "SALES_REP" });
+      mockPrisma.user.findUnique.mockResolvedValue({ role: "AGENCY_OPERATOR" });
 
       const result = await requireAdminOrRep();
 

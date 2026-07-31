@@ -58,8 +58,11 @@ describe("require-admin resolves the caller by clerkUserId", () => {
     mockAuth.mockResolvedValue({ userId: CLERK_ID });
   });
 
+  // Roles updated 2026-07-31 (audit P1-1): the helper now checks real
+  // UserRole enum values (AGENCY_*), not the phantom "ADMIN"/"OPS"/
+  // "SALES_REP" strings that 403'd everyone in production.
   it("requireAdmin queries User.clerkUserId, never User.id", async () => {
-    seedUser("ADMIN");
+    seedUser("AGENCY_OWNER");
 
     await requireAdmin();
 
@@ -69,7 +72,7 @@ describe("require-admin resolves the caller by clerkUserId", () => {
   });
 
   it("requireAdmin admits an admin whose internal id differs from the Clerk id", async () => {
-    seedUser("ADMIN");
+    seedUser("AGENCY_ADMIN");
 
     const result = await requireAdmin();
 
@@ -89,7 +92,7 @@ describe("require-admin resolves the caller by clerkUserId", () => {
   });
 
   it("requireAdminOrRep queries User.clerkUserId and admits a rep", async () => {
-    seedUser("SALES_REP");
+    seedUser("AGENCY_OPERATOR");
 
     const result = await requireAdminOrRep();
 
@@ -111,7 +114,7 @@ describe("require-admin resolves the caller by clerkUserId", () => {
   });
 
   it("an unknown Clerk id resolves no row and is refused", async () => {
-    seedUser("ADMIN");
+    seedUser("AGENCY_OWNER");
     mockAuth.mockResolvedValue({ userId: "user_strangerDanger" });
 
     const result = await requireAdmin();

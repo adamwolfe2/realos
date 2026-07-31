@@ -12,7 +12,10 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
-const ADMIN_ROLES = ["ADMIN", "OPS"] as const;
+// Audit P1-1 (2026-07-31): these previously checked "ADMIN"/"OPS", which
+// do not exist in the UserRole enum — every route behind this helper was
+// permanently 403 for everyone. The real agency-side roles are below.
+const ADMIN_ROLES = ["AGENCY_OWNER", "AGENCY_ADMIN"] as const;
 
 export async function requireAdmin(): Promise<
   | { userId: string; error: null }
@@ -66,7 +69,11 @@ export async function requireAdminOrRep(): Promise<
     select: { role: true },
   });
 
-  if (!user || !["ADMIN", "OPS", "SALES_REP"].includes(user.role)) {
+  // AGENCY_OPERATOR is the limited agency role (the old "SALES_REP" intent).
+  if (
+    !user ||
+    !["AGENCY_OWNER", "AGENCY_ADMIN", "AGENCY_OPERATOR"].includes(user.role)
+  ) {
     return {
       userId: null,
       error: NextResponse.json({ error: "Forbidden" }, { status: 403 }),

@@ -91,7 +91,7 @@ export default async function SettingsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Settings"
-        description="Update company info and brand tokens. Module selection and plan tier are managed by your account manager."
+        description="Update company info and brand tokens. Manage modules in the Marketplace and your plan in Billing."
       />
 
       <SettingsForm

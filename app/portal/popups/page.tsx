@@ -70,7 +70,7 @@ export default async function PopupsListPage({
         actions={
           <Link
             href="/portal/popups/new"
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3.5 py-2 text-sm font-semibold hover:bg-primary/90 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-[2px] bg-primary text-primary-foreground px-3.5 py-2 text-sm font-semibold hover:bg-primary/90 transition-colors"
           >
             <Plus className="h-3.5 w-3.5" />
             New popup

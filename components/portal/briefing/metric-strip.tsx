@@ -125,7 +125,9 @@ function toneFor(delta: number | null, good: "up" | "down") {
   if (delta === null) return "text-muted-foreground bg-muted";
   if (delta === 0) return "text-muted-foreground bg-muted";
   const isGood = good === "up" ? delta > 0 : delta < 0;
+  // Bad deltas get the red token (audit P1-4): the briefing's whole job is
+  // flagging what got worse — rendering bad identically to flat hid it.
   return isGood
     ? "text-primary bg-primary/10"
-    : "text-muted-foreground bg-muted";
+    : "text-[#da1e28] bg-[rgba(218,30,40,0.10)]";
 }

@@ -30,7 +30,7 @@ export function StatCard({
         // Premium-pass: rounded-xl + softer hover shadow + bumped padding
         // (p-3 → p-4) to match the dashboard KpiTile so the SEO and
         // Attribution stat strips read as the same product surface.
-        "rounded-xl border p-4 transition-all hover:shadow-[0_2px_8px_rgba(15,23,42,0.04)]",
+        "rounded-[2px] border p-4 transition-all hover:shadow-[0_2px_8px_rgba(15,23,42,0.04)]",
         toneClass,
         className,
       )}

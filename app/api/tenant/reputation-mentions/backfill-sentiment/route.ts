@@ -75,9 +75,24 @@ export async function POST(req: NextRequest) {
     propertyId?: string;
   };
 
-  const propertyClause: Prisma.PropertyMentionWhereInput =
+  // Audit P1-2: honor per-user property restrictions — previously a
+  // property-restricted user could trigger billed AI classification work
+  // across the whole org's mentions.
+  const requestedPropertyId =
     body.propertyId && typeof body.propertyId === "string"
-      ? { propertyId: body.propertyId }
+      ? body.propertyId
+      : null;
+  if (
+    requestedPropertyId &&
+    scope.allowedPropertyIds &&
+    !scope.allowedPropertyIds.includes(requestedPropertyId)
+  ) {
+    return NextResponse.json({ error: "Property not found" }, { status: 404 });
+  }
+  const propertyClause: Prisma.PropertyMentionWhereInput = requestedPropertyId
+    ? { propertyId: requestedPropertyId }
+    : scope.allowedPropertyIds
+      ? { propertyId: { in: scope.allowedPropertyIds } }
       : {};
 
   const unclassified = await prisma.propertyMention.findMany({
