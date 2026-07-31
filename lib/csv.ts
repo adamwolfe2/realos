@@ -2,9 +2,15 @@
 
 export function csvField(raw: unknown): string {
   if (raw == null) return "";
-  const s = typeof raw === "string" ? raw : String(raw);
+  let s = typeof raw === "string" ? raw : String(raw);
   if (s === "") return "";
-  const needsQuote = /[,"\n\r]/.test(s);
+  // Formula-injection guard (review 2026-07-31): a value starting with
+  // = + - @ or a tab/CR executes as a formula when the export is opened
+  // in Excel/Sheets. User-controlled fields (e.g. referral sourceDetail
+  // straight off the URL) reach these exports, so neutralize with a
+  // leading apostrophe — the standard spreadsheet escape.
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  const needsQuote = /[,"\n\r']/.test(s);
   const escaped = s.replace(/"/g, '""');
   return needsQuote ? `"${escaped}"` : escaped;
 }

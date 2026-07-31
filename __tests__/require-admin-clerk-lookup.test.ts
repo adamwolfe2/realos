@@ -77,7 +77,9 @@ describe("require-admin resolves the caller by clerkUserId", () => {
     const result = await requireAdmin();
 
     expect(result.error).toBeNull();
-    expect(result.userId).toBe(CLERK_ID);
+    // Must be the INTERNAL User.id — callers persist this into
+    // AuditEvent.userId (FK to User.id); the Clerk id would violate it.
+    expect(result.userId).toBe(INTERNAL_ID);
   });
 
   it("requireAdmin still refuses a non-admin role found by clerkUserId", async () => {
@@ -100,7 +102,7 @@ describe("require-admin resolves the caller by clerkUserId", () => {
       expect.objectContaining({ where: { clerkUserId: CLERK_ID } }),
     );
     expect(result.error).toBeNull();
-    expect(result.userId).toBe(CLERK_ID);
+    expect(result.userId).toBe(INTERNAL_ID);
   });
 
   it("requireAdminOrRep still refuses a client role", async () => {

@@ -7,6 +7,7 @@ import {
   ForbiddenError,
   auditPayload,
   tenantWhere,
+  propertyInScope,
 } from "@/lib/tenancy/scope";
 import {
   checkRateLimit,
@@ -108,7 +109,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Load the property and verify tenant ownership.
+  // Load the property and verify tenant ownership + per-user property
+  // grant (review 2026-07-31: property-restricted users could trigger
+  // billed scans on any org property).
+  if (!propertyInScope(scope, parsed.data.propertyId)) {
+    return NextResponse.json({ error: "Property not found" }, { status: 404 });
+  }
   const property = await prisma.property.findFirst({
     where: { id: parsed.data.propertyId, ...tenantWhere(scope) },
     select: {

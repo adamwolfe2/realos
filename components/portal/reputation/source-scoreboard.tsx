@@ -59,10 +59,19 @@ export function SourceScoreboard({
     : "No scans yet";
 
   return (
-    <section
-      aria-label="Mentions by source"
-      className="grid grid-cols-2 lg:grid-cols-4 gap-3"
-    >
+    <section aria-label="Mentions by source" className="space-y-2">
+      {/* Scan recency lives on the section, not each card — a portfolio-
+          wide timestamp on an unconfigured source card implied that
+          source was individually scanned (review 2026-07-31). */}
+      <div className="flex items-baseline justify-between">
+        <span className="text-[10px] tracking-[0.14em] uppercase font-semibold text-muted-foreground">
+          Mentions by source
+        </span>
+        <span className="text-[11px] text-muted-foreground">
+          {lastScanLabel}
+        </span>
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       {entries.map((entry) => {
         const active = activeSource === entry.source;
         const positivePct =
@@ -128,12 +137,10 @@ export function SourceScoreboard({
               </div>
             </dl>
 
-            <div className="mt-3 text-[11px] text-muted-foreground truncate">
-              {lastScanLabel}
-            </div>
           </Link>
         );
       })}
+      </div>
     </section>
   );
 }

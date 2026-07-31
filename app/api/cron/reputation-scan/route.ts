@@ -123,10 +123,10 @@ export async function GET(req: NextRequest) {
         new Map(),
       );
 
-      for (const org of orgs) {
+      // Iterate the batch directly (review 2026-07-31: looping every org
+      // when the batch holds ≤25 properties was dead iterations).
+      for (const [orgId, properties] of propertiesByOrg) {
         try {
-          const properties = propertiesByOrg.get(org.id) ?? [];
-
           for (const p of properties) {
             const seed: PropertySeed = {
               id: p.id,
@@ -160,15 +160,15 @@ export async function GET(req: NextRequest) {
             } catch (err) {
               propertiesFailed += 1;
               const message = err instanceof Error ? err.message : String(err);
-              errors.push({ orgId: org.id, propertyId: p.id, error: message });
+              errors.push({ orgId, propertyId: p.id, error: message });
               // continue to next property
             }
           }
         } catch (err) {
-          // Org-level failure (e.g. property query died). Log + continue.
+          // Org-level failure. Log + continue.
           propertiesFailed += 1;
           const message = err instanceof Error ? err.message : String(err);
-          errors.push({ orgId: org.id, error: message });
+          errors.push({ orgId, error: message });
         }
       }
 

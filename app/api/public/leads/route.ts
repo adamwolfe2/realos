@@ -92,6 +92,30 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unknown tenant" }, { status: 404 });
   }
 
+  // Referral resolution (review 2026-07-31). Resident referral links carry
+  // ?ref=<propertySlug>; the client marks the lead REFERRAL with
+  // sourceDetail "referral:<slug>". Resolve the slug server-side and
+  // OVERRIDE the client-sent propertyId — the contact page hardcodes the
+  // org's first property, which mis-credited every referral in
+  // multi-property orgs. An unresolvable ref demotes to FORM so
+  // attribution can't be forged from the URL bar.
+  if (data.source === "REFERRAL") {
+    const refSlug = data.sourceDetail?.startsWith("referral:")
+      ? data.sourceDetail.slice("referral:".length)
+      : null;
+    const refProperty = refSlug
+      ? await prisma.property.findFirst({
+          where: { orgId: data.orgId, slug: refSlug },
+          select: { id: true },
+        })
+      : null;
+    if (refProperty) {
+      data.propertyId = refProperty.id;
+    } else {
+      data.source = LeadSource.FORM;
+    }
+  }
+
   // Confirm the property (if passed) belongs to this tenant.
   if (data.propertyId) {
     const ok = await prisma.property.findFirst({

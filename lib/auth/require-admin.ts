@@ -36,7 +36,7 @@ export async function requireAdmin(): Promise<
   // every route behind this helper return 403 for real admins.
   const user = await prisma.user.findUnique({
     where: { clerkUserId: userId },
-    select: { role: true },
+    select: { id: true, role: true },
   });
 
   if (!user || !(ADMIN_ROLES as readonly string[]).includes(user.role)) {
@@ -46,7 +46,11 @@ export async function requireAdmin(): Promise<
     };
   }
 
-  return { userId, error: null };
+  // Return the INTERNAL User.id, not the Clerk id. Callers persist this
+  // into AuditEvent.userId (FK to User.id) and attribution fields — the
+  // Clerk id never matches a cuid, so audit writes were failing P2003
+  // and being silently swallowed (review 2026-07-31).
+  return { userId: user.id, error: null };
 }
 
 /** Same as requireAdmin but also allows SALES_REP (for rep-facing admin routes) */
@@ -66,7 +70,7 @@ export async function requireAdminOrRep(): Promise<
   // Same Clerk-id-vs-internal-id correction as requireAdmin above.
   const user = await prisma.user.findUnique({
     where: { clerkUserId: userId },
-    select: { role: true },
+    select: { id: true, role: true },
   });
 
   // AGENCY_OPERATOR is the limited agency role (the old "SALES_REP" intent).
@@ -80,5 +84,6 @@ export async function requireAdminOrRep(): Promise<
     };
   }
 
-  return { userId, error: null };
+  // Internal User.id — see requireAdmin above.
+  return { userId: user.id, error: null };
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireWritableWorkspace } from "@/lib/tenancy/scope";
@@ -71,17 +72,26 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const body = (await req.json().catch(() => ({}))) as {
-    propertyId?: string;
-  };
+  // Validate rather than cast (review 2026-07-31): a malformed propertyId
+  // was previously silently dropped, widening a billed backfill to the
+  // whole org instead of erroring.
+  const bodySchema = z
+    .object({ propertyId: z.string().min(1).optional() })
+    .strict();
+  const parsedBody = bodySchema.safeParse(
+    await req.json().catch(() => ({})),
+  );
+  if (!parsedBody.success) {
+    return NextResponse.json(
+      { error: "Validation failed", details: parsedBody.error.flatten() },
+      { status: 400 },
+    );
+  }
 
   // Audit P1-2: honor per-user property restrictions — previously a
   // property-restricted user could trigger billed AI classification work
   // across the whole org's mentions.
-  const requestedPropertyId =
-    body.propertyId && typeof body.propertyId === "string"
-      ? body.propertyId
-      : null;
+  const requestedPropertyId = parsedBody.data.propertyId ?? null;
   if (
     requestedPropertyId &&
     scope.allowedPropertyIds &&

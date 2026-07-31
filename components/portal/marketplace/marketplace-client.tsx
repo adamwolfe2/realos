@@ -313,14 +313,25 @@ export function MarketplaceClient({
                     onActivate={() => toggleModule(m.key, true)}
                     onDeactivate={() => toggleModule(m.key, false)}
                     onNotifyMe={() => {
-                      // Optimistic UI + real persistence (audit: this
-                      // button previously wrote nothing anywhere).
+                      // Optimistic UI + real persistence; roll back the
+                      // confirmed state if the write fails so "we'll
+                      // notify you" is never a lie (review 2026-07-31).
                       setNotified((n) => new Set(n).add(m.key));
                       void fetch("/api/portal/marketplace/interest", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ moduleKey: m.key }),
-                      }).catch(() => {});
+                      })
+                        .then((res) => {
+                          if (!res.ok) throw new Error(String(res.status));
+                        })
+                        .catch(() => {
+                          setNotified((n) => {
+                            const next = new Set(n);
+                            next.delete(m.key);
+                            return next;
+                          });
+                        });
                     }}
                   />
                 ))}

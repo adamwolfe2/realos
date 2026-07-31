@@ -525,6 +525,26 @@ export function tenantWhere<T extends { orgId?: string }>(
   return { orgId: scope.orgId } as T;
 }
 
+/**
+ * Per-user property grant check. tenantWhere() is org-only BY DESIGN — any
+ * route that accepts a caller-supplied propertyId (or mutates a
+ * property-scoped row) must ALSO pass this gate, or property-restricted
+ * users can read/write/bill against properties outside their grant.
+ * Added 2026-07-31 after review found four sibling routes sharing the
+ * org-only pattern (reputation scans, mention flag/review, creative
+ * requests). null/undefined propertyId passes — org-wide requests are
+ * narrowed separately by the caller.
+ */
+export function propertyInScope(
+  scope: ScopedContext,
+  propertyId: string | null | undefined,
+): boolean {
+  if (!propertyId) return true;
+  return (
+    !scope.allowedPropertyIds || scope.allowedPropertyIds.includes(propertyId)
+  );
+}
+
 // Helper for admin cross-tenant queries. Must be called inside requireAgency().
 export function agencyWhereAll(): Record<string, never> {
   return {};

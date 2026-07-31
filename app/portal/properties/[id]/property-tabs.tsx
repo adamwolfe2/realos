@@ -138,7 +138,17 @@ function PropertyTabsInner({
     [showAds, showOccupancy],
   );
 
-  const activeCategoryId = TAB_TO_CATEGORY[active];
+  // Snap to Overview when the active tab's category isn't visible (review
+  // 2026-07-31: a ?tab=occupancy deep link with showOccupancy=false — or
+  // ?tab=ads with ads hidden — previously rendered a panel with no nav
+  // highlight). One effective value drives both nav + panel.
+  const mappedCategory = TAB_TO_CATEGORY[active];
+  const effectiveActive: TabKey = categories.some(
+    (c) => c.id === mappedCategory,
+  )
+    ? active
+    : "overview";
+  const activeCategoryId = TAB_TO_CATEGORY[effectiveActive];
 
   const selectTab = (key: TabKey) => {
     if (key === active) return;
@@ -192,7 +202,7 @@ function PropertyTabsInner({
           Tradeoff: switching tabs is now a remount + re-fetch, which
           is fine because each tab's data is already URL-driven and
           server-cached at the page level. */}
-      <div role="tabpanel">{panels[active]}</div>
+      <div role="tabpanel">{panels[effectiveActive]}</div>
     </div>
   );
 }

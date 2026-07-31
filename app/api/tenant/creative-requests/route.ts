@@ -7,6 +7,7 @@ import {
   tenantWhere,
   ForbiddenError,
   auditPayload,
+  propertyInScope,
 } from "@/lib/tenancy/scope";
 import {
   AuditAction,
@@ -68,6 +69,13 @@ export async function POST(req: NextRequest) {
     const data = parsed.data;
 
     if (data.propertyId) {
+      // Org ownership AND per-user property grant (review 2026-07-31).
+      if (!propertyInScope(scope, data.propertyId)) {
+        return NextResponse.json(
+          { error: "Property not part of this tenant" },
+          { status: 403 }
+        );
+      }
       const owned = await prisma.property.findFirst({
         where: { id: data.propertyId, ...tenantWhere(scope) },
         select: { id: true },

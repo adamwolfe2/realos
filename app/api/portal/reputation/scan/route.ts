@@ -6,6 +6,7 @@ import {
   requireWritableWorkspace,
   ForbiddenError,
   tenantWhere,
+  propertyInScope,
 } from "@/lib/tenancy/scope";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { orchestrateScan } from "@/lib/reputation/orchestrate";
@@ -117,13 +118,23 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Resolve target properties.
+  // Resolve target properties — narrowed to the caller's property grant
+  // (review 2026-07-31: restricted users could scan the whole org).
   const where = {
     ...marketablePropertyWhere(scope.orgId),
+    ...(scope.allowedPropertyIds
+      ? { id: { in: scope.allowedPropertyIds } }
+      : {}),
   };
   let propertyTargets: Array<PropertySeed> = [];
 
   if (parsed.data.propertyId) {
+    if (!propertyInScope(scope, parsed.data.propertyId)) {
+      return NextResponse.json(
+        { error: "Property not found" },
+        { status: 404 },
+      );
+    }
     const p = await prisma.property.findFirst({
       where: { id: parsed.data.propertyId, ...where },
       select: propertySelect,

@@ -43,6 +43,19 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
+    // Dedupe per org+module — repeat clicks (or a spamming client) must
+    // not flood the org's audit trail (review 2026-07-31).
+    const existing = await prisma.auditEvent.findFirst({
+      where: {
+        orgId: scope.orgId,
+        entityType: "Organization.moduleInterest",
+        diff: { path: ["module"], equals: parsed.moduleKey },
+      },
+      select: { id: true },
+    });
+    if (existing) {
+      return NextResponse.json({ ok: true, deduped: true });
+    }
     const moduleDef = getModuleByKey(parsed.moduleKey);
     await prisma.auditEvent.create({
       data: {

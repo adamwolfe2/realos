@@ -6,6 +6,7 @@ import {
   requireWritableWorkspace,
   ForbiddenError,
   tenantWhere,
+  propertyInScope,
 } from "@/lib/tenancy/scope";
 import {
   checkRateLimit,
@@ -69,12 +70,14 @@ export async function PATCH(
     );
   }
 
-  // Verify tenant ownership before write.
+  // Verify tenant ownership + per-user property grant before write
+  // (review 2026-07-31: restricted users could flag/review mentions on
+  // properties outside their grant).
   const existing = await prisma.propertyMention.findFirst({
     where: { id, ...tenantWhere(scope) },
-    select: { id: true },
+    select: { id: true, propertyId: true },
   });
-  if (!existing) {
+  if (!existing || !propertyInScope(scope, existing.propertyId)) {
     return NextResponse.json({ error: "Mention not found" }, { status: 404 });
   }
 
