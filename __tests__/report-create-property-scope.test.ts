@@ -11,6 +11,14 @@ import { createMockPrisma, type MockPrisma } from "./helpers/mock-prisma";
 //
 // The action must mirror /portal/properties/[id]/snapshot (per-property
 // gate) and POST /api/portal/reports (org-wide gate for restricted users).
+//
+// Policy update (2026-08-01, Adam-approved): these four mutations are now
+// OPERATOR-ONLY (see assertOperatorScope in lib/actions/reports.ts). Real
+// client scopes never reach the property-RBAC code below — they're denied
+// up front. The scope() helper here defaults to an operator (isAgency:
+// true) so the property-RBAC + AI-spend tests below still exercise a real
+// case: a property-restricted AGENCY operator (UserPropertyAccess applies
+// to agency seats too). The real-client-denied path is covered separately.
 // ---------------------------------------------------------------------------
 
 let mockPrisma: MockPrisma;
@@ -58,10 +66,22 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
-const { createReport, updateReport, archiveReport, sendReportToRecipients } =
-  await import("@/lib/actions/reports");
+const {
+  createReport,
+  updateReport,
+  archiveReport,
+  sendReportToRecipients,
+  REPORT_OPERATOR_ONLY_ERROR,
+} = await import("@/lib/actions/reports");
 
-function scope(allowedPropertyIds: string[] | null) {
+// Defaults to an OPERATOR scope (isAgency: true, isImpersonating: false) so
+// every existing call site below keeps exercising property RBAC / AI spend
+// controls past the operator gate. Pass { isAgency: false } for a real
+// client scope, which assertOperatorScope denies outright.
+function scope(
+  allowedPropertyIds: string[] | null,
+  opts: { isAgency?: boolean; isImpersonating?: boolean } = {},
+) {
   return {
     userId: "u1",
     clerkUserId: "clerk_u1",
@@ -70,6 +90,8 @@ function scope(allowedPropertyIds: string[] | null) {
     role: "LEASING_AGENT",
     email: "agent@client.test",
     allowedPropertyIds,
+    isAgency: opts.isAgency ?? true,
+    isImpersonating: opts.isImpersonating ?? false,
   };
 }
 
@@ -199,7 +221,7 @@ const ORG_WIDE = { id: "rep-1", status: "draft", shareToken: "tok", sharedAt: nu
 const SCOPED_A = { id: "rep-2", status: "draft", shareToken: "tok", sharedAt: null, propertyId: "prop-A" };
 
 describe("post-create actions — property RBAC gate", () => {
-  it("updateReport: restricted user cannot share an org-wide report", async () => {
+  it("updateReport: restricted agency operator cannot share an org-wide report", async () => {
     mockRequireWritableWorkspace.mockResolvedValue(scope(["prop-A"]));
     mockPrisma.clientReport.findFirst.mockResolvedValue(ORG_WIDE);
 
@@ -209,7 +231,7 @@ describe("post-create actions — property RBAC gate", () => {
     expect(mockPrisma.clientReport.update).not.toHaveBeenCalled();
   });
 
-  it("updateReport: restricted user CAN update an in-scope property report", async () => {
+  it("updateReport: restricted agency operator CAN update an in-scope property report", async () => {
     mockRequireWritableWorkspace.mockResolvedValue(scope(["prop-A"]));
     mockPrisma.clientReport.findFirst.mockResolvedValue(SCOPED_A);
     mockPrisma.clientReport.update.mockResolvedValue({});
@@ -218,7 +240,7 @@ describe("post-create actions — property RBAC gate", () => {
     expect(mockPrisma.clientReport.update).toHaveBeenCalled();
   });
 
-  it("archiveReport: restricted user cannot archive an org-wide report", async () => {
+  it("archiveReport: restricted agency operator cannot archive an org-wide report", async () => {
     mockRequireWritableWorkspace.mockResolvedValue(scope(["prop-A"]));
     mockPrisma.clientReport.findFirst.mockResolvedValue({ propertyId: null });
 
@@ -234,7 +256,7 @@ describe("post-create actions — property RBAC gate", () => {
     expect(mockPrisma.clientReport.updateMany).not.toHaveBeenCalled();
   });
 
-  it("sendReportToRecipients: restricted user cannot email an org-wide report", async () => {
+  it("sendReportToRecipients: restricted agency operator cannot email an org-wide report", async () => {
     mockRequireWritableWorkspace.mockResolvedValue(scope(["prop-A"]));
     mockPrisma.clientReport.findFirst.mockResolvedValue({
       ...ORG_WIDE,
@@ -276,5 +298,59 @@ describe("post-create actions — property RBAC gate", () => {
     const sent = mockSendReportEmail.mock.calls[0][0].to;
     expect(sent).toHaveLength(10);
     expect(sent.every((r: string) => /@.*\./.test(r))).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Policy: ClientReport mutations are OPERATOR-ONLY. A real client scope
+// (isAgency: false, isImpersonating: false) must be denied by
+// assertOperatorScope before any property/report lookup, snapshot
+// generation, or send — regardless of allowedPropertyIds.
+// ---------------------------------------------------------------------------
+
+describe("real client scope — operator-only gate", () => {
+  it("createReport: denied before any property lookup or snapshot generation", async () => {
+    mockRequireWritableWorkspace.mockResolvedValue(scope(null, { isAgency: false }));
+
+    await expect(createReport("monthly", { propertyId: "prop-A" })).rejects.toThrow(
+      REPORT_OPERATOR_ONLY_ERROR,
+    );
+
+    expect(mockPrisma.property.findFirst).not.toHaveBeenCalled();
+    expect(mockCheckAiBillingGate).not.toHaveBeenCalled();
+    expect(mockGenerateSnapshot).not.toHaveBeenCalled();
+    expect(mockPrisma.clientReport.create).not.toHaveBeenCalled();
+  });
+
+  it("updateReport: denied before the report is loaded", async () => {
+    mockRequireWritableWorkspace.mockResolvedValue(scope(null, { isAgency: false }));
+
+    await expect(
+      updateReport("rep-1", { status: "shared" }),
+    ).rejects.toThrow(REPORT_OPERATOR_ONLY_ERROR);
+
+    expect(mockPrisma.clientReport.findFirst).not.toHaveBeenCalled();
+    expect(mockPrisma.clientReport.update).not.toHaveBeenCalled();
+  });
+
+  it("archiveReport: denied before the report is loaded", async () => {
+    mockRequireWritableWorkspace.mockResolvedValue(scope(null, { isAgency: false }));
+
+    await expect(archiveReport("rep-1")).rejects.toThrow(REPORT_OPERATOR_ONLY_ERROR);
+
+    expect(mockPrisma.clientReport.findFirst).not.toHaveBeenCalled();
+    expect(mockPrisma.clientReport.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("sendReportToRecipients: denied before rate-limit check or report load", async () => {
+    mockRequireWritableWorkspace.mockResolvedValue(scope(null, { isAgency: false }));
+
+    await expect(
+      sendReportToRecipients("rep-1", { to: ["client@example.com"] }),
+    ).rejects.toThrow(REPORT_OPERATOR_ONLY_ERROR);
+
+    expect(mockCheckRateLimit).not.toHaveBeenCalled();
+    expect(mockPrisma.clientReport.findFirst).not.toHaveBeenCalled();
+    expect(mockSendReportEmail).not.toHaveBeenCalled();
   });
 });
