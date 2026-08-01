@@ -20,6 +20,11 @@ import {
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-banner";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
+import {
+  fetchSeoSnapshots,
+  fetchSeoTopPages,
+  fetchSeoTopQueries,
+} from "@/lib/seo/portal-overview-queries";
 import { SeoProvider } from "@prisma/client";
 import {
   ConnectSeoForm,
@@ -178,13 +183,11 @@ export default async function SeoPage({
   const accessDenied = isAccessDenied(scope, requestedIds);
   const effectiveIds = effectivePropertyIds(scope, requestedIds);
 
-  // SeoSnapshot/SeoQuery/SeoLandingPage gained a propertyId column in Wave 3
-  // Phase 5, but this page's aggregate trend sections were not rewired to
-  // scope by it (deliberately deferred — a contained follow-up, not part of
-  // that slice). Until they are, keep hiding the aggregate trend sections
-  // from property-restricted users to avoid leaking org-wide data through
-  // them. Per-property integration cards remain visible because the
-  // SeoIntegration model itself is propertyId-aware.
+  // SeoSnapshot/SeoQuery/SeoLandingPage carry a propertyId column (Wave 3
+  // Phase 5). A property-restricted user's aggregate trend queries below are
+  // scoped to their allowed properties via fetchSeo*() in
+  // lib/seo/portal-overview-queries.ts, which never lets a NULL (org-wide)
+  // row through to a restricted user.
   const isRestricted = scope.allowedPropertyIds !== null;
 
   // Only count rows backed by a real Google service-account JSON. Seeded
@@ -254,49 +257,15 @@ export default async function SeoPage({
     );
   }
 
-  // Restricted users can't see org-aggregate data until SeoSnapshot gains a
-  // propertyId column. Render their existing "coming soon" branch.
-  if (isRestricted) {
-    return (
-      <SeoRestrictedShell
-        accessDenied={accessDenied}
-        properties={properties}
-        orgId={scope.orgId}
-        shouldAutoRefresh={shouldAutoRefresh}
-      />
-    );
-  }
-
   // ── Fetch the overview data set ──────────────────────────────────────
-  // One round-trip for everything we need: 365d series, recent queries,
-  // recent pages, and the action-recommendation annotation feed.
+  // 365d series, recent queries, recent pages, and the action-recommendation
+  // annotation feed. The three trend queries are property-scoped for
+  // restricted users via effectiveIds (see lib/seo/portal-overview-queries).
   const [snapshots365, topQueriesRaw, topPagesRaw, annotationRows] =
     await Promise.all([
-      prisma.seoSnapshot.findMany({
-        where: { orgId: scope.orgId, date: { gte: start365, lte: yesterday } },
-        orderBy: { date: "asc" },
-        select: {
-          date: true,
-          totalClicks: true,
-          totalImpressions: true,
-          avgCtr: true,
-          avgPosition: true,
-        },
-      }),
-      prisma.seoQuery.groupBy({
-        by: ["query"],
-        where: { orgId: scope.orgId, date: { gte: start30, lte: yesterday } },
-        _sum: { clicks: true, impressions: true },
-        orderBy: { _sum: { clicks: "desc" } },
-        take: 12,
-      }),
-      prisma.seoLandingPage.groupBy({
-        by: ["url"],
-        where: { orgId: scope.orgId, date: { gte: start30, lte: yesterday } },
-        _sum: { sessions: true, users: true },
-        orderBy: { _sum: { sessions: "desc" } },
-        take: 12,
-      }),
+      fetchSeoSnapshots(scope, effectiveIds, { start: start365, end: yesterday }),
+      fetchSeoTopQueries(scope, effectiveIds, { start: start30, end: yesterday }),
+      fetchSeoTopPages(scope, effectiveIds, { start: start30, end: yesterday }),
       prisma.seoActionRecommendation.findMany({
         where: {
           ...tenantWhere(scope),
@@ -312,6 +281,21 @@ export default async function SeoPage({
         },
       }),
     ]);
+
+  // Restricted user whose allowed properties have no property-scoped SEO
+  // rows yet (sync hasn't run for their building, or their integration is
+  // brand new). Render the page's existing empty state rather than a chart
+  // full of zeros or the old blackout.
+  if (isRestricted && snapshots365.length === 0) {
+    return (
+      <SeoEmptyShell
+        accessDenied={accessDenied}
+        properties={properties}
+        defaultPropertyId={defaultSeoPropertyId}
+        orgId={scope.orgId}
+      />
+    );
+  }
 
   // Build a 365d continuous series (zero-pad missing days) so both the
   // chart and the 30d sparklines below derive from the same source.
@@ -577,57 +561,6 @@ function SeoEmptyShell({
           </div>
         </div>
         <SetupHelp />
-      </SectionCard>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// SeoRestrictedShell — property-restricted users get the integration cards
-// (which respect their property scope) plus an explainer that the
-// aggregate trend tables aren't yet partitioned per property.
-// ---------------------------------------------------------------------------
-function SeoRestrictedShell({
-  accessDenied,
-  properties,
-  orgId,
-  shouldAutoRefresh,
-}: {
-  accessDenied: boolean;
-  properties: Array<{ id: string; name: string }>;
-  orgId: string;
-  shouldAutoRefresh: boolean;
-}) {
-  return (
-    <div className="space-y-3">
-      {accessDenied ? <PropertyAccessDeniedBanner /> : null}
-      {shouldAutoRefresh ? (
-        <StaleOnLoadTrigger
-          endpoint="/api/tenant/seo/sync"
-          dedupeKey={`seo:${orgId}`}
-          cooldownMs={60_000}
-          refreshAfterMs={3000}
-        />
-      ) : null}
-      <PageHeader
-        title="SEO"
-        description="Per-property SEO performance is being rolled out. Your integration cards below show connection status."
-        actions={
-          properties.length > 1 ? (
-            <PropertyMultiSelect properties={properties} orgId={orgId} />
-          ) : null
-        }
-      />
-      <SectionCard
-        label="Organic search performance"
-        description="Per-property trend data is coming soon. Your integration cards above show connection status; cross-property comparison requires the agency-wide view."
-      >
-        <p className="text-sm text-muted-foreground">
-          Sessions, impressions, clicks, top queries, and top pages are
-          tracked at the organization level today. Once we partition the
-          SEO snapshot tables by property, this view will narrow to just
-          your scope.
-        </p>
       </SectionCard>
     </div>
   );
