@@ -14,15 +14,20 @@ import sanitizeHtml from "sanitize-html";
 // (rather than only at write time) neutralizes anything already stored,
 // not just future writes.
 //
-// The allowlist matches the tag set lib/content/render-mdx.ts documents as
-// the supported TipTap-output subset: h1-h6, p, lists, blockquote,
-// strong/em, code/pre, links, line breaks.
+// The allowlist covers every tag the editor's StarterKit config
+// (@tiptap/starter-kit@3) can actually emit: headings (limited to h1-h3
+// by editor-client.tsx, h4-h6 kept here as harmless slack), paragraphs,
+// lists, blockquote, bold/italic (strong/em), strike (s), underline (u),
+// inline code + code blocks (code/pre), links (a), line breaks (br), and
+// horizontal rules (hr). StarterKit v3 bundles Link, Strike, and
+// Underline by default (unlike v2) — all three are enabled here since
+// editor-client.tsx never sets link/strike/underline: false.
 // ---------------------------------------------------------------------------
 
 const ALLOWED_TAGS = [
   "h1", "h2", "h3", "h4", "h5", "h6",
   "p", "ul", "ol", "li",
-  "blockquote", "strong", "b", "em", "i",
+  "blockquote", "strong", "b", "em", "i", "s", "u",
   "code", "pre", "a", "br", "hr",
 ];
 
