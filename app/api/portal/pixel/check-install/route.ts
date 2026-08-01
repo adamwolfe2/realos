@@ -7,7 +7,7 @@ import {
 } from "@/lib/tenancy/property-filter";
 import { prisma } from "@/lib/db";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
-import { isAllowedUrlWithDns } from "@/lib/utils/ssrf-protection";
+import { isAllowedUrlWithDns } from "@/lib/security/ssrf-guard";
 import { detectPixelInstall } from "@/lib/pixel/detect-install";
 import { checkRateLimit, rateLimited, seoSyncLimiter } from "@/lib/rate-limit";
 

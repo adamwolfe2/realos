@@ -23,7 +23,7 @@ import {
   type AudienceSegment,
 } from "@prisma/client";
 import { computeNextRunAt } from "@/lib/audiences/schedule";
-import { isAllowedUrlWithDns } from "@/lib/utils/ssrf-protection";
+import { isAllowedUrlWithDns } from "@/lib/security/ssrf-guard";
 
 // ---------------------------------------------------------------------------
 // Insight computation. the upstream pixel provider returns a list of members per segment

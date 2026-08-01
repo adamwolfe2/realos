@@ -6,7 +6,14 @@ import crypto from "node:crypto";
  * Pads both inputs to equal length before calling crypto.timingSafeEqual so
  * the comparison takes the same number of cycles regardless of where strings
  * diverge. Length mismatch is detected via an explicit check AFTER the
- * fixed-time comparison, not via early-exit.
+ * fixed-time comparison, not via early-exit — an early `if (a.length !==
+ * b.length) return false` would still run in near-zero time versus the full
+ * comparison, giving an attacker a cheap length oracle. This is the sole
+ * timing-safe-compare helper in the repo (canonical as of the 2026-08
+ * security-helper consolidation, replacing the former lib/utils/timing-safe.ts
+ * duplicate) — use it anywhere you'd reach for `timingSafeEqual` against an
+ * untrusted input (HMAC signatures, signed cookies, OAuth state, webhook
+ * tokens, shared secrets).
  *
  * Mirrors the pattern in lib/cron/auth.ts::verifyCronAuth.
  */

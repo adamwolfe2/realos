@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireWritableWorkspace, ForbiddenError } from "@/lib/tenancy/scope";
 import { enrichLimiter, checkRateLimit } from "@/lib/rate-limit";
-import { isAllowedUrl } from "@/lib/utils/ssrf-protection";
+import { isAllowedUrl } from "@/lib/security/ssrf-guard";
 
 const enrichSchema = z.object({
   url: z.string().url(),

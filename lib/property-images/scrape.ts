@@ -1,5 +1,5 @@
 import "server-only";
-import { isAllowedUrlWithDns } from "@/lib/utils/ssrf-protection";
+import { isAllowedUrlWithDns } from "@/lib/security/ssrf-guard";
 
 // Max redirects we'll re-validate against the SSRF allowlist before giving
 // up. Three is enough for marketing-site `www → bare → https` chains.

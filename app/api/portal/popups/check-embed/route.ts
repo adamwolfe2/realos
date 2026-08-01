@@ -3,7 +3,7 @@ import { unstable_cache } from "next/cache";
 import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
-import { isAllowedUrlWithDns } from "@/lib/utils/ssrf-protection";
+import { isAllowedUrlWithDns } from "@/lib/security/ssrf-guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
