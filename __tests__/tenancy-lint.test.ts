@@ -61,6 +61,8 @@ const INLINE_SCOPE_RE = /\bscope\.(orgId|actualOrgId|allowedPropertyIds)\b/;
 // that's fine today. Keep entries exact — a new violation in one of these
 // files still needs its own review; this list is not a directory wildcard.
 const ALLOWLIST: Record<string, string> = {
+  "lib/seo/snapshot-supersede.ts":
+    "pass-through aggregation helper — takes a caller-built Prisma where; every caller (briefing/queries, reports/weekly-digest, insights/traffic-drop, seo/portal-overview-queries) applies tenantWhere before calling",
   "app/api/tenant/listings/route.ts":
     "public unauthenticated marketing endpoint — org resolved from readTenantHeaders() (middleware-set x-tenant-org-id), not an authenticated ScopedContext",
   "lib/actions/admin-appfolio.ts":
