@@ -126,6 +126,119 @@ findings before reporting so we don't re-litigate wave-2/3 fixes.
 
 ---
 
-## Execution log
+## Final report
 
-(filled in as work completes)
+Finished: 2026-07-31 20:27 PDT (~2h20m runtime)
+Branch: `autonomous-hardening-20260731` · 18 commits on top of `b7d9d83f` ·
+local only, nothing pushed/merged/deployed.
+
+### Before → after
+
+| Check | Before | After |
+|---|---|---|
+| vitest | 1421/1421 green | **1522/1522 green** (+101 tests, +15 files) |
+| tsc --noEmit | clean | clean (still clean) |
+| eslint | 0 errors / 90 warnings | 0 errors / 90 warnings (unchanged) |
+
+### Completed (12 backlog items + 6 bonus items beyond the original scope)
+
+**Security (3 fixes)**
+- Stored XSS on `ContentDraft.htmlBody` — sanitized at both
+  `dangerouslySetInnerHTML` render sites (public preview page + agency
+  admin review UI) with an allowlist sanitizer
+  (`lib/security/sanitize-content-html.ts`). Added the `sanitize-html`
+  dependency (+ types) — noted per ground rules, justified because a
+  regex-based sanitizer is the classic XSS-filter-bypass mistake.
+- Raw Stripe error message no longer leaked to the buyer on a failed
+  marketplace checkout (money path); raw error no longer leaked from the
+  audit-run endpoint.
+
+**Performance (1 fix, 4 routes)**
+- Batched the per-org dedup lookup in `trial-reminders`,
+  `onboarding-drip`, `monthly-report`, `weekly-report` crons — same N+1
+  anti-pattern the sibling `billing-reminders` cron already fixed.
+  `monthly-report`/`weekly-report` also now share one `now` timestamp
+  across the run (fixes a millisecond period-boundary drift bug as a
+  bonus) and skip the expensive per-org report generation entirely for
+  orgs already reported this period.
+
+**Bug fix (1)**
+- `syncListingsForOrg` (AppFolio) no longer throws a raw TypeError when
+  an org has zero AppFolio-backed properties yet — skips cleanly instead.
+
+**New test coverage (15 files, 101 tests)** — all money/auth/tenancy/
+webhook surfaces that had zero coverage:
+- `lib/billing/gate.ts` (AI billing gate — blocks spend for delinquent
+  tenants), `lib/billing/sync-subscription-quantity.ts` (Stripe seat
+  sync), `lib/billing/retention.ts` (ad-metrics retention policy)
+- `POST /api/tenant/billing`, `POST /api/tenant/appfolio/clear-stuck`,
+  `POST /api/tenant/integration-requests`,
+  `GET+POST /api/tenant/creative-requests` (property-scope gate),
+  `GET /api/tenant/leads/export` (property-scope intersection, using
+  the real `lib/tenancy/property-filter` functions, not mocked)
+- `GET+PATCH /api/tenant/reputation-mentions[/[id]]` (property-scope gate)
+- `POST /api/public/leads` (unauthenticated, high blast radius)
+- `POST /api/webhooks/resend` (real computed-HMAC signature test — the
+  only webhook route using genuine crypto instead of structural
+  string-matching, since `verifySignature` isn't exported)
+- Regression coverage for every fix above (XSS sanitizer, error-leak
+  fix, cron batching x4, appfolio null-guard)
+
+### BLOCKED — none
+
+Nothing hit the "failed 3x, skip and log" threshold. Every attempted item
+landed clean on the first or second try (one test-mock fixup for the
+`resolvePeriod` export, one enum-value typo).
+
+### Reviewed and deliberately NOT changed (with reasoning)
+
+- **Q1 — console.log sweep.** All 10 flagged sites are the app's
+  intentional `[module-name]` cost/operability telemetry convention (one
+  file explicitly documents "stays intentionally... backs /admin/costs
+  rollups"). Left untouched — gating it would be an unrequested change to
+  a working, documented pattern.
+- **S4/S5 — duplicate SSRF-guard and timing-safe implementations**
+  (`lib/utils/ssrf-protection.ts` vs `lib/security/ssrf-guard.ts`;
+  `lib/utils/timing-safe.ts` vs `lib/auth/timing-safe.ts`). Both pairs
+  are actively used by different callers — real drift risk (a fix to one
+  won't propagate) but consolidating is a multi-call-site refactor on a
+  security-critical path. Flagged for review, not attempted solo
+  overnight.
+- **10 largest files over the 800-line convention**
+  (`components/product-tour/index.tsx` 3915 lines,
+  `lib/reports/generate.ts` 3079, `app/api/webhooks/stripe/route.ts`
+  2121, etc.) — real code-quality debt, but a safe split of a
+  multi-thousand-line production file is a multi-hour structural change
+  with real regression risk for a solo pass. Logged for a dedicated
+  daytime refactor session.
+- **Inconsistent `{ok:false,error}` / `throw` / `return null` error
+  convention across `lib/actions/**`** — a style-guide decision, not a
+  bug; noted rather than changed blind.
+- All items already explicitly decision-blocked in the session brief
+  (SEO metrics property dimension, per-property site config, pixel
+  precedence flag, createProperty restriction, GSC sub-properties) —
+  not attempted, as instructed.
+- All 25 `batchAB-review-findings.json` items — spot-checked the top
+  HIGH findings (chatbot property scoping, `updateProperty` IDOR)
+  against the actual current code and found them already fixed in
+  `b7d9d83f`. Not re-reported or re-fixed.
+
+### Review needed (for Adam)
+
+1. **`sanitize-html` new dependency** — verify the allowlist in
+   `lib/security/sanitize-content-html.ts` matches what the portal
+   content editor actually needs to render (currently: h1-h6, p, lists,
+   blockquote, strong/em, code/pre, links). If the editor ever adds
+   images or tables, the sanitizer needs a matching allowlist update or
+   they'll silently disappear from rendered output.
+2. **SSRF-guard and timing-safe duplication** (S4/S5 above) — pick a
+   canonical implementation and migrate callers off the other, or
+   document why both need to exist.
+3. **Large-file refactor candidates** (10 files over 800 lines) — worth
+   a dedicated slice if/when touched next for a feature, rather than a
+   standalone refactor session.
+4. This branch has **not** been pushed. Review the diff, then merge or
+   cherry-pick at your discretion — nothing here is time-sensitive.
+
+Worktree: `/Users/adamwolfe/realos/.claude/worktrees/agent-aba75865db4fc1742`
+Branch: `autonomous-hardening-20260731`
