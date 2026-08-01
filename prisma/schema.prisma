@@ -442,7 +442,7 @@ model Organization {
   // (chatbot, popup, form, ingest webhook), the lead helper fires a one-shot
   // email to this address with the lead details + a deep link to /portal/leads.
   // Null = no notifications (existing behavior). Comma-separated for multiple.
-  notifyLeadEmail String?
+  notifyLeadEmail    String?
   // Optional CC (visible) + BCC (hidden) recipients for lead notifications.
   // Comma-separated for multiple. Let an owner/manager get copied without
   // being the primary recipient.
@@ -862,11 +862,11 @@ model TenantSiteConfig {
 // greeting, capture mode, branding) while inheriting anything it doesn't
 // override. Resolution + field-level merge lives in lib/chatbot/resolve-config.ts.
 model PropertyChatbotConfig {
-  id         String   @id @default(cuid())
+  id         String       @id @default(cuid())
   orgId      String
   org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  propertyId String   @unique
-  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId String       @unique
+  property   Property     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   // Chatbot fields — all nullable; null = inherit org TenantSiteConfig.
   // chatbotEnabled is Boolean? on purpose: null inherits the org toggle,
@@ -947,10 +947,10 @@ model PropertyKnowledgeBase {
 // onboarding cart. Global platform config (not org-scoped) — drives the
 // onboarding running total and, later, the per-feature Stripe prices.
 model FeaturePrice {
-  id           String   @id @default(cuid())
-  key          String   @unique
-  monthlyCents Int
-  active       Boolean  @default(true)
+  id              String    @id @default(cuid())
+  key             String    @unique
+  monthlyCents    Int
+  active          Boolean   @default(true)
   // Stripe linkage (slice: per-feature billing). When an admin syncs prices to
   // Stripe, we create a recurring Price per feature with a stable lookup_key
   // (transfer_lookup_key keeps the key pointing at the latest price after an
@@ -960,8 +960,8 @@ model FeaturePrice {
   stripePriceId   String?
   stripeProductId String?
   stripeSyncedAt  DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
 // ============================================================================
@@ -1087,74 +1087,84 @@ model Property {
   // the org-level address (most properties).
   notifyLeadEmailOverride String?
 
-  listings             Listing[]
-  leads                Lead[]
-  tours                Tour[]
-  applications         Application[]
-  chatbotConversations ChatbotConversation[]
-  visitors             Visitor[]
-  creativeRequests     CreativeRequest[]
-  adCampaigns          AdCampaign[]
-  insights             Insight[]
-  reputationScans      ReputationScan[]
-  reputationMentions   PropertyMention[]
-  adLibraryAdvertisers AdLibraryAdvertiser[]
-  residents            Resident[]
-  leases               Lease[]
-  workOrders           WorkOrder[]
-  clientReports        ClientReport[]
-  popupCampaigns       PopupCampaign[]
-  credentialEntries    CredentialEntry[]
+  listings               Listing[]
+  leads                  Lead[]
+  tours                  Tour[]
+  applications           Application[]
+  chatbotConversations   ChatbotConversation[]
+  visitors               Visitor[]
+  creativeRequests       CreativeRequest[]
+  adCampaigns            AdCampaign[]
+  insights               Insight[]
+  reputationScans        ReputationScan[]
+  reputationMentions     PropertyMention[]
+  adLibraryAdvertisers   AdLibraryAdvertiser[]
+  residents              Resident[]
+  leases                 Lease[]
+  workOrders             WorkOrder[]
+  clientReports          ClientReport[]
+  popupCampaigns         PopupCampaign[]
+  credentialEntries      CredentialEntry[]
+  // Wave 3 Phase 3 — pixel engagement rows attributed to this property.
+  visitorSessions        VisitorSession[]
+  visitorEvents          VisitorEvent[]
+  // Wave 3 Phase 8 — pixel provisioning requests scoped to this property.
+  pixelProvisionRequests PixelProvisionRequest[]
   // Reverse relation for property-level RBAC. See UserPropertyAccess.
-  userAccess           UserPropertyAccess[]
+  userAccess             UserPropertyAccess[]
   // Per-property integration connections. NULL on these rows means
   // "applies to the whole org" (legacy / pre-migration behavior); a
   // populated propertyId scopes the connection to this single property
   // so multi-property tenants can wire each domain's GA4 + GSC + Pixel
   // independently.
-  cursiveIntegrations  CursiveIntegration[]
-  seoIntegrations      SeoIntegration[]
+  cursiveIntegrations    CursiveIntegration[]
+  seoIntegrations        SeoIntegration[]
+  // Wave 3 Phase 5 — SEO metrics scoped to this property (NULL-propertyId
+  // rows on these models are org-wide and have no Property relation).
+  seoSnapshots           SeoSnapshot[]
+  seoQueries             SeoQuery[]
+  seoLandingPages        SeoLandingPage[]
   // Per-property chatbot override. NULL relation = this property inherits the
   // org-level TenantSiteConfig chatbot fields. A populated row lets a
   // multi-property workspace run a distinct bot (persona, knowledge base,
   // capture mode, branding) on this property's own website. Field-level
   // fallback to the org config is done in lib/chatbot/resolve-config.ts.
-  chatbotConfig        PropertyChatbotConfig?
+  chatbotConfig          PropertyChatbotConfig?
   // Structured per-property knowledge base (slice "Property Knowledge Base"
   // S1). Captures canonical floor plans, amenities, policies, lease terms,
   // application process + neighborhood as STRUCTURED facts so the chatbot
   // answers from grounded data instead of inventing unit type -> size maps
   // (Telegraph "triple = 200 sq ft" bug). Distinct from the free-text
   // chatbotKnowledgeBase blob on the config; this is queryable + scored.
-  knowledgeBase        PropertyKnowledgeBase?
-  websiteBuildRequests WebsiteBuildRequest[]
-  aeoChecks            AeoCitationCheck[]
-  aeoMentionSnapshots  AeoMentionSnapshot[]
-  aeoOpportunityScores AeoOpportunityScore[]
-  aeoOnPageAudits      AeoOnPageAudit[]
-  neighborhoodPages    NeighborhoodPage[]
+  knowledgeBase          PropertyKnowledgeBase?
+  websiteBuildRequests   WebsiteBuildRequest[]
+  aeoChecks              AeoCitationCheck[]
+  aeoMentionSnapshots    AeoMentionSnapshot[]
+  aeoOpportunityScores   AeoOpportunityScore[]
+  aeoOnPageAudits        AeoOnPageAudit[]
+  neighborhoodPages      NeighborhoodPage[]
   // Per-property RentCast market intelligence snapshots (rent AVM,
   // market stats). Populated by the Market Intelligence section on
   // the property detail page; cached by lib/rentcast/cache.ts.
-  rentCastSnapshots    RentCastSnapshot[]
+  rentCastSnapshots      RentCastSnapshot[]
   // SEO/AEO Agent backrefs — Phase 1
-  seoActionRecs        SeoActionRecommendation[]
-  contentDrafts        ContentDraft[]
-  seoScoreHistory      SeoScoreHistory[]
-  competitorScans      PropertyCompetitorScan[]
+  seoActionRecs          SeoActionRecommendation[]
+  contentDrafts          ContentDraft[]
+  seoScoreHistory        SeoScoreHistory[]
+  competitorScans        PropertyCompetitorScan[]
   // DataforSEO ingestion (Phase 1.5)
-  seoTargetQueries     SeoTargetQuery[]
-  seoScanJobs          SeoScanJob[]
-  serpRankings         SerpRanking[]
-  onPageAudits         OnPageAudit[]
-  backlinkSummaries    BacklinkSummary[]
+  seoTargetQueries       SeoTargetQuery[]
+  seoScanJobs            SeoScanJob[]
+  serpRankings           SerpRanking[]
+  onPageAudits           OnPageAudit[]
+  backlinkSummaries      BacklinkSummary[]
   // DataforSEO ingestion (Phase 2)
-  onPageInstantAudits  OnPageInstantAudit[]
-  localPackRankings    LocalPackRanking[]
-  rankedKeywords       RankedKeyword[]
-  keywordIntersections KeywordIntersection[]
-  queryLandingDaily    QueryLandingDaily[]
-  dailySignalSnapshots DailySignalSnapshot[]
+  onPageInstantAudits    OnPageInstantAudit[]
+  localPackRankings      LocalPackRanking[]
+  rankedKeywords         RankedKeyword[]
+  keywordIntersections   KeywordIntersection[]
+  queryLandingDaily      QueryLandingDaily[]
+  dailySignalSnapshots   DailySignalSnapshot[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1735,6 +1745,12 @@ model PixelProvisionRequest {
   orgId String
   org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
+  // Wave 3 Phase 8 — which building this request is for. Null for legacy
+  // org-wide requests (pre multi-property). scaffoldPropertyIntegrations
+  // always sets it now since it loops per-property.
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
   websiteName String
   websiteUrl  String
 
@@ -1768,6 +1784,13 @@ model VisitorSession {
   org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   visitorId String?
   visitor   Visitor?     @relation(fields: [visitorId], references: [id], onDelete: SetNull)
+
+  // Building this session's pixel hit is attributed to (Wave 3 Phase 3).
+  // Set from the SAME attributedPropertyId the webhook processor already
+  // resolved for the Visitor/Lead write — never re-inferred here. Null for
+  // legacy org-wide pixels whose URL didn't resolve to a specific property.
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
 
   // Cookie / device identifiers (set by our pixel)
   anonymousId  String // cookie value, lives in browser
@@ -1805,6 +1828,7 @@ model VisitorSession {
 
   @@index([orgId, startedAt])
   @@index([orgId, anonymousId])
+  @@index([orgId, propertyId, startedAt])
   @@index([visitorId])
 }
 
@@ -1817,6 +1841,12 @@ model VisitorEvent {
   session   VisitorSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   visitorId String?
   visitor   Visitor?       @relation(fields: [visitorId], references: [id], onDelete: SetNull)
+
+  // Same attribution as the parent VisitorSession — copied at write time
+  // (Wave 3 Phase 3), not re-inferred, so a session that later gets a
+  // property doesn't leave its earlier events orphaned from filters.
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
 
   type     String // "pageview" | "identify" | "scroll" | "timing" | "click" | "form_submit" | "unload"
   url      String?
@@ -1833,6 +1863,7 @@ model VisitorEvent {
   createdAt  DateTime @default(now())
 
   @@index([orgId, occurredAt])
+  @@index([orgId, propertyId, occurredAt])
   @@index([sessionId])
   @@index([visitorId])
   @@index([type])
@@ -2328,6 +2359,17 @@ enum SeoSyncStatus {
   ERROR
 }
 
+// Defense-in-depth note (applies to every `propertyId` FK added in Wave 3:
+// SeoSnapshot, SeoQuery, SeoLandingPage below, plus VisitorSession,
+// VisitorEvent, and PixelProvisionRequest): the FK references Property(id)
+// only, with no constraint that Property.orgId matches the row's own
+// orgId. Not currently exploitable — every writer derives propertyId from
+// already org-scoped state (an org's own SeoIntegration/session/property
+// loop), never from a caller-supplied value. A future caller-supplied
+// propertyId on any of these models would need explicit validation via
+// propertyInScope() before write; the DB alone will not catch a
+// cross-tenant propertyId.
+
 model SeoIntegration {
   id    String       @id @default(cuid())
   orgId String
@@ -2368,11 +2410,36 @@ model SeoIntegration {
   @@index([propertyId])
 }
 
-// Daily aggregate per tenant. Re-run-safe via the unique (orgId, date) index.
+// Daily aggregate per tenant (optionally per property, Wave 3 Phase 5).
+// Re-run-safe, but NOT via a Prisma @@unique — Prisma can't express the
+// partial-unique shape this model needs (one org-wide row per date, PLUS
+// one row per property per date, coexisting). Uniqueness is enforced by
+// two partial unique indexes created in raw SQL
+// (prisma/migrations/20260801_add_seo_metrics_property_dimension):
+//   "SeoSnapshot_org_date_orgwide_key" on (orgId, date) WHERE propertyId IS NULL
+//   "SeoSnapshot_org_prop_date_key" on (orgId, propertyId, date) WHERE propertyId IS NOT NULL
+//
+// WARNING: these partial indexes are invisible to Prisma's migration
+// diff engine — never use `prisma db push` or `migrate dev` (its
+// reset/drift-repair path) against a real database for this schema.
+// Either can generate a DROP INDEX for these six indexes (three models:
+// SeoSnapshot, SeoQuery, SeoLandingPage), since Prisma sees no @@unique
+// matching them. Partial uniques live only in SQL migrations; always use
+// `prisma migrate deploy`.
 model SeoSnapshot {
   id    String       @id @default(cuid())
   orgId String
   org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  // NULL = org-wide row (legacy behavior / single-property orgs pre-dating
+  // this column). Populated = scoped to one Property's GSC/GA4 data so two
+  // properties' syncs stop overwriting each other. CASCADE (not SetNull):
+  // nulling a property-scoped row on delete could collide with the
+  // org-wide partial unique for the same date — see lib/actions/
+  // properties.ts deleteProperty. Property-scoped metric rows die with
+  // the property instead.
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   date             DateTime // start of the calendar day in UTC
   organicSessions  Int      @default(0)
@@ -2385,15 +2452,24 @@ model SeoSnapshot {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([orgId, date])
   @@index([orgId, date])
+  @@index([orgId, propertyId, date])
 }
 
-// One row per (tenant, date, query). Drives the "top queries" table.
+// One row per (tenant, date, query[, property]). Drives the "top queries"
+// table. Uniqueness enforced by partial unique indexes in raw SQL, same
+// pattern as SeoSnapshot above: "SeoQuery_org_date_query_orgwide_key" on
+// (orgId, date, query) WHERE propertyId IS NULL, and
+// "SeoQuery_org_prop_date_query_key" on (orgId, propertyId, date, query)
+// WHERE propertyId IS NOT NULL.
 model SeoQuery {
   id    String       @id @default(cuid())
   orgId String
   org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  // CASCADE — see SeoSnapshot.propertyId above for why (not SetNull).
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   date        DateTime
   query       String   @db.Text
@@ -2404,16 +2480,25 @@ model SeoQuery {
 
   createdAt DateTime @default(now())
 
-  @@unique([orgId, date, query])
   @@index([orgId, date])
   @@index([orgId, clicks])
+  @@index([orgId, propertyId, date])
 }
 
-// One row per (tenant, date, url). Drives the "top landing pages" table.
+// One row per (tenant, date, url[, property]). Drives the "top landing
+// pages" table. Uniqueness enforced by partial unique indexes in raw SQL,
+// same pattern as SeoSnapshot above: "SeoLandingPage_org_date_url_orgwide_key"
+// on (orgId, date, url) WHERE propertyId IS NULL, and
+// "SeoLandingPage_org_prop_date_url_key" on (orgId, propertyId, date, url)
+// WHERE propertyId IS NOT NULL.
 model SeoLandingPage {
   id    String       @id @default(cuid())
   orgId String
   org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  // CASCADE — see SeoSnapshot.propertyId above for why (not SetNull).
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   date              DateTime
   url               String   @db.Text
@@ -2424,9 +2509,9 @@ model SeoLandingPage {
 
   createdAt DateTime @default(now())
 
-  @@unique([orgId, date, url])
   @@index([orgId, date])
   @@index([orgId, sessions])
+  @@index([orgId, propertyId, date])
 }
 
 // Generic OAuth token storage for self-serve integration connect flows.
@@ -4574,13 +4659,13 @@ model ContentDraft {
   model          String?
   estimatedScore Int?
 
-  status      DraftStatus @default(GENERATING)
-  generatedAt DateTime?
-  submittedAt DateTime?
-  reviewedAt  DateTime?
-  reviewedBy  String?
-  reviewNotes String?     @db.Text
-  shippedAt   DateTime?
+  status       DraftStatus @default(GENERATING)
+  generatedAt  DateTime?
+  submittedAt  DateTime?
+  reviewedAt   DateTime?
+  reviewedBy   String?
+  reviewNotes  String?     @db.Text
+  shippedAt    DateTime?
   /// Proof-of-life for managed publishing ("Managed by LeaseStack"): the
   /// live URL the piece was published at. Set by the admin when shipping;
   /// rendered to the tenant so "shipped" is verifiable, not a claim.

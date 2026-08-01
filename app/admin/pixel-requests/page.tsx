@@ -66,6 +66,9 @@ export default async function PixelRequestsPage({
         org: {
           select: { id: true, name: true, slug: true },
         },
+        property: {
+          select: { id: true, name: true },
+        },
         requestedByUserId: true,
       },
     }),
@@ -148,7 +151,10 @@ export default async function PixelRequestsPage({
                       >
                         {r.org.name}
                       </Link>
-                      <div className="text-[11px] text-muted-foreground">{r.org.slug}</div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {r.org.slug}
+                        {r.property ? ` · ${r.property.name}` : ""}
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <div className="text-[13px] text-foreground">{r.websiteName}</div>

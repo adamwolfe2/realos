@@ -96,6 +96,7 @@ export async function scaffoldPropertyIntegrations(
           await prisma.pixelProvisionRequest.create({
             data: {
               orgId,
+              propertyId: property.id,
               websiteName: property.name,
               websiteUrl: property.websiteUrl ?? "",
               notes: `Auto-requested at onboarding for ${property.name} (${marker})`,

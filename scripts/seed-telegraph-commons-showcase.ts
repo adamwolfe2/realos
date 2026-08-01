@@ -712,33 +712,39 @@ async function main() {
     });
 
   // 28 days of SEO snapshots
+  // Find-then-write (not upsert) — matches lib/integrations/seo-sync.ts.
+  // SeoSnapshot's uniqueness is a raw-SQL partial index, not a Prisma
+  // @@unique, so orgId_date is not a valid upsert `where` key anymore.
+  // Explicit propertyId so the demo rows are scoped to Telegraph Commons,
+  // consistent with the property-scoped SeoIntegration rows above.
   const seoRng = seededRandom(99443211);
   for (let dayOffset = 27; dayOffset >= 0; dayOffset--) {
     const date = dateOnly(daysAgo(dayOffset));
     const baseSessions = 95 + seoRng() * 60;
     const baseImpr = 3200 + seoRng() * 1400;
     const clicks = Math.round(baseSessions * (0.7 + seoRng() * 0.4));
-    await prisma.seoSnapshot.upsert({
-      where: { orgId_date: { orgId, date } },
-      update: {
-        organicSessions: Math.round(baseSessions),
-        organicUsers: Math.round(baseSessions * 0.78),
-        totalImpressions: Math.round(baseImpr),
-        totalClicks: clicks,
-        avgCtr: clicks / Math.max(1, baseImpr),
-        avgPosition: 14 - seoRng() * 4,
-      },
-      create: {
-        orgId,
-        date,
-        organicSessions: Math.round(baseSessions),
-        organicUsers: Math.round(baseSessions * 0.78),
-        totalImpressions: Math.round(baseImpr),
-        totalClicks: clicks,
-        avgCtr: clicks / Math.max(1, baseImpr),
-        avgPosition: 14 - seoRng() * 4,
-      },
+    const data = {
+      organicSessions: Math.round(baseSessions),
+      organicUsers: Math.round(baseSessions * 0.78),
+      totalImpressions: Math.round(baseImpr),
+      totalClicks: clicks,
+      avgCtr: clicks / Math.max(1, baseImpr),
+      avgPosition: 14 - seoRng() * 4,
+    };
+    const existingSnapshot = await prisma.seoSnapshot.findFirst({
+      where: { orgId, propertyId, date },
+      select: { id: true },
     });
+    if (existingSnapshot) {
+      await prisma.seoSnapshot.update({
+        where: { id: existingSnapshot.id },
+        data,
+      });
+    } else {
+      await prisma.seoSnapshot.create({
+        data: { orgId, propertyId, date, ...data },
+      });
+    }
   }
 
   // Top organic queries (last 7 days, what the SEO page surfaces).
@@ -752,32 +758,33 @@ async function main() {
     { q: "furnished housing berkeley",       impr: 1080, ctr: 0.045, pos: 8.2 },
     { q: "all inclusive student housing berkeley", impr: 870, ctr: 0.062, pos: 6.4 },
   ];
+  // Find-then-write (not upsert) — see the SeoSnapshot loop above for why.
+  // No .catch(() => null) swallow: a real schema/runtime break here should
+  // be loud, not a silently half-seeded showcase org.
   for (const dayOffset of [0, 7]) {
     const date = dateOnly(daysAgo(dayOffset));
     for (const row of TOP_QUERIES) {
       const clicks = Math.round(row.impr * row.ctr);
-      await prisma.seoQuery
-        .upsert({
-          where: {
-            orgId_date_query: { orgId, date, query: row.q },
-          },
-          update: {
-            impressions: row.impr,
-            clicks,
-            ctr: row.ctr,
-            position: row.pos,
-          },
-          create: {
-            orgId,
-            date,
-            query: row.q,
-            impressions: row.impr,
-            clicks,
-            ctr: row.ctr,
-            position: row.pos,
-          },
-        })
-        .catch(() => null);
+      const data = {
+        impressions: row.impr,
+        clicks,
+        ctr: row.ctr,
+        position: row.pos,
+      };
+      const existingQuery = await prisma.seoQuery.findFirst({
+        where: { orgId, propertyId, date, query: row.q },
+        select: { id: true },
+      });
+      if (existingQuery) {
+        await prisma.seoQuery.update({
+          where: { id: existingQuery.id },
+          data,
+        });
+      } else {
+        await prisma.seoQuery.create({
+          data: { orgId, propertyId, date, query: row.q, ...data },
+        });
+      }
     }
   }
 
@@ -790,29 +797,31 @@ async function main() {
     { url: "https://telegraphcommons.com/tour/",             sessions: 96,  bounce: 0.18, dwell: 88  },
     { url: "https://telegraphcommons.com/about/",            sessions: 73,  bounce: 0.46, dwell: 47  },
   ];
+  // Find-then-write (not upsert) — see the SeoSnapshot loop above for why.
+  // No .catch(() => null) swallow — see the SeoQuery loop above for why.
   for (const dayOffset of [0, 7]) {
     const date = dateOnly(daysAgo(dayOffset));
     for (const p of TOP_PAGES) {
-      await prisma.seoLandingPage
-        .upsert({
-          where: { orgId_date_url: { orgId, date, url: p.url } },
-          update: {
-            sessions: p.sessions,
-            users: Math.round(p.sessions * 0.85),
-            bounceRate: p.bounce,
-            avgEngagementTime: p.dwell,
-          },
-          create: {
-            orgId,
-            date,
-            url: p.url,
-            sessions: p.sessions,
-            users: Math.round(p.sessions * 0.85),
-            bounceRate: p.bounce,
-            avgEngagementTime: p.dwell,
-          },
-        })
-        .catch(() => null);
+      const data = {
+        sessions: p.sessions,
+        users: Math.round(p.sessions * 0.85),
+        bounceRate: p.bounce,
+        avgEngagementTime: p.dwell,
+      };
+      const existingPage = await prisma.seoLandingPage.findFirst({
+        where: { orgId, propertyId, date, url: p.url },
+        select: { id: true },
+      });
+      if (existingPage) {
+        await prisma.seoLandingPage.update({
+          where: { id: existingPage.id },
+          data,
+        });
+      } else {
+        await prisma.seoLandingPage.create({
+          data: { orgId, propertyId, date, url: p.url, ...data },
+        });
+      }
     }
   }
 

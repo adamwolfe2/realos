@@ -24,9 +24,12 @@ export function MetricStrip({
     organicSessions: { current: number; deltaPct: number | null };
     chatbotConversations: { current: number; deltaPct: number | null };
   };
-  /** True when an active-property filter applies. Ad spend + organic have no
-      property dimension yet, so their tiles are labeled portfolio-wide to
-      keep the strip honest (a scoped cost-per-lead read would be wrong). */
+  /** True when an active-property filter applies. AdMetricDaily still has no
+      property dimension, so the ad spend tile stays labeled portfolio-wide
+      to keep the strip honest. Organic sessions gained a propertyId column
+      (Wave 3 Phase 5) and is now genuinely scoped when a property filter is
+      active — if that property has no per-property SEO rows yet the tile
+      just reads 0, which is accurate, not a bug. */
   scopedToProperty?: boolean;
 }) {
   const rows: Metric[] = [
@@ -55,7 +58,7 @@ export function MetricStrip({
       good: "down",
     },
     {
-      label: scopedToProperty ? "Organic (portfolio-wide)" : "Organic",
+      label: "Organic",
       value: metrics.organicSessions.current.toLocaleString(),
       deltaPct: metrics.organicSessions.deltaPct,
       good: "up",

@@ -227,8 +227,14 @@ async function getOrganicSessionsForUrls(
   patterns: string[],
   since: Date,
 ): Promise<number | null> {
-  // SeoLandingPage rows don't have a property FK. We aggregate sessions where
-  // the URL matches any of our slug/name patterns (case-insensitive).
+  // SeoLandingPage gained a propertyId column in Wave 3 Phase 5, but this
+  // URL-pattern heuristic was deliberately not rewired to use it (a
+  // contained follow-up, matching the same deferral note on
+  // app/portal/seo/page.tsx). We still aggregate sessions by matching the
+  // URL against slug/name patterns (case-insensitive), which is now
+  // strictly worse than filtering on the column for orgs with
+  // property-scoped rows and can double-count a NULL-scoped row alongside
+  // a property-scoped row for the same url+date.
   const or: Prisma.SeoLandingPageWhereInput[] = patterns.map((p) => ({
     url: { contains: p.replace(/%/g, ""), mode: "insensitive" as const },
   }));

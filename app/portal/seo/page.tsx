@@ -178,10 +178,12 @@ export default async function SeoPage({
   const accessDenied = isAccessDenied(scope, requestedIds);
   const effectiveIds = effectivePropertyIds(scope, requestedIds);
 
-  // SeoSnapshot/SeoQuery/SeoLandingPage are still org-level today (no
-  // propertyId column). If the user is property-restricted, hide the
-  // aggregate trend sections to avoid leaking org-wide data through them.
-  // Per-property integration cards remain visible because the
+  // SeoSnapshot/SeoQuery/SeoLandingPage gained a propertyId column in Wave 3
+  // Phase 5, but this page's aggregate trend sections were not rewired to
+  // scope by it (deliberately deferred — a contained follow-up, not part of
+  // that slice). Until they are, keep hiding the aggregate trend sections
+  // from property-restricted users to avoid leaking org-wide data through
+  // them. Per-property integration cards remain visible because the
   // SeoIntegration model itself is propertyId-aware.
   const isRestricted = scope.allowedPropertyIds !== null;
 

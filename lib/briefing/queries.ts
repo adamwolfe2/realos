@@ -247,8 +247,31 @@ export async function getBriefingMetrics(
   orgId: string,
   opts: { propertyIds?: string[] | null } = {},
 ) {
-  // Ad spend + organic sessions stay org-level: AdMetricDaily and
-  // SeoSnapshot have no property dimension yet (Wave-3 topology work).
+  // Ad spend stays org-level: AdMetricDaily has no property dimension.
+  // Organic sessions (SeoSnapshot) gained a propertyId column in Wave 3
+  // Phase 5 — when the caller passes propertyIds we filter to that
+  // property's own rows only (strictly propertyId IN (...), NOT the
+  // org-wide NULL rows). When no propertyIds are passed we read org-wide
+  // (both NULL rows and property rows, unfiltered SUM).
+  //
+  // Why this doesn't double-count (2026-08-01 addendum — the original
+  // comment here claimed the invariant came from "each SeoIntegration
+  // writes to exactly one scope," which is false: two integrations in two
+  // different scopes can cover the same org+date, and summing both would
+  // double-count). The actual invariant is enforced write-side in
+  // lib/integrations/seo-sync.ts: once a property-scoped integration has
+  // synced a date, the sync run deletes that date's org-wide NULL row (see
+  // the "Double-counting write-side policy" comment there), so an
+  // org-wide unfiltered SUM never sees both a NULL row and a property row
+  // for the same date. Two caveats: (1) transition period — a date synced
+  // before this policy existed can still carry a stale NULL row alongside
+  // a newer property row until the next sync for that date supersedes it;
+  // (2) orgs whose ONLY integrations are NULL-scoped (never had a
+  // property-scoped integration sync) never trigger the delete, so their
+  // property-filtered reads (the propertyIds-passed branch above) will
+  // read 0 even though the org has real, just-unattributed, organic
+  // traffic — that is a known limitation of the strict propertyId filter,
+  // not a bug in this query.
   const propertyFilter = propertyFilterOf(opts.propertyIds);
   const now = Date.now();
   const since7d = new Date(now - 7 * DAY);
@@ -281,11 +304,11 @@ export async function getBriefingMetrics(
       _sum: { spendCents: true },
     }),
     prisma.seoSnapshot.aggregate({
-      where: { orgId, date: { gte: since7d } },
+      where: { orgId, ...propertyFilter, date: { gte: since7d } },
       _sum: { organicSessions: true },
     }),
     prisma.seoSnapshot.aggregate({
-      where: { orgId, date: { gte: since14d, lt: since7d } },
+      where: { orgId, ...propertyFilter, date: { gte: since14d, lt: since7d } },
       _sum: { organicSessions: true },
     }),
     prisma.chatbotConversation.count({

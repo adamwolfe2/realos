@@ -7,16 +7,31 @@ import { Button } from "@/components/ui/button";
 // (/api/portal/pixel/check-install) which fetches the client's site server-side
 // and confirms the Cursive pixel loader is actually present. Replaces the old
 // "paste-and-pray" flow where the only signal was a webhook eventually landing.
+//
+// Wave 3 Phase 8: the route now probes every pixel row for the org and
+// returns a `results` array keyed by propertyId. Single-property orgs still
+// get exactly one row so the plain summary message below covers them; a
+// multi-property org additionally sees the per-property breakdown.
+
+type ProbeStatus =
+  | "DETECTED_OK"
+  | "DETECTED_WRONG_PIXEL"
+  | "NOT_DETECTED"
+  | "NO_URL"
+  | "FETCH_FAILED";
+
+type PerPropertyResult = {
+  propertyId: string | null;
+  propertyName: string | null;
+  status: ProbeStatus;
+  message: string;
+};
 
 type ProbeResult = {
   ok: boolean;
-  status:
-    | "DETECTED_OK"
-    | "DETECTED_WRONG_PIXEL"
-    | "NOT_DETECTED"
-    | "NO_URL"
-    | "FETCH_FAILED";
+  status: ProbeStatus;
   message: string;
+  results?: PerPropertyResult[];
 };
 
 const TONE: Record<ProbeResult["status"], string> = {
@@ -78,6 +93,22 @@ export function PixelInstallCheck() {
           style={{ borderRadius: 6 }}
         >
           {result.message}
+        </div>
+      ) : null}
+      {result && result.results && result.results.length > 1 ? (
+        <div className="space-y-1.5 pt-1">
+          {result.results.map((r) => (
+            <div
+              key={r.propertyId ?? "org-wide"}
+              className={`rounded-md border px-3 py-2 text-[11px] leading-relaxed ${TONE[r.status]}`}
+              style={{ borderRadius: 6 }}
+            >
+              <span className="font-medium">
+                {r.propertyName ?? "Org-wide"}:
+              </span>{" "}
+              {r.message}
+            </div>
+          ))}
         </div>
       ) : null}
     </div>

@@ -597,6 +597,10 @@ export async function processCursiveEvent(
         utmSource: utmSource ?? null,
         utmMedium: utmMedium ?? null,
         utmCampaign: utmCampaign ?? null,
+        // Wave 3 Phase 3: reuse the SAME attribution already resolved above
+        // (integration.propertyId ?? URL inference) — never re-run inference
+        // for the session/event rows.
+        propertyId: attributedPropertyId ?? null,
       });
     } catch (err) {
       // Non-fatal: log via Sentry breadcrumb when configured but never throw.
@@ -647,6 +651,8 @@ async function recordPageViewSession(args: {
   utmSource: string | null;
   utmMedium: string | null;
   utmCampaign: string | null;
+  /** Same attribution already resolved for the Visitor/Lead write. */
+  propertyId: string | null;
 }): Promise<void> {
   const path = pathFromUrl(args.pageUrl);
 
@@ -658,8 +664,20 @@ async function recordPageViewSession(args: {
       lastEventAt: { gte: idleThreshold },
     },
     orderBy: { lastEventAt: "desc" },
-    select: { id: true, startedAt: true },
+    select: { id: true, startedAt: true, propertyId: true },
   });
+
+  // Effective attribution for THIS event, computed once and reused for both
+  // the session backfill and the event write below. Without this, a
+  // session already attributed by an earlier event (recentSession.propertyId
+  // set) but whose current event's URL doesn't resolve (args.propertyId ===
+  // null) would write this event with propertyId NULL under a
+  // property-scoped session — orphaning it from property-filtered reads,
+  // which is exactly what VisitorEvent.propertyId's "copied from the parent
+  // session" comment promises never happens.
+  const sessionPropertyId = recentSession
+    ? backfillPropertyId(recentSession.propertyId, args.propertyId) ?? null
+    : args.propertyId;
 
   let sessionId: string;
   if (recentSession) {
@@ -669,6 +687,9 @@ async function recordPageViewSession(args: {
       data: {
         lastEventAt: args.eventTime,
         pageviewCount: { increment: 1 },
+        // Backfill only — same first-write-wins rule as Visitor.propertyId
+        // so an already-attributed session never gets re-filed mid-visit.
+        propertyId: sessionPropertyId,
       },
     });
   } else {
@@ -676,6 +697,7 @@ async function recordPageViewSession(args: {
       data: {
         orgId: args.orgId,
         visitorId: args.visitorId,
+        propertyId: args.propertyId,
         anonymousId: args.anonymousId,
         sessionToken: crypto.randomUUID(),
         firstUrl: args.pageUrl,
@@ -699,6 +721,7 @@ async function recordPageViewSession(args: {
       orgId: args.orgId,
       sessionId,
       visitorId: args.visitorId,
+      propertyId: sessionPropertyId,
       type: "pageview",
       url: args.pageUrl,
       path,
