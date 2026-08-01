@@ -313,6 +313,23 @@ function AcquisitionSection(s: ReportSnapshot): React.ReactNode {
         </div>
       </Card>
 
+      {s.popupStats ? (
+        <Card>
+          <SectionHeading>Popup performance</SectionHeading>
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+            <Stat value={num(s.popupStats.shown)} label="Shown" />
+            <Stat value={num(s.popupStats.ctaClicks)} label="CTA clicks" />
+            <Stat value={num(s.popupStats.converted)} label="Converted" />
+            <Stat value={num(s.popupStats.dismissed)} label="Dismissed" />
+          </div>
+          {s.popupStats.conversionRate != null ? (
+            <p className="mt-3 text-[11px] text-slate-600">
+              {pct(s.popupStats.conversionRate)} conversion rate
+            </p>
+          ) : null}
+        </Card>
+      ) : null}
+
       {attribution.length ? (
         <Card>
           <SectionHeading>Attribution by source</SectionHeading>

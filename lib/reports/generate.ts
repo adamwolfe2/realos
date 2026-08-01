@@ -20,6 +20,7 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { buildPropertyUrlPatterns } from "@/lib/properties/queries";
 import { realAdAccountWhere } from "@/lib/integrations/real-ad-account";
 import { reportPeriodWindow } from "@/lib/recency";
+import { buildPopupStats, type ReportPopupStats } from "@/lib/reports/popup-stats";
 
 // ---------------------------------------------------------------------------
 // Report snapshot generator.
@@ -444,6 +445,11 @@ export type ReportSnapshot = {
   // Content (blog posts + neighborhood landing pages) shipped in the
   // window. Drives the new Content tab.
   contentStats?: ReportContentStats;
+  // Popup performance for the period — Shown/CTA clicks/Converted/Dismissed,
+  // same rollup as the /portal/popups KPI strip. Undefined when the org has
+  // no popup campaigns so pre-popups reports (and reports for orgs that
+  // never built one) don't render an empty section.
+  popupStats?: ReportPopupStats;
   // AppFolio lifecycle layer — applications submitted + approved +
   // leases signed in period + total active leases. Norman bug May 22:
   // SG was signing 20+ leases at TC that never showed up because the
@@ -1681,6 +1687,14 @@ export async function generateReportSnapshot(
     periodEnd,
   ).catch(() => undefined);
 
+  // Popup performance — Shown/CTA clicks/Converted/Dismissed for the period.
+  const popupStats = await buildPopupStats(
+    orgId,
+    scope.propertyId,
+    periodStart,
+    periodEnd,
+  ).catch(() => undefined);
+
   // Connection status for every integration — drives section gating in
   // the renderer + email so we never show fake $X ad spend / 0 tours
   // numbers for sources the operator hasn't actually connected.
@@ -1775,6 +1789,7 @@ export async function generateReportSnapshot(
     visitorStats,
     aeoStats,
     contentStats,
+    popupStats,
     lifecycleStats,
     dataSources,
   };

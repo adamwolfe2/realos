@@ -36,6 +36,8 @@ export function createMockPrisma() {
     project: createModelMock(),
     property: createModelMock(),
     clientReport: createModelMock(),
+    popupCampaign: createModelMock(),
+    popupEvent: createModelMock(),
     userPropertyAccess: {
       ...createModelMock(),
       deleteMany: vi.fn(),
