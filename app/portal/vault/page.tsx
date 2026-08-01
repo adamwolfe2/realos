@@ -1,12 +1,13 @@
 import * as React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { KeyRound, Plus, Upload, Lock } from "lucide-react";
+import { KeyRound, Plus, Upload, Lock, Eye, Clock, RotateCw } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import { Prisma } from "@prisma/client";
 import { VaultClient } from "./vault-client";
+import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 
 export const metadata: Metadata = { title: "Vault" };
 export const dynamic = "force-dynamic";
@@ -90,32 +91,45 @@ export default async function VaultPage() {
       }
     : {};
 
-  const [entries, properties, recentReveals] = await Promise.all([
-    prisma.credentialEntry.findMany({
-      where: {
-        ...tenantWhere(scope),
-        deletedAt: null,
-        ...propertyGate,
-      },
-      orderBy: { updatedAt: "desc" },
-      take: 500,
-      include: {
-        property: { select: { id: true, name: true } },
-      },
-    }),
-    prisma.property.findMany({
-      where: { orgId: scope.orgId },
-      select: { id: true, name: true },
-      orderBy: { name: "asc" },
-    }),
-    prisma.credentialAccessLog.count({
-      where: {
-        orgId: scope.orgId,
-        action: "reveal",
-        occurredAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-      },
-    }),
-  ]);
+  const [totalCredentials, entries, properties, recentReveals] =
+    await Promise.all([
+      // Same where as the list below — entries is capped at take:500 and
+      // is not a valid "total stored" count on its own.
+      prisma.credentialEntry.count({
+        where: {
+          ...tenantWhere(scope),
+          deletedAt: null,
+          ...propertyGate,
+        },
+      }),
+      prisma.credentialEntry.findMany({
+        where: {
+          ...tenantWhere(scope),
+          deletedAt: null,
+          ...propertyGate,
+        },
+        orderBy: { updatedAt: "desc" },
+        take: 500,
+        include: {
+          property: { select: { id: true, name: true } },
+        },
+      }),
+      prisma.property.findMany({
+        where: { orgId: scope.orgId },
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      }),
+      prisma.credentialAccessLog.count({
+        where: {
+          orgId: scope.orgId,
+          action: "reveal",
+          occurredAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+          // Property-gate through the credential relation — the log row
+          // itself has no propertyId (see schema comment on the model).
+          credential: propertyGate,
+        },
+      }),
+    ]);
 
   // Strip the encrypted secret fields before passing rows to the
   // client. The list view never needs ciphertext — it's only fetched
@@ -141,6 +155,22 @@ export default async function VaultPage() {
     scope.allowedPropertyIds ? scope.allowedPropertyIds.includes(p.id) : true,
   );
 
+  // KPI strip — derived entirely from `entries` + `recentReveals` (both
+  // already fetched above). No extra queries.
+  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+  const expiredCount = entries.filter(
+    (e) => e.expiresAt != null && e.expiresAt.getTime() <= Date.now(),
+  ).length;
+  const expiringSoonCount = entries.filter(
+    (e) =>
+      e.expiresAt != null &&
+      e.expiresAt.getTime() > Date.now() &&
+      e.expiresAt.getTime() - Date.now() < THIRTY_DAYS_MS,
+  ).length;
+  const neverRotatedCount = entries.filter(
+    (e) => e.lastRotatedAt == null,
+  ).length;
+
   return (
     <div className="space-y-3">
       <PageHeader
@@ -148,26 +178,46 @@ export default async function VaultPage() {
         description="Encrypted credentials for every external platform. Click a row to reveal — every reveal is logged."
       />
 
+      <section
+        aria-label="Vault at a glance"
+        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 ls-stagger"
+      >
+        <KpiTile
+          label="Credentials"
+          value={totalCredentials.toLocaleString()}
+          hint={totalCredentials === 0 ? "None yet" : "Total stored"}
+          icon={<KeyRound className="h-4 w-4" />}
+        />
+        <KpiTile
+          label="Reveals (24h)"
+          value={recentReveals.toLocaleString()}
+          hint="Every reveal is logged"
+          icon={<Eye className="h-4 w-4" />}
+        />
+        <KpiTile
+          label="Expiring soon"
+          value={expiringSoonCount.toLocaleString()}
+          hint={
+            expiredCount > 0
+              ? `${expiredCount} expired`
+              : expiringSoonCount === 0
+                ? "None within 30 days"
+                : "Within 30 days"
+          }
+          icon={<Clock className="h-4 w-4" />}
+        />
+        <KpiTile
+          label="Never rotated"
+          value={neverRotatedCount.toLocaleString()}
+          hint={neverRotatedCount === 0 ? "All rotated at least once" : "No rotation on record"}
+          icon={<RotateCw className="h-4 w-4" />}
+        />
+      </section>
+
       <SectionCard label="" padded={false}>
-        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
-          <div className="flex items-center gap-6 text-xs text-muted-foreground">
-            <span>
-              <span className="font-semibold text-foreground">
-                {entries.length}
-              </span>{" "}
-              credentials
-            </span>
-            <span>
-              <span className="font-semibold text-foreground">
-                {recentReveals}
-              </span>{" "}
-              reveals in last 24h
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <VaultImportButton properties={propertyOptions} />
-            <VaultNewButton properties={propertyOptions} />
-          </div>
+        <div className="flex items-center justify-end gap-2 border-b border-border px-4 py-3">
+          <VaultImportButton properties={propertyOptions} />
+          <VaultNewButton properties={propertyOptions} />
         </div>
 
         <VaultClient entries={safeEntries} properties={propertyOptions} />

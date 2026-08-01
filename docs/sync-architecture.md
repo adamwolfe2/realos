@@ -142,7 +142,7 @@ self-updates.
 ## Future work
 
 - Extend the on-demand sync pattern to ads + SEO so opening
-  `/portal/campaigns` or `/portal/seo` on stale data triggers a refresh.
+  `/portal/ads` or `/portal/seo` on stale data triggers a refresh.
   Same pattern as AppFolio; about 30 minutes of work per integration.
 - Per-tenant adaptive cadence: tenants with no leads in 30 days don't
   need ads synced every 30 min. Add `nextSyncAt` to the integration

@@ -130,7 +130,7 @@ export const audienceExhaustionDetector: Detector = {
         propertyId: campaign.propertyId,
         entityType: "campaign",
         entityId: campaign.id,
-        href: `/portal/campaigns#${campaign.id}`,
+        href: `/portal/ads#${campaign.id}`,
         dedupeKey: `audience_exhaustion:${campaign.id}:week:${weekKey}`,
         context: {
           campaignId: campaign.id,

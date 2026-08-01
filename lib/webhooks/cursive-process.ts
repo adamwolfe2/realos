@@ -9,6 +9,11 @@ import {
 } from "@prisma/client";
 import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
 import { backfillPropertyId } from "@/lib/tenancy/property-filter";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
+import {
+  resolvePropertyForChatPage,
+  type PropertyAttributionInput,
+} from "@/lib/chatbot/property-attribution";
 
 // the upstream pixel provider event-processing core. Extracted from the shared
 // /api/webhooks/cursive route so the per-tenant path-token route
@@ -61,6 +66,12 @@ export type CursiveProcessResult = {
 export async function processCursiveEvent(
   ev: Record<string, unknown>,
   integrationOverride?: ResolvedIntegration,
+  // Org property list, keyed by orgId, reused across every event in one
+  // webhook POST. A batch can carry hundreds of events for the same org —
+  // fetching properties per event would multiply the query count for no
+  // reason. Callers looping over a batch should create one Map and pass it
+  // to every call; a fresh Map per call is also safe (no cross-request state).
+  orgPropertiesCache?: Map<string, PropertyAttributionInput[]>,
 ): Promise<CursiveProcessResult> {
   const flat = flatten(ev);
 
@@ -342,6 +353,26 @@ export async function processCursiveEvent(
     "event_data.page_url",
   );
 
+  // Property attribution. CONSERVATIVE RULE (decided 2026-07-31): a pixel
+  // row explicitly bound to a property (integration.propertyId set) keeps
+  // that binding always — no behavior change for bound pixels. URL
+  // inference only runs for legacy org-wide rows (propertyId null), and
+  // only helps when it can name a specific building; an ambiguous/no-match
+  // URL leaves attribution null exactly like today. Gated on pageUrl so a
+  // single-property org's legacy pixel doesn't auto-bind every URL-less
+  // event to its one property (that fallback is fine for chatbot, not for
+  // an anonymous pixel visitor), and so URL-less events skip the property
+  // query entirely.
+  const attributedPropertyId =
+    integration.propertyId ??
+    (pageUrl
+      ? await resolveAttributedPropertyId(
+          integration.orgId,
+          pageUrl,
+          orgPropertiesCache,
+        )
+      : null);
+
   const now = new Date();
   const eventTime = eventTimestamp ? new Date(eventTimestamp) : now;
   const intentScore = computeIntentScore({
@@ -404,7 +435,7 @@ export async function processCursiveEvent(
         // none yet. A person can browse two buildings' sites; re-filing them
         // on every event would make the row flap and would change which
         // operator sees them under per-property access.
-        propertyId: backfillPropertyId(existing.propertyId, integration.propertyId),
+        propertyId: backfillPropertyId(existing.propertyId, attributedPropertyId),
         cursiveVisitorId: pickHighestPriorityIdentity(
           existing.cursiveVisitorId,
           profileId,
@@ -447,8 +478,9 @@ export async function processCursiveEvent(
         data: {
           orgId: integration.orgId,
           // Per-property pixels are a first-class setup (CursiveIntegration is
-          // unique on (orgId, propertyId)). Null only for legacy org-wide rows.
-          propertyId: integration.propertyId ?? null,
+          // unique on (orgId, propertyId)). Null only for legacy org-wide rows
+          // whose URL didn't resolve to a specific property.
+          propertyId: attributedPropertyId ?? null,
           cursiveVisitorId: identityKey,
           hashedEmail: hemSha256,
           status,
@@ -485,7 +517,7 @@ export async function processCursiveEvent(
         visitor = await prisma.visitor.update({
           where: { id: winner.id },
           data: {
-            propertyId: backfillPropertyId(winner.propertyId, integration.propertyId),
+            propertyId: backfillPropertyId(winner.propertyId, attributedPropertyId),
             lastSeenAt:
               eventTime > winner.lastSeenAt ? eventTime : winner.lastSeenAt,
             sessionCount:
@@ -510,7 +542,7 @@ export async function processCursiveEvent(
   if (leadWorthy && normalizedEmail) {
     const upserted = await upsertLead({
       orgId: integration.orgId,
-      propertyId: integration.propertyId ?? null,
+      propertyId: attributedPropertyId ?? null,
       email: normalizedEmail,
       firstName: firstName ?? null,
       lastName: lastName ?? null,
@@ -530,7 +562,7 @@ export async function processCursiveEvent(
       void notifyLeadCaptured({
         orgId: integration.orgId,
         leadId,
-        propertyId: integration.propertyId ?? null,
+        propertyId: attributedPropertyId ?? null,
         // PIXEL, not INGEST: this is a resolved anonymous browser, not an
         // inbound enquiry. Defaults to no email; the lead still appears in
         // the dashboard. Operators can opt in per workspace.
@@ -957,6 +989,39 @@ function mergeEnrichment(
   }
   if (Object.keys(base).length === 0) return Prisma.JsonNull;
   return base as Prisma.InputJsonValue;
+}
+
+/**
+ * Legacy org-wide pixel rows (propertyId null) get URL-based attribution.
+ * Fetches the org's property list once per webhook POST via the caller-
+ * supplied cache (keyed by orgId) instead of once per event.
+ */
+async function resolveAttributedPropertyId(
+  orgId: string,
+  pageUrl: string | undefined,
+  cache?: Map<string, PropertyAttributionInput[]>,
+): Promise<string | null> {
+  let properties = cache?.get(orgId);
+  if (!properties) {
+    // marketablePropertyWhere excludes EXCLUDED/ARCHIVED junk rows (parking
+    // lots, "Do not use" placeholders) — a junk row's slug could otherwise
+    // win attribution over a real building, or inflate the property count
+    // and defeat the single-property fallback. take:500 matches every
+    // other property-count site in the codebase.
+    properties = await prisma.property.findMany({
+      where: marketablePropertyWhere(orgId),
+      select: { id: true, slug: true, name: true },
+      take: 500,
+    });
+    cache?.set(orgId, properties);
+  }
+  // requireUrlMatch: the pixel path never falls back to "single property,
+  // must be that one" — an unrelated site with the pixel installed
+  // shouldn't get bound. Chatbot callers (resolvePropertyForChatPage called
+  // directly elsewhere) keep the fallback via the default.
+  return resolvePropertyForChatPage(pageUrl, properties, {
+    requireUrlMatch: true,
+  });
 }
 
 function pickHighestPriorityIdentity(

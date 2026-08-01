@@ -76,7 +76,22 @@ export async function POST(
   // their cadence window (e.g. appfolio-sync) honor it and run anyway —
   // otherwise "Run sync now" reports success while silently doing nothing.
   // Jobs that don't implement it simply ignore the unknown query param.
-  const target = `${getSiteUrl().replace(/\/$/, "")}/api/cron/${jobName}?force=true`;
+  //
+  // Tenant-scoped runs also carry ?orgId= so a click for a specific tenant
+  // targets that integration directly instead of falling into the cron's
+  // batch cap (appfolio-sync honors this; other jobs ignore the unknown
+  // param the same way they ignore force on jobs that don't implement it).
+  let orgId: string | null = null;
+  try {
+    const body = await req.json();
+    if (body?.scope === "tenant" && typeof body?.orgId === "string") {
+      orgId = body.orgId;
+    }
+  } catch {
+    // No body / not JSON — platform-scoped runs don't send one.
+  }
+  const orgIdQs = orgId ? `&orgId=${encodeURIComponent(orgId)}` : "";
+  const target = `${getSiteUrl().replace(/\/$/, "")}/api/cron/${jobName}?force=true${orgIdQs}`;
 
   // Fire-and-forget kickoff. We deliberately do NOT await the full cron
   // duration — they can take minutes. We DO await the initial connection

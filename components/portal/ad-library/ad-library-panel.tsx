@@ -20,7 +20,7 @@ import {
 
 // ---------------------------------------------------------------------------
 // AdLibraryPanel — operator-facing widget on the property detail Ads tab
-// (and the org-wide /portal/campaigns page). Lets the operator paste any
+// (and the org-wide /portal/ads page). Lets the operator paste any
 // Facebook Page URL or name and immediately see every ad currently
 // running in Meta's public Ad Library. Tracks changes over time so the
 // next visit shows "3 launched this week, 1 went inactive."

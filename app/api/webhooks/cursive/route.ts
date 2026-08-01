@@ -89,8 +89,15 @@ export async function POST(req: NextRequest) {
 
   try {
     const results = [];
+    // Shared across every event in this batch so property-attribution
+    // lookups for legacy org-wide pixels hit the DB once per org, not
+    // once per event.
+    const orgPropertiesCache = new Map<
+      string,
+      Array<{ id: string; slug: string; name: string }>
+    >();
     for (const ev of events) {
-      results.push(await processCursiveEvent(ev));
+      results.push(await processCursiveEvent(ev, undefined, orgPropertiesCache));
     }
     await prisma.webhookEvent.update({
       where: { id: envelope.id },

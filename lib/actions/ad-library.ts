@@ -68,7 +68,7 @@ export async function trackAdvertiserAction(input: {
   if (propertyId) {
     revalidatePath(`/portal/properties/${propertyId}`);
   }
-  revalidatePath("/portal/campaigns");
+  revalidatePath("/portal/ads");
 
   return scan.ok
     ? { ok: true, advertiserId: advertiser.id, ads: scan.found }
@@ -92,7 +92,7 @@ export async function rescanAdvertiserAction(
   if (owned.propertyId) {
     revalidatePath(`/portal/properties/${owned.propertyId}`);
   }
-  revalidatePath("/portal/campaigns");
+  revalidatePath("/portal/ads");
   return result.ok
     ? {
         ok: true,
@@ -116,6 +116,6 @@ export async function untrackAdvertiserAction(
   if (owned.propertyId) {
     revalidatePath(`/portal/properties/${owned.propertyId}`);
   }
-  revalidatePath("/portal/campaigns");
+  revalidatePath("/portal/ads");
   return { ok: true };
 }

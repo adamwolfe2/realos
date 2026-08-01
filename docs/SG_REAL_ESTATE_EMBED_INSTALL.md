@@ -4,7 +4,7 @@ Goal: install the LeaseStack **chatbot** and **popup** embeds on SG Real Estate'
 
 SG's tenant slug is **`sg-real-estate`** (the canonical `Organization.slug`). All embed scoping is by this slug; no API keys are required (the embeds are public, slug-scoped, server-resolved, and rate-limited).
 
-If SG has multiple properties under one org (e.g. a Telegraph Commons-style multi-building setup), append a property slug to scope the chatbot to a single building.
+If SG has multiple properties under one org (e.g. a Telegraph Commons-style multi-building setup), add `data-property="<property-slug>"` alongside `data-slug` to scope an embed to a single building.
 
 ---
 
@@ -23,17 +23,18 @@ If SG has multiple properties under one org (e.g. a Telegraph Commons-style mult
 - Captures leads either pre-chat (intro form) or mid-conversation (extractor). Both paths fire the operator's primary-contact email **and** the in-app bell notification in `/portal`.
 - Shadow DOM isolates all styles; no CSS collisions with the SG site.
 
-To scope to a specific property (e.g. `1100-yosemite`):
+To scope to a specific property (e.g. `1100-yosemite`), keep `data-slug` as the **org** slug and add `data-property` for the building:
 
 ```html
 <script
   src="https://www.leasestack.co/embed/chatbot.js"
-  data-slug="1100-yosemite"
+  data-slug="sg-real-estate"
+  data-property="1100-yosemite"
   defer
 ></script>
 ```
 
-The chatbot endpoint resolves the slug against `Property.slug` first and falls back to `Organization.slug`, so a single property slug works as the data-slug value when the org and property are uniquely identified by it.
+`data-slug` is always resolved against `Organization.slug` — `/api/public/chatbot/config` looks up the org by that value and does NOT fall back to `Property.slug`. Putting a property slug in `data-slug` fails closed (`{ enabled: false }`, widget silently vanishes) because no org will match it. Use `data-property` (mapped to the `?property=` query param) to scope the embed to a single building; omit it to serve the org's default config.
 
 ---
 

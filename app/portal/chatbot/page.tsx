@@ -8,6 +8,10 @@ import { readGtmContainerId } from "@/components/tenant-site/tenant-analytics";
 import { MasterToggle } from "./master-toggle";
 import { LeadRoutingPanel } from "./lead-routing-panel";
 import { InstallSnippet } from "./install-snippet";
+import { ChatbotInstallSnippetPicker } from "./chatbot-install-snippet-picker";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
+import { visibleProperties } from "@/lib/tenancy/property-filter";
+import { chatbotSnippet } from "@/lib/chatbot/snippet";
 import { PageHeader } from "@/components/admin/page-header";
 import {
   StatusChip,
@@ -72,6 +76,7 @@ export default async function ChatbotPage() {
     latestConversation,
     analytics,
     prospects,
+    rawChatbotProperties,
   ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
@@ -158,9 +163,28 @@ export default async function ChatbotPage() {
     // profiles the digest cron already produced.
     getChatbotAnalytics({ orgId: scope.orgId, periodDays: 30 }).catch(() => null),
     getProspectIntel({ orgId: scope.orgId, periodDays: 30 }).catch(() => null),
+    // Multi-property picker (Wave 3 phase 6): only fetched/shown when the
+    // org actually has more than one marketable property — single-property
+    // orgs keep the plain org-wide snippet, matching every other
+    // property-picker surface's showPicker convention
+    // (cursive-setup-wizard.tsx).
+    prisma.property
+      .findMany({
+        where: marketablePropertyWhere(scope.orgId),
+        select: { id: true, name: true, slug: true },
+        orderBy: { name: "asc" },
+      })
+      .catch((e) => {
+        console.error("[chatbot] property list failed", e);
+        return [] as Array<{ id: string; name: string; slug: string }>;
+      }),
   ]);
 
   if (!org) return null;
+
+  // Property-restricted operators must only see/generate snippets for
+  // buildings in their grant — every sibling picker filters the same way.
+  const chatbotProperties = visibleProperties(scope, rawChatbotProperties);
 
   const initial = {
     chatbotEnabled: existingConfig?.chatbotEnabled ?? false,
@@ -190,7 +214,7 @@ export default async function ChatbotPage() {
     /^https:\/\/www\.leasestack\.co/i,
     "https://leasestack.co",
   );
-  const snippet = `<script src="${snippetHost}/embed/chatbot.js" data-slug="${org.slug}" defer></script>`;
+  const snippet = chatbotSnippet(snippetHost, org.slug);
 
   // Norman bug #91: lead with the insight (conversation volume) so
   // operators land on a useful dashboard, then drop into configuration.
@@ -315,13 +339,27 @@ export default async function ChatbotPage() {
         moduleActive={org.moduleChatbot}
       />
 
-      {/* ── INSTALLATION (bottom; collapsed once the widget is live) ── */}
-      <InstallSnippet
-        snippet={snippet}
-        status={installStatus}
-        lastActivityLabel={lastActivityLabel}
-        defaultCollapsed={installStatus === "live"}
-      />
+      {/* ── INSTALLATION (bottom; collapsed once the widget is live) ──
+          Multi-property orgs get a picker that regenerates the snippet
+          with data-property="<slug>"; single-property orgs keep the
+          plain org-wide snippet unchanged. */}
+      {chatbotProperties.length > 1 ? (
+        <ChatbotInstallSnippetPicker
+          properties={chatbotProperties}
+          snippetHost={snippetHost}
+          orgSlug={org.slug}
+          status={installStatus}
+          lastActivityLabel={lastActivityLabel}
+          defaultCollapsed={installStatus === "live"}
+        />
+      ) : (
+        <InstallSnippet
+          snippet={snippet}
+          status={installStatus}
+          lastActivityLabel={lastActivityLabel}
+          defaultCollapsed={installStatus === "live"}
+        />
+      )}
     </div>
   );
 }

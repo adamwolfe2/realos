@@ -37,10 +37,45 @@ export async function GET(req: NextRequest) {
   if (authError) return authError;
 
   return recordCronRun("aeo-scan", async () => {
-    const orgs = await prisma.organization.findMany({
+    const eligibleOrgs = await prisma.organization.findMany({
       where: { moduleSEO: true },
       select: { id: true, name: true },
     });
+
+    // P0-8/P1-23: same oldest-first bounded-batch pattern as
+    // cron/reputation-scan — this loop runs a full AEO scan (multiple
+    // prompts × engines) plus a per-published-page neighborhood scan for
+    // every org, all inside one 300s window. Unbounded fan-out over every
+    // moduleSEO org risked starving smaller tenants / blowing the timeout
+    // once the org count grows. Cap per tick and rotate oldest-scanned-
+    // first (never-scanned orgs = highest priority) so every org still
+    // gets refreshed across successive weekly ticks.
+    const BATCH_SIZE = 25;
+    // ponytail: rotation key is last SUCCESSFUL queryRunAt, not last
+    // attempt — an org whose runAeoScan/prompts always fail (or that has
+    // no marketable properties, so no rows ever get written) keeps key 0
+    // forever and is stable-sort-repicked into every batch, permanently
+    // consuming a slot. Bounded by BATCH_SIZE=25: harmless until ~25
+    // orgs are simultaneously stuck. Upgrade path: persist an
+    // attempt-timestamp column (e.g. lastAeoScanAttemptedAt on
+    // Organization) written at loop-entry regardless of outcome, and
+    // rotate on that instead of the success-only aggregate.
+    const lastScans = eligibleOrgs.length === 0
+      ? []
+      : await prisma.aeoCitationCheck.groupBy({
+          by: ["orgId"],
+          where: { orgId: { in: eligibleOrgs.map((o) => o.id) } },
+          _max: { queryRunAt: true },
+        });
+    const lastScanByOrg = new Map(
+      lastScans.map((s) => [s.orgId, s._max.queryRunAt?.getTime() ?? 0]),
+    );
+    const orgs = [...eligibleOrgs]
+      .sort(
+        (a, b) =>
+          (lastScanByOrg.get(a.id) ?? 0) - (lastScanByOrg.get(b.id) ?? 0),
+      )
+      .slice(0, BATCH_SIZE);
 
     const summary: Array<{
       orgId: string;
@@ -186,6 +221,9 @@ export async function GET(req: NextRequest) {
         ok: true,
         totalRows,
         errorCount,
+        orgsEligible: eligibleOrgs.length,
+        orgsBatched: orgs.length,
+        batchSize: BATCH_SIZE,
         engineSource,
         recentSnapshotCount,
         neighborhoodPagesScanned,

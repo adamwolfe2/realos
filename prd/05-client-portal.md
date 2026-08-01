@@ -226,7 +226,7 @@ All routes use `requireClient()` and filter by `orgId`.
 
 ### 6. Campaigns
 
-`app/portal/campaigns/page.tsx` — lists `AdCampaign` rows with performance (impressions, clicks, conversions, spend). Links out to ad platform for full management. v1 is read-only; clients see what we're running but don't edit.
+`app/portal/ads/page.tsx` — lists `AdCampaign` rows with performance (impressions, clicks, conversions, spend). Links out to ad platform for full management. v1 is read-only; clients see what we're running but don't edit. (`/portal/campaigns` retired P1-15, now a redirect into this page.)
 
 ### 7. Site builder
 

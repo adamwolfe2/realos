@@ -350,7 +350,9 @@ Organization. `app/onboarding/page.tsx` renders the wizard.
 - `app/portal/billing/page.tsx` + `billing-portal-button.tsx` — MRR and
   ad-spend roll-ups, opens Stripe Customer Portal session via
   `/api/tenant/billing`.
-- `app/portal/campaigns/page.tsx` — read-only ad campaign table.
+- `app/portal/campaigns/page.tsx` — read-only ad campaign table. (Retired
+  P1-15; folded into `app/portal/ads/page.tsx`, `/portal/campaigns` now
+  redirects there.)
 - Stub pages for `/portal/visitors` (Sprint 08), `/conversations`
   (Sprint 09), `/creative` (Sprint 11) with explicit sprint markers.
 - Tenant API layer (`/api/tenant/*`):

@@ -138,6 +138,8 @@ export default async function AdsPage({
         clicks: true,
         conversions: true,
         spendToDateCents: true,
+        monthlyBudgetCents: true,
+        property: { select: { name: true } },
       },
     }),
     prisma.adMetricDaily.findMany({
@@ -299,6 +301,12 @@ export default async function AdsPage({
             </Suspense>
             <ExportButton href="/api/tenant/ad-metrics/export?days=90" />
             <Link
+              href="/portal/creative"
+              className="inline-flex items-center rounded-md border border-border bg-card px-3 py-2 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
+            >
+              Request creative
+            </Link>
+            <Link
               href="/portal/connect"
               className="inline-flex items-center rounded-md border border-border bg-card px-3 py-2 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
             >
@@ -370,6 +378,8 @@ export default async function AdsPage({
             clicks: c.clicks ?? 0,
             conversions: c.conversions ?? 0,
             spendCents: c.spendToDateCents ?? 0,
+            budgetCents: c.monthlyBudgetCents ?? null,
+            propertyName: c.property?.name ?? null,
           }))}
           currentMetrics={currentMetrics.map((m) => ({
             adAccountId: m.adAccountId,

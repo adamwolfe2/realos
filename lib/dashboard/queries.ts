@@ -844,13 +844,13 @@ export async function getIntegrationHealth(
       key: "google-ads",
       label: "Google Ads",
       status: adStatus(adsBy.get(AdPlatform.GOOGLE_ADS)),
-      href: "/portal/campaigns",
+      href: "/portal/ads",
     },
     {
       key: "meta-ads",
       label: "Meta Ads",
       status: adStatus(adsBy.get(AdPlatform.META)),
-      href: "/portal/campaigns",
+      href: "/portal/ads",
     },
     {
       key: "appfolio",

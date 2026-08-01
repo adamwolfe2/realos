@@ -32,7 +32,7 @@ export default async function ConnectPage() {
   const activePropertyId = await getActivePropertyId().catch(() => null);
   const [sources, availability, activeProperty, pixelInFlight, pixelRequest] =
     await Promise.all([
-      getConnectStatusForOrg(scope.orgId),
+      getConnectStatusForOrg(scope.orgId, activePropertyId),
       Promise.resolve(getProviderAvailability()),
       activePropertyId
         ? prisma.property
@@ -85,6 +85,7 @@ export default async function ConnectPage() {
           accountLabel: s.accountLabel,
           healthNote: s.healthNote ?? null,
           hasError: s.hasError ?? false,
+          scopedPropertyIds: s.scopedPropertyIds ?? null,
           provisioning:
             s.id === "cursive_pixel" && !s.connected ? pixelRequested : false,
         }))}

@@ -51,6 +51,12 @@ export type ConnectSourceStatus = {
 
 export async function getConnectStatusForOrg(
   orgId: string,
+  // Wave 3 phase 4 made GA4/GSC per-property-connectable — pass the
+  // operator's active property (from lib/portal/active-property) so
+  // `connected` reflects THAT property, not just "is any row connected
+  // anywhere in the org." Omit for the org-wide callers (settings,
+  // attribution) that don't have a property switcher.
+  activePropertyId?: string | null,
 ): Promise<ConnectSourceStatus[]> {
   const [appfolio, seoIntegrations, adAccounts, cursive, website] =
     await Promise.all([
@@ -143,6 +149,20 @@ export async function getConnectStatusForOrg(
 
   const ga4 = seoIntegrations.find((s) => s.provider === "GA4");
   const gsc = seoIntegrations.find((s) => s.provider === "GSC");
+  const ga4Rows = seoIntegrations.filter((s) => s.provider === "GA4");
+  const gscRows = seoIntegrations.filter((s) => s.provider === "GSC");
+  // Any row scoped to the active property, or org-wide (propertyId=null),
+  // counts as connected for that property. No activePropertyId (org-wide
+  // callers, or "All properties" selected) falls back to "any row at all"
+  // — same behavior as before per-property OAuth existed.
+  const connectedForActiveProperty = (
+    rows: Array<{ propertyId: string | null }>,
+  ): boolean =>
+    activePropertyId
+      ? rows.some(
+          (r) => r.propertyId === activePropertyId || r.propertyId === null,
+        )
+      : rows.length > 0;
   const googleAds = adAccounts.find((a) => a.platform === "GOOGLE_ADS");
   const metaAds = adAccounts.find((a) => a.platform === "META_ADS");
   const installedCursive = cursive.filter((c) => !!c.cursivePixelId);
@@ -190,7 +210,7 @@ export async function getConnectStatusForOrg(
     },
     {
       id: "ga4",
-      connected: !!ga4,
+      connected: connectedForActiveProperty(ga4Rows),
       lastSyncAt: ga4?.lastSyncAt ?? null,
       accountLabel: ga4?.propertyIdentifier
         ? `Property ${ga4.propertyIdentifier}`
@@ -200,13 +220,26 @@ export async function getConnectStatusForOrg(
       // than a hand-rolled RED check so the two surfaces are structurally
       // incapable of disagreeing on whether GA4 is erroring.
       hasError: classifyHealth("ga4", ga4?.lastSyncAt ?? null, ga4HasError) === "error",
+      // Wave-3 phase 4: OAuth (and the legacy manual-JSON form) can now bind
+      // a GA4 SeoIntegration row to a specific property, same as the pixel.
+      // Group across every GA4 row instead of picking just the first (via
+      // `.find()` above) so a multi-property org's per-property connections
+      // all show up here.
+      scopedPropertyIds: seoIntegrations
+        .filter((s) => s.provider === "GA4")
+        .map((s) => s.propertyId)
+        .filter((id): id is string => !!id),
     },
     {
       id: "gsc",
-      connected: !!gsc,
+      connected: connectedForActiveProperty(gscRows),
       lastSyncAt: gsc?.lastSyncAt ?? null,
       accountLabel: gsc?.propertyIdentifier ?? null,
       hasError: classifyHealth("gsc", gsc?.lastSyncAt ?? null, gscHasError) === "error",
+      scopedPropertyIds: seoIntegrations
+        .filter((s) => s.provider === "GSC")
+        .map((s) => s.propertyId)
+        .filter((id): id is string => !!id),
     },
     {
       id: "google_ads",

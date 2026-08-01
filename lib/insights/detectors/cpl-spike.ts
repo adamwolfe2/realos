@@ -90,7 +90,7 @@ export const cplSpikeDetector: Detector = {
         suggestedAction:
           "Open Campaigns to check which ad sets changed. Common causes: a campaign exhausted its audience, creative fatigue, or a new competitor bidding up your terms.",
         entityType: "campaign",
-        href: "/portal/campaigns",
+        href: "/portal/ads",
         dedupeKey: `cpl_spike:${acct.platform}:week:${weekKey}`,
         context: {
           platform: acct.platform,

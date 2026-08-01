@@ -12,7 +12,6 @@ import {
   Eye,
   MessageSquare,
   Bot,
-  Megaphone,
   BarChart3,
   Brush,
   CreditCard,
@@ -308,12 +307,6 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Marketing",
     items: [
-      {
-        href: "/portal/campaigns",
-        label: "Campaigns",
-        icon: Megaphone,
-        show: (o) => o.moduleGoogleAds || o.moduleMetaAds,
-      },
       {
         href: "/portal/ads",
         label: "Ads",

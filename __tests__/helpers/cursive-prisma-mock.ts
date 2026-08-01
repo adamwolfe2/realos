@@ -83,6 +83,9 @@ export interface CursivePrismaStore {
   webhookEvents: Row[];
   visitorSessions: Row[];
   visitorEvents: Row[];
+  // Org property list for URL->property attribution (wave-3 phase 1). Empty
+  // by default — tests that exercise attribution seed it explicitly.
+  properties: Row[];
   counters: {
     visitor: { n: number };
     lead: { n: number };
@@ -100,6 +103,7 @@ export function createCursivePrismaMock() {
     webhookEvents: [],
     visitorSessions: [],
     visitorEvents: [],
+    properties: [],
     counters: {
       visitor: { n: 0 },
       lead: { n: 0 },
@@ -341,6 +345,11 @@ export function createCursivePrismaMock() {
         };
         store.visitorEvents.push(row);
         return row;
+      }),
+    },
+    property: {
+      findMany: vi.fn(async (args: { where: Record<string, unknown> }) => {
+        return store.properties.filter((r) => matchesWhere(r, args.where));
       }),
     },
   };

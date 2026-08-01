@@ -8,6 +8,7 @@ import {
   requireWritableWorkspace,
   ForbiddenError,
   auditPayload,
+  propertyInScope,
 } from "@/lib/tenancy/scope";
 import {
   AuditAction,
@@ -55,6 +56,14 @@ const createSchema = z.object({
   virtualTourUrl: z.string().url().optional().nullable().or(z.literal("")),
   yearBuilt: z.number().int().min(1700).max(2100).optional().nullable(),
   totalUnits: z.number().int().min(1).max(10000).optional().nullable(),
+  // Yelp Fusion business id (alias or numeric id) — lets the reputation
+  // scanner resolve a Yelp biz page without guessing. See lib/reputation/yelp.ts.
+  yelpBusinessId: z
+    .string()
+    .max(120)
+    .regex(/^[a-z0-9-]+$/i, "Letters, numbers and dashes only.")
+    .optional()
+    .nullable(),
 });
 
 export type CreatePropertyResult =
@@ -142,6 +151,7 @@ export async function createProperty(
       virtualTourUrl: data.virtualTourUrl || null,
       yearBuilt: data.yearBuilt ?? null,
       totalUnits: data.totalUnits ?? null,
+      yelpBusinessId: data.yelpBusinessId || null,
       // Manual creation = operator explicitly chose to add this. Lands
       // as ACTIVE (counts toward dashboards immediately) and is sticky
       // so AppFolio re-syncs that adopt this row don't auto-reclassify.
@@ -232,6 +242,12 @@ export async function updateProperty(
     return { ok: false, error: "Cannot modify another tenant's property." };
   }
 
+  if (!propertyInScope(scope, existing.id)) {
+    // Same shape as the missing-row branch above — don't confirm the id
+    // exists to a property-restricted caller outside their grant.
+    return { ok: false, error: "Property not found" };
+  }
+
   if (data.slug !== existing.slug) {
     const conflict = await prisma.property.findFirst({
       where: { orgId: existing.orgId, slug: data.slug },
@@ -263,6 +279,7 @@ export async function updateProperty(
       virtualTourUrl: data.virtualTourUrl || null,
       yearBuilt: data.yearBuilt ?? null,
       totalUnits: data.totalUnits ?? null,
+      yelpBusinessId: data.yelpBusinessId || null,
     },
   });
 

@@ -119,8 +119,15 @@ export async function POST(
 
   try {
     const results = [];
+    // Shared across every event in this batch — see cursive-process.ts.
+    const orgPropertiesCache = new Map<
+      string,
+      Array<{ id: string; slug: string; name: string }>
+    >();
     for (const ev of events) {
-      results.push(await processCursiveEvent(ev, integration));
+      results.push(
+        await processCursiveEvent(ev, integration, orgPropertiesCache),
+      );
     }
     await prisma.webhookEvent.update({
       where: { id: envelope.id },

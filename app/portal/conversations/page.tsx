@@ -24,13 +24,14 @@ import {
   isFlagType,
   type FlagType,
 } from "@/components/portal/conversations/flag-pill";
-import { MessageSquare, BarChart3 } from "lucide-react";
+import { MessageSquare, BarChart3, Flame, PhoneMissed, Flag } from "lucide-react";
 import {
   TranscriptSearch,
   type SortOption,
 } from "./transcript-search";
 import { InlineTranscript } from "./inline-transcript";
 import { cn } from "@/lib/utils";
+import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 
 export const metadata: Metadata = { title: "Chatbot conversations" };
 export const dynamic = "force-dynamic";
@@ -108,15 +109,32 @@ export default async function ConversationsList({
     messageMatchIds = new Set(rows.map((r) => r.id));
   }
 
+  // Shared with the list query's `where` below so the KPI strip and the
+  // filter-chip counts match what a property-restricted/filtered operator
+  // can actually open (finding: counts were org-wide while the list was
+  // property-gated).
+  const propertyClause = await marketableScopedPropertyClause(
+    scope,
+    propertyIds,
+    "propertyId",
+    { defaultIncludesOrgRows: true },
+  );
+
   const [totalConversations, flagCounts, qualityBadCount] = await Promise.all([
-    prisma.chatbotConversation.count({ where: { ...tenantWhere(scope) } }),
+    prisma.chatbotConversation.count({
+      where: { ...tenantWhere(scope), ...propertyClause },
+    }),
     prisma.conversationFlag.groupBy({
       by: ["flag"],
-      where: { orgId: scope.orgId },
+      where: { orgId: scope.orgId, conversation: propertyClause },
       _count: { conversationId: true },
     }),
     prisma.conversationFlag.count({
-      where: { orgId: scope.orgId, flag: "quality_bad" },
+      where: {
+        orgId: scope.orgId,
+        flag: "quality_bad",
+        conversation: propertyClause,
+      },
     }),
   ]);
 
@@ -167,9 +185,7 @@ export default async function ConversationsList({
     ...tenantWhere(scope),
     // Default (no selection) scopes to enabled properties; org-level
     // conversations (propertyId=null) stay visible.
-    ...(await marketableScopedPropertyClause(scope, propertyIds, "propertyId", {
-      defaultIncludesOrgRows: true,
-    })),
+    ...propertyClause,
   };
   if (statusParam) where.status = statusParam;
   if (activeFlag) where.flags = { some: { flag: activeFlag } };
@@ -239,6 +255,43 @@ export default async function ConversationsList({
           </div>
         }
       />
+
+      {/* KPI strip — derived from the same counts already fetched above
+          (totalConversations, flagCountMap, qualityBadCount). No extra
+          queries. */}
+      <section
+        aria-label="Conversation volume at a glance"
+        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 ls-stagger mt-3"
+      >
+        <KpiTile
+          label="Total conversations"
+          value={totalConversations.toLocaleString()}
+          hint={totalConversations === 0 ? "None yet" : "All-time"}
+          icon={<MessageSquare className="h-4 w-4" />}
+        />
+        <KpiTile
+          label="High intent leads"
+          value={(flagCountMap.get("lead_high_intent") ?? 0).toLocaleString()}
+          hint="Flagged by the assistant"
+          icon={<Flame className="h-4 w-4" />}
+        />
+        <KpiTile
+          label="Missed handoffs"
+          value={(flagCountMap.get("handoff_missed") ?? 0).toLocaleString()}
+          hint={
+            (flagCountMap.get("handoff_missed") ?? 0) === 0
+              ? "None flagged"
+              : "Needs review"
+          }
+          icon={<PhoneMissed className="h-4 w-4" />}
+        />
+        <KpiTile
+          label="Flagged bad quality"
+          value={qualityBadCount.toLocaleString()}
+          hint={qualityBadCount === 0 ? "None flagged" : "Needs prompt tuning"}
+          icon={<Flag className="h-4 w-4" />}
+        />
+      </section>
 
       {isAccessDenied(scope, propertyIds) ? (
         <PropertyAccessDeniedBanner pathname="/portal/conversations" />

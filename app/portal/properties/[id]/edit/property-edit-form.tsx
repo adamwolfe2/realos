@@ -37,6 +37,7 @@ export type PropertyEditInitial = {
   description: string | null;
   heroImageUrl: string | null;
   virtualTourUrl: string | null;
+  yelpBusinessId: string | null;
 };
 
 type FormState = {
@@ -56,6 +57,7 @@ type FormState = {
   description: string;
   heroImageUrl: string;
   virtualTourUrl: string;
+  yelpBusinessId: string;
 };
 
 function seed(initial: PropertyEditInitial): FormState {
@@ -76,6 +78,7 @@ function seed(initial: PropertyEditInitial): FormState {
     description: initial.description ?? "",
     heroImageUrl: initial.heroImageUrl ?? "",
     virtualTourUrl: initial.virtualTourUrl ?? "",
+    yelpBusinessId: initial.yelpBusinessId ?? "",
   };
 }
 
@@ -129,6 +132,7 @@ export function PropertyEditForm({ initial }: { initial: PropertyEditInitial }) 
         description: form.description || null,
         heroImageUrl: form.heroImageUrl || null,
         virtualTourUrl: form.virtualTourUrl || null,
+        yelpBusinessId: form.yelpBusinessId.trim() || null,
       });
       if (!result.ok) {
         toast.error(result.error);
@@ -225,6 +229,28 @@ export function PropertyEditForm({ initial }: { initial: PropertyEditInitial }) 
             </code>
           </p>
         ) : null}
+      </section>
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-sm font-semibold text-foreground">Reputation sources</h2>
+          <p className="text-xs text-muted-foreground mt-1">
+            Set this so the reputation scanner can find your Yelp page
+            directly instead of guessing from a web search.
+          </p>
+        </div>
+        <Field
+          id="yelpBusinessId"
+          label="Yelp business id"
+          hint="The slug from your Yelp URL, e.g. yelp.com/biz/<this-part>. Leave blank to skip Yelp."
+        >
+          <Input
+            id="yelpBusinessId"
+            value={form.yelpBusinessId}
+            onChange={(e) => update("yelpBusinessId", e.target.value)}
+            placeholder="acme-apartments-austin"
+          />
+        </Field>
       </section>
 
       <section className="space-y-4">

@@ -60,7 +60,35 @@ type Campaign = {
   clicks: number;
   conversions: number;
   spendCents: number;
+  /** Monthly budget as configured on the native platform. Null when the
+   *  platform hasn't reported one (e.g. campaign uses a lifetime budget). */
+  budgetCents: number | null;
+  /** Property this campaign is scoped to, or null for an org-wide campaign. */
+  propertyName: string | null;
 };
+
+// One-click escape hatch into the native ad platform — folded in from the
+// retired /portal/campaigns page (P1-15). Returns null when we can't build
+// a useful URL (no platform match or missing external id); callers render
+// the campaign name as plain text in that case.
+function platformManageUrl(args: {
+  platform: AdPlatform;
+  externalCampaignId: string;
+  externalAccountId: string | undefined;
+}): string | null {
+  const cid = args.externalCampaignId;
+  if (!cid) return null;
+  if (args.platform === AdPlatform.GOOGLE_ADS) {
+    return `https://ads.google.com/aw/campaigns?campaignId=${encodeURIComponent(cid)}`;
+  }
+  if (args.platform === AdPlatform.META) {
+    const acct = args.externalAccountId
+      ? `&act=${encodeURIComponent(args.externalAccountId)}`
+      : "";
+    return `https://business.facebook.com/adsmanager/manage/campaigns?selected_campaign_ids=${encodeURIComponent(cid)}${acct}`;
+  }
+  return null;
+}
 
 type Metric = {
   adAccountId: string;
@@ -105,6 +133,11 @@ export function AdsDashboard({
     }
     return m;
   }, [accounts]);
+
+  const accountById = React.useMemo(
+    () => new Map(accounts.map((a) => [a.id, a])),
+    [accounts],
+  );
 
   const filteredAccountIds = React.useMemo<Set<string> | null>(() => {
     if (filter === "all") return null;
@@ -270,6 +303,9 @@ export function AdsDashboard({
                   onSort={setSort(setSortKey, setSortDir)}
                   align="left"
                 />
+                <th className="px-4 py-2 text-left text-[10px] tracking-widest uppercase text-muted-foreground">
+                  Property
+                </th>
                 <SortHeader
                   label="Status"
                   k="status"
@@ -278,6 +314,9 @@ export function AdsDashboard({
                   onSort={setSort(setSortKey, setSortDir)}
                   align="center"
                 />
+                <th className="px-4 py-2 text-right text-[10px] tracking-widest uppercase text-muted-foreground">
+                  Budget
+                </th>
                 <SortHeader
                   label="Spend"
                   k="spend"
@@ -328,10 +367,27 @@ export function AdsDashboard({
                   c.conversions > 0
                     ? Math.round(c.spendCents / c.conversions)
                     : 0;
+                const manageUrl = platformManageUrl({
+                  platform: c.platform,
+                  externalCampaignId: c.externalCampaignId,
+                  externalAccountId: accountById.get(c.adAccountId)?.externalAccountId,
+                });
                 return (
-                  <tr key={c.id}>
+                  <tr key={c.id} id={c.id} className="scroll-mt-24">
                     <td className="px-4 py-2 text-sm text-foreground">
-                      {c.name}
+                      {manageUrl ? (
+                        <a
+                          href={manageUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-primary hover:underline underline-offset-2"
+                          title={`Open in ${platformLabel(c.platform)} ↗`}
+                        >
+                          {c.name}
+                        </a>
+                      ) : (
+                        c.name
+                      )}
                       {c.objective ? (
                         <div className="text-[10px] text-muted-foreground mt-0.5">
                           {c.objective}
@@ -341,8 +397,14 @@ export function AdsDashboard({
                     <td className="px-4 py-2 text-xs text-muted-foreground">
                       {platformLabel(c.platform)}
                     </td>
+                    <td className="px-4 py-2 text-xs text-muted-foreground">
+                      {c.propertyName ?? "Org-wide"}
+                    </td>
                     <td className="px-4 py-2 text-center">
                       <StatusPill status={c.status} />
+                    </td>
+                    <td className="px-4 py-2 text-right tabular-nums">
+                      {c.budgetCents ? `${formatCents(c.budgetCents)}/mo` : "—"}
                     </td>
                     <td className="px-4 py-2 text-right tabular-nums">
                       {formatCents(c.spendCents)}

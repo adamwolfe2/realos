@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
@@ -46,17 +46,10 @@ export default async function PropertyEditPage({
       description: true,
       heroImageUrl: true,
       virtualTourUrl: true,
+      yelpBusinessId: true,
     },
   });
   if (!property) notFound();
-
-  // Restricted RBAC users can view but never edit cross-property metadata.
-  // (Restriction guard above stops them from getting here on the wrong id;
-  //  this guard is for the all-properties-vs-none case.)
-  if (!scope.isAgency && scope.allowedPropertyIds === null && false) {
-    // placeholder reserved for future "edit requires write role" gate
-    redirect(`/portal/properties/${id}`);
-  }
 
   return (
     <div className="space-y-6">
@@ -93,6 +86,7 @@ export default async function PropertyEditPage({
           description: property.description,
           heroImageUrl: property.heroImageUrl,
           virtualTourUrl: property.virtualTourUrl,
+          yelpBusinessId: property.yelpBusinessId,
         }}
       />
     </div>

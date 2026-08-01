@@ -102,7 +102,7 @@ export const wastedAdSpendDetector: Detector = {
         propertyId: campaign.propertyId,
         entityType: "campaign",
         entityId: campaign.id,
-        href: `/portal/campaigns#${campaign.id}`,
+        href: `/portal/ads#${campaign.id}`,
         dedupeKey: `wasted_ad_spend:${campaign.id}:week:${weekKey}`,
         context: {
           campaignId: campaign.id,

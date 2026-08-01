@@ -937,7 +937,7 @@ async function main() {
       title: "Cost per lead on Google Search up 27%",
       body: "Google Search CPL rose from $58 to $74 over the last 14 days. Click volume is steady but conversion rate slipped from 5.1% to 3.9%. Likely creative fatigue.",
       suggestedAction: "Refresh the top two ad copy variations or rotate in the campus-shuttle creative we shipped last month.",
-      href: "/portal/campaigns",
+      href: "/portal/ads",
       context: { beforeCents: 5800, afterCents: 7400, deltaPct: 27 },
       daysAgo: 2,
     },

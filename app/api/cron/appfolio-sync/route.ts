@@ -82,15 +82,107 @@ export async function GET(req: NextRequest) {
         console.warn("[appfolio-sync] auto-clear stuck rows failed:", err);
       });
 
-    const integrations = await prisma.appFolioIntegration.findMany({
-      where: {
-        autoSyncEnabled: true,
-        OR: [
-          { clientIdEncrypted: { not: null } },
-          { apiKeyEncrypted: { not: null } },
-        ],
-      },
-    });
+    // Only the columns processOne actually reads — the unselected default
+    // findMany() was pulling every column including oauthTokenEncrypted /
+    // oauthRefreshEncrypted / instanceSubdomain for every eligible row on
+    // every tick.
+    const INTEGRATION_SELECT = {
+      orgId: true,
+      syncFrequencyMinutes: true,
+      lastSyncAt: true,
+      clientIdEncrypted: true,
+      clientSecretEncrypted: true,
+      apiKeyEncrypted: true,
+      lastSyncStats: true,
+    } as const;
+    const eligibleWhere = {
+      autoSyncEnabled: true,
+      OR: [
+        { clientIdEncrypted: { not: null } },
+        { apiKeyEncrypted: { not: null } },
+      ],
+    };
+
+    // P0-8/P1-23: same oldest-first bounded-batch pattern as
+    // cron/reputation-scan — cap per tick and rotate oldest-synced-first so
+    // one mass "everyone's due at once" event (e.g. after an outage) can't
+    // starve the rest of the tenants or blow the 300s function timeout.
+    // Never-synced integrations (lastSyncAt=null) sort first (treated as
+    // epoch 0 — highest priority). The per-integration cadence check inside
+    // processOne still applies, so a batch slot spent on a not-yet-due
+    // integration just resolves to a fast skip.
+    // ponytail: rotation key is lastSyncAt, which appfolio-sync.ts:1198
+    // only advances when a phase actually completed — a persistently
+    // failing integration (bad creds, AppFolio outage on its endpoints)
+    // never advances it and sorts first every tick, pinning a batch slot
+    // forever once BATCH_SIZE=25 concurrently-stuck integrations exist.
+    // syncStartedAt is stamped at attempt start but is cleared back to
+    // null on every completion (success or fail) for the stuck-run
+    // detector above, so it can't double as a rotation key without
+    // breaking that detector. Not fixing here: doing so means either
+    // (a) advancing lastSyncAt on failure, which breaks the "since
+    // lastSyncAt" incremental-window logic and the user-facing "last
+    // synced" timestamp, or (b) a new lastAttemptedAt column (schema
+    // change, out of scope for this pass). Upgrade path: add
+    // lastAttemptedAt, stamp it unconditionally at processOne entry,
+    // rotate on that instead of lastSyncAt.
+    const BATCH_SIZE = 25;
+
+    // A manual "Run sync now" click on a specific tenant (see
+    // app/api/admin/data-sinks/[provider]/run/route.ts) targets that org
+    // directly and bypasses the batch cap entirely — otherwise a tenant
+    // outside the 25 oldest lastSyncAt values got no work done while the
+    // operator saw ok:true.
+    const orgIdParam = new URL(req.url).searchParams.get("orgId");
+
+    let eligibleCount: number;
+    let integrations: Array<{
+      orgId: string;
+      syncFrequencyMinutes: number;
+      lastSyncAt: Date | null;
+      clientIdEncrypted: string | null;
+      clientSecretEncrypted: string | null;
+      apiKeyEncrypted: string | null;
+      lastSyncStats: unknown;
+    }>;
+
+    if (orgIdParam) {
+      const targeted = await prisma.appFolioIntegration.findUnique({
+        where: { orgId: orgIdParam },
+        select: INTEGRATION_SELECT,
+      });
+      if (!targeted) {
+        // Same response shape as the success path below (with an added
+        // `error`) so recordCronRun's generic return type doesn't fork.
+        return {
+          result: NextResponse.json(
+            {
+              ok: false,
+              error: `No AppFolio integration for org ${orgIdParam}`,
+              processed: 0,
+              integrations: 0,
+              integrationsEligible: 0,
+              batchSize: BATCH_SIZE,
+              results: [] as SyncResult[],
+            },
+            { status: 400 },
+          ),
+          recordsProcessed: 0,
+        };
+      }
+      integrations = [targeted];
+      eligibleCount = 1;
+    } else {
+      [eligibleCount, integrations] = await Promise.all([
+        prisma.appFolioIntegration.count({ where: eligibleWhere }),
+        prisma.appFolioIntegration.findMany({
+          where: eligibleWhere,
+          select: INTEGRATION_SELECT,
+          orderBy: { lastSyncAt: { sort: "asc", nulls: "first" } },
+          take: BATCH_SIZE,
+        }),
+      ]);
+    }
 
     type SyncResult = {
       orgId: string;
@@ -234,6 +326,8 @@ export async function GET(req: NextRequest) {
         ok: true,
         processed: results.length,
         integrations: integrations.length,
+        integrationsEligible: eligibleCount,
+        batchSize: BATCH_SIZE,
         results,
       }),
       recordsProcessed: results.filter((r) => r.ok && !r.skipped).length,

@@ -13,7 +13,13 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const h = vi.hoisted(() => ({
   runAppfolioSync: vi.fn(),
   db: {
-    appFolioIntegration: { updateMany: vi.fn(), findMany: vi.fn(), update: vi.fn() },
+    appFolioIntegration: {
+      updateMany: vi.fn(),
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      count: vi.fn(),
+    },
   },
 }));
 
@@ -56,6 +62,10 @@ beforeEach(() => {
   h.db.appFolioIntegration.findMany.mockResolvedValue([
     RECENTLY_SYNCED_INTEGRATION,
   ]);
+  h.db.appFolioIntegration.count.mockResolvedValue(1);
+  h.db.appFolioIntegration.findUnique.mockResolvedValue(
+    RECENTLY_SYNCED_INTEGRATION,
+  );
   h.runAppfolioSync.mockResolvedValue({ ok: true, stats: {} });
 });
 

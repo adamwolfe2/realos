@@ -87,6 +87,11 @@ export type ConnectSourceVM = {
       page (lib/integrations/status.ts classifyHealth) — so this chip and
       the Integrations marketplace pill can never disagree. */
   hasError?: boolean;
+  /** Property-level scope (GA4/GSC/pixel only) — which properties have
+      this source connected. Surfaced as a small "Connected for N
+      properties" line so a multi-property connection doesn't read as
+      org-wide when it isn't. */
+  scopedPropertyIds?: string[] | null;
 };
 
 const SOURCE_META: Record<
@@ -346,13 +351,19 @@ function resolveConnectUrl(
   switch (id) {
     case "cursive_pixel":
       return `/portal/settings/integrations?propertyId=${propertyId}`;
-    // /portal/seo scopes by `property` (parsePropertyFilter), NOT `propertyId`
-    // — the old param name was silently ignored, so the per-property pre-select
-    // never fired. (Codex.)
+    // GA4/GSC OAuth start (lib/integrations/oauth-handler.ts, wave-3 phase 4)
+    // now validates + embeds ?propertyId= in the signed state and writes the
+    // resulting SeoIntegration row scoped to that property, so the "Connect"
+    // click can go straight through OAuth instead of detouring to the manual
+    // service-account-JSON form on /portal/seo. `returnTo` keeps the
+    // post-OAuth landing on the property-scoped SEO page — same destination
+    // the manual-form path used, so the two connect paths agree on where the
+    // operator ends up too. /portal/seo scopes by `property`
+    // (parsePropertyFilter), NOT `propertyId`. (Codex.)
     case "ga4":
-      return `/portal/seo?provider=GA4&property=${propertyId}`;
+      return `${base}?propertyId=${propertyId}&returnTo=${encodeURIComponent(`/portal/seo?provider=GA4&property=${propertyId}`)}`;
     case "gsc":
-      return `/portal/seo?provider=GSC&property=${propertyId}`;
+      return `${base}?propertyId=${propertyId}&returnTo=${encodeURIComponent(`/portal/seo?provider=GSC&property=${propertyId}`)}`;
     case "website":
       return `/portal/site-builder?propertyId=${propertyId}`;
     default:
@@ -508,15 +519,18 @@ export function ConnectHub({
         {activePropertyName ? (
           <span>
             Setting up <span className="font-semibold">{activePropertyName}</span>.
-            Pixel, GA4, GSC, and your site connect for this property. Switch
-            properties in the selector above to set up another — each gets its
-            own pixel, chatbot, and analytics.
+            Pixel, chatbot, and popups connect just for this property. GA4,
+            GSC, your site, and AppFolio connect once for the whole
+            workspace. Switch properties in the selector above to set up
+            another building&apos;s pixel and chatbot.
           </span>
         ) : (
           <span>
             You&apos;re on <span className="font-semibold">All properties</span>.
-            Pick a single property in the selector above to set up its own
-            pixel, GA4, GSC, and site — every feature is configured per property.
+            Pixel, chatbot, and popups are configured per property — pick one
+            in the selector above to set up its own. GA4, GSC, your site, and
+            AppFolio connect once for the whole workspace today (per-property
+            support for these is coming).
           </span>
         )}
       </div>
@@ -698,6 +712,12 @@ function SourceCard({
                 source.lastSyncAt ? formatSyncDate(source.lastSyncAt) : undefined
               }
             />
+            {source.scopedPropertyIds && source.scopedPropertyIds.length > 0 ? (
+              <p className="text-[11px] text-[#525252]">
+                Connected for {source.scopedPropertyIds.length}{" "}
+                {source.scopedPropertyIds.length === 1 ? "property" : "properties"}
+              </p>
+            ) : null}
             {/* Health note — one-line yellow action link when a connected
                 source isn't fully green (e.g. AppFolio auto-sync paused). */}
             {source.healthNote ? (

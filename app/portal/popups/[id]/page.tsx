@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { AlertTriangle } from "lucide-react";
-import { requireScope } from "@/lib/tenancy/scope";
+import { AlertTriangle, Eye, MousePointerClick, CheckCircle2, XCircle } from "lucide-react";
+import { requireScope, propertyInScope } from "@/lib/tenancy/scope";
+import { visibleProperties } from "@/lib/tenancy/property-filter";
 import { prisma } from "@/lib/db";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { getPopupById } from "@/lib/popups/queries";
 import { getSiteUrl } from "@/lib/brand";
 import { PageHeader } from "@/components/admin/page-header";
+import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { PopupEditor } from "@/components/portal/popups/popup-editor";
 import { InstallSnippet } from "@/app/portal/chatbot/install-snippet";
 import { EmbedDetectionChip } from "@/components/portal/popups/embed-detection-chip";
@@ -28,8 +30,9 @@ export default async function PopupEditorPage({
   const { id } = await params;
   const popup = await getPopupById(scope.orgId, id);
   if (!popup) notFound();
+  if (!propertyInScope(scope, popup.propertyId)) notFound();
 
-  const [properties, org, marketingSite] = await Promise.all([
+  const [allProperties, org, marketingSite] = await Promise.all([
     prisma.property.findMany({
       where: marketablePropertyWhere(scope.orgId),
       select: { id: true, name: true },
@@ -63,6 +66,10 @@ export default async function PopupEditorPage({
       return p?.websiteUrl ?? null;
     })(),
   ]);
+
+  // Property-restricted operators only get the picker options they're
+  // actually granted — same gate as the popup lookup above.
+  const properties = visibleProperties(scope, allProperties);
 
   // One-line embed snippet — same shape as chatbot install-snippet so
   // operators recognize the pattern. The popup script reads the slug
@@ -110,6 +117,42 @@ export default async function PopupEditorPage({
         title={popup.name}
         description="Edit copy, design, triggers, and capture settings. The preview on the right updates as you type. Don't forget to hit Save."
       />
+
+      {/* KPI strip — lifetime performance for this campaign, derived from
+          the popup row already fetched above (no extra queries). */}
+      <section
+        aria-label="This popup's lifetime performance"
+        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 ls-stagger"
+      >
+        <KpiTile
+          label="Shown"
+          value={popup.shownCount.toLocaleString()}
+          hint={popup.shownCount === 0 ? "No impressions yet" : "All-time"}
+          icon={<Eye className="h-4 w-4" />}
+        />
+        <KpiTile
+          label="CTA clicks"
+          value={popup.ctaClickCount.toLocaleString()}
+          hint={popup.ctaClickCount === 0 ? "No clicks yet" : "All-time"}
+          icon={<MousePointerClick className="h-4 w-4" />}
+        />
+        <KpiTile
+          label="Converted"
+          value={popup.convertedCount.toLocaleString()}
+          hint={
+            popup.shownCount > 0
+              ? `${((popup.convertedCount / popup.shownCount) * 100).toFixed(1)}% of shown`
+              : "No conversions yet"
+          }
+          icon={<CheckCircle2 className="h-4 w-4" />}
+        />
+        <KpiTile
+          label="Dismissed"
+          value={popup.dismissedCount.toLocaleString()}
+          hint={popup.dismissedCount === 0 ? "None yet" : "All-time"}
+          icon={<XCircle className="h-4 w-4" />}
+        />
+      </section>
 
       {/* Testing surface — Preview / Embed detection / Trigger inspector /
           Live event feed. Sits above the editor so an operator can verify

@@ -13,7 +13,7 @@ import {
 } from "./oauth-config";
 import { prisma } from "@/lib/db";
 import { encrypt } from "@/lib/crypto";
-import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
+import { requireScope, ForbiddenError, propertyInScope } from "@/lib/tenancy/scope";
 import { OrgType } from "@prisma/client";
 import { safeEqual } from "@/lib/utils/timing-safe";
 
@@ -85,11 +85,36 @@ export async function handleOAuthStart(
       ? rawReturnTo
       : "/portal/settings/integrations";
 
+  // Optional per-property scoping (Wave 3 phase 4). The Connect hub passes
+  // ?propertyId= when the operator has an active property selected. Validate
+  // it belongs to this org AND passes the caller's own property grant before
+  // trusting it. A stale/foreign-org id (not a scope violation, just a bad
+  // link) is dropped silently and falls back to an org-wide connection. A
+  // property that fails propertyInScope IS a scope violation — the caller
+  // holds a restricted grant and is asking for a building outside it — so
+  // that case fails the whole OAuth start with 403 instead of swallowing it.
+  const rawPropertyId = new URL(req.url).searchParams.get("propertyId");
+  let propertyId: string | null = null;
+  if (rawPropertyId) {
+    if (!propertyInScope(scope, rawPropertyId)) {
+      return NextResponse.json(
+        { error: "That property is outside your access." },
+        { status: 403 },
+      );
+    }
+    const property = await prisma.property.findFirst({
+      where: { id: rawPropertyId, orgId: scope.orgId },
+      select: { id: true },
+    });
+    propertyId = property?.id ?? null;
+  }
+
   const state = signState({
     orgId: scope.orgId,
     returnTo,
     nonce: crypto.randomBytes(16).toString("hex"),
     exp: Math.floor(Date.now() / 1000) + 600, // 10 min
+    propertyId,
   });
 
   const authUrl = new URL(config.authorizationUrl);
@@ -216,6 +241,7 @@ export async function handleOAuthCallback(
     accessToken: tokens.access_token,
     refreshToken: tokens.refresh_token ?? null,
     expiresInSec: tokens.expires_in ?? null,
+    propertyId: payload.propertyId ?? null,
   });
 
   // On-data-arrival insight pass — runs in the background after the OAuth
@@ -260,6 +286,9 @@ async function persistTokens(args: {
   accessToken: string;
   refreshToken: string | null;
   expiresInSec: number | null;
+  /** GSC/GA4 only — which property this connection scopes to. Ignored for
+      google_ads/meta_ads, which bind to an AdAccount, not a Property. */
+  propertyId: string | null;
 }): Promise<void> {
   const accessTokenEncrypted = encrypt(args.accessToken);
   const refreshTokenEncrypted = args.refreshToken
@@ -327,7 +356,7 @@ async function persistTokens(args: {
     };
     const encryptedBlob = encrypt(JSON.stringify(blob));
     const existing = await prisma.seoIntegration.findFirst({
-      where: { orgId: args.orgId, propertyId: null, provider },
+      where: { orgId: args.orgId, propertyId: args.propertyId ?? null, provider },
       select: { id: true },
     });
     if (existing) {
@@ -342,7 +371,7 @@ async function persistTokens(args: {
       await prisma.seoIntegration.create({
         data: {
           orgId: args.orgId,
-          propertyId: null,
+          propertyId: args.propertyId ?? null,
           provider,
           propertyIdentifier: "PENDING_OAUTH_BIND",
           serviceAccountJsonEncrypted: encryptedBlob,

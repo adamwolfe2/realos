@@ -239,6 +239,11 @@ export type StatePayload = {
   returnTo: string;
   nonce: string;
   exp: number; // unix seconds
+  // Which property this connection scopes to, when the caller had an
+  // active property selected and it passed ownership + grant checks.
+  // null = org-wide connection (legacy behavior, still the default for
+  // ads and for GSC/GA4 connects made from the "All properties" view).
+  propertyId?: string | null;
 };
 
 export function signState(payload: StatePayload): string {
