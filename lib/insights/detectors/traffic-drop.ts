@@ -1,7 +1,7 @@
 import "server-only";
-import { prisma } from "@/lib/db";
 import { isoWeekKey } from "../iso-week";
 import type { Detector, DetectedInsight } from "../types";
+import { fetchDedupedSeoSnapshots, sumField } from "@/lib/seo/snapshot-supersede";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -20,24 +20,18 @@ export const trafficDropDetector: Detector = {
     const since7d = new Date(now - 7 * DAY);
     const since14d = new Date(now - 14 * DAY);
 
-    const [current, previous, daily] = await Promise.all([
-      prisma.seoSnapshot.aggregate({
-        where: { orgId, date: { gte: since7d } },
-        _sum: { organicSessions: true, totalClicks: true },
-      }),
-      prisma.seoSnapshot.aggregate({
-        where: { orgId, date: { gte: since14d, lt: since7d } },
-        _sum: { organicSessions: true, totalClicks: true },
-      }),
-      prisma.seoSnapshot.findMany({
-        where: { orgId, date: { gte: since14d } },
-        orderBy: { date: "asc" },
-        select: { date: true, organicSessions: true },
-      }),
-    ]);
+    // Org-wide read (no property filter) over the full 14d window, then
+    // split in JS — one query instead of three, and the supersede dedupe
+    // (see lib/seo/snapshot-supersede.ts) guarantees a date's org-wide
+    // NULL row and a property-scoped row for that same date never both
+    // get summed.
+    const rows = await fetchDedupedSeoSnapshots({ orgId, date: { gte: since14d } });
+    const daily = [...rows].sort((a, b) => a.date.getTime() - b.date.getTime());
+    const current = rows.filter((r) => r.date >= since7d);
+    const previous = rows.filter((r) => r.date < since7d);
 
-    const currSessions = current._sum.organicSessions ?? 0;
-    const prevSessions = previous._sum.organicSessions ?? 0;
+    const currSessions = sumField(current, "organicSessions");
+    const prevSessions = sumField(previous, "organicSessions");
 
     if (prevSessions < 30) return [];
 

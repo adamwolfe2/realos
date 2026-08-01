@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { LeadStatus, LeadSource } from "@prisma/client";
+import { fetchDedupedSeoSnapshots, sumField } from "@/lib/seo/snapshot-supersede";
 
 // ---------------------------------------------------------------------------
 // Command Center (/portal/briefing) query helpers.
@@ -251,27 +252,18 @@ export async function getBriefingMetrics(
   // Organic sessions (SeoSnapshot) gained a propertyId column in Wave 3
   // Phase 5 — when the caller passes propertyIds we filter to that
   // property's own rows only (strictly propertyId IN (...), NOT the
-  // org-wide NULL rows). When no propertyIds are passed we read org-wide
-  // (both NULL rows and property rows, unfiltered SUM).
+  // org-wide NULL rows). When no propertyIds are passed we read org-wide.
   //
-  // Why this doesn't double-count (2026-08-01 addendum — the original
-  // comment here claimed the invariant came from "each SeoIntegration
-  // writes to exactly one scope," which is false: two integrations in two
-  // different scopes can cover the same org+date, and summing both would
-  // double-count). The actual invariant is enforced write-side in
-  // lib/integrations/seo-sync.ts: once a property-scoped integration has
-  // synced a date, the sync run deletes that date's org-wide NULL row (see
-  // the "Double-counting write-side policy" comment there), so an
-  // org-wide unfiltered SUM never sees both a NULL row and a property row
-  // for the same date. Two caveats: (1) transition period — a date synced
-  // before this policy existed can still carry a stale NULL row alongside
-  // a newer property row until the next sync for that date supersedes it;
-  // (2) orgs whose ONLY integrations are NULL-scoped (never had a
-  // property-scoped integration sync) never trigger the delete, so their
-  // property-filtered reads (the propertyIds-passed branch above) will
-  // read 0 even though the org has real, just-unattributed, organic
-  // traffic — that is a known limitation of the strict propertyId filter,
-  // not a bug in this query.
+  // 2026-08-01 addendum: the write-side supersede in
+  // lib/integrations/seo-sync.ts ("Double-counting write-side policy")
+  // deletes a date's org-wide NULL row once a property-scoped row covers
+  // it, but that delete is best-effort (a failure is caught and only
+  // logged) and seed/backfill scripts write rows without triggering it at
+  // all — so a NULL row and a property row CAN coexist for the same date.
+  // fetchDedupedSeoSnapshots() applies the same supersede rule read-side
+  // (property rows win per date) so the org-wide sum below never
+  // double-counts. It's a no-op when propertyFilter already constrains to
+  // specific properties (every returned row is non-null there).
   const propertyFilter = propertyFilterOf(opts.propertyIds);
   const now = Date.now();
   const since7d = new Date(now - 7 * DAY);
@@ -303,13 +295,11 @@ export async function getBriefingMetrics(
       where: { orgId, date: { gte: since14d, lt: since7d } },
       _sum: { spendCents: true },
     }),
-    prisma.seoSnapshot.aggregate({
-      where: { orgId, ...propertyFilter, date: { gte: since7d } },
-      _sum: { organicSessions: true },
-    }),
-    prisma.seoSnapshot.aggregate({
-      where: { orgId, ...propertyFilter, date: { gte: since14d, lt: since7d } },
-      _sum: { organicSessions: true },
+    fetchDedupedSeoSnapshots({ orgId, ...propertyFilter, date: { gte: since7d } }),
+    fetchDedupedSeoSnapshots({
+      orgId,
+      ...propertyFilter,
+      date: { gte: since14d, lt: since7d },
     }),
     prisma.chatbotConversation.count({
       where: { orgId, ...propertyFilter, createdAt: { gte: since7d } },
@@ -335,9 +325,9 @@ export async function getBriefingMetrics(
       deltaPct: pct(adSpend._sum.spendCents ?? 0, prevSpend._sum.spendCents ?? 0),
     },
     organicSessions: {
-      current: organic._sum.organicSessions ?? 0,
-      previous: prevOrganic._sum.organicSessions ?? 0,
-      deltaPct: pct(organic._sum.organicSessions ?? 0, prevOrganic._sum.organicSessions ?? 0),
+      current: sumField(organic, "organicSessions"),
+      previous: sumField(prevOrganic, "organicSessions"),
+      deltaPct: pct(sumField(organic, "organicSessions"), sumField(prevOrganic, "organicSessions")),
     },
     chatbotConversations: {
       current: chats,

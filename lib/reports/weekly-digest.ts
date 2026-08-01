@@ -2,6 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { LeadStatus, TourStatus, ApplicationStatus } from "@prisma/client";
 import { format } from "date-fns";
+import { fetchDedupedSeoSnapshots, sumField } from "@/lib/seo/snapshot-supersede";
 
 // ---------------------------------------------------------------------------
 // WeeklyDigest type
@@ -134,11 +135,11 @@ export async function buildWeeklyDigest(orgId: string): Promise<WeeklyDigest> {
       _sum: { spendCents: true },
     }),
 
-    // Organic sessions this week (from SeoSnapshot)
-    prisma.seoSnapshot.aggregate({
-      where: { orgId, date: { gte: thisWeekStart, lt: now } },
-      _sum: { organicSessions: true },
-    }),
+    // Organic sessions this week (from SeoSnapshot). Org-wide read, so it
+    // must apply the write-side supersede rule itself — see
+    // lib/seo/snapshot-supersede.ts for why the write-side delete alone
+    // isn't a strong enough guarantee against double-counting.
+    fetchDedupedSeoSnapshots({ orgId, date: { gte: thisWeekStart, lt: now } }),
 
     // Open insights (status=open, not dismissed or acknowledged)
     prisma.insight.count({
@@ -188,7 +189,7 @@ export async function buildWeeklyDigest(orgId: string): Promise<WeeklyDigest> {
   ]);
 
   const adSpendCents = adSpendAgg._sum.spendCents ?? 0;
-  const organicSessions = organicAgg._sum.organicSessions ?? 0;
+  const organicSessions = sumField(organicAgg, "organicSessions");
 
   // SEO Agent digest data. Pulled in a second batch so we don't bloat
   // the primary Promise.all above. Each is cheap (indexed reads).

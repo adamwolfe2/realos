@@ -11,7 +11,7 @@ vi.mock("@/lib/db", () => {
       application: countMock(),
       chatbotConversation: countMock(),
       adMetricDaily: aggMock(),
-      seoSnapshot: aggMock(),
+      seoSnapshot: { findMany: vi.fn(async () => []) },
     },
   };
 });
@@ -27,6 +27,13 @@ type AnyMock = ReturnType<typeof vi.fn>;
 // the caller passes propertyIds, the query must scope to that property's
 // own rows (NOT the org-wide NULL rows, which are a separate portfolio
 // bucket). When no propertyIds are passed, it stays org-wide.
+//
+// 2026-08-01: the org-wide read now goes through fetchDedupedSeoSnapshots
+// (lib/seo/snapshot-supersede.ts, findMany + JS sum) instead of a raw
+// prisma.seoSnapshot.aggregate, so it can apply the read-side supersede
+// dedupe and never double-count a legacy NULL row against a property row
+// for the same date. See seo-snapshot-supersede.test.ts for the dedupe
+// behavior itself.
 // ---------------------------------------------------------------------------
 
 beforeEach(() => {
@@ -37,7 +44,7 @@ describe("getBriefingMetrics — organic sessions property scope", () => {
   it("filters SeoSnapshot by propertyId when propertyIds is provided", async () => {
     await getBriefingMetrics("org-1", { propertyIds: ["prop-1"] });
 
-    const calls = (prisma.seoSnapshot.aggregate as AnyMock).mock.calls;
+    const calls = (prisma.seoSnapshot.findMany as AnyMock).mock.calls;
     expect(calls.length).toBeGreaterThan(0);
     for (const [args] of calls) {
       expect(args.where.orgId).toBe("org-1");
@@ -48,7 +55,7 @@ describe("getBriefingMetrics — organic sessions property scope", () => {
   it("filters SeoSnapshot by propertyId: { in } for multiple properties", async () => {
     await getBriefingMetrics("org-1", { propertyIds: ["prop-1", "prop-2"] });
 
-    const calls = (prisma.seoSnapshot.aggregate as AnyMock).mock.calls;
+    const calls = (prisma.seoSnapshot.findMany as AnyMock).mock.calls;
     for (const [args] of calls) {
       expect(args.where.propertyId).toEqual({ in: ["prop-1", "prop-2"] });
     }
@@ -57,7 +64,7 @@ describe("getBriefingMetrics — organic sessions property scope", () => {
   it("does not filter by propertyId when no propertyIds are passed (org-wide, includes NULL rows)", async () => {
     await getBriefingMetrics("org-1", {});
 
-    const calls = (prisma.seoSnapshot.aggregate as AnyMock).mock.calls;
+    const calls = (prisma.seoSnapshot.findMany as AnyMock).mock.calls;
     for (const [args] of calls) {
       expect(args.where.orgId).toBe("org-1");
       expect(args.where.propertyId).toBeUndefined();

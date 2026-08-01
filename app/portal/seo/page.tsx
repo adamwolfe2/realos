@@ -21,6 +21,7 @@ import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-banner";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import {
+  fetchSeoActionRecommendations,
   fetchSeoSnapshots,
   fetchSeoTopPages,
   fetchSeoTopQueries,
@@ -259,27 +260,14 @@ export default async function SeoPage({
 
   // ── Fetch the overview data set ──────────────────────────────────────
   // 365d series, recent queries, recent pages, and the action-recommendation
-  // annotation feed. The three trend queries are property-scoped for
-  // restricted users via effectiveIds (see lib/seo/portal-overview-queries).
+  // annotation feed. All four queries are property-scoped for restricted
+  // users via effectiveIds (see lib/seo/portal-overview-queries.ts).
   const [snapshots365, topQueriesRaw, topPagesRaw, annotationRows] =
     await Promise.all([
       fetchSeoSnapshots(scope, effectiveIds, { start: start365, end: yesterday }),
       fetchSeoTopQueries(scope, effectiveIds, { start: start30, end: yesterday }),
       fetchSeoTopPages(scope, effectiveIds, { start: start30, end: yesterday }),
-      prisma.seoActionRecommendation.findMany({
-        where: {
-          ...tenantWhere(scope),
-          severity: { in: ["HIGH", "CRITICAL"] },
-        },
-        orderBy: { generatedAt: "desc" },
-        take: 10,
-        select: {
-          id: true,
-          title: true,
-          severity: true,
-          generatedAt: true,
-        },
-      }),
+      fetchSeoActionRecommendations(scope, effectiveIds),
     ]);
 
   // Restricted user whose allowed properties have no property-scoped SEO

@@ -1,6 +1,8 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { tenantWhere, type ScopedContext } from "@/lib/tenancy/scope";
+import { propertyWhereFragment } from "@/lib/tenancy/property-filter";
+import { dedupeSupersededByDate } from "@/lib/seo/snapshot-supersede";
 
 // ---------------------------------------------------------------------------
 // Portal SEO overview — property-scoped aggregate reads for /portal/seo.
@@ -9,25 +11,13 @@ import { tenantWhere, type ScopedContext } from "@/lib/tenancy/scope";
 // Phase 5): NULL = org-wide row, populated = one property's data. A
 // property-restricted user (scope.allowedPropertyIds !== null) must NEVER
 // see NULL rows — those can aggregate properties outside their grant.
-// seoPropertyWhereFragment() enforces that. Unrestricted users keep the
-// page's existing behavior (no propertyId filter unless one is selected).
+// The canonical propertyWhereFragment() (lib/tenancy/property-filter.ts)
+// enforces that, and — unlike a bespoke local copy — also returns the
+// repo-wide `__no_property_access__` deny sentinel instead of fail-open
+// when a restricted user's selection is fully out of grant. Unrestricted
+// users keep the page's existing behavior (no propertyId filter unless
+// one is selected).
 // ---------------------------------------------------------------------------
-
-export function seoPropertyWhereFragment(
-  scope: ScopedContext,
-  effectiveIds: string[] | null,
-): Record<string, unknown> {
-  if (effectiveIds && effectiveIds.length > 0) {
-    return { propertyId: { in: effectiveIds } };
-  }
-  if (scope.allowedPropertyIds !== null) {
-    // Restricted user with no (or a fully-denied) selection — fall back to
-    // their full allowed set. Never `{}` here: that would let a NULL
-    // (org-wide) row leak through to a restricted user.
-    return { propertyId: { in: scope.allowedPropertyIds } };
-  }
-  return {};
-}
 
 type DateRange = { start: Date; end: Date };
 
@@ -36,21 +26,27 @@ export async function fetchSeoSnapshots(
   effectiveIds: string[] | null,
   range: DateRange,
 ) {
-  return prisma.seoSnapshot.findMany({
+  const rows = await prisma.seoSnapshot.findMany({
     where: {
       ...tenantWhere(scope),
       date: { gte: range.start, lte: range.end },
-      ...seoPropertyWhereFragment(scope, effectiveIds),
+      ...propertyWhereFragment(scope, effectiveIds),
     },
     orderBy: { date: "asc" },
     select: {
       date: true,
+      propertyId: true,
       totalClicks: true,
       totalImpressions: true,
       avgCtr: true,
       avgPosition: true,
     },
   });
+  // Org-wide (unrestricted, no selection) reads can otherwise sum a
+  // legacy NULL-propertyId row and a property-scoped row for the same
+  // date — see lib/seo/snapshot-supersede.ts. No-op when the fragment
+  // above already constrained to specific propertyIds.
+  return dedupeSupersededByDate(rows);
 }
 
 export async function fetchSeoTopQueries(
@@ -63,7 +59,7 @@ export async function fetchSeoTopQueries(
     where: {
       ...tenantWhere(scope),
       date: { gte: range.start, lte: range.end },
-      ...seoPropertyWhereFragment(scope, effectiveIds),
+      ...propertyWhereFragment(scope, effectiveIds),
     },
     _sum: { clicks: true, impressions: true },
     orderBy: { _sum: { clicks: "desc" } },
@@ -81,10 +77,36 @@ export async function fetchSeoTopPages(
     where: {
       ...tenantWhere(scope),
       date: { gte: range.start, lte: range.end },
-      ...seoPropertyWhereFragment(scope, effectiveIds),
+      ...propertyWhereFragment(scope, effectiveIds),
     },
     _sum: { sessions: true, users: true },
     orderBy: { _sum: { sessions: "desc" } },
     take: 12,
+  });
+}
+
+/**
+ * SeoActionRecommendation.propertyId is also nullable, same as the three
+ * fetchers above — a restricted user must never see a NULL-propertyId
+ * (org-wide) or out-of-grant recommendation title.
+ */
+export async function fetchSeoActionRecommendations(
+  scope: ScopedContext,
+  effectiveIds: string[] | null,
+) {
+  return prisma.seoActionRecommendation.findMany({
+    where: {
+      ...tenantWhere(scope),
+      severity: { in: ["HIGH", "CRITICAL"] },
+      ...propertyWhereFragment(scope, effectiveIds),
+    },
+    orderBy: { generatedAt: "desc" },
+    take: 10,
+    select: {
+      id: true,
+      title: true,
+      severity: true,
+      generatedAt: true,
+    },
   });
 }
