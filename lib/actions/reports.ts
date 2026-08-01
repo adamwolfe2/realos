@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { requireWritableWorkspace } from "@/lib/tenancy/scope";
 import { generateReportSnapshot, type ReportKind, type ReportSnapshot } from "@/lib/reports/generate";
 import { generateShareToken } from "@/lib/reports/token";
-import { canAccessReport, REPORT_PORTFOLIO_ACCESS_ERROR } from "@/lib/reports/access";
+import { canAccessReport, REPORT_PORTFOLIO_ACCESS_ERROR, isReportStatusRestricted } from "@/lib/reports/access";
 import { checkAiBillingGate, aiBillingDeniedResponseBody } from "@/lib/billing/gate";
 import { aiCallLimiter, notifyLimiter, checkRateLimit } from "@/lib/rate-limit";
 import { sendReportEmail } from "@/lib/email/send-report";
@@ -13,7 +13,24 @@ import { revalidatePath } from "next/cache";
 // ---------------------------------------------------------------------------
 // Server actions for ClientReport. Every call is tenant-scoped via
 // requireScope(); operator review is mandatory so nothing here ever auto-sends.
+//
+// All four mutations below are OPERATOR actions: real CLIENT_* scopes are
+// report consumers (they see status "shared" only — see access.ts). Without
+// this gate a client user could generate, edit, share, email, or archive
+// reports the operator never reviewed.
 // ---------------------------------------------------------------------------
+
+export const REPORT_OPERATOR_ONLY_ERROR =
+  "Reports are managed by your agency team. Ask them to generate or update this report.";
+
+function assertOperatorScope(scope: {
+  isAgency: boolean;
+  isImpersonating: boolean;
+}): void {
+  if (isReportStatusRestricted(scope)) {
+    throw new Error(REPORT_OPERATOR_ONLY_ERROR);
+  }
+}
 
 export async function createReport(
   kind: ReportKind,
@@ -23,6 +40,7 @@ export async function createReport(
     throw new Error("Invalid report kind");
   }
   const scope = await requireWritableWorkspace();
+  assertOperatorScope(scope);
 
   // If a property was requested, validate it belongs to this org. Pre-empts
   // any chance of an off-tenant id slipping through and gives us a stable
@@ -92,6 +110,7 @@ export async function updateReport(
   input: { headline?: string | null; notes?: string | null; status?: "draft" | "shared" | "archived" },
 ): Promise<void> {
   const scope = await requireWritableWorkspace();
+  assertOperatorScope(scope);
 
   // Load for ownership + transition logic.
   const existing = await prisma.clientReport.findFirst({
@@ -127,6 +146,7 @@ export async function updateReport(
 
 export async function archiveReport(id: string): Promise<void> {
   const scope = await requireWritableWorkspace();
+  assertOperatorScope(scope);
   const existing = await prisma.clientReport.findFirst({
     where: { id, orgId: scope.orgId },
     select: { propertyId: true },
@@ -164,6 +184,7 @@ export async function sendReportToRecipients(
   previewSubject?: string;
 }> {
   const scope = await requireWritableWorkspace();
+  assertOperatorScope(scope);
 
   // Per-user send throttle: an authenticated account must not be usable
   // as a bulk relay on the org's sending domain.

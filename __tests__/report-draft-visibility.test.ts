@@ -102,3 +102,33 @@ describe("/portal/reports/[id] detail — draft gate wired in", () => {
     expect(content.slice(gateIdx, gateIdx + 90)).toContain("notFound()");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Mutation actions are operator-only. A real CLIENT_* scope must not be able
+// to generate, edit, share, email, or archive reports — assertOperatorScope
+// (which throws for isReportStatusRestricted scopes) must run in all four
+// server actions, right after scope resolution.
+// ---------------------------------------------------------------------------
+
+describe("report mutation actions — operator gate wired in", () => {
+  const actionsSrc = fs.readFileSync(
+    path.join(process.cwd(), "lib/actions/reports.ts"),
+    "utf-8",
+  );
+
+  it("defines assertOperatorScope on isReportStatusRestricted", () => {
+    expect(actionsSrc).toContain("function assertOperatorScope");
+    expect(actionsSrc).toContain("isReportStatusRestricted(scope)");
+  });
+
+  it("every mutation action calls the gate after resolving scope", () => {
+    // One requireWritableWorkspace per action; each must be followed by the
+    // operator gate before any query or mutation runs.
+    const resolves = actionsSrc.match(/await requireWritableWorkspace\(\);/g) ?? [];
+    const gated = actionsSrc.match(
+      /await requireWritableWorkspace\(\);\s*\n\s*assertOperatorScope\(scope\);/g,
+    ) ?? [];
+    expect(resolves.length).toBeGreaterThanOrEqual(4);
+    expect(gated.length).toBe(resolves.length);
+  });
+});
