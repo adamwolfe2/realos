@@ -25,7 +25,7 @@ const TTL_MS = 24 * 60 * 60 * 1000;
 
 export async function expireStaleEngagements(
   now: Date = new Date(),
-): Promise<{ expiredCount: number; cutoff: string }> {
+): Promise<{ expiredCount: number }> {
   const cutoff = new Date(now.getTime() - TTL_MS);
 
   const { count } = await prisma.chatbotEngagement.updateMany({
@@ -36,5 +36,5 @@ export async function expireStaleEngagements(
     data: { status: EngagementStatus.EXPIRED },
   });
 
-  return { expiredCount: count, cutoff: cutoff.toISOString() };
+  return { expiredCount: count };
 }

@@ -12,8 +12,8 @@
 //
 // No external deps. The converter handles the subset of TipTap output the
 // operator-editor produces: h1-h3, p, ul/ol/li, blockquote, strong, em,
-// inline code, code blocks, and anchor tags. Anything else falls through as
-// plain text so we never break the MDX paste.
+// strike, underline, inline code, code blocks, and anchor tags. Anything
+// else falls through as plain text so we never break the MDX paste.
 // ---------------------------------------------------------------------------
 
 import type { ContentDraft, ContentFormat } from "@prisma/client";
@@ -91,8 +91,25 @@ function inlineHtmlToMdx(html: string): string {
     (_m, _tag, inner: string) => `*${inlineHtmlToMdx(inner)}*`,
   );
 
-  // anything else: strip
-  out = out.replace(/<[^>]+>/g, "");
+  // <s> -> GFM strikethrough
+  out = out.replace(
+    /<s[^>]*>([\s\S]*?)<\/s>/gi,
+    (_m, inner: string) => `~~${inlineHtmlToMdx(inner)}~~`,
+  );
+
+  // <u> -> underline. Markdown has no native underline syntax, but MDX
+  // bodies are compiled as JSX and pass raw HTML/JSX elements through
+  // untouched (this file already relies on that — see the raw <script>
+  // JSON-LD blocks emitted by renderJsonLdScripts below), so <u> survives
+  // as literal HTML rather than being downgraded to plain text. Excluded
+  // from the generic tag-strip below so it isn't stripped a line later.
+  out = out.replace(
+    /<u[^>]*>([\s\S]*?)<\/u>/gi,
+    (_m, inner: string) => `<u>${inlineHtmlToMdx(inner)}</u>`,
+  );
+
+  // anything else: strip (but keep our own passed-through <u>/</u>)
+  out = out.replace(/<(?!\/?u(?:\s[^>]*)?>)[^>]+>/gi, "");
   return decodeEntities(out).trim();
 }
 

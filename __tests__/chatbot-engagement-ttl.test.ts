@@ -39,10 +39,7 @@ describe("expireStaleEngagements", () => {
       },
       data: { status: EngagementStatus.EXPIRED },
     });
-    expect(result).toEqual({
-      expiredCount: 3,
-      cutoff: "2026-07-31T12:00:00.000Z",
-    });
+    expect(result).toEqual({ expiredCount: 3 });
   });
 
   it("only ever issues one updateMany call (no row fetch, no per-row loop)", async () => {
