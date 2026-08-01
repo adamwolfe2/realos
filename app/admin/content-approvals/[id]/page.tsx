@@ -8,6 +8,7 @@ import {
   renderClaudeCodePromptFromDraft,
   renderMdxFromDraft,
 } from "@/lib/content/render-mdx";
+import { sanitizeContentHtml } from "@/lib/security/sanitize-content-html";
 import { ApprovalDetailClient } from "./detail-client";
 
 export const metadata: Metadata = { title: "Content approval · LeaseStack" };
@@ -145,7 +146,7 @@ export default async function ContentApprovalDetailPage({
       <ApprovalDetailClient
         draftId={draft.id}
         canReview={!isTerminal}
-        htmlBody={draft.htmlBody ?? ""}
+        htmlBody={sanitizeContentHtml(draft.htmlBody ?? "")}
         mdxOutput={rendered.mdx}
         claudePrompt={claudePrompt}
         slug={rendered.slug}
