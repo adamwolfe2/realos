@@ -19,6 +19,7 @@ import {
   type DataTableColumn,
 } from "@/components/portal/ui/data-table";
 import { createReport } from "@/lib/actions/reports";
+import { isReportStatusRestricted } from "@/lib/reports/access";
 import {
   LivePreviewBody,
   PreviewSkeleton,
@@ -71,7 +72,13 @@ export default async function ReportsListPage({
   if (sp.kind === "weekly" || sp.kind === "monthly" || sp.kind === "custom") {
     where.kind = sp.kind;
   }
-  if (sp.status === "draft" || sp.status === "shared" || sp.status === "archived") {
+  // Real CLIENT_* users only ever see shared reports — clamp regardless of
+  // ?status=, so a hand-crafted URL can't surface a draft. Agency/impersonating
+  // scopes (the operators doing the review) keep the normal status filter.
+  const statusRestricted = isReportStatusRestricted(scope);
+  if (statusRestricted) {
+    where.status = "shared";
+  } else if (sp.status === "draft" || sp.status === "shared" || sp.status === "archived") {
     where.status = sp.status;
   }
 

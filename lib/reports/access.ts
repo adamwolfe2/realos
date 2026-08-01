@@ -30,3 +30,19 @@ export function canAccessReport(
     scope.allowedPropertyIds.includes(reportPropertyId)
   );
 }
+
+// ---------------------------------------------------------------------------
+// Draft-status gate. lib/actions/reports.ts documents "operator review is
+// mandatory so nothing here ever auto-sends" — a real CLIENT_* user must
+// never see a report before an operator has reviewed it and flipped it to
+// "shared". Agency scopes (the operators doing that review) and impersonating
+// scopes (an agency user supporting a client) keep full visibility, same as
+// the property gate above.
+// ---------------------------------------------------------------------------
+
+export function isReportStatusRestricted(scope: {
+  isAgency: boolean;
+  isImpersonating: boolean;
+}): boolean {
+  return !scope.isAgency && !scope.isImpersonating;
+}

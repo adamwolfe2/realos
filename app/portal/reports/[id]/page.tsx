@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
-import { canAccessReport } from "@/lib/reports/access";
+import { canAccessReport, isReportStatusRestricted } from "@/lib/reports/access";
 import { getSiteUrl } from "@/lib/brand";
 import { ReportDashboard } from "@/components/portal/reports/dashboard/report-dashboard";
 import { PropertyOnePager } from "@/components/portal/reports/property-one-pager";
@@ -68,6 +68,11 @@ export default async function ReportDetailPage({
   // reports: the snapshot is the full portfolio and the page renders the
   // world-readable /r/<token> share link. Same 404 as a wrong org id.
   if (!canAccessReport(scope, report.propertyId)) notFound();
+  // Real CLIENT_* users must not open a draft — operator review is
+  // mandatory (lib/actions/reports.ts) so nothing here ever auto-sends.
+  // Same 404 as the property gate above: no info leak about whether a
+  // draft exists for this id.
+  if (isReportStatusRestricted(scope) && report.status !== "shared") notFound();
 
   const snapshot = report.snapshot as unknown as ReportSnapshot;
   const status = (report.status as "draft" | "shared" | "archived") ?? "draft";
