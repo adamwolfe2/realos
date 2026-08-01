@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { recordCronRun } from "@/lib/health/cron-run";
-import { generateReportSnapshot } from "@/lib/reports/generate";
+import { generateReportSnapshot, resolvePeriod } from "@/lib/reports/generate";
 import { generateShareToken } from "@/lib/reports/token";
 import { notifyReportDraftReady } from "@/lib/notifications/create";
 import { verifyCronAuth } from "@/lib/cron/auth";
@@ -54,25 +54,42 @@ export async function GET(req: NextRequest) {
     const errors: { orgId: string; error: string }[] = [];
     const autoSendSkipped: { orgId: string; reason: string }[] = [];
 
+    // A single shared `now` for the whole run so every org resolves the
+    // exact same periodStart (previously each org's generateReportSnapshot
+    // call used its own new Date(), so the dedup key could drift by
+    // milliseconds between orgs processed at different points in the loop).
+    // That also lets us batch-fetch every existing-report dedup row in one
+    // query up front — skipping generateReportSnapshot entirely (its own
+    // heavy per-org queries) for orgs already drafted this period, instead
+    // of the old per-org findFirst() after doing the expensive work anyway.
+    const runNow = new Date();
+    const { periodStart: sharedPeriodStart } = resolvePeriod("weekly", runNow);
+    const orgIds = orgs.map((o) => o.id);
+    const existingReports =
+      orgIds.length > 0
+        ? await prisma.clientReport.findMany({
+            where: {
+              orgId: { in: orgIds },
+              kind: "weekly",
+              periodStart: sharedPeriodStart,
+            },
+            select: { orgId: true },
+          })
+        : [];
+    const alreadyDrafted = new Set(existingReports.map((r) => r.orgId));
+
     for (const org of orgs) {
       try {
-        const snapshot = await generateReportSnapshot(org.id, "weekly");
-        const periodStart = new Date(snapshot.periodStart);
-        const periodEnd = new Date(snapshot.periodEnd);
-
-        // Idempotency: skip if we already drafted a weekly for this window.
-        const existing = await prisma.clientReport.findFirst({
-          where: {
-            orgId: org.id,
-            kind: "weekly",
-            periodStart,
-          },
-          select: { id: true },
-        });
-        if (existing) {
+        if (alreadyDrafted.has(org.id)) {
           skipped += 1;
           continue;
         }
+
+        const snapshot = await generateReportSnapshot(org.id, "weekly", {
+          now: runNow,
+        });
+        const periodStart = new Date(snapshot.periodStart);
+        const periodEnd = new Date(snapshot.periodEnd);
 
         const report = await prisma.clientReport.create({
           data: {

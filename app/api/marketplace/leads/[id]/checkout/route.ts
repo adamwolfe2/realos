@@ -194,7 +194,11 @@ export async function POST(
       data: { status: MarketplaceLeadStatus.AVAILABLE },
     });
     return NextResponse.json(
-      { error: "stripe_error", message },
+      {
+        error: "stripe_error",
+        message:
+          "We couldn't start checkout for this lead. Please try again — if the problem continues, contact support.",
+      },
       { status: 502 },
     );
   }

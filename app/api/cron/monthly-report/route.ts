@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { recordCronRun } from "@/lib/health/cron-run";
-import { generateReportSnapshot } from "@/lib/reports/generate";
+import { generateReportSnapshot, resolvePeriod } from "@/lib/reports/generate";
 import { generateShareToken } from "@/lib/reports/token";
 import { sendReportEmail } from "@/lib/email/send-report";
 import { notifyReportDraftReady } from "@/lib/notifications/create";
@@ -57,8 +57,37 @@ export async function GET(req: NextRequest) {
     let skipped = 0;
     const errors: { orgId: string; error: string }[] = [];
 
+    // A single shared `now` for the whole run so every org resolves the
+    // exact same periodStart (previously each org's generateReportSnapshot
+    // call used its own new Date(), so the dedup key could drift by
+    // milliseconds between orgs processed at different points in the loop).
+    // That also lets us batch-fetch every existing-report dedup row in one
+    // query up front — skipping generateReportSnapshot entirely (its own
+    // heavy per-org queries) for orgs already reported this period, instead
+    // of the old per-org findFirst() after doing the expensive work anyway.
+    const runNow = new Date();
+    const { periodStart: sharedPeriodStart } = resolvePeriod("monthly", runNow);
+    const orgIds = orgs.map((o) => o.id);
+    const existingReports =
+      orgIds.length > 0
+        ? await prisma.clientReport.findMany({
+            where: {
+              orgId: { in: orgIds },
+              kind: "monthly",
+              periodStart: sharedPeriodStart,
+            },
+            select: { orgId: true },
+          })
+        : [];
+    const alreadyReported = new Set(existingReports.map((r) => r.orgId));
+
     for (const org of orgs) {
       try {
+        if (alreadyReported.has(org.id)) {
+          skipped += 1;
+          continue;
+        }
+
         // Auto-send ONLY on explicit opt-in (matches weekly-report cron).
         // Everyone else gets a draft + operator notification — the operator
         // reviews and shares manually, exactly as the Reports UI promises.
@@ -67,17 +96,10 @@ export async function GET(req: NextRequest) {
           org.reportCadence === "monthly" &&
           (org.reportRecipients?.length ?? 0) > 0;
 
-        const snapshot = await generateReportSnapshot(org.id, "monthly");
-        const periodStart = new Date(snapshot.periodStart);
-
-        const existing = await prisma.clientReport.findFirst({
-          where: { orgId: org.id, kind: "monthly", periodStart },
-          select: { id: true },
+        const snapshot = await generateReportSnapshot(org.id, "monthly", {
+          now: runNow,
         });
-        if (existing) {
-          skipped += 1;
-          continue;
-        }
+        const periodStart = new Date(snapshot.periodStart);
 
         const shareToken = generateShareToken();
 

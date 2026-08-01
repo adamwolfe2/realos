@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { sanitizeContentHtml } from "@/lib/security/sanitize-content-html";
 
 // ---------------------------------------------------------------------------
 // /preview/content/[id] — public read-only preview of a ContentDraft.
@@ -69,13 +70,19 @@ export default async function ContentPreviewPage({ params }: Props) {
   const markdown = draft.outputMarkdown?.trim();
   const outBody =
     typeof out?.body === "string" && out.body.length > 0 ? out.body : null;
-  const renderedHtml = htmlBody
+  const renderedHtmlRaw = htmlBody
     ? htmlBody
     : markdown
       ? markdownToHtml(markdown)
       : outBody
         ? markdownToHtml(outBody)
         : null;
+  // Public unauthenticated route — sanitize before dangerouslySetInnerHTML.
+  // htmlBody is persisted verbatim from the portal editor / AI chat-edit
+  // route with no HTML-shape validation, so treat it as untrusted at render.
+  const renderedHtml = renderedHtmlRaw
+    ? sanitizeContentHtml(renderedHtmlRaw)
+    : null;
 
   return (
     <div className="min-h-screen bg-[var(--parchment,#FAF8F2)] py-4 sm:py-8 px-3 sm:px-6">

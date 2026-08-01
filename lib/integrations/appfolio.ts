@@ -1946,6 +1946,15 @@ export async function syncListingsForOrg(
     let remoteListings: NormalizedListing[];
     if (mode === "REST") {
       remoteListings = await fetchRest(integration);
+    } else if (properties.length === 0) {
+      // No AppFolio-backed property exists yet for this org (mid-onboarding,
+      // or the last one was deleted/re-platformed). properties[0] below
+      // would throw a raw TypeError that surfaced as the tenant-facing sync
+      // error message. Nothing to scope the scrape to — skip cleanly.
+      console.warn(
+        `[appfolio] embed-scrape listing sync skipped for org (no AppFolio-backed properties yet)`,
+      );
+      remoteListings = [];
     } else if (properties.length > 1) {
       // Multi-property tenant on embed-scrape: scraped listings carry no
       // property-group hint, so they can't be attributed to the right

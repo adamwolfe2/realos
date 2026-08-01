@@ -141,6 +141,9 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       .catch(() => {
         /* swallow — the original error is what matters */
       });
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: "audit_run_failed" },
+      { status: 500 },
+    );
   }
 }
