@@ -50,17 +50,24 @@ describe("SEO module — structure", () => {
   it("portal page exists at /portal/seo and uses requireScope", () => {
     const src = readFile("app/portal/seo/page.tsx");
     expect(src).toContain("requireScope");
-    expect(src).toContain("seoSnapshot");
+    // The 365d/30d aggregate reads (SeoSnapshot/SeoQuery/SeoLandingPage)
+    // live in the property-scoped query layer (lib/seo/portal-overview-
+    // queries.ts) as of the restricted-user rewire — the page calls into
+    // it rather than querying prisma.seoSnapshot directly.
+    expect(src).toContain("fetchSeoSnapshots");
     // Tenant scoping: every prisma read must filter by orgId. Two equivalent
     // gating patterns count as valid: a literal `orgId: scope.orgId` clause,
     // OR a `tenantWhere(scope)` helper expansion (lib/tenancy/scope.ts line
     // 422 — returns `{ orgId: scope.orgId }`). Counting only the literal
     // gives false-positive failures the moment a query is refactored to
-    // use the helper.
-    const prismaCallCount = (src.match(/prisma\.seo/g) ?? []).length;
+    // use the helper. Combine the page with its query-layer module so
+    // reads that moved into lib/seo/* still count toward the guard.
+    const queryLayerSrc = readFile("lib/seo/portal-overview-queries.ts");
+    const combined = src + queryLayerSrc;
+    const prismaCallCount = (combined.match(/prisma\.seo/g) ?? []).length;
     expect(prismaCallCount).toBeGreaterThan(0);
-    const literalScopeCount = (src.match(/orgId: scope\.orgId/g) ?? []).length;
-    const tenantWhereCount = (src.match(/tenantWhere\(scope\)/g) ?? []).length;
+    const literalScopeCount = (combined.match(/orgId: scope\.orgId/g) ?? []).length;
+    const tenantWhereCount = (combined.match(/tenantWhere\(scope\)/g) ?? []).length;
     const totalScopeCount = literalScopeCount + tenantWhereCount;
     expect(
       totalScopeCount,
