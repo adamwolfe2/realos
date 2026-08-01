@@ -16,7 +16,7 @@ export type ReportPopupStats = {
   ctaClicks: number;
   converted: number;
   dismissed: number;
-  conversionRate: number | null; // converted / shown, rounded to 1 decimal, null when shown=0
+  conversionRate: number | null; // converted / shown, rounded to a whole number — the only renderer (pct() in snapshot-shared.tsx) rounds again, so a stored decimal is noise; null when shown=0
 };
 
 /**
@@ -69,7 +69,6 @@ export async function buildPopupStats(
     ctaClicks,
     converted,
     dismissed,
-    conversionRate:
-      shown > 0 ? Math.round((converted / shown) * 1000) / 10 : null,
+    conversionRate: shown > 0 ? Math.round((converted / shown) * 100) : null,
   };
 }

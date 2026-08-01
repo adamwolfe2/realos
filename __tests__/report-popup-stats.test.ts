@@ -49,26 +49,26 @@ describe("buildPopupStats", () => {
     });
   });
 
-  it("aggregates event type counts into the KPI shape and computes conversion rate", async () => {
+  it("aggregates event type counts into the KPI shape and computes conversion rate, rounded to a whole number", async () => {
     mockPrisma.popupCampaign.findMany.mockResolvedValue([
       { id: "camp-1" },
       { id: "camp-2" },
     ]);
     mockPrisma.popupEvent.groupBy.mockResolvedValue([
-      { type: "SHOWN", _count: { _all: 200 } },
+      { type: "SHOWN", _count: { _all: 300 } },
       { type: "CTA_CLICKED", _count: { _all: 40 } },
-      { type: "CONVERTED", _count: { _all: 20 } },
+      { type: "CONVERTED", _count: { _all: 100 } },
       { type: "DISMISSED", _count: { _all: 30 } },
     ]);
 
     const result = await buildPopupStats("org-1", null, PERIOD_START, PERIOD_END);
 
     expect(result).toEqual({
-      shown: 200,
+      shown: 300,
       ctaClicks: 40,
-      converted: 20,
+      converted: 100,
       dismissed: 30,
-      conversionRate: 10, // 20/200 = 10%
+      conversionRate: 33, // 100/300 = 33.33...% -> rounds to whole number, matching pct()
     });
     // Scoped to this org's campaign ids + the report window.
     expect(mockPrisma.popupEvent.groupBy).toHaveBeenCalledWith(

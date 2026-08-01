@@ -1693,7 +1693,10 @@ export async function generateReportSnapshot(
     scope.propertyId,
     periodStart,
     periodEnd,
-  ).catch(() => undefined);
+  ).catch((err) => {
+    console.error("[report] popupStats failed:", orgId, err);
+    return undefined;
+  });
 
   // Connection status for every integration — drives section gating in
   // the renderer + email so we never show fake $X ad spend / 0 tours

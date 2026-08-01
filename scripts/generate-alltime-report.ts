@@ -4,14 +4,15 @@
 // here ever auto-shares, an operator still has to review it and flip it to
 // "shared" from /portal/reports/<id> before the /r/<token> link goes live.
 //
-// DO NOT run this against prod — Adam runs it after this ships.
+// Safety: bare invocation is ALWAYS a dry run — it generates the snapshot,
+// prints headline numbers, and writes nothing. Persisting requires the
+// explicit --write flag. The resolved DB host prints before any query runs
+// so a wrong .env.local (staging vs prod DATABASE_URL) is visible before
+// anything is touched.
 //
-//   pnpm exec tsx --env-file=.env.local scripts/generate-alltime-report.ts --org <slug>
+//   pnpm exec tsx --env-file=.env.local scripts/generate-alltime-report.ts --org <slug>                 (dry run)
 //   pnpm exec tsx --env-file=.env.local scripts/generate-alltime-report.ts --org <slug> --property <slug>
-//   pnpm exec tsx --env-file=.env.local scripts/generate-alltime-report.ts --org <slug> --dry-run
-//
-// --dry-run generates the snapshot and prints headline numbers WITHOUT
-// writing a ClientReport row.
+//   pnpm exec tsx --env-file=.env.local scripts/generate-alltime-report.ts --org <slug> --write          (persists)
 
 import { getPrisma } from "../lib/db";
 import { generateReportSnapshot } from "../lib/reports/generate";
@@ -22,7 +23,7 @@ import { generateShareToken } from "../lib/reports/token";
 // scripts/backfill-lead-lease-links.ts).
 const prisma = getPrisma();
 
-const DRY_RUN = process.argv.includes("--dry-run");
+const WRITE = process.argv.includes("--write");
 const orgFlag = process.argv.indexOf("--org");
 const ORG_SLUG = orgFlag > -1 ? process.argv[orgFlag + 1] : null;
 const propertyFlag = process.argv.indexOf("--property");
@@ -30,8 +31,16 @@ const PROPERTY_SLUG = propertyFlag > -1 ? process.argv[propertyFlag + 1] : null;
 
 async function main() {
   if (!ORG_SLUG) {
-    throw new Error("Usage: --org <slug> is required (optionally --property <slug>, --dry-run)");
+    throw new Error("Usage: --org <slug> is required (optionally --property <slug>, --write)");
   }
+
+  // Print BEFORE any connect/write — the one thing an operator needs to see
+  // before this script can touch a database.
+  const dbHost = process.env.DATABASE_URL
+    ? new URL(process.env.DATABASE_URL).host
+    : "(DATABASE_URL not set)";
+  console.log(`DB host: ${dbHost}`);
+  console.log(WRITE ? "Mode: WRITE (will persist a draft report)" : "Mode: DRY RUN (pass --write to persist)");
 
   // Org.slug is @unique in the schema, so this can never actually return
   // more than one row — findMany + a length check is the defensive version
@@ -135,8 +144,8 @@ async function main() {
     );
   }
 
-  if (DRY_RUN) {
-    console.log("\n--dry-run: not persisting.");
+  if (!WRITE) {
+    console.log("\nDry run (default) — not persisting. Pass --write to persist.");
     return;
   }
 
