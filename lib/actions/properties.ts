@@ -86,6 +86,18 @@ export async function createProperty(
     throw err;
   }
 
+  // Property-RBAC gate. A property-restricted operator (someone scoped to a
+  // subset of buildings via UserPropertyAccess, e.g. a leasing manager on 2
+  // of 30 buildings) has no grant to extend — there's no propertyId yet to
+  // check against propertyInScope, so restricted callers are denied
+  // outright rather than allowed to mint a new property outside any grant.
+  // Mirrors the property-RBAC gate on setPropertyLifecycle/
+  // setPropertyLaunchStatus. Agency users are unrestricted (see
+  // ScopedContext.allowedPropertyIds) so this is a no-op for them.
+  if (!scope.isAgency && scope.allowedPropertyIds) {
+    return { ok: false, error: "Not authorized to create properties." };
+  }
+
   const parsed = createSchema.safeParse(raw);
   if (!parsed.success) {
     return {
