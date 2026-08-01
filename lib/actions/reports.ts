@@ -25,12 +25,6 @@ import { revalidatePath } from "next/cache";
 // reports the operator never reviewed.
 // ---------------------------------------------------------------------------
 
-// Re-exported for existing callers/tests — canonical definitions now live in
-// lib/reports/access.ts next to isReportStatusRestricted so the REST routes
-// (app/api/portal/reports) can share the same gate without importing a
-// "use server" module.
-export { assertOperatorScope, REPORT_OPERATOR_ONLY_ERROR };
-
 export async function createReport(
   kind: ReportKind,
   options: { propertyId?: string | null } = {},

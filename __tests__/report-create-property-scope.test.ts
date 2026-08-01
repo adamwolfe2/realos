@@ -71,8 +71,8 @@ const {
   updateReport,
   archiveReport,
   sendReportToRecipients,
-  REPORT_OPERATOR_ONLY_ERROR,
 } = await import("@/lib/actions/reports");
+const { REPORT_OPERATOR_ONLY_ERROR } = await import("@/lib/reports/access");
 
 // Defaults to an OPERATOR scope (isAgency: true, isImpersonating: false) so
 // every existing call site below keeps exercising property RBAC / AI spend
