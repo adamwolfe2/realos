@@ -92,9 +92,11 @@ export async function createProperty(
   // check against propertyInScope, so restricted callers are denied
   // outright rather than allowed to mint a new property outside any grant.
   // Mirrors the property-RBAC gate on setPropertyLifecycle/
-  // setPropertyLaunchStatus. Agency users are unrestricted (see
-  // ScopedContext.allowedPropertyIds) so this is a no-op for them.
-  if (!scope.isAgency && scope.allowedPropertyIds) {
+  // setPropertyLaunchStatus. No agency exemption — UserPropertyAccess grants
+  // are populated for agency users too (see scope.ts allowedPropertyIds),
+  // and updateProperty's propertyInScope check binds agency callers the same
+  // way, so this stays consistent rather than carving agency out here.
+  if (scope.allowedPropertyIds) {
     return { ok: false, error: "Not authorized to create properties." };
   }
 

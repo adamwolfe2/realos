@@ -8,6 +8,12 @@ import { createMockPrisma, type MockPrisma } from "./helpers/mock-prisma";
 // updateProperty IDOR fixed via propertyInScope (see
 // update-property-scope-guard.test.ts). There's no existing propertyId to
 // check createProperty against, so restricted callers are denied outright.
+//
+// The gate applies uniformly regardless of scope.isAgency — scope.ts
+// populates allowedPropertyIds from UserPropertyAccess for agency users too,
+// and updateProperty's propertyInScope check has no agency exemption, so an
+// agency-flagged carve-out here would be an inconsistent, unintended
+// widening of what a restricted agency grant is supposed to mean.
 // ---------------------------------------------------------------------------
 
 let mockPrisma: MockPrisma;
@@ -77,6 +83,14 @@ function unrestrictedScope() {
   return { ...restrictedScope(), allowedPropertyIds: null };
 }
 
+function agencyRestrictedScope() {
+  return { ...restrictedScope(), isAgency: true, orgId: "agency-1" };
+}
+
+function agencyUnrestrictedScope() {
+  return { ...agencyRestrictedScope(), allowedPropertyIds: null };
+}
+
 const validPayload = {
   name: "New Building",
   slug: "new-building",
@@ -106,6 +120,31 @@ describe("createProperty — property-scope guard", () => {
     mockPrisma.property.create.mockResolvedValue({ id: "prop-new" });
 
     const result = await createProperty(validPayload);
+
+    expect(result.ok).toBe(true);
+    expect(mockPrisma.property.create).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects an agency scope with allowedPropertyIds set — no agency carve-out", async () => {
+    mockRequireWritableWorkspace.mockResolvedValue(agencyRestrictedScope());
+
+    const result = await createProperty({ ...validPayload, orgId: "org-1" });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe("Not authorized to create properties.");
+    expect(mockPrisma.property.create).not.toHaveBeenCalled();
+  });
+
+  it("allows an agency scope with null allowedPropertyIds", async () => {
+    mockRequireWritableWorkspace.mockResolvedValue(agencyUnrestrictedScope());
+    mockPrisma.organization.findUnique.mockResolvedValue({
+      id: "org-1",
+      orgType: OrgType.CLIENT,
+    });
+    mockPrisma.property.findFirst.mockResolvedValue(null);
+    mockPrisma.property.create.mockResolvedValue({ id: "prop-new" });
+
+    const result = await createProperty({ ...validPayload, orgId: "org-1" });
 
     expect(result.ok).toBe(true);
     expect(mockPrisma.property.create).toHaveBeenCalledTimes(1);

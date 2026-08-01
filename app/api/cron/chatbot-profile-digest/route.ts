@@ -116,7 +116,15 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const { expiredCount } = await expireStaleEngagements();
+    // Sweep errors must not 500 the cron after digests were already sent —
+    // that would invite Vercel to retry the whole invocation and double-send.
+    // Treat a failed sweep as 0 expired; it just runs again next cadence.
+    let expiredCount = 0;
+    try {
+      ({ expiredCount } = await expireStaleEngagements());
+    } catch (err) {
+      console.error("[chatbot-profile-digest] expireStaleEngagements failed:", err);
+    }
 
     return {
       result: NextResponse.json({
@@ -128,7 +136,7 @@ export async function GET(req: NextRequest) {
         summary,
         expiredEngagements: expiredCount,
       }),
-      recordsProcessed: sent + expiredCount,
+      recordsProcessed: sent,
     };
   });
 }
