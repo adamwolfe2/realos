@@ -94,15 +94,16 @@ findings before reporting so we don't re-litigate wave-2/3 fixes.
 
 ### 2f. Code quality (small, safe wins)
 
-- [ ] **Q1.** console.log cleanup in prod paths (not gated by debug flag,
-      not test/script code): `lib/intelligence/perplexity-research.ts:113,120`,
-      `lib/seo/dataforseo.ts:222`, `lib/intelligence/firecrawl.ts:246`,
-      `lib/intelligence/site-ingest.ts:369`,
-      `lib/intelligence/voice-extract.ts:94`,
-      `lib/integrations/appfolio.ts:716`, `lib/seo/google-places.ts:175`,
-      `app/api/webhooks/stripe/route.ts:1839`,
-      `app/api/cron/site-intelligence-refresh/route.ts:93`,
-      `app/api/cron/dataforseo-sync/route.ts:109`.
+- [x] **Q1 — reviewed, not a bug.** Inspected all 10 console.log sites
+      flagged by recon. Every one follows the same intentional
+      `[module-name]` operational/cost-telemetry convention used
+      consistently across lib/intelligence/**, lib/seo/**, cron routes, and
+      the Stripe webhook — one file's comment explicitly says "The console
+      line stays so existing log tooling still works; the DB row backs
+      /admin/costs rollups." This is the app's operability logging, not
+      debug cruft. Gating it behind a flag would be an unrequested change
+      to a working, documented convention and risks breaking whatever reads
+      these lines today. Left untouched.
 
 ### Deliberately NOT attempted (queued / decision-blocked / out of scope)
 
