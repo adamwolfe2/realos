@@ -14,7 +14,7 @@ const h = vi.hoisted(() => ({
   sendReportEmail: vi.fn(),
   db: {
     organization: { findMany: vi.fn() },
-    clientReport: { findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
+    clientReport: { findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
   },
 }));
 
@@ -30,6 +30,14 @@ vi.mock("@/lib/reports/generate", () => ({
   generateReportSnapshot: async () => ({
     periodStart: "2026-06-01T00:00:00.000Z",
     periodEnd: "2026-06-30T00:00:00.000Z",
+  }),
+  // Real resolvePeriod is a pure function of `now`; the route only uses it
+  // to batch-fetch the dedup lookup, so a fixed stub period is enough here.
+  resolvePeriod: () => ({
+    periodStart: new Date("2026-06-01T00:00:00.000Z"),
+    periodEnd: new Date("2026-06-30T00:00:00.000Z"),
+    priorStart: new Date("2026-05-01T00:00:00.000Z"),
+    priorEnd: new Date("2026-06-01T00:00:00.000Z"),
   }),
 }));
 vi.mock("@/lib/reports/token", () => ({
@@ -58,7 +66,7 @@ const AUTO_SEND_ORG = {
 beforeEach(() => {
   vi.clearAllMocks();
   h.db.organization.findMany.mockResolvedValue([AUTO_SEND_ORG]);
-  h.db.clientReport.findFirst.mockResolvedValue(null);
+  h.db.clientReport.findMany.mockResolvedValue([]);
   h.db.clientReport.create.mockResolvedValue({
     id: "report_1",
     shareToken: "test-share-token",

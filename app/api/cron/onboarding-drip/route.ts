@@ -65,6 +65,34 @@ export async function GET(req: NextRequest) {
     const results: Array<{ orgId: string; action: string; error?: string }> =
       [];
 
+    // Legacy-step dedup lookups are pure functions of daysSince (no DB
+    // needed to compute the target step), so batch-fetch every relevant
+    // AuditEvent row in one query up front instead of one findFirst() per
+    // org in the loop below.
+    function pickLegacyStep(daysSince: number): StepKey | null {
+      if (daysSince >= 2 && daysSince <= 4) return "add_property";
+      if (daysSince >= 5 && daysSince <= 9) return "add_integration";
+      if (daysSince >= 10 && daysSince <= 14) return "setup_checklist";
+      return null;
+    }
+    const orgIds = orgs.map((o) => o.id);
+    const legacyDedupEvents =
+      orgIds.length > 0
+        ? await prisma.auditEvent.findMany({
+            where: {
+              orgId: { in: orgIds },
+              entityType: "onboarding_drip",
+              description: {
+                in: ["add_property", "add_integration", "setup_checklist"],
+              },
+            },
+            select: { orgId: true, description: true },
+          })
+        : [];
+    const legacyAlreadySent = new Set(
+      legacyDedupEvents.map((e) => `${e.orgId}:${e.description}`),
+    );
+
     for (const org of orgs) {
       try {
         const daysSince = Math.floor(
@@ -78,11 +106,7 @@ export async function GET(req: NextRequest) {
         await sendPhaseAwareDrip({ org, daysSince, portalBase, results });
 
         // Determine which legacy step is due.
-        type StepKey = "add_property" | "add_integration" | "setup_checklist";
-        let targetStep: StepKey | null = null;
-        if (daysSince >= 2 && daysSince <= 4) targetStep = "add_property";
-        else if (daysSince >= 5 && daysSince <= 9) targetStep = "add_integration";
-        else if (daysSince >= 10 && daysSince <= 14) targetStep = "setup_checklist";
+        const targetStep = pickLegacyStep(daysSince);
 
         if (!targetStep) {
           results.push({ orgId: org.id, action: "skip_window" });
@@ -90,15 +114,7 @@ export async function GET(req: NextRequest) {
         }
 
         // Check dedup — has this step already been sent?
-        const alreadySent = await prisma.auditEvent.findFirst({
-          where: {
-            orgId: org.id,
-            entityType: "onboarding_drip",
-            description: targetStep,
-          },
-        });
-
-        if (alreadySent) {
+        if (legacyAlreadySent.has(`${org.id}:${targetStep}`)) {
           results.push({ orgId: org.id, action: "already_sent" });
           continue;
         }

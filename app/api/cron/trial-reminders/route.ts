@@ -75,25 +75,51 @@ export async function GET(req: NextRequest) {
     const resend = getResend();
     const now = new Date();
 
+    // Compute (org, stage, dedupId) for every candidate up front — pickStage
+    // is pure/local, no DB needed — then batch-fetch every dedup AuditEvent
+    // in a single query instead of one findFirst() per org. Replaces the
+    // N+1 pattern the sibling billing-reminders cron already fixed.
+    const candidates: Array<{
+      org: (typeof orgs)[number] & {
+        trialEndsAt: Date;
+        primaryContactEmail: string;
+      };
+      stage: Stage;
+      dedupId: string;
+    }> = [];
     for (const org of orgs) {
       scanned += 1;
       if (!org.trialEndsAt || !org.primaryContactEmail) continue;
       if (!isValidEmail(org.primaryContactEmail)) continue;
-
       const stage = pickStage(now, org.trialEndsAt);
       if (!stage) continue;
-
       const startedAtMarker = org.trialStartedAt?.toISOString() ?? "unknown";
-      const dedupId = `trial:${stage}:${startedAtMarker}`;
-      const existing = await prisma.auditEvent.findFirst({
-        where: {
-          orgId: org.id,
-          entityType: "TrialReminderSent",
-          entityId: dedupId,
-        },
-        select: { id: true },
+      candidates.push({
+        org: { ...org, trialEndsAt: org.trialEndsAt, primaryContactEmail: org.primaryContactEmail },
+        stage,
+        dedupId: `trial:${stage}:${startedAtMarker}`,
       });
-      if (existing) continue;
+    }
+
+    const candidateOrgIds = candidates.map((c) => c.org.id);
+    const candidateDedupIds = candidates.map((c) => c.dedupId);
+    const existingEvents =
+      candidates.length > 0
+        ? await prisma.auditEvent.findMany({
+            where: {
+              orgId: { in: candidateOrgIds },
+              entityType: "TrialReminderSent",
+              entityId: { in: candidateDedupIds },
+            },
+            select: { orgId: true, entityId: true },
+          })
+        : [];
+    const alreadySent = new Set(
+      existingEvents.map((e) => `${e.orgId}:${e.entityId}`),
+    );
+
+    for (const { org, stage, dedupId } of candidates) {
+      if (alreadySent.has(`${org.id}:${dedupId}`)) continue;
 
       try {
         if (!resend) throw new Error("Resend not configured");
