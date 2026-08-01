@@ -23,6 +23,7 @@ import { PageTransition } from "@/components/portal/page-transition";
 import { getActivePropertyId } from "@/lib/portal/active-property";
 import { visibleProperties } from "@/lib/tenancy/property-filter";
 import { ScopeRecovery } from "@/components/auth/scope-recovery";
+import { isReportStatusRestricted } from "@/lib/reports/access";
 
 export const metadata: Metadata = {
   title: {
@@ -152,7 +153,17 @@ export default async function PortalLayout({
       select: { instanceSubdomain: true, autoSyncEnabled: true },
     }),
     prisma.insight.count({ where: { orgId: scope.orgId } }).catch(() => 0),
-    prisma.clientReport.count({ where: { orgId: scope.orgId } }).catch(() => 0),
+    // Restricted (real client) scopes only ever see shared reports — clamp
+    // the badge count the same way as /portal/reports, so the nav pill
+    // never counts invisible drafts.
+    prisma.clientReport
+      .count({
+        where: {
+          orgId: scope.orgId,
+          ...(isReportStatusRestricted(scope) ? { status: "shared" } : {}),
+        },
+      })
+      .catch(() => 0),
     prisma.creativeRequest
       .count({ where: { orgId: scope.orgId } })
       .catch(() => 0),

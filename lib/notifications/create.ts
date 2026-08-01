@@ -329,18 +329,25 @@ export async function notifyPacingAlert(input: {
 }
 
 /**
- * Fire a notification when a draft weekly report is generated on Monday and
- * is waiting for operator review. Keeps the white-glove loop intact.
+ * Fire a notification when a draft weekly/monthly report is generated and is
+ * waiting for operator review. Keeps the white-glove loop intact.
+ *
+ * `agencyOrgId` — NOT the client org the report is about. This is an
+ * operator-voiced message ("your headline and personal note"), so it must
+ * land in the agency's own inbox, same as notifyDraftSubmitted resolves it.
+ * Landing it in the client org's bell (the pre-2026-08-01 bug) meant a real
+ * CLIENT_* user saw a notification instructing THEM to write copy for
+ * themselves and share their own report.
  */
 export async function notifyReportDraftReady(
-  orgId: string,
+  agencyOrgId: string,
   reportId: string,
   kind: "weekly" | "monthly",
 ): Promise<void> {
   const label = kind === "weekly" ? "Weekly" : "Monthly";
   await prisma.notification.create({
     data: {
-      orgId,
+      orgId: agencyOrgId,
       kind: "report_draft_ready",
       title: `${label} report draft is ready to review`,
       body: `Add your headline and personal note, then send or share the link with your client.`,

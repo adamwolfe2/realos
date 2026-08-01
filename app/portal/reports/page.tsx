@@ -318,6 +318,10 @@ export default async function ReportsListPage({
         title="Weekly and monthly reviews"
         description="Freeze the numbers, add a note, share a clean link. Nothing sends without your review."
         actions={
+          // Cadence/auto-send + report generation are operator-only surfaces
+          // (lib/reports/access.ts) — a real CLIENT_* user must not see a
+          // path to either, matching the status clamp above.
+          statusRestricted ? undefined : (
           <>
             {/* Persistent entry to cadence/auto-send (audit P1-11: the
                 automation pitch was invisible — the settings page existed
@@ -386,6 +390,7 @@ export default async function ReportsListPage({
             </button>
           </form>
           </>
+          )
         }
       />
 
@@ -457,6 +462,7 @@ export default async function ReportsListPage({
               </div>
             </div>
 
+            {statusRestricted ? null : (
             <div className="border-b border-border px-4 py-3">
               <form action={generateReport} className="flex items-center justify-between gap-3">
                 <input type="hidden" name="kind" value={previewKind} />
@@ -473,6 +479,7 @@ export default async function ReportsListPage({
                 </button>
               </form>
             </div>
+            )}
 
             <div className="p-3">
               <Suspense fallback={<PreviewSkeleton />}>
@@ -530,6 +537,10 @@ export default async function ReportsListPage({
                   <option value="custom">Custom</option>
                 </select>
               </label>
+              {statusRestricted ? null : (
+              // Dropped entirely for restricted (real client) scopes — the
+              // status clamp above means "shared" is the only reachable
+              // value, so a filter with unreachable options is just noise.
               <label className="flex flex-col gap-1.5">
                 <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
                   Status
@@ -545,6 +556,7 @@ export default async function ReportsListPage({
                   <option value="archived">Archived</option>
                 </select>
               </label>
+              )}
               <button
                 type="submit"
                 className="inline-flex items-center rounded-[2px] border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted"
@@ -569,10 +581,17 @@ export default async function ReportsListPage({
             sort={{ by: sortKey, dir: sortDir, hrefForSort }}
             density="compact"
             emptyState={
-              <EmptyState
-                title="Generate your first report"
-                body="Use the Generate report button up top to capture this period's leads, tours, ad spend, and organic traffic as a frozen snapshot. Add a note, then copy a shareable link for your client. Nothing is sent automatically."
-              />
+              statusRestricted ? (
+                <EmptyState
+                  title="No reports yet"
+                  body="Your agency team publishes reports here. Nothing to review yet."
+                />
+              ) : (
+                <EmptyState
+                  title="Generate your first report"
+                  body="Use the Generate report button up top to capture this period's leads, tours, ad spend, and organic traffic as a frozen snapshot. Add a note, then copy a shareable link for your client. Nothing is sent automatically."
+                />
+              )
             }
           />
         </div>

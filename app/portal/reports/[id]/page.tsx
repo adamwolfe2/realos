@@ -73,6 +73,10 @@ export default async function ReportDetailPage({
   // Same 404 as the property gate above: no info leak about whether a
   // draft exists for this id.
   if (isReportStatusRestricted(scope) && report.status !== "shared") notFound();
+  // Operator-only surface below (headline/note editing, share/archive
+  // controls, the mark-shared button, and the view-count telemetry banner)
+  // — a real CLIENT_* scope reads the frozen snapshot only.
+  const isOperator = !isReportStatusRestricted(scope);
 
   const snapshot = report.snapshot as unknown as ReportSnapshot;
   const status = (report.status as "draft" | "shared" | "archived") ?? "draft";
@@ -133,34 +137,36 @@ export default async function ReportDetailPage({
         </div>
       </div>
 
-      <OperatorReviewBar
-        status={status}
-        hasHeadline={(report.headline?.length ?? 0) > 0}
-        hasNotes={(report.notes?.length ?? 0) > 0}
-        shareUrl={shareUrl}
-        recipient={report.org?.primaryContactEmail ?? null}
-      >
-        <ReportEditorControls
-          reportId={report.id}
-          initialHeadline={report.headline ?? ""}
-          initialNotes={report.notes ?? ""}
+      {isOperator ? (
+        <OperatorReviewBar
           status={status}
+          hasHeadline={(report.headline?.length ?? 0) > 0}
+          hasNotes={(report.notes?.length ?? 0) > 0}
           shareUrl={shareUrl}
-        />
-        {status !== "archived" ? (
-          <SendEmailPanel
+          recipient={report.org?.primaryContactEmail ?? null}
+        >
+          <ReportEditorControls
             reportId={report.id}
-            defaultRecipient={report.org?.primaryContactEmail ?? null}
-            defaultRecipientName={report.org?.primaryContactName ?? null}
-            canSend={
-              (report.headline?.length ?? 0) > 0 ||
-              (report.notes?.length ?? 0) > 0
-            }
+            initialHeadline={report.headline ?? ""}
+            initialNotes={report.notes ?? ""}
+            status={status}
+            shareUrl={shareUrl}
           />
-        ) : null}
-      </OperatorReviewBar>
+          {status !== "archived" ? (
+            <SendEmailPanel
+              reportId={report.id}
+              defaultRecipient={report.org?.primaryContactEmail ?? null}
+              defaultRecipientName={report.org?.primaryContactName ?? null}
+              canSend={
+                (report.headline?.length ?? 0) > 0 ||
+                (report.notes?.length ?? 0) > 0
+              }
+            />
+          ) : null}
+        </OperatorReviewBar>
+      ) : null}
 
-      {status === "shared" && report.viewCount > 0 ? (
+      {isOperator && status === "shared" && report.viewCount > 0 ? (
         <div
           data-no-print
           className="rounded-[2px] border border-primary/30 bg-primary/10 px-4 py-2 text-xs text-primary"

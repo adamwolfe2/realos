@@ -13,7 +13,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const h = vi.hoisted(() => ({
   sendReportEmail: vi.fn(),
   db: {
-    organization: { findMany: vi.fn() },
+    // findFirst resolves the single agency org that report-draft-ready
+    // notifications route to (2026-08-01 fix) — notifyReportDraftReady is
+    // mocked as a no-op below so the id value here doesn't matter to these
+    // status-sequencing assertions.
+    organization: { findMany: vi.fn(), findFirst: vi.fn() },
     clientReport: { findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
   },
 }));
@@ -66,6 +70,7 @@ const AUTO_SEND_ORG = {
 beforeEach(() => {
   vi.clearAllMocks();
   h.db.organization.findMany.mockResolvedValue([AUTO_SEND_ORG]);
+  h.db.organization.findFirst.mockResolvedValue({ id: "agency_1" });
   h.db.clientReport.findMany.mockResolvedValue([]);
   h.db.clientReport.create.mockResolvedValue({
     id: "report_1",

@@ -88,8 +88,13 @@ export function ReportEditorControls({
 
   function handleMarkShared() {
     startTransition(async () => {
-      await updateReport(reportId, { headline, notes, status: "shared" });
-      router.refresh();
+      try {
+        await updateReport(reportId, { headline, notes, status: "shared" });
+        router.refresh();
+      } catch (err) {
+        console.error("Failed to mark report as shared:", err);
+        setSaveState("error");
+      }
     });
   }
 
@@ -98,8 +103,13 @@ export function ReportEditorControls({
       return;
     }
     startTransition(async () => {
-      await archiveReport(reportId);
-      router.push("/portal/reports");
+      try {
+        await archiveReport(reportId);
+        router.push("/portal/reports");
+      } catch (err) {
+        console.error("Failed to archive report:", err);
+        setSaveState("error");
+      }
     });
   }
 

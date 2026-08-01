@@ -67,6 +67,12 @@ export async function GET(req: NextRequest) {
     // of the old per-org findFirst() after doing the expensive work anyway.
     const runNow = new Date();
     const { periodStart: sharedPeriodStart } = resolvePeriod("monthly", runNow);
+    // Resolved once for the whole run (single-agency instance, same lookup
+    // notifyDraftSubmitted uses) — notifyReportDraftReady is operator-voiced
+    // and must land in the agency's inbox, not the client org's.
+    const agencyOrg = await prisma.organization
+      .findFirst({ where: { orgType: "AGENCY" }, select: { id: true }, orderBy: { createdAt: "asc" } })
+      .catch(() => null);
     const orgIds = orgs.map((o) => o.id);
     const existingReports =
       orgIds.length > 0
@@ -136,9 +142,11 @@ export async function GET(req: NextRequest) {
             });
             sent += 1;
           } else {
-            await notifyReportDraftReady(org.id, report.id, "monthly").catch(() => {
-              // Notification failure must not fail the run; the draft exists.
-            });
+            if (agencyOrg) {
+              await notifyReportDraftReady(agencyOrg.id, report.id, "monthly").catch(() => {
+                // Notification failure must not fail the run; the draft exists.
+              });
+            }
             errors.push({
               orgId: org.id,
               error:
@@ -150,9 +158,11 @@ export async function GET(req: NextRequest) {
             skipped += 1;
           }
         } else {
-          await notifyReportDraftReady(org.id, report.id, "monthly").catch(() => {
-            // Notification failure must not fail the run; the draft exists.
-          });
+          if (agencyOrg) {
+            await notifyReportDraftReady(agencyOrg.id, report.id, "monthly").catch(() => {
+              // Notification failure must not fail the run; the draft exists.
+            });
+          }
           skipped += 1;
         }
       } catch (err) {

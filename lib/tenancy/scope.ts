@@ -50,6 +50,13 @@ export type ScopedContext = {
   // can support every property, regardless of any restrictions on
   // the agency user's own org.
   allowedPropertyIds: string[] | null;
+  // True only for the synthetic getDemoScope() scope below. Lets a handful
+  // of policy checks (e.g. isReportStatusRestricted) opt demo out of gates
+  // that exist to protect real client orgs from real operator-only surfaces,
+  // without touching isAgency/isImpersonating — those flags have real
+  // side effects elsewhere (billing gate bypass, audit "impersonator"
+  // tagging) that a synthetic demo session must not trigger.
+  isDemo: boolean;
 };
 
 // DEMO_MODE fallback. When no Clerk session exists AND the flag is on, we
@@ -125,6 +132,7 @@ async function getDemoScope(): Promise<ScopedContext | null> {
     // to render the full surface for showcasing, so we never hand it a
     // property gate.
     allowedPropertyIds: null,
+    isDemo: true,
   };
 }
 
@@ -409,6 +417,7 @@ async function getScopeUncached(): Promise<ScopedContext | null> {
     isAlPartner,
     isImpersonating,
     allowedPropertyIds,
+    isDemo: false,
   };
 }
 

@@ -64,6 +64,12 @@ export async function GET(req: NextRequest) {
     // of the old per-org findFirst() after doing the expensive work anyway.
     const runNow = new Date();
     const { periodStart: sharedPeriodStart } = resolvePeriod("weekly", runNow);
+    // Resolved once for the whole run (single-agency instance, same lookup
+    // notifyDraftSubmitted uses) — notifyReportDraftReady is operator-voiced
+    // and must land in the agency's inbox, not the client org's.
+    const agencyOrg = await prisma.organization
+      .findFirst({ where: { orgType: "AGENCY" }, select: { id: true }, orderBy: { createdAt: "asc" } })
+      .catch(() => null);
     const orgIds = orgs.map((o) => o.id);
     const existingReports =
       orgIds.length > 0
@@ -104,9 +110,14 @@ export async function GET(req: NextRequest) {
           select: { id: true, shareToken: true },
         });
 
-        await notifyReportDraftReady(org.id, report.id, "weekly").catch(() => {
-          // fire-and-forget: don't fail the draft just because the bell is down
-        });
+        // Suppressed (not client org.id) if no agency org resolves — an
+        // empty-DB edge case; the draft still exists, only the bell ping
+        // is skipped rather than misrouting it to the client.
+        if (agencyOrg) {
+          await notifyReportDraftReady(agencyOrg.id, report.id, "weekly").catch(() => {
+            // fire-and-forget: don't fail the draft just because the bell is down
+          });
+        }
 
         drafted += 1;
 
