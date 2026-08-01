@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { verifyCronAuth } from "@/lib/cron/auth";
 import { recordCronRun } from "@/lib/health/cron-run";
 import { sendProspectProfileForConversation } from "@/lib/chatbot/send-prospect-profile";
+import { expireStaleEngagements } from "@/lib/chatbot/expire-stale-engagements";
 
 // ---------------------------------------------------------------------------
 // GET /api/cron/chatbot-profile-digest
@@ -18,6 +19,10 @@ import { sendProspectProfileForConversation } from "@/lib/chatbot/send-prospect-
 //
 // Capped at MAX_PER_RUN per invocation so a backlog can't blow past
 // Vercel's serverless ceiling. Backlog drains over subsequent runs.
+//
+// Also piggybacks the ChatbotEngagement stale-TTL sweep (flips PENDING >24h
+// old to EXPIRED) — same chatbot domain, and 5-minute cadence catches the
+// TTL boundary quickly. See lib/chatbot/expire-stale-engagements.ts.
 //
 // Auth: Bearer CRON_SECRET.
 // ---------------------------------------------------------------------------
@@ -111,6 +116,8 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    const { expiredCount } = await expireStaleEngagements();
+
     return {
       result: NextResponse.json({
         ok: true,
@@ -119,8 +126,9 @@ export async function GET(req: NextRequest) {
         skipped,
         failed,
         summary,
+        expiredEngagements: expiredCount,
       }),
-      recordsProcessed: sent,
+      recordsProcessed: sent + expiredCount,
     };
   });
 }
