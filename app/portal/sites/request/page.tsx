@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
 import { PageHeader } from "@/components/admin/page-header";
+import { ManagedByChip } from "@/components/portal/managed-by-chip";
 import { IntakeForm } from "@/components/site-engine/intake-form";
 import type { IntakeFormInput } from "@/lib/site-engine/intake-schema";
 import {
@@ -74,7 +75,12 @@ export default async function PortalSiteRequestPage() {
   return (
     <div className="max-w-3xl space-y-6">
       <PageHeader
-        title="Site Engine"
+        title={
+          <span className="flex items-center gap-3 flex-wrap">
+            Site Engine
+            <ManagedByChip sla="first build in 5 business days" />
+          </span>
+        }
         description="Tell us about the site you want and we'll hand-build it. Pre-filled from your portal profile — edit anything that's wrong."
         breadcrumb={
           <Link href="/portal" className="hover:underline">

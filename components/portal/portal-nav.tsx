@@ -108,11 +108,16 @@ export type PortalNavOrg = {
    */
   hasTours?: boolean;
   /**
-   * Applications have no production write path yet — the page is empty
-   * for every real tenant. Hide until either AppFolio rental_application
-   * sync ships or a public application form is wired.
+   * Applications can be logged manually (P1-9) in addition to demo
+   * seeding. Hide until a row exists or AppFolio is connected.
    */
   hasApplications?: boolean;
+  /**
+   * Residents / work orders can be manually entered (P1-7/8), so their
+   * nav items show when rows exist even without AppFolio.
+   */
+  hasResidents?: boolean;
+  hasWorkOrders?: boolean;
   /**
    * Number of AppFolio records pending curation. Surfaces as a badge on
    * the Properties nav item so the signal is visible without eating a
@@ -263,13 +268,17 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/portal/applications",
         label: "Applications",
         icon: ClipboardList,
-        show: (o) => o.moduleResidents && Boolean(o.hasApplications),
+        show: (o) =>
+          o.moduleResidents &&
+          (Boolean(o.appFolioConnected) || Boolean(o.hasApplications)),
       },
       {
         href: "/portal/residents",
         label: "Residents",
         icon: Home,
-        show: (o) => o.moduleResidents && Boolean(o.appFolioConnected),
+        show: (o) =>
+          o.moduleResidents &&
+          (Boolean(o.appFolioConnected) || Boolean(o.hasResidents)),
       },
       {
         href: "/portal/renewals",
@@ -282,7 +291,9 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/portal/work-orders",
         label: "Work orders",
         icon: Wrench,
-        show: (o) => o.moduleResidents && Boolean(o.appFolioConnected),
+        show: (o) =>
+          o.moduleResidents &&
+          (Boolean(o.appFolioConnected) || Boolean(o.hasWorkOrders)),
         badge: (o) => o.urgentWorkOrdersCount ?? null,
       },
       {

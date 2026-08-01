@@ -312,12 +312,6 @@ model Organization {
   // use their own the upstream pixel provider account instead of the platform-shared key.
   cursiveApiKeyOverride String?
 
-  // Per-org unguessable secret for the Cal.com booking webhook. The webhook
-  // URL path IS the auth (mirrors CursiveIntegration.webhookToken), so this
-  // 32-char hex token must never be exposed on any public/unauthenticated
-  // surface. Minted lazily the first time an operator views Integrations.
-  calWebhookToken String? @unique
-
   // Property classification
   propertyType       PropertyType        @default(RESIDENTIAL)
   residentialSubtype ResidentialSubtype?
@@ -4587,6 +4581,10 @@ model ContentDraft {
   reviewedBy  String?
   reviewNotes String?     @db.Text
   shippedAt   DateTime?
+  /// Proof-of-life for managed publishing ("Managed by LeaseStack"): the
+  /// live URL the piece was published at. Set by the admin when shipping;
+  /// rendered to the tenant so "shipped" is verifiable, not a claim.
+  publishedUrl String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

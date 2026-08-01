@@ -94,6 +94,8 @@ export default async function PortalLayout({
     leadCount,
     tourCount,
     applicationCount,
+    residentCount,
+    workOrderCount,
     appfolioStatus,
     pendingCurationCount,
     activePropertyIdFromCookie,
@@ -171,6 +173,14 @@ export default async function PortalLayout({
     // surfacing this to operators as a feature.
     prisma.application
       .count({ where: { lead: { orgId: scope.orgId }, ...inMarketable } })
+      .catch(() => 0),
+    // Residents / work orders can now also be manually entered (P1-7/8),
+    // so the nav gates on "has rows OR AppFolio" instead of AppFolio-only.
+    prisma.resident
+      .count({ where: { orgId: scope.orgId, ...inMarketable } })
+      .catch(() => 0),
+    prisma.workOrder
+      .count({ where: { orgId: scope.orgId, ...inMarketable } })
       .catch(() => 0),
     // Portfolio-wide health probe — surfaced as a single banner below the
     // impersonation strip so users see staleness everywhere, not just on
@@ -356,6 +366,8 @@ export default async function PortalLayout({
     // matches what's actually wired.
     hasTours: tourCount > 0,
     hasApplications: applicationCount > 0,
+    hasResidents: residentCount > 0,
+    hasWorkOrders: workOrderCount > 0,
     // Surface AppFolio curation queue as a count badge on the Properties
     // nav item rather than a full chrome banner on every page.
     pendingCurationCount,

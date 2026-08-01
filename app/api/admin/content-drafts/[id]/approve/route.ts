@@ -24,6 +24,15 @@ const bodySchema = z
   .object({
     notes: z.string().max(2000).optional(),
     ship: z.boolean().optional(),
+    /// Proof-of-life for managed publishing: where the piece went live.
+    /// Only persisted when shipping. http(s) only — the value is rendered
+    /// as a tenant-facing href, so javascript:/data: URLs must not pass.
+    publishedUrl: z
+      .string()
+      .url()
+      .max(2000)
+      .refine((u) => /^https?:\/\//i.test(u), "Must be an http(s) URL")
+      .optional(),
   })
   .optional();
 
@@ -80,6 +89,7 @@ export async function POST(
       reviewedBy: userId,
       ...(body?.notes !== undefined ? { reviewNotes: body.notes } : {}),
       ...(ship ? { shippedAt: now } : {}),
+      ...(ship && body?.publishedUrl ? { publishedUrl: body.publishedUrl } : {}),
     },
   });
 

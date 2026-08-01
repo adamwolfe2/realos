@@ -256,12 +256,18 @@ export default async function WorkOrdersPage({
       ) : null}
       <PageHeader
         title="Work orders"
-        description="Maintenance pipeline mirrored from AppFolio. Operator fulfillment happens in AppFolio; this view keeps you ahead of property issues."
+        description="Maintenance pipeline synced from AppFolio or logged manually. This view keeps you ahead of property issues."
         actions={
           <div className="flex items-center gap-3 flex-wrap justify-end">
             <span className="text-[11px] text-muted-foreground hidden md:inline-block">
               {lastSyncLabel}
             </span>
+            <Link
+              href="/portal/work-orders/new"
+              className="inline-flex items-center rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
+            >
+              Log work order
+            </Link>
             <RunAppFolioSyncButton label="Sync now" subtle />
             {properties.length > 1 ? (
               <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded" />}>
@@ -291,9 +297,9 @@ export default async function WorkOrdersPage({
       completed30dCount === 0 &&
       hotspots.length === 0 ? (
         <EmptyState
-          title="No work orders synced yet"
-          body="Maintenance tickets mirror from AppFolio on the hourly cron. The pipeline and property hotspots populate as soon as the first batch lands."
-          action={{ label: "Open Connect hub", href: "/portal/connect" }}
+          title="No work orders yet"
+          body="Connect AppFolio to mirror maintenance tickets automatically, or log work orders manually — both appear side by side."
+          action={{ label: "Log work order", href: "/portal/work-orders/new" }}
         />
       ) : (
         <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">

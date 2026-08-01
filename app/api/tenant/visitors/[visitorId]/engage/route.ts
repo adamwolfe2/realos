@@ -96,9 +96,14 @@ export async function POST(
       }),
     ]);
 
-    if (!visitor && !convo) {
+    // The conversation lookup is the REAL cross-tenant guard: delivery is
+    // keyed on sessionId alone (the public inbox endpoint has no org
+    // filter), so the sessionId MUST resolve to a conversation in this
+    // org. A valid own-org visitorId is not sufficient — accepting it
+    // would let an operator queue messages into another org's session.
+    if (!convo) {
       return NextResponse.json(
-        { error: "Visitor or session not found in this org" },
+        { error: "Chat session not found in this org" },
         { status: 404 }
       );
     }

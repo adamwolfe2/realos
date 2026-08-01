@@ -203,28 +203,53 @@ const conversationSelect = {
   flags: { select: { flag: true } },
 } as const;
 
+// Shared active-property filter (P1-3): mirrors the shape used by
+// getCallPriorityLeads above. Empty/null propertyIds = "All properties".
+//
+// SECURITY CONTRACT: `propertyIds` must ALREADY be gated through
+// effectivePropertyIds()/allowedPropertyIds by the caller (briefing/page.tsx
+// does this). This helper applies no RBAC of its own — never pass raw
+// URL-supplied ids into it.
+function propertyFilterOf(propertyIds?: string[] | null) {
+  return propertyIds && propertyIds.length > 0
+    ? propertyIds.length === 1
+      ? { propertyId: propertyIds[0] }
+      : { propertyId: { in: propertyIds } }
+    : {};
+}
+
 export async function getSinceLastViewed(
   orgId: string,
   lastViewedAt: Date | null,
+  opts: { propertyIds?: string[] | null } = {},
 ) {
+  const propertyFilter = propertyFilterOf(opts.propertyIds);
   const since = lastViewedAt ?? new Date(Date.now() - 7 * DAY);
   const [newLeads, newInsights, newTours, newChats, newApplications] = await Promise.all([
-    prisma.lead.count({ where: { orgId, createdAt: { gte: since } } }),
+    prisma.lead.count({ where: { orgId, ...propertyFilter, createdAt: { gte: since } } }),
     prisma.insight.count({
-      where: { orgId, createdAt: { gte: since }, status: { in: ["open", "acknowledged"] } },
+      where: { orgId, ...propertyFilter, createdAt: { gte: since }, status: { in: ["open", "acknowledged"] } },
     }),
-    prisma.tour.count({ where: { lead: { orgId }, createdAt: { gte: since } } }),
+    prisma.tour.count({
+      where: { lead: { orgId }, ...propertyFilter, createdAt: { gte: since } },
+    }),
     prisma.chatbotConversation.count({
-      where: { orgId, createdAt: { gte: since }, capturedEmail: { not: null } },
+      where: { orgId, ...propertyFilter, createdAt: { gte: since }, capturedEmail: { not: null } },
     }),
     prisma.application.count({
-      where: { lead: { orgId }, createdAt: { gte: since } },
+      where: { lead: { orgId }, ...propertyFilter, createdAt: { gte: since } },
     }),
   ]);
   return { since, newLeads, newInsights, newTours, newChats, newApplications };
 }
 
-export async function getBriefingMetrics(orgId: string) {
+export async function getBriefingMetrics(
+  orgId: string,
+  opts: { propertyIds?: string[] | null } = {},
+) {
+  // Ad spend + organic sessions stay org-level: AdMetricDaily and
+  // SeoSnapshot have no property dimension yet (Wave-3 topology work).
+  const propertyFilter = propertyFilterOf(opts.propertyIds);
   const now = Date.now();
   const since7d = new Date(now - 7 * DAY);
   const since14d = new Date(now - 14 * DAY);
@@ -243,10 +268,10 @@ export async function getBriefingMetrics(orgId: string) {
     curApps,
     prevApps,
   ] = await Promise.all([
-    prisma.lead.count({ where: { orgId, createdAt: { gte: since7d } } }),
-    prisma.lead.count({ where: { orgId, createdAt: { gte: since14d, lt: since7d } } }),
-    prisma.tour.count({ where: { lead: { orgId }, createdAt: { gte: since7d } } }),
-    prisma.tour.count({ where: { lead: { orgId }, createdAt: { gte: since14d, lt: since7d } } }),
+    prisma.lead.count({ where: { orgId, ...propertyFilter, createdAt: { gte: since7d } } }),
+    prisma.lead.count({ where: { orgId, ...propertyFilter, createdAt: { gte: since14d, lt: since7d } } }),
+    prisma.tour.count({ where: { lead: { orgId }, ...propertyFilter, createdAt: { gte: since7d } } }),
+    prisma.tour.count({ where: { lead: { orgId }, ...propertyFilter, createdAt: { gte: since14d, lt: since7d } } }),
     prisma.adMetricDaily.aggregate({
       where: { orgId, date: { gte: since7d } },
       _sum: { spendCents: true },
@@ -263,12 +288,18 @@ export async function getBriefingMetrics(orgId: string) {
       where: { orgId, date: { gte: since14d, lt: since7d } },
       _sum: { organicSessions: true },
     }),
-    prisma.chatbotConversation.count({ where: { orgId, createdAt: { gte: since7d } } }),
     prisma.chatbotConversation.count({
-      where: { orgId, createdAt: { gte: since14d, lt: since7d } },
+      where: { orgId, ...propertyFilter, createdAt: { gte: since7d } },
     }),
-    prisma.application.count({ where: { lead: { orgId }, createdAt: { gte: since7d } } }),
-    prisma.application.count({ where: { lead: { orgId }, createdAt: { gte: since14d, lt: since7d } } }),
+    prisma.chatbotConversation.count({
+      where: { orgId, ...propertyFilter, createdAt: { gte: since14d, lt: since7d } },
+    }),
+    prisma.application.count({
+      where: { lead: { orgId }, ...propertyFilter, createdAt: { gte: since7d } },
+    }),
+    prisma.application.count({
+      where: { lead: { orgId }, ...propertyFilter, createdAt: { gte: since14d, lt: since7d } },
+    }),
   ]);
 
   return {
@@ -299,7 +330,10 @@ const TERMINAL_LEAD_STATUSES = [
   LeadStatus.UNQUALIFIED,
 ];
 
-export async function getAgingLeadsSummary(orgId: string): Promise<{
+export async function getAgingLeadsSummary(
+  orgId: string,
+  opts: { propertyIds?: string[] | null } = {},
+): Promise<{
   fresh: number;
   aging: number;
   stale: number;
@@ -307,6 +341,7 @@ export async function getAgingLeadsSummary(orgId: string): Promise<{
   const activeLeads = await prisma.lead.findMany({
     where: {
       orgId,
+      ...propertyFilterOf(opts.propertyIds),
       status: { notIn: TERMINAL_LEAD_STATUSES },
     },
     select: { createdAt: true },

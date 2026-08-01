@@ -108,12 +108,16 @@ export default async function BriefingPage({
       // alongside "add your first property."
       select: { name: true, primaryContactEmail: true },
     }),
-    getSinceLastViewed(scope.orgId, user?.lastBriefingViewedAt ?? null),
+    getSinceLastViewed(scope.orgId, user?.lastBriefingViewedAt ?? null, {
+      propertyIds: activePropertyIds,
+    }),
     getCallPriorityLeads(scope.orgId, { limit: 10, propertyIds: activePropertyIds }),
     getTranscriptsWorthReading(scope.orgId, { limit: 6, propertyIds: activePropertyIds }),
-    getBriefingMetrics(scope.orgId),
-    getRecentInsightsForBriefing(scope.orgId, user?.lastBriefingViewedAt ?? null, 8),
-    getAgingLeadsSummary(scope.orgId),
+    getBriefingMetrics(scope.orgId, { propertyIds: activePropertyIds }),
+    getRecentInsightsForBriefing(scope.orgId, user?.lastBriefingViewedAt ?? null, 8, {
+      propertyIds: activePropertyIds,
+    }),
+    getAgingLeadsSummary(scope.orgId, { propertyIds: activePropertyIds }),
     // "Connect data sources" step — ANY connected source counts, mirroring
     // the canonical CONNECT_DATA_SOURCE onboarding detector
     // (lib/onboarding/step-detectors.ts). Previously AppFolio-only, which
@@ -235,7 +239,10 @@ export default async function BriefingPage({
             title="Last 7 days"
             description="Compared to the prior 7. Deltas tell you where to dig in."
           >
-            <MetricStrip metrics={metrics} />
+            <MetricStrip
+            metrics={metrics}
+            scopedToProperty={Boolean(activePropertyIds?.length)}
+          />
           </DashboardSection>
 
           <DashboardSection

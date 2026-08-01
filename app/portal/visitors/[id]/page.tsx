@@ -5,7 +5,10 @@ import { notFound } from "next/navigation";
 import { formatDistanceToNow, format } from "date-fns";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
-import { propertyOrOrgLevelWhereFragment } from "@/lib/tenancy/property-filter";
+import {
+  propertyOrOrgLevelWhereFragment,
+  propertyWhereFragment,
+} from "@/lib/tenancy/property-filter";
 import { VisitorIdentificationStatus } from "@prisma/client";
 import {
   ArrowLeft,
@@ -41,6 +44,13 @@ export const metadata: Metadata = { title: "Visitor detail" };
 export const revalidate = 15;
 
 const LIVE_WINDOW_MS = 5 * 60 * 1000;
+// Engage window: the widget's session id lives per-tab (sessionStorage), so
+// delivery only works while the SAME tab that chatted is still open. A chat
+// within the last 30 min + live pixel activity now is a strong same-tab
+// signal; older conversations are dead sessions and queuing to them would
+// recreate the false-"Sent" bug. ponytail: heuristic window — replace with a
+// real last-poll heartbeat on ChatbotConversation if precision matters.
+const ENGAGE_WINDOW_MS = 30 * 60 * 1000;
 
 // ---------------------------------------------------------------------------
 // Page
@@ -119,13 +129,20 @@ export default async function VisitorDetailPage({
     },
   });
 
-  // Linked chatbot conversation (match by visitorHash)
+  // Linked chatbot conversation (match by visitorHash). Property-gated:
+  // the transcript + captured contact info must not leak to a
+  // property-restricted agent just because the visitor row is org-level.
   const linkedConversation = visitor.visitorHash
     ? await prisma.chatbotConversation.findFirst({
-        where: { orgId: scope.orgId, visitorHash: visitor.visitorHash },
+        where: {
+          orgId: scope.orgId,
+          visitorHash: visitor.visitorHash,
+          ...propertyWhereFragment(scope, null),
+        },
         orderBy: { lastMessageAt: "desc" },
         select: {
           id: true,
+          sessionId: true,
           status: true,
           messageCount: true,
           capturedName: true,
@@ -239,23 +256,40 @@ export default async function VisitorDetailPage({
         }
       />
 
-      {/* Engage button (live only) */}
+      {/* Engage button (live only). Delivery goes through the chatbot inbox
+          poll, which is keyed on the CHAT session id — the pixel's
+          sessionToken is never polled by any widget, so targeting it would
+          queue a message that can never arrive (the false-"Sent" bug). Only
+          offer Engage when a linked chat conversation exists. */}
       {isLive && liveSession ? (
-        <div className="rounded-[2px] border border-primary/30 bg-primary/10 p-4">
-          <div className="text-sm font-medium text-primary mb-3">
-            This visitor is active right now. Send them a message and it will
-            appear in the chatbot widget within seconds.
+        linkedConversation &&
+        linkedConversation.lastMessageAt &&
+        linkedConversation.lastMessageAt.getTime() >=
+          Date.now() - ENGAGE_WINDOW_MS ? (
+          <div className="rounded-[2px] border border-primary/30 bg-primary/10 p-4">
+            <div className="text-sm font-medium text-primary mb-3">
+              This visitor is active right now. Send them a message and it will
+              appear in the chatbot widget within seconds.
+            </div>
+            <EngageComposer
+              visitorId={visitor.id}
+              sessionId={linkedConversation.sessionId}
+              defaultPlaceholder={
+                identity.lastPagePath
+                  ? `Hi! I noticed you were checking out ${identity.lastPagePath}. Anything I can help with?`
+                  : undefined
+              }
+            />
           </div>
-          <EngageComposer
-            visitorId={visitor.id}
-            sessionId={liveSession.sessionToken}
-            defaultPlaceholder={
-              identity.lastPagePath
-                ? `Hi! I noticed you were checking out ${identity.lastPagePath}. Anything I can help with?`
-                : undefined
-            }
-          />
-        </div>
+        ) : (
+          <div className="rounded-[2px] border border-border bg-muted/50 p-4 text-sm text-muted-foreground">
+            This visitor is active right now, but doesn&apos;t have an open
+            chat — messages can only be delivered into a live chat
+            conversation. {/* Stale sessions are excluded on purpose: the
+            widget's session id lives per-tab, so a conversation from a
+            previous visit can no longer receive messages. */}
+          </div>
+        )
       ) : null}
 
       {/* Two-column layout: identity card + engagement */}

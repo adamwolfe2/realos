@@ -85,6 +85,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Readiness gate: below-bar modules are withheld from the storefront and
+    // must not be newly activated (deactivation stays allowed so orgs that
+    // already have the module can still turn it off).
+    if (parsed.enabled && moduleDef.ready === false) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: `${moduleDef.name} isn't available for activation yet.`,
+        },
+        { status: 400 },
+      );
+    }
+
     const org = await prisma.organization.findUnique({
       where: { id: scope.orgId },
       select: {

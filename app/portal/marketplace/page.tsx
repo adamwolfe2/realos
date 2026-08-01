@@ -2,10 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { requireScope } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
-import {
-  groupModulesByCategory,
-  MARKETPLACE_ENTRIES,
-} from "@/lib/marketplace/catalog";
+import { groupModulesByCategory } from "@/lib/marketplace/catalog";
 import { MarketplaceClient } from "@/components/portal/marketplace/marketplace-client";
 
 export const metadata: Metadata = {
@@ -89,9 +86,13 @@ export default async function MarketplacePage() {
   const grouped = groupModulesByCategory();
 
   // Toggleable keys only — the client uses this for "Unlock everything".
-  const toggleableKeys = MARKETPLACE_ENTRIES.filter(
-    (e) => e.kind === "toggle",
-  ).map((e) => e.key);
+  // Derived from the same grouped/rendered set so the storefront filter
+  // (hidden + readiness gate) and the bulk action can't drift: a ready:false
+  // module here would 400 at the toggle API and wedge "Unlock everything".
+  const toggleableKeys = grouped
+    .flatMap((g) => g.modules)
+    .filter((e) => e.kind === "toggle")
+    .map((e) => e.key);
 
   return (
     <MarketplaceClient

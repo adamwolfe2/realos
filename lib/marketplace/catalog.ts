@@ -140,6 +140,12 @@ export type CatalogEntry = {
   /** Real brand logos rendered on the card. Communicates the integration
       stack at a glance and prevents the "what tools is this?" question. */
   brandLogoKeys?: BrandLogoKey[];
+  /** Quality-bar gate (Adam 2026-07-31): modules below the bar (no KPI
+      header, incomplete flow, dishonest empty state) are withheld from the
+      storefront + upsell grids and reject NEW self-serve activation until
+      they pass. Unlike `hidden` this is expected to flip back to true —
+      orgs that already have the module enabled keep their surfaces. */
+  ready?: boolean;
 };
 
 // ---------------------------------------------------------------------------
@@ -169,6 +175,9 @@ export const MARKETPLACE_ENTRIES: CatalogEntry[] = [
     popular: true,
     setupEffort: "Drop-in snippet · 5 min",
     brandLogoKeys: ["appfolio"],
+    // Below the quality bar 2026-07-31 (Visitors/Engage surface): withheld
+    // from the storefront until the module passes readiness review.
+    ready: false,
   },
   {
     key: "moduleLeadCapture",
@@ -238,6 +247,9 @@ export const MARKETPLACE_ENTRIES: CatalogEntry[] = [
     icon: Sparkles,
     category: "Engagement",
     setupEffort: "Design + embed · 5 min",
+    // Below the quality bar 2026-07-31: withheld from the storefront until
+    // the popup editor passes readiness review (KPI strip, complete flow).
+    ready: false,
   },
   // ============== Discovery ==============
   {
@@ -441,7 +453,7 @@ export function groupModulesByCategory(): Array<{
   return order.map((category) => ({
     category,
     modules: MARKETPLACE_ENTRIES.filter(
-      (e) => e.category === category && !e.hidden,
+      (e) => e.category === category && !e.hidden && e.ready !== false,
     ),
   }));
 }

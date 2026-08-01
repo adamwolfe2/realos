@@ -49,6 +49,23 @@ export async function GET(req: NextRequest) {
       { status: 429, headers: { ...CORS_HEADERS, "Retry-After": "60" } }
     );
   }
+  // Second limiter keyed on the sessionId itself: the read is destructive
+  // (PENDING -> DELIVERED), so a distributed enumerator must not be able to
+  // consume messages faster than one legitimate widget would poll.
+  const sidParam = req.nextUrl.searchParams.get("sessionId");
+  if (sidParam) {
+    const bySession = await checkRateLimit(
+      publicApiLimiter,
+      `inbox:sid:${sidParam}`,
+      { softFallback: WIDGET_FALLBACK.publicApi }
+    );
+    if (!bySession.allowed) {
+      return NextResponse.json(
+        { error: "Too many requests" },
+        { status: 429, headers: { ...CORS_HEADERS, "Retry-After": "60" } }
+      );
+    }
+  }
 
   const parsed = querySchema.safeParse({
     sessionId: req.nextUrl.searchParams.get("sessionId") ?? undefined,
@@ -80,6 +97,20 @@ export async function GET(req: NextRequest) {
     });
 
     if (pending.length > 0) {
+      // The read is destructive, so before consuming rows require the
+      // sessionId to resolve to a real conversation — engagements are only
+      // ever created for in-org conversations (see the engage route), so a
+      // sessionId with pending rows but no conversation is a forgery.
+      const convo = await prisma.chatbotConversation.findFirst({
+        where: { sessionId },
+        select: { id: true },
+      });
+      if (!convo) {
+        return NextResponse.json(
+          { engagements: [], serverTime: new Date().toISOString() },
+          { status: 200, headers: { ...CORS_HEADERS, "Cache-Control": "no-store" } }
+        );
+      }
       const now = new Date();
       await prisma.chatbotEngagement.updateMany({
         where: {

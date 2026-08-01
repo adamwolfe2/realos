@@ -151,6 +151,12 @@ export default async function ApplicationsPage({
         description="Every lease application, from started through decision."
         actions={
           <div className="flex items-center gap-2 flex-wrap">
+            <Link
+              href="/portal/applications/new"
+              className="inline-flex items-center rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
+            >
+              Log application
+            </Link>
             <div
               className="inline-flex items-center rounded-none border border-[#e0e0e0] bg-white p-0"
               role="group"
@@ -228,8 +234,8 @@ export default async function ApplicationsPage({
         unitGroups.length === 0 ? (
           <EmptyState
             title="Once leads start applying, they'll show up here."
-            body="Applications sync in from AppFolio. Connect it from the Connect hub to populate this view."
-            action={{ label: "Open Connect hub", href: "/portal/connect" }}
+            body="Applications sync in from AppFolio, or you can log them manually — both appear side by side."
+            action={{ label: "Log application", href: "/portal/applications/new" }}
           />
         ) : (
           <UnitApplicationsBoard
@@ -240,8 +246,8 @@ export default async function ApplicationsPage({
       ) : apps.length === 0 ? (
         <EmptyState
           title="Once leads start applying, they'll show up here."
-          body="Applications sync in from AppFolio. Connect it from the Connect hub to populate this view."
-          action={{ label: "Open Connect hub", href: "/portal/connect" }}
+          body="Applications sync in from AppFolio, or you can log them manually — both appear side by side."
+          action={{ label: "Log application", href: "/portal/applications/new" }}
         />
       ) : (
         <ApplicationsPipelineTable

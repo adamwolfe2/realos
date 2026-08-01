@@ -125,7 +125,9 @@ export function EngageComposer({
               {status.message}
             </span>
           ) : status.kind === "ok" ? (
-            <span className="text-[11px] text-primary">Sent</span>
+            <span className="text-[11px] text-primary">
+              Queued — delivers to their open chat
+            </span>
           ) : null}
           <button
             type="button"

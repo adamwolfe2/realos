@@ -7,6 +7,8 @@ import { ContentFormat, DraftStatus } from "@prisma/client";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import { EmptyState } from "@/components/portal/ui/empty-state";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
+import { ManagedByChip, MANAGED_SLA } from "@/components/portal/managed-by-chip";
+import { ExternalLink } from "lucide-react";
 
 export const metadata: Metadata = { title: "Content" };
 export const dynamic = "force-dynamic";
@@ -97,6 +99,7 @@ type DraftRow = {
   brief: string;
   date: Date | null;
   dateLabel: string;
+  publishedUrl?: string | null;
 };
 
 export default async function ContentPage() {
@@ -141,6 +144,7 @@ export default async function ContentPage() {
         htmlBody: true,
         output: true,
         shippedAt: true,
+        publishedUrl: true,
       },
     }),
   ]);
@@ -174,6 +178,7 @@ export default async function ContentPage() {
     brief: d.brief,
     date: d.shippedAt,
     dateLabel: `shipped ${fmtAge(d.shippedAt)}`,
+    publishedUrl: d.publishedUrl,
   }));
 
   const hasAnyContent = draftRows.length > 0 || shippedRows.length > 0;
@@ -182,8 +187,13 @@ export default async function ContentPage() {
     <div className="space-y-4 ls-page-fade">
       <PageHeader
         eyebrow="Content"
-        title="Drafts & shipped pieces"
-        description="Open a draft to edit it with the AI assistant, or scaffold a new piece."
+        title={
+          <span className="flex items-center gap-3 flex-wrap">
+            Drafts &amp; shipped pieces
+            <ManagedByChip sla={MANAGED_SLA} />
+          </span>
+        }
+        description="Open a draft to edit it with the AI assistant, or scaffold a new piece. Our team reviews, publishes, and links every shipped piece below."
         actions={<NewDraftMenu />}
       />
 
@@ -270,10 +280,10 @@ function ContentRow({ draft }: { draft: DraftRow }) {
   const words = countWords(draft.htmlBody);
 
   return (
-    <li>
+    <li className="flex items-center gap-2">
       <Link
         href={`/portal/content/${draft.id}`}
-        className="group flex items-center gap-3 px-1 py-3 -mx-0.5 rounded-md hover:bg-muted/30 transition-colors"
+        className="group flex min-w-0 flex-1 items-center gap-3 px-1 py-3 -mx-0.5 rounded-md hover:bg-muted/30 transition-colors"
       >
         <span
           aria-hidden="true"
@@ -297,6 +307,19 @@ function ContentRow({ draft }: { draft: DraftRow }) {
         </span>
         <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-primary transition-colors shrink-0" />
       </Link>
+      {/* Proof-of-life: where the shipped piece actually lives. Sits outside
+          the row Link (nested anchors are invalid HTML). */}
+      {draft.publishedUrl ? (
+        <a
+          href={draft.publishedUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="shrink-0 inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+        >
+          Live
+          <ExternalLink className="h-3 w-3" aria-hidden="true" />
+        </a>
+      ) : null}
     </li>
   );
 }

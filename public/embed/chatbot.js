@@ -58,6 +58,15 @@
   var LISTINGS_URL = origin + "/api/public/chatbot/listings-summary?slug=" + encodeURIComponent(slug) + propertyQS;
   var CHAT_URL = origin + "/api/public/chatbot/chat";
   var LEAD_URL = origin + "/api/public/chatbot/lead";
+  var INBOX_URL = origin + "/api/public/chatbot/inbox";
+
+  // Operator-engagement inbox poll. Only runs once this browser tab has an
+  // actual conversation (operators can only target sessions that exist
+  // server-side), so idle page views on customer sites cost zero requests.
+  // 5s instead of the portal widget's 3s — this runs on third-party sites.
+  var INBOX_POLL_MS = 5000;
+  var SESSION_KEY = "leasestack.chatbot.embed.session.v1";
+  var SESSION_ACTIVE_KEY = "leasestack.chatbot.embed.active.v1";
 
   var EMAIL_RE = /[\w.+-]+@[\w-]+\.[\w.-]+/;
   var EMAIL_STRICT_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -96,8 +105,10 @@
     teaserShown: false,
     teaserDismissed: false,
     sending: false,
-    sessionId: randomUuid(),
+    sessionId: persistedSessionId(),
     history: [],
+    // True once the operator-engagement inbox poll loop is running.
+    inboxPolling: false,
     config: null,
     // PRE_CHAT gate: when true, the intro form is rendered in place of the
     // normal messages/composer surface and the sessionId is assigned by the
@@ -255,7 +266,14 @@
 
     wireQuickActions();
 
-    state.needsIntro = state.config.captureMode === "PRE_CHAT";
+    // A previous page in this tab already had a live conversation — resume
+    // the engagement poll so operator messages still reach this visitor.
+    // That also means any PRE_CHAT intro was already completed (chat can't
+    // start without it), so don't ask for contact info a second time.
+    if (sessionWasActive()) startInboxPolling();
+
+    state.needsIntro =
+      state.config.captureMode === "PRE_CHAT" && !sessionWasActive();
     if (state.needsIntro) {
       setupIntroForm();
     } else {
@@ -408,6 +426,10 @@
           throw new Error("Missing sessionId in response");
         }
         state.sessionId = data.sessionId;
+        try {
+          window.sessionStorage.setItem(SESSION_KEY, data.sessionId);
+        } catch (_) { /* ignore */ }
+        markSessionActive();
         state.needsIntro = false;
         state.leadCaptured = true;
         root.classList.remove("rec-intro-mode");
@@ -520,6 +542,119 @@
       }
     } catch (_) { /* ignore */ }
     return undefined;
+  }
+
+  // --- Per-tab session id + operator-engagement inbox ----------------------
+  // The session id is persisted in sessionStorage so a visitor who chats on
+  // one page and navigates to another keeps the SAME conversation — and stays
+  // reachable by an operator engagement. Previously it was minted fresh on
+  // every page load, so any engagement sent after a navigation targeted a
+  // dead session and silently never delivered (the "false Sent" bug).
+  function persistedSessionId() {
+    try {
+      var existing = window.sessionStorage.getItem(SESSION_KEY);
+      if (existing) return existing;
+    } catch (_) { /* storage blocked — fall through to per-load id */ }
+    var fresh = randomUuid();
+    try {
+      window.sessionStorage.setItem(SESSION_KEY, fresh);
+    } catch (_) { /* ignore */ }
+    return fresh;
+  }
+
+  // Called once this session has a server-side conversation (first chat reply
+  // or PRE_CHAT intro). Flags the tab so a later page load resumes polling,
+  // and starts the inbox loop.
+  function markSessionActive() {
+    try {
+      window.sessionStorage.setItem(SESSION_ACTIVE_KEY, "1");
+    } catch (_) { /* ignore */ }
+    startInboxPolling();
+  }
+
+  function sessionWasActive() {
+    try {
+      return window.sessionStorage.getItem(SESSION_ACTIVE_KEY) === "1";
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // Poll /api/public/chatbot/inbox for operator-pushed engagements and render
+  // them as assistant turns (mirrors components/chatbot/proactive-widget.tsx).
+  // The server atomically marks rows DELIVERED on read, so `since` is only an
+  // advisory skip hint. Errors are swallowed and the loop keeps going.
+  //
+  // Backoff: this runs on third-party sites against a 60 req/min/IP public
+  // limiter, so a handful of visitors behind one office NAT must not saturate
+  // it. Empty responses decay 5s → 15s → 30s; any engagement (or a new chat
+  // message) snaps back to 5s. 429/errors back off to the 30s ceiling.
+  var INBOX_POLL_STEPS = [INBOX_POLL_MS, 15000, 30000];
+  var inboxLastSeen = null;
+  var inboxPollStep = 0;
+
+  function startInboxPolling() {
+    inboxPollStep = 0; // fresh activity — poll eagerly again
+    if (state.inboxPolling) return;
+    state.inboxPolling = true;
+    setTimeout(pollInbox, INBOX_POLL_MS);
+  }
+
+  function scheduleNextPoll() {
+    setTimeout(pollInbox, INBOX_POLL_STEPS[inboxPollStep]);
+  }
+
+  function pollInbox() {
+    if (document.hidden) {
+      // Tab is backgrounded — skip the request, keep the loop alive.
+      scheduleNextPoll();
+      return;
+    }
+    var url =
+      INBOX_URL +
+      "?sessionId=" + encodeURIComponent(state.sessionId) +
+      (inboxLastSeen ? "&since=" + encodeURIComponent(inboxLastSeen) : "");
+    fetch(url, { method: "GET", credentials: "omit", cache: "no-store" })
+      .then(function (res) {
+        if (!res.ok) {
+          // Rate limited or transient server error — back off to ceiling.
+          inboxPollStep = INBOX_POLL_STEPS.length - 1;
+          return null;
+        }
+        return res.json();
+      })
+      .then(function (body) {
+        if (!body) return;
+        var engagements = body.engagements || [];
+        if (!engagements.length) {
+          // Quiet tick — decay toward the ceiling.
+          inboxPollStep = Math.min(
+            inboxPollStep + 1,
+            INBOX_POLL_STEPS.length - 1
+          );
+          return;
+        }
+        inboxPollStep = 0;
+        var shouldOpen = false;
+        engagements.forEach(function (e) {
+          appendMessage("assistant", e.message);
+          state.history.push({ role: "assistant", content: e.message });
+          if (e.openWidget) shouldOpen = true;
+        });
+        inboxLastSeen = engagements[engagements.length - 1].createdAt;
+        if (!state.open) {
+          if (shouldOpen) openPanel("engagement");
+          else showTeaser();
+        }
+        fireAnalytics("chatbot_engagement_received", {
+          count: engagements.length,
+        });
+      })
+      .catch(function () {
+        // Network blip — back off to ceiling, next tick retries.
+        inboxPollStep = INBOX_POLL_STEPS.length - 1;
+      })
+      .then(scheduleNextPoll);
   }
 
   function readOrCreateVisitorId() {
@@ -667,9 +802,9 @@
         pageUrl: window.location.href,
         property: propertySlug || undefined,
         // Stable per-browser id so a returning visitor's new conversation can
-        // be joined to their previous ones. sessionId is minted fresh on every
-        // widget load, so without this a person who chatted last week comes
-        // back as a total stranger and gets asked for an email we already have.
+        // be joined to their previous ones. sessionId only lives for the tab
+        // (sessionStorage), so without this a person who chatted last week
+        // comes back as a stranger and gets asked for an email we already have.
         visitorHash: readOrCreateVisitorId(),
       }),
     })
@@ -701,6 +836,9 @@
         // markdown HTML so **bold**, line breaks, and links render.
         if (acc) assistantEl.innerHTML = renderMarkdown(acc);
         state.history.push({ role: "assistant", content: acc });
+        // The chat POST created/updated the server-side conversation, so this
+        // session is now targetable by operator engagements — start polling.
+        markSessionActive();
         // Consider the inline lead capture card once the visitor has come
         // back for a SECOND exchange. It used to fire 800ms after the FIRST
         // reply, which put a 3-field form in front of someone who had asked
@@ -790,16 +928,29 @@
     } catch (_) { /* ignore */ }
   }
 
+  // The sessionId doubles as the bearer credential for the public inbox
+  // endpoint, so it must always come from a CSPRNG. randomUUID is missing in
+  // insecure contexts (plain-http host pages), but getRandomValues is
+  // available everywhere we support — no Math.random fallback.
   function randomUuid() {
     if (window.crypto && window.crypto.randomUUID) {
       return window.crypto.randomUUID();
     }
-    var s = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx";
-    return s.replace(/[xy]/g, function (c) {
-      var r = (Math.random() * 16) | 0;
-      var v = c === "x" ? r : (r & 0x3) | 0x8;
-      return v.toString(16);
-    });
+    var bytes = new Uint8Array(16);
+    window.crypto.getRandomValues(bytes);
+    bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
+    bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant 10
+    var hex = [];
+    for (var i = 0; i < 16; i++) {
+      hex.push((bytes[i] + 0x100).toString(16).slice(1));
+    }
+    return (
+      hex.slice(0, 4).join("") + "-" +
+      hex.slice(4, 6).join("") + "-" +
+      hex.slice(6, 8).join("") + "-" +
+      hex.slice(8, 10).join("") + "-" +
+      hex.slice(10, 16).join("")
+    );
   }
 
   function escapeHtml(s) {

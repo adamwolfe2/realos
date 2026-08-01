@@ -180,14 +180,23 @@ export async function getRecentInsightsForBriefing(
   orgId: string,
   sinceViewedAt: Date | null,
   limit = 20,
+  opts: { propertyIds?: string[] | null } = {},
 ) {
   const since = sinceViewedAt ?? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  // Active-property scoping (P1-3): Insight.propertyId is nullable, and
+  // org-level insights (propertyId null) apply to every property, so they
+  // stay visible in a scoped view. Ids must be pre-gated by the caller.
+  const propertyFilter =
+    opts.propertyIds && opts.propertyIds.length > 0
+      ? { OR: [{ propertyId: { in: opts.propertyIds } }, { propertyId: null }] }
+      : {};
   // Same severity-rank workaround as getOpenInsights — see SEVERITY_RANK
   // comment. Postgres' string sort on "critical/warning/info" lands
   // critical at the bottom which is the opposite of what we want.
   const rows = await prisma.insight.findMany({
     where: {
       orgId,
+      ...propertyFilter,
       status: { in: ["open", "acknowledged"] },
       createdAt: { gte: since },
     },

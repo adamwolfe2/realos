@@ -216,12 +216,18 @@ export default async function ResidentsPage({
 
       <PageHeader
         title="Residents"
-        description="Mirrored from AppFolio — read-only here; edit residents in AppFolio."
+        description="Synced from AppFolio (read-only — edit those in AppFolio) or added manually below."
         actions={
           <div className="flex items-center gap-3 flex-wrap justify-end">
             <span className="text-[11px] text-muted-foreground hidden md:inline-block">
               {lastSyncLabel}
             </span>
+            <Link
+              href="/portal/residents/new"
+              className="inline-flex items-center rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
+            >
+              Add resident
+            </Link>
             <RunAppFolioSyncButton label="Sync now" subtle />
             <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded" />}>
               <PropertyMultiSelect
@@ -256,8 +262,8 @@ export default async function ResidentsPage({
       {activeCount === 0 && pastCount === 0 && noticeCount === 0 ? (
         <EmptyState
           title="No resident roster yet"
-          body="Resident KPIs populate once AppFolio finishes syncing the first 90 days of active leases. The first sync typically completes in 30–90 seconds."
-          action={{ label: "Open Connect hub", href: "/portal/connect" }}
+          body="Connect AppFolio to sync your roster automatically, or add residents manually — both appear side by side."
+          action={{ label: "Add resident", href: "/portal/residents/new" }}
         />
       ) : (
         <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">

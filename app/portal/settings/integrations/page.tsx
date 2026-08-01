@@ -42,10 +42,6 @@ import {
   MetaAdsManage,
 } from "./meta-ads-forms";
 import { OAuthConnectButton } from "./oauth-button";
-import {
-  getOrCreateCalWebhookToken,
-  buildCalWebhookUrl,
-} from "@/lib/integrations/cal-webhook";
 
 export const metadata: Metadata = { title: "Integrations" };
 export const dynamic = "force-dynamic";
@@ -73,7 +69,6 @@ export default async function IntegrationsPage({
     properties,
     pendingPixelRequest,
     allCursiveRows,
-    calWebhookToken,
   ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
@@ -198,10 +193,6 @@ export default async function IntegrationsPage({
       where: { orgId: scope.orgId },
       select: { propertyId: true, cursivePixelId: true },
     }),
-    // Lazily mint (once) the Cal.com webhook token so the panel can render the
-    // operator's unguessable Subscriber URL. Idempotent — returns the existing
-    // token on every subsequent view.
-    getOrCreateCalWebhookToken(scope.orgId),
   ]);
 
   if (!org) return null;
@@ -486,48 +477,13 @@ export default async function IntegrationsPage({
         }))}
         cursiveRows={allCursiveRows}
       />
-      <CalWebhookPanel url={buildCalWebhookUrl(calWebhookToken)} />
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// CalWebhookPanel — surfaces the per-org Cal.com webhook URL the operator
-// can paste into any Cal.com webhook subscription. The URL embeds an
-// unguessable per-org token (NOT the org id — see P0-2). When a prospect
-// books a slot, the receiver creates a Lead (source=REFERRAL,
-// sourceDetail=cal.com) + a Tour scoped to the org's default property. See
-// app/api/webhooks/cal/[token]/route.ts for the full contract.
-// ---------------------------------------------------------------------------
-function CalWebhookPanel({ url }: { url: string }) {
-  return (
-    <section className="rounded-[2px] border border-border bg-card p-5 space-y-3">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div>
-          <h3 className="text-sm font-semibold text-foreground">
-            Cal.com bookings → Leads
-          </h3>
-          <p className="text-[12px] text-muted-foreground mt-1 max-w-xl leading-relaxed">
-            Paste this URL as the Subscriber URL on any Cal.com webhook
-            (Booking created / rescheduled / cancelled). Every booking
-            becomes a Lead + Tour in your portal automatically.
-          </p>
-        </div>
-      </div>
-      <code className="block rounded-[2px] border border-border bg-background px-3 py-2 text-[11.5px] font-mono text-foreground overflow-x-auto whitespace-nowrap">
-        {url}
-      </code>
-      <ol className="text-[11.5px] text-muted-foreground space-y-1 list-decimal list-inside leading-relaxed">
-        <li>Cal.com → Settings → Developer → Webhooks → New webhook</li>
-        <li>Paste the URL above into Subscriber URL</li>
-        <li>
-          Check: Booking created · Booking rescheduled · Booking cancelled
-        </li>
-        <li>Save. New bookings appear on /portal/leads within seconds.</li>
-      </ol>
-    </section>
-  );
-}
+// Cal.com tour-sync panel removed 2026-07-31 (Adam): every client books
+// differently, so the per-org Cal webhook was dead weight. Tours still
+// arrive via the public booking form + API-key ingest.
 
 // ---------------------------------------------------------------------------
 // Pixel manage view — embedded inside the drawer for "visitor-identification"

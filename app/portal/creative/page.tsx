@@ -6,6 +6,7 @@ import { CreativeRequestStatus } from "@prisma/client";
 import { formatDistanceToNow } from "date-fns";
 import { StatCard } from "@/components/admin/stat-card";
 import { PageHeader } from "@/components/admin/page-header";
+import { ManagedByChip, MANAGED_SLA } from "@/components/portal/managed-by-chip";
 import { EmptyState } from "@/components/portal/ui/empty-state";
 import { StatusBadge } from "@/components/admin/status-badge";
 import { humanCreativeStatus } from "@/lib/format";
@@ -48,8 +49,13 @@ export default async function CreativePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Creative studio"
-        description="Submit ad, email, story, or flyer creative. The agency team delivers, you review, we iterate."
+        title={
+          <span className="flex items-center gap-3 flex-wrap">
+            Creative studio
+            <ManagedByChip sla={MANAGED_SLA} />
+          </span>
+        }
+        description="Submit ad, email, story, or flyer creative. Our team delivers, you review, we iterate."
         actions={
           <Link
             href="/portal/creative/new"

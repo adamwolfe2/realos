@@ -14,6 +14,7 @@ type Metric = {
 
 export function MetricStrip({
   metrics,
+  scopedToProperty = false,
 }: {
   metrics: {
     leads: { current: number; deltaPct: number | null };
@@ -23,6 +24,10 @@ export function MetricStrip({
     organicSessions: { current: number; deltaPct: number | null };
     chatbotConversations: { current: number; deltaPct: number | null };
   };
+  /** True when an active-property filter applies. Ad spend + organic have no
+      property dimension yet, so their tiles are labeled portfolio-wide to
+      keep the strip honest (a scoped cost-per-lead read would be wrong). */
+  scopedToProperty?: boolean;
 }) {
   const rows: Metric[] = [
     {
@@ -44,13 +49,13 @@ export function MetricStrip({
       good: "up",
     },
     {
-      label: "Ad spend",
+      label: scopedToProperty ? "Ad spend (portfolio-wide)" : "Ad spend",
       value: `$${metrics.adSpendUsd.current.toLocaleString()}`,
       deltaPct: metrics.adSpendUsd.deltaPct,
       good: "down",
     },
     {
-      label: "Organic",
+      label: scopedToProperty ? "Organic (portfolio-wide)" : "Organic",
       value: metrics.organicSessions.current.toLocaleString(),
       deltaPct: metrics.organicSessions.deltaPct,
       good: "up",

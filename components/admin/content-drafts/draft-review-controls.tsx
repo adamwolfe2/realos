@@ -16,6 +16,7 @@ export function DraftReviewControls({ draftId }: Props) {
   const router = useRouter();
   const [notes, setNotes] = useState("");
   const [ship, setShip] = useState(false);
+  const [publishedUrl, setPublishedUrl] = useState("");
   const [pending, startTransition] = useTransition();
 
   function call(path: "approve" | "reject", body: Record<string, unknown>) {
@@ -65,6 +66,16 @@ export function DraftReviewControls({ draftId }: Props) {
           Mark as shipped (I&apos;m pasting it live now)
         </label>
 
+        {ship ? (
+          <input
+            type="url"
+            value={publishedUrl}
+            onChange={(e) => setPublishedUrl(e.target.value)}
+            placeholder="Live URL (shown to the client as proof it shipped)"
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+          />
+        ) : null}
+
         <div className="flex items-center gap-2 ml-auto">
           <button
             type="button"
@@ -101,6 +112,8 @@ export function DraftReviewControls({ draftId }: Props) {
               call("approve", {
                 notes: notes.trim() || undefined,
                 ship,
+                publishedUrl:
+                  ship && publishedUrl.trim() ? publishedUrl.trim() : undefined,
               })
             }
             className="rounded-lg bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"

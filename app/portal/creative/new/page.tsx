@@ -27,7 +27,7 @@ export default async function NewCreativeRequestPage() {
           </Link>
         }
         title="New creative request"
-        description="Share the brief, the reference images, and any brand assets. We'll come back with a first draft within the target date."
+        description="Share the brief, the reference images, and any brand assets. Managed by LeaseStack — first draft within 3 business days (or your target date, whichever is sooner)."
       />
       <CreativeRequestForm properties={properties} />
     </div>

@@ -679,10 +679,10 @@ export async function runAppfolioSync(
 
   // 1c. SHOWINGS — AppFolio v1 CRUD endpoint (/api/v1/showings.json).
   // Tour bookings AppFolio is tracking on its side (manual entries by
-  // leasing agents, AppFolio tour-scheduler bookings). Cal.com bookings
-  // arrive via /api/webhooks/cal/[orgId] independently — both paths
-  // upsert Tour rows keyed on (externalSystem, externalId) so they
-  // never collide. Same auto-skip pattern as leads/applications.
+  // leasing agents, AppFolio tour-scheduler bookings). Tours upsert
+  // keyed on (externalSystem, externalId) so sources never collide.
+  // Same auto-skip pattern as leads/applications. (Cal.com tour-sync
+  // removed 2026-07-31.)
   if (isPhaseSkipped("showings")) {
     stats.warnings.push(
       `showings: phase auto-skipped after ${PHASE_SKIP_THRESHOLD} consecutive failures (last: ${phaseFailures.showings?.lastError ?? "unknown"}). Use Retry skipped phases to re-attempt.`,
