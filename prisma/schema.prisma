@@ -227,6 +227,7 @@ enum EngagementStatus {
   DELIVERED
   DISMISSED
   REPLIED
+  EXPIRED
 }
 
 enum CreativeRequestStatus {
