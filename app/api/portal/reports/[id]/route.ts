@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireWritableWorkspace, ForbiddenError } from "@/lib/tenancy/scope";
-import { canAccessReport } from "@/lib/reports/access";
+import { canAccessReport, isReportStatusRestricted } from "@/lib/reports/access";
 import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +18,13 @@ export async function PATCH(
 ) {
   try {
     const scope = await requireWritableWorkspace();
+    // Reports are OPERATOR-managed. Flipping status to "shared" is a
+    // mutation that activates the world-readable share link, and the
+    // response returns shareToken — a real CLIENT_* scope must not reach
+    // either. Same 404 as the ownership miss below so nothing leaks.
+    if (isReportStatusRestricted(scope)) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
     const { id } = await context.params;
     const body = await req.json().catch(() => ({}));
 
@@ -90,6 +97,12 @@ export async function DELETE(
 ) {
   try {
     const scope = await requireWritableWorkspace();
+    // Reports are OPERATOR-managed — a real CLIENT_* scope must not archive
+    // a report an operator hasn't reviewed. Same 404 shape as the ownership
+    // miss below.
+    if (isReportStatusRestricted(scope)) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
     const { id } = await context.params;
 
     const existing = await prisma.clientReport.findFirst({

@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CalendarClock } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
+import { isReportStatusRestricted } from "@/lib/reports/access";
 import { PageHeader } from "@/components/admin/page-header";
 import { ReportCadenceForm } from "@/components/portal/reports/report-cadence-form";
 import {
@@ -72,6 +74,10 @@ function formatUtcRun(d: Date): string {
 
 export default async function ReportCadenceSettingsPage() {
   const scope = await requireScope();
+  // Cadence + auto-send is an operator-only surface (lib/reports/access.ts):
+  // a real CLIENT_* user configuring it could opt an org into unreviewed
+  // auto-sent reports. Same 404 as any other operator-only page.
+  if (isReportStatusRestricted(scope)) notFound();
   const org = await prisma.organization.findUnique({
     where: { id: scope.orgId },
     select: {

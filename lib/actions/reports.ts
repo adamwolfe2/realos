@@ -4,7 +4,12 @@ import { prisma } from "@/lib/db";
 import { requireWritableWorkspace } from "@/lib/tenancy/scope";
 import { generateReportSnapshot, type ReportKind, type ReportSnapshot } from "@/lib/reports/generate";
 import { generateShareToken } from "@/lib/reports/token";
-import { canAccessReport, REPORT_PORTFOLIO_ACCESS_ERROR, isReportStatusRestricted } from "@/lib/reports/access";
+import {
+  canAccessReport,
+  REPORT_PORTFOLIO_ACCESS_ERROR,
+  assertOperatorScope,
+  REPORT_OPERATOR_ONLY_ERROR,
+} from "@/lib/reports/access";
 import { checkAiBillingGate, aiBillingDeniedResponseBody } from "@/lib/billing/gate";
 import { aiCallLimiter, notifyLimiter, checkRateLimit } from "@/lib/rate-limit";
 import { sendReportEmail } from "@/lib/email/send-report";
@@ -20,17 +25,11 @@ import { revalidatePath } from "next/cache";
 // reports the operator never reviewed.
 // ---------------------------------------------------------------------------
 
-export const REPORT_OPERATOR_ONLY_ERROR =
-  "Reports are managed by your agency team. Ask them to generate or update this report.";
-
-function assertOperatorScope(scope: {
-  isAgency: boolean;
-  isImpersonating: boolean;
-}): void {
-  if (isReportStatusRestricted(scope)) {
-    throw new Error(REPORT_OPERATOR_ONLY_ERROR);
-  }
-}
+// Re-exported for existing callers/tests — canonical definitions now live in
+// lib/reports/access.ts next to isReportStatusRestricted so the REST routes
+// (app/api/portal/reports) can share the same gate without importing a
+// "use server" module.
+export { assertOperatorScope, REPORT_OPERATOR_ONLY_ERROR };
 
 export async function createReport(
   kind: ReportKind,

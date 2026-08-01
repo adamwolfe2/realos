@@ -3,7 +3,11 @@ import { requireScope, requireWritableWorkspace, ForbiddenError } from "@/lib/te
 import { prisma } from "@/lib/db";
 import { generateReportSnapshot, type ReportKind } from "@/lib/reports/generate";
 import { generateShareToken } from "@/lib/reports/token";
-import { REPORT_PORTFOLIO_ACCESS_ERROR } from "@/lib/reports/access";
+import {
+  REPORT_PORTFOLIO_ACCESS_ERROR,
+  isReportStatusRestricted,
+  REPORT_OPERATOR_ONLY_ERROR,
+} from "@/lib/reports/access";
 import { aiCallLimiter, checkRateLimit, rateLimited } from "@/lib/rate-limit";
 import {
   checkAiBillingGate,
@@ -21,6 +25,17 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   try {
     const scope = await requireWritableWorkspace();
+
+    // Reports are OPERATOR-managed (lib/reports/access.ts): a real CLIENT_*
+    // scope must not be able to generate a report and burn LLM budget on
+    // demand — same gate as createReport() in lib/actions/reports.ts, now
+    // enforced here too so this REST route can't be used to route around it.
+    if (isReportStatusRestricted(scope)) {
+      return NextResponse.json(
+        { error: REPORT_OPERATOR_ONLY_ERROR },
+        { status: 403 },
+      );
+    }
 
     // Reports are org-wide snapshots — generateReportSnapshot rolls
     // up the entire portfolio (every property's leads, spend, tours,
@@ -129,7 +144,12 @@ export async function GET(req: NextRequest) {
     if (kind === "weekly" || kind === "monthly" || kind === "custom") {
       where.kind = kind;
     }
-    if (status === "draft" || status === "shared" || status === "archived") {
+    // Real CLIENT_* users only ever see shared reports — clamp regardless of
+    // ?status=, so a hand-crafted URL (?status=draft) can't enumerate drafts.
+    // Mirrors app/portal/reports/page.tsx's statusRestricted clamp exactly.
+    if (isReportStatusRestricted(scope)) {
+      where.status = "shared";
+    } else if (status === "draft" || status === "shared" || status === "archived") {
       where.status = status;
     }
 

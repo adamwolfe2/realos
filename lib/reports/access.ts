@@ -43,6 +43,31 @@ export function canAccessReport(
 export function isReportStatusRestricted(scope: {
   isAgency: boolean;
   isImpersonating: boolean;
+  // Demo scopes (lib/tenancy/scope.ts getDemoScope) are synthetic and never
+  // AGENCY/impersonating even when showcasing the client surface — the demo
+  // is supposed to render the FULL operator experience, so it opts out here
+  // too. Optional so every existing real-scope caller is unaffected.
+  isDemo?: boolean;
 }): boolean {
-  return !scope.isAgency && !scope.isImpersonating;
+  return !scope.isAgency && !scope.isImpersonating && !scope.isDemo;
+}
+
+// ---------------------------------------------------------------------------
+// Operator-only mutation gate. Shared by every mutating surface (server
+// actions AND the REST routes below) so a real CLIENT_* scope can never
+// generate, edit, share, email, or archive a report — nothing here ever
+// auto-sends until an operator has reviewed it.
+// ---------------------------------------------------------------------------
+
+export const REPORT_OPERATOR_ONLY_ERROR =
+  "Reports are managed by your agency team. Ask them to generate or update this report.";
+
+export function assertOperatorScope(scope: {
+  isAgency: boolean;
+  isImpersonating: boolean;
+  isDemo?: boolean;
+}): void {
+  if (isReportStatusRestricted(scope)) {
+    throw new Error(REPORT_OPERATOR_ONLY_ERROR);
+  }
 }

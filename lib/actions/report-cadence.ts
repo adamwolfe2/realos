@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireWritableWorkspace } from "@/lib/tenancy/scope";
+import { isReportStatusRestricted, REPORT_OPERATOR_ONLY_ERROR } from "@/lib/reports/access";
 
 // ---------------------------------------------------------------------------
 // Update the report cadence + recipients + auto-send toggle for the
@@ -56,6 +57,14 @@ export async function saveReportCadence(
   raw: unknown,
 ): Promise<SaveReportCadenceResult> {
   const scope = await requireWritableWorkspace();
+  // Ungated, a real CLIENT_* user could set reportAutoSend + recipients here
+  // and the weekly/monthly cron would then generate, email, and share a
+  // report with zero operator review — same policy as every other report
+  // mutation (lib/reports/access.ts). This action returns a result object
+  // rather than throwing, so check directly instead of assertOperatorScope.
+  if (isReportStatusRestricted(scope)) {
+    return { ok: false, error: REPORT_OPERATOR_ONLY_ERROR };
+  }
   const parsed = inputSchema.safeParse(raw);
   if (!parsed.success) {
     return {
