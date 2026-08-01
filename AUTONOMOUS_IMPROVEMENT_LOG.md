@@ -25,7 +25,7 @@ findings before reporting so we don't re-litigate wave-2/3 fixes.
 
 ### 2c. Security hardening
 
-- [ ] **S1 (HIGH).** Stored XSS: `ContentDraft.htmlBody` is persisted
+- [x] **S1 (HIGH).** Stored XSS: `ContentDraft.htmlBody` is persisted
       unsanitized via `PATCH app/api/portal/content/[id]/route.ts:116` and
       the chat-edit route, then rendered raw via `dangerouslySetInnerHTML`
       in two places — `app/preview/content/[id]/page.tsx:130` (public,
@@ -39,11 +39,11 @@ findings before reporting so we don't re-litigate wave-2/3 fixes.
       sanitizer) rather than hand-roll a regex sanitizer — regex can't
       safely parse HTML and that's the classic XSS-filter-bypass mistake.
       Noting the new dependency per ground rules.
-- [ ] **S2 (MEDIUM).** Raw error leaked to a money-path caller:
+- [x] **S2 (MEDIUM).** Raw error leaked to a money-path caller:
       `app/api/marketplace/leads/[id]/checkout/route.ts:196` returns
       `err.message` from a failed Stripe call straight to the buyer. Fix:
       generic user-facing message, log detail server-side.
-- [ ] **S3 (LOW).** Raw error leaked: `app/api/audit/run/[id]/route.ts:144`
+- [x] **S3 (LOW).** Raw error leaked: `app/api/audit/run/[id]/route.ts:144`
       returns caught error message verbatim in the 500 body. Fix: generic
       message + server-side log.
 - [ ] **S4 (LOW, note only).** Two independent SSRF-guard implementations
@@ -59,7 +59,7 @@ findings before reporting so we don't re-litigate wave-2/3 fixes.
 
 ### 2d. Bug hunting
 
-- [ ] **B1 (MEDIUM).** N+1 query pattern in 4 cron routes — sibling
+- [x] **B1 (MEDIUM).** N+1 query pattern in 4 cron routes — sibling
       `billing-reminders/route.ts` already fixed this exact anti-pattern
       with a batched `orgId: { in: orgIds }` lookup before its loop (per
       its own comments). Copy that pattern into:
@@ -67,29 +67,29 @@ findings before reporting so we don't re-litigate wave-2/3 fixes.
       `app/api/cron/onboarding-drip/route.ts:93`,
       `app/api/cron/monthly-report/route.ts:73`,
       `app/api/cron/weekly-report/route.ts:64`.
-- [ ] **B2 (LOW).** Missing null guard:
+- [x] **B2 (LOW).** Missing null guard:
       `lib/integrations/appfolio.ts:1963` — `properties[0].addressLine1`
       accessed unguarded when `findMany` can return `[]`; throws a raw
       TypeError that surfaces as the tenant-facing sync error message.
 
 ### 2b. Missing tests (mock-based, follow existing `__tests__/` conventions)
 
-- [ ] **T1.** `app/api/tenant/billing/route.ts` — zero coverage, tenant
+- [x] **T1.** `app/api/tenant/billing/route.ts` — zero coverage, tenant
       billing/subscription route.
-- [ ] **T2.** `app/api/marketplace/leads/[id]/checkout/route.ts` — zero
+- [x] **T2.** `app/api/marketplace/leads/[id]/checkout/route.ts` — zero
       coverage on the money path (also where S2 lives — pairs naturally).
-- [ ] **T3.** `app/api/tenant/reputation-mentions/route.ts` +
+- [x] **T3.** `app/api/tenant/reputation-mentions/route.ts` +
       `[id]` + `backfill-sentiment` — zero coverage, property-scope-shaped
       surface (same bug class other tests guard elsewhere).
-- [ ] **T4.** `app/api/public/leads/route.ts` — zero coverage on an
+- [x] **T4.** `app/api/public/leads/route.ts` — zero coverage on an
       unauthenticated, high-blast-radius endpoint (validation + rate
       limit).
-- [ ] **T5.** `app/api/webhooks/resend/route.ts` — signature verification
+- [x] **T5.** `app/api/webhooks/resend/route.ts` — signature verification
       completely untested; stripe/clerk/cursive webhooks all have
       dedicated test files, resend is the outlier.
-- [ ] **T6.** `lib/billing/gate.ts` — real gate logic never exercised
+- [x] **T6.** `lib/billing/gate.ts` — real gate logic never exercised
       (only ever mocked by consumers).
-- [ ] **T7.** cron N+1 fix regression coverage — one runnable vitest check
+- [x] **T7.** cron N+1 fix regression coverage — one runnable vitest check
       proving the batched lookup is used (pairs with B1).
 
 ### 2f. Code quality (small, safe wins)
