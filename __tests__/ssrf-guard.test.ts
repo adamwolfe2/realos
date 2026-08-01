@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // ---------------------------------------------------------------------------
 // SSRF guard for operator-supplied outbound URLs (Funnel integration base URL).
@@ -14,9 +14,8 @@ vi.mock("node:dns/promises", () => ({
   lookup: (...args: unknown[]) => mockLookup(...args),
 }));
 
-const { assertPublicHttpUrl, SsrfError } = await import(
-  "@/lib/security/ssrf-guard"
-);
+const { assertPublicHttpUrl, safeFetchFollowingRedirects, SsrfError } =
+  await import("@/lib/security/ssrf-guard");
 
 beforeEach(() => {
   mockLookup.mockReset();
@@ -47,6 +46,33 @@ describe("assertPublicHttpUrl — literal IP hosts (no DNS)", () => {
     );
     expect(mockLookup).not.toHaveBeenCalled();
   });
+});
+
+describe("assertPublicHttpUrl — IPv6 numeric-form regression coverage", () => {
+  const blocked = [
+    "http://[0:0:0:0:0:0:0:1]", // uncompressed loopback — no "::" for a regex to match
+    "http://[::127.0.0.1]", // IPv4-compatible (deprecated) loopback embed
+    "http://[64:ff9b::7f00:1]", // NAT64 well-known prefix embedding 127.0.0.1
+  ];
+  for (const url of blocked) {
+    it(`blocks ${url}`, async () => {
+      await expect(assertPublicHttpUrl(url)).rejects.toBeInstanceOf(SsrfError);
+      expect(mockLookup).not.toHaveBeenCalled();
+    });
+  }
+});
+
+describe("assertPublicHttpUrl — trailing-dot FQDN hostnames", () => {
+  const blocked = [
+    "http://localhost./",
+    "http://metadata.google.internal./",
+  ];
+  for (const url of blocked) {
+    it(`blocks ${url}`, async () => {
+      await expect(assertPublicHttpUrl(url)).rejects.toBeInstanceOf(SsrfError);
+      expect(mockLookup).not.toHaveBeenCalled();
+    });
+  }
 });
 
 describe("assertPublicHttpUrl — protocol + parse guards", () => {
@@ -96,5 +122,78 @@ describe("assertPublicHttpUrl — hostname resolution", () => {
     await expect(
       assertPublicHttpUrl("https://nope.invalid"),
     ).rejects.toBeInstanceOf(SsrfError);
+  });
+});
+
+describe("safeFetchFollowingRedirects", () => {
+  const originalFetch = global.fetch;
+
+  beforeEach(() => {
+    mockLookup.mockReset();
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
+
+  it("throws SsrfError instead of following a redirect to a private target", async () => {
+    // The guard for this hop never reaches DNS — 169.254.169.254 is a
+    // literal-IP block, same as the assertPublicHttpUrl coverage above.
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(null, {
+        status: 302,
+        headers: { location: "http://169.254.169.254/latest/meta-data" },
+      }),
+    );
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    await expect(
+      safeFetchFollowingRedirects("https://example.com/"),
+    ).rejects.toBeInstanceOf(SsrfError);
+    // Only the initial hop should have been fetched — the disallowed
+    // redirect target must never be requested.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("follows a redirect to an allowed public target and returns the final response", async () => {
+    mockLookup.mockResolvedValue([{ address: "93.184.216.34", family: 4 }]);
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(null, {
+          status: 302,
+          headers: { location: "https://final.example.com/" },
+        }),
+      )
+      .mockResolvedValueOnce(new Response("ok", { status: 200 }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const res = await safeFetchFollowingRedirects("https://start.example.com/");
+    expect(res.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    // Every fetch call must force manual redirect handling — the caller
+    // never gets to opt back into `redirect: "follow"`.
+    for (const call of fetchMock.mock.calls) {
+      expect(call[1]).toMatchObject({ redirect: "manual" });
+    }
+  });
+
+  it("stops (without throwing) once the hop cap is reached", async () => {
+    mockLookup.mockResolvedValue([{ address: "93.184.216.34", family: 4 }]);
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(null, {
+        status: 302,
+        headers: { location: "https://start.example.com/" },
+      }),
+    );
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const res = await safeFetchFollowingRedirects(
+      "https://start.example.com/",
+      {},
+      { maxHops: 2 },
+    );
+    expect(res.status).toBe(302); // gave up mid-redirect, same as the old hand-rolled loops
+    expect(fetchMock).toHaveBeenCalledTimes(3); // hop 0, 1, 2
   });
 });

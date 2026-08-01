@@ -1,5 +1,9 @@
 import "server-only";
-import { isAllowedUrlWithDns } from "@/lib/security/ssrf-guard";
+import {
+  isAllowedUrlWithDns,
+  safeFetchFollowingRedirects,
+  SsrfError,
+} from "@/lib/security/ssrf-guard";
 
 // Max redirects we'll re-validate against the SSRF allowlist before giving
 // up. Three is enough for marketing-site `www → bare → https` chains.
@@ -132,10 +136,10 @@ export async function scrapePropertyImages(
   const timeout = setTimeout(() => controller.abort(), SCRAPE_TIMEOUT_MS);
 
   let response: Response;
-  let currentUrl = normalised;
   try {
-    for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
-      response = await fetch(currentUrl, {
+    response = await safeFetchFollowingRedirects(
+      normalised,
+      {
         method: "GET",
         headers: {
           "User-Agent": USER_AGENT,
@@ -144,39 +148,20 @@ export async function scrapePropertyImages(
           // redirects that try to set cookies.
           "Accept-Language": "en-US,en;q=0.9",
         },
-        redirect: "manual",
         signal: controller.signal,
-      });
-
-      // 3xx → re-validate Location against the SSRF allowlist before
-      // stepping. Same-origin redirects are still subject to the full
-      // DNS-resolved check (a self-host could move the A record between
-      // hops to a private range).
-      if (response.status >= 300 && response.status < 400) {
-        const location = response.headers.get("location");
-        if (!location) break; // Malformed 3xx — bail with current response.
-        const next = new URL(location, currentUrl).toString();
-        if (!(await isAllowedUrlWithDns(next))) {
-          throw new Error(
-            `Redirect target ${next} points to a disallowed host`,
-          );
-        }
-        currentUrl = next;
-        continue;
-      }
-      break;
-    }
-    // The inner loop always assigns to `response` before break/continue,
-    // so by the time we reach here `response!` is defined.
-    response = response!;
+      },
+      { maxHops: MAX_REDIRECTS },
+    );
   } catch (err) {
     clearTimeout(timeout);
     const message =
-      err instanceof Error && err.name === "AbortError"
-        ? `Timed out after ${SCRAPE_TIMEOUT_MS}ms`
-        : err instanceof Error
-          ? err.message
-          : "Network error";
+      err instanceof SsrfError
+        ? err.message
+        : err instanceof Error && err.name === "AbortError"
+          ? `Timed out after ${SCRAPE_TIMEOUT_MS}ms`
+          : err instanceof Error
+            ? err.message
+            : "Network error";
     throw new Error(message);
   }
   clearTimeout(timeout);

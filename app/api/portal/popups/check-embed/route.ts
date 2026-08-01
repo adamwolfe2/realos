@@ -3,7 +3,11 @@ import { unstable_cache } from "next/cache";
 import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
-import { isAllowedUrlWithDns } from "@/lib/security/ssrf-guard";
+import {
+  isAllowedUrlWithDns,
+  safeFetchFollowingRedirects,
+  SsrfError,
+} from "@/lib/security/ssrf-guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,6 +54,13 @@ const FETCH_TIMEOUT_MS = 8_000;
 // a 10MB single-page-app payload through the route handler.
 const MAX_HTML_BYTES = 200_000;
 
+// Re-validate each redirect hop's target against the SSRF allowlist before
+// following it — `redirect: "follow"` would let a tenant-controlled host
+// 302 to an internal address that the pre-flight check on the ORIGINAL url
+// never saw. Cap matches lib/property-images/scrape.ts and the sibling
+// pixel/check-install probe.
+const MAX_REDIRECTS = 3;
+
 async function probeUrl(url: string, expectedSlug: string): Promise<Omit<CheckResult, "checkedAt">> {
   let resolved: URL;
   try {
@@ -77,18 +88,21 @@ async function probeUrl(url: string, expectedSlug: string): Promise<Omit<CheckRe
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-    const res = await fetch(resolved.toString(), {
-      method: "GET",
-      redirect: "follow",
-      signal: controller.signal,
-      headers: {
-        // Some sites serve different markup to bots — claim a real UA
-        // so we see the snippet a real visitor would see.
-        "User-Agent":
-          "Mozilla/5.0 (compatible; LeaseStack-EmbedProbe/1.0; +https://www.leasestack.co)",
-        Accept: "text/html,application/xhtml+xml",
+    const res = await safeFetchFollowingRedirects(
+      resolved.toString(),
+      {
+        method: "GET",
+        signal: controller.signal,
+        headers: {
+          // Some sites serve different markup to bots — claim a real UA
+          // so we see the snippet a real visitor would see.
+          "User-Agent":
+            "Mozilla/5.0 (compatible; LeaseStack-EmbedProbe/1.0; +https://www.leasestack.co)",
+          Accept: "text/html,application/xhtml+xml",
+        },
       },
-    });
+      { maxHops: MAX_REDIRECTS },
+    );
     clearTimeout(timeout);
     if (!res.ok) {
       return {
@@ -122,6 +136,15 @@ async function probeUrl(url: string, expectedSlug: string): Promise<Omit<CheckRe
       ));
     }
   } catch (err) {
+    if (err instanceof SsrfError) {
+      return {
+        ok: false,
+        url: resolved.toString(),
+        status: "FETCH_FAILED",
+        message: "This URL isn't allowed to be probed.",
+        detectedSlug: null,
+      };
+    }
     const msg = err instanceof Error ? err.message : String(err);
     return {
       ok: false,

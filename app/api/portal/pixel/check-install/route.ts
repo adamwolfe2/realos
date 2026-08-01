@@ -7,7 +7,11 @@ import {
 } from "@/lib/tenancy/property-filter";
 import { prisma } from "@/lib/db";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
-import { isAllowedUrlWithDns } from "@/lib/security/ssrf-guard";
+import {
+  isAllowedUrlWithDns,
+  safeFetchFollowingRedirects,
+  SsrfError,
+} from "@/lib/security/ssrf-guard";
 import { detectPixelInstall } from "@/lib/pixel/detect-install";
 import { checkRateLimit, rateLimited, seoSyncLimiter } from "@/lib/rate-limit";
 
@@ -126,41 +130,22 @@ async function probeUrl(
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-    let res: Response;
-    let currentUrl = resolved.toString();
     // Manual redirect handling, per-hop re-validated against the SSRF
     // allowlist — see the MAX_REDIRECTS comment above.
-    for (let hop = 0; ; hop += 1) {
-      res = await fetch(currentUrl, {
+    const res = await safeFetchFollowingRedirects(
+      resolved.toString(),
+      {
         method: "GET",
-        redirect: "manual",
         signal: controller.signal,
         headers: {
           "User-Agent":
             "Mozilla/5.0 (compatible; LeaseStack-PixelProbe/1.0; +https://www.leasestack.co)",
           Accept: "text/html,application/xhtml+xml",
         },
-      });
-      if (res.status >= 300 && res.status < 400 && hop < MAX_REDIRECTS) {
-        const location = res.headers.get("location");
-        if (!location) break;
-        const next = new URL(location, currentUrl).toString();
-        if (!(await isAllowedUrlWithDns(next))) {
-          clearTimeout(timeout);
-          return {
-            ok: false,
-            url: currentUrl,
-            status: "FETCH_FAILED",
-            message: "This URL isn't allowed to be probed.",
-            detectedPixelId: null,
-          };
-        }
-        currentUrl = next;
-        continue;
-      }
-      break;
-    }
-    finalUrl = currentUrl;
+      },
+      { maxHops: MAX_REDIRECTS },
+    );
+    finalUrl = res.url || finalUrl;
     clearTimeout(timeout);
     if (!res.ok) {
       return {
@@ -198,6 +183,15 @@ async function probeUrl(
       );
     }
   } catch (err) {
+    if (err instanceof SsrfError) {
+      return {
+        ok: false,
+        url: finalUrl,
+        status: "FETCH_FAILED",
+        message: "This URL isn't allowed to be probed.",
+        detectedPixelId: null,
+      };
+    }
     const msg = err instanceof Error ? err.message : String(err);
     // Don't echo the raw Node error (ECONNREFUSED <ip>:<port>, TLS/cert
     // detail) back to the caller — it aids host reconnaissance. Log server-
