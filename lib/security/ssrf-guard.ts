@@ -7,15 +7,32 @@ import net from "node:net";
 //
 // Some integrations (Funnel Leasing) let the operator type in the API base
 // URL because the real host varies per account and isn't publicly documented.
-// A free-form URL is an SSRF vector: an operator (or an attacker who reached an
-// operator-level action) can point it at localhost, an internal service, or the
-// cloud metadata endpoint (169.254.169.254), and the server will happily fetch
-// it — leaking credentials/PII or probing the internal network from our infra.
+// Other callers (property-image scraper, popup/pixel install probes, org
+// enrichment) fetch a tenant's own marketing site. A free-form URL is an SSRF
+// vector: an operator (or an attacker who reached an operator-level action)
+// can point it at localhost, an internal service, or the cloud metadata
+// endpoint (169.254.169.254), and the server will happily fetch it — leaking
+// credentials/PII or probing the internal network from our infra.
 //
 // This guard rejects any URL whose host is (or DNS-resolves to) a private,
 // loopback, link-local, CGNAT, or otherwise non-public address. Validate at
 // config time for fast feedback AND immediately before each fetch — resolving
 // at fetch time is what defeats a host that later rebinds to a private IP.
+//
+// Three entry points, same underlying IP/hostname rules:
+//   - `isAllowedUrl`         sync, no DNS. Fast validation of a literal IP or
+//                            an obviously-blocked hostname at form-submission
+//                            time. A hostname that isn't a literal IP and
+//                            isn't on the blocklist passes (it hasn't been
+//                            resolved yet) — NOT sufficient on its own before
+//                            a fetch.
+//   - `isAllowedUrlWithDns`  async boolean. Runs `isAllowedUrl` first, then
+//                            resolves the hostname and re-checks every
+//                            returned address. Use immediately before any
+//                            outbound fetch, including each redirect hop.
+//   - `assertPublicHttpUrl`  async, throws `SsrfError` instead of returning
+//                            false. Same rules as `isAllowedUrlWithDns`, for
+//                            callers that prefer throw-on-reject.
 //
 // Residual: a sub-second DNS-rebind between this lookup and fetch's own connect
 // is not closed here (that needs IP pinning); the fetch-time re-check shrinks
@@ -28,6 +45,24 @@ export class SsrfError extends Error {
     this.name = "SsrfError";
   }
 }
+
+// Hostnames that are always unsafe regardless of what they resolve to (or
+// even if they don't resolve at all in this environment). Checked before any
+// DNS lookup as a fail-fast, defense-in-depth layer on top of the IP-range
+// checks below — a resolver quirk (e.g. "localhost" not hitting /etc/hosts,
+// or a cloud metadata hostname failing to resolve outside its own cloud) must
+// never be the only thing standing between an operator-supplied URL and an
+// internal target.
+const BLOCKED_HOSTNAMES = new Set([
+  "localhost",
+  "ip6-localhost",
+  "ip6-loopback",
+  "metadata",
+  "metadata.google.internal",
+  "metadata.aws.internal",
+  "instance-data",
+  "instance-data.ec2.internal",
+]);
 
 function ipv4ToInt(ip: string): number | null {
   const parts = ip.split(".");
@@ -106,11 +141,92 @@ function isBlockedIp(ip: string): boolean {
   return true; // not a recognizable IP → unsafe
 }
 
+// url.hostname keeps IPv6 literals bracket-wrapped ("[::1]") and Node's URL
+// parser lowercases hostnames already, but strip brackets defensively so
+// net.isIP / the BLOCKED_HOSTNAMES lookup always see the bare form.
+function bareHostOf(host: string): string {
+  const stripped =
+    host.startsWith("[") && host.endsWith("]") ? host.slice(1, -1) : host;
+  return stripped.toLowerCase();
+}
+
+/**
+ * Structural (no-DNS) validation: parseable http(s) URL, no embedded
+ * credentials, not an explicitly blocked hostname, and — if the host is a
+ * literal IP — not a private/reserved address. A non-IP hostname that isn't
+ * on the blocklist returns true here without proof it's safe; DNS hasn't run
+ * yet. Fast path for form-submission-time feedback only — NOT sufficient on
+ * its own immediately before a fetch (use `isAllowedUrlWithDns` there).
+ */
+export function isAllowedUrl(urlString: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(urlString);
+  } catch {
+    return false;
+  }
+  // Reject userinfo (https://user:pass@host) — defends against credential
+  // leakage and parser-ambiguity tricks in any downstream re-parse of the
+  // raw string, even though `url.hostname` itself is already unambiguous.
+  if (url.username || url.password) return false;
+  if (url.protocol !== "http:" && url.protocol !== "https:") return false;
+  if (!url.hostname) return false;
+
+  const bareHost = bareHostOf(url.hostname);
+  if (BLOCKED_HOSTNAMES.has(bareHost)) return false;
+
+  if (net.isIP(bareHost)) return !isBlockedIp(bareHost);
+
+  // Non-IP hostname (including any numeric-looking encoding — Node/WHATWG's
+  // URL parser already canonicalizes decimal/octal/hex IPv4 encodings like
+  // "2130706433" or "0x7f000001" into dotted-decimal at `new URL()` time, so
+  // they hit the net.isIP branch above, not this one).
+  return true;
+}
+
+/**
+ * DNS-resolved validation. Runs `isAllowedUrl` first, then — for a hostname
+ * (not a literal IP) — resolves ALL addresses and rejects if any is private.
+ * Resolving every record prevents a host that mixes a public and a private
+ * A/AAAA record, and re-resolving at call time (rather than trusting a
+ * cached/earlier check) is what catches a host that DNS-rebinds to a private
+ * IP between validation and fetch. Use immediately before every outbound
+ * fetch to a user-controlled URL, including each redirect hop.
+ */
+export async function isAllowedUrlWithDns(urlString: string): Promise<boolean> {
+  if (!isAllowedUrl(urlString)) return false;
+
+  let url: URL;
+  try {
+    url = new URL(urlString);
+  } catch {
+    return false;
+  }
+  const bareHost = bareHostOf(url.hostname);
+  // Literal IP host — isAllowedUrl already validated it, no DNS needed.
+  if (net.isIP(bareHost)) return true;
+
+  let addrs: Array<{ address: string }>;
+  try {
+    addrs = await lookup(bareHost, { all: true });
+  } catch {
+    // Fail closed: if DNS doesn't resolve we can't prove it's safe.
+    return false;
+  }
+  if (addrs.length === 0) return false;
+  for (const { address } of addrs) {
+    if (isBlockedIp(address)) return false;
+  }
+  return true;
+}
+
 /**
  * Validate an operator-supplied URL is a public http(s) endpoint. Throws
- * SsrfError if the protocol is unsupported, the host is missing, the host is a
- * literal private IP, or DNS resolves it to any private/reserved address.
- * Returns the parsed URL on success.
+ * SsrfError if the protocol is unsupported, the host is missing or blocked,
+ * the URL embeds credentials, the host is a literal private IP, or DNS
+ * resolves it to any private/reserved address. Returns the parsed URL on
+ * success. Same underlying rules as `isAllowedUrlWithDns`; use this variant
+ * when the caller prefers throw-on-reject over a boolean.
  */
 export async function assertPublicHttpUrl(rawUrl: string): Promise<URL> {
   let url: URL;
@@ -122,13 +238,16 @@ export async function assertPublicHttpUrl(rawUrl: string): Promise<URL> {
   if (url.protocol !== "http:" && url.protocol !== "https:") {
     throw new SsrfError("URL must use http or https");
   }
+  if (url.username || url.password) {
+    throw new SsrfError("URL must not contain credentials");
+  }
   const host = url.hostname;
   if (!host) throw new SsrfError("URL has no host");
 
-  // url.hostname keeps IPv6 literals bracket-wrapped ("[::1]"); strip them so
-  // net.isIP recognizes the address.
-  const bareHost =
-    host.startsWith("[") && host.endsWith("]") ? host.slice(1, -1) : host;
+  const bareHost = bareHostOf(host);
+  if (BLOCKED_HOSTNAMES.has(bareHost)) {
+    throw new SsrfError("URL host is a disallowed hostname");
+  }
 
   // Literal IP host — check directly, no DNS.
   if (net.isIP(bareHost)) {

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHmac } from "crypto";
 import { prisma } from "@/lib/db";
 import { notifyNewIntake } from "@/lib/integrations/slack";
-import { safeEqual } from "@/lib/utils/timing-safe";
+import { timingSafeEqual } from "@/lib/auth/timing-safe";
 
 // Cal.com booking webhook. Flips IntakeSubmission.bookedCallAt when a
 // consultation is booked.
@@ -29,9 +29,9 @@ export async function POST(
   const rawBody = await req.text();
   const sig = req.headers.get("X-Cal-Signature-256") ?? "";
   const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
-  // safeEqual is constant-time and returns false on length mismatch instead
-  // of throwing — no more try/catch needed around the compare.
-  if (!safeEqual(sig, expected)) {
+  // timingSafeEqual is constant-time and returns false on length mismatch
+  // instead of throwing — no try/catch needed around the compare.
+  if (!timingSafeEqual(sig, expected)) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 

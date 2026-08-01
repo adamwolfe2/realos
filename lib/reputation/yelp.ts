@@ -2,7 +2,7 @@ import "server-only";
 import { MentionSource } from "@prisma/client";
 import * as cheerio from "cheerio";
 import type { ScanSourceResult, ScannedMention, PropertySeed } from "./types";
-import { isAllowedUrlWithDns } from "@/lib/utils/ssrf-protection";
+import { isAllowedUrlWithDns } from "@/lib/security/ssrf-guard";
 
 // ---------------------------------------------------------------------------
 // Yelp — public biz-page review scrape.
