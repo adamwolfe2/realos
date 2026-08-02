@@ -121,6 +121,7 @@ export async function adminClearStuckSyncStatus(
         leasesUpserted: 0,
         workOrdersUpserted: 0,
         delinquenciesUpdated: 0,
+        skippedInactiveProperty: 0,
         warnings: [] as string[],
       },
     };
@@ -171,6 +172,7 @@ export async function adminMarkPropertiesAppfolio(
         leasesUpserted: 0,
         workOrdersUpserted: 0,
         delinquenciesUpdated: 0,
+        skippedInactiveProperty: 0,
         warnings: [`updated ${result.count} property rows`],
       },
     };

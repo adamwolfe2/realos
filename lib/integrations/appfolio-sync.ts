@@ -88,6 +88,13 @@ export type AppfolioSyncStats = {
   workOrdersUpserted: number;
   delinquenciesUpdated: number;
   applicationsUpserted: number;
+  // Rows that resolved to a KNOWN Property (not null — that's the existing
+  // unmatchedNoProperty/residentsNoProperty/leasesNoProperty path) whose
+  // lifecycle isn't ACTIVE — i.e. the client hasn't set up that building
+  // (IMPORTED) or curated it out (EXCLUDED). See lib/properties/marketable.ts.
+  // Counted, not silently dropped, across the leads/applications/residents/
+  // leases phases.
+  skippedInactiveProperty: number;
   warnings: string[];
 };
 
@@ -126,6 +133,27 @@ export function resolveAppfolioPropertyId(
 }
 
 /**
+ * True only when propertyId resolved to a KNOWN property whose lifecycle
+ * isn't ACTIVE (IMPORTED = not launched yet, EXCLUDED = curated-out junk
+ * sub-record — see lib/properties/marketable.ts). A null propertyId (the
+ * resolver found nothing) is a different, pre-existing skip path each phase
+ * already has (unmatchedNoProperty / residentsNoProperty / leasesNoProperty)
+ * — this only tightens the "resolved to a real but not-yet-launched/excluded
+ * property" case that used to sync unconditionally.
+ *
+ * SG Real Estate audit (2026-08-01): AppFolio syncs the whole portfolio
+ * account-wide, so leads/applications/residents/leases for the 766 of 929
+ * (leads) and ~791 of 895 (applications) EXCLUDED/IMPORTED sub-records were
+ * landing in the DB and inflating every downstream report.
+ */
+export function isInactiveAppfolioProperty(
+  propertyId: string | null,
+  lifecycleByPropertyId: Map<string, string>,
+): boolean {
+  return propertyId != null && lifecycleByPropertyId.get(propertyId) !== "ACTIVE";
+}
+
+/**
  * Whether a property belongs to the operator's configured AppFolio property
  * group. Used to scope Phase 0 discovery (and therefore every downstream
  * phase, via resolveAppfolioPropertyId).
@@ -160,6 +188,7 @@ export async function runAppfolioSync(
     workOrdersUpserted: 0,
     delinquenciesUpdated: 0,
     applicationsUpserted: 0,
+    skippedInactiveProperty: 0,
     warnings: [],
   };
 
@@ -631,6 +660,24 @@ export async function runAppfolioSync(
     topLevelError = topLevelError ?? `properties: ${message}`;
   }
 
+  // Snapshot property lifecycles AFTER Phase 0 so the leads/applications/
+  // residents/leases phases below see whatever just happened above (a
+  // brand-new AppFolio property lands IMPORTED, a re-classified row may
+  // have flipped EXCLUDED<->IMPORTED). Only ACTIVE means "the client has
+  // actually set this property up" — see lib/properties/marketable.ts.
+  // One query for every property currently in the resolver map; cheap
+  // next to the per-row REST pagination the phases below do.
+  const propertyLifecycleById = new Map<string, string>();
+  if (propertyByExternalId.size > 0) {
+    const currentProperties = await prisma.property.findMany({
+      where: { id: { in: Array.from(new Set(propertyByExternalId.values())) } },
+      select: { id: true, lifecycle: true },
+    });
+    for (const p of currentProperties) propertyLifecycleById.set(p.id, p.lifecycle);
+  }
+  const isInactiveResolvedProperty = (propertyId: string | null): boolean =>
+    isInactiveAppfolioProperty(propertyId, propertyLifecycleById);
+
   // 1. LEADS — AppFolio v2 report: guest_cards
   if (isPhaseSkipped("leads")) {
     // Auto-skipped after 3 consecutive failures. Almost always indicates
@@ -662,7 +709,12 @@ export async function runAppfolioSync(
       for (const row of rows) {
         const mapped = mapLeadPayload(row);
         if (!mapped) continue;
-        await upsertAppfolioLead(orgId, mapped, resolvePropertyId(mapped.propertyIds));
+        const localPropertyId = resolvePropertyId(mapped.propertyIds);
+        if (isInactiveResolvedProperty(localPropertyId)) {
+          stats.skippedInactiveProperty += 1;
+          continue;
+        }
+        await upsertAppfolioLead(orgId, mapped, localPropertyId);
         stats.leadsUpserted += 1;
       }
       phasesCompleted += 1;
@@ -764,6 +816,10 @@ export async function runAppfolioSync(
         const propertyId = resolvePropertyId(mapped.propertyIds);
         if (!propertyId) {
           unmatchedNoProperty += 1;
+          continue;
+        }
+        if (isInactiveResolvedProperty(propertyId)) {
+          stats.skippedInactiveProperty += 1;
           continue;
         }
         const upserted = await upsertAppfolioApplication(
@@ -940,6 +996,10 @@ export async function runAppfolioSync(
         residentsNoProperty += 1;
         continue;
       }
+      if (isInactiveResolvedProperty(propertyId)) {
+        stats.skippedInactiveProperty += 1;
+        continue;
+      }
       const listingId =
         (mapped.unitExternalId && listingByExternalId.get(mapped.unitExternalId)) ||
         null;
@@ -973,6 +1033,10 @@ export async function runAppfolioSync(
       );
       if (!propertyId) {
         leasesNoProperty += 1;
+        continue;
+      }
+      if (isInactiveResolvedProperty(propertyId)) {
+        stats.skippedInactiveProperty += 1;
         continue;
       }
       const listingId =
