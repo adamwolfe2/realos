@@ -1,0 +1,140 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+// ---------------------------------------------------------------------------
+// SG Real Estate lead/application overclaim (2026-08-01 forensic audit):
+// AppFolio syncs the WHOLE portfolio account-wide, so the org-wide client
+// report's Lead/Application queries pulled in rows attached to EXCLUDED
+// (curated-out junk sub-records) and IMPORTED (not-yet-launched) properties
+// -- 766 of 929 reported leads, ~791 of 895 applications, a ~6x overclaim.
+// Fix: every Lead/Application-shaped query in generate.ts spreads
+// activePropertyLeadClause(scope) so org-wide reports only see
+// ACTIVE-lifecycle properties (the ones the client actually set up).
+//
+// This locks the gate to the REAL prisma calls generateReportSnapshot
+// makes (not just the helper in isolation), so a future edit that drops
+// the `...activePropertyLeadClause(scope)` spread from a query fails loud.
+// Every model/method generateReportSnapshot touches gets an auto-mock with
+// a harmless empty/zero default; only the calls under test get inspected.
+// ---------------------------------------------------------------------------
+
+function autoMockPrisma() {
+  const defaultFor = (method: string) => {
+    switch (method) {
+      case "count":
+        return vi.fn(async () => 0);
+      case "aggregate":
+        return vi.fn(async () => ({ _sum: {}, _avg: {}, _count: { _all: 0 } }));
+      case "groupBy":
+        return vi.fn(async () => []);
+      case "findMany":
+        return vi.fn(async () => []);
+      default:
+        // findFirst / findUnique / anything else this file might add later.
+        return vi.fn(async () => null);
+    }
+  };
+  return new Proxy(
+    {} as Record<string, Record<string, ReturnType<typeof vi.fn>>>,
+    {
+      get(models, model: string) {
+        if (!(model in models)) {
+          models[model] = new Proxy(
+            {} as Record<string, ReturnType<typeof vi.fn>>,
+            {
+              get(methods, method: string) {
+                if (!(method in methods)) methods[method] = defaultFor(method);
+                return methods[method];
+              },
+            },
+          );
+        }
+        return models[model];
+      },
+    },
+  );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockPrisma: any = autoMockPrisma();
+
+vi.mock("@/lib/db", () => ({
+  get prisma() {
+    return mockPrisma;
+  },
+}));
+
+const { generateReportSnapshot } = await import("@/lib/reports/generate");
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
+
+describe("generateReportSnapshot — org-wide report gates Lead/Application queries to ACTIVE properties", () => {
+  it("lead.count (KPI + chatbot-source + funnel total) is gated every time it's called", async () => {
+    await generateReportSnapshot("org-1", "monthly", { skipAi: true });
+
+    const calls = mockPrisma.lead.count.mock.calls;
+    expect(calls.length).toBeGreaterThan(0);
+    for (const [args] of calls) {
+      expect(args.where).toMatchObject({ property: { lifecycle: "ACTIVE" } });
+    }
+  });
+
+  it("application.count is gated every time it's called", async () => {
+    await generateReportSnapshot("org-1", "monthly", { skipAi: true });
+
+    const calls = mockPrisma.application.count.mock.calls;
+    expect(calls.length).toBeGreaterThan(0);
+    for (const [args] of calls) {
+      expect(args.where).toMatchObject({ property: { lifecycle: "ACTIVE" } });
+    }
+  });
+
+  it("lead.groupBy(propertyId) attribution table is gated", async () => {
+    await generateReportSnapshot("org-1", "monthly", { skipAi: true });
+
+    const propertyGroupByCalls = mockPrisma.lead.groupBy.mock.calls.filter(
+      ([args]: [{ by?: string[] }]) => args.by?.includes("propertyId"),
+    );
+    expect(propertyGroupByCalls.length).toBe(1);
+    expect(propertyGroupByCalls[0][0].where).toMatchObject({
+      property: { lifecycle: "ACTIVE" },
+    });
+  });
+
+  it("lead.groupBy(status) funnel is gated", async () => {
+    await generateReportSnapshot("org-1", "monthly", { skipAi: true });
+
+    const statusGroupByCalls = mockPrisma.lead.groupBy.mock.calls.filter(
+      ([args]: [{ by?: string[] }]) => args.by?.includes("status"),
+    );
+    expect(statusGroupByCalls.length).toBe(1);
+    expect(statusGroupByCalls[0][0].where).toMatchObject({
+      property: { lifecycle: "ACTIVE" },
+    });
+  });
+
+  it("chatbot conversation aggregate keeps null-propertyId rows (widget predates property stamping) alongside ACTIVE-property rows", async () => {
+    await generateReportSnapshot("org-1", "monthly", { skipAi: true });
+
+    const [args] = mockPrisma.chatbotConversation.aggregate.mock.calls[0];
+    expect(args.where.OR).toEqual([
+      { propertyId: null },
+      { property: { lifecycle: "ACTIVE" } },
+    ]);
+  });
+
+  it("property-scoped reports are unchanged: no lifecycle gate, still filtered to the one property", async () => {
+    await generateReportSnapshot("org-1", "monthly", {
+      skipAi: true,
+      propertyId: "prop-a",
+    });
+
+    const calls = mockPrisma.lead.count.mock.calls;
+    expect(calls.length).toBeGreaterThan(0);
+    for (const [args] of calls) {
+      expect(args.where.property).toBeUndefined();
+      expect(args.where.propertyId).toBe("prop-a");
+    }
+  });
+});

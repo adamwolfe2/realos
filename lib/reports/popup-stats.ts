@@ -33,6 +33,13 @@ export async function buildPopupStats(
   periodStart: Date,
   periodEnd: Date,
 ): Promise<ReportPopupStats | undefined> {
+  // KNOWN LIMITATION (2026-08-01 lead/application overclaim audit): unlike
+  // the Lead/Application queries in generate.ts, org-wide popup stats are
+  // NOT gated to ACTIVE-lifecycle properties here. A campaign with
+  // propertyId: null is legitimately org-wide by design (fires on every
+  // property), so there's no clean way to attribute its events to one
+  // property's lifecycle without changing what "org-wide campaign" means.
+  // Tracked as a separate slice alongside the Visitor/pixel limitation.
   const campaigns = await prisma.popupCampaign.findMany({
     where: {
       orgId,
