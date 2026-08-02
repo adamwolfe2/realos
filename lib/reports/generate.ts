@@ -1017,9 +1017,12 @@ export async function generateReportSnapshot(
       },
       _count: { _all: true },
     }),
-    // Lead sources
+    // Lead sources — group by sourceDetail too so an OTHER-enum lead's
+    // real origin (e.g. "AppFolio application") can replace the
+    // meaningless "Other" bucket below (matches getLeadSourceBreakdown
+    // in lib/dashboard/queries.ts, the canonical pattern for this).
     prisma.lead.groupBy({
-      by: ["source"],
+      by: ["source", "sourceDetail"],
       where: {
         orgId,
         ...scope.propertyClause,
@@ -1359,13 +1362,24 @@ export async function generateReportSnapshot(
     return { stage: LEAD_STATUS_LABELS[s], count };
   });
 
-  // Lead sources
+  // Lead sources — OTHER-enum rows fall back to their real origin
+  // (sourceDetail, e.g. "AppFolio application") instead of a bare
+  // "Other" bucket. Rows sharing a resolved label (two OTHER leads both
+  // detailed "AppFolio application") are summed together.
   const totalSourceLeads = totalLeadsForSource || 1;
-  const leadSources: ReportLeadSource[] = leadSourceGroups
-    .map((row) => ({
-      source: LEAD_SOURCE_LABELS[row.source] ?? row.source,
-      count: row._count._all,
-      pct: Math.round((row._count._all / totalSourceLeads) * 100),
+  const leadSourceCounts = new Map<string, number>();
+  for (const row of leadSourceGroups) {
+    const label =
+      row.source === LeadSource.OTHER && row.sourceDetail
+        ? row.sourceDetail
+        : (LEAD_SOURCE_LABELS[row.source] ?? row.source);
+    leadSourceCounts.set(label, (leadSourceCounts.get(label) ?? 0) + row._count._all);
+  }
+  const leadSources: ReportLeadSource[] = [...leadSourceCounts.entries()]
+    .map(([source, count]) => ({
+      source,
+      count,
+      pct: Math.round((count / totalSourceLeads) * 100),
     }))
     .sort((a, b) => b.count - a.count);
 
@@ -2657,17 +2671,23 @@ async function buildOccupancyStats(
   orgId: string,
   propertyId: string | null,
 ): Promise<ReportOccupancyStats | undefined> {
+  // Every aggregate below is scoped to ACTIVE (marketable) properties —
+  // see lib/properties/marketable.ts. Without this, org-wide reports
+  // pulled in AppFolio sub-records (parking, storage, model units) that
+  // were excluded from the portfolio count, inflating on-notice/rent-roll
+  // numbers by ~2x for SG Real Estate (127 raw rows vs ~100 marketable).
   const propertyClause = propertyId ? { propertyId } : {};
   const [propertyAgg, residentNoticeCount, applicationsQueued, rentRoll, activeListings] =
     await Promise.all([
       prisma.property.aggregate({
-        where: { orgId, ...(propertyId ? { id: propertyId } : {}) },
+        where: { orgId, ...(propertyId ? { id: propertyId } : {}), lifecycle: "ACTIVE" },
         _sum: { totalUnits: true, availableCount: true },
       }),
       prisma.resident.count({
         where: {
           orgId,
           ...propertyClause,
+          property: { lifecycle: "ACTIVE" },
           status: ResidentStatus.NOTICE_GIVEN,
         },
       }),
@@ -2675,10 +2695,11 @@ async function buildOccupancyStats(
         where: {
           status: ApplicationStatus.SUBMITTED,
           lead: { orgId, ...(propertyId ? { propertyId } : {}) },
+          property: { lifecycle: "ACTIVE" },
         },
       }),
       prisma.lease.aggregate({
-        where: { orgId, ...propertyClause, status: LeaseStatus.ACTIVE },
+        where: { orgId, ...propertyClause, property: { lifecycle: "ACTIVE" }, status: LeaseStatus.ACTIVE },
         _sum: { monthlyRentCents: true },
         _count: { _all: true },
       }),
@@ -2686,7 +2707,7 @@ async function buildOccupancyStats(
       // active Lease rows synced yet.
       prisma.listing.count({
         where: {
-          property: { orgId, ...(propertyId ? { id: propertyId } : {}) },
+          property: { orgId, ...(propertyId ? { id: propertyId } : {}), lifecycle: "ACTIVE" },
           isAvailable: true,
         },
       }),
@@ -2762,7 +2783,10 @@ async function buildRenewalStats(
   propertyId: string | null,
   periodEnd: Date,
 ): Promise<ReportRenewalStats | undefined> {
-  const propertyClause = propertyId ? { propertyId } : {};
+  // Scoped to ACTIVE (marketable) properties — same reasoning as
+  // buildOccupancyStats above; renewals/past-due must never include
+  // AppFolio sub-records excluded from the portfolio.
+  const propertyClause = propertyId ? { propertyId, property: { lifecycle: "ACTIVE" as const } } : { property: { lifecycle: "ACTIVE" as const } };
   const next30 = new Date(periodEnd.getTime() + 30 * DAY_MS);
   const next60 = new Date(periodEnd.getTime() + 60 * DAY_MS);
   const next120 = new Date(periodEnd.getTime() + 120 * DAY_MS);
