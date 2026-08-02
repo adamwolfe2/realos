@@ -5,19 +5,9 @@ import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { canAccessReport, isReportStatusRestricted } from "@/lib/reports/access";
 import { getSiteUrl } from "@/lib/brand";
-import { ReportDashboard } from "@/components/portal/reports/dashboard/report-dashboard";
 import { PropertyOnePager } from "@/components/portal/reports/property-one-pager";
-import { PropertyHeroBanner } from "@/components/portal/properties/property-hero-banner";
-import {
-  ReportPrintHeader,
-  ReportHeaderStrip,
-} from "@/components/portal/reports/sections/report-header";
-import {
-  type PropertyMeta,
-  periodLabel as formatPeriodLabel,
-} from "@/components/portal/reports/snapshot-shared";
+import type { PropertyMeta } from "@/components/portal/reports/snapshot-shared";
 import { ReportPrintStyles } from "@/components/portal/reports/report-print-styles";
-import { loadPropertyHero } from "@/lib/reports/load-property-hero";
 import { ReportEditorControls } from "@/components/portal/reports/report-editor-controls";
 import { SendEmailPanel } from "@/components/portal/reports/send-email-panel";
 import { PrintButton } from "@/components/portal/reports/print-button";
@@ -83,22 +73,13 @@ export default async function ReportDetailPage({
   const shareUrl =
     status === "shared" ? `${getSiteUrl()}/r/${report.shareToken}` : null;
 
-  // Norman feedback (May 22): the report should open with the building
-  // image pinned at the top, exactly like the dashboard's Featured
-  // Property card. loadPropertyHero handles both scoped (use the
-  // attached property) and portfolio reports (pick the flagship by
-  // leads, then occupancy, then any LIVE property in the org) so even
-  // an org-wide rollup opens with a real building photo.
-  const propertyHero = await loadPropertyHero(snapshot, report.orgId);
-
-  // 2026-07-29 redesign: the report used to render through the old tabbed
-  // ReportView, which looked nothing like the polished dashboard/one-pager
-  // preview on the reports list page. Now both surfaces render the SAME
-  // ReportDashboard + PropertyOnePager pair the property snapshot page
-  // uses (app/portal/properties/[id]/snapshot/page.tsx). Portfolio reports
-  // (propertyId null) don't have a Property row, so PropertyMeta falls back
-  // to the org name — every section already reads snapshot fields directly
-  // and degrades gracefully without a real property.
+  // 2026-08-01 redesign: render the SAME flat single-scroll snapshot body
+  // (PropertyOnePager) the /portal/reports live preview generates, instead
+  // of the old building-photo banner + branded header band + tabbed
+  // dashboard stack. Adam rejected the old combo outright. Portfolio
+  // reports (propertyId null) don't have a Property row, so PropertyMeta
+  // falls back to the org name — every section already reads snapshot
+  // fields directly and degrades gracefully without a real property.
   const propertyRow = report.propertyId
     ? await prisma.property.findUnique({
         where: { id: report.propertyId },
@@ -107,13 +88,6 @@ export default async function ReportDetailPage({
     : null;
   const propertyMeta: PropertyMeta =
     propertyRow ?? { name: report.org?.name ?? "Portfolio report" };
-
-  const kindLabel =
-    snapshot.kind === "weekly"
-      ? "Weekly report"
-      : snapshot.kind === "monthly"
-        ? "Monthly report"
-        : "Performance report";
 
   return (
     <div className="space-y-5 report-page">
@@ -179,87 +153,27 @@ export default async function ReportDetailPage({
 
       <PrintExpander />
 
-      {/* Norman feedback (May 22): the report should open with the building
-          image pinned at the top, exactly like the dashboard's Featured
-          Property card. editable=false — operators upload images from
-          /portal/properties/[id], not the report. */}
-      {propertyHero ? (
-        <PropertyHeroBanner
-          propertyId={propertyHero.propertyId}
-          propertyName={propertyHero.propertyName}
-          subtitle={propertyHero.subtitle}
-          heroImageUrl={propertyHero.heroImageUrl}
-          imageOffsetX={propertyHero.imageOffsetX ?? 0}
-          imageOffsetY={propertyHero.imageOffsetY ?? 0}
-          imageScale={propertyHero.imageScale ?? 1}
-          editable={false}
-          compact
-          stats={[
-            {
-              label: "Captured · period",
-              value: (
-                snapshot.kpis.leads + (snapshot.kpis.identifiedVisitors ?? 0)
-              ).toLocaleString("en-US"),
-              hint: `${snapshot.kpis.leads} form + ${snapshot.kpis.identifiedVisitors ?? 0} visitors`,
-            },
-            {
-              label: snapshot.aeoStats ? "AI search · cited" : "Tours · period",
-              value: snapshot.aeoStats
-                ? `${snapshot.aeoStats.cited}/${snapshot.aeoStats.totalChecks}`
-                : snapshot.kpis.tours.toLocaleString("en-US"),
-              hint: snapshot.aeoStats
-                ? `${snapshot.aeoStats.enginesUsed.length} engines`
-                : undefined,
-            },
-            {
-              label: "Reputation",
-              value:
-                propertyHero.googleAggRating != null
-                  ? `${propertyHero.googleAggRating.toFixed(1)}★`
-                  : snapshot.reputationStats?.overallRating != null
-                    ? `${snapshot.reputationStats.overallRating.toFixed(1)}★`
-                    : "—",
-              hint: snapshot.reputationStats?.totalReviews
-                ? `${snapshot.reputationStats.totalReviews} reviews`
-                : undefined,
-            },
-          ]}
-        />
+      {/* Operator's headline + personal note for this client, editable
+          above via ReportEditorControls. Prints too (no data-no-print). */}
+      {report.headline || report.notes ? (
+        <div className="ls-report-section rounded-[2px] border border-border bg-card px-5 py-4">
+          {report.headline ? (
+            <p className="text-sm font-semibold text-foreground leading-snug">
+              {report.headline}
+            </p>
+          ) : null}
+          {report.notes ? (
+            <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
+              {report.notes}
+            </p>
+          ) : null}
+        </div>
       ) : null}
 
-      {/* Print-only branded header — hidden on screen, first thing on the
-          PDF's page 1. */}
-      <ReportPrintHeader
-        kindLabel={kindLabel}
-        periodLabel={formatPeriodLabel(snapshot)}
-        orgName={report.org?.name}
-        orgLogoUrl={report.org?.logoUrl}
-        headline={report.headline}
-        notes={report.notes}
-        propertyName={snapshot.scope?.propertyName ?? null}
-      />
-
-      {/* On-screen editorial block: client branding + the operator's
-          headline/note, editable above via ReportEditorControls. */}
-      <ReportHeaderStrip
-        kindLabel={kindLabel}
-        periodLabel={formatPeriodLabel(snapshot)}
-        orgName={report.org?.name}
-        orgLogoUrl={report.org?.logoUrl}
-        headline={report.headline}
-        notes={report.notes}
-        propertyName={snapshot.scope?.propertyName ?? null}
-      />
-
-      {/* Interactive dashboard — same component the reports list preview
-          and property snapshot page render. */}
-      <ReportDashboard snapshot={snapshot} property={propertyMeta} />
-
-      {/* Printable one-pager — hidden on screen, the only thing that
-          prints, same pattern as the property snapshot page. */}
-      <div className="hidden print:block">
-        <PropertyOnePager snapshot={snapshot} property={propertyMeta} />
-      </div>
+      {/* Flat single-scroll snapshot body — the same PropertyOnePager the
+          live preview renders, fed from the frozen snapshot instead of a
+          fresh query. */}
+      <PropertyOnePager snapshot={snapshot} property={propertyMeta} />
     </div>
   );
 }
