@@ -6,6 +6,7 @@ import {
   pct,
   periodLabel,
   addressLine,
+  bucketWeekly,
   EngineMark,
   engineLabel,
   toMentionSource,
@@ -45,6 +46,14 @@ export function PropertyOnePager({ snapshot, property }: Props) {
     1,
     ...(reputationStats?.sourceBreakdown ?? []).map((r) => r.count),
   );
+  // "custom" (all-time) reports compare against a prior window that
+  // predates tracking entirely — a "From 36 prior" pill there is not a
+  // real comparison, just noise. Weekly/monthly reports keep their pills.
+  const showDeltas = snapshot.kind !== "custom";
+  // A wall of ~134 daily bars is unreadable; bucket to weekly once the
+  // window passes ~8 weeks.
+  const trafficIsWeekly = (trafficTrend?.length ?? 0) > 56;
+  const trafficValues = trafficIsWeekly ? bucketWeekly(trafficTrend!) : trafficTrend;
 
   return (
     <div className="mx-auto w-full max-w-[880px] rounded-[2px] border border-border bg-card p-6 text-foreground shadow-sm print:border-0 print:shadow-none">
@@ -75,12 +84,12 @@ export function PropertyOnePager({ snapshot, property }: Props) {
       </header>
 
       {/* Headline KPIs */}
-      <div className="mt-4 grid grid-cols-4 gap-2.5">
+      <div className="mt-5 grid grid-cols-4 gap-2.5">
         <KpiCard
           value={num(kpis.leads)}
           label="New leads"
           delta={
-            snapshot.kpiDeltas?.leadsPct != null
+            showDeltas && snapshot.kpiDeltas?.leadsPct != null
               ? { up: snapshot.kpiDeltas.leadsPct >= 0, text: `${snapshot.kpiDeltas.leadsPct >= 0 ? "Up" : "Down"} vs prior period` }
               : undefined
           }
@@ -89,6 +98,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
           value={num(lifecycleStats?.leasesSignedInPeriod ?? 0)}
           label="Leases signed"
           delta={(() => {
+            if (!showDeltas) return undefined;
             const cur = lifecycleStats?.leasesSignedInPeriod ?? 0;
             const prior = lifecycleStats?.priorLeasesSignedInPeriod ?? 0;
             return cur === 0 && prior === 0
@@ -99,7 +109,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
         <KpiCard
           value={occupancyStats?.occupancyPct != null ? pct(occupancyStats.occupancyPct) : "—"}
           label={`Occupancy across ${occupancyStats?.totalUnits ?? 0} units`}
-          deltaRed={
+          deltaNeutral={
             (occupancyStats?.onNotice ?? 0) > 0
               ? `${occupancyStats?.onNotice} residents on notice`
               : undefined
@@ -148,22 +158,40 @@ export function PropertyOnePager({ snapshot, property }: Props) {
             <Stat value={num(kpis.identifiedVisitors)} label="Identified visitors" />
           </div>
           {snapshot.popupStats ? (
-            <div className="mt-3.5 grid grid-cols-4 gap-2.5">
-              <Stat value={num(snapshot.popupStats.shown)} label="Popups shown" />
-              <Stat value={num(snapshot.popupStats.ctaClicks)} label="CTA clicks" />
-              <Stat value={num(snapshot.popupStats.converted)} label="Converted" />
-              <Stat
-                value={snapshot.popupStats.conversionRate != null ? pct(snapshot.popupStats.conversionRate) : "—"}
-                label="Conversion rate"
-              />
+            <div className={`mt-3.5 grid gap-2.5 ${snapshot.popupStats.converted > 0 ? "grid-cols-4" : "grid-cols-3"}`}>
+              {snapshot.popupStats.converted > 0 ? (
+                <>
+                  <Stat value={num(snapshot.popupStats.shown)} label="Popups shown" />
+                  <Stat value={num(snapshot.popupStats.ctaClicks)} label="CTA clicks" />
+                  <Stat value={num(snapshot.popupStats.converted)} label="Converted" />
+                  <Stat
+                    value={snapshot.popupStats.conversionRate != null ? pct(snapshot.popupStats.conversionRate) : "—"}
+                    label="Conversion rate"
+                  />
+                </>
+              ) : (
+                // converted=0 means the feature is unused/unwired this period —
+                // don't give "0 Converted" / "0% Conversion rate" equal billing
+                // next to real numbers. Show what actually happened instead.
+                <>
+                  <Stat value={num(snapshot.popupStats.shown)} label="Popups shown" />
+                  <Stat value={num(snapshot.popupStats.ctaClicks)} label="CTA clicks" />
+                  <Stat
+                    value={snapshot.popupStats.shown > 0 ? pct((snapshot.popupStats.ctaClicks / snapshot.popupStats.shown) * 100) : "—"}
+                    label="CTA rate"
+                  />
+                </>
+              )}
             </div>
           ) : null}
-          {trafficTrend?.length ? (
+          {trafficValues?.length ? (
             <>
               <div className="mb-1.5 mt-3.5 text-[10px] font-medium text-muted-foreground">
-                Daily site traffic, trailing {trafficTrend.length} day{trafficTrend.length === 1 ? "" : "s"}
+                {trafficIsWeekly
+                  ? `Weekly site traffic, trailing ${trafficValues.length} week${trafficValues.length === 1 ? "" : "s"}`
+                  : `Daily site traffic, trailing ${trafficValues.length} day${trafficValues.length === 1 ? "" : "s"}`}
               </div>
-              <Sparkline values={trafficTrend} />
+              <Sparkline values={trafficValues} />
             </>
           ) : null}
         </section>
@@ -190,8 +218,10 @@ export function PropertyOnePager({ snapshot, property }: Props) {
         </section>
       </div>
 
-      {/* Renewals + Reputation */}
-      <div className="mt-5 grid grid-cols-2 gap-6">
+      {/* Renewals + Reputation — same column split as the Acquisition +
+          Leasing zone above so the two left/right boundaries line up as
+          the page scans down. */}
+      <div className="mt-5 grid grid-cols-[1.1fr_0.9fr] gap-6">
         <section>
           <SectionHeading>Renewals at risk</SectionHeading>
           <div className="grid grid-cols-3 gap-2.5">
@@ -239,13 +269,10 @@ export function PropertyOnePager({ snapshot, property }: Props) {
               </div>
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {reputationStats.responseRatePct != null ? (
-                  <span
-                    className={`rounded-full border px-2.5 py-1 text-[10.5px] font-medium ${
-                      reputationStats.responseRatePct < 50
-                        ? "border-destructive/30 bg-destructive/5 font-semibold text-destructive"
-                        : "border-border bg-card text-muted-foreground"
-                    }`}
-                  >
+                  // Neutral always — red is reserved for metrics that sell the
+                  // product's value (revenue-at-risk). A low response rate is
+                  // an ops stat, not a risk pill that should draw the eye.
+                  <span className="rounded-full border border-border bg-card px-2.5 py-1 text-[10.5px] font-medium text-muted-foreground">
                     {Math.round(reputationStats.responseRatePct)}% response rate
                   </span>
                 ) : null}
@@ -257,9 +284,11 @@ export function PropertyOnePager({ snapshot, property }: Props) {
         </section>
       </div>
 
-      {/* AI search visibility */}
+      {/* AI search visibility — the differentiator. Same 2px card language
+          as every other section, just a touch more presence via a faint
+          brand tint (no gradient, no side-stripe). */}
       {aeoStats && aeoStats.totalChecks > 0 ? (
-        <section className="mt-5 rounded-[2px] border border-border bg-card p-4">
+        <section className="mt-5 rounded-[2px] border border-primary/20 bg-primary/[0.03] p-5">
           <h2 className="flex items-center gap-2 text-[12.5px] font-bold text-foreground">
             <span className="inline-block h-3.5 w-1 rounded-sm bg-primary" />
             AI search visibility
@@ -321,21 +350,19 @@ export function PropertyOnePager({ snapshot, property }: Props) {
         </section>
       ) : null}
 
-      {/* Coverage */}
-      <div className="mt-5 grid grid-cols-4 gap-x-4 gap-y-2 border-t border-border pt-3.5">
+      {/* Data-source status — one compact wrapping strip instead of a grid
+          + a paragraph re-explaining what each dot color means. */}
+      <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-border pt-3.5 text-[10px] font-medium text-muted-foreground">
         {coverageRows(snapshot).map((row) => (
-          <div key={row.label} className="flex items-center gap-2 text-[10.5px] font-medium text-muted-foreground">
+          <span key={row.label} className="flex items-center gap-1.5">
             <span className={`h-[7px] w-[7px] flex-none rounded-full ${COVERAGE_DOT[row.state]}`} />
             {row.label}
-          </div>
+          </span>
         ))}
       </div>
 
-      <p className="mt-4 text-[10px] leading-relaxed text-muted-foreground">
-        Cohort report. Reflects leads created in the window and any downstream activity for them, even if it occurs later.{" "}
-        <b className="font-semibold text-muted-foreground">Green</b> data flowing,{" "}
-        <b className="font-semibold text-muted-foreground">blue</b> connected and in progress,{" "}
-        <b className="font-semibold text-muted-foreground">grey</b> not yet integrated.
+      <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
+        Cohort report — reflects leads created in the window and downstream activity for them, even if it occurs later. Green data flowing, blue connected and in progress, grey not yet integrated.
       </p>
     </div>
   );
