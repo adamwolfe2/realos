@@ -26,9 +26,10 @@ export type PropertyMeta = {
 
 export function compactUsd(n: number | null | undefined): string {
   if (n == null) return "—";
-  if (Math.abs(n) >= 1000)
-    return `$${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}K`;
-  return `$${n.toLocaleString()}`;
+  const abs = Math.abs(n);
+  if (abs < 10_000) return `$${n.toLocaleString()}`;
+  if (abs < 1_000_000) return `$${(n / 1_000).toFixed(1)}K`;
+  return `$${(n / 1_000_000).toFixed(2)}M`;
 }
 
 export function num(n: number | null | undefined): string {
@@ -166,6 +167,19 @@ export function Stat({
   );
 }
 
+// Chunk a daily trend into weekly sums when the window is too long to read
+// as individual daily bars (~134 thin bars is an unreadable wall). Chunks
+// from the newest day backward so the most recent bucket is always a full
+// week; any leftover partial week lands at the start (oldest).
+export function bucketWeekly(values: number[]): number[] {
+  const weeks: number[] = [];
+  for (let end = values.length; end > 0; end -= 7) {
+    const start = Math.max(0, end - 7);
+    weeks.unshift(values.slice(start, end).reduce((sum, v) => sum + v, 0));
+  }
+  return weeks;
+}
+
 export function Sparkline({ values }: { values: number[] }) {
   const max = Math.max(1, ...values);
   return (
@@ -181,32 +195,30 @@ export function Sparkline({ values }: { values: number[] }) {
   );
 }
 
-// KPI card with optional delta line.
+// KPI card with optional delta line. All four headline KPIs share this one
+// component so their number scale, label treatment, and delta styling never
+// drift from each other.
 export function KpiCard({
   value,
   label,
   delta,
-  deltaRed,
   deltaNeutral,
 }: {
   value: string;
   label: string;
   delta?: { up: boolean; text: string };
-  deltaRed?: string;
   deltaNeutral?: string;
 }) {
   return (
     <div className="rounded-[2px] border border-border bg-card px-3 py-2.5">
       <div className="font-mono text-[20px] font-semibold leading-none tracking-tight tabular-nums">{value}</div>
-      <div className="mt-1 text-[10.5px] font-medium text-muted-foreground">{label}</div>
+      <div className="mt-1 truncate text-[10.5px] font-medium text-muted-foreground">{label}</div>
       {delta ? (
         <div className={`mt-1 text-[10px] font-semibold ${delta.up ? "text-green-600" : "text-destructive"}`}>
           {delta.up ? "▲" : "▼"} {delta.text}
         </div>
-      ) : deltaRed ? (
-        <div className="mt-1 text-[10px] font-semibold text-destructive">{deltaRed}</div>
       ) : deltaNeutral ? (
-        <div className="mt-1 text-[10px] font-medium text-muted-foreground">{deltaNeutral}</div>
+        <div className="mt-1 truncate text-[10px] font-medium text-muted-foreground">{deltaNeutral}</div>
       ) : null}
     </div>
   );
