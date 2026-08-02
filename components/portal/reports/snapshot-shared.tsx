@@ -42,17 +42,38 @@ export function pct(n: number | null | undefined): string {
 }
 
 export function periodLabel(snapshot: ReportSnapshot): string {
-  const days = snapshot.kind === "weekly" ? 7 : 28;
   // Defensive: some legacy/stub snapshots predate periodEnd entirely. Don't
   // let a missing or unparseable date surface as "Invalid Date" in the UI.
   const end = snapshot.periodEnd ? new Date(snapshot.periodEnd) : null;
-  if (!end || Number.isNaN(end.getTime())) return `Trailing ${days} days`;
-  const endLabel = end.toLocaleDateString("en-US", {
+  const endLabel =
+    end && !Number.isNaN(end.getTime())
+      ? end.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+      : null;
+
+  // weekly/monthly reports always run the fixed rolling window
+  // resolvePeriod() produces (7d / 28d) — safe to name the length outright.
+  if (snapshot.kind === "weekly") {
+    return endLabel ? `Trailing 7 days through ${endLabel}` : "Trailing 7 days";
+  }
+  if (snapshot.kind === "monthly") {
+    return endLabel ? `Trailing 28 days through ${endLabel}` : "Trailing 28 days";
+  }
+
+  // "custom" (and any other kind) can carry an arbitrary options.period
+  // override — e.g. an all-time report spanning months. Naming a fixed
+  // length here would claim a window the numbers don't match (bug: an
+  // all-time report reading "Trailing 28 days" while its KPIs cover
+  // Mar-Aug). Show the actual range instead.
+  const start = snapshot.periodStart ? new Date(snapshot.periodStart) : null;
+  if (!start || !end || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return endLabel ? `Through ${endLabel}` : "Custom period";
+  }
+  const startLabel = start.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
-    year: "numeric",
+    ...(start.getFullYear() !== end.getFullYear() ? { year: "numeric" as const } : {}),
   });
-  return `Trailing ${days} days through ${endLabel}`;
+  return `${startLabel} – ${endLabel}`;
 }
 
 export function addressLine(p: PropertyMeta): string | null {

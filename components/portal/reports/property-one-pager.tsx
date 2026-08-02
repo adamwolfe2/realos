@@ -147,10 +147,21 @@ export function PropertyOnePager({ snapshot, property }: Props) {
             <Stat value={chatbotStatsExtended?.capturedRatePct != null ? pct(chatbotStatsExtended.capturedRatePct) : "—"} label="Lead capture rate" />
             <Stat value={num(kpis.identifiedVisitors)} label="Identified visitors" />
           </div>
+          {snapshot.popupStats ? (
+            <div className="mt-3.5 grid grid-cols-4 gap-2.5">
+              <Stat value={num(snapshot.popupStats.shown)} label="Popups shown" />
+              <Stat value={num(snapshot.popupStats.ctaClicks)} label="CTA clicks" />
+              <Stat value={num(snapshot.popupStats.converted)} label="Converted" />
+              <Stat
+                value={snapshot.popupStats.conversionRate != null ? pct(snapshot.popupStats.conversionRate) : "—"}
+                label="Conversion rate"
+              />
+            </div>
+          ) : null}
           {trafficTrend?.length ? (
             <>
               <div className="mb-1.5 mt-3.5 text-[10px] font-medium text-muted-foreground">
-                Daily site traffic, trailing 28 days
+                Daily site traffic, trailing {trafficTrend.length} day{trafficTrend.length === 1 ? "" : "s"}
               </div>
               <Sparkline values={trafficTrend} />
             </>
