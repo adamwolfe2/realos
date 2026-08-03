@@ -129,7 +129,13 @@ function OverviewSection(s: ReportSnapshot, p: PropertyMeta, navTo: NavTo): Reac
       icon: Users,
       label: "Lead acquisition",
       value: num(kpis.leads),
-      context: `${num(kpis.identifiedVisitors ?? 0)} identified visitors`,
+      // Drop the visitor clause at 0 rather than asserting "0 identified
+      // visitors" — zero here means nothing was attributable to a launched
+      // building, not that the pixel measured nobody.
+      context:
+        (kpis.identifiedVisitors ?? 0) > 0
+          ? `${num(kpis.identifiedVisitors)} identified visitors`
+          : "First-touch source breakdown",
     },
     {
       id: "leasing",
@@ -272,6 +278,7 @@ function AcquisitionSection(s: ReportSnapshot): React.ReactNode {
   const maxFunnel = Math.max(1, ...funnel.map((f) => f.count));
   const attribution = s.attributionBySource ?? [];
   const chat = s.chatbotStatsExtended;
+  const identifiedVisitors = s.kpis.identifiedVisitors ?? 0;
 
   return (
     <Panel>
@@ -304,12 +311,21 @@ function AcquisitionSection(s: ReportSnapshot): React.ReactNode {
       </div>
 
       <Card>
-        <SectionHeading>Chatbot &amp; visitor capture</SectionHeading>
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+        <SectionHeading>
+          {identifiedVisitors > 0 ? "Chatbot & visitor capture" : "Chatbot capture"}
+        </SectionHeading>
+        {/* Same rule as the one-pager: omit the visitor tile at 0 instead of
+            printing "0", and drop it from the heading too so the section
+            doesn't promise a number it isn't showing. */}
+        <div
+          className={`grid grid-cols-2 gap-2.5 ${identifiedVisitors > 0 ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}
+        >
           <Stat value={num(chat?.conversations)} label="Conversations" />
           <Stat value={chat?.capturedRatePct != null ? pct(chat.capturedRatePct) : "—"} label="Lead capture rate" />
           <Stat value={num(chat?.capturedConversations)} label="Leads from chat" />
-          <Stat value={num(s.kpis.identifiedVisitors)} label="Identified visitors" />
+          {identifiedVisitors > 0 ? (
+            <Stat value={num(identifiedVisitors)} label="Identified visitors" />
+          ) : null}
         </div>
       </Card>
 

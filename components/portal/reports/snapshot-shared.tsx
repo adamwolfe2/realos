@@ -233,17 +233,31 @@ export function coverageRows(s: ReportSnapshot): Array<{
   state: CoverageState;
 }> {
   const adsLive = (s.adPerformance ?? []).some((a) => (a.spendUsd ?? 0) > 0);
+  // Pixel state must come from a PIXEL signal. `trafficTrend` was previously
+  // OR'd in here, which made this row structurally incapable of ever saying
+  // anything else: bucketDaily() returns `new Array(days).fill(0)`, so every
+  // trafficFallback branch yields a NON-EMPTY array and `.length > 0` was
+  // unconditionally true on any generated snapshot. The row therefore printed
+  // "Visitor pixel: live" with zero pixel installs, zero sessions, zero clicks
+  // and zero ad spend. trafficTrend isn't pixel data anyway — generate.ts
+  // builds it from GA4 organic sessions, falling back to GSC clicks, falling
+  // back to daily ad spend.
+  const visitorPixelLive = (s.kpis.identifiedVisitors ?? 0) > 0;
   return [
     {
       label: "Chatbot leads: live",
       state: (s.chatbotStats?.conversations ?? 0) > 0 ? "live" : "prog",
     },
     {
-      label: "Visitor pixel: live",
-      state:
-        (s.kpis.identifiedVisitors ?? 0) > 0 || (s.trafficTrend?.length ?? 0) > 0
-          ? "live"
-          : "prog",
+      // Flip the LABEL, not just the dot colour — every other row here that
+      // can be inactive says so in words (see the ads row below). Leaving
+      // this one hardcoded to "live" meant a report with zero identifications
+      // still read "Visitor pixel: live" and relied on a colour swap alone to
+      // say otherwise, which print/PDF and colour-blind readers both lose.
+      label: visitorPixelLive
+        ? "Visitor pixel: live"
+        : "Visitor pixel: no identifications yet",
+      state: visitorPixelLive ? "live" : "prog",
     },
     {
       label: "Leasing and occupancy: live",

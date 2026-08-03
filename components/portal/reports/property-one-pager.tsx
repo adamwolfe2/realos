@@ -41,6 +41,9 @@ export function PropertyOnePager({ snapshot, property }: Props) {
 
   const addr = addressLine(property);
   const sources = leadSources ?? [];
+  // Only visitors filed under a launched building reach the snapshot, so 0
+  // means "nothing attributable", not "no traffic". See the tile below.
+  const identifiedVisitors = kpis.identifiedVisitors ?? 0;
   const monthlySigned = lifecycleStats?.monthlySignedLast12 ?? [];
   const repMaxCount = Math.max(
     1,
@@ -152,10 +155,21 @@ export function PropertyOnePager({ snapshot, property }: Props) {
               </div>
             ))}
           </div>
-          <div className="grid grid-cols-3 gap-2.5">
+          {/* identifiedVisitors === 0 is dropped rather than rendered as "0",
+              the same rule the popup tiles below already follow. A zero here
+              almost never means "nobody visited" — it means no visitor row
+              could be filed under a launched building (Visitor.propertyId
+              unstamped, or every property inactive), so the pixel section has
+              nothing it can honestly claim. Printing "0 Identified visitors"
+              next to real chatbot numbers reads as a measured result instead
+              of absent data. Omit the claim; the coverage strip below still
+              reports the pixel's actual state. */}
+          <div className={`grid gap-2.5 ${identifiedVisitors > 0 ? "grid-cols-3" : "grid-cols-2"}`}>
             <Stat value={num(chatbotStatsExtended?.conversations)} label="Chatbot conversations" />
             <Stat value={chatbotStatsExtended?.capturedRatePct != null ? pct(chatbotStatsExtended.capturedRatePct) : "—"} label="Lead capture rate" />
-            <Stat value={num(kpis.identifiedVisitors)} label="Identified visitors" />
+            {identifiedVisitors > 0 ? (
+              <Stat value={num(identifiedVisitors)} label="Identified visitors" />
+            ) : null}
           </div>
           {snapshot.popupStats ? (
             <div className={`mt-3.5 grid gap-2.5 ${snapshot.popupStats.converted > 0 ? "grid-cols-4" : "grid-cols-3"}`}>
