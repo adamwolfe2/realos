@@ -179,6 +179,40 @@ export function propertyMatchesGroupFilter(
   return propertyGroup.toLowerCase() === filter.toLowerCase();
 }
 
+/**
+ * Decide where this run's date window starts.
+ *
+ * Three reasons to pull the wide backfill window instead of the cheap
+ * incremental one:
+ *  - `fullBackfill` — explicit caller request (fresh connection).
+ *  - no `lastSyncAt` — first ever run, there is no watermark to resume from.
+ *  - `backfillRequestedAt` — an operator promoted a property to ACTIVE. Every
+ *    phase declined that building's records while it was IMPORTED/EXCLUDED,
+ *    and the watermark has already advanced past them, so resuming
+ *    incrementally would leave the newly-enabled building permanently empty.
+ *
+ * Extracted from runAppfolioSync (a closure-scoped monolith that needs a full
+ * REST client + prisma mock to drive) purely so this branch is directly
+ * testable — getting it wrong is silent, and shows up as a customer's
+ * building rendering zeroes rather than as an error.
+ */
+export function resolveSyncWindowStart(
+  now: Date,
+  input: {
+    fullBackfill?: boolean;
+    lastSyncAt: Date | null;
+    backfillRequestedAt: Date | null;
+  },
+): Date {
+  const wide = new Date(
+    now.getTime() - DEFAULT_BACKFILL_DAYS * 24 * 60 * 60 * 1000,
+  );
+  if (input.fullBackfill) return wide;
+  if (input.backfillRequestedAt != null) return wide;
+  if (!input.lastSyncAt) return wide;
+  return input.lastSyncAt;
+}
+
 export async function runAppfolioSync(
   orgId: string,
   options: { fullBackfill?: boolean; retrySkipped?: boolean } = {}
@@ -223,10 +257,19 @@ export async function runAppfolioSync(
 
   const now = new Date();
   const toDate = now;
-  const fromDate =
-    options.fullBackfill || !integration.lastSyncAt
-      ? new Date(now.getTime() - DEFAULT_BACKFILL_DAYS * 24 * 60 * 60 * 1000)
-      : integration.lastSyncAt;
+  // A pending backfill request means an operator promoted a property to
+  // ACTIVE since the last run. Every phase skipped that building's records
+  // while it was IMPORTED/EXCLUDED, and the incremental window (`since
+  // lastSyncAt`) has already moved past them — so without widening here,
+  // the newly-enabled building stays empty forever. Captured before any
+  // phase runs so the clear-on-success check below can detect a request
+  // that arrived DURING this run.
+  const backfillRequestedAt = integration.backfillRequestedAt;
+  const fromDate = resolveSyncWindowStart(now, {
+    fullBackfill: options.fullBackfill,
+    lastSyncAt: integration.lastSyncAt,
+    backfillRequestedAt,
+  });
 
   // Concurrency guard. If a sync is already in flight + started less
   // than 10 min ago, no-op instead of racing a second one. The
@@ -934,6 +977,15 @@ export async function runAppfolioSync(
         );
         continue;
       }
+      // Lifecycle gate — a unit belonging to a building the client never
+      // enabled in LeaseStack is not ours to store. Downstream phases
+      // (residents / leases / work orders) resolve unit_id through
+      // listingByExternalId, but they skip inactive properties themselves,
+      // so withholding these entries cannot orphan a gated row.
+      if (isInactiveResolvedProperty(propertyId)) {
+        stats.skippedInactiveProperty += 1;
+        continue;
+      }
       const syncListingWhere = {
         propertyId_backendListingId: { propertyId, backendListingId: mapped.backendListingId },
       } as const;
@@ -1173,6 +1225,14 @@ export async function runAppfolioSync(
         workOrdersNoProperty += 1;
         continue;
       }
+      // Same lifecycle gate as leads/applications/residents/leases. This
+      // phase was the ONLY property-dimensioned writer without it, and it
+      // was the worst offender: 2,891 of SG Real Estate's 2,989 WorkOrder
+      // rows (97%) described buildings that are not in LeaseStack.
+      if (isInactiveResolvedProperty(propertyId)) {
+        stats.skippedInactiveProperty += 1;
+        continue;
+      }
       const listingId =
         (mapped.unitExternalId && listingByExternalId.get(mapped.unitExternalId)) ||
         null;
@@ -1299,6 +1359,19 @@ export async function runAppfolioSync(
         lastSyncStats: persistedStats,
       },
     });
+
+    // Retire the backfill request — but only if this run actually pulled
+    // data (a hard failure must keep the request armed for the next tick),
+    // and only if no NEWER request arrived while we were in flight. An
+    // operator activating a second property mid-run stamps a later
+    // timestamp; the `lte` guard leaves that one armed instead of
+    // swallowing it, which would have left the second building empty.
+    if (anyPhaseCompleted && backfillRequestedAt) {
+      await prisma.appFolioIntegration.updateMany({
+        where: { orgId, backfillRequestedAt: { lte: backfillRequestedAt } },
+        data: { backfillRequestedAt: null },
+      });
+    }
 
     await prisma.auditEvent.create({
       data: {

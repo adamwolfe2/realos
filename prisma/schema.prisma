@@ -2196,6 +2196,21 @@ model AppFolioIntegration {
   // AppfolioSyncStats in lib/integrations/appfolio-sync.ts.
   lastSyncStats Json?
 
+  // Set when an operator promotes a Property to lifecycle=ACTIVE.
+  //
+  // The sync refuses to import child records (leads, applications,
+  // residents, leases, listings, work orders) for properties that are not
+  // ACTIVE — see isInactiveAppfolioProperty. That gate means enabling a
+  // building AFTER its records were skipped would otherwise leave it
+  // permanently empty: the incremental window is `since lastSyncAt`, which
+  // has long advanced past the records we deliberately declined to store.
+  //
+  // A non-null value makes the NEXT run widen its date window to the full
+  // backfill instead of the incremental one. Cleared only after a run that
+  // actually completed a phase, and only if it has not been re-stamped
+  // mid-run (see the `lte` guard in runAppfolioSync).
+  backfillRequestedAt DateTime?
+
   // Configuration
   propertyGroupFilter  String? // Only sync specific property groups
   syncFrequencyMinutes Int     @default(60)

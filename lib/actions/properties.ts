@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { requestAppfolioBackfill } from "@/lib/integrations/appfolio-backfill";
 import {
   requireAgency,
   requireWritableWorkspace,
@@ -452,6 +453,14 @@ export async function setPropertyLifecycle(
     ),
   });
 
+  // Enabling a building arms a full-window backfill. The sync skipped every
+  // child record for this property while it was IMPORTED/EXCLUDED, and the
+  // incremental window has already moved past them — without this the
+  // operator enables a building and it stays empty forever.
+  if (next === "ACTIVE") {
+    await requestAppfolioBackfill([property.orgId]);
+  }
+
   revalidatePath("/portal/properties");
   revalidatePath("/portal/properties/curate");
   revalidatePath("/portal");
@@ -517,6 +526,20 @@ export async function setPropertyLifecycleBulk(
       excludeReason: action === "exclude" ? "Bulk operator-flagged" : null,
     },
   });
+
+  // Arm a backfill for every org whose buildings just went live. Re-reading
+  // the affected rows (rather than assuming scope.orgId) matters because an
+  // agency caller has orgFilter={}, so a single bulk call can legitimately
+  // span more than one client org. The where clause is the same one the
+  // updateMany used and does not mention lifecycle, so it still matches.
+  if (next === "ACTIVE" && result.count > 0) {
+    const affected = await prisma.property.findMany({
+      where: { id: { in: propertyIds }, ...orgFilter, ...propertyAccessGate },
+      select: { orgId: true },
+      distinct: ["orgId"],
+    });
+    await requestAppfolioBackfill(affected.map((p) => p.orgId));
+  }
 
   revalidatePath("/portal/properties");
   revalidatePath("/portal/properties/curate");
@@ -588,6 +611,13 @@ export async function activateAllImportedProperties(): Promise<
         diff: { activatedCount: result.count } as Prisma.InputJsonValue,
       }),
     });
+  }
+
+  // Bulk-activate is the single biggest backfill trigger there is — this is
+  // the "Activate all N" button on the curation queue. Org-bound by
+  // construction (scope.orgId), so no re-read is needed here.
+  if (result.count > 0) {
+    await requestAppfolioBackfill([scope.orgId]);
   }
 
   revalidatePath("/portal/properties");

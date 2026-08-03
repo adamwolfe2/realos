@@ -108,6 +108,28 @@ describe("appfolio-sync.ts — inactive-property gate wired into every people-da
     expect(leasesPhase).toContain("stats.skippedInactiveProperty += 1");
   });
 
+  // 2026-08-04: the 2026-08-01 pass gated leads/applications/residents/leases
+  // but missed the two phases below. Work orders was the single worst
+  // offender in the whole database — 2,891 of SG Real Estate's 2,989
+  // WorkOrder rows (97%) described buildings that are not in LeaseStack.
+  it("gates the listings (unit_directory) phase and counts the skip", () => {
+    const listingsPhase = content.slice(
+      content.indexOf("3. UNITS / LISTINGS"),
+      content.indexOf("5. RESIDENTS"),
+    );
+    expect(listingsPhase).toContain("isInactiveResolvedProperty(propertyId)");
+    expect(listingsPhase).toContain("stats.skippedInactiveProperty += 1");
+  });
+
+  it("gates the work-orders phase and counts the skip", () => {
+    const workOrdersPhase = content.slice(
+      content.indexOf("8. WORK ORDERS"),
+      content.indexOf('Connector is "healthy"'),
+    );
+    expect(workOrdersPhase).toContain("isInactiveResolvedProperty(propertyId)");
+    expect(workOrdersPhase).toContain("stats.skippedInactiveProperty += 1");
+  });
+
   it("does NOT touch property_directory ingestion itself (Phase 0 stays unconditional)", () => {
     const phase0 = content.slice(
       content.indexOf("0. PROPERTIES"),
