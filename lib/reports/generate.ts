@@ -3191,17 +3191,25 @@ async function buildChatbotExtended(
   baseStats: ReportChatbotStats,
 ): Promise<ReportChatbotStatsExtended | undefined> {
   if (baseStats.conversations === 0) return undefined;
+  // Org-wide must count only conversations on a LAUNCHED building (plus
+  // org-level rows with no property) — identical to the gate the sibling
+  // chatbot aggregate in generateReportSnapshot already applies. Without
+  // it these two stats counted the operator's whole synced AppFolio
+  // account while every KPI beside them counted one building.
+  const propertyClause = propertyId
+    ? { propertyId }
+    : { OR: [{ propertyId: null }, { property: { lifecycle: "ACTIVE" as const } }] };
   const [captured, lifetime] = await Promise.all([
     prisma.chatbotConversation.count({
       where: {
         orgId,
-        ...(propertyId ? { propertyId } : {}),
+        ...propertyClause,
         createdAt: { gte: periodStart, lt: periodEnd },
         status: ChatbotConversationStatus.LEAD_CAPTURED,
       },
     }),
     prisma.chatbotConversation.count({
-      where: { orgId, ...(propertyId ? { propertyId } : {}) },
+      where: { orgId, ...propertyClause },
     }),
   ]);
   return {

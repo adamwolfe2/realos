@@ -297,7 +297,7 @@ export async function marketableScopedPropertyClause(
   if (Object.keys(base).length > 0) return base;
 
   const ids = await marketablePropertyIds(scope.orgId);
-  if (ids.length === 0) return { [field]: "__no_marketable_properties__" };
+  if (ids.length === 0) return { [field]: NO_MARKETABLE_PROPERTIES };
   const inList = propertyIdsToWhere(ids, field);
   return opts.defaultIncludesOrgRows
     ? { OR: [inList, { [field]: null }] }
@@ -309,7 +309,13 @@ export async function marketableScopedPropertyClause(
  * this file importable in contexts without the Prisma client (unit
  * tests exercise the pure helpers above without a DB).
  */
-async function marketablePropertyIds(orgId: string): Promise<string[]> {
+/**
+ * Sentinel id used to make an "org has no enabled properties" query match
+ * NOTHING. Never a real cuid, so the `in`/equals check can't collide.
+ */
+export const NO_MARKETABLE_PROPERTIES = "__no_marketable_properties__";
+
+export async function marketablePropertyIds(orgId: string): Promise<string[]> {
   const { prisma } = await import("@/lib/db");
   const { marketablePropertyWhere } = await import(
     "@/lib/properties/marketable"
@@ -319,6 +325,43 @@ async function marketablePropertyIds(orgId: string): Promise<string[]> {
     select: { id: true },
   });
   return rows.map((r) => r.id);
+}
+
+/**
+ * Scope an org-wide query to the properties that actually exist in the
+ * LeaseStack account — NOT everything the backend sync dumped in.
+ *
+ * Use this anywhere you have an `orgId` but no request `scope`: crons,
+ * insight detectors, digest emails, admin panels. Page-level code with a
+ * scope should keep using `marketableScopedPropertyClause`, which also
+ * enforces the per-user access gate.
+ *
+ * Why this exists: an AppFolio connection imports the operator's ENTIRE
+ * account. SG Real Estate has 135 Property rows of which exactly 1 is
+ * enabled — so an ungated `{ orgId }` count returns 942 leads and 903
+ * applications where the honest answer is 150 and 86. EXCLUDED/IMPORTED
+ * rows are retained only so re-syncs can dedupe on backendPropertyId;
+ * they must never reach a count, a chart, or a customer's inbox.
+ *
+ * FAILS CLOSED. An org with zero enabled properties matches NOTHING
+ * rather than everything — the same sentinel `marketableScopedPropertyClause`
+ * uses. Returning `{}` here would silently re-open the exact leak.
+ *
+ * @param field       the FK column on the model being queried
+ * @param includeOrgLevel keep rows with a NULL property (unattributed
+ *   captures — Lead, Visitor, ChatbotConversation, AdCampaign,
+ *   ClientReport). Never pass this for models where propertyId is
+ *   required (Application, Tour, Resident, Lease, WorkOrder).
+ */
+export async function marketableOrgClause(
+  orgId: string,
+  field: string = "propertyId",
+  opts: { includeOrgLevel?: boolean } = {},
+): Promise<Record<string, unknown>> {
+  const ids = await marketablePropertyIds(orgId);
+  if (ids.length === 0) return { [field]: NO_MARKETABLE_PROPERTIES };
+  const inList = propertyIdsToWhere(ids, field);
+  return opts.includeOrgLevel ? { OR: [inList, { [field]: null }] } : inList;
 }
 
 /**

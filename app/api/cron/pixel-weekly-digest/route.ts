@@ -4,6 +4,7 @@ import { VisitorIdentificationStatus } from "@prisma/client";
 import { sendVisitorWeeklyDigest } from "@/lib/email/visitor-emails";
 import { recordCronRun } from "@/lib/health/cron-run";
 import { verifyCronAuth } from "@/lib/cron/auth";
+import { marketableOrgClause } from "@/lib/tenancy/property-filter";
 
 export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for unbounded loops
 
@@ -39,18 +40,30 @@ export async function GET(req: NextRequest) {
   for (const integration of integrations) {
     try {
       const rangeLabel = "the last 7 days";
+      // Scope to the properties enabled in LeaseStack. This email goes to
+      // the CLIENT's primary contact, and an AppFolio connection imports
+      // the operator's entire account — an ungated org-wide count reports
+      // traffic for buildings they aren't a customer for. Visitors carry a
+      // nullable propertyId, so unattributed captures stay counted.
+      const propertyClause = await marketableOrgClause(
+        integration.orgId,
+        "propertyId",
+        { includeOrgLevel: true },
+      );
       const [totalVisitors, identified, highIntent, convertedToLead] =
         await Promise.all([
           prisma.visitor.count({
             where: {
               orgId: integration.orgId,
               lastSeenAt: { gte: sinceWeek },
+              ...propertyClause,
             },
           }),
           prisma.visitor.count({
             where: {
               orgId: integration.orgId,
               lastSeenAt: { gte: sinceWeek },
+              ...propertyClause,
               status: {
                 in: [
                   VisitorIdentificationStatus.IDENTIFIED,
@@ -63,6 +76,7 @@ export async function GET(req: NextRequest) {
             where: {
               orgId: integration.orgId,
               lastSeenAt: { gte: sinceWeek },
+              ...propertyClause,
               intentScore: { gte: 60 },
             },
           }),
@@ -70,6 +84,7 @@ export async function GET(req: NextRequest) {
             where: {
               orgId: integration.orgId,
               lastSeenAt: { gte: sinceWeek },
+              ...propertyClause,
               status: VisitorIdentificationStatus.MATCHED_TO_LEAD,
             },
           }),

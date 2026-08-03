@@ -277,6 +277,10 @@ export default async function PortalLayout({
         where: {
           orgId: scope.orgId,
           flag: { in: ["handoff_missed", "quality_bad"] },
+          // ConversationFlag has no propertyId of its own — gate through
+          // the conversation it flags, so this badge matches the other
+          // five instead of counting the whole synced portfolio.
+          conversation: inMarketableOrOrgLevel,
         },
       })
       .catch(() => 0),

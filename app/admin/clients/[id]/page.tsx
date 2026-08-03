@@ -8,6 +8,8 @@ import { OrgType, VisitorIdentificationStatus } from "@prisma/client";
 import { ImpersonateButton } from "./impersonate-button";
 import { InviteUserButton } from "./invite-user-button";
 import { getUsageSummary } from "@/lib/rentcast/budget";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
+import { marketableOrgClause } from "@/lib/tenancy/property-filter";
 import type { ToggleableModule } from "@/lib/actions/admin-modules";
 import { PageHeader } from "@/components/admin/page-header";
 import { StatusBadge } from "@/components/admin/status-badge";
@@ -122,18 +124,42 @@ export default async function ClientDetail({
   // filter — see app/portal/visitors/page.tsx:154-176. The cursive sync
   // result subtracts this from the segment-pulled count to show how
   // many segment members landed without a usable name+email.
-  const identifiedVisitorCount = await prisma.visitor.count({
-    where: {
-      orgId: org.id,
-      status: {
-        in: [
-          VisitorIdentificationStatus.IDENTIFIED,
-          VisitorIdentificationStatus.ENRICHED,
-          VisitorIdentificationStatus.MATCHED_TO_LEAD,
-        ],
-      },
-    },
+  // Scoped to the properties enabled in LeaseStack, like every operator
+  // surface. The relation `_count` above CANNOT express this (a Prisma
+  // relation count is a bare FK filter with no room for a lifecycle join),
+  // so the numbers that matter are recounted explicitly here — otherwise
+  // this page reports the operator's whole synced AppFolio account and
+  // disagrees with the client's own portal.
+  const marketableClause = await marketableOrgClause(org.id, "propertyId", {
+    includeOrgLevel: true,
   });
+  const [
+    identifiedVisitorCount,
+    scopedLeadCount,
+    scopedVisitorCount,
+    scopedChatCount,
+    marketablePropertyCount,
+  ] = await Promise.all([
+      prisma.visitor.count({
+        where: {
+          orgId: org.id,
+          ...marketableClause,
+          status: {
+            in: [
+              VisitorIdentificationStatus.IDENTIFIED,
+              VisitorIdentificationStatus.ENRICHED,
+              VisitorIdentificationStatus.MATCHED_TO_LEAD,
+            ],
+          },
+        },
+      }),
+      prisma.lead.count({ where: { orgId: org.id, ...marketableClause } }),
+      prisma.visitor.count({ where: { orgId: org.id, ...marketableClause } }),
+      prisma.chatbotConversation.count({
+        where: { orgId: org.id, ...marketableClause },
+      }),
+      prisma.property.count({ where: marketablePropertyWhere(org.id) }),
+    ]);
 
   const moduleRows: Array<[ToggleableModule, string, boolean]> = [
     // Acquisition + on-site
@@ -178,7 +204,7 @@ export default async function ClientDetail({
   ];
 
   const recentLeads = await prisma.lead.findMany({
-    where: { orgId: org.id },
+    where: { orgId: org.id, ...marketableClause },
     orderBy: { createdAt: "desc" },
     take: 10,
     include: { property: { select: { name: true } } },
@@ -433,7 +459,18 @@ export default async function ClientDetail({
       {tab === "overview" ? (
         <OverviewTab
           orgId={org.id}
-          counts={org._count}
+          // org._count is a bare FK count and cannot be lifecycle-gated —
+          // override the four that would otherwise report the operator's
+          // entire synced AppFolio account instead of what they run in
+          // LeaseStack. The rest (users, campaigns, domains) have no
+          // property dimension and are already right.
+          counts={{
+            ...org._count,
+            properties: marketablePropertyCount,
+            leads: scopedLeadCount,
+            visitors: scopedVisitorCount,
+            chatbotConversations: scopedChatCount,
+          }}
           readinessItems={readinessItems}
           actionItems={actionItems}
           failingSinks={failingSinks}

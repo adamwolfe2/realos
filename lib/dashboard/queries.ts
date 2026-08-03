@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
+import { marketableOrgClause } from "@/lib/tenancy/property-filter";
 import {
   AdPlatform,
   LeadSource,
@@ -597,10 +598,17 @@ export async function getActivityFeed(
   const since = new Date(Date.now() - lookbackDays * DAY_MS);
   const fetchEach = Math.max(limit, 10);
 
+  // Same marketable gate as the rest of the dashboard. Ungated, this feed
+  // named real leads/tours/chats from buildings the operator never enabled
+  // in LeaseStack. Tours require a propertyId; leads and chats do not.
+  const [orgLevelClause, strictClause] = await Promise.all([
+    marketableOrgClause(orgId, "propertyId", { includeOrgLevel: true }),
+    marketableOrgClause(orgId, "propertyId"),
+  ]);
   const [recentLeads, recentTours, recentSessions, recentChats] =
     await Promise.all([
       prisma.lead.findMany({
-        where: { orgId, createdAt: { gte: since } },
+        where: { orgId, ...orgLevelClause, createdAt: { gte: since } },
         orderBy: { createdAt: "desc" },
         take: fetchEach,
         select: {
@@ -615,6 +623,7 @@ export async function getActivityFeed(
       prisma.tour.findMany({
         where: {
           lead: { orgId },
+          ...strictClause,
           status: TourStatus.SCHEDULED,
           createdAt: { gte: since },
         },
@@ -649,7 +658,7 @@ export async function getActivityFeed(
         },
       }),
       prisma.chatbotConversation.findMany({
-        where: { orgId, createdAt: { gte: since } },
+        where: { orgId, ...orgLevelClause, createdAt: { gte: since } },
         orderBy: { createdAt: "desc" },
         take: fetchEach,
         select: {
@@ -1425,15 +1434,25 @@ export async function getPerformanceOverTime(
   const priorStart = new Date(now.getTime() - 2 * days * DAY_MS);
   const priorEnd = currentStart;
 
+  // Scope to properties enabled in LeaseStack. Every KPI tile beside this
+  // chart is already marketable-gated; this one was not, so a connected
+  // AppFolio account made the headline velocity line count the operator's
+  // entire portfolio (SG: 942 leads vs the 150 that are actually theirs
+  // to see here). Leads have a nullable propertyId — unattributed
+  // captures stay counted.
+  const propertyClause = await marketableOrgClause(orgId, "propertyId", {
+    includeOrgLevel: true,
+  });
   const [currentLeads, priorLeads] = await Promise.all([
     prisma.lead.findMany({
-      where: { orgId, createdAt: { gte: currentStart } },
+      where: { orgId, ...propertyClause, createdAt: { gte: currentStart } },
       select: { createdAt: true },
     }),
     includeComparison
       ? prisma.lead.findMany({
           where: {
             orgId,
+            ...propertyClause,
             createdAt: { gte: priorStart, lt: priorEnd },
           },
           select: { createdAt: true },

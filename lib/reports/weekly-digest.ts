@@ -2,6 +2,8 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { LeadStatus, TourStatus, ApplicationStatus } from "@prisma/client";
 import { format } from "date-fns";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
+import { marketableOrgClause } from "@/lib/tenancy/property-filter";
 import { fetchDedupedSeoSnapshots, sumField } from "@/lib/seo/snapshot-supersede";
 
 // ---------------------------------------------------------------------------
@@ -70,6 +72,20 @@ export async function buildWeeklyDigest(orgId: string): Promise<WeeklyDigest> {
   const thisWeekStart = new Date(now.getTime() - 7 * DAY_MS);
   const lastWeekStart = new Date(now.getTime() - 14 * DAY_MS);
 
+  // Every number in this email is scoped to the properties enabled in
+  // LeaseStack. A connected AppFolio account imports the operator's whole
+  // portfolio, so an ungated org-wide count emailed weekly numbers for
+  // buildings they don't run here — and the top-properties leaderboard
+  // even printed the EXCLUDED buildings' names.
+  //   leadClause   — models with a NULLABLE propertyId (Lead): keep
+  //                  unattributed captures.
+  //   strictClause — models where propertyId is REQUIRED (Tour,
+  //                  Application): no org-level rows exist to preserve.
+  const [leadClause, strictClause] = await Promise.all([
+    marketableOrgClause(orgId, "propertyId", { includeOrgLevel: true }),
+    marketableOrgClause(orgId, "propertyId"),
+  ]);
+
   const [
     org,
     leadsThisWeek,
@@ -94,18 +110,23 @@ export async function buildWeeklyDigest(orgId: string): Promise<WeeklyDigest> {
 
     // Leads this week
     prisma.lead.count({
-      where: { orgId, createdAt: { gte: thisWeekStart, lt: now } },
+      where: { orgId, ...leadClause, createdAt: { gte: thisWeekStart, lt: now } },
     }),
 
     // Leads last week (for delta)
     prisma.lead.count({
-      where: { orgId, createdAt: { gte: lastWeekStart, lt: thisWeekStart } },
+      where: {
+        orgId,
+        ...leadClause,
+        createdAt: { gte: lastWeekStart, lt: thisWeekStart },
+      },
     }),
 
     // Tours this week: scheduled or completed, created or updated in window
     prisma.tour.count({
       where: {
         lead: { orgId },
+        ...strictClause,
         status: { in: [TourStatus.SCHEDULED, TourStatus.COMPLETED] },
         createdAt: { gte: thisWeekStart, lt: now },
       },
@@ -115,6 +136,7 @@ export async function buildWeeklyDigest(orgId: string): Promise<WeeklyDigest> {
     prisma.tour.count({
       where: {
         lead: { orgId },
+        ...strictClause,
         status: { in: [TourStatus.SCHEDULED, TourStatus.COMPLETED] },
         createdAt: { gte: lastWeekStart, lt: thisWeekStart },
       },
@@ -124,6 +146,7 @@ export async function buildWeeklyDigest(orgId: string): Promise<WeeklyDigest> {
     prisma.application.count({
       where: {
         lead: { orgId },
+        ...strictClause,
         status: { in: [ApplicationStatus.SUBMITTED, ApplicationStatus.APPROVED] },
         createdAt: { gte: thisWeekStart, lt: now },
       },
@@ -148,7 +171,7 @@ export async function buildWeeklyDigest(orgId: string): Promise<WeeklyDigest> {
 
     // Unread leads (status NEW)
     prisma.lead.count({
-      where: { orgId, status: LeadStatus.NEW },
+      where: { orgId, ...leadClause, status: LeadStatus.NEW },
     }),
 
     // Lead count per property this week
@@ -156,6 +179,7 @@ export async function buildWeeklyDigest(orgId: string): Promise<WeeklyDigest> {
       by: ["propertyId"],
       where: {
         orgId,
+        ...strictClause,
         createdAt: { gte: thisWeekStart, lt: now },
         propertyId: { not: null },
       },
@@ -167,6 +191,7 @@ export async function buildWeeklyDigest(orgId: string): Promise<WeeklyDigest> {
       by: ["propertyId"],
       where: {
         lead: { orgId },
+        ...strictClause,
         status: { in: [TourStatus.SCHEDULED, TourStatus.COMPLETED] },
         createdAt: { gte: thisWeekStart, lt: now },
       },
@@ -175,7 +200,7 @@ export async function buildWeeklyDigest(orgId: string): Promise<WeeklyDigest> {
 
     // Property names (for top-properties rollup)
     prisma.property.findMany({
-      where: { orgId },
+      where: marketablePropertyWhere(orgId),
       select: { id: true, name: true },
     }),
 
