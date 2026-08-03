@@ -397,6 +397,16 @@ model Organization {
   // /portal/insights, /portal/briefing, /portal/reports — all of which
   // depend on the same underlying signal pipeline.
   moduleInsights           Boolean  @default(false)
+  // Sidebar VISIBILITY preference, deliberately independent of entitlement.
+  // Holds nav item hrefs (e.g. "/portal/insights") to hide from the
+  // sidebar for orgs that are entitled to a module but don't want every
+  // one of its rows. Keyed per ITEM, not per module, because one module
+  // can own several rows: moduleInsights gates BOTH /portal/insights and
+  // /portal/reports, so a module-keyed list could not hide one and keep
+  // the other. Purely cosmetic — requireModule / billing never read this,
+  // so hiding a row never grants or revokes a paid feature and a hidden
+  // page is still reachable by direct URL.
+  navHiddenItems           String[] @default([])
   // RentCast-powered market intelligence on the property detail page
   // (estimated market rent, submarket median, nearby comparables,
   // hot/cold market badge). Off by default — Norman feedback (May 22)

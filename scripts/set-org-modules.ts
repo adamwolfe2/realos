@@ -17,7 +17,26 @@
 
 import { getPrisma } from "../lib/db";
 
-type ModuleFlags = Record<string, boolean>;
+// Boolean module flags, plus navHiddenItems (string[]) — a VISIBILITY
+// preference that is deliberately not a module flag. See prisma/schema.
+type PresetValue = boolean | string[];
+type ModuleFlags = Record<string, PresetValue>;
+
+const isSame = (a: PresetValue, b: PresetValue) =>
+  Array.isArray(a) || Array.isArray(b)
+    ? JSON.stringify([...(a as string[])].sort()) ===
+      JSON.stringify([...(b as string[])].sort())
+    : a === b;
+
+const show = (v: PresetValue) =>
+  Array.isArray(v) ? (v.length ? `[${v.join(", ")}]` : "[]") : String(v);
+
+/**
+ * A CLI flag's value is only real if it exists, is non-empty, and isn't the
+ * NEXT flag — `--org --write` must not resolve the slug to "--write".
+ */
+export const isValue = (v: string | undefined): v is string =>
+  typeof v === "string" && v.length > 0 && !v.startsWith("--");
 
 // SG Real Estate: chatbot + leads + attribution + reports only.
 //
@@ -26,8 +45,8 @@ type ModuleFlags = Record<string, boolean>;
 //     Reports", GROWTH tier) that bundles insights, briefings AND reports,
 //     and the reports pages themselves call requireModule("moduleInsights").
 //     Turning it off would 403 the monthly report — the one thing we most
-//     want them to see. Hiding only the Insights nav row needs an
-//     entitlement-independent nav preference; see the session notes.
+//     want them to see. The Insights ROW is hidden via navHiddenItems
+//     below, which is visibility-only and leaves entitlement intact.
 //   moduleChatbot / moduleConversations / moduleAttribution /
 //     moduleLeadCapture — the sellable unit, stay ON.
 const PRESETS: Record<string, ModuleFlags> = {
@@ -43,6 +62,10 @@ const PRESETS: Record<string, ModuleFlags> = {
     moduleSEO: false,
     modulePopups: false,
     moduleReputation: false,
+    // Hide the Insights ROW while moduleInsights stays ON, so /portal/reports
+    // (same SKU, same requireModule gate) keeps working. Cosmetic only —
+    // /portal/insights is still reachable by direct URL and still billed.
+    navHiddenItems: ["/portal/insights"],
   },
 };
 
@@ -52,9 +75,21 @@ async function main() {
   const orgSlug = args[args.indexOf("--org") + 1];
   const presetName = args[args.indexOf("--preset") + 1];
 
-  if (!args.includes("--org") || !args.includes("--preset")) {
+  // Validate the VALUES, not just the flags. `--org` as the final argument
+  // (e.g. `--preset sg-focus --write --org "$ORG"` with $ORG unset) leaves
+  // orgSlug undefined while `args.includes("--org")` still passes. Prisma
+  // drops undefined fields from a `where`, so findFirst({ slug: undefined })
+  // degrades to findFirst({}) and returns an ARBITRARY org — which --write
+  // would then downgrade. A tenant that was never named must never be the
+  // one we write to.
+  if (!isValue(orgSlug) || !isValue(presetName)) {
+    const missing = [
+      !isValue(orgSlug) && "--org <slug>",
+      !isValue(presetName) && "--preset <name>",
+    ].filter(Boolean);
     console.error(
-      "usage: set-org-modules.ts --org <slug> --preset <name> [--write]",
+      `Missing or malformed: ${missing.join(", ")}\n` +
+        "usage: set-org-modules.ts --org <slug> --preset <name> [--write]",
     );
     process.exitCode = 1;
     return;
@@ -95,16 +130,17 @@ async function main() {
     return;
   }
 
-  const current = org as unknown as Record<string, boolean | string>;
+  const current = org as unknown as Record<string, PresetValue | string>;
   console.log(`\nOrg: ${current.name} (${current.slug})  preset: ${presetName}`);
 
   const changes: ModuleFlags = {};
   for (const key of keys) {
-    const from = current[key] as boolean;
+    const from = current[key] as PresetValue;
     const to = preset[key];
-    const mark = from === to ? "  (no change)" : "  <-- CHANGES";
-    console.log(`  ${key}: ${from} -> ${to}${mark}`);
-    if (from !== to) changes[key] = to;
+    const same = isSame(from, to);
+    const mark = same ? "  (no change)" : "  <-- CHANGES";
+    console.log(`  ${key}: ${show(from)} -> ${show(to)}${mark}`);
+    if (!same) changes[key] = to;
   }
 
   if (Object.keys(changes).length === 0) {

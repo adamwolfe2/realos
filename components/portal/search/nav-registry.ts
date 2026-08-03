@@ -29,6 +29,16 @@ export type NavGroupKey =
   | "Modules"
   | "Settings";
 
+// KNOWN GAP (2026-08-03): this list is static and org-independent. Nothing
+// here is filtered by the org's module flags OR by Organization.navHiddenItems,
+// so the Cmd+K palette can offer a page the sidebar deliberately hides —
+// e.g. SG hides /portal/insights via navHiddenItems and still gets it by
+// typing "insights". Access is unaffected (requireModule still guards the
+// pages themselves); this is a discoverability leak, not an entitlement one.
+// Fixing it means deciding whether the palette should mirror the sidebar's
+// visible set — which would also start hiding module-gated rows it has always
+// shown, for every org. Deliberately not changed here.
+// See visibleNavItems() in components/portal/portal-nav.tsx.
 export const NAV_REGISTRY: NavRegistryItem[] = [
   // Top-level pages
   {

@@ -67,6 +67,13 @@ export type PortalNavOrg = {
   moduleResidents: boolean;
   moduleTours: boolean;
   moduleConversations: boolean;
+  /**
+   * Sidebar rows the operator has chosen to hide, by href. Cosmetic only —
+   * entitlement lives on the module flags above. Lets an org drop a single
+   * row of a module it still pays for (SG hides /portal/insights while
+   * keeping /portal/reports; both ride moduleInsights).
+   */
+  navHiddenItems?: string[];
   bringYourOwnSite: boolean;
   onboardingDismissed: boolean;
   setupComplete: boolean;
@@ -151,6 +158,35 @@ export type NavGroup = {
   label: string;
   items: NavItem[];
 };
+
+/**
+ * The one place SIDEBAR visibility is decided. Both the desktop sidebar and
+ * the mobile drawer route through this, so a row can never appear in one and
+ * not the other.
+ *
+ * NOT global: the Cmd+K palette searches its own static list
+ * (components/portal/search/nav-registry.ts) and is filtered by neither
+ * `navHiddenItems` NOR the module flags, so it can still surface a row this
+ * function hides. Pre-existing and broader than nav preferences — see the
+ * note on NAV_REGISTRY.
+ *
+ * Two independent gates, in order:
+ *   1. `item.show(org)` — ENTITLEMENT + data. Module flags, soft-gates.
+ *   2. `org.navHiddenItems` — the operator's cosmetic PREFERENCE.
+ *
+ * Keep them separate. `navHiddenItems` must never be consulted by
+ * `requireModule` or billing: hiding a row is a sidebar opinion, not a
+ * downgrade, and the page stays reachable by direct URL.
+ */
+export function visibleNavItems(
+  group: NavGroup,
+  org: PortalNavOrg,
+): NavItem[] {
+  const hidden = org.navHiddenItems;
+  return group.items.filter(
+    (item) => item.show(org) && !hidden?.includes(item.href),
+  );
+}
 
 const ALWAYS = () => true;
 
@@ -560,7 +596,7 @@ export function PortalNav({
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-3" aria-label="Portal navigation">
         {(org.isAudienceSync ? AUDIENCE_NAV_GROUPS : NAV_GROUPS).map((group) => {
-          const visible = group.items.filter((item) => item.show(org));
+          const visible = visibleNavItems(group, org);
           if (!visible.length) return null;
           return (
             <div key={group.label} className="mb-3">

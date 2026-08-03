@@ -6,7 +6,12 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { NAV_GROUPS, AUDIENCE_NAV_GROUPS, type PortalNavOrg } from "./portal-nav";
+import {
+  NAV_GROUPS,
+  AUDIENCE_NAV_GROUPS,
+  visibleNavItems,
+  type PortalNavOrg,
+} from "./portal-nav";
 import { BRAND_NAME } from "@/lib/brand";
 import {
   ActivePropertySwitcher,
@@ -124,7 +129,7 @@ export function MobileNavDrawer({
 
         <nav className="flex-1 overflow-y-auto py-3" aria-label="Portal navigation">
           {(org.isAudienceSync ? AUDIENCE_NAV_GROUPS : NAV_GROUPS).map((group) => {
-            const visible = group.items.filter((item) => item.show(org));
+            const visible = visibleNavItems(group, org);
             if (!visible.length) return null;
             return (
               <div key={group.label} className="mb-3">
