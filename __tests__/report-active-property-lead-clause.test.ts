@@ -177,6 +177,34 @@ describe("generateReportSnapshot — org-wide report gates Lead/Application quer
     }
   });
 
+  it("tracedSignedLeads is omitted at zero (never zero-padded) and its query requires a Resident link + ACTIVE property", async () => {
+    const snap = await generateReportSnapshot("org-1", "monthly", {
+      skipAi: true,
+    });
+    // Default mocks count 0 → the proof claim must be ABSENT, not "0".
+    expect(snap.tracedSignedLeads).toBeUndefined();
+
+    mockPrisma.lead.count.mockImplementation(async () => 2);
+    try {
+      const snap2 = await generateReportSnapshot("org-1", "monthly", {
+        skipAi: true,
+      });
+      expect(snap2.tracedSignedLeads).toBe(2);
+      const tracedCalls = mockPrisma.lead.count.mock.calls.filter(
+        ([args]: [{ where: { residents?: unknown } }]) => args.where.residents,
+      );
+      expect(tracedCalls.length).toBeGreaterThan(0);
+      for (const [args] of tracedCalls) {
+        expect(args.where).toMatchObject({
+          residents: { some: {} },
+          property: { lifecycle: "ACTIVE" },
+        });
+      }
+    } finally {
+      mockPrisma.lead.count.mockImplementation(async () => 0);
+    }
+  });
+
   it("property-scoped reports are unchanged: no lifecycle gate, still filtered to the one property", async () => {
     await generateReportSnapshot("org-1", "monthly", {
       skipAi: true,
