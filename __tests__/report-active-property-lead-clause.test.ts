@@ -7,12 +7,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // (curated-out junk sub-records) and IMPORTED (not-yet-launched) properties
 // -- 766 of 929 reported leads, ~791 of 895 applications, a ~6x overclaim.
 // Fix: every Lead/Application-shaped query in generate.ts spreads
-// activePropertyLeadClause(scope) so org-wide reports only see
+// activePropertyClause(scope) so org-wide reports only see
 // ACTIVE-lifecycle properties (the ones the client actually set up).
+// Visitor queries joined the gate 2026-08-02 once propertyId stamping at
+// ingest + the single-property backfill made it safe.
 //
 // This locks the gate to the REAL prisma calls generateReportSnapshot
 // makes (not just the helper in isolation), so a future edit that drops
-// the `...activePropertyLeadClause(scope)` spread from a query fails loud.
+// the `...activePropertyClause(scope)` spread from a query fails loud.
 // Every model/method generateReportSnapshot touches gets an auto-mock with
 // a harmless empty/zero default; only the calls under test get inspected.
 // ---------------------------------------------------------------------------
@@ -22,6 +24,12 @@ function autoMockPrisma() {
     switch (method) {
       case "count":
         return vi.fn(async () => 0);
+      case "$queryRaw":
+      case "$queryRawUnsafe":
+        // Root-level prisma methods, not models — must be callable or the
+        // Promise.all inside buildVisitorStats throws and every query after
+        // the raw call silently never registers (the caller swallows it).
+        return vi.fn(async () => [{ count: BigInt(0) }]);
       case "aggregate":
         return vi.fn(async () => ({ _sum: {}, _avg: {}, _count: { _all: 0 } }));
       case "groupBy":
@@ -37,6 +45,18 @@ function autoMockPrisma() {
     {} as Record<string, Record<string, ReturnType<typeof vi.fn>>>,
     {
       get(models, model: string) {
+        // prisma.$queryRaw / $queryRawUnsafe are functions on the client
+        // root, not models — return the fn directly instead of a model
+        // proxy (which isn't callable).
+        if (model.startsWith("$")) {
+          if (!(model in models)) {
+            models[model] = defaultFor(model) as unknown as Record<
+              string,
+              ReturnType<typeof vi.fn>
+            >;
+          }
+          return models[model];
+        }
         if (!(model in models)) {
           models[model] = new Proxy(
             {} as Record<string, ReturnType<typeof vi.fn>>,
@@ -124,17 +144,52 @@ describe("generateReportSnapshot — org-wide report gates Lead/Application quer
     ]);
   });
 
+  it("visitor.count (KPI identified-visitor counts + visitor stats) is gated every time it's called", async () => {
+    await generateReportSnapshot("org-1", "monthly", { skipAi: true });
+
+    const calls = mockPrisma.visitor.count.mock.calls;
+    expect(calls.length).toBeGreaterThan(0);
+    for (const [args] of calls) {
+      expect(args.where).toMatchObject({ property: { lifecycle: "ACTIVE" } });
+    }
+  });
+
+  it("visitor.groupBy + visitor.findMany in the deep stats block are gated too", async () => {
+    // buildVisitorStats bails (returns undefined) when identifiedTotal is
+    // 0, which would skip the groupBy/findMany block entirely — force a
+    // non-zero count so the second Promise.all actually runs and records.
+    // (clearAllMocks does NOT drop implementations, so restore in finally.)
+    mockPrisma.visitor.count.mockImplementation(async () => 3);
+    try {
+      await generateReportSnapshot("org-1", "monthly", { skipAi: true });
+
+      for (const method of ["groupBy", "findMany"] as const) {
+        const calls = mockPrisma.visitor[method].mock.calls;
+        expect(calls.length).toBeGreaterThan(0);
+        for (const [args] of calls) {
+          expect(args.where).toMatchObject({
+            property: { lifecycle: "ACTIVE" },
+          });
+        }
+      }
+    } finally {
+      mockPrisma.visitor.count.mockImplementation(async () => 0);
+    }
+  });
+
   it("property-scoped reports are unchanged: no lifecycle gate, still filtered to the one property", async () => {
     await generateReportSnapshot("org-1", "monthly", {
       skipAi: true,
       propertyId: "prop-a",
     });
 
-    const calls = mockPrisma.lead.count.mock.calls;
-    expect(calls.length).toBeGreaterThan(0);
-    for (const [args] of calls) {
-      expect(args.where.property).toBeUndefined();
-      expect(args.where.propertyId).toBe("prop-a");
+    for (const model of ["lead", "visitor"] as const) {
+      const calls = mockPrisma[model].count.mock.calls;
+      expect(calls.length).toBeGreaterThan(0);
+      for (const [args] of calls) {
+        expect(args.where.property).toBeUndefined();
+        expect(args.where.propertyId).toBe("prop-a");
+      }
     }
   });
 });

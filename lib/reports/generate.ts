@@ -819,9 +819,12 @@ async function buildScope(
 // set up) count. Property-scoped reports (explicit propertyId) already
 // resolve to exactly one property via scope.propertyClause and don't need
 // this. Same fix family as marketablePropertyWhere/buildOccupancyStats,
-// applied to every Lead/Application-shaped org-wide query below instead of
-// re-typing `property: { lifecycle: "ACTIVE" }` at each call site.
-function activePropertyLeadClause(
+// applied to every Lead/Application/Visitor-shaped org-wide query below
+// instead of re-typing `property: { lifecycle: "ACTIVE" }` at each call
+// site. (Visitor rows joined 2026-08-02 once propertyId stamping at ingest
+// + the single-property backfill made the gate safe — see the visitor
+// counts below.)
+function activePropertyClause(
   scope: Scope,
 ): { property?: { lifecycle: "ACTIVE" } } {
   return scope.propertyId ? {} : { property: { lifecycle: "ACTIVE" } };
@@ -896,7 +899,7 @@ export async function generateReportSnapshot(
       where: {
         orgId,
         ...scope.propertyClause,
-        ...activePropertyLeadClause(scope),
+        ...activePropertyClause(scope),
         createdAt: { gte: periodStart, lt: periodEnd },
       },
     }),
@@ -904,7 +907,7 @@ export async function generateReportSnapshot(
       where: {
         orgId,
         ...scope.propertyClause,
-        ...activePropertyLeadClause(scope),
+        ...activePropertyClause(scope),
         createdAt: { gte: priorStart, lt: priorEnd },
       },
     }),
@@ -913,7 +916,7 @@ export async function generateReportSnapshot(
         createdAt: { gte: periodStart, lt: periodEnd },
         status: { in: [TourStatus.SCHEDULED, TourStatus.COMPLETED] },
         lead: { orgId, ...(scope.leadRelClause.lead ?? {}) },
-        ...activePropertyLeadClause(scope),
+        ...activePropertyClause(scope),
       },
     }),
     prisma.tour.count({
@@ -921,7 +924,7 @@ export async function generateReportSnapshot(
         createdAt: { gte: priorStart, lt: priorEnd },
         status: { in: [TourStatus.SCHEDULED, TourStatus.COMPLETED] },
         lead: { orgId, ...(scope.leadRelClause.lead ?? {}) },
-        ...activePropertyLeadClause(scope),
+        ...activePropertyClause(scope),
       },
     }),
     prisma.application.count({
@@ -929,7 +932,7 @@ export async function generateReportSnapshot(
         createdAt: { gte: periodStart, lt: periodEnd },
         status: { in: [ApplicationStatus.SUBMITTED, ApplicationStatus.APPROVED] },
         lead: { orgId, ...(scope.leadRelClause.lead ?? {}) },
-        ...activePropertyLeadClause(scope),
+        ...activePropertyClause(scope),
       },
     }),
     prisma.application.count({
@@ -937,7 +940,7 @@ export async function generateReportSnapshot(
         createdAt: { gte: priorStart, lt: priorEnd },
         status: { in: [ApplicationStatus.SUBMITTED, ApplicationStatus.APPROVED] },
         lead: { orgId, ...(scope.leadRelClause.lead ?? {}) },
-        ...activePropertyLeadClause(scope),
+        ...activePropertyClause(scope),
       },
     }),
     // Ad spend — AdMetricDaily has no propertyId; we filter via the
@@ -1036,7 +1039,7 @@ export async function generateReportSnapshot(
       where: {
         orgId,
         ...scope.propertyClause,
-        ...activePropertyLeadClause(scope),
+        ...activePropertyClause(scope),
         createdAt: { gte: periodStart, lt: periodEnd },
       },
       _count: { _all: true },
@@ -1050,7 +1053,7 @@ export async function generateReportSnapshot(
       where: {
         orgId,
         ...scope.propertyClause,
-        ...activePropertyLeadClause(scope),
+        ...activePropertyClause(scope),
         createdAt: { gte: periodStart, lt: periodEnd },
       },
       _count: { _all: true },
@@ -1059,7 +1062,7 @@ export async function generateReportSnapshot(
       where: {
         orgId,
         ...scope.propertyClause,
-        ...activePropertyLeadClause(scope),
+        ...activePropertyClause(scope),
         createdAt: { gte: periodStart, lt: periodEnd },
       },
     }),
@@ -1081,7 +1084,7 @@ export async function generateReportSnapshot(
       where: {
         orgId,
         ...scope.propertyClause,
-        ...activePropertyLeadClause(scope),
+        ...activePropertyClause(scope),
         createdAt: { gte: periodStart, lt: periodEnd },
         source: { in: [LeadSource.GOOGLE_ADS, LeadSource.META_ADS] },
       },
@@ -1153,7 +1156,7 @@ export async function generateReportSnapshot(
       where: {
         orgId,
         ...scope.propertyClause,
-        ...activePropertyLeadClause(scope),
+        ...activePropertyClause(scope),
         createdAt: { gte: periodStart, lt: periodEnd },
         source: LeadSource.CHATBOT,
       },
@@ -1179,7 +1182,7 @@ export async function generateReportSnapshot(
         ...(scope.propertyId
           ? { propertyId: scope.propertyId }
           : { propertyId: { not: null } }),
-        ...activePropertyLeadClause(scope),
+        ...activePropertyClause(scope),
         createdAt: { gte: periodStart, lt: periodEnd },
       },
       _count: { _all: true },
@@ -1191,17 +1194,20 @@ export async function generateReportSnapshot(
     // Period window matches the leads count so the two combine
     // cleanly into a single "captured contacts" headline.
     //
-    // KNOWN LIMITATION (2026-08-01 lead/application overclaim audit): this
-    // is intentionally left org-level, unlike the Lead/Application queries
-    // above. Visitor.propertyId is optional and inconsistently populated
-    // across the pixel ingest paths (webhook, cursive-process, manual) —
-    // gating on property lifecycle here risks dropping real ACTIVE-property
-    // visitors whose propertyId never got backfilled. Needs reliable
-    // propertyId stamping on ingest first; tracked as a separate slice.
+    // ACTIVE-property gated since 2026-08-02: ingest paths stamp
+    // Visitor.propertyId where attribution is defensible (webhook via
+    // integration binding/URL inference, segment sync + backfill via the
+    // sole-ACTIVE-property rule), so an org-wide report only claims
+    // visitors it can file under a real, launched building — same rule as
+    // Leads/Applications above. Null-propertyId rows can still occur
+    // (multi-property org with an org-wide pixel and no URL match, or an
+    // /api/ingest/visitor caller that omits propertyId) and intentionally
+    // don't count: smaller-but-provable numbers.
     prisma.visitor.count({
       where: {
         orgId,
         ...scope.propertyClause,
+        ...activePropertyClause(scope),
         status: {
           in: [
             VisitorIdentificationStatus.IDENTIFIED,
@@ -1216,6 +1222,7 @@ export async function generateReportSnapshot(
       where: {
         orgId,
         ...scope.propertyClause,
+        ...activePropertyClause(scope),
         status: {
           in: [
             VisitorIdentificationStatus.IDENTIFIED,
@@ -1625,7 +1632,7 @@ export async function generateReportSnapshot(
     where: {
       orgId,
       ...scope.propertyClause,
-      ...activePropertyLeadClause(scope),
+      ...activePropertyClause(scope),
       createdAt: { gte: periodStart, lt: periodEnd },
     },
     select: { id: true, source: true, status: true },
@@ -1719,7 +1726,13 @@ export async function generateReportSnapshot(
     periodStart,
     periodEnd,
     days,
-  ).catch(() => undefined);
+  ).catch((err) => {
+    // Optional report section — degrade to "no visitor data" rather than
+    // failing the whole snapshot, but never silently: the raw-SQL joins in
+    // buildVisitorStats can only fail at runtime.
+    console.error("buildVisitorStats failed; omitting visitor section", err);
+    return undefined;
+  });
 
   // Chatbot extended — captured-rate breakdown for the report.
   const chatbotStatsExtended = await buildChatbotExtended(
@@ -2905,7 +2918,13 @@ async function buildVisitorStats(
   periodEnd: Date,
   days: number,
 ): Promise<ReportVisitorStats | undefined> {
-  const propertyClause = propertyId ? { propertyId } : {};
+  // Org-wide stats claim only visitors filed under a real, launched
+  // building — same ACTIVE-lifecycle rule as the KPI queries in
+  // generateReportSnapshot (see activePropertyClause). Property-scoped
+  // stats resolve to exactly one property and need no lifecycle gate.
+  const propertyClause = propertyId
+    ? { propertyId }
+    : { property: { lifecycle: "ACTIVE" as const } };
   const [identifiedTotal, identifiedNew, withEmail, withPhone, identifiedDaily, identifiedWithLead] =
     await Promise.all([
       prisma.visitor.count({
@@ -2953,21 +2972,23 @@ async function buildVisitorStats(
       // identified visitor that has a real lead row now". Scoped further
       // to the property when set so the count reflects that asset only.
       propertyId
-        ? prisma.$queryRawUnsafe<Array<{ count: bigint }>>(
-            `select count(distinct v.id) as count
-             from "Visitor" v
-             join "Lead" l on l."orgId" = v."orgId" and l.email is not null and v.email is not null and lower(l.email) = lower(v.email)
-             where v."orgId" = $1 and v.status = 'IDENTIFIED' and v."propertyId" = $2 and l."propertyId" = $2`,
-            orgId,
-            propertyId,
-          )
-        : prisma.$queryRawUnsafe<Array<{ count: bigint }>>(
-            `select count(distinct v.id) as count
-             from "Visitor" v
-             join "Lead" l on l."orgId" = v."orgId" and l.email is not null and v.email is not null and lower(l.email) = lower(v.email)
-             where v."orgId" = $1 and v.status = 'IDENTIFIED'`,
-            orgId,
-          ),
+        ? prisma.$queryRaw<Array<{ count: bigint }>>`
+            select count(distinct v.id) as count
+            from "Visitor" v
+            join "Lead" l on l."orgId" = v."orgId" and l.email is not null and v.email is not null and lower(l.email) = lower(v.email)
+            where v."orgId" = ${orgId} and v.status = 'IDENTIFIED' and v."propertyId" = ${propertyId} and l."propertyId" = ${propertyId}`
+        : // Org-wide: both sides of the visitor→lead claim must sit on an
+          // ACTIVE property, mirroring the Prisma queries above — otherwise
+          // a lead on an EXCLUDED junk sub-record could prove a conversion
+          // the report doesn't count anywhere else. Tagged template ($queryRaw,
+          // not Unsafe) so params stay bound by construction.
+          prisma.$queryRaw<Array<{ count: bigint }>>`
+            select count(distinct v.id) as count
+            from "Visitor" v
+            join "Property" vp on vp.id = v."propertyId" and vp.lifecycle = 'ACTIVE'
+            join "Lead" l on l."orgId" = v."orgId" and l.email is not null and v.email is not null and lower(l.email) = lower(v.email)
+            join "Property" lp on lp.id = l."propertyId" and lp.lifecycle = 'ACTIVE'
+            where v."orgId" = ${orgId} and v.status = 'IDENTIFIED'`,
     ]);
 
   if (identifiedTotal === 0) return undefined;

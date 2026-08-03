@@ -7,6 +7,8 @@ import { prisma } from "@/lib/db";
 import { requireAgency, ForbiddenError, auditPayload } from "@/lib/tenancy/scope";
 import { AuditAction, PixelRequestStatus, Prisma } from "@prisma/client";
 import { sendPixelReadyCustomerEmail } from "@/lib/email/pixel-emails";
+import { soleActiveProperty } from "@/lib/properties/sole-active";
+import { backfillPropertyId } from "@/lib/tenancy/property-filter";
 
 // ---------------------------------------------------------------------------
 // Agency-only Cursive (the upstream pixel provider) integration management.
@@ -340,6 +342,13 @@ export async function runCursiveSegmentSync(
     };
   }
 
+  // Segment items carry no page URL, so per-event property attribution is
+  // impossible here. When the org has exactly one ACTIVE (= launched)
+  // property, visitors are filed under it — see soleActiveProperty for the
+  // rule, its justification, and its accepted ceiling. Multi-property orgs
+  // keep null; never guess.
+  const solePropertyId = (await soleActiveProperty(orgId))?.id ?? null;
+
   let pulled = 0;
   let created = 0;
   let updated = 0;
@@ -351,10 +360,16 @@ export async function runCursiveSegmentSync(
       cache: "no-store",
     });
     if (!res.ok) {
+      // Log the upstream body server-side only — this error string renders
+      // in the tenant-facing pixel-sync UI (syncPixelFromSegment), and
+      // upstream bodies can echo segment ids / request context.
       const body = await res.text().catch(() => "");
+      console.error(
+        `Cursive segment fetch failed (${res.status}): ${body.slice(0, 500)}`,
+      );
       return {
         ok: false,
-        error: `Cursive fetch failed (${res.status}): ${body.slice(0, 200)}`,
+        error: `Cursive fetch failed (${res.status}). See server logs for detail.`,
       };
     }
     const json = (await res.json()) as Record<string, unknown>;
@@ -367,6 +382,7 @@ export async function runCursiveSegmentSync(
         orgId,
         item,
         integration.installedOnDomain,
+        solePropertyId,
       );
       if (result === "created") created++;
       else if (result === "updated") updated++;
@@ -460,6 +476,7 @@ async function upsertResolutionAsVisitor(
   orgId: string,
   item: Record<string, unknown>,
   installedOnDomain: string | null,
+  solePropertyId: string | null,
 ): Promise<"created" | "updated" | "skipped"> {
   const profileId = pickString(item, "profile_id", "id", "PROFILE_ID");
   const uid = pickString(item, "uid", "UID");
@@ -528,6 +545,9 @@ async function upsertResolutionAsVisitor(
     await prisma.visitor.update({
       where: { id: existing.id },
       data: {
+        // First-write-wins — never re-file a visitor that already has a
+        // building (canonical rule, same helper as the webhook path).
+        propertyId: backfillPropertyId(existing.propertyId, solePropertyId),
         cursiveVisitorId: identity ?? existing.cursiveVisitorId ?? undefined,
         firstName: firstName ?? existing.firstName ?? undefined,
         lastName: lastName ?? existing.lastName ?? undefined,
@@ -548,6 +568,7 @@ async function upsertResolutionAsVisitor(
   await prisma.visitor.create({
     data: {
       orgId,
+      propertyId: solePropertyId,
       cursiveVisitorId: identity ?? `seg:${normalizedEmail ?? Date.now()}`,
       hashedEmail: hemSha256 ?? null,
       status:

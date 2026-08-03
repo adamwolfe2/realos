@@ -358,11 +358,17 @@ export async function processCursiveEvent(
   // that binding always — no behavior change for bound pixels. URL
   // inference only runs for legacy org-wide rows (propertyId null), and
   // only helps when it can name a specific building; an ambiguous/no-match
-  // URL leaves attribution null exactly like today. Gated on pageUrl so a
-  // single-property org's legacy pixel doesn't auto-bind every URL-less
-  // event to its one property (that fallback is fine for chatbot, not for
-  // an anonymous pixel visitor), and so URL-less events skip the property
-  // query entirely.
+  // URL leaves attribution null exactly like today. Gated on pageUrl so
+  // URL-less events skip the property query entirely.
+  //
+  // SUPERSEDED IN PART (Adam decision, 2026-08-02 SG focus): for orgs with
+  // exactly ONE ACTIVE property, rows this path leaves null get stamped to
+  // that property anyway by the segment-sync pull (admin-cursive.ts) and
+  // the historical backfill (scripts/backfill-visitor-propertyids.ts) —
+  // see lib/properties/sole-active.ts for the rule and its rationale. This
+  // webhook path stays URL-strict only because it HAS a URL to check;
+  // don't read the old "never fall back to single property" note as a live
+  // org-wide invariant.
   const attributedPropertyId =
     integration.propertyId ??
     (pageUrl
