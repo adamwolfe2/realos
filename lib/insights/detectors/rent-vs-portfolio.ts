@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { LeaseStatus } from "@prisma/client";
 import { isoWeekKey } from "../iso-week";
 import type { Detector, DetectedInsight } from "../types";
+import { propertyIdsToWhere } from "@/lib/tenancy/property-filter";
 
 const MIN_PROPERTIES = 3;
 const MIN_LEASES_PER_PROPERTY = 5;
@@ -21,13 +22,20 @@ const MIN_LEASES_PER_PROPERTY = 5;
  */
 export const rentVsPortfolioDetector: Detector = {
   name: "rent-vs-portfolio",
-  async run(orgId: string): Promise<DetectedInsight[]> {
+  async run(orgId: string, propertyIds: string[]): Promise<DetectedInsight[]> {
     const weekKey = isoWeekKey(new Date());
 
-    // Pull active leases per property with rent.
+    // Pull active leases per property with rent. Lease.propertyId is
+    // required (never null), so this is a plain `in`. Scoping here is
+    // what makes the baseline cohort below honest: the portfolio average
+    // is computed ONLY from leases at properties enabled in LeaseStack —
+    // pulling every AppFolio-synced property (parking lots, storage
+    // units, disabled buildings) would poison the benchmark every
+    // per-property comparison below is measured against.
     const leases = await prisma.lease.findMany({
       where: {
         orgId,
+        ...propertyIdsToWhere(propertyIds),
         status: { in: [LeaseStatus.ACTIVE, LeaseStatus.EXPIRING] },
         monthlyRentCents: { gt: 0 },
       },

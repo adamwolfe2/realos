@@ -16,13 +16,28 @@ import path from "path";
 // stayed green, because nothing inspected the where-clause that actually
 // reached Prisma.
 //
-// A behavioural test would be better, but `marketablePropertyIds` pulls the
-// client through a DYNAMIC `await import("@/lib/db")` that vi.mock does not
-// intercept, so mocking it means mocking the DB itself. This is a source
-// guard instead — same convention as __tests__/public-report-onepager.test.ts
-// and the nav drift guard. It is deliberately about SHAPE, not values: any
-// `propertyId` or `OR` key appearing AFTER a gate spread inside the same
-// object literal is a clobber, regardless of what it holds.
+// This is a source guard — same convention as
+// __tests__/public-report-onepager.test.ts and the nav drift guard. It is
+// deliberately about SHAPE, not values.
+//
+// (An earlier version of this comment claimed a behavioural test was
+// impossible because `marketablePropertyIds` uses a dynamic
+// `await import("@/lib/db")` that vi.mock cannot intercept. That is false —
+// __tests__/marketable-org-clause.test.ts does exactly that and passes. The
+// claim was removed rather than left to talk the next author out of writing
+// the better test.)
+//
+// TWO DIRECTIONS, NOT ONE. The original guard only rejected a key appearing
+// AFTER a gate spread. That is correct for `propertyId` (a spread later in
+// the literal wins, so the gate survives), but WRONG for `OR`: an
+// includeOrgLevel gate is itself `{ OR: [...] }`, so a literal holding both
+// a gate spread and its own top-level `OR` loses one of them no matter
+// which comes first. Mutation-verified by parallel-review 2026-08-04:
+// rewriting getActivityFeed's visitorSession where to
+// `{ orgId, startedAt, OR: [engagement...], ...orgLevelClause }` silently
+// deleted the ENGAGEMENT filter — every session counted as engaged — and
+// all 10 tests stayed green. The only safe shape is an AND-wrap, so `OR`
+// co-existing with a gate spread now fails regardless of order.
 // ---------------------------------------------------------------------------
 
 const GATED_FILES = [
@@ -31,7 +46,28 @@ const GATED_FILES = [
   "../app/api/cron/pixel-weekly-digest/route.ts",
   "../app/portal/layout.tsx",
   "../app/admin/clients/[id]/page.tsx",
+  // Modified in the same range and carries a `...propertyClause` spread;
+  // was silently unguarded.
+  "../lib/reports/generate.ts",
+  // Holds the sharpest latent instance: a literal top-level
+  // `OR: [SUBMITTED, UNDER_REVIEW]` sitting beside a gate spread that is
+  // safe today only because it happens to be built without opts.
+  "../app/portal/page.tsx",
 ];
+
+/**
+ * Blank out comments so `propertyId:` / `OR:` mentioned in prose is not
+ * scanned as code. Replaces with spaces rather than deleting so every
+ * offset below stays valid. Without this, a future explanatory comment
+ * placed after a gate spread fails the suite with a bogus clobber report —
+ * and the natural "fix" is to reword the comment, which is the fastest
+ * route to someone deleting the guard.
+ */
+function stripComments(src: string): string {
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))
+    .replace(/\/\/[^\n]*/g, (m) => " ".repeat(m.length));
+}
 
 /** Names that carry a marketable-property gate. */
 const GATE_SPREAD =
@@ -99,7 +135,7 @@ function gateSpreadOffsets(objSrc: string): number[] {
 describe("marketable gate is never clobbered by a later key", () => {
   for (const rel of GATED_FILES) {
     const file = path.resolve(__dirname, rel);
-    const src = fs.readFileSync(file, "utf-8");
+    const src = stripComments(fs.readFileSync(file, "utf-8"));
     const objs = whereObjects(src).filter(
       (o) => gateSpreadOffsets(o).length > 0,
     );
@@ -108,17 +144,24 @@ describe("marketable gate is never clobbered by a later key", () => {
       expect(objs.length).toBeGreaterThan(0);
     });
 
-    it(`${rel.replace("../", "")} never re-declares propertyId/OR after a gate spread`, () => {
+    it(`${rel.replace("../", "")} never re-declares propertyId after a gate spread`, () => {
       for (const obj of objs) {
         const lastSpread = Math.max(...gateSpreadOffsets(obj));
-        for (const key of ["propertyId", "OR"]) {
-          for (const at of topLevelKeyOffsets(obj, key)) {
-            expect(
-              at,
-              `\`${key}\` is declared AFTER a gate spread and overwrites it:\n${obj.slice(0, 400)}`,
-            ).toBeLessThan(lastSpread);
-          }
+        for (const at of topLevelKeyOffsets(obj, "propertyId")) {
+          expect(
+            at,
+            `\`propertyId\` is declared AFTER a gate spread and overwrites it:\n${obj.slice(0, 400)}`,
+          ).toBeLessThan(lastSpread);
         }
+      }
+    });
+
+    it(`${rel.replace("../", "")} never puts a top-level OR beside a gate spread (either order)`, () => {
+      for (const obj of objs) {
+        expect(
+          topLevelKeyOffsets(obj, "OR"),
+          `a top-level \`OR\` shares an object literal with a gate spread. An includeOrgLevel gate IS an \`OR\`, so one of the two is silently dropped whichever order they appear in — and the survivor looks perfectly correct. AND-wrap instead: \`AND: [gateClause, { OR: [...] }]\`.\n${obj.slice(0, 400)}`,
+        ).toHaveLength(0);
       }
     });
   }

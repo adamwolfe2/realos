@@ -18,7 +18,7 @@ const WEEK = 7 * DAY;
 //   critical: -40% combined score vs prior 4w
 export const leasingVelocityDropDetector: Detector = {
   name: "leasing-velocity-drop",
-  async run(orgId: string): Promise<DetectedInsight[]> {
+  async run(orgId: string, propertyIds: string[]): Promise<DetectedInsight[]> {
     const now = Date.now();
     const since4w = new Date(now - 4 * WEEK);
     const since8w = new Date(now - 8 * WEEK);
@@ -31,12 +31,48 @@ export const leasingVelocityDropDetector: Detector = {
       currApps,
       prevApps,
     ] = await Promise.all([
-      prisma.lead.count({ where: { orgId, createdAt: { gte: since4w } } }),
-      prisma.lead.count({ where: { orgId, createdAt: { gte: since8w, lt: since4w } } }),
-      prisma.tour.count({ where: { lead: { orgId }, createdAt: { gte: since4w } } }),
-      prisma.tour.count({ where: { lead: { orgId }, createdAt: { gte: since8w, lt: since4w } } }),
-      prisma.application.count({ where: { lead: { orgId }, createdAt: { gte: since4w } } }),
-      prisma.application.count({ where: { lead: { orgId }, createdAt: { gte: since8w, lt: since4w } } }),
+      // Lead.propertyId is nullable — include org-level (unattributed)
+      // leads in this funnel-wide velocity score. Attribution often
+      // backfills after creation, so requiring propertyId here would
+      // undercount the most recent activity, which is exactly the
+      // window this detector is watching.
+      prisma.lead.count({
+        where: {
+          orgId,
+          OR: [{ propertyId: { in: propertyIds } }, { propertyId: null }],
+          createdAt: { gte: since4w },
+        },
+      }),
+      prisma.lead.count({
+        where: {
+          orgId,
+          OR: [{ propertyId: { in: propertyIds } }, { propertyId: null }],
+          createdAt: { gte: since8w, lt: since4w },
+        },
+      }),
+      // Tour.propertyId is required — the property id already implies
+      // this org (marketablePropertyIds only returns this org's rows),
+      // so filtering on it alone is sufficient scope.
+      prisma.tour.count({
+        where: { propertyId: { in: propertyIds }, createdAt: { gte: since4w } },
+      }),
+      prisma.tour.count({
+        where: {
+          propertyId: { in: propertyIds },
+          createdAt: { gte: since8w, lt: since4w },
+        },
+      }),
+      // Application.propertyId is required (Application has no orgId
+      // column at all — it's reached only via property/lead).
+      prisma.application.count({
+        where: { propertyId: { in: propertyIds }, createdAt: { gte: since4w } },
+      }),
+      prisma.application.count({
+        where: {
+          propertyId: { in: propertyIds },
+          createdAt: { gte: since8w, lt: since4w },
+        },
+      }),
     ]);
 
     if (prevLeads < 5) return [];

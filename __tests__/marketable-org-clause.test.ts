@@ -17,14 +17,50 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // do it on the orgs least able to notice (brand-new tenants).
 // ---------------------------------------------------------------------------
 
+// The mock MUST forward its arguments. It previously did not
+// (`findMany: () => findMany()`), which made every test below inert against
+// the single highest-value regression: rewriting the query in
+// marketablePropertyIds to `where: {}` — dropping BOTH the org filter and
+// the lifecycle filter, i.e. reopening the entire over-sync leak across
+// every caller at once — left all six tests green. Caught by
+// parallel-review 2026-08-04; see the WHERE-shape test below.
 const findMany = vi.fn();
-vi.mock("@/lib/db", () => ({ prisma: { property: { findMany: () => findMany() } } }));
+vi.mock("@/lib/db", () => ({
+  prisma: { property: { findMany: (args: unknown) => findMany(args) } },
+}));
 
 const { marketableOrgClause, NO_MARKETABLE_PROPERTIES } = await import(
   "@/lib/tenancy/property-filter"
 );
 
 beforeEach(() => findMany.mockReset());
+
+describe("marketablePropertyIds — the query the whole gate rests on", () => {
+  // Without this, every other assertion in this file is satisfied by a
+  // property-filter that selects the entire Property table. The clause
+  // SHAPE being right is worthless if the id list feeding it is wrong.
+  it("filters by BOTH orgId and lifecycle=ACTIVE", async () => {
+    findMany.mockResolvedValue([{ id: "p1" }]);
+    await marketableOrgClause("org_1");
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          orgId: "org_1",
+          lifecycle: { in: ["ACTIVE"] },
+        }),
+      }),
+    );
+  });
+
+  it("does not leak across tenants — the orgId is the one passed in", async () => {
+    findMany.mockResolvedValue([{ id: "p1" }]);
+    await marketableOrgClause("org_other");
+    const args = findMany.mock.calls[0]?.[0] as
+      | { where?: { orgId?: string } }
+      | undefined;
+    expect(args?.where?.orgId).toBe("org_other");
+  });
+});
 
 describe("marketableOrgClause", () => {
   it("FAILS CLOSED when the org has no enabled properties", async () => {

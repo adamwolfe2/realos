@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { LeadSource } from "@prisma/client";
 import { isoWeekKey } from "../iso-week";
 import type { Detector, DetectedInsight } from "../types";
+import { propertyIdsToWhere } from "@/lib/tenancy/property-filter";
 
 const DAY = 24 * 60 * 60 * 1000;
 const MIN_ORGANIC_LEADS_PRIOR = 3;
@@ -21,11 +22,19 @@ const MIN_ORGANIC_LEADS_PRIOR = 3;
  */
 export const seoLeadsDisconnectDetector: Detector = {
   name: "seo-leads-disconnect",
-  async run(orgId: string): Promise<DetectedInsight[]> {
-    // Only fire when the org has SEO connected. Detector is a no-op for
-    // orgs that haven't set up GA4 / GSC yet — they get a different
+  async run(orgId: string, propertyIds: string[]): Promise<DetectedInsight[]> {
+    // Only fire when the org has SEO connected to a property enabled in
+    // LeaseStack (or a legacy org-wide connection — SeoIntegration.propertyId
+    // is nullable). A GA4/GSC connection that only covers a disabled or
+    // excluded property shouldn't unlock this detector. Detector is a no-op
+    // for orgs that haven't set up GA4 / GSC yet — they get a different
     // empty-state nudge from the Connect Hub.
-    const seoCount = await prisma.seoIntegration.count({ where: { orgId } });
+    const seoCount = await prisma.seoIntegration.count({
+      where: {
+        orgId,
+        OR: [propertyIdsToWhere(propertyIds), { propertyId: null }],
+      },
+    });
     if (seoCount === 0) return [];
 
     const now = Date.now();
@@ -40,6 +49,12 @@ export const seoLeadsDisconnectDetector: Detector = {
       prisma.lead.count({
         where: {
           orgId,
+          // Lead.propertyId is nullable — an organic lead from an org-wide
+          // page (e.g. a homepage contact form not tied to one building)
+          // is still a real organic signal, so keep NULL-property leads
+          // alongside leads on marketable properties. Drop leads
+          // attributed to a disabled/excluded property.
+          OR: [propertyIdsToWhere(propertyIds), { propertyId: null }],
           source: { in: organicSources },
           createdAt: { gte: since7d },
         },
@@ -47,6 +62,7 @@ export const seoLeadsDisconnectDetector: Detector = {
       prisma.lead.count({
         where: {
           orgId,
+          OR: [propertyIdsToWhere(propertyIds), { propertyId: null }],
           source: { in: organicSources },
           createdAt: { gte: since21d, lt: since7d },
         },

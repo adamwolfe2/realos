@@ -86,5 +86,29 @@ export interface DetectorResult {
 
 export interface Detector {
   name: string;
-  run(orgId: string): Promise<DetectedInsight[]>;
+  /**
+   * @param orgId
+   * @param propertyIds the org's MARKETABLE property ids — the buildings
+   *   actually enabled in LeaseStack, not everything the backend sync
+   *   dumped in. Every property-dimensioned query in a detector must be
+   *   scoped to these, because the counts a detector computes are baked as
+   *   literal numbers into `body` text that gets EMAILED to the customer.
+   *
+   *   SG Real Estate has 135 Property rows and exactly 1 enabled building;
+   *   457 of their 537 insights (85%) had already been generated about
+   *   buildings that are not in LeaseStack.
+   *
+   *   Never empty — the runner skips the whole pass when an org has no
+   *   marketable properties, so a detector can use this list directly
+   *   without a fail-open `length === 0` branch.
+   *
+   *   NOTE: this parameter is advisory to the compiler only. TypeScript
+   *   permits a function with fewer parameters to satisfy this signature,
+   *   so a detector that simply ignores `propertyIds` still type-checks.
+   *   Enforcement is therefore three-layered: this signature (discovery),
+   *   the runner's output-stage filter (catches wrong attribution), and
+   *   __tests__/insight-detectors-property-scoped.test.ts (catches a
+   *   detector that never references it at all).
+   */
+  run(orgId: string, propertyIds: string[]): Promise<DetectedInsight[]>;
 }

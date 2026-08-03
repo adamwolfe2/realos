@@ -152,9 +152,15 @@ export async function buildWeeklyDigest(orgId: string): Promise<WeeklyDigest> {
       },
     }),
 
-    // Ad spend this week (sum across all campaigns)
+    // Ad spend this week (sum across all campaigns). AdMetricDaily has no
+    // propertyId of its own — it reaches one through its campaign, so the
+    // gate has to be applied on the relation.
     prisma.adMetricDaily.aggregate({
-      where: { orgId, date: { gte: thisWeekStart, lt: now } },
+      where: {
+        orgId,
+        campaign: leadClause,
+        date: { gte: thisWeekStart, lt: now },
+      },
       _sum: { spendCents: true },
     }),
 
@@ -162,11 +168,15 @@ export async function buildWeeklyDigest(orgId: string): Promise<WeeklyDigest> {
     // must apply the write-side supersede rule itself — see
     // lib/seo/snapshot-supersede.ts for why the write-side delete alone
     // isn't a strong enough guarantee against double-counting.
-    fetchDedupedSeoSnapshots({ orgId, date: { gte: thisWeekStart, lt: now } }),
+    fetchDedupedSeoSnapshots({
+      orgId,
+      ...leadClause,
+      date: { gte: thisWeekStart, lt: now },
+    }),
 
     // Open insights (status=open, not dismissed or acknowledged)
     prisma.insight.count({
-      where: { orgId, status: "open" },
+      where: { orgId, ...leadClause, status: "open" },
     }),
 
     // Unread leads (status NEW)
@@ -210,7 +220,11 @@ export async function buildWeeklyDigest(orgId: string): Promise<WeeklyDigest> {
 
     // Visitor sessions this week — fetch max pageviewCount for hotVisitorPeak
     prisma.visitorSession.findMany({
-      where: { orgId, startedAt: { gte: thisWeekStart, lt: now } },
+      where: {
+        orgId,
+        ...leadClause,
+        startedAt: { gte: thisWeekStart, lt: now },
+      },
       select: { pageviewCount: true },
       orderBy: { pageviewCount: "desc" },
       take: 1,
@@ -225,15 +239,28 @@ export async function buildWeeklyDigest(orgId: string): Promise<WeeklyDigest> {
   const [thisWeekScores, lastWeekScores, openRecs, pendingDrafts] =
     await Promise.all([
       prisma.seoScoreHistory.findMany({
-        where: { orgId, weekOf: { gte: thisWeekStart, lt: now } },
+        where: {
+          orgId,
+          ...leadClause,
+          weekOf: { gte: thisWeekStart, lt: now },
+        },
         select: { compositeScore: true },
       }),
       prisma.seoScoreHistory.findMany({
-        where: { orgId, weekOf: { gte: lastWeekStart, lt: thisWeekStart } },
+        where: {
+          orgId,
+          ...leadClause,
+          weekOf: { gte: lastWeekStart, lt: thisWeekStart },
+        },
         select: { compositeScore: true },
       }),
+      // This one SELECTS `property.name` and the email renders it as
+      // topRecommendations[].propertyName — so leaving it ungated printed
+      // the names of buildings the customer never onboarded straight into
+      // their inbox. Exactly the leaderboard defect this file's header
+      // claims was fixed, 160 lines below the fix.
       prisma.seoActionRecommendation.findMany({
-        where: { orgId, status: "OPEN" },
+        where: { orgId, ...leadClause, status: "OPEN" },
         orderBy: [{ severity: "asc" }, { score: "desc" }],
         take: 12,
         select: {
@@ -245,6 +272,7 @@ export async function buildWeeklyDigest(orgId: string): Promise<WeeklyDigest> {
       prisma.contentDraft.count({
         where: {
           orgId,
+          ...leadClause,
           status: { in: ["PENDING_REVIEW", "GENERATING", "CHANGES_REQUESTED"] },
         },
       }),

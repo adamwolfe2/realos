@@ -2,6 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { isoWeekKey } from "../iso-week";
 import type { Detector, DetectedInsight } from "../types";
+import { propertyIdsToWhere } from "@/lib/tenancy/property-filter";
 
 const DAY = 24 * 60 * 60 * 1000;
 const MIN_CONVERSATIONS = 10;
@@ -22,13 +23,18 @@ const MIN_DROPOFF_PCT = 0.6; // ≥60% of conversations end without lead capture
  */
 export const chatbotDropoffDetector: Detector = {
   name: "chatbot-dropoff",
-  async run(orgId: string): Promise<DetectedInsight[]> {
+  async run(orgId: string, propertyIds: string[]): Promise<DetectedInsight[]> {
     const since = new Date(Date.now() - 7 * DAY);
     const weekKey = isoWeekKey(new Date());
 
     const conversations = await prisma.chatbotConversation.findMany({
       where: {
         orgId,
+        // ChatbotConversation.propertyId is nullable — the widget can be
+        // installed org-wide. Keep unattributed conversations (they already
+        // bucket separately below under "_org") alongside marketable
+        // properties; drop conversations tagged to an excluded property.
+        OR: [propertyIdsToWhere(propertyIds), { propertyId: null }],
         createdAt: { gte: since },
       },
       select: {

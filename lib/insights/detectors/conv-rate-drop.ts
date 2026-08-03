@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { LeadStatus } from "@prisma/client";
 import { isoWeekKey } from "../iso-week";
 import type { Detector, DetectedInsight } from "../types";
+import { propertyIdsToWhere } from "@/lib/tenancy/property-filter";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -16,7 +17,7 @@ const DAY = 24 * 60 * 60 * 1000;
  */
 export const convRateDropDetector: Detector = {
   name: "conv-rate-drop",
-  async run(orgId: string): Promise<DetectedInsight[]> {
+  async run(orgId: string, propertyIds: string[]): Promise<DetectedInsight[]> {
     const now = Date.now();
     const since28d = new Date(now - 28 * DAY);
     const since56d = new Date(now - 56 * DAY);
@@ -30,20 +31,36 @@ export const convRateDropDetector: Detector = {
     ];
 
     const [currTotal, currConverted, prevTotal, prevConverted] = await Promise.all([
-      prisma.lead.count({ where: { orgId, createdAt: { gte: since28d } } }),
       prisma.lead.count({
         where: {
           orgId,
+          // Lead.propertyId is nullable. This detector's insight is
+          // org-wide (funnel rate, no propertyId on the emitted insight),
+          // so unattributed leads count toward the funnel same as before;
+          // leads on an excluded/non-marketable property do not.
+          OR: [propertyIdsToWhere(propertyIds), { propertyId: null }],
+          createdAt: { gte: since28d },
+        },
+      }),
+      prisma.lead.count({
+        where: {
+          orgId,
+          OR: [propertyIdsToWhere(propertyIds), { propertyId: null }],
           createdAt: { gte: since28d },
           status: { in: tourOrBeyond },
         },
       }),
       prisma.lead.count({
-        where: { orgId, createdAt: { gte: since56d, lt: since28d } },
+        where: {
+          orgId,
+          OR: [propertyIdsToWhere(propertyIds), { propertyId: null }],
+          createdAt: { gte: since56d, lt: since28d },
+        },
       }),
       prisma.lead.count({
         where: {
           orgId,
+          OR: [propertyIdsToWhere(propertyIds), { propertyId: null }],
           createdAt: { gte: since56d, lt: since28d },
           status: { in: tourOrBeyond },
         },

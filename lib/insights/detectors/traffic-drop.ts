@@ -2,6 +2,7 @@ import "server-only";
 import { isoWeekKey } from "../iso-week";
 import type { Detector, DetectedInsight } from "../types";
 import { fetchDedupedSeoSnapshots, sumField } from "@/lib/seo/snapshot-supersede";
+import { propertyIdsToWhere } from "@/lib/tenancy/property-filter";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -15,17 +16,27 @@ const DAY = 24 * 60 * 60 * 1000;
  */
 export const trafficDropDetector: Detector = {
   name: "traffic-drop",
-  async run(orgId: string): Promise<DetectedInsight[]> {
+  async run(orgId: string, propertyIds: string[]): Promise<DetectedInsight[]> {
     const now = Date.now();
     const since7d = new Date(now - 7 * DAY);
     const since14d = new Date(now - 14 * DAY);
 
-    // Org-wide read (no property filter) over the full 14d window, then
-    // split in JS — one query instead of three, and the supersede dedupe
-    // (see lib/seo/snapshot-supersede.ts) guarantees a date's org-wide
-    // NULL row and a property-scoped row for that same date never both
-    // get summed.
-    const rows = await fetchDedupedSeoSnapshots({ orgId, date: { gte: since14d } });
+    // Org-wide read over the full 14d window, then split in JS — one query
+    // instead of three, and the supersede dedupe (see
+    // lib/seo/snapshot-supersede.ts) guarantees a date's org-wide NULL row
+    // and a property-scoped row for that same date never both get summed.
+    //
+    // SeoSnapshot.propertyId is nullable: NULL rows are a legacy org-wide
+    // GA4/GSC connection covering the whole site; non-null rows are scoped
+    // to one property. Keep both org-wide rows and rows on properties
+    // enabled in LeaseStack; drop snapshots tied to a disabled/excluded
+    // property so a customer who once connected GA4 to a building they
+    // later turned off doesn't inflate this org's traffic numbers.
+    const rows = await fetchDedupedSeoSnapshots({
+      orgId,
+      date: { gte: since14d },
+      OR: [propertyIdsToWhere(propertyIds), { propertyId: null }],
+    });
     const daily = [...rows].sort((a, b) => a.date.getTime() - b.date.getTime());
     const current = rows.filter((r) => r.date >= since7d);
     const previous = rows.filter((r) => r.date < since7d);

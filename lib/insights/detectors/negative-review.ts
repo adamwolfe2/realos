@@ -38,11 +38,15 @@ function isReviewSource(source: string): boolean {
  */
 export const negativeReviewDetector: Detector = {
   name: "negative-review",
-  async run(orgId: string): Promise<DetectedInsight[]> {
+  async run(orgId: string, propertyIds: string[]): Promise<DetectedInsight[]> {
     const since = new Date(Date.now() - DAY);
     const mentions = await prisma.propertyMention.findMany({
       where: {
         orgId,
+        // PropertyMention.propertyId is required — scope directly to
+        // enabled buildings. A 1-star review on a building the customer
+        // never turned on in LeaseStack must never reach their inbox.
+        propertyId: { in: propertyIds },
         sentiment: "NEGATIVE",
         // Use createdAt (when we ingested it) rather than publishedAt so a
         // mention that was published months ago but only just discovered

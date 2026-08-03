@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { isoWeekKey } from "../iso-week";
+import { propertyIdsToWhere } from "@/lib/tenancy/property-filter";
 import type { Detector, DetectedInsight } from "../types";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -25,16 +26,24 @@ const MIN_HIGH_INTENT_VISITORS = 5;
  */
 export const pixelLeadsGapDetector: Detector = {
   name: "pixel-leads-gap",
-  async run(orgId: string): Promise<DetectedInsight[]> {
+  async run(orgId: string, propertyIds: string[]): Promise<DetectedInsight[]> {
     const since = new Date(Date.now() - 7 * DAY);
     const weekKey = isoWeekKey(new Date());
 
     // Group visitors by property so we can fire one insight per
     // affected property. NULL-property visitors get their own
     // "portfolio-wide" bucket.
+    //
+    // Visitor.propertyId is nullable: the Cursive pixel is installed
+    // org-wide on the resident domain, so unattributed visitors are a
+    // real org-level signal, not noise from a disabled building. Keep
+    // them (propertyId: null) alongside visitors tied to a marketable
+    // property; drop visitors attributed to a building the customer
+    // never enabled in LeaseStack.
     const visitors = await prisma.visitor.findMany({
       where: {
         orgId,
+        OR: [propertyIdsToWhere(propertyIds), { propertyId: null }],
         intentScore: { gte: HIGH_INTENT_THRESHOLD },
         lastSeenAt: { gte: since },
       },

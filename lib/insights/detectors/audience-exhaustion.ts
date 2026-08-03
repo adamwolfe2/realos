@@ -2,6 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { isoWeekKey } from "../iso-week";
 import type { Detector, DetectedInsight } from "../types";
+import { propertyIdsToWhere } from "@/lib/tenancy/property-filter";
 
 const DAY = 24 * 60 * 60 * 1000;
 const MIN_SPEND_CENTS = 50_000; // $500 minimum to flag
@@ -21,7 +22,7 @@ const MIN_SPEND_CENTS = 50_000; // $500 minimum to flag
  */
 export const audienceExhaustionDetector: Detector = {
   name: "audience-exhaustion",
-  async run(orgId: string): Promise<DetectedInsight[]> {
+  async run(orgId: string, propertyIds: string[]): Promise<DetectedInsight[]> {
     const now = Date.now();
     const since7d = new Date(now - 7 * DAY);
     const since14d = new Date(now - 14 * DAY);
@@ -30,6 +31,12 @@ export const audienceExhaustionDetector: Detector = {
     const campaigns = await prisma.adCampaign.findMany({
       where: {
         orgId,
+        // AdCampaign.propertyId is nullable — a campaign isn't required to
+        // target one building. Keep org-level campaigns (propertyId null)
+        // alongside campaigns on marketable properties; drop campaigns
+        // pointed at excluded/imported properties the customer never
+        // enabled.
+        OR: [propertyIdsToWhere(propertyIds), { propertyId: null }],
         status: { not: "PAUSED" },
       },
       select: {

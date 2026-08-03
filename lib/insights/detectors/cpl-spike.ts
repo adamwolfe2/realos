@@ -22,7 +22,7 @@ const SOURCE_BY_PLATFORM: Record<string, LeadSource[]> = {
  */
 export const cplSpikeDetector: Detector = {
   name: "cpl-spike",
-  async run(orgId: string): Promise<DetectedInsight[]> {
+  async run(orgId: string, propertyIds: string[]): Promise<DetectedInsight[]> {
     const now = Date.now();
     const since7d = new Date(now - 7 * DAY);
     const since14d = new Date(now - 14 * DAY);
@@ -31,19 +31,46 @@ export const cplSpikeDetector: Detector = {
 
     // Pull 14d of spend aggregated per platform via AdAccount->AdCampaign
     // chain. Keep the query narrow — we only need platform + spend buckets.
+    // AdAccount is org-level (one Google/Meta account credential covers the
+    // whole org, not one building) — it has no propertyId dimension at all.
+    // Scoping happens downstream: campaign below, leads further down.
     const accounts = await prisma.adAccount.findMany({
-      where: { orgId },
+      where: {
+        orgId,
+        // property-scope: org-level — AdAccount is one platform credential
+        // per org, not per building. It has no propertyId column at all.
+        // The spend and lead numbers derived from it ARE property-scoped
+        // below, via the campaign relation.
+      },
       select: { id: true, platform: true },
     });
+
+    // AdMetricDaily has no direct propertyId, only via its campaign.
+    // AdCampaign.propertyId is nullable: a campaign can target one enabled
+    // building, or run org-wide (null). Only count spend against campaigns
+    // that touch an enabled building or run org-wide — never spend parked
+    // exclusively on a building this customer never turned on, which would
+    // inflate CPL against leads that could never have come from it.
+    const campaignPropertyClause = {
+      OR: [{ propertyId: { in: propertyIds } }, { propertyId: null }],
+    };
 
     for (const acct of accounts) {
       const [currSpend, prevSpend] = await Promise.all([
         prisma.adMetricDaily.aggregate({
-          where: { adAccountId: acct.id, date: { gte: since7d } },
+          where: {
+            adAccountId: acct.id,
+            date: { gte: since7d },
+            campaign: campaignPropertyClause,
+          },
           _sum: { spendCents: true },
         }),
         prisma.adMetricDaily.aggregate({
-          where: { adAccountId: acct.id, date: { gte: since14d, lt: since7d } },
+          where: {
+            adAccountId: acct.id,
+            date: { gte: since14d, lt: since7d },
+            campaign: campaignPropertyClause,
+          },
           _sum: { spendCents: true },
         }),
       ]);
@@ -59,11 +86,24 @@ export const cplSpikeDetector: Detector = {
 
       const [currLeads, prevLeads] = await Promise.all([
         prisma.lead.count({
-          where: { orgId, source: { in: sources }, createdAt: { gte: since7d } },
+          where: {
+            orgId,
+            // Lead.propertyId is nullable — keep org-level (unattributed)
+            // leads alongside leads on enabled buildings. Ad-sourced leads
+            // often land before property resolution runs, and the spend
+            // side above already includes org-wide (null-property)
+            // campaigns, so excluding unattributed leads here would
+            // understate the leads that spend paid for and falsely spike
+            // the CPL.
+            OR: [{ propertyId: { in: propertyIds } }, { propertyId: null }],
+            source: { in: sources },
+            createdAt: { gte: since7d },
+          },
         }),
         prisma.lead.count({
           where: {
             orgId,
+            OR: [{ propertyId: { in: propertyIds } }, { propertyId: null }],
             source: { in: sources },
             createdAt: { gte: since14d, lt: since7d },
           },

@@ -2,6 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { isoWeekKey } from "../iso-week";
 import type { Detector, DetectedInsight } from "../types";
+import { propertyIdsToWhere } from "@/lib/tenancy/property-filter";
 
 const DAY = 24 * 60 * 60 * 1000;
 const STALE_VACANCY_DAYS = 7;
@@ -20,7 +21,7 @@ const MIN_AVAILABLE_UNITS = 1;
  */
 export const vacancyNeedsBoostDetector: Detector = {
   name: "vacancy-needs-boost",
-  async run(orgId: string): Promise<DetectedInsight[]> {
+  async run(orgId: string, propertyIds: string[]): Promise<DetectedInsight[]> {
     const weekKey = isoWeekKey(new Date());
 
     // Pull every property with available inventory and at least one
@@ -28,9 +29,15 @@ export const vacancyNeedsBoostDetector: Detector = {
     // earliest-listed unit's createdAt as the "vacancy age" proxy —
     // not perfect but the closest signal we have without unit-level
     // turnover history.
+    //
+    // Scoped to the marketable set via `id` (Property's own PK, not a
+    // propertyId FK). A vacancy alert for a building the customer never
+    // onboarded to LeaseStack is pure noise — and would tell them to
+    // launch ads for a property they can't even manage here.
     const properties = await prisma.property.findMany({
       where: {
         orgId,
+        ...propertyIdsToWhere(propertyIds, "id"),
         availableCount: { gte: MIN_AVAILABLE_UNITS },
       },
       select: {

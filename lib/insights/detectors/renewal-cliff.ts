@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { LeaseStatus } from "@prisma/client";
+import { propertyIdsToWhere } from "@/lib/tenancy/property-filter";
 import type { Detector, DetectedInsight } from "../types";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -19,13 +20,17 @@ const CLIFF_THRESHOLD = 5; // ≥5 leases expiring in any 30-day window
  */
 export const renewalCliffDetector: Detector = {
   name: "renewal-cliff",
-  async run(orgId: string): Promise<DetectedInsight[]> {
+  async run(orgId: string, propertyIds: string[]): Promise<DetectedInsight[]> {
     const now = new Date();
     const windowEnd = new Date(now.getTime() + WINDOW_DAYS * DAY);
 
+    // Lease.propertyId is required, so a renewal cliff on a building the
+    // customer never onboarded to LeaseStack is pure noise in their
+    // inbox — scope directly, no org-level branch to consider.
     const leases = await prisma.lease.findMany({
       where: {
         orgId,
+        ...propertyIdsToWhere(propertyIds),
         status: { in: [LeaseStatus.ACTIVE, LeaseStatus.EXPIRING] },
         endDate: { gte: now, lte: windowEnd },
       },

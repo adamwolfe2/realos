@@ -17,12 +17,18 @@ const LOOKBACK_HOURS = 2;
  */
 export const hotVisitorDetector: Detector = {
   name: "hot-visitor",
-  async run(orgId: string): Promise<DetectedInsight[]> {
+  async run(orgId: string, propertyIds: string[]): Promise<DetectedInsight[]> {
     const since = new Date(Date.now() - LOOKBACK_HOURS * 60 * 60 * 1000);
 
     const sessions = await prisma.visitorSession.findMany({
       where: {
         orgId,
+        // VisitorSession.propertyId is nullable — the pixel often fires
+        // before per-building resolution runs, so unattributed sessions
+        // (propertyId: null) are kept alongside sessions tied to an
+        // enabled building. Dropping them would hide most of this
+        // signal, since resolution frequently lags the session itself.
+        OR: [{ propertyId: { in: propertyIds } }, { propertyId: null }],
         lastEventAt: { gte: since },
         totalTimeSeconds: { gte: MIN_SESSION_SECONDS },
         pageviewCount: { gte: MIN_PAGE_VIEWS },

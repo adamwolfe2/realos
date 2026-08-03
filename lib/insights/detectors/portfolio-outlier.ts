@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { isoWeekKey } from "../iso-week";
+import { propertyIdsToWhere } from "@/lib/tenancy/property-filter";
 import type { Detector, DetectedInsight } from "../types";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -25,15 +26,23 @@ const MIN_LEADS_FOR_COMPARISON = 5;
  */
 export const portfolioOutlierDetector: Detector = {
   name: "portfolio-outlier",
-  async run(orgId: string): Promise<DetectedInsight[]> {
+  async run(orgId: string, propertyIds: string[]): Promise<DetectedInsight[]> {
     const since = new Date(Date.now() - 28 * DAY);
     const weekKey = isoWeekKey(new Date());
 
     // Count leads per property in the last 28d. Group at the DB level
     // so we don't fan-in 1000 leads then aggregate in JS.
+    //
+    // This is a cross-property comparison, so the comparison cohort
+    // MUST be restricted to marketable (enabled-in-LeaseStack)
+    // properties — including a disabled building in the benchmark
+    // corrupts the average every other property (including the one
+    // enabled building) gets measured against. No org-level/null
+    // bucket here on purpose: a property-vs-property outlier check has
+    // nothing to compare an unattributed lead against.
     const leadCounts = await prisma.lead.groupBy({
       by: ["propertyId"],
-      where: { orgId, createdAt: { gte: since } },
+      where: { orgId, ...propertyIdsToWhere(propertyIds), createdAt: { gte: since } },
       _count: { _all: true },
     });
 

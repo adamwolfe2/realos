@@ -17,6 +17,7 @@ import { seoLeadsDisconnectDetector } from "./detectors/seo-leads-disconnect";
 import { chatbotDropoffDetector } from "./detectors/chatbot-dropoff";
 import { audienceExhaustionDetector } from "./detectors/audience-exhaustion";
 import { rentVsPortfolioDetector } from "./detectors/rent-vs-portfolio";
+import { marketablePropertyIds } from "@/lib/tenancy/property-filter";
 import { upsertInsights, autoResolveStale } from "./upsert";
 import { polishInsights } from "./llm-polish";
 import type { Detector, DetectorResult } from "./types";
@@ -73,6 +74,15 @@ export interface InsightsRunSummary {
   totalInserted: number;
   totalUpdated: number;
   totalResolved: number;
+  /**
+   * Insights a detector produced against a property that is not enabled in
+   * LeaseStack, dropped before polish + upsert. Should be 0 once every
+   * detector scopes its own queries; a non-zero value names a detector
+   * still reading org-wide.
+   */
+  totalOutOfScope: number;
+  /** Set when the whole pass was skipped, with the reason. */
+  skipped?: string;
   detectorResults: DetectorResult[];
 }
 
@@ -85,8 +95,28 @@ export async function runInsightDetectors(
     totalInserted: 0,
     totalUpdated: 0,
     totalResolved: 0,
+    totalOutOfScope: 0,
     detectorResults: [],
   };
+
+  // The enabled buildings — NOT everything the backend sync imported. An
+  // AppFolio connection imports the operator's entire account; SG Real
+  // Estate has 135 Property rows and is a customer for exactly 1 building.
+  // Insight bodies bake counts in as literal text and get emailed, so a
+  // detector reading org-wide mails the customer numbers about buildings
+  // they never onboarded.
+  const propertyIds = await marketablePropertyIds(orgId);
+
+  // Fail closed, and loudly. An org with nothing enabled has nothing
+  // truthful to say — generating org-level insights from an unscoped
+  // portfolio is exactly the leak. Skipping is recorded rather than
+  // silent so "no insights" is distinguishable from "detectors broken".
+  if (propertyIds.length === 0) {
+    summary.skipped = "org has no properties enabled in LeaseStack";
+    return summary;
+  }
+
+  const marketable = new Set(propertyIds);
 
   // Phase 1: run every detector and collect raw insights. We DON'T
   // polish per-detector; one batched Claude call across the full pass
@@ -98,7 +128,22 @@ export async function runInsightDetectors(
 
   for (const detector of DETECTORS) {
     try {
-      const detected = await detector.run(orgId);
+      const raw = await detector.run(orgId, propertyIds);
+      // Output-stage backstop. Widening Detector.run does NOT force a
+      // detector to use propertyIds — TypeScript accepts a function that
+      // declares fewer parameters — so a new detector can silently go back
+      // to reading org-wide. This filter is the layer that cannot be
+      // forgotten: an insight ABOUT a building the customer never enabled
+      // never reaches polish, upsert, the dashboard, or their inbox.
+      //
+      // Insights with a null propertyId are org-level ("ad spend is up")
+      // and are kept — but their internal numbers still depend on the
+      // detector scoping its own aggregates, which is what the signature
+      // and the source-guard test are for.
+      const detected = raw.filter(
+        (i) => i.propertyId == null || marketable.has(i.propertyId),
+      );
+      summary.totalOutOfScope += raw.length - detected.length;
       allDetected.push({ detector: detector.name, insights: detected });
       summary.totalDetected += detected.length;
     } catch (err) {

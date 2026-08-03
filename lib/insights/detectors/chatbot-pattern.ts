@@ -2,6 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { isoWeekKey } from "../iso-week";
 import type { Detector, DetectedInsight } from "../types";
+import { propertyIdsToWhere } from "@/lib/tenancy/property-filter";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -26,10 +27,19 @@ type ChatbotMessage = {
  */
 export const chatbotPatternDetector: Detector = {
   name: "chatbot-pattern",
-  async run(orgId: string): Promise<DetectedInsight[]> {
+  async run(orgId: string, propertyIds: string[]): Promise<DetectedInsight[]> {
     const since = new Date(Date.now() - 7 * DAY);
     const conversations = await prisma.chatbotConversation.findMany({
-      where: { orgId, lastMessageAt: { gte: since } },
+      where: {
+        orgId,
+        // ChatbotConversation.propertyId is nullable — the widget can be
+        // installed org-wide, and this detector's insight is org-level
+        // (no propertyId on the emitted insight), so unattributed
+        // conversations count too. Drop conversations tagged to an
+        // excluded/non-marketable property.
+        OR: [propertyIdsToWhere(propertyIds), { propertyId: null }],
+        lastMessageAt: { gte: since },
+      },
       select: { messages: true },
       take: 500,
     });

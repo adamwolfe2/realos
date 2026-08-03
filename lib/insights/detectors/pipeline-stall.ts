@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { LeadStatus } from "@prisma/client";
+import { propertyIdsToWhere } from "@/lib/tenancy/property-filter";
 import type { Detector, DetectedInsight } from "../types";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -20,11 +21,16 @@ const ACTIONABLE_STATUSES: LeadStatus[] = [LeadStatus.NEW, LeadStatus.CONTACTED]
  */
 export const pipelineStallDetector: Detector = {
   name: "pipeline-stall",
-  async run(orgId: string): Promise<DetectedInsight[]> {
+  async run(orgId: string, propertyIds: string[]): Promise<DetectedInsight[]> {
     const since = new Date(Date.now() - STALL_DAYS * DAY);
     const stalled = await prisma.lead.findMany({
       where: {
         orgId,
+        // Lead.propertyId is nullable. An unattributed org-level lead
+        // (no building tied yet) is still a real, actionable inquiry for
+        // the customer, so keep it alongside leads on a marketable
+        // (enabled-in-LeaseStack) building rather than dropping it.
+        OR: [propertyIdsToWhere(propertyIds), { propertyId: null }],
         status: { in: ACTIONABLE_STATUSES },
         lastActivityAt: { lt: since },
       },
