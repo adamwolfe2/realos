@@ -19,6 +19,7 @@ import { avatarPaletteFor, extractIdentity } from "@/lib/visitors/enrichment";
 import { cn } from "@/lib/utils";
 import { AddNoteForm } from "./add-note-form";
 import { LeadStatusForm } from "./lead-status-form";
+import { LinkResidentForm } from "./link-resident-form";
 import { Timeline } from "@/components/portal/leads/timeline";
 import { buildTimeline } from "@/components/portal/leads/timeline-events";
 import { EnrichmentCard, SidebarCard } from "@/components/portal/leads/enrichment-card";
@@ -103,6 +104,17 @@ export default async function LeadDetailPage({
           },
         },
         visitor: true,
+        // Lead→lease proof chain: residents linked to this lead (auto-match
+        // or manual "Mark as signed").
+        residents: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            unitNumber: true,
+            currentLease: { select: { startDate: true } },
+          },
+        },
       },
     }),
     prisma.clientNote.findMany({
@@ -192,6 +204,41 @@ export default async function LeadDetailPage({
         })
       : [];
   const allConversations = [...lead.conversations, ...orphanedConversations];
+
+  // Candidate residents for the manual "Mark as signed" link. Scoped to the
+  // caller's property access; narrowed to the lead's own property when it
+  // has one (a cross-property link is still possible via the API, the UI
+  // just leads with the overwhelmingly common case). Only unlinked
+  // residents — a resident already linked to another lead can't be stolen.
+  const residentCandidates =
+    lead.residents.length > 0
+      ? []
+      : await prisma.resident.findMany({
+          where: {
+            ...tenantWhere(scope),
+            // AND-combined, never spread side by side: both clauses key on
+            // `propertyId`, so spreading would let the lead's property
+            // silently REPLACE the RBAC gate instead of narrowing it.
+            AND: [
+              propertyWhereFragment(scope, null),
+              lead.propertyId ? { propertyId: lead.propertyId } : {},
+            ],
+            leadId: null,
+          },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            unitNumber: true,
+            moveInDate: true,
+            property: { select: { name: true } },
+          },
+          // nulls: "last" — Postgres sorts NULLs FIRST on DESC, so
+          // residents with no move-in date would otherwise fill the 300-row
+          // window and push every real candidate out of the picker.
+          orderBy: { moveInDate: { sort: "desc", nulls: "last" } },
+          take: 300,
+        });
 
   const leadInsightCards: InsightCardData[] = leadInsights.map((i) => ({
     ...i,
@@ -521,6 +568,31 @@ export default async function LeadDetailPage({
               leadId={lead.id}
               initialStatus={lead.status}
               score={lead.score}
+            />
+          </SidebarCard>
+
+          <SidebarCard label="Signed lease">
+            <LinkResidentForm
+              leadId={lead.id}
+              linked={lead.residents.map((r) => ({
+                id: r.id,
+                name:
+                  [r.firstName, r.lastName].filter(Boolean).join(" ") ||
+                  "Resident",
+                unitNumber: r.unitNumber,
+                leaseStart: r.currentLease?.startDate
+                  ? r.currentLease.startDate.toISOString()
+                  : null,
+              }))}
+              candidates={residentCandidates.map((r) => ({
+                id: r.id,
+                name:
+                  [r.firstName, r.lastName].filter(Boolean).join(" ") ||
+                  "Resident",
+                unitNumber: r.unitNumber,
+                propertyName: r.property?.name ?? null,
+                moveInDate: r.moveInDate ? r.moveInDate.toISOString() : null,
+              }))}
             />
           </SidebarCard>
 

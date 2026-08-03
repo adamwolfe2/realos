@@ -30,6 +30,12 @@ import {
   type MappedShowing,
 } from "./appfolio";
 import { classifyProperty } from "@/lib/properties/marketable";
+import {
+  buildLeadMatchIndex,
+  matchResidentToLead,
+  LEAD_STATUSES_BELOW_SIGNED,
+  type LeadMatchIndex,
+} from "@/lib/leads/lead-lease-link";
 
 // ---------------------------------------------------------------------------
 // AppFolio REST sync worker.
@@ -876,7 +882,7 @@ export async function runAppfolioSync(
         if (!lead.email) continue;
         const tenant = tenantsByEmail.get(lead.email);
         if (!tenant) continue;
-        const matched = await markLeadSignedByTenant(orgId, tenant);
+        const matched = await tenantMatchesExistingLead(orgId, tenant);
         if (matched) stats.tenantsMatched += 1;
       }
     }
@@ -985,6 +991,29 @@ export async function runAppfolioSync(
     const rows = await fetchAllPages(client, "tenant_directory", {
       extraFilters: { status: "all" },
     });
+    // Lead-match index, built ONCE per sync run (replaces the old
+    // per-resident email findFirst — same email tier plus normalized
+    // phone and exact-name tiers, unambiguous-only; see
+    // lib/leads/lead-lease-link.ts). Built after the guest-card/lead
+    // phases so leads created earlier in this same run are matchable.
+    // ponytail: unbounded by design — one findMany of the org's leads per
+    // sync run (was one findFirst per resident). Fine to ~100k leads;
+    // paginate with a cursor if an org ever exceeds that.
+    const leadMatchIndex = buildLeadMatchIndex(
+      await prisma.lead.findMany({
+        where: { orgId },
+        select: {
+          id: true,
+          email: true,
+          phone: true,
+          firstName: true,
+          lastName: true,
+          // Corroborates the weak (phone/name) tiers — see
+          // matchResidentToLead.
+          propertyId: true,
+        },
+      }),
+    );
     let residentsNoProperty = 0;
     for (const row of rows) {
       const mapped = mapResidentPayload(row);
@@ -1003,7 +1032,13 @@ export async function runAppfolioSync(
       const listingId =
         (mapped.unitExternalId && listingByExternalId.get(mapped.unitExternalId)) ||
         null;
-      const id = await upsertResident(orgId, propertyId, listingId, mapped);
+      const id = await upsertResident(
+        orgId,
+        propertyId,
+        listingId,
+        mapped,
+        leadMatchIndex,
+      );
       residentByExternalId.set(mapped.externalId, id);
       stats.residentsUpserted += 1;
     }
@@ -1408,7 +1443,19 @@ export async function upsertAppfolioLead(
   });
 }
 
-async function markLeadSignedByTenant(
+// COUNTER ONLY — does not mutate (2026-08-02). This used to promote the
+// matched lead to SIGNED with `convertedAt: new Date()`, i.e. sync time.
+// That silently broke the report's new traced-signings number: the report
+// buckets by convertedAt, so an org's FIRST sync stamped every historical
+// signing with today's date and spiked the current period — exactly the
+// bug the backfill script anchors around.
+//
+// SIGNED promotion now belongs to the residents phase (upsertResident →
+// promoteLinkedLead), which is the only place that has the real signing
+// evidence (mapped.moveInDate) AND writes the Resident.leadId proof link
+// at the same time. Its email tier is case-insensitive, so it matches a
+// superset of what this exact-match phase finds.
+async function tenantMatchesExistingLead(
   orgId: string,
   tenant: MappedTenant
 ): Promise<boolean> {
@@ -1418,20 +1465,9 @@ async function markLeadSignedByTenant(
   // mixed-case leads permanently unlinked from their signed lease).
   const lead = await prisma.lead.findFirst({
     where: { orgId, email: { equals: tenant.email, mode: "insensitive" } },
-    select: { id: true, status: true },
+    select: { id: true },
   });
-  if (!lead) return false;
-  if (lead.status === LeadStatus.SIGNED) return true;
-
-  await prisma.lead.update({
-    where: { id: lead.id },
-    data: {
-      status: LeadStatus.SIGNED,
-      convertedAt: new Date(),
-      lastActivityAt: new Date(),
-    },
-  });
-  return true;
+  return Boolean(lead);
 }
 
 // ---------------------------------------------------------------------------
@@ -1753,22 +1789,54 @@ async function upsertAppfolioApplication(
 
 // ---------------------------------------------------------------------------
 // Resident upsert — keyed on (orgId, externalSystem, externalId). Best-effort
-// match to an existing Lead by email so the Resident row carries leadId.
-async function upsertResident(
+// match to an existing Lead (email → phone → name, unambiguous-only; shared
+// rules in lib/leads/lead-lease-link.ts) so the Resident row carries leadId.
+// Exported for tests (same precedent as upsertAppfolioLead).
+/**
+ * Promote a lead that just gained a Resident link to SIGNED.
+ *
+ * Without this the widened matcher was half-wired: upsertResident wrote
+ * Resident.leadId for phone/name matches, but only the email path (phase 2
+ * markLeadSignedByTenant) ever set Lead.convertedAt — and the report's
+ * tracedSignedLeads requires convertedAt in the period. So a phone- or
+ * name-linked resident produced a link that no report could ever count.
+ *
+ * Monotonic and idempotent: LOST/UNQUALIFIED/SIGNED are excluded by
+ * LEAD_STATUSES_BELOW_SIGNED, so a re-sync can't resurrect a corrected
+ * lead or re-stamp convertedAt on one already signed. convertedAt anchors
+ * to the resident's move-in (the real signing evidence available here),
+ * matching the manual route's lease-start anchor as closely as the
+ * AppFolio payload allows.
+ */
+async function promoteLinkedLead(
+  leadId: string,
+  mapped: MappedResident,
+): Promise<void> {
+  await prisma.lead.updateMany({
+    where: { id: leadId, status: { in: LEAD_STATUSES_BELOW_SIGNED } },
+    data: {
+      status: LeadStatus.SIGNED,
+      convertedAt: mapped.moveInDate ?? new Date(),
+      lastActivityAt: new Date(),
+    },
+  });
+}
+
+export async function upsertResident(
   orgId: string,
   propertyId: string,
   listingId: string | null,
   mapped: MappedResident,
+  leadMatchIndex: LeadMatchIndex,
 ): Promise<string> {
-  let leadId: string | null = null;
-  if (mapped.email) {
-    // Case-insensitive for the same reason as markLeadSignedByTenant.
-    const lead = await prisma.lead.findFirst({
-      where: { orgId, email: { equals: mapped.email, mode: "insensitive" } },
-      select: { id: true },
-    });
-    if (lead) leadId = lead.id;
-  }
+  const leadId =
+    matchResidentToLead(leadMatchIndex, {
+      email: mapped.email,
+      phone: mapped.phone,
+      firstName: mapped.firstName,
+      lastName: mapped.lastName,
+      propertyId,
+    })?.leadId ?? null;
 
   const where = {
     orgId_externalSystem_externalId: {
@@ -1794,9 +1862,38 @@ async function upsertResident(
     raw: mapped.raw as unknown as Prisma.InputJsonValue,
   };
 
-  const existing = await prisma.resident.findUnique({ where, select: { id: true } });
+  const existing = await prisma.resident.findUnique({
+    where,
+    select: { id: true, leadId: true, leadLinkManual: true },
+  });
   if (existing) {
-    await prisma.resident.update({ where, data });
+    // Link precedence, strongest first:
+    //   1. leadLinkManual — an operator linked OR unlinked this resident.
+    //      Sync never touches leadId (even when it is null: that null IS
+    //      the operator's decision, and re-linking would undo it every
+    //      tick).
+    //   2. existing.leadId — first-write-wins for auto-matches. The old
+    //      unconditional write nulled an existing link whenever this run's
+    //      matching came up empty, destroying the proof chain.
+    //   3. this run's match.
+    const nextLeadId = existing.leadLinkManual
+      ? existing.leadId
+      : (existing.leadId ?? leadId);
+
+    await prisma.resident.update({
+      where,
+      data: { ...data, leadId: nextLeadId },
+    });
+    // Promote on EVERY run that has an auto-managed link, not only on the
+    // transition. promoteLinkedLead is a no-op once the lead is SIGNED (or
+    // LOST/UNQUALIFIED), so this is idempotent — and unlike a
+    // transition-only call it retries after a failed promotion instead of
+    // stranding a link with no convertedAt forever. Operator-managed links
+    // are skipped: the link route already promoted, and re-promoting would
+    // fight an operator who deliberately moved the status back.
+    if (nextLeadId && !existing.leadLinkManual) {
+      await promoteLinkedLead(nextLeadId, mapped);
+    }
     return existing.id;
   }
   const created = await prisma.resident.create({
@@ -1807,6 +1904,7 @@ async function upsertResident(
       ...data,
     },
   });
+  if (leadId) await promoteLinkedLead(leadId, mapped);
   return created.id;
 }
 

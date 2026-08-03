@@ -1431,9 +1431,19 @@ model Resident {
   listingId String?
   listing   Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
 
-  // Optional bridge to a Lead row when we can match by email.
+  // Optional bridge to a Lead row — set by the AppFolio sync's
+  // unambiguous email/phone/name match, or by an operator via the lead
+  // detail "Mark as signed" control.
   leadId String?
   lead   Lead?   @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  // True once an OPERATOR has explicitly decided this resident's link
+  // (linked or unlinked via /api/tenant/leads/[id]/link-resident). The
+  // AppFolio sync never touches leadId on these rows: without the flag,
+  // leadId presence was the only signal, so an operator's unlink was
+  // silently re-linked by the very next sync tick using the same
+  // auto-match that produced the wrong link.
+  leadLinkManual Boolean @default(false)
 
   // Identity
   firstName String?

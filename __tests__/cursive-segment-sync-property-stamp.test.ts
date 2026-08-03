@@ -31,7 +31,10 @@ const h = vi.hoisted(() => ({
     })),
   },
   property: {
-    findMany: vi.fn(async () => [] as Array<{ id: string; name: string }>),
+    findMany: vi.fn(
+      async (_args: { where: Record<string, unknown> }) =>
+        [] as Array<{ id: string; name: string }>,
+    ),
   },
 }));
 
@@ -83,8 +86,8 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-describe("runCursiveSegmentSync — sole-ACTIVE-property stamping", () => {
-  it("stamps a newly created visitor when the org has exactly one ACTIVE property", async () => {
+describe("runCursiveSegmentSync — sole-launched-property stamping", () => {
+  it("stamps a newly created visitor when the org has exactly one launched property", async () => {
     h.property.findMany.mockResolvedValueOnce([{ id: "prop_tc", name: "TC" }]);
 
     const result = await runCursiveSegmentSync("org_1");
@@ -97,7 +100,24 @@ describe("runCursiveSegmentSync — sole-ACTIVE-property stamping", () => {
     });
   });
 
-  it("leaves propertyId null when the org has 2+ ACTIVE properties (never guess)", async () => {
+  it("requires launchStatus LIVE, not just lifecycle ACTIVE — an unlaunched building has no pixel-bearing site", async () => {
+    h.property.findMany.mockResolvedValueOnce([{ id: "prop_tc", name: "TC" }]);
+
+    await runCursiveSegmentSync("org_1");
+
+    // The sole-property query itself must exclude ONBOARDING/DRAFT/PAUSED
+    // rows; without this an org whose single ACTIVE building is still
+    // ONBOARDING (real: team, cleivas) gets visitors filed onto a
+    // building that has no site.
+    const [args] = h.property.findMany.mock.calls[0];
+    expect(args.where).toMatchObject({
+      orgId: "org_1",
+      launchStatus: "LIVE",
+      lifecycle: { in: ["ACTIVE"] },
+    });
+  });
+
+  it("leaves propertyId null when the org has 2+ launched properties (never guess)", async () => {
     h.property.findMany.mockResolvedValueOnce([
       { id: "prop_a", name: "A" },
       { id: "prop_b", name: "B" },

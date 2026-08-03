@@ -203,6 +203,17 @@ export function PropertyOnePager({ snapshot, property }: Props) {
             <Stat value={num(lifecycleStats?.activeLeases)} label="Active leases" />
             <Stat value={compactUsd(renewalStats?.pastDueBalanceUsd)} label="Past-due balance" />
           </div>
+          {/* Traced lead→lease proof. Only rendered when at least one
+              concrete Resident link exists — never a zero-padded claim. */}
+          {snapshot.tracedSignedLeads ? (
+            <p className="mt-3 text-[11.5px] font-semibold text-foreground">
+              {snapshot.tracedSignedLeads}{" "}
+              {snapshot.tracedSignedLeads === 1
+                ? "signed lease this period traces"
+                : "signed leases this period trace"}{" "}
+              directly back to a captured lead
+            </p>
+          ) : null}
           {monthlySigned.length ? (
             <>
               <div className="mb-1.5 mt-3.5 text-[10px] font-medium text-muted-foreground">

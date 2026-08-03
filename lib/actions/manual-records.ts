@@ -17,10 +17,10 @@ import {
   ApplicationStatus,
   LeadSource,
   ResidentStatus,
-  UserRole,
   WorkOrderPriority,
   WorkOrderStatus,
 } from "@prisma/client";
+import { ALLOWED_WRITE_ROLES } from "@/lib/auth/write-roles";
 
 // ---------------------------------------------------------------------------
 // Manual entry (P1-7/8/9): AppFolio-less orgs need Residents, Work orders,
@@ -37,16 +37,8 @@ export type ManualCreateResult =
 type Scope = Awaited<ReturnType<typeof requireWritableWorkspace>>;
 
 // Manual entry is operational data entry: owners/admins + leasing agents.
-// CLIENT_VIEWER (read-only seat) and AL_PARTNER are excluded, mirroring
-// ALLOWED_TOGGLE_ROLES in the marketplace toggle route.
-const ALLOWED_WRITE_ROLES: ReadonlySet<UserRole> = new Set<UserRole>([
-  UserRole.CLIENT_OWNER,
-  UserRole.CLIENT_ADMIN,
-  UserRole.LEASING_AGENT,
-  UserRole.AGENCY_OWNER,
-  UserRole.AGENCY_ADMIN,
-  UserRole.AGENCY_OPERATOR,
-]);
+// The set moved to lib/auth/write-roles.ts (2026-08-02) so the lead→lease
+// link route shares it rather than re-deriving the same policy.
 
 /** Shared entry gate: auth + role + rate limit + moduleResidents flag.
     Returns an error result, or null to proceed. */

@@ -419,6 +419,11 @@ export type ReportSnapshot = {
   kpis: ReportKpis;
   kpiDeltas: ReportKpiDeltas;
   funnel: ReportFunnelStage[];
+  // Leads with a concrete Resident link (the lead→lease proof chain)
+  // whose convertedAt falls in the period. UNDEFINED when zero — the
+  // view must omit the claim entirely rather than render "0 traced"
+  // (never zero-pad a proof). Optional on legacy snapshots.
+  tracedSignedLeads?: number;
   leadSources: ReportLeadSource[];
   adPerformance: ReportAdRow[];
   topPages: ReportTopPage[];
@@ -1824,6 +1829,26 @@ export async function generateReportSnapshot(
         }
       : undefined;
 
+  // Traced lead→lease proof (2026-08-02): leads with a concrete Resident
+  // link (Resident.leadId — auto-matched or operator-linked via "Mark as
+  // signed") whose signing date falls in the period. This is the only
+  // number the report may present as "this captured lead became this
+  // lease." Rendered ONLY when > 0 — never zero-padded; an absent chain
+  // is absent, not "0" (Adam: we cannot be doing more than we say).
+  const tracedSignedLeadsCount = await prisma.lead.count({
+    where: {
+      orgId,
+      ...scope.propertyClause,
+      ...activePropertyClause(scope),
+      residents: { some: {} },
+      // status must still BE signed: convertedAt is never cleared, so a
+      // lead an operator later corrected to LOST/UNQUALIFIED would keep
+      // counting as proof of a signing the client no longer claims.
+      status: LeadStatus.SIGNED,
+      convertedAt: { gte: periodStart, lt: periodEnd },
+    },
+  });
+
   // Per-property leases signed map — used below to enrich the
   // attribution table when org-wide reports want to show signed counts
   // by source. Kept as a Map so the lookup stays O(1) per property row.
@@ -1849,6 +1874,8 @@ export async function generateReportSnapshot(
     kpis,
     kpiDeltas,
     funnel,
+    tracedSignedLeads:
+      tracedSignedLeadsCount > 0 ? tracedSignedLeadsCount : undefined,
     leadSources,
     adPerformance,
     topPages,
