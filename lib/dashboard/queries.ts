@@ -641,9 +641,18 @@ export async function getActivityFeed(
         where: {
           orgId,
           startedAt: { gte: since },
-          OR: [
-            { pageviewCount: { gt: 1 } },
-            { totalTimeSeconds: { gt: ENGAGED_TIME_SECONDS } },
+          // AND-wrapped, NOT spread: orgLevelClause is itself an `OR`, and
+          // this where already owns a top-level `OR` for the engagement
+          // filter. Spreading would clobber one of them — the gate would
+          // vanish silently and the suite would stay green.
+          AND: [
+            orgLevelClause,
+            {
+              OR: [
+                { pageviewCount: { gt: 1 } },
+                { totalTimeSeconds: { gt: ENGAGED_TIME_SECONDS } },
+              ],
+            },
           ],
         },
         orderBy: { startedAt: "desc" },

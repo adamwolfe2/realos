@@ -179,9 +179,13 @@ export async function buildWeeklyDigest(orgId: string): Promise<WeeklyDigest> {
       by: ["propertyId"],
       where: {
         orgId,
-        ...strictClause,
         createdAt: { gte: thisWeekStart, lt: now },
-        propertyId: { not: null },
+        // NOTE: `propertyId: { not: null }` used to live here. Spreading
+        // strictClause (which also keys on propertyId) BELOW it silently
+        // clobbered the gate — object literals take the last key. The
+        // marketable clause is already an explicit id list, so non-null is
+        // implied; keep this as the single propertyId key in this where.
+        ...strictClause,
       },
       _count: { _all: true },
     }),
