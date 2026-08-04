@@ -1,7 +1,7 @@
-import "server-only";
-
 // ---------------------------------------------------------------------------
 // Marketplace catalog
+// Pure static contract shared by server routes, UI, and read-only audit tools.
+// Keep database, environment, and mutation imports out of this module.
 //
 // The user-facing à-la-carte module catalog rendered on /portal/marketplace.
 // Each entry maps to a `module*` boolean flag on the Organization model

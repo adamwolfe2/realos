@@ -3,10 +3,10 @@
   "registryProductCount": 8,
   "sourceRecordCount": 135,
   "summary": {
-    "critical": 29,
-    "warning": 40,
-    "info": 0,
-    "total": 69
+    "critical": 42,
+    "warning": 21,
+    "info": 18,
+    "total": 81
   },
   "findings": [
     {
@@ -109,6 +109,149 @@
       "evidencePath": "lib/billing/price-ids.generated.ts"
     },
     {
+      "id": "tier_readiness_conflict:billing_catalog:growth.annual:search-opportunity-engine",
+      "code": "tier_readiness_conflict",
+      "severity": "critical",
+      "owner": "product",
+      "source": "billing_catalog",
+      "sourceId": "growth.annual",
+      "productKey": "search-opportunity-engine",
+      "reason": "Search Opportunity Engine is beta but the growth tier family grants it across billing variants.",
+      "evidencePath": "lib/billing/catalog.ts"
+    },
+    {
+      "id": "tier_readiness_conflict:billing_catalog:scale.annual:search-opportunity-engine",
+      "code": "tier_readiness_conflict",
+      "severity": "critical",
+      "owner": "product",
+      "source": "billing_catalog",
+      "sourceId": "scale.annual",
+      "productKey": "search-opportunity-engine",
+      "reason": "Search Opportunity Engine is beta but the scale tier family grants it across billing variants.",
+      "evidencePath": "lib/billing/catalog.ts"
+    },
+    {
+      "id": "tier_unsupported_entitlement:billing_catalog:growth.annual:moduleCreativeStudio",
+      "code": "tier_unsupported_entitlement",
+      "severity": "critical",
+      "owner": "product",
+      "source": "billing_catalog",
+      "sourceId": "growth.annual",
+      "productKey": null,
+      "reason": "The growth tier family grants unsupported entitlement moduleCreativeStudio across billing variants.",
+      "evidencePath": "lib/billing/catalog.ts"
+    },
+    {
+      "id": "tier_unsupported_entitlement:billing_catalog:growth.annual:moduleGoogleAds",
+      "code": "tier_unsupported_entitlement",
+      "severity": "critical",
+      "owner": "product",
+      "source": "billing_catalog",
+      "sourceId": "growth.annual",
+      "productKey": null,
+      "reason": "The growth tier family grants unsupported entitlement moduleGoogleAds across billing variants.",
+      "evidencePath": "lib/billing/catalog.ts"
+    },
+    {
+      "id": "tier_unsupported_entitlement:billing_catalog:growth.annual:moduleMetaAds",
+      "code": "tier_unsupported_entitlement",
+      "severity": "critical",
+      "owner": "product",
+      "source": "billing_catalog",
+      "sourceId": "growth.annual",
+      "productKey": null,
+      "reason": "The growth tier family grants unsupported entitlement moduleMetaAds across billing variants.",
+      "evidencePath": "lib/billing/catalog.ts"
+    },
+    {
+      "id": "tier_unsupported_entitlement:billing_catalog:growth.annual:modulePixel",
+      "code": "tier_unsupported_entitlement",
+      "severity": "critical",
+      "owner": "product",
+      "source": "billing_catalog",
+      "sourceId": "growth.annual",
+      "productKey": null,
+      "reason": "The growth tier family grants unsupported entitlement modulePixel across billing variants.",
+      "evidencePath": "lib/billing/catalog.ts"
+    },
+    {
+      "id": "tier_unsupported_entitlement:billing_catalog:scale.annual:moduleCreativeStudio",
+      "code": "tier_unsupported_entitlement",
+      "severity": "critical",
+      "owner": "product",
+      "source": "billing_catalog",
+      "sourceId": "scale.annual",
+      "productKey": null,
+      "reason": "The scale tier family grants unsupported entitlement moduleCreativeStudio across billing variants.",
+      "evidencePath": "lib/billing/catalog.ts"
+    },
+    {
+      "id": "tier_unsupported_entitlement:billing_catalog:scale.annual:moduleEmail",
+      "code": "tier_unsupported_entitlement",
+      "severity": "critical",
+      "owner": "product",
+      "source": "billing_catalog",
+      "sourceId": "scale.annual",
+      "productKey": null,
+      "reason": "The scale tier family grants unsupported entitlement moduleEmail across billing variants.",
+      "evidencePath": "lib/billing/catalog.ts"
+    },
+    {
+      "id": "tier_unsupported_entitlement:billing_catalog:scale.annual:moduleGoogleAds",
+      "code": "tier_unsupported_entitlement",
+      "severity": "critical",
+      "owner": "product",
+      "source": "billing_catalog",
+      "sourceId": "scale.annual",
+      "productKey": null,
+      "reason": "The scale tier family grants unsupported entitlement moduleGoogleAds across billing variants.",
+      "evidencePath": "lib/billing/catalog.ts"
+    },
+    {
+      "id": "tier_unsupported_entitlement:billing_catalog:scale.annual:moduleMetaAds",
+      "code": "tier_unsupported_entitlement",
+      "severity": "critical",
+      "owner": "product",
+      "source": "billing_catalog",
+      "sourceId": "scale.annual",
+      "productKey": null,
+      "reason": "The scale tier family grants unsupported entitlement moduleMetaAds across billing variants.",
+      "evidencePath": "lib/billing/catalog.ts"
+    },
+    {
+      "id": "tier_unsupported_entitlement:billing_catalog:scale.annual:moduleOutboundEmail",
+      "code": "tier_unsupported_entitlement",
+      "severity": "critical",
+      "owner": "product",
+      "source": "billing_catalog",
+      "sourceId": "scale.annual",
+      "productKey": null,
+      "reason": "The scale tier family grants unsupported entitlement moduleOutboundEmail across billing variants.",
+      "evidencePath": "lib/billing/catalog.ts"
+    },
+    {
+      "id": "tier_unsupported_entitlement:billing_catalog:scale.annual:modulePixel",
+      "code": "tier_unsupported_entitlement",
+      "severity": "critical",
+      "owner": "product",
+      "source": "billing_catalog",
+      "sourceId": "scale.annual",
+      "productKey": null,
+      "reason": "The scale tier family grants unsupported entitlement modulePixel across billing variants.",
+      "evidencePath": "lib/billing/catalog.ts"
+    },
+    {
+      "id": "tier_unsupported_entitlement:billing_catalog:scale.annual:moduleReferrals",
+      "code": "tier_unsupported_entitlement",
+      "severity": "critical",
+      "owner": "product",
+      "source": "billing_catalog",
+      "sourceId": "scale.annual",
+      "productKey": null,
+      "reason": "The scale tier family grants unsupported entitlement moduleReferrals across billing variants.",
+      "evidencePath": "lib/billing/catalog.ts"
+    },
+    {
       "id": "unsupported_claim:marketing:features.ads.managed-end-to-end",
       "code": "unsupported_claim",
       "severity": "critical",
@@ -117,7 +260,7 @@
       "sourceId": "features.ads.managed-end-to-end",
       "productKey": null,
       "reason": "LeaseStack is software and does not operate advertising for customers.",
-      "evidencePath": "app/(platform)/features/ads/page.tsx"
+      "evidencePath": "lib/copy/product-claims.ts"
     },
     {
       "id": "unsupported_claim:marketing:features.ads.universal-attribution",
@@ -128,7 +271,7 @@
       "sourceId": "features.ads.universal-attribution",
       "productKey": "lead-to-lease-attribution",
       "reason": "Paid-media attribution cannot guarantee every dollar maps to a signed lease.",
-      "evidencePath": "app/(platform)/features/page.tsx"
+      "evidencePath": "lib/copy/product-claims.ts"
     },
     {
       "id": "unsupported_claim:marketing:features.ads.weekly-creative-refresh",
@@ -139,7 +282,7 @@
       "sourceId": "features.ads.weekly-creative-refresh",
       "productKey": null,
       "reason": "LeaseStack does not sell an ongoing creative-production service.",
-      "evidencePath": "app/(platform)/features/page.tsx"
+      "evidencePath": "lib/copy/product-claims.ts"
     },
     {
       "id": "unsupported_claim:marketing:home.faq.ads-start-running",
@@ -337,7 +480,7 @@
       "sourceId": "features.ads.managed-end-to-end",
       "productKey": null,
       "reason": "Customer-visible source has no approved canonical product mapping.",
-      "evidencePath": "app/(platform)/features/ads/page.tsx"
+      "evidencePath": "lib/copy/product-claims.ts"
     },
     {
       "id": "orphan_product_source:marketing:features.ads.weekly-creative-refresh",
@@ -348,7 +491,7 @@
       "sourceId": "features.ads.weekly-creative-refresh",
       "productKey": null,
       "reason": "Customer-visible source has no approved canonical product mapping.",
-      "evidencePath": "app/(platform)/features/page.tsx"
+      "evidencePath": "lib/copy/product-claims.ts"
     },
     {
       "id": "orphan_product_source:marketing:home.faq.ads-start-running",
@@ -546,10 +689,10 @@
       "sourceId": "terms.no-managed-advertising",
       "productKey": null,
       "reason": "Customer-visible source has no approved canonical product mapping.",
-      "evidencePath": "app/(platform)/terms/page.tsx"
+      "evidencePath": "lib/copy/product-claims.ts"
     },
     {
-      "id": "price_drift:billing_features:moduleReputation",
+      "id": "price_drift:billing_features:moduleReputation:group-1",
       "code": "price_drift",
       "severity": "warning",
       "owner": "billing",
@@ -560,212 +703,201 @@
       "evidencePath": "lib/billing/features.ts"
     },
     {
-      "id": "price_drift:billing_features:moduleSEO",
-      "code": "price_drift",
-      "severity": "warning",
-      "owner": "billing",
-      "source": "billing_features",
-      "sourceId": "moduleSEO",
-      "productKey": "search-opportunity-engine",
-      "reason": "Search Opportunity Engine has multiple self-serve prices: 14900, 7900.",
-      "evidencePath": "lib/billing/features.ts"
-    },
-    {
-      "id": "stripe_mapping_unverified:billing_features:base_platform",
-      "code": "stripe_mapping_unverified",
-      "severity": "warning",
+      "id": "stripe_live_verification_deferred:billing_features:base_platform",
+      "code": "stripe_live_verification_deferred",
+      "severity": "info",
       "owner": "billing",
       "source": "billing_features",
       "sourceId": "base_platform",
       "productKey": "connected-data-foundation",
-      "reason": "A lookup key is declared but its live DB-backed Price mapping is unverified.",
+      "reason": "Lookup key ls_base_platform_monthly requires separate live Stripe reconciliation.",
       "evidencePath": "lib/billing/features.ts"
     },
     {
-      "id": "stripe_mapping_unverified:billing_features:moduleAttribution",
-      "code": "stripe_mapping_unverified",
-      "severity": "warning",
+      "id": "stripe_live_verification_deferred:billing_features:moduleAttribution",
+      "code": "stripe_live_verification_deferred",
+      "severity": "info",
       "owner": "billing",
       "source": "billing_features",
       "sourceId": "moduleAttribution",
       "productKey": "lead-to-lease-attribution",
-      "reason": "A lookup key is declared but its live DB-backed Price mapping is unverified.",
+      "reason": "Lookup key ls_feat_moduleAttribution_monthly requires separate live Stripe reconciliation.",
       "evidencePath": "lib/billing/features.ts"
     },
     {
-      "id": "stripe_mapping_unverified:billing_features:moduleChatbot",
-      "code": "stripe_mapping_unverified",
-      "severity": "warning",
+      "id": "stripe_live_verification_deferred:billing_features:moduleChatbot",
+      "code": "stripe_live_verification_deferred",
+      "severity": "info",
       "owner": "billing",
       "source": "billing_features",
       "sourceId": "moduleChatbot",
       "productKey": "ai-leasing-chatbot",
-      "reason": "A lookup key is declared but its live DB-backed Price mapping is unverified.",
+      "reason": "Lookup key ls_feat_moduleChatbot_monthly requires separate live Stripe reconciliation.",
       "evidencePath": "lib/billing/features.ts"
     },
     {
-      "id": "stripe_mapping_unverified:billing_features:moduleCreativeStudio",
-      "code": "stripe_mapping_unverified",
-      "severity": "warning",
+      "id": "stripe_live_verification_deferred:billing_features:moduleCreativeStudio",
+      "code": "stripe_live_verification_deferred",
+      "severity": "info",
       "owner": "billing",
       "source": "billing_features",
       "sourceId": "moduleCreativeStudio",
       "productKey": null,
-      "reason": "A lookup key is declared but its live DB-backed Price mapping is unverified.",
+      "reason": "Lookup key ls_feat_moduleCreativeStudio_monthly requires separate live Stripe reconciliation.",
       "evidencePath": "lib/billing/features.ts"
     },
     {
-      "id": "stripe_mapping_unverified:billing_features:moduleEmail",
-      "code": "stripe_mapping_unverified",
-      "severity": "warning",
+      "id": "stripe_live_verification_deferred:billing_features:moduleEmail",
+      "code": "stripe_live_verification_deferred",
+      "severity": "info",
       "owner": "billing",
       "source": "billing_features",
       "sourceId": "moduleEmail",
       "productKey": null,
-      "reason": "A lookup key is declared but its live DB-backed Price mapping is unverified.",
+      "reason": "Lookup key ls_feat_moduleEmail_monthly requires separate live Stripe reconciliation.",
       "evidencePath": "lib/billing/features.ts"
     },
     {
-      "id": "stripe_mapping_unverified:billing_features:moduleGoogleAds",
-      "code": "stripe_mapping_unverified",
-      "severity": "warning",
+      "id": "stripe_live_verification_deferred:billing_features:moduleGoogleAds",
+      "code": "stripe_live_verification_deferred",
+      "severity": "info",
       "owner": "billing",
       "source": "billing_features",
       "sourceId": "moduleGoogleAds",
       "productKey": null,
-      "reason": "A lookup key is declared but its live DB-backed Price mapping is unverified.",
+      "reason": "Lookup key ls_feat_moduleGoogleAds_monthly requires separate live Stripe reconciliation.",
       "evidencePath": "lib/billing/features.ts"
     },
     {
-      "id": "stripe_mapping_unverified:billing_features:moduleInsights",
-      "code": "stripe_mapping_unverified",
-      "severity": "warning",
+      "id": "stripe_live_verification_deferred:billing_features:moduleInsights",
+      "code": "stripe_live_verification_deferred",
+      "severity": "info",
       "owner": "billing",
       "source": "billing_features",
       "sourceId": "moduleInsights",
       "productKey": "monday-action-brief",
-      "reason": "A lookup key is declared but its live DB-backed Price mapping is unverified.",
+      "reason": "Lookup key ls_feat_moduleInsights_monthly requires separate live Stripe reconciliation.",
       "evidencePath": "lib/billing/features.ts"
     },
     {
-      "id": "stripe_mapping_unverified:billing_features:moduleMarketIntelligence",
-      "code": "stripe_mapping_unverified",
-      "severity": "warning",
+      "id": "stripe_live_verification_deferred:billing_features:moduleMarketIntelligence",
+      "code": "stripe_live_verification_deferred",
+      "severity": "info",
       "owner": "billing",
       "source": "billing_features",
       "sourceId": "moduleMarketIntelligence",
       "productKey": "search-opportunity-engine",
-      "reason": "A lookup key is declared but its live DB-backed Price mapping is unverified.",
+      "reason": "Lookup key ls_feat_moduleMarketIntelligence_monthly requires separate live Stripe reconciliation.",
       "evidencePath": "lib/billing/features.ts"
     },
     {
-      "id": "stripe_mapping_unverified:billing_features:moduleMetaAds",
-      "code": "stripe_mapping_unverified",
-      "severity": "warning",
+      "id": "stripe_live_verification_deferred:billing_features:moduleMetaAds",
+      "code": "stripe_live_verification_deferred",
+      "severity": "info",
       "owner": "billing",
       "source": "billing_features",
       "sourceId": "moduleMetaAds",
       "productKey": null,
-      "reason": "A lookup key is declared but its live DB-backed Price mapping is unverified.",
+      "reason": "Lookup key ls_feat_moduleMetaAds_monthly requires separate live Stripe reconciliation.",
       "evidencePath": "lib/billing/features.ts"
     },
     {
-      "id": "stripe_mapping_unverified:billing_features:moduleOutboundEmail",
-      "code": "stripe_mapping_unverified",
-      "severity": "warning",
+      "id": "stripe_live_verification_deferred:billing_features:moduleOutboundEmail",
+      "code": "stripe_live_verification_deferred",
+      "severity": "info",
       "owner": "billing",
       "source": "billing_features",
       "sourceId": "moduleOutboundEmail",
       "productKey": null,
-      "reason": "A lookup key is declared but its live DB-backed Price mapping is unverified.",
+      "reason": "Lookup key ls_feat_moduleOutboundEmail_monthly requires separate live Stripe reconciliation.",
       "evidencePath": "lib/billing/features.ts"
     },
     {
-      "id": "stripe_mapping_unverified:billing_features:modulePixel",
-      "code": "stripe_mapping_unverified",
-      "severity": "warning",
+      "id": "stripe_live_verification_deferred:billing_features:modulePixel",
+      "code": "stripe_live_verification_deferred",
+      "severity": "info",
       "owner": "billing",
       "source": "billing_features",
       "sourceId": "modulePixel",
       "productKey": null,
-      "reason": "A lookup key is declared but its live DB-backed Price mapping is unverified.",
+      "reason": "Lookup key ls_feat_modulePixel_monthly requires separate live Stripe reconciliation.",
       "evidencePath": "lib/billing/features.ts"
     },
     {
-      "id": "stripe_mapping_unverified:billing_features:modulePopups",
-      "code": "stripe_mapping_unverified",
-      "severity": "warning",
+      "id": "stripe_live_verification_deferred:billing_features:modulePopups",
+      "code": "stripe_live_verification_deferred",
+      "severity": "info",
       "owner": "billing",
       "source": "billing_features",
       "sourceId": "modulePopups",
       "productKey": "conversion-offers",
-      "reason": "A lookup key is declared but its live DB-backed Price mapping is unverified.",
+      "reason": "Lookup key ls_feat_modulePopups_monthly requires separate live Stripe reconciliation.",
       "evidencePath": "lib/billing/features.ts"
     },
     {
-      "id": "stripe_mapping_unverified:billing_features:moduleReferrals",
-      "code": "stripe_mapping_unverified",
-      "severity": "warning",
+      "id": "stripe_live_verification_deferred:billing_features:moduleReferrals",
+      "code": "stripe_live_verification_deferred",
+      "severity": "info",
       "owner": "billing",
       "source": "billing_features",
       "sourceId": "moduleReferrals",
       "productKey": null,
-      "reason": "A lookup key is declared but its live DB-backed Price mapping is unverified.",
+      "reason": "Lookup key ls_feat_moduleReferrals_monthly requires separate live Stripe reconciliation.",
       "evidencePath": "lib/billing/features.ts"
     },
     {
-      "id": "stripe_mapping_unverified:billing_features:moduleReputation",
-      "code": "stripe_mapping_unverified",
-      "severity": "warning",
+      "id": "stripe_live_verification_deferred:billing_features:moduleReputation",
+      "code": "stripe_live_verification_deferred",
+      "severity": "info",
       "owner": "billing",
       "source": "billing_features",
       "sourceId": "moduleReputation",
       "productKey": "reputation-rescue",
-      "reason": "A lookup key is declared but its live DB-backed Price mapping is unverified.",
+      "reason": "Lookup key ls_feat_moduleReputation_monthly requires separate live Stripe reconciliation.",
       "evidencePath": "lib/billing/features.ts"
     },
     {
-      "id": "stripe_mapping_unverified:billing_features:moduleSEO",
-      "code": "stripe_mapping_unverified",
-      "severity": "warning",
+      "id": "stripe_live_verification_deferred:billing_features:moduleSEO",
+      "code": "stripe_live_verification_deferred",
+      "severity": "info",
       "owner": "billing",
       "source": "billing_features",
       "sourceId": "moduleSEO",
       "productKey": "search-opportunity-engine",
-      "reason": "A lookup key is declared but its live DB-backed Price mapping is unverified.",
+      "reason": "Lookup key ls_feat_moduleSEO_monthly requires separate live Stripe reconciliation.",
       "evidencePath": "lib/billing/features.ts"
     },
     {
-      "id": "stripe_mapping_unverified:marketplace:ai-chatbot",
-      "code": "stripe_mapping_unverified",
-      "severity": "warning",
+      "id": "stripe_live_verification_deferred:marketplace:ai-chatbot",
+      "code": "stripe_live_verification_deferred",
+      "severity": "info",
       "owner": "billing",
       "source": "marketplace",
       "sourceId": "ai-chatbot",
       "productKey": "ai-leasing-chatbot",
-      "reason": "A lookup key is declared but its live DB-backed Price mapping is unverified.",
+      "reason": "Lookup key ls_addon_chatbot_v1 requires separate live Stripe reconciliation.",
       "evidencePath": "lib/marketplace/catalog.ts"
     },
     {
-      "id": "stripe_mapping_unverified:marketplace:referrals",
-      "code": "stripe_mapping_unverified",
-      "severity": "warning",
+      "id": "stripe_live_verification_deferred:marketplace:referrals",
+      "code": "stripe_live_verification_deferred",
+      "severity": "info",
       "owner": "billing",
       "source": "marketplace",
       "sourceId": "referrals",
       "productKey": null,
-      "reason": "A lookup key is declared but its live DB-backed Price mapping is unverified.",
+      "reason": "Lookup key ls_addon_referrals_v1 requires separate live Stripe reconciliation.",
       "evidencePath": "lib/marketplace/catalog.ts"
     },
     {
-      "id": "stripe_mapping_unverified:marketplace:reputation-pro",
-      "code": "stripe_mapping_unverified",
-      "severity": "warning",
+      "id": "stripe_live_verification_deferred:marketplace:reputation-pro",
+      "code": "stripe_live_verification_deferred",
+      "severity": "info",
       "owner": "billing",
       "source": "marketplace",
       "sourceId": "reputation-pro",
       "productKey": "reputation-rescue",
-      "reason": "A lookup key is declared but its live DB-backed Price mapping is unverified.",
+      "reason": "Lookup key ls_reputation_pro_monthly_v1 requires separate live Stripe reconciliation.",
       "evidencePath": "lib/marketplace/catalog.ts"
     }
   ]

@@ -11,6 +11,10 @@ import {
   Globe,
 } from "lucide-react";
 import { BRAND_NAME } from "@/lib/brand";
+import {
+  ADS_ATTRIBUTION_HEADLINE,
+  ADS_CREATIVE_REFRESH_CLAIM,
+} from "@/lib/copy/product-claims";
 import { BookDemoLink } from "@/components/marketing/book-demo-link";
 import { SoftFramedArtifact } from "@/components/platform/soft-framed-artifact";
 import { SectionEyebrow } from "@/components/platform/section-eyebrow";
@@ -221,7 +225,7 @@ export default function FeaturesIndexPage() {
                   letterSpacing: "-0.01em",
                 }}
               >
-                Every dollar mapped to a signed lease, not an impression.
+                {ADS_ATTRIBUTION_HEADLINE}
               </h2>
               <p
                 className="mt-5"
@@ -239,7 +243,7 @@ export default function FeaturesIndexPage() {
               </p>
               <FeatureBullets
                 items={[
-                  "Geo-fenced campaigns per property with weekly creative refresh",
+                  ADS_CREATIVE_REFRESH_CLAIM,
                   "Cost per lease defended on a weekly review call",
                   "Pause or kill any campaign directly from the portal",
                 ]}

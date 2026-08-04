@@ -112,6 +112,23 @@ describe("product truth discrepancy engine", () => {
         productKey: "conversion-offers",
         stripePriceMapped: false,
       }),
+      record({
+        sourceId: "beta-sale-2",
+        productKey: "conversion-offers",
+        stripePriceMapped: false,
+      }),
+      record({
+        source: "stripe_static",
+        sourceId: "unknown-static-price",
+        productKey: null,
+        customerVisible: false,
+        selfServe: false,
+      }),
+      record({
+        sourceId: "missing-lookup",
+        stripeLookupKey: null,
+        stripePriceMapped: false,
+      }),
     ]);
 
     expect(findings).toEqual(
@@ -121,11 +138,64 @@ describe("product truth discrepancy engine", () => {
           severity: "critical",
         }),
         expect.objectContaining({
-          code: "stripe_mapping_unverified",
+          code: "missing_stripe_mapping",
+          sourceId: "missing-lookup",
+          severity: "critical",
+        }),
+        expect.objectContaining({
+          code: "stripe_live_verification_deferred",
+          severity: "info",
+        }),
+        expect.objectContaining({
+          code: "unclassified_stripe_mapping",
+          sourceId: "unknown-static-price",
           severity: "warning",
         }),
       ]),
     );
+    expect(
+      findings.filter(
+        ({ code }) => code === "stripe_live_verification_deferred",
+      ),
+    ).toHaveLength(2);
+  });
+
+  it("rejects beta and unsupported entitlements bundled into self-serve tiers", () => {
+    const findings = analyzeProductTruth(PRODUCT_REGISTRY, [
+      record({
+        source: "billing_catalog",
+        sourceId: "growth.monthly",
+        recordKind: "tier",
+        productKey: null,
+        legacyModuleKeys: ["modulePopups", "moduleReferrals"],
+      }),
+      record({
+        source: "billing_catalog",
+        sourceId: "growth.annual",
+        recordKind: "tier",
+        productKey: null,
+        legacyModuleKeys: ["modulePopups", "moduleReferrals"],
+      }),
+    ]);
+
+    expect(findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "tier_readiness_conflict",
+          productKey: "conversion-offers",
+        }),
+        expect.objectContaining({
+          code: "tier_unsupported_entitlement",
+          reason: expect.stringContaining("moduleReferrals"),
+        }),
+      ]),
+    );
+    expect(
+      findings.filter(({ code }) => code === "tier_readiness_conflict"),
+    ).toHaveLength(1);
+    expect(
+      findings.filter(({ code }) => code === "tier_unsupported_entitlement"),
+    ).toHaveLength(1);
   });
 
   it("surfaces the known software-boundary and universal-claim conflicts", () => {
@@ -161,22 +231,50 @@ describe("product truth discrepancy engine", () => {
   });
 
   it("reports missing registry entitlements and self-serve price drift", () => {
-    const chatbot = PRODUCT_REGISTRY.find(
-      ({ key }) => key === "ai-leasing-chatbot",
+    const reputation = PRODUCT_REGISTRY.find(
+      ({ key }) => key === "reputation-rescue",
     );
-    expect(chatbot).toBeDefined();
+    expect(reputation).toBeDefined();
 
-    const findings = analyzeProductTruth([chatbot!], [
-      record({ legacyModuleKeys: [], priceCents: 14900 }),
-      record({ source: "billing_features", sourceId: "other", priceCents: 9900 }),
+    const findings = analyzeProductTruth([reputation!], [
+      record({
+        source: "billing_features",
+        sourceId: "moduleReputation",
+        productKey: "reputation-rescue",
+        legacyModuleKeys: [],
+        priceCents: 7900,
+      }),
+      record({
+        source: "billing_catalog",
+        sourceId: "ls_addon_reputation_pro",
+        productKey: "reputation-rescue",
+        priceCents: 9900,
+      }),
+      record({
+        sourceId: "unrelated-price",
+        productKey: "reputation-rescue",
+        priceCents: 12000,
+      }),
     ]);
 
     expect(findings).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ code: "missing_entitlement_evidence" }),
-        expect.objectContaining({ code: "price_drift", severity: "warning" }),
+        expect.objectContaining({
+          code: "price_drift",
+          severity: "warning",
+          reason: expect.stringContaining("7900, 9900"),
+        }),
+        expect.objectContaining({
+          code: "unclassified_price_source",
+          sourceId: "unrelated-price",
+          reason: expect.stringContaining("12000"),
+        }),
       ]),
     );
+    expect(
+      findings.find(({ code }) => code === "price_drift")?.reason,
+    ).not.toContain("12000");
   });
 
   it("sorts findings deterministically by severity, code, source, and id", () => {

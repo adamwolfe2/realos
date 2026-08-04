@@ -7,7 +7,7 @@ Status: **BLOCKED**
 
 | Products | Source records | Critical | Warning | Info | Total |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 8 | 135 | 29 | 40 | 0 | 69 |
+| 8 | 135 | 42 | 21 | 18 | 81 |
 
 ## Critical
 
@@ -83,12 +83,116 @@ Status: **BLOCKED**
 - Evidence: `lib/billing/price-ids.generated.ts`
 - Reason: Reputation Rescue is beta but this source sells it self-serve.
 
+### `tier_readiness_conflict:billing_catalog:growth.annual:search-opportunity-engine`
+
+- Owner: product
+- Product: search-opportunity-engine
+- Source: billing_catalog / growth.annual
+- Evidence: `lib/billing/catalog.ts`
+- Reason: Search Opportunity Engine is beta but the growth tier family grants it across billing variants.
+
+### `tier_readiness_conflict:billing_catalog:scale.annual:search-opportunity-engine`
+
+- Owner: product
+- Product: search-opportunity-engine
+- Source: billing_catalog / scale.annual
+- Evidence: `lib/billing/catalog.ts`
+- Reason: Search Opportunity Engine is beta but the scale tier family grants it across billing variants.
+
+### `tier_unsupported_entitlement:billing_catalog:growth.annual:moduleCreativeStudio`
+
+- Owner: product
+- Product: unmapped
+- Source: billing_catalog / growth.annual
+- Evidence: `lib/billing/catalog.ts`
+- Reason: The growth tier family grants unsupported entitlement moduleCreativeStudio across billing variants.
+
+### `tier_unsupported_entitlement:billing_catalog:growth.annual:moduleGoogleAds`
+
+- Owner: product
+- Product: unmapped
+- Source: billing_catalog / growth.annual
+- Evidence: `lib/billing/catalog.ts`
+- Reason: The growth tier family grants unsupported entitlement moduleGoogleAds across billing variants.
+
+### `tier_unsupported_entitlement:billing_catalog:growth.annual:moduleMetaAds`
+
+- Owner: product
+- Product: unmapped
+- Source: billing_catalog / growth.annual
+- Evidence: `lib/billing/catalog.ts`
+- Reason: The growth tier family grants unsupported entitlement moduleMetaAds across billing variants.
+
+### `tier_unsupported_entitlement:billing_catalog:growth.annual:modulePixel`
+
+- Owner: product
+- Product: unmapped
+- Source: billing_catalog / growth.annual
+- Evidence: `lib/billing/catalog.ts`
+- Reason: The growth tier family grants unsupported entitlement modulePixel across billing variants.
+
+### `tier_unsupported_entitlement:billing_catalog:scale.annual:moduleCreativeStudio`
+
+- Owner: product
+- Product: unmapped
+- Source: billing_catalog / scale.annual
+- Evidence: `lib/billing/catalog.ts`
+- Reason: The scale tier family grants unsupported entitlement moduleCreativeStudio across billing variants.
+
+### `tier_unsupported_entitlement:billing_catalog:scale.annual:moduleEmail`
+
+- Owner: product
+- Product: unmapped
+- Source: billing_catalog / scale.annual
+- Evidence: `lib/billing/catalog.ts`
+- Reason: The scale tier family grants unsupported entitlement moduleEmail across billing variants.
+
+### `tier_unsupported_entitlement:billing_catalog:scale.annual:moduleGoogleAds`
+
+- Owner: product
+- Product: unmapped
+- Source: billing_catalog / scale.annual
+- Evidence: `lib/billing/catalog.ts`
+- Reason: The scale tier family grants unsupported entitlement moduleGoogleAds across billing variants.
+
+### `tier_unsupported_entitlement:billing_catalog:scale.annual:moduleMetaAds`
+
+- Owner: product
+- Product: unmapped
+- Source: billing_catalog / scale.annual
+- Evidence: `lib/billing/catalog.ts`
+- Reason: The scale tier family grants unsupported entitlement moduleMetaAds across billing variants.
+
+### `tier_unsupported_entitlement:billing_catalog:scale.annual:moduleOutboundEmail`
+
+- Owner: product
+- Product: unmapped
+- Source: billing_catalog / scale.annual
+- Evidence: `lib/billing/catalog.ts`
+- Reason: The scale tier family grants unsupported entitlement moduleOutboundEmail across billing variants.
+
+### `tier_unsupported_entitlement:billing_catalog:scale.annual:modulePixel`
+
+- Owner: product
+- Product: unmapped
+- Source: billing_catalog / scale.annual
+- Evidence: `lib/billing/catalog.ts`
+- Reason: The scale tier family grants unsupported entitlement modulePixel across billing variants.
+
+### `tier_unsupported_entitlement:billing_catalog:scale.annual:moduleReferrals`
+
+- Owner: product
+- Product: unmapped
+- Source: billing_catalog / scale.annual
+- Evidence: `lib/billing/catalog.ts`
+- Reason: The scale tier family grants unsupported entitlement moduleReferrals across billing variants.
+
 ### `unsupported_claim:marketing:features.ads.managed-end-to-end`
 
 - Owner: marketing
 - Product: unmapped
 - Source: marketing / features.ads.managed-end-to-end
-- Evidence: `app/(platform)/features/ads/page.tsx`
+- Evidence: `lib/copy/product-claims.ts`
 - Reason: LeaseStack is software and does not operate advertising for customers.
 
 ### `unsupported_claim:marketing:features.ads.universal-attribution`
@@ -96,7 +200,7 @@ Status: **BLOCKED**
 - Owner: marketing
 - Product: lead-to-lease-attribution
 - Source: marketing / features.ads.universal-attribution
-- Evidence: `app/(platform)/features/page.tsx`
+- Evidence: `lib/copy/product-claims.ts`
 - Reason: Paid-media attribution cannot guarantee every dollar maps to a signed lease.
 
 ### `unsupported_claim:marketing:features.ads.weekly-creative-refresh`
@@ -104,7 +208,7 @@ Status: **BLOCKED**
 - Owner: marketing
 - Product: unmapped
 - Source: marketing / features.ads.weekly-creative-refresh
-- Evidence: `app/(platform)/features/page.tsx`
+- Evidence: `lib/copy/product-claims.ts`
 - Reason: LeaseStack does not sell an ongoing creative-production service.
 
 ### `unsupported_claim:marketing:home.faq.ads-start-running`
@@ -250,7 +354,7 @@ Status: **BLOCKED**
 - Owner: product
 - Product: unmapped
 - Source: marketing / features.ads.managed-end-to-end
-- Evidence: `app/(platform)/features/ads/page.tsx`
+- Evidence: `lib/copy/product-claims.ts`
 - Reason: Customer-visible source has no approved canonical product mapping.
 
 ### `orphan_product_source:marketing:features.ads.weekly-creative-refresh`
@@ -258,7 +362,7 @@ Status: **BLOCKED**
 - Owner: product
 - Product: unmapped
 - Source: marketing / features.ads.weekly-creative-refresh
-- Evidence: `app/(platform)/features/page.tsx`
+- Evidence: `lib/copy/product-claims.ts`
 - Reason: Customer-visible source has no approved canonical product mapping.
 
 ### `orphan_product_source:marketing:home.faq.ads-start-running`
@@ -402,10 +506,10 @@ Status: **BLOCKED**
 - Owner: product
 - Product: unmapped
 - Source: terms / terms.no-managed-advertising
-- Evidence: `app/(platform)/terms/page.tsx`
+- Evidence: `lib/copy/product-claims.ts`
 - Reason: Customer-visible source has no approved canonical product mapping.
 
-### `price_drift:billing_features:moduleReputation`
+### `price_drift:billing_features:moduleReputation:group-1`
 
 - Owner: billing
 - Product: reputation-rescue
@@ -413,158 +517,148 @@ Status: **BLOCKED**
 - Evidence: `lib/billing/features.ts`
 - Reason: Reputation Rescue has multiple self-serve prices: 7900, 9900.
 
-### `price_drift:billing_features:moduleSEO`
+## Info
 
-- Owner: billing
-- Product: search-opportunity-engine
-- Source: billing_features / moduleSEO
-- Evidence: `lib/billing/features.ts`
-- Reason: Search Opportunity Engine has multiple self-serve prices: 14900, 7900.
-
-### `stripe_mapping_unverified:billing_features:base_platform`
+### `stripe_live_verification_deferred:billing_features:base_platform`
 
 - Owner: billing
 - Product: connected-data-foundation
 - Source: billing_features / base_platform
 - Evidence: `lib/billing/features.ts`
-- Reason: A lookup key is declared but its live DB-backed Price mapping is unverified.
+- Reason: Lookup key ls_base_platform_monthly requires separate live Stripe reconciliation.
 
-### `stripe_mapping_unverified:billing_features:moduleAttribution`
+### `stripe_live_verification_deferred:billing_features:moduleAttribution`
 
 - Owner: billing
 - Product: lead-to-lease-attribution
 - Source: billing_features / moduleAttribution
 - Evidence: `lib/billing/features.ts`
-- Reason: A lookup key is declared but its live DB-backed Price mapping is unverified.
+- Reason: Lookup key ls_feat_moduleAttribution_monthly requires separate live Stripe reconciliation.
 
-### `stripe_mapping_unverified:billing_features:moduleChatbot`
+### `stripe_live_verification_deferred:billing_features:moduleChatbot`
 
 - Owner: billing
 - Product: ai-leasing-chatbot
 - Source: billing_features / moduleChatbot
 - Evidence: `lib/billing/features.ts`
-- Reason: A lookup key is declared but its live DB-backed Price mapping is unverified.
+- Reason: Lookup key ls_feat_moduleChatbot_monthly requires separate live Stripe reconciliation.
 
-### `stripe_mapping_unverified:billing_features:moduleCreativeStudio`
+### `stripe_live_verification_deferred:billing_features:moduleCreativeStudio`
 
 - Owner: billing
 - Product: unmapped
 - Source: billing_features / moduleCreativeStudio
 - Evidence: `lib/billing/features.ts`
-- Reason: A lookup key is declared but its live DB-backed Price mapping is unverified.
+- Reason: Lookup key ls_feat_moduleCreativeStudio_monthly requires separate live Stripe reconciliation.
 
-### `stripe_mapping_unverified:billing_features:moduleEmail`
+### `stripe_live_verification_deferred:billing_features:moduleEmail`
 
 - Owner: billing
 - Product: unmapped
 - Source: billing_features / moduleEmail
 - Evidence: `lib/billing/features.ts`
-- Reason: A lookup key is declared but its live DB-backed Price mapping is unverified.
+- Reason: Lookup key ls_feat_moduleEmail_monthly requires separate live Stripe reconciliation.
 
-### `stripe_mapping_unverified:billing_features:moduleGoogleAds`
+### `stripe_live_verification_deferred:billing_features:moduleGoogleAds`
 
 - Owner: billing
 - Product: unmapped
 - Source: billing_features / moduleGoogleAds
 - Evidence: `lib/billing/features.ts`
-- Reason: A lookup key is declared but its live DB-backed Price mapping is unverified.
+- Reason: Lookup key ls_feat_moduleGoogleAds_monthly requires separate live Stripe reconciliation.
 
-### `stripe_mapping_unverified:billing_features:moduleInsights`
+### `stripe_live_verification_deferred:billing_features:moduleInsights`
 
 - Owner: billing
 - Product: monday-action-brief
 - Source: billing_features / moduleInsights
 - Evidence: `lib/billing/features.ts`
-- Reason: A lookup key is declared but its live DB-backed Price mapping is unverified.
+- Reason: Lookup key ls_feat_moduleInsights_monthly requires separate live Stripe reconciliation.
 
-### `stripe_mapping_unverified:billing_features:moduleMarketIntelligence`
+### `stripe_live_verification_deferred:billing_features:moduleMarketIntelligence`
 
 - Owner: billing
 - Product: search-opportunity-engine
 - Source: billing_features / moduleMarketIntelligence
 - Evidence: `lib/billing/features.ts`
-- Reason: A lookup key is declared but its live DB-backed Price mapping is unverified.
+- Reason: Lookup key ls_feat_moduleMarketIntelligence_monthly requires separate live Stripe reconciliation.
 
-### `stripe_mapping_unverified:billing_features:moduleMetaAds`
+### `stripe_live_verification_deferred:billing_features:moduleMetaAds`
 
 - Owner: billing
 - Product: unmapped
 - Source: billing_features / moduleMetaAds
 - Evidence: `lib/billing/features.ts`
-- Reason: A lookup key is declared but its live DB-backed Price mapping is unverified.
+- Reason: Lookup key ls_feat_moduleMetaAds_monthly requires separate live Stripe reconciliation.
 
-### `stripe_mapping_unverified:billing_features:moduleOutboundEmail`
+### `stripe_live_verification_deferred:billing_features:moduleOutboundEmail`
 
 - Owner: billing
 - Product: unmapped
 - Source: billing_features / moduleOutboundEmail
 - Evidence: `lib/billing/features.ts`
-- Reason: A lookup key is declared but its live DB-backed Price mapping is unverified.
+- Reason: Lookup key ls_feat_moduleOutboundEmail_monthly requires separate live Stripe reconciliation.
 
-### `stripe_mapping_unverified:billing_features:modulePixel`
+### `stripe_live_verification_deferred:billing_features:modulePixel`
 
 - Owner: billing
 - Product: unmapped
 - Source: billing_features / modulePixel
 - Evidence: `lib/billing/features.ts`
-- Reason: A lookup key is declared but its live DB-backed Price mapping is unverified.
+- Reason: Lookup key ls_feat_modulePixel_monthly requires separate live Stripe reconciliation.
 
-### `stripe_mapping_unverified:billing_features:modulePopups`
+### `stripe_live_verification_deferred:billing_features:modulePopups`
 
 - Owner: billing
 - Product: conversion-offers
 - Source: billing_features / modulePopups
 - Evidence: `lib/billing/features.ts`
-- Reason: A lookup key is declared but its live DB-backed Price mapping is unverified.
+- Reason: Lookup key ls_feat_modulePopups_monthly requires separate live Stripe reconciliation.
 
-### `stripe_mapping_unverified:billing_features:moduleReferrals`
+### `stripe_live_verification_deferred:billing_features:moduleReferrals`
 
 - Owner: billing
 - Product: unmapped
 - Source: billing_features / moduleReferrals
 - Evidence: `lib/billing/features.ts`
-- Reason: A lookup key is declared but its live DB-backed Price mapping is unverified.
+- Reason: Lookup key ls_feat_moduleReferrals_monthly requires separate live Stripe reconciliation.
 
-### `stripe_mapping_unverified:billing_features:moduleReputation`
+### `stripe_live_verification_deferred:billing_features:moduleReputation`
 
 - Owner: billing
 - Product: reputation-rescue
 - Source: billing_features / moduleReputation
 - Evidence: `lib/billing/features.ts`
-- Reason: A lookup key is declared but its live DB-backed Price mapping is unverified.
+- Reason: Lookup key ls_feat_moduleReputation_monthly requires separate live Stripe reconciliation.
 
-### `stripe_mapping_unverified:billing_features:moduleSEO`
+### `stripe_live_verification_deferred:billing_features:moduleSEO`
 
 - Owner: billing
 - Product: search-opportunity-engine
 - Source: billing_features / moduleSEO
 - Evidence: `lib/billing/features.ts`
-- Reason: A lookup key is declared but its live DB-backed Price mapping is unverified.
+- Reason: Lookup key ls_feat_moduleSEO_monthly requires separate live Stripe reconciliation.
 
-### `stripe_mapping_unverified:marketplace:ai-chatbot`
+### `stripe_live_verification_deferred:marketplace:ai-chatbot`
 
 - Owner: billing
 - Product: ai-leasing-chatbot
 - Source: marketplace / ai-chatbot
 - Evidence: `lib/marketplace/catalog.ts`
-- Reason: A lookup key is declared but its live DB-backed Price mapping is unverified.
+- Reason: Lookup key ls_addon_chatbot_v1 requires separate live Stripe reconciliation.
 
-### `stripe_mapping_unverified:marketplace:referrals`
+### `stripe_live_verification_deferred:marketplace:referrals`
 
 - Owner: billing
 - Product: unmapped
 - Source: marketplace / referrals
 - Evidence: `lib/marketplace/catalog.ts`
-- Reason: A lookup key is declared but its live DB-backed Price mapping is unverified.
+- Reason: Lookup key ls_addon_referrals_v1 requires separate live Stripe reconciliation.
 
-### `stripe_mapping_unverified:marketplace:reputation-pro`
+### `stripe_live_verification_deferred:marketplace:reputation-pro`
 
 - Owner: billing
 - Product: reputation-rescue
 - Source: marketplace / reputation-pro
 - Evidence: `lib/marketplace/catalog.ts`
-- Reason: A lookup key is declared but its live DB-backed Price mapping is unverified.
-
-## Info
-
-None.
+- Reason: Lookup key ls_reputation_pro_monthly_v1 requires separate live Stripe reconciliation.

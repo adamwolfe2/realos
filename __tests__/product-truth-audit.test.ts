@@ -3,7 +3,10 @@ import { describe, expect, it } from "vitest";
 import baseline from "@/docs/audits/2026-08-04-product-truth-baseline.json";
 import { ALL_PRODUCT_SOURCE_RECORDS } from "@/lib/products/adapters";
 import { analyzeProductTruth } from "@/lib/products/discrepancies";
-import { UNSUPPORTED_CLAIM_POLICIES } from "@/lib/products/policies";
+import {
+  PRICE_COMPARISON_POLICIES,
+  UNSUPPORTED_CLAIM_POLICIES,
+} from "@/lib/products/policies";
 import { PRODUCT_REGISTRY } from "@/lib/products/registry";
 
 describe("product truth regression gates", () => {
@@ -38,6 +41,12 @@ describe("product truth regression gates", () => {
     );
 
     expect(unsafe).toEqual([]);
+    const billableKeys = PRODUCT_REGISTRY.filter(
+      ({ commercialPolicy }) => commercialPolicy === "billable",
+    ).map(({ key }) => key);
+    expect(Object.keys(PRICE_COMPARISON_POLICIES)).toEqual(
+      expect.arrayContaining(billableKeys),
+    );
   });
 
   it("pins known drift and requires policy for every unsupported claim", () => {
@@ -52,8 +61,10 @@ describe("product truth regression gates", () => {
     expect(findings.map(({ id }) => id)).toEqual(
       baseline.findings.map(({ id }) => id),
     );
-    expect(unsupportedClaims.map(({ sourceId }) => sourceId).sort()).toEqual(
-      Object.keys(UNSUPPORTED_CLAIM_POLICIES).sort(),
-    );
+    expect(
+      unsupportedClaims
+        .map(({ source, sourceId }) => `${source}:${sourceId}`)
+        .sort(),
+    ).toEqual(Object.keys(UNSUPPORTED_CLAIM_POLICIES).sort());
   });
 });

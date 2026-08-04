@@ -1,0 +1,390 @@
+import { STRIPE_PRICE_IDS } from "@/lib/billing/price-ids.generated";
+
+
+// ---------------------------------------------------------------------------
+// Proposal builder catalog seed.
+//
+// The proposal builder draws its line-item picker from `ProposalCatalogItem`
+// rows. To keep the agency tool aligned with the public pricing page (the
+// source of truth for what we sell), we maintain a TypeScript array literal
+// of the canonical SKUs here and `ensureCatalogSeeded()` upserts them by
+// `slug`. Safe to run on app startup, migration, or as a one-shot CLI.
+//
+// Operator UX:
+//   - Tier slugs:  `tier-<id>`        (foundation | growth | scale | enterprise)
+//   - Addon slugs: `addon-<kebab>`    (addon-reputation-pro, addon-keyword-trends, …)
+//
+// Pricing rules:
+//   - Every `defaultPriceCents` is an INTEGER in USD cents.
+//   - `cadence` MONTHLY for recurring rows, null for one-time (Website Build).
+//   - `stripePriceIdMonthly` / `stripePriceIdAnnual` populated when a
+//     stable Stripe Price exists (from `lib/billing/price-ids.generated.ts`);
+//     null otherwise. The builder always falls back to inline `price_data`
+//     so a missing Stripe ID does NOT block sending — it just means a
+//     fresh disposable Price gets created on Checkout.
+//   - Foundation: $0 (free trial) — kept active so operators can include it
+//     in a proposal as a "trial line" or upsell teaser.
+//   - Enterprise: stored with price 0 and `active: false`. Surfaces in the
+//     catalog admin as "price-on-request"; operators override per-proposal.
+// ---------------------------------------------------------------------------
+
+export type ProposalCatalogSeed = {
+  slug: string;
+  kind: "TIER" | "ADDON";
+  label: string;
+  description: string;
+  defaultPriceCents: number;
+  cadence: "MONTHLY" | "ANNUAL" | null;
+  stripePriceIdMonthly: string | null;
+  stripePriceIdAnnual: string | null;
+  active: boolean;
+  sortOrder: number;
+};
+
+// Helper: look up a generated Stripe Price ID by lookup_key, returning null
+// if absent. Kept in-module so the seed list reads cleanly.
+function priceId(
+  lookupKey: keyof typeof STRIPE_PRICE_IDS | (string & {}),
+): string | null {
+  return (STRIPE_PRICE_IDS as Record<string, string | undefined>)[lookupKey] ?? null;
+}
+
+export const PROPOSAL_CATALOG: ReadonlyArray<ProposalCatalogSeed> = [
+  // ── Tiers ────────────────────────────────────────────────────────────
+  {
+    slug: "tier-foundation",
+    kind: "TIER",
+    label: "Foundation",
+    description:
+      "Free 14-day trial. Connect your PMS, ad accounts, and site so LeaseStack can read what your marketing is actually doing. Includes the AI leasing chatbot trained on your listings and reputation monitoring across Google, Reddit, and the open web.",
+    defaultPriceCents: 0,
+    cadence: "MONTHLY",
+    stripePriceIdMonthly: priceId("ls_foundation_monthly_v1"),
+    stripePriceIdAnnual: priceId("ls_foundation_annual_v1"),
+    active: true,
+    sortOrder: 10,
+  },
+  {
+    slug: "tier-growth",
+    kind: "TIER",
+    label: "Growth",
+    description:
+      "Replace your retainer. Visitor pixel with 5,000 identified visitors per month, Google and Meta spend recommendations, AI chatbot at 5,000 conversations per month, source-to-lease attribution with GSC and GA4, operator-written weekly read on every channel.",
+    defaultPriceCents: 89900,
+    cadence: "MONTHLY",
+    stripePriceIdMonthly: priceId("ls_growth_monthly_v1"),
+    stripePriceIdAnnual: priceId("ls_growth_annual_v1"),
+    active: true,
+    sortOrder: 20,
+  },
+  {
+    slug: "tier-scale",
+    kind: "TIER",
+    label: "Scale",
+    description:
+      "Per-property pricing with a portfolio rollup. Visitor pixel at 25,000 identified visitors per month, audience sync to Meta, Google, and TikTok, unlimited AI chatbot, dedicated operator success contact, scheduled reports formatted for asset reviews.",
+    defaultPriceCents: 149900,
+    cadence: "MONTHLY",
+    stripePriceIdMonthly: priceId("ls_scale_monthly_v1"),
+    stripePriceIdAnnual: priceId("ls_scale_annual_v1"),
+    active: true,
+    sortOrder: 30,
+  },
+  {
+    slug: "tier-enterprise",
+    kind: "TIER",
+    label: "Enterprise",
+    description:
+      "Custom integrations and volume pricing for multi-brand owners. Includes white-label workspace, custom PMS integrations, SSO + SCIM, custom data retention, and multi-year terms. Pricing set per deal — override the line item with the negotiated number before sending.",
+    defaultPriceCents: 0,
+    cadence: "MONTHLY",
+    stripePriceIdMonthly: null,
+    stripePriceIdAnnual: null,
+    // Kept active so it shows in the picker; operator must enter a price
+    // when adding to a proposal. The builder UI surfaces a warning when
+    // a TIER line is added with a 0 unit price.
+    active: true,
+    sortOrder: 40,
+  },
+
+  // ── Add-ons (capability, recurring) ──────────────────────────────────
+  {
+    slug: "addon-reputation-pro",
+    kind: "ADDON",
+    label: "Reputation Pro",
+    description:
+      "Deeper ApartmentRatings crawl, Google Business reply automation, and sentiment trending across every source. Flags negative mentions in under 6 hours.",
+    defaultPriceCents: 9900,
+    cadence: "MONTHLY",
+    stripePriceIdMonthly: priceId("ls_reputation_pro_monthly_v1"),
+    stripePriceIdAnnual: null,
+    active: true,
+    sortOrder: 110,
+  },
+  {
+    slug: "addon-keyword-trends",
+    kind: "ADDON",
+    label: "Keyword Trends",
+    description:
+      "Weekly competitor rank tracking across your top 200 keywords. What people are searching for, who's winning, where you're closest to top-3.",
+    defaultPriceCents: 14900,
+    cadence: "MONTHLY",
+    stripePriceIdMonthly: null,
+    stripePriceIdAnnual: null,
+    active: true,
+    sortOrder: 120,
+  },
+  {
+    slug: "addon-aeo-boost",
+    kind: "ADDON",
+    label: "AEO Boost",
+    description:
+      "Daily AI-search scans across Claude, ChatGPT, Gemini, and Perplexity. Per-prompt citation history plus Content Drafter for the gaps. Standard plans run weekly.",
+    defaultPriceCents: 19900,
+    cadence: "MONTHLY",
+    stripePriceIdMonthly: null,
+    stripePriceIdAnnual: null,
+    active: true,
+    sortOrder: 130,
+  },
+  {
+    slug: "addon-audience-sync",
+    kind: "ADDON",
+    label: "Audience Sync",
+    description:
+      "Push identified visitors to Meta, Google, and TikTok ad audiences as custom audiences or lookalike seeds. Refreshes nightly.",
+    defaultPriceCents: 12900,
+    cadence: "MONTHLY",
+    stripePriceIdMonthly: null,
+    stripePriceIdAnnual: null,
+    active: true,
+    sortOrder: 140,
+  },
+  {
+    slug: "addon-outbound-email-engine",
+    kind: "ADDON",
+    label: "Outbound Email Engine",
+    description:
+      "Trigger drip sequences off identified visitors and chatbot drop-offs. Templates, deliverability monitoring, and a 3,000-send cap included.",
+    defaultPriceCents: 17900,
+    cadence: "MONTHLY",
+    stripePriceIdMonthly: null,
+    stripePriceIdAnnual: null,
+    active: true,
+    sortOrder: 150,
+  },
+  {
+    slug: "addon-chatbot-pro",
+    kind: "ADDON",
+    label: "Chatbot Pro",
+    description:
+      "Voice + SMS handoff, multi-language support, deeper escalation routing, and the unlimited-conversation cap. Plays alongside any tier.",
+    defaultPriceCents: 14900,
+    cadence: "MONTHLY",
+    stripePriceIdMonthly: null,
+    stripePriceIdAnnual: null,
+    active: true,
+    sortOrder: 160,
+  },
+  {
+    slug: "addon-cursive-pixel-pro",
+    kind: "ADDON",
+    label: "Cursive Pixel Pro",
+    description:
+      "Higher visitor-resolution tier with enriched company + role data, longer history retention, and priority pipeline for ad-audience export.",
+    defaultPriceCents: 19900,
+    cadence: "MONTHLY",
+    stripePriceIdMonthly: null,
+    stripePriceIdAnnual: null,
+    active: true,
+    sortOrder: 170,
+  },
+  {
+    slug: "addon-insights-pro",
+    kind: "ADDON",
+    label: "Insights Pro",
+    description:
+      "Operator-written insight digest, custom KPI tracking, board-ready summaries, and the scheduled-report builder. Powers the Insights and Briefing surfaces.",
+    defaultPriceCents: 14900,
+    cadence: "MONTHLY",
+    stripePriceIdMonthly: null,
+    stripePriceIdAnnual: null,
+    active: true,
+    sortOrder: 180,
+  },
+  {
+    slug: "addon-integrations-pro",
+    kind: "ADDON",
+    label: "Integrations Pro",
+    description:
+      "AppFolio, RealPage, Yardi, HubSpot, and Salesforce two-way sync. Lead push, lease pull, audit log, and Slack / Teams notifications.",
+    defaultPriceCents: 19900,
+    cadence: "MONTHLY",
+    stripePriceIdMonthly: null,
+    stripePriceIdAnnual: null,
+    active: true,
+    sortOrder: 190,
+  },
+  {
+    slug: "addon-custom-domain",
+    kind: "ADDON",
+    label: "Custom domain",
+    description:
+      "Bring your own domain for the operator dashboard and outbound emails (portal.yourbrand.com). Includes SSL plus SPF / DKIM setup.",
+    defaultPriceCents: 4900,
+    cadence: "MONTHLY",
+    stripePriceIdMonthly: null,
+    stripePriceIdAnnual: null,
+    active: true,
+    sortOrder: 200,
+  },
+  {
+    slug: "addon-white-label",
+    kind: "ADDON",
+    label: "White-label workspace",
+    description:
+      "Removes LeaseStack branding from the operator dashboard, tenant portal, and outbound emails. For owners running multiple brands under one entity.",
+    defaultPriceCents: 49900,
+    cadence: "MONTHLY",
+    stripePriceIdMonthly: priceId("ls_white_label_monthly_v1"),
+    stripePriceIdAnnual: null,
+    active: true,
+    sortOrder: 210,
+  },
+
+  // ── Add-ons (one-time delivery) ─────────────────────────────────────
+  {
+    slug: "addon-website-build",
+    kind: "ADDON",
+    label: "Website Build",
+    description:
+      "Site Engine designs, builds, and ships your property marketing site in 14 days. Pre-installed pixel, chatbot, and lead capture. One-time delivery, then optional maintenance.",
+    defaultPriceCents: 250000,
+    cadence: null,
+    stripePriceIdMonthly: null,
+    stripePriceIdAnnual: null,
+    active: true,
+    sortOrder: 300,
+  },
+
+  // ── Engagement scaffolding (one-time, professional-services style) ──
+  // The white-glove enterprise stack. Used for proposals that pair a
+  // recurring tier with a paid kickoff, an initial deep audit, and a
+  // fixed-scope implementation sprint. Pricing is anchor-quality — every
+  // line is meant to be edited on the proposal if a specific deal
+  // negotiates around it. cadence = null marks these as one-time so the
+  // composer puts them in the "one-time" bucket on the share page.
+  {
+    slug: "setup-kickoff-workshop",
+    kind: "ADDON",
+    label: "Kickoff Workshop & Discovery",
+    description:
+      "90-minute strategy session with your broker, web vendor, and asset team. We confirm goals, map the 30-day plan to your CMS and brokerage workflow, and align on who owns what. Bills once at engagement start.",
+    defaultPriceCents: 250000,
+    cadence: null,
+    stripePriceIdMonthly: null,
+    stripePriceIdAnnual: null,
+    active: true,
+    sortOrder: 305,
+  },
+  {
+    slug: "setup-aeo-status-report",
+    kind: "ADDON",
+    label: "AEO Status Report",
+    description:
+      "Deep audit across ChatGPT, Perplexity, Claude, Gemini, and Google AI Overview. Includes per-engine citation breakdown, verbatim AI quotes, schema gap, on-page health 8-check, competitive AI mindshare. Delivered as a shareable brief + PDF. Often bundled into the implementation sprint.",
+    defaultPriceCents: 150000,
+    cadence: null,
+    stripePriceIdMonthly: null,
+    stripePriceIdAnnual: null,
+    active: true,
+    sortOrder: 306,
+  },
+  {
+    slug: "sprint-30-day-implementation",
+    kind: "ADDON",
+    label: "30-Day Implementation Sprint",
+    description:
+      "Fixed-scope, fixed-price implementation engagement. Ship Organization + LocalBusiness + Place JSON-LD, FAQPage schema for top tenant questions, homepage rewrite to 1,200+ words, install Cursive Pixel + GA4 + AI chatbot, and publish the comparison page that names your competitive set. Includes weekly progress calls and final AI-scan delta report.",
+    defaultPriceCents: 1250000,
+    cadence: null,
+    stripePriceIdMonthly: null,
+    stripePriceIdAnnual: null,
+    active: true,
+    sortOrder: 307,
+  },
+
+  // ── Engagement scaffolding (recurring, white-glove) ─────────────────
+  {
+    slug: "addon-white-glove-coordination",
+    kind: "ADDON",
+    label: "White-Glove Coordination",
+    description:
+      "We sit on every weekly call with your agency, web vendor, and broker. We file the tickets in your PM tool, write the briefs for your design team, QA every shipped page, and present results to your asset committee. Typically billed for the first 3 months and discontinued or reduced thereafter.",
+    defaultPriceCents: 250000,
+    cadence: "MONTHLY",
+    stripePriceIdMonthly: null,
+    stripePriceIdAnnual: null,
+    active: true,
+    sortOrder: 220,
+  },
+  {
+    slug: "addon-commercial-retainer",
+    kind: "ADDON",
+    label: "Commercial Property Retainer",
+    description:
+      "Recurring engagement for one commercial / Class-A asset. Weekly AI scans across ChatGPT, Perplexity, Claude, Gemini, and Google AI Overview. Monthly executive report sized for the asset committee. AEO Boost ($199/mo) included. On-demand white-glove for new pages and edits.",
+    defaultPriceCents: 150000,
+    cadence: "MONTHLY",
+    stripePriceIdMonthly: null,
+    stripePriceIdAnnual: null,
+    active: true,
+    sortOrder: 225,
+  },
+  {
+    slug: "addon-portfolio-success",
+    kind: "ADDON",
+    label: "Portfolio Success Manager",
+    description:
+      "Named LeaseStack contact across 3+ properties under one ownership umbrella. Quarterly business review, portfolio-wide rollup of AI search visibility, dedicated Slack channel, and priority on new feature shipping. Replaces the per-property white-glove line on portfolio deals.",
+    defaultPriceCents: 750000,
+    cadence: "MONTHLY",
+    stripePriceIdMonthly: null,
+    stripePriceIdAnnual: null,
+    active: true,
+    sortOrder: 230,
+  },
+
+  // ── Capacity add-ons (metered, billed in arrears) ────────────────────
+  // We surface these in the catalog so operators can flag them on a
+  // proposal as "what overage looks like". The proposal builder treats
+  // them as recurring lines at $0 with a note in the description; actual
+  // billing happens through the metered Stripe prices once the org is
+  // live (see `lib/billing/catalog.ts` ADDONS metered entries).
+  {
+    slug: "addon-pixel-overage",
+    kind: "ADDON",
+    label: "Pixel visitor overage",
+    description:
+      "Identified visitors beyond your plan cap. Billed monthly in arrears at $0.05 per identified visitor. Hard-capped at 100x your plan cap as a safety stop. Surfaced here for transparency — no charge until usage lands.",
+    defaultPriceCents: 0,
+    cadence: "MONTHLY",
+    stripePriceIdMonthly: priceId("ls_pixel_overage_per_visitor_v1"),
+    stripePriceIdAnnual: null,
+    active: true,
+    sortOrder: 310,
+  },
+  {
+    slug: "addon-email-overage",
+    kind: "ADDON",
+    label: "Outbound email overage",
+    description:
+      "Sends beyond the 3,000-per-month cap. Billed at $0.01 per send. Includes the same deliverability monitoring, unsubscribe handling, and bounce processing as base sends.",
+    defaultPriceCents: 0,
+    cadence: "MONTHLY",
+    stripePriceIdMonthly: priceId("ls_email_overage_per_send_v1"),
+    stripePriceIdAnnual: null,
+    active: true,
+    sortOrder: 320,
+  },
+];
