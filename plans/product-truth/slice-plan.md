@@ -55,8 +55,8 @@ Source artifacts: approved design plus read-only product/marketing/feature/integ
 | S0 | done | T1 | A1 | 12 characterization assertions pass; one intentional registry RED; 80 existing regressions pass; ESLint/diff check pass. | S1 registry contract. |
 | S1 | done | T1 | Main | 21 focused tests pass; ESLint and TypeScript pass; registry has no runtime consumers. | S2 source adapters. |
 | S2 | done | T1 | A2 + A3 | 41 focused tests pass; adapters cover all planned sources; ESLint, TypeScript, forbidden-import scan, and diff check pass. | S3 discrepancy policy. |
-| S3 | in_progress | T1 | Main | none | Known conflicts are classified deterministically. |
-| S4 | pending | T2 | Main | none | CLI produces stable JSON and Markdown baseline. |
+| S3 | done | T1 | Main | 47 focused tests pass; discrepancy cases cover duplicate/unknown identities, unsupported self-serve products, service conflicts, readiness, Stripe proof, claims, entitlements, price drift, and stable sorting; ESLint, TypeScript, and diff check pass. | S4 deterministic baseline. |
+| S4 | in_progress | T2 | Main | none | CLI produces stable JSON and Markdown baseline. |
 | S5 | pending | T1 | Main | none | Unsafe mappings fail tests; known drift remains explicit. |
 | S6 | pending | T1 | Main | none | Full checks and diff review pass. |
 
@@ -133,7 +133,7 @@ Blocked on: Nothing.
 
 ### S3 - Build the discrepancy engine and policy severity model
 
-Status: in_progress
+Status: done
 Tier: T1
 Type: backend
 Actor/trigger: Internal audit compares registry expectations with normalized legacy sources.
@@ -150,13 +150,13 @@ Runtime verification: Not required.
 Migration/backfill notes: None.
 External docs needed: None.
 Acceptance criteria: Same inputs always yield the same sorted findings; every finding cites source IDs/paths and a product key or explicit orphan classification.
-Exit evidence: Focused tests showing critical, warning, informational, and approved-alias cases.
+Exit evidence: Six discrepancy-engine tests and 41 prior product-truth tests pass. Critical and warning policies are deterministic; proposal tiers and approved legacy mappings avoid false unsupported-product findings. Focused ESLint, `tsc --noEmit`, and `git diff --check` pass.
 Parallelization: Single-threaded; owns shared policy semantics.
 Blocked on: Nothing.
 
 ### S4 - Generate the deterministic Product Truth baseline
 
-Status: pending
+Status: in_progress
 Tier: T2
 Type: ops
 Actor/trigger: Developer runs a local audit command.
