@@ -54,7 +54,7 @@ const registryEntries: ProductDefinition[] = [
       "Label unmatched outcomes and coverage gaps instead of assigning a guessed source.",
     sourceReferences: [
       { source: "billing_features", id: "moduleAttribution" },
-      { source: "marketing", id: "home.hero" },
+      { source: "marketing", id: "home.hero.universal-attribution" },
     ],
   },
   {
@@ -85,7 +85,6 @@ const registryEntries: ProductDefinition[] = [
     sourceReferences: [
       { source: "billing_features", id: "moduleChatbot" },
       { source: "marketplace", id: "ai-chatbot" },
-      { source: "marketing", id: "features.chatbot" },
     ],
   },
   {
@@ -115,7 +114,6 @@ const registryEntries: ProductDefinition[] = [
     sourceReferences: [
       { source: "billing_features", id: "modulePopups" },
       { source: "marketplace", id: "embeddable-popups" },
-      { source: "marketing", id: "features.popups" },
     ],
   },
   {
@@ -173,7 +171,6 @@ const registryEntries: ProductDefinition[] = [
       { source: "billing_features", id: "moduleSEO" },
       { source: "billing_features", id: "moduleMarketIntelligence" },
       { source: "marketplace", id: "seo-aeo" },
-      { source: "marketing", id: "features.seo-aeo" },
     ],
   },
   {
@@ -201,7 +198,6 @@ const registryEntries: ProductDefinition[] = [
       "Name missing sources and provide setup actions without fabricating trends, causality, or dollar impact.",
     sourceReferences: [
       { source: "billing_features", id: "moduleInsights" },
-      { source: "marketing", id: "features.weekly-report" },
     ],
   },
   {
@@ -227,9 +223,9 @@ const registryEntries: ProductDefinition[] = [
     degradedBehavior:
       "Surface customer or third-party dependencies explicitly and do not promise a launch date before inputs are verified.",
     sourceReferences: [
-      { source: "billing_catalog", id: "website-build" },
+      { source: "billing_catalog", id: "standard" },
+      { source: "billing_catalog", id: "premium" },
       { source: "proposal_catalog", id: "addon-website-build" },
-      { source: "marketing", id: "features.website-build" },
     ],
   },
 ];

@@ -57,8 +57,8 @@ Source artifacts: approved design plus read-only product/marketing/feature/integ
 | S2 | done | T1 | A2 + A3 | 41 focused tests pass; adapters cover all planned sources; ESLint, TypeScript, forbidden-import scan, and diff check pass. | S3 discrepancy policy. |
 | S3 | done | T1 | Main | 47 focused tests pass; discrepancy cases cover duplicate/unknown identities, unsupported self-serve products, service conflicts, readiness, Stripe proof, claims, entitlements, price drift, and stable sorting; ESLint, TypeScript, and diff check pass. | S4 deterministic baseline. |
 | S4 | done | T2 | Main | 51 focused tests pass; CLI generates a 135-record baseline with 29 critical and 40 warning findings; two runs produced identical SHA-256 hashes; ESLint, TypeScript, and diff check pass. | S5 regression gates. |
-| S5 | in_progress | T1 | Main | none | Unsafe mappings fail tests; known drift remains explicit. |
-| S6 | pending | T1 | Main | none | Full checks and diff review pass. |
+| S5 | done | T1 | Main | 154 product/billing/Stripe/marketplace/proposal tests pass; canonical references resolve; sellable billable products require a declared billing path; known findings and unsupported-claim policies are pinned; ESLint, TypeScript, hashes, and diff check pass. | S6 final verification. |
+| S6 | in_progress | T1 | Main | none | Full checks and diff review pass. |
 
 ## Slices
 
@@ -179,7 +179,7 @@ Blocked on: Nothing.
 
 ### S5 - Add product-truth regression gates
 
-Status: in_progress
+Status: done
 Tier: T1
 Type: verification
 Actor/trigger: Test suite runs after any catalog or product metadata change.
@@ -196,13 +196,13 @@ Runtime verification: Not required.
 Migration/backfill notes: None.
 External docs needed: None.
 Acceptance criteria: A new unsupported sellable product, entitlement mismatch, or service/software contradiction causes a clear failing test.
-Exit evidence: Focused Vitest output and proof that existing billing/Stripe suites still pass.
+Exit evidence: 18 focused files pass 154 tests, including 46 Stripe-webhook cases plus billing math/gates, marketplace settlement, proposal totals, Stripe idempotency, and all product-truth gates. Canonical source references now resolve to normalized evidence. ESLint, `tsc --noEmit`, deterministic report hashes, and `git diff --check` pass.
 Parallelization: Single-threaded due to shared expected findings.
 Blocked on: Nothing.
 
 ### S6 - Verify and hand off Product Truth foundation
 
-Status: pending
+Status: in_progress
 Tier: T1
 Type: verification
 Actor/trigger: Main agent completes the slice before product-source alignment begins.
