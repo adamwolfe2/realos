@@ -52,8 +52,8 @@ Source artifacts: approved design plus read-only product/marketing/feature/integ
 
 | Slice | Status | Tier | Owner | Evidence | Next gate |
 | --- | --- | --- | --- | --- | --- |
-| S0 | pending | T1 | A1 | none | Characterization tests fail for missing normalized snapshot contract. |
-| S1 | pending | T1 | Main | none | Registry type and entries compile with no runtime consumers. |
+| S0 | done | T1 | A1 | 12 characterization assertions pass; one intentional registry RED; 80 existing regressions pass; ESLint/diff check pass. | S1 registry contract. |
+| S1 | in_progress | T1 | Main | none | Registry type and entries compile with no runtime consumers. |
 | S2 | pending | T1 | A2 + A3 | none | Every legacy source emits normalized static records. |
 | S3 | pending | T1 | Main | none | Known conflicts are classified deterministically. |
 | S4 | pending | T2 | Main | none | CLI produces stable JSON and Markdown baseline. |
@@ -64,7 +64,7 @@ Source artifacts: approved design plus read-only product/marketing/feature/integ
 
 ### S0 - Characterize current catalog and entitlement behavior
 
-Status: pending
+Status: done
 Tier: T1
 Type: verification
 Actor/trigger: Developer runs focused tests before adding the registry.
@@ -81,13 +81,13 @@ Runtime verification: Not required; no UI or runtime behavior changes.
 Migration/backfill notes: None.
 External docs needed: None.
 Acceptance criteria: Stable identifiers and safety-relevant statuses are captured without approving customer-facing copy or prices as correct.
-Exit evidence: Focused Vitest output plus references to existing entitlement regression tests.
+Exit evidence: `__tests__/product-truth-characterization.test.ts` has 12 passing assertions and one intentional RED requiring `lib/products/registry.ts`; six existing regression files pass 80 tests; focused ESLint and `git diff --check` pass.
 Parallelization: Single-threaded; establishes the baseline for every later worker.
 Blocked on: Nothing.
 
 ### S1 - Define the canonical product contract and registry
 
-Status: pending
+Status: in_progress
 Tier: T1
 Type: backend
 Actor/trigger: Internal code imports product metadata for analysis only.
