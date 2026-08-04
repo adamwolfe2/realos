@@ -54,8 +54,8 @@ Source artifacts: approved design plus read-only product/marketing/feature/integ
 | --- | --- | --- | --- | --- | --- |
 | S0 | done | T1 | A1 | 12 characterization assertions pass; one intentional registry RED; 80 existing regressions pass; ESLint/diff check pass. | S1 registry contract. |
 | S1 | done | T1 | Main | 21 focused tests pass; ESLint and TypeScript pass; registry has no runtime consumers. | S2 source adapters. |
-| S2 | in_progress | T1 | A2 + A3 | none | Every legacy source emits normalized static records. |
-| S3 | pending | T1 | Main | none | Known conflicts are classified deterministically. |
+| S2 | done | T1 | A2 + A3 | 41 focused tests pass; adapters cover all planned sources; ESLint, TypeScript, forbidden-import scan, and diff check pass. | S3 discrepancy policy. |
+| S3 | in_progress | T1 | Main | none | Known conflicts are classified deterministically. |
 | S4 | pending | T2 | Main | none | CLI produces stable JSON and Markdown baseline. |
 | S5 | pending | T1 | Main | none | Unsafe mappings fail tests; known drift remains explicit. |
 | S6 | pending | T1 | Main | none | Full checks and diff review pass. |
@@ -110,7 +110,7 @@ Blocked on: Nothing.
 
 ### S2 - Normalize existing product sources through read-only adapters
 
-Status: in_progress
+Status: done
 Tier: T1
 Type: backend
 Actor/trigger: Product-truth audit requests normalized legacy records.
@@ -127,13 +127,13 @@ Runtime verification: Not required.
 Migration/backfill notes: None.
 External docs needed: None because only local static metadata is read.
 Acceptance criteria: Every known commercial/product source can be compared without database or external access.
-Exit evidence: Adapter tests plus a source scan proving no Prisma client, Stripe client, fetch, or action import is reachable from the audit entry point.
+Exit evidence: Marketplace/proposal adapters pass seven tests; billing/entitlement/Stripe/marketing adapters pass 11 tests; aggregate contract and prior registry/characterization tests bring the focused total to 41. ESLint, `tsc --noEmit`, forbidden-import assertions, mocked Prisma non-access, and `git diff --check` pass.
 Parallelization: Parallel-safe after S1. One worker per adapter family with disjoint files; main agent owns the barrel export and integration.
 Blocked on: Nothing.
 
 ### S3 - Build the discrepancy engine and policy severity model
 
-Status: pending
+Status: in_progress
 Tier: T1
 Type: backend
 Actor/trigger: Internal audit compares registry expectations with normalized legacy sources.

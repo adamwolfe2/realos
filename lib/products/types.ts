@@ -1,4 +1,7 @@
-import type { FeatureKey } from "@/lib/billing/features";
+import type {
+  AlwaysOnModuleKey,
+  FeatureKey,
+} from "@/lib/billing/features";
 
 export type ProductClassification =
   | "foundation"
@@ -19,12 +22,16 @@ export type ProductCommercialPolicy = "included" | "billable" | "service";
 export type ProductSource =
   | "billing_features"
   | "billing_catalog"
+  | "stripe_static"
   | "marketplace"
   | "proposal_catalog"
   | "marketing"
   | "terms";
 
-export type LegacyModuleKey = FeatureKey | "moduleConversations";
+export type LegacyModuleKey =
+  | FeatureKey
+  | AlwaysOnModuleKey
+  | "moduleConversations";
 
 export type ProductSourceReference = Readonly<{
   source: ProductSource;
