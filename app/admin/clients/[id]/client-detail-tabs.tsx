@@ -29,6 +29,8 @@ export const CLIENT_TAB_KEYS: ClientTabKey[] = [
   "activity",
 ];
 
+export type ClientDetailActiveKey = ClientTabKey | "activation";
+
 export function ClientDetailTabs({
   orgId,
   active,
@@ -36,15 +38,20 @@ export function ClientDetailTabs({
   failingSyncCount,
 }: {
   orgId: string;
-  active: ClientTabKey;
+  active: ClientDetailActiveKey;
   propertiesCount: number;
   /** Count of syncs currently erroring/dead — surfaced as a red badge so
    *  the operator doesn't have to open Integrations to know something's
    *  on fire. */
   failingSyncCount: number;
 }) {
-  const tabs: Array<{ key: ClientTabKey; label: string; count?: number }> = [
+  const tabs: Array<{
+    key: ClientDetailActiveKey;
+    label: string;
+    count?: number;
+  }> = [
     { key: "overview", label: "Overview" },
+    { key: "activation", label: "Activation" },
     { key: "integrations", label: "Integrations" },
     { key: "team", label: "Team" },
     { key: "modules", label: "Modules & Domains" },
@@ -62,7 +69,9 @@ export function ClientDetailTabs({
         const href =
           t.key === "overview"
             ? `/admin/clients/${orgId}`
-            : `/admin/clients/${orgId}?tab=${t.key}`;
+            : t.key === "activation"
+              ? `/admin/clients/${orgId}/activation`
+              : `/admin/clients/${orgId}?tab=${t.key}`;
         return (
           <Link
             key={t.key}
