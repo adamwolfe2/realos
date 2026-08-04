@@ -24,6 +24,8 @@ export const ALWAYS_ON_MODULE_KEYS = [
   "moduleLeadCapture",
 ] as const;
 
+export type AlwaysOnModuleKey = (typeof ALWAYS_ON_MODULE_KEYS)[number];
+
 // Base platform fee (per property / month). Covers the marketing site,
 // lead capture + inbox, and the dashboard. Every workspace pays this.
 export const BASE_PLATFORM_CENTS = 9900;
