@@ -56,8 +56,8 @@ Source artifacts: approved design plus read-only product/marketing/feature/integ
 | S1 | done | T1 | Main | 21 focused tests pass; ESLint and TypeScript pass; registry has no runtime consumers. | S2 source adapters. |
 | S2 | done | T1 | A2 + A3 | 41 focused tests pass; adapters cover all planned sources; ESLint, TypeScript, forbidden-import scan, and diff check pass. | S3 discrepancy policy. |
 | S3 | done | T1 | Main | 47 focused tests pass; discrepancy cases cover duplicate/unknown identities, unsupported self-serve products, service conflicts, readiness, Stripe proof, claims, entitlements, price drift, and stable sorting; ESLint, TypeScript, and diff check pass. | S4 deterministic baseline. |
-| S4 | in_progress | T2 | Main | none | CLI produces stable JSON and Markdown baseline. |
-| S5 | pending | T1 | Main | none | Unsafe mappings fail tests; known drift remains explicit. |
+| S4 | done | T2 | Main | 51 focused tests pass; CLI generates a 135-record baseline with 29 critical and 40 warning findings; two runs produced identical SHA-256 hashes; ESLint, TypeScript, and diff check pass. | S5 regression gates. |
+| S5 | in_progress | T1 | Main | none | Unsafe mappings fail tests; known drift remains explicit. |
 | S6 | pending | T1 | Main | none | Full checks and diff review pass. |
 
 ## Slices
@@ -156,7 +156,7 @@ Blocked on: Nothing.
 
 ### S4 - Generate the deterministic Product Truth baseline
 
-Status: in_progress
+Status: done
 Tier: T2
 Type: ops
 Actor/trigger: Developer runs a local audit command.
@@ -173,13 +173,13 @@ Runtime verification: Run locally twice and verify no diff on the second run.
 Migration/backfill notes: None.
 External docs needed: None.
 Acceptance criteria: A future agent can reproduce the baseline from version-controlled sources only.
-Exit evidence: Exact command, clean second-run diff, and generated report path.
+Exit evidence: `./node_modules/.bin/tsx tooling/audit-product-truth.ts` writes the Markdown and JSON baselines from 135 static records. Two consecutive runs produced Markdown SHA-256 `9cf0b38dbf8f2e12f20dda476f4f57bfa7bdcb648b8a5c629878024162960a6f` and JSON SHA-256 `c7029ba117fb7cf55845d95e8b6ed930a06d4c08bb92ed7472bbf35bc85c0235`. The focused suite passes 51 tests, including a real CLI process check; ESLint, TypeScript, and diff check pass.
 Parallelization: Single-threaded because it writes the canonical baseline artifact.
 Blocked on: Nothing.
 
 ### S5 - Add product-truth regression gates
 
-Status: pending
+Status: in_progress
 Tier: T1
 Type: verification
 Actor/trigger: Test suite runs after any catalog or product metadata change.
