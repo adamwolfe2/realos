@@ -1,6 +1,6 @@
 # Product Truth Foundation Thin Slice Plan
 
-Status: READY
+Status: COMPLETE
 Last updated: 2026-08-04
 Owner: Codex
 
@@ -56,9 +56,9 @@ Source artifacts: approved design plus read-only product/marketing/feature/integ
 | S1 | done | T1 | Main | 21 focused tests pass; ESLint and TypeScript pass; registry has no runtime consumers. | S2 source adapters. |
 | S2 | done | T1 | A2 + A3 | 41 focused tests pass; adapters cover all planned sources; ESLint, TypeScript, forbidden-import scan, and diff check pass. | S3 discrepancy policy. |
 | S3 | done | T1 | Main | 47 focused tests pass; discrepancy cases cover duplicate/unknown identities, unsupported self-serve products, service conflicts, readiness, Stripe proof, claims, entitlements, price drift, and stable sorting; ESLint, TypeScript, and diff check pass. | S4 deterministic baseline. |
-| S4 | done | T2 | Main | 51 focused tests pass; CLI generates a 135-record baseline with 29 critical and 40 warning findings; two runs produced identical SHA-256 hashes; ESLint, TypeScript, and diff check pass. | S5 regression gates. |
-| S5 | done | T1 | Main | 154 product/billing/Stripe/marketplace/proposal tests pass; canonical references resolve; sellable billable products require a declared billing path; known findings and unsupported-claim policies are pinned; ESLint, TypeScript, hashes, and diff check pass. | S6 final verification. |
-| S6 | in_progress | T1 | Main | none | Full checks and diff review pass. |
+| S4 | done | T2 | Main | CLI generates a 135-record baseline with 42 critical, 21 warning, and 18 informational findings; `--check` is non-mutating and the Markdown/JSON hashes are deterministic. | S5 regression gates. |
+| S5 | done | T1 | Main | 57 product-truth tests pin source references, billing paths, comparison policies, shared claims, tier entitlements, known findings, and non-mutating CLI behavior. | S6 final verification. |
+| S6 | done | T1 | Main | 181 files / 1,967 tests pass; TypeScript and audit check pass; lint has 0 errors; production compilation and its TypeScript phase pass; independent reviews have no remaining critical/high findings. | Phase B capability profiles and ordered remediation. |
 
 ## Slices
 
@@ -150,7 +150,7 @@ Runtime verification: Not required.
 Migration/backfill notes: None.
 External docs needed: None.
 Acceptance criteria: Same inputs always yield the same sorted findings; every finding cites source IDs/paths and a product key or explicit orphan classification.
-Exit evidence: Six discrepancy-engine tests and 41 prior product-truth tests pass. Critical and warning policies are deterministic; proposal tiers and approved legacy mappings avoid false unsupported-product findings. Focused ESLint, `tsc --noEmit`, and `git diff --check` pass.
+Exit evidence: Seven discrepancy-engine tests cover individual and tier-bundled readiness, unsupported entitlements, service conflicts, source identity, claim policy, price groups, unclassified prices, Stripe evidence, and deterministic ordering. Focused ESLint, `tsc --noEmit`, and `git diff --check` pass.
 Parallelization: Single-threaded; owns shared policy semantics.
 Blocked on: Nothing.
 
@@ -173,7 +173,7 @@ Runtime verification: Run locally twice and verify no diff on the second run.
 Migration/backfill notes: None.
 External docs needed: None.
 Acceptance criteria: A future agent can reproduce the baseline from version-controlled sources only.
-Exit evidence: `./node_modules/.bin/tsx tooling/audit-product-truth.ts` writes the Markdown and JSON baselines from 135 static records. Two consecutive runs produced Markdown SHA-256 `9cf0b38dbf8f2e12f20dda476f4f57bfa7bdcb648b8a5c629878024162960a6f` and JSON SHA-256 `c7029ba117fb7cf55845d95e8b6ed930a06d4c08bb92ed7472bbf35bc85c0235`. The focused suite passes 51 tests, including a real CLI process check; ESLint, TypeScript, and diff check pass.
+Exit evidence: `./node_modules/.bin/tsx tooling/audit-product-truth.ts` writes the Markdown and JSON baselines from 135 static records; `--check` compares without writing. The final Markdown SHA-256 is `ecd2d6ae1523a616cdde237fa7f0b57f8ad7bae3cc59d3b3673ebd24e415ccf3`; JSON is `eb127accc998f379ce2c8f53d8906c6d95136c5e24efd1d1cfa8984d3edbffa4`.
 Parallelization: Single-threaded because it writes the canonical baseline artifact.
 Blocked on: Nothing.
 
@@ -202,7 +202,7 @@ Blocked on: Nothing.
 
 ### S6 - Verify and hand off Product Truth foundation
 
-Status: in_progress
+Status: done
 Tier: T1
 Type: verification
 Actor/trigger: Main agent completes the slice before product-source alignment begins.
@@ -219,7 +219,7 @@ Runtime verification: No browser proof required because no customer-visible cons
 Migration/backfill notes: Confirm no migration exists.
 External docs needed: None.
 Acceptance criteria: Checks pass; diff contains no runtime consumer switch, database call, Stripe call, env access, or customer-facing content edit.
-Exit evidence: Exact command outputs, report checksum or clean regeneration, and final diff review.
+Exit evidence: `vitest run` passes 181 files and 1,967 tests. `tsc --noEmit` passes. Repository ESLint exits 0 with 0 errors and 96 pre-existing warnings. The audit `--check` passes without modifying its baseline; hashes are recorded above. Next production build compiles and completes its TypeScript phase, then page-data collection stops because the isolated worktree intentionally has no `DATABASE_URL`; no live Neon connection was used. Diff review finds no environment, Prisma schema, migration, secret, live Stripe, or deployment change. Independent Codex and Claude reviews found no remaining critical/high issue after remediation.
 Parallelization: Single-threaded final gate.
 Blocked on: Nothing.
 
@@ -258,4 +258,4 @@ None for Phase A. Customer-facing catalog corrections, prices, product activatio
 
 ## Next Recommended Slice
 
-Start S0 with failing characterization tests. Do not begin S1 until the current money/access behavior is locked by evidence.
+Start Phase B with capability profiles and resolve the baseline's critical conflicts in dependency order before changing customer-visible pricing or access.

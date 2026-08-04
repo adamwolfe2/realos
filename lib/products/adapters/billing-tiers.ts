@@ -3,11 +3,19 @@ import {
   TIERS,
   WEBSITE_BUILDS,
 } from "@/lib/billing/catalog";
+import type { ModuleFlags } from "@/lib/billing/catalog";
 import { STRIPE_PRICE_IDS } from "@/lib/billing/price-ids.generated";
 import { defineProductSourceRecords } from "@/lib/products/adapters/types";
+import type { LegacyModuleKey } from "@/lib/products/types";
 
 function isStaticallyMapped(lookupKey: string): boolean {
   return lookupKey in STRIPE_PRICE_IDS;
+}
+
+function enabledModuleKeys(modules: ModuleFlags): readonly LegacyModuleKey[] {
+  return (Object.keys(modules) as (keyof ModuleFlags)[]).filter(
+    (key) => modules[key],
+  );
 }
 
 export const BILLING_TIER_RECORDS = defineProductSourceRecords(
@@ -19,7 +27,7 @@ export const BILLING_TIER_RECORDS = defineProductSourceRecords(
       recordKind: "tier" as const,
       commercialState: "sellable" as const,
       productKey: null,
-      legacyModuleKeys: [],
+      legacyModuleKeys: enabledModuleKeys(tier.modules),
       priceCents: tier.monthly.unitAmountCents,
       billingCadence: "monthly" as const,
       stripeLookupKey: tier.monthly.lookupKey,
@@ -36,7 +44,7 @@ export const BILLING_TIER_RECORDS = defineProductSourceRecords(
       recordKind: "tier" as const,
       commercialState: "sellable" as const,
       productKey: null,
-      legacyModuleKeys: [],
+      legacyModuleKeys: enabledModuleKeys(tier.modules),
       priceCents: tier.annual.unitAmountCents * 12,
       billingCadence: "annual" as const,
       stripeLookupKey: tier.annual.lookupKey,
@@ -53,7 +61,7 @@ export const BILLING_TIER_RECORDS = defineProductSourceRecords(
       recordKind: "tier" as const,
       commercialState: "sellable" as const,
       productKey: null,
-      legacyModuleKeys: [],
+      legacyModuleKeys: enabledModuleKeys(tier.modules),
       priceCents: tier.monthly.unitAmountCents,
       billingCadence: "monthly" as const,
       stripeLookupKey: tier.graduatedMonthly.lookupKey,
@@ -70,7 +78,7 @@ export const BILLING_TIER_RECORDS = defineProductSourceRecords(
       recordKind: "tier" as const,
       commercialState: "sellable" as const,
       productKey: null,
-      legacyModuleKeys: [],
+      legacyModuleKeys: enabledModuleKeys(tier.modules),
       priceCents: tier.annual.unitAmountCents * 12,
       billingCadence: "annual" as const,
       stripeLookupKey: tier.graduatedAnnual.lookupKey,

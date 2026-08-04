@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { FeaturePage } from "@/components/platform/feature-page";
 import { ConfigTabs } from "@/components/platform/artifacts/config-tabs";
+import { MANAGED_ADS_DESCRIPTION } from "@/lib/copy/product-claims";
 
 export const metadata: Metadata = {
   title: "Managed Google + Meta ads",
-  description:
-    "Geo-fenced campaigns, pixel-powered retargeting, creative studio, weekly performance reviews. Google, Meta, LinkedIn, and TikTok, managed end-to-end.",
+  description: MANAGED_ADS_DESCRIPTION,
 };
 
 export default function AdsFeaturePage() {

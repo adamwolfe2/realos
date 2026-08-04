@@ -4,6 +4,11 @@ import { describe, expect, it } from "vitest";
 import { FEATURE_CATALOG } from "@/lib/billing/features";
 import { ADDONS, TIERS, WEBSITE_BUILDS } from "@/lib/billing/catalog";
 import { STRIPE_PRICE_IDS } from "@/lib/billing/price-ids.generated";
+import {
+  ADS_ATTRIBUTION_HEADLINE,
+  ADS_CREATIVE_REFRESH_CLAIM,
+  MANAGED_ADS_DESCRIPTION,
+} from "@/lib/copy/product-claims";
 import { BILLING_FEATURE_RECORDS } from "@/lib/products/adapters/billing-features";
 import {
   BILLING_ADDON_RECORDS,
@@ -90,6 +95,23 @@ describe("tier, add-on, and website-build source adapters", () => {
       stripeLookupKey: "ls_scale_graduated_annual_v1",
       stripePriceMapped: true,
     });
+  });
+
+  it("carries enabled tier modules into the normalized contract", () => {
+    expect(
+      BILLING_TIER_RECORDS.find(({ sourceId }) => sourceId === "growth.monthly")
+        ?.legacyModuleKeys,
+    ).toEqual(
+      expect.arrayContaining([
+        "moduleSEO",
+        "moduleGoogleAds",
+        "moduleMetaAds",
+      ]),
+    );
+    expect(
+      BILLING_TIER_RECORDS.find(({ sourceId }) => sourceId === "scale.monthly")
+        ?.legacyModuleKeys,
+    ).toContain("moduleReferrals");
   });
 
   it("normalizes all add-ons and both concierge website services", () => {
@@ -184,7 +206,7 @@ describe("marketing and Terms claim adapter", () => {
     ).toMatchObject({
       source: "terms",
       commercialState: "active",
-      evidencePath: "app/(platform)/terms/page.tsx",
+      evidencePath: "lib/copy/product-claims.ts",
       customerVisible: true,
     });
     expect(
@@ -202,14 +224,23 @@ describe("marketing and Terms claim adapter", () => {
     expect(byId.get("features.ads.managed-end-to-end")?.claim).toContain(
       "managed end-to-end",
     );
+    expect(byId.get("features.ads.managed-end-to-end")?.claim).toBe(
+      MANAGED_ADS_DESCRIPTION,
+    );
     expect(byId.get("features.ads.weekly-creative-refresh")?.claim).toContain(
       "weekly creative refresh",
+    );
+    expect(byId.get("features.ads.weekly-creative-refresh")?.claim).toBe(
+      ADS_CREATIVE_REFRESH_CLAIM,
     );
     expect(byId.get("home.hero.universal-attribution")?.claim).toContain(
       "every ad dollar",
     );
     expect(byId.get("features.ads.universal-attribution")?.claim).toContain(
       "Every dollar mapped to a signed lease",
+    );
+    expect(byId.get("features.ads.universal-attribution")?.claim).toBe(
+      ADS_ATTRIBUTION_HEADLINE,
     );
     expect(byId.get("home.faq.every-major-pms")?.claim).toContain(
       "Every major PMS",
@@ -224,6 +255,24 @@ describe("marketing and Terms claim adapter", () => {
         "utf8",
       );
       expect(source).toContain(record.claim as string);
+    }
+  });
+
+  it("keeps live marketing and Terms pages bound to shared claim constants", () => {
+    const bindings = [
+      ["app/(platform)/features/ads/page.tsx", "MANAGED_ADS_DESCRIPTION"],
+      ["app/(platform)/features/page.tsx", "ADS_ATTRIBUTION_HEADLINE"],
+      ["app/(platform)/features/page.tsx", "ADS_CREATIVE_REFRESH_CLAIM"],
+      ["app/(platform)/terms/page.tsx", "TERMS_SOFTWARE_SERVICE_CLAIM"],
+      ["app/(platform)/terms/page.tsx", "TERMS_AD_SPEND_BOUNDARY_CLAIM"],
+    ] as const;
+
+    for (const [sourcePath, constantName] of bindings) {
+      const source = fs.readFileSync(
+        path.resolve(process.cwd(), sourcePath),
+        "utf8",
+      );
+      expect(source).toContain(constantName);
     }
   });
 });

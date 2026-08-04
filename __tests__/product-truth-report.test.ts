@@ -27,7 +27,7 @@ describe("product truth baseline report", () => {
     expect(report.summary.total).toBe(findings.length);
     expect(report.summary.critical).toBeGreaterThan(0);
     expect(report.summary.warning).toBeGreaterThan(0);
-    expect(report.summary.info).toBe(0);
+    expect(report.summary.info).toBeGreaterThan(0);
     expect(report).not.toHaveProperty("generatedAt");
   });
 

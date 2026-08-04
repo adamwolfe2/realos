@@ -1,5 +1,8 @@
 import type { NormalizedProductSourceRecord } from "@/lib/products/adapters";
-import { UNSUPPORTED_CLAIM_POLICIES } from "@/lib/products/policies";
+import {
+  PRICE_COMPARISON_POLICIES,
+  UNSUPPORTED_CLAIM_POLICIES,
+} from "@/lib/products/policies";
 import type { ProductDefinition } from "@/lib/products/types";
 
 export type ProductTruthSeverity = "critical" | "warning" | "info";
@@ -36,9 +39,10 @@ function finding(
   owner: ProductTruthOwner,
   record: NormalizedProductSourceRecord,
   reason: string,
+  idSuffix?: string,
 ): ProductTruthFinding {
   return Object.freeze({
-    id: `${code}:${record.source}:${record.sourceId}`,
+    id: `${code}:${record.source}:${record.sourceId}${idSuffix ? `:${idSuffix}` : ""}`,
     code,
     severity,
     owner,
@@ -48,6 +52,77 @@ function finding(
     reason,
     evidencePath: record.evidencePath,
   });
+}
+
+function addTierEntitlementFindings(
+  records: readonly NormalizedProductSourceRecord[],
+  registry: readonly ProductDefinition[],
+  findings: MutableFindings,
+): void {
+  const productsByModule = new Map<string, ProductDefinition[]>();
+  for (const product of registry) {
+    for (const moduleKey of product.legacyModuleKeys) {
+      const products = productsByModule.get(moduleKey) ?? [];
+      productsByModule.set(moduleKey, [...products, product]);
+    }
+  }
+
+  const tierGroups = new Map<string, NormalizedProductSourceRecord[]>();
+  for (const record of records) {
+    if (record.recordKind !== "tier" || !record.selfServe) continue;
+    const family = record.sourceId.split(".")[0];
+    const identity = `${record.source}:${family}`;
+    const grouped = tierGroups.get(identity) ?? [];
+    tierGroups.set(identity, [...grouped, record]);
+  }
+
+  for (const [, group] of [...tierGroups].sort(([a], [b]) => a.localeCompare(b))) {
+    const sortedGroup = [...group].sort((a, b) =>
+      a.sourceId.localeCompare(b.sourceId),
+    );
+    const record = sortedGroup[0];
+    const moduleKeys = [
+      ...new Set(sortedGroup.flatMap((item) => item.legacyModuleKeys)),
+    ].sort();
+    const reportedProducts = new Set<string>();
+    for (const moduleKey of moduleKeys) {
+      const products = productsByModule.get(moduleKey) ?? [];
+      if (products.length === 0) {
+        findings.push(
+          finding(
+            "tier_unsupported_entitlement",
+            "critical",
+            "product",
+            record,
+            `The ${record.sourceId.split(".")[0]} tier family grants unsupported entitlement ${moduleKey} across billing variants.`,
+            moduleKey,
+          ),
+        );
+      }
+      for (const product of products) {
+        if (
+          product.readiness === "sellable" ||
+          reportedProducts.has(product.key)
+        ) {
+          continue;
+        }
+        findings.push(
+          Object.freeze({
+            ...finding(
+              "tier_readiness_conflict",
+              "critical",
+              "product",
+              record,
+              `${product.name} is ${product.readiness} but the ${record.sourceId.split(".")[0]} tier family grants it across billing variants.`,
+              product.key,
+            ),
+            productKey: product.key,
+          }),
+        );
+        reportedProducts.add(product.key);
+      }
+    }
+  }
 }
 
 function addIdentityFindings(
@@ -170,6 +245,21 @@ function addStripeFindings(
   findings: MutableFindings,
 ): void {
   for (const record of records) {
+    if (
+      record.source === "stripe_static" &&
+      record.recordKind === "product" &&
+      record.productKey === null
+    ) {
+      findings.push(
+        finding(
+          "unclassified_stripe_mapping",
+          "warning",
+          "billing",
+          record,
+          "Static Stripe lookup key has no canonical product classification.",
+        ),
+      );
+    }
     const requiresPriceProof =
       record.customerVisible &&
       record.selfServe &&
@@ -177,15 +267,25 @@ function addStripeFindings(
       (record.priceCents ?? 0) > 0;
     if (!requiresPriceProof || record.stripePriceMapped) continue;
     const missingLookup = !record.stripeLookupKey;
+    if (missingLookup) {
+      findings.push(
+        finding(
+          "missing_stripe_mapping",
+          "critical",
+          "billing",
+          record,
+          "Sellable self-serve product has no Stripe lookup key.",
+        ),
+      );
+      continue;
+    }
     findings.push(
       finding(
-        missingLookup ? "missing_stripe_mapping" : "stripe_mapping_unverified",
-        missingLookup ? "critical" : "warning",
+        "stripe_live_verification_deferred",
+        "info",
         "billing",
         record,
-        missingLookup
-          ? "Sellable self-serve product has no Stripe lookup key."
-          : "A lookup key is declared but its live DB-backed Price mapping is unverified.",
+        `Lookup key ${record.stripeLookupKey} requires separate live Stripe reconciliation.`,
       ),
     );
   }
@@ -196,7 +296,8 @@ function addClaimFindings(
   findings: MutableFindings,
 ): void {
   for (const record of records) {
-    const policy = UNSUPPORTED_CLAIM_POLICIES[record.sourceId];
+    const policy =
+      UNSUPPORTED_CLAIM_POLICIES[`${record.source}:${record.sourceId}`];
     if (!policy) continue;
     findings.push(
       finding(
@@ -247,25 +348,66 @@ function addPriceFindings(
 ): void {
   for (const product of registry) {
     if (product.commercialPolicy !== "billable") continue;
-    const priced = records.filter(
+    const comparisonGroups = PRICE_COMPARISON_POLICIES[product.key];
+    if (!comparisonGroups) {
+      findings.push(
+        Object.freeze({
+          id: `missing_price_comparison_policy:registry:${product.key}`,
+          code: "missing_price_comparison_policy",
+          severity: "warning",
+          owner: "billing",
+          source: "registry",
+          sourceId: product.key,
+          productKey: product.key,
+          reason: `${product.name} has no approved price comparison policy.`,
+          evidencePath: "lib/products/policies.ts",
+        }),
+      );
+      continue;
+    }
+    const allComparableIdentities = new Set(comparisonGroups.flat());
+    const unclassified = records.filter(
       (record) =>
         record.productKey === product.key &&
         record.customerVisible &&
         record.selfServe &&
-        (record.priceCents ?? 0) > 0,
+        (record.priceCents ?? 0) > 0 &&
+        !allComparableIdentities.has(`${record.source}:${record.sourceId}`),
     );
-    const prices = [...new Set(priced.map((record) => record.priceCents))];
-    if (prices.length < 2) continue;
-    const record = priced[0];
-    findings.push(
-      finding(
-        "price_drift",
-        "warning",
-        "billing",
-        record,
-        `${product.name} has multiple self-serve prices: ${prices.join(", ")}.`,
-      ),
-    );
+    for (const record of unclassified) {
+      findings.push(
+        finding(
+          "unclassified_price_source",
+          "warning",
+          "billing",
+          record,
+          `${product.name} price ${record.priceCents} is outside every approved comparison group.`,
+        ),
+      );
+    }
+    comparisonGroups.forEach((group, index) => {
+      const comparableIdentities = new Set(group);
+      const priced = records.filter(
+        (record) =>
+          record.productKey === product.key &&
+          comparableIdentities.has(`${record.source}:${record.sourceId}`) &&
+          record.customerVisible &&
+          record.selfServe &&
+          (record.priceCents ?? 0) > 0,
+      );
+      const prices = [...new Set(priced.map((record) => record.priceCents))];
+      if (prices.length < 2) return;
+      findings.push(
+        finding(
+          "price_drift",
+          "warning",
+          "billing",
+          priced[0],
+          `${product.name} has multiple self-serve prices: ${prices.join(", ")}.`,
+          `group-${index + 1}`,
+        ),
+      );
+    });
   }
 }
 
@@ -289,6 +431,7 @@ export function analyzeProductTruth(
 
   addIdentityFindings(records, productKeys, findings);
   addCommercialFindings(records, products, findings);
+  addTierEntitlementFindings(records, registry, findings);
   addServiceFindings(records, products, findings);
   addStripeFindings(records, findings);
   addClaimFindings(records, findings);

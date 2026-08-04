@@ -1,4 +1,4 @@
-import { PROPOSAL_CATALOG } from "@/lib/proposals/catalog";
+import { PROPOSAL_CATALOG } from "@/lib/proposals/catalog-data";
 import {
   defineProductSourceRecords,
   type NormalizedProductSourceRecord,
