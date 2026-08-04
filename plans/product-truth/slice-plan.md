@@ -53,8 +53,8 @@ Source artifacts: approved design plus read-only product/marketing/feature/integ
 | Slice | Status | Tier | Owner | Evidence | Next gate |
 | --- | --- | --- | --- | --- | --- |
 | S0 | done | T1 | A1 | 12 characterization assertions pass; one intentional registry RED; 80 existing regressions pass; ESLint/diff check pass. | S1 registry contract. |
-| S1 | in_progress | T1 | Main | none | Registry type and entries compile with no runtime consumers. |
-| S2 | pending | T1 | A2 + A3 | none | Every legacy source emits normalized static records. |
+| S1 | done | T1 | Main | 21 focused tests pass; ESLint and TypeScript pass; registry has no runtime consumers. | S2 source adapters. |
+| S2 | in_progress | T1 | A2 + A3 | none | Every legacy source emits normalized static records. |
 | S3 | pending | T1 | Main | none | Known conflicts are classified deterministically. |
 | S4 | pending | T2 | Main | none | CLI produces stable JSON and Markdown baseline. |
 | S5 | pending | T1 | Main | none | Unsafe mappings fail tests; known drift remains explicit. |
@@ -87,7 +87,7 @@ Blocked on: Nothing.
 
 ### S1 - Define the canonical product contract and registry
 
-Status: in_progress
+Status: done
 Tier: T1
 Type: backend
 Actor/trigger: Internal code imports product metadata for analysis only.
@@ -104,13 +104,13 @@ Runtime verification: Not required.
 Migration/backfill notes: None.
 External docs needed: None.
 Acceptance criteria: The approved design is expressible in typed, pure data and compiles without importing server-only or mutable infrastructure.
-Exit evidence: Focused registry tests and TypeScript check.
+Exit evidence: Eight registry tests plus 13 characterization tests pass; focused ESLint and `tsc --noEmit` pass; source scan confirms only tests and the new barrel import the registry.
 Parallelization: Single-threaded because all adapters depend on this shared contract.
 Blocked on: Nothing.
 
 ### S2 - Normalize existing product sources through read-only adapters
 
-Status: pending
+Status: in_progress
 Tier: T1
 Type: backend
 Actor/trigger: Product-truth audit requests normalized legacy records.
