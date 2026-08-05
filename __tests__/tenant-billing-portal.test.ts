@@ -40,6 +40,14 @@ vi.mock("@/lib/stripe/config", () => ({
 
 import { POST } from "@/app/api/tenant/billing/route";
 import { ForbiddenError } from "@/lib/tenancy/scope";
+import { UserRole } from "@prisma/client";
+
+const ownerScope = {
+  orgId: "org_1",
+  role: UserRole.CLIENT_OWNER,
+  isAgency: false,
+  isImpersonating: false,
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -55,14 +63,14 @@ describe("POST /api/tenant/billing", () => {
   });
 
   it("returns 503 when Stripe isn't configured", async () => {
-    mockRequireScope.mockResolvedValue({ orgId: "org_1" });
+    mockRequireScope.mockResolvedValue(ownerScope);
     mockIsStripeConfigured.mockReturnValue(false);
     const res = (await POST()) as Response;
     expect(res.status).toBe(503);
   });
 
   it("returns 404 when the org has no Stripe customer on file", async () => {
-    mockRequireScope.mockResolvedValue({ orgId: "org_1" });
+    mockRequireScope.mockResolvedValue(ownerScope);
     mockPrisma.organization.findUnique.mockResolvedValue({
       id: "org_1",
       stripeCustomerId: null,
@@ -72,7 +80,10 @@ describe("POST /api/tenant/billing", () => {
   });
 
   it("looks up the Stripe customer keyed on scope.orgId, never a caller input", async () => {
-    mockRequireScope.mockResolvedValue({ orgId: "org_caller_scope" });
+    mockRequireScope.mockResolvedValue({
+      ...ownerScope,
+      orgId: "org_caller_scope",
+    });
     mockPrisma.organization.findUnique.mockResolvedValue({
       id: "org_caller_scope",
       stripeCustomerId: "cus_123",
@@ -90,7 +101,7 @@ describe("POST /api/tenant/billing", () => {
   });
 
   it("returns 500 (not a raw error message) when Stripe itself throws", async () => {
-    mockRequireScope.mockResolvedValue({ orgId: "org_1" });
+    mockRequireScope.mockResolvedValue(ownerScope);
     mockPrisma.organization.findUnique.mockResolvedValue({
       id: "org_1",
       stripeCustomerId: "cus_123",
@@ -102,5 +113,17 @@ describe("POST /api/tenant/billing", () => {
 
     expect(res.status).toBe(500);
     expect(json.error).not.toContain("secret leaked");
+  });
+
+  it("denies a client admin before creating a portal session", async () => {
+    mockRequireScope.mockResolvedValue({
+      ...ownerScope,
+      role: UserRole.CLIENT_ADMIN,
+    });
+
+    const res = (await POST()) as Response;
+
+    expect(res.status).toBe(403);
+    expect(mockCreatePortalSession).not.toHaveBeenCalled();
   });
 });

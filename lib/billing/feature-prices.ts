@@ -29,8 +29,11 @@ export type EffectiveFeatureCatalog = {
   basePlatformCents: number;
 };
 
-export async function getEffectiveFeatureCatalog(): Promise<EffectiveFeatureCatalog> {
-  const rows = await prisma.featurePrice.findMany().catch(() => []);
+export async function getEffectiveFeatureCatalog(
+  options: { strict?: boolean } = {},
+): Promise<EffectiveFeatureCatalog> {
+  const query = prisma.featurePrice.findMany();
+  const rows = options.strict ? await query : await query.catch(() => []);
   const byKey = new Map(rows.map((r) => [r.key, r]));
 
   const features: EffectiveFeature[] = FEATURE_CATALOG

@@ -14,6 +14,7 @@ const h = vi.hoisted(() => ({
   db: {
     organization: { findUnique: vi.fn() },
     property: { count: vi.fn() },
+    featurePrice: { findMany: vi.fn() },
     auditEvent: { create: vi.fn() },
   },
   stripeConfigured: true,
@@ -44,10 +45,14 @@ const ACTIVE_ORG = {
 
 const tierLookupKey = TIERS[0].graduatedMonthly.lookupKey;
 
-function stripeSub(overrides: Partial<{ status: string; quantity: number; lookupKey: string | null }> = {}) {
+function stripeSub(overrides: Partial<{ status: string; quantity: number; lookupKey: string | null; metadata: Record<string, string> }> = {}) {
   return {
     id: "sub_1",
     status: overrides.status ?? "active",
+    metadata: overrides.metadata ?? {
+      intent: "trial_activation",
+      org_id: "org_1",
+    },
     items: {
       data: [
         {
@@ -65,6 +70,7 @@ beforeEach(() => {
   h.stripeConfigured = true;
   h.db.organization.findUnique.mockResolvedValue(ACTIVE_ORG);
   h.db.property.count.mockResolvedValue(3);
+  h.db.featurePrice.findMany.mockResolvedValue([]);
   h.subscriptionsList.mockResolvedValue({ data: [stripeSub({ quantity: 1 })] });
 });
 
@@ -88,11 +94,19 @@ describe("syncSubscriptionQuantity", () => {
     expect(result).toEqual({ ok: true, skipped: "no_stripe_customer" });
   });
 
-  it("no-ops during TRIALING — hasn't paid yet", async () => {
+  it("updates a scheduled trial subscription before its first invoice", async () => {
     h.db.organization.findUnique.mockResolvedValue({ ...ACTIVE_ORG, subscriptionStatus: "TRIALING" });
+    h.subscriptionsList.mockResolvedValue({
+      data: [stripeSub({ status: "trialing", quantity: 1 })],
+    });
     const result = await syncSubscriptionQuantity("org_1");
-    expect(result).toEqual({ ok: true, skipped: "not_paid_subscription" });
-    expect(h.subscriptionsList).not.toHaveBeenCalled();
+    expect(result).toEqual(
+      expect.objectContaining({ ok: true, changedTo: 3, changedItemCount: 1 }),
+    );
+    expect(h.subscriptionsUpdate).toHaveBeenCalledWith(
+      "sub_1",
+      expect.objectContaining({ items: [{ id: "si_1", quantity: 3 }] }),
+    );
   });
 
   it("no-ops when the org has zero active/imported properties", async () => {
@@ -132,7 +146,12 @@ describe("syncSubscriptionQuantity", () => {
 
     const result = await syncSubscriptionQuantity("org_1");
 
-    expect(result).toEqual({ ok: true, changedFrom: 2, changedTo: 5 });
+    expect(result).toEqual({
+      ok: true,
+      changedFrom: 2,
+      changedTo: 5,
+      changedItemCount: 1,
+    });
     expect(h.subscriptionsUpdate).toHaveBeenCalledWith(
       "sub_1",
       expect.objectContaining({
@@ -144,6 +163,108 @@ describe("syncSubscriptionQuantity", () => {
       expect.objectContaining({
         data: expect.objectContaining({ orgId: "org_1", entityType: "Subscription" }),
       }),
+    );
+  });
+
+  it("updates every stale per-property item on an a-la-carte subscription", async () => {
+    h.db.property.count.mockResolvedValue(4);
+    h.db.featurePrice.findMany.mockResolvedValue([
+      { stripePriceId: "price_base" },
+      { stripePriceId: "price_chatbot" },
+      { stripePriceId: "price_seo" },
+    ]);
+    h.subscriptionsList.mockResolvedValue({
+      data: [
+        {
+          id: "sub_feature",
+          status: "active",
+          metadata: { intent: "trial_activation", org_id: "org_1" },
+          items: {
+            data: [
+              { id: "si_base", quantity: 1, price: { id: "price_base", lookup_key: null, recurring: { usage_type: "licensed" } } },
+              { id: "si_chat", quantity: 1, price: { id: "price_chatbot", lookup_key: null, recurring: { usage_type: "licensed" } } },
+              { id: "si_seo", quantity: 4, price: { id: "price_seo", lookup_key: null, recurring: { usage_type: "licensed" } } },
+              { id: "si_fixed", quantity: 1, price: { id: "price_white_label", lookup_key: "ls_white_label_monthly_v1", recurring: { usage_type: "licensed" } } },
+              { id: "si_metered", quantity: null, price: { id: "price_metered", lookup_key: "metered", recurring: { usage_type: "metered" } } },
+            ],
+          },
+        },
+      ],
+    });
+    h.subscriptionsUpdate.mockResolvedValue({});
+
+    const result = await syncSubscriptionQuantity("org_1");
+
+    expect(result).toEqual(
+      expect.objectContaining({ ok: true, changedTo: 4, changedItemCount: 2 }),
+    );
+    expect(h.subscriptionsUpdate).toHaveBeenCalledWith("sub_feature", {
+      items: [
+        { id: "si_base", quantity: 4 },
+        { id: "si_chat", quantity: 4 },
+      ],
+      proration_behavior: "create_prorations",
+    });
+  });
+
+  it("recognizes historical feature prices by their stable Stripe product", async () => {
+    h.db.property.count.mockResolvedValue(4);
+    h.db.featurePrice.findMany.mockResolvedValue([
+      { stripePriceId: "price_chat_v2", stripeProductId: "prod_chat" },
+    ]);
+    h.subscriptionsList.mockResolvedValue({
+      data: [
+        {
+          id: "sub_historical",
+          status: "active",
+          metadata: { intent: "trial_activation", org_id: "org_1" },
+          items: {
+            data: [
+              {
+                id: "si_chat_v1",
+                quantity: 1,
+                price: {
+                  id: "price_chat_v1",
+                  product: "prod_chat",
+                  lookup_key: null,
+                  recurring: { usage_type: "licensed" },
+                },
+              },
+            ],
+          },
+        },
+      ],
+    });
+    const result = await syncSubscriptionQuantity("org_1");
+    expect(result).toEqual(
+      expect.objectContaining({ ok: true, changedTo: 4, changedItemCount: 1 }),
+    );
+  });
+
+  it("skips a proposal subscription and updates the platform subscription", async () => {
+    h.db.property.count.mockResolvedValue(3);
+    h.subscriptionsList.mockResolvedValue({
+      data: [
+        stripeSub({
+          status: "active",
+          quantity: 1,
+          metadata: { kind: "proposal", proposalId: "proposal_1" },
+        }),
+        {
+          ...stripeSub({ status: "active", quantity: 1 }),
+          id: "sub_platform",
+        },
+      ],
+    });
+
+    const result = await syncSubscriptionQuantity("org_1");
+
+    expect(result).toEqual(
+      expect.objectContaining({ ok: true, changedTo: 3, changedItemCount: 1 }),
+    );
+    expect(h.subscriptionsUpdate).toHaveBeenCalledWith(
+      "sub_platform",
+      expect.any(Object),
     );
   });
 

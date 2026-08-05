@@ -158,28 +158,58 @@ export async function featureKeyFromStripePriceId(
   return row?.key ?? null;
 }
 
-// Webhook resolver: given the price IDs on a subscription, if any are
-// per-feature prices, return the EXACT module state — always-on base modules
+// Webhook resolver: given the prices/products on a subscription, if any are
+// per-feature products, return the EXACT module state — always-on base modules
 // true, each catalog feature true iff its price is on the subscription, all
 // other catalog features false. This is what stops the trial→paid conversion
 // from clobbering the operator's à-la-carte selection with tier defaults.
 // Returns null when the subscription has no feature prices (legacy tier sub),
 // so the caller can fall back to the tier mapping.
+type FeatureStripeReference = {
+  priceId: string;
+  productId: string;
+  featureKey?: string | null;
+};
+
 export async function modulesFromFeaturePriceIds(
-  priceIds: string[],
+  references: readonly (string | FeatureStripeReference)[],
 ): Promise<Record<string, boolean> | null> {
-  if (priceIds.length === 0) return null;
+  if (references.length === 0) return null;
+  const priceIds = references.map((reference) =>
+    typeof reference === "string" ? reference : reference.priceId,
+  );
+  const productIds = references
+    .map((reference) =>
+      typeof reference === "string" ? null : reference.productId,
+    )
+    .filter((id): id is string => id !== null);
+  const metadataKeys = new Set(
+    references
+      .map((reference) =>
+        typeof reference === "string" ? null : reference.featureKey,
+      )
+      .filter(
+        (key): key is string =>
+          key === BASE_PLATFORM_KEY ||
+          FEATURE_CATALOG.some((feature) => feature.key === key),
+      ),
+  );
   // Do NOT swallow a DB error to [] — that would look like "no feature prices",
   // fall through to tier defaults (or no change), and let the webhook commit
   // status/MRR while the module entitlement stays wrong. Let it throw so the
   // Stripe webhook returns non-2xx and retries. (Codex.)
   const rows = await prisma.featurePrice.findMany({
-    where: { stripePriceId: { in: priceIds } },
+    where: {
+      OR: [
+        { stripePriceId: { in: priceIds } },
+        { stripeProductId: { in: productIds } },
+      ],
+    },
     select: { key: true },
   });
-  if (rows.length === 0) return null; // not an à-la-carte subscription
+  if (rows.length === 0 && metadataKeys.size === 0) return null;
 
-  const matched = new Set(rows.map((r) => r.key));
+  const matched = new Set([...rows.map((r) => r.key), ...metadataKeys]);
   const state: Record<string, boolean> = {};
   for (const k of ALWAYS_ON_MODULE_KEYS) state[k] = true;
   for (const f of FEATURE_CATALOG) state[f.key] = matched.has(f.key);

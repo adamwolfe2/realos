@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2, Sparkles } from "lucide-react";
 
@@ -47,7 +46,6 @@ export function TrialActivationCard({
   selectedModuleKeys: string[];
   perPropertyCents: number;
 }) {
-  const router = useRouter();
   const [submitting, setSubmitting] = React.useState(false);
 
   // Per-feature total = the effective per-property price × property count.
@@ -140,8 +138,8 @@ export function TrialActivationCard({
             }}
           >
             {expired
-              ? "Your trial has ended. Activate to keep your workspace fully unlocked. You can change tiers or property count at checkout."
-              : "Lock in today and your workspace stays unlocked when the trial ends. Activating mid-trial gives you full credit for the remaining days."}
+              ? "Your trial has ended. Activate the workspace to restore full access."
+              : `Add your payment method today. You won't be charged until the trial ends; then your $${totalMonthly.toLocaleString()}/month subscription begins.`}
           </p>
         </div>
         <div
@@ -177,18 +175,6 @@ export function TrialActivationCard({
       <div className="flex items-center justify-end gap-2">
         <button
           type="button"
-          onClick={() => router.push("/pricing")}
-          className="text-xs underline underline-offset-2 transition-colors"
-          style={{
-            color: "#64748B",
-            fontFamily: "var(--font-sans)",
-            padding: "4px 8px",
-          }}
-        >
-          Change tier
-        </button>
-        <button
-          type="button"
           onClick={handle}
           disabled={submitting}
           className="inline-flex items-center gap-2 rounded-none transition-colors disabled:opacity-60 disabled:cursor-progress"
@@ -214,7 +200,7 @@ export function TrialActivationCard({
           ) : expired ? (
             "Activate subscription"
           ) : (
-            "Activate now"
+            "Schedule subscription"
           )}
         </button>
       </div>

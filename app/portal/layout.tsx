@@ -16,6 +16,7 @@ import { CmdKSearch } from "@/components/portal/search/cmdk-search";
 import { BugReportButton } from "@/components/feedback/bug-report-button";
 import { TrialBanner } from "@/components/portal/trial-banner";
 import { resolveTrialState } from "@/lib/billing/trial-status";
+import { canManageBilling } from "@/lib/billing/checkout-policy";
 import { AlertBanner } from "@/components/portal/ui/alert-banner";
 import { getAppFolioStatus } from "@/lib/integrations/appfolio-status";
 import { DismissibleStrip } from "@/components/portal/dismissible-strip";
@@ -393,6 +394,7 @@ export default async function PortalLayout({
     expiringLeases30dCount,
     urgentWorkOrdersCount,
     flaggedConversationsCount,
+    canManageBilling: canManageBilling(scope),
   };
 
   // Per-property switcher feed. Apply the user's UserPropertyAccess gate
