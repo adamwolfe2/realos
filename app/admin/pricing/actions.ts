@@ -34,6 +34,12 @@ export async function saveFeaturePrices(
     // Iterate the canonical key set (base + every catalog feature) so a
     // crafted payload can't write arbitrary keys.
     const rows = await getFeaturePriceRows();
+    const persistedRows = await prisma.featurePrice.findMany({
+      select: { key: true, monthlyCents: true },
+    });
+    const persistedByKey = new Map(
+      persistedRows.map((row) => [row.key, row.monthlyCents]),
+    );
     const updates: Array<{ key: string; monthlyCents: number; active: boolean }> = [];
 
     for (const row of rows) {
@@ -57,7 +63,16 @@ export async function saveFeaturePrices(
       updates.map((u) =>
         prisma.featurePrice.upsert({
           where: { key: u.key },
-          update: { monthlyCents: u.monthlyCents, active: u.active },
+          update: {
+            monthlyCents: u.monthlyCents,
+            active: u.active,
+            // Stripe Prices are immutable. Changing the amount invalidates
+            // the linked Price until an agency user explicitly syncs the new
+            // catalog price to Stripe. Checkout fails closed while pending.
+            ...(persistedByKey.get(u.key) !== u.monthlyCents
+              ? { stripePriceId: null, stripeSyncedAt: null }
+              : {}),
+          },
           create: { key: u.key, monthlyCents: u.monthlyCents, active: u.active },
         }),
       ),

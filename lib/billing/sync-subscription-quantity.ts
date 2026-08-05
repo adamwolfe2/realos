@@ -3,6 +3,8 @@ import { prisma } from "@/lib/db";
 import { getStripeClient, isStripeConfigured } from "@/lib/stripe/config";
 import { captureWithContext } from "@/lib/sentry";
 import { TIERS } from "@/lib/billing/catalog";
+import { isFeatureKey } from "@/lib/billing/features";
+import { selectPlatformSubscriptionForOrg } from "@/lib/billing/stripe-state";
 
 // ---------------------------------------------------------------------------
 // syncSubscriptionQuantity(orgId)
@@ -13,9 +15,9 @@ import { TIERS } from "@/lib/billing/catalog";
 // quantity for the graduated tier price.
 //
 // Behavior:
-//   * No-op when the org isn't on an ACTIVE / PAST_DUE subscription.
-//     During TRIALING the customer hasn't paid yet, so adding
-//     properties just changes the future activation price.
+//   * No-op when the org isn't on a TRIALING / ACTIVE / PAST_DUE
+//     subscription. A scheduled trial subscription must stay in sync so the
+//     first paid invoice uses the current property count.
 //   * No-op when the subscription item already matches the new
 //     quantity. Saves API calls in the common case where the count
 //     didn't actually change (e.g. someone toggled `isAvailable` on
@@ -36,6 +38,7 @@ export async function syncSubscriptionQuantity(
   skipped?: string;
   changedFrom?: number;
   changedTo?: number;
+  changedItemCount?: number;
   error?: string;
 }> {
   if (!isStripeConfigured()) {
@@ -56,6 +59,7 @@ export async function syncSubscriptionQuantity(
     return { ok: true, skipped: "no_stripe_customer" };
   }
   if (
+    org.subscriptionStatus !== "TRIALING" &&
     org.subscriptionStatus !== "ACTIVE" &&
     org.subscriptionStatus !== "PAST_DUE"
   ) {
@@ -77,19 +81,22 @@ export async function syncSubscriptionQuantity(
     const subs = await stripe.subscriptions.list({
       customer: org.stripeCustomerId,
       status: "all",
-      limit: 5,
+      limit: 100,
       expand: ["data.items.data.price"],
     });
-    // Pick the most-recent ACTIVE / PAST_DUE subscription; ignore
-    // canceled or incomplete to avoid bumping a dead sub.
-    const sub = subs.data.find((s) =>
-      ["active", "past_due"].includes(s.status),
+    // Pick the current scheduled or paid subscription; ignore canceled or
+    // incomplete subscriptions to avoid bumping a dead sub.
+    const sub = selectPlatformSubscriptionForOrg(
+      subs.data,
+      org.id,
+      new Set(["trialing", "active", "past_due"]),
     );
     if (!sub) return { ok: true, skipped: "no_active_subscription" };
 
-    // Find the subscription item whose price corresponds to one of
-    // our graduated-tier lookup keys. There should be exactly one
-    // per subscription (we only ever create a single tiered item).
+    // Legacy subscriptions have one tier item. À-la-carte subscriptions have
+    // base + one item per enabled feature, and every one of those prices is
+    // per property. FeaturePrice is the authoritative allowlist so fixed
+    // add-ons and metered usage items are never resized accidentally.
     const tierLookupKeys = new Set(
       TIERS.flatMap((t) => [
         t.graduatedMonthly.lookupKey,
@@ -100,17 +107,43 @@ export async function syncSubscriptionQuantity(
         t.annual.lookupKey,
       ]),
     );
-    const tierItem = sub.items.data.find((i) =>
-      i.price?.lookup_key
-        ? tierLookupKeys.has(i.price.lookup_key)
-        : false,
+    const featurePrices = await prisma.featurePrice.findMany({
+      select: { stripePriceId: true, stripeProductId: true },
+    });
+    const featurePriceIds = new Set(
+      featurePrices
+        .map((price) => price.stripePriceId)
+        .filter((id): id is string => typeof id === "string"),
     );
-    if (!tierItem) {
+    const featureProductIds = new Set(
+      featurePrices
+        .map((price) => price.stripeProductId)
+        .filter((id): id is string => typeof id === "string"),
+    );
+    const perPropertyItems = sub.items.data.filter((item) => {
+      if (item.price?.recurring?.usage_type === "metered") return false;
+      const featureKey = item.price?.metadata?.featureKey;
+      if (featureKey === "base_platform") return true;
+      if (featureKey && isFeatureKey(featureKey)) return true;
+      if (item.price?.id && featurePriceIds.has(item.price.id)) return true;
+      const productId =
+        typeof item.price?.product === "string"
+          ? item.price.product
+          : item.price?.product?.id;
+      if (productId && featureProductIds.has(productId)) return true;
+      return item.price?.lookup_key
+        ? tierLookupKeys.has(item.price.lookup_key)
+        : false;
+    });
+    if (perPropertyItems.length === 0) {
       return { ok: true, skipped: "no_tier_item_on_subscription" };
     }
 
-    const currentQuantity = tierItem.quantity ?? 1;
-    if (currentQuantity === propertyCount) {
+    const staleItems = perPropertyItems.filter(
+      (item) => (item.quantity ?? 1) !== propertyCount,
+    );
+    if (staleItems.length === 0) {
+      const currentQuantity = perPropertyItems[0]?.quantity ?? 1;
       return {
         ok: true,
         skipped: "quantity_already_matches",
@@ -120,9 +153,14 @@ export async function syncSubscriptionQuantity(
     }
 
     await stripe.subscriptions.update(sub.id, {
-      items: [{ id: tierItem.id, quantity: propertyCount }],
+      items: staleItems.map((item) => ({
+        id: item.id,
+        quantity: propertyCount,
+      })),
       proration_behavior: "create_prorations",
     });
+
+    const currentQuantity = staleItems[0]?.quantity ?? 1;
 
     await prisma.auditEvent.create({
       data: {
@@ -130,11 +168,14 @@ export async function syncSubscriptionQuantity(
         action: "UPDATE",
         entityType: "Subscription",
         entityId: sub.id,
-        description: `Property count changed (${currentQuantity} → ${propertyCount}); subscription quantity synced`,
+        description: `Property count changed (${currentQuantity} → ${propertyCount}); ${staleItems.length} subscription item${staleItems.length === 1 ? "" : "s"} synced`,
         diff: {
           subscriptionId: sub.id,
-          itemId: tierItem.id,
-          from: currentQuantity,
+          items: staleItems.map((item) => ({
+            itemId: item.id,
+            from: item.quantity ?? 1,
+            to: propertyCount,
+          })),
           to: propertyCount,
         },
       },
@@ -144,6 +185,7 @@ export async function syncSubscriptionQuantity(
       ok: true,
       changedFrom: currentQuantity,
       changedTo: propertyCount,
+      changedItemCount: staleItems.length,
     };
   } catch (err) {
     captureWithContext(err, {

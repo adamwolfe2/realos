@@ -143,6 +143,8 @@ export type PortalNavOrg = {
   expiringLeases30dCount?: number;
   urgentWorkOrdersCount?: number;
   flaggedConversationsCount?: number;
+  /** Billing is visible only to client owners or authorized agency support. */
+  canManageBilling?: boolean;
 };
 
 export type NavItem = {
@@ -211,7 +213,12 @@ export const AUDIENCE_NAV_GROUPS: NavGroup[] = [
       // audience-only sidebar — matches the Today-group hide above.
       // The bell in the top header is unaffected.
       { href: "/portal/notifications", label: "Notifications", icon: Bell, show: () => false },
-      { href: "/portal/billing", label: "Billing", icon: CreditCard, show: ALWAYS },
+      {
+        href: "/portal/billing",
+        label: "Billing",
+        icon: CreditCard,
+        show: (o) => o.canManageBilling === true,
+      },
       { href: "/portal/settings", label: "Settings", icon: Settings, show: ALWAYS },
     ],
   },
@@ -449,7 +456,12 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: KeyRound,
         show: (o) => o.moduleVault,
       },
-      { href: "/portal/billing", label: "Billing", icon: CreditCard, show: ALWAYS },
+      {
+        href: "/portal/billing",
+        label: "Billing",
+        icon: CreditCard,
+        show: (o) => o.canManageBilling === true,
+      },
       { href: "/portal/settings", label: "Settings", icon: Settings, show: ALWAYS },
       // Setup — kept as a deep link for operators still mid-onboarding,
       // but folded into Account since the steps are mostly integration

@@ -21,6 +21,7 @@ import {
 // ---------------------------------------------------------------------------
 
 const SG: PortalNavOrg = {
+  canManageBilling: true,
   name: "SG Real Estate",
   moduleWebsite: true,
   modulePixel: false, // slimmed: pixel is proof, not a product surface

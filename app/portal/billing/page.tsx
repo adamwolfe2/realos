@@ -15,12 +15,16 @@ import { TrialActivationCard } from "./trial-activation-card";
 // quiet link to /portal/marketplace. The card is still available for
 // other surfaces (marketplace, onboarding) where the full pitch belongs.
 import { WebsiteBuildTracker } from "./website-build-tracker";
+import { redirect } from "next/navigation";
+import { canManageBilling } from "@/lib/billing/checkout-policy";
+import { selectPlatformSubscriptionForOrg } from "@/lib/billing/stripe-state";
 
 export const metadata: Metadata = { title: "Billing" };
 export const dynamic = "force-dynamic";
 
 export default async function BillingPage() {
   const scope = await requireScope();
+  if (!canManageBilling(scope)) redirect("/portal");
   const org = await prisma.organization.findUnique({
     where: { id: scope.orgId },
     select: {
@@ -121,13 +125,14 @@ export default async function BillingPage() {
       const subs = await getStripeClient().subscriptions.list({
         customer: org.stripeCustomerId,
         status: "all",
-        limit: 5,
+        limit: 100,
         expand: ["data.items.data.price.product"],
       });
-      activeSubscription =
-        subs.data.find((s) =>
-          ["active", "trialing", "past_due", "paused"].includes(s.status),
-        ) ?? null;
+      activeSubscription = selectPlatformSubscriptionForOrg(
+        subs.data,
+        org.id,
+        new Set(["active", "trialing", "past_due", "paused"]),
+      );
     } catch {
       // Non-fatal; surface cached fields only.
     }

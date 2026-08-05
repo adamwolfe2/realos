@@ -1,165 +1,169 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { auth } from "@clerk/nextjs/server";
+import { CalendarCheck2, CheckCircle2, CircleAlert, Clock3 } from "lucide-react";
 import { BRAND_NAME } from "@/lib/brand";
-import { CheckCircle2, ArrowRight } from "lucide-react";
-
-// ---------------------------------------------------------------------------
-// /billing/success — Stripe Checkout success_url destination.
-//
-// Stripe redirects here with ?session_id=cs_test_... after a successful
-// checkout. We deliberately DO NOT verify the session contents here — the
-// webhook does that asynchronously. This page exists to confirm to the
-// buyer that the charge went through and route them to the right next
-// step based on whether they already have an account.
-//
-// Routing logic:
-//   1. Signed in with a Clerk session → redirect to /portal. The webhook
-//      will have already linked their Organization to the Stripe customer
-//      and flipped the right module flags.
-//   2. Anonymous (no session, the most common case for prospects landing
-//      here from the public /pricing page) → show the "create account"
-//      next-step rail. Their Stripe customer is already in our database;
-//      signup will match by email and provision the workspace.
-// ---------------------------------------------------------------------------
+import { prisma } from "@/lib/db";
+import { getScope } from "@/lib/tenancy/scope";
+import { getStripeClient, isStripeConfigured } from "@/lib/stripe/config";
+import {
+  resolveCheckoutReturn,
+  resolveScheduledTrialEnd,
+  type CheckoutReturnState,
+} from "@/lib/billing/checkout-return";
+import { captureWithContext } from "@/lib/sentry";
 
 export const metadata: Metadata = {
-  title: `Welcome to ${BRAND_NAME}`,
-  description: "Your subscription is active.",
+  title: `Checkout status | ${BRAND_NAME}`,
+  description: "Verify your LeaseStack subscription Checkout status.",
   robots: { index: false, follow: false },
 };
 
-// Needs to read the Clerk session per request to know which CTA path
-// to render, so we can't static-prerender this anymore.
 export const dynamic = "force-dynamic";
 
-export default async function CheckoutSuccessPage() {
-  const { userId } = await auth();
+type SearchParams = Promise<{ session_id?: string }>;
 
-  // Already signed in → straight to the portal. We pass a query flag
-  // so /portal can show a one-time welcome / activation banner if it
-  // wants to.
-  if (userId) {
-    redirect("/portal?welcome=1");
+const CONTENT: Record<
+  CheckoutReturnState,
+  { eyebrow: string; title: string; copy: string }
+> = {
+  active: {
+    eyebrow: "Payment confirmed",
+    title: "Your subscription is active.",
+    copy: "Stripe confirmed the payment and LeaseStack has activated your workspace.",
+  },
+  scheduled: {
+    eyebrow: "Payment method saved",
+    title: "Your subscription is scheduled.",
+    copy: "You were not charged today. Your workspace will remain unlocked and billing will begin when the current trial ends.",
+  },
+  processing: {
+    eyebrow: "Payment confirmed",
+    title: "Activation is processing.",
+    copy: "Stripe confirmed the payment. LeaseStack is finishing the secure activation; refresh Billing in a moment.",
+  },
+  invalid: {
+    eyebrow: "Verification needed",
+    title: "We could not verify this Checkout session.",
+    copy: "No payment or activation is being claimed on this page. Sign in and open Billing to review the current status safely.",
+  },
+};
+
+function StatusIcon({ state }: { state: CheckoutReturnState }) {
+  const props = { size: 36, strokeWidth: 2, "aria-hidden": true } as const;
+  if (state === "active") return <CheckCircle2 {...props} />;
+  if (state === "scheduled") return <CalendarCheck2 {...props} />;
+  if (state === "processing") return <Clock3 {...props} />;
+  return <CircleAlert {...props} />;
+}
+
+export default async function CheckoutSuccessPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const { session_id: sessionId } = await searchParams;
+  const scope = await getScope();
+  let state: CheckoutReturnState = "invalid";
+  let trialEndsAt: Date | null = null;
+
+  if (scope && sessionId && isStripeConfigured()) {
+    try {
+      const [session, org] = await Promise.all([
+        getStripeClient().checkout.sessions.retrieve(sessionId, {
+          expand: ["subscription"],
+        }),
+        prisma.organization.findUnique({
+          where: { id: scope.orgId },
+          select: {
+            stripeCustomerId: true,
+            subscriptionStatus: true,
+            trialEndsAt: true,
+          },
+        }),
+      ]);
+      if (org) {
+        const sessionCustomerId =
+          typeof session.customer === "string"
+            ? session.customer
+            : session.customer?.id ?? null;
+        const stripeSubscriptionStatus =
+          typeof session.subscription === "object" && session.subscription
+            ? session.subscription.status
+            : null;
+        const stripeTrialEnd =
+          typeof session.subscription === "object" && session.subscription
+            ? session.subscription.trial_end
+            : null;
+        state = resolveCheckoutReturn({
+          expectedOrgId: scope.orgId,
+          expectedCustomerId: org.stripeCustomerId,
+          sessionOrgId: session.metadata?.org_id ?? null,
+          sessionCustomerId,
+          sessionMode: session.mode,
+          sessionStatus: session.status,
+          paymentStatus: session.payment_status,
+          stripeSubscriptionStatus,
+          subscriptionStatus: org.subscriptionStatus,
+        });
+        trialEndsAt =
+          state === "scheduled"
+            ? resolveScheduledTrialEnd(stripeTrialEnd, org.trialEndsAt)
+            : org.trialEndsAt;
+      }
+    } catch (error) {
+      captureWithContext(error, {
+        route: "billing/success",
+        orgId: scope.orgId,
+      });
+    }
   }
 
+  const content = CONTENT[state];
+  const isVerified = state !== "invalid";
+  const href = scope ? "/portal/billing" : "/sign-in";
+
   return (
-    <section
-      style={{ backgroundColor: "#FFFFFF", minHeight: "calc(100vh - 80px)" }}
-    >
-      <div className="max-w-[720px] mx-auto px-4 md:px-8 py-20 md:py-28 text-center">
-        <div className="inline-flex items-center justify-center mb-6">
-          <div
-            className="rounded-full inline-flex items-center justify-center"
-            style={{
-              width: 64,
-              height: 64,
-              backgroundColor: "rgba(37,99,235,0.08)",
-              color: "#2563EB",
-            }}
-          >
-            <CheckCircle2 size={36} strokeWidth={2} aria-hidden="true" />
-          </div>
-        </div>
-
-        <p className="eyebrow mb-3" style={{ color: "#2563EB" }}>
-          Payment received
-        </p>
-        <h1
-          className="heading-section"
-          style={{
-            color: "#1E2A3A",
-            maxWidth: 580,
-            margin: "0 auto",
-            fontSize: "clamp(28px, 4vw, 40px)",
-          }}
-        >
-          Your subscription is active.
-        </h1>
-        <p
-          className="mt-4 mx-auto"
-          style={{
-            color: "#64748B",
-            fontFamily: "var(--font-sans)",
-            fontSize: "17px",
-            lineHeight: 1.6,
-            maxWidth: 560,
-          }}
-        >
-          One more step. Create your account with the same email you used at
-          checkout. Your workspace will be ready the moment you sign in.
-        </p>
-
-        <div className="mt-10 flex flex-col sm:flex-row gap-3 justify-center items-center">
-          <Link
-            href="/sign-up"
-            className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-colors"
-            style={{ backgroundColor: "#2563EB", color: "#ffffff" }}
-          >
-            Create your account
-            <ArrowRight size={16} strokeWidth={2.5} aria-hidden="true" />
-          </Link>
-          <Link
-            href="/sign-in"
-            className="inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-semibold transition-colors"
-            style={{
-              backgroundColor: "transparent",
-              color: "#1E2A3A",
-              border: "1px solid #d6d3c8",
-            }}
-          >
-            Sign in
-          </Link>
-        </div>
-
+    <section className="min-h-[calc(100vh-80px)] bg-white">
+      <div className="mx-auto max-w-[720px] px-4 py-20 text-center md:px-8 md:py-28">
         <div
-          className="mt-12 mx-auto rounded-xl p-5 text-left"
+          className="mx-auto mb-6 inline-flex h-16 w-16 items-center justify-center rounded-full"
           style={{
-            backgroundColor: "#ffffff",
-            border: "1px solid #E2E8F0",
-            maxWidth: 480,
+            backgroundColor: isVerified
+              ? "rgba(37,99,235,0.08)"
+              : "rgba(138,109,0,0.10)",
+            color: isVerified ? "#2563EB" : "#8a6d00",
           }}
         >
-          <p
-            style={{
-              color: "#1E2A3A",
-              fontFamily: "var(--font-sans)",
-              fontSize: "13px",
-              fontWeight: 600,
-              marginBottom: "6px",
-            }}
-          >
-            What happens next
-          </p>
-          <ol
-            className="space-y-1.5"
-            style={{
-              color: "#64748B",
-              fontFamily: "var(--font-sans)",
-              fontSize: "13px",
-              lineHeight: 1.55,
-              paddingLeft: "1.1em",
-              listStyle: "decimal",
-            }}
-          >
-            <li>Sign up with the email you used at checkout</li>
-            <li>Add your first property and pick your branding</li>
-            <li>Connect AppFolio or skip it for later</li>
-            <li>Install the chatbot widget and pixel on your site</li>
-          </ol>
+          <StatusIcon state={state} />
         </div>
-
-        <p
-          className="mt-8"
-          style={{
-            color: "#88867f",
-            fontFamily: "var(--font-mono)",
-            fontSize: "11px",
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
-          }}
-        >
+        <p className="eyebrow mb-3" style={{ color: isVerified ? "#2563EB" : "#8a6d00" }}>
+          {content.eyebrow}
+        </p>
+        <h1 className="heading-section mx-auto max-w-[580px] text-[#1E2A3A]">
+          {content.title}
+        </h1>
+        <p className="mx-auto mt-4 max-w-[560px] text-[17px] leading-relaxed text-[#64748B]">
+          {content.copy}
+        </p>
+        {state === "scheduled" && trialEndsAt ? (
+          <p className="mt-3 text-sm font-semibold text-[#1E2A3A]">
+            Current trial ends {trialEndsAt.toLocaleDateString("en-US", {
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            })}
+          </p>
+        ) : null}
+        <div className="mt-10">
+          <Link
+            href={href}
+            className="inline-flex items-center justify-center px-6 py-3 text-sm font-semibold text-white"
+            style={{ backgroundColor: "#2563EB" }}
+          >
+            {scope ? "Review billing" : "Sign in to verify"}
+          </Link>
+        </div>
+        <p className="mt-8 font-mono text-[11px] uppercase tracking-[0.14em] text-[#88867f]">
           Questions? team@leasestack.co
         </p>
       </div>

@@ -186,13 +186,15 @@ describe("product truth — legacy tier and Stripe contract", () => {
     ).toEqual([]);
   });
 
-  it("preserves the per-feature lookup-key namespace and legacy fallback", () => {
+  it("preserves the per-feature lookup-key namespace and safe legacy fallback", () => {
     expect(featureStripeSource).toContain(
       'key === BASE_PLATFORM_KEY ? "ls_base_platform_monthly" : `ls_feat_${key}_monthly`',
     );
     expect(featureStripeSource).toContain(
-      "if (rows.length === 0) return null; // not an à-la-carte subscription",
+      "if (rows.length === 0 && metadataKeys.size === 0) return null;",
     );
+    expect(featureStripeSource).toContain("stripeProductId: { in: productIds }");
+    expect(featureStripeSource).toContain("reference.featureKey");
   });
 });
 

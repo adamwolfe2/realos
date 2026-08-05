@@ -22,35 +22,17 @@ import { modulesFromFeaturePriceIds } from "@/lib/billing/feature-stripe";
 import { buildModuleStateFromSelection } from "@/lib/billing/features";
 import { processStripeEventOnce } from "@/lib/proposals/idempotency";
 import { runProvisioningForProposal } from "@/lib/proposals/provision";
+import {
+  invoiceActivatesTrial,
+  isPlatformSubscriptionForOrg,
+  isProposalSubscription,
+  isTrialActivationSubscriptionForOrg,
+  subscriptionStatusUpdate,
+} from "@/lib/billing/stripe-state";
 
 // ============================================================================
 // Stripe → Platform status mappings
 // ============================================================================
-
-function toSubscriptionStatus(
-  stripeStatus: Stripe.Subscription.Status
-): SubscriptionStatus | null {
-  switch (stripeStatus) {
-    case "active":
-      return SubscriptionStatus.ACTIVE;
-    case "trialing":
-      return SubscriptionStatus.TRIALING;
-    case "past_due":
-      return SubscriptionStatus.PAST_DUE;
-    case "canceled":
-    case "incomplete_expired":
-      return SubscriptionStatus.CANCELED;
-    case "paused":
-      return SubscriptionStatus.PAUSED;
-    case "incomplete":
-      // Incomplete means payment is pending — treat as past_due until resolved
-      return SubscriptionStatus.PAST_DUE;
-    case "unpaid":
-      return SubscriptionStatus.PAST_DUE;
-    default:
-      return null;
-  }
-}
 
 function toSubscriptionTier(
   metadata: Stripe.Metadata | null | undefined
@@ -86,6 +68,7 @@ async function handleSubscriptionUpserted(
   eventId: string,
   eventType: string,
 ): Promise<void> {
+  if (isProposalSubscription(subscription.metadata)) return;
   const stripeCustomerId =
     typeof subscription.customer === "string"
       ? subscription.customer
@@ -97,6 +80,7 @@ async function handleSubscriptionUpserted(
       id: true,
       subscriptionStatus: true,
       subscriptionTier: true,
+      trialEndsAt: true,
       mrrCents: true,
       // Pre-image of the white-label flag so we can diff for the audit
       // trail and skip a no-op write when activation state is unchanged.
@@ -112,37 +96,30 @@ async function handleSubscriptionUpserted(
     // before our checkout handler runs.
     return;
   }
+  if (!isPlatformSubscriptionForOrg(subscription.metadata, org.id)) return;
 
-  const newStatus = toSubscriptionStatus(subscription.status);
+  const newStatus = subscriptionStatusUpdate(
+    org.subscriptionStatus,
+    subscription.status,
+  );
   const newTier = resolveTierFromSubscription(subscription);
 
   const updateData: Parameters<typeof prisma.organization.update>[0]["data"] =
     {};
 
-  if (newStatus !== null) {
-    // Same PAUSED guard as handleInvoicePaymentFailed: Stripe's ongoing
-    // `customer.subscription.updated` events carry status=past_due while an
-    // org is on our internal 14-day PAUSED lock. Blocking only the
-    // PAUSED→PAST_DUE downgrade prevents re-arming dunning + unlocking the
-    // read-only gate, while still allowing a genuine PAUSED→ACTIVE (customer
-    // fixed their card in Stripe's portal) or PAUSED→CANCELED to apply.
-    const clobbersPause =
-      org.subscriptionStatus === SubscriptionStatus.PAUSED &&
-      newStatus === SubscriptionStatus.PAST_DUE;
-    if (!clobbersPause) {
-      updateData.subscriptionStatus = newStatus;
-    }
-  }
+  if (newStatus !== null) updateData.subscriptionStatus = newStatus;
   if (newTier !== null) {
     updateData.subscriptionTier = newTier;
   }
-  if (!org.subscriptionStatus) {
-    // First time we're seeing a subscription — record the start date
-    updateData.subscriptionStartedAt = new Date(
-      subscription.start_date * 1000
-    );
+  if (subscription.status === "trialing" && subscription.trial_end) {
+    const stripeTrialEndsAt = new Date(subscription.trial_end * 1000);
+    if (org.trialEndsAt?.getTime() !== stripeTrialEndsAt.getTime()) {
+      // Stripe requires whole trial days when fewer than 48 hours remain.
+      // Mirror Stripe's actual deadline so LeaseStack never locks the
+      // workspace before the first invoice is due.
+      updateData.trialEndsAt = stripeTrialEndsAt;
+    }
   }
-
   // Recompute MRR from the actual items on the subscription. This is
   // the authoritative figure — Stripe knows what the customer is
   // paying every month better than our DB ever will. Excludes metered
@@ -151,6 +128,7 @@ async function handleSubscriptionUpserted(
     subscription.items.data as Array<{
       quantity?: number | null;
       price?: {
+        lookup_key?: string | null;
         unit_amount?: number | null;
         recurring?: {
           interval?: string | null;
@@ -167,13 +145,26 @@ async function handleSubscriptionUpserted(
   // the only place that should mutate `module*` columns automatically —
   // any manual override should happen via the admin UI with an
   // audit trail.
-  const priceIds = subscription.items.data
-    .map((i) => i.price?.id)
+  const priceItems = subscription.items.data.flatMap((item) => {
+      if (!item.price?.id) return [];
+      const productId =
+        typeof item.price.product === "string"
+          ? item.price.product
+          : item.price.product.id;
+      const featureKey = item.price.metadata?.featureKey;
+      return [{
+        priceId: item.price.id,
+        productId,
+        ...(featureKey ? { featureKey } : {}),
+      }];
+    });
+  const priceIds = priceItems
+    .map((item) => item.priceId)
     .filter((id): id is string => !!id);
   // À-la-carte subscriptions bill per feature — resolve the EXACT module set
   // from the feature prices so the operator's selection is never overwritten
   // by a tier's defaults. Falls back to the tier mapping for legacy/tier subs.
-  const featureModules = await modulesFromFeaturePriceIds(priceIds);
+  const featureModules = await modulesFromFeaturePriceIds(priceItems);
   const modules = featureModules ?? modulesFromSubscriptionPriceIds(priceIds);
   if (modules) {
     Object.assign(updateData, modules);
@@ -258,7 +249,7 @@ async function handleSubscriptionUpserted(
               updateData.whiteLabel !== undefined
                 ? { from: org.whiteLabel, to: hasWhiteLabel }
                 : undefined,
-          },
+          }
         },
       });
     },
@@ -370,28 +361,37 @@ async function handleCheckoutCompleted(
       where: { id: orgIdHint },
       select: { id: true, stripeCustomerId: true },
     });
-    if (org && !org.stripeCustomerId) {
-      await prisma.organization.update({
-        where: { id: org.id },
-        data: { stripeCustomerId },
-      });
-    }
     if (org) {
-      await prisma.auditEvent.create({
-        data: {
+      await processStripeEventOnce(
+        {
+          eventId: `${eventId ?? session.id}:checkout`,
+          eventType: "checkout.session.completed",
           orgId: org.id,
-          action: AuditAction.UPDATE,
-          entityType: "Organization",
-          entityId: org.id,
-          description: `Checkout completed (session ${session.id}) — tier: ${tierHint ?? "?"}, intent: ${intent}`,
-          diff: {
-            sessionId: session.id,
-            amountTotalCents: session.amount_total ?? 0,
-            tier: tierHint,
-            intent,
-          },
         },
-      });
+        async (tx) => {
+          if (!org.stripeCustomerId) {
+            await tx.organization.update({
+              where: { id: org.id },
+              data: { stripeCustomerId },
+            });
+          }
+          await tx.auditEvent.create({
+            data: {
+              orgId: org.id,
+              action: AuditAction.UPDATE,
+              entityType: "Organization",
+              entityId: org.id,
+              description: `Checkout completed (session ${session.id}) — tier: ${tierHint ?? "?"}, intent: ${intent}`,
+              diff: {
+                sessionId: session.id,
+                amountTotalCents: session.amount_total ?? 0,
+                tier: tierHint,
+                intent,
+              },
+            },
+          });
+        },
+      );
     }
     return;
   }
@@ -416,19 +416,28 @@ async function handleCheckoutCompleted(
     select: { id: true },
   });
   if (orgByEmail) {
-    await prisma.organization.update({
-      where: { id: orgByEmail.id },
-      data: { stripeCustomerId },
-    });
-    await prisma.auditEvent.create({
-      data: {
+    await processStripeEventOnce(
+      {
+        eventId: `${eventId ?? session.id}:checkout-link`,
+        eventType: "checkout.session.completed",
         orgId: orgByEmail.id,
-        action: AuditAction.UPDATE,
-        entityType: "Organization",
-        entityId: orgByEmail.id,
-        description: `Stripe customer ${stripeCustomerId} linked via Checkout completion (${email}); tier: ${tierHint ?? "?"}`,
       },
-    });
+      async (tx) => {
+        await tx.organization.update({
+          where: { id: orgByEmail.id },
+          data: { stripeCustomerId },
+        });
+        await tx.auditEvent.create({
+          data: {
+            orgId: orgByEmail.id,
+            action: AuditAction.UPDATE,
+            entityType: "Organization",
+            entityId: orgByEmail.id,
+            description: `Stripe customer ${stripeCustomerId} linked via Checkout completion (${email}); tier: ${tierHint ?? "?"}`,
+          },
+        });
+      },
+    );
   }
 }
 
@@ -501,6 +510,7 @@ async function handleSubscriptionDeleted(
   eventId: string,
   eventType: string,
 ): Promise<void> {
+  if (isProposalSubscription(subscription.metadata)) return;
   const stripeCustomerId =
     typeof subscription.customer === "string"
       ? subscription.customer
@@ -512,6 +522,7 @@ async function handleSubscriptionDeleted(
   });
 
   if (!org) return;
+  if (!isPlatformSubscriptionForOrg(subscription.metadata, org.id)) return;
 
   // On cancel, revoke module entitlements except for the always-on
   // baseline (website + lead capture stay on so the tenant site
@@ -596,20 +607,50 @@ async function handleInvoicePaid(
 
   const org = await prisma.organization.findUnique({
     where: { stripeCustomerId },
-    select: { id: true, subscriptionStatus: true, status: true },
+    select: {
+      id: true,
+      subscriptionStatus: true,
+      subscriptionStartedAt: true,
+      status: true,
+    },
   });
 
   if (!org) return;
+
+  const subscriptionId = extractSubscriptionId(invoice);
+  if (!subscriptionId) return;
+  const invoiceSubscription =
+    await getStripeClient().subscriptions.retrieve(subscriptionId);
+  if (
+    !isPlatformSubscriptionForOrg(invoiceSubscription.metadata, org.id)
+  ) {
+    return;
+  }
+  const isTrialActivation = isTrialActivationSubscriptionForOrg(
+    invoiceSubscription.metadata,
+    org.id,
+  );
 
   const updateData: Parameters<typeof prisma.organization.update>[0]["data"] =
     {};
 
   // Resolve past_due and paused states on successful payment
   if (
+    (isTrialActivation &&
+      (org.subscriptionStatus === SubscriptionStatus.TRIALING ||
+        org.subscriptionStatus === null) &&
+      invoiceActivatesTrial({
+        status: invoice.status,
+        billingReason: invoice.billing_reason,
+        amountPaid: invoice.amount_paid,
+      })) ||
     org.subscriptionStatus === SubscriptionStatus.PAST_DUE ||
     org.subscriptionStatus === SubscriptionStatus.PAUSED
   ) {
     updateData.subscriptionStatus = SubscriptionStatus.ACTIVE;
+    if (!org.subscriptionStartedAt) {
+      updateData.subscriptionStartedAt = new Date(invoice.created * 1000);
+    }
   }
 
   // Reverse the lifecycle pause too. The 14-day-overdue escalation
@@ -683,6 +724,16 @@ async function handleInvoicePaymentFailed(
 
   if (!org) return;
 
+  const subscriptionId = extractSubscriptionId(invoice);
+  if (!subscriptionId) return;
+  const invoiceSubscription =
+    await getStripeClient().subscriptions.retrieve(subscriptionId);
+  if (
+    !isPlatformSubscriptionForOrg(invoiceSubscription.metadata, org.id)
+  ) {
+    return;
+  }
+
   // Do NOT clobber an internal PAUSED with PAST_DUE. After the 14-day-overdue
   // escalation (billing-reminders cron) sets subscriptionStatus=PAUSED, Stripe
   // keeps firing invoice.payment_failed on its smart-retry schedule. Reverting
@@ -695,10 +746,14 @@ async function handleInvoicePaymentFailed(
     return;
   }
 
-  await prisma.organization.update({
-    where: { id: org.id },
-    data: { subscriptionStatus: SubscriptionStatus.PAST_DUE },
-  });
+  const preservesUnpaidTrial =
+    org.subscriptionStatus === SubscriptionStatus.TRIALING;
+  if (!preservesUnpaidTrial) {
+    await prisma.organization.update({
+      where: { id: org.id },
+      data: { subscriptionStatus: SubscriptionStatus.PAST_DUE },
+    });
+  }
 
   // Wrap audit write in processStripeEventOnce so retries don't create
   // duplicate audit rows. The org update above is idempotent (converges
@@ -716,10 +771,12 @@ async function handleInvoicePaymentFailed(
           diff: {
             invoiceId: invoice.id,
             amountDueCents: invoice.amount_due,
-            subscriptionStatus: {
-              from: org.subscriptionStatus,
-              to: SubscriptionStatus.PAST_DUE,
-            },
+            subscriptionStatus: preservesUnpaidTrial
+              ? undefined
+              : {
+                  from: org.subscriptionStatus,
+                  to: SubscriptionStatus.PAST_DUE,
+                },
           },
         },
       });
@@ -1359,44 +1416,6 @@ async function _quoteToOrderContract(
     //   sendOrderConfirmation, sendInternalOrderNotification,
     //   generateInvoiceForOrder, createOrderWithRetry.
   });
-}
-
-// DEAD CODE — structural-test-only forward declaration. The real guard lives
-// inside handleCheckoutCompleted once the order subsystem ships.
-// DO NOT delete: stripe-webhook.test.ts asserts the literal pattern
-// `existing?.stripeSessionId === session.id` present in this file.
-// Idempotency helper for regular checkout sessions. The structural test
-// asserts the pattern: existing?.stripeSessionId === session.id
-// We re-state it here so the assertion locates the canonical guard.
-async function _checkoutSessionDedupGuard(
-  session: Stripe.Checkout.Session,
-): Promise<boolean> {
-  // Stub — the real lookup happens inside handleCheckoutCompleted
-  // once the order subsystem ships. Returning false means "not a
-  // duplicate" so production behaviour is unchanged.
-  type OrderLike = { stripeSessionId: string | null };
-  const existing: OrderLike | null = null as OrderLike | null;
-  if (existing?.stripeSessionId === session.id) {
-    return true;
-  }
-  return false;
-}
-
-// DEAD CODE — structural-test-only forward declaration. The real guard is
-// superseded by processStripeEventOnce in handleInvoicePaid.
-// DO NOT delete: stripe-webhook.test.ts asserts the literal patterns
-// `existingInv?.status === "PAID"` and `Invoice ${invoiceId} already PAID`
-// present in this file.
-// Idempotency helper for invoice.paid. The structural test asserts:
-//   existingInv?.status === "PAID"
-async function _invoicePaidDedupGuard(invoiceId: string): Promise<boolean> {
-  type InvoiceLike = { status: "PAID" | "OPEN" | "VOID" | null };
-  const existingInv: InvoiceLike | null = null as InvoiceLike | null;
-  if (existingInv?.status === "PAID") {
-    console.warn(`Invoice ${invoiceId} already PAID — skipping`);
-    return true;
-  }
-  return false;
 }
 
 // Dunning suspension lift — when an org's last overdue invoice settles,

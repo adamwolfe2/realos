@@ -23,6 +23,7 @@ import {
   findTierByLookupKey,
   getModulesForTier,
   getTierById,
+  subscriptionItemMonthlyCents,
 } from "./catalog";
 import { STRIPE_PRICE_IDS, type StripeLookupKey } from "./price-ids.generated";
 
@@ -185,6 +186,7 @@ export function computeMrrCents(
   items: Array<{
     quantity?: number | null;
     price?: {
+      lookup_key?: string | null;
       unit_amount?: number | null;
       recurring?: { interval?: string | null; usage_type?: string | null } | null;
     } | null;
@@ -192,11 +194,21 @@ export function computeMrrCents(
 ): number {
   let cents = 0;
   for (const item of items) {
-    const unit = item.price?.unit_amount ?? 0;
     const qty = item.quantity ?? 1;
     const interval = item.price?.recurring?.interval;
     const usageType = item.price?.recurring?.usage_type;
     if (usageType === "metered") continue;
+    const tierCents = subscriptionItemMonthlyCents({
+      lookupKey: item.price?.lookup_key ?? null,
+      unitAmountCents: item.price?.unit_amount ?? null,
+      interval: interval === "month" || interval === "year" ? interval : null,
+      quantity: qty,
+    });
+    if (tierCents !== null) {
+      cents += tierCents;
+      continue;
+    }
+    const unit = item.price?.unit_amount ?? 0;
     if (interval === "month") {
       cents += unit * qty;
     } else if (interval === "year") {

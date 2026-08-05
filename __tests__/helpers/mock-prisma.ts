@@ -35,6 +35,7 @@ export function createMockPrisma() {
     product: createModelMock(),
     project: createModelMock(),
     property: createModelMock(),
+    featurePrice: createModelMock(),
     clientReport: createModelMock(),
     popupCampaign: createModelMock(),
     popupEvent: createModelMock(),

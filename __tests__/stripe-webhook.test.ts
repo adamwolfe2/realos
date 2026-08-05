@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
+import { SubscriptionStatus } from "@prisma/client";
+import { subscriptionStatusUpdate } from "@/lib/billing/stripe-state";
 
 /**
  * Structural and behavioral tests for the Stripe webhook handler.
@@ -104,17 +106,27 @@ describe("Stripe webhook — app/api/webhooks/stripe/route.ts", () => {
     expect(content).toContain("already converted");
   });
 
-  it("has idempotency check for regular checkout sessions via stripeSessionId", () => {
+  it("deduplicates regular Checkout completion inside the real handler", () => {
     const content = readRoute();
-    // Guard: skip if same session already recorded
-    expect(content).toContain("stripeSessionId");
-    expect(content).toMatch(/existing\?\.stripeSessionId\s*===\s*session\.id/);
+    const fn = content.slice(
+      content.indexOf("async function handleCheckoutCompleted"),
+      content.indexOf("async function handleWebsiteBuildCheckoutCompleted"),
+    );
+    expect(fn.length).toBeGreaterThan(0);
+    expect(fn).toContain("processStripeEventOnce(");
+    expect(fn).toContain(":checkout`");
+    expect(fn).toContain("auditEvent.create");
   });
 
-  it("has idempotency check for invoice.paid via existing paid status", () => {
+  it("deduplicates invoice.paid audit effects inside the real handler", () => {
     const content = readRoute();
-    // The invoice.paid handler checks if invoice is already paid
-    expect(content).toMatch(/existingInv\?\.status\s*===\s*["']PAID["']/);
+    const fn = content.slice(
+      content.indexOf("async function handleInvoicePaid"),
+      content.indexOf("async function handleInvoicePaymentFailed"),
+    );
+    expect(fn.length).toBeGreaterThan(0);
+    expect(fn).toContain("processStripeEventOnce(");
+    expect(fn).toContain(":audit`");
   });
 
   it("validates amount matches quote total (amount mismatch detection)", () => {
@@ -196,6 +208,46 @@ describe("Stripe webhook — app/api/webhooks/stripe/route.ts", () => {
     expect(content).toMatch(/select:\s*\{[^}]*status:\s*true/);
   });
 
+  it("records the paid subscription start when the first invoice activates a trial", () => {
+    const content = readRoute();
+    expect(content).toContain("subscriptionStartedAt: true");
+    expect(content).toContain("if (!org.subscriptionStartedAt)");
+    expect(content).toContain(
+      "updateData.subscriptionStartedAt = new Date(invoice.created * 1000)",
+    );
+  });
+
+  it("mirrors Stripe's actual trial deadline into the workspace gate", () => {
+    const content = readRoute();
+    expect(content).toContain('subscription.status === "trialing"');
+    expect(content).toContain("subscription.trial_end");
+    expect(content).toContain("updateData.trialEndsAt = stripeTrialEndsAt");
+  });
+
+  it("isolates proposal subscriptions and invoices from platform access state", () => {
+    const content = readRoute();
+    expect(content).toContain(
+      "if (isProposalSubscription(subscription.metadata)) return;",
+    );
+    expect(content).toContain(
+      "isPlatformSubscriptionForOrg(invoiceSubscription.metadata, org.id)",
+    );
+    expect(content).toContain(
+      "isTrialActivationSubscriptionForOrg(\n    invoiceSubscription.metadata",
+    );
+    expect(content.indexOf("maybeAcceptProposalFromInvoice(invoice")).toBeLessThan(
+      content.indexOf("const invoiceSubscription ="),
+    );
+    const failedHandler = content.slice(
+      content.indexOf("async function handleInvoicePaymentFailed"),
+      content.indexOf("async function handleCustomerCreated"),
+    );
+    expect(failedHandler).toContain("extractSubscriptionId(invoice)");
+    expect(failedHandler).toContain(
+      "isPlatformSubscriptionForOrg(invoiceSubscription.metadata, org.id)",
+    );
+  });
+
   it("uses createOrderWithRetry for quote-to-order conversion", () => {
     const content = readRoute();
     expect(content).toContain("createOrderWithRetry");
@@ -265,13 +317,18 @@ describe("Stripe webhook — paused-dunning enforcement (Batch B)", () => {
     );
   });
 
-  it("subscription.updated only blocks the PAUSED->PAST_DUE downgrade", () => {
+  it("subscription.updated blocks PAUSED->PAST_DUE without blocking paid recovery", () => {
     const content = readRoute();
-    // Guard is scoped: PAUSED->ACTIVE / PAUSED->CANCELED still apply.
-    expect(content).toContain("clobbersPause");
-    expect(content).toMatch(
-      /org\.subscriptionStatus\s*===\s*SubscriptionStatus\.PAUSED\s*&&\s*newStatus\s*===\s*SubscriptionStatus\.PAST_DUE/,
-    );
+    expect(content).toContain("subscriptionStatusUpdate(");
+    expect(
+      subscriptionStatusUpdate(SubscriptionStatus.PAUSED, "past_due"),
+    ).toBeNull();
+    expect(
+      subscriptionStatusUpdate(SubscriptionStatus.PAUSED, "active"),
+    ).toBe(SubscriptionStatus.ACTIVE);
+    expect(
+      subscriptionStatusUpdate(SubscriptionStatus.PAUSED, "canceled"),
+    ).toBe(SubscriptionStatus.CANCELED);
   });
 });
 
