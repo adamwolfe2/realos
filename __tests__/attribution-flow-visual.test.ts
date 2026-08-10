@@ -4,39 +4,34 @@ import { describe, expect, it } from "vitest";
 
 const read = (path: string) => readFileSync(resolve(process.cwd(), path), "utf8");
 
-describe("attribution flow visual", () => {
-  it("shows LeaseStack-owned sources flowing into AppFolio outcomes", () => {
-    const component = read(
-      "components/portal/attribution/attribution-flow.tsx",
-    );
-
-    expect(component).toContain("Chatbot");
-    expect(component).toContain("Popups and forms");
-    expect(component).toContain("Visitor pixel");
-    expect(component).toContain("Captured");
-    expect(component).toContain("Applied in AppFolio");
-    expect(component).toContain("Signed in AppFolio");
-    expect(component).not.toContain("Tour scheduled");
-    expect(component).not.toContain("Toured");
-  });
-
-  it("uses an accessible animated SVG with a reduced-motion fallback", () => {
-    const component = read(
-      "components/portal/attribution/attribution-flow.tsx",
-    );
-    const css = read("app/globals.css");
-
-    expect(component).toContain('<svg');
-    expect(component).toContain('role="img"');
-    expect(component).toContain("attribution-flow-path");
-    expect(css).toContain("@keyframes attribution-flow-draw");
-    expect(css).toContain("prefers-reduced-motion: reduce");
-  });
-
-  it("replaces the old nine-stage funnel on the page", () => {
+describe("attribution filtered ledger", () => {
+  it("keeps the ledger primary and removes the oversized flow graph", () => {
     const page = read("app/portal/attribution/page.tsx");
 
-    expect(page).toContain("<AttributionFlow");
+    expect(page).not.toContain("<AttributionFlow");
     expect(page).not.toContain("proof.funnel.map");
+    expect(page).toContain("Lead proof ledger");
+  });
+
+  it("offers compact source filters with a visible active state", () => {
+    const page = read("app/portal/attribution/page.tsx");
+
+    expect(page).toContain("SOURCE_FILTERS");
+    expect(page).toContain("sourceFilterHref");
+    expect(page).toContain("Chatbot");
+    expect(page).toContain("Popups and forms");
+    expect(page).toContain("Visitor pixel");
+    expect(page).toContain("bg-blue-600");
+    expect(page).toContain("font-semibold text-white");
+  });
+
+  it("highlights LeaseStack sources without tinting the entire table", () => {
+    const page = read("app/portal/attribution/page.tsx");
+    const css = read("app/globals.css");
+
+    expect(page).toContain("<SourceBadge");
+    expect(page).toContain("bg-blue-100 text-blue-800");
+    expect(page).not.toContain("sourceRowClass");
+    expect(css).not.toContain("@keyframes attribution-flow-draw");
   });
 });

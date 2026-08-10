@@ -27,7 +27,6 @@ import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { RangePresetControl } from "@/components/portal/attribution/range-preset-control";
-import { AttributionFlow } from "@/components/portal/attribution/attribution-flow";
 import { StatusChip } from "@/components/portal/ui/status-chip";
 import { EmptyState } from "@/components/portal/ui/empty-state";
 
@@ -36,7 +35,7 @@ export const dynamic = "force-dynamic";
 
 const SOURCE_OPTIONS: Array<{ value: LeadSource; label: string }> = [
   { value: LeadSource.CHATBOT, label: "Chatbot" },
-  { value: LeadSource.FORM, label: "Forms and popups" },
+  { value: LeadSource.FORM, label: "Popups and forms" },
   { value: LeadSource.PIXEL_OUTREACH, label: "Visitor pixel" },
   { value: LeadSource.GOOGLE_ADS, label: "Google Ads" },
   { value: LeadSource.META_ADS, label: "Meta Ads" },
@@ -45,6 +44,11 @@ const SOURCE_OPTIONS: Array<{ value: LeadSource; label: string }> = [
   { value: LeadSource.REFERRAL, label: "Referral" },
   { value: LeadSource.MANUAL, label: "Manual" },
   { value: LeadSource.OTHER, label: "Other / imported" },
+];
+
+const SOURCE_FILTERS: Array<{ value: LeadSource | null; label: string }> = [
+  { value: null, label: "All" },
+  ...SOURCE_OPTIONS,
 ];
 
 export default async function AttributionPage({
@@ -128,35 +132,33 @@ export default async function AttributionPage({
           properties={params.properties}
           source={source ?? undefined}
         />
-        <form action="/portal/attribution" className="flex items-center gap-2">
-          <input type="hidden" name="from" value={range.fromIso} />
-          <input type="hidden" name="to" value={range.toIso} />
-          {params.properties ? (
-            <input type="hidden" name="properties" value={params.properties} />
-          ) : null}
-          <label htmlFor="attribution-source" className="sr-only">
-            Source channel
-          </label>
-          <select
-            id="attribution-source"
-            name="source"
-            defaultValue={source ?? ""}
-            className="ls-select h-8 min-w-40 px-3 text-xs"
-          >
-            <option value="">All source channels</option>
-            {SOURCE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
+        <nav
+          aria-label="Filter leads by source"
+          className="flex min-w-0 flex-1 gap-1 overflow-x-auto border border-border bg-background p-1"
+        >
+          {SOURCE_FILTERS.map((option) => {
+            const active = source === option.value;
+            return (
+              <Link
+                key={option.value ?? "all"}
+                href={sourceFilterHref({
+                  source: option.value,
+                  from: range.fromIso,
+                  to: range.toIso,
+                  properties: params.properties,
+                })}
+                aria-current={active ? "page" : undefined}
+                className={
+                  active
+                    ? "shrink-0 bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white"
+                    : "shrink-0 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-blue-50 hover:text-blue-700"
+                }
+              >
                 {option.label}
-              </option>
-            ))}
-          </select>
-          <button
-            type="submit"
-            className="h-8 bg-primary px-3 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-          >
-            Apply
-          </button>
-        </form>
+              </Link>
+            );
+          })}
+        </nav>
         <AppFolioHealth status={appfolio} />
       </div>
 
@@ -187,8 +189,6 @@ export default async function AttributionPage({
           icon={<AlertTriangle className="h-4 w-4" />}
         />
       </section>
-
-      <AttributionFlow flow={proof.flow} />
 
       <section className="ls-card overflow-hidden">
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-3">
@@ -244,9 +244,7 @@ export default async function AttributionPage({
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="font-medium text-foreground">
-                        {row.sourceLabel}
-                      </div>
+                      <SourceBadge row={row} />
                       <div className="mt-1 text-[10px] text-muted-foreground">
                         {row.provenance}
                       </div>
@@ -389,6 +387,41 @@ function ProofState({
       </div>
     </div>
   );
+}
+
+function SourceBadge({
+  row,
+}: {
+  row: Awaited<ReturnType<typeof getAttributionProof>>["rows"][number];
+}) {
+  const style =
+    row.verification === "imported"
+      ? "bg-slate-100 text-slate-700"
+      : row.source === LeadSource.CHATBOT
+        ? "bg-blue-100 text-blue-800"
+        : row.source === LeadSource.FORM
+          ? "bg-sky-100 text-sky-800"
+          : row.source === LeadSource.PIXEL_OUTREACH
+            ? "bg-cyan-100 text-cyan-800"
+            : "bg-blue-50 text-blue-700";
+
+  return (
+    <span className={`inline-flex px-2 py-1 text-[11px] font-semibold ${style}`}>
+      {row.sourceLabel}
+    </span>
+  );
+}
+
+function sourceFilterHref(args: {
+  source: LeadSource | null;
+  from: string;
+  to: string;
+  properties?: string;
+}): string {
+  const query = new URLSearchParams({ from: args.from, to: args.to });
+  if (args.properties) query.set("properties", args.properties);
+  if (args.source) query.set("source", args.source);
+  return `/portal/attribution?${query.toString()}`;
 }
 
 function AppFolioHealth({
