@@ -43,18 +43,17 @@ describe("attribution — AppFolio first-class leasing lane", () => {
 
   it("frames AppFolio leads as their own leasing lane, not an excluded bucket", () => {
     const content = read(diagramPath);
-    // Positive assertions so this can actually fail (Opus review 2026-07-29:
-    // the prior not.toContain matched a string that never existed).
-    expect(content).toContain("leadFlow.imported.leads > 0");
-    expect(content).toContain("AppFolio-synced leads appear as their own leasing lane");
+    expect(content).toContain("imported leads labeled separately");
+    expect(content).toContain("Imported from PMS");
+    expect(content).toContain("Excluded from LeaseStack-generated ROI");
     expect(content).not.toContain(
       "imported leads (AppFolio sync, no marketing channel) are excluded",
     );
   });
 
-  it("honestly frames reverse-attribution when pixel identity resolution is off", () => {
+  it("consolidates reverse attribution without breaking old bookmarks", () => {
     const content = read(revPath);
-    expect(content).toContain("reverse.identifiedCount === 0");
-    expect(content).toContain("Pixel identity resolution is off");
+    expect(content).toContain("URLSearchParams");
+    expect(content).toContain('redirect(`/portal/attribution');
   });
 });

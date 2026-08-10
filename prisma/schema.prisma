@@ -201,6 +201,30 @@ enum ApplicationStatus {
   WITHDRAWN
 }
 
+enum LeadMatchDecisionStatus {
+  MATCHED
+  UNMATCHED
+  REVIEW_REQUIRED
+  AMBIGUOUS
+  REJECTED
+  MANUAL_MATCH
+  MANUAL_UNLINK
+}
+
+enum LeadMatchMethod {
+  PHONE_EMAIL
+  NAME_EMAIL
+  NAME_PHONE
+  EXACT_EMAIL
+  NORMALIZED_EMAIL
+  EXACT_PHONE
+  NORMALIZED_PHONE
+  FUZZY_COMPOSITE
+  NAME_ONLY
+  MANUAL
+  NONE
+}
+
 enum VisitorIdentificationStatus {
   ANONYMOUS
   IDENTIFIED
@@ -527,6 +551,7 @@ model Organization {
   propertyChatbotConfigs  PropertyChatbotConfig[]
   propertyKnowledgeBases  PropertyKnowledgeBase[]
   leads                   Lead[]
+  leadMatchDecisions      LeadMatchDecision[]
   visitors                Visitor[]
   chatbotConversations    ChatbotConversation[]
   creativeRequests        CreativeRequest[]
@@ -1100,6 +1125,7 @@ model Property {
 
   listings               Listing[]
   leads                  Lead[]
+  leadMatchDecisions     LeadMatchDecision[]
   tours                  Tour[]
   applications           Application[]
   chatbotConversations   ChatbotConversation[]
@@ -1288,10 +1314,11 @@ model Lead {
   visitor   Visitor? @relation(fields: [visitorId], references: [id])
 
   // Conversation history
-  conversations ChatbotConversation[]
-  tours         Tour[]
-  applications  Application[]
-  residents     Resident[]
+  conversations  ChatbotConversation[]
+  tours          Tour[]
+  applications   Application[]
+  residents      Resident[]
+  matchDecisions LeadMatchDecision[]
 
   // Ownership
   assignedToUserId String?
@@ -1400,6 +1427,8 @@ model Application {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  matchDecisions LeadMatchDecision[]
+
   // Idempotency: one Application row per (lead, AppFolio applicant id).
   // backendAppId is null for manual entries; Postgres treats NULLs as
   // distinct, so manual applications are unaffected by this constraint.
@@ -1478,8 +1507,9 @@ model Resident {
 
   raw Json?
 
-  leases     Lease[]
-  workOrders WorkOrder[]
+  leases         Lease[]
+  workOrders     WorkOrder[]
+  matchDecisions LeadMatchDecision[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1492,6 +1522,46 @@ model Resident {
   @@index([orgId, status, propertyId])
   @@index([email])
   @@index([moveOutDate])
+}
+
+// Append-only evidence trail for the lead -> AppFolio outcome proof chain.
+// Resident.leadId remains the current durable link; this table explains every
+// automatic or manual decision, including ambiguous/unmatched outcomes that
+// operators need to review. Candidate reads are org/property-scoped before a
+// row reaches this table.
+model LeadMatchDecision {
+  id String @id @default(cuid())
+
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  residentId String?
+  resident   Resident? @relation(fields: [residentId], references: [id], onDelete: Cascade)
+
+  applicationId String?
+  application   Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+
+  leadId String?
+  lead   Lead?   @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  status     LeadMatchDecisionStatus
+  method     LeadMatchMethod
+  confidence Int
+  evidence   Json?
+  syncRunId  String?
+
+  reviewedByUserId String?
+  reviewedAt       DateTime?
+  createdAt        DateTime  @default(now())
+
+  @@index([orgId, status, createdAt])
+  @@index([residentId, createdAt])
+  @@index([applicationId, createdAt])
+  @@index([leadId, createdAt])
+  @@index([syncRunId])
 }
 
 enum LeaseStatus {
@@ -1640,12 +1710,13 @@ model Visitor {
   visitorHash      String? // Unique ID for deduplication
 
   // Identified data
-  status       VisitorIdentificationStatus @default(ANONYMOUS)
-  firstName    String?
-  lastName     String?
-  email        String?
-  phone        String?
-  enrichedData Json? // Full Cursive enrichment payload
+  status         VisitorIdentificationStatus @default(ANONYMOUS)
+  firstName      String?
+  lastName       String?
+  email          String?
+  phone          String?
+  enrichedData   Json? // Full Cursive enrichment payload
+  lastEnrichedAt DateTime? // Segment/profile refresh; never a substitute for a site visit
 
   // Session data
   firstSeenAt      DateTime @default(now())

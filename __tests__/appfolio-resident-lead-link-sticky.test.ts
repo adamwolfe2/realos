@@ -35,6 +35,15 @@ const h = vi.hoisted(() => ({
         }) => ({ count: 1 }),
       ),
     },
+    leadMatchDecision: {
+      create: vi.fn(async (args: { data: Record<string, unknown> }) => ({
+        id: "decision_1",
+        ...args.data,
+      })),
+    },
+    $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
+      callback(h.db),
+    ),
   },
 }));
 
@@ -222,9 +231,20 @@ describe("upsertResident — operator intent beats auto-match", () => {
     expect(h.db.resident.update.mock.calls[0][0].data.leadId).toBe(
       "lead-phone",
     );
+    expect(h.db.leadMatchDecision.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        orgId: "org1",
+        propertyId: "prop1",
+        residentId: "r1",
+        leadId: "lead-phone",
+        status: "MATCHED",
+        method: "NORMALIZED_PHONE",
+        confidence: 92,
+      }),
+    });
   });
 
-  it("creates new residents with the matched lead attached", async () => {
+  it("keeps a name-only candidate in review instead of minting signed proof", async () => {
     h.db.resident.findUnique.mockResolvedValue(null);
     const index = buildLeadMatchIndex([
       {
@@ -240,8 +260,32 @@ describe("upsertResident — operator intent beats auto-match", () => {
     await upsertResident("org1", "prop1", null, mapped(), index);
 
     expect(h.db.resident.create).toHaveBeenCalledTimes(1);
-    expect(h.db.resident.create.mock.calls[0][0].data.leadId).toBe(
-      "lead-name",
-    );
+    expect(h.db.resident.create.mock.calls[0][0].data.leadId).toBeNull();
+    expect(h.db.lead.updateMany).not.toHaveBeenCalled();
+    expect(h.db.leadMatchDecision.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        residentId: "r-new",
+        leadId: "lead-name",
+        status: "REVIEW_REQUIRED",
+        method: "NAME_ONLY",
+        confidence: 70,
+      }),
+    });
+  });
+
+  it("records unmatched decisions so operators can see missing proof", async () => {
+    h.db.resident.findUnique.mockResolvedValue(null);
+
+    await upsertResident("org1", "prop1", null, mapped(), buildLeadMatchIndex([]));
+
+    expect(h.db.leadMatchDecision.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        residentId: "r-new",
+        leadId: null,
+        status: "UNMATCHED",
+        method: "NONE",
+        confidence: 0,
+      }),
+    });
   });
 });

@@ -92,7 +92,6 @@ describe("SG focus nav", () => {
   it("documents the exact nav SG's team sees", () => {
     // Anything beyond the four-item sellable unit here is either
     // ALWAYS-gated (no flag exists) or entitlement-coupled:
-    //   - Reverse Attribution rides moduleAttribution alongside Attribution.
     //   - Dashboard/Properties/Content/Integrations/Marketplace/Billing/
     //     Settings have no module flag at all.
     // Insights is gone via navHiddenItems, NOT via its module flag — see
@@ -105,7 +104,6 @@ describe("SG focus nav", () => {
       "Chatbot",
       "Content",
       "Attribution",
-      "Reverse Attribution",
       "Reports",
       "Integrations",
       "Marketplace",

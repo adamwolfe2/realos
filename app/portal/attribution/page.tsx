@@ -1,5 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import {
+  AlertTriangle,
+  BadgeCheck,
+  Download,
+  FileSearch,
+  Users,
+} from "lucide-react";
+import { LeadSource } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
 import { requireModule } from "@/lib/portal/module-gate";
@@ -9,42 +17,34 @@ import {
   parsePropertyFilter,
   visibleProperties,
 } from "@/lib/tenancy/property-filter";
-import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
-import { PageHeader, SectionCard } from "@/components/admin/page-header";
-import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
-import { TrendChart } from "@/components/portal/attribution/trend-chart";
+import { getAttributionProof } from "@/lib/attribution/proof";
 import {
-  getAttributionHeadline,
-  getLeadFlow,
-  getLeadsPerCity,
-  getLeadsPerModuleTrend,
-  getLeadsPerTouchFrequency,
-  type AttributionFilters,
-} from "@/lib/attribution/queries";
-import { fetchGa4SourceVolumes } from "@/lib/attribution/ga4-sources";
-import { SourceLogo } from "@/components/portal/attribution/source-logo";
+  parseAttributionDateRange,
+  parseAttributionSource,
+} from "@/lib/attribution/proof-filters";
+import { getAppFolioStatus } from "@/lib/integrations/appfolio-status";
+import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
+import { PageHeader } from "@/components/admin/page-header";
+import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { RangePresetControl } from "@/components/portal/attribution/range-preset-control";
 import { StatusChip } from "@/components/portal/ui/status-chip";
 import { EmptyState } from "@/components/portal/ui/empty-state";
-import { getConnectStatusForOrg } from "@/lib/connect/status";
-import { Users, Eye, MousePointerClick, BarChart3 } from "lucide-react";
 
-export const metadata: Metadata = { title: "Attribution" };
+export const metadata: Metadata = { title: "Lead to lease proof" };
 export const dynamic = "force-dynamic";
 
-// ---------------------------------------------------------------------------
-// /portal/attribution — direct competitor surface to Clarity Attribution.
-//
-// Mirrors the seven charts Clarity charges $5–10k/property/month for, but
-// pulls every value from real LeaseStack data — VisitorSession utm /
-// referrer parsing, Lead.source enum, AL enrichment for city, userAgent
-// for device. No mocks, no seeds. Empty windows render honest empty
-// states.
-//
-// Filters: ?from=YYYY-MM-DD&to=YYYY-MM-DD&property=<id>. Defaults to the
-// trailing 30 days across all properties. Date-range parser is
-// permissive — bad input falls back to defaults.
-// ---------------------------------------------------------------------------
+const SOURCE_OPTIONS: Array<{ value: LeadSource; label: string }> = [
+  { value: LeadSource.CHATBOT, label: "Chatbot" },
+  { value: LeadSource.FORM, label: "Forms and popups" },
+  { value: LeadSource.PIXEL_OUTREACH, label: "Visitor pixel" },
+  { value: LeadSource.GOOGLE_ADS, label: "Google Ads" },
+  { value: LeadSource.META_ADS, label: "Meta Ads" },
+  { value: LeadSource.ORGANIC, label: "Organic" },
+  { value: LeadSource.DIRECT, label: "Direct" },
+  { value: LeadSource.REFERRAL, label: "Referral" },
+  { value: LeadSource.MANUAL, label: "Manual" },
+  { value: LeadSource.OTHER, label: "Other / imported" },
+];
 
 export default async function AttributionPage({
   searchParams,
@@ -54,6 +54,7 @@ export default async function AttributionPage({
     to?: string;
     property?: string;
     properties?: string;
+    source?: string;
   }>;
 }) {
   const gate = await requireModule("moduleAttribution");
@@ -61,11 +62,7 @@ export default async function AttributionPage({
 
   const scope = await requireScope();
   const params = await searchParams;
-
-  const { fromDate, toDate, fromIso, toIso } = parseDateRange(
-    params.from,
-    params.to
-  );
+  const range = parseAttributionDateRange(params.from, params.to);
   const requestedIds = await parsePropertyFilter(params, scope.orgId);
 
   const allProperties = await prisma.property.findMany({
@@ -74,485 +71,376 @@ export default async function AttributionPage({
     select: { id: true, name: true },
   });
   const properties = visibleProperties(scope, allProperties);
-
-  // Two-step gate:
-  //   1. Drop any requested id that doesn't belong to this tenant
-  //      (defense against URL-tampered ids from another org).
-  //   2. Intersect with the user's allowed property set via
-  //      effectivePropertyIds(); restricted users get their full
-  //      allowed list as the default, not the org's full set.
-  //
-  // Critical: a restricted user whose URL gates to an empty set must
-  // fall back to their FULL allowed set, not null. Passing null to
-  // queries.ts would mean "no filter" = see every property in the org,
-  // which would defeat the entire access gate.
   const tenantValid = (requestedIds ?? []).filter((id) =>
-    allProperties.some((p) => p.id === id)
+    properties.some((property) => property.id === id),
   );
   const gatedIds = effectivePropertyIds(
     scope,
     tenantValid.length > 0 ? tenantValid : null,
   );
-  const activePropertyIds =
-    gatedIds && gatedIds.length > 0
-      ? gatedIds
-      : scope.allowedPropertyIds && scope.allowedPropertyIds.length > 0
-        ? scope.allowedPropertyIds
-        : null;
+  const propertyIds = gatedIds ?? properties.map((property) => property.id);
+  const source = parseAttributionSource(params.source);
 
-  const filters: AttributionFilters = {
-    orgId: scope.orgId,
-    propertyIds: activePropertyIds,
-    fromDate,
-    toDate,
-  };
+  const [proof, appfolio] = await Promise.all([
+    getAttributionProof({
+      orgId: scope.orgId,
+      propertyIds,
+      includeOrgLevel: gatedIds === null,
+      fromDate: range.fromDate,
+      toDate: range.toDate,
+      source,
+    }),
+    getAppFolioStatus(scope.orgId),
+  ]);
 
-  const [headline, leadFlow, citySplit, moduleTrend, touchFreq, connectSources] =
-    await Promise.all([
-      getAttributionHeadline(filters),
-      // Flow hero — folds in GA4 source volumes (best-effort; null if GA4 isn't
-      // connected or slow, in which case it degrades to pixel-only).
-      (async () => {
-        const ga4Sessions = await fetchGa4SourceVolumes(
-          scope.orgId,
-          fromDate,
-          toDate,
-        );
-        return getLeadFlow(filters, ga4Sessions);
-      })(),
-      getLeadsPerCity(filters),
-      getLeadsPerModuleTrend(filters),
-      getLeadsPerTouchFrequency(filters),
-      // Feed-state chips — same derivation the Connect hub uses (one
-      // integration row = connected), so "Live" here always agrees with
-      // /portal/connect.
-      getConnectStatusForOrg(scope.orgId),
-    ]);
-
-  const ga4Connected =
-    connectSources.find((s) => s.id === "ga4")?.connected ?? false;
-  const pixelConnected =
-    connectSources.find((s) => s.id === "cursive_pixel")?.connected ?? false;
-
-  // Used in the page header description. When exactly one property is
-  // selected we name it; when multiple are selected we just say how many.
-  const activeProperty =
-    activePropertyIds && activePropertyIds.length === 1
-      ? properties.find((p) => p.id === activePropertyIds[0]) ?? null
-      : null;
-
-  const dayCount = Math.round(
-    (toDate.getTime() - fromDate.getTime()) / (24 * 60 * 60 * 1000)
-  );
-
-  // Build the trend chart series from the per-day buckets. Limit to the
-  // top 5 sources so the line chart stays readable; everything else
-  // collapses into "Other".
-  const moduleSeries = buildModuleSeries(moduleTrend, 5);
-  const moduleDates = moduleTrend.map((p) => p.date);
+  const exportParams = new URLSearchParams({
+    from: range.fromIso,
+    to: range.toIso,
+  });
+  if (params.properties) exportParams.set("properties", params.properties);
+  if (source) exportParams.set("source", source);
 
   return (
-    <div className="space-y-3 ls-page-fade">
+    <div className="space-y-4 ls-page-fade">
       <PageHeader
-        title="Attribution"
-        description={`Lead and session attribution across every connected channel.${
-          activeProperty
-            ? ` Filtered to ${activeProperty.name}.`
-            : activePropertyIds
-              ? ` Filtered to ${activePropertyIds.length} properties.`
-              : ""
-        }`}
+        eyebrow="Attribution"
+        title="Lead to lease proof"
+        description="See where every lead came from and which LeaseStack leads became verified AppFolio outcomes."
         actions={
-          <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href={`/api/tenant/attribution/export?${exportParams.toString()}`}
+              className="inline-flex h-9 items-center gap-2 border border-border bg-background px-3 text-sm font-semibold text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              <Download className="h-4 w-4" aria-hidden="true" />
+              Export CSV
+            </Link>
+            <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+          </div>
         }
       />
 
-      {/* Feed-state row — attribution silently degrades when GA4 or the
-          visitor pixel is missing (sessions undercount, identities blank).
-          Make the state explicit instead of letting charts read as broken. */}
-      <div className="ls-card flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2">
-        <span className="flex items-center gap-2">
-          <span className="text-[11px] font-semibold text-foreground">
-            Google Analytics 4
-          </span>
-          <StatusChip status={ga4Connected ? "live" : "not_connected"} />
-        </span>
-        <span aria-hidden="true" className="h-4 w-px bg-border" />
-        <span className="flex items-center gap-2">
-          <span className="text-[11px] font-semibold text-foreground">
-            Visitor pixel
-          </span>
-          <StatusChip status={pixelConnected ? "live" : "not_connected"} />
-        </span>
-        {!ga4Connected || !pixelConnected ? (
-          <Link
-            href="/portal/connect"
-            className="ml-auto text-[11px] font-semibold text-primary underline-offset-2 hover:underline"
-          >
-            Connect data sources
-          </Link>
-        ) : null}
-      </div>
-
-      {/* Filter bar — shared preset range control (same Carbon chip group as
-          the dashboard) + custom date form for non-standard windows. */}
-      <div className="ls-card p-2.5 flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3 border border-border bg-secondary/40 px-3 py-2.5">
         <RangePresetControl
           basePath="/portal/attribution"
-          activeDays={dayCount}
+          activeDays={range.dayCount}
           properties={params.properties}
+          source={source ?? undefined}
         />
-
-        {/* Divider */}
-        <span aria-hidden="true" className="h-4 w-px bg-border" />
-
-        {/* Custom date form — for non-standard windows */}
-        <form
-          action="/portal/attribution"
-          className="flex flex-wrap items-center gap-2"
-        >
+        <form action="/portal/attribution" className="flex items-center gap-2">
+          <input type="hidden" name="from" value={range.fromIso} />
+          <input type="hidden" name="to" value={range.toIso} />
           {params.properties ? (
             <input type="hidden" name="properties" value={params.properties} />
           ) : null}
-          <label className="flex items-center gap-1.5">
-            <span className="text-[9px] font-semibold tracking-widest uppercase text-muted-foreground shrink-0">
-              From
-            </span>
-            <input
-              type="date"
-              name="from"
-              defaultValue={fromIso}
-              className="rounded-[2px] border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
-            />
+          <label htmlFor="attribution-source" className="sr-only">
+            Source channel
           </label>
-          <label className="flex items-center gap-1.5">
-            <span className="text-[9px] font-semibold tracking-widest uppercase text-muted-foreground shrink-0">
-              To
-            </span>
-            <input
-              type="date"
-              name="to"
-              defaultValue={toIso}
-              className="rounded-[2px] border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
-            />
-          </label>
+          <select
+            id="attribution-source"
+            name="source"
+            defaultValue={source ?? ""}
+            className="ls-select h-8 min-w-40 px-3 text-xs"
+          >
+            <option value="">All source channels</option>
+            {SOURCE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
           <button
             type="submit"
-            className="inline-flex items-center justify-center rounded-none bg-primary text-primary-foreground px-3 py-1 text-xs font-semibold hover:bg-primary/90 transition-colors"
+            className="h-8 bg-primary px-3 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             Apply
           </button>
         </form>
+        <AppFolioHealth status={appfolio} />
       </div>
 
-      {/* Headline KPIs */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
+      <section className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
         <KpiTile
-          label="Total leads"
-          value={headline.totalLeads.toLocaleString()}
-          hint={`${leadFlow.totalLeads.toLocaleString()} attributed · ${leadFlow.imported.leads.toLocaleString()} imported`}
-          icon={<Users className="h-3.5 w-3.5" />}
+          label="LeaseStack leads"
+          value={proof.summary.captured.toLocaleString()}
+          hint={`${proof.summary.imported.toLocaleString()} imported leads labeled separately`}
+          icon={<Users className="h-4 w-4" />}
+          variant="accent"
         />
         <KpiTile
-          label="Sessions"
-          value={leadFlow.totalSessions.toLocaleString()}
-          hint="GA4 + visitor pixel"
-          icon={<MousePointerClick className="h-3.5 w-3.5" />}
+          label="Applied"
+          value={proof.summary.applied.toLocaleString()}
+          hint="Lead status or AppFolio application"
+          icon={<FileSearch className="h-4 w-4" />}
         />
         <KpiTile
-          label="Identified visitors"
-          value={headline.identifiedVisitors.toLocaleString()}
-          hint="Resolved by name"
-          icon={<Eye className="h-3.5 w-3.5" />}
+          label="Verified signed"
+          value={proof.summary.verifiedSigned.toLocaleString()}
+          hint="Matched AppFolio resident and lease"
+          icon={<BadgeCheck className="h-4 w-4" />}
         />
         <KpiTile
-          label="Source channels"
-          value={leadFlow.sources.length.toLocaleString()}
-          hint="Distinct traffic sources"
-          icon={<BarChart3 className="h-3.5 w-3.5" />}
+          label="Needs review"
+          value={proof.summary.reviewNeeded.toLocaleString()}
+          hint="Possible matches, never counted as signed"
+          icon={<AlertTriangle className="h-4 w-4" />}
         />
       </section>
 
-      {/* Pipeline outcomes — replaced the Sankey flow diagram (Adam,
-          2026-07-29: "we'd rather see a list"). Same stage-strip style as
-          the portfolio funnel. Stages carry real evidence only — Toured
-          was removed at the source (lib/attribution/queries.ts). */}
-      <div className="ls-card p-4">
-        <div className="flex items-stretch divide-x divide-[var(--hair)]">
-          <div className="flex-1 min-w-0 px-4 first:pl-0">
-            <div className="ls-eyebrow">Attributed leads</div>
-            <div className="ls-metric ls-metric-md mt-1">
-              {leadFlow.totalLeads.toLocaleString()}
-            </div>
-          </div>
-          {leadFlow.stages.map((st) => (
-            <div key={st.id} className="flex-1 min-w-0 px-4 last:pr-0">
-              <div className="ls-eyebrow">{st.label}</div>
-              <div className="ls-metric ls-metric-md mt-1">
-                {st.count.toLocaleString()}
-              </div>
-            </div>
-          ))}
-        </div>
-        {leadFlow.imported.leads > 0 ? (
-          <p className="mt-3 text-[11px] text-muted-foreground">
-            {leadFlow.imported.leads.toLocaleString()} leads without a known
-            channel are excluded from source attribution. AppFolio-synced leads appear as their own leasing lane above.
+      <section className="ls-card overflow-hidden">
+        <div className="border-b border-border px-4 py-3">
+          <h2 className="text-sm font-semibold text-foreground">
+            Proof funnel
+          </h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            One window, one cohort. Unconnected stages say Not tracked instead of showing a false zero.
           </p>
-        ) : null}
-      </div>
+        </div>
+        <div className="overflow-x-auto">
+          <div className="flex min-w-max divide-x divide-border">
+            {proof.funnel.map((stage) => (
+              <div key={stage.key} className="w-36 px-4 py-3">
+                <div className="ls-eyebrow">{stage.label}</div>
+                <div className="mt-1 font-mono text-xl font-medium tabular-nums text-foreground">
+                  {stage.tracked ? stage.count.toLocaleString() : "Not tracked"}
+                </div>
+                <div className="mt-1 text-[10px] leading-snug text-muted-foreground">
+                  {stage.provenance}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-      {/* Traffic & lead sources — the GA4-driven logo board. Real platform
-          logos, sessions blended from GA4 + pixel, leads, and conversion. This
-          replaces the old wall of look-alike donuts. */}
-      {leadFlow.sources.length > 0 ? (
-        <SectionCard
-          label="Traffic & lead sources"
-          description="The sites visitors came from before yours. Sessions blended from GA4 + visitor pixel · conversion = leads ÷ sessions."
-          action={
-            <span className="text-[10px] uppercase tracking-widest text-muted-foreground shrink-0 pl-3">
-              {leadFlow.sources.length} channels
-            </span>
-          }
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-0.5">
-            {leadFlow.sources.slice(0, 12).map((s) => {
-              const max = Math.max(
-                1,
-                ...leadFlow.sources.map((x) => Math.max(x.leads, x.sessions)),
-              );
-              const barVal = Math.max(s.leads, s.sessions);
-              return (
-                <div
-                  key={s.id}
-                  className="flex items-center gap-3 py-2 border-b border-border/40 last:border-0"
-                >
-                  <SourceLogo logo={s.id} size={32} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[13px] font-medium text-foreground truncate">
-                        {s.label}
+      <section className="ls-card overflow-hidden">
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-3">
+          <div>
+            <h2 className="text-sm font-semibold text-foreground">
+              Lead proof ledger
+            </h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Source, identity, stage, and outcome evidence for every lead in this window.
+            </p>
+          </div>
+          <span className="font-mono text-xs tabular-nums text-muted-foreground">
+            {proof.rows.length.toLocaleString()} rows
+          </span>
+        </div>
+
+        {proof.rows.length === 0 ? (
+          <div className="p-6">
+            <EmptyState
+              variant="bare"
+              icon={<FileSearch className="h-4 w-4" />}
+              title="No leads in this window"
+              body="Try a wider date range or another property."
+            />
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[980px] text-left text-xs">
+              <thead className="bg-secondary/70 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-2.5 font-semibold">Lead</th>
+                  <th className="px-4 py-2.5 font-semibold">Source and proof</th>
+                  <th className="px-4 py-2.5 font-semibold">First touch</th>
+                  <th className="px-4 py-2.5 font-semibold">Current stage</th>
+                  <th className="px-4 py-2.5 font-semibold">PMS outcome</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {proof.rows.map((row) => (
+                  <tr key={row.id} className="align-top hover:bg-secondary/35">
+                    <td className="px-4 py-3">
+                      <Link
+                        href={`/portal/leads/${row.id}`}
+                        className="font-semibold text-foreground underline-offset-2 hover:text-primary hover:underline"
+                      >
+                        {row.name}
+                      </Link>
+                      <div className="mt-1 max-w-56 truncate text-muted-foreground">
+                        {row.email ?? row.phone ?? "Identity incomplete"}
+                      </div>
+                      <div className="mt-0.5 text-[10px] text-muted-foreground">
+                        {row.propertyName ?? "Unassigned property"}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-foreground">
+                        {row.sourceLabel}
+                      </div>
+                      <div className="mt-1 text-[10px] text-muted-foreground">
+                        {row.provenance}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 font-mono tabular-nums text-foreground">
+                      {formatDate(row.firstTouchAt)}
+                      <div className="mt-1 font-sans text-[10px] text-muted-foreground">
+                        Captured {formatDate(row.capturedAt)}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="font-semibold text-foreground">
+                        {row.stage}
                       </span>
-                      <span className="font-mono text-[11px] tabular-nums text-muted-foreground shrink-0">
-                        {s.sessions > 0
-                          ? `${s.sessions.toLocaleString()} sess`
-                          : ""}
-                      </span>
-                    </div>
-                    <div className="mt-1.5 h-1.5 bg-muted overflow-hidden">
-                      <div
-                        className="h-full transition-all"
-                        style={{
-                          width: `${Math.max((barVal / max) * 100, barVal > 0 ? 3 : 0)}%`,
-                          background: s.color,
-                        }}
-                      />
-                    </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <ProofState row={row} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {proof.reviewRows.length > 0 ? (
+        <section className="ls-card overflow-hidden">
+          <div className="border-b border-border px-4 py-3">
+            <h2 className="text-sm font-semibold text-foreground">
+              Match review queue
+            </h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              These candidates are excluded from verified ROI until an operator confirms them.
+            </p>
+          </div>
+          <div className="divide-y divide-border">
+            {proof.reviewRows.map((row) => (
+              <div
+                key={row.decisionId}
+                className="grid gap-3 px-4 py-3 md:grid-cols-[1fr_auto_1fr_auto] md:items-center"
+              >
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                    AppFolio outcome
                   </div>
-                  <div className="text-right shrink-0 w-16">
-                    <div className="font-mono text-sm font-semibold tabular-nums text-foreground leading-none">
-                      {s.leads.toLocaleString()}
-                    </div>
-                    <div className="font-mono text-[10px] tabular-nums text-muted-foreground mt-0.5">
-                      {s.conversionRate !== null
-                        ? `${(s.conversionRate * 100).toFixed(1)}%`
-                        : "leads"}
-                    </div>
+                  <div className="mt-1 font-semibold text-foreground">
+                    {row.residentName}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {row.residentEmail ?? row.residentPhone ?? "Identity incomplete"}
                   </div>
                 </div>
-              );
-            })}
+                <div className="font-mono text-xs tabular-nums text-muted-foreground">
+                  {row.confidence}%
+                  <div className="font-sans text-[10px]">{row.method}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                    Suggested LeaseStack lead
+                  </div>
+                  <div className="mt-1 font-semibold text-foreground">
+                    {row.candidateLeadName ?? "Multiple possible leads"}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {row.propertyName ?? "Unassigned property"}
+                  </div>
+                </div>
+                {row.candidateLeadId ? (
+                  <Link
+                    href={`/portal/leads/${row.candidateLeadId}`}
+                    className="inline-flex h-8 items-center justify-center border border-border px-3 text-xs font-semibold text-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  >
+                    Review match
+                  </Link>
+                ) : (
+                  <Link
+                    href="/portal/leads"
+                    className="inline-flex h-8 items-center justify-center border border-border px-3 text-xs font-semibold text-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  >
+                    Find lead
+                  </Link>
+                )}
+              </div>
+            ))}
           </div>
-        </SectionCard>
+        </section>
       ) : null}
-
-      {/* Capture surface + nurture depth — two purposeful breakdowns. */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <SectionCard
-          label="Leads by capture surface"
-          description={`Which LeaseStack surface created each lead — chatbot, form, ads, referral. Imported/unattributed excluded. ${leadFlow.totalLeads.toLocaleString()} leads total.`}
-        >
-          <AttributionBarList
-            slices={headline.modules
-              .filter((m) => !["Other", "Manual entry"].includes(m.label))
-              .map((m) => ({ label: m.label, value: m.count }))}
-            emptyMessage="No attributed leads in this window."
-          />
-        </SectionCard>
-        <SectionCard
-          label="Touch frequency"
-          description={`How many sessions each lead had before converting. Higher = more nurture needed. ${headline.totalLeads.toLocaleString()} leads total.`}
-        >
-          <AttributionBarList
-            slices={touchFreq
-              .filter((b) => b.count > 0)
-              .map((b) => ({
-                label: `${b.bucket} ${b.bucket === "1" ? "touch" : "touches"}`,
-                value: b.count,
-              }))}
-            emptyMessage="No leads in this window."
-          />
-        </SectionCard>
-      </section>
-
-      {/* Trends + geography. */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <TrendChart
-          title="Leads by source — daily"
-          description="Daily lead volume by channel. Top 5 shown, rest collapsed into Other."
-          dates={moduleDates}
-          series={moduleSeries}
-          totalEntries={headline.totalLeads}
-          emptyMessage="No leads in this window."
-        />
-        <SectionCard
-          label="Leads by city"
-          description={`Lead's resolved city from pixel enrichment (when available). ${citySplit.reduce((s, c) => s + c.count, 0).toLocaleString()} located.`}
-        >
-          <AttributionBarList
-            slices={citySplit.slice(0, 8).map((c) => ({
-              label: c.city,
-              value: c.count,
-            }))}
-            emptyMessage="No city-resolved leads yet. Enrichment fills this in as visitors are identified."
-          />
-        </SectionCard>
-      </section>
-
     </div>
   );
 }
 
-// Pulls top N sources from the per-day trend points and collapses the
-// rest into "Other" so the line chart doesn't render 12 colors.
-function buildModuleSeries(
-  trend: Array<{ date: string; bySource: Record<string, number> }>,
-  topN: number
-): Array<{ label: string; values: number[] }> {
-  // Compute totals per source across the window so we know which to keep.
-  const totals = new Map<string, number>();
-  for (const point of trend) {
-    for (const [source, count] of Object.entries(point.bySource)) {
-      totals.set(source, (totals.get(source) ?? 0) + count);
-    }
-  }
-  const ranked = Array.from(totals.entries())
-    .sort((a, b) => b[1] - a[1])
-    .map(([source]) => source);
-  const kept = new Set(ranked.slice(0, topN));
-  const collapsed = ranked.slice(topN);
-
-  const series: Array<{ label: string; values: number[] }> = [];
-  for (const source of kept) {
-    series.push({
-      label: source,
-      values: trend.map((p) => p.bySource[source] ?? 0),
-    });
-  }
-  if (collapsed.length > 0) {
-    series.push({
-      label: "Other",
-      values: trend.map((p) =>
-        collapsed.reduce((sum, s) => sum + (p.bySource[s] ?? 0), 0),
-      ),
-    });
-  }
-  return series;
-}
-
-// Date-range parser. Permissive: bad input → trailing-30-day default
-// instead of throwing. Always returns dates in UTC midnight so the day
-// buckets line up across timezones.
-function parseDateRange(
-  fromRaw?: string,
-  toRaw?: string
-): { fromDate: Date; toDate: Date; fromIso: string; toIso: string } {
-  const today = new Date();
-  const defaultFrom = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-  const from = parseIsoDate(fromRaw) ?? defaultFrom;
-  const to = parseIsoDate(toRaw) ?? today;
-
-  // Clamp to ≤ 365 days so the queries don't blow out on accidental input.
-  const maxRange = 365 * 24 * 60 * 60 * 1000;
-  if (to.getTime() - from.getTime() > maxRange) {
-    return parseDateRange(undefined, undefined);
-  }
-  // Set to UTC midnight for the day buckets.
-  const fromUtc = new Date(
-    Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate())
-  );
-  const toUtc = new Date(
-    Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate(), 23, 59, 59)
-  );
-  return {
-    fromDate: fromUtc,
-    toDate: toUtc,
-    fromIso: toIsoDay(fromUtc),
-    toIso: toIsoDay(toUtc),
-  };
-}
-
-function parseIsoDate(raw: string | undefined): Date | null {
-  if (!raw) return null;
-  const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!m) return null;
-  const year = Number(m[1]);
-  const month = Number(m[2]) - 1;
-  const day = Number(m[3]);
-  const d = new Date(Date.UTC(year, month, day));
-  if (Number.isNaN(d.getTime())) return null;
-  return d;
-}
-
-function toIsoDay(d: Date): string {
-  const year = d.getUTCFullYear();
-  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(d.getUTCDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-// Compact horizontal bar list — replaces the oversized donut charts (Adam,
-// 2026-07-29: "why are those dials so big?"). Each row = label · bar ·
-// count/pct, sorted descending by value.
-function AttributionBarList({
-  slices,
-  emptyMessage,
+function ProofState({
+  row,
 }: {
-  slices: Array<{ label: string; value: number }>;
-  emptyMessage: string;
+  row: Awaited<ReturnType<typeof getAttributionProof>>["rows"][number];
 }) {
-  const sorted = [...slices].sort((a, b) => b.value - a.value);
-  const total = sorted.reduce((s, x) => s + x.value, 0);
-  const max = Math.max(1, ...sorted.map((s) => s.value));
-
-  if (total === 0 || sorted.length === 0) {
-    return <EmptyState variant="bare" title={emptyMessage} />;
+  if (row.verification === "verified") {
+    return (
+      <div>
+        <StatusChip
+          status="live"
+          label={`Verified${row.matchConfidence !== null ? ` · ${row.matchConfidence}%` : ""}`}
+        />
+        <div className="mt-1 text-[10px] text-muted-foreground">
+          {row.outcomeEvidence}
+          {row.matchMethod ? ` · ${row.matchMethod}` : ""}
+        </div>
+      </div>
+    );
   }
-
+  if (row.verification === "review_needed") {
+    return (
+      <div>
+        <StatusChip
+          status="stale"
+          label={`Review needed${row.matchConfidence !== null ? ` · ${row.matchConfidence}%` : ""}`}
+        />
+        <div className="mt-1 text-[10px] text-muted-foreground">
+          Not counted as signed
+        </div>
+      </div>
+    );
+  }
+  if (row.verification === "imported") {
+    return (
+      <div>
+        <StatusChip status="not_connected" label="Imported from PMS" />
+        <div className="mt-1 text-[10px] text-muted-foreground">
+          Excluded from LeaseStack-generated ROI
+        </div>
+      </div>
+    );
+  }
   return (
-    <ul className="space-y-2">
-      {sorted.map((s) => {
-        const pct = total > 0 ? Math.round((s.value / total) * 100) : 0;
-        return (
-          <li key={s.label} className="flex items-center gap-3">
-            <span className="w-32 shrink-0 truncate text-xs font-medium text-foreground">
-              {s.label}
-            </span>
-            <span className="h-2 flex-1 bg-muted overflow-hidden">
-              <span
-                className="block h-full bg-primary/80"
-                style={{
-                  width: `${Math.max((s.value / max) * 100, s.value > 0 ? 2 : 0)}%`,
-                }}
-              />
-            </span>
-            <span className="w-24 shrink-0 text-right font-mono text-[11px] tabular-nums text-muted-foreground">
-              {s.value.toLocaleString()} · {pct}%
-            </span>
-          </li>
-        );
-      })}
-    </ul>
+    <div>
+      <StatusChip status="not_connected" label="LeaseStack only" />
+      <div className="mt-1 text-[10px] text-muted-foreground">
+        {row.outcomeEvidence}
+      </div>
+    </div>
   );
+}
+
+function AppFolioHealth({
+  status,
+}: {
+  status: Awaited<ReturnType<typeof getAppFolioStatus>>;
+}) {
+  const spec =
+    status.state === "synced"
+      ? { status: "live" as const, label: "AppFolio outcomes live" }
+      : status.state === "syncing"
+        ? { status: "connecting" as const, label: "AppFolio syncing" }
+        : status.state === "failed"
+          ? { status: "error" as const, label: "AppFolio sync failed" }
+          : status.state === "partial" || status.stale
+            ? { status: "stale" as const, label: "AppFolio needs attention" }
+            : { status: "not_connected" as const, label: "AppFolio not connected" };
+  return (
+    <Link href="/portal/connect" className="ml-auto">
+      <StatusChip status={spec.status} label={spec.label} />
+    </Link>
+  );
+}
+
+function formatDate(date: Date): string {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(date);
 }

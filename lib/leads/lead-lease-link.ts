@@ -83,6 +83,8 @@ export function nameKey(
 }
 
 export type LeadMatchIndex = {
+  /** Original candidates retained for the scored/reviewable matcher. */
+  candidates: LeadMatchCandidate[];
   byEmail: Map<string, string[]>;
   byPhone: Map<string, string[]>;
   byName: Map<string, string[]>;
@@ -110,7 +112,13 @@ export function buildLeadMatchIndex(
     push(byName, nameKey(l.firstName, l.lastName), l.id);
     propertyByLeadId.set(l.id, l.propertyId ?? null);
   }
-  return { byEmail, byPhone, byName, propertyByLeadId };
+  return {
+    candidates: leads.map((lead) => ({ ...lead })),
+    byEmail,
+    byPhone,
+    byName,
+    propertyByLeadId,
+  };
 }
 
 export type ResidentLeadMatch = {

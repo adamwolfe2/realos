@@ -178,4 +178,27 @@ describe("runCursiveSegmentSync — sole-launched-property stamping", () => {
       propertyId: "prop_other",
     });
   });
+
+  it("records enrichment refreshes without inventing a new site visit", async () => {
+    h.property.findMany.mockResolvedValueOnce([{ id: "prop_tc", name: "TC" }]);
+    h.visitor.findFirst.mockResolvedValueOnce({
+      id: "v_old",
+      propertyId: "prop_tc",
+      cursiveVisitorId: "prof_1",
+      status: "IDENTIFIED",
+      firstName: "Jane",
+      lastName: "Doe",
+      email: "jane@example.com",
+      phone: null,
+      hashedEmail: null,
+      lastSeenAt: new Date(0),
+      lastEnrichedAt: null,
+    });
+
+    await runCursiveSegmentSync("org_1");
+
+    const data = h.visitor.update.mock.calls[0][0].data;
+    expect(data.lastEnrichedAt).toBeInstanceOf(Date);
+    expect(data).not.toHaveProperty("lastSeenAt");
+  });
 });

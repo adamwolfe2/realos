@@ -10,8 +10,7 @@ import Link from "next/link";
 // The dashboard's RANGES (7/28/90 keyed by ?range=) don't transfer directly:
 // attribution pages filter by explicit ?from/?to ISO dates and default to a
 // trailing 30-day window, so the presets here are 7/30/60/90 with the same
-// visual grammar. Both /portal/attribution and /portal/reverse-attribution
-// mount this control instead of hand-rolling their own.
+// visual grammar used by the unified attribution proof page.
 // ---------------------------------------------------------------------------
 
 const PRESET_DAYS = [7, 30, 60, 90] as const;
@@ -20,6 +19,7 @@ export function RangePresetControl({
   basePath,
   activeDays,
   properties,
+  source,
 }: {
   /** e.g. "/portal/attribution" */
   basePath: string;
@@ -27,6 +27,8 @@ export function RangePresetControl({
   activeDays: number;
   /** Pass-through ?properties= filter so switching range keeps scope. */
   properties?: string;
+  /** Pass-through source filter so switching range keeps the same cohort. */
+  source?: string;
 }) {
   return (
     <div
@@ -37,7 +39,7 @@ export function RangePresetControl({
       {PRESET_DAYS.map((days) => (
         <Link
           key={days}
-          href={presetHref(basePath, days, properties)}
+          href={presetHref(basePath, days, properties, source)}
           prefetch={false}
           className={
             activeDays === days
@@ -57,6 +59,7 @@ function presetHref(
   basePath: string,
   days: number,
   properties?: string,
+  source?: string,
 ): string {
   const today = new Date();
   const from = new Date(today.getTime() - days * 24 * 60 * 60 * 1000);
@@ -65,6 +68,7 @@ function presetHref(
     to: toIsoDay(today),
   });
   if (properties) params.set("properties", properties);
+  if (source) params.set("source", source);
   return `${basePath}?${params.toString()}`;
 }
 

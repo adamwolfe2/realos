@@ -3,6 +3,8 @@ import { prisma } from "@/lib/db";
 import {
   AuditAction,
   BackendPlatform,
+  LeadMatchDecisionStatus,
+  LeadMatchMethod,
   LeadSource,
   LeadStatus,
   Prisma,
@@ -32,10 +34,14 @@ import {
 import { classifyProperty } from "@/lib/properties/marketable";
 import {
   buildLeadMatchIndex,
-  matchResidentToLead,
   LEAD_STATUSES_BELOW_SIGNED,
   type LeadMatchIndex,
 } from "@/lib/leads/lead-lease-link";
+import {
+  evaluateResidentLeadMatch,
+  type OutcomeMatchEvaluation,
+  type OutcomeMatchMethod,
+} from "@/lib/leads/outcome-match-policy";
 
 // ---------------------------------------------------------------------------
 // AppFolio REST sync worker.
@@ -1882,10 +1888,11 @@ async function upsertAppfolioApplication(
  * AppFolio payload allows.
  */
 async function promoteLinkedLead(
+  db: Prisma.TransactionClient,
   leadId: string,
   mapped: MappedResident,
 ): Promise<void> {
-  await prisma.lead.updateMany({
+  await db.lead.updateMany({
     where: { id: leadId, status: { in: LEAD_STATUSES_BELOW_SIGNED } },
     data: {
       status: LeadStatus.SIGNED,
@@ -1902,14 +1909,18 @@ export async function upsertResident(
   mapped: MappedResident,
   leadMatchIndex: LeadMatchIndex,
 ): Promise<string> {
-  const leadId =
-    matchResidentToLead(leadMatchIndex, {
+  const matchEvaluation = evaluateResidentLeadMatch(
+    leadMatchIndex.candidates,
+    {
       email: mapped.email,
       phone: mapped.phone,
       firstName: mapped.firstName,
       lastName: mapped.lastName,
       propertyId,
-    })?.leadId ?? null;
+    },
+  );
+  const leadId =
+    matchEvaluation.status === "matched" ? matchEvaluation.leadId : null;
 
   const where = {
     orgId_externalSystem_externalId: {
@@ -1935,50 +1946,118 @@ export async function upsertResident(
     raw: mapped.raw as unknown as Prisma.InputJsonValue,
   };
 
-  const existing = await prisma.resident.findUnique({
-    where,
-    select: { id: true, leadId: true, leadLinkManual: true },
-  });
-  if (existing) {
-    // Link precedence, strongest first:
-    //   1. leadLinkManual — an operator linked OR unlinked this resident.
-    //      Sync never touches leadId (even when it is null: that null IS
-    //      the operator's decision, and re-linking would undo it every
-    //      tick).
-    //   2. existing.leadId — first-write-wins for auto-matches. The old
-    //      unconditional write nulled an existing link whenever this run's
-    //      matching came up empty, destroying the proof chain.
-    //   3. this run's match.
-    const nextLeadId = existing.leadLinkManual
-      ? existing.leadId
-      : (existing.leadId ?? leadId);
-
-    await prisma.resident.update({
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.resident.findUnique({
       where,
-      data: { ...data, leadId: nextLeadId },
+      select: { id: true, leadId: true, leadLinkManual: true },
     });
-    // Promote on EVERY run that has an auto-managed link, not only on the
-    // transition. promoteLinkedLead is a no-op once the lead is SIGNED (or
-    // LOST/UNQUALIFIED), so this is idempotent — and unlike a
-    // transition-only call it retries after a failed promotion instead of
-    // stranding a link with no convertedAt forever. Operator-managed links
-    // are skipped: the link route already promoted, and re-promoting would
-    // fight an operator who deliberately moved the status back.
-    if (nextLeadId && !existing.leadLinkManual) {
-      await promoteLinkedLead(nextLeadId, mapped);
+    if (existing) {
+      // Link precedence, strongest first:
+      //   1. leadLinkManual — an operator linked OR unlinked this resident.
+      //      Sync never touches leadId (even when it is null: that null IS
+      //      the operator's decision, and re-linking would undo it every
+      //      tick).
+      //   2. existing.leadId — first-write-wins for auto-matches. The old
+      //      unconditional write nulled an existing link whenever this run's
+      //      matching came up empty, destroying the proof chain.
+      //   3. this run's match.
+      const nextLeadId = existing.leadLinkManual
+        ? existing.leadId
+        : (existing.leadId ?? leadId);
+
+      await tx.resident.update({
+        where,
+        data: { ...data, leadId: nextLeadId },
+      });
+      // Promote on EVERY run that has an auto-managed link, not only on the
+      // transition. promoteLinkedLead is a no-op once the lead is SIGNED (or
+      // LOST/UNQUALIFIED), so this is idempotent — and unlike a
+      // transition-only call it retries after a failed promotion instead of
+      // stranding a link with no convertedAt forever. Operator-managed links
+      // are skipped: the link route already promoted, and re-promoting would
+      // fight an operator who deliberately moved the status back.
+      if (nextLeadId && !existing.leadLinkManual) {
+        await promoteLinkedLead(tx, nextLeadId, mapped);
+      }
+      if (!existing.leadLinkManual && !existing.leadId) {
+        await recordLeadMatchDecision(tx, {
+          orgId,
+          propertyId,
+          residentId: existing.id,
+          evaluation: matchEvaluation,
+        });
+      }
+      return existing.id;
     }
-    return existing.id;
-  }
-  const created = await prisma.resident.create({
-    data: {
+    const created = await tx.resident.create({
+      data: {
+        orgId,
+        externalSystem: EXTERNAL_SYSTEM,
+        externalId: mapped.externalId,
+        ...data,
+      },
+    });
+    if (leadId) await promoteLinkedLead(tx, leadId, mapped);
+    await recordLeadMatchDecision(tx, {
       orgId,
-      externalSystem: EXTERNAL_SYSTEM,
-      externalId: mapped.externalId,
-      ...data,
+      propertyId,
+      residentId: created.id,
+      evaluation: matchEvaluation,
+    });
+    return created.id;
+  });
+}
+
+const MATCH_METHOD_DB: Record<OutcomeMatchMethod, LeadMatchMethod> = {
+  phone_email: LeadMatchMethod.PHONE_EMAIL,
+  name_email: LeadMatchMethod.NAME_EMAIL,
+  name_phone: LeadMatchMethod.NAME_PHONE,
+  exact_email: LeadMatchMethod.EXACT_EMAIL,
+  normalized_email: LeadMatchMethod.NORMALIZED_EMAIL,
+  exact_phone: LeadMatchMethod.EXACT_PHONE,
+  normalized_phone: LeadMatchMethod.NORMALIZED_PHONE,
+  fuzzy_composite: LeadMatchMethod.FUZZY_COMPOSITE,
+  name_only: LeadMatchMethod.NAME_ONLY,
+  none: LeadMatchMethod.NONE,
+};
+
+async function recordLeadMatchDecision(
+  db: Prisma.TransactionClient,
+  args: {
+    orgId: string;
+    propertyId: string;
+    residentId: string;
+    evaluation: OutcomeMatchEvaluation;
+  },
+): Promise<void> {
+  const status: LeadMatchDecisionStatus =
+    args.evaluation.status === "matched"
+      ? LeadMatchDecisionStatus.MATCHED
+      : args.evaluation.status === "review"
+        ? LeadMatchDecisionStatus.REVIEW_REQUIRED
+        : args.evaluation.status === "ambiguous"
+          ? LeadMatchDecisionStatus.AMBIGUOUS
+          : LeadMatchDecisionStatus.UNMATCHED;
+
+  await db.leadMatchDecision.create({
+    data: {
+      orgId: args.orgId,
+      propertyId: args.propertyId,
+      residentId: args.residentId,
+      leadId: args.evaluation.leadId,
+      status,
+      method: MATCH_METHOD_DB[args.evaluation.method],
+      confidence: args.evaluation.confidence,
+      evidence: {
+        reasons: [...args.evaluation.reasons],
+        candidates: args.evaluation.candidates.map((candidate) => ({
+          leadId: candidate.leadId,
+          confidence: candidate.confidence,
+          method: candidate.method,
+        })),
+      },
     },
   });
-  if (leadId) await promoteLinkedLead(leadId, mapped);
-  return created.id;
 }
 
 // ---------------------------------------------------------------------------

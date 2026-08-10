@@ -37,6 +37,9 @@ const h = vi.hoisted(() => ({
       ),
     },
     auditEvent: { create: vi.fn(async () => ({ id: "audit1" })) },
+    leadMatchDecision: {
+      create: vi.fn(async () => ({ id: "decision1" })),
+    },
     $transaction: vi.fn(async (arg: unknown) => {
       if (typeof arg === "function") {
         return (arg as (tx: unknown) => Promise<unknown>)(h.db);
@@ -188,6 +191,17 @@ describe("POST link-resident", () => {
       new Date("2026-06-15T00:00:00Z"),
     );
     expect(h.db.auditEvent.create).toHaveBeenCalled();
+    expect(h.db.leadMatchDecision.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        orgId: "org1",
+        residentId: "r1",
+        leadId: "l1",
+        status: "MANUAL_MATCH",
+        method: "MANUAL",
+        confidence: 100,
+        reviewedByUserId: "u1",
+      }),
+    });
   });
 
   it("falls back to moveInDate for convertedAt when no lease row exists", async () => {
@@ -223,6 +237,17 @@ describe("DELETE link-resident (unlink)", () => {
     );
     expect(h.db.lead.updateMany).not.toHaveBeenCalled();
     expect(h.db.auditEvent.create).toHaveBeenCalled();
+    expect(h.db.leadMatchDecision.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        orgId: "org1",
+        residentId: "r1",
+        leadId: "l1",
+        status: "MANUAL_UNLINK",
+        method: "MANUAL",
+        confidence: 100,
+        reviewedByUserId: "u1",
+      }),
+    });
   });
 
   it("403s a read-only seat on unlink too", async () => {

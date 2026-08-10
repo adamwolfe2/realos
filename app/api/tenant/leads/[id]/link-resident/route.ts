@@ -10,7 +10,13 @@ import {
 import { propertyWhereFragment } from "@/lib/tenancy/property-filter";
 import { LEAD_STATUSES_BELOW_SIGNED } from "@/lib/leads/lead-lease-link";
 import { ALLOWED_WRITE_ROLES } from "@/lib/auth/write-roles";
-import { AuditAction, LeadStatus, Prisma } from "@prisma/client";
+import {
+  AuditAction,
+  LeadMatchDecisionStatus,
+  LeadMatchMethod,
+  LeadStatus,
+  Prisma,
+} from "@prisma/client";
 
 // ---------------------------------------------------------------------------
 // Manual lead ↔ resident link — the operator's "Mark as signed" close-the-
@@ -71,6 +77,7 @@ export async function POST(
       },
       select: {
         id: true,
+        propertyId: true,
         leadId: true,
         firstName: true,
         lastName: true,
@@ -141,6 +148,24 @@ export async function POST(
         }),
       });
 
+      await tx.leadMatchDecision.create({
+        data: {
+          orgId: scope.orgId,
+          propertyId: resident.propertyId,
+          residentId: resident.id,
+          leadId: lead.id,
+          status: LeadMatchDecisionStatus.MANUAL_MATCH,
+          method: LeadMatchMethod.MANUAL,
+          confidence: 100,
+          evidence: {
+            reasons: ["Operator confirmed the lead and AppFolio resident"],
+            convertedAt: convertedAt.toISOString(),
+          } satisfies Prisma.InputJsonValue,
+          reviewedByUserId: scope.userId,
+          reviewedAt: new Date(),
+        },
+      });
+
       return { won: true as const, promotedToSigned: promoted.count > 0 };
     });
 
@@ -205,7 +230,12 @@ export async function DELETE(
         ...tenantWhere(scope),
         ...propertyWhereFragment(scope, null),
       },
-      select: { id: true, firstName: true, lastName: true },
+      select: {
+        id: true,
+        propertyId: true,
+        firstName: true,
+        lastName: true,
+      },
     });
     if (!resident) {
       return NextResponse.json({ error: "Link not found" }, { status: 404 });
@@ -239,6 +269,22 @@ export async function DELETE(
             unlinked: true,
           } as Prisma.InputJsonValue,
         }),
+      });
+      await tx.leadMatchDecision.create({
+        data: {
+          orgId: scope.orgId,
+          propertyId: resident.propertyId,
+          residentId: resident.id,
+          leadId: id,
+          status: LeadMatchDecisionStatus.MANUAL_UNLINK,
+          method: LeadMatchMethod.MANUAL,
+          confidence: 100,
+          evidence: {
+            reasons: ["Operator rejected the existing lead-resident link"],
+          } satisfies Prisma.InputJsonValue,
+          reviewedByUserId: scope.userId,
+          reviewedAt: new Date(),
+        },
       });
     });
 
