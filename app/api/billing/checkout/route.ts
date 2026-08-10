@@ -5,40 +5,24 @@ import { prisma } from "@/lib/db";
 import { getStripeClient, isStripeConfigured } from "@/lib/stripe/config";
 import { getScope } from "@/lib/tenancy/scope";
 import { getSiteUrl } from "@/lib/brand";
-import { ADDONS, getTierById, resolveLineItems } from "@/lib/billing/plans";
-import { isFeatureKey } from "@/lib/billing/features";
 import { BASE_PLATFORM_KEY } from "@/lib/billing/feature-prices";
 import { getFeatureStripePriceId } from "@/lib/billing/feature-stripe";
 import { captureWithContext } from "@/lib/sentry";
+import { getEffectiveFeatureCatalog } from "@/lib/billing/feature-prices";
+import {
+  billingCheckoutIdempotencyKey,
+  canManageBilling,
+  canonicalFeatureKeys,
+  stripeTrialSchedule,
+} from "@/lib/billing/checkout-policy";
+import { isPlatformSubscriptionForOrg } from "@/lib/billing/stripe-state";
 
 // ---------------------------------------------------------------------------
 // POST /api/billing/checkout
 //
-// Creates a Stripe Checkout Session for a new subscription or upgrade.
-//
-// Three callers in flight:
-//
-//   1. Public /pricing page (anonymous prospect):
-//      No scope. We create a Stripe Customer with the email they enter
-//      at Checkout, and the webhook (`customer.created` + `checkout.
-//      session.completed`) provisions the Organization row on the way
-//      back. `metadata.intent="signup"` flags this case for the
-//      webhook handler.
-//
-//   2. Authed prospect coming through /onboarding:
-//      Scope exists, Organization exists (created at signup), no
-//      Stripe customer yet. We create the customer here, attach it to
-//      the org, then start the Checkout session.
-//
-//   3. Existing customer upgrading or adding a property:
-//      Scope + Organization + stripeCustomerId all present. Start a
-//      Checkout session in `mode: "subscription"` with the new items.
-//      For pure upgrades (no setup fee, just tier change) the operator
-//      should use the Stripe Customer Portal — this endpoint is for
-//      signups + add-on purchases.
-//
-// All scenarios share the same Checkout Session shape so the success
-// page + webhook can normalize them.
+// Creates the Stripe-hosted trial activation session. The request body is a
+// UI hint only: property count, enabled features, trial end, customer, and
+// tier are all resolved from the authenticated Organization on the server.
 // ---------------------------------------------------------------------------
 
 export const runtime = "nodejs";
@@ -60,33 +44,11 @@ const PROPERTY_CAP = 99;
 
 const bodySchema = z.object({
   tierId: z.enum(["starter", "growth", "scale"]),
-  cycle: z.enum(["monthly", "annual"]).default("monthly"),
+  cycle: z.literal("monthly").default("monthly"),
   propertyCount: z.number().int().min(1).max(PROPERTY_CAP).default(1),
-  addOnLookupKeys: z.array(z.string().max(80)).max(10).optional(),
-  // Module keys the operator picked during onboarding. We translate the
-  // ones that have a real Stripe add-on SKU into add-on lookup keys and
-  // merge them with `addOnLookupKeys` below. Modules that are tier-gated
-  // (no standalone SKU) are silently dropped — the tier choice is what
-  // gates those entitlements.
   selectedModuleKeys: z.array(z.string().max(64)).max(20).optional(),
-  // Only used for anonymous (scope-less) signups so we can prefill the
-  // Checkout email field and the customer email after creation.
-  prospectEmail: z.string().email().max(254).optional(),
-  // Optional UTM-style context — recorded on the session metadata so
-  // we can attribute conversions back to landing pages.
-  source: z.string().max(64).optional(),
+  source: z.literal("trial_activation"),
 });
-
-// Module key → Stripe add-on lookup key. Only modules that have a real
-// recurring add-on SKU are listed; everything else is tier-gated and
-// chosen via the `tierId` param. Keep this map in sync with the ADDONS
-// catalog.
-const MODULE_KEY_TO_ADDON_LOOKUP: Record<string, string> = {
-  // Currently only two non-metered self-serve add-ons exist. The rest of
-  // the picker's modules ride on the tier price.
-  reputation_pro: "ls_reputation_pro_monthly_v1",
-  white_label: "ls_white_label_monthly_v1",
-};
 
 export async function POST(req: NextRequest) {
   if (!isStripeConfigured()) {
@@ -112,14 +74,6 @@ export async function POST(req: NextRequest) {
     throw err;
   }
 
-  const tier = getTierById(parsed.tierId);
-  if (!tier) {
-    return NextResponse.json(
-      { ok: false, error: `Unknown tier "${parsed.tierId}"` },
-      { status: 400 },
-    );
-  }
-
   const scope = await getScope();
 
   // P1 (launch-critical-sweep): anonymous checkout is retired. Public pricing
@@ -138,168 +92,200 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Resolve or create the Stripe Customer.
-  let stripeCustomerId: string | null = null;
-  let orgIdMetadata: string | null = null;
-  const stripe = getStripeClient();
-
-  if (scope) {
-    const org = await prisma.organization.findUnique({
-      where: { id: scope.orgId },
-      select: {
-        id: true,
-        name: true,
-        primaryContactEmail: true,
-        stripeCustomerId: true,
-      },
-    });
-    if (!org) {
-      return NextResponse.json(
-        { ok: false, error: "Organization not found for the current scope." },
-        { status: 404 },
-      );
-    }
-    orgIdMetadata = org.id;
-    if (org.stripeCustomerId) {
-      stripeCustomerId = org.stripeCustomerId;
-    } else {
-      // Create the Stripe Customer and link it to the org now. The
-      // webhook can't do this safely for the authed flow because the
-      // session.completed event needs the customer attached at the
-      // checkout time so we can scope add-on purchases later.
-      const customer = await stripe.customers.create(
-        {
-          email: org.primaryContactEmail ?? scope.email,
-          name: org.name,
-          metadata: { org_id: org.id },
-        },
-        // Idempotency keyed on the org so two concurrent first-conversion
-        // requests can't mint two Stripe customers for the same workspace.
-        { idempotencyKey: `cust_${org.id}` },
-      );
-      await prisma.organization.update({
-        where: { id: org.id },
-        data: { stripeCustomerId: customer.id },
-      });
-      stripeCustomerId = customer.id;
-    }
-
-    // P1 guard (launch-critical-sweep): never create a SECOND subscription for
-    // an org that already has a live one — that double-charges the customer.
-    // Existing subscribers manage/add through the billing page (Customer
-    // Portal), not a fresh Checkout Session. First trial→paid conversion is
-    // unaffected: our trial is in-app (no Stripe sub exists yet).
-    if (stripeCustomerId) {
-      const existingSubs = await stripe.subscriptions.list({
-        customer: stripeCustomerId,
-        status: "all",
-        limit: 100,
-      });
-      // Block on ANY non-terminal subscription. Only fully-dead statuses
-      // (canceled / incomplete_expired) are safe to start fresh over —
-      // active/trialing/past_due/unpaid/incomplete/paused are all recoverable
-      // or live and must route to the portal instead. (Codex review.)
-      const TERMINAL_STATUSES = new Set(["canceled", "incomplete_expired"]);
-      const hasLiveSub = existingSubs.data.some(
-        (s) => !TERMINAL_STATUSES.has(s.status),
-      );
-      if (hasLiveSub) {
-        return NextResponse.json(
-          {
-            ok: false,
-            error:
-              "You already have an active subscription. Manage your plan or add properties from the billing page instead of starting a new one.",
-            redirectTo: "/portal/billing",
-          },
-          { status: 409 },
-        );
-      }
-    }
+  if (!canManageBilling(scope)) {
+    return NextResponse.json(
+      { ok: false, error: "Only the workspace owner can manage billing." },
+      { status: 403 },
+    );
   }
 
-  // Translate selectedModuleKeys → Stripe add-on lookup keys and merge
-  // with any explicit addOnLookupKeys the caller passed. De-dupe so a
-  // caller that passes both representations doesn't double-bill.
-  const moduleDerivedAddons = (parsed.selectedModuleKeys ?? [])
-    .map((k) => MODULE_KEY_TO_ADDON_LOOKUP[k])
-    .filter((v): v is string => typeof v === "string");
-  const mergedAddOnKeys = Array.from(
-    new Set([...(parsed.addOnLookupKeys ?? []), ...moduleDerivedAddons]),
+  // Anonymous/public Checkout was retired. The only remaining caller is the
+  // trial activation card, whose cart is rebuilt from server-owned org state
+  // below. Rejecting generic requests prevents a hand-crafted body from
+  // choosing a cheaper property count or module set.
+  if (parsed.source !== "trial_activation") {
+    return NextResponse.json(
+      { ok: false, error: "Unsupported billing flow." },
+      { status: 400 },
+    );
+  }
+
+  // Resolve or create the Stripe Customer.
+  let stripeCustomerId: string | null = null;
+  const stripe = getStripeClient();
+  const org = await prisma.organization.findUnique({
+    where: { id: scope.orgId },
+    select: {
+      id: true,
+      name: true,
+      primaryContactEmail: true,
+      stripeCustomerId: true,
+      trialEndsAt: true,
+      subscriptionStatus: true,
+      chosenTier: true,
+      subscriptionTier: true,
+      moduleChatbot: true,
+      modulePixel: true,
+      moduleSEO: true,
+      moduleReputation: true,
+      moduleGoogleAds: true,
+      moduleMetaAds: true,
+      modulePopups: true,
+      moduleCreativeStudio: true,
+      moduleEmail: true,
+      moduleOutboundEmail: true,
+      moduleReferrals: true,
+      moduleInsights: true,
+      moduleMarketIntelligence: true,
+      moduleAttribution: true,
+    },
+  });
+  if (!org) {
+    return NextResponse.json(
+      { ok: false, error: "Organization not found for the current scope." },
+      { status: 404 },
+    );
+  }
+  if (org.subscriptionStatus !== "TRIALING") {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "This workspace does not have a trial awaiting activation.",
+      },
+      { status: 409 },
+    );
+  }
+
+  const propertyCount = Math.max(
+    1,
+    await prisma.property.count({
+      where: {
+        orgId: org.id,
+        lifecycle: { in: ["IMPORTED", "ACTIVE"] },
+      },
+    }),
   );
+  if (propertyCount > PROPERTY_CAP) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          "Portfolios with more than 99 properties require an Enterprise billing setup.",
+      },
+      { status: 409 },
+    );
+  }
+  let activeFeatures;
+  try {
+    ({ features: activeFeatures } = await getEffectiveFeatureCatalog({
+      strict: true,
+    }));
+  } catch (error) {
+    captureWithContext(error, {
+      route: "api/billing/checkout/catalog",
+      orgId: org.id,
+    });
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Billing prices are temporarily unavailable. Please try again.",
+      },
+      { status: 503 },
+    );
+  }
+  const selectedModuleKeys = canonicalFeatureKeys(
+    activeFeatures.filter(
+      (feature) => (org as Record<string, unknown>)[feature.key] === true,
+    ).map((feature) => feature.key),
+  );
+  const orgTier = org.chosenTier ?? org.subscriptionTier;
+  const tierId =
+    orgTier === "STARTER"
+      ? "starter"
+      : orgTier === "GROWTH"
+        ? "growth"
+        : orgTier === "SCALE"
+          ? "scale"
+          : null;
+  if (!tierId) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Choose a supported subscription tier before activating.",
+      },
+      { status: 409 },
+    );
+  }
 
-  // Build the Checkout line items. Two modes:
-  //  - À-la-carte (selectedModuleKeys present): bill the base platform + each
-  //    selected feature at its OWN per-feature Stripe price, quantity = N
-  //    properties. This carries the operator's exact selection through to
-  //    billing — no tier clobber. Requires admin to have synced prices.
-  //  - Tier (no selectedModuleKeys): the legacy graduated-tier path + add-ons.
+  if (org.stripeCustomerId) {
+    stripeCustomerId = org.stripeCustomerId;
+  } else {
+    const customer = await stripe.customers.create(
+      {
+        email: org.primaryContactEmail ?? scope.email,
+        name: org.name,
+        metadata: { org_id: org.id },
+      },
+      { idempotencyKey: `cust_${org.id}` },
+    );
+    await prisma.organization.update({
+      where: { id: org.id },
+      data: { stripeCustomerId: customer.id },
+    });
+    stripeCustomerId = customer.id;
+  }
+
+  const existingSubs = await stripe.subscriptions.list({
+    customer: stripeCustomerId,
+    status: "all",
+    limit: 100,
+  });
+  const TERMINAL_STATUSES = new Set(["canceled", "incomplete_expired"]);
+  const hasLiveSub = existingSubs.data.some(
+    (subscription) =>
+      !TERMINAL_STATUSES.has(subscription.status) &&
+      isPlatformSubscriptionForOrg(subscription.metadata, org.id),
+  );
+  if (hasLiveSub) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          "You already have a subscription in Stripe. Manage payment methods and invoices from the billing page.",
+        redirectTo: "/portal/billing",
+      },
+      { status: 409 },
+    );
+  }
+
+  // Bill the base platform plus every enabled catalog feature. The browser's
+  // posted module list is deliberately ignored; only Organization flags can
+  // create line items.
   const checkoutLineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
-  // À-la-carte mode is signalled by the PRESENCE of selectedModuleKeys, not a
-  // non-empty array. A base-only customer (zero add-on features) sends an empty
-  // array and must still be billed the $99 base — not silently dropped into the
-  // legacy tier path, which overcharged them the full Starter tier. (Codex.)
-  const useFeaturePricing = parsed.selectedModuleKeys !== undefined;
-
-  if (useFeaturePricing) {
-    const qty = Math.max(1, parsed.propertyCount);
-    const basePriceId = await getFeatureStripePriceId(BASE_PLATFORM_KEY);
-    if (!basePriceId) {
+  const basePriceId = await getFeatureStripePriceId(BASE_PLATFORM_KEY);
+  if (!basePriceId) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          "Feature prices aren't synced to Stripe yet. An admin must click \"Sync to Stripe\" on /admin/pricing first.",
+      },
+      { status: 503 },
+    );
+  }
+  checkoutLineItems.push({ price: basePriceId, quantity: propertyCount });
+  for (const key of selectedModuleKeys) {
+    const priceId = await getFeatureStripePriceId(key);
+    if (!priceId) {
       return NextResponse.json(
         {
           ok: false,
-          error:
-            "Feature prices aren't synced to Stripe yet. An admin must click \"Sync to Stripe\" on /admin/pricing first.",
+          error: `Feature "${key}" isn't priced in Stripe yet. Sync prices on /admin/pricing.`,
         },
         { status: 503 },
       );
     }
-    checkoutLineItems.push({ price: basePriceId, quantity: qty });
-    for (const key of parsed.selectedModuleKeys ?? []) {
-      // Always-on base modules (website/lead capture) ride on the base price;
-      // only catalog features have their own line item.
-      if (!isFeatureKey(key)) continue;
-      const priceId = await getFeatureStripePriceId(key);
-      if (!priceId) {
-        return NextResponse.json(
-          {
-            ok: false,
-            error: `Feature "${key}" isn't priced in Stripe yet. Sync prices on /admin/pricing.`,
-          },
-          { status: 503 },
-        );
-      }
-      checkoutLineItems.push({ price: priceId, quantity: qty });
-    }
-  } else {
-    let lineItems;
-    try {
-      lineItems = resolveLineItems({
-        tier,
-        cycle: parsed.cycle,
-        propertyCount: parsed.propertyCount,
-        addOnLookupKeys: mergedAddOnKeys,
-      });
-    } catch (err) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error:
-            err instanceof Error
-              ? err.message
-              : "Could not build line items for the selected plan.",
-        },
-        { status: 500 },
-      );
-    }
-    for (const item of lineItems) {
-      if (item.kind === "subscription_tiered") {
-        checkoutLineItems.push({ price: item.priceId, quantity: item.quantity });
-      } else if (item.kind === "subscription_addon") {
-        checkoutLineItems.push({ price: item.priceId, quantity: 1 });
-      } else if (item.kind === "subscription_metered_addon") {
-        checkoutLineItems.push({ price: item.priceId });
-      }
-    }
+    checkoutLineItems.push({ price: priceId, quantity: propertyCount });
   }
 
   const siteUrl = getSiteUrl();
@@ -311,45 +297,27 @@ export async function POST(req: NextRequest) {
   // Stash everything the webhook needs to provision the right
   // entitlements and attribute the conversion.
   const metadata: Stripe.MetadataParam = {
-    tier: tier.tier,
-    tier_id: tier.id,
+    tier: tierId.toUpperCase(),
+    tier_id: tierId,
     cycle: parsed.cycle,
-    property_count: String(parsed.propertyCount),
-    intent: scope ? "upgrade_or_add" : "signup",
-    ...(orgIdMetadata ? { org_id: orgIdMetadata } : {}),
+    property_count: String(propertyCount),
+    intent: "trial_activation",
+    org_id: org.id,
+    feature_keys: selectedModuleKeys.join(","),
     ...(parsed.source ? { source: parsed.source } : {}),
-    ...(mergedAddOnKeys.length > 0
-      ? { addons: mergedAddOnKeys.join(",") }
-      : {}),
   };
 
   try {
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items: checkoutLineItems,
-      customer: stripeCustomerId ?? undefined,
-      // For anonymous signups, prefill the email so the prospect doesn't
-      // re-type it after picking the plan.
-      ...(stripeCustomerId
-        ? {}
-        : parsed.prospectEmail
-          ? { customer_email: parsed.prospectEmail }
-          : {}),
-      // When `customer` is provided AND automatic_tax is on, Stripe
-      // needs to know how to source the address used for tax
-      // calculation. Brand-new orgs have no address on the Customer
-      // record yet, so we tell Stripe to save the billing address the
-      // prospect enters at Checkout back to the Customer (auto). Same
-      // for name. This also satisfies the "Automatic tax calculation
-      // in Checkout requires a valid address on the Customer" guard.
-      ...(stripeCustomerId
-        ? {
-            customer_update: {
-              address: "auto",
-              name: "auto",
-            },
-          }
-        : {}),
+      customer: stripeCustomerId,
+      // Save Checkout's billing identity back to the customer so Stripe Tax
+      // and future invoices use the confirmed address and name.
+      customer_update: {
+        address: "auto",
+        name: "auto",
+      },
       success_url: successUrl,
       cancel_url: cancelUrl,
       allow_promotion_codes: true,
@@ -359,20 +327,25 @@ export async function POST(req: NextRequest) {
       // customer_update[address]=auto above so brand-new customers
       // capture an address at first Checkout.
       automatic_tax: { enabled: true },
-      // Self-serve model: no trial, no setup fee. The 30-day money-
-      // back guarantee is handled out-of-band per the FAQ.
       subscription_data: {
         metadata,
+        ...stripeTrialSchedule(org.trialEndsAt),
       },
       metadata,
     },
     {
-      // Dedupe a rapid double-submit of the SAME checkout into one Stripe
-      // session (and thus one subscription) within a 1-minute window —
-      // closes the concurrent first-conversion double-charge race. A
-      // genuinely different plan/cycle/count, or a later attempt, gets a new
-      // key. (Codex review.)
-      idempotencyKey: `co_${orgIdMetadata ?? "x"}_${parsed.tierId}_${parsed.cycle}_${parsed.propertyCount}_${Math.floor(Date.now() / 60_000)}`,
+      // Dedupe a rapid double-submit of the exact same server-owned cart.
+      // Price IDs are part of the fingerprint, so an admin price sync can
+      // never reuse a Checkout Session created with an older amount.
+      idempotencyKey: billingCheckoutIdempotencyKey({
+        orgId: org.id,
+        tierId,
+        cycle: parsed.cycle,
+        propertyCount,
+        featureKeys: selectedModuleKeys,
+        priceIds: checkoutLineItems.map((item) => String(item.price)),
+        trialEndsAt: org.trialEndsAt,
+      }),
     });
 
     return NextResponse.json({ ok: true, url: session.url });
@@ -381,15 +354,12 @@ export async function POST(req: NextRequest) {
       route: "api/billing/checkout",
       tierId: parsed.tierId,
       cycle: parsed.cycle,
-      orgId: orgIdMetadata ?? undefined,
+      orgId: org.id,
     });
     return NextResponse.json(
       {
         ok: false,
-        error:
-          err instanceof Error
-            ? err.message
-            : "Failed to create Checkout session",
+        error: "Stripe Checkout is temporarily unavailable. Please try again.",
       },
       { status: 502 },
     );
@@ -398,15 +368,8 @@ export async function POST(req: NextRequest) {
 
 // Tiny GET helper so the route is discoverable in the browser during dev.
 export async function GET() {
-  const tiers = ["starter", "growth", "scale"];
   return NextResponse.json({
     ok: true,
-    info: "POST a JSON body with { tierId, cycle, propertyCount, addOnLookupKeys?, prospectEmail? }",
-    tiers,
-    addons: ADDONS.map((a) => ({
-      lookup_key: a.priceLookupKey,
-      label: a.uiLabel,
-      mode: a.billingMode,
-    })),
+    info: "POST the signed-in trial activation payload. Billing details are resolved from the workspace on the server.",
   });
 }

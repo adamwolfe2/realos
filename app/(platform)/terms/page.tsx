@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import { BRAND_NAME } from "@/lib/brand";
+import {
+  TERMS_AD_SPEND_BOUNDARY_CLAIM,
+  TERMS_SOFTWARE_SERVICE_CLAIM,
+} from "@/lib/copy/product-claims";
 
 export const metadata: Metadata = {
   title: "Terms",
@@ -12,7 +16,7 @@ const SECTIONS = [
   {
     title: "The service",
     body: [
-      `${BRAND_NAME} is a software-as-a-service platform that tracks leasing signals for property operators. It connects to systems you already use — property management software, web analytics, search console, ad accounts, your website, and your chatbot — and reports what they show in one place.`,
+      `${BRAND_NAME} is a ${TERMS_SOFTWARE_SERVICE_CLAIM} It connects to systems you already use — property management software, web analytics, search console, ad accounts, your website, and your chatbot — and reports what they show in one place.`,
       `${BRAND_NAME} does not manage your properties, operate your leasing, place or manage advertising on your behalf, or act as your agent. You remain responsible for all decisions you make based on the data the platform reports.`,
       "By using the platform you agree to these terms. If you do not agree, do not use the platform.",
     ],
@@ -31,7 +35,7 @@ const SECTIONS = [
       "The platform is sold as a subscription, priced per property on your account. Subscriptions are billed in advance through Stripe, our payment processor, on the billing cycle shown at checkout.",
       "You can cancel at any time from your account settings or by written notice. Cancellation takes effect at the end of the current billing period; we do not issue refunds for partial periods unless required by law.",
       "We will give you at least 30 days written notice before any price change takes effect.",
-      `${BRAND_NAME} does not bill or manage ad spend. Advertising runs in your own ad platform accounts, on their terms; the platform only reads performance data you authorize.`,
+      `${BRAND_NAME} ${TERMS_AD_SPEND_BOUNDARY_CLAIM}`,
     ],
   },
   {

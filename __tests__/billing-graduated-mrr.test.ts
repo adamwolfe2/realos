@@ -4,6 +4,7 @@ import {
   computeGraduatedMonthlyCents,
   subscriptionItemMonthlyCents,
 } from "@/lib/billing/catalog";
+import { computeMrrCents } from "@/lib/billing/plans";
 
 // ---------------------------------------------------------------------------
 // Regression: /portal/billing showed $0 MRR for graduated Stripe prices.
@@ -18,6 +19,21 @@ import {
 const foundation = TIERS.find((t) => t.id === "starter")!;
 
 describe("subscriptionItemMonthlyCents — graduated prices", () => {
+  it("webhook MRR uses graduated bracket math when Stripe unit_amount is null", () => {
+    expect(
+      computeMrrCents([
+        {
+          quantity: 5,
+          price: {
+            lookup_key: foundation.graduatedMonthly.lookupKey,
+            unit_amount: null,
+            recurring: { interval: "month", usage_type: "licensed" },
+          },
+        },
+      ]),
+    ).toBe(computeGraduatedMonthlyCents(foundation.monthly.unitAmountCents, 5));
+  });
+
   it("graduated monthly with null unit_amount uses the bracket math, not 0", () => {
     const cents = subscriptionItemMonthlyCents({
       lookupKey: foundation.graduatedMonthly.lookupKey,

@@ -31,6 +31,7 @@ export type TrialState =
   | "trial_expired"
   | "paid"
   | "paused"
+  | "canceled"
   | "none";
 
 export type TrialStatusInput = Pick<
@@ -48,6 +49,7 @@ export function resolveTrialState(org: TrialStatusInput): TrialState {
   // (billing-reminders cron). The portal flips to read-only and the
   // customer is told to update payment; invoice.paid restores it to ACTIVE.
   if (status === "PAUSED") return "paused";
+  if (status === "CANCELED") return "canceled";
   if (status === "TRIALING") {
     if (!ends) return "trial_active"; // defensive — null end = treat as active
     return ends.getTime() > now.getTime() ? "trial_active" : "trial_expired";
@@ -83,7 +85,9 @@ export function isWorkspaceReadOnly(
   // Both an unactivated expired trial AND a payment-paused workspace are
   // read-only. PAUSED matches the "your account has been paused" dunning
   // email — without this the email lied (portal stayed fully writable).
-  return state === "trial_expired" || state === "paused";
+  return (
+    state === "trial_expired" || state === "paused" || state === "canceled"
+  );
 }
 
 // Soft-deadline gating: "we're going to lock this down in N days".

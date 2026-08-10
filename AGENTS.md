@@ -24,3 +24,4 @@ github.com/adamwolfe2/realos · Ship: `cap`. Review: `dual-review`.
 ## Gotchas
 - Repo is "realos", domain is leasestack.co. Key customer: Telegraph Commons / SG Real Estate (Norman Gensinger).
 - Track NOT manage — copy frames everything as tracking/intel, never property management.
+- Recurring proposals and the LeaseStack platform may share a Stripe Customer. Every subscription/invoice state transition must classify the exact subscription metadata; customer ID alone is never a platform-billing boundary.

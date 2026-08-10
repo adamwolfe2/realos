@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
 import { getStripeClient, isStripeConfigured } from "@/lib/stripe/config";
+import { canManageBilling } from "@/lib/billing/checkout-policy";
 
 // Returns the Stripe Customer Portal URL for the current tenant, or an
 // explanatory 503 if Stripe isn't configured yet. Sprint 05 wires the
@@ -9,6 +10,12 @@ import { getStripeClient, isStripeConfigured } from "@/lib/stripe/config";
 export async function POST() {
   try {
     const scope = await requireScope();
+    if (!canManageBilling(scope)) {
+      return NextResponse.json(
+        { error: "Only the workspace owner can manage billing." },
+        { status: 403 },
+      );
+    }
     if (!isStripeConfigured()) {
       return NextResponse.json(
         { error: "Stripe is not configured yet, contact your account manager." },
@@ -23,7 +30,7 @@ export async function POST() {
       return NextResponse.json(
         {
           error:
-            "No Stripe customer on file yet. Your account manager creates it with the first invoice.",
+            "Stripe access becomes available after you start subscription activation.",
         },
         { status: 404 }
       );

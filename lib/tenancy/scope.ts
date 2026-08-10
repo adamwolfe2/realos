@@ -448,10 +448,24 @@ const AGENCY_ROLES: ReadonlySet<UserRole> = new Set([
   UserRole.AL_PARTNER, // agency-typed org already; preserves its prior access
 ]);
 
+const AGENCY_STAFF_READ_ROLES: ReadonlySet<UserRole> = new Set([
+  UserRole.AGENCY_OWNER,
+  UserRole.AGENCY_ADMIN,
+  UserRole.AGENCY_OPERATOR,
+]);
+
 export async function requireAgency(): Promise<ScopedContext> {
   const scope = await requireScope();
   if (!scope.isAgency || !AGENCY_ROLES.has(scope.role)) {
     throw new ForbiddenError("Agency access only");
+  }
+  return scope;
+}
+
+export async function requireAgencyStaffRead(): Promise<ScopedContext> {
+  const scope = await requireScope();
+  if (!scope.isAgency || !AGENCY_STAFF_READ_ROLES.has(scope.role)) {
+    throw new ForbiddenError("Agency staff access only");
   }
   return scope;
 }

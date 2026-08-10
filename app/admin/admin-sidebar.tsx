@@ -6,10 +6,9 @@ import { usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { BRAND_NAME } from "@/lib/brand";
-import { adminNavGroups } from "./nav-config";
+import { AdminNavList } from "./admin-nav-list";
 
 export function AdminSidebar({
   navBadges,
@@ -18,7 +17,6 @@ export function AdminSidebar({
 }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     try {
@@ -27,17 +25,19 @@ export function AdminSidebar({
     } catch {
       // ignore
     }
-    setMounted(true);
   }, []);
 
-  function toggleCollapsed() {
-    const next = !collapsed;
+  function persistCollapsed(next: boolean) {
     setCollapsed(next);
     try {
       localStorage.setItem("admin-sidebar-collapsed", String(next));
     } catch {
       // ignore
     }
+  }
+
+  function toggleCollapsed() {
+    persistCollapsed(!collapsed);
   }
 
   return (
@@ -86,74 +86,13 @@ export function AdminSidebar({
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-4 overflow-y-auto">
-        {adminNavGroups.map((group, groupIdx) => (
-          <motion.div
-            key={group.label}
-            className="mb-4"
-            initial={mounted ? { opacity: 0, x: -16 } : false}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{
-              duration: 0.35,
-              delay: 0.05 + groupIdx * 0.06,
-              ease: [0.22, 1, 0.36, 1],
-            }}
-          >
-            {!collapsed && (
-              <div className="flex items-center gap-2 px-4 mb-1.5">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  {group.label}
-                </p>
-                <div className="flex-1 h-px bg-border" />
-              </div>
-            )}
-
-            <div className="px-2 space-y-0.5">
-              {group.items.map((item) => {
-                const isActive =
-                  pathname === item.href ||
-                  (item.href !== "/admin" &&
-                    pathname?.startsWith(item.href + "/")) ||
-                  (item.href !== "/admin" && pathname === item.href);
-                const badgeCount = item.badgeKey
-                  ? (navBadges[item.badgeKey] ?? 0)
-                  : 0;
-
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "relative flex items-center gap-3 rounded-lg py-2 text-sm font-medium transition-all duration-150",
-                      isActive
-                        ? "border-l-2 border-primary pl-[10px] pr-3 bg-accent text-primary"
-                        : "border-l-2 border-transparent pl-[10px] pr-3 text-muted-foreground hover:text-foreground hover:bg-muted/60 hover:pl-[14px]"
-                    )}
-                    title={collapsed ? item.label : undefined}
-                  >
-                    <item.icon className="h-4 w-4 shrink-0" />
-                    {!collapsed && <span className="flex-1">{item.label}</span>}
-                    {badgeCount > 0 && (
-                      <span
-                        className={cn(
-                          "shrink-0 min-w-[20px] h-[18px] px-1.5 rounded-full text-[10px] font-semibold inline-flex items-center justify-center",
-                          isActive
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-primary/15 text-primary",
-                          collapsed &&
-                            "absolute top-1 right-1 min-w-[14px] h-[14px] px-0.5 text-[9px]"
-                        )}
-                        aria-label={`${badgeCount} pending`}
-                      >
-                        {badgeCount > 99 ? "99+" : badgeCount}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          </motion.div>
-        ))}
+      <nav className="flex-1 overflow-y-auto py-4" aria-label="Admin navigation">
+        <AdminNavList
+          pathname={pathname}
+          navBadges={navBadges}
+          collapsed={collapsed}
+          onRequestExpand={() => persistCollapsed(false)}
+        />
       </nav>
 
       {/* Public site link */}
