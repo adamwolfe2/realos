@@ -27,6 +27,7 @@ import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { RangePresetControl } from "@/components/portal/attribution/range-preset-control";
+import { AttributionFlow } from "@/components/portal/attribution/attribution-flow";
 import { StatusChip } from "@/components/portal/ui/status-chip";
 import { EmptyState } from "@/components/portal/ui/empty-state";
 
@@ -187,31 +188,7 @@ export default async function AttributionPage({
         />
       </section>
 
-      <section className="ls-card overflow-hidden">
-        <div className="border-b border-border px-4 py-3">
-          <h2 className="text-sm font-semibold text-foreground">
-            Proof funnel
-          </h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            One window, one cohort. Unconnected stages say Not tracked instead of showing a false zero.
-          </p>
-        </div>
-        <div className="overflow-x-auto">
-          <div className="flex min-w-max divide-x divide-border">
-            {proof.funnel.map((stage) => (
-              <div key={stage.key} className="w-36 px-4 py-3">
-                <div className="ls-eyebrow">{stage.label}</div>
-                <div className="mt-1 font-mono text-xl font-medium tabular-nums text-foreground">
-                  {stage.tracked ? stage.count.toLocaleString() : "Not tracked"}
-                </div>
-                <div className="mt-1 text-[10px] leading-snug text-muted-foreground">
-                  {stage.provenance}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <AttributionFlow flow={proof.flow} />
 
       <section className="ls-card overflow-hidden">
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-3">

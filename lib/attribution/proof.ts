@@ -8,7 +8,9 @@ import {
 } from "@/lib/attribution/source-taxonomy";
 import {
   deriveLeadProof,
+  summarizeAttributionFlow,
   sourceProvenance,
+  type AttributionFlowSummary,
   type ProofStage,
   type ProofVerification,
 } from "@/lib/attribution/proof-model";
@@ -25,6 +27,7 @@ export type AttributionProofRow = {
   email: string | null;
   phone: string | null;
   propertyName: string | null;
+  source: LeadSource;
   sourceId: string;
   sourceLabel: string;
   provenance: string;
@@ -55,6 +58,7 @@ export type AttributionReviewRow = {
 export type AttributionProof = {
   rows: AttributionProofRow[];
   reviewRows: AttributionReviewRow[];
+  flow: AttributionFlowSummary;
   summary: {
     captured: number;
     applied: number;
@@ -276,6 +280,7 @@ export async function getAttributionProof(args: {
       email: lead.email,
       phone: lead.phone,
       propertyName: lead.property?.name ?? null,
+      source: lead.source,
       sourceId: source.id,
       sourceLabel: source.label,
       provenance: sourceProvenance(lead.source, lead.externalSystem),
@@ -325,11 +330,8 @@ export async function getAttributionProof(args: {
       createdAt: decision.createdAt,
     }));
 
-  const applied = rows.filter((row) => hasReached(row.stage, "Applied")).length;
+  const flow = summarizeAttributionFlow(rows);
   const tourEvidence = leads.some((lead) => lead.tours.length > 0);
-  const verifiedSigned = rows.filter(
-    (row) => row.stage === "Signed" && row.verification === "verified",
-  ).length;
   const enriched = leads.filter(
     (lead) =>
       lead.enrichedData !== null ||
@@ -360,10 +362,11 @@ export async function getAttributionProof(args: {
   return {
     rows,
     reviewRows,
+    flow,
     summary: {
-      captured: rows.length,
-      applied,
-      verifiedSigned,
+      captured: flow.captured,
+      applied: flow.applied,
+      verifiedSigned: flow.signed,
       reviewNeeded: reviewRows.length,
       imported: rows.filter((row) => row.verification === "imported").length,
     },
@@ -413,7 +416,7 @@ export async function getAttributionProof(args: {
       {
         key: "applied",
         label: "Applied",
-        count: applied,
+        count: flow.applied,
         tracked: true,
         provenance: "AppFolio applications",
       },
@@ -427,7 +430,7 @@ export async function getAttributionProof(args: {
       {
         key: "signed",
         label: "Signed",
-        count: verifiedSigned,
+        count: flow.signed,
         tracked: true,
         provenance: "Matched AppFolio resident and lease",
       },

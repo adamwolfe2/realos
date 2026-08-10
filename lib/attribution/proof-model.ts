@@ -23,6 +23,22 @@ export type ProofVerification =
   | "leasestack_only"
   | "imported";
 
+export type AttributionFlowSummary = {
+  captured: number;
+  chatbot: number;
+  forms: number;
+  visitorPixel: number;
+  other: number;
+  applied: number;
+  signed: number;
+};
+
+type AttributionFlowRow = {
+  source: LeadSource;
+  stage: ProofStage;
+  verification: ProofVerification;
+};
+
 type LeadProofInput = {
   leadStatus: LeadStatus;
   externalSystem: string | null;
@@ -60,6 +76,31 @@ const STAGE_RANK: Record<ProofStage, number> = {
 
 function laterStage(left: ProofStage, right: ProofStage): ProofStage {
   return STAGE_RANK[right] > STAGE_RANK[left] ? right : left;
+}
+
+export function summarizeAttributionFlow(
+  rows: AttributionFlowRow[],
+): AttributionFlowSummary {
+  const leaseStackRows = rows.filter((row) => row.verification !== "imported");
+  const sourceCount = (source: LeadSource) =>
+    leaseStackRows.filter((row) => row.source === source).length;
+  const chatbot = sourceCount("CHATBOT");
+  const forms = sourceCount("FORM");
+  const visitorPixel = sourceCount("PIXEL_OUTREACH");
+
+  return {
+    captured: leaseStackRows.length,
+    chatbot,
+    forms,
+    visitorPixel,
+    other: leaseStackRows.length - chatbot - forms - visitorPixel,
+    applied: leaseStackRows.filter(
+      (row) => STAGE_RANK[row.stage] >= STAGE_RANK.Applied,
+    ).length,
+    signed: leaseStackRows.filter(
+      (row) => row.stage === "Signed" && row.verification === "verified",
+    ).length,
+  };
 }
 
 export function deriveLeadProof(input: LeadProofInput): {
