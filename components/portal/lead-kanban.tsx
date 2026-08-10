@@ -29,6 +29,7 @@ import { SideDrawer } from "@/components/portal/ui/side-drawer";
 import { BulkActionBar } from "@/components/portal/ui/bulk-action-bar";
 import { AlertDialog } from "@/components/portal/ui/alert-dialog";
 import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
+import { leadDisplayName } from "@/lib/leads/display-name";
 
 export type LeadKanbanItem = {
   id: string;
@@ -445,10 +446,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
           </thead>
           <tbody className="divide-y divide-border">
             {items.map((item, rowIndex) => {
-              const name =
-                [item.firstName, item.lastName].filter(Boolean).join(" ") ||
-                item.email ||
-                "Anonymous";
+              const name = leadDisplayName(item);
               const isSelected = selected.has(item.id);
               // Cap the stagger at 12 rows so long lists don't feel slow to
               // finish rolling in.
@@ -687,14 +685,6 @@ function csvEscape(value: string): string {
     return `"${value.replace(/"/g, '""')}"`;
   }
   return value;
-}
-
-function leadDisplayName(item: LeadKanbanItem): string {
-  return (
-    [item.firstName, item.lastName].filter(Boolean).join(" ") ||
-    item.email ||
-    "Anonymous lead"
-  );
 }
 
 // ---------------------------------------------------------------------------

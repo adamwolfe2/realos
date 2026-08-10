@@ -20,6 +20,7 @@ import type {
   LeadSource,
   Prisma,
 } from "@prisma/client";
+import { leadDisplayName } from "@/lib/leads/display-name";
 
 export type AttributionProofRow = {
   id: string;
@@ -276,7 +277,7 @@ export async function getAttributionProof(args: {
 
     return {
       id: lead.id,
-      name: displayName(lead.firstName, lead.lastName, "Unknown lead"),
+      name: leadDisplayName(lead),
       email: lead.email,
       phone: lead.phone,
       propertyName: lead.property?.name ?? null,
@@ -318,11 +319,7 @@ export async function getAttributionProof(args: {
       propertyName: decision.resident?.property.name ?? null,
       candidateLeadId: decision.leadId,
       candidateLeadName: decision.lead
-        ? displayName(
-            decision.lead.firstName,
-            decision.lead.lastName,
-            decision.lead.email ?? "Unknown lead",
-          )
+        ? leadDisplayName(decision.lead)
         : null,
       status: decision.status,
       method: METHOD_LABEL[decision.method],

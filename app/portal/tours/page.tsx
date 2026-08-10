@@ -21,6 +21,7 @@ import { DashboardSection } from "@/components/portal/dashboard/dashboard-sectio
 import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
 import { EmptyState } from "@/components/portal/ui/empty-state";
 import { TourStatus } from "@prisma/client";
+import { leadDisplayName } from "@/lib/leads/display-name";
 
 export const metadata: Metadata = { title: "Tours" };
 export const dynamic = "force-dynamic";
@@ -376,9 +377,7 @@ export default async function ToursPage({
                                 />
                               </div>
                               <p className="text-[11px] font-medium text-foreground truncate mt-0.5">
-                                {[t.lead.firstName, t.lead.lastName]
-                                  .filter(Boolean)
-                                  .join(" ") || t.lead.email || "Anonymous"}
+                                {leadDisplayName(t.lead)}
                               </p>
                               <p className="text-[10px] text-muted-foreground truncate">
                                 {t.property.name}
@@ -442,9 +441,7 @@ export default async function ToursPage({
                             className="block rounded-[2px] border border-border bg-card hover:border-primary/40 hover:shadow-sm px-2 py-1.5 transition-all"
                           >
                             <p className="text-[11px] font-medium text-foreground truncate">
-                              {[t.lead.firstName, t.lead.lastName]
-                                .filter(Boolean)
-                                .join(" ") || t.lead.email || "Anonymous"}
+                              {leadDisplayName(t.lead)}
                             </p>
                             <div className="mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground">
                               <MapPin className="h-2.5 w-2.5" />

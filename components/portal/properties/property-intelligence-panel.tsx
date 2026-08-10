@@ -79,10 +79,10 @@ export function PropertyIntelligencePanel({ propertyName, actions }: Props) {
     );
   }
 
-  // Pull the top 5 for the headline list, then group the remainder by
+  // Pull the top 3 for the headline list, then group the remainder by
   // category for "more recommendations" below the fold.
-  const top = actions.slice(0, 5);
-  const rest = actions.slice(5);
+  const top = actions.slice(0, 3);
+  const rest = actions.slice(3);
   const restByCategory = rest.reduce<Record<string, ProactiveAction[]>>(
     (acc, a) => {
       (acc[a.category] ||= []).push(a);
@@ -102,13 +102,13 @@ export function PropertyIntelligencePanel({ propertyName, actions }: Props) {
 
   return (
     <section className="rounded-[2px] border border-border bg-card overflow-hidden">
-      <header className="flex items-center justify-between gap-3 px-3.5 py-2 border-b border-border bg-gradient-to-br from-card to-primary/[0.04]">
+      <header className="flex items-center justify-between gap-3 px-3.5 py-2 border-b border-border bg-muted/30">
         <div className="min-w-0 flex items-center gap-2">
           <span className="inline-flex h-5 w-5 items-center justify-center rounded-[2px] bg-primary/10 text-primary shrink-0">
             <Sparkles className="h-3 w-3" />
           </span>
           <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.12em] text-primary shrink-0">
-            Intelligence
+            Next actions
           </p>
           <span aria-hidden="true" className="h-3 w-px bg-border" />
           <h2 className="text-[12px] font-semibold text-foreground leading-tight truncate">

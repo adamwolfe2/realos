@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { LeadStatus } from "@prisma/client";
 import { propertyIdsToWhere } from "@/lib/tenancy/property-filter";
 import type { Detector, DetectedInsight } from "../types";
+import { leadDisplayName } from "@/lib/leads/display-name";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -53,8 +54,7 @@ export const pipelineStallDetector: Detector = {
       const daysStalled = Math.floor(
         (Date.now() - lead.lastActivityAt.getTime()) / DAY,
       );
-      const fullName = [lead.firstName, lead.lastName].filter(Boolean).join(" ").trim();
-      const name = fullName || lead.email || "Unknown lead";
+      const name = leadDisplayName(lead);
       // Reporter feedback (jsoc@uoregon.edu): the insight names a
       // specific person and overdue action but the CTA was a generic
       // "Open →". Tailor the label so the action language matches the

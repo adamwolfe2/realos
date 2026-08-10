@@ -16,6 +16,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { searchNavRegistry, type NavRegistryItem } from "./nav-registry";
+import { leadDisplayName } from "@/lib/leads/display-name";
 
 // ---------------------------------------------------------------------------
 // Cmd+K global search modal. Lives in the portal layout so any page can
@@ -197,10 +198,7 @@ export function CmdKSearch() {
 
     if (!data || Array.isArray(data.results)) return out;
     for (const l of data.results.leads) {
-      const name =
-        [l.firstName, l.lastName].filter(Boolean).join(" ") ||
-        l.email ||
-        "Anonymous";
+      const name = leadDisplayName(l);
       out.push({
         group: "leads",
         href: `/portal/leads/${l.id}`,
@@ -241,7 +239,7 @@ export function CmdKSearch() {
       });
     }
     return out;
-  }, [data]);
+  }, [data, navResults]);
 
   function onKeyDown(e: React.KeyboardEvent) {
     if (e.key === "ArrowDown") {

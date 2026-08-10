@@ -14,20 +14,11 @@ import type {
   ActivityMentionRow,
   ActivityTourRow,
 } from "./types";
+import { leadDisplayName } from "@/lib/leads/display-name";
 
 // ---------------------------------------------------------------------------
 // Activity timeline — unified feed across leads, tours, leases, mentions.
 // ---------------------------------------------------------------------------
-
-function fullName(
-  first: string | null | undefined,
-  last: string | null | undefined,
-): string {
-  const f = (first ?? "").trim();
-  const l = (last ?? "").trim();
-  const joined = [f, l].filter(Boolean).join(" ");
-  return joined.length > 0 ? joined : "Someone";
-}
 
 function sourceWord(source: string): string {
   const map: Record<string, string> = {
@@ -70,13 +61,13 @@ export function buildActivityEvents({
     events.push({
       id: `lead:${l.id}`,
       kind: "lead",
-      summary: `${fullName(l.firstName, l.lastName)} came in via ${sourceWord(l.source)}`,
+      summary: `${leadDisplayName(l)} came in via ${sourceWord(l.source)}`,
       occurredAt: l.createdAt,
     });
   }
 
   for (const t of tours) {
-    const who = fullName(t.lead?.firstName, t.lead?.lastName);
+    const who = t.lead ? leadDisplayName(t.lead) : "Unidentified lead";
     let summary = `${who} requested a tour`;
     if (t.status === "SCHEDULED" || t.status === "REQUESTED") {
       summary = t.scheduledAt

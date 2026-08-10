@@ -221,6 +221,7 @@ export async function OverviewTab({
           id: true,
           firstName: true,
           lastName: true,
+          email: true,
           source: true,
           createdAt: true,
         },
@@ -236,7 +237,7 @@ export async function OverviewTab({
           status: true,
           scheduledAt: true,
           createdAt: true,
-          lead: { select: { firstName: true, lastName: true } },
+          lead: { select: { firstName: true, lastName: true, email: true } },
         },
       })
       .catch(() => [] as Array<ActivityTourRow>),
@@ -374,7 +375,7 @@ export async function OverviewTab({
       30 * 24 * 60 * 60 * 1000;
 
   return (
-    <div className="space-y-6 ls-page-fade">
+    <div className="space-y-4 ls-page-fade">
       {/* Norman 2026-05-21: hero identity + headline stats now live in
           the new PropertyHeroBanner ABOVE the tab nav (see
           app/portal/properties/[id]/page.tsx). Removed the in-tab
@@ -455,9 +456,9 @@ export async function OverviewTab({
           </div>
         </section>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.75fr)_minmax(280px,0.75fr)] gap-4">
           {/* LEFT — the work. */}
-          <div className="space-y-6 min-w-0">
+          <div className="space-y-4 min-w-0">
             {/* Norman 2026-05-21: the in-tab InsightsHero / AiInsightCard
                 pair is now served by the PropertyIntelligencePanel
                 rendered ABOVE the tab nav (see page.tsx). Removed here

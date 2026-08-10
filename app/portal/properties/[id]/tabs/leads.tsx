@@ -6,6 +6,7 @@ import { SourceBars } from "@/components/portal/dashboard/source-bars";
 import { getPropertyLeads } from "@/lib/properties/queries";
 import { prisma } from "@/lib/db";
 import { LeadStatus, ApplicationStatus, type Lead } from "@prisma/client";
+import { leadDisplayName } from "@/lib/leads/display-name";
 
 // Bug #30 — Operators reported the leads tab "doesn't show most of the
 // active prospects which are in ongoing processes." The 28d funnel
@@ -217,10 +218,7 @@ export async function LeadsTab({
         >
           <ul className="divide-y divide-border">
             {recentActivity.map((lead: Pick<Lead, "id" | "firstName" | "lastName" | "email" | "phone" | "status" | "source" | "lastActivityAt" | "createdAt">) => {
-              const name =
-                [lead.firstName, lead.lastName].filter(Boolean).join(" ").trim() ||
-                lead.email ||
-                "Anonymous";
+              const name = leadDisplayName(lead);
               const lastSeenAt = lead.lastActivityAt ?? lead.createdAt;
               return (
                 <li key={lead.id} className="py-2.5 first:pt-0 last:pb-0">
@@ -296,10 +294,7 @@ export async function LeadsTab({
         ) : (
           <ul className="divide-y divide-border">
             {data.recent.map((lead) => {
-              const name =
-                [lead.firstName, lead.lastName].filter(Boolean).join(" ").trim() ||
-                lead.email ||
-                "Anonymous";
+              const name = leadDisplayName(lead);
               return (
                 <li key={lead.id} className="py-2.5 first:pt-0 last:pb-0">
                   <Link

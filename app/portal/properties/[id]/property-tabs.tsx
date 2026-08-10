@@ -1,35 +1,24 @@
 "use client";
 
 import * as React from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
-  LayoutDashboard,
-  Rocket,
-  TrendingUp,
-  Users,
   BarChart3,
-  MessageSquare,
-  Star,
   BookOpen,
   Building2,
   CalendarClock,
+  LayoutDashboard,
+  MessageSquare,
+  Rocket,
+  Star,
+  TrendingUp,
   UserCheck,
+  Users,
   Wrench,
+  type LucideIcon,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-// ---------------------------------------------------------------------------
-// PropertyTabs — restructured from a flat 10-tab nav into a two-level
-// category system. Primary tabs (Overview / Acquisition / Engagement /
-// Operations) compress the navigation surface from 10 items to 4. The
-// underlying panels are unchanged; secondary sub-tabs appear under the
-// active primary when the category has multiple children.
-//
-// URL contract preserved: ?tab=X still works for every existing key. The
-// category for a given tab is looked up from CATEGORIES.
-// ---------------------------------------------------------------------------
 
 type TabKey =
   | "overview"
@@ -45,51 +34,40 @@ type TabKey =
   | "renewals"
   | "work-orders";
 
-type Category = {
-  /** The category IS the tab — flat, one tab per nav item. */
+type GroupKey = "overview" | "marketing" | "leasing" | "operations";
+
+type TabDefinition = {
   id: TabKey;
   label: string;
   icon: LucideIcon;
+  group: GroupKey;
 };
 
-// Flat top-level tabs (2026-06-09): the prior two-level system buried
-// Chatbot / Reputation / Traffic under Acquisition + Engagement pill
-// sub-tabs, which operators couldn't find. Each is now its own primary
-// tab. URL contract (?tab=X) is unchanged — every key still resolves.
-const CATEGORIES: Category[] = [
-  { id: "overview", label: "Overview", icon: LayoutDashboard },
-  { id: "onboarding", label: "Onboarding", icon: Rocket },
-  { id: "leads", label: "Leads", icon: Users },
-  { id: "traffic", label: "Traffic", icon: TrendingUp },
-  { id: "ads", label: "Ads", icon: BarChart3 },
-  { id: "chatbot", label: "Chatbot", icon: MessageSquare },
-  { id: "knowledge-base", label: "Knowledge Base", icon: BookOpen },
-  { id: "reputation", label: "Reputation", icon: Star },
-  // Operations tabs — fully built panels that were previously unreachable
-  // (2026-07-31 production-readiness audit P0-2: finished features had no
-  // nav entry). Occupancy stays gated by showOccupancy.
-  { id: "residents", label: "Residents", icon: UserCheck },
-  { id: "renewals", label: "Renewals", icon: CalendarClock },
-  { id: "work-orders", label: "Work Orders", icon: Wrench },
-  { id: "occupancy", label: "Occupancy", icon: Building2 },
+const TABS: TabDefinition[] = [
+  { id: "overview", label: "Overview", icon: LayoutDashboard, group: "overview" },
+  { id: "leads", label: "Leads", icon: Users, group: "marketing" },
+  { id: "traffic", label: "Traffic", icon: TrendingUp, group: "marketing" },
+  { id: "ads", label: "Ads", icon: BarChart3, group: "marketing" },
+  { id: "chatbot", label: "Chatbot", icon: MessageSquare, group: "marketing" },
+  { id: "knowledge-base", label: "Knowledge Base", icon: BookOpen, group: "marketing" },
+  { id: "reputation", label: "Reputation", icon: Star, group: "marketing" },
+  { id: "residents", label: "Residents", icon: UserCheck, group: "leasing" },
+  { id: "renewals", label: "Renewals", icon: CalendarClock, group: "leasing" },
+  { id: "occupancy", label: "Occupancy", icon: Building2, group: "leasing" },
+  { id: "onboarding", label: "Setup", icon: Rocket, group: "operations" },
+  { id: "work-orders", label: "Work Orders", icon: Wrench, group: "operations" },
 ];
 
-// Map every TabKey → the top-level tab it belongs to. Every tab now maps
-// to itself — the Operations tabs are first-class nav items.
-const TAB_TO_CATEGORY: Record<TabKey, TabKey> = {
-  overview: "overview",
-  onboarding: "onboarding",
-  leads: "leads",
-  traffic: "traffic",
-  ads: "ads",
-  chatbot: "chatbot",
-  "knowledge-base": "knowledge-base",
-  reputation: "reputation",
-  residents: "residents",
-  renewals: "renewals",
-  occupancy: "occupancy",
-  "work-orders": "work-orders",
-};
+const GROUPS: Array<{ id: GroupKey; label: string }> = [
+  { id: "overview", label: "Overview" },
+  { id: "marketing", label: "Marketing" },
+  { id: "leasing", label: "Leasing" },
+  { id: "operations", label: "Operations" },
+];
+
+const TAB_TO_GROUP = Object.fromEntries(
+  TABS.map((tab) => [tab.id, tab.group]),
+) as Record<TabKey, GroupKey>;
 
 function PropertyTabsInner({
   initialTab,
@@ -99,109 +77,113 @@ function PropertyTabsInner({
 }: {
   initialTab: string;
   showOccupancy: boolean;
-  /** When both moduleGoogleAds and moduleMetaAds are off for the org we
-   *  hide the Ads sub-tab entirely — an Acquisition group of "Leads ·
-   *  Traffic · Ads(empty)" looks broken; "Leads · Traffic" reads clean. */
   showAds: boolean;
   panels: Partial<Record<TabKey, React.ReactNode>>;
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-
-  // Resolve the active tab from URL or fall back.
-  const normalizedTab = React.useMemo<TabKey>(() => {
-    const all = Object.keys(TAB_TO_CATEGORY) as TabKey[];
-    return (
-      all.includes(initialTab as TabKey) ? initialTab : "overview"
-    ) as TabKey;
-  }, [initialTab]);
-
-  const [active, setActive] = React.useState<TabKey>(normalizedTab);
+  const requestedTab = TABS.some((tab) => tab.id === initialTab)
+    ? (initialTab as TabKey)
+    : "overview";
+  const [active, setActive] = React.useState<TabKey>(requestedTab);
 
   React.useEffect(() => {
-    const t = (searchParams?.get("tab") ?? "overview") as TabKey;
-    const all = Object.keys(TAB_TO_CATEGORY) as TabKey[];
-    setActive(all.includes(t) ? t : "overview");
+    const requested = searchParams?.get("tab") ?? "overview";
+    setActive(
+      TABS.some((tab) => tab.id === requested)
+        ? (requested as TabKey)
+        : "overview",
+    );
   }, [searchParams]);
 
-  // Hide the Ads tab when both ad modules are off org-wide, and the
-  // Occupancy tab when the org doesn't track occupancy — an empty tab
-  // reads as broken.
-  const categories = React.useMemo<Category[]>(
+  const visibleTabs = React.useMemo(
     () =>
-      CATEGORIES.filter(
-        (c) =>
-          (c.id !== "ads" || showAds) &&
-          (c.id !== "occupancy" || showOccupancy),
+      TABS.filter(
+        (tab) =>
+          (tab.id !== "ads" || showAds) &&
+          (tab.id !== "occupancy" || showOccupancy),
       ),
     [showAds, showOccupancy],
   );
-
-  // Snap to Overview when the active tab's category isn't visible (review
-  // 2026-07-31: a ?tab=occupancy deep link with showOccupancy=false — or
-  // ?tab=ads with ads hidden — previously rendered a panel with no nav
-  // highlight). One effective value drives both nav + panel.
-  const mappedCategory = TAB_TO_CATEGORY[active];
-  const effectiveActive: TabKey = categories.some(
-    (c) => c.id === mappedCategory,
-  )
+  const effectiveActive = visibleTabs.some((tab) => tab.id === active)
     ? active
     : "overview";
-  const activeCategoryId = TAB_TO_CATEGORY[effectiveActive];
+  const activeGroup = TAB_TO_GROUP[effectiveActive];
+  const groupTabs = visibleTabs.filter((tab) => tab.group === activeGroup);
 
-  const selectTab = (key: TabKey) => {
-    if (key === active) return;
-    setActive(key);
-    const params = new URLSearchParams(searchParams?.toString() ?? "");
-    if (key === "overview") {
-      params.delete("tab");
-    } else {
-      params.set("tab", key);
-    }
-    const qs = params.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  };
+  const selectTab = React.useCallback(
+    (key: TabKey) => {
+      setActive(key);
+      const params = new URLSearchParams(searchParams?.toString() ?? "");
+      if (key === "overview") params.delete("tab");
+      else params.set("tab", key);
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
 
   return (
     <div className="space-y-4">
-      {/* Primary nav — 4 categories. Single visual element. */}
-      <nav
-        aria-label="Property sections"
-        className="flex flex-nowrap gap-1 border-b border-border overflow-x-auto scrollbar-hide"
-      >
-        {categories.map((cat) => {
-          const Icon = cat.icon;
-          const isActive = cat.id === activeCategoryId;
-          return (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => selectTab(cat.id)}
-              className={cn(
-                "inline-flex shrink-0 items-center gap-2 px-4 py-3 text-[13px] font-medium border-b-2 -mb-px whitespace-nowrap transition-colors",
-                isActive
-                  ? "border-primary text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground",
-              )}
-              aria-current={isActive ? "page" : undefined}
-            >
-              <Icon className="w-3.5 h-3.5" aria-hidden="true" />
-              {cat.label}
-            </button>
-          );
-        })}
-      </nav>
+      <div className="border-b border-border">
+        <nav
+          aria-label="Property section groups"
+          className="flex gap-1 overflow-x-auto py-2 scrollbar-hide"
+        >
+          {GROUPS.map((group) => {
+            const firstTab = visibleTabs.find((tab) => tab.group === group.id);
+            if (!firstTab) return null;
+            const isActive = group.id === activeGroup;
+            return (
+              <button
+                key={group.id}
+                type="button"
+                onClick={() => selectTab(firstTab.id)}
+                className={cn(
+                  "shrink-0 px-3 py-1.5 text-[12px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                  isActive
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+                aria-current={isActive ? "page" : undefined}
+              >
+                {group.label}
+              </button>
+            );
+          })}
+        </nav>
 
-      {/* Panels — render ONLY the active panel. Bundle-analyzer pass
-          (2026-06-04) revealed every panel was mounted simultaneously
-          with `hidden={!isActive}`, shipping the JS for ScannerPanel
-          + MetricsPanel (recharts donut) + every other tab even when
-          the operator only ever sees Overview. Single-panel rendering
-          drops the /portal/properties/[id] route bundle dramatically.
-          Tradeoff: switching tabs is now a remount + re-fetch, which
-          is fine because each tab's data is already URL-driven and
-          server-cached at the page level. */}
+        {groupTabs.length > 1 ? (
+          <nav
+            aria-label={`${GROUPS.find((group) => group.id === activeGroup)?.label} sections`}
+            className="flex gap-1 overflow-x-auto scrollbar-hide"
+          >
+            {groupTabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = tab.id === effectiveActive;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => selectTab(tab.id)}
+                  className={cn(
+                    "inline-flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2 text-[12px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                    isActive
+                      ? "border-primary text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground",
+                  )}
+                  aria-current={isActive ? "page" : undefined}
+                >
+                  <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </nav>
+        ) : null}
+      </div>
+
       <div role="tabpanel">{panels[effectiveActive]}</div>
     </div>
   );
@@ -211,9 +193,7 @@ export function PropertyTabs(
   props: React.ComponentProps<typeof PropertyTabsInner>,
 ) {
   return (
-    <Suspense
-      fallback={<div className="h-10 animate-pulse rounded-md bg-muted" />}
-    >
+    <Suspense fallback={<div className="h-10 animate-pulse bg-muted" />}>
       <PropertyTabsInner {...props} />
     </Suspense>
   );

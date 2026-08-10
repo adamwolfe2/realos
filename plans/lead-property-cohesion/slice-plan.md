@@ -1,6 +1,6 @@
 # Lead and Property Cohesion Thin Slice Plan
 
-Status: READY
+Status: COMPLETE
 Last updated: 2026-08-10
 Owner: Codex
 
@@ -39,13 +39,13 @@ Owner: Codex
 
 | Slice | Status | Tier | Owner | Evidence | Next gate |
 | --- | --- | --- | --- | --- | --- |
-| S1 | pending | T3 | Codex | none | failing formatter tests |
-| S2 | pending | T3 | Codex | none | focused renderer tests |
-| S3 | pending | T3 | Codex | none | structural UI test |
-| S4 | pending | T3 | Codex | none | compact queue assertions |
-| S5 | pending | T3 | Codex | none | tab mapping assertions |
-| S6 | pending | T3 | Codex | none | layout assertions |
-| S7 | pending | T3 | Codex | none | checks and push |
+| S1 | done | T3 | Codex | `lead-display-name.test.ts`, 11 passing cases | adopt formatter |
+| S2 | done | T3 | Codex | attribution and primary lead surfaces use shared formatter | property UI |
+| S3 | done | T3 | Codex | compact header structural test passes | action queue |
+| S4 | done | T3 | Codex | three-item queue structural test passes | grouped tabs |
+| S5 | done | T3 | Codex | four-group mapping structural test passes | overview |
+| S6 | done | T3 | Codex | balanced overview structural test passes | final checks |
+| S7 | done | T3 | Codex | 23 focused tests, TypeScript, ESLint, and diff checks pass | ship |
 
 ## Slices
 

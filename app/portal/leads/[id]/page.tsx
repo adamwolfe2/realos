@@ -35,6 +35,7 @@ import {
   type LeadConversationMessage,
 } from "@/components/portal/leads/lead-conversation-panel";
 import type { Prisma } from "@prisma/client";
+import { leadDisplayName } from "@/lib/leads/display-name";
 
 export const metadata: Metadata = { title: "Lead detail" };
 export const dynamic = "force-dynamic";
@@ -245,10 +246,7 @@ export default async function LeadDetailPage({
     context: (i.context as Record<string, unknown>) ?? null,
   }));
 
-  const displayName =
-    [lead.firstName, lead.lastName].filter(Boolean).join(" ") ||
-    lead.email ||
-    "Anonymous lead";
+  const displayName = leadDisplayName(lead);
 
   const visitorIdentity = lead.visitor ? extractIdentity(lead.visitor) : null;
   const logoUrl = visitorIdentity?.logoUrl ?? null;

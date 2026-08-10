@@ -2,6 +2,7 @@ import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
 import { ApplicationStatus } from "@prisma/client";
+import { leadDisplayName } from "@/lib/leads/display-name";
 
 const STATUS_LABEL: Record<ApplicationStatus, string> = {
   STARTED: "Started",
@@ -70,10 +71,7 @@ export function ApplicationsPipelineTable({
           </thead>
           <tbody className="divide-y divide-[var(--hair)]">
             {apps.map((a) => {
-              const name =
-                [a.lead.firstName, a.lead.lastName].filter(Boolean).join(" ") ||
-                a.lead.email ||
-                "Anonymous";
+              const name = leadDisplayName(a.lead);
               const ts = a.decidedAt ?? a.appliedAt ?? a.createdAt;
               return (
                 <tr key={a.id} className="h-11 transition-colors hover:bg-muted/30">

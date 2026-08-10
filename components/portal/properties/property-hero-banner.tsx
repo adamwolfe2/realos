@@ -294,7 +294,7 @@ export function PropertyHeroBanner({
     setDraftScale((s) => Math.max(0.5, Math.min(3, s * factor)));
   }
 
-  const padding = compact ? "p-4 sm:p-5" : "p-5 sm:p-7";
+  const padding = compact ? "p-4 sm:p-5" : "p-4";
   // Norman bug (May 22): on mobile (~390px viewport) compact mode was
   // locked to "180px image + remainder" which left only ~150px for
   // the 3-stat column — the stats overlapped each other ("15042/4104"
@@ -303,7 +303,7 @@ export function PropertyHeroBanner({
   // Multi-column kicks in at sm: (640px) where there's enough room.
   const gridCols = compact
     ? "grid-cols-1 sm:grid-cols-[180px_minmax(0,1fr)]"
-    : "grid-cols-1 sm:grid-cols-[300px_minmax(0,1fr)] md:grid-cols-[340px_minmax(0,1fr)]";
+    : "grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)]";
   // Norman 2026-05-21 fifth pass: the rounded-xl + perspective tilt
   // were treating the BG-removed PNG as if it were a card. Dropped
   // both. The building silhouette IS the shape now. Bigger size +
@@ -311,17 +311,17 @@ export function PropertyHeroBanner({
   // sides of its column.
   // Compact (dashboard) variant: contained image block — no negative-margin
   // spill, no float-out. Detail view keeps the larger silhouette treatment.
-  const imageSize = compact ? "h-[140px]" : "h-[320px] sm:h-[380px]";
-  const imageLift = compact ? "" : "-mt-16 sm:-mt-20 -mx-3 sm:-mx-5";
+  const imageSize = compact ? "h-[140px]" : "h-[150px]";
+  const imageLift = "";
 
   return (
     <section
       aria-label={`${propertyName} hero`}
       onDragOver={editable ? (e) => e.preventDefault() : undefined}
       onDrop={editable ? onDrop : undefined}
-      className={`relative rounded-[2px] border border-[#e0e0e0] bg-white ${padding}`}
+      className={`relative rounded-[2px] border border-border bg-card ${padding}`}
     >
-      <div className={`relative grid items-end gap-5 ${gridCols}`}>
+      <div className={`relative grid items-center gap-4 ${gridCols}`}>
         <div className="relative group" style={{ overflow: "visible" }}>
           {currentImage ? (
             <div
@@ -343,7 +343,7 @@ export function PropertyHeroBanner({
                   keeps overflow visible for the silhouette treatment. */}
               <div
                 className={
-                  compact ? "overflow-hidden rounded-[2px]" : undefined
+                  "overflow-hidden rounded-[2px] border border-border bg-muted/20"
                 }
               >
               {/* Image wrapper — handles pointer drag + wheel zoom in
@@ -375,7 +375,7 @@ export function PropertyHeroBanner({
                   src={currentImage}
                   alt={`${propertyName} exterior`}
                   className={`relative w-full h-full ${
-                    compact ? "object-cover" : "object-contain"
+                    compact ? "object-cover" : "object-contain p-2"
                   }`}
                   draggable={false}
                   style={{ pointerEvents: "none" }}
@@ -395,7 +395,7 @@ export function PropertyHeroBanner({
                     onClick={startReposition}
                     disabled={uploading}
                     aria-label="Reposition image"
-                    className="inline-flex items-center gap-1 rounded-[2px] bg-white/90 backdrop-blur px-2 py-1 text-[10px] font-semibold text-foreground border border-border shadow-sm hover:bg-white transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-[2px] bg-card px-2 py-1 text-[10px] font-semibold text-foreground border border-border shadow-sm hover:bg-muted transition-colors disabled:opacity-50"
                   >
                     <Move className="h-3 w-3" />
                     Reposition
@@ -404,7 +404,7 @@ export function PropertyHeroBanner({
                     type="button"
                     onClick={() => fileRef.current?.click()}
                     disabled={uploading}
-                    className="inline-flex items-center gap-1 rounded-[2px] bg-white/90 backdrop-blur px-2 py-1 text-[10px] font-semibold text-foreground border border-border shadow-sm hover:bg-white transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-[2px] bg-card px-2 py-1 text-[10px] font-semibold text-foreground border border-border shadow-sm hover:bg-muted transition-colors disabled:opacity-50"
                   >
                     {uploading ? (
                       <Loader2 className="h-3 w-3 animate-spin" />
@@ -418,7 +418,7 @@ export function PropertyHeroBanner({
                     onClick={handleRemove}
                     disabled={uploading}
                     aria-label="Remove image"
-                    className="inline-flex items-center justify-center h-6 w-6 rounded-[2px] bg-white/90 backdrop-blur text-muted-foreground hover:text-destructive border border-border shadow-sm hover:bg-white transition-colors disabled:opacity-50"
+                    className="inline-flex items-center justify-center h-6 w-6 rounded-[2px] bg-card text-muted-foreground hover:text-destructive border border-border shadow-sm hover:bg-muted transition-colors disabled:opacity-50"
                   >
                     <XIcon className="h-3 w-3" />
                   </button>
@@ -526,11 +526,11 @@ export function PropertyHeroBanner({
             className="text-[10px] font-mono font-semibold tracking-[0.16em] uppercase mb-1.5"
             style={{ color: accent ?? "#0f62fe" }}
           >
-            Featured property
+            Property overview
           </p>
           <h1
             className={`font-display tracking-tight text-foreground leading-tight ${
-              compact ? "text-xl" : "text-2xl sm:text-3xl"
+              compact ? "text-xl" : "text-xl sm:text-2xl"
             }`}
             style={{ letterSpacing: "-0.02em" }}
           >
@@ -542,7 +542,7 @@ export function PropertyHeroBanner({
 
           {stats.length > 0 ? (
             <div
-              className={`mt-4 pt-4 grid gap-2 sm:gap-3 border-t border-border/70 ${
+              className={`mt-3 pt-3 grid gap-2 sm:gap-3 border-t border-border ${
                 compact ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 sm:grid-cols-2 md:grid-cols-4"
               }`}
             >
@@ -556,7 +556,7 @@ export function PropertyHeroBanner({
                             // fixes the Norman May 22 mobile overlap bug —
                             // ~95px columns at 390px viewport).
                             "text-xl"
-                          : "text-3xl sm:text-4xl md:text-5xl"
+                          : "text-2xl sm:text-3xl"
                       }`}
                       style={{ letterSpacing: "-0.02em" }}
                     >

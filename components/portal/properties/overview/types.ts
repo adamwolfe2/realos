@@ -22,6 +22,7 @@ export type ActivityLeadRow = {
   id: string;
   firstName: string | null;
   lastName: string | null;
+  email: string | null;
   source: string;
   createdAt: Date;
 };
@@ -30,7 +31,11 @@ export type ActivityTourRow = {
   status: string;
   scheduledAt: Date | null;
   createdAt: Date;
-  lead: { firstName: string | null; lastName: string | null } | null;
+  lead: {
+    firstName: string | null;
+    lastName: string | null;
+    email: string | null;
+  } | null;
 };
 export type ActivityLeaseRow = {
   id: string;

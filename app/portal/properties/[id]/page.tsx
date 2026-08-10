@@ -306,7 +306,7 @@ export default async function PropertyDetail({
     .map(({ hasData: _hd, ...rest }) => rest);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <Link
           href="/portal/properties"
