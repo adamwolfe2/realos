@@ -79,7 +79,7 @@ export default async function LeadDetailPage({
   // param, so we can fan them out without waiting for the lead row to
   // resolve first. Saves two sequential round-trips on the lead detail
   // page that operators hit dozens of times per session.
-  const [lead, notes, leadInsights, popupEvents] = await Promise.all([
+  const [lead, notes, leadInsights, popupEvents, followUpTasks] = await Promise.all([
     prisma.lead.findFirst({
       // Property-level RBAC: block reads on leads outside the agent's
       // scope, matching the status/notes/handoff routes.
@@ -169,6 +169,25 @@ export default async function LeadDetailPage({
         occurredAt: true,
         pageUrl: true,
         campaign: { select: { name: true } },
+      },
+    }),
+    prisma.leadFollowUpTask.findMany({
+      where: {
+        orgId: scope.orgId,
+        leadId: id,
+        status: { in: ["OPEN", "APPROVED"] },
+      },
+      orderBy: [{ priority: "asc" }, { createdAt: "desc" }],
+      take: 5,
+      include: {
+        drafts: {
+          where: { status: "DRAFT" },
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
+        learningCase: {
+          select: { reasonSummary: true, evidenceJson: true },
+        },
       },
     }),
   ]);
@@ -491,6 +510,77 @@ export default async function LeadDetailPage({
           </Tile>
         </div>
       </section>
+
+      {followUpTasks.length > 0 ? (
+        <section className="rounded-[2px] border border-border bg-card p-5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                AI follow-up drafts
+              </p>
+              <h2 className="mt-1 text-lg font-semibold tracking-tight text-foreground">
+                Recommended next steps from chatbot learning
+              </h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <LeadEmailComposer
+                leadId={lead.id}
+                to={lead.email}
+                unsubscribed={lead.unsubscribedFromEmails}
+                defaultSubject={followUpTasks[0]?.drafts[0]?.subject ?? undefined}
+              />
+              <LeadSmsComposer
+                leadId={lead.id}
+                to={lead.phone}
+                smsEnabled={isSmsConfigured()}
+              />
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-1 gap-3">
+            {followUpTasks.map((task) => {
+              const draft = task.drafts[0] ?? null;
+              return (
+                <article
+                  key={task.id}
+                  className="rounded-[2px] border border-border bg-background p-4"
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-[2px] bg-muted px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Priority {task.priority}
+                    </span>
+                    <span className="rounded-[2px] bg-muted px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      {task.taskType.replaceAll("_", " ").toLowerCase()}
+                    </span>
+                    <span className="rounded-[2px] bg-muted px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      {task.recommendedChannel}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-sm font-medium text-foreground">
+                    {task.reasonSummary}
+                  </p>
+                  {task.learningCase?.reasonSummary ? (
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      {task.learningCase.reasonSummary}
+                    </p>
+                  ) : null}
+                  {draft ? (
+                    <div className="mt-3 rounded-[2px] border border-border bg-card p-3">
+                      {draft.subject ? (
+                        <p className="text-xs font-semibold text-foreground">
+                          {draft.subject}
+                        </p>
+                      ) : null}
+                      <p className="mt-1 whitespace-pre-wrap text-xs leading-5 text-muted-foreground">
+                        {draft.body}
+                      </p>
+                    </div>
+                  ) : null}
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
 
       {/* C + D. Timeline + sidebar */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">

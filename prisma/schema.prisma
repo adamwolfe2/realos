@@ -254,6 +254,94 @@ enum EngagementStatus {
   EXPIRED
 }
 
+enum ChatbotLearningCaseType {
+  STALLED_LEAD
+  UNCAPTURED_ENGAGED_CONVERSATION
+  TOUR_INTENT_NO_TOUR
+  PRICING_QUESTION_NO_CAPTURE
+  AVAILABILITY_QUESTION_NO_CAPTURE
+  APPLICATION_HELP_NEEDED
+  SIGNED_PATTERN
+  LOST_PATTERN
+  BOT_FALLBACK_PATTERN
+}
+
+enum ChatbotLearningStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+  SUPERSEDED
+}
+
+enum LeadFollowUpTaskType {
+  SEND_AVAILABILITY_PRICING
+  INVITE_TO_TOUR
+  APPLICATION_HELP
+  GENERAL_FOLLOW_UP
+  CONFIRM_ROOM_TYPE
+  CONFIRM_MOVE_IN
+}
+
+enum LeadFollowUpTaskStatus {
+  OPEN
+  APPROVED
+  SENT
+  EDITED_SENT
+  DISMISSED
+  SNOOZED
+}
+
+enum LeadFollowUpChannel {
+  EMAIL
+  SMS
+  CALL
+  INTERNAL_NOTE
+}
+
+enum LeadFollowUpDraftStatus {
+  DRAFT
+  APPROVED
+  SENT
+  EDITED_SENT
+  DISMISSED
+}
+
+enum ConversationInsightType {
+  OBJECTION
+  MISSING_ANSWER
+  PRICING_CONFUSION
+  AVAILABILITY_CONFUSION
+  TOUR_FRICTION
+  APPLICATION_FRICTION
+  POLICY_QUESTION
+  SITE_CONTENT_GAP
+  WEAK_CTA
+  HIGH_CONVERTING_PATTERN
+}
+
+enum RecommendationStatus {
+  OPEN
+  APPLIED
+  DISMISSED
+  SUPERSEDED
+}
+
+enum SiteImprovementType {
+  FAQ
+  PRICING_COPY
+  AVAILABILITY_COPY
+  TOUR_CTA
+  APPLICATION_COPY
+  POLICY_COPY
+}
+
+enum SiteImprovementTarget {
+  TENANT_SITE
+  CHATBOT_KNOWLEDGE_BASE
+  SITE_BUILDER
+  CONTENT_WORKFLOW
+}
+
 enum CreativeRequestStatus {
   SUBMITTED
   IN_REVIEW
@@ -609,6 +697,12 @@ model Organization {
   aeoOnPageAudits         AeoOnPageAudit[]
   neighborhoodPages       NeighborhoodPage[]
   onboardingProgress      OnboardingProgress?
+  chatbotLearningCases    ChatbotLearningCase[]
+  leadFollowUpTasks       LeadFollowUpTask[]
+  leadFollowUpDrafts      LeadFollowUpDraft[]
+  chatbotKnowledgeSuggestions ChatbotKnowledgeSuggestion[]
+  conversationInsights    ConversationInsight[]
+  siteImprovementRecommendations SiteImprovementRecommendation[]
   // SEO/AEO Agent backrefs — Phase 1
   seoActionRecs           SeoActionRecommendation[]
   contentDrafts           ContentDraft[]
@@ -1129,6 +1223,11 @@ model Property {
   tours                  Tour[]
   applications           Application[]
   chatbotConversations   ChatbotConversation[]
+  chatbotLearningCases   ChatbotLearningCase[]
+  leadFollowUpTasks      LeadFollowUpTask[]
+  chatbotKnowledgeSuggestions ChatbotKnowledgeSuggestion[]
+  conversationInsights   ConversationInsight[]
+  siteImprovementRecommendations SiteImprovementRecommendation[]
   visitors               Visitor[]
   creativeRequests       CreativeRequest[]
   adCampaigns            AdCampaign[]
@@ -1315,6 +1414,8 @@ model Lead {
 
   // Conversation history
   conversations  ChatbotConversation[]
+  chatbotLearningCases ChatbotLearningCase[]
+  followUpTasks  LeadFollowUpTask[]
   tours          Tour[]
   applications   Application[]
   residents      Resident[]
@@ -2022,6 +2123,8 @@ model ChatbotConversation {
   updatedAt DateTime @updatedAt
 
   flags ConversationFlag[]
+  learningCases ChatbotLearningCase[]
+  followUpTasks LeadFollowUpTask[]
 
   @@index([orgId, status])
   @@index([orgId, lastMessageAt])
@@ -2064,6 +2167,167 @@ model ChatbotEngagement {
   @@index([orgId, status])
   @@index([orgId, createdAt])
   @@index([visitorId])
+}
+
+model ChatbotLearningCase {
+  id             String                  @id @default(cuid())
+  orgId          String
+  org            Organization            @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId     String?
+  property       Property?               @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  conversationId String?
+  conversation   ChatbotConversation?    @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  leadId         String?
+  lead           Lead?                   @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  caseType            ChatbotLearningCaseType
+  status              ChatbotLearningStatus @default(OPEN)
+  confidence          Float                 @default(0.5)
+  reasonSummary       String                @db.Text
+  evidenceJson        Json?
+  outcomeSnapshotJson Json?
+  dedupeKey           String
+  resolvedAt          DateTime?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  followUpTasks LeadFollowUpTask[]
+
+  @@unique([orgId, dedupeKey])
+  @@index([orgId, status, createdAt(sort: Desc)])
+  @@index([propertyId])
+  @@index([conversationId])
+  @@index([leadId])
+}
+
+model LeadFollowUpTask {
+  id             String                 @id @default(cuid())
+  orgId          String
+  org            Organization           @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId     String?
+  property       Property?              @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  leadId         String?
+  lead           Lead?                  @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  conversationId String?
+  conversation   ChatbotConversation?   @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  learningCaseId String?
+  learningCase   ChatbotLearningCase?   @relation(fields: [learningCaseId], references: [id], onDelete: SetNull)
+
+  taskType           LeadFollowUpTaskType
+  priority           Int                 @default(2)
+  status             LeadFollowUpTaskStatus @default(OPEN)
+  recommendedChannel LeadFollowUpChannel
+  dueAt              DateTime?
+  reasonSummary      String              @db.Text
+  dedupeKey          String
+  dismissedReason    String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  drafts LeadFollowUpDraft[]
+
+  @@unique([orgId, dedupeKey])
+  @@index([orgId, status, priority, dueAt])
+  @@index([propertyId])
+  @@index([leadId])
+  @@index([conversationId])
+  @@index([learningCaseId])
+}
+
+model LeadFollowUpDraft {
+  id                     String                 @id @default(cuid())
+  orgId                  String
+  org                    Organization           @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  taskId                 String
+  task                   LeadFollowUpTask       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  channel                LeadFollowUpChannel
+  subject                String?
+  body                   String                 @db.Text
+  generatedFromJson      Json?
+  complianceWarningsJson Json?
+  status                 LeadFollowUpDraftStatus @default(DRAFT)
+  editedBody             String?                @db.Text
+  sentAt                 DateTime?
+  sentAuditEventId       String?
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+
+  @@unique([taskId, channel])
+  @@index([orgId, status, createdAt(sort: Desc)])
+}
+
+model ChatbotKnowledgeSuggestion {
+  id            String               @id @default(cuid())
+  orgId         String
+  org           Organization         @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId    String?
+  property      Property?            @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  patternType   String
+  affectedCount Int                  @default(0)
+  suggestedText String               @db.Text
+  sourceCaseIds String[]             @default([])
+  status        RecommendationStatus @default(OPEN)
+  dedupeKey     String
+  appliedAt     DateTime?
+  dismissedAt   DateTime?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@unique([orgId, dedupeKey])
+  @@index([orgId, status, createdAt(sort: Desc)])
+  @@index([propertyId])
+}
+
+model ConversationInsight {
+  id                 String                  @id @default(cuid())
+  orgId              String
+  org                Organization            @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId         String?
+  property           Property?               @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  insightType        ConversationInsightType
+  title              String
+  summary            String                  @db.Text
+  affectedCount      Int                     @default(0)
+  impactScore        Int                     @default(0)
+  status             RecommendationStatus    @default(OPEN)
+  evidenceJson       Json?
+  recommendationJson Json?
+  sourceCaseIds      String[]                @default([])
+  dedupeKey          String
+  resolvedAt         DateTime?
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+
+  siteRecommendations SiteImprovementRecommendation[]
+
+  @@unique([orgId, dedupeKey])
+  @@index([orgId, status, impactScore])
+  @@index([propertyId])
+}
+
+model SiteImprovementRecommendation {
+  id                 String                 @id @default(cuid())
+  orgId              String
+  org                Organization           @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId         String?
+  property           Property?              @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  insightId          String?
+  insight            ConversationInsight?   @relation(fields: [insightId], references: [id], onDelete: SetNull)
+  recommendationType SiteImprovementType
+  targetSurface      SiteImprovementTarget
+  suggestedTitle     String
+  suggestedBody      String                 @db.Text
+  status             RecommendationStatus   @default(OPEN)
+  dedupeKey          String
+  appliedAt          DateTime?
+  dismissedAt        DateTime?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+
+  @@unique([orgId, dedupeKey])
+  @@index([orgId, status, createdAt(sort: Desc)])
+  @@index([propertyId])
+  @@index([insightId])
 }
 
 // ============================================================================
