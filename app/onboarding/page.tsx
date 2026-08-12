@@ -5,16 +5,17 @@ import { prisma } from "@/lib/db";
 import { BRAND_NAME } from "@/lib/brand";
 import { resolveCurrentStep } from "@/lib/onboarding/steps";
 import { OnboardingWizard } from "@/components/onboarding/wizard";
+import { PublicChatbotOnboarding } from "@/components/onboarding/public-chatbot-onboarding";
 import { getEffectiveFeatureCatalog } from "@/lib/billing/feature-prices";
 import { FEATURE_CATALOG } from "@/lib/billing/features";
 
 // ---------------------------------------------------------------------------
-// /onboarding — the self-serve, trial-first signup wizard.
+// /onboarding — public chatbot-first preview, then signed-in trial wizard.
 //
-// Replaces the legacy IntakeWizard (which was a sales-call intake form).
-// This is the actual product onboarding: a signed-in user lands here
-// right after Clerk signup, walks through three steps (workspace,
-// property, plan), and lands in the portal with a 14-day trial active.
+// Logged-out prospects can configure and preview a chatbot without creating
+// an account. Account creation is required only to save/install the chatbot
+// and enter the real product workspace. Signed-in users land in the persisted
+// trial wizard below and keep the existing DB-backed step flow.
 //
 // State persists on Organization.onboardingStep so closing the tab is
 // safe; the page reads the field on every load and renders the right
@@ -33,7 +34,7 @@ export const dynamic = "force-dynamic";
 export default async function OnboardingPage() {
   const { userId } = await auth();
   if (!userId) {
-    redirect("/sign-up?redirect_url=/onboarding");
+    return <PublicChatbotOnboarding />;
   }
 
   const user = await prisma.user.findUnique({
