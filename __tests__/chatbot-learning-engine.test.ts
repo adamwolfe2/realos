@@ -32,6 +32,19 @@ function conversation(
       budgetMonthly: "$995",
       followUpNeeded: "Send current availability and pricing options.",
     },
+    property: {
+      id: "prop_1",
+      name: "Telegraph Commons",
+      websiteUrl: "https://telegraphcommons.com",
+      virtualTourUrl: "https://telegraphcommons.com/tour",
+      notifyLeadEmailOverride: "leasing@telegraphcommons.com",
+      chatbotConfig: {
+        primaryCtaText: "Schedule a tour",
+        primaryCtaUrl: "https://telegraphcommons.com/contact#tour",
+        phoneNumber: "(510) 462-5442",
+        contactEmail: "hello@telegraphcommons.com",
+      },
+    },
     lead: {
       id: "lead_1",
       status: "NEW",
@@ -64,10 +77,48 @@ describe("chatbot learning engine", () => {
       leadId: "lead_1",
     });
     expect(plan.tasks[0]?.draft.body).toContain("Taylor");
+    expect(plan.tasks[0]?.draft.body).toContain("Telegraph Commons");
+    expect(plan.tasks[0]?.draft.body).toContain(
+      "https://telegraphcommons.com/contact#tour",
+    );
+    expect(plan.tasks[0]?.draft.body).toContain("(510) 462-5442");
     expect(plan.tasks[0]?.draft.body).toContain("Availability can change");
+    expect(plan.tasks[0]?.draft.generatedFrom).toMatchObject({
+      property: {
+        name: "Telegraph Commons",
+        primaryCtaUrl: "https://telegraphcommons.com/contact#tour",
+      },
+    });
     expect(plan.tasks[0]?.draft.complianceWarnings.join(" ")).toContain(
       "invented pricing",
     );
+  });
+
+  it("adds property tour links to visit-intent follow-up drafts", () => {
+    const plan = createLearningRunPlan(
+      [
+        conversation({
+          prospectProfile: {
+            sentiment: "warm",
+            roomType: "private room",
+            moveInDate: "fall",
+            followUpNeeded: "Invite the prospect to tour.",
+          },
+          messages: [
+            { role: "user", content: "Can I schedule a tour this week?" },
+            {
+              role: "assistant",
+              content: "Reach out to leasing to schedule a visit.",
+            },
+          ],
+        }),
+      ],
+      NOW,
+    );
+
+    expect(plan.tasks[0]?.taskType).toBe("INVITE_TO_TOUR");
+    expect(plan.tasks[0]?.draft.subject).toBe("Want to visit Telegraph Commons?");
+    expect(plan.tasks[0]?.draft.body).toContain("https://telegraphcommons.com/tour");
   });
 
   it("turns uncaptured mid-depth pricing conversations into knowledge and site recommendations", () => {

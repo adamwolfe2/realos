@@ -21,6 +21,20 @@ export type LearningLead = {
   residents: Array<{ id: string }>;
 };
 
+export type LearningProperty = {
+  id: string;
+  name: string;
+  websiteUrl: string | null;
+  virtualTourUrl: string | null;
+  notifyLeadEmailOverride: string | null;
+  chatbotConfig: {
+    primaryCtaText: string | null;
+    primaryCtaUrl: string | null;
+    phoneNumber: string | null;
+    contactEmail: string | null;
+  } | null;
+};
+
 export type LearningConversation = {
   id: string;
   orgId: string;
@@ -33,6 +47,7 @@ export type LearningConversation = {
   messages: unknown;
   prospectProfile: unknown;
   lead: LearningLead | null;
+  property: LearningProperty | null;
 };
 
 export type LearningCasePlan = {
@@ -445,6 +460,21 @@ function buildDraft(
   const room = compactString(profile.roomType);
   const moveIn = compactString(profile.moveInDate);
   const budget = compactString(profile.budgetMonthly);
+  const property = learningPropertyContext(conversation.property);
+  const propertyName = property.name ?? "the property";
+  const brandName = property.name ?? "us";
+  const tourPath = property.tourUrl
+    ? ` You can also use this tour link: ${property.tourUrl}.`
+    : "";
+  const ctaPath = property.primaryCtaUrl
+    ? ` The current next-step link is ${property.primaryCtaUrl}.`
+    : property.websiteUrl
+      ? ` The property website is ${property.websiteUrl}.`
+      : "";
+  const contactPath =
+    property.phoneNumber || property.contactEmail
+      ? ` Leasing can confirm details${property.phoneNumber ? ` by phone at ${property.phoneNumber}` : ""}${property.contactEmail ? `${property.phoneNumber ? " or" : ""} by email at ${property.contactEmail}` : ""}.`
+      : "";
 
   const contextLine = [
     room ? `a ${room}` : null,
@@ -457,22 +487,22 @@ function buildDraft(
   let subject: string | null = "Following up from your chat";
   let body: string;
   if (taskType === "INVITE_TO_TOUR") {
-    subject = "Want to schedule a tour?";
-    body = `${greeting}, thanks for chatting with us. If you are still interested${contextLine ? ` in ${contextLine}` : ""}, I can help you set up a tour or answer questions before you visit.`;
+    subject = `Want to visit ${propertyName}?`;
+    body = `${greeting}, thanks for chatting about ${propertyName}. If you are still interested${contextLine ? ` in ${contextLine}` : ""}, I can help you set up a tour or answer questions before you visit.${tourPath}${ctaPath}`;
   } else if (taskType === "APPLICATION_HELP") {
-    subject = "Application help";
-    body = `${greeting}, I saw you had questions about the application or leasing process. I can help point you to the right next step and answer anything that was unclear.`;
+    subject = `${propertyName} application help`;
+    body = `${greeting}, I saw you had questions about the application or leasing process for ${propertyName}. I can help point you to the right next step and answer anything that was unclear.${ctaPath}${contactPath}`;
   } else if (taskType === "SEND_AVAILABILITY_PRICING") {
-    subject = "Availability follow-up";
-    body = `${greeting}, thanks for checking us out. I saw you were looking for availability or pricing${contextLine ? ` for ${contextLine}` : ""}. Availability can change, so the best next step is to confirm your preferred room type and move-in timing, then we can point you to the right option.`;
+    subject = `${propertyName} availability follow-up`;
+    body = `${greeting}, thanks for checking out ${brandName}. I saw you were looking for availability or pricing${contextLine ? ` for ${contextLine}` : ""}. Availability can change, so the best next step is to confirm your preferred room type and move-in timing, then we can point you to the right option.${ctaPath}${contactPath}`;
   } else if (taskType === "CONFIRM_ROOM_TYPE") {
     subject = "Quick room preference question";
-    body = `${greeting}, quick follow-up from your chat: are you looking for a single, double, triple, or another room type? Once I know that, I can help narrow the next step.`;
+    body = `${greeting}, quick follow-up from your ${propertyName} chat: are you looking for a single, double, triple, or another room type? Once I know that, I can help narrow the next step.${ctaPath}`;
   } else if (taskType === "CONFIRM_MOVE_IN") {
     subject = "Quick move-in timing question";
-    body = `${greeting}, quick follow-up from your chat: when are you hoping to move in? Once I know the timing, I can help with the right availability path.`;
+    body = `${greeting}, quick follow-up from your ${propertyName} chat: when are you hoping to move in? Once I know the timing, I can help with the right availability path.${ctaPath}`;
   } else {
-    body = `${greeting}, thanks for chatting with us. I wanted to follow up and see if you are still looking or if there is anything we can answer for you.`;
+    body = `${greeting}, thanks for chatting about ${propertyName}. I wanted to follow up and see if you are still looking or if there is anything we can answer for you.${ctaPath}`;
   }
 
   if (channel === "SMS") {
@@ -488,12 +518,34 @@ function buildDraft(
       taskType,
       conversationId: conversation.id,
       leadId: conversation.leadId,
+      property,
       profile: safeProfileSummary(conversation.prospectProfile),
     },
     complianceWarnings: [
       "Review before sending.",
       "Draft does not include invented pricing, availability, or tour times.",
     ],
+  };
+}
+
+function learningPropertyContext(property: LearningProperty | null): {
+  name: string | null;
+  websiteUrl: string | null;
+  primaryCtaUrl: string | null;
+  tourUrl: string | null;
+  phoneNumber: string | null;
+  contactEmail: string | null;
+} {
+  const primaryCtaUrl = compactString(property?.chatbotConfig?.primaryCtaUrl);
+  return {
+    name: compactString(property?.name),
+    websiteUrl: compactString(property?.websiteUrl),
+    primaryCtaUrl,
+    tourUrl: compactString(property?.virtualTourUrl) ?? primaryCtaUrl,
+    phoneNumber: compactString(property?.chatbotConfig?.phoneNumber),
+    contactEmail:
+      compactString(property?.chatbotConfig?.contactEmail) ??
+      compactString(property?.notifyLeadEmailOverride),
   };
 }
 

@@ -104,6 +104,7 @@ check "/api/cron/lapsed-clients" "401"
 check "/api/cron/abandoned-carts" "401"
 check "/api/cron/weekly-report" "401"
 check "/api/cron/weekly-digest" "401"
+check "/api/cron/chatbot-learning-loop" "401"
 check "/api/cron/low-stock-alerts" "401"
 check "/api/cron/onboarding-drip" "401"
 

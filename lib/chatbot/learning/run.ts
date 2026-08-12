@@ -181,6 +181,23 @@ async function loadLearningConversations(params: {
       lastMessageAt: true,
       messages: true,
       prospectProfile: true,
+      property: {
+        select: {
+          id: true,
+          name: true,
+          websiteUrl: true,
+          virtualTourUrl: true,
+          notifyLeadEmailOverride: true,
+          chatbotConfig: {
+            select: {
+              primaryCtaText: true,
+              primaryCtaUrl: true,
+              phoneNumber: true,
+              contactEmail: true,
+            },
+          },
+        },
+      },
       lead: {
         select: {
           id: true,
@@ -212,6 +229,23 @@ async function loadLearningConversations(params: {
     lastMessageAt: row.lastMessageAt,
     messages: row.messages,
     prospectProfile: row.prospectProfile,
+    property: row.property
+      ? {
+          id: row.property.id,
+          name: row.property.name,
+          websiteUrl: row.property.websiteUrl,
+          virtualTourUrl: row.property.virtualTourUrl,
+          notifyLeadEmailOverride: row.property.notifyLeadEmailOverride,
+          chatbotConfig: row.property.chatbotConfig
+            ? {
+                primaryCtaText: row.property.chatbotConfig.primaryCtaText,
+                primaryCtaUrl: row.property.chatbotConfig.primaryCtaUrl,
+                phoneNumber: row.property.chatbotConfig.phoneNumber,
+                contactEmail: row.property.chatbotConfig.contactEmail,
+              }
+            : null,
+        }
+      : null,
     lead: row.lead
       ? {
           id: row.lead.id,

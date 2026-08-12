@@ -101,6 +101,10 @@
       "schedule": "*/5 * * * *"
     },
     {
+      "path": "/api/cron/chatbot-learning-loop",
+      "schedule": "17 5 * * *"
+    },
+    {
       "path": "/api/cron/funnel-lead-sync",
       "schedule": "*/5 * * * *"
     },

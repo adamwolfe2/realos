@@ -21,8 +21,8 @@ Assumptions: `LeadFollowUpTask.dueAt` can represent snooze-until for the current
 | 1. Review and send task controls | done | Added approve/dismiss/snooze/send controls, scoped server actions, tests, and build verification. |
 | 2. Learning feedback capture | done | Task sends, edits, dismissals, snoozes, and review actions now persist status/audit evidence. |
 | 3. Knowledge/site approval actions | done | Added apply/dismiss knowledge fixes, mark reviewed insights, and mark planned/dismiss site recommendations. |
-| 4. Scheduled learning cron | pending | Add cron endpoint and Vercel schedule after manual path proves safe. |
-| 5. Property-aware draft enrichment | pending | Use property config, tour URL, application URL, and leasing contact rules in drafts. |
+| 4. Scheduled learning cron | done | Added authenticated daily cron, Vercel schedule, bounded per-org execution, and cron health/error reporting. |
+| 5. Property-aware draft enrichment | done | Drafts now use property name, CTA/tour links, leasing contact overrides, and preserve no-invented-pricing safeguards. |
 
 ## Slice 1: Review and Send Task Controls
 
