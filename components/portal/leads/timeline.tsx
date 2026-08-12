@@ -331,7 +331,10 @@ function renderBody(event: TimelineEvent): React.ReactNode {
         <>
           <p className="text-sm text-foreground">
             <span className="font-medium">Email sent</span>
-            <span className="text-muted-foreground"> — {event.label}</span>
+            <span className="text-muted-foreground">
+              {" "}
+              — {formatEmailEventLabel(event.label)}
+            </span>
           </p>
           {event.subject ? (
             <p className="mt-0.5 text-xs text-foreground line-clamp-1">
@@ -355,4 +358,15 @@ function safePath(url: string): string {
   } catch {
     return url;
   }
+}
+
+function formatEmailEventLabel(label: string): string {
+  const labels: Record<string, string> = {
+    day_one_sent: "Day 1 nurture",
+    day_three_sent: "Day 3 nurture",
+    day_seven_sent: "Day 7 nurture",
+    day_thirty_sent: "Day 30 nurture",
+    year_one_sent: "Year 1 reactivation",
+  };
+  return labels[label] ?? label;
 }
