@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RunLearningButton } from "./run-learning-button";
+import { RecommendationActions } from "./recommendation-actions";
 
 export const metadata: Metadata = { title: "Chatbot insights" };
 export const dynamic = "force-dynamic";
@@ -270,6 +271,7 @@ export default async function ChatbotInsightsPage({
                     <p className="mt-1 line-clamp-3 text-[12px] leading-5 text-muted-foreground">
                       {insight.summary}
                     </p>
+                    <RecommendationActions id={insight.id} kind="insight" />
                   </li>
                 ))}
               </ul>
@@ -297,6 +299,7 @@ export default async function ChatbotInsightsPage({
                     <p className="mt-1 line-clamp-3 text-[12px] leading-5 text-foreground">
                       {suggestion.suggestedText}
                     </p>
+                    <RecommendationActions id={suggestion.id} kind="knowledge" />
                   </li>
                 ))}
               </ul>
@@ -324,6 +327,7 @@ export default async function ChatbotInsightsPage({
                     <p className="mt-1 line-clamp-3 text-[12px] leading-5 text-muted-foreground">
                       {rec.suggestedBody}
                     </p>
+                    <RecommendationActions id={rec.id} kind="site" />
                   </li>
                 ))}
               </ul>

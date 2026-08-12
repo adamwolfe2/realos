@@ -32,6 +32,17 @@ export function createMockPrisma() {
     lead: createModelMock(),
     leadFollowUpTask: createModelMock(),
     leadFollowUpDraft: createModelMock(),
+    chatbotKnowledgeSuggestion: createModelMock(),
+    conversationInsight: createModelMock(),
+    siteImprovementRecommendation: createModelMock(),
+    propertyChatbotConfig: {
+      ...createModelMock(),
+      upsert: vi.fn(),
+    },
+    tenantSiteConfig: {
+      ...createModelMock(),
+      upsert: vi.fn(),
+    },
     application: createModelMock(),
     quote: createModelMock(),
     product: createModelMock(),
