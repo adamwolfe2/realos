@@ -20,6 +20,8 @@ type Props = {
     id: string;
     taskType: string;
     priority: number;
+    status: string;
+    dueAt: string | null;
     recommendedChannel: string;
     reasonSummary: string;
     drafts: Draft[];
@@ -35,6 +37,11 @@ export function AiFollowUpTaskCard({ task }: Props) {
   const [isPending, startTransition] = React.useTransition();
   const disabled = isPending || !!pendingAction;
   const canSend = !!draft && (draft.channel === "EMAIL" || draft.channel === "SMS");
+  const bodyLimit = draft?.channel === "SMS" ? 1600 : 8000;
+  const charsRemaining = bodyLimit - body.length;
+  const edited =
+    !!draft && (body !== draft.body || subject !== (draft.subject ?? ""));
+  const dueLabel = formatDue(task.dueAt);
 
   function runTaskAction(action: "approve" | "dismiss" | "snooze") {
     setPendingAction(action);
@@ -72,11 +79,19 @@ export function AiFollowUpTaskCard({ task }: Props) {
           Priority {task.priority}
         </span>
         <span className="rounded-[2px] bg-muted px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          {task.taskType.replaceAll("_", " ").toLowerCase()}
+          {humanTaskType(task.taskType)}
         </span>
         <span className="rounded-[2px] bg-muted px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          {task.recommendedChannel}
+          {humanChannel(task.recommendedChannel)}
         </span>
+        <span className="rounded-[2px] bg-muted px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          {task.status.toLowerCase()}
+        </span>
+        {dueLabel ? (
+          <span className="rounded-[2px] bg-muted px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            {dueLabel}
+          </span>
+        ) : null}
       </div>
       <p className="mt-3 text-sm font-medium text-foreground">
         {task.reasonSummary}
@@ -102,12 +117,18 @@ export function AiFollowUpTaskCard({ task }: Props) {
             onChange={(event) => setBody(event.target.value)}
             disabled={disabled}
             rows={draft.channel === "SMS" ? 4 : 7}
-            maxLength={draft.channel === "SMS" ? 1600 : 8000}
+            maxLength={bodyLimit}
             className="w-full resize-none rounded-[2px] border border-border bg-background px-2 py-1.5 text-xs leading-5 text-muted-foreground"
           />
-          <p className="text-[10px] text-muted-foreground">
-            Review and edit before sending. LeaseStack will mark the task sent only after delivery succeeds.
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-muted-foreground">
+            <p>
+              Review and edit before sending. LeaseStack marks this sent only after delivery succeeds.
+            </p>
+            <p className={charsRemaining < 80 ? "font-semibold text-destructive" : undefined}>
+              {edited ? "Edited · " : ""}
+              {charsRemaining.toLocaleString()} chars left
+            </p>
+          </div>
         </div>
       ) : null}
       <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -156,4 +177,42 @@ export function AiFollowUpTaskCard({ task }: Props) {
       </div>
     </article>
   );
+}
+
+function humanTaskType(value: string): string {
+  const labels: Record<string, string> = {
+    SEND_AVAILABILITY_PRICING: "Availability/pricing",
+    INVITE_TO_TOUR: "Tour invite",
+    APPLICATION_HELP: "Application help",
+    GENERAL_FOLLOW_UP: "General follow-up",
+    CONFIRM_ROOM_TYPE: "Confirm room type",
+    CONFIRM_MOVE_IN: "Confirm move-in",
+  };
+  return labels[value] ?? value.replaceAll("_", " ").toLowerCase();
+}
+
+function humanChannel(value: string): string {
+  const labels: Record<string, string> = {
+    EMAIL: "Email",
+    SMS: "SMS",
+    CALL: "Call",
+    INTERNAL_NOTE: "Internal note",
+  };
+  return labels[value] ?? value;
+}
+
+function formatDue(value: string | null): string | null {
+  if (!value) return null;
+  const due = new Date(value);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const dueDay = new Date(due);
+  dueDay.setHours(0, 0, 0, 0);
+
+  if (dueDay < today) return "overdue";
+  if (dueDay.getTime() === today.getTime()) return "due today";
+  if (dueDay.getTime() === tomorrow.getTime()) return "due tomorrow";
+  return `due ${due.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
 }

@@ -36,6 +36,6 @@ export async function runConversationLearningAction(): Promise<
 
   return {
     ok: true,
-    message: `Created or refreshed ${result.persisted?.tasks ?? 0} follow-up tasks, ${result.persisted?.conversationInsights ?? 0} insights, and ${result.persisted?.siteRecommendations ?? 0} site recommendations.`,
+    message: `Scanned ${result.scannedConversations.toLocaleString()} conversations. Created or refreshed ${result.persisted?.tasks ?? 0} follow-up tasks, ${result.persisted?.knowledgeSuggestions ?? 0} knowledge fixes, ${result.persisted?.conversationInsights ?? 0} insights, and ${result.persisted?.siteRecommendations ?? 0} site recommendations.`,
   };
 }

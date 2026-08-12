@@ -86,9 +86,16 @@ export async function loadChatbotLearningSummary(params: {
   propertyIds?: string[] | null;
 }) {
   const propertyWhere = propertyScope(params.propertyIds);
+  const now = new Date();
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+  const endOfToday = new Date(startOfToday);
+  endOfToday.setDate(endOfToday.getDate() + 1);
   const [
     openTasks,
     highPriorityTasks,
+    overdueTasks,
+    dueTodayTasks,
     openInsights,
     openKnowledgeSuggestions,
     openSiteRecommendations,
@@ -96,6 +103,7 @@ export async function loadChatbotLearningSummary(params: {
     topInsights,
     knowledgeSuggestions,
     siteRecommendations,
+    latestRun,
   ] = await Promise.all([
     prisma.leadFollowUpTask.count({
       where: { orgId: params.orgId, status: LeadFollowUpTaskStatus.OPEN, ...propertyWhere },
@@ -105,6 +113,22 @@ export async function loadChatbotLearningSummary(params: {
         orgId: params.orgId,
         status: LeadFollowUpTaskStatus.OPEN,
         priority: { lte: 1 },
+        ...propertyWhere,
+      },
+    }),
+    prisma.leadFollowUpTask.count({
+      where: {
+        orgId: params.orgId,
+        status: LeadFollowUpTaskStatus.OPEN,
+        dueAt: { lt: startOfToday },
+        ...propertyWhere,
+      },
+    }),
+    prisma.leadFollowUpTask.count({
+      where: {
+        orgId: params.orgId,
+        status: LeadFollowUpTaskStatus.OPEN,
+        dueAt: { gte: startOfToday, lt: endOfToday },
         ...propertyWhere,
       },
     }),
@@ -141,16 +165,31 @@ export async function loadChatbotLearningSummary(params: {
       orderBy: { createdAt: "desc" },
       take: 5,
     }),
+    prisma.cronRun.findFirst({
+      where: { jobName: "chatbot-learning-loop" },
+      orderBy: { startedAt: "desc" },
+      select: {
+        id: true,
+        startedAt: true,
+        finishedAt: true,
+        status: true,
+        recordsProcessed: true,
+        durationMs: true,
+      },
+    }),
   ]);
 
   return {
     counts: {
       openTasks,
       highPriorityTasks,
+      overdueTasks,
+      dueTodayTasks,
       openInsights,
       openKnowledgeSuggestions,
       openSiteRecommendations,
     },
+    latestRun,
     recentTasks,
     topInsights,
     knowledgeSuggestions,

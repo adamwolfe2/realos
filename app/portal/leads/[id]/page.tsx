@@ -181,7 +181,7 @@ export default async function LeadDetailPage({
           { status: "SNOOZED", dueAt: { lte: new Date() } },
         ],
       },
-      orderBy: [{ priority: "asc" }, { createdAt: "desc" }],
+      orderBy: [{ priority: "asc" }, { dueAt: "asc" }, { createdAt: "desc" }],
       take: 5,
       include: {
         drafts: {
@@ -548,6 +548,8 @@ export default async function LeadDetailPage({
                   id: task.id,
                   taskType: task.taskType,
                   priority: task.priority,
+                  status: task.status,
+                  dueAt: task.dueAt?.toISOString() ?? null,
                   recommendedChannel: task.recommendedChannel,
                   reasonSummary: task.reasonSummary,
                   drafts: task.drafts,

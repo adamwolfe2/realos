@@ -15,6 +15,7 @@ import { EmptyState } from "@/components/portal/ui/empty-state";
 import {
   AlertTriangle,
   CheckCircle2,
+  Clock3,
   Lightbulb,
   ListChecks,
   ListFilter,
@@ -23,6 +24,7 @@ import {
   UserCheck,
   Wrench,
 } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { RunLearningButton } from "./run-learning-button";
 import { RecommendationActions } from "./recommendation-actions";
@@ -74,6 +76,13 @@ export default async function ChatbotInsightsPage({
   const maxKeyword = topKeywords[0]?.count ?? 1;
   const maxQuestion = topQuestions[0]?.count ?? 1;
   const hasData = totals.conversations > 0;
+  const latestRun = learning.latestRun;
+  const latestRunLabel = latestRun
+    ? formatDistanceToNow(latestRun.startedAt, { addSuffix: true })
+    : "Not run yet";
+  const latestRunHint = latestRun
+    ? `${latestRun.status}${latestRun.recordsProcessed == null ? "" : ` · ${latestRun.recordsProcessed.toLocaleString()} records`}`
+    : "Daily automation is scheduled";
 
   const periodQS = (days: number) => {
     const params = new URLSearchParams();
@@ -152,13 +161,19 @@ export default async function ChatbotInsightsPage({
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6">
         <KpiTile
           label="Follow-up tasks"
           value={learning.counts.openTasks.toLocaleString()}
-          hint={`${learning.counts.highPriorityTasks.toLocaleString()} high priority`}
+          hint={`${learning.counts.highPriorityTasks.toLocaleString()} high priority · ${learning.counts.overdueTasks.toLocaleString()} overdue`}
           icon={<ListChecks className="h-4 w-4" />}
           variant="accent"
+        />
+        <KpiTile
+          label="Due today"
+          value={learning.counts.dueTodayTasks.toLocaleString()}
+          hint="AI follow-ups ready now"
+          icon={<Clock3 className="h-4 w-4" />}
         />
         <KpiTile
           label="Conversation insights"
@@ -177,6 +192,12 @@ export default async function ChatbotInsightsPage({
           value={learning.counts.openSiteRecommendations.toLocaleString()}
           hint="copy and CTA gaps"
           icon={<AlertTriangle className="h-4 w-4" />}
+        />
+        <KpiTile
+          label="Last learning run"
+          value={latestRunLabel}
+          hint={latestRunHint}
+          icon={<RefreshStatusIcon status={latestRun?.status ?? null} />}
         />
         <KpiTile
           label="Approval mode"
@@ -420,4 +441,12 @@ export default async function ChatbotInsightsPage({
       )}
     </div>
   );
+}
+
+function RefreshStatusIcon({ status }: { status: string | null }) {
+  if (status === "ok") return <CheckCircle2 className="h-4 w-4" />;
+  if (status === "partial" || status === "error") {
+    return <AlertTriangle className="h-4 w-4" />;
+  }
+  return <Clock3 className="h-4 w-4" />;
 }
