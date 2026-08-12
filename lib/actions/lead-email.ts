@@ -32,6 +32,7 @@ const inputSchema = z.object({
   leadId: z.string().min(1),
   subject: z.string().min(1).max(200),
   body: z.string().min(1).max(8000),
+  skipAutoGreeting: z.boolean().optional(),
 });
 
 type SendResult =
@@ -53,7 +54,7 @@ export async function sendLeadEmail(input: unknown): Promise<SendResult> {
   if (!parsed.success) {
     return { ok: false, error: "Invalid input" };
   }
-  const { leadId, subject, body } = parsed.data;
+  const { leadId, subject, body, skipAutoGreeting } = parsed.data;
 
   // Tenant scope: only allow sending to leads in the caller's org, AND
   // property-level RBAC — same gate the sibling lead routes apply (see
@@ -98,7 +99,7 @@ export async function sendLeadEmail(input: unknown): Promise<SendResult> {
   const html = buildBaseHtml({
     headline: subject,
     bodyHtml: `${
-      greetingName
+      greetingName && !skipAutoGreeting
         ? `<p style="margin:0 0 12px;font-size:14px;line-height:1.6;">Hi ${escapeHtml(greetingName)},</p>`
         : ""
     }${formatBodyAsHtml(body)}`,

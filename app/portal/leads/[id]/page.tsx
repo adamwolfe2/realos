@@ -27,6 +27,7 @@ import { CopyButton } from "@/components/portal/leads/copy-button";
 import { LeadEmailComposer } from "@/components/portal/leads/email-composer";
 import { ReviewRequestButton } from "@/components/portal/leads/review-request-button";
 import { LeadSmsComposer } from "@/components/portal/leads/sms-composer";
+import { AiFollowUpTaskCard } from "@/components/portal/leads/ai-follow-up-task-card";
 import { isSmsConfigured } from "@/lib/sms/twilio";
 import { InsightCard, type InsightCardData } from "@/components/portal/insights/insight-card";
 import { MarkLostButton } from "./mark-lost-button";
@@ -175,7 +176,10 @@ export default async function LeadDetailPage({
       where: {
         orgId: scope.orgId,
         leadId: id,
-        status: { in: ["OPEN", "APPROVED"] },
+        OR: [
+          { status: { in: ["OPEN", "APPROVED"] } },
+          { status: "SNOOZED", dueAt: { lte: new Date() } },
+        ],
       },
       orderBy: [{ priority: "asc" }, { createdAt: "desc" }],
       take: 5,
@@ -537,47 +541,20 @@ export default async function LeadDetailPage({
             </div>
           </div>
           <div className="mt-4 grid grid-cols-1 gap-3">
-            {followUpTasks.map((task) => {
-              const draft = task.drafts[0] ?? null;
-              return (
-                <article
-                  key={task.id}
-                  className="rounded-[2px] border border-border bg-background p-4"
-                >
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-[2px] bg-muted px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      Priority {task.priority}
-                    </span>
-                    <span className="rounded-[2px] bg-muted px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      {task.taskType.replaceAll("_", " ").toLowerCase()}
-                    </span>
-                    <span className="rounded-[2px] bg-muted px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      {task.recommendedChannel}
-                    </span>
-                  </div>
-                  <p className="mt-3 text-sm font-medium text-foreground">
-                    {task.reasonSummary}
-                  </p>
-                  {task.learningCase?.reasonSummary ? (
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                      {task.learningCase.reasonSummary}
-                    </p>
-                  ) : null}
-                  {draft ? (
-                    <div className="mt-3 rounded-[2px] border border-border bg-card p-3">
-                      {draft.subject ? (
-                        <p className="text-xs font-semibold text-foreground">
-                          {draft.subject}
-                        </p>
-                      ) : null}
-                      <p className="mt-1 whitespace-pre-wrap text-xs leading-5 text-muted-foreground">
-                        {draft.body}
-                      </p>
-                    </div>
-                  ) : null}
-                </article>
-              );
-            })}
+            {followUpTasks.map((task) => (
+              <AiFollowUpTaskCard
+                key={task.id}
+                task={{
+                  id: task.id,
+                  taskType: task.taskType,
+                  priority: task.priority,
+                  recommendedChannel: task.recommendedChannel,
+                  reasonSummary: task.reasonSummary,
+                  drafts: task.drafts,
+                  learningCase: task.learningCase,
+                }}
+              />
+            ))}
           </div>
         </section>
       ) : null}

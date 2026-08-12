@@ -30,6 +30,8 @@ export function createMockPrisma() {
     webhookLog: createModelMock(),
     auditEvent: createModelMock(),
     lead: createModelMock(),
+    leadFollowUpTask: createModelMock(),
+    leadFollowUpDraft: createModelMock(),
     application: createModelMock(),
     quote: createModelMock(),
     product: createModelMock(),
