@@ -18,4 +18,13 @@ describe("public chatbot onboarding", () => {
     expect(component).toContain("leasestack:public-chatbot-onboarding");
     expect(component).toContain('params.set("redirect_url", "/onboarding")');
   });
+
+  it("routes the chatbot feature page into preview-first setup", () => {
+    const featurePage = read("app/(platform)/features/chatbot/page.tsx");
+
+    expect(featurePage).toContain('label: "Preview chatbot setup", href: "/onboarding"');
+    expect(featurePage).toContain('label: "Create account", href: "/sign-up"');
+    expect(featurePage).toContain("The first experience is the product");
+    expect(featurePage).toContain("Account needed only when you save and install.");
+  });
 });
