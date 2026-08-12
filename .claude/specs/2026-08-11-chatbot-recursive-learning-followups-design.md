@@ -4,16 +4,17 @@ Date: 2026-08-11
 
 ## Goal
 
-Make the LeaseStack chatbot learn from real lead outcomes and turn abandoned or stalled conversations into drafted follow-ups and recommended leasing-team tasks.
+Make the LeaseStack chatbot learn from real lead outcomes and turn abandoned or stalled conversations into drafted follow-ups, recommended leasing-team tasks, objection insights, website improvement recommendations, and chatbot knowledge-base fixes.
 
 This is a core product loop, not an extra feature:
 
 1. The chatbot talks to prospects.
 2. LeaseStack observes what happened next.
 3. The system identifies where the conversation stalled.
-4. It drafts a better follow-up or a knowledge-base improvement.
-5. The leasing team approves, edits, sends, or dismisses.
-6. Those operator decisions become training signal for the next draft.
+4. It identifies objections, missing answers, weak CTAs, and site content gaps.
+5. It drafts a better follow-up, task, chatbot knowledge update, or site improvement.
+6. The leasing team approves, edits, sends, applies, or dismisses.
+7. Those operator decisions become training signal for the next draft and the next chatbot/site recommendation.
 
 First rule: do not auto-send follow-ups in the first version. Generate drafts and tasks. Operators stay in control until enough trust and audit history exists.
 
@@ -139,10 +140,16 @@ Build a **Conversation Learning Loop** with three connected outputs:
 2. **Drafted Follow-Ups**
    AI-generated email/SMS drafts grounded in the transcript, prospect profile, property data, and the desired next step.
 
-3. **Chatbot Knowledge Improvements**
+3. **Conversation Insights**
+   Structured insights from real prospect language: objections, recurring questions, confusion points, missed CTAs, and conversion blockers.
+
+4. **Chatbot Knowledge Improvements**
    Suggested knowledge-base updates when repeated drop-offs come from missing answers, weak CTAs, or generic leasing-office handoffs.
 
-This should plug into the chatbot-first onboarding and Leasing Action Center spec. It is part of the core product spine.
+5. **Website Improvement Recommendations**
+   Suggested site copy, UX, and content changes when conversations reveal that the website is failing to answer the questions prospects keep asking.
+
+This should plug into the chatbot-selected onboarding branch and Leasing Action Center spec. It is part of the core product spine.
 
 ## Alternatives Considered
 
@@ -250,6 +257,119 @@ Each improvement includes:
 - approval state,
 - before/after test prompt.
 
+### Conversation Insight
+
+Conversation insights are the productized answer to: "What are prospects telling us that the site, chatbot, or leasing process is not handling?"
+
+Insight types:
+
+- `objection`
+- `missing_answer`
+- `pricing_confusion`
+- `availability_confusion`
+- `tour_friction`
+- `application_friction`
+- `policy_question`
+- `site_content_gap`
+- `weak_cta`
+- `high_converting_pattern`
+
+Each insight includes:
+
+- natural-language title,
+- affected conversation count,
+- representative sanitized themes,
+- funnel impact,
+- recommended owner,
+- recommended fix,
+- linked tasks/drafts/knowledge suggestions,
+- status.
+
+Examples:
+
+- "Prospects ask about singles/doubles/triples before sharing contact info."
+- "Pricing questions often end in a leasing-office handoff."
+- "Tour intent is not converting into tour records."
+- "The site likely does not make fall availability clear enough."
+
+### Website Improvement
+
+Website improvements are generated when lead conversations reveal missing or confusing public-site content.
+
+Examples:
+
+- add a pricing explainer section,
+- add current room-type availability,
+- clarify move-in timing for fall/semester leases,
+- make tour CTA more prominent,
+- add FAQ for utilities/furnished/laundry/pets/parking,
+- add application next-step copy,
+- add a chatbot answer source link for a frequently asked question.
+
+These should be recommendations first. If LeaseStack hosts the site, later versions can draft the exact content update in the site builder/content workflow.
+
+## Insight Generation Rules
+
+### Objection Detector
+
+Groups prospect messages by repeated blocker language:
+
+- price too high / budget mismatch,
+- no available preferred room type,
+- unclear move-in timing,
+- wants tour before applying,
+- application confusion,
+- policy concern,
+- competitor comparison.
+
+Output:
+
+- objection insight,
+- impacted leads/conversations,
+- recommended follow-up angle,
+- chatbot/site improvement suggestion.
+
+### Missing Answer Detector
+
+Finds repeated questions followed by assistant fallback language.
+
+Output:
+
+- knowledge suggestion,
+- site FAQ recommendation,
+- before/after test prompt.
+
+### Weak CTA Detector
+
+Finds assistant replies that send prospects to "contact leasing" or "check the site" without capturing contact info or offering a tour/application next step.
+
+Output:
+
+- chatbot prompt/knowledge improvement,
+- task template change,
+- CTA recommendation.
+
+### Site Gap Detector
+
+Finds questions that should already be answered on the public site because they are repeated and operationally stable.
+
+Output:
+
+- website improvement recommendation,
+- proposed copy block,
+- link to affected conversation cohort,
+- priority based on drop-off volume.
+
+### Winning Pattern Detector
+
+Compares conversations that became applied/signed against conversations that stalled.
+
+Output:
+
+- "what worked" insight,
+- recommended bot behavior to repeat,
+- follow-up template variant.
+
 ## Telegraph Commons Initial Task Rules
 
 Based on the analysis, the first SG rules should be:
@@ -333,7 +453,10 @@ Add a "Learning" panel:
 - drop-off cohort count,
 - top stalled reasons,
 - knowledge improvements waiting approval,
-- "Review follow-up tasks" link.
+- "Review follow-up tasks" link,
+- top objections,
+- website/site-content gaps,
+- high-converting answer patterns.
 
 ### Conversations Page
 
@@ -343,7 +466,10 @@ Add per-conversation learning status:
 - inferred intent,
 - follow-up needed,
 - suggested next action,
-- draft available.
+- draft available,
+- objection tags,
+- site gap tags,
+- knowledge gap tags.
 
 ### Lead Detail Page
 
@@ -371,6 +497,28 @@ Bulk actions should be review-only at first:
 - snooze selected.
 
 No bulk auto-send in v1.
+
+### Insights Page
+
+Add a conversation-insights section:
+
+- top objections,
+- missed-answer themes,
+- site improvement recommendations,
+- chatbot knowledge recommendations,
+- funnel impact,
+- accepted/dismissed state.
+
+This is where the product becomes more than a chatbot inbox. It shows what prospects are actually objecting to and what to fix in the site, chatbot, and leasing workflow.
+
+### Site Builder / Content
+
+When an insight is a public-site content gap:
+
+- show it in site/content workflows,
+- offer a drafted FAQ or section update,
+- keep approval/manual publish in v1,
+- link back to the conversation cohort that justified it.
 
 ### Knowledge Base
 
@@ -487,6 +635,39 @@ Fields:
 - appliedAt,
 - dismissedAt.
 
+### `ConversationInsight`
+
+Fields:
+
+- orgId,
+- propertyId,
+- insightType,
+- title,
+- summary,
+- affectedCount,
+- impactScore,
+- status,
+- evidenceJson,
+- recommendationJson,
+- sourceCaseIds,
+- createdAt,
+- resolvedAt.
+
+### `SiteImprovementRecommendation`
+
+Fields:
+
+- orgId,
+- propertyId,
+- insightId,
+- recommendationType,
+- targetSurface,
+- suggestedTitle,
+- suggestedBody,
+- status,
+- appliedAt,
+- dismissedAt.
+
 These should be tenant-scoped and property-RBAC-aware from the start.
 
 ## Generation Policy
@@ -514,8 +695,12 @@ In scope:
 
 - detector for stalled chatbot leads,
 - detector for uncaptured engaged conversations,
+- detector for objections/site gaps/missing answers,
 - task creation,
 - draft generation,
+- insight generation,
+- knowledge suggestion generation,
+- site improvement recommendation generation,
 - lead-detail draft review UI,
 - action-center list or dashboard panel,
 - operator feedback capture,
@@ -529,6 +714,7 @@ Out of scope:
 - voice,
 - full nurture sequences,
 - broad CRM replacement.
+- automatic site publishing.
 
 ## Validation Plan
 
@@ -540,6 +726,8 @@ Run against SG production data in dry-run first:
 - number with phone,
 - number blocked by missing contact,
 - number of knowledge suggestions,
+- number of objection/site-gap insights,
+- number of site improvement recommendations,
 - sample draft review internally without sending.
 
 Expected initial SG dry-run:
@@ -549,6 +737,7 @@ Expected initial SG dry-run:
 - availability/pricing as top draft reason,
 - tour scheduling as second draft reason,
 - knowledge suggestions for human-contact punts and capture CTA gaps.
+- site recommendations around pricing, availability, room types, move-in timing, and tour CTAs.
 
 ## Success Criteria
 
@@ -558,5 +747,6 @@ Expected initial SG dry-run:
 - No AI follow-up sends without explicit operator approval.
 - Operator edits/dismissals are stored as learning signal.
 - Repeated drop-off patterns create knowledge-base suggestions.
+- Repeated objections create actual insights for improving the site, chatbot knowledge base, and leasing workflow.
+- Conversation insights are visible beyond the conversation inbox.
 - Future reports can say: "These chatbot follow-ups created X tours/applications/signings."
-

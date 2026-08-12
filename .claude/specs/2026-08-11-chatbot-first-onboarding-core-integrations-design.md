@@ -1,26 +1,26 @@
-# Chatbot-First Onboarding + Core Integrations Design
+# Chatbot Self-Serve Onboarding + Core Integrations Design
 
 Date: 2026-08-11
 
 ## Goal
 
-Lower signup friction so a new operator can test LeaseStack quickly, usually through the chatbot, then discover the deeper platform naturally. The product should not feel like a collection of add-ons. It should feel like one leasing command center where every capability either makes the chatbot smarter, turns chatbot demand into action, or proves which actions create tours/applications/leases.
+Lower signup friction so a new operator who selects the chatbot can configure and test it without a sales call, while preserving the broader onboarding path for operators who want sites, attribution, SEO, reputation, ads, or PMS-backed portfolio setup. The product should not feel like a collection of add-ons. It should feel like one leasing command center where every capability either makes the chatbot smarter, turns chatbot demand into action, or proves which actions create tours/applications/leases.
 
 This design follows Adam's direction:
 
 - no services-first positioning,
 - no full-service agency language,
 - no property-management-system sprawl,
-- chatbot is the first "aha",
+- chatbot can be the first "aha" when the user selects it,
 - Respage-inspired capabilities become core integrations in the UI, not fluff.
 
 ## Product Thesis
 
-LeaseStack should onboard users through the fastest credible proof:
+LeaseStack should keep one onboarding system, but branch users into the fastest credible proof for the capability they selected. For chatbot-selected users, that proof is:
 
 > "Paste your property website. Test the AI leasing assistant. Then connect the pieces that make it smarter and more accountable."
 
-The onboarding path should not start with a feature cart. A curious operator does not know yet whether they want reputation, GBP, review requests, attribution, surveys, or resident support. They know they want a better leasing chatbot. Once they see the chatbot, the rest of the platform can be framed as the system around that assistant.
+The onboarding path can still include feature selection. The correction is that selecting chatbot should unlock a self-serve chatbot setup branch immediately after the core workspace/property basics are known. A curious operator who picked chatbot should not be forced through unrelated setup before seeing and configuring the assistant. Once they see the chatbot, the rest of the platform can be framed as the system around that assistant.
 
 ## Current Friction
 
@@ -31,7 +31,7 @@ Current onboarding is already no-card and trial-first:
 3. properties,
 4. done.
 
-The friction is ordering. Users must pick feature modules before value. The "features" step is a pricing/catalog decision, which belongs after the user has seen a working surface.
+The friction is not that feature selection exists. The friction is that choosing chatbot does not yet create a dedicated, low-friction path to configure and test the chatbot. The existing feature and property steps should remain, but chatbot-selected users need a branch that feels like "set up my assistant now," not "finish every possible platform setup task first."
 
 Portal welcome also pushes broad setup tasks:
 
@@ -44,23 +44,24 @@ That is useful for an already-convinced buyer, but heavy for a user who only wan
 
 ## Recommended Approach
 
-Use a **chatbot-first trial path** with progressive activation.
+Use a **chatbot-selected self-serve branch** with progressive activation.
 
 ### First-Run Flow
 
 1. User signs up.
-2. Workspace asks for:
+2. Existing onboarding collects workspace/package intent.
+3. If the user selects chatbot, onboarding collects:
    - company/workspace name,
    - property website URL,
    - optional property name if the URL cannot be parsed.
-3. LeaseStack creates:
+4. LeaseStack creates or updates:
    - org,
    - first property,
    - chatbot config,
    - starter knowledge base from the website crawl when available,
    - sample lead/transcript/demo state if live data is not available yet.
-4. User lands in **Chatbot Launchpad**, not the generic dashboard.
-5. Launchpad shows:
+5. User lands in **Chatbot Launchpad** after onboarding, instead of the generic welcome page.
+6. Launchpad shows:
    - live chatbot preview,
    - editable greeting/persona/knowledge,
    - install snippet,
@@ -78,17 +79,17 @@ Use a **chatbot-first trial path** with progressive activation.
 
 ## Alternative Approaches Considered
 
-### A. Keep Feature Cart, Improve Copy
+### A. Keep Feature Cart Only, Improve Copy
 
-This is the smallest change, but it still asks users to select tools before they understand the product. It is better for sales-qualified buyers than curious self-serve users.
+This is the smallest change, but it still leaves chatbot-selected users without a self-serve assistant setup branch. It is better for sales-qualified buyers than curious self-serve users.
 
 ### B. PMS-First Onboarding
 
 This creates high-quality data fast for serious operators, but it is the wrong first ask. Credentials, PMS admin permissions, and report availability introduce too much friction.
 
-### C. Chatbot-First Launchpad
+### C. Chatbot-Selected Launchpad
 
-Recommended. It gives value with a URL, then exposes PMS, reputation, GBP, surveys, review requests, attribution, and follow-up automation as connected jobs around one assistant.
+Recommended. It preserves broader onboarding, then gives chatbot-selected users value with a URL. PMS, reputation, GBP, surveys, review requests, attribution, and follow-up automation become connected jobs around one assistant.
 
 ## New Information Architecture
 
@@ -202,7 +203,7 @@ Includes:
 - install verification,
 - "what the bot cannot answer yet" question gaps.
 
-This replaces the generic post-onboarding welcome as the default landing page for users who start with chatbot.
+This becomes the post-onboarding landing page for users who selected chatbot. Users who did not select chatbot can keep the existing welcome/dashboard path.
 
 ### 3. Leasing Action Center
 
@@ -313,7 +314,18 @@ If PMS is not connected, still show partial funnel through lead/tour/application
 
 ## Onboarding Design
 
-### Step 1: Create Workspace
+This is a branch inside the existing onboarding flow, not a total replacement.
+
+### Branch Entry: Chatbot Selected
+
+Trigger:
+
+- user selects `moduleChatbot` during feature/package onboarding,
+- or user activates chatbot later from the portal.
+
+The same setup branch should be reusable from both places.
+
+### Chatbot Setup Step 1: Property Source
 
 Fields:
 
@@ -330,10 +342,11 @@ System behavior:
 - create org if needed,
 - create or update first property,
 - queue website ingest,
-- enable base platform + chatbot + conversations by default for trial,
-- start trial only after the preview is created or skipped.
+- enable chatbot + conversations when selected,
+- leave other selected modules intact,
+- do not disable broader onboarding choices.
 
-### Step 2: Chatbot Preview
+### Chatbot Setup Step 2: Chatbot Preview
 
 Content:
 
@@ -350,7 +363,7 @@ CTA choices:
 
 The user can continue even if ingest is still running.
 
-### Step 3: Launchpad
+### Chatbot Setup Step 3: Launchpad
 
 This is the first portal destination.
 
@@ -373,7 +386,7 @@ Secondary "make it stronger" integrations:
 
 ## Pricing / Packaging Implication
 
-For onboarding, default to:
+For chatbot-selected onboarding, default to:
 
 - base platform,
 - chatbot,
@@ -383,7 +396,7 @@ For onboarding, default to:
 - limited reputation scan or preview,
 - limited report preview.
 
-Do not show a broad module cart before trial activation.
+Do not remove the broader module/package path. Only avoid forcing chatbot-selected users through unrelated configuration before they can test the assistant.
 
 Inside the app, show upgrade prompts contextually:
 
@@ -409,13 +422,13 @@ This keeps the signup path frictionless while preserving monetization.
 
 ## Implementation Slices
 
-### Slice 1: Chatbot-First Onboarding
+### Slice 1: Chatbot-Selected Self-Serve Branch
 
-Replace onboarding order:
+Add a branch to the existing onboarding flow:
 
-- workspace + URL,
-- chatbot preview,
-- launchpad.
+- if chatbot is selected, collect property URL,
+- generate chatbot preview,
+- route to launchpad after onboarding.
 
 Retain existing property/manual/PMS capability behind "connect data source."
 
@@ -430,7 +443,7 @@ Build `/portal/launch` or repurpose `/portal/chatbot` top section:
 - knowledge gaps,
 - next integrations.
 
-Route new chatbot-first users there after signup.
+Route users who selected chatbot there after signup.
 
 ### Slice 3: Action Center
 
@@ -491,9 +504,8 @@ Normalize event history across:
 
 ## Success Criteria
 
-- A new user can reach a working chatbot preview from signup with only a website URL.
-- A new user does not have to choose a module package before seeing product value.
+- A new user who selected chatbot can reach a working chatbot preview from signup with only a website URL.
+- Broader onboarding remains available for non-chatbot packages.
 - First portal destination has a clear next action in under 10 seconds.
 - The chatbot page explains and launches at least three deeper platform loops: PMS availability, review booster, and attribution.
 - New core integrations feel operational: they live in launch/actions/reputation/performance workflows, not in a detached add-on grid.
-
