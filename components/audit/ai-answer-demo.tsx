@@ -256,7 +256,7 @@ export function AiAnswerDemo() {
           <span className="text-[10px] font-semibold uppercase tracking-[.1em]" style={{ color: "#6f6f6f" }}>
             Who owns the answer
           </span>
-          <span className="text-[10px]" style={{ color: "#8d8d8d" }}>sample data</span>
+          <span className="text-[10px]" style={{ color: "#6f6f6f" }}>sample data</span>
         </div>
         <div className="grid grid-cols-4 gap-3">
           {ENGINES.map((e) => (

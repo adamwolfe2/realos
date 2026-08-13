@@ -107,7 +107,8 @@ export function PlatformFooter() {
           className="mt-12 pt-6 flex flex-col md:flex-row items-center justify-between gap-3"
           style={{ borderTop: "1px solid #e0e0e0" }}
         >
-          <p style={{ color: "#8d8d8d", fontFamily: "var(--font-sans)", fontSize: "12px", fontWeight: 400 }}>
+          {/* #8d8d8d was 3.31:1 at 12px (axe serious); #6f6f6f = 5.02:1. */}
+          <p style={{ color: "#6f6f6f", fontFamily: "var(--font-sans)", fontSize: "12px", fontWeight: 400 }}>
             &copy; {year} {BRAND_NAME}
           </p>
         </div>

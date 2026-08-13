@@ -14,13 +14,15 @@ import { CountUp } from "@/components/audit/count-up";
 // numerals, rise-in entrance motion.
 // ---------------------------------------------------------------------------
 
-type Tone = { text: string; bar: string; wash: string };
+// `chip` is the darkened variant that stays AA (≥4.5) at 11px on the
+// 8%-alpha wash; the base tone lands at ~4.4 there and fails axe.
+type Tone = { text: string; bar: string; wash: string; chip: string };
 
 function toneFor(score: number): Tone {
-  if (score >= 80) return { text: "#24a148", bar: "#24a148", wash: "rgba(36,161,72,0.08)" };
-  if (score >= 65) return { text: "#0f62fe", bar: "#0f62fe", wash: "rgba(15,98,254,0.08)" };
-  if (score >= 45) return { text: "#b45309", bar: "#b45309", wash: "rgba(180,83,9,0.08)" };
-  return { text: "#da1e28", bar: "#da1e28", wash: "rgba(218,30,40,0.08)" };
+  if (score >= 80) return { text: "#24a148", bar: "#24a148", wash: "rgba(36,161,72,0.08)", chip: "#0e6027" };
+  if (score >= 65) return { text: "#0f62fe", bar: "#0f62fe", wash: "rgba(15,98,254,0.08)", chip: "#0043ce" };
+  if (score >= 45) return { text: "#b45309", bar: "#b45309", wash: "rgba(180,83,9,0.08)", chip: "#8a3800" };
+  return { text: "#da1e28", bar: "#da1e28", wash: "rgba(218,30,40,0.08)", chip: "#a2191f" };
 }
 
 export type FoldStat = { value: number; suffix?: string; label: string };
@@ -194,7 +196,7 @@ export function VerdictFold({
               />
               <span
                 className="text-[15px]"
-                style={{ fontFamily: "var(--font-mono)", color: "#8d8d8d" }}
+                style={{ fontFamily: "var(--font-mono)", color: "#6f6f6f" }}
               >
                 / 100
               </span>
@@ -217,7 +219,7 @@ export function VerdictFold({
                 className="mt-4 inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em]"
                 style={{
                   fontFamily: "var(--font-mono)",
-                  color: tone.text,
+                  color: tone.chip,
                   backgroundColor: tone.wash,
                   borderRadius: 999,
                 }}

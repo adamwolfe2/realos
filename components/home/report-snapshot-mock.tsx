@@ -28,7 +28,8 @@ import { CountUp } from "./count-up";
 
 const INK = "#161616";
 const MUTED = "#6f6f6f";
-const FAINT = "#8d8d8d";
+// 2026-08-13: was #8d8d8d — 3.31:1 at 10px, axe serious on /ai-visibility.
+const FAINT = "#6f6f6f";
 const BRAND = "#0f62fe";
 const BORDER = "#e0e0e0";
 const UP = "#24a148";

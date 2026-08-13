@@ -28,7 +28,8 @@ export function MentionCard({ m }: { m: AuditMention }) {
           <p className="text-sm font-semibold" style={{ color: "#1E2A3A" }}>
             {sourceLabel(m.source)}
           </p>
-          <p className="text-xs" style={{ color: "#9CA3AF" }}>
+          {/* was #9CA3AF — 2.53:1 at 12px, axe serious. #6B7280 = 4.83:1. */}
+          <p className="text-xs" style={{ color: "#6B7280" }}>
             {relativeTime(m.publishedAt)}
           </p>
         </div>
