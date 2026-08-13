@@ -919,11 +919,12 @@ function SourceBreakdown({
               style={{
                 backgroundColor: has ? "#FFFFFF" : "#FBFBFD",
                 border: `1px solid ${has ? "#E5E7EB" : "#F3F4F6"}`,
-                color: has ? "#1E2A3A" : "#9CA3AF",
+                // AA: zero-count chips were #9CA3AF at 0.85 opacity —
+                // 2.12:1 once the accordion default-opened (axe, 2026-08-13).
+                color: has ? "#1E2A3A" : "#5f6b7c",
                 fontFamily: "var(--font-sans)",
                 fontSize: 12,
                 fontWeight: 500,
-                opacity: has ? 1 : 0.85,
               }}
             >
               <span
@@ -936,7 +937,7 @@ function SourceBreakdown({
               <span>{label}</span>
               <span
                 className="tabular-nums"
-                style={{ color: has ? "#6B7280" : "#9CA3AF" }}
+                style={{ color: has ? "#6B7280" : "#5f6b7c" }}
               >
                 {count}
               </span>
