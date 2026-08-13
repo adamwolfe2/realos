@@ -43,6 +43,11 @@ import type { AeoEngine, Prisma } from "@prisma/client";
 // higher citation rate than discovery prompts, so the dashboard reads
 // as a real moat-vs-gap story instead of "0% across the board."
 const PROMPTS_PER_PROPERTY = 5;
+// Operator-added prompts run IN ADDITION to the generated set — they are
+// deliberate spend, so they don't compete with generated prompts for the
+// PROMPTS_PER_PROPERTY budget. The API layer caps active rows at 10 per
+// property; this cap is a second belt in case rows bypass the API.
+const CUSTOM_PROMPTS_PER_PROPERTY = 10;
 const PER_ENGINE_DELAY_MS = 3000;
 const PROJECTED_QUERIES_WARN = 100;
 const NEIGHBORHOOD_PROMPTS_PER_CLAIM_CAP = 3;
@@ -125,6 +130,26 @@ export async function runAeoScan(opts: ScanOptions): Promise<ScanResult> {
       // meaningfully non-zero citation rates immediately on branded.
       propertyName: property.name,
     }).slice(0, PROMPTS_PER_PROPERTY);
+
+    // Operator-added custom prompts — appended after the generated set,
+    // deduped case-insensitively against it.
+    const customRows = await prisma.aeoCustomPrompt.findMany({
+      where: {
+        orgId: property.orgId,
+        propertyId: property.id,
+        active: true,
+      },
+      orderBy: { createdAt: "asc" },
+      take: CUSTOM_PROMPTS_PER_PROPERTY,
+      select: { prompt: true },
+    });
+    const seenPrompts = new Set(prompts.map((p) => p.toLowerCase()));
+    for (const row of customRows) {
+      const text = row.prompt.trim();
+      if (!text || seenPrompts.has(text.toLowerCase())) continue;
+      seenPrompts.add(text.toLowerCase());
+      prompts.push(text);
+    }
 
     if (prompts.length === 0) {
       // Property lacks a city — nothing useful we can ask the engines.

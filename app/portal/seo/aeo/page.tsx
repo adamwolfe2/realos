@@ -2,6 +2,7 @@ import * as React from "react";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { withMarketableLifecycle } from "@/lib/properties/marketable";
 import { AeoClient } from "./aeo-client";
 import type { EngineCardData } from "./aeo-engine-cards";
 import type { ResponseRow } from "./aeo-responses-table";
@@ -318,6 +319,33 @@ export default async function AeoPage() {
     : null;
 
   // ---------------------------------------------------------------------
+  // Custom prompts — operator-added questions that run alongside the
+  // generated set in every scan. Property list mirrors what the scan
+  // orchestrator targets (marketable only), intersected with the user's
+  // property grants.
+  // ---------------------------------------------------------------------
+  const promptProperties = await prisma.property.findMany({
+    where: {
+      ...withMarketableLifecycle(tenantWhere(scope)),
+      ...(scope.allowedPropertyIds
+        ? { id: { in: scope.allowedPropertyIds } }
+        : {}),
+    },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+    take: 50,
+  });
+  const customPromptRows = await prisma.aeoCustomPrompt.findMany({
+    where: {
+      ...where,
+      propertyId: { in: promptProperties.map((p) => p.id) },
+    },
+    orderBy: [{ active: "desc" }, { createdAt: "desc" }],
+    take: 100,
+    select: { id: true, propertyId: true, prompt: true, active: true },
+  });
+
+  // ---------------------------------------------------------------------
   // AEO v2 W1 — AI Share of Voice aggregation. Reads AeoMentionSnapshot
   // rows from the last 30 days (DataForSEO-only), groups by engine for
   // the bar chart, and rolls up classified mentions into a top-entities
@@ -587,6 +615,10 @@ export default async function AeoPage() {
         competitorsNamed: competitorCounts.size,
       }}
       recommendations={recommendations}
+      customPrompts={{
+        properties: promptProperties,
+        prompts: customPromptRows,
+      }}
       shareOfVoice={{
         perEngine: sovPerEngine,
         topEntities,

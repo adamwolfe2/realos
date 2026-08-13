@@ -15,6 +15,10 @@ import {
   AeoResponsesTable,
   type ResponseRow,
 } from "./aeo-responses-table";
+import {
+  AeoCustomPrompts,
+  type CustomPromptsProps,
+} from "./aeo-custom-prompts";
 import type { ShareOfVoiceProps } from "@/components/portal/aeo/share-of-voice-card";
 import {
   OpportunityScoreCard,
@@ -64,6 +68,7 @@ export type AeoClientProps = {
   opportunityScore: OpportunityScoreProps;
   aiOverview: AiOverviewProps;
   onPageAudit: OnPageAuditProps;
+  customPrompts: CustomPromptsProps;
 };
 
 function fmtPercent(value: number): string {
@@ -319,6 +324,7 @@ export function AeoClient({
   opportunityScore,
   aiOverview,
   onPageAudit,
+  customPrompts,
 }: AeoClientProps) {
   // Whole-card activation gate only — once ANY signal exists anywhere on
   // this page, all four tabs render unconditionally. Per-tab presence
@@ -480,6 +486,12 @@ export function AeoClient({
       <div id="all-responses">
         <AeoResponsesTable rows={responses} />
       </div>
+
+      {/* Operator-added prompts — run alongside the generated set. */}
+      <AeoCustomPrompts
+        properties={customPrompts.properties}
+        prompts={customPrompts.prompts}
+      />
 
       {/* AEO v2: deeper AI-search intelligence, consolidated into one
           tabbed card. All four tabs always render once any signal exists

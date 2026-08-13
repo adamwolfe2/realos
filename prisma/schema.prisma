@@ -692,6 +692,7 @@ model Organization {
   zillowReports           ZillowReport[]
   aeoChecks               AeoCitationCheck[]
   aeoMentionSnapshots     AeoMentionSnapshot[]
+  aeoCustomPrompts        AeoCustomPrompt[]
   aeoOpportunityScores    AeoOpportunityScore[]
   aeoOverviewSnapshots    AeoOverviewSnapshot[]
   aeoOnPageAudits         AeoOnPageAudit[]
@@ -1276,6 +1277,7 @@ model Property {
   websiteBuildRequests   WebsiteBuildRequest[]
   aeoChecks              AeoCitationCheck[]
   aeoMentionSnapshots    AeoMentionSnapshot[]
+  aeoCustomPrompts       AeoCustomPrompt[]
   aeoOpportunityScores   AeoOpportunityScore[]
   aeoOnPageAudits        AeoOnPageAudit[]
   neighborhoodPages      NeighborhoodPage[]
@@ -4466,6 +4468,31 @@ model AeoCitationCheck {
   @@index([engine, queryRunAt])
   @@index([neighborhoodPageId, queryRunAt])
   @@index([orgId, mentioned, queryRunAt])
+}
+
+// ---------------------------------------------------------------------------
+// AeoCustomPrompt — operator-added prompts that run alongside the generated
+// ones in every AEO scan. Same lifecycle pattern as SeoTargetQuery: capped
+// active count per property to bound engine-call cost, mark inactive instead
+// of deleting so history stays interpretable.
+// ---------------------------------------------------------------------------
+model AeoCustomPrompt {
+  id         String   @id @default(cuid())
+  orgId      String
+  propertyId String
+  /// User-style natural-language prompt, run verbatim against every engine.
+  prompt     String   @db.Text
+  /// User id of the operator who added it.
+  addedBy    String?
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  org      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  property Property     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, propertyId, prompt])
+  @@index([orgId, propertyId, active])
 }
 
 // ---------------------------------------------------------------------------
