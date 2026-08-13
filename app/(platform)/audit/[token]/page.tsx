@@ -14,13 +14,23 @@ import {
   MentionsSection,
   type AuditMention,
 } from "@/components/audit/mentions-section";
-import { VerdictFold, type FoldStat } from "@/components/audit/verdict-fold";
+import {
+  VerdictFold,
+  type FoldStat,
+  type FoldEngine,
+  type FoldPillar,
+} from "@/components/audit/verdict-fold";
 import { ReportSpine, type SpineItem } from "@/components/audit/report-spine";
 import { PillarGrid } from "@/components/audit/pillar-grid";
 import { RecommendationsSection } from "@/components/audit/recommendations-section";
 import { BookCallCta } from "@/components/audit/book-call-cta";
 import { AuditTrustStrip } from "@/components/audit/audit-trust-strip";
 import { AeoEngineBreakdown } from "@/components/audit/aeo-engine-breakdown";
+import { AeoReceiptsBlock } from "@/components/audit/aeo-receipts";
+import {
+  AUDIT_PROMPTS_PER_ENGINE,
+  type AeoReceipt,
+} from "@/lib/signals/compute";
 import {
   GoogleAiOverviewCard,
   AeoOnPageCard,
@@ -33,6 +43,7 @@ import {
   BriefNarrativePanel,
   BriefSourcesBlock,
   SourceBullet,
+  displayName,
   ChatGPTMark,
   PerplexityMark,
   ClaudeMark,
@@ -94,6 +105,10 @@ interface Findings {
   // branded-only fallback on a new audit; absent = legacy audit.
   aeoDiscoveryRan?: boolean;
   aeoLocale?: { city: string | null; region: string | null } | null;
+  // Verbatim receipts (post-2026-08-14 audits).
+  aeoReceipts?: AeoReceipt[];
+  // Ranked competitor mentions (post-2026-08-14 audits).
+  aeoCompetitorsRanked?: Array<{ name: string; mentions: number }>;
   aeoOnPage?: AeoOnPageFindings | null;
   googleAiOverview?: GoogleAiOverviewFindings | null;
   detectedStack?: DetectedStack;
@@ -132,7 +147,9 @@ export async function generateMetadata({
   if (!audit) {
     return { title: `Audit not found | ${BRAND_NAME}` };
   }
-  const subject = audit.brandName ?? audit.domain;
+  // Same display-casing rule as the page body — "telegraph commons." in
+  // the tab title vs "Telegraph Commons" in the hero read as a typo.
+  const subject = displayName(audit.brandName ?? audit.domain);
   return {
     title: `${subject}. Digital Performance Score | ${BRAND_NAME}`,
     description: `Personalized Digital Performance Score for ${subject}. Six pillars of real-data benchmarking with a prioritized action plan.`,
@@ -187,13 +204,9 @@ export default async function AuditViewerPage({
     opportunities: [],
   };
   const subject = audit.brandName ?? audit.domain;
-  // Display-scale name: an all-lowercase brandName ("telegraph commons")
-  // reads as a typo at 66px. Title-case only when the input has no
-  // capitalization of its own.
-  const displaySubject =
-    subject === subject.toLowerCase()
-      ? subject.replace(/\b[a-z]/g, (c) => c.toUpperCase())
-      : subject;
+  // Display-scale name — shared rule with generateMetadata (brief-shell
+  // displayName): title-case all-lowercase brand names, never domains.
+  const displaySubject = displayName(subject);
   const dps = findings.dps;
   const recommendations = findings.recommendations ?? [];
   const mentions = findings.mentions ?? [];
@@ -211,6 +224,9 @@ export default async function AuditViewerPage({
   // aeoEngines field on findings) cleanly render as no-ops.
   const aeoEngines = findings.aeoEngines ?? [];
   const aeoCompetitorsCited = findings.aeoCompetitorsCited ?? [];
+  // Verbatim receipts (2026-08-14): additive field — legacy audits lack
+  // it and render exactly as before.
+  const aeoReceipts: AeoReceipt[] = findings.aeoReceipts ?? [];
   const aeoDiscoveryRan = findings.aeoDiscoveryRan;
   const aeoCity = findings.aeoLocale?.city ?? null;
   const googleAio = findings.googleAiOverview ?? null;
@@ -228,7 +244,7 @@ export default async function AuditViewerPage({
   const awareNotDiscovered = discoveryMode
     ? aeoEngines.filter((r) => r.discovered === false && r.aware).length
     : 0;
-  const totalAiResponses = enginesQueried * 5; // 5 prompts per engine
+  const totalAiResponses = enginesQueried * AUDIT_PROMPTS_PER_ENGINE;
 
   // ── Executive verdict: ONE sentence built from the report's real
   // numbers, highlighted phrase in the /ai-visibility marker style. ──────
@@ -271,6 +287,37 @@ export default async function AuditViewerPage({
       </>
     );
 
+  // Fold instrumentation (2026-08-14): per-engine 3-state minis + the
+  // six-pillar bars, both from data the report already carries.
+  const foldEngines: FoldEngine[] = aeoEngines.map((r) => ({
+    engine: r.engine,
+    state:
+      r.discovered !== undefined
+        ? r.discovered
+          ? "recommends"
+          : r.aware
+            ? "aware"
+            : "unknown"
+        : r.cited
+          ? "cited"
+          : "not_cited",
+  }));
+  const PILLAR_ORDER: Array<{ key: string; label: string }> = [
+    { key: "findability", label: "Findability" },
+    { key: "reputation", label: "Reputation" },
+    { key: "conversion", label: "Conversion" },
+    { key: "tracking", label: "Tracking" },
+    { key: "accessibility", label: "Accessibility" },
+    { key: "listings", label: "Listings" },
+  ];
+  const foldPillars: FoldPillar[] = dps
+    ? PILLAR_ORDER.map(({ key, label }) => ({
+        key,
+        label,
+        score: dps.pillars[key as keyof typeof dps.pillars]?.score ?? 0,
+      }))
+    : [];
+
   const foldStats: FoldStat[] = [
     { value: totalAiResponses, label: "live AI answers analyzed" },
     { value: mentions.length, label: "public mentions · past 90 days" },
@@ -311,7 +358,17 @@ export default async function AuditViewerPage({
           brandName={displaySubject}
           discoveryRan={aeoDiscoveryRan}
           city={aeoCity}
+          competitorsRanked={
+            notCited > 0 ? (findings.aeoCompetitorsRanked ?? []) : []
+          }
         />
+        {aeoReceipts.length > 0 ? (
+          <AeoReceiptsBlock
+            receipts={aeoReceipts}
+            brandName={displaySubject}
+            competitors={notCited > 0 ? aeoCompetitorsCited : []}
+          />
+        ) : null}
         {googleAio ? (
           <GoogleAiOverviewCard findings={googleAio} brandName={displaySubject} />
         ) : null}
@@ -472,6 +529,8 @@ export default async function AuditViewerPage({
         highSeverity={highSeverity}
         verdict={verdict}
         stats={foldStats}
+        engines={foldEngines}
+        pillars={foldPillars}
         secondaryCta={
           audit.email
             ? { href: "#three-things", label: "See the 3 things below" }
@@ -529,7 +588,10 @@ export default async function AuditViewerPage({
             mentionCount={mentions.length}
             findingCount={recommendations.length}
           >
-            <RecommendationsSection recommendations={recommendations} />
+            <RecommendationsSection
+              recommendations={recommendations}
+              spineIds={top3.map((t) => t.id)}
+            />
 
             <MentionsSection
               mentions={mentions}
@@ -595,6 +657,27 @@ export default async function AuditViewerPage({
             Appendix
           </p>
 
+          {/* Methodology first (2026-08-14): "live API calls, not stock
+              copy" is the strongest trust asset in the appendix — it was
+              dead last. */}
+          <AppendixItem
+            label="How this report was built"
+            sublabel={`${totalAiResponses > 0 ? `${totalAiResponses} live API calls · ` : ""}every source, traceable`}
+          >
+            {enginesQueried > 0 ? (
+              <AuditTrustStrip
+                brandName={displaySubject}
+                enginesQueried={enginesQueried}
+                reputationSources={7}
+                totalMentions={mentions.length}
+                totalAiResponses={totalAiResponses}
+                auditedAtIso={audit.createdAt.toISOString()}
+                auditId={audit.id}
+              />
+            ) : null}
+            <BriefSourcesBlock sources={sources} />
+          </AppendixItem>
+
           {dps ? (
             <AppendixItem label="Full scorecard" sublabel="six pillars, scored">
               <PillarGrid pillars={dps.pillars} />
@@ -635,23 +718,6 @@ export default async function AuditViewerPage({
             </AppendixItem>
           ) : null}
 
-          <AppendixItem
-            label="How this report was built"
-            sublabel={`${totalAiResponses > 0 ? `${totalAiResponses} live API calls · ` : ""}every source, traceable`}
-          >
-            {enginesQueried > 0 ? (
-              <AuditTrustStrip
-                brandName={displaySubject}
-                enginesQueried={enginesQueried}
-                reputationSources={7}
-                totalMentions={mentions.length}
-                totalAiResponses={totalAiResponses}
-                auditedAtIso={audit.createdAt.toISOString()}
-                auditId={audit.id}
-              />
-            ) : null}
-            <BriefSourcesBlock sources={sources} />
-          </AppendixItem>
         </section>
 
         <BookCallCta

@@ -26,22 +26,20 @@ export function BookCallCta({
   const href = process.env.NEXT_PUBLIC_CAL_BOOK_URL ?? FALLBACK_BOOK_URL;
   const isExternal = href.startsWith("http");
   return (
-    <div
-      className="sticky bottom-3 z-30 mt-8"
-      style={{ pointerEvents: "none" }}
-    >
+    // Docked bar, not a floating island (2026-08-14): the rounded island
+    // with transparent gutters read as content-overlapping-content while
+    // scrolling ("it covered the Yelp review"). Edge-to-edge solid white
+    // with a top hairline reads as page chrome — the same content passes
+    // beneath it without looking broken.
+    <div className="sticky bottom-0 z-30 mt-8 -mx-4 md:-mx-6">
       <div
-        className="max-w-[920px] mx-auto px-3 md:px-6"
-        style={{ pointerEvents: "auto" }}
+        className="bg-white px-4 md:px-6"
+        style={{
+          borderTop: "1px solid #E5E7EB",
+          boxShadow: "0 -6px 16px rgba(15, 23, 42, 0.05)",
+        }}
       >
-        <div
-          className="rounded-xl border bg-white px-4 py-3 sm:px-5 sm:py-3.5 flex items-center justify-between gap-3"
-          style={{
-            borderColor: "#E5E7EB",
-            boxShadow:
-              "0 8px 20px rgba(15, 23, 42, 0.08), 0 1px 4px rgba(15, 23, 42, 0.04)",
-          }}
-        >
+        <div className="max-w-[920px] mx-auto py-3 sm:py-3.5 flex items-center justify-between gap-3">
           <div className="flex-1 min-w-0">
             {/* One line on mobile — the wrapped title + subtitle made the
                 sticky bar eat a quarter of a phone viewport. */}

@@ -60,7 +60,13 @@ export function parseCitation(
       return {
         status: "CITED",
         citedUrl: url,
-        competitorsCited: [],
+        // 2026-08-14: extract rivals on the CITED branch too. An answer
+        // that names the brand AND five competitors used to contribute
+        // zero to the competitor tally, systematically undercounting for
+        // partially-visible properties. Consumers gate on status, so
+        // legacy behavior (competitors only read on COMPETITOR_CITED)
+        // is unchanged unless they opt in.
+        competitorsCited: extractCompetitorNames(text, aliases),
       };
     }
   }
@@ -68,7 +74,11 @@ export function parseCitation(
   // 2. Domain match — any URL hosted on the property's domain counts.
   const domainUrl = extractDomainUrl(text, target.websiteUrl);
   if (domainUrl) {
-    return { status: "CITED", citedUrl: domainUrl, competitorsCited: [] };
+    return {
+      status: "CITED",
+      citedUrl: domainUrl,
+      competitorsCited: extractCompetitorNames(text, aliases),
+    };
   }
 
   // 3. Competitor extraction — names we DIDN'T match.

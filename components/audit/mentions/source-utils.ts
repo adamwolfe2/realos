@@ -81,21 +81,23 @@ export function sentimentMeta(s: NonNullable<AuditMention["sentiment"]>): {
   }
 }
 
-// "3 days ago" / "2 weeks ago" — keeps the mention card visually scannable
-// at a glance. Defensive against malformed timestamps from upstream sources.
-export function relativeTime(iso: string | null): string {
-  if (!iso) return "recently";
+// Real dates build trust (2026-08-14 feedback: a wall of "recently"
+// reads as unverified). Fresh mentions keep the relative form ("3 days
+// ago" — scannable urgency); anything older renders the absolute date
+// ("Jul 2, 2026"). Unknown date → empty string; the card hides the
+// separator instead of implying a recency we can't back up.
+export function mentionDateLabel(iso: string | null): string {
+  if (!iso) return "";
   const t = new Date(iso).getTime();
-  if (!Number.isFinite(t)) return "recently";
+  if (!Number.isFinite(t)) return "";
   const deltaMs = Date.now() - t;
   const days = Math.floor(deltaMs / (24 * 60 * 60 * 1000));
   if (days <= 0) return "today";
   if (days === 1) return "1 day ago";
   if (days < 14) return `${days} days ago`;
-  const weeks = Math.floor(days / 7);
-  if (weeks < 9) return `${weeks} week${weeks === 1 ? "" : "s"} ago`;
-  const months = Math.floor(days / 30);
-  if (months < 12) return `${months} month${months === 1 ? "" : "s"} ago`;
-  const years = Math.floor(days / 365);
-  return `${years} year${years === 1 ? "" : "s"} ago`;
+  return new Date(t).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }

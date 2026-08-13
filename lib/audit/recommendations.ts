@@ -35,6 +35,10 @@ export interface ActionItem {
    *  grouping on the result page. */
   pillar: Pillar;
   severity: Severity;
+  /** "Copy for your web person" payload (2026-08-14). Plain-English
+   *  instructions + optional finished code snippet. Additive — legacy
+   *  persisted items lack it and render unchanged. */
+  handoff?: { instructions: string; snippet?: string };
 }
 
 /** Cheap snapshot of signal-derived booleans the recommendation engine
@@ -53,6 +57,16 @@ export interface RecSignals {
   hasNegativeMentions: boolean;
   /** Total mentions count from the reputation scan. */
   totalMentions: number;
+  /** Identity for handoff generation (2026-08-14). All optional —
+   *  legacy callers omit them and no snippets are generated. */
+  brandName?: string;
+  domain?: string;
+  /** Crawl-derived locale — powers the auto-generated JSON-LD snippet. */
+  locale?: {
+    city: string | null;
+    region: string | null;
+    category?: string | null;
+  } | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -347,7 +361,102 @@ export function computeRecommendations(
     });
   }
 
-  return sortBySeverity(recs);
+  return sortBySeverity(attachHandoffs(recs, recSignals));
+}
+
+// ---------------------------------------------------------------------------
+// Handoffs — "copy instructions for your web person" (2026-08-14)
+// ---------------------------------------------------------------------------
+
+/** Finished JSON-LD from crawl-derived identity. The PM pastes a done
+ *  snippet, not advice. Pure — exported for tests. */
+export function buildSchemaJsonLd(input: {
+  brandName: string;
+  domain: string;
+  city?: string | null;
+  region?: string | null;
+  category?: string | null;
+}): string {
+  const category = (input.category ?? "").toLowerCase();
+  const isResidence =
+    /apartment|student|housing|residen|senior|townhome|condo|dorm/.test(category) ||
+    category === "";
+  const jsonLd: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": isResidence ? "ApartmentComplex" : "LocalBusiness",
+    name: input.brandName,
+    url: `https://${input.domain}`,
+  };
+  if (input.city) {
+    jsonLd.address = {
+      "@type": "PostalAddress",
+      addressLocality: input.city,
+      ...(input.region ? { addressRegion: input.region } : {}),
+      addressCountry: "US",
+    };
+  }
+  // <-escape: JSON.stringify leaves "<" intact, so a crawl-derived
+  // name containing "</script>" would break out of the script element
+  // when pasted into a page (classic inline-JSON-LD injection). Escaped
+  // form is byte-safe in HTML and parses identically as JSON.
+  const json = JSON.stringify(jsonLd, null, 2).replace(/</g, "\\u003c");
+  return `<script type="application/ld+json">\n${json}\n</script>`;
+}
+
+/** Per-item plain-English handoff, with a finished code snippet where we
+ *  can generate one from crawl data. Every item gets instructions —
+ *  specific text for the ids a web person actually executes, a generic
+ *  brief for the rest. */
+function attachHandoffs(
+  recs: ActionItem[],
+  recSignals: RecSignals,
+): ActionItem[] {
+  const brandName = recSignals.brandName;
+  const domain = recSignals.domain;
+  return recs.map((item) => {
+    if (item.id === "rec-schema" && brandName && domain) {
+      const snippet = buildSchemaJsonLd({
+        brandName,
+        domain,
+        city: recSignals.locale?.city ?? null,
+        region: recSignals.locale?.region ?? null,
+        category: recSignals.locale?.category ?? null,
+      });
+      return {
+        ...item,
+        handoff: {
+          instructions:
+            `Paste the snippet below into the <head> of the ${domain} homepage (before </head>). ` +
+            `It's finished structured data generated from the site itself — no edits needed unless the address is wrong. ` +
+            `After deploying, validate at https://validator.schema.org by entering the homepage URL.`,
+          snippet,
+        },
+      };
+    }
+    if (item.id === "rec-seo") {
+      return {
+        ...item,
+        handoff: {
+          instructions:
+            `Run the homepage through https://pagespeed.web.dev and fix every item listed under the SEO category ` +
+            `(missing meta description, image alt text, crawlable links). Each fix is usually a one-line template change. ` +
+            `Target: SEO category 90+.`,
+        },
+      };
+    }
+    if (item.id === "rec-google-business") {
+      return {
+        ...item,
+        handoff: {
+          instructions:
+            `Claim or update the Google Business Profile for ${brandName ?? "the property"} at https://business.google.com. ` +
+            `Confirm the address, hours, photos, and website link, then post one update per month. ` +
+            `AI engines and Maps both read this profile directly.`,
+        },
+      };
+    }
+    return item;
+  });
 }
 
 // ---------------------------------------------------------------------------

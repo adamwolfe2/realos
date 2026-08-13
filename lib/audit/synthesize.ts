@@ -17,13 +17,14 @@ import type {
   LighthouseScores,
 } from "@/lib/seo/dataforseo";
 import type { ProspectMention } from "./reputation-prospect";
+import type { AeoReceipt } from "@/lib/signals/compute";
 import {
   crawlFindings,
   type SiteCrawlResult,
 } from "./site-crawl";
 import { computeDps, type DpsResult } from "./scoring";
 import { computeRecommendations, type ActionItem } from "./recommendations";
-import type { QuizAnswers } from "./quiz-questions";
+import { PILLAR_LABELS, type QuizAnswers } from "./quiz-questions";
 import {
   runOnPageAuditChecks,
   type OnPageAuditResult,
@@ -156,6 +157,14 @@ export type SynthesizedFindings = {
    *  False = branded-only fallback on a NEW audit (city not derivable —
    *  the UI says so). Absent = legacy audit. */
   aeoDiscoveryRan?: boolean;
+  /** Verbatim AI-answer excerpts, one per engine × prompt-kind
+   *  (2026-08-14). The receipts feed — "here is literally what ChatGPT
+   *  said." Absent = legacy audit; renderer branches on presence. */
+  aeoReceipts?: AeoReceipt[];
+  /** Ranked competitor mentions across discovery answers (2026-08-14).
+   *  Same {name, mentions} shape as the tenant report's topCompetitors.
+   *  Additive — the flat aeoCompetitorsCited list keeps being written. */
+  aeoCompetitorsRanked?: Array<{ name: string; mentions: number }>;
   /** City the discovery prompts searched, for renderer copy
    *  ("…when renters ask about Berkeley"). */
   aeoLocale?: { city: string | null; region: string | null } | null;
@@ -191,8 +200,17 @@ export type ProviderData = {
   /** True when unbranded discovery prompts ran (2026-08-13). Absent /
    *  false = branded-only legacy semantics. */
   aeoDiscoveryRan?: boolean;
-  /** Crawl-derived locale the discovery prompts used. */
-  aeoLocale?: { city: string | null; region: string | null } | null;
+  /** Verbatim answer excerpts from the fan-out (2026-08-14). */
+  aeoReceipts?: AeoReceipt[];
+  /** Ranked competitor mentions from discovery answers (2026-08-14). */
+  aeoCompetitorsRanked?: Array<{ name: string; mentions: number }>;
+  /** Crawl-derived locale the discovery prompts used. Category powers
+   *  the generated JSON-LD handoff snippet (2026-08-14). */
+  aeoLocale?: {
+    city: string | null;
+    region: string | null;
+    category?: string | null;
+  } | null;
   /** Google AI Overview captured during compute. Null when DataForSEO
    *  is unconfigured or the query returned no AI Overview. */
   googleAiOverview?: {
@@ -581,6 +599,11 @@ export async function synthesizeAudit(
     noSchemaMarkup: !hasSchemaMarkup,
     hasNegativeMentions,
     totalMentions: signals.reputation?.totalMentions ?? 0,
+    // Handoff identity (2026-08-14) — powers the generated JSON-LD
+    // snippet on the schema-gap item.
+    brandName: provider.brandName,
+    domain: provider.domain,
+    locale: provider.aeoLocale ?? null,
   });
 
   // 2026-05-29: quickWins cap raised from 5 → 10 so the punch-list
@@ -610,6 +633,8 @@ export async function synthesizeAudit(
     aeoEngines,
     aeoCompetitorsCited: provider.aeoCompetitorsCited,
     aeoDiscoveryRan: provider.aeoDiscoveryRan ?? false,
+    aeoReceipts: provider.aeoReceipts ?? [],
+    aeoCompetitorsRanked: provider.aeoCompetitorsRanked ?? [],
     aeoLocale: provider.aeoLocale ?? null,
     aeoOnPage,
     googleAiOverview,
@@ -969,7 +994,7 @@ async function writeNarrative(
       model: anthropic("claude-haiku-4-5-20251001"),
       system:
         "You are a senior property marketing analyst writing directly to the property operator. Plain text only: no markdown, no headings, no asterisks, no bullet markers, no em dashes. Never invent statistics; every number must come from the fact sheet.",
-      prompt: `Write the "What this means" verdict for ${provider.brandName}. Exactly 3 sentences. Second person throughout (you, your property). Each sentence cites exactly one concrete number from the fact sheet; pick the three numbers an owner would care about most. Do not recite the overall score. No marketing fluff, no list of recommendations.
+      prompt: `Write the "What this means" verdict for ${provider.brandName}. Exactly 3 sentences. Second person throughout (you, your property). Each sentence cites exactly one concrete number from the fact sheet; pick the three numbers an owner would care about most. Do not recite the overall score. Never compute your own percentages or averages — use counts exactly as written. Never call any score "perfect". No marketing fluff, no list of recommendations.
 
 FACT SHEET
 ${factSheet}`,
@@ -1025,9 +1050,20 @@ function buildFactSheet(
   const lines: string[] = [];
   lines.push(`Brand: ${provider.brandName}`);
   lines.push(`Domain: ${provider.domain}`);
-  lines.push(`Overall score: ${signals.overallScore}/100`);
+  // 2026-08-14: the fact sheet must cite THE SAME numbers the report
+  // renders — the six-pillar DPS — never the internal 4-section signal
+  // model. A narrative that says "65/100" while the hero shows 47 kills
+  // every other number on the page. (Adam feedback, TC report.)
+  const dps = findings.dps;
+  lines.push(`Overall Digital Performance Score: ${dps.score}/100`);
   lines.push(
-    `Section scores: SEO ${signals.seo?.score ?? "n/a"}, AEO ${signals.aeo?.score ?? "n/a"}, Reputation ${signals.reputation?.score ?? "n/a"}, Traffic ${signals.traffic?.score ?? "n/a"}`,
+    `Pillar scores (these are the only scores the reader sees): ` +
+      (Object.entries(dps.pillars) as Array<[string, { score: number }]>)
+        .map(
+          ([name, p]) =>
+            `${PILLAR_LABELS[name as keyof typeof PILLAR_LABELS] ?? name} ${p.score}`,
+        )
+        .join(", "),
   );
   if (provider.lighthouse) {
     lines.push(
@@ -1045,14 +1081,15 @@ function buildFactSheet(
       `SEO: ${signals.seo.organicKeywords} ranked keywords (${signals.seo.top10Count} in top 10); est. Monthly traffic ${signals.seo.estimatedTraffic.toLocaleString()}`,
     );
   }
-  if (provider.backlinks) {
-    lines.push(
-      `Backlinks: ${provider.backlinks.backlinks ?? 0} total, ${provider.backlinks.referring_domains ?? 0} referring domains, rank ${provider.backlinks.rank ?? "n/a"}`,
-    );
-  }
+  // Backlinks intentionally omitted: the report never renders backlink
+  // counts, and a narrative citing numbers the reader can't find reads
+  // as a different report bolted on.
   if (signals.aeo) {
+    const discovery = provider.aeoDiscoveryRan === true;
     lines.push(
-      `AEO: ${signals.aeo.citationsFound}/${signals.aeo.enginesChecked} engines cited the brand (rate ${(signals.aeo.citationRate * 100).toFixed(0)}%). Cited: ${provider.aeoCitedEngines.join(", ") || "none"}. Uncited: ${provider.aeoUncitedEngines.join(", ") || "none"}.`,
+      discovery
+        ? `AI search: ${provider.aeoCitedEngines.length} of ${signals.aeo.enginesChecked} engines recommend the property unprompted (${provider.aeoCitedEngines.join(", ") || "none"}). Not recommending it: ${provider.aeoUncitedEngines.join(", ") || "none"}.`
+        : `AI search: ${provider.aeoCitedEngines.length} of ${signals.aeo.enginesChecked} engines named the brand when asked about it directly (${provider.aeoCitedEngines.join(", ") || "none"}). This checked brand-name questions only.`,
     );
     if (provider.aeoCompetitorsCited.length > 0) {
       lines.push(
@@ -1061,8 +1098,13 @@ function buildFactSheet(
     }
   }
   if (signals.reputation) {
+    const mix = signals.reputation.sentimentMix;
+    const total = signals.reputation.totalMentions;
+    const pos = Math.round(mix.positive * total);
+    const neg = Math.round(mix.negative * total);
+    const neutral = Math.max(0, total - pos - neg);
     lines.push(
-      `Reputation (last 90d): ${signals.reputation.totalMentions} mentions; sentiment positive ${(signals.reputation.sentimentMix.positive * 100).toFixed(0)}%, negative ${(signals.reputation.sentimentMix.negative * 100).toFixed(0)}%.`,
+      `Reputation (last 90d): ${total} public mentions — ${pos} positive, ${neg} negative, ${neutral} neutral/unclassified.`,
     );
   }
   if (findings.mentions.length > 0) {
@@ -1081,7 +1123,7 @@ function fallbackNarrative(
 ): string {
   const parts: string[] = [];
   parts.push(
-    `${provider.brandName} (${provider.domain}) sits at an overall score of ${signals.overallScore}/100.`,
+    `${provider.brandName} (${provider.domain}) sits at an overall score of ${findings.dps.score}/100.`,
   );
   if (provider.lighthouse?.seo != null) {
     parts.push(

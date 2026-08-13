@@ -2,6 +2,7 @@ import Link from "next/link";
 import { PILLAR_LABELS, type Pillar } from "@/lib/audit/quiz-questions";
 import type { ActionItem } from "@/lib/audit/recommendations";
 import { getFeature, getFeatureCta } from "@/lib/audit/feature-catalog";
+import { CopyHandoffButton } from "@/components/audit/copy-handoff-button";
 
 // RecommendationsSection. The sales-tool layer of the audit result.
 //
@@ -28,14 +29,23 @@ const SEVERITY_TONE: Record<Severity, { tag: string; bar: string; bg: string }> 
 
 export function RecommendationsSection({
   recommendations,
+  spineIds = [],
 }: {
   recommendations: ActionItem[];
+  /** Ids already presented as the top-3 "short version" above. Those
+   *  render as one-line back-references here instead of repeating the
+   *  full card copy verbatim (2026-08-14 feedback: the dupe reads as
+   *  padding). */
+  spineIds?: string[];
 }) {
   if (recommendations.length === 0) return null;
+  const spineSet = new Set(spineIds);
+  const covered = recommendations.filter((r) => spineSet.has(r.id));
+  const remaining = recommendations.filter((r) => !spineSet.has(r.id));
   const groups: Record<Severity, ActionItem[]> = {
-    high: recommendations.filter((r) => r.severity === "high"),
-    medium: recommendations.filter((r) => r.severity === "medium"),
-    low: recommendations.filter((r) => r.severity === "low"),
+    high: remaining.filter((r) => r.severity === "high"),
+    medium: remaining.filter((r) => r.severity === "medium"),
+    low: remaining.filter((r) => r.severity === "low"),
   };
 
   return (
@@ -53,6 +63,34 @@ export function RecommendationsSection({
         {recommendations.length} thing
         {recommendations.length === 1 ? "" : "s"} we'd fix, in priority order
       </h2>
+
+      {covered.length > 0 ? (
+        <div
+          className="mt-3 px-3.5 py-2.5"
+          style={{
+            backgroundColor: "#FBFBFD",
+            border: "1px solid #E5E7EB",
+            borderRadius: 2,
+          }}
+        >
+          <p className="text-[12.5px]" style={{ color: "#525252" }}>
+            {covered.length === 1 ? "The top item is" : `The top ${covered.length} are`}{" "}
+            covered in detail above:{" "}
+            {covered.map((item, i) => (
+              <span key={item.id}>
+                <a
+                  href="#three-things"
+                  className="underline underline-offset-2"
+                  style={{ color: "#1E2A3A", fontWeight: 500 }}
+                >
+                  {item.title}
+                </a>
+                {i < covered.length - 1 ? " · " : ""}
+              </span>
+            ))}
+          </p>
+        </div>
+      ) : null}
 
       <div className="mt-4 flex flex-col gap-5">
         {(["high", "medium", "low"] as Severity[]).map((sev) => {
@@ -160,6 +198,40 @@ function RecommendationCard({ item }: { item: ActionItem }) {
         >
           {item.why}
         </p>
+        {item.handoff ? (
+          <details className="mt-1">
+            <summary
+              className="cursor-pointer list-none text-[12px] font-medium"
+              style={{ color: "#2563EB" }}
+            >
+              What to tell your web person
+            </summary>
+            <p
+              className="mt-1.5 text-[12px] leading-relaxed"
+              style={{ color: "#4B5563" }}
+            >
+              {item.handoff.instructions}
+            </p>
+            {item.handoff.snippet ? (
+              <pre
+                className="mt-2 overflow-x-auto p-2.5 text-[11px] leading-snug"
+                style={{
+                  backgroundColor: "#161616",
+                  color: "#f4f4f4",
+                  borderRadius: 2,
+                }}
+              >
+                <code>{item.handoff.snippet}</code>
+              </pre>
+            ) : null}
+            <div className="mt-2">
+              <CopyHandoffButton
+                instructions={item.handoff.instructions}
+                snippet={item.handoff.snippet}
+              />
+            </div>
+          </details>
+        ) : null}
         {cta ? (
           <div className="mt-auto pt-1">
             <Link

@@ -31,6 +31,18 @@ import { BRAND_NAME } from "@/lib/brand";
 // linkify a building or competitor name to its marketing site. Extend
 // freely; missing entries fall back to plain text.
 // ---------------------------------------------------------------------------
+/** Display-scale casing for an audit subject. All-lowercase brand names
+ *  ("telegraph commons") read as typos at 66px, so title-case them —
+ *  but never touch domains ("telegraphcommons.com" must not become
+ *  "Telegraphcommons.Com"). ONE rule for the hero, the tab title, and
+ *  every section (2026-08-14: two divergent copies of this logic
+ *  produced exactly the mismatch it exists to prevent). */
+export function displayName(raw: string): string {
+  return raw === raw.toLowerCase() && !raw.includes(".")
+    ? raw.replace(/\b[a-z]/g, (c) => c.toUpperCase())
+    : raw;
+}
+
 export const COMPETITOR_URLS: Record<string, string> = {
   // SF Class-A office (255 Cal brief comp set)
   "555 California Street": "https://www.555california.com/",
@@ -187,7 +199,9 @@ export function BriefShellFooter({
           <span>
             Report id{" "}
             <span style={{ color: "#1E2A3A", fontWeight: 600 }}>
-              {reportId.slice(0, 12)}
+              {/* Same 8-char truncation as the trust strip — the id
+                  appearing two different ways read as unproofed. */}
+              {reportId.slice(0, 8)}
             </span>
           </span>
           <span aria-hidden style={{ color: "#CBD5E1" }} className="hidden md:inline">

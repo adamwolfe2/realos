@@ -10,13 +10,15 @@
 import { ExternalLink } from "lucide-react";
 import type { AuditMention, AuditMentionSource } from "./types";
 import {
-  relativeTime,
+  mentionDateLabel,
   sentimentMeta,
   sourceLabel,
 } from "./source-utils";
 import { SourceGlyph } from "./source-glyphs";
+import { safeHttpUrl } from "@/lib/safe-url";
 
 export function MentionCard({ m }: { m: AuditMention }) {
+  const dateLabel = mentionDateLabel(m.publishedAt);
   return (
     <li
       className="rounded-xl border bg-white p-5 sm:p-6 flex items-start gap-4 relative"
@@ -29,9 +31,11 @@ export function MentionCard({ m }: { m: AuditMention }) {
             {sourceLabel(m.source)}
           </p>
           {/* was #9CA3AF — 2.53:1 at 12px, axe serious. #6B7280 = 4.83:1. */}
-          <p className="text-xs" style={{ color: "#6B7280" }}>
-            {relativeTime(m.publishedAt)}
-          </p>
+          {dateLabel ? (
+            <p className="text-xs" style={{ color: "#6B7280" }}>
+              {dateLabel}
+            </p>
+          ) : null}
         </div>
         {m.title ? (
           <p
@@ -49,16 +53,18 @@ export function MentionCard({ m }: { m: AuditMention }) {
             {m.snippet}
           </p>
         ) : null}
-        <a
-          href={m.url}
-          target="_blank"
-          rel="noopener noreferrer nofollow"
-          className="text-xs font-medium mt-3 inline-flex items-center gap-1.5"
-          style={{ color: "#2563EB" }}
-        >
-          View source
-          <ExternalLink size={14} aria-hidden />
-        </a>
+        {safeHttpUrl(m.url) ? (
+          <a
+            href={safeHttpUrl(m.url)!}
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            className="text-xs font-medium mt-3 inline-flex items-center gap-1.5"
+            style={{ color: "#2563EB" }}
+          >
+            View source
+            <ExternalLink size={14} aria-hidden />
+          </a>
+        ) : null}
       </div>
       <SentimentDot sentiment={m.sentiment ?? null} />
     </li>

@@ -23,6 +23,7 @@ import {
 } from "@/lib/seo/dataforseo";
 import { ALL_ENGINES } from "@/lib/aeo/engines";
 import { parseCitation } from "@/lib/aeo/parse";
+import { stripChatbotMarkdown } from "@/lib/chatbot/strip-markdown";
 import {
   runProspectReputation,
   brandNameFromDomain,
@@ -72,6 +73,11 @@ export type ProspectComputeResult = SignalSnapshot & {
     aeoLocale: PropertyLocale | null;
     /** True when unbranded discovery prompts ran (city derivable). */
     aeoDiscoveryRan: boolean;
+    /** Verbatim answer excerpts, one per engine × prompt-kind
+     *  (2026-08-14). Persisted onto findings as the receipts feed. */
+    aeoReceipts: AeoReceipt[];
+    /** Ranked competitor mentions from discovery answers (2026-08-14). */
+    aeoCompetitorsRanked: Array<{ name: string; mentions: number }>;
     /** Google AI Overview captured for one branded query during the
      *  audit run. Powers the verbatim "this is what Google AI says
      *  about you today" section on the result page. Null when
@@ -211,6 +217,8 @@ async function computeProspectSignals(
       aeoUncitedEngines: aeoData.uncitedEngines,
       aeoLocale: derivedLocale,
       aeoDiscoveryRan: aeoData.discoveryRan,
+      aeoReceipts: aeoData.receipts,
+      aeoCompetitorsRanked: aeoData.competitorsRanked,
       googleAiOverview: aioData,
     },
   };
@@ -435,6 +443,15 @@ type AeoFanout = {
   /** True when unbranded discovery prompts ran. False = branded-only
    *  fallback (city not derivable) — legacy semantics preserved. */
   discoveryRan: boolean;
+  /** Verbatim receipts (2026-08-14): one curated answer excerpt per
+   *  engine × prompt-kind. The fan-out already holds every responseText
+   *  in memory — persisting a capped excerpt is free and is the single
+   *  highest-trust artifact the report can show. */
+  receipts: AeoReceipt[];
+  /** Ranked competitor mentions across discovery answers (2026-08-14).
+   *  Same {name, mentions} shape as the tenant report's topCompetitors.
+   *  Additive alongside the flat competitorsCited list. */
+  competitorsRanked: Array<{ name: string; mentions: number }>;
 };
 
 function emptyAeoFanout(): AeoFanout {
@@ -447,10 +464,91 @@ function emptyAeoFanout(): AeoFanout {
     citedEngines: [],
     uncitedEngines: [],
     discoveryRan: false,
+    receipts: [],
+    competitorsRanked: [],
   };
 }
 
 export type AuditPrompt = { text: string; kind: "branded" | "discovery" };
+
+/** Prompts per engine in the audit fan-out — 5 in both modes (2 branded
+ *  + 3 discovery, or 5 branded legacy). Exported so the report's "N live
+ *  API calls" trust copy can't drift from the fan-out. */
+export const AUDIT_PROMPTS_PER_ENGINE = 5;
+
+/** One verbatim AI-answer excerpt, persisted onto findings so the report
+ *  can show "here is literally what ChatGPT said." Additive JSONB field —
+ *  legacy audits simply lack it and render unchanged. */
+export type AeoReceipt = {
+  engine: "CHATGPT" | "PERPLEXITY" | "CLAUDE" | "GEMINI";
+  kind: AuditPrompt["kind"];
+  /** The exact prompt we asked the engine. */
+  prompt: string;
+  /** Markdown-stripped answer excerpt, capped ~500 chars on a word
+   *  boundary. */
+  excerpt: string;
+};
+
+const RECEIPT_EXCERPT_CAP = 500;
+
+/** Strip markdown + cap for a persisted receipt excerpt. Pure — exported
+ *  for tests. Reuses the chatbot markdown stripper, then removes the
+ *  link/heading syntax LLM answers add that chat replies don't. */
+export function toReceiptExcerpt(text: string): string {
+  let out = stripChatbotMarkdown(text);
+  // [label](url) → label ; bare heading markers ; leftover table pipes.
+  out = out.replace(/\[([^\]]+)\]\([^)]*\)/g, "$1");
+  out = out.replace(/^#{1,6}\s+/gm, "");
+  out = out.replace(/^\|.*\|$/gm, " ");
+  out = out.replace(/\s+/g, " ").trim();
+  if (out.length <= RECEIPT_EXCERPT_CAP) return out;
+  const cut = out.slice(0, RECEIPT_EXCERPT_CAP);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${cut.slice(0, lastSpace > 300 ? lastSpace : RECEIPT_EXCERPT_CAP).trimEnd()}…`;
+}
+
+/**
+ * Pick the single most informative answer per prompt-kind for one engine.
+ * Pure — exported for tests.
+ *
+ * Discovery: an answer that recommends the brand (CITED) is the proof
+ * receipt; an answer that names competitors (COMPETITOR_CITED) is the
+ * gap receipt; anything else only if that's all we have. Branded:
+ * prefer an answer that cites the domain (real awareness), then any
+ * name-mention, then the longest answer.
+ */
+export function curateEngineReceipts(
+  engine: AeoReceipt["engine"],
+  items: Array<{
+    kind: AuditPrompt["kind"];
+    prompt: string;
+    text: string;
+    parse: ReturnType<typeof parseCitation>;
+  }>,
+): AeoReceipt[] {
+  const rank = (it: (typeof items)[number]): number => {
+    if (it.kind === "discovery") {
+      if (it.parse.status === "CITED") return 0;
+      if (it.parse.status === "COMPETITOR_CITED") return 1;
+      return 2;
+    }
+    if (it.parse.status === "CITED" && it.parse.citedUrl) return 0;
+    if (it.parse.status === "CITED") return 1;
+    return 2;
+  };
+  const receipts: AeoReceipt[] = [];
+  for (const kind of ["discovery", "branded"] as const) {
+    const pool = items
+      .filter((i) => i.kind === kind && i.text.trim().length > 0)
+      .sort((a, b) => rank(a) - rank(b) || b.text.length - a.text.length);
+    const best = pool[0];
+    if (!best) continue;
+    const excerpt = toReceiptExcerpt(best.text);
+    if (!excerpt) continue;
+    receipts.push({ engine, kind, prompt: best.prompt, excerpt });
+  }
+  return receipts;
+}
 
 /**
  * Classify one engine's parsed answers into the verdict trio
@@ -558,8 +656,10 @@ async function runAeoFanout(
 
   const byEngine: EngineMap = {};
   const competitorsCited = new Set<string>();
+  const competitorCounts = new Map<string, number>();
   const citedEngines: string[] = [];
   const uncitedEngines: string[] = [];
+  const receipts: AeoReceipt[] = [];
 
   await Promise.all(
     enabled.map(async (engine) => {
@@ -568,6 +668,8 @@ async function runAeoFanout(
       );
       const answers: Array<{
         kind: AuditPrompt["kind"];
+        prompt: string;
+        text: string;
         parse: ReturnType<typeof parseCitation>;
       }> = [];
       results.forEach((r, i) => {
@@ -575,12 +677,26 @@ async function runAeoFanout(
         if (r.value.skipped) return;
         answers.push({
           kind: prompts[i].kind,
+          prompt: prompts[i].text,
+          text: r.value.responseText,
           parse: parseCitation(r.value.responseText, {
             name: brandName,
             websiteUrl: domain,
           }),
         });
       });
+      receipts.push(...curateEngineReceipts(engine.engine, answers));
+      // Ranked competitor tally (2026-08-14): answer-level mentions
+      // across DISCOVERY answers only — branded answers' capitalized
+      // nouns are review themes, not rivals. Counts rivals from CITED
+      // answers too (an answer naming the brand AND five competitors
+      // must not contribute zero).
+      for (const a of answers) {
+        if (a.kind !== "discovery") continue;
+        for (const c of a.parse.competitorsCited) {
+          competitorCounts.set(c, (competitorCounts.get(c) ?? 0) + 1);
+        }
+      }
       const verdict = classifyEngineAnswers(answers, {
         brandedCompetitors: !discoveryRan,
       });
@@ -610,6 +726,19 @@ async function runAeoFanout(
   const citationRate =
     enginesChecked > 0 ? round(citationsFound / enginesChecked, 2) : 0;
 
+  // Stable render order: engine display order, discovery receipt first.
+  const engineOrder: Record<AeoReceipt["engine"], number> = {
+    CHATGPT: 0,
+    PERPLEXITY: 1,
+    CLAUDE: 2,
+    GEMINI: 3,
+  };
+  receipts.sort(
+    (a, b) =>
+      engineOrder[a.engine] - engineOrder[b.engine] ||
+      (a.kind === "discovery" ? 0 : 1) - (b.kind === "discovery" ? 0 : 1),
+  );
+
   return {
     byEngine,
     enginesChecked,
@@ -619,6 +748,11 @@ async function runAeoFanout(
     citedEngines,
     uncitedEngines,
     discoveryRan,
+    receipts,
+    competitorsRanked: [...competitorCounts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([name, mentions]) => ({ name, mentions })),
   };
 }
 

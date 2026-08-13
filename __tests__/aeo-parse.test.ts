@@ -85,7 +85,7 @@ describe("lib/aeo/parse — parseCitation", () => {
     expect(r.status).toBe("CITED");
   });
 
-  it("does not flag the response as COMPETITOR_CITED when own property appears in a list", () => {
+  it("stays CITED when own property appears in a list, but still captures the rivals", () => {
     const r = parseCitation(
       `Top picks:
 1. Telegraph Commons
@@ -93,7 +93,12 @@ describe("lib/aeo/parse — parseCitation", () => {
       target,
     );
     expect(r.status).toBe("CITED");
-    expect(r.competitorsCited).toEqual([]);
+    // 2026-08-14: rivals in a CITED answer used to be discarded, which
+    // systematically undercounted the competitor leaderboard for
+    // partially-visible properties. They must be captured (consumers
+    // gate on status, so legacy chip behavior is unchanged).
+    expect(r.competitorsCited.join(" ")).toMatch(/whitley/i);
+    expect(r.competitorsCited.join(" ")).not.toMatch(/telegraph commons/i);
   });
 });
 

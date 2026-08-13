@@ -7,6 +7,7 @@ import {
   GeminiMark,
 } from "@/components/platform/artifacts/brand-logos";
 import { COMPETITOR_URLS } from "@/components/audit/brief-shell";
+import { safeHttpUrl } from "@/lib/safe-url";
 import type { AeoEngineRow } from "@/lib/audit/synthesize";
 
 // ---------------------------------------------------------------------------
@@ -62,6 +63,10 @@ export type AeoEngineBreakdownProps = {
   discoveryRan?: boolean;
   /** City the discovery prompts searched. */
   city?: string | null;
+  /** Ranked competitor mentions across discovery answers (2026-08-14).
+   *  When present, renders as a ranked bar list instead of flat chips —
+   *  "who AI recommends instead, and how often." */
+  competitorsRanked?: Array<{ name: string; mentions: number }>;
 };
 
 export function AeoEngineBreakdown({
@@ -70,6 +75,7 @@ export function AeoEngineBreakdown({
   brandName,
   discoveryRan,
   city,
+  competitorsRanked,
 }: AeoEngineBreakdownProps) {
   const discovery = discoveryRan === true && rows.some((r) => r.discovered !== undefined);
   const citedCount = rows.filter((r) => r.cited).length;
@@ -127,7 +133,12 @@ export function AeoEngineBreakdown({
         ))}
       </ul>
 
-      {competitorsCited.length > 0 ? (
+      {competitorsRanked && competitorsRanked.length > 0 ? (
+        <CompetitorLeaderboard
+          entries={competitorsRanked}
+          city={city ?? null}
+        />
+      ) : competitorsCited.length > 0 ? (
         <div
           className="mt-5 rounded-xl"
           style={{
@@ -199,6 +210,89 @@ export function AeoEngineBreakdown({
   );
 }
 
+// ---------------------------------------------------------------------------
+// CompetitorLeaderboard — ranked "who AI recommends instead" bar list
+// (2026-08-14). Single-series magnitude → one hue, thin bars, mono
+// numerals, direct labels, no legend. The single most screenshot-able
+// element in the report: you vs the buildings AI actually pushes.
+// ---------------------------------------------------------------------------
+
+function CompetitorLeaderboard({
+  entries,
+  city,
+}: {
+  entries: Array<{ name: string; mentions: number }>;
+  city: string | null;
+}) {
+  const max = Math.max(...entries.map((e) => e.mentions), 1);
+  return (
+    <div
+      className="mt-5 rounded-xl"
+      style={{
+        backgroundColor: "#FBFBFD",
+        border: "1px solid #E5E7EB",
+        padding: "14px 16px",
+      }}
+    >
+      <p
+        className="text-[10px] font-mono uppercase tracking-[0.14em]"
+        style={{ color: "#2563EB" }}
+      >
+        Who AI recommends{city ? ` in ${city}` : ""} instead
+      </p>
+      <p className="mt-1 text-[12px]" style={{ color: "#6B7280" }}>
+        Times each competitor was named across the discovery answers above.
+      </p>
+      <ol className="mt-3 space-y-2">
+        {entries.map((e) => {
+          const href = COMPETITOR_URLS[e.name];
+          return (
+            <li key={e.name} className="flex items-center gap-3">
+              <span
+                className="w-40 sm:w-52 shrink-0 truncate text-[12.5px]"
+                style={{ color: "#1E2A3A", fontWeight: 500 }}
+                title={e.name}
+              >
+                {href ? (
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline"
+                  >
+                    {e.name}
+                  </a>
+                ) : (
+                  e.name
+                )}
+              </span>
+              <span
+                className="flex-1 h-2 rounded-[2px] overflow-hidden"
+                style={{ backgroundColor: "#E5E7EB" }}
+                aria-hidden
+              >
+                <span
+                  className="block h-full rounded-[2px]"
+                  style={{
+                    width: `${Math.max(6, (e.mentions / max) * 100)}%`,
+                    backgroundColor: "#0f62fe",
+                  }}
+                />
+              </span>
+              <span
+                className="w-6 text-right text-[12.5px] tabular-nums font-mono"
+                style={{ color: "#1E2A3A" }}
+              >
+                {e.mentions}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
+
 type EngineVerdict = "recommends" | "aware_only" | "unknown" | "cited" | "not_cited";
 
 function engineVerdict(row: AeoEngineRow): EngineVerdict {
@@ -254,16 +348,22 @@ function EngineCard({ row }: { row: AeoEngineRow }) {
               style={{ color: "#4B5563" }}
             >
               <ExternalLink className="w-3 h-3 shrink-0" />
-              <a
-                href={u}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="truncate hover:underline"
-                style={{ color: "#1E2A3A" }}
-                title={u}
-              >
-                {safeHost(u)}
-              </a>
+              {safeHttpUrl(u) ? (
+                <a
+                  href={safeHttpUrl(u)!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="truncate hover:underline"
+                  style={{ color: "#1E2A3A" }}
+                  title={u}
+                >
+                  {safeHost(u)}
+                </a>
+              ) : (
+                <span className="truncate" style={{ color: "#1E2A3A" }}>
+                  {safeHost(u)}
+                </span>
+              )}
             </li>
           ))}
         </ul>

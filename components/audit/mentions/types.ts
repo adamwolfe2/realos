@@ -35,4 +35,7 @@ export const ALL_SOURCES: AuditMentionSource[] = [
 
 // 2026-08-13 report redesign: the mention feed reads as an appendix, not
 // the spine. Top 3 visible, the rest behind "Show N more".
-export const INITIAL_MENTION_LIMIT = 3;
+// 6, not 3 (2026-08-14): three visible mentions out of 18 — with a
+// negative often in the trio — read as cherry-picking. Six gives the
+// feed enough mass to look like evidence before "Show more".
+export const INITIAL_MENTION_LIMIT = 6;

@@ -126,7 +126,13 @@ export function MentionsSection({
               count={c}
               color={sourceColor(s)}
               active={activeSource === s}
-              glyph={<SourceGlyph source={s} className="h-3.5 w-3.5" />}
+              // BBB's glyph IS the "BBB" wordmark — pairing it with the
+              // "BBB" text label rendered as "BBB BBB" (2026-08-14).
+              glyph={
+                s === "BBB" ? undefined : (
+                  <SourceGlyph source={s} className="h-3.5 w-3.5" />
+                )
+              }
               onClick={() => {
                 setActiveSource(activeSource === s ? null : s);
                 setShowAll(false);

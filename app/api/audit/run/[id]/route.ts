@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { ProspectAuditStatus } from "@prisma/client";
@@ -37,9 +38,20 @@ export const maxDuration = 120;
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function POST(req: NextRequest, ctx: RouteContext) {
+  // Constant-time compare (2026-08-14 review): plain !== on a secret is
+  // cheap to probe on a public endpoint; match lib/cron/auth.ts.
   const expected = process.env.CRON_SECRET ?? "";
   const got = req.headers.get("x-internal-trigger") ?? "";
-  if (!expected || got !== expected) {
+  const a = Buffer.from(got);
+  const b = Buffer.from(expected);
+  const max = Math.max(a.length, b.length, 1);
+  const aPad = Buffer.alloc(max);
+  const bPad = Buffer.alloc(max);
+  a.copy(aPad);
+  b.copy(bPad);
+  const equal =
+    crypto.timingSafeEqual(aPad, bPad) && a.length === b.length;
+  if (!expected || !equal) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -114,10 +126,13 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
           aeoCitedEngines: __provider?.aeoCitedEngines ?? [],
           aeoUncitedEngines: __provider?.aeoUncitedEngines ?? [],
           aeoDiscoveryRan: __provider?.aeoDiscoveryRan ?? false,
+          aeoReceipts: __provider?.aeoReceipts ?? [],
+          aeoCompetitorsRanked: __provider?.aeoCompetitorsRanked ?? [],
           aeoLocale: __provider?.aeoLocale
             ? {
                 city: __provider.aeoLocale.city,
                 region: __provider.aeoLocale.region,
+                category: __provider.aeoLocale.category ?? null,
               }
             : null,
           googleAiOverview: __provider?.googleAiOverview ?? null,

@@ -220,7 +220,7 @@ export async function crawlSite(targetUrl: string): Promise<SiteCrawlResult> {
   // Tier 2 — native fetch. Free, fast for SSR sites, blind to SPAs.
   let res: Response;
   try {
-    res = await fetch(url, {
+    res = await fetchPublicOnly(url, {
       method: "GET",
       headers: {
         "User-Agent": CRAWL_USER_AGENT,
@@ -228,8 +228,6 @@ export async function crawlSite(targetUrl: string): Promise<SiteCrawlResult> {
           "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.9",
       },
-      // Follow redirects so we end up on the canonical homepage.
-      redirect: "follow",
       signal: AbortSignal.timeout(CRAWL_TIMEOUT_MS),
     });
   } catch (err) {
@@ -720,14 +718,82 @@ function collectSchemaTypes(node: unknown, out: string[]): void {
 
 async function headProbe(url: string): Promise<boolean> {
   try {
-    const res = await fetch(url, {
+    const res = await fetchPublicOnly(url, {
       method: "HEAD",
       headers: { "User-Agent": CRAWL_USER_AGENT },
-      redirect: "follow",
       signal: AbortSignal.timeout(HEAD_PROBE_TIMEOUT_MS),
     });
     return res.ok;
   } catch {
     return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// SSRF guard (2026-08-14). The crawl fetches attacker-supplied domains
+// from an unauthenticated endpoint — a public DNS name resolving to
+// 127.0.0.1 / 10.x / 169.254.169.254, or a redirect to an internal
+// host, must never be fetched. One guard; both fetch sites above route
+// through it.
+// ponytail: DNS is re-resolved by fetch after the check (TOCTOU /
+// rebinding window). Closing it needs a custom dialer/agent — upgrade
+// if this surface ever handles credentials.
+// ---------------------------------------------------------------------------
+
+/** Pure — exported for tests. */
+export function isPrivateIp(ip: string): boolean {
+  const m = ip.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (m) {
+    const a = Number(m[1]);
+    const b = Number(m[2]);
+    if (a === 0 || a === 10 || a === 127) return true;
+    if (a === 169 && b === 254) return true; // link-local / metadata
+    if (a === 172 && b >= 16 && b <= 31) return true;
+    if (a === 192 && b === 168) return true;
+    if (a === 100 && b >= 64 && b <= 127) return true; // CGNAT
+    return false;
+  }
+  const v6 = ip.toLowerCase();
+  if (v6 === "::" || v6 === "::1") return true;
+  if (v6.startsWith("fc") || v6.startsWith("fd")) return true; // ULA
+  if (v6.startsWith("fe80")) return true; // link-local
+  if (v6.startsWith("::ffff:")) return isPrivateIp(v6.slice(7)); // mapped v4
+  return false;
+}
+
+/** Throws unless every resolved address for the url's host is public. */
+async function assertPublicHost(url: string): Promise<void> {
+  const { hostname, protocol } = new URL(url);
+  if (protocol !== "http:" && protocol !== "https:") {
+    throw new Error(`blocked scheme ${protocol}`);
+  }
+  const bare = hostname.replace(/^\[|\]$/g, "");
+  if (isPrivateIp(bare)) throw new Error(`blocked address ${bare}`);
+  const { lookup } = await import("node:dns/promises");
+  const addrs = await lookup(bare, { all: true, verbatim: true });
+  if (addrs.length === 0 || addrs.some((a) => isPrivateIp(a.address))) {
+    throw new Error(`blocked address for ${bare}`);
+  }
+}
+
+/** fetch with the public-host guard applied to the initial url AND every
+ *  redirect hop (manual redirects, max 3). */
+async function fetchPublicOnly(
+  url: string,
+  init: Omit<RequestInit, "redirect">,
+): Promise<Response> {
+  let current = url;
+  let res: Response;
+  for (let hop = 0; ; hop++) {
+    await assertPublicHost(current);
+    res = await fetch(current, { ...init, redirect: "manual" });
+    if (res.status >= 300 && res.status < 400 && hop < 3) {
+      const loc = res.headers.get("location");
+      if (loc) {
+        current = new URL(loc, current).toString();
+        continue;
+      }
+    }
+    return res;
   }
 }
