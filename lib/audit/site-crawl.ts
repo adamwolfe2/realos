@@ -1,6 +1,8 @@
 import "server-only";
 import * as cheerio from "cheerio";
-import { scrape as firecrawlScrape, isFirecrawlConfigured } from "@/lib/intelligence/firecrawl";
+// scrapeFresh, not scrape: the audit is a ground-truth surface — it must
+// never render from a week-old cached scrape (see scrapeFresh docstring).
+import { scrapeFresh as firecrawlScrape, isFirecrawlConfigured } from "@/lib/intelligence/firecrawl";
 
 // ---------------------------------------------------------------------------
 // Direct site crawl — fallback SEO signal source when DataForSEO returns

@@ -151,6 +151,30 @@ async function scrapeUncached(args: {
 }
 
 /**
+ * Fresh-scrape variant for ground-truth surfaces (prospect audits).
+ * Busts the url's cache tag and fetches uncached, so a stale entry —
+ * including a SUCCESS captured while the page was degraded (un-rendered
+ * SPA shell, challenge page) — can never poison the scan. 2026-08-13:
+ * TC audit re-runs kept reading a cached ok-but-shell scrape (91 visible
+ * words, >4KB so it passed the integrity gate); the failure-bust path
+ * below never fires on ok entries. Audits are themselves deduped 14 days
+ * via COMPUTE_VERSION, so a real scan paying for one fresh scrape is the
+ * intended economics.
+ */
+export async function scrapeFresh(args: {
+  url: string;
+  formats?: Array<"markdown" | "html" | "rawHtml" | "links">;
+}): Promise<FirecrawlResult<FirecrawlScrapePage>> {
+  try {
+    revalidateTag(firecrawlScrapeCacheTag(args.url), "max");
+  } catch {
+    // Outside a request/route context (scripts) revalidateTag throws;
+    // the uncached fetch below is the part that matters.
+  }
+  return scrapeUncached({ url: args.url, formats: args.formats ?? ["markdown", "html"] });
+}
+
+/**
  * POST /scrape — pulls a single URL as markdown + html.
  * Cached for 7 days keyed on (url, formats) so repeated discovery
  * passes don't burn through scrape budget. Bust via
