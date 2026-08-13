@@ -5,6 +5,8 @@ import { AiAnswerDemo } from "@/components/audit/ai-answer-demo";
 import { BookCallCta } from "@/components/audit/book-call-cta";
 import { BookDemoLink } from "@/components/marketing/book-demo-link";
 import { CountUp } from "@/components/audit/count-up";
+import { Atmosphere } from "@/components/home/atmosphere";
+import { ReportSnapshotMock } from "@/components/home/report-snapshot-mock";
 import {
   ChatGPTMark,
   PerplexityMark,
@@ -15,13 +17,12 @@ import {
 // ---------------------------------------------------------------------------
 // /ai-visibility — public AI-search audit lead magnet.
 //
-// AI-search-specific front door to the existing prospect-audit engine
-// (/api/audit/start → scan → /audit/[token]#ai-search). Every submission
-// captures email BEFORE the scan runs, so the ProspectAudit row is a
-// contactable lead even if the prospect bounces mid-scan. Page goal:
-// run the audit, then book the call — sticky BookCallCta + closing
-// BookDemoLink both route to the Cal.com booking (Norman's link via
-// NEXT_PUBLIC_CAL_BOOK_URL).
+// Brand-register surface in the homepage's visual voice: Atmosphere grid
+// backdrop, oversized tight-tracked display type, Carbon-blue commitment.
+// The logo moment is an orbit: the four engine marks circling the
+// prospect's property node, CSS-only, paused for reduced motion. Funnel:
+// run the audit (form posts into the existing prospect-audit engine),
+// then book the call (sticky BookCallCta + closing BookDemoLink).
 // ---------------------------------------------------------------------------
 
 export const metadata: Metadata = {
@@ -32,111 +33,204 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-const ENGINE_LOGOS = [
-  { label: "ChatGPT", Mark: ChatGPTMark },
-  { label: "Perplexity", Mark: PerplexityMark },
-  { label: "Claude", Mark: ClaudeMark },
-  { label: "Gemini", Mark: GeminiMark },
+const ORBIT = [
+  { label: "ChatGPT", Mark: ChatGPTMark, angle: 0 },
+  { label: "Perplexity", Mark: PerplexityMark, angle: 90 },
+  { label: "Claude", Mark: ClaudeMark, angle: 180 },
+  { label: "Gemini", Mark: GeminiMark, angle: 270 },
 ] as const;
 
-const STATS: Array<{ value: number; suffix: string; label: string }> = [
+const STATS = [
   { value: 4, suffix: "", label: "AI engines queried live" },
   { value: 20, suffix: "+", label: "renter prompts tested" },
   { value: 7, suffix: "", label: "review sources scanned" },
   { value: 2, suffix: " min", label: "to your full report" },
-];
+] as const;
 
-const DELIVERABLES: Array<{ title: string; body: string }> = [
+const DELIVERABLES = [
   {
+    n: "01",
     title: "Per-engine verdict",
-    body: "Which of the four major AI engines mention your property by name, and which link to your site — checked live, not estimated.",
+    body: "Which of the four major AI engines mention your property by name, and which link to your site. Checked live against real engines, not estimated.",
   },
   {
+    n: "02",
     title: "Who wins instead",
-    body: "The exact competitor buildings the AI recommends when a prospect asks about your market — the demand you're losing today.",
+    body: "The exact competitor buildings the AI recommends when a prospect asks about your market. That list is the demand you're losing today.",
   },
   {
+    n: "03",
     title: "A prioritized fix list",
-    body: "Schema gaps, missing FAQ blocks, citability failures on your homepage — ranked by impact, in plain English.",
+    body: "Schema gaps, missing FAQ blocks, citability failures on your homepage. Ranked by impact, written in plain English.",
   },
-];
+] as const;
 
 export default function AiVisibilityPage() {
   return (
-    <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
+    <div style={{ backgroundColor: "#FFFFFF", color: "#161616" }}>
+      <style>{`
+        @keyframes aiv-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+        .aiv-rise { animation: aiv-rise .7s cubic-bezier(.2,.8,.2,1) both; }
+        @keyframes aiv-orbit { to { transform: rotate(360deg); } }
+        @keyframes aiv-orbit-ccw { to { transform: rotate(-360deg); } }
+        .aiv-ring { animation: aiv-orbit 46s linear infinite; }
+        .aiv-sat { animation: aiv-orbit-ccw 46s linear infinite; }
+        @keyframes aiv-ping { 0% { transform: scale(1); opacity: .45; } 100% { transform: scale(1.9); opacity: 0; } }
+        .aiv-ping { animation: aiv-ping 2.6s cubic-bezier(.2,.8,.2,1) infinite; }
+        @media (prefers-reduced-motion: reduce) {
+          .aiv-rise { animation: none; }
+          .aiv-ring, .aiv-sat, .aiv-ping { animation: none; }
+        }
+      `}</style>
+
       {/* ── Hero ─────────────────────────────────────────────────────── */}
-      <section className="relative">
-        <div className="mx-auto max-w-[1100px] px-4 pt-20 md:px-8 md:pt-24">
-          <div className="ls-page-fade mx-auto max-w-3xl text-center">
+      <section className="relative overflow-hidden">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, #ffffff 0%, #ffffff 40%, #f7f9fe 100%)",
+          }}
+        />
+        <Atmosphere />
+
+        <div className="relative mx-auto max-w-[1100px] px-4 pt-16 md:px-8 md:pt-24">
+          <div className="mx-auto max-w-[880px] text-center">
             <p
-              className="mb-4 text-[11px] font-mono uppercase tracking-[0.18em]"
-              style={{ color: "#2563EB", fontFamily: "var(--font-mono)" }}
+              className="aiv-rise mb-5 text-[11px] font-mono uppercase tracking-[0.18em]"
+              style={{ color: "#0f62fe", fontFamily: "var(--font-mono)" }}
             >
               Free AI visibility audit
             </p>
-            <h1 className="text-[34px] font-semibold leading-[1.12] tracking-[-0.02em] md:text-[48px]">
-              <span className="block" style={{ textWrap: "balance" }}>
-                When renters ask ChatGPT where to live,
-              </span>
-              <span
-                className="mt-1 inline-block px-2"
-                style={{ backgroundColor: "#DBEAFE" }}
-              >
-                does it say your name?
+            <h1
+              className="aiv-rise mx-auto"
+              style={{
+                animationDelay: "80ms",
+                fontFamily: "var(--font-display)",
+                fontSize: "clamp(40px, 6.4vw, 74px)",
+                fontWeight: 550,
+                lineHeight: 1.04,
+                letterSpacing: "-0.035em",
+              }}
+            >
+              Renters ask ChatGPT
+              <br />
+              where to live.
+              <br />
+              <span className="px-2" style={{ backgroundColor: "#d0e2ff" }}>
+                Does it say your name?
               </span>
             </h1>
             <p
-              className="mx-auto mt-5 max-w-[52ch] text-[16px] leading-relaxed md:text-[17px]"
-              style={{ color: "#475569" }}
+              className="aiv-rise mx-auto mt-6 max-w-[54ch] text-[16px] leading-relaxed md:text-[17px]"
+              style={{ animationDelay: "160ms", color: "#525252" }}
             >
               Prospects ask AI engines for apartment recommendations before
               they ever open Google. We query all four major engines about
-              your market and your property — live — and show you exactly
+              your market and your property, live, and show you exactly
               where you stand.
             </p>
+          </div>
 
-            {/* Big engine logos under the H1 */}
-            <div className="ls-stagger mt-10 flex flex-wrap items-center justify-center gap-x-10 gap-y-6 md:gap-x-14">
-              {ENGINE_LOGOS.map(({ label, Mark }) => (
-                <div key={label} className="flex flex-col items-center gap-2">
-                  <Mark size={44} />
-                  <span
-                    className="text-[12px] font-medium"
-                    style={{ color: "#64748B" }}
+          {/* Orbit — the four engines circling your property. */}
+          <div
+            className="aiv-rise relative mx-auto mt-6 md:mt-10"
+            style={{ animationDelay: "240ms", width: 340, height: 340 }}
+            role="img"
+            aria-label="ChatGPT, Perplexity, Claude, and Gemini orbiting your property"
+          >
+            {/* Ring lines */}
+            <div
+              aria-hidden
+              className="absolute rounded-full border"
+              style={{ inset: 28, borderColor: "#0f62fe26" }}
+            />
+            <div
+              aria-hidden
+              className="absolute rounded-full border border-dashed"
+              style={{ inset: 92, borderColor: "#0f62fe1f" }}
+            />
+
+            {/* Center: your property */}
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
+              <div className="relative mx-auto flex h-[92px] w-[92px] items-center justify-center rounded-full bg-white"
+                style={{ boxShadow: "0 2px 6px rgba(15,23,42,.08), 0 14px 34px rgba(15,98,254,.16), inset 0 0 0 1px #e0e0e0" }}>
+                <span aria-hidden className="aiv-ping absolute inset-0 rounded-full" style={{ boxShadow: "inset 0 0 0 1.5px #0f62fe" }} />
+                <span
+                  className="text-[11px] font-semibold uppercase leading-tight tracking-[.08em]"
+                  style={{ color: "#0f62fe" }}
+                >
+                  Your
+                  <br />
+                  property
+                </span>
+              </div>
+            </div>
+
+            {/* Orbiting engine marks */}
+            <div className="aiv-ring absolute" style={{ inset: 28 }}>
+              {ORBIT.map(({ label, Mark, angle }) => (
+                <div
+                  key={label}
+                  className="absolute left-1/2 top-1/2"
+                  style={{
+                    transform: `rotate(${angle}deg) translateX(142px)`,
+                  }}
+                >
+                  <div
+                    className="aiv-sat flex -translate-x-1/2 -translate-y-1/2 flex-col items-center"
+                    style={{ animationDelay: "0s" }}
                   >
-                    {label}
-                  </span>
+                    <div
+                      className="flex h-16 w-16 items-center justify-center rounded-full bg-white transition-transform duration-300 hover:scale-110"
+                      style={{
+                        transform: `rotate(${-angle}deg)`,
+                        boxShadow:
+                          "0 1px 3px rgba(15,23,42,.08), 0 10px 26px rgba(15,23,42,.12), inset 0 0 0 1px #e0e0e0",
+                      }}
+                    >
+                      <Mark size={30} />
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Engine labels under the orbit */}
+          <div className="aiv-rise mt-2 flex items-center justify-center gap-6" style={{ animationDelay: "320ms" }}>
+            {ORBIT.map(({ label }) => (
+              <span key={label} className="text-[12px] font-medium" style={{ color: "#6f6f6f" }}>
+                {label}
+              </span>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ── Demo + form ──────────────────────────────────────────────── */}
       <section className="relative">
-        <div className="mx-auto max-w-[1100px] px-4 pb-16 pt-14 md:px-8 md:pb-20 md:pt-16">
-          <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-2 lg:gap-12">
-            <div>
+        <div className="mx-auto max-w-[1100px] px-4 pb-16 pt-12 md:px-8 md:pb-24 md:pt-16">
+          <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[1.08fr_1fr] lg:gap-12">
+            <div className="aiv-rise" style={{ animationDelay: "120ms" }}>
               <AiAnswerDemo />
-              <div className="ls-stagger mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
+
+              {/* Stat strip: single rule-divided band, mono numerals. */}
+              <div
+                className="mt-8 grid grid-cols-2 divide-y border-y sm:grid-cols-4 sm:divide-x sm:divide-y-0"
+                style={{ borderColor: "#e0e0e0" }}
+              >
                 {STATS.map((s) => (
-                  <div
-                    key={s.label}
-                    className="rounded-[4px] border px-3 py-4 text-center"
-                    style={{ borderColor: "#E2E8F0" }}
-                  >
+                  <div key={s.label} className="px-4 py-5 first:pl-0 sm:py-4" style={{ borderColor: "#e0e0e0" }}>
                     <div
-                      className="text-[24px] font-semibold tabular-nums tracking-tight"
-                      style={{ color: "#1E2A3A" }}
+                      className="text-[26px] tabular-nums"
+                      style={{ fontFamily: "var(--font-mono)", fontWeight: 500, color: "#161616", letterSpacing: "-0.02em" }}
                     >
                       <CountUp to={s.value} />
                       {s.suffix}
                     </div>
-                    <div
-                      className="mt-1 text-[11px] leading-snug"
-                      style={{ color: "#64748B" }}
-                    >
+                    <div className="mt-0.5 text-[11.5px] leading-snug" style={{ color: "#6f6f6f" }}>
                       {s.label}
                     </div>
                   </div>
@@ -146,62 +240,97 @@ export default function AiVisibilityPage() {
 
             <div id="run-audit" className="scroll-mt-24 lg:sticky lg:top-24">
               <AiVisibilityForm />
+              <p className="mt-3 text-center text-[12px]" style={{ color: "#6f6f6f" }}>
+                Your report is generated from live engine responses, then a
+                human walks you through it if you want.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── What the report contains ─────────────────────────────────── */}
-      <section style={{ backgroundColor: "#F8FAFC" }}>
-        <div className="mx-auto max-w-[1100px] px-4 py-14 md:px-8 md:py-20">
-          <h2 className="text-center text-[24px] font-semibold tracking-[-0.01em] md:text-[30px]">
-            What your report shows
-          </h2>
-          <div className="ls-stagger mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
-            {DELIVERABLES.map((d) => (
-              <div
-                key={d.title}
-                className="rounded-[4px] border p-5"
-                style={{ borderColor: "#E2E8F0", backgroundColor: "#FFFFFF" }}
+      {/* ── What the report shows — editorial rows beside the artifact ── */}
+      <section style={{ backgroundColor: "#f7f9fe" }}>
+        <div className="mx-auto max-w-[1100px] px-4 py-16 md:px-8 md:py-24">
+          <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-16">
+            <div>
+              <h2
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: "clamp(26px, 3.4vw, 38px)",
+                  fontWeight: 550,
+                  letterSpacing: "-0.03em",
+                  lineHeight: 1.1,
+                }}
               >
-                <h3 className="text-[15px] font-semibold">{d.title}</h3>
-                <p
-                  className="mt-2 text-[13.5px] leading-relaxed"
-                  style={{ color: "#64748B" }}
-                >
-                  {d.body}
-                </p>
+                One report. Three answers your owner will ask for.
+              </h2>
+              <div className="mt-8">
+                {DELIVERABLES.map((d, i) => (
+                  <div
+                    key={d.n}
+                    className="flex gap-5 py-5"
+                    style={{ borderTop: i === 0 ? "none" : "1px solid #dde3f0" }}
+                  >
+                    <span
+                      className="mt-0.5 text-[13px] tabular-nums"
+                      style={{ fontFamily: "var(--font-mono)", color: "#0f62fe" }}
+                    >
+                      {d.n}
+                    </span>
+                    <div>
+                      <h3 className="text-[16px] font-semibold" style={{ color: "#161616" }}>
+                        {d.title}
+                      </h3>
+                      <p className="mt-1.5 max-w-[52ch] text-[14px] leading-relaxed" style={{ color: "#525252" }}>
+                        {d.body}
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+            <div className="hidden lg:block">
+              <ReportSnapshotMock />
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── Closing CTA — the call is the conversion ─────────────────── */}
+      {/* ── Closing: the call is the conversion ──────────────────────── */}
       <section>
-        <div className="mx-auto max-w-[760px] px-4 py-16 text-center md:px-8 md:py-24">
-          <h2 className="text-[26px] font-semibold tracking-[-0.01em] md:text-[34px]">
-            Invisible to AI search is invisible to renters.
-          </h2>
-          <p
-            className="mx-auto mt-4 max-w-[48ch] text-[15px] leading-relaxed"
-            style={{ color: "#475569" }}
+        <div className="mx-auto max-w-[820px] px-4 py-16 text-center md:px-8 md:py-24">
+          <h2
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "clamp(28px, 4vw, 44px)",
+              fontWeight: 550,
+              letterSpacing: "-0.03em",
+              lineHeight: 1.08,
+            }}
           >
+            Invisible to AI search is
+            <br />
+            <span className="px-2" style={{ backgroundColor: "#d0e2ff" }}>
+              invisible to renters.
+            </span>
+          </h2>
+          <p className="mx-auto mt-5 max-w-[48ch] text-[15px] leading-relaxed" style={{ color: "#525252" }}>
             Run the free audit, then walk through your results with us on a
-            15-minute call — we&apos;ll show you exactly what it takes to get
+            15-minute call. We&apos;ll show you exactly what it takes to get
             your property cited.
           </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <a
               href="#run-audit"
-              className="inline-flex items-center justify-center rounded-[2px] px-6 py-3 text-[14px] font-semibold"
-              style={{ backgroundColor: "#2563EB", color: "#FFFFFF" }}
+              className="inline-flex items-center justify-center px-6 py-3 text-[14px] font-semibold transition-colors"
+              style={{ backgroundColor: "#0f62fe", color: "#ffffff", borderRadius: 2 }}
             >
               Run my free audit
             </a>
             <BookDemoLink
-              className="inline-flex items-center justify-center rounded-[2px] border px-6 py-3 text-[14px] font-semibold"
-              style={{ borderColor: "#1E2A3A", color: "#1E2A3A" }}
+              className="inline-flex items-center justify-center border px-6 py-3 text-[14px] font-semibold"
+              style={{ borderColor: "#161616", color: "#161616", borderRadius: 2 }}
               ariaLabel="Book a 15-minute call (opens scheduling)"
             >
               Book a 15-min call
@@ -210,7 +339,6 @@ export default function AiVisibilityPage() {
         </div>
       </section>
 
-      {/* Sticky bottom booking bar — stays one click away while scrolling. */}
       <BookCallCta subtitle="Walk through your AI visibility results with our team" />
     </div>
   );

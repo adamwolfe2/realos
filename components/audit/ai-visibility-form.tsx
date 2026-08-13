@@ -184,8 +184,13 @@ export function AiVisibilityForm() {
   return (
     <form
       onSubmit={onSubmit}
-      className="rounded-[4px] border p-6 md:p-8"
-      style={{ borderColor: "#E2E8F0", backgroundColor: "#FFFFFF" }}
+      className="rounded-[6px] border p-6 md:p-8"
+      style={{
+        borderColor: "#e0e0e0",
+        backgroundColor: "#FFFFFF",
+        boxShadow:
+          "0 2px 4px rgba(15,23,42,.05), 0 16px 40px rgba(15,23,42,.09)",
+      }}
     >
       <div className="grid grid-cols-1 gap-4">
         <Field
@@ -224,8 +229,12 @@ export function AiVisibilityForm() {
       <button
         type="submit"
         disabled={!canSubmit}
-        className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-[2px] px-5 py-3 text-[14px] font-semibold transition-colors disabled:opacity-50"
-        style={{ backgroundColor: "#2563EB", color: "#FFFFFF" }}
+        className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-[2px] px-5 py-3 text-[14px] font-semibold transition-all duration-200 hover:brightness-110 disabled:opacity-50"
+        style={{
+          backgroundColor: "#0f62fe",
+          color: "#FFFFFF",
+          boxShadow: "0 4px 14px rgba(15,98,254,.3)",
+        }}
       >
         Run my free AI visibility audit
         <ArrowRight className="h-4 w-4" />
