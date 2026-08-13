@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { ProspectAuditStatus } from "@prisma/client";
+import { healStalledProspectAudit } from "@/lib/audit/self-heal";
 import { BRAND_NAME, getSiteUrl } from "@/lib/brand";
 import { isValidShareToken } from "@/lib/audit/token";
 import { stripChatbotMarkdown } from "@/lib/chatbot/strip-markdown";
@@ -63,6 +64,7 @@ interface AuditRow {
   email: string | null;
   emailCapturedAt: Date | null;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 interface Finding {
@@ -115,6 +117,7 @@ async function loadAudit(token: string): Promise<AuditRow | null> {
       email: true,
       emailCapturedAt: true,
       createdAt: true,
+      updatedAt: true,
     },
   });
 }
@@ -163,6 +166,12 @@ export default async function AuditViewerPage({
     .catch(() => undefined);
 
   if (audit.status !== ProspectAuditStatus.READY) {
+    // Self-heal on view (2026-08-13): share-link viewers land here
+    // without ever hitting the form's status poll, so a stranded QUEUED
+    // audit (dropped fire-and-forget trigger) would spin forever. The
+    // 5s meta-refresh makes this render the poll loop — re-arm or
+    // reap exactly like GET /api/audit/[id]. Fire-and-forget.
+    void healStalledProspectAudit(audit).catch(() => undefined);
     return (
       <PendingState
         status={audit.status}

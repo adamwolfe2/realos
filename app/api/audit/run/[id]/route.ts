@@ -62,11 +62,19 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     return NextResponse.json({ ok: true, status: audit.status });
   }
 
+  // Atomic claim (2026-08-13): the self-heal path can re-fire this
+  // trigger while the original is in flight. updateMany with the status
+  // guard means exactly one caller wins the QUEUED→RUNNING flip; the
+  // loser early-outs instead of double-running the ~$0.25 fan-out.
+  const claimed = await prisma.prospectAudit.updateMany({
+    where: { id, status: ProspectAuditStatus.QUEUED },
+    data: { status: ProspectAuditStatus.RUNNING },
+  });
+  if (claimed.count === 0) {
+    return NextResponse.json({ ok: true, status: "RUNNING" });
+  }
+
   try {
-    await prisma.prospectAudit.update({
-      where: { id },
-      data: { status: ProspectAuditStatus.RUNNING },
-    });
 
     const computeResult = await computeSignals({
       kind: "prospect",
