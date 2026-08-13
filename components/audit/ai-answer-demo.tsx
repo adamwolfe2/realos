@@ -169,7 +169,7 @@ export function AiAnswerDemo() {
           </div>
         </div>
 
-        <p className="mt-4 text-center text-[11px]" style={{ color: "#94A3B8" }}>
+        <p className="mt-4 text-center text-[11px]" style={{ color: "#64748B" }}>
           Sample data. Your audit shows the real answers for your market.
         </p>
       </div>

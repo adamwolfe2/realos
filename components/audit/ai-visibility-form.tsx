@@ -173,7 +173,7 @@ export function AiVisibilityForm() {
             ? "Queuing your scan…"
             : SCAN_STATUS_MESSAGES[statusIdx]}
         </p>
-        <p className="mt-4 text-[12px]" style={{ color: "#94A3B8" }}>
+        <p className="mt-4 text-[12px]" style={{ color: "#64748B" }}>
           Usually under 2 minutes. Your report link is saved to{" "}
           <span className="font-medium">{email.trim()}</span>.
         </p>
@@ -230,7 +230,7 @@ export function AiVisibilityForm() {
         Run my free AI visibility audit
         <ArrowRight className="h-4 w-4" />
       </button>
-      <p className="mt-3 text-center text-[12px]" style={{ color: "#94A3B8" }}>
+      <p className="mt-3 text-center text-[12px]" style={{ color: "#64748B" }}>
         Free · no account needed · results in about 2 minutes
       </p>
     </form>
