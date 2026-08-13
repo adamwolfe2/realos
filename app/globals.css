@@ -241,20 +241,26 @@ body {
    heroes (/ai-visibility, /book-demo). Pair with horizontal padding on
    the span. box-decoration-break keeps the wash intact across wraps. */
 @keyframes ls-hl-wipe {
-  from { background-size: 0% 100%; }
-  to { background-size: 100% 100%; }
+  from { background-size: 0% 84%; }
+  to { background-size: 100% 84%; }
 }
 .ls-hl {
   background-image: linear-gradient(#d0e2ff, #d0e2ff);
   background-repeat: no-repeat;
-  background-position: 0 0;
-  background-size: 0% 100%;
+  /* 84% tall, bottom-anchored (2026-08-13). At 100% the wash fills the
+     font's em box, which is TALLER than a tight display line-height
+     (1.04), so the band overpainted the descenders of the line above
+     (seen on /build-a-chatbot: blue covering "leasing agent,").
+     Trimming the top 16% keeps the marker look and stays inside the
+     highlighted line. */
+  background-position: 0 100%;
+  background-size: 0% 84%;
   animation: ls-hl-wipe 700ms cubic-bezier(0.2, 0.8, 0.2, 1) 550ms both;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
 @media (prefers-reduced-motion: reduce) {
-  .ls-hl { animation: none; background-size: 100% 100%; }
+  .ls-hl { animation: none; background-size: 100% 84%; }
 }
 
 /* Page surfaces opt in via `.ls-page-fade` */

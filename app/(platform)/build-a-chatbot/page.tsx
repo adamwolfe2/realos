@@ -63,10 +63,10 @@ export default function BuildAChatbotPage() {
         />
         <Atmosphere />
 
-        <div className="relative mx-auto max-w-[1100px] px-4 pt-16 md:px-8 md:pt-24">
-          <div className="mx-auto max-w-[860px] text-center">
+        <div className="relative mx-auto max-w-[1100px] px-4 pt-12 md:px-8 md:pt-20">
+          <div className="mx-auto max-w-[760px] text-center">
             <p
-              className="cbp-rise mb-5 text-[11px] font-mono uppercase tracking-[0.18em]"
+              className="cbp-rise mb-4 text-[11px] font-mono uppercase tracking-[0.18em]"
               style={{ color: "#0f62fe", fontFamily: "var(--font-mono)" }}
             >
               Free chatbot builder
@@ -76,9 +76,9 @@ export default function BuildAChatbotPage() {
               style={{
                 animationDelay: "80ms",
                 fontFamily: "var(--font-display)",
-                fontSize: "clamp(40px, 6.4vw, 74px)",
+                fontSize: "clamp(34px, 4.8vw, 58px)",
                 fontWeight: 550,
-                lineHeight: 1.04,
+                lineHeight: 1.06,
                 letterSpacing: "-0.035em",
               }}
             >
@@ -87,12 +87,11 @@ export default function BuildAChatbotPage() {
               <span className="ls-hl px-2">built in 60 seconds.</span>
             </h1>
             <p
-              className="cbp-rise mx-auto mt-6 max-w-[54ch] text-[16px] leading-relaxed md:text-[17px]"
+              className="cbp-rise mx-auto mt-5 max-w-[46ch] text-[15.5px] leading-relaxed md:text-[16px]"
               style={{ animationDelay: "160ms", color: "#525252" }}
             >
-              Paste your property&apos;s website below. We read it, train an
-              AI leasing assistant on your actual floor plans and policies,
-              and you can talk to it right here. Keep it with one click.
+              Paste your website below. We train a leasing assistant on
+              what&apos;s actually there, and you talk to it right here.
             </p>
           </div>
         </div>
