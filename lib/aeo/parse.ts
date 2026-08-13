@@ -193,11 +193,38 @@ export function extractCompetitorNames(
     .slice(0, 10);
 }
 
+// Listing sites + aggregators AI answers cite constantly. They pass the
+// capitalization heuristics but are never competitor BUILDINGS — observed
+// polluting the livehigby.com audit's "who AI recommends instead" chips
+// (2026-08-13): "Zillow", "Apartments.com", "Apartment List".
+const NON_BUILDING_NAMES = new Set([
+  "zillow",
+  "apartments.com",
+  "apartment list",
+  "apartmentlist",
+  "craigslist",
+  "redfin",
+  "trulia",
+  "rent.com",
+  "hotpads",
+  "padmapper",
+  "streeteasy",
+  "airbnb",
+  "facebook marketplace",
+  "google maps",
+  "yelp",
+  "reddit",
+]);
+
 function isPlausibleBuildingName(s: string): boolean {
   const trimmed = s.trim();
   if (trimmed.length < 3 || trimmed.length > 80) return false;
   // Must start with a capital letter or "The".
   if (!/^[A-Z]/.test(trimmed)) return false;
+  // A trailing colon is a list-item LABEL ("Best overall for campus
+  // access:"), not a name.
+  if (/[:;]$/.test(trimmed)) return false;
+  if (NON_BUILDING_NAMES.has(trimmed.toLowerCase())) return false;
   // Reject sentences with verbs / lower-case dominance — heuristic only.
   const words = trimmed.split(/\s+/);
   if (words.length > 8) return false;

@@ -117,4 +117,21 @@ describe("lib/aeo/parse — extractCompetitorNames", () => {
     const text = "i'm not sure, you could try various options in the area";
     expect(extractCompetitorNames(text, [])).toEqual([]);
   });
+
+  it("rejects listing sites and list-item labels (livehigby audit junk, 2026-08-13)", () => {
+    // Observed in a real discovery answer: aggregators and a trailing-colon
+    // label survived the capitalization heuristics and rendered as
+    // "competitor buildings" chips on the report.
+    const text = `Where to search:
+1. Zillow
+2. Apartments.com
+3. Apartment List
+4. Best overall for UC Berkeley access:
+5. The Berkeley Place
+6. Jones Berkeley`;
+    const competitors = extractCompetitorNames(text, []);
+    expect(competitors).toContain("The Berkeley Place");
+    expect(competitors).toContain("Jones Berkeley");
+    expect(competitors.join(" | ")).not.toMatch(/zillow|apartments\.com|apartment list|access:/i);
+  });
 });
