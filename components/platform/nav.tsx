@@ -16,6 +16,8 @@ import {
   Target,
   Globe,
   Sparkles,
+  Megaphone,
+  Calculator,
   Menu,
   X,
 } from "lucide-react";
@@ -79,6 +81,18 @@ const PRODUCT_LINKS: ProductLink[] = [
     label: "Free Chatbot Builder",
     description: "Train a chatbot on your property's site in 60 seconds",
     icon: Bot,
+  },
+  {
+    href: "/reputation-report",
+    label: "Free Reputation Report",
+    description: "Every Google, Yelp, and Reddit mention, scored and ranked",
+    icon: Megaphone,
+  },
+  {
+    href: "/lost-leads",
+    label: "Lost-Lead Calculator",
+    description: "See how many renters visit and leave with no name on it",
+    icon: Calculator,
   },
   {
     // Reputation has no dedicated /features sub-page and no #reputation

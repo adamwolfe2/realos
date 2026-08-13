@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { BRAND_NAME } from "@/lib/brand";
 import { DigitalScoreQuiz } from "@/components/audit/digital-score-quiz";
 import { ReportSnapshotMock } from "@/components/home/report-snapshot-mock";
@@ -90,6 +91,21 @@ export default function AuditFormPage() {
               body="Each finding is tagged 'fix yourself' or 'LeaseStack handles' so you know what to do next."
             />
           </ul>
+
+          <p
+            className="mt-10 md:mt-12 text-center text-sm"
+            style={{ color: "#6B7280" }}
+          >
+            Curious what people are already saying about you?{" "}
+            <Link
+              href="/reputation-report"
+              className="font-semibold underline underline-offset-2"
+              style={{ color: "#2563EB" }}
+            >
+              Run a free reputation report
+            </Link>
+            .
+          </p>
         </div>
       </section>
     </div>
