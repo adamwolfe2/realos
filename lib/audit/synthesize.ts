@@ -924,12 +924,12 @@ async function writeNarrative(
     const { text, usage } = await generateText({
       model: anthropic("claude-haiku-4-5-20251001"),
       system:
-        "You are a senior property marketing analyst. Write tight, specific, number-driven prose. Never invent statistics. Cite exact numbers from the fact sheet. 180–220 words, 2–3 paragraphs.",
-      prompt: `Write a "What this means" summary for the ${provider.brandName} property marketing audit. Reference SPECIFIC numbers from the fact sheet below. Mention at least one named Lighthouse audit failure or page-audit metric, at least one keyword/ranking number, and one reputation observation. Do not bullet. Flowing prose. No marketing fluff.
+        "You are a senior property marketing analyst writing directly to the property operator. Plain text only: no markdown, no headings, no asterisks, no bullet markers, no em dashes. Never invent statistics; every number must come from the fact sheet.",
+      prompt: `Write the "What this means" verdict for ${provider.brandName}. Exactly 3 sentences. Second person throughout (you, your property). Each sentence cites exactly one concrete number from the fact sheet; pick the three numbers an owner would care about most. Do not recite the overall score. No marketing fluff, no list of recommendations.
 
 FACT SHEET
 ${factSheet}`,
-      maxOutputTokens: 600,
+      maxOutputTokens: 300,
     });
 
     // Log the cost. The AI SDK returns `usage` with inputTokens +

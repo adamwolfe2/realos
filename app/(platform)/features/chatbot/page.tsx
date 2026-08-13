@@ -16,12 +16,12 @@ export default function ChatbotFeaturePage() {
         eyebrow="Leasing assistant"
         headline="An assistant"
         headlineAccent="that captures leads at 2am."
-        subhead="Preview the setup before you create an account. Then train the assistant on your live units, pricing rules, objections, and handoff process."
+        subhead="Paste your property's website and talk to your own assistant in about 60 seconds. Then we train the production version on your live units, pricing rules, objections, and handoff process."
         ctas={[
-          { label: "Preview chatbot setup", href: "/onboarding" },
+          { label: "Build yours free in 60 seconds", href: "/build-a-chatbot" },
           { label: "Create account", href: "/sign-up", variant: "secondary" },
         ]}
-        caption="No card to preview. Account needed only when you save and install."
+        caption="No account, no card. The preview runs on your real website content."
         artifact={<ChatDemo />}
       />
 

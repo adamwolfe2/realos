@@ -1,16 +1,20 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ChevronDown } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { ProspectAuditStatus } from "@prisma/client";
 import { BRAND_NAME, getSiteUrl } from "@/lib/brand";
 import { isValidShareToken } from "@/lib/audit/token";
+import { stripChatbotMarkdown } from "@/lib/chatbot/strip-markdown";
 import { AuditPaywall } from "@/components/audit/paywall";
 import {
   MentionsSection,
   type AuditMention,
 } from "@/components/audit/mentions-section";
-import { DpsHero } from "@/components/audit/dps-hero";
+import { VerdictFold, type FoldStat } from "@/components/audit/verdict-fold";
+import { ReportSpine, type SpineItem } from "@/components/audit/report-spine";
 import { PillarGrid } from "@/components/audit/pillar-grid";
 import { RecommendationsSection } from "@/components/audit/recommendations-section";
 import { BookCallCta } from "@/components/audit/book-call-cta";
@@ -170,6 +174,13 @@ export default async function AuditViewerPage({
     opportunities: [],
   };
   const subject = audit.brandName ?? audit.domain;
+  // Display-scale name: an all-lowercase brandName ("telegraph commons")
+  // reads as a typo at 66px. Title-case only when the input has no
+  // capitalization of its own.
+  const displaySubject =
+    subject === subject.toLowerCase()
+      ? subject.replace(/\b[a-z]/g, (c) => c.toUpperCase())
+      : subject;
   const dps = findings.dps;
   const recommendations = findings.recommendations ?? [];
   const mentions = findings.mentions ?? [];
@@ -182,9 +193,9 @@ export default async function AuditViewerPage({
   const score = dps?.score ?? Math.min(audit.overallScore ?? 0, OVERALL_DPS_CAP);
   const highSeverity = recommendations.filter((r) => r.severity === "high").length;
 
-  // Premium pre-paywall surfaces (2026-06-03). Each is gated only on
-  // whether the underlying signal landed for this audit — legacy audits
-  // (no aeoEngines field on findings) cleanly render as no-ops.
+  // Premium surfaces (2026-06-03). Each is gated only on whether the
+  // underlying signal landed for this audit — legacy audits (no
+  // aeoEngines field on findings) cleanly render as no-ops.
   const aeoEngines = findings.aeoEngines ?? [];
   const aeoCompetitorsCited = findings.aeoCompetitorsCited ?? [];
   const googleAio = findings.googleAiOverview ?? null;
@@ -192,12 +203,142 @@ export default async function AuditViewerPage({
   const schemaGap = findings.schemaGap ?? null;
   const detectedStack = findings.detectedStack ?? null;
   const enginesQueried = aeoEngines.length;
+  const notCited = aeoEngines.filter((r) => !r.cited).length;
   const totalAiResponses = enginesQueried * 5; // 5 prompts per engine
 
+  // ── Executive verdict: ONE sentence built from the report's real
+  // numbers, highlighted phrase in the /ai-visibility marker style. ──────
+  const verdict: ReactNode =
+    enginesQueried > 0 && notCited > 0 ? (
+      <>
+        {notCited} of {enginesQueried} major AI engines skip {displaySubject}{" "}
+        when renters ask where to live, and what they recommend instead is{" "}
+        <span className="ls-hl px-1">costing you leases.</span>
+      </>
+    ) : enginesQueried > 0 ? (
+      <>
+        Every major AI engine names {displaySubject} today, and the{" "}
+        {recommendations.length} gaps below decide whether that{" "}
+        <span className="ls-hl px-1">stays true.</span>
+      </>
+    ) : (
+      <>
+        Renters read the public record on {displaySubject} before they ever
+        call, and the gaps below are{" "}
+        <span className="ls-hl px-1">costing you leases.</span>
+      </>
+    );
+
+  const foldStats: FoldStat[] = [
+    { value: totalAiResponses, label: "live AI answers analyzed" },
+    { value: mentions.length, label: "public mentions · past 90 days" },
+    { value: recommendations.length, label: "action items, ranked by impact" },
+  ].filter((s) => s.value > 0);
+
+  // ── Spine assembly: top-3 recommendations promoted to numbered claims,
+  // each paired with the evidence pool its pillar maps to. Pools are
+  // consumed at most once; anything left over renders in the appendix. ──
+  const severityRank = { high: 0, medium: 1, low: 2 } as const;
+  const top3 = [...recommendations]
+    .sort((a, b) => severityRank[a.severity] - severityRank[b.severity])
+    .slice(0, 3);
+
+  // Only meaningful when at least one engine actually skipped the brand —
+  // when every engine cites it, the "competitors" list is fan-out noise
+  // (observed: "Noise", "Broken facilities" on an all-cited audit).
+  const competitorNote: ReactNode =
+    notCited > 0 && aeoCompetitorsCited.length > 0 ? (
+      <>
+        When AI skipped you, it named{" "}
+        {aeoCompetitorsCited.slice(0, 3).map((name, i, arr) => (
+          <span key={name}>
+            <span style={{ fontWeight: 600 }}>{name}</span>
+            {i < arr.length - 2 ? ", " : i === arr.length - 2 ? " and " : ""}
+          </span>
+        ))}{" "}
+        instead.
+      </>
+    ) : undefined;
+
+  const aiEvidence: ReactNode =
+    enginesQueried > 0 ? (
+      <>
+        <AeoEngineBreakdown
+          rows={aeoEngines}
+          competitorsCited={notCited > 0 ? aeoCompetitorsCited : []}
+          brandName={displaySubject}
+        />
+        {googleAio ? (
+          <GoogleAiOverviewCard findings={googleAio} brandName={displaySubject} />
+        ) : null}
+      </>
+    ) : null;
+  const reputationEvidence: ReactNode =
+    mentions.length > 0 ? (
+      <>
+        <SourceBreakdown counts={perSourceCounts} totalMentions={mentions.length} />
+        <p className="mt-3 text-[12.5px]" style={{ color: "#6f6f6f" }}>
+          All {mentions.length} mentions, with links, are in the full report
+          below.
+        </p>
+      </>
+    ) : null;
+  const onPageEvidence: ReactNode =
+    aeoOnPage || schemaGap || detectedStack ? (
+      <>
+        {aeoOnPage ? <AeoOnPageCard findings={aeoOnPage} /> : null}
+        {schemaGap ? <SchemaGapCard findings={schemaGap} /> : null}
+        {detectedStack ? <DetectedStackCard findings={detectedStack} /> : null}
+      </>
+    ) : null;
+
+  type PoolKey = "ai" | "reputation" | "onpage";
+  const pools: Record<PoolKey, { node: ReactNode; label: string }> = {
+    ai: { node: aiEvidence, label: "See the evidence · live engine responses" },
+    reputation: {
+      node: reputationEvidence,
+      label: "See the evidence · where mentions come from",
+    },
+    onpage: {
+      node: onPageEvidence,
+      label: "See the evidence · your homepage, checked",
+    },
+  };
+  const pillarPool: Record<string, PoolKey> = {
+    findability: "ai",
+    listings: "ai",
+    reputation: "reputation",
+    conversion: "onpage",
+    tracking: "onpage",
+    accessibility: "onpage",
+  };
+  const used = new Set<PoolKey>();
+  const spineItems: SpineItem[] = top3.map((item) => {
+    // STRICT pillar → evidence matching. A mismatched pairing ("visitor
+    // pixel" claim over AI-engine evidence) reads as a broken report;
+    // a claim with no evidence block reads fine. Unclaimed pools render
+    // in the appendix instead.
+    let pool: PoolKey | null = pillarPool[item.pillar] ?? null;
+    if (!pool || used.has(pool) || !pools[pool].node) pool = null;
+    if (pool) used.add(pool);
+    return {
+      id: item.id,
+      title: item.title,
+      why: item.why,
+      note: pool === "ai" ? competitorNote : undefined,
+      evidence: pool ? pools[pool].node : undefined,
+      evidenceLabel: pool ? pools[pool].label : undefined,
+      // /ai-visibility deep-links to #ai-search — anchor lives on the
+      // spine item that carries the engine evidence, expanded on load.
+      anchorId: pool === "ai" ? "ai-search" : undefined,
+      defaultOpen: pool === "ai",
+    };
+  });
+  const aiAnchorPlaced = spineItems.some((s) => s.anchorId === "ai-search");
+
   // Shared brief-shell sources — every data provider the pipeline
-  // touched, rendered as clickable cards before the footer. Trust by
-  // traceability. Future audits with the verbatim-quote layer can
-  // extend this list with the deep-link surfaces directly.
+  // touched, rendered as clickable cards in the appendix. Trust by
+  // traceability.
   const sources: BriefSource[] = [
     {
       label: "Firecrawl",
@@ -265,116 +406,189 @@ export default async function AuditViewerPage({
   ];
 
   return (
-    <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
+    <div style={{ backgroundColor: "#FFFFFF", color: "#161616" }}>
       <BriefShellHeader
-        subjectName={subject}
+        subjectName={displaySubject}
         generatedAtIso={audit.createdAt.toISOString()}
         label="Audit"
       />
 
-      <div className="max-w-[1080px] mx-auto px-4 md:px-6 pt-10 md:pt-12 pb-12">
-        <DpsHero
-          subject={subject}
-          score={score}
-          recommendationCount={recommendations.length}
-        />
+      {/* ── 1. Verdict fold ─────────────────────────────────────────── */}
+      <VerdictFold
+        subject={displaySubject}
+        generatedAtIso={audit.createdAt.toISOString()}
+        score={score}
+        highSeverity={highSeverity}
+        verdict={verdict}
+        stats={foldStats}
+      />
 
-        {/* Premium trust strip — engine logos + audit counts. Lives
-            between the hero and the pillar grid so the prospect's
-            first scroll establishes credibility. */}
-        {enginesQueried > 0 ? (
-          <AuditTrustStrip
-            brandName={subject}
-            enginesQueried={enginesQueried}
-            reputationSources={7}
-            totalMentions={mentions.length}
-            totalAiResponses={totalAiResponses}
-            auditedAtIso={audit.createdAt.toISOString()}
-            auditId={audit.id}
-          />
-        ) : null}
+      {/* ── 2. The spine: three things costing you leases ───────────── */}
+      <ReportSpine items={spineItems} />
+      {/* Deep-link safety net: /ai-visibility links to #ai-search. When
+          no spine item carried the engine evidence, the appendix's AI
+          item is anchored + opened below; this bare anchor only covers
+          audits with no engine data at all. */}
+      {!aiAnchorPlaced && !aiEvidence ? (
+        <span id="ai-search" className="scroll-mt-24" />
+      ) : null}
 
-        {dps ? <PillarGrid pillars={dps.pillars} /> : null}
+      {/* ── 3. Narrative: markdown stripped before it ever renders ──── */}
+      {audit.claudeSummary ? (
+        <BriefNarrativePanel heading={`Where ${displaySubject} stands today.`}>
+          <p>{stripChatbotMarkdown(audit.claudeSummary)}</p>
+        </BriefNarrativePanel>
+      ) : null}
 
-        {/* Per-engine AEO breakdown — branded marks for ChatGPT,
-            Perplexity, Claude, Gemini. The verdict surface. The
-            #ai-search anchor is the /ai-visibility landing page's
-            deep-link target; scroll-mt keeps it clear of the fixed nav. */}
-        <div id="ai-search" className="scroll-mt-24">
-          {aeoEngines.length > 0 ? (
-            <AeoEngineBreakdown
-              rows={aeoEngines}
-              competitorsCited={aeoCompetitorsCited}
-              brandName={subject}
-            />
-          ) : null}
-        </div>
-
-        {/* Verbatim Google AI Overview for the brand-name query. */}
-        {googleAio ? (
-          <GoogleAiOverviewCard findings={googleAio} brandName={subject} />
-        ) : null}
-
-        {/* 8-check AEO Page Health scorecard on the homepage. */}
-        {aeoOnPage ? <AeoOnPageCard findings={aeoOnPage} /> : null}
-
-        {/* Schema markup gap — present vs missing types. */}
-        {schemaGap ? <SchemaGapCard findings={schemaGap} /> : null}
-
-        {/* Observed conversion stack from the rendered homepage HTML. */}
-        {detectedStack ? <DetectedStackCard findings={detectedStack} /> : null}
-
-        <SourceBreakdown counts={perSourceCounts} totalMentions={mentions.length} />
-
-        <AuditPaywall
-          unlocked={!!audit.email}
-          auditId={audit.id}
-          mentionCount={mentions.length}
-          findingCount={recommendations.length}
-        >
-          <RecommendationsSection recommendations={recommendations} />
-
-          <MentionsSection
-            mentions={mentions}
-            brandName={subject}
-            shareToken={audit.shareToken}
-            auditCreatedAtIso={audit.createdAt.toISOString()}
-          />
-
-          <section
-            className="mt-10 rounded-xl border p-5 sm:p-6"
-            style={{ borderColor: "#E5E7EB", backgroundColor: "#FBFBFD" }}
+      <div className="mx-auto max-w-[1080px] px-4 pb-12 md:px-6">
+        {/* ── 4. The full report (email-gated, unchanged mechanics) ─── */}
+        <section className="mt-12">
+          <p
+            className="text-[11px] font-mono uppercase tracking-[0.18em]"
+            style={{ color: "#0f62fe", fontFamily: "var(--font-mono)" }}
           >
-            <p
-              className="text-[10px] font-mono uppercase tracking-[0.16em]"
-              style={{ color: "#2563EB", fontFamily: "var(--font-mono)" }}
+            The full report
+          </p>
+          <h2
+            className="mt-2"
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "clamp(24px, 3vw, 34px)",
+              fontWeight: 550,
+              letterSpacing: "-0.025em",
+              lineHeight: 1.1,
+              color: "#161616",
+            }}
+          >
+            Every mention. Every action item.
+          </h2>
+
+          <AuditPaywall
+            unlocked={!!audit.email}
+            auditId={audit.id}
+            mentionCount={mentions.length}
+            findingCount={recommendations.length}
+          >
+            <RecommendationsSection recommendations={recommendations} />
+
+            <MentionsSection
+              mentions={mentions}
+              brandName={displaySubject}
+              shareToken={audit.shareToken}
+              auditCreatedAtIso={audit.createdAt.toISOString()}
+            />
+
+            <section
+              className="mt-10 border p-5 sm:p-6"
+              style={{ borderColor: "#e0e0e0", borderRadius: 2, backgroundColor: "#FBFBFD" }}
             >
-              Next step
-            </p>
-            <h3
-              className="text-lg sm:text-xl font-semibold mt-1 max-w-xl"
-              style={{ color: "#1E2A3A" }}
-            >
-              Want this monitored daily for your whole portfolio?
-            </h3>
-            <p
-              className="text-[13px] sm:text-sm mt-1.5 max-w-xl"
-              style={{ color: "#4B5563" }}
-            >
-              {BRAND_NAME} runs this report every day for every property,
-              watches the deltas, and tells your team what to do about it.
-            </p>
-            <div className="mt-3">
-              <Link
-                href="/onboarding"
-                className="inline-flex items-center justify-center h-10 px-5 rounded-md text-[13px] font-medium text-white"
-                style={{ backgroundColor: "#2563EB" }}
+              <p
+                className="text-[10px] font-mono uppercase tracking-[0.16em]"
+                style={{ color: "#0f62fe", fontFamily: "var(--font-mono)" }}
               >
-                Talk to us
-              </Link>
-            </div>
-          </section>
-        </AuditPaywall>
+                Next step
+              </p>
+              <h3
+                className="mt-1 max-w-xl text-lg font-semibold sm:text-xl"
+                style={{ color: "#161616" }}
+              >
+                Want this monitored daily for your whole portfolio?
+              </h3>
+              <p
+                className="mt-1.5 max-w-xl text-[13px] sm:text-sm"
+                style={{ color: "#525252" }}
+              >
+                {BRAND_NAME} runs this report every day for every property,
+                watches the deltas, and tells your team what to do about it.
+              </p>
+              <div className="mt-3">
+                <Link
+                  href="/onboarding"
+                  className="inline-flex h-10 items-center justify-center px-5 text-[13px] font-medium text-white"
+                  style={{ backgroundColor: "#0f62fe", borderRadius: 2 }}
+                >
+                  Talk to us
+                </Link>
+              </div>
+            </section>
+          </AuditPaywall>
+        </section>
+
+        {/* ── 5. Appendix: everything demoted, one accordion ────────── */}
+        <section className="mt-16">
+          <style>{`
+            .apx-det > summary { list-style: none; cursor: pointer; }
+            .apx-det > summary::-webkit-details-marker { display: none; }
+            .apx-chev { transition: transform .35s cubic-bezier(.2,.8,.2,1); }
+            .apx-det[open] .apx-chev { transform: rotate(180deg); }
+            @keyframes apx-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+            .apx-det[open] .apx-body { animation: apx-in .4s cubic-bezier(.2,.8,.2,1) both; }
+            @media (prefers-reduced-motion: reduce) {
+              .apx-det[open] .apx-body { animation: none; }
+              .apx-chev { transition: none; }
+            }
+          `}</style>
+          <p
+            className="text-[11px] font-mono uppercase tracking-[0.18em]"
+            style={{ color: "#0f62fe", fontFamily: "var(--font-mono)" }}
+          >
+            Appendix
+          </p>
+
+          {dps ? (
+            <AppendixItem label="Full scorecard" sublabel="six pillars, scored">
+              <PillarGrid pillars={dps.pillars} />
+            </AppendixItem>
+          ) : null}
+
+          {!used.has("ai") && aiEvidence ? (
+            <AppendixItem
+              label="AI search visibility"
+              sublabel="per-engine breakdown"
+              // Carries the /ai-visibility deep link when the spine
+              // didn't claim the engine evidence — open so the anchor
+              // lands on visible content.
+              id={!aiAnchorPlaced ? "ai-search" : undefined}
+              defaultOpen={!aiAnchorPlaced}
+            >
+              {aiEvidence}
+            </AppendixItem>
+          ) : null}
+          {!used.has("onpage") && onPageEvidence ? (
+            <AppendixItem
+              label="Homepage health"
+              sublabel="on-page, schema, stack"
+            >
+              {onPageEvidence}
+            </AppendixItem>
+          ) : null}
+          {!used.has("reputation") && reputationEvidence ? (
+            <AppendixItem
+              label="Reputation scan"
+              sublabel="mention sources"
+            >
+              {reputationEvidence}
+            </AppendixItem>
+          ) : null}
+
+          <AppendixItem
+            label="How this report was built"
+            sublabel={`${totalAiResponses > 0 ? `${totalAiResponses} live API calls · ` : ""}every source, traceable`}
+          >
+            {enginesQueried > 0 ? (
+              <AuditTrustStrip
+                brandName={displaySubject}
+                enginesQueried={enginesQueried}
+                reputationSources={7}
+                totalMentions={mentions.length}
+                totalAiResponses={totalAiResponses}
+                auditedAtIso={audit.createdAt.toISOString()}
+                auditId={audit.id}
+              />
+            ) : null}
+            <BriefSourcesBlock sources={sources} />
+          </AppendixItem>
+        </section>
 
         <BookCallCta
           subtitle={
@@ -385,21 +599,6 @@ export default async function AuditViewerPage({
         />
       </div>
 
-      {/* Light brand-blue narrative panel — replaces the old inline
-          "What this means" paragraph. Lives outside the max-width
-          container so the panel goes full-bleed like /brief. */}
-      {audit.claudeSummary ? (
-        <BriefNarrativePanel
-          heading={`Where ${subject} stands today.`}
-        >
-          <p>{audit.claudeSummary}</p>
-        </BriefNarrativePanel>
-      ) : null}
-
-      {/* Sources block — every data provider that produced a number on
-          this audit, with a clickable link to verify. */}
-      <BriefSourcesBlock sources={sources} />
-
       {/* Light footer with audit id + traceability metadata. */}
       <BriefShellFooter
         reportId={audit.id}
@@ -407,6 +606,58 @@ export default async function AuditViewerPage({
         liveApiCalls={totalAiResponses}
       />
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// AppendixItem — one hairline-ruled accordion row. Mono summary label,
+// chevron rotates open, body fades up.
+// ---------------------------------------------------------------------------
+function AppendixItem({
+  label,
+  sublabel,
+  id,
+  defaultOpen,
+  children,
+}: {
+  label: string;
+  sublabel?: string;
+  id?: string;
+  defaultOpen?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <details
+      className="apx-det mt-3 scroll-mt-24"
+      id={id}
+      open={defaultOpen}
+      style={{ borderTop: "1px solid #e0e0e0" }}
+    >
+      <summary className="flex items-baseline justify-between gap-3 py-4">
+        <span className="inline-flex items-center gap-2.5">
+          <ChevronDown
+            className="apx-chev h-4 w-4"
+            style={{ color: "#0f62fe" }}
+            aria-hidden
+          />
+          <span
+            className="text-[14.5px] font-semibold"
+            style={{ color: "#161616" }}
+          >
+            {label}
+          </span>
+        </span>
+        {sublabel ? (
+          <span
+            className="hidden text-[11px] font-mono sm:inline"
+            style={{ color: "#6f6f6f", fontFamily: "var(--font-mono)" }}
+          >
+            {sublabel}
+          </span>
+        ) : null}
+      </summary>
+      <div className="apx-body pb-6">{children}</div>
+    </details>
   );
 }
 
@@ -539,7 +790,8 @@ function PendingState({
 
 // ---------------------------------------------------------------------------
 // SourceBreakdown. Chip row that exposes the breadth of the reputation
-// scan above the email gate. Preserved from the legacy result page.
+// scan. Now lives inside the spine's reputation evidence (or the
+// appendix when the spine didn't claim it).
 // ---------------------------------------------------------------------------
 
 type AuditSource = AuditMention["source"];

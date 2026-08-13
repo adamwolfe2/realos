@@ -62,7 +62,9 @@ export function PlatformFooter() {
             <div key={col.heading}>
               <p
                 style={{
-                  color: "#6f7a94",
+                  // #6f7a94 failed AA at 11px (4.30:1). #5a647d = 5.91:1,
+                  // same gray the nav uses for its Segments label.
+                  color: "#5a647d",
                   fontFamily: "var(--font-mono)",
                   fontSize: "11px",
                   fontWeight: 500,

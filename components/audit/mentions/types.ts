@@ -33,4 +33,6 @@ export const ALL_SOURCES: AuditMentionSource[] = [
   "TAVILY_WEB",
 ];
 
-export const INITIAL_MENTION_LIMIT = 25;
+// 2026-08-13 report redesign: the mention feed reads as an appendix, not
+// the spine. Top 3 visible, the rest behind "Show N more".
+export const INITIAL_MENTION_LIMIT = 3;

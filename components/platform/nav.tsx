@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { BookDemoLink } from "@/components/marketing/book-demo-link";
 import type { LucideIcon } from "lucide-react";
 import {
+  Bot,
   LayoutGrid,
   MessageSquare,
   Fingerprint,
@@ -72,6 +73,12 @@ const PRODUCT_LINKS: ProductLink[] = [
     label: "Free AI Visibility Audit",
     description: "See if ChatGPT recommends your property — in 2 minutes",
     icon: Sparkles,
+  },
+  {
+    href: "/build-a-chatbot",
+    label: "Free Chatbot Builder",
+    description: "Train a chatbot on your property's site in 60 seconds",
+    icon: Bot,
   },
   {
     // Reputation has no dedicated /features sub-page and no #reputation
