@@ -17,7 +17,7 @@
  */
 
 import "server-only";
-import { unstable_cache } from "next/cache";
+import { unstable_cache, revalidateTag } from "next/cache";
 
 const BASE_URL = "https://api.firecrawl.dev/v1";
 
@@ -169,7 +169,23 @@ export async function scrape(args: {
       tags: [firecrawlScrapeCacheTag(args.url)],
     },
   );
-  return cached();
+  const result = await cached();
+  // NEVER serve a cached FAILURE for 7 days (2026-08-13): a transient
+  // Firecrawl error on the first scrape of telegraphcommons.com was
+  // cached under (url, formats) and every audit re-run replayed it,
+  // silently degrading the crawl to the native-fetch fallback. On a
+  // failed cache hit: bust the tag and retry uncached once — the retry's
+  // result lands in the (now empty) cache slot on the next call.
+  if (!result.ok && !("skipped" in result && result.skipped)) {
+    try {
+      revalidateTag(firecrawlScrapeCacheTag(args.url), "max");
+    } catch {
+      // revalidateTag throws outside a request/route context (e.g.
+      // scripts) — the direct retry below still self-heals this call.
+    }
+    return scrapeUncached({ url: args.url, formats });
+  }
+  return result;
 }
 
 /**
