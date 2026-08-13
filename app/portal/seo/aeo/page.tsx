@@ -23,6 +23,11 @@ import {
   ADDON_AEO_BOOST,
 } from "@/lib/proposals/org-addons";
 import type { AeoEngine } from "@prisma/client";
+import {
+  CANONICAL_SOURCES,
+  classifySource,
+} from "@/lib/attribution/source-taxonomy";
+import { isBrandedPromptText } from "@/lib/aeo/prompts";
 
 export const metadata: Metadata = { title: "AI search visibility" };
 export const dynamic = "force-dynamic";
@@ -50,6 +55,10 @@ export default async function AeoPage() {
     where: {
       ...where,
       queryRunAt: { gte: sixtyDaysAgo },
+      // Property visibility only (2026-08-14): neighborhood-page content
+      // scans have different prompt semantics and were silently mixed
+      // into every rate on this page.
+      neighborhoodPageId: null,
     },
     select: {
       id: true,
@@ -73,6 +82,127 @@ export default async function AeoPage() {
     (c) => c.queryRunAt < thirtyDaysAgo && c.queryRunAt >= sixtyDaysAgo,
   );
 
+  // Weekly visibility trend (2026-08-14): mention rate per week, overall
+  // + per engine. Dedicated lean query — the `checks` query above is
+  // capped at 2000 rows for its heavy fields, and a truncated window
+  // would fabricate a surge by emptying the oldest weeks. Weeks with no
+  // scan carry null so the client skips them instead of plotting zeros.
+  //
+  // Cutover: branded name-echo demotion changed what `mentioned` means
+  // on 2026-08-13. Pre-cutover weeks would render the semantic change as
+  // a real visibility cliff, so the trend starts at the cutover and the
+  // card stays hidden until two post-cutover scan weeks exist.
+  const ECHO_SEMANTICS_CUTOVER = new Date("2026-08-13T09:00:00Z");
+  const TREND_WEEKS = 8;
+  const WEEK_MS = 7 * DAY_MS;
+  const trendFloor =
+    ECHO_SEMANTICS_CUTOVER > sixtyDaysAgo ? ECHO_SEMANTICS_CUTOVER : sixtyDaysAgo;
+  const trendRows = await prisma.aeoCitationCheck.findMany({
+    where: {
+      ...where,
+      neighborhoodPageId: null,
+      queryRunAt: { gte: trendFloor },
+    },
+    select: { queryRunAt: true, mentioned: true, engine: true },
+  });
+  const trendWeeks = Array.from({ length: TREND_WEEKS }, (_, i) => {
+    const start = new Date(now - (TREND_WEEKS - i) * WEEK_MS);
+    const end = new Date(start.getTime() + WEEK_MS);
+    const rows = trendRows.filter(
+      (c) => c.queryRunAt >= start && c.queryRunAt < end,
+    );
+    const rate = (subset: typeof rows): number | null =>
+      subset.length > 0
+        ? subset.filter((c) => c.mentioned).length / subset.length
+        : null;
+    const byEngine: Record<string, number | null> = {};
+    for (const engine of ENGINES) {
+      byEngine[engine] = rate(rows.filter((c) => c.engine === engine));
+    }
+    return {
+      label: start.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      overall: rate(rows),
+      byEngine,
+    };
+  });
+
+  // AI-referral attribution (2026-08-14, slice 11): sessions whose
+  // referrer/utm is an AI assistant, chained through visitor → lead →
+  // SIGNED. Classification routes through the canonical source taxonomy
+  // (classifySource) — the same waterfall /portal/attribution uses — so
+  // the two surfaces can never disagree on the same session (the exact
+  // dual-waterfall bug consolidated after the 2026-07-22 audit).
+  const aiSources = CANONICAL_SOURCES.filter((s) => s.category === "ai");
+  const aiHostFilters = aiSources.flatMap((s) =>
+    s.matchHosts.map((h) => ({
+      firstReferrer: { contains: h, mode: "insensitive" as const },
+    })),
+  );
+  const aiUtmFilters = aiSources.flatMap((s) =>
+    s.matchUtm.map((m) => ({
+      utmSource: { contains: m, mode: "insensitive" as const },
+    })),
+  );
+  const aiSessions = await prisma.visitorSession.findMany({
+    where: {
+      ...where,
+      startedAt: { gte: sixtyDaysAgo },
+      OR: [...aiHostFilters, ...aiUtmFilters],
+    },
+    select: {
+      visitorId: true,
+      firstReferrer: true,
+      utmSource: true,
+      utmMedium: true,
+      startedAt: true,
+    },
+    orderBy: { startedAt: "desc" },
+    take: 2000,
+  });
+  const aiByEngine = new Map<string, number>();
+  // visitorId → earliest AI-referred session start, so a lead created
+  // BEFORE the visitor ever arrived from an AI engine is never counted.
+  const aiVisitorFirstSeen = new Map<string, Date>();
+  let aiVisits = 0;
+  for (const s of aiSessions) {
+    // The SQL prefilter is a coarse superset (substring match); the
+    // canonical classifier makes the real call on the parsed hostname.
+    const src = classifySource(s.utmSource, s.firstReferrer, s.utmMedium);
+    if (src.category !== "ai") continue;
+    aiVisits += 1;
+    aiByEngine.set(src.label, (aiByEngine.get(src.label) ?? 0) + 1);
+    if (s.visitorId) {
+      const prev = aiVisitorFirstSeen.get(s.visitorId);
+      if (!prev || s.startedAt < prev) aiVisitorFirstSeen.set(s.visitorId, s.startedAt);
+    }
+  }
+  const aiLeadRows =
+    aiVisitorFirstSeen.size > 0
+      ? await prisma.lead.findMany({
+          where: {
+            ...where,
+            visitorId: { in: [...aiVisitorFirstSeen.keys()] },
+            firstSeenAt: { gte: sixtyDaysAgo },
+          },
+          select: { status: true, visitorId: true, firstSeenAt: true },
+        })
+      : [];
+  // Lead must post-date the visitor's first AI-referred session — the
+  // chain claims causation order, so enforce it.
+  const aiLeads = aiLeadRows.filter((l) => {
+    const firstAi = l.visitorId ? aiVisitorFirstSeen.get(l.visitorId) : null;
+    return firstAi ? l.firstSeenAt >= firstAi : false;
+  });
+  const aiReferral = {
+    visits: aiVisits,
+    leads: aiLeads.length,
+    signed: aiLeads.filter((l) => l.status === "SIGNED").length,
+    byEngine: [...aiByEngine.entries()]
+      .map(([engine, visits]) => ({ engine, visits }))
+      .sort((a, b) => b.visits - a.visits),
+    windowDays: 60,
+  };
+
   // Mention = brand was named anywhere in the answer (mentioned column,
   // backfilled from CITED + COMPETITOR_CITED in the migration).
   // Citation = engine returned a URL we own.
@@ -86,7 +216,10 @@ export default async function AeoPage() {
   const citationRate30 = last30Total > 0 ? last30Cited / last30Total : 0;
   const priorMentionRate =
     prior30Total > 0 ? prior30Mentioned / prior30Total : 0;
-  const trendDelta = mentionRate30 - priorMentionRate;
+  // No prior-period rows (new org, or the capped query truncated them)
+  // → no honest delta. 0 renders as a flat dash, never a fake surge.
+  const trendDelta =
+    prior30Total > 0 ? mentionRate30 - priorMentionRate : 0;
 
   // Composite Visibility Score (0-100). Norman feedback (May 22): the
   // original 50/40/10 weighting capped the score at ~9 even for a
@@ -125,15 +258,7 @@ export default async function AeoPage() {
   // than fetching property names — the generator in lib/aeo/prompts.ts
   // always leads branded prompts with one of these templates, so a
   // text match is cheap and self-contained.
-  const BRANDED_PROMPT_MARKERS = [
-    /^tell me about /i,
-    /^what do residents say about /i,
-    /^what are the amenities and pricing like at /i,
-    / reviews — what are the most common /i,
-  ];
-  const brandedRows = last30.filter((c) =>
-    BRANDED_PROMPT_MARKERS.some((re) => re.test(c.prompt)),
-  );
+  const brandedRows = last30.filter((c) => isBrandedPromptText(c.prompt));
   const brandedMentioned = brandedRows.filter((c) => c.mentioned).length;
   const brandedMentionRate =
     brandedRows.length > 0 ? brandedMentioned / brandedRows.length : 0;
@@ -602,6 +727,8 @@ export default async function AeoPage() {
       responses={responses}
       competitorRollup={competitorRollup}
       lastScanAt={lastScanAt}
+      trendWeeks={trendWeeks}
+      aiReferral={aiReferral}
       kpis={{
         visibilityScore,
         mentionRate30,

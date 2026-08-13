@@ -61,6 +61,7 @@ export const CANONICAL_SOURCES: CanonicalSource[] = [
   { id: "perplexity", label: "Perplexity", category: "ai", color: "#20808D", logo: "perplexity", matchHosts: ["perplexity."], matchUtm: ["perplexity"] },
   { id: "gemini", label: "Gemini", category: "ai", color: "#8E75F8", logo: "gemini", matchHosts: ["gemini.google."], matchUtm: ["gemini"] },
   { id: "claude_ai", label: "Claude", category: "ai", color: "#D97757", logo: "claude_ai", matchHosts: ["claude.ai"], matchUtm: ["claude"] },
+  { id: "copilot", label: "Copilot", category: "ai", color: "#0078D4", logo: "copilot", matchHosts: ["copilot.microsoft."], matchUtm: ["copilot", "bingchat"] },
 
   // --- Paid (resolved primarily via LeadSource enum / utm medium) ----------
   { id: "google_ads", label: "Google Ads", category: "paid", color: "#4285F4", logo: "google_ads", matchHosts: [], matchUtm: ["google-ads", "googleads", "gads", "adwords"] },

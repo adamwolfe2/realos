@@ -24,6 +24,7 @@ import { AeoCitationStatus, NeighborhoodPageStatus } from "@prisma/client";
 // DataforSEO-dependent rule is wrapped in `if (isDataforSeoConfigured())`
 // so the engine works fine without the key.
 import { isDataforSeoConfigured } from "./dataforseo";
+import { isBrandedPromptText } from "@/lib/aeo/prompts";
 
 // Mirror Prisma's enums so consumers don't need to import them transitively.
 export type SeoActionCategory =
@@ -252,16 +253,21 @@ async function aeoNotCitedRecs(
   propertyId: string,
 ): Promise<SeoRecommendation[]> {
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  const count = await prisma.aeoCitationCheck
-    .count({
+  // Discovery prompts only (2026-08-14): a demoted branded name-echo row
+  // is also NOT_CITED now, but "engines surface no one — publish the
+  // right page and own it" is only true of discovery questions.
+  const rows = await prisma.aeoCitationCheck
+    .findMany({
       where: {
         orgId,
         propertyId,
         status: AeoCitationStatus.NOT_CITED,
         queryRunAt: { gte: since },
       },
+      select: { prompt: true },
     })
-    .catch(() => 0);
+    .catch(() => [] as Array<{ prompt: string }>);
+  const count = rows.filter((r) => !isBrandedPromptText(r.prompt)).length;
   if (count === 0) return [];
   return [
     makeRec({

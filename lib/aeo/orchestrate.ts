@@ -21,7 +21,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
-import { generatePrompts } from "./prompts";
+import { generatePromptsWithKinds } from "./prompts";
 import {
   parseClaimSets,
   rewriteAllClaims,
@@ -29,6 +29,7 @@ import {
   type ClaimPromptSet,
 } from "./prompts-neighborhood";
 import { parseCitation } from "./parse";
+import { classifyEngineAnswers } from "@/lib/signals/compute";
 import {
   getEnabledEngines,
   isDataForSeoEngineMetadata,
@@ -115,7 +116,7 @@ export async function runAeoScan(opts: ScanOptions): Promise<ScanResult> {
   const engineNextAllowedAt = new Map<string, number>();
 
   for (const property of properties) {
-    const prompts = generatePrompts({
+    const generated = generatePromptsWithKinds({
       city: property.city,
       state: property.state,
       neighborhood: deriveNeighborhood(property),
@@ -143,12 +144,26 @@ export async function runAeoScan(opts: ScanOptions): Promise<ScanResult> {
       take: CUSTOM_PROMPTS_PER_PROPERTY,
       select: { prompt: true },
     });
+    const prompts = generated.map((g) => g.text);
+    const kindByPrompt = new Map(
+      generated.map((g) => [g.text.toLowerCase(), g.kind]),
+    );
     const seenPrompts = new Set(prompts.map((p) => p.toLowerCase()));
+    const customBrand = property.name?.trim().toLowerCase() ?? "";
     for (const row of customRows) {
       const text = row.prompt.trim();
       if (!text || seenPrompts.has(text.toLowerCase())) continue;
       seenPrompts.add(text.toLowerCase());
       prompts.push(text);
+      // Custom prompts: operator free text — classify branded only when
+      // it actually names the property (≥3 chars, mirrors parseCitation's
+      // alias floor).
+      kindByPrompt.set(
+        text.toLowerCase(),
+        customBrand.length >= 3 && text.toLowerCase().includes(customBrand)
+          ? "branded"
+          : "discovery",
+      );
     }
 
     if (prompts.length === 0) {
@@ -173,28 +188,42 @@ export async function runAeoScan(opts: ScanOptions): Promise<ScanResult> {
             name: property.name,
             websiteUrl: property.websiteUrl,
           });
-          // `mentioned` is the looser signal — true when the brand name
-          // or its domain shows up in the response at all (i.e. status is
-          // CITED). COMPETITOR_CITED rows mean the engine named a rival
-          // without naming the brand, so mentioned stays false. This
-          // keeps the AEO page's mention vs. citation breakdown honest:
-          // a high mention rate now means "engines are aware of the
-          // brand" rather than the previous overstatement.
-          const mentioned = parsed.status === "CITED";
+          // Discovery/aware split (2026-08-14, ports the prospect-side
+          // fix via the same classifyEngineAnswers): a BRANDED prompt
+          // ("Tell me about X…") always echoes X back, so a bare name
+          // match on a branded prompt counts for NOTHING — awareness
+          // requires the engine to cite the property's own site. The
+          // dashboard's mention/citation rates were echo-inflated on
+          // every branded row before this. Kind comes from the prompt
+          // GENERATOR (ground truth), not a substring guess — "Riverside"
+          // in Riverside must not brand every discovery prompt.
+          const kind = kindByPrompt.get(prompt.toLowerCase()) ?? "discovery";
+          const verdict = classifyEngineAnswers([{ kind, parse: parsed }]);
+          const nameEchoOnly =
+            kind === "branded" && parsed.status === "CITED" && !verdict.aware;
+          const status = nameEchoOnly ? "NOT_CITED" : parsed.status;
+          const mentioned = status === "CITED";
           await prisma.aeoCitationCheck.create({
             data: {
               orgId: property.orgId,
               propertyId: property.id,
               engine: engine.engine as AeoEngine,
               prompt,
-              status: parsed.status,
+              status,
               mentioned,
               responseText: result.responseText.slice(0, 8000),
               citedUrl: parsed.citedUrl ?? null,
-              competitorsCited: parsed.competitorsCited,
+              // Only the DEMOTED echo rows drop their extracted names —
+              // their capitalized nouns are review themes, not rivals,
+              // and the rollup aggregates non-CITED rows. A branded
+              // COMPETITOR_CITED row (brand truly absent, rivals named)
+              // is real evidence and keeps its list.
+              competitorsCited: nameEchoOnly ? [] : parsed.competitorsCited,
               metadata: {
                 engineMetadata: result.metadata ?? {},
                 citedUrls: result.citedUrls.slice(0, 20),
+                promptKind: kind,
+                ...(nameEchoOnly ? { nameEchoOnly: true } : {}),
               } as Prisma.InputJsonValue,
             },
           });

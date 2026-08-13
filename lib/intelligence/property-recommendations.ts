@@ -31,6 +31,7 @@
 // ---------------------------------------------------------------------------
 
 import { prisma } from "@/lib/db";
+import { isBrandedPromptText } from "@/lib/aeo/prompts";
 import type { Property } from "@prisma/client";
 import {
   AeoCitationStatus,
@@ -256,14 +257,20 @@ async function aeoActions(
     },
   });
 
-  const notCited = await prisma.aeoCitationCheck.count({
+  // Discovery prompts only (2026-08-14): demoted branded name-echo rows
+  // are NOT_CITED too, but they're not "open gap nobody owns" evidence.
+  const notCitedRows = await prisma.aeoCitationCheck.findMany({
     where: {
       orgId,
       propertyId: property.id,
       status: AeoCitationStatus.NOT_CITED,
       queryRunAt: { gte: since },
     },
+    select: { prompt: true },
   });
+  const notCited = notCitedRows.filter(
+    (r) => !isBrandedPromptText(r.prompt),
+  ).length;
 
   const actions: ProactiveAction[] = [];
 

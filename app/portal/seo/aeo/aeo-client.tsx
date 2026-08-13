@@ -2,9 +2,10 @@
 
 import * as React from "react";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
+import { Sparkline } from "@/components/portal/ui/charts";
 import { TabbedCard } from "@/components/portal/ui/tabbed-card";
 import { AeoScanButton } from "./aeo-scan-button";
 import {
@@ -40,11 +41,28 @@ import { mergeEntities, type MergedEntity } from "@/lib/aeo/merge-entities";
 // own search / group / filter state without forcing the whole page into
 // a client component.
 
+export type TrendWeek = {
+  label: string;
+  overall: number | null;
+  byEngine: Record<string, number | null>;
+};
+
 export type AeoClientProps = {
   engineCards: EngineCardData[];
   responses: ResponseRow[];
   competitorRollup: { name: string; count: number }[];
   lastScanAt: string | null;
+  /** Weekly mention-rate trend over the 60d window (2026-08-14). */
+  trendWeeks: TrendWeek[];
+  /** AI-referral attribution (2026-08-14): pixel sessions from AI
+   *  assistants chained to leads + signed leases. */
+  aiReferral: {
+    visits: number;
+    leads: number;
+    signed: number;
+    byEngine: Array<{ engine: string; visits: number }>;
+    windowDays: number;
+  };
   kpis: {
     visibilityScore: number;
     mentionRate30: number;
@@ -318,6 +336,8 @@ export function AeoClient({
   responses,
   competitorRollup,
   lastScanAt,
+  trendWeeks,
+  aiReferral,
   kpis,
   recommendations,
   shareOfVoice,
@@ -422,6 +442,8 @@ export function AeoClient({
         actions={<AeoScanButton />}
       />
 
+      <VisibilityTrendCard trendWeeks={trendWeeks} trendDelta={kpis.trendDelta} />
+
       {/* Visibility Score hero + 3-up micro KPIs — consolidated onto the
           canonical KpiTile (was two hand-rolled cards). The composite score
           drives the gauge; band copy + response count move into `hint`. */}
@@ -479,6 +501,8 @@ export function AeoClient({
           headline KPIs). Each shows mention + citation rate per engine. */}
       <AeoEngineCards rows={engineCards} />
 
+      <AiReferralCard aiReferral={aiReferral} />
+
       {/* What to do next — derived recommendations. */}
       <NextActions recs={recommendations} />
 
@@ -514,5 +538,169 @@ export function AeoClient({
         </SectionCard>
       )}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// AiReferralCard (2026-08-14, slice 11) — the attribution proof chain.
+// Visits from AI assistants (pixel referrer/utm) → leads → signed
+// leases. Visibility tools stop at "you were mentioned"; this is the
+// number that closes deals.
+// ---------------------------------------------------------------------------
+
+function AiReferralCard({
+  aiReferral,
+}: {
+  aiReferral: AeoClientProps["aiReferral"];
+}) {
+  const { visits, leads, signed, byEngine, windowDays } = aiReferral;
+  return (
+    <SectionCard label="AI search → signed leases">
+      {visits === 0 ? (
+        <p className="text-[13px] text-muted-foreground py-1">
+          No AI-referred visits detected in the last {windowDays} days.
+          Renters arrive from ChatGPT, Perplexity, Gemini, and Copilot once
+          the engines recommend you — the pixel attributes every one of
+          those visits automatically.
+        </p>
+      ) : (
+        <>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            {[
+              { value: visits, label: `visits from AI assistants (${windowDays}d)` },
+              { value: leads, label: "became leads" },
+              { value: signed, label: "signed leases" },
+            ].map((s, i) => (
+              <React.Fragment key={s.label}>
+                {i > 0 ? (
+                  <ArrowRight
+                    className="h-4 w-4 text-muted-foreground"
+                    aria-hidden
+                  />
+                ) : null}
+                <div>
+                  <div className="text-xl font-semibold tabular-nums">
+                    {fmtNumber(s.value)}
+                  </div>
+                  <div className="text-[11.5px] text-muted-foreground">
+                    {s.label}
+                  </div>
+                </div>
+              </React.Fragment>
+            ))}
+          </div>
+          {byEngine.length > 0 ? (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {byEngine.map((e) => (
+                <span
+                  key={e.engine}
+                  className="rounded-full border border-border px-2.5 py-1 text-[11.5px] text-muted-foreground"
+                >
+                  {e.engine}{" "}
+                  <span className="font-medium text-foreground tabular-nums">
+                    {fmtNumber(e.visits)}
+                  </span>
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </>
+      )}
+    </SectionCard>
+  );
+}
+
+const TREND_ENGINE_OPTIONS = [
+  { key: "ALL", label: "All engines" },
+  { key: "CHATGPT", label: "ChatGPT" },
+  { key: "PERPLEXITY", label: "Perplexity" },
+  { key: "CLAUDE", label: "Claude" },
+  { key: "GEMINI", label: "Gemini" },
+] as const;
+
+// VisibilityTrendCard (2026-08-14) — weekly mention-rate line above the
+// stat cards. One hero number + arrow, engine-filterable. Weeks without
+// a scan are skipped, never plotted as fake zeros.
+function VisibilityTrendCard({
+  trendWeeks,
+  trendDelta,
+}: {
+  trendWeeks: TrendWeek[];
+  trendDelta: number;
+}) {
+  const [engine, setEngine] = React.useState<string>("ALL");
+  const points = trendWeeks
+    .map((w) => ({
+      label: w.label,
+      value: engine === "ALL" ? w.overall : (w.byEngine[engine] ?? null),
+    }))
+    .filter((p): p is { label: string; value: number } => p.value !== null);
+
+  if (points.length < 2) return null; // trend needs two scanned weeks
+
+  const latest = points[points.length - 1].value;
+  const delta =
+    engine === "ALL" ? trendDelta : latest - points[0].value;
+  const DeltaIcon =
+    Math.abs(delta) < 0.005 ? Minus : delta > 0 ? TrendingUp : TrendingDown;
+  const deltaColor =
+    Math.abs(delta) < 0.005
+      ? "text-muted-foreground"
+      : delta > 0
+        ? "text-emerald-700"
+        : "text-red-700";
+
+  return (
+    <SectionCard label="Visibility trend">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-semibold tabular-nums">
+              {fmtPercent(latest)}
+            </span>
+            <span
+              className={`inline-flex items-center gap-1 text-[13px] font-medium ${deltaColor}`}
+            >
+              <DeltaIcon className="h-3.5 w-3.5" aria-hidden />
+              {delta >= 0 ? "+" : ""}
+              {(delta * 100).toFixed(0)} pts
+            </span>
+          </div>
+          <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+            {engine === "ALL"
+              ? "Share of AI answers naming you, weekly · vs prior 30 days"
+              : `Share of ${TREND_ENGINE_OPTIONS.find((o) => o.key === engine)?.label} answers naming you · vs first scanned week`}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-1">
+          {TREND_ENGINE_OPTIONS.map((o) => (
+            <button
+              key={o.key}
+              type="button"
+              onClick={() => setEngine(o.key)}
+              className={`rounded-full border px-2.5 py-1 text-[11.5px] font-medium ${
+                engine === o.key
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground"
+              }`}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="mt-3">
+        <Sparkline
+          data={points.map((p) => p.value)}
+          width={600}
+          height={56}
+          className="w-full"
+        />
+        <div className="mt-1 flex justify-between text-[10.5px] text-muted-foreground">
+          <span>{points[0].label}</span>
+          <span>{points[points.length - 1].label}</span>
+        </div>
+      </div>
+    </SectionCard>
   );
 }

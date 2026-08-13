@@ -51,7 +51,32 @@ export interface PromptSeed {
  * Generate 4-6 user-style prompts for the given property seed.
  * Empty array if we don't have enough geographic signal.
  */
+/** Prompt + its kind. Branded prompts NAME the property; a name-echo on
+ *  them proves nothing (2026-08-14 — the orchestrator demotes echo rows
+ *  and needs ground truth for which prompts are branded, not a
+ *  substring guess that false-positives on location-named properties
+ *  like "Riverside" in Riverside). */
+export type GeneratedPrompt = { text: string; kind: "branded" | "discovery" };
+
+/** The generator's branded templates, matchable on persisted rows that
+ *  predate promptKind metadata. ONE definition — the dashboard, the SEO
+ *  agent, and property recommendations all read the same rule. */
+export const BRANDED_PROMPT_MARKERS: RegExp[] = [
+  /^tell me about /i,
+  /^what do residents say about /i,
+  /^what are the amenities and pricing like at /i,
+  / reviews — what are the most common /i,
+];
+
+export function isBrandedPromptText(prompt: string): boolean {
+  return BRANDED_PROMPT_MARKERS.some((re) => re.test(prompt));
+}
+
 export function generatePrompts(seed: PromptSeed): string[] {
+  return generatePromptsWithKinds(seed).map((p) => p.text);
+}
+
+export function generatePromptsWithKinds(seed: PromptSeed): GeneratedPrompt[] {
   const city = seed.city?.trim();
   if (!city) return [];
 
@@ -61,7 +86,8 @@ export function generatePrompts(seed: PromptSeed): string[] {
     : city;
   const audience = audiencePhrase(seed);
 
-  const out: string[] = [];
+  const out: GeneratedPrompt[] = [];
+  const branded = (text: string): GeneratedPrompt => ({ text, kind: "branded" });
 
   // BRANDED prompts first. When the seed carries propertyName, lead with
   // 2 prompts that explicitly name the property — these are how a real
@@ -80,31 +106,29 @@ export function generatePrompts(seed: PromptSeed): string[] {
     // training data (reviews, Reddit, social) about most named
     // buildings. Keeping branded prompts ahead of discovery in the
     // emission order means they never get trimmed by PROMPTS_PER_PROPERTY.
-    out.push(`Tell me about ${brand} in ${broadLocation}. Is it a good place to live?`);
+    out.push(branded(`Tell me about ${brand} in ${broadLocation}. Is it a good place to live?`));
     out.push(
-      `What do residents say about ${brand}? Any common complaints or things to know before signing a lease?`,
+      branded(`What do residents say about ${brand}? Any common complaints or things to know before signing a lease?`),
     );
-    out.push(`What are the amenities and pricing like at ${brand}?`);
+    out.push(branded(`What are the amenities and pricing like at ${brand}?`));
     out.push(
-      `${brand} reviews — what are the most common positive and negative things people say?`,
+      branded(`${brand} reviews — what are the most common positive and negative things people say?`),
     );
   }
 
-  if (seed.propertyType === "COMMERCIAL") {
-    out.push(...generateCommercialPrompts(seed, location, broadLocation));
-  } else {
-    out.push(
-      ...generateResidentialPrompts(seed, location, broadLocation, audience),
-    );
-  }
+  const discoveryTexts =
+    seed.propertyType === "COMMERCIAL"
+      ? generateCommercialPrompts(seed, location, broadLocation)
+      : generateResidentialPrompts(seed, location, broadLocation, audience);
+  out.push(...discoveryTexts.map((text) => ({ text, kind: "discovery" as const })));
 
   // De-dupe + cap at 6 (was 6 pre-branded, stays 6 — the 2 branded
   // ones replace 2 of the lower-value discovery variants, not extend
   // the budget).
   const seen = new Set<string>();
-  const deduped: string[] = [];
+  const deduped: GeneratedPrompt[] = [];
   for (const p of out) {
-    const key = p.toLowerCase();
+    const key = p.text.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
     deduped.push(p);

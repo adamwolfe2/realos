@@ -42,8 +42,11 @@ describe("AEO orchestrator — mentioned flag semantics (commit 0c04934)", () =>
       "expected ≥ 2 aeoCitationCheck.create call sites",
     ).toBeGreaterThanOrEqual(2);
 
+    // 2026-08-14: the property scan demotes branded name-echo rows
+    // before persisting, so its guard reads the adjusted `status`
+    // (still CITED-only — strictly narrower than parsed.status).
     const guardPattern =
-      /(?:mentioned\s*[:=]\s*parsed\.status\s*===\s*["']CITED["']|const\s+mentioned\s*=\s*parsed\.status\s*===\s*["']CITED["'])/g;
+      /(?:mentioned\s*[:=]\s*(?:parsed\.)?status\s*===\s*["']CITED["']|const\s+mentioned\s*=\s*(?:parsed\.)?status\s*===\s*["']CITED["'])/g;
     const guards = (src.match(guardPattern) ?? []).length;
 
     expect(
