@@ -32,15 +32,24 @@ export default function BookDemoPage() {
             >
               Book a demo
             </p>
-            <h1 className="text-[32px] font-semibold leading-[1.1] tracking-[-0.02em] md:text-[40px]">
-              15 minutes. We come prepared.
+            <h1
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: "clamp(32px, 4.6vw, 46px)",
+                fontWeight: 550,
+                lineHeight: 1.08,
+                letterSpacing: "-0.03em",
+              }}
+            >
+              A 15-minute demo, built around{" "}
+              <span className="ls-hl px-2">your property.</span>
             </h1>
             <p
               className="mx-auto mt-4 max-w-[46ch] text-[15px] leading-relaxed"
-              style={{ color: "#475569" }}
+              style={{ color: "#525252" }}
             >
-              Two quick questions so the call is about your property, not a
-              generic pitch — then pick any time that works.
+              Two quick questions so we can pull your market and your numbers
+              before the call. Then pick any time that works.
             </p>
           </div>
           <DemoQualifyWizard />

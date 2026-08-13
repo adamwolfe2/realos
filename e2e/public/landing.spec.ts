@@ -46,7 +46,7 @@ test.describe("Public marketing landing @critical", () => {
     await bookDemo.click();
     await expect(page).toHaveURL(/\/book-demo$/);
     await expect(page.getByRole("heading", { level: 1 })).toContainText(
-      /15 minutes/i
+      /15-minute demo/i
     );
   });
 });

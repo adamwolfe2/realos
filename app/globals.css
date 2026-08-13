@@ -236,6 +236,27 @@ body {
   to { transform: scaleX(1); }
 }
 
+/* Animated marker highlight: the blue wash wipes left-to-right across a
+   headline phrase shortly after the page lands. Used on the lead-magnet
+   heroes (/ai-visibility, /book-demo). Pair with horizontal padding on
+   the span. box-decoration-break keeps the wash intact across wraps. */
+@keyframes ls-hl-wipe {
+  from { background-size: 0% 100%; }
+  to { background-size: 100% 100%; }
+}
+.ls-hl {
+  background-image: linear-gradient(#d0e2ff, #d0e2ff);
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  background-size: 0% 100%;
+  animation: ls-hl-wipe 700ms cubic-bezier(0.2, 0.8, 0.2, 1) 550ms both;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ls-hl { animation: none; background-size: 100% 100%; }
+}
+
 /* Page surfaces opt in via `.ls-page-fade` */
 .ls-page-fade {
   animation: ls-fade-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;

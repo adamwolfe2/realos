@@ -118,9 +118,7 @@ export default function AiVisibilityPage() {
               <br />
               where to live.
               <br />
-              <span className="px-2" style={{ backgroundColor: "#d0e2ff" }}>
-                Does it say your name?
-              </span>
+              <span className="ls-hl px-2">Does it say your name?</span>
             </h1>
             <p
               className="aiv-rise mx-auto mt-6 max-w-[54ch] text-[16px] leading-relaxed md:text-[17px]"
@@ -311,9 +309,7 @@ export default function AiVisibilityPage() {
           >
             Invisible to AI search is
             <br />
-            <span className="px-2" style={{ backgroundColor: "#d0e2ff" }}>
-              invisible to renters.
-            </span>
+            <span className="ls-hl px-2">invisible to renters.</span>
           </h2>
           <p className="mx-auto mt-5 max-w-[48ch] text-[15px] leading-relaxed" style={{ color: "#525252" }}>
             Run the free audit, then walk through your results with us on a

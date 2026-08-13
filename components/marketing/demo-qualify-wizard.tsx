@@ -124,7 +124,7 @@ export function DemoQualifyWizard() {
         <StepHeader
           step={3}
           title="Pick a time"
-          subtitle="15 minutes. We'll come prepared with your answers."
+          subtitle="15 minutes, focused on exactly what you picked."
         />
         {calSlug ? (
           <div
