@@ -88,6 +88,10 @@ interface Findings {
   // per-engine breakdown.
   aeoEngines?: AeoEngineRow[];
   aeoCompetitorsCited?: string[];
+  // Discovery split (post-2026-08-13 audits). aeoDiscoveryRan false =
+  // branded-only fallback on a new audit; absent = legacy audit.
+  aeoDiscoveryRan?: boolean;
+  aeoLocale?: { city: string | null; region: string | null } | null;
   aeoOnPage?: AeoOnPageFindings | null;
   googleAiOverview?: GoogleAiOverviewFindings | null;
   detectedStack?: DetectedStack;
@@ -198,29 +202,58 @@ export default async function AuditViewerPage({
   // aeoEngines field on findings) cleanly render as no-ops.
   const aeoEngines = findings.aeoEngines ?? [];
   const aeoCompetitorsCited = findings.aeoCompetitorsCited ?? [];
+  const aeoDiscoveryRan = findings.aeoDiscoveryRan;
+  const aeoCity = findings.aeoLocale?.city ?? null;
   const googleAio = findings.googleAiOverview ?? null;
   const aeoOnPage = findings.aeoOnPage ?? null;
   const schemaGap = findings.schemaGap ?? null;
   const detectedStack = findings.detectedStack ?? null;
   const enginesQueried = aeoEngines.length;
   const notCited = aeoEngines.filter((r) => !r.cited).length;
+  // Discovery split (2026-08-13): engines that know the property exists
+  // (cite its site on branded prompts) but never recommend it in
+  // unbranded discovery answers. The sharpest sales wedge in the report.
+  const discoveryMode =
+    aeoDiscoveryRan === true &&
+    aeoEngines.some((r) => r.discovered !== undefined);
+  const awareNotDiscovered = discoveryMode
+    ? aeoEngines.filter((r) => r.discovered === false && r.aware).length
+    : 0;
   const totalAiResponses = enginesQueried * 5; // 5 prompts per engine
 
   // ── Executive verdict: ONE sentence built from the report's real
   // numbers, highlighted phrase in the /ai-visibility marker style. ──────
   const verdict: ReactNode =
     enginesQueried > 0 && notCited > 0 ? (
-      <>
-        {notCited} of {enginesQueried} major AI engines skip {displaySubject}{" "}
-        when renters ask where to live, and what they recommend instead is{" "}
-        <span className="ls-hl px-1">costing you leases.</span>
-      </>
+      discoveryMode && awareNotDiscovered > 0 ? (
+        <>
+          AI engines know {displaySubject} exists — but{" "}
+          {notCited === enginesQueried ? "none of them" : `${enginesQueried - notCited} of ${enginesQueried}`}{" "}
+          recommend it when renters ask where to live
+          {aeoCity ? ` in ${aeoCity}` : ""}, and what they push instead is{" "}
+          <span className="ls-hl px-1">costing you leases.</span>
+        </>
+      ) : (
+        <>
+          {notCited} of {enginesQueried} major AI engines skip {displaySubject}{" "}
+          when renters ask where to live, and what they recommend instead is{" "}
+          <span className="ls-hl px-1">costing you leases.</span>
+        </>
+      )
     ) : enginesQueried > 0 ? (
-      <>
-        Every major AI engine names {displaySubject} today, and the{" "}
-        {recommendations.length} gaps below decide whether that{" "}
-        <span className="ls-hl px-1">stays true.</span>
-      </>
+      discoveryMode ? (
+        <>
+          Every major AI engine recommends {displaySubject} to renters
+          today, and the {recommendations.length} gaps below decide whether
+          that <span className="ls-hl px-1">stays true.</span>
+        </>
+      ) : (
+        <>
+          Every major AI engine names {displaySubject} today, and the{" "}
+          {recommendations.length} gaps below decide whether that{" "}
+          <span className="ls-hl px-1">stays true.</span>
+        </>
+      )
     ) : (
       <>
         Renters read the public record on {displaySubject} before they ever
@@ -267,6 +300,8 @@ export default async function AuditViewerPage({
           rows={aeoEngines}
           competitorsCited={notCited > 0 ? aeoCompetitorsCited : []}
           brandName={displaySubject}
+          discoveryRan={aeoDiscoveryRan}
+          city={aeoCity}
         />
         {googleAio ? (
           <GoogleAiOverviewCard findings={googleAio} brandName={displaySubject} />

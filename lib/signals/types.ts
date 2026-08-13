@@ -31,9 +31,24 @@ export interface AeoSignal {
   byEngine: Partial<
     Record<
       "claude" | "chatgpt" | "gemini" | "perplexity",
-      { cited: boolean; sources: string[] }
+      {
+        /** Back-compat verdict. When discovery prompts ran this equals
+         *  `discovered`; legacy rows carry the old name-echo semantics. */
+        cited: boolean;
+        sources: string[];
+        /** Named OR domain-cited in a DISCOVERY answer (no brand in the
+         *  prompt). Absent on legacy / branded-only rows. */
+        discovered?: boolean;
+        /** Domain-cited in a BRANDED answer. Name echo counts for
+         *  nothing. Absent on legacy / branded-only rows. */
+        aware?: boolean;
+      }
     >
   >;
+  /** True when the fan-out included unbranded discovery prompts
+   *  (city was derivable). False = branded-only fallback. Absent on
+   *  legacy snapshots. */
+  discoveryRan?: boolean;
   score: number;
 }
 
@@ -106,7 +121,13 @@ export interface SignalSnapshot {
 // so the result page silently hides the 6-pillar grid + the action plan.
 // Invalidate the 14-day dedupe so the next /audit submission re-runs
 // the scan and persists the new shape.
-export const COMPUTE_VERSION = "2026-06-01.dps.v1";
+// 2026-08-13: bump to aeo-discovery.v1 — the AEO fan-out previously ran
+// 5 BRANDED prompts and parseCitation counted a name echo as CITED, so
+// every property read all-engines-cited (a tautology). The fan-out now
+// splits 2 branded + 3 discovery prompts (city derived from the crawl)
+// and the verdict counts DISCOVERED. Invalidate the dedupe so stale
+// all-green audits re-run on next visit.
+export const COMPUTE_VERSION = "2026-08-13.aeo-discovery.v1";
 
 export function scopeKey(s: SignalScope): string {
   if (s.kind === "tenant") {

@@ -33,6 +33,10 @@ import {
   crawlScore,
   type SiteCrawlResult,
 } from "@/lib/audit/site-crawl";
+import {
+  derivePropertyLocale,
+  type PropertyLocale,
+} from "@/lib/audit/derive-locale";
 import { computeRealTenantSignals } from "./real-tenant";
 
 // ----------------------------------------------------------------------------
@@ -63,6 +67,11 @@ export type ProspectComputeResult = SignalSnapshot & {
     aeoCompetitorsCited: string[];
     aeoCitedEngines: string[];
     aeoUncitedEngines: string[];
+    /** Locale derived from the crawl for discovery prompts. Null city =
+     *  branded-only fallback ran. */
+    aeoLocale: PropertyLocale | null;
+    /** True when unbranded discovery prompts ran (city derivable). */
+    aeoDiscoveryRan: boolean;
     /** Google AI Overview captured for one branded query during the
      *  audit run. Powers the verbatim "this is what Google AI says
      *  about you today" section on the result page. Null when
@@ -106,12 +115,24 @@ async function computeProspectSignals(
   // ALWAYS (not just when DataForSEO fails) — buildSeoSignal merges the
   // two, preferring DataForSEO where present and falling back to the
   // crawl-derived score + findings otherwise.
+  //
+  // 2026-08-13: the AEO fan-out now CHAINS on the crawl — discovery
+  // prompts need a city derived from the homepage. Everything else still
+  // runs concurrently; AEO waits only on the crawl (+ ~1s locale call),
+  // and the LLM fan-out is the long pole anyway.
+  const crawlPromise = crawlSite(url);
+  let derivedLocale: PropertyLocale | null = null;
+  const aeoPromise = (async () => {
+    const crawl = await crawlPromise.catch(() => null);
+    derivedLocale = await derivePropertyLocale(crawl, prospectAuditId);
+    return runAeoFanout(brandName, domain, prospectAuditId, derivedLocale);
+  })();
   const [seoFanout, aeoResult, repResult, crawlResult, aioResult] =
     await Promise.allSettled([
       runSeoFanout(domain, url),
-      runAeoFanout(brandName, domain, prospectAuditId),
+      aeoPromise,
       runProspectReputation({ brandName, domain, prospectAuditId }),
-      crawlSite(url),
+      crawlPromise,
       // Google AI Overview for the branded query. One DataForSEO SERP
       // advanced call (~$0.005). Captures verbatim Google AI summary +
       // cited URLs. Renders as the "what Google AI says about you" card
@@ -188,6 +209,8 @@ async function computeProspectSignals(
       aeoCompetitorsCited: aeoData.competitorsCited,
       aeoCitedEngines: aeoData.citedEngines,
       aeoUncitedEngines: aeoData.uncitedEngines,
+      aeoLocale: derivedLocale,
+      aeoDiscoveryRan: aeoData.discoveryRan,
       googleAiOverview: aioData,
     },
   };
@@ -409,6 +432,9 @@ type AeoFanout = {
   competitorsCited: string[];
   citedEngines: string[];
   uncitedEngines: string[];
+  /** True when unbranded discovery prompts ran. False = branded-only
+   *  fallback (city not derivable) — legacy semantics preserved. */
+  discoveryRan: boolean;
 };
 
 function emptyAeoFanout(): AeoFanout {
@@ -420,6 +446,80 @@ function emptyAeoFanout(): AeoFanout {
     competitorsCited: [],
     citedEngines: [],
     uncitedEngines: [],
+    discoveryRan: false,
+  };
+}
+
+export type AuditPrompt = { text: string; kind: "branded" | "discovery" };
+
+/**
+ * Classify one engine's parsed answers into the verdict trio
+ * (2026-08-13 discovery split). Pure — exported for tests.
+ *
+ *  - discovered: named OR domain-cited in a DISCOVERY answer. This is
+ *    the number that matters — "does AI recommend you when a renter
+ *    doesn't already know your name."
+ *  - aware: domain-cited in a BRANDED answer. A name echo counts for
+ *    NOTHING — every engine parrots the name it was handed (that echo
+ *    was the tautology this replaces).
+ *  - legacyCited: old semantics (name echo counts), used only in the
+ *    branded-only fallback so those audits behave exactly like before.
+ *  - Competitor names are collected from DISCOVERY answers only — a
+ *    branded answer's capitalized nouns are review themes, not rivals.
+ */
+export function classifyEngineAnswers(
+  answers: Array<{
+    kind: AuditPrompt["kind"];
+    parse: ReturnType<typeof parseCitation>;
+  }>,
+  opts?: {
+    /** Branded-only fallback: also collect competitors from branded
+     *  answers (legacy behavior, junk-prone — kept for back-compat). */
+    brandedCompetitors?: boolean;
+  },
+): {
+  discovered: boolean;
+  aware: boolean;
+  legacyCited: boolean;
+  sources: string[];
+  competitors: string[];
+} {
+  let discovered = false;
+  let aware = false;
+  let legacyCited = false;
+  const sources = new Set<string>();
+  const competitors = new Set<string>();
+
+  for (const { kind, parse } of answers) {
+    if (kind === "discovery") {
+      if (parse.status === "CITED") {
+        discovered = true;
+        if (parse.citedUrl) sources.add(parse.citedUrl);
+      } else if (parse.status === "COMPETITOR_CITED") {
+        for (const c of parse.competitorsCited) competitors.add(c);
+      }
+    } else {
+      if (parse.status === "CITED") {
+        legacyCited = true;
+        if (parse.citedUrl) {
+          aware = true;
+          sources.add(parse.citedUrl);
+        }
+      } else if (
+        opts?.brandedCompetitors &&
+        parse.status === "COMPETITOR_CITED"
+      ) {
+        for (const c of parse.competitorsCited) competitors.add(c);
+      }
+    }
+  }
+
+  return {
+    discovered,
+    aware,
+    legacyCited,
+    sources: Array.from(sources),
+    competitors: Array.from(competitors),
   };
 }
 
@@ -430,8 +530,13 @@ async function runAeoFanout(
    *  ApiUsage row to the audit. Lets /admin/costs answer "this audit
    *  cost $0.08 across 16 LLM calls." */
   prospectAuditId: string | null,
+  /** 2026-08-13: crawl-derived locale. A derivable city switches the
+   *  fan-out to 2 branded + 3 discovery prompts; otherwise branded-only
+   *  fallback with legacy semantics. */
+  locale: PropertyLocale | null,
 ): Promise<AeoFanout> {
-  const prompts = buildProspectPrompts(brandName, domain);
+  const prompts = buildProspectPrompts(brandName, domain, locale);
+  const discoveryRan = prompts.some((p) => p.kind === "discovery");
   const enabled = ALL_ENGINES.filter((e) => e.isConfigured());
   if (enabled.length === 0 || prompts.length === 0) {
     return emptyAeoFanout();
@@ -458,27 +563,43 @@ async function runAeoFanout(
 
   await Promise.all(
     enabled.map(async (engine) => {
-      const sources = new Set<string>();
-      let citedAny = false;
       const results = await Promise.allSettled(
-        prompts.map((p) => engine.runPrompt(p, { prospectAuditId })),
+        prompts.map((p) => engine.runPrompt(p.text, { prospectAuditId })),
       );
-      for (const r of results) {
-        if (r.status !== "fulfilled") continue;
-        if (r.value.skipped) continue;
-        const parse = parseCitation(r.value.responseText, {
-          name: brandName,
-          websiteUrl: domain,
+      const answers: Array<{
+        kind: AuditPrompt["kind"];
+        parse: ReturnType<typeof parseCitation>;
+      }> = [];
+      results.forEach((r, i) => {
+        if (r.status !== "fulfilled") return;
+        if (r.value.skipped) return;
+        answers.push({
+          kind: prompts[i].kind,
+          parse: parseCitation(r.value.responseText, {
+            name: brandName,
+            websiteUrl: domain,
+          }),
         });
-        if (parse.status === "CITED") {
-          citedAny = true;
-          if (parse.citedUrl) sources.add(parse.citedUrl);
-        } else if (parse.status === "COMPETITOR_CITED") {
-          for (const c of parse.competitorsCited) competitorsCited.add(c);
-        }
-      }
+      });
+      const verdict = classifyEngineAnswers(answers, {
+        brandedCompetitors: !discoveryRan,
+      });
+      for (const c of verdict.competitors) competitorsCited.add(c);
+
+      // `cited` stays the back-compat verdict field: discovered when
+      // discovery ran, legacy name-echo semantics otherwise.
+      const citedAny = discoveryRan ? verdict.discovered : verdict.legacyCited;
       const key = engineKeyMap[engine.engine];
-      if (key) byEngine[key] = { cited: citedAny, sources: Array.from(sources) };
+      if (key) {
+        byEngine[key] = discoveryRan
+          ? {
+              cited: citedAny,
+              sources: verdict.sources,
+              discovered: verdict.discovered,
+              aware: verdict.aware,
+            }
+          : { cited: citedAny, sources: verdict.sources };
+      }
       const pretty = prettyName[engine.engine] ?? engine.engine;
       (citedAny ? citedEngines : uncitedEngines).push(pretty);
     }),
@@ -497,29 +618,96 @@ async function runAeoFanout(
     competitorsCited: Array.from(competitorsCited).slice(0, 10),
     citedEngines,
     uncitedEngines,
+    discoveryRan,
   };
 }
 
-function buildProspectPrompts(brandName: string, domain: string): string[] {
-  return [
-    `Tell me about ${brandName}. Is it a good place to live?`,
-    `What do residents say about ${brandName}? Any common complaints?`,
-    `${brandName} reviews — what are people saying online?`,
-    `What are the amenities and pricing like at ${brandName}?`,
-    `Should I rent at ${brandName} or look elsewhere? (${domain})`,
+/**
+ * 2026-08-13 discovery split. With a derivable city: 2 branded prompts
+ * (awareness / defensive moat) + 3 DISCOVERY prompts that never contain
+ * the brand — "does AI recommend you to a renter who doesn't know you."
+ * Without a city: the original 5 branded prompts, unchanged (legacy
+ * fallback; the UI says the location wasn't derivable).
+ *
+ * Exported for tests — discovery prompts must never contain the brand.
+ */
+export function buildProspectPrompts(
+  brandName: string,
+  domain: string,
+  locale: PropertyLocale | null,
+): AuditPrompt[] {
+  const branded: AuditPrompt[] = [
+    {
+      text: `Tell me about ${brandName}. Is it a good place to live?`,
+      kind: "branded",
+    },
+    {
+      text: `Should I rent at ${brandName} or look elsewhere? (${domain})`,
+      kind: "branded",
+    },
   ];
+
+  const city = locale?.city?.trim();
+  if (!city) {
+    return [
+      branded[0],
+      {
+        text: `What do residents say about ${brandName}? Any common complaints?`,
+        kind: "branded",
+      },
+      {
+        text: `${brandName} reviews — what are people saying online?`,
+        kind: "branded",
+      },
+      {
+        text: `What are the amenities and pricing like at ${brandName}?`,
+        kind: "branded",
+      },
+      branded[1],
+    ];
+  }
+
+  const category = locale?.category || "apartments";
+  const where = locale?.region ? `${city}, ${locale.region}` : city;
+  const discovery: AuditPrompt[] = [
+    { text: `What are the best ${category} in ${where}?`, kind: "discovery" },
+    locale?.amenity
+      ? {
+          text: `Looking for ${category} in ${city} with ${locale.amenity}. What do you recommend?`,
+          kind: "discovery",
+        }
+      : {
+          text: `What are the top-rated ${category} in ${where} right now?`,
+          kind: "discovery",
+        },
+    locale?.neighborhood
+      ? {
+          text: `Where should I live near ${locale.neighborhood} in ${city}? Recommend specific buildings.`,
+          kind: "discovery",
+        }
+      : {
+          text: `I'm moving to ${where} and looking for ${category}. Which specific buildings should I tour?`,
+          kind: "discovery",
+        },
+  ];
+
+  return [...branded, ...discovery];
 }
 
 function buildAeoSignal(data: AeoFanout): AeoSignal | null {
   if (data.enginesChecked === 0) return null;
-  // 0..1 citation rate → 0..100 score. 20-pt floor so a wholly uncited
-  // brand doesn't read as zero — there's always SOME defensive moat.
+  // 0..1 rate → 0..100 score. 20-pt floor so a wholly invisible brand
+  // doesn't read as zero. Since 2026-08-13 the rate counts DISCOVERED
+  // engines (when discovery ran) instead of branded name echo — the
+  // echo made this ~always 1.0 and the AEO pillar read 100 for every
+  // property.
   const score = clampScore(Math.round(20 + data.citationRate * 80));
   return {
     enginesChecked: data.enginesChecked,
     citationsFound: data.citationsFound,
     citationRate: data.citationRate,
     byEngine: data.byEngine,
+    discoveryRan: data.discoveryRan,
     score,
   };
 }

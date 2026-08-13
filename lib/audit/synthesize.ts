@@ -71,6 +71,12 @@ export type AeoEngineRow = {
   /** URLs the engine surfaced when it cited the brand. Empty when not
    *  cited or when the engine doesn't return source URLs. */
   sources: string[];
+  /** 2026-08-13 discovery split. discovered = named/domain-cited in an
+   *  UNBRANDED discovery answer. aware = domain-cited in a branded
+   *  answer (name echo counts for nothing). Absent on legacy audits and
+   *  branded-only fallbacks — the renderer branches on presence. */
+  discovered?: boolean;
+  aware?: boolean;
 };
 
 /** AEO Page Health — 8-check on-page audit run against the prospect's
@@ -146,6 +152,13 @@ export type SynthesizedFindings = {
   /** AEO Page Health 8-check on the homepage. Always emitted when we
    *  have crawled HTML. */
   aeoOnPage?: AeoOnPageFindings | null;
+  /** True when the AEO fan-out included unbranded discovery prompts.
+   *  False = branded-only fallback on a NEW audit (city not derivable —
+   *  the UI says so). Absent = legacy audit. */
+  aeoDiscoveryRan?: boolean;
+  /** City the discovery prompts searched, for renderer copy
+   *  ("…when renters ask about Berkeley"). */
+  aeoLocale?: { city: string | null; region: string | null } | null;
   /** Verbatim Google AI Overview for the brand's name query. Null when
    *  DataForSEO is unconfigured or Google didn't surface an AI Overview
    *  for the query. */
@@ -175,6 +188,11 @@ export type ProviderData = {
   aeoCompetitorsCited: string[];
   aeoCitedEngines: string[];
   aeoUncitedEngines: string[];
+  /** True when unbranded discovery prompts ran (2026-08-13). Absent /
+   *  false = branded-only legacy semantics. */
+  aeoDiscoveryRan?: boolean;
+  /** Crawl-derived locale the discovery prompts used. */
+  aeoLocale?: { city: string | null; region: string | null } | null;
   /** Google AI Overview captured during compute. Null when DataForSEO
    *  is unconfigured or the query returned no AI Overview. */
   googleAiOverview?: {
@@ -464,11 +482,17 @@ export async function synthesizeAudit(
     });
   }
   if (provider.aeoUncitedEngines.length > 0) {
+    const discoveryCity = provider.aeoDiscoveryRan
+      ? provider.aeoLocale?.city
+      : null;
     risks.push({
       id: "r-aeo",
-      title: `${provider.aeoUncitedEngines.join(" and ")} aren't citing ${provider.brandName}`,
-      detail:
-        "Today's renters check AI search before clicking. Un-cited brands are invisible on the chat surface.",
+      title: discoveryCity
+        ? `${provider.aeoUncitedEngines.join(" and ")} don't recommend ${provider.brandName} to renters searching ${discoveryCity}`
+        : `${provider.aeoUncitedEngines.join(" and ")} aren't citing ${provider.brandName}`,
+      detail: discoveryCity
+        ? `We asked each engine what a renter moving to ${discoveryCity} would ask — "best apartments", "which buildings should I tour" — without naming you. These engines answered with specific buildings, and yours wasn't one of them.`
+        : "Today's renters check AI search before clicking. Un-cited brands are invisible on the chat surface.",
     });
   }
   if (provider.aeoCompetitorsCited.length > 0) {
@@ -520,9 +544,12 @@ export async function synthesizeAudit(
   if (provider.aeoCitedEngines.length > 0) {
     opportunities.push({
       id: "o-aeo-defend",
-      title: `Defend AI citations on ${provider.aeoCitedEngines.join(" and ")}`,
-      detail:
-        "These engines already cite you. Schema markup + FAQ pages keep that visibility durable as the models retrain.",
+      title: provider.aeoDiscoveryRan
+        ? `Defend AI recommendations on ${provider.aeoCitedEngines.join(" and ")}`
+        : `Defend AI citations on ${provider.aeoCitedEngines.join(" and ")}`,
+      detail: provider.aeoDiscoveryRan
+        ? "These engines already recommend you to renters who don't know your name. Schema markup + FAQ pages keep that visibility durable as the models retrain."
+        : "These engines already cite you. Schema markup + FAQ pages keep that visibility durable as the models retrain.",
     });
   }
 
@@ -582,6 +609,8 @@ export async function synthesizeAudit(
     recommendations,
     aeoEngines,
     aeoCompetitorsCited: provider.aeoCompetitorsCited,
+    aeoDiscoveryRan: provider.aeoDiscoveryRan ?? false,
+    aeoLocale: provider.aeoLocale ?? null,
     aeoOnPage,
     googleAiOverview,
     detectedStack,
@@ -735,16 +764,25 @@ function buildAeoDetail(
 ): SectionDetail | null {
   const aeo = signals.aeo;
   if (!aeo) return null;
+  const discovery = provider.aeoDiscoveryRan === true;
   const points: string[] = [];
   points.push(
-    `${aeo.citationsFound} of ${aeo.enginesChecked} AI engines cited the brand by name (${Math.round(aeo.citationRate * 100)}% citation rate).`,
+    discovery
+      ? `${aeo.citationsFound} of ${aeo.enginesChecked} AI engines recommended the property in unbranded discovery answers (${Math.round(aeo.citationRate * 100)}% discovery rate).`
+      : `${aeo.citationsFound} of ${aeo.enginesChecked} AI engines cited the brand by name (${Math.round(aeo.citationRate * 100)}% citation rate).`,
   );
   if (provider.aeoCitedEngines.length > 0) {
-    points.push(`Cited by: ${provider.aeoCitedEngines.join(", ")}.`);
+    points.push(
+      discovery
+        ? `Recommends you: ${provider.aeoCitedEngines.join(", ")}.`
+        : `Cited by: ${provider.aeoCitedEngines.join(", ")}.`,
+    );
   }
   if (provider.aeoUncitedEngines.length > 0) {
     points.push(
-      `Uncited by: ${provider.aeoUncitedEngines.join(", ")}. Missing reach on those engines.`,
+      discovery
+        ? `Doesn't recommend you: ${provider.aeoUncitedEngines.join(", ")}. Renters asking these engines where to live never hear your name.`
+        : `Uncited by: ${provider.aeoUncitedEngines.join(", ")}. Missing reach on those engines.`,
     );
   }
   if (provider.aeoCompetitorsCited.length > 0) {
@@ -759,6 +797,12 @@ function buildAeoDetail(
 }
 
 function pickAeoHeadline(aeo: AeoSignal): string {
+  if (aeo.discoveryRan) {
+    if (aeo.citationRate >= 0.8) return "AI engines recommend you unprompted";
+    if (aeo.citationRate >= 0.5) return "Recommended by some engines, invisible on others";
+    if (aeo.citationRate > 0) return "Rarely recommended when renters ask where to live";
+    return "AI never recommends you in discovery";
+  }
   if (aeo.citationRate >= 0.8) return "AI search well-defended";
   if (aeo.citationRate >= 0.5) return "Half the AI surface covered";
   if (aeo.citationRate > 0) return "Limited AI citation reach";
@@ -1095,6 +1139,11 @@ function buildAeoEngineRows(snapshot: SignalSnapshot): AeoEngineRow[] {
       engine,
       cited: row?.cited ?? false,
       sources: row?.sources ?? [],
+      // Present only when the discovery split ran — renderer branches
+      // on presence for legacy audits.
+      ...(row?.discovered !== undefined
+        ? { discovered: row.discovered, aware: row.aware ?? false }
+        : {}),
     };
   });
 }

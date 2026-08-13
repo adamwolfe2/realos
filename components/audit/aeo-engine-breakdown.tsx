@@ -56,28 +56,58 @@ export type AeoEngineBreakdownProps = {
    *  Shown as a chip strip below the engine cards. */
   competitorsCited: string[];
   brandName: string;
+  /** 2026-08-13 discovery split. true = unbranded discovery prompts ran.
+   *  false = NEW audit, branded-only fallback (location not derivable —
+   *  we say so). undefined = legacy audit (old copy). */
+  discoveryRan?: boolean;
+  /** City the discovery prompts searched. */
+  city?: string | null;
 };
 
 export function AeoEngineBreakdown({
   rows,
   competitorsCited,
   brandName,
+  discoveryRan,
+  city,
 }: AeoEngineBreakdownProps) {
+  const discovery = discoveryRan === true && rows.some((r) => r.discovered !== undefined);
   const citedCount = rows.filter((r) => r.cited).length;
   const total = rows.length;
   const allCited = citedCount === total && total > 0;
   const noneCited = citedCount === 0 && total > 0;
+  // The sales wedge: engines that KNOW the property (cite its site on
+  // branded prompts) but never recommend it in discovery answers.
+  const awareNotDiscovered = discovery
+    ? rows.filter((r) => r.discovered === false && r.aware).length
+    : 0;
 
   // Headline. Reads as a verdict, not a score.
-  const headline = allCited
-    ? `Every AI engine names ${brandName} today.`
-    : noneCited
-      ? `${total} of ${total} major AI engines do NOT name ${brandName}.`
-      : `${total - citedCount} of ${total} major AI engines do not name ${brandName} today.`;
+  const headline = discovery
+    ? allCited
+      ? `Every AI engine recommends ${brandName} to renters — unprompted.`
+      : noneCited
+        ? awareNotDiscovered > 0
+          ? `AI engines know ${brandName} exists. None of them recommend it.`
+          : `No major AI engine recommends ${brandName} when renters ask where to live.`
+        : `${total - citedCount} of ${total} major AI engines never recommend ${brandName} when renters ask where to live.`
+    : allCited
+      ? `Every AI engine names ${brandName} today.`
+      : noneCited
+        ? `${total} of ${total} major AI engines do NOT name ${brandName}.`
+        : `${total - citedCount} of ${total} major AI engines do not name ${brandName} today.`;
+
+  const explainer = discovery
+    ? `We asked each engine what a renter moving to ${city ?? "your market"} would ask — "best apartments," "which buildings should I tour" — without ever naming you, plus direct questions about ${brandName}. Below: who recommends you when nobody mentions your name.`
+    : discoveryRan === false
+      ? `We couldn't derive this property's location from its website, so this check covers brand-name questions only. Add a city to your homepage (address schema markup) for the full discovery check.`
+      : `We asked each engine the same five buyer-intent prompts your prospects would type. Below: who named you, who didn't, and the URLs each engine actually cited.`;
 
   return (
     <section className="mt-10" aria-label="AI search citation per engine">
-      <Heading>Where AI search engines name you</Heading>
+      <Heading>
+        {discovery ? "Where AI recommends you — and where it doesn't" : "Where AI search engines name you"}
+      </Heading>
       <p
         className="mt-2 text-[14.5px] leading-relaxed max-w-2xl"
         style={{ color: "#1E2A3A", fontWeight: 500 }}
@@ -88,9 +118,7 @@ export function AeoEngineBreakdown({
         className="mt-1 text-[12.5px] max-w-2xl"
         style={{ color: "#6B7280" }}
       >
-        We asked each engine the same five buyer-intent prompts your
-        prospects would type. Below: who named you, who didn&apos;t, and
-        the URLs each engine actually cited.
+        {explainer}
       </p>
 
       <ul className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -112,7 +140,9 @@ export function AeoEngineBreakdown({
             className="text-[10px] font-mono uppercase tracking-[0.14em]"
             style={{ color: "#2563EB" }}
           >
-            When AI didn&apos;t name you, it named these
+            {discovery
+              ? "When renters ask where to live, AI recommends these instead"
+              : "When AI didn't name you, it named these"}
           </p>
           <ul className="mt-2 flex flex-wrap gap-1.5">
             {competitorsCited.slice(0, 10).map((name) => {
@@ -169,14 +199,36 @@ export function AeoEngineBreakdown({
   );
 }
 
+type EngineVerdict = "recommends" | "aware_only" | "unknown" | "cited" | "not_cited";
+
+function engineVerdict(row: AeoEngineRow): EngineVerdict {
+  if (row.discovered === undefined) {
+    return row.cited ? "cited" : "not_cited";
+  }
+  if (row.discovered) return "recommends";
+  return row.aware ? "aware_only" : "unknown";
+}
+
+const VERDICT_BODY: Record<EngineVerdict, string> = {
+  recommends:
+    "Recommended your property in a discovery answer — a renter who'd never heard of you would.",
+  aware_only:
+    "Knows you exist — cites your site when asked directly — but never recommends you when renters ask where to live. It's sending them elsewhere.",
+  unknown:
+    "Never surfaced your property — not in discovery answers, and no source link even when asked about you directly.",
+  cited: "Named in the answer. No URL returned.",
+  not_cited: "The engine answered the prompt without naming your property.",
+};
+
 function EngineCard({ row }: { row: AeoEngineRow }) {
-  const cited = row.cited;
+  const verdict = engineVerdict(row);
+  const positive = verdict === "recommends" || verdict === "cited";
   return (
     <li
       className="rounded-xl flex flex-col"
       style={{
         backgroundColor: "#FFFFFF",
-        border: `1px solid ${cited ? "#CFE2FF" : "#E5E7EB"}`,
+        border: `1px solid ${positive ? "#CFE2FF" : "#E5E7EB"}`,
         padding: "14px 16px",
       }}
     >
@@ -190,53 +242,83 @@ function EngineCard({ row }: { row: AeoEngineRow }) {
             {ENGINE_LABELS[row.engine]}
           </span>
         </div>
-        <CitedChip cited={cited} />
+        <CitedChip verdict={verdict} />
       </div>
 
-      {cited ? (
-        row.sources.length > 0 ? (
-          <ul className="mt-3 space-y-1">
-            {row.sources.slice(0, 3).map((u) => (
-              <li
-                key={u}
-                className="flex items-center gap-1.5 text-[11.5px]"
-                style={{ color: "#4B5563" }}
+      {positive && row.sources.length > 0 ? (
+        <ul className="mt-3 space-y-1">
+          {row.sources.slice(0, 3).map((u) => (
+            <li
+              key={u}
+              className="flex items-center gap-1.5 text-[11.5px]"
+              style={{ color: "#4B5563" }}
+            >
+              <ExternalLink className="w-3 h-3 shrink-0" />
+              <a
+                href={u}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="truncate hover:underline"
+                style={{ color: "#1E2A3A" }}
+                title={u}
               >
-                <ExternalLink className="w-3 h-3 shrink-0" />
-                <a
-                  href={u}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="truncate hover:underline"
-                  style={{ color: "#1E2A3A" }}
-                  title={u}
-                >
-                  {safeHost(u)}
-                </a>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p
-            className="mt-3 text-[12px]"
-            style={{ color: "#6B7280" }}
-          >
-            Named in the answer. No URL returned.
-          </p>
-        )
+                {safeHost(u)}
+              </a>
+            </li>
+          ))}
+        </ul>
       ) : (
-        <p
-          className="mt-3 text-[12px]"
-          style={{ color: "#6B7280" }}
-        >
-          The engine answered the prompt without naming your property.
+        <p className="mt-3 text-[12px]" style={{ color: "#6B7280" }}>
+          {VERDICT_BODY[verdict]}
         </p>
       )}
     </li>
   );
 }
 
-function CitedChip({ cited }: { cited: boolean }) {
+const CHIP_STYLES: Record<
+  EngineVerdict,
+  { bg: string; fg: string; border: string; label: string; positive: boolean }
+> = {
+  recommends: {
+    bg: "#EBF3FF",
+    fg: "#1D4ED8",
+    border: "#CFE2FF",
+    label: "Recommends you",
+    positive: true,
+  },
+  aware_only: {
+    bg: "#FEF3C7",
+    fg: "#92400E",
+    border: "#FDE68A",
+    label: "Knows you only",
+    positive: false,
+  },
+  unknown: {
+    bg: "#F3F4F6",
+    fg: "#4B5563",
+    border: "#E5E7EB",
+    label: "Doesn't know you",
+    positive: false,
+  },
+  cited: {
+    bg: "#EBF3FF",
+    fg: "#1D4ED8",
+    border: "#CFE2FF",
+    label: "Cited",
+    positive: true,
+  },
+  not_cited: {
+    bg: "#F3F4F6",
+    fg: "#4B5563",
+    border: "#E5E7EB",
+    label: "Not cited",
+    positive: false,
+  },
+};
+
+function CitedChip({ verdict }: { verdict: EngineVerdict }) {
+  const s = CHIP_STYLES[verdict];
   return (
     <span
       className="inline-flex items-center gap-1 rounded-full shrink-0"
@@ -244,20 +326,20 @@ function CitedChip({ cited }: { cited: boolean }) {
         padding: "3px 9px 3px 7px",
         fontSize: 11,
         fontWeight: 600,
-        backgroundColor: cited ? "#EBF3FF" : "#F3F4F6",
-        color: cited ? "#1D4ED8" : "#4B5563",
-        border: `1px solid ${cited ? "#CFE2FF" : "#E5E7EB"}`,
+        backgroundColor: s.bg,
+        color: s.fg,
+        border: `1px solid ${s.border}`,
         fontFamily: "var(--font-mono)",
         letterSpacing: "0.06em",
         textTransform: "uppercase",
       }}
     >
-      {cited ? (
+      {s.positive ? (
         <Check className="w-3 h-3" aria-hidden />
       ) : (
         <X className="w-3 h-3" aria-hidden />
       )}
-      {cited ? "Cited" : "Not cited"}
+      {s.label}
     </span>
   );
 }
