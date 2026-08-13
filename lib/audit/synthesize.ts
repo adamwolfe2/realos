@@ -17,7 +17,7 @@ import type {
   LighthouseScores,
 } from "@/lib/seo/dataforseo";
 import type { ProspectMention } from "./reputation-prospect";
-import type { AeoReceipt } from "@/lib/signals/compute";
+import type { AeoReceipt, AeoRivalResult } from "@/lib/signals/compute";
 import {
   crawlFindings,
   type SiteCrawlResult,
@@ -165,6 +165,9 @@ export type SynthesizedFindings = {
    *  Same {name, mentions} shape as the tenant report's topCompetitors.
    *  Additive — the flat aeoCompetitorsCited list keeps being written. */
   aeoCompetitorsRanked?: Array<{ name: string; mentions: number }>;
+  /** You-vs-tracked-rival per engine (slice 13). Null/absent when the
+   *  lead didn't name a competitor. */
+  aeoRival?: AeoRivalResult | null;
   /** City the discovery prompts searched, for renderer copy
    *  ("…when renters ask about Berkeley"). */
   aeoLocale?: { city: string | null; region: string | null } | null;
@@ -204,6 +207,8 @@ export type ProviderData = {
   aeoReceipts?: AeoReceipt[];
   /** Ranked competitor mentions from discovery answers (2026-08-14). */
   aeoCompetitorsRanked?: Array<{ name: string; mentions: number }>;
+  /** You-vs-tracked-rival per engine (slice 13). */
+  aeoRival?: AeoRivalResult | null;
   /** Crawl-derived locale the discovery prompts used. Category powers
    *  the generated JSON-LD handoff snippet (2026-08-14). */
   aeoLocale?: {
@@ -635,6 +640,7 @@ export async function synthesizeAudit(
     aeoDiscoveryRan: provider.aeoDiscoveryRan ?? false,
     aeoReceipts: provider.aeoReceipts ?? [],
     aeoCompetitorsRanked: provider.aeoCompetitorsRanked ?? [],
+    aeoRival: provider.aeoRival ?? null,
     aeoLocale: provider.aeoLocale ?? null,
     aeoOnPage,
     googleAiOverview,

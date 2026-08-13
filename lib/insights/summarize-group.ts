@@ -39,6 +39,16 @@ export function summarizeGroup(
         title: `${count} leads stuck in pipeline`,
         body: "These leads haven't moved status in a while. Open each to see who they are and the suggested next step.",
       };
+    case "negative_mention_spike":
+      return {
+        title: `${count} negative-mention spike${count === 1 ? "" : "s"}`,
+        body: "Negative public mentions surged past the weekly baseline. Open each to see the sources and respond while the window is fresh.",
+      };
+    case "aeo_competitor_overtake":
+      return {
+        title: `${count} AI engine${count === 1 ? "" : "s"} now favor a competitor`,
+        body: "A rival building overtook this property in AI discovery answers. Open each to see which engine flipped and the counter-content to publish.",
+      };
     case "negative_review":
       return {
         title: `${count} new negative reviews`,

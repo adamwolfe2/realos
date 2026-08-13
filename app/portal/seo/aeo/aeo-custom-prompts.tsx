@@ -16,15 +16,41 @@ export type CustomPromptRow = {
   id: string;
   propertyId: string;
   prompt: string;
+  /** Funnel tag (2026-08-14): branded / tof / bof. Null = untagged. */
+  tag: string | null;
   active: boolean;
 };
 
 export type CustomPromptsProps = {
   properties: Array<{ id: string; name: string }>;
   prompts: CustomPromptRow[];
+  /** Suggested hyperlocal pack per property (slice 8) — one-click add. */
+  suggestions?: Array<{
+    propertyId: string;
+    suggestions: Array<{ text: string; tag: "branded" | "tof" | "bof" }>;
+  }>;
 };
 
-export function AeoCustomPrompts({ properties, prompts }: CustomPromptsProps) {
+const TAG_LABEL: Record<string, string> = {
+  branded: "Branded",
+  tof: "Discovery",
+  bof: "Bottom-funnel",
+};
+
+function TagChip({ tag }: { tag: string | null }) {
+  if (!tag || !TAG_LABEL[tag]) return null;
+  return (
+    <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+      {TAG_LABEL[tag]}
+    </span>
+  );
+}
+
+export function AeoCustomPrompts({
+  properties,
+  prompts,
+  suggestions,
+}: CustomPromptsProps) {
   const router = useRouter();
   const [propertyId, setPropertyId] = React.useState(properties[0]?.id ?? "");
   const [text, setText] = React.useState("");
@@ -55,6 +81,29 @@ export function AeoCustomPrompts({ properties, prompts }: CustomPromptsProps) {
         return;
       }
       setText("");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Network error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onAddSuggestion(prompt: string, tag: string) {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/portal/seo/aeo/custom-prompts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ propertyId, prompt, tag }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setError(data.error ?? `Could not add prompt (${res.status})`);
+        return;
+      }
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Network error");
@@ -143,14 +192,17 @@ export function AeoCustomPrompts({ properties, prompts }: CustomPromptsProps) {
               key={row.id}
               className="flex items-center justify-between gap-3 py-2"
             >
-              <span
-                className={`text-[13px] leading-snug ${
-                  row.active
-                    ? "text-foreground"
-                    : "text-muted-foreground line-through"
-                }`}
-              >
-                {row.prompt}
+              <span className="flex min-w-0 items-center gap-2">
+                <span
+                  className={`text-[13px] leading-snug ${
+                    row.active
+                      ? "text-foreground"
+                      : "text-muted-foreground line-through"
+                  }`}
+                >
+                  {row.prompt}
+                </span>
+                <TagChip tag={row.tag} />
               </span>
               <button
                 type="button"
@@ -168,6 +220,45 @@ export function AeoCustomPrompts({ properties, prompts }: CustomPromptsProps) {
           ))}
         </ul>
       )}
+
+      {/* Suggested hyperlocal pack (slice 8) — the generator's own city/
+          campus prompts, funnel-tagged, one click to start tracking. */}
+      {(() => {
+        const pack =
+          suggestions?.find((s) => s.propertyId === propertyId)?.suggestions ??
+          [];
+        if (pack.length === 0 || activeCount >= 10) return null;
+        return (
+          <div className="mt-4 border-t border-border pt-3">
+            <p className="text-[11px] font-mono uppercase tracking-[0.14em] text-muted-foreground">
+              Suggested for this property
+            </p>
+            <ul className="mt-2 space-y-1.5">
+              {pack.map((s) => (
+                <li
+                  key={s.text}
+                  className="flex items-center justify-between gap-3"
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span className="truncate text-[13px] text-muted-foreground">
+                      {s.text}
+                    </span>
+                    <TagChip tag={s.tag} />
+                  </span>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void onAddSuggestion(s.text, s.tag)}
+                    className="shrink-0 text-[11px] font-semibold text-primary hover:underline disabled:opacity-60"
+                  >
+                    Track this
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })()}
     </SectionCard>
   );
 }

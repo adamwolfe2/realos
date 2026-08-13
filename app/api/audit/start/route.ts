@@ -49,6 +49,11 @@ const BodySchema = z.object({
   // without them.
   brandName: z.string().trim().min(2).max(120).optional(),
   email: z.string().trim().toLowerCase().email().max(200).optional(),
+  /** Optional rival building name (2026-08-14 slice 13). Tracked
+   *  explicitly in discovery parsing; the report renders you-vs-them. */
+  // min(3) matches parseCitation's alias floor — a shorter name can
+  // never match, which would render a fabricated all-X rival row.
+  competitorName: z.string().trim().min(3).max(80).optional(),
 });
 
 const DEDUPE_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
@@ -131,6 +136,7 @@ export async function POST(req: NextRequest) {
         urlInput: parsed.data.url,
         domain,
         brandName: parsed.data.brandName ?? undefined,
+        competitorName: parsed.data.competitorName ?? undefined,
         // Email supplied at start = lead captured before the scan runs.
         // Mirror capture-email's behavior: stamp capturedAt + extend
         // expiry to 365d so the row stays warm for remarketing.

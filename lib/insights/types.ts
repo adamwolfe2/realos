@@ -41,7 +41,10 @@ export type InsightKind =
   | "wasted_ad_spend"
   | "renewal_cliff"
   | "vacancy_needs_boost"
-  | "portfolio_outlier";
+  | "portfolio_outlier"
+  // AEO alerts (2026-08-14, goal spec slice 10).
+  | "negative_mention_spike"
+  | "aeo_competitor_overtake";
 
 export type InsightEntityType =
   | "lead"

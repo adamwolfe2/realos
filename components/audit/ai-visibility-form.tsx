@@ -55,6 +55,9 @@ export function AiVisibilityForm() {
   const [propertyName, setPropertyName] = useState("");
   const [url, setUrl] = useState("");
   const [email, setEmail] = useState("");
+  // Optional rival (slice 13): tracked explicitly in discovery parsing;
+  // the report renders you-vs-them per engine.
+  const [competitorName, setCompetitorName] = useState("");
   const [phase, setPhase] = useState<Phase>("form");
   const [error, setError] = useState<string | null>(null);
   const [statusIdx, setStatusIdx] = useState(0);
@@ -94,6 +97,9 @@ export function AiVisibilityForm() {
           url: url.trim(),
           brandName: propertyName.trim(),
           email: email.trim().toLowerCase(),
+          ...(competitorName.trim().length >= 3
+            ? { competitorName: competitorName.trim() }
+            : {}),
         }),
       });
       const data = (await res.json().catch(() => ({}))) as Partial<
@@ -217,6 +223,14 @@ export function AiVisibilityForm() {
           placeholder="you@company.com"
           type="email"
           autoComplete="email"
+        />
+        <Field
+          label="A competitor building (optional)"
+          value={competitorName}
+          onChange={setCompetitorName}
+          placeholder="e.g. The Standard at Berkeley"
+          type="text"
+          autoComplete="off"
         />
       </div>
 

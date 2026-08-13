@@ -90,16 +90,24 @@ export function AeoReceiptsBlock({
   receipts,
   brandName,
   competitors,
+  previewOnly = false,
 }: {
   receipts: AeoReceipt[];
   brandName: string;
   competitors: string[];
+  /** Locked reports (2026-08-14, slice 12): show ONE verbatim receipt as
+   *  the tease and count the rest — the full feed unlocks with the email
+   *  gate. Gate mechanics themselves are untouched. */
+  previewOnly?: boolean;
 }) {
   if (receipts.length === 0) return null;
 
+  const visible = previewOnly ? receipts.slice(0, 1) : receipts;
+  const hiddenCount = receipts.length - visible.length;
+
   // Group by engine, preserving the persisted engine order.
   const byEngine = new Map<AeoReceipt["engine"], AeoReceipt[]>();
-  for (const r of receipts) {
+  for (const r of visible) {
     const list = byEngine.get(r.engine) ?? [];
     list.push(r);
     byEngine.set(r.engine, list);
@@ -198,6 +206,21 @@ export function AeoReceiptsBlock({
           </details>
         ))}
       </div>
+
+      {hiddenCount > 0 ? (
+        <p className="mt-3 text-[12.5px]" style={{ color: "#525252" }}>
+          <a
+            href="#full-report"
+            className="underline underline-offset-2"
+            style={{ color: "#0f62fe", fontWeight: 500 }}
+          >
+            {hiddenCount} more verbatim engine answer
+            {hiddenCount === 1 ? "" : "s"}
+          </a>{" "}
+          — including what each engine says when renters don&apos;t know
+          your name — unlock with the full report below.
+        </p>
+      ) : null}
     </section>
   );
 }

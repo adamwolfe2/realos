@@ -236,6 +236,33 @@ export function AeoSection({ stats }: { stats: ReportAeoStats }) {
           </div>
         ) : null}
 
+        {/* AI-referral proof chain (2026-08-14, slice 11): visibility →
+            visits → leads → signed leases. Legacy snapshots lack the
+            field and render nothing. */}
+        {stats.aiReferral && stats.aiReferral.visits > 0 ? (
+          <div className="rounded-[2px] border border-border bg-muted/30 px-3 py-2.5">
+            <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-1">
+              AI search, attributed
+            </div>
+            <p className="text-[12.5px] text-foreground">
+              <span className="font-semibold tabular-nums">
+                {stats.aiReferral.visits}
+              </span>{" "}
+              visit{stats.aiReferral.visits === 1 ? "" : "s"} arrived from AI
+              assistants this period ·{" "}
+              <span className="font-semibold tabular-nums">
+                {stats.aiReferral.leads}
+              </span>{" "}
+              became lead{stats.aiReferral.leads === 1 ? "" : "s"} ·{" "}
+              <span className="font-semibold tabular-nums">
+                {stats.aiReferral.signed}
+              </span>{" "}
+              signed{" "}
+              {stats.aiReferral.signed === 1 ? "a lease" : "leases"}.
+            </p>
+          </div>
+        ) : null}
+
         {stats.topCompetitors.length > 0 ? (
           <div>
             <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-1.5">

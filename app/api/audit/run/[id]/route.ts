@@ -65,6 +65,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       status: true,
       brandName: true,
       quizAnswers: true,
+      competitorName: true,
     },
   });
   if (!audit) {
@@ -88,11 +89,14 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
 
   try {
 
-    const computeResult = await computeSignals({
-      kind: "prospect",
-      prospectAuditId: id,
-      domain: audit.domain,
-    });
+    const computeResult = await computeSignals(
+      {
+        kind: "prospect",
+        prospectAuditId: id,
+        domain: audit.domain,
+      },
+      { rivalName: audit.competitorName },
+    );
 
     // Strip the non-persistable __provider field before saving the daily
     // snapshot — DailySignalSnapshot only carries the typed sections.
@@ -128,6 +132,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
           aeoDiscoveryRan: __provider?.aeoDiscoveryRan ?? false,
           aeoReceipts: __provider?.aeoReceipts ?? [],
           aeoCompetitorsRanked: __provider?.aeoCompetitorsRanked ?? [],
+          aeoRival: __provider?.aeoRival ?? null,
           aeoLocale: __provider?.aeoLocale
             ? {
                 city: __provider.aeoLocale.city,

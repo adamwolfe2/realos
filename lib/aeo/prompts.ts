@@ -72,6 +72,55 @@ export function isBrandedPromptText(prompt: string): boolean {
   return BRANDED_PROMPT_MARKERS.some((re) => re.test(prompt));
 }
 
+// ---------------------------------------------------------------------------
+// Funnel tags + suggested packs (2026-08-14, goal spec slice 8).
+// Hyperlocal is the moat: tracked prompts auto-generated from the
+// property's own city / neighborhood / campus, tagged by funnel stage.
+// ---------------------------------------------------------------------------
+
+export type FunnelTag = "branded" | "tof" | "bof";
+
+/** How many generated prompts the weekly scan runs automatically per
+ *  property (orchestrate slices to this). The suggested pack must skip
+ *  these — suggesting a prompt the scan already runs burns a custom-
+ *  prompt slot for zero new data. */
+export const PROMPTS_PER_PROPERTY = 5;
+
+/** Funnel stage for a prompt. Branded beats funnel position; bottom-of-
+ *  funnel = the renter is comparing specifics (price, amenities, tours,
+ *  reviews); everything else discovery-shaped is top-of-funnel. Pure —
+ *  exported for tests. */
+export function suggestFunnelTag(
+  text: string,
+  kind: GeneratedPrompt["kind"],
+): FunnelTag {
+  if (kind === "branded") return "branded";
+  return /\b(price|pricing|rent|cost|amenit|tour|apply|review|deposit|lease terms|pet policy|parking)\b/i.test(
+    text,
+  )
+    ? "bof"
+    : "tof";
+}
+
+export type SuggestedPrompt = { text: string; tag: FunnelTag };
+
+/** The one-click "suggested pack" for a property: the generator's own
+ *  hyperlocal prompts, tagged, minus anything the operator already
+ *  tracks. */
+export function buildSuggestedPack(
+  seed: PromptSeed,
+  existingPrompts: string[],
+): SuggestedPrompt[] {
+  const existing = new Set(existingPrompts.map((p) => p.trim().toLowerCase()));
+  // Skip the first PROMPTS_PER_PROPERTY — the weekly scan already runs
+  // those automatically; suggesting them would let the operator burn a
+  // 10-slot custom cap on duplicates the scan dedupes away.
+  return generatePromptsWithKinds(seed)
+    .slice(PROMPTS_PER_PROPERTY)
+    .filter((p) => !existing.has(p.text.trim().toLowerCase()))
+    .map((p) => ({ text: p.text, tag: suggestFunnelTag(p.text, p.kind) }));
+}
+
 export function generatePrompts(seed: PromptSeed): string[] {
   return generatePromptsWithKinds(seed).map((p) => p.text);
 }

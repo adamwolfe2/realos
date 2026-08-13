@@ -27,6 +27,9 @@ const MAX_ACTIVE_PER_PROPERTY = 10;
 const createSchema = z.object({
   propertyId: z.string().min(1),
   prompt: z.string().trim().min(10).max(300),
+  /** Funnel tag (2026-08-14): branded / tof / bof. Optional — untagged
+   *  prompts behave exactly as before. */
+  tag: z.enum(["branded", "tof", "bof"]).optional(),
 });
 
 const patchSchema = z.object({
@@ -67,6 +70,7 @@ export async function GET(req: NextRequest) {
       id: p.id,
       propertyId: p.propertyId,
       prompt: p.prompt,
+      tag: p.tag,
       active: p.active,
       createdAt: p.createdAt,
     })),
@@ -126,10 +130,11 @@ export async function POST(req: NextRequest) {
         orgId: property.orgId,
         propertyId: property.id,
         prompt: text,
+        tag: parsed.tag ?? null,
         addedBy: scope.userId,
         active: true,
       },
-      update: { active: true },
+      update: { active: true, ...(parsed.tag ? { tag: parsed.tag } : {}) },
     })
     .catch(() => null);
 

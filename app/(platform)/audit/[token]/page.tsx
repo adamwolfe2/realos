@@ -109,6 +109,11 @@ interface Findings {
   aeoReceipts?: AeoReceipt[];
   // Ranked competitor mentions (post-2026-08-14 audits).
   aeoCompetitorsRanked?: Array<{ name: string; mentions: number }>;
+  // You-vs-tracked-rival (slice 13).
+  aeoRival?: {
+    name: string;
+    byEngine: Array<{ engine: AeoEngineRow["engine"]; you: boolean; rival: boolean }>;
+  } | null;
   aeoOnPage?: AeoOnPageFindings | null;
   googleAiOverview?: GoogleAiOverviewFindings | null;
   detectedStack?: DetectedStack;
@@ -361,12 +366,16 @@ export default async function AuditViewerPage({
           competitorsRanked={
             notCited > 0 ? (findings.aeoCompetitorsRanked ?? []) : []
           }
+          rival={findings.aeoRival ?? null}
         />
         {aeoReceipts.length > 0 ? (
           <AeoReceiptsBlock
             receipts={aeoReceipts}
             brandName={displaySubject}
             competitors={notCited > 0 ? aeoCompetitorsCited : []}
+            // Locked report → one receipt teases; the feed unlocks with
+            // the email gate (slice 12). Gate mechanics unchanged.
+            previewOnly={!audit.email}
           />
         ) : null}
         {googleAio ? (

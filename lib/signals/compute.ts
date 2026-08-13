@@ -78,6 +78,8 @@ export type ProspectComputeResult = SignalSnapshot & {
     aeoReceipts: AeoReceipt[];
     /** Ranked competitor mentions from discovery answers (2026-08-14). */
     aeoCompetitorsRanked: Array<{ name: string; mentions: number }>;
+    /** You-vs-tracked-rival per engine (slice 13). */
+    aeoRival: AeoRivalResult | null;
     /** Google AI Overview captured for one branded query during the
      *  audit run. Powers the verbatim "this is what Google AI says
      *  about you today" section on the result page. Null when
@@ -93,9 +95,17 @@ export type ProspectComputeResult = SignalSnapshot & {
 
 export async function computeSignals(
   scope: SignalScope,
+  opts?: {
+    /** Explicitly tracked rival (2026-08-14 slice 13, prospect only). */
+    rivalName?: string | null;
+  },
 ): Promise<ProspectComputeResult> {
   if (scope.kind === "prospect") {
-    return computeProspectSignals(scope.prospectAuditId, scope.domain);
+    return computeProspectSignals(
+      scope.prospectAuditId,
+      scope.domain,
+      opts?.rivalName ?? null,
+    );
   }
   return computeRealTenantSignals(scope);
 }
@@ -107,6 +117,7 @@ export async function computeSignals(
 async function computeProspectSignals(
   prospectAuditId: string,
   domain: string,
+  rivalName: string | null = null,
 ): Promise<ProspectComputeResult> {
   const startedAt = Date.now();
   const key = scopeKey({ kind: "prospect", prospectAuditId, domain });
@@ -131,7 +142,13 @@ async function computeProspectSignals(
   const aeoPromise = (async () => {
     const crawl = await crawlPromise.catch(() => null);
     derivedLocale = await derivePropertyLocale(crawl, prospectAuditId);
-    return runAeoFanout(brandName, domain, prospectAuditId, derivedLocale);
+    return runAeoFanout(
+      brandName,
+      domain,
+      prospectAuditId,
+      derivedLocale,
+      rivalName,
+    );
   })();
   const [seoFanout, aeoResult, repResult, crawlResult, aioResult] =
     await Promise.allSettled([
@@ -219,6 +236,7 @@ async function computeProspectSignals(
       aeoDiscoveryRan: aeoData.discoveryRan,
       aeoReceipts: aeoData.receipts,
       aeoCompetitorsRanked: aeoData.competitorsRanked,
+      aeoRival: aeoData.rival,
       googleAiOverview: aioData,
     },
   };
@@ -452,6 +470,21 @@ type AeoFanout = {
    *  Same {name, mentions} shape as the tenant report's topCompetitors.
    *  Additive alongside the flat competitorsCited list. */
   competitorsRanked: Array<{ name: string; mentions: number }>;
+  /** You-vs-them for the lead's explicitly tracked rival (slice 13).
+   *  Null when the lead didn't name one. */
+  rival: AeoRivalResult | null;
+};
+
+/** Per-engine you-vs-rival verdict for an explicitly tracked competitor. */
+export type AeoRivalResult = {
+  name: string;
+  byEngine: Array<{
+    engine: AeoReceipt["engine"];
+    /** You were named/cited in a discovery answer on this engine. */
+    you: boolean;
+    /** The rival was named in a discovery answer on this engine. */
+    rival: boolean;
+  }>;
 };
 
 function emptyAeoFanout(): AeoFanout {
@@ -466,6 +499,7 @@ function emptyAeoFanout(): AeoFanout {
     discoveryRan: false,
     receipts: [],
     competitorsRanked: [],
+    rival: null,
   };
 }
 
@@ -632,6 +666,9 @@ async function runAeoFanout(
    *  fan-out to 2 branded + 3 discovery prompts; otherwise branded-only
    *  fallback with legacy semantics. */
   locale: PropertyLocale | null,
+  /** Explicitly tracked rival (slice 13) — parsed as its own citation
+   *  target against every discovery answer. Free: no extra API calls. */
+  rivalName: string | null = null,
 ): Promise<AeoFanout> {
   const prompts = buildProspectPrompts(brandName, domain, locale);
   const discoveryRan = prompts.some((p) => p.kind === "discovery");
@@ -660,6 +697,8 @@ async function runAeoFanout(
   const citedEngines: string[] = [];
   const uncitedEngines: string[] = [];
   const receipts: AeoReceipt[] = [];
+  const rivalByEngine: AeoRivalResult["byEngine"] = [];
+  const rival = rivalName?.trim() || null;
 
   await Promise.all(
     enabled.map(async (engine) => {
@@ -701,6 +740,22 @@ async function runAeoFanout(
         brandedCompetitors: !discoveryRan,
       });
       for (const c of verdict.competitors) competitorsCited.add(c);
+
+      // Explicit rival tracking (slice 13): parse each discovery answer
+      // against the rival as its own citation target. Name match = the
+      // rival was recommended where you weren't asked about.
+      if (rival && discoveryRan) {
+        const rivalNamed = answers.some(
+          (a) =>
+            a.kind === "discovery" &&
+            parseCitation(a.text, { name: rival }).status === "CITED",
+        );
+        rivalByEngine.push({
+          engine: engine.engine as AeoReceipt["engine"],
+          you: verdict.discovered,
+          rival: rivalNamed,
+        });
+      }
 
       // `cited` stays the back-compat verdict field: discovered when
       // discovery ran, legacy name-echo semantics otherwise.
@@ -753,6 +808,17 @@ async function runAeoFanout(
       .sort((a, b) => b[1] - a[1])
       .slice(0, 8)
       .map(([name, mentions]) => ({ name, mentions })),
+    rival:
+      rival && rivalByEngine.length > 0
+        ? {
+            name: rival,
+            byEngine: rivalByEngine.sort(
+              (a, b) =>
+                ["CHATGPT", "PERPLEXITY", "CLAUDE", "GEMINI"].indexOf(a.engine) -
+                ["CHATGPT", "PERPLEXITY", "CLAUDE", "GEMINI"].indexOf(b.engine),
+            ),
+          }
+        : null,
   };
 }
 

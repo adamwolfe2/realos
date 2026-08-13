@@ -63,6 +63,12 @@ export type AeoClientProps = {
     byEngine: Array<{ engine: string; visits: number }>;
     windowDays: number;
   };
+  /** Per-engine competitor heatmap rows (2026-08-14, slice 9). */
+  heatmapRows: Array<{
+    name: string;
+    isYou: boolean;
+    cells: Array<{ engine: string; pct: number | null }>;
+  }>;
   kpis: {
     visibilityScore: number;
     mentionRate30: number;
@@ -338,6 +344,7 @@ export function AeoClient({
   lastScanAt,
   trendWeeks,
   aiReferral,
+  heatmapRows,
   kpis,
   recommendations,
   shareOfVoice,
@@ -503,6 +510,8 @@ export function AeoClient({
 
       <AiReferralCard aiReferral={aiReferral} />
 
+      <CompetitorHeatmap rows={heatmapRows} />
+
       {/* What to do next — derived recommendations. */}
       <NextActions recs={recommendations} />
 
@@ -538,6 +547,98 @@ export function AeoClient({
         </SectionCard>
       )}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// CompetitorHeatmap (2026-08-14, slice 9 — Peec pattern). Rows = you +
+// the top named competitors, cols = engines, cell = share of that
+// engine's answers naming the row. Sequential single-hue fill (Carbon
+// blue, alpha-stepped); the % is always printed so color never carries
+// the value alone.
+// ---------------------------------------------------------------------------
+
+const HEATMAP_ENGINE_LABEL: Record<string, string> = {
+  CHATGPT: "ChatGPT",
+  PERPLEXITY: "Perplexity",
+  CLAUDE: "Claude",
+  GEMINI: "Gemini",
+};
+
+function heatCellStyle(pct: number | null): React.CSSProperties {
+  if (pct === null) return { backgroundColor: "transparent" };
+  // 5-step sequential alpha ramp on one hue.
+  const alpha =
+    pct === 0 ? 0.03 : pct < 0.25 ? 0.1 : pct < 0.5 ? 0.22 : pct < 0.75 ? 0.38 : 0.55;
+  return { backgroundColor: `rgba(15, 98, 254, ${alpha})` };
+}
+
+function CompetitorHeatmap({
+  rows,
+}: {
+  rows: AeoClientProps["heatmapRows"];
+}) {
+  // Needs you + at least one competitor with signal to be worth space.
+  const competitorRows = rows.filter((r) => !r.isYou);
+  if (
+    rows.length < 2 ||
+    competitorRows.every((r) => r.cells.every((c) => !c.pct))
+  ) {
+    return null;
+  }
+  const engines = rows[0]?.cells.map((c) => c.engine) ?? [];
+  return (
+    <SectionCard label="Who each engine prefers">
+      <p className="mb-3 text-[12.5px] text-muted-foreground">
+        Share of each engine&apos;s answers (30d) that name you vs the
+        competitors AI brings up instead.
+      </p>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[480px] border-collapse text-[12.5px]">
+          <thead>
+            <tr>
+              <th className="py-1.5 pr-3 text-left font-medium text-muted-foreground" />
+              {engines.map((e) => (
+                <th
+                  key={e}
+                  className="px-2 py-1.5 text-center font-medium text-muted-foreground"
+                >
+                  {HEATMAP_ENGINE_LABEL[e] ?? e}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.name} className="border-t border-border">
+                <td
+                  className={`max-w-[180px] truncate py-1.5 pr-3 ${
+                    row.isYou ? "font-semibold text-foreground" : "text-foreground"
+                  }`}
+                  title={row.name}
+                >
+                  {row.name}
+                </td>
+                {row.cells.map((cell) => (
+                  <td key={cell.engine} className="px-1 py-1">
+                    <div
+                      className="flex h-8 items-center justify-center tabular-nums"
+                      style={{ ...heatCellStyle(cell.pct), borderRadius: 2 }}
+                    >
+                      {cell.pct === null ? (
+                        <span className="text-muted-foreground">—</span>
+                      ) : (
+                        `${Math.round(cell.pct * 100)}%`
+                      )}
+                    </div>
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </SectionCard>
   );
 }
 

@@ -20,6 +20,10 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { buildPropertyUrlPatterns } from "@/lib/properties/queries";
 import { realAdAccountWhere } from "@/lib/integrations/real-ad-account";
 import { reportPeriodWindow } from "@/lib/recency";
+import {
+  CANONICAL_SOURCES,
+  classifySource,
+} from "@/lib/attribution/source-taxonomy";
 import { buildPopupStats, type ReportPopupStats } from "@/lib/reports/popup-stats";
 
 // ---------------------------------------------------------------------------
@@ -257,6 +261,14 @@ export type ReportAeoStats = {
     cited: number;
     competitorCited: number;
   }>;
+  // AI-referral attribution (2026-08-14, goal spec slice 11): pixel
+  // sessions arriving FROM AI assistants during the report period,
+  // chained visitor → lead → SIGNED. Absent on legacy snapshots.
+  aiReferral?: {
+    visits: number;
+    leads: number;
+    signed: number;
+  };
 };
 
 // ---------------------------------------------------------------------------
@@ -2532,6 +2544,76 @@ async function buildAeoStats(
     a.engine.localeCompare(b.engine),
   );
 
+  // AI-referral proof chain for the period (slice 11): sessions whose
+  // referrer/utm classifies to an AI assistant via the CANONICAL source
+  // taxonomy (same waterfall as /portal/attribution), chained through
+  // visitor → lead → SIGNED with causation order enforced.
+  const aiSources = CANONICAL_SOURCES.filter((s) => s.category === "ai");
+  const aiSessions = await prisma.visitorSession.findMany({
+    where: {
+      orgId,
+      ...propertyClause,
+      startedAt: { gte: periodStart, lt: periodEnd },
+      // OR nested under AND — a top-level OR beside the gate spread is
+      // banned house-wide (weekly-digest-marketable-gate.test.ts): the
+      // pattern invites a refactor that lets the OR escape the gate.
+      AND: [
+        {
+          OR: [
+            ...aiSources.flatMap((s) =>
+              s.matchHosts.map((h) => ({
+                firstReferrer: { contains: h, mode: "insensitive" as const },
+              })),
+            ),
+            ...aiSources.flatMap((s) =>
+              s.matchUtm.map((m) => ({
+                utmSource: { contains: m, mode: "insensitive" as const },
+              })),
+            ),
+          ],
+        },
+      ],
+    },
+    select: {
+      visitorId: true,
+      firstReferrer: true,
+      utmSource: true,
+      utmMedium: true,
+      startedAt: true,
+    },
+    orderBy: { startedAt: "desc" },
+    take: 2000,
+  });
+  let aiVisits = 0;
+  const aiVisitorFirstSeen = new Map<string, Date>();
+  for (const s of aiSessions) {
+    const src = classifySource(s.utmSource, s.firstReferrer, s.utmMedium);
+    if (src.category !== "ai") continue;
+    aiVisits += 1;
+    if (s.visitorId) {
+      const prev = aiVisitorFirstSeen.get(s.visitorId);
+      if (!prev || s.startedAt < prev) aiVisitorFirstSeen.set(s.visitorId, s.startedAt);
+    }
+  }
+  const aiLeadRows =
+    aiVisitorFirstSeen.size > 0
+      ? await prisma.lead.findMany({
+          where: {
+            orgId,
+            visitorId: { in: [...aiVisitorFirstSeen.keys()] },
+            // Both sides bounded — a July report regenerated in August
+            // must not count August leads (matches every other lead
+            // window in this file).
+            firstSeenAt: { gte: periodStart, lt: periodEnd },
+          },
+          select: { status: true, visitorId: true, firstSeenAt: true },
+        })
+      : [];
+  const aiLeads = aiLeadRows.filter((l) => {
+    const firstAi = l.visitorId ? aiVisitorFirstSeen.get(l.visitorId) : null;
+    return firstAi ? l.firstSeenAt >= firstAi : false;
+  });
+
   return {
     totalChecks: checks.length,
     cited,
@@ -2541,6 +2623,11 @@ async function buildAeoStats(
     topCompetitors,
     sampleCompetitorQueries: competitorSamples,
     byEngine,
+    aiReferral: {
+      visits: aiVisits,
+      leads: aiLeads.length,
+      signed: aiLeads.filter((l) => l.status === "SIGNED").length,
+    },
   };
 }
 

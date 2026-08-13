@@ -27,7 +27,7 @@ import {
   CANONICAL_SOURCES,
   classifySource,
 } from "@/lib/attribution/source-taxonomy";
-import { isBrandedPromptText } from "@/lib/aeo/prompts";
+import { isBrandedPromptText, buildSuggestedPack } from "@/lib/aeo/prompts";
 
 export const metadata: Metadata = { title: "AI search visibility" };
 export const dynamic = "force-dynamic";
@@ -352,6 +352,46 @@ export default async function AeoPage() {
     .sort((a, b) => b.count - a.count)
     .slice(0, 10);
 
+  // Per-engine competitor heatmap (2026-08-14, slice 9 — Peec pattern):
+  // rows = you + the top named competitors, cols = engines, cell = the
+  // share of that engine's answers naming the row. All from rows already
+  // in memory.
+  const heatmapCompetitors = competitorRollup.slice(0, 5).map((c) => c.name);
+  // Discovery answers only: branded prompts structurally can't surface
+  // a rival, so including them tilts the "You" row upward.
+  const heatmapPool = last30.filter((c) => !isBrandedPromptText(c.prompt));
+  const engineTotals = new Map<string, number>();
+  for (const engine of ENGINES) {
+    engineTotals.set(
+      engine,
+      heatmapPool.filter((c) => c.engine === engine).length,
+    );
+  }
+  const heatmapRows = [
+    {
+      name: "You",
+      isYou: true,
+      cells: ENGINES.map((engine) => {
+        const total = engineTotals.get(engine) ?? 0;
+        const named = heatmapPool.filter(
+          (c) => c.engine === engine && c.mentioned,
+        ).length;
+        return { engine, pct: total > 0 ? named / total : null };
+      }),
+    },
+    ...heatmapCompetitors.map((name) => ({
+      name,
+      isYou: false,
+      cells: ENGINES.map((engine) => {
+        const total = engineTotals.get(engine) ?? 0;
+        const named = heatmapPool.filter(
+          (c) => c.engine === engine && c.competitorsCited.includes(name),
+        ).length;
+        return { engine, pct: total > 0 ? named / total : null };
+      }),
+    })),
+  ];
+
   // ---------------------------------------------------------------------
   // "What to do next" — derived recommendations.
   //
@@ -456,7 +496,15 @@ export default async function AeoPage() {
         ? { id: { in: scope.allowedPropertyIds } }
         : {}),
     },
-    select: { id: true, name: true },
+    select: {
+      id: true,
+      name: true,
+      city: true,
+      state: true,
+      propertyType: true,
+      residentialSubtype: true,
+      commercialSubtype: true,
+    },
     orderBy: { name: "asc" },
     take: 50,
   });
@@ -467,8 +515,28 @@ export default async function AeoPage() {
     },
     orderBy: [{ active: "desc" }, { createdAt: "desc" }],
     take: 100,
-    select: { id: true, propertyId: true, prompt: true, active: true },
+    select: { id: true, propertyId: true, prompt: true, tag: true, active: true },
   });
+
+  // Suggested hyperlocal packs (2026-08-14, slice 8): the generator's own
+  // city/campus prompts, funnel-tagged, minus anything already tracked.
+  const promptSuggestions = promptProperties.map((p) => ({
+    propertyId: p.id,
+    suggestions: buildSuggestedPack(
+      {
+        city: p.city,
+        state: p.state,
+        neighborhood: null,
+        propertyType: p.propertyType,
+        residentialSubtype: p.residentialSubtype,
+        commercialSubtype: p.commercialSubtype,
+        propertyName: p.name,
+      },
+      customPromptRows
+        .filter((r) => r.propertyId === p.id)
+        .map((r) => r.prompt),
+    ).slice(0, 6),
+  }));
 
   // ---------------------------------------------------------------------
   // AEO v2 W1 — AI Share of Voice aggregation. Reads AeoMentionSnapshot
@@ -729,6 +797,7 @@ export default async function AeoPage() {
       lastScanAt={lastScanAt}
       trendWeeks={trendWeeks}
       aiReferral={aiReferral}
+      heatmapRows={heatmapRows}
       kpis={{
         visibilityScore,
         mentionRate30,
@@ -743,8 +812,9 @@ export default async function AeoPage() {
       }}
       recommendations={recommendations}
       customPrompts={{
-        properties: promptProperties,
+        properties: promptProperties.map((p) => ({ id: p.id, name: p.name })),
         prompts: customPromptRows,
+        suggestions: promptSuggestions,
       }}
       shareOfVoice={{
         perEngine: sovPerEngine,

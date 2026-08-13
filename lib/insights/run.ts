@@ -8,6 +8,8 @@ import { chatbotPatternDetector } from "./detectors/chatbot-pattern";
 import { convRateDropDetector } from "./detectors/conv-rate-drop";
 import { leasingVelocityDropDetector } from "./detectors/leasing-velocity-drop";
 import { negativeReviewDetector } from "./detectors/negative-review";
+import { negativeMentionSpikeDetector } from "./detectors/negative-mention-spike";
+import { aeoCompetitorOvertakeDetector } from "./detectors/aeo-competitor-overtake";
 import { wastedAdSpendDetector } from "./detectors/wasted-ad-spend";
 import { renewalCliffDetector } from "./detectors/renewal-cliff";
 import { vacancyNeedsBoostDetector } from "./detectors/vacancy-needs-boost";
@@ -34,6 +36,10 @@ const DETECTORS: Detector[] = [
   // user connects their first data source. Reputation, ad-waste, renewal
   // cliffs, vacancy + portfolio benchmarking — the moat.
   negativeReviewDetector,
+  // AEO alerts (2026-08-14, goal spec slice 10): sentiment spikes +
+  // "a competitor now outranks you on {engine}". Pure severity rules.
+  negativeMentionSpikeDetector,
+  aeoCompetitorOvertakeDetector,
   wastedAdSpendDetector,
   renewalCliffDetector,
   vacancyNeedsBoostDetector,

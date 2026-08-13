@@ -4482,6 +4482,10 @@ model AeoCustomPrompt {
   propertyId String
   /// User-style natural-language prompt, run verbatim against every engine.
   prompt     String   @db.Text
+  /// Funnel tag (2026-08-14): "branded" | "tof" | "bof". Null = untagged
+  /// legacy row. Branded-tagged prompts get echo-demotion semantics in
+  /// the scan; ToF/BoF drive the funnel grouping in the dashboard.
+  tag        String?
   /// User id of the operator who added it.
   addedBy    String?
   active     Boolean  @default(true)
@@ -6183,6 +6187,10 @@ model ProspectAudit {
   // `lib/audit/quiz-questions.ts::QuizAnswers`. Nullable so pre-DPS
   // audits and URL-only submits still work.
   quizAnswers     Json?
+  /// Optional rival building the lead wants tracked (2026-08-14 slice
+  /// 13). Discovery parsing tracks it explicitly; the report renders
+  /// you-vs-them per engine.
+  competitorName  String?
   viewCount       Int                 @default(0)
   lastViewedAt    DateTime?
   expiresAt       DateTime

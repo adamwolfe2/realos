@@ -43,7 +43,9 @@ import type { AeoEngine, Prisma } from "@prisma/client";
 // well within the rate limits. Branded prompts have a meaningfully
 // higher citation rate than discovery prompts, so the dashboard reads
 // as a real moat-vs-gap story instead of "0% across the board."
-const PROMPTS_PER_PROPERTY = 5;
+// Canonical value lives in lib/aeo/prompts.ts so the suggested-pack
+// generator can't drift from the scan's own slice boundary.
+import { PROMPTS_PER_PROPERTY } from "./prompts";
 // Operator-added prompts run IN ADDITION to the generated set — they are
 // deliberate spend, so they don't compete with generated prompts for the
 // PROMPTS_PER_PROPERTY budget. The API layer caps active rows at 10 per
@@ -142,7 +144,7 @@ export async function runAeoScan(opts: ScanOptions): Promise<ScanResult> {
       },
       orderBy: { createdAt: "asc" },
       take: CUSTOM_PROMPTS_PER_PROPERTY,
-      select: { prompt: true },
+      select: { prompt: true, tag: true },
     });
     const prompts = generated.map((g) => g.text);
     const kindByPrompt = new Map(
@@ -155,12 +157,15 @@ export async function runAeoScan(opts: ScanOptions): Promise<ScanResult> {
       if (!text || seenPrompts.has(text.toLowerCase())) continue;
       seenPrompts.add(text.toLowerCase());
       prompts.push(text);
-      // Custom prompts: operator free text — classify branded only when
-      // it actually names the property (≥3 chars, mirrors parseCitation's
-      // alias floor).
+      // Custom prompts: the operator's funnel tag is ground truth when
+      // present (slice 8); untagged legacy rows fall back to the name-
+      // match heuristic (≥3 chars, mirrors parseCitation's alias floor).
       kindByPrompt.set(
         text.toLowerCase(),
-        customBrand.length >= 3 && text.toLowerCase().includes(customBrand)
+        row.tag === "branded" ||
+          (!row.tag &&
+            customBrand.length >= 3 &&
+            text.toLowerCase().includes(customBrand))
           ? "branded"
           : "discovery",
       );

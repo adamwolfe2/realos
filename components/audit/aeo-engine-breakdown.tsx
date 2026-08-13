@@ -67,6 +67,12 @@ export type AeoEngineBreakdownProps = {
    *  When present, renders as a ranked bar list instead of flat chips —
    *  "who AI recommends instead, and how often." */
   competitorsRanked?: Array<{ name: string; mentions: number }>;
+  /** You-vs-tracked-rival per engine (slice 13) — the competitor the
+   *  lead explicitly asked us to compare against. */
+  rival?: {
+    name: string;
+    byEngine: Array<{ engine: AeoEngineRow["engine"]; you: boolean; rival: boolean }>;
+  } | null;
 };
 
 export function AeoEngineBreakdown({
@@ -76,6 +82,7 @@ export function AeoEngineBreakdown({
   discoveryRan,
   city,
   competitorsRanked,
+  rival,
 }: AeoEngineBreakdownProps) {
   const discovery = discoveryRan === true && rows.some((r) => r.discovered !== undefined);
   const citedCount = rows.filter((r) => r.cited).length;
@@ -132,6 +139,10 @@ export function AeoEngineBreakdown({
           <EngineCard key={row.engine} row={row} />
         ))}
       </ul>
+
+      {rival && rival.byEngine.length > 0 ? (
+        <RivalVersus name={rival.name} brandName={brandName} rows={rival.byEngine} />
+      ) : null}
 
       {competitorsRanked && competitorsRanked.length > 0 ? (
         <CompetitorLeaderboard
@@ -207,6 +218,100 @@ export function AeoEngineBreakdown({
         </div>
       ) : null}
     </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// RivalVersus (slice 13) — you vs the competitor the lead explicitly
+// asked about, per engine. Two rows, four engine columns, check/cross.
+// ---------------------------------------------------------------------------
+
+function RivalVersus({
+  name,
+  brandName,
+  rows,
+}: {
+  name: string;
+  brandName: string;
+  rows: Array<{ engine: AeoEngineRow["engine"]; you: boolean; rival: boolean }>;
+}) {
+  const youWins = rows.filter((r) => r.you && !r.rival).length;
+  const rivalWins = rows.filter((r) => r.rival && !r.you).length;
+  return (
+    <div
+      className="mt-5 rounded-xl"
+      style={{
+        backgroundColor: "#FBFBFD",
+        border: "1px solid #E5E7EB",
+        padding: "14px 16px",
+      }}
+    >
+      <p
+        className="text-[10px] font-mono uppercase tracking-[0.14em]"
+        style={{ color: "#2563EB" }}
+      >
+        You vs {name}
+      </p>
+      <p className="mt-1 text-[12px]" style={{ color: "#6B7280" }}>
+        {rivalWins > youWins
+          ? `${name} is recommended on ${rivalWins} engine${rivalWins === 1 ? "" : "s"} where you aren't.`
+          : youWins > rivalWins
+            ? `You're recommended on ${youWins} engine${youWins === 1 ? "" : "s"} where ${name} isn't.`
+            : `You and ${name} are neck and neck across the engines.`}
+      </p>
+      <table className="mt-3 w-full border-collapse text-[12px]">
+        <thead>
+          <tr>
+            <th className="py-1 pr-2 text-left font-medium" style={{ color: "#6B7280" }} />
+            {rows.map((r) => (
+              <th
+                key={r.engine}
+                className="px-1 py-1 text-center font-medium"
+                style={{ color: "#6B7280" }}
+              >
+                {ENGINE_LABELS[r.engine]}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {[
+            { label: brandName, key: "you" as const },
+            { label: name, key: "rival" as const },
+          ].map((row) => (
+            <tr key={row.key} style={{ borderTop: "1px solid #E5E7EB" }}>
+              <td
+                className="max-w-[140px] truncate py-1.5 pr-2"
+                style={{ color: "#1E2A3A", fontWeight: row.key === "you" ? 600 : 500 }}
+                title={row.label}
+              >
+                {row.label}
+              </td>
+              {rows.map((r) => {
+                const hit = r[row.key];
+                return (
+                  <td key={r.engine} className="px-1 py-1.5 text-center">
+                    {hit ? (
+                      <Check
+                        className="mx-auto h-4 w-4"
+                        style={{ color: "#24a148" }}
+                        aria-label="Recommended"
+                      />
+                    ) : (
+                      <X
+                        className="mx-auto h-4 w-4"
+                        style={{ color: "#da1e28" }}
+                        aria-label="Not recommended"
+                      />
+                    )}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
