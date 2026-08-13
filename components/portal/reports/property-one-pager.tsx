@@ -39,6 +39,15 @@ export function PropertyOnePager({ snapshot, property }: Props) {
   const { kpis, occupancyStats, renewalStats, lifecycleStats, reputationStats, aeoStats, chatbotStatsExtended, leadSources, trafficTrend } =
     snapshot;
 
+  // Presentation-only suppression (2026-08-13). Operator-chosen at
+  // generation time (snapshot.hiddenSections) — for client-facing reports
+  // where a sensitive or zero-data section reads as noise. Absent = show
+  // everything (legacy snapshots unchanged).
+  const hidden = new Set(snapshot.hiddenSections ?? []);
+  const hideMoney = hidden.has("money");
+  const hideTurnover = hidden.has("turnover");
+  const hideUntracked = hidden.has("untracked-sources");
+
   const addr = addressLine(property);
   const sources = leadSources ?? [];
   // Only visitors filed under a launched building reach the snapshot, so 0
@@ -86,8 +95,14 @@ export function PropertyOnePager({ snapshot, property }: Props) {
         </div>
       </header>
 
-      {/* Headline KPIs */}
-      <div className="mt-5 grid grid-cols-4 gap-2.5">
+      {/* Headline KPIs. Occupancy (turnover) + rent roll (money) drop out
+          when suppressed; the grid tightens to the surviving cards. */}
+      <div
+        className="mt-5 grid gap-2.5"
+        style={{
+          gridTemplateColumns: `repeat(${2 + (hideTurnover ? 0 : 1) + (hideMoney ? 0 : 1)}, minmax(0, 1fr))`,
+        }}
+      >
         <KpiCard
           value={num(kpis.leads)}
           label="New leads"
@@ -109,24 +124,28 @@ export function PropertyOnePager({ snapshot, property }: Props) {
               : { up: cur >= prior, text: `From ${prior} prior` };
           })()}
         />
-        <KpiCard
-          value={occupancyStats?.occupancyPct != null ? pct(occupancyStats.occupancyPct) : "—"}
-          label={`Occupancy across ${occupancyStats?.totalUnits ?? 0} units`}
-          deltaNeutral={
-            (occupancyStats?.onNotice ?? 0) > 0
-              ? `${occupancyStats?.onNotice} residents on notice`
-              : undefined
-          }
-        />
-        <KpiCard
-          value={compactUsd(occupancyStats?.monthlyRentRollUsd)}
-          label="Monthly rent roll"
-          deltaNeutral={
-            occupancyStats?.avgRentPerUnitUsd != null
-              ? `${compactUsd(occupancyStats.avgRentPerUnitUsd)} avg per unit`
-              : undefined
-          }
-        />
+        {!hideTurnover ? (
+          <KpiCard
+            value={occupancyStats?.occupancyPct != null ? pct(occupancyStats.occupancyPct) : "—"}
+            label={`Occupancy across ${occupancyStats?.totalUnits ?? 0} units`}
+            deltaNeutral={
+              (occupancyStats?.onNotice ?? 0) > 0
+                ? `${occupancyStats?.onNotice} residents on notice`
+                : undefined
+            }
+          />
+        ) : null}
+        {!hideMoney ? (
+          <KpiCard
+            value={compactUsd(occupancyStats?.monthlyRentRollUsd)}
+            label="Monthly rent roll"
+            deltaNeutral={
+              occupancyStats?.avgRentPerUnitUsd != null
+                ? `${compactUsd(occupancyStats.avgRentPerUnitUsd)} avg per unit`
+                : undefined
+            }
+          />
+        ) : null}
       </div>
 
       {/* Acquisition + Leasing momentum */}
@@ -147,13 +166,15 @@ export function PropertyOnePager({ snapshot, property }: Props) {
                 </div>
               ))
             )}
-            {["Zillow", "Apartments.com"].map((s) => (
-              <div key={s} className="flex items-center gap-2.5 font-medium text-muted-foreground">
-                <span className="h-2 w-2 flex-none rounded-sm bg-muted-foreground/30" />
-                <span>{s}</span>
-                <span className="ml-auto">not tracked</span>
-              </div>
-            ))}
+            {!hideUntracked
+              ? ["Zillow", "Apartments.com"].map((s) => (
+                  <div key={s} className="flex items-center gap-2.5 font-medium text-muted-foreground">
+                    <span className="h-2 w-2 flex-none rounded-sm bg-muted-foreground/30" />
+                    <span>{s}</span>
+                    <span className="ml-auto">not tracked</span>
+                  </div>
+                ))
+              : null}
           </div>
           {/* identifiedVisitors === 0 is dropped rather than rendered as "0",
               the same rule the popup tiles below already follow. A zero here
@@ -212,10 +233,12 @@ export function PropertyOnePager({ snapshot, property }: Props) {
 
         <section>
           <SectionHeading>Leasing momentum</SectionHeading>
-          <div className="grid grid-cols-3 gap-2.5">
+          <div className={`grid gap-2.5 ${hideMoney ? "grid-cols-2" : "grid-cols-3"}`}>
             <Stat value={num(lifecycleStats?.leasesSignedLast180d)} label="Signed, last 180 days" />
             <Stat value={num(lifecycleStats?.activeLeases)} label="Active leases" />
-            <Stat value={compactUsd(renewalStats?.pastDueBalanceUsd)} label="Past-due balance" />
+            {!hideMoney ? (
+              <Stat value={compactUsd(renewalStats?.pastDueBalanceUsd)} label="Past-due balance" />
+            ) : null}
           </div>
           {/* Traced lead→lease proof. Only rendered when at least one
               concrete Resident link exists — never a zero-padded claim. */}
@@ -245,22 +268,27 @@ export function PropertyOnePager({ snapshot, property }: Props) {
 
       {/* Renewals + Reputation — same column split as the Acquisition +
           Leasing zone above so the two left/right boundaries line up as
-          the page scans down. */}
-      <div className="mt-5 grid grid-cols-[1.1fr_0.9fr] gap-6">
-        <section>
-          <SectionHeading>Renewals at risk</SectionHeading>
-          <div className="grid grid-cols-3 gap-2.5">
-            <Stat value={num(renewalStats?.expiringNext30)} label="Expiring within 30 days" />
-            <Stat value={num(renewalStats?.expiringNext60)} label="Expiring within 60 days" />
-            <Stat value={num(renewalStats?.expiringNext120)} label="Expiring within 120 days" />
-          </div>
-          <div className="mt-2.5 grid grid-cols-3 gap-2.5">
-            <div className="col-span-2">
-              <Stat value={compactUsd(renewalStats?.monthlyAtRiskUsd)} label="Monthly revenue at risk, next 120 days" flag />
+          the page scans down. When turnover is suppressed, reputation
+          takes the full width. */}
+      <div className={`mt-5 grid gap-6 ${hideTurnover ? "grid-cols-1" : "grid-cols-[1.1fr_0.9fr]"}`}>
+        {!hideTurnover ? (
+          <section>
+            <SectionHeading>Renewals at risk</SectionHeading>
+            <div className="grid grid-cols-3 gap-2.5">
+              <Stat value={num(renewalStats?.expiringNext30)} label="Expiring within 30 days" />
+              <Stat value={num(renewalStats?.expiringNext60)} label="Expiring within 60 days" />
+              <Stat value={num(renewalStats?.expiringNext120)} label="Expiring within 120 days" />
             </div>
-            <Stat value={num(occupancyStats?.onNotice)} label="Residents on notice" />
-          </div>
-        </section>
+            <div className="mt-2.5 grid grid-cols-3 gap-2.5">
+              {!hideMoney ? (
+                <div className="col-span-2">
+                  <Stat value={compactUsd(renewalStats?.monthlyAtRiskUsd)} label="Monthly revenue at risk, next 120 days" flag />
+                </div>
+              ) : null}
+              <Stat value={num(occupancyStats?.onNotice)} label="Residents on notice" />
+            </div>
+          </section>
+        ) : null}
 
         <section>
           <SectionHeading>Online reputation</SectionHeading>

@@ -165,17 +165,28 @@ export async function derivePropertyLocale(
 ): Promise<PropertyLocale> {
   const deterministic = parseLocaleFromCrawl(crawl);
   if (deterministic.city) return deterministic;
-  if (!process.env.ANTHROPIC_API_KEY || !crawl?.html) return deterministic;
+  if (!process.env.ANTHROPIC_API_KEY || !crawl) return deterministic;
 
-  const text = stripHtmlToText(crawl.html);
-  if (text.length < 100) return deterministic;
+  // Lead with title + meta description — on JS-heavy sites the native-
+  // fetch fallback's first 200KB is mostly <head> noise and the visible
+  // body text is thin, but the title/description almost always carry the
+  // location ("Student Housing Near UC Berkeley Campus", "2490 Channing
+  // Way, Berkeley"). Observed on telegraphcommons.com 2026-08-13: body
+  // text alone gave Haiku nothing.
+  const parts = [
+    crawl.title ? `Page title: ${crawl.title}` : "",
+    crawl.description ? `Meta description: ${crawl.description}` : "",
+    crawl.html ? `Page text: ${stripHtmlToText(crawl.html)}` : "",
+  ].filter(Boolean);
+  const text = parts.join("\n");
+  if (text.length < 80) return deterministic;
 
   const startedAt = Date.now();
   try {
     const { object, usage } = await generateObject({
       model: anthropic(LOCALE_MODEL),
       schema: llmLocaleSchema,
-      prompt: `This is text extracted from a rental property's homepage. Extract facts about the property itself. Use null for anything not explicitly stated — never guess.
+      prompt: `This is content extracted from a rental property's homepage. Extract facts about the property itself. Use null for anything not explicitly stated — never guess.
 
 - city: the city the property is located in
 - state: 2-letter US state code (null if absent or non-US)
@@ -183,7 +194,7 @@ export async function derivePropertyLocale(
 - category: housing type as a renter would search it (e.g. "apartments", "student apartments", "senior living communities", "townhomes")
 - amenity: the single most prominent amenity mentioned (e.g. "rooftop deck", "in-unit laundry")
 
-Homepage text:
+Homepage content:
 ${text}`,
       maxOutputTokens: 300,
     });

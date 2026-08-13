@@ -28,6 +28,21 @@ const orgFlag = process.argv.indexOf("--org");
 const ORG_SLUG = orgFlag > -1 ? process.argv[orgFlag + 1] : null;
 const propertyFlag = process.argv.indexOf("--property");
 const PROPERTY_SLUG = propertyFlag > -1 ? process.argv[propertyFlag + 1] : null;
+// --hide money,turnover,untracked-sources → snapshot.hiddenSections.
+// Presentation-only: the renderer omits those sections (see
+// ReportSnapshot.hiddenSections). Unknown keys are rejected up front so a
+// typo doesn't silently ship a section the operator meant to hide.
+const KNOWN_HIDE_KEYS = ["money", "turnover", "untracked-sources"];
+const hideFlag = process.argv.indexOf("--hide");
+const HIDE =
+  hideFlag > -1
+    ? (process.argv[hideFlag + 1] ?? "").split(",").map((s) => s.trim()).filter(Boolean)
+    : [];
+for (const k of HIDE) {
+  if (!KNOWN_HIDE_KEYS.includes(k)) {
+    throw new Error(`Unknown --hide key "${k}". Known: ${KNOWN_HIDE_KEYS.join(", ")}`);
+  }
+}
 
 async function main() {
   if (!ORG_SLUG) {
@@ -129,10 +144,13 @@ async function main() {
   );
 
   console.log("\nGenerating snapshot via generateReportSnapshot() (AI analysis enabled)...");
-  const snapshot = await generateReportSnapshot(org.id, "custom", {
+  const generated = await generateReportSnapshot(org.id, "custom", {
     propertyId,
     period: { periodStart, periodEnd },
   });
+  const snapshot =
+    HIDE.length > 0 ? { ...generated, hiddenSections: HIDE } : generated;
+  if (HIDE.length > 0) console.log(`  Hidden sections: ${HIDE.join(", ")}`);
 
   console.log(
     `  KPIs: leads=${snapshot.kpis.leads} applications=${snapshot.kpis.applications} ` +

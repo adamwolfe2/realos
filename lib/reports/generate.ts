@@ -414,6 +414,15 @@ export type ReportSnapshot = {
   // before this field shipped). Older rows continue to render as
   // org-wide because the absence of scope == portfolio-wide.
   scope?: ReportScope;
+  // Presentation-only suppression (2026-08-13, additive). Sections listed
+  // here are omitted by the renderer — for client-facing reports where a
+  // zero-data or sensitive section (rent roll, lease turnover, untracked
+  // ad sources) would read as noise. Data is still computed and frozen;
+  // this only gates RENDERING. Known keys: "money" (rent roll, past-due,
+  // revenue-at-risk), "turnover" (occupancy card + renewals-at-risk
+  // section), "untracked-sources" (Zillow / Apartments.com "not tracked"
+  // rows). Absent = show everything (legacy behavior).
+  hiddenSections?: string[];
   periodStart: string;
   periodEnd: string;
   kpis: ReportKpis;
