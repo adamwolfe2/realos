@@ -40,7 +40,9 @@ import Cal, { getCalApi } from "@calcom/embed-react";
 
 // Cal's embed expects a slug like "username/event-slug". Parse our env
 // var (which is usually a full https://cal.com/... URL) into that shape.
-function parseCalSlug(rawUrl: string | undefined): string | null {
+// Exported: the /book-demo qualification wizard reuses it for its inline
+// (non-modal) Cal embed.
+export function parseCalSlug(rawUrl: string | undefined): string | null {
   if (!rawUrl) return null;
   // Already a bare slug?
   if (!rawUrl.startsWith("http") && rawUrl.includes("/")) return rawUrl;

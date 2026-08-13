@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 // @critical
 // Marketing landing page must load with no console errors and show the
-// primary "Book a demo" CTA pointing at /onboarding. If this breaks, every
+// primary "Book a demo" CTA pointing at /book-demo. If this breaks, every
 // inbound visitor lands on a broken page.
 
 test.describe("Public marketing landing @critical", () => {
@@ -28,10 +28,10 @@ test.describe("Public marketing landing @critical", () => {
     const h1 = page.locator("h1").first();
     await expect(h1).toBeVisible();
 
-    // Primary CTA points at the intake wizard.
+    // Primary CTA points at the qualification wizard.
     const bookDemo = page.getByRole("link", { name: /book a demo/i }).first();
     await expect(bookDemo).toBeVisible();
-    await expect(bookDemo).toHaveAttribute("href", /\/onboarding/);
+    await expect(bookDemo).toHaveAttribute("href", /\/book-demo/);
 
     // Don't be strict about every sub-error; we just want the page to not
     // throw in pageerror. Hydration warnings can appear in dev.
@@ -40,13 +40,13 @@ test.describe("Public marketing landing @critical", () => {
     ).toEqual([]);
   });
 
-  test("clicking the primary CTA navigates to onboarding", async ({ page }) => {
+  test("clicking the primary CTA navigates to the demo wizard", async ({ page }) => {
     await page.goto("/");
     const bookDemo = page.getByRole("link", { name: /book a demo/i }).first();
     await bookDemo.click();
-    await expect(page).toHaveURL(/\/onboarding$/);
+    await expect(page).toHaveURL(/\/book-demo$/);
     await expect(page.getByRole("heading", { level: 1 })).toContainText(
-      /portfolio/i
+      /15 minutes/i
     );
   });
 });

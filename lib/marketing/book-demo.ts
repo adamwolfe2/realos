@@ -3,18 +3,16 @@
 //
 // Single source of truth for every "Book a demo" / "Book a call" CTA on
 // the marketing site, the audit lead-magnet, and the platform footer.
-// Reads NEXT_PUBLIC_CAL_BOOK_URL (set in Vercel → Project Settings →
-// Environment Variables) and returns it as the destination.
 //
-// Falls back to /onboarding only when the env var is missing. NOTE: that
-// fallback routes prospects through the auth gate (/sign-up first,
-// /onboarding wizard second) and isn't the desired UX — set the env var.
+// 2026-08-12 (Adam): every demo CTA routes to the /book-demo qualification
+// wizard (contact info → feature interests → inline Cal booking on
+// Norman's calendar) instead of opening the Cal modal directly. The Cal
+// link itself (NEXT_PUBLIC_CAL_BOOK_URL) is consumed by the wizard's
+// final step and by BookCallCta on audit reports.
 // ---------------------------------------------------------------------------
 
-const FALLBACK_HREF = "/onboarding";
-
 export function getBookDemoHref(): string {
-  return process.env.NEXT_PUBLIC_CAL_BOOK_URL ?? FALLBACK_HREF;
+  return "/book-demo";
 }
 
 export function isExternalBookDemoHref(href?: string): boolean {

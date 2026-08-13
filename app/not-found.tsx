@@ -88,7 +88,7 @@ export default function NotFound() {
               Back to home
             </Link>
             <Link
-              href="/onboarding"
+              href="/book-demo"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
