@@ -34,10 +34,10 @@ export const metadata: Metadata = {
 };
 
 const ORBIT = [
-  { label: "ChatGPT", Mark: ChatGPTMark, angle: 0 },
-  { label: "Perplexity", Mark: PerplexityMark, angle: 90 },
-  { label: "Claude", Mark: ClaudeMark, angle: 180 },
-  { label: "Gemini", Mark: GeminiMark, angle: 270 },
+  { label: "ChatGPT", Mark: ChatGPTMark },
+  { label: "Perplexity", Mark: PerplexityMark },
+  { label: "Claude", Mark: ClaudeMark },
+  { label: "Gemini", Mark: GeminiMark },
 ] as const;
 
 const STATS = [
@@ -71,15 +71,25 @@ export default function AiVisibilityPage() {
       <style>{`
         @keyframes aiv-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
         .aiv-rise { animation: aiv-rise .7s cubic-bezier(.2,.8,.2,1) both; }
-        @keyframes aiv-orbit { to { transform: rotate(360deg); } }
-        @keyframes aiv-orbit-ccw { to { transform: rotate(-360deg); } }
-        .aiv-ring { animation: aiv-orbit 46s linear infinite; }
-        .aiv-sat { animation: aiv-orbit-ccw 46s linear infinite; }
-        @keyframes aiv-ping { 0% { transform: scale(1); opacity: .45; } 100% { transform: scale(1.9); opacity: 0; } }
-        .aiv-ping { animation: aiv-ping 2.6s cubic-bezier(.2,.8,.2,1) infinite; }
+        /* Headline engine ticker: the four engine names (word + mark)
+           stack in one inline-grid cell and take 3s turns. Rise-in from
+           below, rise-out above, exponential ease. Width is the widest
+           word so the headline never reflows. */
+        .aiv-tick { display: inline-grid; vertical-align: baseline; white-space: nowrap; }
+        .aiv-tick > span { grid-area: 1 / 1; display: inline-flex; align-items: center; gap: .18em;
+          justify-self: start; opacity: 0; animation: aiv-tick-cycle 12s cubic-bezier(.2,.8,.2,1) infinite; }
+        .aiv-tick svg { width: .72em; height: .72em; }
+        @keyframes aiv-tick-cycle {
+          0% { opacity: 0; transform: translateY(.45em); }
+          3.5% { opacity: 1; transform: translateY(0); }
+          22.5% { opacity: 1; transform: translateY(0); }
+          26% { opacity: 0; transform: translateY(-.45em); }
+          100% { opacity: 0; transform: translateY(.45em); }
+        }
         @media (prefers-reduced-motion: reduce) {
           .aiv-rise { animation: none; }
-          .aiv-ring, .aiv-sat, .aiv-ping { animation: none; }
+          .aiv-tick > span { animation: none; }
+          .aiv-tick > span:first-child { opacity: 1; transform: none; }
         }
       `}</style>
 
@@ -114,7 +124,16 @@ export default function AiVisibilityPage() {
                 letterSpacing: "-0.035em",
               }}
             >
-              Renters ask ChatGPT
+              Renters ask{" "}
+              <span className="sr-only">ChatGPT, Perplexity, Claude, and Gemini</span>
+              <span className="aiv-tick" aria-hidden>
+                {ORBIT.map(({ label, Mark }, i) => (
+                  <span key={label} style={{ animationDelay: `${i * 3}s` }}>
+                    {label}
+                    <Mark size={48} />
+                  </span>
+                ))}
+              </span>
               <br />
               where to live.
               <br />
@@ -131,79 +150,6 @@ export default function AiVisibilityPage() {
             </p>
           </div>
 
-          {/* Orbit — the four engines circling your property. */}
-          <div
-            className="aiv-rise relative mx-auto mt-6 md:mt-10"
-            style={{ animationDelay: "240ms", width: 340, height: 340 }}
-            role="img"
-            aria-label="ChatGPT, Perplexity, Claude, and Gemini orbiting your property"
-          >
-            {/* Ring lines */}
-            <div
-              aria-hidden
-              className="absolute rounded-full border"
-              style={{ inset: 28, borderColor: "#0f62fe26" }}
-            />
-            <div
-              aria-hidden
-              className="absolute rounded-full border border-dashed"
-              style={{ inset: 92, borderColor: "#0f62fe1f" }}
-            />
-
-            {/* Center: your property */}
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
-              <div className="relative mx-auto flex h-[92px] w-[92px] items-center justify-center rounded-full bg-white"
-                style={{ boxShadow: "0 2px 6px rgba(15,23,42,.08), 0 14px 34px rgba(15,98,254,.16), inset 0 0 0 1px #e0e0e0" }}>
-                <span aria-hidden className="aiv-ping absolute inset-0 rounded-full" style={{ boxShadow: "inset 0 0 0 1.5px #0f62fe" }} />
-                <span
-                  className="text-[11px] font-semibold uppercase leading-tight tracking-[.08em]"
-                  style={{ color: "#0f62fe" }}
-                >
-                  Your
-                  <br />
-                  property
-                </span>
-              </div>
-            </div>
-
-            {/* Orbiting engine marks */}
-            <div className="aiv-ring absolute" style={{ inset: 28 }}>
-              {ORBIT.map(({ label, Mark, angle }) => (
-                <div
-                  key={label}
-                  className="absolute left-1/2 top-1/2"
-                  style={{
-                    transform: `rotate(${angle}deg) translateX(142px)`,
-                  }}
-                >
-                  <div
-                    className="aiv-sat flex -translate-x-1/2 -translate-y-1/2 flex-col items-center"
-                    style={{ animationDelay: "0s" }}
-                  >
-                    <div
-                      className="flex h-16 w-16 items-center justify-center rounded-full bg-white transition-transform duration-300 hover:scale-110"
-                      style={{
-                        transform: `rotate(${-angle}deg)`,
-                        boxShadow:
-                          "0 1px 3px rgba(15,23,42,.08), 0 10px 26px rgba(15,23,42,.12), inset 0 0 0 1px #e0e0e0",
-                      }}
-                    >
-                      <Mark size={30} />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Engine labels under the orbit */}
-          <div className="aiv-rise mt-2 flex items-center justify-center gap-6" style={{ animationDelay: "320ms" }}>
-            {ORBIT.map(({ label }) => (
-              <span key={label} className="text-[12px] font-medium" style={{ color: "#6f6f6f" }}>
-                {label}
-              </span>
-            ))}
-          </div>
         </div>
       </section>
 
