@@ -76,7 +76,8 @@ export function ProductFrame({
               borderRadius: 2,
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: "#8d8d8d",
+              // was #8d8d8d — 3.31:1 at 11px, axe serious. #6f6f6f = 5.02:1.
+              color: "#6f6f6f",
               letterSpacing: "0.01em",
             }}
           >
