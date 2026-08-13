@@ -148,47 +148,55 @@ export default function AiVisibilityPage() {
               your market and your property, live, and show you exactly
               where you stand.
             </p>
+            <div className="aiv-rise mt-7" style={{ animationDelay: "220ms" }}>
+              <a
+                href="#run-audit"
+                className="inline-flex items-center justify-center px-7 py-3.5 text-[15px] font-semibold text-white"
+                style={{ backgroundColor: "#0f62fe", borderRadius: 2 }}
+              >
+                Run my free audit
+              </a>
+            </div>
           </div>
 
         </div>
       </section>
 
-      {/* ── Demo + form ──────────────────────────────────────────────── */}
+      {/* ── Demo, then form (Adam 2026-08-13: animation directly under
+          the H1 + button, wider; form stacked below it) ─────────────── */}
       <section className="relative">
-        <div className="mx-auto max-w-[1100px] px-4 pb-16 pt-12 md:px-8 md:pb-24 md:pt-16">
-          <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[1.08fr_1fr] lg:gap-12">
-            <div className="aiv-rise" style={{ animationDelay: "120ms" }}>
-              <AiAnswerDemo />
+        <div className="mx-auto max-w-[1100px] px-4 pb-16 pt-12 md:px-8 md:pb-24 md:pt-14">
+          <div className="aiv-rise mx-auto max-w-[860px]" style={{ animationDelay: "120ms" }}>
+            <AiAnswerDemo />
 
-              {/* Stat strip: single rule-divided band, mono numerals. */}
-              <div
-                className="mt-8 grid grid-cols-2 divide-y border-y sm:grid-cols-4 sm:divide-x sm:divide-y-0"
-                style={{ borderColor: "#e0e0e0" }}
-              >
-                {STATS.map((s) => (
-                  <div key={s.label} className="px-4 py-5 first:pl-0 sm:py-4" style={{ borderColor: "#e0e0e0" }}>
-                    <div
-                      className="text-[26px] tabular-nums"
-                      style={{ fontFamily: "var(--font-mono)", fontWeight: 500, color: "#161616", letterSpacing: "-0.02em" }}
-                    >
-                      <CountUp to={s.value} />
-                      {s.suffix}
-                    </div>
-                    <div className="mt-0.5 text-[11.5px] leading-snug" style={{ color: "#6f6f6f" }}>
-                      {s.label}
-                    </div>
+            {/* Stat strip: single rule-divided band, mono numerals. */}
+            <div
+              className="mt-8 grid grid-cols-2 divide-y border-y sm:grid-cols-4 sm:divide-x sm:divide-y-0"
+              style={{ borderColor: "#e0e0e0" }}
+            >
+              {STATS.map((s) => (
+                <div key={s.label} className="px-4 py-5 first:pl-0 sm:py-4" style={{ borderColor: "#e0e0e0" }}>
+                  <div
+                    className="text-[26px] tabular-nums"
+                    style={{ fontFamily: "var(--font-mono)", fontWeight: 500, color: "#161616", letterSpacing: "-0.02em" }}
+                  >
+                    <CountUp to={s.value} />
+                    {s.suffix}
                   </div>
-                ))}
-              </div>
+                  <div className="mt-0.5 text-[11.5px] leading-snug" style={{ color: "#6f6f6f" }}>
+                    {s.label}
+                  </div>
+                </div>
+              ))}
             </div>
+          </div>
 
-            <div id="run-audit" className="scroll-mt-24 lg:sticky lg:top-24">
-              <AiVisibilityForm />
-              <p className="mt-3 text-center text-[12px]" style={{ color: "#6f6f6f" }}>
-                Your report is generated from live engine responses, then a
-                human walks you through it if you want.
-              </p>
-            </div>
+          <div id="run-audit" className="mx-auto mt-12 max-w-[560px] scroll-mt-24 md:mt-16">
+            <AiVisibilityForm />
+            <p className="mt-3 text-center text-[12px]" style={{ color: "#6f6f6f" }}>
+              Your report is generated from live engine responses, then a
+              human walks you through it if you want.
+            </p>
           </div>
         </div>
       </section>
