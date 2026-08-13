@@ -74,10 +74,12 @@ export default function AiVisibilityPage() {
             >
               Free AI visibility audit
             </p>
-            <h1 className="text-[36px] font-semibold leading-[1.08] tracking-[-0.02em] md:text-[52px]">
-              When renters ask ChatGPT where to live,
+            <h1 className="text-[34px] font-semibold leading-[1.12] tracking-[-0.02em] md:text-[48px]">
+              <span className="block" style={{ textWrap: "balance" }}>
+                When renters ask ChatGPT where to live,
+              </span>
               <span
-                className="px-1"
+                className="mt-1 inline-block px-2"
                 style={{ backgroundColor: "#DBEAFE" }}
               >
                 does it say your name?
