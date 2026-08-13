@@ -34,6 +34,7 @@ export function VerdictFold({
   highSeverity,
   verdict,
   stats,
+  secondaryCta,
 }: {
   subject: string;
   generatedAtIso: string;
@@ -44,6 +45,9 @@ export function VerdictFold({
   verdict: ReactNode;
   /** Rule-divided mono stat band under the verdict. Max 3. */
   stats: FoldStat[];
+  /** Second button next to Book a call. Locked reports jump straight to
+   *  the email-unlock form; unlocked jump to the spine. */
+  secondaryCta: { href: string; label: string };
 }) {
   const tone = toneFor(score);
   const dateLabel = new Date(generatedAtIso).toLocaleDateString("en-US", {
@@ -118,11 +122,11 @@ export function VerdictFold({
                 Book a 15-min call
               </BookDemoLink>
               <a
-                href="#three-things"
+                href={secondaryCta.href}
                 className="inline-flex items-center justify-center border px-6 py-3 text-[14px] font-semibold"
                 style={{ borderColor: "#161616", color: "#161616", borderRadius: 2 }}
               >
-                See the 3 things below
+                {secondaryCta.label}
               </a>
             </div>
 

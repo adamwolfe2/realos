@@ -421,6 +421,11 @@ export default async function AuditViewerPage({
         highSeverity={highSeverity}
         verdict={verdict}
         stats={foldStats}
+        secondaryCta={
+          audit.email
+            ? { href: "#three-things", label: "See the 3 things below" }
+            : { href: "#full-report", label: "Unlock the full report" }
+        }
       />
 
       {/* ── 2. The spine: three things costing you leases ───────────── */}
@@ -442,7 +447,7 @@ export default async function AuditViewerPage({
 
       <div className="mx-auto max-w-[1080px] px-4 pb-12 md:px-6">
         {/* ── 4. The full report (email-gated, unchanged mechanics) ─── */}
-        <section className="mt-12">
+        <section id="full-report" className="mt-12 scroll-mt-24">
           <p
             className="text-[11px] font-mono uppercase tracking-[0.18em]"
             style={{ color: "#0f62fe", fontFamily: "var(--font-mono)" }}

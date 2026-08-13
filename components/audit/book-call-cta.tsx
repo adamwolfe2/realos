@@ -43,15 +43,17 @@ export function BookCallCta({
           }}
         >
           <div className="flex-1 min-w-0">
+            {/* One line on mobile — the wrapped title + subtitle made the
+                sticky bar eat a quarter of a phone viewport. */}
             <p
-              className="text-[13px] sm:text-sm font-semibold leading-tight"
+              className="text-[13px] sm:text-sm font-semibold leading-tight truncate"
               style={{ color: "#1E2A3A" }}
             >
               Book a 15-min call with {BRAND_NAME}
             </p>
             {subtitle ? (
               <p
-                className="text-[11px] sm:text-xs mt-0.5 truncate"
+                className="hidden sm:block text-xs mt-0.5 truncate"
                 style={{ color: "#6B7280" }}
               >
                 {subtitle}

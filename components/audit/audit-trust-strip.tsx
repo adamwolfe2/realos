@@ -62,7 +62,9 @@ export function AuditTrustStrip({
       aria-label={`Trust strip — what we ran for ${brandName}`}
     >
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        {/* Logo rail */}
+        {/* Logo rail. flex-wrap: on a 390px viewport the five marks +
+            labels overflowed the card and "Google AI Overview" bled off
+            the right edge (Adam, 2026-08-13 mobile pass). */}
         <div className="flex items-center gap-5">
           <span
             className="hidden sm:inline-flex shrink-0 items-center text-[10px] font-mono uppercase tracking-[0.16em]"
@@ -70,7 +72,7 @@ export function AuditTrustStrip({
           >
             We asked
           </span>
-          <ul className="flex items-center gap-3.5" aria-label="AI engines queried">
+          <ul className="flex flex-wrap items-center gap-x-3.5 gap-y-2" aria-label="AI engines queried">
             <li className="flex items-center gap-1.5">
               <ChatGPTMark size={20} />
               <span style={{ fontSize: 12.5, color: "#1E2A3A", fontWeight: 500 }}>
