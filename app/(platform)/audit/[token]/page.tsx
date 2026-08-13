@@ -363,13 +363,20 @@ export default async function AuditViewerPage({
       note: pool === "ai" ? competitorNote : undefined,
       evidence: pool ? pools[pool].node : undefined,
       evidenceLabel: pool ? pools[pool].label : undefined,
-      // /ai-visibility deep-links to #ai-search — anchor lives on the
-      // spine item that carries the engine evidence, expanded on load.
-      anchorId: pool === "ai" ? "ai-search" : undefined,
-      defaultOpen: pool === "ai",
+      // /ai-visibility deep-links to #ai-search, /reputation-report to
+      // #reputation — anchor lives on the spine item that carries the
+      // matching evidence, expanded on load.
+      anchorId:
+        pool === "ai"
+          ? "ai-search"
+          : pool === "reputation"
+            ? "reputation"
+            : undefined,
+      defaultOpen: pool === "ai" || pool === "reputation",
     };
   });
   const aiAnchorPlaced = spineItems.some((s) => s.anchorId === "ai-search");
+  const repAnchorPlaced = spineItems.some((s) => s.anchorId === "reputation");
 
   // Shared brief-shell sources — every data provider the pipeline
   // touched, rendered as clickable cards in the appendix. Trust by
@@ -471,6 +478,10 @@ export default async function AuditViewerPage({
           audits with no engine data at all. */}
       {!aiAnchorPlaced && !aiEvidence ? (
         <span id="ai-search" className="scroll-mt-24" />
+      ) : null}
+      {/* Same net for /reputation-report → #reputation. */}
+      {!repAnchorPlaced && !reputationEvidence ? (
+        <span id="reputation" className="scroll-mt-24" />
       ) : null}
 
       {/* ── 3. Narrative: markdown stripped before it ever renders ──── */}
@@ -606,6 +617,10 @@ export default async function AuditViewerPage({
             <AppendixItem
               label="Reputation scan"
               sublabel="mention sources"
+              // Carries the /reputation-report deep link when the spine
+              // didn't claim the mention evidence.
+              id={!repAnchorPlaced ? "reputation" : undefined}
+              defaultOpen={!repAnchorPlaced}
             >
               {reputationEvidence}
             </AppendixItem>
