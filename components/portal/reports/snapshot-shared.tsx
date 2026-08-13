@@ -286,7 +286,12 @@ export function coverageRows(s: ReportSnapshot): Array<{
           ? "live"
           : "prog",
     },
-    { label: "Zillow, Apartments.com: not wired", state: "off" },
+    // Suppressible (2026-08-13): on client-facing reports where these
+    // sources were deliberately never wired, "not wired" reads as a gap
+    // rather than transparency. Same key as the acquisition-list rows.
+    ...(s.hiddenSections?.includes("untracked-sources")
+      ? []
+      : [{ label: "Zillow, Apartments.com: not wired", state: "off" as const }]),
   ];
 }
 

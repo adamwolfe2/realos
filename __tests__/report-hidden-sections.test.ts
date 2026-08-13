@@ -51,6 +51,15 @@ describe("PropertyOnePager honors snapshot.hiddenSections", () => {
     expect(src).toMatch(/\{!hideUntracked\s*\?\s*\["Zillow", "Apartments\.com"\]/);
   });
 
+  it("coverage strip's 'Zillow, Apartments.com: not wired' row is gated too", () => {
+    // Caught by a real-snapshot render 2026-08-13: the acquisition rows
+    // were gated but this second surface still leaked the names.
+    const shared = read("../components/portal/reports/snapshot-shared.tsx");
+    expect(shared).toMatch(
+      /hiddenSections\?\.includes\("untracked-sources"\)[\s\S]{0,120}Zillow, Apartments\.com: not wired/,
+    );
+  });
+
   it("legacy snapshots (no hiddenSections) hide nothing", () => {
     // The flags must come only from the optional field with a [] default —
     // no other source may force-hide a section.
