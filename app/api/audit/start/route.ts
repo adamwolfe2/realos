@@ -42,6 +42,13 @@ const BodySchema = z.object({
     .record(z.string().max(64), QuizAnswerValue)
     .optional()
     .nullable(),
+  // Optional lead fields from the /ai-visibility landing page. brandName
+  // seeds the scan's AEO prompts (run route: audit.brandName ??
+  // brandNameFromDomain); email captured up-front means the report lands
+  // already unlocked. Both additive — the /audit quiz keeps posting
+  // without them.
+  brandName: z.string().trim().min(2).max(120).optional(),
+  email: z.string().trim().toLowerCase().email().max(200).optional(),
 });
 
 const DEDUPE_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
@@ -123,10 +130,18 @@ export async function POST(req: NextRequest) {
         shareToken,
         urlInput: parsed.data.url,
         domain,
+        brandName: parsed.data.brandName ?? undefined,
+        // Email supplied at start = lead captured before the scan runs.
+        // Mirror capture-email's behavior: stamp capturedAt + extend
+        // expiry to 365d so the row stays warm for remarketing.
+        email: parsed.data.email ?? undefined,
+        emailCapturedAt: parsed.data.email ? new Date() : undefined,
         ipAddress: getIp(req),
         userAgent: req.headers.get("user-agent") ?? null,
         status: ProspectAuditStatus.QUEUED,
-        expiresAt,
+        expiresAt: parsed.data.email
+          ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+          : expiresAt,
         quizAnswers: quizAnswers ?? undefined,
       },
       select: { id: true, shareToken: true, status: true },

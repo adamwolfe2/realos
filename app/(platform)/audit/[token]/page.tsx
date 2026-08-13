@@ -297,14 +297,18 @@ export default async function AuditViewerPage({
         {dps ? <PillarGrid pillars={dps.pillars} /> : null}
 
         {/* Per-engine AEO breakdown — branded marks for ChatGPT,
-            Perplexity, Claude, Gemini. The verdict surface. */}
-        {aeoEngines.length > 0 ? (
-          <AeoEngineBreakdown
-            rows={aeoEngines}
-            competitorsCited={aeoCompetitorsCited}
-            brandName={subject}
-          />
-        ) : null}
+            Perplexity, Claude, Gemini. The verdict surface. The
+            #ai-search anchor is the /ai-visibility landing page's
+            deep-link target; scroll-mt keeps it clear of the fixed nav. */}
+        <div id="ai-search" className="scroll-mt-24">
+          {aeoEngines.length > 0 ? (
+            <AeoEngineBreakdown
+              rows={aeoEngines}
+              competitorsCited={aeoCompetitorsCited}
+              brandName={subject}
+            />
+          ) : null}
+        </div>
 
         {/* Verbatim Google AI Overview for the brand-name query. */}
         {googleAio ? (

@@ -1124,8 +1124,8 @@ function FinalCta() {
               Start free
               <ArrowRight className="w-4 h-4" />
             </Link>
-            <Link href="/pricing" className="btn-secondary">
-              See pricing
+            <Link href="/ai-visibility" className="btn-secondary">
+              Run this on your property — free
             </Link>
           </div>
         </div>

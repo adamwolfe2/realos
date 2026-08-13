@@ -14,6 +14,7 @@ import {
   TrendingUp,
   Target,
   Globe,
+  Sparkles,
   Menu,
   X,
 } from "lucide-react";
@@ -65,6 +66,12 @@ const PRODUCT_LINKS: ProductLink[] = [
     label: "SEO / AEO",
     description: "Ranks on Google, gets cited when renters ask ChatGPT",
     icon: Search,
+  },
+  {
+    href: "/ai-visibility",
+    label: "Free AI Visibility Audit",
+    description: "See if ChatGPT recommends your property — in 2 minutes",
+    icon: Sparkles,
   },
   {
     // Reputation has no dedicated /features sub-page and no #reputation
