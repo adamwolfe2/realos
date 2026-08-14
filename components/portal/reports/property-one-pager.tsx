@@ -17,6 +17,7 @@ import {
   KpiCard,
   coverageRows,
   COVERAGE_DOT,
+  TILE_FILL,
 } from "./snapshot-shared";
 
 // ---------------------------------------------------------------------------
@@ -111,7 +112,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
 
       {/* Headline KPIs. Occupancy (turnover) + rent roll (money) drop out
           when suppressed; the grid tightens to the surviving cards. */}
-      <div className={`mt-5 grid grid-cols-2 gap-2.5 ${kpiCols[kpiColCount]}`}>
+      <div className={`mt-5 grid grid-cols-2 gap-2.5 ${TILE_FILL} ${kpiCols[kpiColCount]}`}>
         <KpiCard
           value={num(kpis.leads)}
           label="New leads"
@@ -194,7 +195,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
               next to real chatbot numbers reads as a measured result instead
               of absent data. Omit the claim; the coverage strip below still
               reports the pixel's actual state. */}
-          <div className={`grid grid-cols-2 gap-2.5 ${identifiedVisitors > 0 ? "sm:grid-cols-3 print:grid-cols-3" : ""}`}>
+          <div className={`grid grid-cols-2 gap-2.5 ${TILE_FILL} ${identifiedVisitors > 0 ? "sm:grid-cols-3 print:grid-cols-3" : ""}`}>
             <Stat value={num(chatbotStatsExtended?.conversations)} label="Chatbot conversations" />
             <Stat value={chatbotStatsExtended?.capturedRatePct != null ? pct(chatbotStatsExtended.capturedRatePct) : "—"} label="Lead capture rate" />
             {identifiedVisitors > 0 ? (
@@ -202,7 +203,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
             ) : null}
           </div>
           {snapshot.popupStats ? (
-            <div className={`mt-3.5 grid grid-cols-2 gap-2.5 ${snapshot.popupStats.converted > 0 ? "sm:grid-cols-4 print:grid-cols-4" : "sm:grid-cols-3 print:grid-cols-3"}`}>
+            <div className={`mt-3.5 grid grid-cols-2 gap-2.5 ${TILE_FILL} ${snapshot.popupStats.converted > 0 ? "sm:grid-cols-4 print:grid-cols-4" : "sm:grid-cols-3 print:grid-cols-3"}`}>
               {snapshot.popupStats.converted > 0 ? (
                 <>
                   <Stat value={num(snapshot.popupStats.shown)} label="Popups shown" />
@@ -242,7 +243,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
 
         <section>
           <SectionHeading>Leasing momentum</SectionHeading>
-          <div className={`grid grid-cols-2 gap-2.5 ${hideMoney ? "" : "sm:grid-cols-3 print:grid-cols-3"}`}>
+          <div className={`grid grid-cols-2 gap-2.5 ${TILE_FILL} ${hideMoney ? "" : "sm:grid-cols-3 print:grid-cols-3"}`}>
             <Stat value={num(lifecycleStats?.leasesSignedLast180d)} label="Signed, last 180 days" />
             <Stat value={num(lifecycleStats?.activeLeases)} label="Active leases" />
             {!hideMoney ? (
@@ -283,18 +284,23 @@ export function PropertyOnePager({ snapshot, property }: Props) {
         {!hideTurnover ? (
           <section>
             <SectionHeading>Renewals at risk</SectionHeading>
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 print:grid-cols-3">
+            <div className={`grid grid-cols-2 gap-2.5 sm:grid-cols-3 print:grid-cols-3 ${TILE_FILL}`}>
               <Stat value={num(renewalStats?.expiringNext30)} label="Expiring within 30 days" />
               <Stat value={num(renewalStats?.expiringNext60)} label="Expiring within 60 days" />
               <Stat value={num(renewalStats?.expiringNext120)} label="Expiring within 120 days" />
             </div>
-            <div className="mt-2.5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 print:grid-cols-3">
+            <div className={`mt-2.5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 print:grid-cols-3 ${TILE_FILL}`}>
               {!hideMoney ? (
                 <div className="col-span-2">
                   <Stat value={compactUsd(renewalStats?.monthlyAtRiskUsd)} label="Monthly revenue at risk, next 120 days" flag />
                 </div>
               ) : null}
-              <Stat value={num(occupancyStats?.onNotice)} label="Residents on notice" />
+              {/* Money tile above spans both mobile columns, which would
+                  strand this one half-width next to a hole — give it the
+                  full row on mobile too. */}
+              <div className="max-sm:col-span-2">
+                <Stat value={num(occupancyStats?.onNotice)} label="Residents on notice" />
+              </div>
             </div>
           </section>
         ) : null}

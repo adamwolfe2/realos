@@ -124,6 +124,11 @@ export { SourceGlyph };
 
 // --- small building blocks --------------------------------------------------
 
+// Mobile 2-up tile grids: an odd tile count leaves the last tile sitting next
+// to an empty cell. Stretch a lone last tile across both columns instead.
+// Scoped to max-sm so the 3/4-column sm+/print layouts are untouched.
+export const TILE_FILL = "max-sm:[&>*:last-child:nth-child(odd)]:col-span-2";
+
 export function SectionHeading({
   children,
   meta,

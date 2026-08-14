@@ -26,6 +26,7 @@ import {
   Sparkline,
   coverageRows,
   COVERAGE_DOT,
+  TILE_FILL,
 } from "../snapshot-shared";
 
 // ---------------------------------------------------------------------------
@@ -318,7 +319,7 @@ function AcquisitionSection(s: ReportSnapshot): React.ReactNode {
             printing "0", and drop it from the heading too so the section
             doesn't promise a number it isn't showing. */}
         <div
-          className={`grid grid-cols-2 gap-2.5 ${identifiedVisitors > 0 ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}
+          className={`grid grid-cols-2 gap-2.5 ${TILE_FILL} ${identifiedVisitors > 0 ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}
         >
           <Stat value={num(chat?.conversations)} label="Conversations" />
           <Stat value={chat?.capturedRatePct != null ? pct(chat.capturedRatePct) : "—"} label="Lead capture rate" />
@@ -381,7 +382,7 @@ function TrafficSection(s: ReportSnapshot): React.ReactNode {
       <Card>
         <SectionHeading meta="trailing 28 days">Daily site traffic</SectionHeading>
         {trend.length ? <Sparkline values={trend} /> : <Empty>No traffic data yet.</Empty>}
-        <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+        <div className={`mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3 ${TILE_FILL}`}>
           <Stat value={num(s.kpis.organicSessions)} label="Organic sessions" />
           <Stat value={num(pages.length)} label="Tracked pages" />
           <Stat value={num(queries.length)} label="Ranking queries" />
@@ -517,7 +518,7 @@ function RenewalsSection(s: ReportSnapshot): React.ReactNode {
   const occ = s.occupancyStats;
   return (
     <Panel>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className={`grid grid-cols-2 gap-3 sm:grid-cols-3 ${TILE_FILL}`}>
         <Stat value={num(r?.expiringNext30)} label="Expiring within 30 days" />
         <Stat value={num(r?.expiringNext60)} label="Expiring within 60 days" />
         <Stat value={num(r?.expiringNext120)} label="Expiring within 120 days" />
