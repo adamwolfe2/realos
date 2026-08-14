@@ -231,6 +231,7 @@ export function AiVisibilityForm() {
           placeholder="e.g. The Standard at Berkeley"
           type="text"
           autoComplete="off"
+          required={false}
         />
       </div>
 
@@ -268,6 +269,7 @@ function Field({
   type,
   autoComplete,
   inputMode,
+  required = true,
 }: {
   label: string;
   value: string;
@@ -276,6 +278,7 @@ function Field({
   type: string;
   autoComplete: string;
   inputMode?: "url";
+  required?: boolean;
 }) {
   return (
     <label className="block">
@@ -287,7 +290,7 @@ function Field({
       </span>
       <input
         type={type}
-        required
+        required={required}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}

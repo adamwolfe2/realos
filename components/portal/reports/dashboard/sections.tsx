@@ -517,7 +517,7 @@ function RenewalsSection(s: ReportSnapshot): React.ReactNode {
   const occ = s.occupancyStats;
   return (
     <Panel>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <Stat value={num(r?.expiringNext30)} label="Expiring within 30 days" />
         <Stat value={num(r?.expiringNext60)} label="Expiring within 60 days" />
         <Stat value={num(r?.expiringNext120)} label="Expiring within 120 days" />
@@ -539,7 +539,7 @@ function ReputationSection(s: ReportSnapshot): React.ReactNode {
   return (
     <Panel>
       <Card>
-        <div className="flex items-baseline gap-2.5">
+        <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1.5">
           <span className="font-mono text-[26px] font-semibold leading-none tracking-tight tabular-nums text-foreground">
             {r.overallRating != null ? r.overallRating.toFixed(1) : "—"}
           </span>

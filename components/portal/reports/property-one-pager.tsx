@@ -67,10 +67,24 @@ export function PropertyOnePager({ snapshot, property }: Props) {
   const trafficIsWeekly = (trafficTrend?.length ?? 0) > 56;
   const trafficValues = trafficIsWeekly ? bucketWeekly(trafficTrend!) : trafficTrend;
 
+  // Responsive note: every multi-column zone stacks (or drops to 2-up) below
+  // `sm`, restores at `sm:`, and is pinned again with a `print:` variant.
+  // The print viewport is US Letter minus 0.5in margins ≈ 720px — wider than
+  // `sm` (640) but narrower than `md` (768) — so sm: alone would keep print
+  // intact today, and the print: pin keeps it intact if margins ever grow.
+  // KPI count is dynamic (2-4 surviving cards); Tailwind needs literal class
+  // names, hence the lookup instead of string interpolation.
+  const kpiColCount = 2 + (hideTurnover ? 0 : 1) + (hideMoney ? 0 : 1);
+  const kpiCols: Record<number, string> = {
+    2: "sm:grid-cols-2 print:grid-cols-2",
+    3: "sm:grid-cols-3 print:grid-cols-3",
+    4: "sm:grid-cols-4 print:grid-cols-4",
+  };
+
   return (
-    <div className="mx-auto w-full max-w-[880px] rounded-[2px] border border-border bg-card p-6 text-foreground shadow-sm print:border-0 print:shadow-none">
+    <div className="mx-auto w-full max-w-[880px] rounded-[2px] border border-border bg-card p-4 text-foreground shadow-sm sm:p-6 print:border-0 print:p-6 print:shadow-none">
       {/* Header */}
-      <header className="flex items-start justify-between border-b border-border pb-4">
+      <header className="flex items-start justify-between gap-4 border-b border-border pb-4">
         <div>
           <h1 className="text-[21px] font-semibold leading-[1.05] tracking-tight">
             Marketing &amp; Performance Snapshot
@@ -97,12 +111,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
 
       {/* Headline KPIs. Occupancy (turnover) + rent roll (money) drop out
           when suppressed; the grid tightens to the surviving cards. */}
-      <div
-        className="mt-5 grid gap-2.5"
-        style={{
-          gridTemplateColumns: `repeat(${2 + (hideTurnover ? 0 : 1) + (hideMoney ? 0 : 1)}, minmax(0, 1fr))`,
-        }}
-      >
+      <div className={`mt-5 grid grid-cols-2 gap-2.5 ${kpiCols[kpiColCount]}`}>
         <KpiCard
           value={num(kpis.leads)}
           label="New leads"
@@ -149,7 +158,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
       </div>
 
       {/* Acquisition + Leasing momentum */}
-      <div className="mt-5 grid grid-cols-[1.1fr_0.9fr] gap-6">
+      <div className="mt-5 grid grid-cols-1 gap-6 sm:grid-cols-[1.1fr_0.9fr] print:grid-cols-[1.1fr_0.9fr]">
         <section>
           <SectionHeading meta="first-touch">Lead acquisition</SectionHeading>
           <div className="mb-4 flex flex-col gap-2.5 text-[12.5px]">
@@ -185,7 +194,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
               next to real chatbot numbers reads as a measured result instead
               of absent data. Omit the claim; the coverage strip below still
               reports the pixel's actual state. */}
-          <div className={`grid gap-2.5 ${identifiedVisitors > 0 ? "grid-cols-3" : "grid-cols-2"}`}>
+          <div className={`grid grid-cols-2 gap-2.5 ${identifiedVisitors > 0 ? "sm:grid-cols-3 print:grid-cols-3" : ""}`}>
             <Stat value={num(chatbotStatsExtended?.conversations)} label="Chatbot conversations" />
             <Stat value={chatbotStatsExtended?.capturedRatePct != null ? pct(chatbotStatsExtended.capturedRatePct) : "—"} label="Lead capture rate" />
             {identifiedVisitors > 0 ? (
@@ -193,7 +202,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
             ) : null}
           </div>
           {snapshot.popupStats ? (
-            <div className={`mt-3.5 grid gap-2.5 ${snapshot.popupStats.converted > 0 ? "grid-cols-4" : "grid-cols-3"}`}>
+            <div className={`mt-3.5 grid grid-cols-2 gap-2.5 ${snapshot.popupStats.converted > 0 ? "sm:grid-cols-4 print:grid-cols-4" : "sm:grid-cols-3 print:grid-cols-3"}`}>
               {snapshot.popupStats.converted > 0 ? (
                 <>
                   <Stat value={num(snapshot.popupStats.shown)} label="Popups shown" />
@@ -233,7 +242,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
 
         <section>
           <SectionHeading>Leasing momentum</SectionHeading>
-          <div className={`grid gap-2.5 ${hideMoney ? "grid-cols-2" : "grid-cols-3"}`}>
+          <div className={`grid grid-cols-2 gap-2.5 ${hideMoney ? "" : "sm:grid-cols-3 print:grid-cols-3"}`}>
             <Stat value={num(lifecycleStats?.leasesSignedLast180d)} label="Signed, last 180 days" />
             <Stat value={num(lifecycleStats?.activeLeases)} label="Active leases" />
             {!hideMoney ? (
@@ -270,16 +279,16 @@ export function PropertyOnePager({ snapshot, property }: Props) {
           Leasing zone above so the two left/right boundaries line up as
           the page scans down. When turnover is suppressed, reputation
           takes the full width. */}
-      <div className={`mt-5 grid gap-6 ${hideTurnover ? "grid-cols-1" : "grid-cols-[1.1fr_0.9fr]"}`}>
+      <div className={`mt-5 grid grid-cols-1 gap-6 ${hideTurnover ? "" : "sm:grid-cols-[1.1fr_0.9fr] print:grid-cols-[1.1fr_0.9fr]"}`}>
         {!hideTurnover ? (
           <section>
             <SectionHeading>Renewals at risk</SectionHeading>
-            <div className="grid grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 print:grid-cols-3">
               <Stat value={num(renewalStats?.expiringNext30)} label="Expiring within 30 days" />
               <Stat value={num(renewalStats?.expiringNext60)} label="Expiring within 60 days" />
               <Stat value={num(renewalStats?.expiringNext120)} label="Expiring within 120 days" />
             </div>
-            <div className="mt-2.5 grid grid-cols-3 gap-2.5">
+            <div className="mt-2.5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 print:grid-cols-3">
               {!hideMoney ? (
                 <div className="col-span-2">
                   <Stat value={compactUsd(renewalStats?.monthlyAtRiskUsd)} label="Monthly revenue at risk, next 120 days" flag />
@@ -294,7 +303,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
           <SectionHeading>Online reputation</SectionHeading>
           {reputationStats ? (
             <>
-              <div className="mb-3 flex items-baseline gap-2.5">
+              <div className="mb-3 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
                 <span className="font-mono text-[22px] font-semibold leading-none tracking-tight tabular-nums">
                   {reputationStats.overallRating != null ? reputationStats.overallRating.toFixed(1) : "—"}
                 </span>
@@ -356,7 +365,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
             </b>{" "}
             AI answers ({pct((aeoStats.cited / aeoStats.totalChecks) * 100)}) across the major engines. Competitor properties appeared in {aeoStats.competitorCited}.
           </p>
-          <div className="grid grid-cols-[1.25fr_1fr] gap-7">
+          <div className="grid grid-cols-1 gap-7 sm:grid-cols-[1.25fr_1fr] print:grid-cols-[1.25fr_1fr]">
             <div>
               <div className="flex flex-col gap-2.5">
                 {(aeoStats.byEngine ?? []).map((row) => (

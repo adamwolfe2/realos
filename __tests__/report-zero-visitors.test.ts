@@ -87,8 +87,10 @@ describe("visitor tiles omit themselves at zero", () => {
       /identifiedVisitors > 0 \? \(\s*<Stat value=\{num\(identifiedVisitors\)\} label="Identified visitors"/,
     );
     // ...and the grid must reflow so the omitted tile doesn't leave a hole.
+    // (2026-08-14: mobile stacks at 2-up always; sm/print widen to 3 only
+    // when the visitor tile is present.)
     expect(src).toContain(
-      'identifiedVisitors > 0 ? "grid-cols-3" : "grid-cols-2"',
+      'identifiedVisitors > 0 ? "sm:grid-cols-3 print:grid-cols-3" : ""',
     );
     // The old unconditional form must not come back.
     expect(src).not.toContain(

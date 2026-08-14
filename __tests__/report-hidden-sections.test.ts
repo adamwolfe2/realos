@@ -33,9 +33,13 @@ describe("PropertyOnePager honors snapshot.hiddenSections", () => {
   });
 
   it("reflows the KPI grid instead of leaving holes", () => {
+    // Column count is derived from the surviving cards (2026-08-14: moved
+    // from an inline gridTemplateColumns style to a literal-class lookup so
+    // the grid can stack to 2-up on mobile without the inline style winning).
     expect(src).toContain(
-      "repeat(${2 + (hideTurnover ? 0 : 1) + (hideMoney ? 0 : 1)}, minmax(0, 1fr))",
+      "const kpiColCount = 2 + (hideTurnover ? 0 : 1) + (hideMoney ? 0 : 1)",
     );
+    expect(src).toContain("${kpiCols[kpiColCount]}");
   });
 
   it("gates past-due balance and revenue-at-risk behind !hideMoney", () => {
