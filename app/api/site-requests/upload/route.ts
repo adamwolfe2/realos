@@ -21,7 +21,21 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MAX_BYTES = 25 * 1024 * 1024; // 25MB per file
-const ALLOWED_MIME_PREFIXES = ["image/", "application/pdf"];
+// Exact allowlist, NOT an "image/" prefix. The prefix admitted
+// `image/svg+xml`, and this route is unauthenticated and writes to a PUBLIC
+// blob store that serves objects with their own content-type — so an SVG
+// carrying <script> would execute when opened directly on
+// *.public.blob.vercel-storage.com (hosted stored-XSS / phishing under a
+// domain that looks like ours). Mirrors the exact allowlist in lib/uploads.ts,
+// which deliberately excludes SVG/HTML. (security-audit-remediation.)
+const ALLOWED_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/avif",
+  "application/pdf",
+]);
 
 // 15 uploads per IP per hour. Mirrors the checkRateLimit + softFallback
 // pattern in lib/rate-limit.ts, built locally rather than added there so
@@ -85,9 +99,9 @@ export async function POST(req: Request) {
   }
 
   const mimeType = file.type || "application/octet-stream";
-  if (!ALLOWED_MIME_PREFIXES.some((p) => mimeType.startsWith(p))) {
+  if (!ALLOWED_MIME_TYPES.has(mimeType)) {
     return NextResponse.json(
-      { ok: false, error: `File type "${mimeType}" not allowed. Images and PDFs only.` },
+      { ok: false, error: `File type "${mimeType}" not allowed. Images (JPEG/PNG/WebP/GIF/AVIF) and PDFs only.` },
       { status: 415 },
     );
   }
@@ -103,6 +117,9 @@ export async function POST(req: Request) {
   try {
     const blob = await putPublic(`${folder}/${safeName}`, file, {
       addRandomSuffix: true,
+      // Pin the served content-type to the validated allowlist value so the
+      // object can never be served as anything executable.
+      contentType: mimeType,
     });
     return NextResponse.json({
       ok: true,

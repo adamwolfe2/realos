@@ -23,6 +23,24 @@ import { resolveTenantByHostname } from "./resolve";
 export type OriginGuardOk = { ok: true; hostname: string };
 export type OriginGuardFail = { ok: false; status: number; error: string };
 
+/**
+ * Whether the CHATBOT_ALLOW_ANY_ORIGIN dev/preview escape hatch is active.
+ * The env flag disables the tenant origin binding — the primary anti-abuse
+ * control on the public chatbot/popup endpoints — so it must NEVER take
+ * effect in production, even if the var is set by mistake. Mirrors the
+ * hard production refusal on DEMO_MODE in lib/tenancy/scope.ts.
+ * (security-audit-remediation.)
+ */
+export function chatbotOriginBypassEnabled(): boolean {
+  if (
+    process.env.VERCEL_ENV === "production" ||
+    process.env.NODE_ENV === "production"
+  ) {
+    return false;
+  }
+  return process.env.CHATBOT_ALLOW_ANY_ORIGIN === "true";
+}
+
 export async function requireMatchingOrigin(
   req: NextRequest,
   claimedOrgId: string,

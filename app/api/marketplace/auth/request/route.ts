@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createSignInLink } from "@/lib/marketplace/auth";
 import { sendSignInLinkEmail } from "@/lib/marketplace/emails";
+import { publicSignupLimiter, checkRateLimit, getIp } from "@/lib/rate-limit";
 
 // ---------------------------------------------------------------------------
 // POST /api/marketplace/auth/request
@@ -20,6 +21,17 @@ const RequestSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  // Rate-limit per IP (fail-closed in prod). Each call mints/updates a
+  // MarketplaceBuyer row and sends an email, so without this an attacker can
+  // enumerate/create rows and blast email through our Resend account at will.
+  const { allowed } = await checkRateLimit(publicSignupLimiter, getIp(req));
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "rate_limited" },
+      { status: 429, headers: { "Retry-After": "3600" } },
+    );
+  }
+
   let body: unknown;
   try {
     body = await req.json();

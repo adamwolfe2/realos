@@ -9,6 +9,11 @@ import { AuditAction, PixelRequestStatus, Prisma } from "@prisma/client";
 import { sendPixelReadyCustomerEmail } from "@/lib/email/pixel-emails";
 import { soleActiveProperty } from "@/lib/properties/sole-active";
 import { backfillPropertyId } from "@/lib/tenancy/property-filter";
+import {
+  INTERNAL_CALL,
+  assertInternalCall,
+  type InternalCall,
+} from "@/lib/security/internal-call";
 
 // ---------------------------------------------------------------------------
 // Agency-only Cursive (the upstream pixel provider) integration management.
@@ -318,7 +323,12 @@ export type SyncSegmentResult =
 // (orgId, cursiveVisitorId).
 export async function runCursiveSegmentSync(
   orgId: string,
+  internal: InternalCall,
 ): Promise<SyncSegmentResult> {
+  // Fails closed if invoked directly as a Server Action — see
+  // lib/security/internal-call.ts. This helper takes orgId from its argument
+  // and does no scope check, so it must only run behind an authorized caller.
+  assertInternalCall(internal);
   // Segment sync currently runs against the legacy org-wide row.
   // When per-property segments come online (each property having its
   // own AL segment) this will need to fan out per row.
@@ -428,7 +438,7 @@ export async function syncCursiveSegment(
     throw err;
   }
 
-  const result = await runCursiveSegmentSync(orgId);
+  const result = await runCursiveSegmentSync(orgId, INTERNAL_CALL);
   if (!result.ok) return result;
 
   await prisma.auditEvent.create({

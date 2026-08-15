@@ -24,6 +24,11 @@ import {
 } from "@prisma/client";
 import { computeNextRunAt } from "@/lib/audiences/schedule";
 import { isAllowedUrlWithDns } from "@/lib/security/ssrf-guard";
+import {
+  INTERNAL_CALL,
+  assertInternalCall,
+  type InternalCall,
+} from "@/lib/security/internal-call";
 
 // ---------------------------------------------------------------------------
 // Insight computation. the upstream pixel provider returns a list of members per segment
@@ -526,14 +531,17 @@ export async function pushSegmentToDestination(
   input: PushSegmentInput,
 ): Promise<PushResult> {
   const scope = await requireAudienceSyncOrThrow();
-  return executeSegmentPush({
-    orgId: scope.orgId,
-    segmentId: input.segmentId,
-    destinationId: input.destinationId,
-    geoFilter: input.geoFilter,
-    maxMembers: input.maxMembers,
-    triggeredByUserId: scope.userId,
-  });
+  return executeSegmentPush(
+    {
+      orgId: scope.orgId,
+      segmentId: input.segmentId,
+      destinationId: input.destinationId,
+      geoFilter: input.geoFilter,
+      maxMembers: input.maxMembers,
+      triggeredByUserId: scope.userId,
+    },
+    INTERNAL_CALL,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -553,7 +561,12 @@ export type ExecuteSegmentPushInput = {
 
 export async function executeSegmentPush(
   input: ExecuteSegmentPushInput,
+  internal: InternalCall,
 ): Promise<PushResult> {
+  // Fails closed if invoked directly as a Server Action — see
+  // lib/security/internal-call.ts. This helper takes orgId from its argument
+  // and does no scope check, so it must only run behind an authorized caller.
+  assertInternalCall(internal);
   const segment = await prisma.audienceSegment.findFirst({
     where: { id: input.segmentId, orgId: input.orgId },
   });

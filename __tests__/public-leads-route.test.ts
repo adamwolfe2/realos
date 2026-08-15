@@ -40,6 +40,7 @@ vi.mock("@/lib/rate-limit", () => ({
 
 vi.mock("@/lib/tenancy/origin-guard", () => ({
   requireMatchingOrigin: vi.fn(async () => ({ ok: true, hostname: "test" })),
+  chatbotOriginBypassEnabled: vi.fn(() => false),
 }));
 
 vi.mock("@/lib/email/lead-emails", () => ({

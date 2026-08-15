@@ -46,6 +46,7 @@ vi.mock("@/lib/notifications/create", () => ({
 
 vi.mock("@/lib/tenancy/origin-guard", () => ({
   requireMatchingOrigin: vi.fn(async () => ({ ok: true, hostname: "test" })),
+  chatbotOriginBypassEnabled: vi.fn(() => false),
 }));
 
 const resolveChatbotConfig = vi.fn();

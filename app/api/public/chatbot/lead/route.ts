@@ -18,7 +18,10 @@ import { notifyChatbotLeadCaptured } from "@/lib/notifications/create";
 import { LeadNotifyChannel } from "@prisma/client";
 import { resolvePropertyForChatPage } from "@/lib/chatbot/property-attribution";
 import { resolveChatbotConfig } from "@/lib/chatbot/resolve-config";
-import { requireMatchingOrigin } from "@/lib/tenancy/origin-guard";
+import {
+  requireMatchingOrigin,
+  chatbotOriginBypassEnabled,
+} from "@/lib/tenancy/origin-guard";
 
 // POST /api/public/chatbot/lead
 //
@@ -123,7 +126,7 @@ export async function POST(req: NextRequest) {
   // tenant from any origin. The legit embed loads from the tenant's own site,
   // whose Origin matches their custom domain / {slug}.{PLATFORM_DOMAIN}.
   // CHATBOT_ALLOW_ANY_ORIGIN=true bypasses for local/preview dev. (Codex.)
-  if (process.env.CHATBOT_ALLOW_ANY_ORIGIN !== "true") {
+  if (!chatbotOriginBypassEnabled()) {
     const guard = await requireMatchingOrigin(req, orgId);
     if (!guard.ok) {
       return NextResponse.json(

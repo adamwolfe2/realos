@@ -1,4 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+// Static import so the `unique symbol` type is preserved (a dynamic import
+// widens it to `symbol`, which the token parameter rejects).
+import { INTERNAL_CALL } from "@/lib/security/internal-call";
 
 // ---------------------------------------------------------------------------
 // Segment-sync property stamping (2026-08-02 SG focus).
@@ -90,7 +93,7 @@ describe("runCursiveSegmentSync — sole-launched-property stamping", () => {
   it("stamps a newly created visitor when the org has exactly one launched property", async () => {
     h.property.findMany.mockResolvedValueOnce([{ id: "prop_tc", name: "TC" }]);
 
-    const result = await runCursiveSegmentSync("org_1");
+    const result = await runCursiveSegmentSync("org_1", INTERNAL_CALL);
 
     expect(result.ok).toBe(true);
     expect(h.visitor.create).toHaveBeenCalledTimes(1);
@@ -103,7 +106,7 @@ describe("runCursiveSegmentSync — sole-launched-property stamping", () => {
   it("requires launchStatus LIVE, not just lifecycle ACTIVE — an unlaunched building has no pixel-bearing site", async () => {
     h.property.findMany.mockResolvedValueOnce([{ id: "prop_tc", name: "TC" }]);
 
-    await runCursiveSegmentSync("org_1");
+    await runCursiveSegmentSync("org_1", INTERNAL_CALL);
 
     // The sole-property query itself must exclude ONBOARDING/DRAFT/PAUSED
     // rows; without this an org whose single ACTIVE building is still
@@ -123,7 +126,7 @@ describe("runCursiveSegmentSync — sole-launched-property stamping", () => {
       { id: "prop_b", name: "B" },
     ]);
 
-    await runCursiveSegmentSync("org_1");
+    await runCursiveSegmentSync("org_1", INTERNAL_CALL);
 
     expect(h.visitor.create).toHaveBeenCalledTimes(1);
     expect(h.visitor.create.mock.calls[0][0].data).toMatchObject({
@@ -146,7 +149,7 @@ describe("runCursiveSegmentSync — sole-launched-property stamping", () => {
       lastSeenAt: new Date(0),
     });
 
-    await runCursiveSegmentSync("org_1");
+    await runCursiveSegmentSync("org_1", INTERNAL_CALL);
 
     expect(h.visitor.update).toHaveBeenCalledTimes(1);
     expect(h.visitor.update.mock.calls[0][0].data).toMatchObject({
@@ -169,7 +172,7 @@ describe("runCursiveSegmentSync — sole-launched-property stamping", () => {
       lastSeenAt: new Date(0),
     });
 
-    await runCursiveSegmentSync("org_1");
+    await runCursiveSegmentSync("org_1", INTERNAL_CALL);
 
     expect(h.visitor.update).toHaveBeenCalledTimes(1);
     // backfillPropertyId keeps the existing binding (first-write-wins):
@@ -195,7 +198,7 @@ describe("runCursiveSegmentSync — sole-launched-property stamping", () => {
       lastEnrichedAt: null,
     });
 
-    await runCursiveSegmentSync("org_1");
+    await runCursiveSegmentSync("org_1", INTERNAL_CALL);
 
     const data = h.visitor.update.mock.calls[0][0].data;
     expect(data.lastEnrichedAt).toBeInstanceOf(Date);

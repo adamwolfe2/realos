@@ -11,6 +11,10 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { scrape as firecrawlScrape } from "@/lib/intelligence/firecrawl";
+import {
+  assertPublicHttpUrl,
+  safeFetchFollowingRedirects,
+} from "@/lib/security/ssrf-guard";
 import { runOnPageAuditChecks, type OnPageAuditResult } from "./onpage-audit";
 import type { Prisma } from "@prisma/client";
 
@@ -96,28 +100,30 @@ export function normalizeUrl(input: string): string | null {
 
 async function fetchHtmlDirect(url: string): Promise<string | null> {
   try {
-    const res = await fetch(url, {
-      method: "GET",
-      headers: {
-        "User-Agent":
-          "LeaseStackAEOBot/1.0 (+https://www.leasestack.co/ — AEO audit)",
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    // SSRF: normalizeUrl only rejects LITERAL private IPs/hostnames via regex —
+    // a public hostname whose A/AAAA record resolves to 127.0.0.1 /
+    // 169.254.169.254 / an RFC-1918 address passes it and would otherwise be
+    // fetched directly, leaking the response back to the caller. Re-validate
+    // through the central DNS-resolving guard (resolves every A/AAAA record,
+    // blocks private/metadata ranges) before the fetch, and follow redirects
+    // via the wrapper that re-validates each hop's Location.
+    await assertPublicHttpUrl(url);
+    const res = await safeFetchFollowingRedirects(
+      url,
+      {
+        method: "GET",
+        headers: {
+          "User-Agent":
+            "LeaseStackAEOBot/1.0 (+https://www.leasestack.co/ — AEO audit)",
+          Accept:
+            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        },
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       },
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      // Disable automatic redirect following so a 30x to a private
-      // hostname doesn't bypass our SSRF guard. We'll re-fetch from the
-      // Location header through normalizeUrl + this function if needed.
-      redirect: "manual",
-    });
-    if (res.status >= 300 && res.status < 400) {
-      const loc = res.headers.get("location");
-      if (!loc) return null;
-      const next = normalizeUrl(new URL(loc, url).toString());
-      if (!next || next === url) return null;
-      // One redirect hop only — keeps the audit deterministic and bounds
-      // the time budget. Real-world audit targets shouldn't need more.
-      return fetchHtmlDirectOnce(next);
-    }
+      // One redirect hop only — keeps the audit deterministic and bounds the
+      // time budget. Real-world audit targets shouldn't need more.
+      { maxHops: 1 },
+    );
     if (!res.ok) return null;
     return await readBodyWithCap(res);
   } catch (err) {
@@ -125,27 +131,6 @@ async function fetchHtmlDirect(url: string): Promise<string | null> {
       `[aeo.onpage] direct fetch failed for ${url}:`,
       err instanceof Error ? err.message : err,
     );
-    return null;
-  }
-}
-
-async function fetchHtmlDirectOnce(url: string): Promise<string | null> {
-  // Same as fetchHtmlDirect but without recursion — used for the
-  // post-redirect single hop.
-  try {
-    const res = await fetch(url, {
-      method: "GET",
-      headers: {
-        "User-Agent":
-          "LeaseStackAEOBot/1.0 (+https://www.leasestack.co/ — AEO audit)",
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      },
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      redirect: "manual",
-    });
-    if (!res.ok) return null;
-    return await readBodyWithCap(res);
-  } catch {
     return null;
   }
 }
