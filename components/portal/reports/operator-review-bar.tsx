@@ -108,17 +108,31 @@ export function OperatorReviewBar({
               Open public view ↗
             </a>
           ) : null}
-          <span className="text-xs font-semibold text-primary">
-            {open ? "Hide" : status === "shared" ? "Edit" : "Open"} ▾
+          <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary">
+            {open ? "Hide" : status === "shared" ? "Edit" : "Open"}
+            <span
+              aria-hidden="true"
+              className="inline-block transition-transform duration-200"
+              style={{ transform: open ? "rotate(180deg)" : "none" }}
+            >
+              ▾
+            </span>
           </span>
         </div>
       </button>
+      {/* Grid-rows collapse: height animates 0fr ↔ 1fr instead of the old
+          `hidden` attribute hard-cut. Content stays mounted (form state
+          survives collapse); inert blocks interaction while closed. */}
       <div
         id="operator-review-content"
-        hidden={!open}
-        className="border-t border-border bg-secondary"
+        inert={!open || undefined}
+        aria-hidden={!open}
+        className="grid transition-[grid-template-rows] duration-[250ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+        style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
       >
-        <div className="p-4 space-y-4">{children}</div>
+        <div className="min-h-0 overflow-hidden border-t border-border bg-secondary">
+          <div className="p-4 space-y-4">{children}</div>
+        </div>
       </div>
     </section>
   );

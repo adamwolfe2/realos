@@ -159,7 +159,7 @@ export function Stat({
   flag?: boolean;
 }) {
   return (
-    <div className="rounded-[2px] border border-border bg-card px-3 py-2">
+    <div className="rounded-[2px] border border-border bg-card px-3 py-2 transition-[border-color,transform] duration-[120ms] hover:-translate-y-px hover:border-[#c6c6c6]">
       <div
         className={`font-mono text-[16px] font-semibold leading-none tracking-tight tabular-nums ${flag ? "text-destructive" : "text-foreground"}`}
       >
@@ -169,6 +169,33 @@ export function Stat({
         {label}
       </div>
     </div>
+  );
+}
+
+// Star rating that tells the truth: filled stars round to the actual rating,
+// the remainder renders hollow. (Previously a literal "★★★★★" string — a 3.1
+// property displayed five full stars.) Pure text, so print/PDF safe.
+export function Stars({
+  rating,
+  className,
+}: {
+  rating: number | null | undefined;
+  className?: string;
+}) {
+  const full =
+    rating != null ? Math.max(0, Math.min(5, Math.round(rating))) : 0;
+  return (
+    <span
+      className={`tracking-wide text-primary ${className ?? ""}`}
+      aria-label={
+        rating != null ? `${rating.toFixed(1)} out of 5 stars` : "No rating yet"
+      }
+    >
+      <span aria-hidden="true">
+        {"★".repeat(full)}
+        {"☆".repeat(5 - full)}
+      </span>
+    </span>
   );
 }
 
@@ -192,8 +219,13 @@ export function Sparkline({ values }: { values: number[] }) {
       {values.map((v, i) => (
         <span
           key={i}
-          className={`min-h-[2px] flex-1 ${v === max ? "bg-primary" : "bg-primary/25"}`}
-          style={{ height: `${Math.max(2, Math.round((v / max) * 100))}%` }}
+          className={`ls-col-grow min-h-[2px] flex-1 ${v === max ? "bg-primary" : "bg-primary/25"}`}
+          style={{
+            height: `${Math.max(2, Math.round((v / max) * 100))}%`,
+            // Left-to-right cascade; the print/reduced-motion nets render
+            // the bars finished because ls-col-in declares only `from`.
+            animationDelay: `${i * 25}ms`,
+          }}
         />
       ))}
     </div>
@@ -215,7 +247,7 @@ export function KpiCard({
   deltaNeutral?: string;
 }) {
   return (
-    <div className="rounded-[2px] border border-border bg-card px-3 py-2.5">
+    <div className="rounded-[2px] border border-border bg-card px-3 py-2.5 transition-[border-color,transform] duration-[120ms] hover:-translate-y-px hover:border-[#c6c6c6]">
       <div className="font-mono text-[20px] font-semibold leading-none tracking-tight tabular-nums">{value}</div>
       <div className="mt-1 truncate text-[10.5px] font-medium text-muted-foreground">{label}</div>
       {delta ? (

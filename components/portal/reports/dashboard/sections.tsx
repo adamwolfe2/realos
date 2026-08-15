@@ -23,6 +23,7 @@ import {
   SourceGlyph,
   SectionHeading,
   Stat,
+  Stars,
   Sparkline,
   coverageRows,
   COVERAGE_DOT,
@@ -83,12 +84,15 @@ function BarRow({
   max,
   trailing,
   glyph,
+  index = 0,
 }: {
   label: string;
   value: number;
   max: number;
   trailing: string;
   glyph?: React.ReactNode;
+  /** Position in its list — staggers the bar grow-in. */
+  index?: number;
 }) {
   return (
     <div className="flex items-center gap-2.5 text-[12px]">
@@ -98,8 +102,11 @@ function BarRow({
       <span className="w-[120px] flex-none truncate font-medium text-slate-600">{label}</span>
       <span className="h-4 flex-1 overflow-hidden rounded bg-muted">
         <span
-          className="block h-full rounded bg-primary"
-          style={{ width: `${max > 0 ? Math.round((value / max) * 100) : 0}%` }}
+          className="ls-bar-grow block h-full rounded bg-primary"
+          style={{
+            width: `${max > 0 ? Math.round((value / max) * 100) : 0}%`,
+            animationDelay: `${Math.min(index, 8) * 60}ms`,
+          }}
         />
       </span>
       <span className="w-16 flex-none text-right font-semibold text-foreground">{trailing}</span>
@@ -290,8 +297,8 @@ function AcquisitionSection(s: ReportSnapshot): React.ReactNode {
             <Empty>No leads in period.</Empty>
           ) : (
             <div className="flex flex-col gap-2.5">
-              {sources.map((src) => (
-                <BarRow key={src.source} label={src.source} value={src.count} max={maxSrc} trailing={`${src.count} · ${Math.round(src.pct)}%`} />
+              {sources.map((src, i) => (
+                <BarRow key={src.source} index={i} label={src.source} value={src.count} max={maxSrc} trailing={`${src.count} · ${Math.round(src.pct)}%`} />
               ))}
             </div>
           )}
@@ -303,8 +310,8 @@ function AcquisitionSection(s: ReportSnapshot): React.ReactNode {
             <Empty>No funnel activity yet.</Empty>
           ) : (
             <div className="flex flex-col gap-2.5">
-              {funnel.map((f) => (
-                <BarRow key={f.stage} label={f.stage} value={f.count} max={maxFunnel} trailing={num(f.count)} />
+              {funnel.map((f, i) => (
+                <BarRow key={f.stage} index={i} label={f.stage} value={f.count} max={maxFunnel} trailing={num(f.count)} />
               ))}
             </div>
           )}
@@ -544,7 +551,7 @@ function ReputationSection(s: ReportSnapshot): React.ReactNode {
           <span className="font-mono text-[26px] font-semibold leading-none tracking-tight tabular-nums text-foreground">
             {r.overallRating != null ? r.overallRating.toFixed(1) : "—"}
           </span>
-          <span className="text-[15px] tracking-wide text-primary">★★★★★</span>
+          <Stars rating={r.overallRating} className="text-[15px]" />
           <span className="text-[12px] font-medium text-muted-foreground">
             {num(r.totalReviews)} reviews · {num(r.positiveCount)} positive, {num(r.negativeCount)} negative
           </span>
@@ -555,9 +562,10 @@ function ReputationSection(s: ReportSnapshot): React.ReactNode {
           ) : null}
         </div>
         <div className="mt-4 flex flex-col gap-2">
-          {(r.sourceBreakdown ?? []).slice(0, 6).map((row) => (
+          {(r.sourceBreakdown ?? []).slice(0, 6).map((row, i) => (
             <BarRow
               key={row.source}
+              index={i}
               label={row.source}
               value={row.count}
               max={maxCount}

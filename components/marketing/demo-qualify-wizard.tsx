@@ -120,7 +120,7 @@ export function DemoQualifyWizard() {
   // ── Step 3: the booking ─────────────────────────────────────────────
   if (step === 3) {
     return (
-      <div className="ls-page-fade">
+      <div key="step-3" className="ls-page-fade">
         <StepHeader
           step={3}
           title="Pick a time"
@@ -164,7 +164,7 @@ export function DemoQualifyWizard() {
   // ── Step 2: feature cards ───────────────────────────────────────────
   if (step === 2) {
     return (
-      <div className="ls-page-fade">
+      <div key="step-2" className="ls-page-fade">
         <StepHeader
           step={2}
           title="What would move the needle most?"
@@ -254,7 +254,7 @@ export function DemoQualifyWizard() {
 
   // ── Step 1: contact + property ──────────────────────────────────────
   return (
-    <div className="ls-page-fade">
+    <div key="step-1" className="ls-page-fade">
       <StepHeader
         step={1}
         title="Tell us who you are"
@@ -318,11 +318,21 @@ function StepHeader({
     <div className="mb-6">
       <div className="mb-3 flex items-center gap-1.5">
         {[1, 2, 3].map((s) => (
+          // Each bar FILLS left-to-right as its step is reached, instead of
+          // the old instant color swap.
           <span
             key={s}
-            className="h-1 w-8 rounded-full transition-colors"
-            style={{ backgroundColor: s <= step ? "#2563EB" : "#E2E8F0" }}
-          />
+            className="h-1 w-8 overflow-hidden rounded-full"
+            style={{ backgroundColor: "#E2E8F0" }}
+          >
+            <span
+              className="block h-full w-full origin-left rounded-full transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+              style={{
+                backgroundColor: "#2563EB",
+                transform: s <= step ? "scaleX(1)" : "scaleX(0)",
+              }}
+            />
+          </span>
         ))}
       </div>
       <h2

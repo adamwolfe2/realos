@@ -45,12 +45,6 @@ const HOW = [
 export default function LostLeadsPage() {
   return (
     <div style={{ backgroundColor: "#FFFFFF", color: "#161616" }}>
-      <style>{`
-        @keyframes lostl-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
-        .lostl-rise { animation: lostl-rise .7s cubic-bezier(.2,.8,.2,1) both; }
-        @media (prefers-reduced-motion: reduce) { .lostl-rise { animation: none; } }
-      `}</style>
-
       {/* ── Hero ─────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden">
         <div
@@ -66,13 +60,13 @@ export default function LostLeadsPage() {
         <div className="relative mx-auto max-w-[1100px] px-4 pt-16 md:px-8 md:pt-24">
           <div className="mx-auto max-w-[820px] text-center">
             <p
-              className="lostl-rise mb-5 text-[11px] font-mono uppercase tracking-[0.18em]"
+              className="ls-rise mb-5 text-[11px] font-mono uppercase tracking-[0.18em]"
               style={{ color: "#0f62fe", fontFamily: "var(--font-mono)" }}
             >
               Free lost-lead calculator
             </p>
             <h1
-              className="lostl-rise mx-auto"
+              className="ls-rise mx-auto"
               style={{
                 animationDelay: "80ms",
                 fontFamily: "var(--font-display)",
@@ -87,7 +81,7 @@ export default function LostLeadsPage() {
               and leave <span className="ls-hl px-2">with no name on it.</span>
             </h1>
             <p
-              className="lostl-rise mx-auto mt-6 max-w-[54ch] text-[16px] leading-relaxed md:text-[17px]"
+              className="ls-rise mx-auto mt-6 max-w-[54ch] text-[16px] leading-relaxed md:text-[17px]"
               style={{ animationDelay: "160ms", color: "#525252" }}
             >
               Two numbers — visitors, leads — is all it takes to see the gap.
@@ -100,7 +94,7 @@ export default function LostLeadsPage() {
       {/* ── The calculator ──────────────────────────────────────────── */}
       <section className="relative">
         <div className="mx-auto max-w-[1100px] px-4 pb-16 pt-12 md:px-8 md:pb-24 md:pt-14">
-          <div className="lostl-rise mx-auto max-w-[720px]" style={{ animationDelay: "120ms" }}>
+          <div className="ls-rise mx-auto max-w-[720px]" style={{ animationDelay: "120ms" }}>
             <LostLeadsCalculator />
           </div>
         </div>

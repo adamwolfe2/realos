@@ -11,6 +11,7 @@ import type {
   SubscriptionTier,
 } from "@prisma/client";
 import type { OnboardingStep } from "@/lib/onboarding/steps";
+import { AnimateHeight } from "@/components/ui/animate-height";
 import { WizardChrome } from "./wizard-chrome";
 import { WelcomeStep } from "./welcome-step";
 import { FeaturesStep } from "./features-step";
@@ -142,7 +143,7 @@ export function OnboardingWizard({
     <WizardChrome step={step} onBack={goBack} backDisabled={submitting}>
       {submitting ? (
         <div
-          className="absolute inset-0 z-10 flex items-center justify-center"
+          className="ls-page-fade absolute inset-0 z-10 flex items-center justify-center"
           style={{ backgroundColor: "rgba(255,255,255,0.7)" }}
         >
           <Loader2
@@ -152,6 +153,13 @@ export function OnboardingWizard({
           />
         </div>
       ) : null}
+
+      {/* Keyed by step so the server-refresh step swap replays a soft fade
+          (router.refresh() delivers the next step; the key remounts this
+          wrapper), while AnimateHeight glides the card between the very
+          different step heights instead of snapping. */}
+      <AnimateHeight>
+      <div key={step} className="ls-page-fade">
 
       {step === "welcome" ? (
         <WelcomeStep
@@ -187,6 +195,9 @@ export function OnboardingWizard({
           module state (no tier bleed-through). properties →
           /api/onboarding/wizard/properties creates the property rows, records
           the CRM choice, starts the 14-day trial, and finishes onboarding. */}
+
+      </div>
+      </AnimateHeight>
     </WizardChrome>
   );
 }

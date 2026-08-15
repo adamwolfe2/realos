@@ -53,12 +53,6 @@ const DELIVERABLES = [
 export default function ReputationReportPage() {
   return (
     <div style={{ backgroundColor: "#FFFFFF", color: "#161616" }}>
-      <style>{`
-        @keyframes rrp-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
-        .rrp-rise { animation: rrp-rise .7s cubic-bezier(.2,.8,.2,1) both; }
-        @media (prefers-reduced-motion: reduce) { .rrp-rise { animation: none; } }
-      `}</style>
-
       {/* ── Hero ─────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden">
         <div
@@ -74,13 +68,13 @@ export default function ReputationReportPage() {
         <div className="relative mx-auto max-w-[1100px] px-4 pt-16 md:px-8 md:pt-24">
           <div className="mx-auto max-w-[880px] text-center">
             <p
-              className="rrp-rise mb-5 text-[11px] font-mono uppercase tracking-[0.18em]"
+              className="ls-rise mb-5 text-[11px] font-mono uppercase tracking-[0.18em]"
               style={{ color: "#0f62fe", fontFamily: "var(--font-mono)" }}
             >
               Free reputation report
             </p>
             <h1
-              className="rrp-rise mx-auto"
+              className="ls-rise mx-auto"
               style={{
                 animationDelay: "80ms",
                 fontFamily: "var(--font-display)",
@@ -97,14 +91,14 @@ export default function ReputationReportPage() {
               <span className="ls-hl px-2">Renters read all of it.</span>
             </h1>
             <p
-              className="rrp-rise mx-auto mt-6 max-w-[54ch] text-[16px] leading-relaxed md:text-[17px]"
+              className="ls-rise mx-auto mt-6 max-w-[54ch] text-[16px] leading-relaxed md:text-[17px]"
               style={{ animationDelay: "160ms", color: "#525252" }}
             >
               Every review, thread, and AI engine answer that mentions your
               property, most of them you've never seen. We scan them all and
               show you exactly what a prospect finds before they apply.
             </p>
-            <div className="rrp-rise mt-7" style={{ animationDelay: "220ms" }}>
+            <div className="ls-rise mt-7" style={{ animationDelay: "220ms" }}>
               <a
                 href="#run-report"
                 className="inline-flex items-center justify-center px-7 py-3.5 text-[15px] font-semibold text-white"
@@ -120,7 +114,7 @@ export default function ReputationReportPage() {
       {/* ── Demo, then form ──────────────────────────────────────────── */}
       <section className="relative">
         <div className="mx-auto max-w-[1100px] px-4 pb-16 pt-12 md:px-8 md:pb-24 md:pt-14">
-          <div className="rrp-rise mx-auto max-w-[860px]" style={{ animationDelay: "120ms" }}>
+          <div className="ls-rise mx-auto max-w-[860px]" style={{ animationDelay: "120ms" }}>
             <MentionFeedDemo />
 
             <div

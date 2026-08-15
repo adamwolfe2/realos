@@ -122,8 +122,9 @@ function DashboardInner({
         })}
       </nav>
 
-      {/* Active panel */}
-      <div role="tabpanel">
+      {/* Active panel — keyed by section so every tab switch replays a soft
+          fade instead of hard-cutting between panels. */}
+      <div role="tabpanel" key={activeSection?.id} className="ls-page-fade">
         {activeSection?.render(snapshot, property, selectTab)}
       </div>
     </div>

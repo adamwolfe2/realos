@@ -69,8 +69,6 @@ export default function AiVisibilityPage() {
   return (
     <div style={{ backgroundColor: "#FFFFFF", color: "#161616" }}>
       <style>{`
-        @keyframes aiv-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
-        .aiv-rise { animation: aiv-rise .7s cubic-bezier(.2,.8,.2,1) both; }
         /* Headline engine ticker: the four engine names (word + mark)
            stack in one inline-grid cell and take 3s turns. Rise-in from
            below, rise-out above, exponential ease. Width is the widest
@@ -87,7 +85,6 @@ export default function AiVisibilityPage() {
           100% { opacity: 0; transform: translateY(.45em); }
         }
         @media (prefers-reduced-motion: reduce) {
-          .aiv-rise { animation: none; }
           .aiv-tick > span { animation: none; }
           .aiv-tick > span:first-child { opacity: 1; transform: none; }
         }
@@ -108,13 +105,13 @@ export default function AiVisibilityPage() {
         <div className="relative mx-auto max-w-[1100px] px-4 pt-16 md:px-8 md:pt-24">
           <div className="mx-auto max-w-[880px] text-center">
             <p
-              className="aiv-rise mb-5 text-[11px] font-mono uppercase tracking-[0.18em]"
+              className="ls-rise mb-5 text-[11px] font-mono uppercase tracking-[0.18em]"
               style={{ color: "#0f62fe", fontFamily: "var(--font-mono)" }}
             >
               Free AI visibility audit
             </p>
             <h1
-              className="aiv-rise mx-auto"
+              className="ls-rise mx-auto"
               style={{
                 animationDelay: "80ms",
                 fontFamily: "var(--font-display)",
@@ -140,7 +137,7 @@ export default function AiVisibilityPage() {
               <span className="ls-hl px-2">Does it say your name?</span>
             </h1>
             <p
-              className="aiv-rise mx-auto mt-6 max-w-[54ch] text-[16px] leading-relaxed md:text-[17px]"
+              className="ls-rise mx-auto mt-6 max-w-[54ch] text-[16px] leading-relaxed md:text-[17px]"
               style={{ animationDelay: "160ms", color: "#525252" }}
             >
               Prospects ask AI engines for apartment recommendations before
@@ -148,7 +145,7 @@ export default function AiVisibilityPage() {
               your market and your property, live, and show you exactly
               where you stand.
             </p>
-            <div className="aiv-rise mt-7" style={{ animationDelay: "220ms" }}>
+            <div className="ls-rise mt-7" style={{ animationDelay: "220ms" }}>
               <a
                 href="#run-audit"
                 className="inline-flex items-center justify-center px-7 py-3.5 text-[15px] font-semibold text-white"
@@ -166,7 +163,7 @@ export default function AiVisibilityPage() {
           the H1 + button, wider; form stacked below it) ─────────────── */}
       <section className="relative">
         <div className="mx-auto max-w-[1100px] px-4 pb-16 pt-12 md:px-8 md:pb-24 md:pt-14">
-          <div className="aiv-rise mx-auto max-w-[860px]" style={{ animationDelay: "120ms" }}>
+          <div className="ls-rise mx-auto max-w-[860px]" style={{ animationDelay: "120ms" }}>
             <AiAnswerDemo />
 
             {/* Stat strip: single rule-divided band, mono numerals. */}

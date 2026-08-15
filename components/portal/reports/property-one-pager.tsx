@@ -15,6 +15,7 @@ import {
   Stat,
   Sparkline,
   KpiCard,
+  Stars,
   coverageRows,
   COVERAGE_DOT,
   TILE_FILL,
@@ -83,7 +84,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
   };
 
   return (
-    <div className="mx-auto w-full max-w-[880px] rounded-[2px] border border-border bg-card p-4 text-foreground shadow-sm sm:p-6 print:border-0 print:p-6 print:shadow-none">
+    <div className="ls-stagger mx-auto w-full max-w-[880px] rounded-[2px] border border-border bg-card p-4 text-foreground shadow-sm sm:p-6 print:border-0 print:p-6 print:shadow-none">
       {/* Header */}
       <header className="flex items-start justify-between gap-4 border-b border-border pb-4">
         <div>
@@ -313,13 +314,13 @@ export function PropertyOnePager({ snapshot, property }: Props) {
                 <span className="font-mono text-[22px] font-semibold leading-none tracking-tight tabular-nums">
                   {reputationStats.overallRating != null ? reputationStats.overallRating.toFixed(1) : "—"}
                 </span>
-                <span className="text-[13px] tracking-wide text-primary">★★★★★</span>
+                <Stars rating={reputationStats.overallRating} className="text-[13px]" />
                 <span className="text-[11px] font-medium text-muted-foreground">
                   {reputationStats.totalReviews} reviews · {reputationStats.positiveCount} positive, {reputationStats.negativeCount} negative
                 </span>
               </div>
               <div className="flex flex-col gap-2">
-                {reputationStats.sourceBreakdown.slice(0, 4).map((row) => (
+                {reputationStats.sourceBreakdown.slice(0, 4).map((row, i) => (
                   <div key={row.source} className="flex items-center gap-2.5 text-[12px]">
                     <span className="flex h-4 w-4 flex-none items-center justify-center">
                       <SourceGlyph source={toMentionSource(row.source)} className="h-4 w-4" />
@@ -327,8 +328,11 @@ export function PropertyOnePager({ snapshot, property }: Props) {
                     <span className="w-[74px] font-medium text-muted-foreground">{row.source}</span>
                     <span className="h-4 flex-1 overflow-hidden rounded bg-muted">
                       <span
-                        className="block h-full rounded bg-primary"
-                        style={{ width: `${Math.round((row.count / repMaxCount) * 100)}%` }}
+                        className="ls-bar-grow block h-full rounded bg-primary"
+                        style={{
+                          width: `${Math.round((row.count / repMaxCount) * 100)}%`,
+                          animationDelay: `${i * 60}ms`,
+                        }}
                       />
                     </span>
                     <span className="w-6 text-right font-bold">{row.count}</span>
@@ -374,7 +378,7 @@ export function PropertyOnePager({ snapshot, property }: Props) {
           <div className="grid grid-cols-1 gap-7 sm:grid-cols-[1.25fr_1fr] print:grid-cols-[1.25fr_1fr]">
             <div>
               <div className="flex flex-col gap-2.5">
-                {(aeoStats.byEngine ?? []).map((row) => (
+                {(aeoStats.byEngine ?? []).map((row, i) => (
                   <div key={row.engine} className="flex items-center gap-2.5 text-[11.5px]">
                     <span className="flex h-[17px] w-[17px] flex-none items-center justify-center">
                       <EngineMark engine={row.engine} />
@@ -382,8 +386,11 @@ export function PropertyOnePager({ snapshot, property }: Props) {
                     <span className="w-[74px] font-semibold text-foreground">{engineLabel(row.engine)}</span>
                     <span className="flex h-3 flex-1 overflow-hidden rounded bg-elevated">
                       <span
-                        className="h-full bg-primary"
-                        style={{ width: `${row.total ? Math.round((row.cited / row.total) * 100) : 0}%` }}
+                        className="ls-bar-grow h-full bg-primary"
+                        style={{
+                          width: `${row.total ? Math.round((row.cited / row.total) * 100) : 0}%`,
+                          animationDelay: `${i * 60}ms`,
+                        }}
                       />
                     </span>
                     <span className="w-12 text-right font-semibold text-muted-foreground">

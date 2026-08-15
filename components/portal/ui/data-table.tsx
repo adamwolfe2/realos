@@ -157,7 +157,9 @@ export function DataTable<T extends { id?: string }>({
               })}
             </tr>
           </thead>
-          <tbody>
+          {/* ls-row-stagger: first 8 rows cascade in on mount (20-230ms
+              delays); deeper rows appear with the page. */}
+          <tbody className="ls-row-stagger">
             {rows.map((row, i) => {
               const key = getRowKey
                 ? getRowKey(row)

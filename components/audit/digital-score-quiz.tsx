@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { ScanProgress } from "@/components/ui/scan-progress";
 import {
   QUIZ_QUESTIONS,
   isQuizComplete,
@@ -202,7 +203,13 @@ export function DigitalScoreQuiz() {
   }, [answers, redirect, startPolling]);
 
   if (phase === "scanning" || phase === "starting") {
-    return <ScanProgress scannedDomain={scannedDomain} />;
+    return (
+      <ScanProgress
+        messages={SCAN_STATUS_MESSAGES}
+        intervalMs={SCAN_STATUS_INTERVAL_MS}
+        footer={`Scanning ${scannedDomain ?? "your site"} · usually 30-60 seconds`}
+      />
+    );
   }
 
   return (
@@ -583,163 +590,6 @@ function NavRow({
           </Button>
         )}
       </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// ScanProgress. Same rotating-status loading as the legacy AuditForm.
-// ---------------------------------------------------------------------------
-
-function ScanProgress({ scannedDomain }: { scannedDomain: string | null }) {
-  const [index, setIndex] = useState(0);
-  const [animKey, setAnimKey] = useState(0);
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setIndex((i) => (i + 1) % SCAN_STATUS_MESSAGES.length);
-      setAnimKey((k) => k + 1);
-    }, SCAN_STATUS_INTERVAL_MS);
-    return () => clearInterval(id);
-  }, []);
-
-  const current = SCAN_STATUS_MESSAGES[index];
-  const history = useMemo(
-    () => [
-      SCAN_STATUS_MESSAGES[
-        (index - 1 + SCAN_STATUS_MESSAGES.length) % SCAN_STATUS_MESSAGES.length
-      ],
-      SCAN_STATUS_MESSAGES[
-        (index - 2 + SCAN_STATUS_MESSAGES.length) % SCAN_STATUS_MESSAGES.length
-      ],
-      SCAN_STATUS_MESSAGES[
-        (index - 3 + SCAN_STATUS_MESSAGES.length) % SCAN_STATUS_MESSAGES.length
-      ],
-    ],
-    [index],
-  );
-
-  return (
-    <div
-      className="rounded-xl border bg-white p-6"
-      style={{ borderColor: "#E5E7EB" }}
-    >
-      <div className="flex items-center gap-3">
-        <span
-          aria-hidden
-          style={{
-            display: "inline-block",
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            backgroundColor: "#2563EB",
-            animation: "dps-pulse-dot 1.4s ease-in-out infinite",
-            flexShrink: 0,
-          }}
-        />
-        <p
-          className="text-sm font-medium"
-          style={{ color: "#1E2A3A", minHeight: 20 }}
-        >
-          <span
-            key={animKey}
-            style={{
-              display: "inline-block",
-              animation: "dps-status-fade 360ms ease-out",
-            }}
-          >
-            {current}
-          </span>
-        </p>
-      </div>
-
-      <div
-        className="mt-4 h-1.5 w-full rounded-full overflow-hidden"
-        style={{ backgroundColor: "#F3F4F6" }}
-      >
-        <div
-          className="h-full"
-          style={{
-            width: "100%",
-            backgroundColor: "#2563EB",
-            animation: "dps-progress-bar 1.2s ease-in-out infinite",
-            transformOrigin: "0% 50%",
-          }}
-        />
-      </div>
-
-      <div className="mt-4">
-        <p
-          className="text-[10px] font-mono uppercase tracking-[0.14em] mb-1.5"
-          style={{ color: "#9CA3AF" }}
-        >
-          Recent steps
-        </p>
-        <ul className="space-y-1">
-          {history.map((msg, i) => (
-            <li
-              key={`${msg}-${animKey}-${i}`}
-              className="text-xs"
-              style={{
-                color: "#9CA3AF",
-                opacity: 0.85 - i * 0.22,
-                fontFamily: "var(--font-mono)",
-                animation: i === 0 ? "dps-status-fade 420ms ease-out" : "none",
-              }}
-            >
-              <span aria-hidden style={{ color: "#CBD5E1" }}>
-                ✓
-              </span>{" "}
-              {msg}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <p
-        className="text-xs mt-4 pt-3 border-t"
-        style={{ color: "#9CA3AF", borderColor: "#F3F4F6" }}
-      >
-        Scanning {scannedDomain ?? "your site"} · usually 30-60 seconds
-      </p>
-
-      <style jsx>{`
-        @keyframes dps-progress-bar {
-          0% {
-            transform: scaleX(0);
-            opacity: 0.4;
-          }
-          50% {
-            transform: scaleX(0.75);
-            opacity: 1;
-          }
-          100% {
-            transform: scaleX(1);
-            opacity: 0.4;
-          }
-        }
-        @keyframes dps-pulse-dot {
-          0%,
-          100% {
-            transform: scale(1);
-            opacity: 1;
-          }
-          50% {
-            transform: scale(1.4);
-            opacity: 0.55;
-          }
-        }
-        @keyframes dps-status-fade {
-          from {
-            opacity: 0;
-            transform: translateY(4px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </div>
   );
 }

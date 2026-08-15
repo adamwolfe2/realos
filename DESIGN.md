@@ -138,7 +138,24 @@ All shadows are cool-toned (`rgba(15,23,42,…)`) — the warm shadows in the ol
 ### Spacing & motion
 - Card padding: `p-5` (20px) on KpiTile / SectionCard; `--ls-card-pad` = `20px`.
 - PageHeader: `pb-5 mb-6` bordered (content sits 24px below).
-- Motion: `--ease-out: cubic-bezier(.2,.8,.2,1)`, `--ease-spring: cubic-bezier(.34,1.56,.64,1)`. Card transitions ~180–200ms.
+- Motion: `--ease-out: cubic-bezier(.2,.8,.2,1)` is THE easing — CSS and framer
+  (`EASE_OUT` in `components/portal/ui/motion.tsx`) share it. `--ease-spring:
+  cubic-bezier(.34,1.56,.64,1)` / `SPRING_POP` are reserved for celebratory
+  pops (a step completing, a check landing) — never for plain entrances.
+- Duration scale: **120ms** micro (hover, press, focus) · **200ms** small UI
+  state (tabs, dialogs, chips, card hovers) · **300ms** entrances, drawers,
+  height changes · **600–900ms** data reveals (bars, arcs, count-ups). Motion
+  plays ONCE; no infinite loops outside loading indicators.
+- Entrance keyframes declare only a `from` state so the element's base style
+  IS its final state — print and reduced-motion then render finished content
+  (see the "print-safe entrance utilities" block in `globals.css`).
+- Reduced motion: a global `prefers-reduced-motion` safety net at the bottom of
+  `globals.css` covers all CSS animation; any new framer-motion code must call
+  `useReducedMotion` itself.
+- Viewport reveals: fire once, ~0.2 visibility threshold. Use `InView`
+  (`components/ui/in-view.tsx`) + `.ls-reveal` / `.ls-grow-x`, or the framer
+  kit in `components/portal/ui/motion.tsx` (`CountUpValue`, `GrowBar`,
+  `StaggerGroup`).
 
 ---
 

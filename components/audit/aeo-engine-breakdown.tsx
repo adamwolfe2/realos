@@ -7,6 +7,7 @@ import {
   GeminiMark,
 } from "@/components/platform/artifacts/brand-logos";
 import { COMPETITOR_URLS } from "@/components/audit/brief-shell";
+import { InView } from "@/components/ui/in-view";
 import { safeHttpUrl } from "@/lib/safe-url";
 import type { AeoEngineRow } from "@/lib/audit/synthesize";
 
@@ -348,52 +349,58 @@ function CompetitorLeaderboard({
       <p className="mt-1 text-[12px]" style={{ color: "#6B7280" }}>
         Times each competitor was named across the discovery answers above.
       </p>
-      <ol className="mt-3 space-y-2">
-        {entries.map((e) => {
-          const href = COMPETITOR_URLS[e.name];
-          return (
-            <li key={e.name} className="flex items-center gap-3">
-              <span
-                className="w-40 sm:w-52 shrink-0 truncate text-[12.5px]"
-                style={{ color: "#1E2A3A", fontWeight: 500 }}
-                title={e.name}
-              >
-                {href ? (
-                  <a
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:underline"
-                  >
-                    {e.name}
-                  </a>
-                ) : (
-                  e.name
-                )}
-              </span>
-              <span
-                className="flex-1 h-2 rounded-[2px] overflow-hidden"
-                style={{ backgroundColor: "#E5E7EB" }}
-                aria-hidden
-              >
+      {/* InView stamps data-inview when the leaderboard scrolls into view;
+          bars then sweep in rank by rank (.ls-grow-x keys off it). This is
+          the screenshot moment — it should never be found already-finished. */}
+      <InView>
+        <ol className="mt-3 space-y-2">
+          {entries.map((e, i) => {
+            const href = COMPETITOR_URLS[e.name];
+            return (
+              <li key={e.name} className="flex items-center gap-3">
                 <span
-                  className="block h-full rounded-[2px]"
-                  style={{
-                    width: `${Math.max(6, (e.mentions / max) * 100)}%`,
-                    backgroundColor: "#0f62fe",
-                  }}
-                />
-              </span>
-              <span
-                className="w-6 text-right text-[12.5px] tabular-nums font-mono"
-                style={{ color: "#1E2A3A" }}
-              >
-                {e.mentions}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
+                  className="w-40 sm:w-52 shrink-0 truncate text-[12.5px]"
+                  style={{ color: "#1E2A3A", fontWeight: 500 }}
+                  title={e.name}
+                >
+                  {href ? (
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:underline"
+                    >
+                      {e.name}
+                    </a>
+                  ) : (
+                    e.name
+                  )}
+                </span>
+                <span
+                  className="flex-1 h-2 rounded-[2px] overflow-hidden"
+                  style={{ backgroundColor: "#E5E7EB" }}
+                  aria-hidden
+                >
+                  <span
+                    className="ls-grow-x block h-full rounded-[2px]"
+                    style={{
+                      width: `${Math.max(6, (e.mentions / max) * 100)}%`,
+                      backgroundColor: "#0f62fe",
+                      ["--reveal-delay" as string]: `${i * 60}ms`,
+                    }}
+                  />
+                </span>
+                <span
+                  className="w-6 text-right text-[12.5px] tabular-nums font-mono"
+                  style={{ color: "#1E2A3A" }}
+                >
+                  {e.mentions}
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+      </InView>
     </div>
   );
 }
