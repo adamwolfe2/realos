@@ -245,19 +245,54 @@ export function AeoOnPageCard({ findings }: { findings: AeoOnPageFindings }) {
 function ScoreRing({ score }: { score: number }) {
   const tone =
     score >= 75 ? "#059669" : score >= 50 ? "#2563EB" : "#DC2626";
+  // Real arc, not a full border circle: the ring fills to score/100 and
+  // sweeps in on load (`from { stroke-dashoffset: var(--circ) }` — final
+  // state lives in the base style, so print/reduced-motion render it
+  // complete). Radius 25 at strokeWidth 3 inside a 56px box.
+  const R = 25;
+  const CIRC = 2 * Math.PI * R;
+  const clamped = Math.max(0, Math.min(100, score));
+  const offset = CIRC * (1 - clamped / 100);
   return (
     <div
-      className="inline-flex items-center justify-center"
-      style={{
-        width: 56,
-        height: 56,
-        borderRadius: "9999px",
-        border: `3px solid ${tone}`,
-        backgroundColor: "#FFFFFF",
-      }}
+      className="relative inline-flex items-center justify-center"
+      style={{ width: 56, height: 56 }}
     >
+      <svg
+        width={56}
+        height={56}
+        viewBox="0 0 56 56"
+        aria-hidden="true"
+        className="absolute inset-0 -rotate-90"
+      >
+        <circle
+          cx={28}
+          cy={28}
+          r={R}
+          fill="#FFFFFF"
+          stroke="#f4f4f4"
+          strokeWidth={3}
+        />
+        <circle
+          className="aud-arc"
+          cx={28}
+          cy={28}
+          r={R}
+          fill="none"
+          stroke={tone}
+          strokeWidth={3}
+          strokeLinecap="round"
+          strokeDasharray={CIRC}
+          strokeDashoffset={offset}
+          style={{ ["--circ" as string]: `${CIRC}` }}
+        />
+      </svg>
+      <style>{`
+        @keyframes aud-arc-in { from { stroke-dashoffset: var(--circ); } }
+        .aud-arc { animation: aud-arc-in 900ms cubic-bezier(.2,.8,.2,1) 200ms backwards; }
+      `}</style>
       <span
-        className="text-[16px] font-semibold tabular-nums"
+        className="relative text-[16px] font-semibold tabular-nums"
         style={{ color: "#1E2A3A" }}
       >
         {score}

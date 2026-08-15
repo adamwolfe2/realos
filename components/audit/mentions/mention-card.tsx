@@ -21,7 +21,7 @@ export function MentionCard({ m }: { m: AuditMention }) {
   const dateLabel = mentionDateLabel(m.publishedAt);
   return (
     <li
-      className="rounded-xl border bg-white p-5 sm:p-6 flex items-start gap-4 relative"
+      className="rounded-xl border bg-white p-5 sm:p-6 flex items-start gap-4 relative transition-[border-color,transform] duration-[120ms] hover:-translate-y-px hover:border-[#c6c6c6]"
       style={{ borderColor: "#E5E7EB" }}
     >
       <SourceBadge source={m.source} />

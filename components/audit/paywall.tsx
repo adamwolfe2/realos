@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // AuditPaywall — wraps the post-TopLine sections (source breakdown,
@@ -49,6 +50,20 @@ export function AuditPaywall({
   findingCount = 0,
   children,
 }: AuditPaywallProps) {
+  const router = useRouter();
+  // The unlock ceremony: on successful email capture the blur LIFTS in
+  // place (600ms) while the modal fades away, and only then does
+  // router.refresh() swap in the unlocked server tree — invisibly, since
+  // the content underneath was the real content all along. Previously the
+  // refresh happened immediately, so the blur teleported off with zero
+  // reveal moment. Reduced motion: the global reduced-motion net zeroes
+  // the transitions, so the reveal is instant there.
+  const [revealing, setRevealing] = useState(false);
+  const handleUnlocked = useCallback(() => {
+    setRevealing(true);
+    window.setTimeout(() => router.refresh(), 750);
+  }, [router]);
+
   if (unlocked) return <>{children}</>;
 
   return (
@@ -58,14 +73,16 @@ export function AuditPaywall({
           is copy-pasteable through the blur. Visual blur is heavy enough
           that text is unreadable. */}
       <div
-        aria-hidden="true"
+        aria-hidden={revealing ? undefined : "true"}
         style={{
-          filter: "blur(7px)",
+          filter: revealing ? "blur(0px)" : "blur(7px)",
           pointerEvents: "none",
           userSelect: "none",
           // Slight saturation drop keeps the blurred region feeling
           // visually quieter — less competing with the modal overlay.
-          opacity: 0.85,
+          opacity: revealing ? 1 : 0.85,
+          transition:
+            "filter 600ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 600ms cubic-bezier(0.2, 0.8, 0.2, 1)",
         }}
       >
         {children}
@@ -79,11 +96,20 @@ export function AuditPaywall({
         style={{ zIndex: 10 }}
       >
         <div className="sticky pointer-events-none" style={{ top: 96 }}>
-          <div className="flex justify-center px-4">
+          <div
+            className="flex justify-center px-4"
+            style={{
+              opacity: revealing ? 0 : 1,
+              transform: revealing ? "translateY(8px)" : "none",
+              transition:
+                "opacity 400ms cubic-bezier(0.2, 0.8, 0.2, 1), transform 400ms cubic-bezier(0.2, 0.8, 0.2, 1)",
+            }}
+          >
             <PaywallModal
               auditId={auditId}
               mentionCount={mentionCount}
               findingCount={findingCount}
+              onUnlocked={handleUnlocked}
             />
           </div>
         </div>
@@ -101,12 +127,15 @@ function PaywallModal({
   auditId,
   mentionCount,
   findingCount,
+  onUnlocked,
 }: {
   auditId: string;
   mentionCount: number;
   findingCount: number;
+  /** Fires on successful capture — the parent runs the blur-lift reveal
+   *  and then refreshes the route. */
+  onUnlocked: () => void;
 }) {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -129,10 +158,9 @@ function PaywallModal({
         setBusy(false);
         return;
       }
-      // Server re-reads ProspectAudit on refresh and now sees
-      // audit.email is set — the viewer renders unlocked=true and the
-      // blur falls away naturally.
-      router.refresh();
+      // Parent lifts the blur, then refreshes; the server re-reads
+      // ProspectAudit and renders unlocked=true.
+      onUnlocked();
     } catch {
       setError("Network error. Try again.");
       setBusy(false);
@@ -203,14 +231,23 @@ function PaywallModal({
         <button
           type="submit"
           disabled={busy || !email.trim()}
-          className="inline-flex items-center justify-center rounded-md text-sm font-semibold text-white disabled:opacity-60"
+          aria-busy={busy}
+          className="inline-flex items-center justify-center gap-2 rounded-md text-sm font-semibold text-white active:scale-[0.98] motion-reduce:active:scale-100 disabled:opacity-60"
           style={{
             backgroundColor: "#2563EB",
             padding: "10px 16px",
-            transition: "background-color 0.15s ease",
+            transition:
+              "background-color 0.15s ease, transform 120ms cubic-bezier(0.2, 0.8, 0.2, 1)",
           }}
         >
-          {busy ? "Unlocking the report…" : "Show me the full report"}
+          {busy ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              Unlocking the report…
+            </>
+          ) : (
+            "Show me the full report"
+          )}
         </button>
       </form>
 

@@ -10,7 +10,8 @@ import { motion, useInView, useReducedMotion, type Variants } from "framer-motio
 // onto the real product surfaces so product and marketing feel like the
 // same system.
 //
-//   - Easing: cubic-bezier(0.2,0.7,0.2,1) for tween entrances, springs at
+//   - Easing: cubic-bezier(0.2,0.8,0.2,1) — the canonical --ease-out token
+//     from globals.css/DESIGN.md — for tween entrances, springs at
 //     stiffness ~380 / damping ~24 for pops.
 //   - Durations: 0.3-0.7s. Stagger: 0.06-0.16s per item.
 //   - Every animation honors `useReducedMotion` (final state immediately)
@@ -20,7 +21,7 @@ import { motion, useInView, useReducedMotion, type Variants } from "framer-motio
 // stay server components; only these pieces get "use client".
 // ---------------------------------------------------------------------------
 
-export const EASE_OUT = [0.2, 0.7, 0.2, 1] as const;
+export const EASE_OUT = [0.2, 0.8, 0.2, 1] as const;
 export const SPRING_POP = { type: "spring" as const, stiffness: 380, damping: 24 };
 
 // ---------------------------------------------------------------------------

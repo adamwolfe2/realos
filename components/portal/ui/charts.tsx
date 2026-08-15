@@ -295,11 +295,14 @@ export function StatBars({
               </span>
             </div>
             <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+              {/* ls-bar-grow replaces a transition-all that never fired
+                  (width is server-rendered static). */}
               <div
-                className="h-full rounded-full transition-all"
+                className="ls-bar-grow h-full rounded-full"
                 style={{
                   width: `${widthPct}%`,
                   backgroundColor: r.color ?? CHART_PALETTE[i % CHART_PALETTE.length],
+                  animationDelay: `${Math.min(i, 8) * 60}ms`,
                 }}
               />
             </div>
@@ -337,11 +340,12 @@ export function VBarChart({
           <div key={b.label} className="flex flex-col items-stretch gap-1.5">
             <div className="flex items-end" style={{ height }}>
               <div
-                className="w-full rounded-md transition-all"
+                className="ls-col-grow w-full rounded-md"
                 style={{
                   height: `${heightPct}%`,
                   backgroundColor: b.color ?? CHART_PALETTE[i % CHART_PALETTE.length],
                   opacity: b.value > 0 ? 1 : 0.18,
+                  animationDelay: `${Math.min(i, 10) * 40}ms`,
                 }}
               />
             </div>

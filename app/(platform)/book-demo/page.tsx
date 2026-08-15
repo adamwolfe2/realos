@@ -25,15 +25,19 @@ export default function BookDemoPage() {
     <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
       <section className="relative">
         <div className="mx-auto max-w-[720px] px-4 pb-20 pt-20 md:px-8 md:pt-24">
+          {/* ls-rise entrance matches the other lead-magnet heroes — this
+              was the only landing page with no entrance at all. */}
           <div className="mb-10 text-center">
             <p
-              className="mb-4 text-[11px] font-mono uppercase tracking-[0.18em]"
+              className="ls-rise mb-4 text-[11px] font-mono uppercase tracking-[0.18em]"
               style={{ color: "#2563EB", fontFamily: "var(--font-mono)" }}
             >
               Book a demo
             </p>
             <h1
+              className="ls-rise"
               style={{
+                animationDelay: "80ms",
                 fontFamily: "var(--font-display)",
                 fontSize: "clamp(32px, 4.6vw, 46px)",
                 fontWeight: 550,
@@ -45,14 +49,16 @@ export default function BookDemoPage() {
               <span className="ls-hl px-2">your property.</span>
             </h1>
             <p
-              className="mx-auto mt-4 max-w-[46ch] text-[15px] leading-relaxed"
-              style={{ color: "#525252" }}
+              className="ls-rise mx-auto mt-4 max-w-[46ch] text-[15px] leading-relaxed"
+              style={{ animationDelay: "160ms", color: "#525252" }}
             >
               Two quick questions so we can pull your market and your numbers
               before the call. Then pick any time that works.
             </p>
           </div>
-          <DemoQualifyWizard />
+          <div className="ls-rise" style={{ animationDelay: "220ms" }}>
+            <DemoQualifyWizard />
+          </div>
         </div>
       </section>
     </div>

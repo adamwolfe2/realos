@@ -37,12 +37,16 @@ export function AlertDialog({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
+  const cancelRef = React.useRef<HTMLButtonElement>(null);
+
   React.useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onCancel();
     };
     window.addEventListener("keydown", onKey);
+    // Initial focus lands on the safe action.
+    cancelRef.current?.focus();
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onCancel]);
 
@@ -53,12 +57,12 @@ export function AlertDialog({
       role="alertdialog"
       aria-modal="true"
       aria-label={title}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="animate-in fade-in-0 fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 duration-150"
       onClick={(e) => {
         if (e.target === e.currentTarget) onCancel();
       }}
     >
-      <div className="w-full max-w-sm rounded-[2px] border border-border bg-card shadow-lg">
+      <div className="animate-in fade-in-0 zoom-in-95 w-full max-w-sm rounded-[2px] border border-border bg-card shadow-lg duration-200 ease-[cubic-bezier(0.2,0.8,0.2,1)]">
         <header className="border-b border-border px-4 py-3">
           <p className="text-sm font-semibold text-foreground">{title}</p>
           {body ? (
@@ -69,6 +73,7 @@ export function AlertDialog({
         </header>
         <footer className="flex items-center justify-end gap-2 px-4 py-3">
           <button
+            ref={cancelRef}
             type="button"
             onClick={onCancel}
             className="inline-flex items-center rounded-[2px] border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:border-foreground/40 transition-colors"

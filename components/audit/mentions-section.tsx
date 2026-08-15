@@ -142,7 +142,9 @@ export function MentionsSection({
         })}
       </div>
 
-      <ul className="mt-6 space-y-3">
+      {/* Keyed by filter so switching sources replays a soft fade instead
+          of the list hard-cutting to a different length. */}
+      <ul key={activeSource ?? "all"} className="ls-page-fade mt-6 space-y-3">
         {visible.map((m) => (
           <MentionCard key={m.url} m={m} />
         ))}
@@ -153,7 +155,7 @@ export function MentionsSection({
           <button
             type="button"
             onClick={() => setShowAll(true)}
-            className="inline-flex items-center justify-center h-10 px-5 rounded-md text-sm font-medium border"
+            className="inline-flex items-center justify-center h-10 px-5 rounded-md text-sm font-medium border transition-[background-color,transform] duration-[120ms] hover:bg-[#f4f4f4] active:scale-[0.98] motion-reduce:active:scale-100"
             style={{ borderColor: "#E5E7EB", color: "#1E2A3A" }}
           >
             Show {hiddenCount} more mention{hiddenCount === 1 ? "" : "s"}

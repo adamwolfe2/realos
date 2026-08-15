@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { ScanProgress } from "@/components/ui/scan-progress";
 
 // ---------------------------------------------------------------------------
 // ReputationReportForm — lead-capture form for the /reputation-report
@@ -37,6 +38,7 @@ const SCAN_STATUS_MESSAGES: string[] = [
   "Finalizing your report…",
 ];
 const SCAN_STATUS_INTERVAL_MS = 2600;
+const QUEUING_MESSAGE = ["Queuing your scan…"];
 
 type Phase = "form" | "starting" | "scanning" | "error";
 
@@ -54,7 +56,6 @@ export function ReputationReportForm() {
   const [email, setEmail] = useState("");
   const [phase, setPhase] = useState<Phase>("form");
   const [error, setError] = useState<string | null>(null);
-  const [statusIdx, setStatusIdx] = useState(0);
   const stoppedRef = useRef(false);
 
   useEffect(() => {
@@ -62,16 +63,6 @@ export function ReputationReportForm() {
       stoppedRef.current = true;
     };
   }, []);
-
-  useEffect(() => {
-    if (phase !== "scanning") return;
-    const t = setInterval(
-      () =>
-        setStatusIdx((i) => Math.min(i + 1, SCAN_STATUS_MESSAGES.length - 1)),
-      SCAN_STATUS_INTERVAL_MS,
-    );
-    return () => clearInterval(t);
-  }, [phase]);
 
   const canSubmit =
     propertyName.trim().length >= 2 &&
@@ -153,28 +144,21 @@ export function ReputationReportForm() {
   }
 
   if (phase === "scanning" || phase === "starting") {
+    // Same scan theater as the /audit quiz (shared ScanProgress) instead
+    // of the old bare spinner — same underlying scan, same wait quality.
     return (
-      <div
-        className="rounded-[4px] border p-8 text-center"
-        style={{ borderColor: "#E2E8F0", backgroundColor: "#FFFFFF" }}
-      >
-        <Loader2
-          className="mx-auto mb-4 h-6 w-6 animate-spin"
-          style={{ color: "#2563EB" }}
-        />
-        <p className="text-[15px] font-semibold" style={{ color: "#1E2A3A" }}>
-          Running your reputation report
-        </p>
-        <p className="mt-2 text-[13px]" style={{ color: "#64748B" }}>
-          {phase === "starting"
-            ? "Queuing your scan…"
-            : SCAN_STATUS_MESSAGES[statusIdx]}
-        </p>
-        <p className="mt-4 text-[12px]" style={{ color: "#64748B" }}>
-          Usually under 2 minutes. Your report link is saved to{" "}
-          <span className="font-medium">{email.trim()}</span>.
-        </p>
-      </div>
+      <ScanProgress
+        messages={phase === "starting" ? QUEUING_MESSAGE : SCAN_STATUS_MESSAGES}
+        intervalMs={SCAN_STATUS_INTERVAL_MS}
+        advance="hold"
+        heading="Running your reputation report"
+        footer={
+          <>
+            Usually under 2 minutes. Your report link is saved to{" "}
+            <span className="font-medium">{email.trim()}</span>.
+          </>
+        }
+      />
     );
   }
 

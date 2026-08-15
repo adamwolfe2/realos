@@ -369,7 +369,22 @@ export function IntakeForm({
         })}
       </nav>
 
+      {/* Progress track under the pills — width tracks n/13 with a spring. */}
+      <div
+        className="h-1 w-full overflow-hidden rounded-full"
+        style={{ backgroundColor: "var(--color-elevated)" }}
+        aria-hidden="true"
+      >
+        <div
+          className="h-full rounded-full bg-primary transition-[width] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+          style={{ width: `${((sectionIndex + 1) / SECTION_ORDER.length) * 100}%` }}
+        />
+      </div>
+
       <div className="rounded-lg border border-border bg-card p-6">
+        {/* Keyed by section: each section swap replays a soft fade instead
+            of hard-cutting while the page is still smooth-scrolling up. */}
+        <div key={currentSection} className="ls-page-fade">
         {currentSection === "identity" && (
           <IdentitySection
             form={form}
@@ -461,6 +476,7 @@ export function IntakeForm({
         {currentSection === "wrap" && (
           <WrapSection form={form} update={update} />
         )}
+        </div>
       </div>
 
       {submitError ? (

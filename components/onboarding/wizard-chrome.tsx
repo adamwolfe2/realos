@@ -92,7 +92,7 @@ export function WizardChrome({
               <React.Fragment key={s.id}>
                 <div className="flex items-center gap-2">
                   <span
-                    className="inline-flex items-center justify-center rounded-full"
+                    className="inline-flex items-center justify-center rounded-full transition-[background-color,color] duration-200"
                     style={{
                       width: 22,
                       height: 22,
@@ -110,7 +110,13 @@ export function WizardChrome({
                       fontWeight: 600,
                     }}
                   >
-                    {isDone ? <Check className="w-3 h-3" strokeWidth={1.5} /> : i + 1}
+                    {isDone ? (
+                      // ls-pop: the check LANDS (spring overshoot) instead of
+                      // flickering into place — the wizard's reward beat.
+                      <Check className="ls-pop w-3 h-3" strokeWidth={1.5} />
+                    ) : (
+                      i + 1
+                    )}
                   </span>
                   {/* Labels hide on phones (just the numbered dots show) so
                       the 3-step rail never overflows a 370px viewport. The
@@ -132,6 +138,8 @@ export function WizardChrome({
                   </span>
                 </div>
                 {i < STEPS.length - 1 ? (
+                  // Connector fills brand-blue left-to-right as its step
+                  // completes (scaleX transition on the inner span).
                   <span
                     aria-hidden="true"
                     className="w-4 sm:w-7"
@@ -139,7 +147,15 @@ export function WizardChrome({
                       height: 1,
                       backgroundColor: "var(--color-border)",
                     }}
-                  />
+                  >
+                    <span
+                      className="block h-full origin-left transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+                      style={{
+                        backgroundColor: "var(--color-primary)",
+                        transform: isDone ? "scaleX(1)" : "scaleX(0)",
+                      }}
+                    />
+                  </span>
                 ) : null}
               </React.Fragment>
             );

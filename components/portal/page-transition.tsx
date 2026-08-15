@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 // ---------------------------------------------------------------------------
 // PageTransition — wraps the portal layout body in a framer-motion
@@ -23,6 +23,7 @@ import { AnimatePresence, motion } from "framer-motion";
 
 export function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const reduce = useReducedMotion();
 
   return (
     <AnimatePresence mode="wait" initial={false}>
@@ -31,7 +32,7 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
+        transition={{ duration: reduce ? 0 : 0.2, ease: [0.2, 0.8, 0.2, 1] }}
       >
         {children}
       </motion.div>

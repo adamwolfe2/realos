@@ -114,10 +114,9 @@ export function PlatformFooter() {
         </div>
       </div>
 
-      {/* Statement wordmark: a pixel-assembly moment. A field of brand square
-          tiles converges into the "LeaseStack" wordmark on scroll, then a
-          signal-pulse sweeps it once. On-brand with the Visitor Pixel motif;
-          scales to width (no overflow). See components/home/pixel-wordmark. */}
+      {/* Statement wordmark: outline-only "LeaseStack" hairline with a slow
+          glint traveling the stroke while in view. Scales to width (no
+          overflow). See components/home/pixel-wordmark. */}
       <div className="max-w-[1240px] mx-auto px-4 md:px-8 pb-6">
         <PixelWordmark />
       </div>

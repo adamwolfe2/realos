@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { CountUp } from "@/components/audit/count-up";
 
 // Tonal palette used across the audit viewer. Matches the marketing
 // brand-blue (`#2563EB`) for the primary tone so all score rings share
@@ -100,12 +101,11 @@ export function ScoreCard({
       </div>
       {hasScore ? (
         <div className="flex items-baseline gap-1.5">
-          <span
+          <CountUp
+            to={value}
             className="text-3xl font-semibold tabular-nums leading-none"
             style={{ color: palette.text }}
-          >
-            {value}
-          </span>
+          />
           <span className="text-xs" style={{ color: "#9CA3AF" }}>
             / 100
           </span>
@@ -131,12 +131,15 @@ export function ScoreCard({
         className="h-1.5 w-full rounded-full overflow-hidden"
         style={{ backgroundColor: "#F3F4F6" }}
       >
+        {/* ls-bar-grow replaces a `transition: width` that never fired —
+            the width was server-rendered static, so nothing ever changed.
+            The keyframe sweeps in on first display (including when the
+            appendix <details> opens). */}
         <div
-          className="h-full"
+          className="ls-bar-grow h-full"
           style={{
             width: `${pct}%`,
             backgroundColor: palette.ring,
-            transition: "width 600ms ease-out",
           }}
         />
       </div>

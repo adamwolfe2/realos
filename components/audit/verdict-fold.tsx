@@ -388,13 +388,17 @@ function EngineStrip({ engines }: { engines: FoldEngine[] }) {
       className="mt-4 grid grid-cols-2 gap-1.5"
       aria-label="Per-engine AI visibility"
     >
-      {engines.map((e) => {
+      {engines.map((e, i) => {
         const meta = ENGINE_STATE_META[e.state];
         return (
           <li
             key={e.engine}
-            className="flex items-center gap-1.5 border px-2 py-1.5"
-            style={{ borderColor: "#e0e0e0", borderRadius: 2 }}
+            className="aud-rise flex items-center gap-1.5 border px-2 py-1.5"
+            style={{
+              borderColor: "#e0e0e0",
+              borderRadius: 2,
+              animationDelay: `${360 + i * 60}ms`,
+            }}
             title={meta.label}
           >
             <FoldEngineMark engine={e.engine} />
@@ -424,7 +428,7 @@ function EngineStrip({ engines }: { engines: FoldEngine[] }) {
 function PillarBars({ pillars }: { pillars: FoldPillar[] }) {
   return (
     <div className="mt-4" role="group" aria-label="Pillar scores">
-      {pillars.map((p) => (
+      {pillars.map((p, i) => (
         <div key={p.key} className="mt-1.5 flex items-center gap-2">
           <span
             className="w-24 shrink-0 truncate text-[11px]"
@@ -437,12 +441,15 @@ function PillarBars({ pillars }: { pillars: FoldPillar[] }) {
             style={{ backgroundColor: "#f4f4f4", borderRadius: 2 }}
             aria-hidden
           >
+            {/* .aud-fill sweeps each bar in alongside the gauge; stepped
+                delays make severity read row by row. */}
             <span
-              className="block h-full"
+              className="aud-fill block h-full"
               style={{
                 width: `${Math.max(2, Math.min(p.score, 100))}%`,
                 backgroundColor: "#0f62fe",
                 borderRadius: 2,
+                animationDelay: `${450 + i * 80}ms`,
               }}
             />
           </span>

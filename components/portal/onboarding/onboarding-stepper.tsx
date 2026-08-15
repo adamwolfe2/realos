@@ -242,7 +242,7 @@ export function OnboardingStepper({ progress, connectStatus }: Props) {
               <div className="flex items-center">
                 <span
                   aria-hidden="true"
-                  className={
+                  className={`transition-[background-color,border-color,color] duration-200 ${
                     isCompleted
                       ? "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[2px] bg-[#0f62fe] text-white"
                       : isSkipped
@@ -250,10 +250,12 @@ export function OnboardingStepper({ progress, connectStatus }: Props) {
                         : isActive
                           ? "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[2px] border-2 border-[#0f62fe] bg-white text-[12px] font-semibold tabular-nums text-[#0f62fe]"
                           : "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[2px] border border-[#c6c6c6] bg-white text-[12px] tabular-nums text-[#8d8d8d]"
-                  }
+                  }`}
                 >
                   {isCompleted ? (
-                    <Check className="h-3 w-3" />
+                    // ls-pop lands the check with a spring — the product's
+                    // core reward moment gets an actual beat.
+                    <Check className="ls-pop h-3 w-3" />
                   ) : isSkipped ? (
                     <Minus className="h-3 w-3" />
                   ) : (
@@ -261,14 +263,17 @@ export function OnboardingStepper({ progress, connectStatus }: Props) {
                   )}
                 </span>
                 {!isLast ? (
-                  <span
-                    aria-hidden="true"
-                    className={`h-px flex-1 ${
-                      i < effectiveActiveIndex
-                        ? "bg-[#0f62fe]"
-                        : "bg-[#e0e0e0]"
-                    }`}
-                  />
+                  // Track stays gray; the inner span fills brand-blue
+                  // left-to-right when the step ahead of it completes.
+                  <span aria-hidden="true" className="h-px flex-1 bg-[#e0e0e0]">
+                    <span
+                      className="block h-full origin-left bg-[#0f62fe] transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+                      style={{
+                        transform:
+                          i < effectiveActiveIndex ? "scaleX(1)" : "scaleX(0)",
+                      }}
+                    />
+                  </span>
                 ) : null}
               </div>
 

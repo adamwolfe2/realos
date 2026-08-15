@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { CountUpValue } from "@/components/portal/ui/motion";
 
-// Simple count-up. No animation library — a 600ms easeOutQuart curve via
-// requestAnimationFrame. Respects prefers-reduced-motion (jumps straight
-// to the final value).
+// Thin wrapper over the shared CountUpValue (components/portal/ui/motion.tsx)
+// keeping this file's historical prop surface. The old local RAF loop fired
+// on MOUNT, so below-the-fold numbers finished counting before anyone saw
+// them — CountUpValue is viewport-triggered (counts when scrolled into view)
+// and reduced-motion aware, and this was one of three duplicate count-up
+// implementations.
 export function CountUp({
   to,
   durationMs = 900,
@@ -16,36 +19,13 @@ export function CountUp({
   className?: string;
   style?: React.CSSProperties;
 }) {
-  const [value, setValue] = useState(0);
-  const rafRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    const target = Math.max(0, Math.round(to));
-    const prefersReduced =
-      typeof window !== "undefined" &&
-      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReduced) {
-      setValue(target);
-      return;
-    }
-    const start = performance.now();
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / durationMs);
-      const eased = 1 - Math.pow(1 - t, 4);
-      setValue(Math.round(target * eased));
-      if (t < 1) {
-        rafRef.current = requestAnimationFrame(tick);
-      }
-    };
-    rafRef.current = requestAnimationFrame(tick);
-    return () => {
-      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
-    };
-  }, [to, durationMs]);
-
   return (
-    <span className={className} style={style}>
-      {value}
-    </span>
+    <CountUpValue
+      value={Math.max(0, Math.round(to))}
+      duration={durationMs / 1000}
+      locale={false}
+      className={className}
+      style={style}
+    />
   );
 }

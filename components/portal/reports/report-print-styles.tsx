@@ -93,10 +93,18 @@ export function ReportPrintStyles() {
             /* Charts keep their bounding boxes intact when paginated. */
             svg { page-break-inside: avoid; }
 
-            /* Suppress on-load animations when printing. */
+            /* Suppress on-load animations when printing. Scoped to BOTH the
+               legacy .report-article tree and the live .report-page surface
+               (app/r/[token] + portal report pages) — every entrance keyframe
+               on the one-pager declares only a \`from\` state, so forcing
+               animation/transform/opacity off renders the finished layout,
+               never a mid-keyframe frame, in PDFs. */
             .report-article *,
             .report-article *::before,
-            .report-article *::after {
+            .report-article *::after,
+            .report-page *,
+            .report-page *::before,
+            .report-page *::after {
               animation: none !important;
               transition: none !important;
               opacity: 1 !important;

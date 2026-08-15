@@ -32,7 +32,7 @@ export function FilterChip({
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center gap-2 h-8 px-3 rounded-full text-xs font-medium transition-colors"
+      className="inline-flex items-center gap-2 h-8 px-3 rounded-full text-xs font-medium transition-[background-color,border-color,color,transform] duration-[120ms] active:scale-[0.97] motion-reduce:active:scale-100"
       style={{
         backgroundColor: active ? color : "#FFFFFF",
         color: active ? "#FFFFFF" : "#1E2A3A",

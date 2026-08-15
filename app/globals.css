@@ -1,4 +1,9 @@
 @import "tailwindcss";
+/* tw-animate-css supplies the `animate-in/out`, `slide-in-from-*`,
+   `fade-in-0`, `zoom-in-95` utilities that ui/sheet.tsx and the Radix
+   surfaces have referenced all along — without this import those classes
+   compiled to NOTHING, so every side drawer popped instead of sliding. */
+@import "tw-animate-css";
 
 /* Light-only product (cross-project rule: no dark theme). Tailwind v4 defaults
    the `dark:` variant to @media (prefers-color-scheme: dark), so stray `dark:`
@@ -297,48 +302,112 @@ body {
   box-shadow: 0 6px 24px -12px rgba(20, 20, 19, 0.12);
 }
 
-/* ── Reputation-feed "live scanning" animations ───────────────────────────
-   Used by the marketing SanityCheckSection artifact to make the feed look
-   like it's actively pulling mentions from Google / Reddit / Yelp / etc.
+/* ── Print-safe entrance utilities ───────────────────────────────────────
+   Every keyframe here declares ONLY a `from` state, so the element's base
+   style IS its final state. With `animation: none` (print, reduced motion)
+   the content renders finished — bars full, numbers visible — instead of
+   frozen mid-entrance. Use `backwards` fill so delayed items hold their
+   start state during the stagger.
    ────────────────────────────────────────────────────────────────────── */
 
-/* Outer pulse ring on the scanner dot — radiates and fades, infinite loop. */
-@keyframes ls-rep-pulse {
-  0%   { transform: scale(0.9); opacity: 0.55; }
-  80%  { transform: scale(2.4); opacity: 0;    }
-  100% { transform: scale(2.4); opacity: 0;    }
+/* Horizontal bar grows in from the left. Element must be the filled bar
+   itself (transform-origin is set here). */
+@keyframes ls-bar-in {
+  from { transform: scaleX(0); }
 }
-.ls-rep-pulse {
-  animation: ls-rep-pulse 1.6s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
-  transform-origin: center;
+.ls-bar-grow {
+  transform-origin: left center;
+  animation: ls-bar-in 700ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
 
-/* Brief "we just found a hit" wash on a feed row when the scanner lands
-   on that source. Background lifts to a faint blue, then settles back. */
-@keyframes ls-rep-flash {
-  0%   { background-color: rgba(15, 98, 254, 0.10); }
-  60%  { background-color: rgba(15, 98, 254, 0.04); }
-  100% { background-color: transparent;            }
+/* Vertical column rises from the baseline — sparkline / mini bar charts. */
+@keyframes ls-col-in {
+  from { transform: scaleY(0); }
 }
-.ls-rep-flash { animation: ls-rep-flash 1.4s ease-out; }
+.ls-col-grow {
+  transform-origin: center bottom;
+  animation: ls-col-in 600ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
 
-/* Crossfade for the scanner query line as it rotates through sources. */
-@keyframes ls-rep-query-in {
-  from { opacity: 0; transform: translateY(2px); }
-  to   { opacity: 1; transform: translateY(0);   }
+/* Soft rise for content blocks (the shared successor to the per-page
+   aiv-rise / rrp-rise / lostl-rise / cbp-rise copies). Stagger with an
+   inline animation-delay. */
+@keyframes ls-rise-in {
+  from { opacity: 0; transform: translateY(14px); }
 }
-.ls-rep-query-in {
-  animation: ls-rep-query-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+.ls-rise {
+  animation: ls-rise-in 700ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+/* ── Viewport reveals (pair with <InView> from components/ui/in-view.tsx) ─
+   InView stamps `data-inview` on its element when it scrolls into view;
+   these classes do the visuals. Transition-based (not keyframes) so the
+   pre-reveal state holds indefinitely below the fold. The reduced-motion
+   net zeroes the transition, and the extra guard below removes the hidden
+   start state entirely so content is never stuck invisible without JS
+   motion. */
+.ls-reveal {
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 300ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+.ls-reveal[data-inview],
+[data-inview] .ls-reveal {
+  opacity: 1;
+  transform: none;
+}
+
+/* Width%-bar reveal for server-rendered bars: the span keeps its inline
+   width; scaleX sweeps it in when the container enters view. */
+.ls-grow-x {
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+.ls-grow-x[data-inview],
+[data-inview] .ls-grow-x {
+  transform: scaleX(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ls-reveal, .ls-grow-x { opacity: 1; transform: none; transition: none; }
+}
+
+/* Celebratory pop for a check/badge landing (step completed). Spring-ish
+   overshoot; reserved for reward moments per DESIGN.md. */
+@keyframes ls-pop-in {
+  from { opacity: 0; transform: scale(0.6); }
+}
+.ls-pop {
+  animation: ls-pop-in 250ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+/* ── Scan theater (components/ui/scan-progress.tsx) ──────────────────────
+   Moved here from a styled-jsx block so the reduced-motion net below
+   covers the infinite loops. */
+@keyframes ls-scan-bar {
+  0%   { transform: scaleX(0);    opacity: 0.4; }
+  50%  { transform: scaleX(0.75); opacity: 1; }
+  100% { transform: scaleX(1);    opacity: 0.4; }
+}
+@keyframes ls-scan-dot {
+  0%, 100% { transform: scale(1);   opacity: 1; }
+  50%      { transform: scale(1.4); opacity: 0.55; }
+}
+@keyframes ls-scan-fade {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* Respect users with reduced-motion preferences. */
 @media (prefers-reduced-motion: reduce) {
   .ls-page-fade,
   .ls-stagger > *,
-  .ls-hover-lift,
-  .ls-rep-pulse,
-  .ls-rep-flash,
-  .ls-rep-query-in {
+  .ls-hover-lift {
     animation: none !important;
     transition: none !important;
     transform: none !important;
@@ -396,33 +465,6 @@ body {
 /* 2026-07-22: the pinned-runway scrollytelling (.mk-pin/.mk-tour-wrap) is
    gone per Adam — the section now uses a sticky left visual + free-scrolling
    right rail (Juicebox pattern) implemented in product-hero-shot.tsx. */
-
-/* Hero outcome pills: a subtle scale pop timed to the pulse cadence. Numbers
-   never change (punch-list item 4). Off under reduced-motion via class gate. */
-@keyframes mk-pillpop {
-  0%, 86%, 100% { transform: scale(1); }
-  92% { transform: scale(1.04); }
-}
-.mk-pillpop {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: mk-pillpop 9s ease-in-out infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .mk-pillpop { animation: none; }
-}
-
-/* Footer wordmark: one signal-pulse sweep after the tiles assemble. */
-@keyframes mk-wordsweep {
-  from { transform: translateX(0); }
-  to { transform: translateX(400%); }
-}
-.mk-wordsweep {
-  animation: mk-wordsweep 1000ms ease-in-out 1150ms 1 both;
-}
-@media (prefers-reduced-motion: reduce) {
-  .mk-wordsweep { animation: none; opacity: 0; }
-}
 
 .btn-white {
   display: inline-flex; align-items: center; justify-content: center;
@@ -733,6 +775,9 @@ body {
   background: var(--color-elevated);
   color: var(--near-black);
 }
+@keyframes ls-nav-bar-in {
+  from { transform: translateY(-50%) scaleY(0); }
+}
 .ls-sidebar-item.is-active {
   background: var(--brand-soft);
   color: var(--terracotta);
@@ -745,6 +790,10 @@ body {
   transform: translateY(-50%);
   width: 3px;
   height: 18px;
+  /* The bar scales in vertically when a route becomes active instead of
+     popping — pairs with the ls-fade-in the pill background gets from
+     .ls-sidebar-item's transition. */
+  animation: ls-nav-bar-in 200ms var(--ease-out) backwards;
   background: var(--terracotta);
   border-radius: 0 2px 2px 0;
 }
@@ -944,6 +993,16 @@ body {
   transform: translateX(-50%) translateY(0);
 }
 
+/* ── Keyboard focus (portal-wide, one rule) ────────────────────────────
+   components/portal/ui/* had zero focus-visible styling — keyboard focus
+   fell back to browser defaults or nothing. Carbon-style 2px brand ring,
+   visible only for keyboard navigation. Components that draw their own
+   ring (shadcn Button) add focus-visible:outline-none locally. */
+.portal-shell :is(button, a, [role="button"], [role="tab"], select, summary, input, textarea):focus-visible {
+  outline: 2px solid #0f62fe;
+  outline-offset: 2px;
+}
+
 /* ── Refined scrollbar (portal-only — narrower than the global one) ────── */
 .portal-shell ::-webkit-scrollbar { width: 6px; height: 6px; }
 .portal-shell ::-webkit-scrollbar-track { background: transparent; }
@@ -1043,5 +1102,29 @@ p, li,
     bottom: 12px !important;
     transform: scale(0.78);
     transform-origin: bottom right;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Global reduced-motion safety net (2026-08-15)
+ *
+ * Every animation before this point was opt-in guarded, class by class —
+ * which meant every NEW animation shipped unguarded by default (the quiz
+ * scan theater and the audit loading shimmer both did). This net makes
+ * reduced-motion the default for everything: entrances with `both`/
+ * `backwards` fill snap to their final frame, infinite loops stop after
+ * one instant pass, and transitions become imperceptible. Keyframes must
+ * therefore always END at the element's resting state (see the
+ * "print-safe entrance utilities" note above). The per-class guards above
+ * remain as belt-and-suspenders and to force explicit final states.
+ * ------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

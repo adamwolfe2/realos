@@ -45,12 +45,6 @@ const HOW = [
 export default function BuildAChatbotPage() {
   return (
     <div style={{ backgroundColor: "#FFFFFF", color: "#161616" }}>
-      <style>{`
-        @keyframes cbp-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
-        .cbp-rise { animation: cbp-rise .7s cubic-bezier(.2,.8,.2,1) both; }
-        @media (prefers-reduced-motion: reduce) { .cbp-rise { animation: none; } }
-      `}</style>
-
       {/* ── Hero ─────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden">
         <div
@@ -66,13 +60,13 @@ export default function BuildAChatbotPage() {
         <div className="relative mx-auto max-w-[1100px] px-4 pt-12 md:px-8 md:pt-20">
           <div className="mx-auto max-w-[760px] text-center">
             <p
-              className="cbp-rise mb-4 text-[11px] font-mono uppercase tracking-[0.18em]"
+              className="ls-rise mb-4 text-[11px] font-mono uppercase tracking-[0.18em]"
               style={{ color: "#0f62fe", fontFamily: "var(--font-mono)" }}
             >
               Free chatbot builder
             </p>
             <h1
-              className="cbp-rise mx-auto"
+              className="ls-rise mx-auto"
               style={{
                 animationDelay: "80ms",
                 fontFamily: "var(--font-display)",
@@ -87,7 +81,7 @@ export default function BuildAChatbotPage() {
               <span className="ls-hl px-2">built in 60 seconds.</span>
             </h1>
             <p
-              className="cbp-rise mx-auto mt-5 max-w-[46ch] text-[15.5px] leading-relaxed md:text-[16px]"
+              className="ls-rise mx-auto mt-5 max-w-[46ch] text-[15.5px] leading-relaxed md:text-[16px]"
               style={{ animationDelay: "160ms", color: "#525252" }}
             >
               Paste your website below. We train a leasing assistant on
@@ -100,7 +94,7 @@ export default function BuildAChatbotPage() {
       {/* ── The builder ──────────────────────────────────────────────── */}
       <section className="relative">
         <div className="mx-auto max-w-[1100px] px-4 pb-16 pt-10 md:px-8 md:pb-24 md:pt-12">
-          <div className="cbp-rise" style={{ animationDelay: "240ms" }}>
+          <div className="ls-rise" style={{ animationDelay: "240ms" }}>
             <ChatbotBuilder />
           </div>
         </div>

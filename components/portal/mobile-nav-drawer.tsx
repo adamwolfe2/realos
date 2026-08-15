@@ -56,13 +56,16 @@ export function MobileNavDrawer({
         <Menu className="h-5 w-5" />
       </button>
 
-      {open && (
-        <div
-          className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm"
-          onClick={() => setOpen(false)}
-          aria-hidden="true"
-        />
-      )}
+      {/* Backdrop stays mounted and fades with the panel slide — previously
+          it hard-cut in while the panel animated, which read as mismatched. */}
+      <div
+        className={cn(
+          "fixed inset-0 z-50 bg-background/80 backdrop-blur-sm transition-opacity duration-200",
+          open ? "opacity-100" : "pointer-events-none opacity-0",
+        )}
+        onClick={() => setOpen(false)}
+        aria-hidden="true"
+      />
 
       <div
         className={cn(
