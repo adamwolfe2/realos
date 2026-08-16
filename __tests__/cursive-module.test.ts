@@ -59,6 +59,36 @@ describe("Cursive module — cron + freshness", () => {
   });
 });
 
+describe("Cursive module — dual-surface segment pull", () => {
+  // 2026-08-16 incident: segments provisioned on AL's newer /audiences
+  // (Audience Lists) surface don't exist on /segments — the old
+  // single-surface pull either 404'd or, worse, read AL's HTTP-200
+  // { status: "NOT_FOUND" } body as an empty segment and reported
+  // ok/pulled:0 forever while syncing nothing. These pins keep the
+  // sync surface-aware and loud about drift.
+  const src = readFile("lib/actions/admin-cursive.ts");
+
+  it("probes both /segments and /audiences surfaces", () => {
+    expect(src).toContain('fetchAlSegmentPage("segments"');
+    expect(src).toContain('fetchAlSegmentPage("audiences"');
+  });
+
+  it("treats AL's HTTP-200 NOT_FOUND body as a miss, never an empty page", () => {
+    expect(src).toContain('json.status === "NOT_FOUND"');
+  });
+
+  it("reports drift as an error instead of a silent empty success", () => {
+    expect(src).toContain(
+      "Segment ID not found on Cursive /segments or /audiences",
+    );
+  });
+
+  it("accepts the /audiences hem field shapes (SHA256_PERSONAL_EMAIL)", () => {
+    expect(src).toContain("SHA256_PERSONAL_EMAIL");
+    expect(src).toContain("SHA256_BUSINESS_EMAIL");
+  });
+});
+
 describe("Cursive module — one-flow setup wiring", () => {
   it("startCursiveSetup server action is exported and mints a webhook token", () => {
     const src = readFile("lib/actions/cursive-connect.ts");

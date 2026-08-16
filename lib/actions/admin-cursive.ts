@@ -308,6 +308,104 @@ const AL_BASE = process.env.CURSIVE_API_URL ?? "https://api.audiencelab.io";
 const PAGE_SIZE = 50;
 const MAX_PAGES = 20; // safety cap; ~1000 resolutions per sync
 
+// the upstream pixel provider exposes TWO parallel surfaces with DIFFERENT ID
+// spaces (see lib/integrations/al-segments.ts): /segments (Studio) and
+// /audiences (Audience Lists — the newer product). A segment provisioned on
+// the Audience Lists surface 404s on /segments, or worse returns HTTP 200
+// with body { status: "NOT_FOUND" } — which the old single-surface loop read
+// as "empty segment" and reported ok:true / pulled:0 forever. The sync
+// LOOKED healthy (lastSegmentSyncAt kept advancing) while syncing nothing.
+// Root cause of the 2026-08-16 "pixel not syncing" incident.
+type AlPullSurface = "segments" | "audiences";
+
+type AlPageFetch =
+  | { ok: true; items: Array<Record<string, unknown>> }
+  | { ok: false; status: number; notFound: boolean; message: string };
+
+async function fetchAlSegmentPage(
+  surface: AlPullSurface,
+  segmentId: string,
+  page: number,
+  apiKey: string,
+): Promise<AlPageFetch> {
+  const url = `${AL_BASE}/${surface}/${encodeURIComponent(segmentId)}?page=${page}&page_size=${PAGE_SIZE}`;
+  const res = await fetch(url, {
+    headers: { "X-Api-Key": apiKey },
+    cache: "no-store",
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!res.ok) {
+    // Log the upstream body server-side only — this error string renders
+    // in the tenant-facing pixel-sync UI (syncPixelFromSegment), and
+    // upstream bodies can echo segment ids / request context.
+    const body = await res.text().catch(() => "");
+    console.error(
+      `Cursive ${surface} fetch failed (${res.status}): ${body.slice(0, 500)}`,
+    );
+    return {
+      ok: false,
+      status: res.status,
+      notFound: res.status === 404,
+      message: `Cursive fetch failed (${res.status}) on /${surface}. See server logs for detail.`,
+    };
+  }
+  const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+  // Soft 404: HTTP 200 with { status: "NOT_FOUND" }. Never treat this as an
+  // empty page — it means the ID does not live on this surface.
+  if (json.status === "NOT_FOUND") {
+    return {
+      ok: false,
+      status: 404,
+      notFound: true,
+      message: `Segment not found on /${surface}.`,
+    };
+  }
+  return { ok: true, items: extractItems(json) };
+}
+
+// Find the surface that actually serves this segment ID. Tries /segments
+// (legacy default) first; falls back to /audiences when /segments doesn't
+// know the ID, and also when /segments answers with zero members — the ID
+// spaces are disjoint, so if /audiences has members for the same ID that's
+// definitive, and a genuinely empty Studio segment loses nothing by the
+// extra probe. Returns the first page alongside the surface so the caller
+// doesn't refetch it.
+async function resolveAlSurface(
+  segmentId: string,
+  apiKey: string,
+): Promise<
+  | { ok: true; surface: AlPullSurface; firstPage: Array<Record<string, unknown>> }
+  | { ok: false; error: string }
+> {
+  const primary = await fetchAlSegmentPage("segments", segmentId, 1, apiKey);
+  if (primary.ok && primary.items.length > 0) {
+    return { ok: true, surface: "segments", firstPage: primary.items };
+  }
+  // /segments unknown or empty — probe the Audience Lists surface.
+  const fallback = await fetchAlSegmentPage("audiences", segmentId, 1, apiKey);
+  if (fallback.ok && fallback.items.length > 0) {
+    return { ok: true, surface: "audiences", firstPage: fallback.items };
+  }
+  if (primary.ok) {
+    // /segments knows the ID but it's empty (and /audiences has nothing
+    // better) — legitimate empty segment, not an error.
+    return { ok: true, surface: "segments", firstPage: primary.items };
+  }
+  if (fallback.ok) {
+    return { ok: true, surface: "audiences", firstPage: fallback.items };
+  }
+  // Neither surface serves the ID. Surface a loud, actionable error instead
+  // of the old silent ok/empty result.
+  if (primary.notFound && fallback.notFound) {
+    return {
+      ok: false,
+      error:
+        "Segment ID not found on Cursive /segments or /audiences. The binding has drifted — re-check the segment ID in the Cursive UI and re-save it in the admin panel.",
+    };
+  }
+  return { ok: false, error: primary.notFound ? fallback.message : primary.message };
+}
+
 export type SyncSegmentResult =
   | { ok: true; pulled: number; created: number; updated: number }
   | { ok: false; error: string };
@@ -353,27 +451,28 @@ export async function runCursiveSegmentSync(
   let created = 0;
   let updated = 0;
 
+  const resolved = await resolveAlSurface(integration.cursiveSegmentId, apiKey);
+  if (!resolved.ok) {
+    return { ok: false, error: resolved.error };
+  }
+
+  let items = resolved.firstPage;
   for (let page = 1; page <= MAX_PAGES; page++) {
-    const url = `${AL_BASE}/segments/${encodeURIComponent(integration.cursiveSegmentId)}?page=${page}&page_size=${PAGE_SIZE}`;
-    const res = await fetch(url, {
-      headers: { "X-Api-Key": apiKey },
-      cache: "no-store",
-    });
-    if (!res.ok) {
-      // Log the upstream body server-side only — this error string renders
-      // in the tenant-facing pixel-sync UI (syncPixelFromSegment), and
-      // upstream bodies can echo segment ids / request context.
-      const body = await res.text().catch(() => "");
-      console.error(
-        `Cursive segment fetch failed (${res.status}): ${body.slice(0, 500)}`,
+    if (page > 1) {
+      const fetched = await fetchAlSegmentPage(
+        resolved.surface,
+        integration.cursiveSegmentId,
+        page,
+        apiKey,
       );
-      return {
-        ok: false,
-        error: `Cursive fetch failed (${res.status}). See server logs for detail.`,
-      };
+      if (!fetched.ok) {
+        // Mid-pagination failure: keep what we already ingested (the
+        // upserts are idempotent) but report the error so the cron/UI
+        // shows it instead of a clean success.
+        return { ok: false, error: fetched.message };
+      }
+      items = fetched.items;
     }
-    const json = (await res.json()) as Record<string, unknown>;
-    const items = extractItems(json);
     if (items.length === 0) break;
 
     for (const item of items) {
@@ -482,8 +581,18 @@ async function upsertResolutionAsVisitor(
   const uid = pickString(item, "uid", "UID");
   const cookieId = pickString(item, "cookie_id", "COOKIE_ID");
   // AL segments endpoint returns SCREAMING_SNAKE_CASE; webhooks use lowercase.
-  // Accept both so the same upsert path serves both flows.
-  const hemSha256 = pickString(item, "hem_sha256", "HEM_SHA256");
+  // Accept both so the same upsert path serves both flows. The newer
+  // /audiences surface replaced HEM_SHA256 with SHA256_PERSONAL_EMAIL /
+  // SHA256_BUSINESS_EMAIL (sometimes comma-separated) — accept those too,
+  // preferring the personal hash, matching lib/integrations/al-segments.ts.
+  const hemSha256 =
+    pickString(item, "hem_sha256", "HEM_SHA256") ??
+    pickString(item, "SHA256_PERSONAL_EMAIL", "sha256_personal_email")
+      ?.split(",")[0]
+      ?.trim() ??
+    pickString(item, "SHA256_BUSINESS_EMAIL", "sha256_business_email")
+      ?.split(",")[0]
+      ?.trim();
   // Segment endpoint returns plural PERSONAL_EMAILS / PERSONAL_VERIFIED_EMAILS,
   // sometimes comma-separated. Take the first valid one.
   const emailRaw =
