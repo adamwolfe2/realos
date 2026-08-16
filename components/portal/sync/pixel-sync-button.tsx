@@ -141,12 +141,16 @@ export function PixelSyncButton({
             {status.throttled ? "Up to date" : "Synced"}
           </span>
         ) : status.kind === "error" ? (
+          // Show the ACTUAL error inline — the sync layer now returns
+          // actionable messages (wrong surface, drifted binding, auth),
+          // and hiding them behind a hover tooltip made every failure
+          // read as the same opaque "Sync failed".
           <span
-            className="inline-flex items-center gap-1 text-[11px] text-rose-700 font-semibold truncate max-w-[140px]"
+            className="inline-flex items-center gap-1 text-[11px] text-rose-700 font-semibold max-w-[340px]"
             title={status.message}
           >
-            <AlertTriangle className="h-3 w-3" />
-            Sync failed
+            <AlertTriangle className="h-3 w-3 shrink-0" />
+            <span className="truncate">Sync failed — {status.message}</span>
           </span>
         ) : null}
       </div>
