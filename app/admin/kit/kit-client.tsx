@@ -5,11 +5,7 @@ import { Check, Copy, ExternalLink, Loader2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import {
-  fillSnippet,
-  kitUrl,
-  type KitSection,
-} from "@/lib/sales-kit/kit";
+import { fillSnippet, kitUrl, type KitSection } from "@/lib/sales-kit/kit";
 
 type KitClientProps = {
   sections: readonly KitSection[];
@@ -31,92 +27,85 @@ export function KitClient({
   const [firstName, setFirstName] = useState("");
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="w-56">
-          <label
-            htmlFor="kit-first-name"
-            className="mb-1 block text-xs font-medium text-muted-foreground"
-          >
-            Prospect first name (optional)
-          </label>
-          <Input
-            id="kit-first-name"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            placeholder="Dana"
-          />
-        </div>
-        <p className="pb-2 text-xs text-muted-foreground">
-          Fills every &ldquo;Copy message&rdquo; below. Links are tagged{" "}
-          <code className="rounded bg-muted px-1">?ref={repRef}</code>.
-        </p>
-      </div>
-
+    <div className="space-y-6">
       <AuditRunner siteUrl={siteUrl} />
 
-      {sections.map((section) => (
-        <section key={section.title} className="space-y-3">
-          <div>
-            <h2 className="text-lg font-semibold">{section.title}</h2>
-            <p className="text-sm text-muted-foreground">{section.blurb}</p>
+      <div className="ls-card">
+        {/* Toolbar: personalization + attribution, one dense row. */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-[var(--hair)] px-5 py-3">
+          <div className="flex items-center gap-2">
+            <label
+              htmlFor="kit-first-name"
+              className="ls-eyebrow whitespace-nowrap"
+            >
+              Prospect
+            </label>
+            <Input
+              id="kit-first-name"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="First name"
+              className="h-8 w-40"
+            />
           </div>
-          <div className="divide-y rounded-xl border bg-card">
-            {section.links.map((link) => {
-              const url = kitUrl(link.href, siteUrl, repRef);
-              return (
-                <div
-                  key={link.href}
-                  className="flex flex-wrap items-start justify-between gap-3 p-4"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{link.label}</span>
+          <p className="text-xs text-muted-foreground">
+            Personalizes every message. Links tagged{" "}
+            <span className="font-mono text-[11px]">?ref={repRef}</span>.
+          </p>
+          {calUrl ? (
+            <div className="ml-auto">
+              <CopyButton value={calUrl} label="Copy your Cal link" />
+            </div>
+          ) : null}
+        </div>
+
+        {sections.map((section) => (
+          <div key={section.title}>
+            <div className="border-b border-[var(--hair)] bg-[var(--color-surface,#F9FAFB)] px-5 py-2">
+              <span className="ls-eyebrow">{section.title}</span>
+            </div>
+            <ul className="divide-y divide-[var(--hair)]">
+              {section.links.map((link) => {
+                const url = kitUrl(link.href, siteUrl, repRef);
+                return (
+                  <li
+                    key={link.href}
+                    className="group flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3 transition-colors hover:bg-[var(--brand-wash,rgba(37,99,235,0.04))]"
+                  >
+                    <div className="min-w-0 flex-1">
                       <a
                         href={url}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-muted-foreground hover:text-foreground"
-                        aria-label={`Open ${link.label} in a new tab`}
+                        className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-primary"
                       >
-                        <ExternalLink className="size-3.5" strokeWidth={1.5} />
+                        {link.label}
+                        <ExternalLink
+                          className="size-3 opacity-0 transition-opacity group-hover:opacity-60"
+                          strokeWidth={1.5}
+                          aria-hidden
+                        />
                       </a>
+                      <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                        {link.whenToSend}
+                      </p>
                     </div>
-                    <p className="mt-0.5 text-sm text-muted-foreground">
-                      {link.whenToSend}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 gap-2">
-                    <CopyButton value={url} label="Copy link" />
-                    {link.snippet ? (
-                      <CopyButton
-                        value={fillSnippet(link.snippet, url, firstName)}
-                        label="Copy message"
-                        variant="secondary"
-                      />
-                    ) : null}
-                  </div>
-                </div>
-              );
-            })}
+                    <div className="flex shrink-0 items-center gap-1">
+                      <CopyButton value={url} label="Link" />
+                      {link.snippet ? (
+                        <CopyButton
+                          value={fillSnippet(link.snippet, url, firstName)}
+                          label="Message"
+                        />
+                      ) : null}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
-        </section>
-      ))}
-
-      {calUrl ? (
-        <section className="space-y-3">
-          <h2 className="text-lg font-semibold">Direct calendar</h2>
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-4">
-            <div className="min-w-0">
-              <p className="font-medium">Your Cal.com link</p>
-              <p className="mt-0.5 truncate text-sm text-muted-foreground">
-                {calUrl}
-              </p>
-            </div>
-            <CopyButton value={calUrl} label="Copy link" />
-          </div>
-        </section>
-      ) : null}
+        ))}
+      </div>
     </div>
   );
 }
@@ -175,94 +164,77 @@ function AuditRunner({ siteUrl }: { siteUrl: string }) {
   }
 
   return (
-    <section className="space-y-3">
-      <div>
-        <h2 className="text-lg font-semibold">Run an audit for a prospect</h2>
-        <p className="text-sm text-muted-foreground">
-          Skip the form. Paste their site, get a report link you can send. The
-          scan takes a couple of minutes — the link works immediately and fills
-          in as it finishes.
-        </p>
-      </div>
-      <form onSubmit={run} className="rounded-xl border bg-card p-4">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="min-w-56 flex-1">
-            <label
-              htmlFor="kit-audit-url"
-              className="mb-1 block text-xs font-medium text-muted-foreground"
-            >
-              Property website
-            </label>
-            <Input
-              id="kit-audit-url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="theparkatwestend.com"
-            />
-          </div>
-          <div className="w-48">
-            <label
-              htmlFor="kit-audit-brand"
-              className="mb-1 block text-xs font-medium text-muted-foreground"
-            >
-              Property name (optional)
-            </label>
-            <Input
-              id="kit-audit-brand"
-              value={brandName}
-              onChange={(e) => setBrandName(e.target.value)}
-              placeholder="The Park at West End"
-            />
-          </div>
-          <Button type="submit" disabled={state.kind === "running"}>
-            {state.kind === "running" ? (
-              <Loader2 className="size-4 animate-spin" strokeWidth={1.5} />
-            ) : (
-              <Zap className="size-4" strokeWidth={1.5} />
-            )}
-            Run audit
-          </Button>
+    <form onSubmit={run} className="ls-card ls-card-accent p-5">
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="min-w-56 flex-1">
+          <label htmlFor="kit-audit-url" className="ls-eyebrow mb-1.5 block">
+            Run an audit for a prospect
+          </label>
+          <Input
+            id="kit-audit-url"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="theparkatwestend.com"
+            className="h-10"
+          />
         </div>
+        <div className="w-52">
+          <label htmlFor="kit-audit-brand" className="ls-eyebrow mb-1.5 block">
+            Property name
+          </label>
+          <Input
+            id="kit-audit-brand"
+            value={brandName}
+            onChange={(e) => setBrandName(e.target.value)}
+            placeholder="Optional"
+            className="h-10"
+          />
+        </div>
+        <Button type="submit" size="lg" disabled={state.kind === "running"}>
+          {state.kind === "running" ? (
+            <Loader2 className="size-4 animate-spin" strokeWidth={1.5} />
+          ) : (
+            <Zap className="size-4" strokeWidth={1.5} />
+          )}
+          {state.kind === "running" ? "Starting" : "Run audit"}
+        </Button>
+      </div>
 
-        {state.kind === "error" ? (
-          <p className="mt-3 text-sm text-destructive">{state.message}</p>
-        ) : null}
+      <p className="mt-2 text-xs text-muted-foreground">
+        Skips the form entirely. The link works immediately and fills in as the
+        scan finishes, usually two minutes.
+      </p>
 
-        {state.kind === "done" ? (
-          <div className="mt-3 flex flex-wrap items-center gap-3 rounded-[2px] border bg-muted/40 p-3">
-            <span className="min-w-0 flex-1 truncate font-mono text-sm">
-              {state.reportUrl}
-            </span>
-            {state.cached ? (
-              <span className="text-xs text-muted-foreground">
-                Recent scan reused
-              </span>
-            ) : null}
-            <CopyButton value={state.reportUrl} label="Copy link" />
-            <a
-              href={state.reportUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="text-sm underline underline-offset-4"
-            >
-              Open
-            </a>
-          </div>
-        ) : null}
-      </form>
-    </section>
+      {state.kind === "error" ? (
+        <p className="mt-3 text-sm text-destructive">
+          {state.message}
+        </p>
+      ) : null}
+
+      {state.kind === "done" ? (
+        <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-[var(--hair)] pt-3">
+          <span className="min-w-0 flex-1 truncate font-mono text-xs">
+            {state.reportUrl}
+          </span>
+          {state.cached ? (
+            <span className="ls-pill ls-pill-neutral">Recent scan reused</span>
+          ) : null}
+          <CopyButton value={state.reportUrl} label="Report link" />
+          <a
+            href={state.reportUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs font-medium text-primary underline-offset-4 hover:underline"
+          >
+            Open
+          </a>
+        </div>
+      ) : null}
+    </form>
   );
 }
 
-function CopyButton({
-  value,
-  label,
-  variant = "outline",
-}: {
-  value: string;
-  label: string;
-  variant?: "outline" | "secondary";
-}) {
+function CopyButton({ value, label }: { value: string; label: string }) {
   const [copied, setCopied] = useState(false);
 
   async function copy() {
@@ -281,19 +253,21 @@ function CopyButton({
   return (
     <Button
       type="button"
-      variant={variant}
+      variant="ghost"
       size="sm"
       onClick={copy}
-      aria-label={label}
+      aria-label={`Copy ${label.toLowerCase()}`}
+      className={cn(
+        "text-muted-foreground hover:text-foreground",
+        copied && "text-[var(--color-success,#24a148)]",
+      )}
     >
       {copied ? (
         <Check className="size-3.5" strokeWidth={1.5} />
       ) : (
         <Copy className="size-3.5" strokeWidth={1.5} />
       )}
-      <span className={cn(copied && "tabular-nums")}>
-        {copied ? "Copied" : label}
-      </span>
+      {copied ? "Copied" : label}
     </Button>
   );
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { currentUser } from "@clerk/nextjs/server";
+import { PageHeader } from "@/components/admin/page-header";
 import { getSiteUrl } from "@/lib/brand";
 import { KIT_SECTIONS } from "@/lib/sales-kit/kit";
 import { KitClient } from "./kit-client";
@@ -22,15 +23,12 @@ export default async function SalesKitPage() {
   const calUrl = process.env.NEXT_PUBLIC_CAL_BOOK_URL?.trim() || null;
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8 p-6">
-      <header>
-        <h1 className="text-2xl font-semibold">Sales kit</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Every link worth sending a prospect, with the words to send it. Copy,
-          paste, move on.
-        </p>
-      </header>
-
+    <div className="mx-auto max-w-5xl p-6 md:p-8">
+      <PageHeader
+        eyebrow="Sales"
+        title="Sales kit"
+        description="Every link worth sending, with the words to send it."
+      />
       <KitClient
         sections={KIT_SECTIONS}
         siteUrl={getSiteUrl()}
