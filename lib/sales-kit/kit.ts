@@ -83,19 +83,16 @@ export const KIT_SECTIONS: readonly KitSection[] = [
         href: "/demo/aeo",
         label: "Live AEO demo",
         whenToSend:
-          "On a screen-share, or when someone asks what 'AI search' actually means.",
-      },
-      {
-        href: "/features/seo-aeo",
-        label: "SEO + AEO feature page",
-        whenToSend: "Technical buyer who wants the how, not the what.",
+          "Screen-share only — walk them through it. Five screens of raw tables, so don't send it cold.",
       },
       {
         href: "/manifesto",
         label: "Manifesto",
         whenToSend:
-          "Founder-to-founder, or anyone asking why we exist. Sets us apart from agencies.",
+          "Founder-to-founder, warm conversations only. Plain prose, no visuals — reads thin next to the other pages.",
       },
+      // 2026-08-17: /features/seo-aeo deliberately NOT listed. It is a stub —
+      // hero, one chart, then the footer. Add it back once it has a body.
     ],
   },
   {
