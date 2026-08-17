@@ -1,5 +1,6 @@
 import {
   Activity,
+  Briefcase,
   Brush,
   Bug,
   Building2,
@@ -73,6 +74,7 @@ function cluster(
 export const adminNavSections: readonly AdminNavEntry[] = [
   link("/admin", "Dashboard", LayoutDashboard),
   link("/admin/insights", "Insights", Sparkles),
+  link("/admin/kit", "Sales kit", Briefcase),
   cluster("Pipeline", Kanban, [
     link("/admin/pipeline", "Pipeline overview", Kanban, "activeBuilds"),
     link("/admin/intakes", "Intake queue", FileInput, "pendingIntakes"),
