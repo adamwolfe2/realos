@@ -7,6 +7,7 @@ import {
   normalizeDomain,
 } from "@/lib/audit/token";
 import { checkAuditStartLimit } from "@/lib/audit/rate-limit";
+import { isOwnDomain } from "@/lib/audit/own-domain";
 import { rateLimited, getIp } from "@/lib/rate-limit";
 import { getSiteUrl } from "@/lib/brand";
 import { COMPUTE_VERSION } from "@/lib/signals/types";
@@ -87,6 +88,15 @@ export async function POST(req: NextRequest) {
   if (!domain) {
     return NextResponse.json(
       { error: "Please enter a valid website URL." },
+      { status: 400 },
+    );
+  }
+  // Auditing ourselves produces a report about LeaseStack wearing the
+  // prospect's name — every engine prompt, mention scan, and AI Overview
+  // query keys off the audited site (Adam 2026-08-19).
+  if (isOwnDomain(domain)) {
+    return NextResponse.json(
+      { error: "Enter the property's own website address." },
       { status: 400 },
     );
   }

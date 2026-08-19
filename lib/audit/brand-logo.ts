@@ -9,6 +9,8 @@
 // <img src>; nothing is fetched server-side, so a hostile page can point
 // us at a 404 (renders nothing) but not at anything internal.
 
+import { isOwnUrl } from "./own-domain";
+
 /** Ordered best-to-worst. Earlier sources are more likely to be an
  *  actual logo rather than a hero photo or a generic favicon. */
 const PATTERNS: Array<{ name: string; re: RegExp; group: number }> = [
@@ -37,29 +39,14 @@ const PATTERNS: Array<{ name: string; re: RegExp; group: number }> = [
   // report is worse than the wordmark alone (Adam 2026-08-19).
 ];
 
-// Our own marks, never the prospect's. Two ways ours could leak into a
-// report: the prospect's site carries a "powered by LeaseStack" badge, or
-// someone audits leasestack.co itself. Either way the hero must fall back
-// to the wordmark rather than brand their report as us (Adam 2026-08-19).
-const OWN_HOSTS = [
-  "leasestack.co",
-  "leasestack.com",
-  "realos.vercel.app",
-];
-
 function isOwnHost(url: string): boolean {
-  try {
-    const host = new URL(url).hostname.toLowerCase().replace(/^www\./, "");
-    return OWN_HOSTS.some((own) => host === own || host.endsWith(`.${own}`));
-  } catch {
-    return true; // unparseable → don't render it
-  }
+  return isOwnUrl(url);
 }
 
-// Attribute values arrive HTML-encoded. Next.js image URLs in
-// particular come through as `?url=x&amp;w=384`, and handing that to an
-// <img src> requests a literally different URL that 400s
-// (telegraphcommons.com, 2026-08-19).
+// Attribute values arrive HTML-encoded. Next.js image URLs in particular
+// come through as `?url=x&amp;w=384`, and handing that to an <img src>
+// requests a literally different URL that 400s (telegraphcommons.com,
+// 2026-08-19).
 function decodeEntities(value: string): string {
   return value
     .replace(/&(?:amp|#38|#x26);/gi, "&")

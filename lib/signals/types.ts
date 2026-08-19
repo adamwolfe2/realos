@@ -127,7 +127,13 @@ export interface SignalSnapshot {
 // splits 2 branded + 3 discovery prompts (city derived from the crawl)
 // and the verdict counts DISCOVERED. Invalidate the dedupe so stale
 // all-green audits re-run on next visit.
-export const COMPUTE_VERSION = "2026-08-13.aeo-discovery.v1";
+// 2026-08-19: bump to brand-identity.v1 — the prospect scan keyed every
+// fan-out (engine prompts, mention scan, Google AI Overview) off a name
+// derived from the domain, ignoring the property name the prospect typed.
+// Reports rendered the typed name over answers about a different company.
+// Every audit computed before this bump carries wrong-entity data, so the
+// dedupe must not serve one to a new submission.
+export const COMPUTE_VERSION = "2026-08-19.brand-identity.v1";
 
 export function scopeKey(s: SignalScope): string {
   if (s.kind === "tenant") {
