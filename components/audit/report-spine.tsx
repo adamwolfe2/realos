@@ -74,8 +74,8 @@ export function ReportSpine({ items }: { items: SpineItem[] }) {
         </h2>
         <p className="mt-4 max-w-[58ch] text-[15px] leading-relaxed" style={{ color: "#525252" }}>
           Everything below comes from live engine responses and public data
-          about your property, ranked by impact. The evidence for each is
-          one click away.
+          about your property, ranked by impact. The evidence for every claim
+          is laid out in the sections underneath.
         </p>
 
         <ol className="mt-6">

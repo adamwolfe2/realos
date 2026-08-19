@@ -109,7 +109,10 @@ export function MentionsSection({
         <FilterChip
           label="All"
           count={sorted.length}
-          color="#1E2A3A"
+          // Accent blue, not near-black. A filled black pill reads as a
+          // dead/disabled state next to the blue brand chips (Adam
+          // 2026-08-19).
+          color="#0f62fe"
           active={activeSource === null}
           onClick={() => {
             setActiveSource(null);

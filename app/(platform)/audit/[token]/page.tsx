@@ -21,6 +21,8 @@ import {
   type FoldPillar,
 } from "@/components/audit/verdict-fold";
 import { ReportSpine, type SpineItem } from "@/components/audit/report-spine";
+import { ReportSection } from "@/components/audit/section";
+import { SourceGlyph } from "@/components/audit/mentions/source-glyphs";
 import { PillarGrid } from "@/components/audit/pillar-grid";
 import { RecommendationsSection } from "@/components/audit/recommendations-section";
 import { BookCallCta } from "@/components/audit/book-call-cta";
@@ -118,6 +120,8 @@ interface Findings {
   googleAiOverview?: GoogleAiOverviewFindings | null;
   detectedStack?: DetectedStack;
   schemaGap?: SchemaGap;
+  // Prospect's own logo off the crawled homepage (post-2026-08-19).
+  brandLogoUrl?: string | null;
 }
 
 async function loadAudit(token: string): Promise<AuditRow | null> {
@@ -213,7 +217,13 @@ export default async function AuditViewerPage({
   // displayName): title-case all-lowercase brand names, never domains.
   const displaySubject = displayName(subject);
   const dps = findings.dps;
-  const recommendations = findings.recommendations ?? [];
+  // Findability-only report (Adam 2026-08-19). This audit sells SEO/AEO/AI
+  // search — not the chatbot or the pixel. Filtering at READ, not in
+  // computeRecommendations, because every audit already generated has the
+  // conversion/tracking items persisted in findings and must render clean.
+  const recommendations = (findings.recommendations ?? []).filter(
+    (r) => r.pillar === "findability",
+  );
   const mentions = findings.mentions ?? [];
   const perSourceCounts = computePerSourceCounts(mentions);
 
@@ -354,35 +364,21 @@ export default async function AuditViewerPage({
       </>
     ) : undefined;
 
-  const aiEvidence: ReactNode =
+  const engineEvidence: ReactNode =
     enginesQueried > 0 ? (
-      <>
-        <AeoEngineBreakdown
-          rows={aeoEngines}
-          competitorsCited={notCited > 0 ? aeoCompetitorsCited : []}
-          brandName={displaySubject}
-          discoveryRan={aeoDiscoveryRan}
-          city={aeoCity}
-          competitorsRanked={
-            notCited > 0 ? (findings.aeoCompetitorsRanked ?? []) : []
-          }
-          rival={findings.aeoRival ?? null}
-        />
-        {aeoReceipts.length > 0 ? (
-          <AeoReceiptsBlock
-            receipts={aeoReceipts}
-            brandName={displaySubject}
-            competitors={notCited > 0 ? aeoCompetitorsCited : []}
-            // Locked report → one receipt teases; the feed unlocks with
-            // the email gate (slice 12). Gate mechanics unchanged.
-            previewOnly={!audit.email}
-          />
-        ) : null}
-        {googleAio ? (
-          <GoogleAiOverviewCard findings={googleAio} brandName={displaySubject} />
-        ) : null}
-      </>
+      <AeoEngineBreakdown
+        rows={aeoEngines}
+        competitorsCited={notCited > 0 ? aeoCompetitorsCited : []}
+        brandName={displaySubject}
+        discoveryRan={aeoDiscoveryRan}
+        city={aeoCity}
+        competitorsRanked={
+          notCited > 0 ? (findings.aeoCompetitorsRanked ?? []) : []
+        }
+        rival={findings.aeoRival ?? null}
+      />
     ) : null;
+
   const reputationEvidence: ReactNode =
     mentions.length > 0 ? (
       <>
@@ -393,65 +389,30 @@ export default async function AuditViewerPage({
         </p>
       </>
     ) : null;
-  const onPageEvidence: ReactNode =
-    aeoOnPage || schemaGap || detectedStack ? (
+  // Blockers = the two surfaces that explain a missing citation. The
+  // detected conversion stack (chatbot/popup/pixel widgets) is off-message
+  // for an AI-search report — appendix only (Adam 2026-08-19).
+  const blockersEvidence: ReactNode =
+    aeoOnPage || schemaGap ? (
       <>
         {aeoOnPage ? <AeoOnPageCard findings={aeoOnPage} /> : null}
-        {schemaGap ? <SchemaGapCard findings={schemaGap} /> : null}
-        {detectedStack ? <DetectedStackCard findings={detectedStack} /> : null}
+        {schemaGap ? (
+          <div className={aeoOnPage ? "mt-8" : ""}>
+            <SchemaGapCard findings={schemaGap} />
+          </div>
+        ) : null}
       </>
     ) : null;
 
-  type PoolKey = "ai" | "reputation" | "onpage";
-  const pools: Record<PoolKey, { node: ReactNode; label: string }> = {
-    ai: { node: aiEvidence, label: "See the evidence · live engine responses" },
-    reputation: {
-      node: reputationEvidence,
-      label: "See the evidence · where mentions come from",
-    },
-    onpage: {
-      node: onPageEvidence,
-      label: "See the evidence · your homepage, checked",
-    },
-  };
-  const pillarPool: Record<string, PoolKey> = {
-    findability: "ai",
-    listings: "ai",
-    reputation: "reputation",
-    conversion: "onpage",
-    tracking: "onpage",
-    accessibility: "onpage",
-  };
-  const used = new Set<PoolKey>();
-  const spineItems: SpineItem[] = top3.map((item) => {
-    // STRICT pillar → evidence matching. A mismatched pairing ("visitor
-    // pixel" claim over AI-engine evidence) reads as a broken report;
-    // a claim with no evidence block reads fine. Unclaimed pools render
-    // in the appendix instead.
-    let pool: PoolKey | null = pillarPool[item.pillar] ?? null;
-    if (!pool || used.has(pool) || !pools[pool].node) pool = null;
-    if (pool) used.add(pool);
-    return {
-      id: item.id,
-      title: item.title,
-      why: item.why,
-      note: pool === "ai" ? competitorNote : undefined,
-      evidence: pool ? pools[pool].node : undefined,
-      evidenceLabel: pool ? pools[pool].label : undefined,
-      // /ai-visibility deep-links to #ai-search, /reputation-report to
-      // #reputation — anchor lives on the spine item that carries the
-      // matching evidence, expanded on load.
-      anchorId:
-        pool === "ai"
-          ? "ai-search"
-          : pool === "reputation"
-            ? "reputation"
-            : undefined,
-      defaultOpen: pool === "ai" || pool === "reputation",
-    };
-  });
-  const aiAnchorPlaced = spineItems.some((s) => s.anchorId === "ai-search");
-  const repAnchorPlaced = spineItems.some((s) => s.anchorId === "reputation");
+  // The claims. Evidence used to hang off each one in a collapsed
+  // <details>; it now lives in the visible sections directly below, so
+  // the spine is pure argument and nothing persuasive needs a click.
+  const spineItems: SpineItem[] = top3.map((item) => ({
+    id: item.id,
+    title: item.title,
+    why: item.why,
+    note: item.id.startsWith("rec-aeo") ? competitorNote : undefined,
+  }));
 
   // Shared brief-shell sources — every data provider the pipeline
   // touched, rendered as clickable cards in the appendix. Trust by
@@ -533,6 +494,7 @@ export default async function AuditViewerPage({
       {/* ── 1. Verdict fold ─────────────────────────────────────────── */}
       <VerdictFold
         subject={displaySubject}
+        logoUrl={findings.brandLogoUrl ?? null}
         generatedAtIso={audit.createdAt.toISOString()}
         score={score}
         highSeverity={highSeverity}
@@ -549,17 +511,83 @@ export default async function AuditViewerPage({
 
       {/* ── 2. The spine: three things costing you leases ───────────── */}
       <ReportSpine items={spineItems} />
-      {/* Deep-link safety net: /ai-visibility links to #ai-search. When
-          no spine item carried the engine evidence, the appendix's AI
-          item is anchored + opened below; this bare anchor only covers
-          audits with no engine data at all. */}
-      {!aiAnchorPlaced && !aiEvidence ? (
-        <span id="ai-search" className="scroll-mt-24" />
-      ) : null}
-      {/* Same net for /reputation-report → #reputation. */}
-      {!repAnchorPlaced && !reputationEvidence ? (
-        <span id="reputation" className="scroll-mt-24" />
-      ) : null}
+      {/* Deep-link safety net: /ai-visibility links to #ai-search, which
+          now lives on the AI search visibility section below. This bare
+          anchor only covers audits with no engine data at all. */}
+      {!engineEvidence ? <span id="ai-search" className="scroll-mt-24" /> : null}
+
+      <div className="mx-auto max-w-[1080px] px-4 md:px-6">
+        {/* ── 3. AI search visibility: the per-engine verdict ────────── */}
+        {engineEvidence ? (
+          <ReportSection
+            id="ai-search"
+            eyebrow="AI search visibility"
+            title={
+              discoveryMode
+                ? "Where AI recommends you \u2014 and where it doesn't"
+                : "Where AI search engines name you"
+            }
+            metric={{
+              value: `${enginesQueried - notCited}/${enginesQueried}`,
+              label: discoveryMode ? "engines recommend you" : "engines name you",
+            }}
+          >
+            {engineEvidence}
+          </ReportSection>
+        ) : null}
+
+        {/* ── 4. The receipts: verbatim answers, full text in a modal ── */}
+        {aeoReceipts.length > 0 || googleAio ? (
+          <ReportSection
+            eyebrow="The receipts"
+            title="What AI actually said, word for word"
+            lede="The exact prompt we asked each engine and the answer it gave. Nothing paraphrased, nothing summarized."
+            metric={
+              totalAiResponses > 0
+                ? { value: totalAiResponses, label: "live answers captured" }
+                : undefined
+            }
+          >
+            {aeoReceipts.length > 0 ? (
+              <AeoReceiptsBlock
+                receipts={aeoReceipts}
+                brandName={displaySubject}
+                competitors={notCited > 0 ? aeoCompetitorsCited : []}
+                // Locked report → one receipt teases; the feed unlocks
+                // with the email gate (slice 12). Mechanics unchanged.
+                previewOnly={!audit.email}
+              />
+            ) : null}
+            {googleAio ? (
+              <div className={aeoReceipts.length > 0 ? "mt-3" : ""}>
+                <GoogleAiOverviewCard
+                  findings={googleAio}
+                  brandName={displaySubject}
+                />
+              </div>
+            ) : null}
+          </ReportSection>
+        ) : null}
+
+        {/* ── 5. Blockers: why a citation isn't happening ────────────── */}
+        {blockersEvidence ? (
+          <ReportSection
+            eyebrow="Why you're not cited"
+            title="What's stopping engines from quoting your site"
+            lede="AI engines quote pages they can attribute to a real, structured entity. These are the signals your homepage is missing."
+            metric={
+              aeoOnPage
+                ? {
+                    value: `${aeoOnPage.checks.filter((c) => c.pass).length}/${aeoOnPage.checks.length}`,
+                    label: "AEO checks passing",
+                  }
+                : undefined
+            }
+          >
+            {blockersEvidence}
+          </ReportSection>
+        ) : null}
+      </div>
 
       {/* ── 3. Narrative: markdown stripped before it ever renders ──── */}
       {audit.claudeSummary ? (
@@ -693,35 +721,21 @@ export default async function AuditViewerPage({
             </AppendixItem>
           ) : null}
 
-          {!used.has("ai") && aiEvidence ? (
+          {detectedStack ? (
             <AppendixItem
-              label="AI search visibility"
-              sublabel="per-engine breakdown"
-              // Carries the /ai-visibility deep link when the spine
-              // didn't claim the engine evidence — open so the anchor
-              // lands on visible content.
-              id={!aiAnchorPlaced ? "ai-search" : undefined}
-              defaultOpen={!aiAnchorPlaced}
+              label="Detected site stack"
+              sublabel="what's installed on your homepage"
             >
-              {aiEvidence}
+              <DetectedStackCard findings={detectedStack} />
             </AppendixItem>
           ) : null}
-          {!used.has("onpage") && onPageEvidence ? (
+          {reputationEvidence ? (
             <AppendixItem
-              label="Homepage health"
-              sublabel="on-page, schema, stack"
-            >
-              {onPageEvidence}
-            </AppendixItem>
-          ) : null}
-          {!used.has("reputation") && reputationEvidence ? (
-            <AppendixItem
-              label="Reputation scan"
-              sublabel="mention sources"
-              // Carries the /reputation-report deep link when the spine
-              // didn't claim the mention evidence.
-              id={!repAnchorPlaced ? "reputation" : undefined}
-              defaultOpen={!repAnchorPlaced}
+              label="What the engines read about you"
+              sublabel="public mention sources"
+              // Carries the /reputation-report deep link.
+              id="reputation"
+              defaultOpen
             >
               {reputationEvidence}
             </AppendixItem>
@@ -938,15 +952,14 @@ type AuditSource = AuditMention["source"];
 const SOURCE_DISPLAY: Array<{
   source: AuditSource;
   label: string;
-  color: string;
 }> = [
-  { source: "REDDIT",            label: "Reddit",          color: "#FF4500" },
-  { source: "YELP",              label: "Yelp",            color: "#D32323" },
-  { source: "GOOGLE_REVIEW",     label: "Google",          color: "#4285F4" },
-  { source: "APARTMENT_RATINGS", label: "ApartmentRatings", color: "#0E9F6E" },
-  { source: "BBB",               label: "BBB",             color: "#0F4C81" },
-  { source: "FACEBOOK",          label: "Facebook",        color: "#1877F2" },
-  { source: "TAVILY_WEB",        label: "Open web",        color: "#6B7280" },
+  { source: "REDDIT",            label: "Reddit" },
+  { source: "YELP",              label: "Yelp" },
+  { source: "GOOGLE_REVIEW",     label: "Google" },
+  { source: "APARTMENT_RATINGS", label: "ApartmentRatings" },
+  { source: "BBB",               label: "BBB" },
+  { source: "FACEBOOK",          label: "Facebook" },
+  { source: "TAVILY_WEB",        label: "Open web" },
 ];
 
 function computePerSourceCounts(
@@ -993,7 +1006,7 @@ function SourceBreakdown({
         </p>
       </div>
       <ul className="mt-2 flex flex-wrap gap-1.5">
-        {SOURCE_DISPLAY.map(({ source, label, color }) => {
+        {SOURCE_DISPLAY.map(({ source, label }) => {
           const count = counts[source] ?? 0;
           const has = count > 0;
           return (
@@ -1002,10 +1015,10 @@ function SourceBreakdown({
               className="inline-flex items-center gap-1.5 rounded-full h-7 px-2.5"
               style={{
                 backgroundColor: has ? "#FFFFFF" : "#FBFBFD",
-                border: `1px solid ${has ? "#E5E7EB" : "#F3F4F6"}`,
+                border: `1px solid ${has ? "#e0e0e0" : "#f4f4f4"}`,
                 // AA: zero-count chips were #9CA3AF at 0.85 opacity —
                 // 2.12:1 once the accordion default-opened (axe, 2026-08-13).
-                color: has ? "#1E2A3A" : "#5f6b7c",
+                color: has ? "#161616" : "#5f6b7c",
                 fontFamily: "var(--font-sans)",
                 fontSize: 12,
                 fontWeight: 500,
@@ -1013,15 +1026,23 @@ function SourceBreakdown({
             >
               <span
                 aria-hidden
-                className="h-1.5 w-1.5 rounded-full"
+                className="inline-flex items-center justify-center"
+                // Real brand mark, always — a bare colour dot doesn't tell
+                // anyone we actually scanned that site (Adam 2026-08-19).
+                // Un-scanned sources desaturate rather than disappear.
                 style={{
-                  backgroundColor: has ? color : "#D1D5DB",
+                  width: 14,
+                  height: 14,
+                  filter: has ? "none" : "grayscale(1)",
+                  opacity: has ? 1 : 0.45,
                 }}
-              />
+              >
+                <SourceGlyph source={source} className="h-3.5 w-3.5" />
+              </span>
               <span>{label}</span>
               <span
                 className="tabular-nums"
-                style={{ color: has ? "#6B7280" : "#5f6b7c" }}
+                style={{ color: has ? "#6f6f6f" : "#5f6b7c" }}
               >
                 {count}
               </span>

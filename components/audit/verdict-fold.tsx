@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Atmosphere } from "@/components/home/atmosphere";
 import { BookDemoLink } from "@/components/marketing/book-demo-link";
 import { CountUp } from "@/components/audit/count-up";
+import { BrandLogoImg } from "@/components/audit/brand-logo-img";
 import {
   ChatGPTMark,
   PerplexityMark,
@@ -54,6 +55,7 @@ export function VerdictFold({
   secondaryCta,
   engines,
   pillars,
+  logoUrl,
 }: {
   subject: string;
   generatedAtIso: string;
@@ -72,6 +74,10 @@ export function VerdictFold({
   engines?: FoldEngine[];
   /** Six-pillar bar rows (2026-08-14). Absent = legacy audit. */
   pillars?: FoldPillar[];
+  /** The prospect's own logo, pulled from their homepage during the crawl
+   *  (2026-08-19). Null on legacy audits and on sites where no credible
+   *  mark was found — the fold then reads as it always did. */
+  logoUrl?: string | null;
 }) {
   const tone = toneFor(score);
   const dateLabel = new Date(generatedAtIso).toLocaleDateString("en-US", {
@@ -115,6 +121,11 @@ export function VerdictFold({
             >
               Digital performance audit · {dateLabel}
             </p>
+            {logoUrl ? (
+              <div className="aud-rise mt-5" style={{ animationDelay: "40ms" }}>
+                <BrandLogoImg src={logoUrl} alt={`${subject} logo`} />
+              </div>
+            ) : null}
             <h1
               className="aud-rise mt-4"
               style={{

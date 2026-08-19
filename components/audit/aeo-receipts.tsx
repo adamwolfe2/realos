@@ -5,18 +5,25 @@ import {
   ClaudeMark,
   GeminiMark,
 } from "@/components/platform/artifacts/brand-logos";
+import { TabGroup, type Tab } from "@/components/audit/tab-group";
+import { Panel, StatusChip, T } from "@/components/audit/section";
 import type { AeoReceipt } from "@/lib/signals/compute";
 
 // ---------------------------------------------------------------------------
-// AeoReceiptsBlock — "What AI actually said about you." (2026-08-14)
+// AeoReceiptsBlock — "What AI actually said about you."
 //
-// Verbatim receipts: per engine, the exact prompt we asked and a capped
-// excerpt of what it answered, with the brand and named competitors
-// highlighted inline. Knowatoa pattern — a report that quotes the engine
-// verbatim is trusted; a report that summarizes it is doubted.
+// Verbatim receipts: per engine, the exact prompt we asked and the answer
+// it gave, with the brand and named competitors highlighted inline.
+// Knowatoa pattern — a report that quotes the engine verbatim is trusted;
+// a report that summarizes it is doubted.
+//
+// 2026-08-19: promoted out of the nested <details> accordion into engine
+// tabs. Every engine is visible at once in the tab strip and its answers
+// read in full in the panel — no clipping, no scrolling past three
+// engines to reach the fourth.
 //
 // Renders only when findings.aeoReceipts exists (additive field) —
-// legacy audits render nothing, byte-identical to before.
+// legacy audits render nothing.
 // ---------------------------------------------------------------------------
 
 const ENGINE_LABELS: Record<AeoReceipt["engine"], string> = {
@@ -86,6 +93,11 @@ const KIND_LABEL: Record<AeoReceipt["kind"], string> = {
   branded: "Asked about you directly",
 };
 
+const KIND_CHIP: Record<AeoReceipt["kind"], string> = {
+  discovery: "Unprompted",
+  branded: "Asked directly",
+};
+
 export function AeoReceiptsBlock({
   receipts,
   brandName,
@@ -95,9 +107,9 @@ export function AeoReceiptsBlock({
   receipts: AeoReceipt[];
   brandName: string;
   competitors: string[];
-  /** Locked reports (2026-08-14, slice 12): show ONE verbatim receipt as
-   *  the tease and count the rest — the full feed unlocks with the email
-   *  gate. Gate mechanics themselves are untouched. */
+  /** Locked reports (slice 12): show ONE verbatim receipt as the tease
+   *  and count the rest — the full feed unlocks with the email gate.
+   *  Gate mechanics themselves are untouched. */
   previewOnly?: boolean;
 }) {
   if (receipts.length === 0) return null;
@@ -105,114 +117,62 @@ export function AeoReceiptsBlock({
   const visible = previewOnly ? receipts.slice(0, 1) : receipts;
   const hiddenCount = receipts.length - visible.length;
 
-  // Group by engine, preserving the persisted engine order.
+  // One tab per engine, each panel holding that engine's answers in full.
   const byEngine = new Map<AeoReceipt["engine"], AeoReceipt[]>();
   for (const r of visible) {
-    const list = byEngine.get(r.engine) ?? [];
-    list.push(r);
-    byEngine.set(r.engine, list);
+    byEngine.set(r.engine, [...(byEngine.get(r.engine) ?? []), r]);
   }
-  const engines = Array.from(byEngine.entries());
 
-  return (
-    <section className="mt-8" aria-label="Verbatim AI answers">
-      <p
-        className="text-[10px] font-mono uppercase tracking-[0.16em]"
-        style={{ color: "#2563EB" }}
-      >
-        The receipts
-      </p>
-      <h3
-        className="mt-1.5 text-lg sm:text-xl font-semibold tracking-tight"
-        style={{ color: "#1E2A3A" }}
-      >
-        What AI actually said, word for word
-      </h3>
-      <p className="mt-1 text-[12.5px] max-w-2xl" style={{ color: "#6B7280" }}>
-        The exact prompt we asked each engine, and the answer it gave.
-        Nothing paraphrased.
-      </p>
-
-      <style>{`
-        .rcpt-det > summary { list-style: none; cursor: pointer; }
-        .rcpt-det > summary::-webkit-details-marker { display: none; }
-        .rcpt-chev { transition: transform .3s cubic-bezier(.2,.8,.2,1); }
-        .rcpt-det[open] .rcpt-chev { transform: rotate(180deg); }
-        @media (prefers-reduced-motion: reduce) { .rcpt-chev { transition: none; } }
-      `}</style>
-
-      <div className="mt-4" style={{ borderTop: "1px solid #E5E7EB" }}>
-        {engines.map(([engine, rows], idx) => (
-          <details
-            key={engine}
-            className="rcpt-det"
-            open={idx === 0}
-            style={{ borderBottom: "1px solid #E5E7EB" }}
-          >
-            <summary className="flex items-center justify-between gap-3 py-3.5">
-              <span className="flex items-center gap-2.5 min-w-0">
-                <EngineMark engine={engine} size={20} />
-                <span
-                  className="text-[14px] font-semibold"
-                  style={{ color: "#1E2A3A" }}
-                >
-                  {ENGINE_LABELS[engine]}
-                </span>
-              </span>
-              <svg
-                className="rcpt-chev shrink-0"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#6B7280"
-                strokeWidth="2"
-                aria-hidden
+  const tabs: Tab[] = Array.from(byEngine.entries()).map(([engine, rows]) => ({
+    id: engine,
+    label: ENGINE_LABELS[engine],
+    icon: <EngineMark engine={engine} size={15} />,
+    badge: rows.length > 1 ? rows.length : undefined,
+    panel: (
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        {rows.map((r) => (
+          <Panel key={`${r.engine}-${r.kind}`} className="flex flex-col p-5">
+            <div className="flex items-center justify-between gap-3">
+              <p
+                className="text-[10.5px] font-mono uppercase tracking-[0.16em]"
+                style={{ color: T.muted, fontFamily: "var(--font-mono)" }}
               >
-                <path d="m6 9 6 6 6-6" />
-              </svg>
-            </summary>
-            <div className="pb-4 space-y-4">
-              {rows.map((r) => (
-                <div key={`${r.engine}-${r.kind}`}>
-                  <p
-                    className="text-[10px] font-mono uppercase tracking-[0.14em]"
-                    style={{ color: "#6B7280" }}
-                  >
-                    {KIND_LABEL[r.kind]}
-                  </p>
-                  <p
-                    className="mt-1 text-[13px] italic"
-                    style={{ color: "#1E2A3A" }}
-                  >
-                    &ldquo;{r.prompt}&rdquo;
-                  </p>
-                  <div
-                    className="mt-2 text-[13.5px] leading-relaxed"
-                    style={{
-                      color: "#374151",
-                      backgroundColor: "#FBFBFD",
-                      border: "1px solid #E5E7EB",
-                      borderLeft: "3px solid #0f62fe",
-                      borderRadius: 2,
-                      padding: "12px 14px",
-                    }}
-                  >
-                    {highlightNames(r.excerpt, brandName, competitors)}
-                  </div>
-                </div>
-              ))}
+                {KIND_LABEL[r.kind]}
+              </p>
+              <StatusChip
+                label={KIND_CHIP[r.kind]}
+                tone={r.kind === "discovery" ? "warn" : "neutral"}
+              />
             </div>
-          </details>
+            <p className="mt-2 text-[13.5px] italic" style={{ color: T.ink }}>
+              &ldquo;{r.prompt}&rdquo;
+            </p>
+            <div
+              className="mt-3 text-[13.5px] leading-relaxed"
+              style={{
+                color: "#3d3d3d",
+                borderLeft: `3px solid ${T.accent}`,
+                paddingLeft: 14,
+              }}
+            >
+              {highlightNames(r.excerpt, brandName, competitors)}
+            </div>
+          </Panel>
         ))}
       </div>
+    ),
+  }));
+
+  return (
+    <div aria-label="Verbatim AI answers">
+      <TabGroup tabs={tabs} ariaLabel="AI engine answers" />
 
       {hiddenCount > 0 ? (
-        <p className="mt-3 text-[12.5px]" style={{ color: "#525252" }}>
+        <p className="mt-4 text-[12.5px]" style={{ color: T.body }}>
           <a
             href="#full-report"
             className="underline underline-offset-2"
-            style={{ color: "#0f62fe", fontWeight: 500 }}
+            style={{ color: T.accent, fontWeight: 500 }}
           >
             {hiddenCount} more verbatim engine answer
             {hiddenCount === 1 ? "" : "s"}
@@ -221,6 +181,6 @@ export function AeoReceiptsBlock({
           your name — unlock with the full report below.
         </p>
       ) : null}
-    </section>
+    </div>
   );
 }

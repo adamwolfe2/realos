@@ -24,6 +24,7 @@ import {
 } from "./site-crawl";
 import { computeDps, type DpsResult } from "./scoring";
 import { computeRecommendations, type ActionItem } from "./recommendations";
+import { extractBrandLogo } from "./brand-logo";
 import { PILLAR_LABELS, type QuizAnswers } from "./quiz-questions";
 import {
   runOnPageAuditChecks,
@@ -180,6 +181,10 @@ export type SynthesizedFindings = {
   detectedStack?: DetectedStack;
   /** Schema markup present + missing. */
   schemaGap?: SchemaGap;
+  /** Absolute URL of the prospect's own logo, pulled from the crawled
+   *  homepage. Absent on legacy audits — the hero falls back to the
+   *  wordmark alone. */
+  brandLogoUrl?: string | null;
 };
 
 export type ProviderData = {
@@ -625,6 +630,11 @@ export async function synthesizeAudit(
   const aeoOnPage = buildAeoOnPageFindings(provider);
   const googleAiOverview = buildGoogleAiOverview(provider);
   const detectedStack = buildDetectedStack(provider.siteCrawl?.html ?? null);
+  // Their mark, off the homepage we already crawled — no extra call.
+  const brandLogoUrl = extractBrandLogo(
+    provider.siteCrawl?.html ?? null,
+    provider.siteCrawl?.resolvedUrl ?? `https://${provider.domain}`,
+  );
   const schemaGap = buildSchemaGap(provider);
 
   const findings: SynthesizedFindings = {
@@ -646,6 +656,7 @@ export async function synthesizeAudit(
     googleAiOverview,
     detectedStack,
     schemaGap,
+    brandLogoUrl,
   };
 
   const claudeSummary = await writeNarrative(signals, provider, findings);

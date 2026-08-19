@@ -35,8 +35,8 @@ export function FilterChip({
       className="inline-flex items-center gap-2 h-8 px-3 rounded-full text-xs font-medium transition-[background-color,border-color,color,transform] duration-[120ms] active:scale-[0.97] motion-reduce:active:scale-100"
       style={{
         backgroundColor: active ? color : "#FFFFFF",
-        color: active ? "#FFFFFF" : "#1E2A3A",
-        border: `1px solid ${active ? color : "#E5E7EB"}`,
+        color: active ? "#FFFFFF" : "#161616",
+        border: `1px solid ${active ? color : "#e0e0e0"}`,
       }}
       aria-pressed={active}
     >
@@ -65,7 +65,7 @@ export function FilterChip({
       <span>{label}</span>
       <span
         className="tabular-nums"
-        style={{ color: active ? "#FFFFFF" : "#6B7280" }}
+        style={{ color: active ? "#FFFFFF" : "#6f6f6f" }}
       >
         {count}
       </span>

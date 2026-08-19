@@ -3,6 +3,7 @@ import { PILLAR_LABELS, type Pillar } from "@/lib/audit/quiz-questions";
 import type { ActionItem } from "@/lib/audit/recommendations";
 import { getFeature, getFeatureCta } from "@/lib/audit/feature-catalog";
 import { CopyHandoffButton } from "@/components/audit/copy-handoff-button";
+import { TabGroup } from "@/components/audit/tab-group";
 
 // RecommendationsSection. The sales-tool layer of the audit result.
 //
@@ -22,9 +23,9 @@ const SEVERITY_LABEL: Record<Severity, string> = {
 };
 
 const SEVERITY_TONE: Record<Severity, { tag: string; bar: string; bg: string }> = {
-  high: { tag: "#B91C1C", bar: "#B91C1C", bg: "rgba(185,28,28,0.08)" },
-  medium: { tag: "#B45309", bar: "#B45309", bg: "rgba(180,83,9,0.08)" },
-  low: { tag: "#2563EB", bar: "#2563EB", bg: "rgba(37,99,235,0.08)" },
+  high: { tag: "#a2191f", bar: "#a2191f", bg: "rgba(185,28,28,0.08)" },
+  medium: { tag: "#8a3800", bar: "#8a3800", bg: "rgba(180,83,9,0.08)" },
+  low: { tag: "#0f62fe", bar: "#0f62fe", bg: "rgba(15,98,254,0.08)" },
 };
 
 export function RecommendationsSection({
@@ -52,13 +53,13 @@ export function RecommendationsSection({
     <section className="mt-10">
       <p
         className="text-[10px] font-mono uppercase tracking-[0.16em]"
-        style={{ color: "#2563EB", fontFamily: "var(--font-mono)" }}
+        style={{ color: "#0f62fe", fontFamily: "var(--font-mono)" }}
       >
         Personalized action plan
       </p>
       <h2
         className="text-lg sm:text-xl font-semibold mt-1"
-        style={{ color: "#1E2A3A" }}
+        style={{ color: "#161616" }}
       >
         {recommendations.length} thing
         {recommendations.length === 1 ? "" : "s"} we'd fix, in priority order
@@ -69,7 +70,7 @@ export function RecommendationsSection({
           className="mt-3 px-3.5 py-2.5"
           style={{
             backgroundColor: "#FBFBFD",
-            border: "1px solid #E5E7EB",
+            border: "1px solid #e0e0e0",
             borderRadius: 2,
           }}
         >
@@ -81,7 +82,7 @@ export function RecommendationsSection({
                 <a
                   href="#three-things"
                   className="underline underline-offset-2"
-                  style={{ color: "#1E2A3A", fontWeight: 500 }}
+                  style={{ color: "#161616", fontWeight: 500 }}
                 >
                   {item.title}
                 </a>
@@ -92,84 +93,51 @@ export function RecommendationsSection({
         </div>
       ) : null}
 
-      <div className="mt-4 flex flex-col gap-5">
-        {(["high", "medium", "low"] as Severity[]).map((sev) => {
-          const items = groups[sev];
-          if (items.length === 0) return null;
-          return (
-            <div key={sev}>
-              <SeverityHeader severity={sev} count={items.length} />
-              <ul className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {items.map((item) => (
-                  <RecommendationCard key={item.id} item={item} />
-                ))}
-              </ul>
-            </div>
-          );
-        })}
+      <div className="mt-5">
+        <TabGroup
+          ariaLabel="Action plan by priority"
+          tabs={(["high", "medium", "low"] as Severity[])
+            .filter((sev) => groups[sev].length > 0)
+            .map((sev) => ({
+              id: sev,
+              label: SEVERITY_LABEL[sev],
+              badge: groups[sev].length,
+              icon: (
+                <span
+                  className="inline-block h-2 w-2 rounded-full"
+                  style={{ backgroundColor: SEVERITY_TONE[sev].tag }}
+                />
+              ),
+              panel: (
+                <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                  {groups[sev].map((item) => (
+                    <RecommendationCard key={item.id} item={item} />
+                  ))}
+                </ul>
+              ),
+            }))}
+        />
       </div>
+
     </section>
   );
 }
 
-function SeverityHeader({
-  severity,
-  count,
-}: {
-  severity: Severity;
-  count: number;
-}) {
-  const tone = SEVERITY_TONE[severity];
-  return (
-    <div className="flex items-center gap-2">
-      <span
-        className="inline-block h-1.5 w-1.5 rounded-full"
-        style={{ backgroundColor: tone.tag }}
-        aria-hidden
-      />
-      <h3
-        className="text-[13px] font-semibold"
-        style={{ color: "#1E2A3A" }}
-      >
-        {SEVERITY_LABEL[severity]}
-      </h3>
-      <span
-        className="text-[10px] font-mono uppercase tracking-[0.12em]"
-        style={{
-          color: tone.tag,
-          backgroundColor: tone.bg,
-          padding: "1px 7px",
-          borderRadius: 999,
-          fontFamily: "var(--font-mono)",
-        }}
-      >
-        {count}
-      </span>
-    </div>
-  );
-}
-
 function RecommendationCard({ item }: { item: ActionItem }) {
-  const tone = SEVERITY_TONE[item.severity];
   const feature = getFeature(item.featureSlug);
   const cta = getFeatureCta(item.featureSlug);
   const pillarLabel = PILLAR_LABELS[item.pillar as Pillar];
 
   return (
     <li
-      className="rounded-lg border bg-white flex flex-col"
-      style={{ borderColor: "#E5E7EB" }}
+      className="flex flex-col border bg-white"
+      style={{ borderColor: "#e0e0e0", borderRadius: 2 }}
     >
-      <div
-        className="h-[3px] w-full rounded-t-lg"
-        style={{ backgroundColor: tone.bar }}
-        aria-hidden
-      />
-      <div className="p-3.5 sm:p-4 flex flex-col gap-2 flex-1">
+      <div className="flex flex-1 flex-col gap-2 p-4 sm:p-[18px]">
         <div className="flex items-center justify-between gap-2">
           <span
             className="text-[9px] font-mono uppercase tracking-[0.12em]"
-            style={{ color: "#6B7280", fontFamily: "var(--font-mono)" }}
+            style={{ color: "#6f6f6f", fontFamily: "var(--font-mono)" }}
           >
             {pillarLabel}
           </span>
@@ -177,8 +145,8 @@ function RecommendationCard({ item }: { item: ActionItem }) {
             <span
               className="text-[9px] font-mono uppercase tracking-[0.12em] px-1.5 py-0.5 rounded"
               style={{
-                color: "#2563EB",
-                backgroundColor: "rgba(37,99,235,0.08)",
+                color: "#0f62fe",
+                backgroundColor: "rgba(15,98,254,0.08)",
                 fontFamily: "var(--font-mono)",
               }}
             >
@@ -188,13 +156,13 @@ function RecommendationCard({ item }: { item: ActionItem }) {
         </div>
         <p
           className="text-[14px] font-semibold leading-snug"
-          style={{ color: "#1E2A3A" }}
+          style={{ color: "#161616" }}
         >
           {item.title}
         </p>
         <p
           className="text-[12.5px] leading-relaxed"
-          style={{ color: "#4B5563" }}
+          style={{ color: "#525252" }}
         >
           {item.why}
         </p>
@@ -202,13 +170,13 @@ function RecommendationCard({ item }: { item: ActionItem }) {
           <details className="mt-1">
             <summary
               className="cursor-pointer list-none text-[12px] font-medium"
-              style={{ color: "#2563EB" }}
+              style={{ color: "#0f62fe" }}
             >
               What to tell your web person
             </summary>
             <p
               className="mt-1.5 text-[12px] leading-relaxed"
-              style={{ color: "#4B5563" }}
+              style={{ color: "#525252" }}
             >
               {item.handoff.instructions}
             </p>
@@ -237,7 +205,7 @@ function RecommendationCard({ item }: { item: ActionItem }) {
             <Link
               href={cta.href}
               className="inline-flex items-center gap-1 text-[12.5px] font-medium"
-              style={{ color: "#2563EB" }}
+              style={{ color: "#0f62fe" }}
             >
               {cta.label}
             </Link>

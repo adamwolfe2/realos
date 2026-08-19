@@ -118,24 +118,24 @@ export function AeoEngineBreakdown({
       : `We asked each engine the same five buyer-intent prompts your prospects would type. Below: who named you, who didn't, and the URLs each engine actually cited.`;
 
   return (
-    <section className="mt-10" aria-label="AI search citation per engine">
-      <Heading>
-        {discovery ? "Where AI recommends you — and where it doesn't" : "Where AI search engines name you"}
-      </Heading>
+    <div aria-label="AI search citation per engine">
+      {/* Section eyebrow + display heading are supplied by the page's
+          ReportSection wrapper (2026-08-19) — this block owns only the
+          data-derived verdict line and the evidence under it. */}
       <p
-        className="mt-2 text-[14.5px] leading-relaxed max-w-2xl"
-        style={{ color: "#1E2A3A", fontWeight: 500 }}
+        className="text-[15.5px] leading-relaxed max-w-3xl"
+        style={{ color: "#161616", fontWeight: 500 }}
       >
         {headline}
       </p>
       <p
-        className="mt-1 text-[12.5px] max-w-2xl"
-        style={{ color: "#6B7280" }}
+        className="mt-1.5 text-[13px] max-w-3xl"
+        style={{ color: "#6f6f6f" }}
       >
         {explainer}
       </p>
 
-      <ul className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+      <ul className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {rows.map((row) => (
           <EngineCard key={row.engine} row={row} />
         ))}
@@ -152,16 +152,16 @@ export function AeoEngineBreakdown({
         />
       ) : competitorsCited.length > 0 ? (
         <div
-          className="mt-5 rounded-xl"
+          className="mt-5 rounded-[2px]"
           style={{
             backgroundColor: "#FBFBFD",
-            border: "1px solid #E5E7EB",
+            border: "1px solid #e0e0e0",
             padding: "14px 16px",
           }}
         >
           <p
             className="text-[10px] font-mono uppercase tracking-[0.14em]"
-            style={{ color: "#2563EB" }}
+            style={{ color: "#0f62fe" }}
           >
             {discovery
               ? "When renters ask where to live, AI recommends these instead"
@@ -180,18 +180,18 @@ export function AeoEngineBreakdown({
                       className="inline-flex items-center gap-1 rounded-full hover:underline"
                       style={{
                         backgroundColor: "#FFFFFF",
-                        border: "1px solid #E5E7EB",
+                        border: "1px solid #e0e0e0",
                         padding: "5px 10px",
                         fontSize: 12.5,
                         fontWeight: 500,
-                        color: "#1E2A3A",
+                        color: "#161616",
                       }}
                       title={`${name} — visit website`}
                     >
                       {name}
                       <ExternalLink
                         className="w-3 h-3"
-                        style={{ color: "#94A3B8" }}
+                        style={{ color: "#a8a8a8" }}
                         aria-hidden
                       />
                     </a>
@@ -204,11 +204,11 @@ export function AeoEngineBreakdown({
                   className="inline-flex items-center gap-1.5 rounded-full"
                   style={{
                     backgroundColor: "#FFFFFF",
-                    border: "1px solid #E5E7EB",
+                    border: "1px solid #e0e0e0",
                     padding: "5px 10px",
                     fontSize: 12.5,
                     fontWeight: 500,
-                    color: "#1E2A3A",
+                    color: "#161616",
                   }}
                 >
                   {name}
@@ -218,7 +218,7 @@ export function AeoEngineBreakdown({
           </ul>
         </div>
       ) : null}
-    </section>
+    </div>
   );
 }
 
@@ -240,20 +240,20 @@ function RivalVersus({
   const rivalWins = rows.filter((r) => r.rival && !r.you).length;
   return (
     <div
-      className="mt-5 rounded-xl"
+      className="mt-5 rounded-[2px]"
       style={{
         backgroundColor: "#FBFBFD",
-        border: "1px solid #E5E7EB",
+        border: "1px solid #e0e0e0",
         padding: "14px 16px",
       }}
     >
       <p
         className="text-[10px] font-mono uppercase tracking-[0.14em]"
-        style={{ color: "#2563EB" }}
+        style={{ color: "#0f62fe" }}
       >
         You vs {name}
       </p>
-      <p className="mt-1 text-[12px]" style={{ color: "#6B7280" }}>
+      <p className="mt-1 text-[12px]" style={{ color: "#6f6f6f" }}>
         {rivalWins > youWins
           ? `${name} is recommended on ${rivalWins} engine${rivalWins === 1 ? "" : "s"} where you aren't.`
           : youWins > rivalWins
@@ -263,12 +263,12 @@ function RivalVersus({
       <table className="mt-3 w-full border-collapse text-[12px]">
         <thead>
           <tr>
-            <th className="py-1 pr-2 text-left font-medium" style={{ color: "#6B7280" }} />
+            <th className="py-1 pr-2 text-left font-medium" style={{ color: "#6f6f6f" }} />
             {rows.map((r) => (
               <th
                 key={r.engine}
                 className="px-1 py-1 text-center font-medium"
-                style={{ color: "#6B7280" }}
+                style={{ color: "#6f6f6f" }}
               >
                 {ENGINE_LABELS[r.engine]}
               </th>
@@ -280,10 +280,10 @@ function RivalVersus({
             { label: brandName, key: "you" as const },
             { label: name, key: "rival" as const },
           ].map((row) => (
-            <tr key={row.key} style={{ borderTop: "1px solid #E5E7EB" }}>
+            <tr key={row.key} style={{ borderTop: "1px solid #e0e0e0" }}>
               <td
                 className="max-w-[140px] truncate py-1.5 pr-2"
-                style={{ color: "#1E2A3A", fontWeight: row.key === "you" ? 600 : 500 }}
+                style={{ color: "#161616", fontWeight: row.key === "you" ? 600 : 500 }}
                 title={row.label}
               >
                 {row.label}
@@ -333,20 +333,20 @@ function CompetitorLeaderboard({
   const max = Math.max(...entries.map((e) => e.mentions), 1);
   return (
     <div
-      className="mt-5 rounded-xl"
+      className="mt-5 rounded-[2px]"
       style={{
         backgroundColor: "#FBFBFD",
-        border: "1px solid #E5E7EB",
+        border: "1px solid #e0e0e0",
         padding: "14px 16px",
       }}
     >
       <p
         className="text-[10px] font-mono uppercase tracking-[0.14em]"
-        style={{ color: "#2563EB" }}
+        style={{ color: "#0f62fe" }}
       >
         Who AI recommends{city ? ` in ${city}` : ""} instead
       </p>
-      <p className="mt-1 text-[12px]" style={{ color: "#6B7280" }}>
+      <p className="mt-1 text-[12px]" style={{ color: "#6f6f6f" }}>
         Times each competitor was named across the discovery answers above.
       </p>
       {/* InView stamps data-inview when the leaderboard scrolls into view;
@@ -360,7 +360,7 @@ function CompetitorLeaderboard({
               <li key={e.name} className="flex items-center gap-3">
                 <span
                   className="w-40 sm:w-52 shrink-0 truncate text-[12.5px]"
-                  style={{ color: "#1E2A3A", fontWeight: 500 }}
+                  style={{ color: "#161616", fontWeight: 500 }}
                   title={e.name}
                 >
                   {href ? (
@@ -378,7 +378,7 @@ function CompetitorLeaderboard({
                 </span>
                 <span
                   className="flex-1 h-2 rounded-[2px] overflow-hidden"
-                  style={{ backgroundColor: "#E5E7EB" }}
+                  style={{ backgroundColor: "#e0e0e0" }}
                   aria-hidden
                 >
                   <span
@@ -392,7 +392,7 @@ function CompetitorLeaderboard({
                 </span>
                 <span
                   className="w-6 text-right text-[12.5px] tabular-nums font-mono"
-                  style={{ color: "#1E2A3A" }}
+                  style={{ color: "#161616" }}
                 >
                   {e.mentions}
                 </span>
@@ -431,10 +431,10 @@ function EngineCard({ row }: { row: AeoEngineRow }) {
   const positive = verdict === "recommends" || verdict === "cited";
   return (
     <li
-      className="rounded-xl flex flex-col"
+      className="rounded-[2px] flex flex-col"
       style={{
         backgroundColor: "#FFFFFF",
-        border: `1px solid ${positive ? "#CFE2FF" : "#E5E7EB"}`,
+        border: `1px solid ${positive ? "#d0e2ff" : "#e0e0e0"}`,
         padding: "14px 16px",
       }}
     >
@@ -443,7 +443,7 @@ function EngineCard({ row }: { row: AeoEngineRow }) {
           <EngineMark engine={row.engine} size={22} />
           <span
             className="text-[14px] font-semibold truncate"
-            style={{ color: "#1E2A3A" }}
+            style={{ color: "#161616" }}
           >
             {ENGINE_LABELS[row.engine]}
           </span>
@@ -457,7 +457,7 @@ function EngineCard({ row }: { row: AeoEngineRow }) {
             <li
               key={u}
               className="flex items-center gap-1.5 text-[11.5px]"
-              style={{ color: "#4B5563" }}
+              style={{ color: "#525252" }}
             >
               <ExternalLink className="w-3 h-3 shrink-0" />
               {safeHttpUrl(u) ? (
@@ -466,13 +466,13 @@ function EngineCard({ row }: { row: AeoEngineRow }) {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="truncate hover:underline"
-                  style={{ color: "#1E2A3A" }}
+                  style={{ color: "#161616" }}
                   title={u}
                 >
                   {safeHost(u)}
                 </a>
               ) : (
-                <span className="truncate" style={{ color: "#1E2A3A" }}>
+                <span className="truncate" style={{ color: "#161616" }}>
                   {safeHost(u)}
                 </span>
               )}
@@ -480,7 +480,7 @@ function EngineCard({ row }: { row: AeoEngineRow }) {
           ))}
         </ul>
       ) : (
-        <p className="mt-3 text-[12px]" style={{ color: "#6B7280" }}>
+        <p className="mt-3 text-[12px]" style={{ color: "#6f6f6f" }}>
           {VERDICT_BODY[verdict]}
         </p>
       )}
@@ -493,37 +493,37 @@ const CHIP_STYLES: Record<
   { bg: string; fg: string; border: string; label: string; positive: boolean }
 > = {
   recommends: {
-    bg: "#EBF3FF",
-    fg: "#1D4ED8",
-    border: "#CFE2FF",
+    bg: "#edf5ff",
+    fg: "#0043ce",
+    border: "#d0e2ff",
     label: "Recommends you",
     positive: true,
   },
   aware_only: {
-    bg: "#FEF3C7",
-    fg: "#92400E",
-    border: "#FDE68A",
+    bg: "#fcf4d6",
+    fg: "#8a3800",
+    border: "#f1c21b",
     label: "Knows you only",
     positive: false,
   },
   unknown: {
-    bg: "#F3F4F6",
-    fg: "#4B5563",
-    border: "#E5E7EB",
+    bg: "#f4f4f4",
+    fg: "#525252",
+    border: "#e0e0e0",
     label: "Doesn't know you",
     positive: false,
   },
   cited: {
-    bg: "#EBF3FF",
-    fg: "#1D4ED8",
-    border: "#CFE2FF",
+    bg: "#edf5ff",
+    fg: "#0043ce",
+    border: "#d0e2ff",
     label: "Cited",
     positive: true,
   },
   not_cited: {
-    bg: "#F3F4F6",
-    fg: "#4B5563",
-    border: "#E5E7EB",
+    bg: "#f4f4f4",
+    fg: "#525252",
+    border: "#e0e0e0",
     label: "Not cited",
     positive: false,
   },
@@ -564,21 +564,3 @@ function safeHost(u: string): string {
   }
 }
 
-function Heading({ children }: { children: React.ReactNode }) {
-  return (
-    <div>
-      <p
-        className="text-[10px] font-mono uppercase tracking-[0.16em]"
-        style={{ color: "#2563EB" }}
-      >
-        AI search visibility
-      </p>
-      <h2
-        className="mt-1.5 text-xl sm:text-2xl font-semibold tracking-tight"
-        style={{ color: "#1E2A3A" }}
-      >
-        {children}
-      </h2>
-    </div>
-  );
-}
