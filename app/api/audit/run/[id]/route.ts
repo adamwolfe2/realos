@@ -95,7 +95,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
         prospectAuditId: id,
         domain: audit.domain,
       },
-      { rivalName: audit.competitorName },
+      { rivalName: audit.competitorName, brandName: audit.brandName },
     );
 
     // Strip the non-persistable __provider field before saving the daily

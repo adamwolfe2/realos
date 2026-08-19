@@ -98,6 +98,13 @@ export async function computeSignals(
   opts?: {
     /** Explicitly tracked rival (2026-08-14 slice 13, prospect only). */
     rivalName?: string | null;
+    /** The property name the prospect typed into the form (prospect only).
+     *  MUST be threaded through: the engine prompts, the reputation scan,
+     *  and the Google AI Overview query are all built from it. Falling back
+     *  to the domain silently audits the wrong entity whenever the two
+     *  differ — which is most of the time (Adam 2026-08-19: a "Warwick"
+     *  audit asked every engine about "Leasestack"). */
+    brandName?: string | null;
   },
 ): Promise<ProspectComputeResult> {
   if (scope.kind === "prospect") {
@@ -105,6 +112,7 @@ export async function computeSignals(
       scope.prospectAuditId,
       scope.domain,
       opts?.rivalName ?? null,
+      opts?.brandName ?? null,
     );
   }
   return computeRealTenantSignals(scope);
@@ -114,14 +122,32 @@ export async function computeSignals(
 // PROSPECT
 // ---------------------------------------------------------------------------
 
+/**
+ * The name every prospect fan-out is keyed off: engine prompts, the
+ * reputation mention scan, and the Google AI Overview query.
+ *
+ * What the prospect typed wins. Deriving it from the domain scans a
+ * different company whenever the two differ — a "Warwick" audit on
+ * leasestack.co asked all four engines about "Leasestack", and the report
+ * rendered those answers under the Warwick name (Adam 2026-08-19).
+ */
+export function resolveProspectBrandName(
+  supplied: string | null | undefined,
+  domain: string,
+): string {
+  const trimmed = supplied?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : brandNameFromDomain(domain);
+}
+
 async function computeProspectSignals(
   prospectAuditId: string,
   domain: string,
   rivalName: string | null = null,
+  suppliedBrandName: string | null = null,
 ): Promise<ProspectComputeResult> {
   const startedAt = Date.now();
   const key = scopeKey({ kind: "prospect", prospectAuditId, domain });
-  const brandName = brandNameFromDomain(domain);
+  const brandName = resolveProspectBrandName(suppliedBrandName, domain);
   const url = `https://${domain}`;
 
   // Five major fan-outs in parallel via allSettled — single source failure
