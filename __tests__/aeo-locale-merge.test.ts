@@ -213,3 +213,71 @@ describe("quiz property_type as the category", () => {
     expect(locale.category).toBe("apartments");
   });
 });
+
+/**
+ * Prompt copy follows the asset class (2026-08-26). Before this, an
+ * office tower with three correct discovery prompts was still asked
+ * whether it was "a good place to live" and where the asker should live.
+ */
+describe("prompt copy by asset class", () => {
+  const locale = (category: string, extra: Record<string, unknown> = {}) => ({
+    city: "San Francisco",
+    region: "CA",
+    neighborhood: null,
+    category,
+    amenity: null,
+    source: "schema" as const,
+    ...extra,
+  });
+
+  it("asks a commercial asset about leasing, not living", () => {
+    const prompts = buildProspectPrompts("255 Cal", "255-cal.com", locale("office buildings"));
+    const all = prompts.map((p) => p.text).join(" ");
+    expect(all).not.toMatch(/place to live|should I live|moving to|rent at/);
+    expect(prompts[0].text).toContain("good building to lease space in");
+    expect(prompts[1].text).toContain("lease space at 255 Cal");
+  });
+
+  it("keeps residential copy for residential categories", () => {
+    for (const category of ["apartments", "student apartments", "senior living communities"]) {
+      const prompts = buildProspectPrompts("BRAND", "x.com", locale(category));
+      expect(prompts[0].text, category).toContain("good place to live");
+      expect(prompts[1].text, category).toContain("rent at BRAND");
+    }
+  });
+
+  it("swaps the neighborhood prompt too", () => {
+    const commercial = buildProspectPrompts("BRAND", "x.com",
+      locale("industrial properties", { neighborhood: "Dogpatch" }));
+    expect(commercial[4].text).toBe(
+      "Where should I lease space near Dogpatch in San Francisco? Recommend specific buildings.",
+    );
+    const residential = buildProspectPrompts("BRAND", "x.com",
+      locale("apartments", { neighborhood: "Dogpatch" }));
+    expect(residential[4].text).toBe(
+      "Where should I live near Dogpatch in San Francisco? Recommend specific buildings.",
+    );
+  });
+
+  it("uses tenant wording in the branded-only fallback", () => {
+    const prompts = buildProspectPrompts("255 Cal", "255-cal.com", {
+      city: null, region: null, neighborhood: null,
+      category: "office buildings", amenity: null, source: "none",
+    });
+    expect(prompts).toHaveLength(5);
+    expect(prompts.every((p) => p.kind === "branded")).toBe(true);
+    expect(prompts[1].text).toContain("What do tenants say about");
+    expect(prompts[3].text).toContain("asking rents");
+  });
+
+  it("still keeps the brand out of every discovery prompt", () => {
+    for (const category of ["office buildings", "apartments"]) {
+      const prompts = buildProspectPrompts("BRAND", "x.com",
+        locale(category, { neighborhood: "Dogpatch", amenity: "rooftop deck" }));
+      expect(prompts).toHaveLength(5);
+      for (const p of prompts.filter((x) => x.kind === "discovery")) {
+        expect(p.text, p.text).not.toContain("BRAND");
+      }
+    }
+  });
+});

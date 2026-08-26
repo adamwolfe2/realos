@@ -40,6 +40,7 @@ import {
 } from "@/lib/audit/derive-identity";
 import {
   derivePropertyLocale,
+  isCommercialCategory,
   type PropertyLocale,
 } from "@/lib/audit/derive-locale";
 import { computeRealTenantSignals } from "./real-tenant";
@@ -914,13 +915,24 @@ export function buildProspectPrompts(
   domain: string,
   locale: PropertyLocale | null,
 ): AuditPrompt[] {
+  // 2026-08-26: the copy used to be hardcoded residential, so an office
+  // tower whose three discovery prompts were correct still got asked
+  // whether it was "a good place to live" and where the asker "should
+  // live" — 3 of 5 prompts wrong for a commercial asset, and the verdict
+  // was built on the answers.
+  const commercial = isCommercialCategory(locale?.category);
+  const verb = commercial ? "lease space at" : "rent at";
+  const occupants = commercial ? "tenants" : "residents";
+
   const branded: AuditPrompt[] = [
     {
-      text: `Tell me about ${brandName}. Is it a good place to live?`,
+      text: commercial
+        ? `Tell me about ${brandName}. Is it a good building to lease space in?`
+        : `Tell me about ${brandName}. Is it a good place to live?`,
       kind: "branded",
     },
     {
-      text: `Should I rent at ${brandName} or look elsewhere? (${domain})`,
+      text: `Should I ${verb} ${brandName} or look elsewhere? (${domain})`,
       kind: "branded",
     },
   ];
@@ -930,7 +942,7 @@ export function buildProspectPrompts(
     return [
       branded[0],
       {
-        text: `What do residents say about ${brandName}? Any common complaints?`,
+        text: `What do ${occupants} say about ${brandName}? Any common complaints?`,
         kind: "branded",
       },
       {
@@ -938,7 +950,9 @@ export function buildProspectPrompts(
         kind: "branded",
       },
       {
-        text: `What are the amenities and pricing like at ${brandName}?`,
+        text: commercial
+          ? `What are the amenities and asking rents like at ${brandName}?`
+          : `What are the amenities and pricing like at ${brandName}?`,
         kind: "branded",
       },
       branded[1],
@@ -960,11 +974,15 @@ export function buildProspectPrompts(
         },
     locale?.neighborhood
       ? {
-          text: `Where should I live near ${locale.neighborhood} in ${city}? Recommend specific buildings.`,
+          text: commercial
+            ? `Where should I lease space near ${locale.neighborhood} in ${city}? Recommend specific buildings.`
+            : `Where should I live near ${locale.neighborhood} in ${city}? Recommend specific buildings.`,
           kind: "discovery",
         }
       : {
-          text: `I'm moving to ${where} and looking for ${category}. Which specific buildings should I tour?`,
+          text: commercial
+            ? `I'm looking for ${category} in ${where}. Which specific buildings should I tour?`
+            : `I'm moving to ${where} and looking for ${category}. Which specific buildings should I tour?`,
           kind: "discovery",
         },
   ];

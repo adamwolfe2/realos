@@ -83,6 +83,21 @@ const QUIZ_CATEGORIES: Record<string, string> = {
   industrial: "industrial properties",
 };
 
+/**
+ * Does this category describe space a business leases rather than a home
+ * someone rents? Drives prompt phrasing — a renter asks whether a
+ * building is a good place to live, a tenant rep asks about leasing.
+ * Keyword-matched because `category` is a free-form phrase by the time it
+ * reaches here (quiz map, schema, or an LLM's own words).
+ */
+export function isCommercialCategory(category: string | null | undefined): boolean {
+  const c = category?.toLowerCase() ?? "";
+  if (!c) return false;
+  return /\b(office|industrial|commercial|warehouse|retail|flex|coworking|medical|lab|self[-\s]?storage)\b/.test(
+    c,
+  );
+}
+
 /** Exported for tests. */
 export function categoryFromPropertyType(
   propertyType: string | null | undefined,

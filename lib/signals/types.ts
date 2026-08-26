@@ -145,7 +145,9 @@ export interface SignalSnapshot {
 // title) instead of the domain splitter, and the mention scan and Google
 // AI Overview query use it too. A cached audit can therefore be about a
 // different entity than a fresh one would be.
-export const COMPUTE_VERSION = "2026-08-26.identity.v3";
+// v4: prompt copy follows the asset class, so a cached commercial audit
+// was scored on answers to "is it a good place to live".
+export const COMPUTE_VERSION = "2026-08-26.identity.v4";
 
 export function scopeKey(s: SignalScope): string {
   if (s.kind === "tenant") {
