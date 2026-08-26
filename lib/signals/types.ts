@@ -141,7 +141,11 @@ export interface SignalSnapshot {
 // serve one to a new submission. v2, same day: the /audit quiz's
 // property_type now sets the category, so a quiz-path audit cached
 // between the two deploys still asks an office tower about apartments.
-export const COMPUTE_VERSION = "2026-08-26.locale-merge.v2";
+// v3: the audited NAME can now come off the site (schema / og:site_name /
+// title) instead of the domain splitter, and the mention scan and Google
+// AI Overview query use it too. A cached audit can therefore be about a
+// different entity than a fresh one would be.
+export const COMPUTE_VERSION = "2026-08-26.identity.v3";
 
 export function scopeKey(s: SignalScope): string {
   if (s.kind === "tenant") {

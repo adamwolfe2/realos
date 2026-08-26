@@ -193,10 +193,25 @@ export type SynthesizedFindings = {
    *  homepage. Absent on legacy audits — the hero falls back to the
    *  wordmark alone. */
   brandLogoUrl?: string | null;
+  /** Provenance of the name this report asserts (2026-08-26 slice 1).
+   *  Additive: absent on every audit before that date. */
+  identity?: {
+    name: string;
+    nameSource: string;
+    resolvedUrl: string | null;
+    confidence: string;
+  } | null;
 };
 
 export type ProviderData = {
   brandName: string;
+  /** How the audited name was arrived at (2026-08-26 slice 1). */
+  resolvedIdentity?: {
+    name: string;
+    nameSource: string;
+    resolvedUrl: string | null;
+    confidence: string;
+  } | null;
   domain: string;
   rankedKeywords: DomainRankedKeyword[] | null;
   lighthouse: LighthouseScores | null;
@@ -668,6 +683,7 @@ export async function synthesizeAudit(
     detectedStack,
     schemaGap,
     brandLogoUrl,
+    identity: provider.resolvedIdentity ?? null,
   };
 
   const claudeSummary = await writeNarrative(signals, provider, findings);

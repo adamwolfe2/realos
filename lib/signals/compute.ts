@@ -35,6 +35,10 @@ import {
   type SiteCrawlResult,
 } from "@/lib/audit/site-crawl";
 import {
+  resolveIdentity,
+  type ResolvedIdentity,
+} from "@/lib/audit/derive-identity";
+import {
   derivePropertyLocale,
   type PropertyLocale,
 } from "@/lib/audit/derive-locale";
@@ -55,6 +59,10 @@ export type ProspectComputeResult = SignalSnapshot & {
    * re-fetch when building findings. */
   __provider?: {
     brandName: string;
+    /** How that name was arrived at, and the URL the crawl landed on
+     *  (2026-08-26 slice 1). `confidence: "low"` means we fell back to
+     *  splitting the domain string. */
+    resolvedIdentity?: ResolvedIdentity;
     domain: string;
     rankedKeywords: DomainRankedKeyword[] | null;
     lighthouse: LighthouseScores | null;
@@ -153,7 +161,6 @@ async function computeProspectSignals(
 ): Promise<ProspectComputeResult> {
   const startedAt = Date.now();
   const key = scopeKey({ kind: "prospect", prospectAuditId, domain });
-  const brandName = resolveProspectBrandName(suppliedBrandName, domain);
   const url = `https://${domain}`;
 
   // Five major fan-outs in parallel via allSettled — single source failure
@@ -171,13 +178,45 @@ async function computeProspectSignals(
   // and the LLM fan-out is the long pole anyway.
   const crawlPromise = crawlSite(url);
   let derivedLocale: PropertyLocale | null = null;
-  const aeoPromise = (async () => {
+  // 2026-08-26 (slice 2): identity resolves off the crawl, so everything
+  // keyed on the name now chains behind it instead of racing it. Before
+  // this, the mention scan and the Google AI Overview query launched in
+  // the same allSettled as the crawl and could only ever use the typed
+  // name or the domain guess — a crawl-derived name reached the engine
+  // prompts and nothing else. The crawl is ~1-3s of a 120s budget.
+  let identity: ResolvedIdentity = {
+    name: resolveProspectBrandName(suppliedBrandName, domain),
+    nameSource: suppliedBrandName?.trim() ? "supplied" : "domain",
+    resolvedUrl: null,
+    confidence: suppliedBrandName?.trim() ? "high" : "low",
+  };
+  const identityPromise = (async () => {
     const crawl = await crawlPromise.catch(() => null);
+    identity = resolveIdentity({
+      supplied: suppliedBrandName,
+      domain,
+      crawl,
+    });
+    if (identity.nameSource !== "supplied") {
+      console.log(
+        `[audit.identity] ${domain} -> "${identity.name}" ` +
+          `(${identity.nameSource}, ${identity.confidence}, ` +
+          `+${Date.now() - startedAt}ms before the name-keyed fan-outs)`,
+      );
+    }
+    return identity;
+  })();
+
+  const aeoPromise = (async () => {
+    const [{ name }, crawl] = await Promise.all([
+      identityPromise,
+      crawlPromise.catch(() => null),
+    ]);
     derivedLocale = await derivePropertyLocale(crawl, prospectAuditId, {
       propertyType,
     });
     return runAeoFanout(
-      brandName,
+      name,
       domain,
       prospectAuditId,
       derivedLocale,
@@ -188,16 +227,20 @@ async function computeProspectSignals(
     await Promise.allSettled([
       runSeoFanout(domain, url),
       aeoPromise,
-      runProspectReputation({ brandName, domain, prospectAuditId }),
+      identityPromise.then(({ name }) =>
+        runProspectReputation({ brandName: name, domain, prospectAuditId }),
+      ),
       crawlPromise,
       // Google AI Overview for the branded query. One DataForSEO SERP
       // advanced call (~$0.005). Captures verbatim Google AI summary +
       // cited URLs. Renders as the "what Google AI says about you" card
       // on the result page. Wrapped in allSettled so a DataForSEO outage
       // never tanks the audit.
-      fetchSerpAiSummary(
-        { query: brandName },
-        { prospectAuditId, surface: "audit" },
+      identityPromise.then(({ name }) =>
+        fetchSerpAiSummary(
+          { query: name },
+          { prospectAuditId, surface: "audit" },
+        ),
       ),
     ]);
 
@@ -255,7 +298,8 @@ async function computeProspectSignals(
     computeMs: Date.now() - startedAt,
     computeVersion: COMPUTE_VERSION,
     __provider: {
-      brandName,
+      brandName: identity.name,
+      resolvedIdentity: identity,
       domain,
       rankedKeywords: seoData.rankedKeywords,
       lighthouse: seoData.lighthouse,

@@ -117,7 +117,21 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       snapshot,
     );
 
-    const brandName = audit.brandName ?? brandNameFromDomain(audit.domain);
+    // The name the fan-outs actually asked about (2026-08-26 slice 1) —
+    // read off the site when the prospect didn't type one. The report
+    // header must assert the same name the engines were asked about.
+    const identity = __provider?.resolvedIdentity ?? null;
+    const brandName =
+      identity?.name ?? audit.brandName ?? brandNameFromDomain(audit.domain);
+    // Backfill the column so admin views, the rerun path and the dedupe
+    // all agree with the report. Only when the prospect supplied nothing —
+    // what they typed is never overwritten.
+    if (!audit.brandName?.trim() && identity?.name) {
+      await prisma.prospectAudit.update({
+        where: { id },
+        data: { brandName: identity.name },
+      });
+    }
     const { findings, claudeSummary, sectionScores, overallScore } =
       await synthesizeAudit(
         snapshot,
@@ -138,6 +152,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
           aeoReceipts: __provider?.aeoReceipts ?? [],
           aeoCompetitorsRanked: __provider?.aeoCompetitorsRanked ?? [],
           aeoRival: __provider?.aeoRival ?? null,
+          resolvedIdentity: __provider?.resolvedIdentity ?? null,
           aeoLocale: __provider?.aeoLocale
             ? {
                 city: __provider.aeoLocale.city,
