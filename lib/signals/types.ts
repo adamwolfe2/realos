@@ -133,7 +133,13 @@ export interface SignalSnapshot {
 // Reports rendered the typed name over answers about a different company.
 // Every audit computed before this bump carries wrong-entity data, so the
 // dedupe must not serve one to a new submission.
-export const COMPUTE_VERSION = "2026-08-19.brand-identity.v1";
+// 2026-08-26: bump to locale-merge.v1 — the schema-address tier took the
+// first PostalAddress anywhere in the markup (a sibling community or a
+// corporate HQ on operator sites) and short-circuited the LLM tier, so
+// every cached audit carries city-only locale and the "apartments"
+// default. Those reports asked the engines the wrong question; don't
+// serve one to a new submission.
+export const COMPUTE_VERSION = "2026-08-26.locale-merge.v1";
 
 export function scopeKey(s: SignalScope): string {
   if (s.kind === "tenant") {

@@ -169,9 +169,17 @@ export type SynthesizedFindings = {
   /** You-vs-tracked-rival per engine (slice 13). Null/absent when the
    *  lead didn't name a competitor. */
   aeoRival?: AeoRivalResult | null;
-  /** City the discovery prompts searched, for renderer copy
-   *  ("…when renters ask about Berkeley"). */
-  aeoLocale?: { city: string | null; region: string | null } | null;
+  /** Locale the discovery prompts searched, for renderer copy
+   *  ("…when renters ask about Berkeley"). Fields past region are
+   *  additive (2026-08-26); legacy audits carry city/region/category only. */
+  aeoLocale?: {
+    city: string | null;
+    region: string | null;
+    category?: string | null;
+    neighborhood?: string | null;
+    amenity?: string | null;
+    source?: string | null;
+  } | null;
   /** Verbatim Google AI Overview for the brand's name query. Null when
    *  DataForSEO is unconfigured or Google didn't surface an AI Overview
    *  for the query. */
@@ -220,6 +228,9 @@ export type ProviderData = {
     city: string | null;
     region: string | null;
     category?: string | null;
+    neighborhood?: string | null;
+    amenity?: string | null;
+    source?: string | null;
   } | null;
   /** Google AI Overview captured during compute. Null when DataForSEO
    *  is unconfigured or the query returned no AI Overview. */

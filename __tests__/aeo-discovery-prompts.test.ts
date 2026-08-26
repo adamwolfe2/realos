@@ -30,14 +30,28 @@ function crawl(overrides: {
   title?: string | null;
   description?: string | null;
   schemaTypes?: string[];
+  h1FirstText?: string | null;
+  canonical?: string | null;
 }) {
   return {
     html: overrides.html ?? null,
     title: overrides.title ?? null,
     description: overrides.description ?? null,
     schemaTypes: overrides.schemaTypes ?? [],
+    h1FirstText: overrides.h1FirstText ?? null,
+    canonical: overrides.canonical ?? null,
   };
 }
+
+/** Two communities in one JSON-LD block — the operator-site shape. */
+const TWO_ADDRESS_HTML = `<script type="application/ld+json">
+  {"@graph":[
+    {"@type":"ApartmentComplex","name":"Sister Property",
+     "address":{"@type":"PostalAddress","addressLocality":"Berkeley","addressRegion":"CA"}},
+    {"@type":"ApartmentComplex","name":"Telegraph Commons",
+     "address":{"@type":"PostalAddress","addressLocality":"Oakland","addressRegion":"CA"}}
+  ]}
+</script>`;
 
 describe("parseLocaleFromCrawl", () => {
   it("extracts city + region from JSON-LD PostalAddress", () => {
@@ -83,6 +97,46 @@ describe("parseLocaleFromCrawl", () => {
   it("returns none when nothing is derivable (and on null crawl)", () => {
     expect(parseLocaleFromCrawl(crawl({})).source).toBe("none");
     expect(parseLocaleFromCrawl(null).city).toBeNull();
+  });
+
+  it("abstains when two properties are in the markup and nothing corroborates", () => {
+    // Trusting the first address audited a sibling community's city.
+    // Abstaining sends this to the LLM tier, which reads the whole page.
+    const locale = parseLocaleFromCrawl(crawl({ html: TWO_ADDRESS_HTML }));
+    expect(locale.city).toBeNull();
+    expect(locale.source).toBe("none");
+  });
+
+  it("picks the address the title corroborates, not the first one", () => {
+    const locale = parseLocaleFromCrawl(
+      crawl({
+        html: TWO_ADDRESS_HTML,
+        title: "Telegraph Commons — Apartments in Oakland",
+      }),
+    );
+    expect(locale.city).toBe("Oakland");
+    expect(locale.source).toBe("schema");
+  });
+
+  it("picks the address the H1 or canonical corroborates", () => {
+    expect(
+      parseLocaleFromCrawl(crawl({ html: TWO_ADDRESS_HTML, h1FirstText: "Now leasing in Oakland" })).city,
+    ).toBe("Oakland");
+    expect(
+      parseLocaleFromCrawl(crawl({ html: TWO_ADDRESS_HTML, canonical: "https://x.com/oakland/lofts" })).city,
+    ).toBe("Oakland");
+  });
+
+  it("still resolves when the same city is repeated across blocks", () => {
+    const html = `<script type="application/ld+json">
+        {"address":{"addressLocality":"Denver","addressRegion":"CO"}}
+      </script>
+      <script type="application/ld+json">
+        {"address":{"addressLocality":"denver"}}
+      </script>`;
+    const locale = parseLocaleFromCrawl(crawl({ html }));
+    expect(locale.city).toBe("Denver");
+    expect(locale.region).toBe("CO");
   });
 
   it("survives malformed JSON-LD blocks", () => {

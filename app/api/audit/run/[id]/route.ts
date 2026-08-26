@@ -138,6 +138,11 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
                 city: __provider.aeoLocale.city,
                 region: __provider.aeoLocale.region,
                 category: __provider.aeoLocale.category ?? null,
+                // Persisted 2026-08-26 so the identity a report asserted is
+                // auditable after the fact (scripts/audit-aeo-identity-dump.ts).
+                neighborhood: __provider.aeoLocale.neighborhood ?? null,
+                amenity: __provider.aeoLocale.amenity ?? null,
+                source: __provider.aeoLocale.source ?? null,
               }
             : null,
           googleAiOverview: __provider?.googleAiOverview ?? null,
