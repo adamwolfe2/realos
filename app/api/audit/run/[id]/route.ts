@@ -88,6 +88,13 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
   }
 
   try {
+    // The Prisma column is Json, so the runtime type is `JsonValue`. The
+    // scoring + recommendation engines validate per-question; this cast
+    // is safe because we wrote a record/string|string[] shape on the
+    // start route.
+    const quizAnswers =
+      (audit.quizAnswers as Record<string, string | string[]> | null) ?? null;
+    const propertyType = quizAnswers?.property_type;
 
     const computeResult = await computeSignals(
       {
@@ -95,7 +102,11 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
         prospectAuditId: id,
         domain: audit.domain,
       },
-      { rivalName: audit.competitorName, brandName: audit.brandName },
+      {
+        rivalName: audit.competitorName,
+        brandName: audit.brandName,
+        propertyType: typeof propertyType === "string" ? propertyType : null,
+      },
     );
 
     // Strip the non-persistable __provider field before saving the daily
@@ -107,12 +118,6 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     );
 
     const brandName = audit.brandName ?? brandNameFromDomain(audit.domain);
-    // The Prisma column is Json, so the runtime type is `JsonValue`. The
-    // scoring + recommendation engines validate per-question; this cast
-    // is safe because we wrote a record/string|string[] shape on the
-    // start route.
-    const quizAnswers =
-      (audit.quizAnswers as Record<string, string | string[]> | null) ?? null;
     const { findings, claudeSummary, sectionScores, overallScore } =
       await synthesizeAudit(
         snapshot,

@@ -22,7 +22,11 @@ vi.mock("@ai-sdk/anthropic", () => ({ anthropic: (id: string) => ({ id }) }));
 vi.mock("@/lib/cost-tracker/log", () => ({ logUsage: h.logUsage }));
 vi.mock("@/lib/aeo/engines/pricing", () => ({ tokenCostUsd: () => 0.001 }));
 
-import { derivePropertyLocale } from "@/lib/audit/derive-locale";
+import {
+  categoryFromPropertyType,
+  derivePropertyLocale,
+} from "@/lib/audit/derive-locale";
+import { buildProspectPrompts } from "@/lib/signals/compute";
 
 const SCHEMA_HTML = `<script type="application/ld+json">
   {"@type":"ApartmentComplex","name":"Telegraph Commons",
@@ -124,5 +128,88 @@ describe("derivePropertyLocale merge", () => {
     const locale = await derivePropertyLocale(siteCrawl(), null);
     expect(h.generateObject).not.toHaveBeenCalled();
     expect(locale.city).toBe("Berkeley");
+  });
+});
+
+/**
+ * Slice 4 — the /audit quiz asks the prospect their asset class and the
+ * answer never reached the prompt builder, so `255-cal.com` (an office
+ * tower, quiz answer "office") was scored on "best apartments in …".
+ */
+describe("quiz property_type as the category", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete process.env.ANTHROPIC_API_KEY;
+  });
+
+  it("maps every quiz id to a phrase that reads inside the templates", () => {
+    for (const id of [
+      "student",
+      "multifamily",
+      "affordable",
+      "senior",
+      "commercial",
+      "office",
+      "industrial",
+    ]) {
+      const category = categoryFromPropertyType(id);
+      expect(category, id).toBeTruthy();
+      const prompts = buildProspectPrompts("BRAND", "x.com", {
+        city: "Dallas",
+        region: "TX",
+        neighborhood: null,
+        category: category as string,
+        amenity: null,
+        source: "schema",
+      });
+      const discovery = prompts.filter((p) => p.kind === "discovery");
+      expect(discovery).toHaveLength(3);
+      expect(discovery[0].text).toBe(
+        `What are the best ${category} in Dallas, TX?`,
+      );
+      expect(discovery[0].text).not.toContain("BRAND");
+    }
+  });
+
+  it("declines to guess on 'a mix of the above' and on junk", () => {
+    expect(categoryFromPropertyType("mixed")).toBeNull();
+    expect(categoryFromPropertyType("condominiums")).toBeNull();
+    expect(categoryFromPropertyType(null)).toBeNull();
+    expect(categoryFromPropertyType("")).toBeNull();
+  });
+
+  it("beats the apartments default with the LLM tier off", async () => {
+    const locale = await derivePropertyLocale(siteCrawl(), null, {
+      propertyType: "office",
+    });
+    expect(h.generateObject).not.toHaveBeenCalled();
+    expect(locale.category).toBe("office buildings");
+    expect(locale.city).toBe("Berkeley");
+  });
+
+  it("beats the category the LLM inferred off the page", async () => {
+    process.env.ANTHROPIC_API_KEY = "test-key";
+    llmReturns({ category: "luxury apartments", neighborhood: "Southside" });
+    const locale = await derivePropertyLocale(siteCrawl(), null, {
+      propertyType: "student",
+    });
+    expect(locale.category).toBe("student apartments");
+    expect(locale.neighborhood).toBe("Southside");
+  });
+
+  it("loses to an explicit senior signal in the site's own markup", async () => {
+    const locale = await derivePropertyLocale(
+      siteCrawl({ schemaTypes: ["SeniorLivingResidence"] }),
+      null,
+      { propertyType: "office" },
+    );
+    expect(locale.category).toBe("senior living communities");
+  });
+
+  it("falls back to the default when the prospect skipped the quiz", async () => {
+    const locale = await derivePropertyLocale(siteCrawl(), null, {
+      propertyType: null,
+    });
+    expect(locale.category).toBe("apartments");
   });
 });

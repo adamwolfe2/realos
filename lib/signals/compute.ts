@@ -105,6 +105,10 @@ export async function computeSignals(
      *  differ — which is most of the time (Adam 2026-08-19: a "Warwick"
      *  audit asked every engine about "Leasestack"). */
     brandName?: string | null;
+    /** `property_type` from the /audit quiz (prospect only). The prospect
+     *  told us the asset class outright; without it the discovery prompts
+     *  ask an office tower about apartments. */
+    propertyType?: string | null;
   },
 ): Promise<ProspectComputeResult> {
   if (scope.kind === "prospect") {
@@ -113,6 +117,7 @@ export async function computeSignals(
       scope.domain,
       opts?.rivalName ?? null,
       opts?.brandName ?? null,
+      opts?.propertyType ?? null,
     );
   }
   return computeRealTenantSignals(scope);
@@ -144,6 +149,7 @@ async function computeProspectSignals(
   domain: string,
   rivalName: string | null = null,
   suppliedBrandName: string | null = null,
+  propertyType: string | null = null,
 ): Promise<ProspectComputeResult> {
   const startedAt = Date.now();
   const key = scopeKey({ kind: "prospect", prospectAuditId, domain });
@@ -167,7 +173,9 @@ async function computeProspectSignals(
   let derivedLocale: PropertyLocale | null = null;
   const aeoPromise = (async () => {
     const crawl = await crawlPromise.catch(() => null);
-    derivedLocale = await derivePropertyLocale(crawl, prospectAuditId);
+    derivedLocale = await derivePropertyLocale(crawl, prospectAuditId, {
+      propertyType,
+    });
     return runAeoFanout(
       brandName,
       domain,

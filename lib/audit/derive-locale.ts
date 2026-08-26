@@ -45,10 +45,50 @@ const US_STATES = new Set([
   "TX","UT","VT","VA","WA","WV","WI","WY","DC",
 ]);
 
-function defaultCategory(schemaTypes: string[]): string {
+const DEFAULT_CATEGORY = "apartments";
+
+/**
+ * Category the site's own markup asserts. Null when the markup says
+ * nothing more specific than "a building" — which is nearly always.
+ */
+function schemaCategory(schemaTypes: string[]): string | null {
   const joined = schemaTypes.join(" ").toLowerCase();
   if (joined.includes("senior")) return "senior living communities";
-  return "apartments";
+  return null;
+}
+
+function defaultCategory(schemaTypes: string[]): string {
+  return schemaCategory(schemaTypes) ?? DEFAULT_CATEGORY;
+}
+
+/**
+ * The /audit quiz asks the prospect their asset class outright
+ * (`lib/audit/quiz-questions.ts::property_type`) and the answer never
+ * reached the prompt builder — so an office tower was asked "what are the
+ * best apartments in San Francisco". Phrased the way a renter or a tenant
+ * rep would actually search. Each has to read correctly inside every
+ * discovery template ("What are the best office buildings in X?"), so
+ * they are noun phrases, not lease-speak.
+ *
+ * "mixed" maps to null on purpose: "a mix of the above" names no search
+ * phrase, so the site's own evidence should decide.
+ */
+const QUIZ_CATEGORIES: Record<string, string> = {
+  student: "student apartments",
+  multifamily: "apartments",
+  affordable: "affordable apartments",
+  senior: "senior living communities",
+  commercial: "commercial properties",
+  office: "office buildings",
+  industrial: "industrial properties",
+};
+
+/** Exported for tests. */
+export function categoryFromPropertyType(
+  propertyType: string | null | undefined,
+): string | null {
+  const id = propertyType?.trim().toLowerCase();
+  return (id && QUIZ_CATEGORIES[id]) || null;
 }
 
 /**
@@ -240,9 +280,29 @@ const llmLocaleSchema = z.object({
 export async function derivePropertyLocale(
   crawl: SiteCrawlResult | null,
   prospectAuditId: string | null,
+  opts?: {
+    /** `property_type` from the /audit quiz, when the prospect took it. */
+    propertyType?: string | null;
+  },
 ): Promise<PropertyLocale> {
   const deterministic = parseLocaleFromCrawl(crawl);
-  if (!process.env.ANTHROPIC_API_KEY || !crawl) return deterministic;
+  const schemaCat = schemaCategory(crawl?.schemaTypes ?? []);
+  const quizCat = categoryFromPropertyType(opts?.propertyType);
+  // Precedence: what the site's markup asserts, then what the prospect
+  // told us in the quiz, then what the LLM read off the page, then the
+  // default. The quiz answer is first-party and beats an inference; the
+  // markup is the site's own claim and beats both.
+  const withCategory = (
+    locale: PropertyLocale,
+    llmCategory?: string | null,
+  ): PropertyLocale => ({
+    ...locale,
+    category: schemaCat ?? quizCat ?? llmCategory ?? DEFAULT_CATEGORY,
+  });
+
+  if (!process.env.ANTHROPIC_API_KEY || !crawl) {
+    return withCategory(deterministic);
+  }
 
   // Lead with title + meta description — on JS-heavy sites the native-
   // fetch fallback's first 200KB is mostly <head> noise and the visible
@@ -256,7 +316,7 @@ export async function derivePropertyLocale(
     crawl.html ? `Page text: ${stripHtmlToText(crawl.html)}` : "",
   ].filter(Boolean);
   const text = parts.join("\n");
-  if (text.length < 80) return deterministic;
+  if (text.length < 80) return withCategory(deterministic);
 
   const startedAt = Date.now();
   try {
@@ -295,20 +355,23 @@ ${text}`,
       !!llmCity &&
       !!deterministic.city &&
       llmCity.toLowerCase() === deterministic.city.toLowerCase();
-    return {
-      city: deterministic.city ?? llmCity,
-      region: deterministic.city
-        ? (deterministic.region ?? (sameCity ? llmRegion : null))
-        : llmRegion,
-      neighborhood: object.neighborhood?.trim() || null,
-      category: object.category?.trim().toLowerCase() || deterministic.category,
-      amenity: object.amenity?.trim() || null,
-      source: deterministic.city
-        ? deterministic.source
-        : llmCity
-          ? "llm"
-          : "none",
-    };
+    return withCategory(
+      {
+        city: deterministic.city ?? llmCity,
+        region: deterministic.city
+          ? (deterministic.region ?? (sameCity ? llmRegion : null))
+          : llmRegion,
+        neighborhood: object.neighborhood?.trim() || null,
+        category: deterministic.category,
+        amenity: object.amenity?.trim() || null,
+        source: deterministic.city
+          ? deterministic.source
+          : llmCity
+            ? "llm"
+            : "none",
+      },
+      object.category?.trim().toLowerCase() || null,
+    );
   } catch (err) {
     console.error(
       "[audit.locale] Haiku locale derivation failed; branded-only fallback:",
@@ -323,6 +386,6 @@ ${text}`,
       prospectAuditId,
       meta: { error: err instanceof Error ? err.message : String(err) },
     });
-    return deterministic;
+    return withCategory(deterministic);
   }
 }

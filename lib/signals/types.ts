@@ -138,8 +138,10 @@ export interface SignalSnapshot {
 // corporate HQ on operator sites) and short-circuited the LLM tier, so
 // every cached audit carries city-only locale and the "apartments"
 // default. Those reports asked the engines the wrong question; don't
-// serve one to a new submission.
-export const COMPUTE_VERSION = "2026-08-26.locale-merge.v1";
+// serve one to a new submission. v2, same day: the /audit quiz's
+// property_type now sets the category, so a quiz-path audit cached
+// between the two deploys still asks an office tower about apartments.
+export const COMPUTE_VERSION = "2026-08-26.locale-merge.v2";
 
 export function scopeKey(s: SignalScope): string {
   if (s.kind === "tenant") {
