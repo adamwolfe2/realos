@@ -31,7 +31,11 @@ export function BookCallCta({
     // scrolling ("it covered the Yelp review"). Edge-to-edge solid white
     // with a top hairline reads as page chrome — the same content passes
     // beneath it without looking broken.
-    <div className="sticky bottom-0 z-30 mt-8 -mx-4 md:-mx-6">
+    // No negative margins here: the bar must never be wider than its
+    // parent, or pages that render it without horizontal padding (the
+    // marketing pages) push it past the viewport and clip the label.
+    // Padded parents opt into edge-to-edge by wrapping the call site.
+    <div className="sticky bottom-0 z-30 mt-8">
       <div
         className="bg-white px-4 md:px-6"
         style={{

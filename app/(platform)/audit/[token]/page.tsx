@@ -743,6 +743,9 @@ export default async function AuditViewerPage({
 
         </section>
 
+        {/* Breakout: this container is px-4 md:px-6; cancel it so the
+            docked bar runs edge-to-edge. */}
+        <div className="-mx-4 md:-mx-6">
         <BookCallCta
           subtitle={
             highSeverity > 0
@@ -750,6 +753,7 @@ export default async function AuditViewerPage({
               : undefined
           }
         />
+        </div>
       </div>
 
       {/* Light footer with audit id + traceability metadata. */}
