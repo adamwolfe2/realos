@@ -54,8 +54,8 @@ function startOfUtcDay(d: Date): Date {
 // this directly so there's no per-call branching at the render site.
 // ---------------------------------------------------------------------------
 
-function buildDelta(current: number, prior: number): KpiDelta {
-  if (prior === 0 && current === 0) return { label: "—", positive: false };
+function buildDelta(current: number, prior: number): KpiDelta | null {
+  if (prior === 0 && current === 0) return null; // nothing to compare against
   if (prior === 0) return { label: "new", positive: true };
   const pct = ((current - prior) / prior) * 100;
   const sign = pct >= 0 ? "+" : "";
@@ -67,8 +67,8 @@ function buildDelta(current: number, prior: number): KpiDelta {
 
 // Position is "lower is better" — improving means the number drops. Flip the
 // positive flag so a -0.4 reads as primary tone, not muted.
-function buildPositionDelta(current: number, prior: number): KpiDelta {
-  if (prior === 0 && current === 0) return { label: "—", positive: false };
+function buildPositionDelta(current: number, prior: number): KpiDelta | null {
+  if (prior === 0 && current === 0) return null; // nothing to compare against
   if (prior === 0) return { label: "new", positive: true };
   const delta = current - prior;
   const sign = delta >= 0 ? "+" : "";

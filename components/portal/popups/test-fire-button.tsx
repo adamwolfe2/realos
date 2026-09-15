@@ -52,7 +52,7 @@ export function TestFireButton({ campaignId }: Props) {
       ) : state === "done" ? (
         <Check className="h-3.5 w-3.5 text-emerald-600" />
       ) : state === "error" ? (
-        <AlertCircle className="h-3.5 w-3.5 text-red-600" />
+        <AlertCircle className="h-3.5 w-3.5 text-destructive" />
       ) : (
         <Zap className="h-3.5 w-3.5" />
       )}

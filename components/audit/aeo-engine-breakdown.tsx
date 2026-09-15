@@ -10,6 +10,7 @@ import { COMPETITOR_URLS } from "@/components/audit/brief-shell";
 import { InView } from "@/components/ui/in-view";
 import { safeHttpUrl } from "@/lib/safe-url";
 import type { AeoEngineRow } from "@/lib/audit/synthesize";
+import { barPct } from "@/lib/charts/bar-width";
 
 // ---------------------------------------------------------------------------
 // AeoEngineBreakdown — per-engine "did the AI name you?" card.
@@ -384,7 +385,7 @@ function CompetitorLeaderboard({
                   <span
                     className="ls-grow-x block h-full rounded-[2px]"
                     style={{
-                      width: `${Math.max(6, (e.mentions / max) * 100)}%`,
+                      width: `${barPct(e.mentions, max, 6)}%`,
                       backgroundColor: "#0f62fe",
                       ["--reveal-delay" as string]: `${i * 60}ms`,
                     }}

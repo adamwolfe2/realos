@@ -34,31 +34,31 @@ const SEVERITY_TOKENS: Record<
 > = {
   info: {
     icon: Info,
-    container: "bg-blue-50 border-blue-200 text-blue-900",
-    iconClass: "text-blue-600",
-    actionClass: "text-blue-600 hover:text-blue-700",
+    container: "bg-primary/5 border-primary/20 text-primary-dark",
+    iconClass: "text-primary",
+    actionClass: "text-primary hover:text-primary-dark",
     cardClass: "ls-alert ls-alert-info text-slate-800",
   },
   success: {
     icon: CheckCircle2,
-    container: "bg-green-50 border-green-200 text-green-900",
-    iconClass: "text-green-600",
-    actionClass: "text-green-700 hover:text-green-900",
+    container: "bg-success/5 border-success/25 text-success-dark",
+    iconClass: "text-success",
+    actionClass: "text-success-dark hover:text-success",
     cardClass: "ls-alert ls-alert-success text-slate-800",
   },
   warning: {
     icon: AlertTriangle,
     container:
-      "bg-[rgba(241,194,27,0.10)] border-[rgba(241,194,27,0.30)] text-[#8a6d00]",
+      "bg-warning/10 border-warning/30 text-[#8a6d00]",
     iconClass: "text-[#8a6d00]",
     actionClass: "text-[#8a6d00] hover:text-[#6f5800]",
     cardClass: "ls-alert ls-alert-warning text-slate-800",
   },
   critical: {
     icon: AlertCircle,
-    container: "bg-red-50 border-red-200 text-red-900",
-    iconClass: "text-red-600",
-    actionClass: "text-red-700 hover:text-red-900",
+    container: "bg-destructive/5 border-destructive/25 text-destructive-dark",
+    iconClass: "text-destructive",
+    actionClass: "text-destructive-dark hover:text-destructive",
     cardClass: "ls-alert ls-alert-critical text-slate-800",
   },
 };

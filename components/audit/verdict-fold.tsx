@@ -3,6 +3,7 @@ import { Atmosphere } from "@/components/home/atmosphere";
 import { BookDemoLink } from "@/components/marketing/book-demo-link";
 import { CountUp } from "@/components/audit/count-up";
 import { BrandLogoImg } from "@/components/audit/brand-logo-img";
+import { barPct } from "@/lib/charts/bar-width";
 import {
   ChatGPTMark,
   PerplexityMark,
@@ -457,7 +458,7 @@ function PillarBars({ pillars }: { pillars: FoldPillar[] }) {
             <span
               className="aud-fill block h-full"
               style={{
-                width: `${Math.max(2, Math.min(p.score, 100))}%`,
+                width: `${barPct(p.score, 100)}%`,
                 backgroundColor: "#0f62fe",
                 borderRadius: 2,
                 animationDelay: `${450 + i * 80}ms`,

@@ -1,6 +1,7 @@
 import * as React from "react";
 import { centsToUsdShort } from "@/lib/properties/queries";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
+import { barPct } from "@/lib/charts/bar-width";
 
 // ---------------------------------------------------------------------------
 // Marketing section — promoted from sidebar to a main-column block per
@@ -249,7 +250,7 @@ function FunnelMini({
             <span className="relative h-2 rounded-full bg-muted overflow-hidden">
               <span
                 className="absolute inset-y-0 left-0 bg-primary/60 rounded-full"
-                style={{ width: `${Math.max(2, pct)}%` }}
+                style={{ width: `${barPct(pct, 100)}%` }}
               />
             </span>
             <span className="text-[12px] font-semibold tabular-nums text-foreground shrink-0">

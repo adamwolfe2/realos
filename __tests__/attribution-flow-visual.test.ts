@@ -21,8 +21,12 @@ describe("attribution filtered ledger", () => {
     expect(page).toContain("Chatbot");
     expect(page).toContain("Popups and forms");
     expect(page).toContain("Visitor pixel");
-    expect(page).toContain("bg-blue-600");
-    expect(page).toContain("font-semibold text-white");
+    // The active filter is a solid brand fill. Pinned as the design token
+    // rather than a raw Tailwind palette step, so the active state cannot
+    // drift away from --color-primary the way bg-blue-600 had.
+    expect(page).toContain("bg-primary");
+    expect(page).not.toContain("bg-blue-600");
+    expect(page).toContain("font-semibold text-primary-foreground");
   });
 
   it("highlights LeaseStack sources without tinting the entire table", () => {
@@ -30,7 +34,10 @@ describe("attribution filtered ledger", () => {
     const css = read("app/globals.css");
 
     expect(page).toContain("<SourceBadge");
-    expect(page).toContain("bg-blue-100 text-blue-800");
+    // A tinted chip, not a tinted row — and on the primary token, so the
+    // badge matches every other brand surface in the portal.
+    expect(page).toContain("bg-primary/15 text-primary-dark");
+    expect(page).not.toContain("bg-blue-100");
     expect(page).not.toContain("sourceRowClass");
     expect(css).not.toContain("@keyframes attribution-flow-draw");
   });

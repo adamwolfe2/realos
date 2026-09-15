@@ -150,8 +150,8 @@ export default async function AttributionPage({
                 aria-current={active ? "page" : undefined}
                 className={
                   active
-                    ? "shrink-0 bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white"
-                    : "shrink-0 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-blue-50 hover:text-blue-700"
+                    ? "shrink-0 bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
+                    : "shrink-0 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-primary-dark"
                 }
               >
                 {option.label}
@@ -398,12 +398,12 @@ function SourceBadge({
     row.verification === "imported"
       ? "bg-slate-100 text-slate-700"
       : row.source === LeadSource.CHATBOT
-        ? "bg-blue-100 text-blue-800"
+        ? "bg-primary/15 text-primary-dark"
         : row.source === LeadSource.FORM
           ? "bg-sky-100 text-sky-800"
           : row.source === LeadSource.PIXEL_OUTREACH
             ? "bg-cyan-100 text-cyan-800"
-            : "bg-blue-50 text-blue-700";
+            : "bg-accent text-primary-dark";
 
   return (
     <span className={`inline-flex px-2 py-1 text-[11px] font-semibold ${style}`}>

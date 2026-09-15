@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Globe, Loader2, Sparkles, ExternalLink, RefreshCw, Check } from "lucide-react";
+import { barPct } from "@/lib/charts/bar-width";
 
 // ---------------------------------------------------------------------------
 // ConnectWebsiteCard — the "feels like magic" entry point.
@@ -343,7 +344,7 @@ function ScanProgress({
         <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
           <div
             className="h-full bg-primary transition-[width] duration-700 ease-out"
-            style={{ width: `${Math.min(100, Math.max(2, pct))}%` }}
+            style={{ width: `${barPct(pct, 100)}%` }}
           />
         </div>
       </div>

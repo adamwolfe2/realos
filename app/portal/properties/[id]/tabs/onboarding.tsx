@@ -190,7 +190,7 @@ function ChecklistRow({ item }: { item: Awaited<ReturnType<typeof getLaunchCheck
           {item.description}
         </p>
         {item.detail ? (
-          <p className="text-[11px] text-muted-foreground/80 mt-1 font-mono">
+          <p className="text-[11px] text-muted-foreground/80 mt-1">
             {item.detail}
           </p>
         ) : null}

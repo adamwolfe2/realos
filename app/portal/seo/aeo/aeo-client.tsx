@@ -749,7 +749,7 @@ function VisibilityTrendCard({
       ? "text-muted-foreground"
       : delta > 0
         ? "text-emerald-700"
-        : "text-red-700";
+        : "text-destructive-dark";
 
   return (
     <SectionCard label="Visibility trend">

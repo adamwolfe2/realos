@@ -259,7 +259,7 @@ function QueryRow({
         <button
           type="button"
           onClick={onRemove}
-          className="text-[11px] text-muted-foreground hover:text-red-600"
+          className="text-[11px] text-muted-foreground hover:text-destructive"
         >
           Remove
         </button>

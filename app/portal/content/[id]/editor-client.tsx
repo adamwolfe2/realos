@@ -719,7 +719,7 @@ function SaveIndicator({ state }: { state: SaveState }) {
         ? "Saved"
         : "Save failed";
   const tone =
-    state === "error" ? "text-red-600" : "text-muted-foreground";
+    state === "error" ? "text-destructive" : "text-muted-foreground";
   return (
     <span className={`text-[11px] font-mono ${tone}`}>{label}</span>
   );

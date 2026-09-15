@@ -114,7 +114,7 @@ export function PropertyIntegrationsList({
 function StatusDot({ health }: { health: IntegrationHealth }) {
   const cls =
     health === "healthy"
-      ? "bg-green-500"
+      ? "bg-success"
       : health === "degraded"
         ? "bg-amber-500"
         : "bg-muted-foreground/30";

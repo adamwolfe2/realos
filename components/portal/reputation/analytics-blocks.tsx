@@ -1,4 +1,5 @@
 import { safeNum } from "@/components/portal/reputation/reputation-utils";
+import { barPct } from "@/lib/charts/bar-width";
 
 // Lightweight block used inside the analytics drawer. Replaces a nested
 // DashboardSection card so the drawer reads as one cohesive surface
@@ -53,7 +54,7 @@ export function SentimentBar({
       <div className="h-1.5 bg-muted rounded-full overflow-hidden">
         <div
           className={`h-full ${tone} transition-[width] duration-300`}
-          style={{ width: `${Math.max(2, pct)}%` }}
+          style={{ width: `${barPct(pct, 100)}%` }}
         />
       </div>
     </div>

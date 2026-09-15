@@ -9,6 +9,7 @@ import { DashboardSection } from "@/components/portal/dashboard/dashboard-sectio
 import { SourceLogo, sourceLabel } from "./source-logo";
 import { CHART_COLORS } from "@/components/portal/ui/chart-theme";
 import { cn } from "@/lib/utils";
+import { barPct } from "@/lib/charts/bar-width";
 
 // ---------------------------------------------------------------------------
 // Metrics panel — all numbers are real, computed server-side from the
@@ -294,7 +295,7 @@ function SentimentBars({
               <div
                 className="h-full rounded-[2px]"
                 style={{
-                  width: `${Math.max(4, (d.count / max) * 100)}%`,
+                  width: `${barPct(d.count, max, 4)}%`,
                   backgroundColor:
                     SENTIMENT_BAR_COLOR[d.sentiment] ?? CHART_COLORS.silver,
                 }}
@@ -370,7 +371,7 @@ function SourceCountBars({
               <div
                 className="h-full rounded-[2px]"
                 style={{
-                  width: `${Math.max(4, (d.count / max) * 100)}%`,
+                  width: `${barPct(d.count, max, 4)}%`,
                   backgroundColor: SOURCE_BAR_SERIES[i % SOURCE_BAR_SERIES.length],
                 }}
               />

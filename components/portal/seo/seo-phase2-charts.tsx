@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { EmptyStateBody } from "./charts/shared";
+import { barPct } from "@/lib/charts/bar-width";
 import {
   ResponsiveContainer,
   Scatter,
@@ -407,7 +408,7 @@ export function ShareOfVoiceDonut({
               <span
                 className="block h-full"
                 style={{
-                  width: `${Math.max((s.shareOfVoice / max) * 100, 2)}%`,
+                  width: `${barPct(s.shareOfVoice, max)}%`,
                   backgroundColor: s.isUs ? BRAND : palette[i % palette.length],
                 }}
               />
@@ -573,7 +574,7 @@ export function ContentRoiTreemap({ nodes }: { nodes: ContentRoiNode[] }) {
               <span
                 className="block h-full"
                 style={{
-                  width: `${Math.max((n.clicks / max) * 100, 2)}%`,
+                  width: `${barPct(n.clicks, max)}%`,
                   backgroundColor: BRAND,
                 }}
               />

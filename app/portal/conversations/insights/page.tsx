@@ -28,6 +28,7 @@ import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { RunLearningButton } from "./run-learning-button";
 import { RecommendationActions } from "./recommendation-actions";
+import { barPct } from "@/lib/charts/bar-width";
 
 export const metadata: Metadata = { title: "Chatbot insights" };
 export const dynamic = "force-dynamic";
@@ -391,7 +392,7 @@ export default async function ChatbotInsightsPage({
                       <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
                         <div
                           className="h-full rounded-full bg-primary"
-                          style={{ width: `${Math.max(6, (q.count / maxQuestion) * 100)}%` }}
+                          style={{ width: `${barPct(q.count, maxQuestion, 6)}%` }}
                         />
                       </div>
                     </div>
@@ -426,7 +427,7 @@ export default async function ChatbotInsightsPage({
                     <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
                       <div
                         className="h-full rounded-full bg-primary/80"
-                        style={{ width: `${Math.max(4, (k.count / maxKeyword) * 100)}%` }}
+                        style={{ width: `${barPct(k.count, maxKeyword, 4)}%` }}
                       />
                     </div>
                     <span className="ls-metric w-8 shrink-0 text-right text-[12px] text-muted-foreground">

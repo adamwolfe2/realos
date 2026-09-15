@@ -271,7 +271,7 @@ function HeroStat({
       <div className="ls-metric text-[20px] leading-none">{value}</div>
       <div className="mt-1 text-[10.5px] font-medium text-muted-foreground">{label}</div>
       {delta != null ? (
-        <div className={`mt-1 text-[10px] font-semibold ${delta >= 0 ? "text-green-600" : "text-destructive"}`}>
+        <div className={`mt-1 text-[10px] font-semibold ${delta >= 0 ? "text-success" : "text-destructive"}`}>
           {delta >= 0 ? "▲" : "▼"} {Math.abs(delta)}% vs prior
         </div>
       ) : null}

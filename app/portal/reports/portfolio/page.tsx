@@ -18,6 +18,7 @@ import {
 } from "@/components/portal/ui/data-table";
 import { Users, UserPlus, CalendarCheck, FileText, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { barPct } from "@/lib/charts/bar-width";
 
 export const metadata: Metadata = { title: "Portfolio funnel" };
 export const dynamic = "force-dynamic";
@@ -345,7 +346,7 @@ export default async function PortfolioFunnelPage({
                     <div className="h-2 flex-1 overflow-hidden rounded-[2px] bg-muted">
                       <div
                         className="h-full rounded-[2px] bg-primary/80"
-                        style={{ width: `${Math.max(4, (s.count / maxSource) * 100)}%` }}
+                        style={{ width: `${barPct(s.count, maxSource, 4)}%` }}
                       />
                     </div>
                     <span className="ls-metric w-8 shrink-0 text-right text-[12px] text-muted-foreground">

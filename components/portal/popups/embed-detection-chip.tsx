@@ -118,8 +118,8 @@ export function EmbedDetectionChip({ url, orgSlug }: Props) {
     },
     NOT_DETECTED: {
       Icon: XCircle,
-      tone: "border-red-500/40 bg-red-50 text-red-900",
-      iconTone: "text-red-600",
+      tone: "border-destructive/40 bg-destructive/5 text-destructive-dark",
+      iconTone: "text-destructive",
       label: "Embed not detected on your site",
     },
     NO_URL: {

@@ -170,7 +170,7 @@ function EventRow({ event, highlight }: { event: RecentEvent; highlight: boolean
 function eventStyle(type: EventType): { Icon: typeof Eye; tone: string; label: string } {
   switch (type) {
     case "SHOWN":
-      return { Icon: Eye, tone: "text-blue-600", label: "Shown" };
+      return { Icon: Eye, tone: "text-primary", label: "Shown" };
     case "DISMISSED":
       return { Icon: X, tone: "text-muted-foreground", label: "Dismissed" };
     case "CTA_CLICKED":

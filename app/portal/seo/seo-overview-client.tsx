@@ -16,13 +16,18 @@ import {
 // derives it from the same two fields without touching the server-side
 // delta builders.
 export type KpiDelta = {
-  label: string; // pre-formatted "+12%", "-3%", "+0.4", "—"
+  label: string; // pre-formatted "+12%", "-3%", "+0.4"
   positive: boolean;
 };
 
-function toTrend(delta: KpiDelta): Trend {
-  if (delta.label === "—") return "flat";
-  return delta.positive ? "up" : "down";
+// `null` means there is no prior period to compare against. It is not a flat
+// trend, and it must not render a pill: an em-dash in the delta slot claims a
+// comparison that was never made.
+function toDelta(
+  delta: KpiDelta | null,
+): { value: string; trend: Trend } | undefined {
+  if (!delta) return undefined;
+  return { value: delta.label, trend: delta.positive ? "up" : "down" };
 }
 
 // ---------------------------------------------------------------------------
@@ -41,10 +46,10 @@ function toTrend(delta: KpiDelta): Trend {
 // ---------------------------------------------------------------------------
 
 export type SeoOverviewKpis = {
-  clicks:      { value: number; delta: KpiDelta; spark: number[] };
-  impressions: { value: number; delta: KpiDelta; spark: number[] };
-  ctr:         { value: number; delta: KpiDelta; spark: number[] }; // 0-1
-  position:    { value: number; delta: KpiDelta; spark: number[] };
+  clicks:      { value: number; delta: KpiDelta | null; spark: number[] };
+  impressions: { value: number; delta: KpiDelta | null; spark: number[] };
+  ctr:         { value: number; delta: KpiDelta | null; spark: number[] }; // 0-1
+  position:    { value: number; delta: KpiDelta | null; spark: number[] };
 };
 
 export type SeoOverviewClientProps = {
@@ -91,28 +96,28 @@ export function SeoOverviewClient(props: SeoOverviewClientProps) {
         <KpiTile
           label="Clicks"
           value={fmtNumber(props.kpis.clicks.value)}
-          delta={{ value: props.kpis.clicks.delta.label, trend: toTrend(props.kpis.clicks.delta) }}
+          delta={toDelta(props.kpis.clicks.delta)}
           spark={props.kpis.clicks.spark}
           chart="sparkline"
         />
         <KpiTile
           label="Impressions"
           value={fmtNumber(props.kpis.impressions.value)}
-          delta={{ value: props.kpis.impressions.delta.label, trend: toTrend(props.kpis.impressions.delta) }}
+          delta={toDelta(props.kpis.impressions.delta)}
           spark={props.kpis.impressions.spark}
           chart="sparkline"
         />
         <KpiTile
           label="Avg CTR"
           value={fmtPercent(props.kpis.ctr.value)}
-          delta={{ value: props.kpis.ctr.delta.label, trend: toTrend(props.kpis.ctr.delta) }}
+          delta={toDelta(props.kpis.ctr.delta)}
           spark={props.kpis.ctr.spark}
           chart="sparkline"
         />
         <KpiTile
           label="Avg Position"
           value={fmtPosition(props.kpis.position.value)}
-          delta={{ value: props.kpis.position.delta.label, trend: toTrend(props.kpis.position.delta) }}
+          delta={toDelta(props.kpis.position.delta)}
           // Position is lower-is-better. KpiTile's sparkline has no invert
           // option, so flip the sign here (data transform only) to keep the
           // "line climbs = improving" convention from the old hand-rolled

@@ -251,7 +251,7 @@ export function KpiCard({
       <div className="ls-metric text-[20px] leading-none">{value}</div>
       <div className="mt-1 truncate text-[10.5px] font-medium text-muted-foreground">{label}</div>
       {delta ? (
-        <div className={`mt-1 text-[10px] font-semibold ${delta.up ? "text-green-600" : "text-destructive"}`}>
+        <div className={`mt-1 text-[10px] font-semibold ${delta.up ? "text-success" : "text-destructive"}`}>
           {delta.up ? "▲" : "▼"} {delta.text}
         </div>
       ) : deltaNeutral ? (
@@ -333,7 +333,7 @@ export function coverageRows(s: ReportSnapshot): Array<{
 }
 
 export const COVERAGE_DOT: Record<CoverageState, string> = {
-  live: "bg-green-600",
+  live: "bg-success",
   prog: "bg-primary",
   off: "bg-slate-300",
 };

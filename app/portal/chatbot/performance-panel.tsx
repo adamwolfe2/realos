@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
+import { barPct } from "@/lib/charts/bar-width";
 import {
   PerformanceOverTime,
   type PerformancePoint,
@@ -163,7 +164,7 @@ export function ChatbotPerformancePanel({
                         <span className="h-2 flex-1 overflow-hidden rounded-[2px] bg-muted">
                           <span
                             className="block h-full rounded-[2px] bg-primary/80"
-                            style={{ width: `${Math.max(6, (k.count / max) * 100)}%` }}
+                            style={{ width: `${barPct(k.count, max, 6)}%` }}
                           />
                         </span>
                         <span className="ls-metric w-7 shrink-0 text-right text-[11px] text-muted-foreground">
@@ -263,7 +264,7 @@ function DistList({ title, rows }: { title: string; rows: Array<{ label: string;
               <span className="h-2 flex-1 overflow-hidden rounded-[2px] bg-muted">
                 <span
                   className="block h-full rounded-[2px] bg-primary/80"
-                  style={{ width: `${Math.max(6, (r.count / max) * 100)}%` }}
+                  style={{ width: `${barPct(r.count, max, 6)}%` }}
                 />
               </span>
               <span className="ls-metric w-7 shrink-0 text-right text-[11px] text-muted-foreground">

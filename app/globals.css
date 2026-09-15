@@ -66,6 +66,9 @@ body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-ins
   --color-accent-foreground: #0f62fe;
   --color-destructive: #da1e28;
   --color-destructive-foreground: #FFFFFF;
+  /* Carbon red-70. The 50/60-weight status colours are for fills and icons;
+     as body text on a tinted wash they sit near 3:1, under the 4.5:1 floor. */
+  --color-destructive-dark: #a2191f;
 
   /* Status tokens — exposed as Tailwind utilities (bg-warning, text-success…).
      Amber = alerts/attention, Muted Green = positive trends. */
@@ -73,6 +76,7 @@ body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-ins
   --color-warning-foreground: #1E2A3A;
   --color-success: #24a148;
   --color-success-foreground: #FFFFFF;
+  --color-success-dark: #0e6027;   /* Carbon green-70 — readable as text */
 
   /* Deep Slate — brand ink for the wordmark ("Lease") and dark-on-light
      accents. Exposed as text-deep-slate / bg-deep-slate. */

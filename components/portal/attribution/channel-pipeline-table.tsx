@@ -2,6 +2,7 @@ import * as React from "react";
 import { SourceLogo } from "@/components/portal/attribution/source-logo";
 import { EmptyState } from "@/components/portal/ui/empty-state";
 import type { ChannelPipelineRow } from "@/lib/attribution/reverse";
+import { barPct } from "@/lib/charts/bar-width";
 
 // ---------------------------------------------------------------------------
 // ChannelPipelineTable — every lead reverse-attributed to a channel, then the
@@ -47,7 +48,7 @@ export function ChannelPipelineTable({ rows }: { rows: ChannelPipelineRow[] }) {
                       <span
                         className="block h-full"
                         style={{
-                          width: `${Math.max((r.leads / maxLeads) * 100, 4)}%`,
+                          width: `${barPct(r.leads, maxLeads, 4)}%`,
                           background: r.color,
                         }}
                       />
