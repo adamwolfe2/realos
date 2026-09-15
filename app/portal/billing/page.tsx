@@ -18,6 +18,7 @@ import { WebsiteBuildTracker } from "./website-build-tracker";
 import { redirect } from "next/navigation";
 import { canManageBilling } from "@/lib/billing/checkout-policy";
 import { selectPlatformSubscriptionForOrg } from "@/lib/billing/stripe-state";
+import { visibleWebsiteBuilds, toBuildStatus } from "@/lib/billing/website-builds";
 
 export const metadata: Metadata = { title: "Billing" };
 export const dynamic = "force-dynamic";
@@ -88,11 +89,14 @@ export default async function BillingPage() {
   // Active website-build requests for this org. Shown above the
   // billing details so customers can see fulfillment status at a
   // glance. Cancelled / live builds drop out of the list once 30
-  // days have passed since the terminal status was reached.
-  const websiteBuilds = await prisma.websiteBuildRequest.findMany({
+  // days have passed since the terminal status was reached, and
+  // expired-checkout rows never appear at all — see
+  // lib/billing/website-builds.ts for why (this page rendered two
+  // dead 2026-07-30 checkout sessions as in-flight builds).
+  const websiteBuildRows = await prisma.websiteBuildRequest.findMany({
     where: { orgId: scope.orgId },
     orderBy: { createdAt: "desc" },
-    take: 5,
+    take: 10,
     select: {
       id: true,
       status: true,
@@ -101,10 +105,26 @@ export default async function BillingPage() {
       calBookedAt: true,
       kickoffCallAt: true,
       launchedAt: true,
+      cancelledAt: true,
       createdAt: true,
       property: { select: { name: true } },
     },
   });
+  const websiteBuilds = visibleWebsiteBuilds(websiteBuildRows).slice(0, 5);
+
+  // Live custom domains we host for this org. A customer whose site we
+  // already built and maintain should see that on the billing page —
+  // and must not be pitched a build they already bought.
+  const domains = await prisma.domainBinding.findMany({
+    where: { orgId: scope.orgId },
+    orderBy: [{ isPrimary: "desc" }, { hostname: "asc" }],
+    select: { hostname: true, isPrimary: true, sslStatus: true, dnsConfigured: true },
+  });
+  const primaryDomain = domains.find((d) => d.isPrimary) ?? domains[0] ?? null;
+  const hasLiveSite =
+    primaryDomain != null &&
+    primaryDomain.dnsConfigured &&
+    primaryDomain.sslStatus === "active";
 
   const adCampaigns = await prisma.adCampaign.findMany({
     where: { orgId: scope.orgId, status: "active" },
@@ -122,19 +142,28 @@ export default async function BillingPage() {
   let activeSubscription: Stripe.Subscription | null = null;
   if (org.stripeCustomerId && isStripeConfigured()) {
     try {
+      // NO `expand` here. `data.items.data.price.product` is five levels
+      // deep and Stripe caps expansion at four, so that request 400s with
+      // `property_expansion_max_depth` on EVERY call — and the catch below
+      // swallowed it, which is why the line-item block had never rendered
+      // for any customer. `price` comes back expanded by default, and the
+      // tier/add-on lookups below key off `price.lookup_key`.
       const subs = await getStripeClient().subscriptions.list({
         customer: org.stripeCustomerId,
         status: "all",
         limit: 100,
-        expand: ["data.items.data.price.product"],
       });
       activeSubscription = selectPlatformSubscriptionForOrg(
         subs.data,
         org.id,
         new Set(["active", "trialing", "past_due", "paused"]),
       );
-    } catch {
-      // Non-fatal; surface cached fields only.
+    } catch (error) {
+      // Non-fatal for the render — we degrade to the cached Prisma fields
+      // rather than 500 a billing page. But it is NOT non-fatal for the
+      // customer's understanding of their bill, so it gets logged: the
+      // silent version of this catch hid a permanent 400 (see above).
+      console.error("[billing] Stripe subscription lookup failed:", error);
     }
   }
 
@@ -243,6 +272,17 @@ export default async function BillingPage() {
     !!org.subscriptionTier &&
     !org.subscriptionStatus;
 
+  // "Subscription started" fell back to "Not yet" whenever the cached
+  // column was null — which read as "you have no subscription" on an
+  // ACTIVE account (SG Real Estate: ACTIVE, $899/mo, column null, Stripe
+  // holding the real 2026-05-12 start). Stripe is the source of truth
+  // here; the cached column is just a copy, so prefer whichever we have.
+  const subscriptionStartedAt =
+    org.subscriptionStartedAt ??
+    (activeSubscription?.start_date
+      ? new Date(activeSubscription.start_date * 1000)
+      : null);
+
   const isTrialing = org.subscriptionStatus === "TRIALING";
   const cancelAtPeriodEnd = org.cancelAtPeriodEnd ?? false;
   const currentPeriodEnd = org.currentPeriodEnd ?? null;
@@ -264,7 +304,9 @@ export default async function BillingPage() {
           : null;
 
   return (
-    <div className="space-y-8 max-w-3xl">
+    // max-w-5xl, not 3xl: at 3xl the four KPI tiles were ~170px wide and
+    // every label truncated ("MONTHLY RETA…", "AD SPEND MAR…").
+    <div className="space-y-8 max-w-5xl">
       <PageHeader
         title="Billing"
         // Norman bug #106: the previous description read like a SaaS
@@ -429,11 +471,17 @@ export default async function BillingPage() {
             <PlanRow
               label="Subscription started"
               value={
-                org.subscriptionStartedAt
-                  ? new Date(org.subscriptionStartedAt).toLocaleDateString()
+                subscriptionStartedAt
+                  ? subscriptionStartedAt.toLocaleDateString()
                   : "Not yet"
               }
             />
+            {currentPeriodEnd && !cancelAtPeriodEnd ? (
+              <PlanRow
+                label="Next invoice"
+                value={new Date(currentPeriodEnd).toLocaleDateString()}
+              />
+            ) : null}
             <PlanRow
               label="Stripe customer"
               value={org.stripeCustomerId ? "Connected" : "Not connected"}
@@ -497,14 +545,7 @@ export default async function BillingPage() {
         <WebsiteBuildTracker
           builds={websiteBuilds.map((b) => ({
             id: b.id,
-            status: b.status as
-              | "requested"
-              | "scoping"
-              | "designing"
-              | "building"
-              | "review"
-              | "live"
-              | "cancelled",
+            status: toBuildStatus(b.status),
             amountPaidCents: b.amountPaidCents,
             calBookingUrl: b.calBookingUrl,
             calBookedAt: b.calBookedAt?.toISOString() ?? null,
@@ -516,6 +557,52 @@ export default async function BillingPage() {
         />
       ) : null}
 
+      {/* Sites we host for this org. A customer whose site we built and
+          maintain should see it on the page where they review what
+          they're paying for — SG Real Estate has had telegraphcommons.com
+          live with us since April and this page mentioned it nowhere,
+          while pitching them a website build directly underneath. */}
+      {domains.length > 0 ? (
+        <SectionCard
+          label="Your website"
+          description="Domains we host and maintain for you under your plan."
+        >
+          <ul className="divide-y divide-[var(--hair)]">
+            {domains.map((d) => (
+              <li
+                key={d.hostname}
+                className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0"
+              >
+                <div className="min-w-0">
+                  <a
+                    href={`https://${d.hostname}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-medium text-foreground hover:underline"
+                  >
+                    {d.hostname}
+                  </a>
+                  {d.isPrimary ? (
+                    <span className="ml-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                      primary
+                    </span>
+                  ) : null}
+                </div>
+                {/* State comes from the two columns that actually gate
+                    serving — never assume "live" from the row existing. */}
+                <span className="shrink-0 text-[12px] font-medium text-muted-foreground">
+                  {d.dnsConfigured && d.sslStatus === "active"
+                    ? "Live · SSL active"
+                    : d.dnsConfigured
+                      ? "DNS configured · SSL pending"
+                      : "Setup in progress"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </SectionCard>
+      ) : null}
+
       {/* Website-build offer — Norman bug #106: the previous dual-card
           tiered upsell with gold crown badges and "Recommended"
           ribbons read as salesy on a billing page that's meant for
@@ -523,25 +610,32 @@ export default async function BillingPage() {
           out to the marketplace for the full offer. The card itself
           (components/billing/website-build-card.tsx) is unchanged for
           surfaces where the full pitch belongs (marketplace,
-          onboarding). */}
-      <section className="ls-card p-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-foreground">
-            Want a custom marketing site built for you?
-          </p>
-          <p className="text-[12.5px] text-muted-foreground mt-0.5">
-            One-time engagement covering design, build, and launch on
-            your domain. Detailed scope + pricing on the marketplace.
-          </p>
-        </div>
-        <a
-          href="/portal/marketplace"
-          className="inline-flex items-center gap-1.5 rounded-none border border-border bg-background px-3 py-1.5 text-[12.5px] font-medium text-foreground hover:bg-muted/50 transition-colors"
-        >
-          View options
-          <span aria-hidden="true">→</span>
-        </a>
-      </section>
+          onboarding).
+
+          Suppressed entirely once we already host a live site for them:
+          pitching "want a custom marketing site built for you?" to a
+          customer whose site we built and maintain reads as software
+          that doesn't know its own customer. */}
+      {!hasLiveSite ? (
+        <section className="ls-card p-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-foreground">
+              Want a custom marketing site built for you?
+            </p>
+            <p className="text-[12.5px] text-muted-foreground mt-0.5">
+              One-time engagement covering design, build, and launch on
+              your domain. Detailed scope + pricing on the marketplace.
+            </p>
+          </div>
+          <a
+            href="/portal/marketplace"
+            className="inline-flex items-center gap-1.5 rounded-none border border-border bg-background px-3 py-1.5 text-[12.5px] font-medium text-foreground hover:bg-muted/50 transition-colors"
+          >
+            View options
+            <span aria-hidden="true">→</span>
+          </a>
+        </section>
+      ) : null}
 
       <section className="ls-card ls-card-pad space-y-3">
         <h2 className="text-sm font-semibold">Stripe Customer Portal</h2>

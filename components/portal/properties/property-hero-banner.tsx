@@ -522,10 +522,9 @@ export function PropertyHeroBanner({
 
         {/* Copy + stats column */}
         <div className="min-w-0">
-          <p
-            className="text-[10px] font-mono font-semibold tracking-[0.16em] uppercase mb-1.5"
-            style={{ color: accent ?? "#0f62fe" }}
-          >
+          {/* Same eyebrow primitive the dashboard PageHeader uses, so the
+              two pages open with identical type. */}
+          <p className="ls-eyebrow mb-1.5" style={{ color: accent ?? "#0f62fe" }}>
             Property overview
           </p>
           <h1
@@ -547,41 +546,57 @@ export function PropertyHeroBanner({
               }`}
             >
               {stats.slice(0, compact ? 3 : 4).map((s, i) => {
+                // Dashboard KPI grammar, not a second bespoke stat style:
+                // `.ls-metric` for the number, `.ls-eyebrow` for the label,
+                // `.ls-delta` pill for the trend — the same three primitives
+                // KpiTile uses. Previously these were display-font numerals
+                // with mono labels and a bare coloured delta string, which
+                // is why the property page read as a different product from
+                // the dashboard it links out of.
                 const tileInner = (
                   <>
                     <p
-                      className={`font-display font-semibold tabular-nums text-foreground leading-none break-words ${
-                        compact
-                          ? // Compact caps at text-xl (Carbon density; also
-                            // fixes the Norman May 22 mobile overlap bug —
-                            // ~95px columns at 390px viewport).
-                            "text-xl"
-                          : "text-2xl sm:text-3xl"
+                      className={`ls-metric text-foreground break-words ${
+                        // Compact caps smaller (Carbon density; also fixes
+                        // the Norman May 22 mobile overlap bug — ~95px
+                        // columns at 390px viewport).
+                        // No `sm:` prefix here — ls-metric-* are plain CSS
+                        // classes in globals.css, not registered Tailwind
+                        // utilities, so a responsive variant silently
+                        // generates nothing.
+                        compact ? "ls-metric-md" : "ls-metric-lg"
                       }`}
-                      style={{ letterSpacing: "-0.02em" }}
                     >
                       {s.value}
                     </p>
-                    <p className="text-[10.5px] font-mono font-medium uppercase tracking-[0.1em] text-muted-foreground mt-1.5 leading-tight">
-                      {s.label}
-                    </p>
+                    <p className="ls-eyebrow mt-1.5 leading-tight">{s.label}</p>
                     {s.hint ? (
                       <p className="text-[10.5px] text-muted-foreground/90 mt-0.5 leading-tight">
                         {s.hint}
                       </p>
                     ) : null}
+                    {/* Only a real trend gets the delta pill. A neutral
+                        value here is a descriptor, not a movement ("49
+                        reviews" behind a reputation score), and putting
+                        it in a pill claims a comparison that doesn't
+                        exist — the dashboard renders that kind of value
+                        as KpiTile's quiet `hint` line, so match it. */}
                     {s.delta ? (
-                      <p
-                        className={`text-[10px] font-medium mt-0.5 ${
-                          s.tone === "positive"
-                            ? "text-[#24a148]"
-                            : s.tone === "negative"
-                              ? "text-destructive"
-                              : "text-muted-foreground"
-                        }`}
-                      >
-                        {s.delta}
-                      </p>
+                      s.tone === "positive" || s.tone === "negative" ? (
+                        <span
+                          className={`mt-1 ${
+                            s.tone === "positive"
+                              ? "ls-delta ls-delta-up"
+                              : "ls-delta ls-delta-down"
+                          }`}
+                        >
+                          {s.delta}
+                        </span>
+                      ) : (
+                        <p className="text-[10.5px] text-muted-foreground mt-0.5 leading-tight">
+                          {s.delta}
+                        </p>
+                      )
                     ) : null}
                   </>
                 );

@@ -10,17 +10,37 @@ describe("property detail UI refresh", () => {
 
     expect(hero).toContain("Property overview");
     expect(hero).toContain('sm:grid-cols-[160px_minmax(0,1fr)]');
-    expect(hero).toContain('"text-2xl sm:text-3xl"');
     expect(hero).not.toContain('"text-3xl sm:text-4xl md:text-5xl"');
     expect(hero).not.toContain("Featured property");
   });
 
-  it("renders intelligence as a compact action queue without decorative gradients", () => {
-    const panel = read("components/portal/properties/property-intelligence-panel.tsx");
+  // 2026-09-15: the hero stats were display-font numerals with mono labels
+  // and a bare coloured delta string — a second stat vocabulary that made
+  // the property page read as a different product from the dashboard it
+  // links out of. They now use the same three primitives KpiTile does.
+  it("states hero metrics in the dashboard's KPI vocabulary", () => {
+    const hero = read("components/portal/properties/property-hero-banner.tsx");
 
-    expect(panel).toContain("Next actions");
-    expect(panel).toContain("actions.slice(0, 3)");
-    expect(panel).not.toContain("bg-gradient-to-br");
+    expect(hero).toContain("ls-metric");
+    expect(hero).toContain("ls-eyebrow");
+    expect(hero).toContain("ls-delta-up");
+    expect(hero).not.toContain("font-display font-semibold tabular-nums");
+    // ls-metric-* are plain CSS classes, not registered Tailwind
+    // utilities, so a responsive variant would silently emit nothing.
+    expect(hero).not.toMatch(/sm:ls-metric-/);
+  });
+
+  // The "Next actions" panel duplicated the dashboard's "Needs your
+  // attention" queue row for row. Removed 2026-09-15; the queue lives on
+  // the dashboard and the property tabs carry the per-building detail.
+  it("does not re-mount the intelligence action queue on the property page", () => {
+    const page = read("app/portal/properties/[id]/page.tsx");
+
+    // Symbols, not prose: the page keeps a comment explaining the
+    // removal, so a bare "Next actions" string match would trip on it.
+    expect(page).not.toContain("PropertyIntelligencePanel");
+    expect(page).not.toContain("getPropertyRecommendations");
+    expect(page).not.toContain("<IntelligenceSection");
   });
 
   it("groups every property section under four stable navigation groups", () => {

@@ -33,8 +33,11 @@ describe("report surfaces render the shared PropertyOnePager snapshot body", () 
   for (const [name, read] of surfaces) {
     it(`${name} renders <PropertyOnePager snapshot={snapshot} ...> fed from report.snapshot`, () => {
       const content = read();
-      expect(content).toContain(
-        'import { PropertyOnePager } from "@/components/portal/reports/property-one-pager"',
+      // Named-import form is free to vary (the public page also pulls the
+      // ReportHeroImage type); what matters is that the body comes from
+      // the shared one-pager module.
+      expect(content).toMatch(
+        /import\s*\{[^}]*\bPropertyOnePager\b[^}]*\}\s*from\s*"@\/components\/portal\/reports\/property-one-pager"/s,
       );
       expect(content).toMatch(/<PropertyOnePager\s+snapshot=\{snapshot\}/);
       // Frozen persisted snapshot, not a fresh generateReportSnapshot() call.

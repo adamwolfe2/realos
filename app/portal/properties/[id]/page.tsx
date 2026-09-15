@@ -5,8 +5,6 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { PropertyHeroBanner } from "@/components/portal/properties/property-hero-banner";
-import { PropertyIntelligencePanel } from "@/components/portal/properties/property-intelligence-panel";
-import { getPropertyRecommendations } from "@/lib/intelligence/property-recommendations";
 import { MarketIntelligenceSection } from "@/components/portal/properties/market-intelligence-section";
 import { PropertyTabs } from "./property-tabs";
 import { OverviewTab } from "./tabs/overview";
@@ -342,22 +340,13 @@ export default async function PropertyDetail({
         imageScale={property.heroImageScale}
       />
 
-      {/* Intelligence panel — proactive recommendations synthesized
-          from real-time signals (reputation, SEO, AEO, listing
-          hygiene, content freshness). Streamed via Suspense so a
-          slow Prisma query never blocks the hero render. */}
-      <Suspense fallback={<IntelligenceSkeleton />}>
-        <IntelligenceSection
-          orgId={scope.orgId}
-          propertyId={property.id}
-          propertyName={property.name}
-        />
-      </Suspense>
-
-      {/* Score history + Recent activity removed (May 28 2026) — operator
-          feedback: the trend chart and 14-day rec-status feed weren't
-          surfacing anything actionable. The Intelligence section above
-          and the property tabs below carry the load. */}
+      {/* Score history + Recent activity removed (May 28 2026), and the
+          "Next actions" intelligence panel removed (Sep 15 2026): it
+          duplicated the dashboard's "Needs your attention" queue row for
+          row, and its solid-blue severity pills and muted header band
+          were the loudest thing on a page that should read like the rest
+          of the portal. The queue lives on the dashboard; the property
+          tabs below carry the per-building detail. */}
 
       {showMarketIntelligence ? (
         <Suspense fallback={<MarketIntelligenceSkeleton />}>
@@ -555,119 +544,3 @@ function PropertyTabsSkeleton() {
 }
 
 
-// ---------------------------------------------------------------------------
-// IntelligenceSection — Suspense child that runs the recommendation
-// engine off the critical path so the hero banner renders immediately
-// and the recommendations stream in a moment later.
-// ---------------------------------------------------------------------------
-async function IntelligenceSection({
-  orgId,
-  propertyId,
-  propertyName,
-}: {
-  orgId: string;
-  propertyId: string;
-  propertyName: string;
-}) {
-  // Two engines in parallel. ProactiveAction = "lib/intelligence" rules
-  // (listings, reputation, ads). SeoActionRecommendation = "lib/seo"
-  // rules (CTR, AEO, neighborhood pages, etc.). Merge + dedupe + sort
-  // by composite score so the operator sees one ranked queue.
-  const [actions, seoRows] = await Promise.all([
-    getPropertyRecommendations(orgId, propertyId).catch(() => []),
-    prisma.seoActionRecommendation
-      .findMany({
-        where: {
-          orgId,
-          propertyId,
-          status: { in: ["OPEN", "IN_PROGRESS"] },
-        },
-        orderBy: [{ severity: "asc" }, { score: "desc" }],
-        take: 8,
-        select: {
-          id: true,
-          kind: true,
-          category: true,
-          severity: true,
-          title: true,
-          detail: true,
-          estimateMinutes: true,
-          score: true,
-          actionHref: true,
-          actionLabel: true,
-        },
-      })
-      .catch(() => []),
-  ]);
-
-  // Adapt SeoActionRecommendation rows to ProactiveAction shape so the
-  // panel renders them uniformly. Category gets mapped: CTR_FIX/ONPAGE→seo,
-  // AEO_*→aeo, NEIGHBORHOOD_PAGE/REFRESH/SCHEMA→content_freshness,
-  // BACKLINK→competitor.
-  const seoAdapted = seoRows.map((r) => ({
-    id: `seo:${r.id}`,
-    category:
-      r.category === "CTR_FIX" || r.category === "ONPAGE_AUDIT"
-        ? ("seo" as const)
-        : r.category === "AEO_GAP" || r.category === "AEO_NOT_CITED"
-          ? ("aeo" as const)
-          : r.category === "NEIGHBORHOOD_PAGE" ||
-              r.category === "CONTENT_GAP" ||
-              r.category === "REFRESH" ||
-              r.category === "SCHEMA_GAP"
-            ? ("content_freshness" as const)
-            : r.category === "BACKLINK_OPPORTUNITY"
-              ? ("competitor" as const)
-              : ("listing" as const),
-    severity:
-      r.severity === "CRITICAL"
-        ? ("critical" as const)
-        : r.severity === "HIGH"
-          ? ("high" as const)
-          : r.severity === "MEDIUM"
-            ? ("medium" as const)
-            : ("low" as const),
-    title: r.title,
-    detail: r.detail,
-    estimateMinutes: r.estimateMinutes,
-    score: r.score,
-    actionHref: r.actionHref ?? "/portal/seo/agent",
-    actionLabel: r.actionLabel ?? "Open Agent",
-    icon: "Sparkles" as const,
-  }));
-
-  // Merge + sort by composite score. Cap at 8 so we don't drown the panel.
-  const merged = [...actions, ...seoAdapted]
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 8);
-
-  return (
-    <PropertyIntelligencePanel propertyName={propertyName} actions={merged} />
-  );
-}
-
-function IntelligenceSkeleton() {
-  return (
-    <div className="rounded-[2px] border border-border bg-card p-5 animate-pulse">
-      <div className="flex items-center gap-2.5 mb-3">
-        <div className="h-6 w-6 rounded-[2px] bg-muted" />
-        <div className="h-4 w-48 bg-muted rounded" />
-      </div>
-      <div className="space-y-2">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div
-            key={i}
-            className="flex items-center gap-3 rounded-[2px] border border-border/60 p-3"
-          >
-            <div className="h-9 w-9 rounded-[2px] bg-muted shrink-0" />
-            <div className="flex-1 space-y-1.5">
-              <div className="h-3 w-3/4 bg-muted rounded" />
-              <div className="h-2.5 w-1/2 bg-muted/60 rounded" />
-            </div>
-            <div className="h-7 w-16 bg-muted rounded shrink-0" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
