@@ -242,7 +242,7 @@ export default async function AudiencesPage() {
         }
         actions={
           <>
-            <Button asChild variant="outline" size="sm" className="rounded-md">
+            <Button asChild variant="outline" size="sm" className="rounded-[2px]">
               <Link href="/portal/audiences/destinations">
                 <Send />
                 Destinations

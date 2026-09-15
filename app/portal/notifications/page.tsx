@@ -298,10 +298,10 @@ export default function NotificationsPage() {
               <div key={i} className="px-5 py-4 flex items-start gap-3">
                 <div className="h-2 w-2 rounded-full bg-muted/60 mt-2 shrink-0" />
                 <div className="flex-1 space-y-1.5">
-                  <div className="h-4 w-64 bg-muted rounded" />
-                  <div className="h-3 w-48 bg-muted/60 rounded" />
+                  <div className="h-4 w-64 bg-muted rounded-[2px]" />
+                  <div className="h-3 w-48 bg-muted/60 rounded-[2px]" />
                 </div>
-                <div className="h-3 w-14 bg-secondary rounded shrink-0" />
+                <div className="h-3 w-14 bg-secondary rounded-[2px] shrink-0" />
               </div>
             ))}
           </div>
@@ -424,7 +424,7 @@ function NotificationRow(props: {
       >
         <span
           className={cn(
-            "shrink-0 text-[9px] uppercase tracking-wide px-1 py-px rounded",
+            "shrink-0 text-[9px] uppercase tracking-wide px-1 py-px rounded-[2px]",
             KIND_COLOR[item.kind] ?? "bg-muted text-muted-foreground",
           )}
         >

@@ -137,7 +137,7 @@ export function ReportCadenceForm({
         </legend>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {cadence === "daily" ? (
-            <label className="flex flex-col gap-0.5 rounded-lg border border-border bg-muted/30 p-3 opacity-70 cursor-not-allowed">
+            <label className="flex flex-col gap-0.5 rounded-[2px] border border-border bg-muted/30 p-3 opacity-70 cursor-not-allowed">
               <span className="flex items-center gap-2">
                 <input
                   type="radio"
@@ -162,7 +162,7 @@ export function ReportCadenceForm({
             return (
               <label
                 key={opt.value}
-                className={`flex flex-col gap-0.5 rounded-lg border p-3 cursor-pointer transition-colors ${
+                className={`flex flex-col gap-0.5 rounded-[2px] border p-3 cursor-pointer transition-colors ${
                   checked
                     ? "border-primary bg-primary/5"
                     : "border-border bg-card hover:bg-muted/30"
@@ -203,7 +203,7 @@ export function ReportCadenceForm({
           onChange={(e) => setRecipientText(e.target.value)}
           rows={5}
           placeholder="ops@example.com&#10;owner@example.com"
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-[13px] leading-relaxed text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+          className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-[13px] leading-relaxed text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
         <p className="text-[11px] text-muted-foreground">
           One email per line (or comma-separated). Up to 25 valid
@@ -263,7 +263,7 @@ export function ReportCadenceForm({
         <button
           type="submit"
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3.5 py-2 text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-[2px] bg-primary text-primary-foreground px-3.5 py-2 text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60"
         >
           {pending ? "Saving…" : "Save cadence"}
         </button>

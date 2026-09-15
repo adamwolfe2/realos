@@ -11,7 +11,7 @@ export default function CreativeRequestError() {
       </p>
       <Link
         href="/portal/creative"
-        className="inline-block text-xs px-3 py-2 border rounded-md hover:bg-muted transition-colors"
+        className="inline-block text-xs px-3 py-2 border rounded-[2px] hover:bg-muted transition-colors"
       >
         Creative studio
       </Link>

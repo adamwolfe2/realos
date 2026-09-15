@@ -132,7 +132,7 @@ function DestinationIcon({ type }: { type: string }) {
             ? BarChart3
             : Send;
   return (
-    <span className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground bg-muted shrink-0">
+    <span className="inline-flex h-6 w-6 items-center justify-center rounded-[2px] text-muted-foreground bg-muted shrink-0">
       <Icon className="h-3 w-3" />
     </span>
   );
@@ -150,7 +150,7 @@ function RunPill({ status }: { status: string }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums",
+        "inline-flex items-center rounded-[2px] px-1.5 py-0.5 text-[10px] font-semibold tabular-nums",
         tone,
       )}
     >

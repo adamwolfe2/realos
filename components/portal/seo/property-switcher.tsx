@@ -43,7 +43,7 @@ export function PropertySwitcher({ properties, activeId }: Props) {
           <Link
             key={p.id}
             href={`/portal/seo/agent?propertyId=${p.id}`}
-            className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-[12px] font-medium transition-colors ${
+            className={`inline-flex items-center gap-2 rounded-[2px] px-3 py-1.5 text-[12px] font-medium transition-colors ${
               isActive
                 ? "bg-primary text-primary-foreground"
                 : "text-foreground hover:bg-muted"

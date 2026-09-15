@@ -343,7 +343,7 @@ export function ListingsTable({
           per-unit fields so the operator knows it's a sync gap, not
           a UI bug. */}
       {missingDetailCount > 0 ? (
-        <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2.5 py-1.5">
+        <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-[2px] px-2.5 py-1.5">
           <AlertTriangle
             className="inline h-3 w-3 mr-1 -translate-y-0.5"
             aria-hidden="true"
@@ -459,11 +459,11 @@ export function ListingsTable({
                 </td>
                 <td className="py-2.5 text-center">
                   {l.isAvailable ? (
-                    <span className="inline-block px-2 py-0.5 text-[10px] font-semibold rounded bg-primary/10 text-primary">
+                    <span className="inline-block px-2 py-0.5 text-[10px] font-semibold rounded-[2px] bg-primary/10 text-primary">
                       Available
                     </span>
                   ) : (
-                    <span className="inline-block px-2 py-0.5 text-[10px] font-semibold rounded bg-muted text-muted-foreground">
+                    <span className="inline-block px-2 py-0.5 text-[10px] font-semibold rounded-[2px] bg-muted text-muted-foreground">
                       Leased
                     </span>
                   )}
@@ -575,7 +575,7 @@ function Chip({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 font-medium transition-colors ${
+      className={`inline-flex items-center gap-1 rounded-[2px] border px-2.5 py-1 font-medium transition-colors ${
         active
           ? "border-primary bg-primary text-primary-foreground"
           : "border-border bg-card text-muted-foreground hover:text-foreground"

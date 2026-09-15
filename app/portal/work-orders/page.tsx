@@ -264,13 +264,13 @@ export default async function WorkOrdersPage({
             </span>
             <Link
               href="/portal/work-orders/new"
-              className="inline-flex items-center rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
+              className="inline-flex items-center rounded-[2px] border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
             >
               Log work order
             </Link>
             <RunAppFolioSyncButton label="Sync now" subtle />
             {properties.length > 1 ? (
-              <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded" />}>
+              <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded-[2px]" />}>
                 <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
               </Suspense>
             ) : null}

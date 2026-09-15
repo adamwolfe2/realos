@@ -59,7 +59,7 @@ export async function MarketIntelligenceSection({ propertyId }: Props) {
         description="RentCast isn't configured for this environment yet."
       >
         <div className="text-sm text-muted-foreground">
-          Add <code className="text-xs px-1 py-0.5 rounded bg-muted">RENTCAST_API_KEY</code>{" "}
+          Add <code className="text-xs px-1 py-0.5 rounded-[2px] bg-muted">RENTCAST_API_KEY</code>{" "}
           to the workspace environment to enable rent AVM, comparables, and submarket trend
           intelligence on this property.
         </div>
@@ -176,7 +176,7 @@ function HeroRentAvmCard({
   fetchedAt: Date | null;
 }) {
   return (
-    <div className="rounded-xl border border-[var(--hair)] bg-card p-5 md:p-6">
+    <div className="rounded-[2px] border border-[var(--hair)] bg-card p-5 md:p-6">
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         <div className="min-w-0">
           <div
@@ -247,7 +247,7 @@ function RentGapBar({
         : "text-muted-foreground";
 
   return (
-    <div className="rounded-xl border border-[var(--hair)] bg-card p-5">
+    <div className="rounded-[2px] border border-[var(--hair)] bg-card p-5">
       <div className="flex items-baseline justify-between gap-3 mb-3">
         <h3 className="text-[13px] font-semibold text-foreground">Your rent vs. market</h3>
         <div className="text-[11px] text-muted-foreground">
@@ -348,7 +348,7 @@ function ComparablesStrip({
         {comparables.map((c, idx) => (
           <article
             key={`${c.formattedAddress ?? "comp"}-${idx}`}
-            className="snap-start shrink-0 w-[260px] md:w-[280px] rounded-lg border border-[var(--hair)] bg-card p-4 hover:border-foreground/30 transition-colors"
+            className="snap-start shrink-0 w-[260px] md:w-[280px] rounded-[2px] border border-[var(--hair)] bg-card p-4 hover:border-foreground/30 transition-colors"
           >
             <div className="text-[12px] font-medium text-foreground line-clamp-2 leading-snug">
               {c.formattedAddress ?? "Address withheld"}

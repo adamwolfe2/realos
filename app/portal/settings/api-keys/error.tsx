@@ -9,7 +9,7 @@ export default function ApiKeysError() {
       <p className="text-xs text-muted-foreground">Try refreshing the page.</p>
       <Link
         href="/portal/settings"
-        className="inline-block text-xs px-3 py-2 border rounded-md hover:bg-muted transition-colors"
+        className="inline-block text-xs px-3 py-2 border rounded-[2px] hover:bg-muted transition-colors"
       >
         Settings
       </Link>

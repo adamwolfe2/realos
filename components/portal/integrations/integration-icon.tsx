@@ -41,7 +41,7 @@ export function IntegrationIcon({
       <div
         aria-hidden="true"
         className={cn(
-          "inline-flex items-center justify-center rounded-lg font-semibold text-white shrink-0 shadow-sm text-[11px]",
+          "inline-flex items-center justify-center rounded-[2px] font-semibold text-white shrink-0 shadow-sm text-[11px]",
           dim,
           className,
         )}
@@ -57,7 +57,7 @@ export function IntegrationIcon({
       <div
         aria-hidden="true"
         className={cn(
-          "inline-flex items-center justify-center rounded-lg shrink-0 shadow-sm text-white",
+          "inline-flex items-center justify-center rounded-[2px] shrink-0 shadow-sm text-white",
           dim,
           className,
         )}
@@ -72,7 +72,7 @@ export function IntegrationIcon({
     <div
       aria-hidden="true"
       className={cn(
-        "inline-flex items-center justify-center rounded-lg shrink-0 bg-card border border-border",
+        "inline-flex items-center justify-center rounded-[2px] shrink-0 bg-card border border-border",
         dim,
         className,
       )}

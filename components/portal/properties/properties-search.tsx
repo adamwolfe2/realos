@@ -65,14 +65,14 @@ export function PropertiesSearch({ initialValue = "", className }: Props) {
         onChange={(e) => setValue(e.target.value)}
         placeholder="Search properties…"
         aria-label="Search properties"
-        className="h-8 w-full rounded-md border border-border bg-card pl-8 pr-7 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-shadow"
+        className="h-8 w-full rounded-[2px] border border-border bg-card pl-8 pr-7 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-shadow"
       />
       {value ? (
         <button
           type="button"
           onClick={() => setValue("")}
           aria-label="Clear search"
-          className="absolute right-1.5 inline-flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted/60"
+          className="absolute right-1.5 inline-flex h-5 w-5 items-center justify-center rounded-[2px] text-muted-foreground hover:text-foreground hover:bg-muted/60"
         >
           <X className="h-3 w-3" aria-hidden="true" />
         </button>

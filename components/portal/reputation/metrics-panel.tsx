@@ -680,7 +680,7 @@ function NegativeKeywords({
       {data.map((d) => (
         <li
           key={d.phrase}
-          className="inline-flex items-center gap-1.5 rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1 text-[11px]"
+          className="inline-flex items-center gap-1.5 rounded-[2px] border border-destructive/30 bg-destructive/5 px-2 py-1 text-[11px]"
         >
           <span className="text-foreground">{d.phrase}</span>
           <span className="text-muted-foreground tabular-nums">

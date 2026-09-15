@@ -21,7 +21,7 @@ import {
 // stops the bot inventing unit sizes (Telegraph "triple = 200 sq ft" bug).
 
 const FIELD =
-  "w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40";
+  "w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40";
 const LABEL = "block text-xs font-medium text-foreground mb-1";
 
 // Floor-plan rows hold strings while editing (controlled inputs); we parse to
@@ -175,7 +175,7 @@ export function KnowledgeBaseForm({
     <div className="space-y-6">
       <CompletenessBanner completeness={completeness} />
 
-      <div className="rounded-xl border border-border bg-card p-4 sm:p-6 space-y-4">
+      <div className="rounded-[2px] border border-border bg-card p-4 sm:p-6 space-y-4">
         <div>
           <h3 className="text-sm font-semibold text-foreground">
             {propertyName} — knowledge base
@@ -194,14 +194,14 @@ export function KnowledgeBaseForm({
             <button
               type="button"
               onClick={addRow}
-              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] font-medium text-foreground hover:bg-muted"
+              className="inline-flex items-center gap-1 rounded-[2px] border border-border px-2 py-1 text-[11px] font-medium text-foreground hover:bg-muted"
             >
               <Plus className="h-3 w-3" aria-hidden="true" /> Add plan
             </button>
           </div>
 
           {rows.map((r, i) => (
-            <div key={i} className="rounded-lg border border-border bg-background p-3 space-y-2">
+            <div key={i} className="rounded-[2px] border border-border bg-background p-3 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-medium text-muted-foreground">
                   Plan {i + 1}
@@ -341,7 +341,7 @@ export function KnowledgeBaseForm({
             type="button"
             onClick={onSubmit}
             disabled={pending}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 w-full sm:w-auto sm:ml-auto"
+            className="rounded-[2px] bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 w-full sm:w-auto sm:ml-auto"
           >
             {pending ? "Saving…" : "Save knowledge base"}
           </button>
@@ -361,7 +361,7 @@ function CompletenessBanner({
   return (
     <div
       className={cn(
-        "rounded-xl border p-4",
+        "rounded-[2px] border p-4",
         complete
           ? "border-[rgba(36,161,72,0.3)] bg-[rgba(36,161,72,0.05)]"
           : "border-[rgba(241,194,27,0.3)] bg-[rgba(241,194,27,0.08)]",
@@ -488,7 +488,7 @@ function TagInput({
   return (
     <div>
       <label className={LABEL}>{label}</label>
-      <div className="rounded-md border border-border bg-background px-2 py-1.5">
+      <div className="rounded-[2px] border border-border bg-background px-2 py-1.5">
         {values.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-1.5">
             {values.map((v) => (

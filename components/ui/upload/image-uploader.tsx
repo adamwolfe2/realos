@@ -105,7 +105,7 @@ export function ImageUploader({
       {value ? (
         <div
           className={cn(
-            "relative w-full overflow-hidden rounded-md border border-border bg-secondary",
+            "relative w-full overflow-hidden rounded-[2px] border border-border bg-secondary",
             aspect,
           )}
         >
@@ -120,7 +120,7 @@ export function ImageUploader({
               type="button"
               onClick={() => inputRef.current?.click()}
               disabled={disabled || uploading}
-              className="inline-flex items-center gap-1 rounded-md bg-black/60 text-white px-2.5 py-1 text-xs font-medium backdrop-blur-sm hover:bg-black/80 disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-[2px] bg-black/60 text-white px-2.5 py-1 text-xs font-medium backdrop-blur-sm hover:bg-black/80 disabled:opacity-50"
             >
               {uploading ? (
                 <Loader2 className="h-3 w-3 animate-spin" />
@@ -133,7 +133,7 @@ export function ImageUploader({
               type="button"
               onClick={() => onChange(null)}
               disabled={disabled || uploading}
-              className="inline-flex items-center gap-1 rounded-md bg-black/60 text-white px-2.5 py-1 text-xs font-medium backdrop-blur-sm hover:bg-black/80 disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-[2px] bg-black/60 text-white px-2.5 py-1 text-xs font-medium backdrop-blur-sm hover:bg-black/80 disabled:opacity-50"
             >
               <X className="h-3 w-3" />
               Remove
@@ -152,7 +152,7 @@ export function ImageUploader({
           onDrop={onDrop}
           disabled={disabled || uploading}
           className={cn(
-            "relative w-full rounded-md border-2 border-dashed bg-muted/20 transition-colors flex flex-col items-center justify-center gap-2",
+            "relative w-full rounded-[2px] border-2 border-dashed bg-muted/20 transition-colors flex flex-col items-center justify-center gap-2",
             aspect,
             dragActive
               ? "border-primary bg-primary/5"

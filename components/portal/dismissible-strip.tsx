@@ -59,7 +59,7 @@ export function DismissibleStrip({
         type="button"
         onClick={handleDismiss}
         aria-label="Dismiss this notice"
-        className="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-5 h-5 rounded hover:bg-foreground/10 transition-colors opacity-60 hover:opacity-100"
+        className="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-5 h-5 rounded-[2px] hover:bg-foreground/10 transition-colors opacity-60 hover:opacity-100"
       >
         <X className="w-3 h-3" />
       </button>

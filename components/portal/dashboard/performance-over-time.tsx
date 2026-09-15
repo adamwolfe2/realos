@@ -24,7 +24,7 @@ const PerformanceOverTimeChart = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-full w-full rounded-md bg-muted/30" aria-hidden="true" />
+      <div className="h-full w-full rounded-[2px] bg-muted/30" aria-hidden="true" />
     ),
   },
 );

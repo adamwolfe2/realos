@@ -98,7 +98,7 @@ export function LeadSmsComposer({ leadId, to, smsEnabled }: Props) {
                 type="button"
                 onClick={close}
                 disabled={pending}
-                className="rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-50"
+                className="rounded-[2px] p-1 text-muted-foreground hover:bg-muted disabled:opacity-50"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -111,14 +111,14 @@ export function LeadSmsComposer({ leadId, to, smsEnabled }: Props) {
                 maxLength={1600}
                 disabled={pending || success}
                 placeholder="Hi! Just confirming your tour tomorrow at 3pm…"
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
               />
               <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                 <span>{body.length} / 1600 characters</span>
                 <span>1 SMS = 160 chars</span>
               </div>
               {error ? (
-                <p className="rounded-md border border-destructive/30 bg-destructive/10 text-destructive text-xs px-3 py-2">
+                <p className="rounded-[2px] border border-destructive/30 bg-destructive/10 text-destructive text-xs px-3 py-2">
                   {error}
                 </p>
               ) : null}
@@ -127,14 +127,14 @@ export function LeadSmsComposer({ leadId, to, smsEnabled }: Props) {
                   type="button"
                   onClick={close}
                   disabled={pending}
-                  className="px-4 py-2 text-sm font-medium rounded-md border border-border bg-card hover:bg-muted disabled:opacity-50"
+                  className="px-4 py-2 text-sm font-medium rounded-[2px] border border-border bg-card hover:bg-muted disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={pending || success || !body.trim()}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-md bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-[2px] bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
                 >
                   {pending ? (
                     <>

@@ -20,7 +20,7 @@ export function RenewalTimeline({
   ];
 
   return (
-    <section className="rounded-xl border border-border bg-card p-4 md:p-5">
+    <section className="rounded-[2px] border border-border bg-card p-4 md:p-5">
       <div className="flex items-baseline justify-between gap-2 mb-3">
         <div>
           <p className="ls-eyebrow">
@@ -47,7 +47,7 @@ export function RenewalTimeline({
           {buckets.map((b, i) => (
             <div
               key={b.label}
-              className={`rounded-lg border px-3 py-2.5 min-w-0 ${tones[i]}`}
+              className={`rounded-[2px] border px-3 py-2.5 min-w-0 ${tones[i]}`}
             >
               <p className="ls-eyebrow">
                 {b.label}

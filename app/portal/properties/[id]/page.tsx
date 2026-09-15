@@ -490,11 +490,11 @@ export default async function PropertyDetail({
 function MarketIntelligenceSkeleton() {
   return (
     <div className="ls-card p-5 animate-pulse" aria-label="Loading market intelligence">
-      <div className="h-3 w-32 bg-muted/60 rounded mb-4" />
+      <div className="h-3 w-32 bg-muted/60 rounded-[2px] mb-4" />
       <div className="rounded-[2px] border border-[var(--hair)] p-5 space-y-3">
-        <div className="h-2.5 w-28 bg-muted/60 rounded" />
-        <div className="h-10 w-44 bg-muted rounded" />
-        <div className="h-3 w-56 bg-secondary rounded" />
+        <div className="h-2.5 w-28 bg-muted/60 rounded-[2px]" />
+        <div className="h-10 w-44 bg-muted rounded-[2px]" />
+        <div className="h-3 w-56 bg-secondary rounded-[2px]" />
       </div>
     </div>
   );
@@ -514,9 +514,9 @@ function PropertyTabsSkeleton() {
             key={i}
             className="ls-card p-4 space-y-2"
           >
-            <div className="h-3 w-20 bg-muted/60 rounded" />
-            <div className="h-7 w-16 bg-muted rounded" />
-            <div className="h-3 w-24 bg-secondary rounded" />
+            <div className="h-3 w-20 bg-muted/60 rounded-[2px]" />
+            <div className="h-7 w-16 bg-muted rounded-[2px]" />
+            <div className="h-3 w-24 bg-secondary rounded-[2px]" />
           </div>
         ))}
       </div>
@@ -526,14 +526,14 @@ function PropertyTabsSkeleton() {
             key={i}
             className="ls-card p-5 space-y-3"
           >
-            <div className="h-4 w-32 bg-muted rounded" />
+            <div className="h-4 w-32 bg-muted rounded-[2px]" />
             {Array.from({ length: 4 }).map((_, j) => (
               <div
                 key={j}
                 className="flex justify-between gap-2"
               >
-                <div className="h-3 w-20 bg-muted/60 rounded" />
-                <div className="h-3 w-32 bg-muted/80 rounded" />
+                <div className="h-3 w-20 bg-muted/60 rounded-[2px]" />
+                <div className="h-3 w-32 bg-muted/80 rounded-[2px]" />
               </div>
             ))}
           </div>

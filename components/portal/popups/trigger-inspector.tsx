@@ -32,7 +32,7 @@ export function TriggerInspector({
   const frequencyLine = describeFrequency(frequency);
 
   return (
-    <div className="rounded-xl border border-border bg-muted/30 p-3 text-[12.5px]">
+    <div className="rounded-[2px] border border-border bg-muted/30 p-3 text-[12.5px]">
       <p className="mb-2 ls-eyebrow">
         When this popup fires
       </p>

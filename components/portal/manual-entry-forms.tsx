@@ -93,7 +93,7 @@ function FormShell({
       <button
         type="submit"
         disabled={pending}
-        className="rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors"
+        className="rounded-[2px] bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors"
       >
         {pending ? "Saving..." : submitLabel}
       </button>

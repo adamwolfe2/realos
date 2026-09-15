@@ -180,7 +180,7 @@ function ChecklistRow({ item }: { item: Awaited<ReturnType<typeof getLaunchCheck
             {item.label}
           </span>
           {!item.done && item.required ? (
-            <span className="inline-flex items-center gap-1 text-[10px] text-destructive px-1.5 py-0.5 rounded bg-destructive/10">
+            <span className="inline-flex items-center gap-1 text-[10px] text-destructive px-1.5 py-0.5 rounded-[2px] bg-destructive/10">
               <AlertCircle className="w-2.5 h-2.5" aria-hidden="true" />
               required
             </span>
@@ -198,14 +198,14 @@ function ChecklistRow({ item }: { item: Awaited<ReturnType<typeof getLaunchCheck
       {!item.done && item.actionHref && item.actionLabel ? (
         <Link
           href={item.actionHref}
-          className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors shrink-0"
+          className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-[2px] border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors shrink-0"
         >
           {item.actionLabel}
         </Link>
       ) : item.done && item.actionHref ? (
         <Link
           href={item.actionHref}
-          className="inline-flex items-center px-2.5 py-1 text-xs text-muted-foreground rounded-md border border-border hover:bg-secondary transition-colors shrink-0"
+          className="inline-flex items-center px-2.5 py-1 text-xs text-muted-foreground rounded-[2px] border border-border hover:bg-secondary transition-colors shrink-0"
         >
           Manage
         </Link>

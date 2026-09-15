@@ -86,7 +86,7 @@ export function LiveEventFeed({ campaignId }: Props) {
   }, [fetchEvents, paused]);
 
   return (
-    <div className="rounded-xl border border-border bg-background">
+    <div className="rounded-[2px] border border-border bg-background">
       <header className="flex items-center justify-between gap-3 border-b border-border px-3 py-2.5">
         <div className="flex items-center gap-2">
           <Activity className="h-3.5 w-3.5 text-emerald-600" />
@@ -101,7 +101,7 @@ export function LiveEventFeed({ campaignId }: Props) {
         <button
           type="button"
           onClick={() => setPaused((p) => !p)}
-          className="rounded-md border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground"
+          className="rounded-[2px] border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground"
         >
           {paused ? "Resume" : "Pause"}
         </button>

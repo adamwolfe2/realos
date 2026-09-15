@@ -186,11 +186,11 @@ export async function WorkOrdersTab({
               return (
                 <div
                   key={status}
-                  className="rounded-xl border border-border bg-muted/30 p-2"
+                  className="rounded-[2px] border border-border bg-muted/30 p-2"
                 >
                   <div className="flex items-center justify-between gap-1 mb-2 px-0.5">
                     <span
-                      className={`text-[9px] tracking-widest uppercase font-semibold rounded px-1.5 py-0.5 border ${STATUS_TONE[status]}`}
+                      className={`text-[9px] tracking-widest uppercase font-semibold rounded-[2px] px-1.5 py-0.5 border ${STATUS_TONE[status]}`}
                     >
                       {STATUS_LABEL[status]}
                     </span>
@@ -267,7 +267,7 @@ export async function WorkOrdersTab({
   } catch (err) {
     console.error("[WorkOrdersTab] Failed to load AppFolio work order data:", err);
     return (
-      <div className="rounded-xl border border-border bg-secondary p-6 text-center">
+      <div className="rounded-[2px] border border-border bg-secondary p-6 text-center">
         <p className="text-sm font-semibold text-foreground">Work order data unavailable</p>
         <p className="mt-1 text-xs text-foreground">
           AppFolio sync may not be configured for this property. Check{" "}

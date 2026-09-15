@@ -200,7 +200,7 @@ export async function LeadsTab({
                         <span className="text-sm font-medium text-foreground truncate group-hover:underline">
                           {name}
                         </span>
-                        <span className="text-[10px] uppercase tracking-widest text-muted-foreground px-1.5 py-0.5 bg-secondary rounded">
+                        <span className="text-[10px] uppercase tracking-widest text-muted-foreground px-1.5 py-0.5 bg-secondary rounded-[2px]">
                           {STATUS_LABEL[lead.status]}
                         </span>
                       </div>

@@ -151,7 +151,7 @@ export function CursiveSetupWizard({
             Pixel ID from the first event. No copy-pasting IDs back and forth.
           </p>
         </div>
-        <div className="rounded-md border border-border bg-muted/30 p-3 space-y-1.5">
+        <div className="rounded-[2px] border border-border bg-muted/30 p-3 space-y-1.5">
           <p className="text-[11px] font-medium text-foreground">
             Before you start
           </p>
@@ -164,7 +164,7 @@ export function CursiveSetupWizard({
             itself.
           </p>
         </div>
-        <div className="rounded-md border border-border bg-muted/30 p-4 space-y-4">
+        <div className="rounded-[2px] border border-border bg-muted/30 p-4 space-y-4">
           {showPicker ? (
             <div className="flex flex-col gap-1.5">
               <Label
@@ -261,7 +261,7 @@ export function CursiveSetupWizard({
       <WebhookUrlBlock url={state.webhookUrl} />
 
       {state.verified && state.pixelId ? (
-        <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-[12px] text-emerald-700">
+        <div className="rounded-[2px] border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-[12px] text-emerald-700">
           Detected Pixel ID:{" "}
           <span className="font-mono">{state.pixelId}</span>
         </div>
@@ -303,13 +303,13 @@ function WebhookUrlBlock({ url }: { url: string }) {
         <button
           type="button"
           onClick={copy}
-          className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-3 py-1 text-[11px] font-semibold rounded"
+          className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-3 py-1 text-[11px] font-semibold rounded-[2px]"
         >
           {copied ? "Copied" : "Copy"}
         </button>
       </div>
       <pre
-        className="rounded-md border border-border bg-muted/50 p-3 text-[11px] leading-relaxed overflow-x-auto whitespace-pre-wrap break-all text-foreground"
+        className="rounded-[2px] border border-border bg-muted/50 p-3 text-[11px] leading-relaxed overflow-x-auto whitespace-pre-wrap break-all text-foreground"
         style={{ borderRadius: 6 }}
       >
         {url}

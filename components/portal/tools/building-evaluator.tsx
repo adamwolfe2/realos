@@ -130,7 +130,7 @@ export function BuildingEvaluator({ recent }: { recent: RecentRow[] }) {
             placeholder={SAMPLE_ADDRESS}
             required
             disabled={pending}
-            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--terracotta)]/30"
+            className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--terracotta)]/30"
           />
           <button
             type="button"
@@ -153,7 +153,7 @@ export function BuildingEvaluator({ recent }: { recent: RecentRow[] }) {
               onChange={(e) => set("askingPrice", e.target.value)}
               placeholder="475000"
               disabled={pending}
-              className="w-full rounded-md border border-border bg-background pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--terracotta)]/30"
+              className="w-full rounded-[2px] border border-border bg-background pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--terracotta)]/30"
             />
           </div>
         </Field>
@@ -168,7 +168,7 @@ export function BuildingEvaluator({ recent }: { recent: RecentRow[] }) {
               onChange={(e) => set("bedrooms", e.target.value)}
               placeholder="2"
               disabled={pending}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--terracotta)]/30"
+              className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--terracotta)]/30"
             />
           </Field>
           <Field label="Baths">
@@ -181,7 +181,7 @@ export function BuildingEvaluator({ recent }: { recent: RecentRow[] }) {
               onChange={(e) => set("bathrooms", e.target.value)}
               placeholder="1"
               disabled={pending}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--terracotta)]/30"
+              className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--terracotta)]/30"
             />
           </Field>
         </div>
@@ -196,7 +196,7 @@ export function BuildingEvaluator({ recent }: { recent: RecentRow[] }) {
               onChange={(e) => set("squareFootage", e.target.value)}
               placeholder="900"
               disabled={pending}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--terracotta)]/30"
+              className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--terracotta)]/30"
             />
           </Field>
           <Field label="Type">
@@ -204,7 +204,7 @@ export function BuildingEvaluator({ recent }: { recent: RecentRow[] }) {
               value={form.propertyType}
               onChange={(e) => set("propertyType", e.target.value)}
               disabled={pending}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--terracotta)]/30"
+              className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--terracotta)]/30"
             >
               <option value="">Any</option>
               <option value="Single Family">Single family</option>
@@ -219,7 +219,7 @@ export function BuildingEvaluator({ recent }: { recent: RecentRow[] }) {
         <button
           type="submit"
           disabled={pending || !form.address}
-          className="w-full inline-flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-50"
+          className="w-full inline-flex items-center justify-center gap-2 rounded-[2px] px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-50"
           style={{
             background: "var(--terracotta)",
             color: "var(--ivory)",
@@ -235,7 +235,7 @@ export function BuildingEvaluator({ recent }: { recent: RecentRow[] }) {
         </button>
 
         {error ? (
-          <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+          <div className="rounded-[2px] border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
             {error}
           </div>
         ) : null}
@@ -785,7 +785,7 @@ function RecentList({ recent, onArchive }: { recent: RecentRow[]; onArchive: (id
                 type="button"
                 onClick={() => onArchive(r.id)}
                 title="Archive"
-                className="shrink-0 inline-flex items-center justify-center h-7 w-7 rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-secondary"
+                className="shrink-0 inline-flex items-center justify-center h-7 w-7 rounded-[2px] border border-border text-muted-foreground hover:text-foreground hover:bg-secondary"
               >
                 <Archive className="h-3.5 w-3.5" />
               </button>

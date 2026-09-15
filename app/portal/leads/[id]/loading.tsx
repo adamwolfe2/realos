@@ -2,7 +2,7 @@ export default function LeadDetailLoading() {
   return (
     <div className="animate-pulse" aria-label="Loading lead">
       {/* Back link */}
-      <div className="h-4 w-24 bg-muted/60 rounded mb-3" />
+      <div className="h-4 w-24 bg-muted/60 rounded-[2px] mb-3" />
       <p className="text-xs text-muted-foreground mb-4 not-sr-only">
         Loading lead…
       </p>
@@ -15,26 +15,26 @@ export default function LeadDetailLoading() {
             <div className="flex items-start gap-4">
               <div className="h-12 w-12 rounded-full bg-muted shrink-0" />
               <div className="flex-1 space-y-2">
-                <div className="h-6 w-48 bg-muted rounded" />
-                <div className="h-4 w-36 bg-muted/60 rounded" />
+                <div className="h-6 w-48 bg-muted rounded-[2px]" />
+                <div className="h-4 w-36 bg-muted/60 rounded-[2px]" />
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-4 w-full bg-secondary rounded" />
+                <div key={i} className="h-4 w-full bg-secondary rounded-[2px]" />
               ))}
             </div>
           </div>
 
           {/* Timeline card */}
           <div className="ls-card p-6 space-y-4">
-            <div className="h-5 w-24 bg-muted rounded" />
+            <div className="h-5 w-24 bg-muted rounded-[2px]" />
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="flex gap-3">
                 <div className="h-4 w-4 rounded-full bg-muted/60 shrink-0 mt-0.5" />
                 <div className="flex-1 space-y-1.5">
-                  <div className="h-4 w-56 bg-muted rounded" />
-                  <div className="h-3 w-36 bg-muted/50 rounded" />
+                  <div className="h-4 w-56 bg-muted rounded-[2px]" />
+                  <div className="h-3 w-36 bg-muted/50 rounded-[2px]" />
                 </div>
               </div>
             ))}
@@ -45,9 +45,9 @@ export default function LeadDetailLoading() {
         <div className="space-y-4">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="ls-card p-5 space-y-3">
-              <div className="h-4 w-24 bg-muted rounded" />
+              <div className="h-4 w-24 bg-muted rounded-[2px]" />
               {Array.from({ length: 3 }).map((_, j) => (
-                <div key={j} className="h-3 w-full bg-muted/50 rounded" />
+                <div key={j} className="h-3 w-full bg-muted/50 rounded-[2px]" />
               ))}
             </div>
           ))}

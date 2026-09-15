@@ -18,13 +18,13 @@ export default function PortalNotFound() {
         <div className="flex flex-wrap gap-3 justify-center pt-2">
           <Link
             href="/portal"
-            className="inline-flex items-center h-9 px-4 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary-dark transition-colors"
+            className="inline-flex items-center h-9 px-4 text-sm font-medium rounded-[2px] bg-primary text-primary-foreground hover:bg-primary-dark transition-colors"
           >
             Dashboard
           </Link>
           <Link
             href="/portal/setup"
-            className="inline-flex items-center h-9 px-4 text-sm font-medium rounded-md border border-border bg-card hover:bg-accent transition-colors"
+            className="inline-flex items-center h-9 px-4 text-sm font-medium rounded-[2px] border border-border bg-card hover:bg-accent transition-colors"
           >
             Setup hub
           </Link>

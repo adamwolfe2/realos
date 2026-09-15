@@ -114,7 +114,7 @@ export function StatStrip({
     <div
       className={cn(
         "flex flex-wrap items-stretch divide-x divide-border",
-        "rounded-xl border border-border bg-card px-1 py-1",
+        "ls-card px-1 py-1",
         className,
       )}
     >

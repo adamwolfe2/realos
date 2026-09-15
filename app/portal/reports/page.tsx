@@ -573,7 +573,7 @@ export default async function ReportsListPage({
           </div>
 
           {/* List — DataTable v2 (dense rows, URL-driven sort) replaces the
-              rounded-xl card list. */}
+              2px card list. */}
           <DataTable<ReportRow>
             columns={columns}
             rows={reports}

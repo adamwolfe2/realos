@@ -180,7 +180,7 @@ export function PopupPreview(props: PopupPreviewProps) {
       aria-label={headline}
       className={cn(
         "relative overflow-hidden",
-        position === "TOP_BANNER" ? "rounded-none w-full" : "rounded-2xl w-full max-w-[520px]",
+        position === "TOP_BANNER" ? "rounded-none w-full" : "rounded-[2px] w-full max-w-[520px]",
       )}
       style={{
         backgroundColor: resolvedBg,
@@ -304,7 +304,7 @@ export function PopupPreview(props: PopupPreviewProps) {
         {/* Featured value card */}
         {hasFeatured && position !== "TOP_BANNER" ? (
           <div
-            className="rounded-xl px-5 py-4"
+            className="rounded-[2px] px-5 py-4"
             style={{
               background: featuredCardBg,
               border: `1px solid ${featuredCardBorder}`,
@@ -364,7 +364,7 @@ export function PopupPreview(props: PopupPreviewProps) {
                   /* ignore */
                 }
               }}
-              className="inline-flex items-center gap-2 rounded-lg border-2 border-dashed px-3 py-1.5 text-sm font-mono font-semibold transition-colors hover:bg-black/[0.03]"
+              className="inline-flex items-center gap-2 rounded-[2px] border-2 border-dashed px-3 py-1.5 text-sm font-mono font-semibold transition-colors hover:bg-black/[0.03]"
               style={{ borderColor: accent, color: resolvedText }}
             >
               {copied ? (
@@ -398,7 +398,7 @@ export function PopupPreview(props: PopupPreviewProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Your email"
-              className="w-full rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
+              className="w-full rounded-[2px] px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
               style={{
                 color: resolvedText,
                 background: isDark ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.7)",
@@ -412,7 +412,7 @@ export function PopupPreview(props: PopupPreviewProps) {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="Phone (optional)"
-                className="w-full rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
+                className="w-full rounded-[2px] px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
                 style={{
                   color: resolvedText,
                   background: isDark ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.7)",
@@ -449,7 +449,7 @@ export function PopupPreview(props: PopupPreviewProps) {
                 type="button"
                 onClick={onSecondaryCtaClick ?? onCtaClick}
                 className={cn(
-                  "inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors",
+                  "inline-flex items-center justify-center gap-2 rounded-[2px] px-4 py-2.5 text-sm font-semibold transition-colors",
                   "w-full",
                 )}
                 style={{
@@ -552,7 +552,7 @@ function PrimaryCta({
       type={type}
       onClick={onClick}
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition-opacity hover:opacity-95",
+        "inline-flex items-center justify-center gap-2 rounded-[2px] px-4 py-3 text-sm font-semibold transition-opacity hover:opacity-95",
         fullWidth ? "w-full" : "",
       )}
       style={{ backgroundColor: accent, color: fg }}

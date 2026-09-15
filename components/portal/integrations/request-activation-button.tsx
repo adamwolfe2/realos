@@ -42,7 +42,7 @@ export function RequestActivationButton({
 
   if (submitted) {
     return (
-      <div className="rounded-xl border border-primary/30 bg-primary/10 p-4">
+      <div className="rounded-[2px] border border-primary/30 bg-primary/10 p-4">
         <p className="text-sm font-medium text-primary">
           Activation requested.
         </p>
@@ -65,7 +65,7 @@ export function RequestActivationButton({
           onChange={(e) => setMessage(e.target.value)}
           rows={3}
           placeholder={`e.g. "We use ${name} on three properties. Already have OAuth creds ready."`}
-          className="rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+          className="rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
       </label>
       <button
@@ -73,7 +73,7 @@ export function RequestActivationButton({
         onClick={submit}
         disabled={pending}
         className={cn(
-          "inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors",
+          "inline-flex items-center justify-center rounded-[2px] px-4 py-2 text-sm font-medium transition-colors",
           "bg-primary text-primary-foreground hover:bg-primary-dark",
           "disabled:opacity-60",
         )}

@@ -106,14 +106,14 @@ function UpsellCard() {
         <div className="flex flex-wrap gap-2 pt-2">
           <Link
             href="/portal/marketplace?focus=white-label"
-            className="inline-flex items-center gap-2 px-3.5 py-2 text-[13px] font-medium rounded bg-foreground text-background hover:opacity-90 transition"
+            className="inline-flex items-center gap-2 px-3.5 py-2 text-[13px] font-medium rounded-[2px] bg-foreground text-background hover:opacity-90 transition"
           >
             Open the marketplace
             <ArrowRight className="size-3.5" />
           </Link>
           <Link
             href="/portal/billing"
-            className="inline-flex items-center gap-2 px-3.5 py-2 text-[13px] font-medium rounded border border-border text-foreground hover:bg-muted transition"
+            className="inline-flex items-center gap-2 px-3.5 py-2 text-[13px] font-medium rounded-[2px] border border-border text-foreground hover:bg-muted transition"
           >
             Manage billing
           </Link>

@@ -267,7 +267,7 @@ export function CmdKSearch() {
       >
         <SearchIcon className="h-3.5 w-3.5" />
         <span>Search…</span>
-        <kbd className="ml-2 inline-flex items-center gap-0.5 rounded border border-border bg-muted px-1 py-0.5 text-[10px] font-mono text-muted-foreground">
+        <kbd className="ml-2 inline-flex items-center gap-0.5 rounded-[2px] border border-border bg-muted px-1 py-0.5 text-[10px] font-mono text-muted-foreground">
           ⌘K
         </kbd>
       </button>
@@ -299,7 +299,7 @@ export function CmdKSearch() {
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded p-1 text-muted-foreground hover:bg-muted"
+                className="rounded-[2px] p-1 text-muted-foreground hover:bg-muted"
                 aria-label="Close"
               >
                 <X className="h-4 w-4" />

@@ -340,7 +340,7 @@ export function VBarChart({
           <div key={b.label} className="flex flex-col items-stretch gap-1.5">
             <div className="flex items-end" style={{ height }}>
               <div
-                className="ls-col-grow w-full rounded-md"
+                className="ls-col-grow w-full rounded-[2px]"
                 style={{
                   height: `${heightPct}%`,
                   backgroundColor: b.color ?? CHART_PALETTE[i % CHART_PALETTE.length],

@@ -126,7 +126,7 @@ export function EditorClient({
               key={t}
               type="button"
               onClick={() => setTab(t)}
-              className={`px-3 py-1.5 text-[12px] font-medium rounded-md ${
+              className={`px-3 py-1.5 text-[12px] font-medium rounded-[2px] ${
                 tab === t
                   ? "bg-foreground text-background"
                   : "bg-transparent text-muted-foreground hover:bg-muted"
@@ -180,7 +180,7 @@ export function EditorClient({
               onChange={(e) => setMetaDescription(e.target.value)}
               maxLength={200}
               rows={3}
-              className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs"
+              className="flex w-full rounded-[2px] border border-input bg-transparent px-3 py-2 text-sm shadow-xs"
             />
             <p className="text-[11px] text-muted-foreground mt-1">
               {metaDescription.length}/155 ideal
@@ -209,7 +209,7 @@ export function EditorClient({
               id="propertyId"
               value={propertyId}
               onChange={(e) => setPropertyId(e.target.value)}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
+              className="flex h-9 w-full rounded-[2px] border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
             >
               <option value="">None</option>
               {properties.map((p) => (
@@ -229,7 +229,7 @@ export function EditorClient({
             value={intro}
             onChange={(e) => setIntro(e.target.value)}
             rows={10}
-            className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs"
+            className="flex w-full rounded-[2px] border border-input bg-transparent px-3 py-2 text-sm shadow-xs"
           />
           <p className="text-[11px] text-muted-foreground mt-1">
             Roughly 120 words. Conversational, specific, no marketing jargon.
@@ -271,7 +271,7 @@ export function EditorClient({
                   setSections(next);
                 }}
                 rows={8}
-                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs"
+                className="flex w-full rounded-[2px] border border-input bg-transparent px-3 py-2 text-sm shadow-xs"
               />
             </div>
           ))}
@@ -319,7 +319,7 @@ export function EditorClient({
                   setFaqs(next);
                 }}
                 rows={5}
-                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs"
+                className="flex w-full rounded-[2px] border border-input bg-transparent px-3 py-2 text-sm shadow-xs"
               />
             </div>
           ))}

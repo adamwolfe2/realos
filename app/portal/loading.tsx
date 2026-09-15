@@ -2,8 +2,8 @@ export default function PortalLoading() {
   return (
     <div className="space-y-2 animate-pulse">
       <div className="pb-5 mb-6 border-b border-border">
-        <div className="h-7 w-48 bg-muted rounded-md" />
-        <div className="h-4 w-64 bg-muted/60 rounded mt-2" />
+        <div className="h-7 w-48 bg-muted rounded-[2px]" />
+        <div className="h-4 w-64 bg-muted/60 rounded-[2px] mt-2" />
       </div>
 
       {/* KPI strip — 4 tiles, mirrors the KpiTile grid. */}
@@ -13,8 +13,8 @@ export default function PortalLoading() {
             key={i}
             className="ls-card p-4 space-y-2"
           >
-            <div className="h-3 w-20 bg-muted rounded" />
-            <div className="h-7 w-16 bg-muted/60 rounded" />
+            <div className="h-3 w-20 bg-muted rounded-[2px]" />
+            <div className="h-7 w-16 bg-muted/60 rounded-[2px]" />
           </div>
         ))}
       </div>
@@ -24,29 +24,29 @@ export default function PortalLoading() {
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-2 items-start">
         <div className="space-y-2 min-w-0">
           <div className="ls-card p-5 h-[300px]">
-            <div className="h-4 w-40 bg-muted rounded" />
+            <div className="h-4 w-40 bg-muted rounded-[2px]" />
           </div>
           <div className="rounded-[2px] border border-border bg-card p-4 h-16">
-            <div className="h-3 w-24 bg-muted rounded" />
+            <div className="h-3 w-24 bg-muted rounded-[2px]" />
           </div>
         </div>
         <div className="space-y-2 min-w-0">
           <div className="ls-card p-4 space-y-2">
-            <div className="h-4 w-40 bg-muted rounded" />
+            <div className="h-4 w-40 bg-muted rounded-[2px]" />
             {Array.from({ length: 4 }).map((_, j) => (
-              <div key={j} className="h-3 w-full bg-muted/50 rounded" />
+              <div key={j} className="h-3 w-full bg-muted/50 rounded-[2px]" />
             ))}
           </div>
           <div className="ls-card p-4 space-y-2">
-            <div className="h-4 w-28 bg-muted rounded" />
+            <div className="h-4 w-28 bg-muted rounded-[2px]" />
             {Array.from({ length: 4 }).map((_, j) => (
-              <div key={j} className="h-3 w-full bg-muted/50 rounded" />
+              <div key={j} className="h-3 w-full bg-muted/50 rounded-[2px]" />
             ))}
           </div>
           <div className="ls-card p-4 space-y-2">
-            <div className="h-3 w-16 bg-muted rounded" />
+            <div className="h-3 w-16 bg-muted rounded-[2px]" />
             {Array.from({ length: 3 }).map((_, j) => (
-              <div key={j} className="h-3 w-full bg-muted/50 rounded" />
+              <div key={j} className="h-3 w-full bg-muted/50 rounded-[2px]" />
             ))}
           </div>
         </div>

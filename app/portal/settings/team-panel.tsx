@@ -354,7 +354,7 @@ function PropertyAccessEditor({
           return (
             <label
               key={p.id}
-              className="flex items-center gap-2 text-xs cursor-pointer hover:bg-secondary px-2 py-1 rounded"
+              className="flex items-center gap-2 text-xs cursor-pointer hover:bg-secondary px-2 py-1 rounded-[2px]"
             >
               <input
                 type="checkbox"
@@ -556,7 +556,7 @@ function InviteForm({
                 return (
                   <label
                     key={p.id}
-                    className="flex items-center gap-2 text-xs cursor-pointer hover:bg-secondary px-2 py-1 rounded"
+                    className="flex items-center gap-2 text-xs cursor-pointer hover:bg-secondary px-2 py-1 rounded-[2px]"
                   >
                     <input
                       type="checkbox"

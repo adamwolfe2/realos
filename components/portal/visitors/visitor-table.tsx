@@ -115,7 +115,7 @@ export function VisitorTable({ rows }: Props) {
         <button
           type="button"
           onClick={handleExport}
-          className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary-dark px-2.5 py-1 text-xs font-medium transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-[2px] bg-primary text-primary-foreground hover:bg-primary-dark px-2.5 py-1 text-xs font-medium transition-colors"
         >
           <Download className="h-3 w-3" aria-hidden="true" />
           Export CSV
@@ -124,7 +124,7 @@ export function VisitorTable({ rows }: Props) {
           <button
             type="button"
             disabled
-            className="inline-flex items-center rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium opacity-50 cursor-not-allowed"
+            className="inline-flex items-center rounded-[2px] border border-border bg-background px-2.5 py-1 text-xs font-medium opacity-50 cursor-not-allowed"
           >
             Push to audience
           </button>
@@ -133,7 +133,7 @@ export function VisitorTable({ rows }: Props) {
           <button
             type="button"
             disabled
-            className="inline-flex items-center rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium opacity-50 cursor-not-allowed"
+            className="inline-flex items-center rounded-[2px] border border-border bg-background px-2.5 py-1 text-xs font-medium opacity-50 cursor-not-allowed"
           >
             Send to ads
           </button>
@@ -154,7 +154,7 @@ export function VisitorTable({ rows }: Props) {
                       if (el) el.indeterminate = someSelected;
                     }}
                     onChange={toggleAll}
-                    className="h-3.5 w-3.5 rounded border-border accent-[#2563EB] cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="h-3.5 w-3.5 rounded-[2px] border-border accent-[#2563EB] cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </th>
                 <Th>Visitor</Th>
@@ -194,7 +194,7 @@ export function VisitorTable({ rows }: Props) {
                         aria-label={`Select ${r.displayName}`}
                         checked={isSelected}
                         onChange={() => toggleRow(r.id)}
-                        className="h-3.5 w-3.5 rounded border-border accent-[#2563EB] cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        className="h-3.5 w-3.5 rounded-[2px] border-border accent-[#2563EB] cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30"
                       />
                     </td>
                     <td className="px-3 py-2 align-middle">
@@ -278,7 +278,7 @@ export function VisitorTable({ rows }: Props) {
           openVisitor ? (
             <Link
               href={`/portal/visitors/${openVisitor.id}`}
-              className="inline-flex items-center gap-1 rounded-md border border-border bg-background hover:bg-muted px-2 py-1 text-[11px] font-medium text-foreground transition-colors"
+              className="inline-flex items-center gap-1 rounded-[2px] border border-border bg-background hover:bg-muted px-2 py-1 text-[11px] font-medium text-foreground transition-colors"
             >
               Open full page
               <ExternalLink className="h-3 w-3" aria-hidden="true" />
@@ -289,7 +289,7 @@ export function VisitorTable({ rows }: Props) {
           openVisitor ? (
             <Link
               href={`/portal/visitors/${openVisitor.id}`}
-              className="inline-flex items-center rounded-md bg-primary text-primary-foreground hover:bg-primary-dark px-3 py-1.5 text-xs font-medium transition-colors"
+              className="inline-flex items-center rounded-[2px] bg-primary text-primary-foreground hover:bg-primary-dark px-3 py-1.5 text-xs font-medium transition-colors"
             >
               Open full page
             </Link>

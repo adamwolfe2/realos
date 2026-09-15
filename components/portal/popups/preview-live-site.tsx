@@ -80,7 +80,7 @@ export function PreviewLiveSite({
 
   if (!previewUrl) {
     return (
-      <div className="inline-flex items-center gap-2 rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 text-[12px] text-muted-foreground">
+      <div className="inline-flex items-center gap-2 rounded-[2px] border border-dashed border-border bg-muted/30 px-3 py-2 text-[12px] text-muted-foreground">
         <LinkIcon className="h-3.5 w-3.5" />
         Set a Public Website URL on your property to enable live-site preview.
       </div>
@@ -94,7 +94,7 @@ export function PreviewLiveSite({
           href={previewUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-[12px] font-semibold text-background transition-opacity hover:opacity-90"
+          className="inline-flex items-center gap-1.5 rounded-[2px] bg-foreground px-3 py-1.5 text-[12px] font-semibold text-background transition-opacity hover:opacity-90"
         >
           <ExternalLink className="h-3.5 w-3.5" />
           Preview on live site
@@ -113,7 +113,7 @@ export function PreviewLiveSite({
           href={clearUrl ?? "#"}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/5 px-3 py-1.5 text-[12px] font-semibold text-primary transition-colors hover:bg-primary/10"
+          className="inline-flex items-center gap-1.5 rounded-[2px] border border-primary/40 bg-primary/5 px-3 py-1.5 text-[12px] font-semibold text-primary transition-colors hover:bg-primary/10"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           Clear cap &amp; re-test on live
@@ -121,7 +121,7 @@ export function PreviewLiveSite({
         <button
           type="button"
           onClick={handleCopy}
-          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground transition-colors hover:bg-muted/50"
+          className="inline-flex items-center gap-1.5 rounded-[2px] border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground transition-colors hover:bg-muted/50"
         >
           {copied ? (
             <>
@@ -139,7 +139,7 @@ export function PreviewLiveSite({
           type="button"
           onClick={() => setShowHelp((v) => !v)}
           aria-expanded={showHelp}
-          className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-border bg-background px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-[2px] border border-dashed border-border bg-background px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
         >
           <HelpCircle className="h-3.5 w-3.5" />
           {showHelp ? "Hide help" : "Why isn't this firing?"}
@@ -151,7 +151,7 @@ export function PreviewLiveSite({
           flag the first time they see it, which then silences every
           subsequent normal visit. */}
       {showHelp ? (
-        <div className="rounded-md border border-primary/20 bg-primary/[0.04] p-3 text-[12px] text-foreground leading-relaxed space-y-2">
+        <div className="rounded-[2px] border border-primary/20 bg-primary/[0.04] p-3 text-[12px] text-foreground leading-relaxed space-y-2">
           <p>
             <strong>Most common cause:</strong> your browser already saw
             this popup once and stored a &ldquo;shown&rdquo; flag in
@@ -174,7 +174,7 @@ export function PreviewLiveSite({
             </li>
             <li>
               Open DevTools → Console — every block reason is logged with{" "}
-              <code className="rounded bg-muted px-1 py-0.5 text-[10.5px]">
+              <code className="rounded-[2px] bg-muted px-1 py-0.5 text-[10.5px]">
                 [leasestack-popup]
               </code>
               {" "}

@@ -293,7 +293,7 @@ export default async function AdsPage({
         description="Spend, clicks, and conversions from every connected ad platform. Refreshes daily."
         actions={
           <div className="flex items-center gap-2 flex-wrap">
-            <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded" />}>
+            <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded-[2px]" />}>
               <PropertyMultiSelect
                 properties={properties}
                 orgId={scope.orgId}
@@ -302,13 +302,13 @@ export default async function AdsPage({
             <ExportButton href="/api/tenant/ad-metrics/export?days=90" />
             <Link
               href="/portal/creative"
-              className="inline-flex items-center rounded-md border border-border bg-card px-3 py-2 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
+              className="inline-flex items-center rounded-[2px] border border-border bg-card px-3 py-2 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
             >
               Request creative
             </Link>
             <Link
               href="/portal/connect"
-              className="inline-flex items-center rounded-md border border-border bg-card px-3 py-2 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
+              className="inline-flex items-center rounded-[2px] border border-border bg-card px-3 py-2 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
             >
               Connect an ad account
             </Link>

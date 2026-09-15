@@ -89,7 +89,7 @@ export function SinceBanner({
         onClick={() => startTransition(() => { void markBriefingViewed(); })}
         disabled={pending}
         title="Marks today's briefing as triaged. Counters do not reset — this just clears the briefing from your daily inbox."
-        className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card text-muted-foreground px-3 py-1.5 text-[12px] font-semibold transition-colors hover:bg-muted hover:text-foreground disabled:opacity-60"
+        className="inline-flex items-center gap-1.5 rounded-[2px] border border-border bg-card text-muted-foreground px-3 py-1.5 text-[12px] font-semibold transition-colors hover:bg-muted hover:text-foreground disabled:opacity-60"
       >
         <Check className="h-3 w-3" />
         {pending ? "Saving..." : "Mark briefing reviewed"}

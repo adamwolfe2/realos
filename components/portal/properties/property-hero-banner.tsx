@@ -469,7 +469,7 @@ export function PropertyHeroBanner({
               type="button"
               onClick={editable ? () => fileRef.current?.click() : undefined}
               disabled={!editable || uploading}
-              className={`group relative w-full ${imageSize} rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-colors ${
+              className={`group relative w-full ${imageSize} rounded-[2px] border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-colors ${
                 editable
                   ? "border-border bg-white/60 hover:border-primary/50 hover:bg-white/90 cursor-pointer"
                   : "border-border bg-white/60 cursor-default"
@@ -614,7 +614,7 @@ export function PropertyHeroBanner({
                     <Link
                       key={s.label}
                       href={s.href}
-                      className={`${layoutCls} block -m-1 p-1 rounded hover:bg-foreground/[0.03] transition-colors`}
+                      className={`${layoutCls} block -m-1 p-1 rounded-[2px] hover:bg-foreground/[0.03] transition-colors`}
                     >
                       {tileInner}
                     </Link>

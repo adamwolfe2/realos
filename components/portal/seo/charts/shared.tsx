@@ -116,7 +116,7 @@ export function EmptyStateBody({
   return (
     <div className="mt-2 grid grid-cols-1 md:grid-cols-[180px_minmax(0,1fr)] gap-5 items-center">
       <div
-        className="rounded-lg border border-dashed border-border bg-gradient-to-br from-primary/[0.03] to-transparent p-2.5 overflow-hidden"
+        className="rounded-[2px] border border-dashed border-border bg-gradient-to-br from-primary/[0.03] to-transparent p-2.5 overflow-hidden"
         aria-hidden="true"
       >
         {preview}

@@ -139,7 +139,7 @@ export function EmbedDetectionChip({ url, orgSlug }: Props) {
   const v = variants[result.status];
 
   return (
-    <div className={`flex flex-wrap items-start gap-2 rounded-xl border px-3 py-2 text-[12.5px] ${v.tone}`}>
+    <div className={`flex flex-wrap items-start gap-2 rounded-[2px] border px-3 py-2 text-[12.5px] ${v.tone}`}>
       <v.Icon className={`mt-0.5 h-4 w-4 flex-shrink-0 ${v.iconTone}`} />
       <div className="min-w-0 flex-1">
         <p className="font-semibold leading-snug">{v.label}</p>
@@ -163,7 +163,7 @@ export function EmbedDetectionChip({ url, orgSlug }: Props) {
         type="button"
         onClick={() => probe(true)}
         disabled={loading}
-        className="inline-flex items-center gap-1 rounded-md border border-current/20 px-2 py-1 text-[11px] font-medium opacity-80 hover:opacity-100 disabled:opacity-40"
+        className="inline-flex items-center gap-1 rounded-[2px] border border-current/20 px-2 py-1 text-[11px] font-medium opacity-80 hover:opacity-100 disabled:opacity-40"
       >
         {loading ? (
           <Loader2 className="h-3 w-3 animate-spin" />

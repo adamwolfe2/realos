@@ -213,7 +213,7 @@ export function OpportunitiesClient({
             type="button"
             disabled
             title="Coming soon"
-            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-[12px] font-medium text-muted-foreground hover:bg-muted disabled:opacity-60 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-1.5 rounded-[2px] border border-border bg-background px-2.5 py-1.5 text-[12px] font-medium text-muted-foreground hover:bg-muted disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <SlidersHorizontal size={12} />
             Filter
@@ -229,7 +229,7 @@ export function OpportunitiesClient({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search opportunities"
-              className="w-full sm:w-64 rounded-md border border-border bg-background pl-7 pr-2.5 py-1.5 text-[12px] focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="w-full sm:w-64 rounded-[2px] border border-border bg-background pl-7 pr-2.5 py-1.5 text-[12px] focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
         </div>
@@ -239,7 +239,7 @@ export function OpportunitiesClient({
         columns={columns}
         rows={filtered}
         emptyState={
-          <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
+          <div className="rounded-[2px] border border-dashed border-border bg-card p-8 text-center">
             <p className="text-[13px] font-medium text-foreground">
               {liveRecs.length === 0
                 ? "Nothing open — you're caught up."

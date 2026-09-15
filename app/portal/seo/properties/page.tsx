@@ -306,7 +306,7 @@ export default async function SeoPortfolioPage({
               <Link
                 key={opt.value}
                 href={`/portal/seo/properties?${params.toString()}`}
-                className={`inline-flex rounded-md border px-2.5 py-0.5 text-[11px] font-medium transition-colors ${
+                className={`inline-flex rounded-[2px] border px-2.5 py-0.5 text-[11px] font-medium transition-colors ${
                   sort === opt.value
                     ? "border-primary bg-primary/10 text-foreground"
                     : "border-border bg-background text-foreground hover:bg-muted"
@@ -325,7 +325,7 @@ export default async function SeoPortfolioPage({
             if (filter !== "open") params.set("filter", "open");
             return `/portal/seo/properties?${params.toString()}`;
           })()}
-          className={`inline-flex rounded-md border px-2.5 py-0.5 text-[11px] font-medium transition-colors ${
+          className={`inline-flex rounded-[2px] border px-2.5 py-0.5 text-[11px] font-medium transition-colors ${
             filter === "open"
               ? "border-primary bg-primary/10 text-foreground"
               : "border-border bg-background text-foreground hover:bg-muted"
@@ -388,7 +388,7 @@ export default async function SeoPortfolioPage({
                 <p className="mt-0.5 text-[11px] text-muted-foreground truncate">
                   {[p.city, p.state].filter(Boolean).join(", ") || "—"}
                   {p.launchStatus !== "LIVE" ? (
-                    <span className="ml-1.5 rounded px-1 py-0.5 bg-muted text-[9.5px] font-mono uppercase">
+                    <span className="ml-1.5 rounded-[2px] px-1 py-0.5 bg-muted text-[9.5px] font-mono uppercase">
                       {p.launchStatus.toLowerCase()}
                     </span>
                   ) : null}
@@ -427,17 +427,17 @@ export default async function SeoPortfolioPage({
               return recs.critical + recs.high + recs.medium + recs.low > 0 ? (
                 <span className="inline-flex items-center gap-1 text-[11px] font-mono">
                   {recs.critical > 0 ? (
-                    <span className="rounded bg-primary px-1.5 py-0.5 text-primary-foreground font-semibold">
+                    <span className="rounded-[2px] bg-primary px-1.5 py-0.5 text-primary-foreground font-semibold">
                       {recs.critical}
                     </span>
                   ) : null}
                   {recs.high > 0 ? (
-                    <span className="rounded bg-primary/15 px-1.5 py-0.5 text-primary">
+                    <span className="rounded-[2px] bg-primary/15 px-1.5 py-0.5 text-primary">
                       {recs.high}
                     </span>
                   ) : null}
                   {recs.medium + recs.low > 0 ? (
-                    <span className="rounded bg-muted px-1.5 py-0.5 text-muted-foreground">
+                    <span className="rounded-[2px] bg-muted px-1.5 py-0.5 text-muted-foreground">
                       {recs.medium + recs.low}
                     </span>
                   ) : null}

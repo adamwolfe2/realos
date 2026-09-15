@@ -153,7 +153,7 @@ export default async function ApplicationsPage({
           <div className="flex items-center gap-2 flex-wrap">
             <Link
               href="/portal/applications/new"
-              className="inline-flex items-center rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
+              className="inline-flex items-center rounded-[2px] border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
             >
               Log application
             </Link>

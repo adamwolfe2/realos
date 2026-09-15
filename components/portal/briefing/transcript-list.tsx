@@ -47,7 +47,7 @@ function TranscriptRow({ conversation }: { conversation: Conversation }) {
 
   return (
     <li className="group flex items-start gap-3 py-3 first:pt-0 last:pb-0">
-      <span className="mt-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-muted">
+      <span className="mt-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[2px] bg-muted">
         <User2 className="h-3 w-3 text-muted-foreground" />
       </span>
       <div className="min-w-0 flex-1">
@@ -59,17 +59,17 @@ function TranscriptRow({ conversation }: { conversation: Conversation }) {
             {name}
           </Link>
           {conversation.capturedEmail ? (
-            <span className="inline-flex items-center rounded-md bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-primary ring-1 ring-inset ring-primary/30">
+            <span className="inline-flex items-center rounded-[2px] bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-primary ring-1 ring-inset ring-primary/30">
               Captured
             </span>
           ) : null}
           {highIntent ? (
-            <span className="inline-flex items-center rounded-md bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-primary ring-1 ring-inset ring-primary/30">
+            <span className="inline-flex items-center rounded-[2px] bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-primary ring-1 ring-inset ring-primary/30">
               High intent
             </span>
           ) : null}
           {needsTuning ? (
-            <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-amber-800 ring-1 ring-inset ring-amber-200/70">
+            <span className="inline-flex items-center gap-1 rounded-[2px] bg-amber-50 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-amber-800 ring-1 ring-inset ring-amber-200/70">
               <AlertTriangle className="h-2.5 w-2.5" />
               Tune prompt
             </span>

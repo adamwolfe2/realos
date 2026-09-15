@@ -173,7 +173,7 @@ export function PropertyMultiSelect({
         disabled={isPending}
         aria-expanded={open}
         aria-haspopup="listbox"
-        className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+        className="inline-flex items-center gap-2 rounded-[2px] border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
       >
         {isPending ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
@@ -190,7 +190,7 @@ export function PropertyMultiSelect({
           // forms like /portal/reports the trigger is on the left, and
           // right-0 caused the 288px panel to extend leftward off-screen
           // (clipped by the sidebar). Left-anchored is the safer default.
-          className="absolute left-0 z-30 mt-1 w-72 rounded-md border border-border bg-background shadow-lg"
+          className="absolute left-0 z-30 mt-1 w-72 rounded-[2px] border border-border bg-background shadow-lg"
         >
           <div className="border-b border-border p-2">
             <div className="relative">
@@ -200,7 +200,7 @@ export function PropertyMultiSelect({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search properties"
-                className="w-full rounded-md border border-border bg-background py-1.5 pl-7 pr-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full rounded-[2px] border border-border bg-background py-1.5 pl-7 pr-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                 aria-label="Search properties"
                 /* eslint-disable-next-line jsx-a11y/no-autofocus */
                 autoFocus
@@ -239,7 +239,7 @@ export function PropertyMultiSelect({
                     className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-secondary"
                   >
                     <span
-                      className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border ${
+                      className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-[2px] border ${
                         checked
                           ? "border-primary bg-primary"
                           : "border-border"

@@ -373,7 +373,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
           Delete
         </button>
         {error ? (
-          <span className="basis-full rounded border border-destructive/30 bg-destructive/10 px-2 py-1 text-[11px] text-destructive">
+          <span className="basis-full rounded-[2px] border border-destructive/30 bg-destructive/10 px-2 py-1 text-[11px] text-destructive">
             {error}
           </span>
         ) : null}
@@ -845,7 +845,7 @@ function SignalBadges({ item }: { item: LeadKanbanItem }) {
           key={b.key}
           title={b.title}
           aria-label={b.title}
-          className="inline-flex items-center justify-center h-4 w-4 rounded border border-border bg-card text-muted-foreground"
+          className="inline-flex items-center justify-center h-4 w-4 rounded-[2px] border border-border bg-card text-muted-foreground"
         >
           {b.icon}
         </span>

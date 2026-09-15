@@ -101,13 +101,13 @@ export default async function DestinationsPage() {
         <p className="text-xs text-muted-foreground">
           Webhook destinations receive a signed POST whenever you push a
           segment. The body is JSON; the{" "}
-          <code className="font-mono text-[11px] bg-muted px-1 py-0.5 rounded">
+          <code className="font-mono text-[11px] bg-muted px-1 py-0.5 rounded-[2px]">
             x-leasestack-signature
           </code>{" "}
           header is an HMAC-SHA256 of the body using your destination secret.
           Verify it before processing.
         </p>
-        <pre className="mt-3 text-[11px] bg-muted/50 p-3 rounded-md overflow-x-auto font-mono leading-relaxed">
+        <pre className="mt-3 text-[11px] bg-muted/50 p-3 rounded-[2px] overflow-x-auto font-mono leading-relaxed">
           {`{
   "event": "audience.sync",
   "sentAt": "2026-04-28T18:30:00.000Z",

@@ -63,7 +63,7 @@ export function ScanProgress({
 
   return (
     <div
-      className="rounded-xl border bg-white p-6"
+      className="rounded-[2px] border bg-white p-6"
       style={{ borderColor: "#E5E7EB" }}
     >
       {heading ? (

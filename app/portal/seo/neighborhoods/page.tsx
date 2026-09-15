@@ -132,7 +132,7 @@ export default async function NeighborhoodPagesIndex() {
 }
 
 function StatusPill({ status }: { status: "DRAFT" | "PUBLISHED" | "ARCHIVED" }) {
-  // Lowercase, rounded-md, 11px — matches the portal-wide status pill
+  // Lowercase, 2px, 11px — matches the portal-wide status pill
   // grammar (no amber/emerald rainbow; brand-primary vs neutral only).
   const map = {
     DRAFT: { label: "draft", className: "bg-muted text-muted-foreground border border-border" },
@@ -142,7 +142,7 @@ function StatusPill({ status }: { status: "DRAFT" | "PUBLISHED" | "ARCHIVED" }) 
   const v = map[status];
   return (
     <span
-      className={`text-[11px] font-medium lowercase rounded-md px-1.5 py-0.5 ${v.className}`}
+      className={`text-[11px] font-medium lowercase rounded-[2px] px-1.5 py-0.5 ${v.className}`}
     >
       {v.label}
     </span>

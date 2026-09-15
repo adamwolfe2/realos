@@ -503,7 +503,7 @@ export default async function LeadsKanbanPage({
           <div className="flex items-center gap-3 flex-wrap">
             <Suspense
               fallback={
-                <div className="h-9 w-48 rounded-md border border-border bg-secondary" />
+                <div className="h-9 w-48 rounded-[2px] border border-border bg-secondary" />
               }
             >
               <PropertyMultiSelect

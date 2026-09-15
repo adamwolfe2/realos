@@ -100,9 +100,9 @@ function BarRow({
         <span className="flex h-4 w-4 flex-none items-center justify-center">{glyph}</span>
       ) : null}
       <span className="w-[120px] flex-none truncate font-medium text-slate-600">{label}</span>
-      <span className="h-4 flex-1 overflow-hidden rounded bg-muted">
+      <span className="h-4 flex-1 overflow-hidden rounded-[2px] bg-muted">
         <span
-          className="ls-bar-grow block h-full rounded bg-primary"
+          className="ls-bar-grow block h-full rounded-[2px] bg-primary"
           style={{
             width: `${max > 0 ? Math.round((value / max) * 100) : 0}%`,
             animationDelay: `${Math.min(index, 8) * 60}ms`,
@@ -644,7 +644,7 @@ function AiVisibilitySection(s: ReportSnapshot, p: PropertyMeta): React.ReactNod
                 <EngineMark engine={row.engine} />
               </span>
               <span className="w-[80px] flex-none font-semibold text-foreground">{engineLabel(row.engine)}</span>
-              <span className="flex h-3 flex-1 overflow-hidden rounded bg-muted">
+              <span className="flex h-3 flex-1 overflow-hidden rounded-[2px] bg-muted">
                 <span className="h-full bg-primary" style={{ width: `${row.total ? Math.round((row.cited / row.total) * 100) : 0}%` }} />
               </span>
               <span className="w-14 flex-none text-right font-semibold text-slate-600">{row.cited} / {row.total}</span>

@@ -68,7 +68,7 @@ export function PropertyAvatar({
     return (
       <div
         className={cn(
-          "relative shrink-0 overflow-hidden rounded-lg border border-border",
+          "relative shrink-0 overflow-hidden rounded-[2px] border border-border",
           sizeClass,
           className,
         )}
@@ -98,7 +98,7 @@ export function PropertyAvatar({
     return (
       <div
         className={cn(
-          "relative shrink-0 grid place-items-center overflow-hidden rounded-lg border border-border",
+          "relative shrink-0 grid place-items-center overflow-hidden rounded-[2px] border border-border",
           sizeClass,
           className,
         )}
@@ -119,7 +119,7 @@ export function PropertyAvatar({
   return (
     <div
       className={cn(
-        "relative shrink-0 grid place-items-center rounded-lg border border-border",
+        "relative shrink-0 grid place-items-center rounded-[2px] border border-border",
         sizeClass,
         className,
       )}
@@ -141,7 +141,7 @@ function LogoBadge({ src, size }: { src: string; size: Size }) {
   return (
     <span
       className={cn(
-        "absolute bottom-0.5 right-0.5 grid place-items-center rounded-md bg-white shadow-sm ring-1 ring-border overflow-hidden",
+        "absolute bottom-0.5 right-0.5 grid place-items-center rounded-[2px] bg-white shadow-sm ring-1 ring-border overflow-hidden",
         BADGE_SIZE[size],
       )}
       aria-hidden="true"

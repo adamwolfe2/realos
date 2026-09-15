@@ -88,7 +88,7 @@ export function CreateNeighborhoodForm({
           id="propertyId"
           value={propertyId}
           onChange={(e) => setPropertyId(e.target.value)}
-          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
+          className="flex h-9 w-full rounded-[2px] border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
         >
           <option value="">None</option>
           {properties.map((p) => (
@@ -104,7 +104,7 @@ export function CreateNeighborhoodForm({
           <select
             value={quality}
             onChange={(e) => setQuality(e.target.value as "default" | "high")}
-            className="ml-1 rounded border px-1.5 py-0.5"
+            className="ml-1 rounded-[2px] border px-1.5 py-0.5"
           >
             <option value="default">Standard (Haiku, fast)</option>
             <option value="high">High (Sonnet, slower)</option>

@@ -104,7 +104,7 @@ export function ResubmitWithChangesButton({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+        className="inline-flex items-center gap-1.5 rounded-[2px] bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
       >
         Re-submit with changes →
       </button>
@@ -130,14 +130,14 @@ export function ResubmitWithChangesButton({
         rows={8}
         value={brief}
         onChange={(e) => setBrief(e.target.value)}
-        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 resize-vertical font-mono"
+        className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 resize-vertical font-mono"
       />
 
       <div className="flex items-center justify-end gap-2">
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted"
+          className="rounded-[2px] border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted"
         >
           Cancel
         </button>
@@ -145,7 +145,7 @@ export function ResubmitWithChangesButton({
           type="button"
           disabled={submitting}
           onClick={submit}
-          className="rounded-lg bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          className="rounded-[2px] bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
         >
           {submitting ? "Generating new draft…" : "Re-submit"}
         </button>

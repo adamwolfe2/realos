@@ -473,7 +473,7 @@ export default async function VisitorsPage({
             <div className="flex items-center gap-2 flex-wrap md:justify-end w-full">
               <Suspense
                 fallback={
-                  <div className="h-9 w-64 animate-pulse bg-neutral-100 rounded" />
+                  <div className="h-9 w-64 animate-pulse bg-neutral-100 rounded-[2px]" />
                 }
               >
                 <PropertyMultiSelect

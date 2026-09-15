@@ -4,8 +4,8 @@ export default function ConversationDetailLoading() {
       {/* Transcript */}
       <div className="flex-1 ls-card overflow-hidden flex flex-col">
         <div className="border-b border-border p-4 space-y-1">
-          <div className="h-5 w-48 bg-muted rounded" />
-          <div className="h-3 w-32 bg-muted/60 rounded" />
+          <div className="h-5 w-48 bg-muted rounded-[2px]" />
+          <div className="h-3 w-32 bg-muted/60 rounded-[2px]" />
         </div>
         <div className="flex-1 p-4 space-y-4">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -15,12 +15,12 @@ export default function ConversationDetailLoading() {
             >
               <div className="h-7 w-7 rounded-full bg-muted shrink-0" />
               <div
-                className={`rounded-xl p-3 space-y-1.5 max-w-xs ${
+                className={`rounded-[2px] p-3 space-y-1.5 max-w-xs ${
                   i % 2 === 0 ? "bg-muted" : "bg-secondary"
                 }`}
               >
-                <div className="h-3 w-40 bg-muted/60 rounded" />
-                <div className="h-3 w-28 bg-secondary rounded" />
+                <div className="h-3 w-40 bg-muted/60 rounded-[2px]" />
+                <div className="h-3 w-28 bg-secondary rounded-[2px]" />
               </div>
             </div>
           ))}
@@ -30,9 +30,9 @@ export default function ConversationDetailLoading() {
       <div className="w-72 shrink-0 space-y-4">
         {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} className="ls-card p-4 space-y-3">
-            <div className="h-4 w-24 bg-muted rounded" />
+            <div className="h-4 w-24 bg-muted rounded-[2px]" />
             {Array.from({ length: 3 }).map((_, j) => (
-              <div key={j} className="h-3 w-full bg-muted/50 rounded" />
+              <div key={j} className="h-3 w-full bg-muted/50 rounded-[2px]" />
             ))}
           </div>
         ))}

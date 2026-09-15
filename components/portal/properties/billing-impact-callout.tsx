@@ -72,7 +72,7 @@ export function BillingImpactCallout({
       <div className="flex items-start gap-3">
         <span
           aria-hidden="true"
-          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary"
+          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[2px] bg-primary/10 text-primary"
         >
           <TrendingUp className="h-4 w-4" />
         </span>
@@ -118,7 +118,7 @@ export function BillingImpactCallout({
               />
             </div>
           ) : (
-            <div className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-border bg-secondary px-2.5 py-1.5 text-[12px] text-muted-foreground">
+            <div className="mt-3 inline-flex items-center gap-1.5 rounded-[2px] border border-border bg-secondary px-2.5 py-1.5 text-[12px] text-muted-foreground">
               <ShieldCheck className="h-3 w-3" aria-hidden="true" />
               Pricing tier not selected yet —{" "}
               <Link
@@ -158,7 +158,7 @@ function ImpactStat({
     <div
       className={
         emphasised
-          ? "rounded-md border border-primary/30 bg-primary/5 px-3 py-2"
+          ? "rounded-[2px] border border-primary/30 bg-primary/5 px-3 py-2"
           : "ls-card px-3 py-2"
       }
     >

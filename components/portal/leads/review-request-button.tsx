@@ -51,7 +51,7 @@ export function ReviewRequestButton({
 
   if (blocker) {
     return (
-      <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground flex items-center gap-1.5">
+      <div className="rounded-[2px] border border-border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground flex items-center gap-1.5">
         <AlertTriangle className="h-3 w-3 shrink-0" />
         <span>Review request unavailable: {blocker}.</span>
       </div>
@@ -64,7 +64,7 @@ export function ReviewRequestButton({
         type="button"
         onClick={send}
         disabled={pending || done}
-        className="w-full inline-flex items-center justify-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs font-medium text-foreground hover:bg-muted/60 transition-colors disabled:opacity-60"
+        className="w-full inline-flex items-center justify-center gap-1.5 rounded-[2px] border border-border bg-card px-3 py-2 text-xs font-medium text-foreground hover:bg-muted/60 transition-colors disabled:opacity-60"
       >
         {pending ? (
           <Loader2 className="h-3 w-3 animate-spin" />

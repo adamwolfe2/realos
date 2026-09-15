@@ -85,7 +85,7 @@ export function PropertyIntegrationsList({
   ];
 
   return (
-    <section className="rounded-xl border border-border bg-card p-4 md:p-5">
+    <section className="rounded-[2px] border border-border bg-card p-4 md:p-5">
       <p className="ls-eyebrow">
         Integrations
       </p>

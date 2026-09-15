@@ -102,7 +102,7 @@ function TranscriptSearchInner({
               type="button"
               onClick={clearQuery}
               aria-label="Clear search"
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded text-muted-foreground hover:text-foreground"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-[2px] text-muted-foreground hover:text-foreground"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -154,7 +154,7 @@ function TranscriptSearchInner({
               <span>{f.label}</span>
               <span
                 className={cn(
-                  "inline-flex items-center justify-center min-w-[18px] rounded px-1 py-0.5",
+                  "inline-flex items-center justify-center min-w-[18px] rounded-[2px] px-1 py-0.5",
                   "text-[10px] tabular-nums font-medium",
                   active
                     ? "bg-card/15 text-background"
@@ -175,7 +175,7 @@ export function TranscriptSearch(
   props: React.ComponentProps<typeof TranscriptSearchInner>,
 ) {
   return (
-    <Suspense fallback={<div className="h-24 animate-pulse rounded-md bg-muted" />}>
+    <Suspense fallback={<div className="h-24 animate-pulse rounded-[2px] bg-muted" />}>
       <TranscriptSearchInner {...props} />
     </Suspense>
   );

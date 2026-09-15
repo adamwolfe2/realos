@@ -139,7 +139,7 @@ function KpiTileInner({
               className={cn(
                 "ls-metric min-w-0 truncate",
                 dense ? "ls-metric-md" : "ls-metric-lg",
-                loading && "text-transparent bg-muted rounded animate-pulse",
+                loading && "text-transparent bg-muted rounded-[2px] animate-pulse",
               )}
             >
               {loading ? "0000" : <AnimatedKpiValue value={value} />}

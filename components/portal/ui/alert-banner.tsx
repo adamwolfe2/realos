@@ -215,7 +215,7 @@ export function AlertBanner({
           onClick={onDismiss}
           aria-label="Dismiss"
           className={cn(
-            "shrink-0 rounded p-1 hover:bg-black/5 transition-colors self-start md:self-auto",
+            "shrink-0 rounded-[2px] p-1 hover:bg-black/5 transition-colors self-start md:self-auto",
             tokens.iconClass,
           )}
         >

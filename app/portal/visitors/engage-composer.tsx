@@ -103,7 +103,7 @@ export function EngageComposer({
           checked={openWidget}
           onChange={(e) => setOpenWidget(e.target.checked)}
           disabled={pending}
-          className="rounded"
+          className="rounded-[2px]"
         />
         Auto-open widget on the visitor&apos;s screen
       </label>

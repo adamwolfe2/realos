@@ -179,7 +179,7 @@ export default async function InsightsPage({
         actions={
           <>
             {properties.length > 1 ? (
-              <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded" />}>
+              <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded-[2px]" />}>
                 <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
               </Suspense>
             ) : null}

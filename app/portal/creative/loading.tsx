@@ -3,10 +3,10 @@ export default function CreativeLoading() {
     <div className="space-y-6 animate-pulse">
       <div className="flex items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="h-7 w-36 bg-muted rounded-md" />
-          <div className="h-4 w-64 bg-muted/60 rounded" />
+          <div className="h-7 w-36 bg-muted rounded-[2px]" />
+          <div className="h-4 w-64 bg-muted/60 rounded-[2px]" />
         </div>
-        <div className="h-9 w-32 bg-muted rounded-md" />
+        <div className="h-9 w-32 bg-muted rounded-[2px]" />
       </div>
       <div className="space-y-4">
         {Array.from({ length: 3 }).map((_, i) => (
@@ -15,17 +15,17 @@ export default function CreativeLoading() {
               <div className="space-y-1.5 flex-1">
                 <div className="flex items-center gap-2">
                   <div className="h-5 w-20 bg-muted/60 rounded-full" />
-                  <div className="h-3 w-16 bg-secondary rounded" />
+                  <div className="h-3 w-16 bg-secondary rounded-[2px]" />
                 </div>
-                <div className="h-4 w-56 bg-muted rounded" />
-                <div className="h-3 w-full bg-secondary rounded" />
-                <div className="h-3 w-4/5 bg-muted/30 rounded" />
+                <div className="h-4 w-56 bg-muted rounded-[2px]" />
+                <div className="h-3 w-full bg-secondary rounded-[2px]" />
+                <div className="h-3 w-4/5 bg-muted/30 rounded-[2px]" />
               </div>
-              <div className="h-8 w-8 bg-muted/50 rounded-md" />
+              <div className="h-8 w-8 bg-muted/50 rounded-[2px]" />
             </div>
             <div className="flex gap-2 pt-1">
-              <div className="h-7 w-20 bg-muted/50 rounded-md" />
-              <div className="h-7 w-24 bg-secondary rounded-md" />
+              <div className="h-7 w-20 bg-muted/50 rounded-[2px]" />
+              <div className="h-7 w-24 bg-secondary rounded-[2px]" />
             </div>
           </div>
         ))}

@@ -947,7 +947,7 @@ function CheckRow({
         checked={checked}
         disabled={disabled}
         onChange={(e) => onChange(e.target.checked)}
-        className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
+        className="mt-0.5 h-4 w-4 rounded-[2px] border-border accent-primary"
       />
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-medium text-foreground">{label}</span>

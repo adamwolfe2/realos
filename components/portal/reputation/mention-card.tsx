@@ -504,7 +504,7 @@ export function MentionCard({
           <button
             type="button"
             onClick={copyLink}
-            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-[2px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             title="Copy link"
             aria-label="Copy link"
           >
@@ -516,7 +516,7 @@ export function MentionCard({
             onClick={() =>
               patch({ reviewed: !reviewed }, { reviewed: !reviewed })
             }
-            className={`inline-flex items-center justify-center w-7 h-7 rounded-md transition-colors ${
+            className={`inline-flex items-center justify-center w-7 h-7 rounded-[2px] transition-colors ${
               reviewed
                 ? "text-primary bg-primary/10"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -534,7 +534,7 @@ export function MentionCard({
             type="button"
             disabled={pending}
             onClick={() => patch({ flagged: !flagged }, { flagged: !flagged })}
-            className={`inline-flex items-center justify-center w-7 h-7 rounded-md transition-colors ${
+            className={`inline-flex items-center justify-center w-7 h-7 rounded-[2px] transition-colors ${
               flagged
                 ? "text-destructive bg-destructive/10"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -589,7 +589,7 @@ export function MentionCard({
                 value={draftText}
                 onChange={(e) => setDraftText(e.target.value)}
                 rows={9}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-[13px] leading-relaxed text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-[13px] leading-relaxed text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                 spellCheck
               />
               <p className="text-[11px] text-muted-foreground">

@@ -529,7 +529,7 @@ export function PortalNav({
               // the brand initial in a chip. Custom favicon support is a
               // follow-up product call (see report-back notes).
               <span
-                className="w-7 h-7 shrink-0 flex items-center justify-center rounded text-[12px] font-semibold bg-foreground text-background"
+                className="w-7 h-7 shrink-0 flex items-center justify-center rounded-[2px] text-[12px] font-semibold bg-foreground text-background"
                 aria-hidden
               >
                 {(org.brand.name[0] ?? "?").toUpperCase()}

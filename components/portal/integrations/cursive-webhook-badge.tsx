@@ -37,7 +37,7 @@ export function CursiveWebhookBadge({ lastEventAtIso, totalEventsCount }: Props)
 
   if (!verified) {
     return (
-      <div className="inline-flex items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-2.5 py-1">
+      <div className="inline-flex items-center gap-2 rounded-[2px] border border-amber-500/40 bg-amber-500/10 px-2.5 py-1">
         <span className="relative inline-flex h-2 w-2">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-500 opacity-50" />
           <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
@@ -52,7 +52,7 @@ export function CursiveWebhookBadge({ lastEventAtIso, totalEventsCount }: Props)
   const ageMs = nowMs - new Date(lastEventAtIso as string).getTime();
   const label = formatRelativeAge(ageMs);
   return (
-    <div className="inline-flex items-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1">
+    <div className="inline-flex items-center gap-2 rounded-[2px] border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1">
       <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" />
       <span className="text-[11px] font-medium text-emerald-700">
         Last event {label}

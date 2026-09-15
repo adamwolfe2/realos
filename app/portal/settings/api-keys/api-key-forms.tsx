@@ -46,7 +46,7 @@ export function CreateApiKeyForm() {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-4 py-2 text-xs font-semibold rounded"
+          className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-4 py-2 text-xs font-semibold rounded-[2px]"
         >
           Create new key
         </button>
@@ -61,7 +61,7 @@ export function CreateApiKeyForm() {
               required
               maxLength={100}
               placeholder="Zapier production"
-              className="border rounded px-3 py-2 text-sm bg-background"
+              className="border rounded-[2px] px-3 py-2 text-sm bg-background"
             />
             <span className="text-[11px] text-muted-foreground">
               Operator-facing label so you can tell keys apart later.
@@ -75,7 +75,7 @@ export function CreateApiKeyForm() {
             <select
               name="expiration"
               defaultValue="90d"
-              className="border rounded px-3 py-2 text-sm bg-background"
+              className="border rounded-[2px] px-3 py-2 text-sm bg-background"
             >
               {EXPIRATION_CHOICES.map((c) => (
                 <option key={c.value} value={c.value}>
@@ -97,7 +97,7 @@ export function CreateApiKeyForm() {
               {SCOPE_OPTIONS.map((s) => (
                 <label
                   key={s.value}
-                  className="flex items-center gap-2 text-sm border rounded px-3 py-2 cursor-pointer"
+                  className="flex items-center gap-2 text-sm border rounded-[2px] px-3 py-2 cursor-pointer"
                 >
                   <input
                     type="checkbox"
@@ -108,7 +108,7 @@ export function CreateApiKeyForm() {
                   <span>{s.label}</span>
                 </label>
               ))}
-              <label className="flex items-center gap-2 text-sm border rounded px-3 py-2 cursor-pointer col-span-2">
+              <label className="flex items-center gap-2 text-sm border rounded-[2px] px-3 py-2 cursor-pointer col-span-2">
                 <input type="checkbox" name="scopes" value="*" />
                 <span>
                   Grant all current and future ingest scopes (
@@ -125,7 +125,7 @@ export function CreateApiKeyForm() {
             <button
               type="submit"
               disabled={pending}
-              className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-4 py-2 text-xs font-semibold rounded disabled:opacity-40"
+              className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-4 py-2 text-xs font-semibold rounded-[2px] disabled:opacity-40"
             >
               {pending ? "Generating…" : "Generate key"}
             </button>
@@ -195,13 +195,13 @@ function NewKeyBanner({
       </div>
       <div className="space-y-1">
         <div className="flex items-center gap-2">
-          <code className="flex-1 font-mono text-[11px] bg-background border rounded px-3 py-2 overflow-x-auto whitespace-nowrap">
+          <code className="flex-1 font-mono text-[11px] bg-background border rounded-[2px] px-3 py-2 overflow-x-auto whitespace-nowrap">
             {rawKey}
           </code>
           <button
             type="button"
             onClick={copy}
-            className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-3 py-2 text-xs font-semibold rounded shrink-0"
+            className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-3 py-2 text-xs font-semibold rounded-[2px] shrink-0"
           >
             {copied ? "Copied" : "Copy"}
           </button>

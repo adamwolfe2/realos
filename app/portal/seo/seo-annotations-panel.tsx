@@ -52,7 +52,7 @@ export function SeoAnnotationsPanel({
           {annotations.map((a) => (
             <li
               key={a.id}
-              className="flex items-start gap-2.5 rounded-lg border border-border bg-card/40 px-3 py-2.5 hover:border-primary/40 transition-colors"
+              className="flex items-start gap-2.5 rounded-[2px] border border-border bg-card/40 px-3 py-2.5 hover:border-primary/40 transition-colors"
             >
               <span
                 aria-hidden="true"
@@ -77,7 +77,7 @@ export function SeoAnnotationsPanel({
           type="button"
           disabled
           title="Coming soon"
-          className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border bg-muted/30 px-3 py-2 text-[12px] font-medium text-muted-foreground cursor-not-allowed"
+          className="w-full inline-flex items-center justify-center gap-1.5 rounded-[2px] border border-dashed border-border bg-muted/30 px-3 py-2 text-[12px] font-medium text-muted-foreground cursor-not-allowed"
         >
           <Plus className="h-3 w-3" />
           Create New

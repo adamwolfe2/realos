@@ -249,7 +249,7 @@ export default async function ConversationsList({
               <BarChart3 className="h-4 w-4" />
               Insights
             </Link>
-            <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded" />}>
+            <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded-[2px]" />}>
               <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
             </Suspense>
           </div>

@@ -711,7 +711,7 @@ export function ScannerPanel({
 
       {/* Mention feed */}
       {filtered.length === 0 ? (
-        <section className="rounded-xl border border-dashed border-border bg-card/40 p-8 text-center">
+        <section className="rounded-[2px] border border-dashed border-border bg-card/40 p-8 text-center">
           {!hasAnyMentions ? (
             <p className="text-sm text-muted-foreground">
               No mentions yet. Click Search now to query Google Reviews,
@@ -848,7 +848,7 @@ function FilterChip({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors",
+        "inline-flex items-center gap-1 rounded-[2px] border px-2.5 py-1 text-[11px] font-medium transition-colors",
         active
           ? "border-primary bg-primary text-primary-foreground"
           : "border-border bg-card text-muted-foreground hover:text-foreground",

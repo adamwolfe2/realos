@@ -269,7 +269,7 @@ export function AppFolioStatusBanner({
         action={<RunAppFolioSyncButton label="Sync now" subtle />}
       />
       {hasWarnings ? (
-        <details className="rounded-xl border border-border bg-secondary px-4 py-2.5 text-xs text-[#8a6d00]">
+        <details className="rounded-[2px] border border-border bg-secondary px-4 py-2.5 text-xs text-[#8a6d00]">
           <summary className="cursor-pointer font-semibold">
             {warnings.length} sync warning{warnings.length === 1 ? "" : "s"}
             {" · "}
@@ -335,7 +335,7 @@ function Banner({
 }) {
   return (
     <div
-      className={`rounded-xl border px-4 py-3 flex items-start gap-3 flex-wrap md:flex-nowrap ${TONES[tone]}`}
+      className={`rounded-[2px] border px-4 py-3 flex items-start gap-3 flex-wrap md:flex-nowrap ${TONES[tone]}`}
       role="status"
     >
       <span className="shrink-0 mt-0.5">{icon}</span>

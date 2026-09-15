@@ -23,7 +23,7 @@ export function OnboardingShellCard({
   return (
     <Card className="p-5 md:p-6 gap-0 shadow-none">
       <div className="flex items-start gap-4 flex-wrap">
-        <div className="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-muted text-muted-foreground shrink-0">
+        <div className="inline-flex h-11 w-11 items-center justify-center rounded-[2px] bg-muted text-muted-foreground shrink-0">
           <Building2 className="h-5 w-5" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
@@ -48,14 +48,14 @@ export function OnboardingShellCard({
           <div className="mt-4 flex items-center gap-2 flex-wrap">
             <a
               href={`/portal/properties/${propertyId}?tab=onboarding`}
-              className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-[12px] font-semibold hover:bg-primary-dark transition-colors"
+              className="inline-flex items-center rounded-[2px] bg-primary text-primary-foreground px-3 py-1.5 text-[12px] font-semibold hover:bg-primary-dark transition-colors"
             >
               Activate this property
             </a>
             {!appfolioConnected ? (
               <a
                 href="/portal/connect"
-                className="inline-flex items-center rounded-md border border-border bg-card px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted/50 transition-colors"
+                className="inline-flex items-center rounded-[2px] border border-border bg-card px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted/50 transition-colors"
               >
                 Connect AppFolio
               </a>

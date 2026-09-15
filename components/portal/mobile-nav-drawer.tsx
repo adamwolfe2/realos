@@ -51,7 +51,7 @@ export function MobileNavDrawer({
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Open navigation"
-        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        className="inline-flex h-9 w-9 items-center justify-center rounded-[2px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
       >
         <Menu className="h-5 w-5" />
       </button>
@@ -108,7 +108,7 @@ export function MobileNavDrawer({
             type="button"
             onClick={() => setOpen(false)}
             aria-label="Close navigation"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-[2px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
             <X className="h-4 w-4" />
           </button>

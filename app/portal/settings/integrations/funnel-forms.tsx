@@ -119,7 +119,7 @@ export function ConnectFunnelForm({
           type="checkbox"
           name="enabled"
           defaultChecked={enabled}
-          className="mt-0.5 h-4 w-4 rounded border-border"
+          className="mt-0.5 h-4 w-4 rounded-[2px] border-border"
         />
         <span className="text-[12px] leading-snug text-foreground">
           <span className="font-medium">Enable live pushing</span>

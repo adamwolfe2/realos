@@ -116,7 +116,7 @@ export function LeadEmailComposer({
                 type="button"
                 onClick={close}
                 disabled={pending}
-                className="rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-50"
+                className="rounded-[2px] p-1 text-muted-foreground hover:bg-muted disabled:opacity-50"
                 aria-label="Close composer"
               >
                 <X className="h-4 w-4" />
@@ -140,7 +140,7 @@ export function LeadEmailComposer({
                   maxLength={200}
                   disabled={pending || success}
                   placeholder="Quick follow-up on your tour…"
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
               </div>
               <div>
@@ -159,7 +159,7 @@ export function LeadEmailComposer({
                   maxLength={8000}
                   disabled={pending || success}
                   placeholder="Type your message. We'll add the greeting and signature automatically."
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-sans focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                  className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm font-sans focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
                 />
                 <p className="text-[10px] text-muted-foreground mt-1">
                   Lead replies arrive at your default reply-to address. The
@@ -168,7 +168,7 @@ export function LeadEmailComposer({
               </div>
 
               {error ? (
-                <p className="rounded-md border border-destructive/30 bg-destructive/10 text-destructive text-xs px-3 py-2">
+                <p className="rounded-[2px] border border-destructive/30 bg-destructive/10 text-destructive text-xs px-3 py-2">
                   {error}
                 </p>
               ) : null}
@@ -178,7 +178,7 @@ export function LeadEmailComposer({
                   type="button"
                   onClick={close}
                   disabled={pending}
-                  className="px-4 py-2 text-sm font-medium rounded-md border border-border bg-card hover:bg-muted disabled:opacity-50 transition-colors"
+                  className="px-4 py-2 text-sm font-medium rounded-[2px] border border-border bg-card hover:bg-muted disabled:opacity-50 transition-colors"
                 >
                   Cancel
                 </button>
@@ -190,7 +190,7 @@ export function LeadEmailComposer({
                     !subject.trim() ||
                     !body.trim()
                   }
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-md bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-[2px] bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
                 >
                   {pending ? (
                     <>

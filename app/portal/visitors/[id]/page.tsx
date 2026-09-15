@@ -247,7 +247,7 @@ export default async function VisitorDetailPage({
             />
             {/* UTM chip */}
             {utmLabel ? (
-              <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground bg-muted border border-border px-2 py-1 rounded-md">
+              <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground bg-muted border border-border px-2 py-1 rounded-[2px]">
                 <Globe className="h-3 w-3" />
                 {utmLabel}
               </span>
@@ -339,7 +339,7 @@ export default async function VisitorDetailPage({
                         alt={identity.companyName}
                         width={16}
                         height={16}
-                        className="h-4 w-4 object-contain rounded"
+                        className="h-4 w-4 object-contain rounded-[2px]"
                         unoptimized
                       />
                       {identity.companyName}

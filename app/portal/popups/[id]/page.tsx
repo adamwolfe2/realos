@@ -222,11 +222,11 @@ export default async function PopupEditorPage({
             </li>
             <li>
               The snippet is pasted with the wrong{" "}
-              <code className="rounded bg-muted px-1 py-0.5 text-[11px] text-foreground">
+              <code className="rounded-[2px] bg-muted px-1 py-0.5 text-[11px] text-foreground">
                 data-tenant
               </code>{" "}
               attribute. It must match your org slug exactly:{" "}
-              <code className="rounded bg-muted px-1 py-0.5 text-[11px] text-foreground">
+              <code className="rounded-[2px] bg-muted px-1 py-0.5 text-[11px] text-foreground">
                 {org?.slug ?? ""}
               </code>
               .

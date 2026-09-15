@@ -173,7 +173,7 @@ export function CitationHealthPanel({ data }: { data: CitationHealthData }) {
             return (
               <div
                 key={e}
-                className="rounded-md border border-border bg-background px-3 py-2"
+                className="rounded-[2px] border border-border bg-background px-3 py-2"
               >
                 <div className="ls-eyebrow">
                   {ENGINE_LABEL[e]}
@@ -259,7 +259,7 @@ function ClaimRowItem({ row }: { row: ClaimRow }) {
               {tested.map((e) => (
                 <span
                   key={e}
-                  className="inline-flex items-center px-1.5 py-0.5 text-[10px] rounded border border-border bg-secondary"
+                  className="inline-flex items-center px-1.5 py-0.5 text-[10px] rounded-[2px] border border-border bg-secondary"
                 >
                   {ENGINE_LABEL[e]}
                 </span>
@@ -307,7 +307,7 @@ function ClaimRowItem({ row }: { row: ClaimRow }) {
                   {row.byEngine.map((c, i) => (
                     <div
                       key={i}
-                      className="rounded-md border border-border bg-background p-3"
+                      className="rounded-[2px] border border-border bg-background p-3"
                     >
                       <div className="flex items-center justify-between gap-2 flex-wrap">
                         <div className="flex items-center gap-2">
@@ -359,7 +359,7 @@ function StatusPill({ status }: { status: CitationStatus | null }) {
   }
   if (status === "CITED") {
     return (
-      <span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded border border-primary/40 text-primary">
+      <span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-[2px] border border-primary/40 text-primary">
         <CheckCircle2 className="h-3 w-3" />
         Cited
       </span>
@@ -367,14 +367,14 @@ function StatusPill({ status }: { status: CitationStatus | null }) {
   }
   if (status === "COMPETITOR_CITED") {
     return (
-      <span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded border border-border text-foreground">
+      <span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-[2px] border border-border text-foreground">
         <AlertCircle className="h-3 w-3" />
         Competitor cited
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded border border-border text-muted-foreground">
+    <span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-[2px] border border-border text-muted-foreground">
       Not cited
     </span>
   );

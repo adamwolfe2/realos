@@ -89,7 +89,7 @@ export function PixelInstallCheck() {
       ) : null}
       {result ? (
         <div
-          className={`rounded-md border px-3 py-2 text-[12px] leading-relaxed ${TONE[result.status]}`}
+          className={`rounded-[2px] border px-3 py-2 text-[12px] leading-relaxed ${TONE[result.status]}`}
           style={{ borderRadius: 6 }}
         >
           {result.message}
@@ -100,7 +100,7 @@ export function PixelInstallCheck() {
           {result.results.map((r) => (
             <div
               key={r.propertyId ?? "org-wide"}
-              className={`rounded-md border px-3 py-2 text-[11px] leading-relaxed ${TONE[r.status]}`}
+              className={`rounded-[2px] border px-3 py-2 text-[11px] leading-relaxed ${TONE[r.status]}`}
               style={{ borderRadius: 6 }}
             >
               <span className="font-medium">

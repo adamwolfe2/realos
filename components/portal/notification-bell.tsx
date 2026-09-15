@@ -172,7 +172,7 @@ export function NotificationBell() {
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span
                           className={cn(
-                            "text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded shrink-0",
+                            "text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-[2px] shrink-0",
                             KIND_COLOR[item.kind] ?? "bg-muted text-muted-foreground"
                           )}
                         >

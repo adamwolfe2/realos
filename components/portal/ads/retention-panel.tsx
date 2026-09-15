@@ -139,10 +139,10 @@ export function AdRetentionPanel(props: AdRetentionPanelProps) {
   return (
     <section
       aria-labelledby="ad-retention-heading"
-      className="rounded-xl border bg-card text-card-foreground p-5 space-y-4"
+      className="rounded-[2px] border bg-card text-card-foreground p-5 space-y-4"
     >
       <header className="flex items-start gap-3">
-        <div className="rounded-md bg-muted/60 p-2">
+        <div className="rounded-[2px] bg-muted/60 p-2">
           <Database className="h-4 w-4 text-muted-foreground" />
         </div>
         <div className="min-w-0 flex-1">

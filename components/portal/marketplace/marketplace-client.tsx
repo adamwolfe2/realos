@@ -395,7 +395,7 @@ function ModuleCard({
       {/* Header — icon + title + status chip */}
       <div className="flex items-start gap-3">
         <div
-          className="inline-flex items-center justify-center h-10 w-10 p-2 rounded-lg shrink-0 bg-card border border-border text-primary"
+          className="inline-flex items-center justify-center h-10 w-10 p-2 rounded-[2px] shrink-0 bg-card border border-border text-primary"
           style={{ opacity: isComing ? 0.6 : 1 }}
         >
           <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} />

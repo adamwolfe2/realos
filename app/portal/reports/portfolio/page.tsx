@@ -198,7 +198,7 @@ export default async function PortfolioFunnelPage({
         title="Portfolio funnel"
         description="Traffic to applications across every property — the one-page roll-up to share with managers."
         actions={
-          <Suspense fallback={<div className="h-9 w-64 animate-pulse rounded bg-neutral-100" />}>
+          <Suspense fallback={<div className="h-9 w-64 animate-pulse rounded-[2px] bg-neutral-100" />}>
             <PropertyMultiSelect properties={visible} orgId={scope.orgId} />
           </Suspense>
         }

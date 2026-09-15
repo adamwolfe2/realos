@@ -45,7 +45,7 @@ function CallSheetRow({ lead, index }: { lead: CallPriorityLead; index: number }
 
   return (
     <li className="group flex items-start gap-3 py-3 first:pt-0 last:pb-0">
-      <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-muted text-[11px] font-semibold tabular-nums text-muted-foreground">
+      <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[2px] bg-muted text-[11px] font-semibold tabular-nums text-muted-foreground">
         {index}
       </span>
       <div className="min-w-0 flex-1">
@@ -58,7 +58,7 @@ function CallSheetRow({ lead, index }: { lead: CallPriorityLead; index: number }
           </Link>
           <span
             className={cn(
-              "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest ring-1 ring-inset",
+              "inline-flex items-center gap-1 rounded-[2px] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest ring-1 ring-inset",
               reason.cls,
             )}
           >

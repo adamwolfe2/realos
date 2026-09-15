@@ -245,7 +245,7 @@ export default async function ToursPage({
           description="Calendar, pipeline, and outcomes for every property tour."
           actions={
             properties.length > 1 ? (
-              <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded" />}>
+              <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded-[2px]" />}>
                 <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
               </Suspense>
             ) : null
@@ -277,7 +277,7 @@ export default async function ToursPage({
         description="Calendar, pipeline, and outcomes for every property tour. Click any tour to open the lead."
         actions={
           properties.length > 1 ? (
-            <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded" />}>
+            <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded-[2px]" />}>
               <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
             </Suspense>
           ) : null

@@ -45,7 +45,7 @@ export function TestFireButton({ campaignId }: Props) {
       type="button"
       onClick={handleClick}
       disabled={isBusy}
-      className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground transition-colors hover:bg-muted/50 disabled:opacity-60"
+      className="inline-flex items-center gap-1.5 rounded-[2px] border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground transition-colors hover:bg-muted/50 disabled:opacity-60"
     >
       {state === "loading" ? (
         <Loader2 className="h-3.5 w-3.5 animate-spin" />

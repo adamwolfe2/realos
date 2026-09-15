@@ -135,7 +135,7 @@ export function WhiteLabelFormClient({
                 type="color"
                 value={primaryColor}
                 onChange={(e) => setPrimaryColor(e.target.value)}
-                className="h-9 w-12 rounded border border-border bg-transparent cursor-pointer"
+                className="h-9 w-12 rounded-[2px] border border-border bg-transparent cursor-pointer"
                 aria-label="Pick primary color"
               />
               <Input
@@ -162,7 +162,7 @@ export function WhiteLabelFormClient({
       >
         <div className="space-y-4">
           {logoUrl ? (
-            <div className="flex items-center gap-4 p-3 rounded border border-border bg-muted/30">
+            <div className="flex items-center gap-4 p-3 rounded-[2px] border border-border bg-muted/30">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={logoUrl}
@@ -187,7 +187,7 @@ export function WhiteLabelFormClient({
             </div>
           ) : null}
 
-          <label className="inline-flex items-center gap-2 px-3.5 py-2 text-[13px] font-medium rounded border border-border cursor-pointer hover:bg-muted transition">
+          <label className="inline-flex items-center gap-2 px-3.5 py-2 text-[13px] font-medium rounded-[2px] border border-border cursor-pointer hover:bg-muted transition">
             <UploadCloud className="size-4" />
             <span>{isUploading ? "Uploading…" : "Upload logo"}</span>
             <input

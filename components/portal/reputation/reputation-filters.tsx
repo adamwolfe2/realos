@@ -149,8 +149,8 @@ function FilterRow<T extends string>({
             onClick={() => onChange(opt.value)}
             className={
               isActive
-                ? "px-2.5 py-1 text-xs rounded-md border border-foreground/20 bg-muted/60 text-foreground font-medium transition-colors"
-                : "px-2.5 py-1 text-xs rounded-md border border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                ? "px-2.5 py-1 text-xs rounded-[2px] border border-foreground/20 bg-muted/60 text-foreground font-medium transition-colors"
+                : "px-2.5 py-1 text-xs rounded-[2px] border border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
             }
             aria-pressed={isActive}
           >

@@ -265,7 +265,7 @@ function RunPill({ status }: { status: string }) {
           : "text-muted-foreground bg-muted";
   return (
     <span
-      className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums shrink-0 ${tone}`}
+      className={`inline-flex items-center rounded-[2px] px-1.5 py-0.5 text-[10px] font-semibold tabular-nums shrink-0 ${tone}`}
     >
       {status.toLowerCase()}
     </span>

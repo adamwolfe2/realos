@@ -36,7 +36,7 @@ type OrgDefaults = {
 };
 
 const FIELD =
-  "w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40";
+  "w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40";
 const LABEL = "block text-xs font-medium text-foreground mb-1";
 const HINT = "mt-1 text-[11px] text-muted-foreground";
 
@@ -68,7 +68,7 @@ export function PropertyChatbotConfigForm({
   const captureValue = config?.chatbotCaptureMode ?? "";
 
   return (
-    <form action={onSubmit} className="space-y-4 rounded-xl border border-border bg-card p-4 sm:p-6">
+    <form action={onSubmit} className="space-y-4 rounded-[2px] border border-border bg-card p-4 sm:p-6">
       <input type="hidden" name="propertyId" value={propertyId} />
 
       <div>
@@ -212,7 +212,7 @@ export function PropertyChatbotConfigForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 w-full sm:w-auto sm:ml-auto"
+          className="rounded-[2px] bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 w-full sm:w-auto sm:ml-auto"
         >
           {pending ? "Saving…" : "Save chatbot"}
         </button>

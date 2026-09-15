@@ -126,7 +126,7 @@ export function MarketingSection({
   }
 
   return (
-    <section className="rounded-xl border border-border bg-card p-4 md:p-5">
+    <section className="rounded-[2px] border border-border bg-card p-4 md:p-5">
       <header className="flex items-baseline justify-between gap-3 mb-3 flex-wrap">
         <div className="min-w-0">
           <p className="ls-eyebrow">
@@ -171,7 +171,7 @@ export function MarketingSection({
         const liveMetrics = metrics.filter((m) => typeof m.value !== "object");
         if (liveMetrics.length === 0) {
           return (
-            <div className="rounded-lg border border-dashed border-border bg-secondary p-4 text-center">
+            <div className="rounded-[2px] border border-dashed border-border bg-secondary p-4 text-center">
               <p className="text-[12px] font-semibold text-foreground">
                 No marketing signal yet
               </p>

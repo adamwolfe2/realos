@@ -9,7 +9,7 @@ import {
 } from "@/lib/actions/listings";
 
 const INPUT =
-  "rounded-md border border-border bg-background px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30";
+  "rounded-[2px] border border-border bg-background px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30";
 const LABEL =
   "ls-eyebrow";
 
@@ -51,7 +51,7 @@ export function AddListingForm({ propertyId }: { propertyId: string }) {
   return (
     <form
       onSubmit={submit}
-      className="rounded-md border border-border bg-muted/20 p-3 space-y-3"
+      className="rounded-[2px] border border-border bg-muted/20 p-3 space-y-3"
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
         <label className="flex flex-col gap-1">
@@ -128,7 +128,7 @@ export function AddListingForm({ propertyId }: { propertyId: string }) {
         <button
           type="submit"
           disabled={pending}
-          className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors px-3 py-1.5 text-xs font-medium rounded-md disabled:opacity-40"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors px-3 py-1.5 text-xs font-medium rounded-[2px] disabled:opacity-40"
         >
           {pending ? "Adding…" : "Add listing"}
         </button>

@@ -320,7 +320,7 @@ export function CurationQueueClient({
             type="checkbox"
             checked={selected.size === items.length && items.length > 0}
             onChange={toggleAll}
-            className="h-4 w-4 rounded border-border"
+            className="h-4 w-4 rounded-[2px] border-border"
             aria-label="Select all"
           />
           <span className="text-xs text-muted-foreground">
@@ -341,7 +341,7 @@ export function CurationQueueClient({
                   type="checkbox"
                   checked={selected.has(item.id)}
                   onChange={() => toggle(item.id)}
-                  className="mt-1 h-4 w-4 rounded border-border"
+                  className="mt-1 h-4 w-4 rounded-[2px] border-border"
                   aria-label={`Select ${item.name}`}
                 />
                 <PropertyAvatar
@@ -355,16 +355,16 @@ export function CurationQueueClient({
                       {item.name}
                     </span>
                     {item.totalUnits ? (
-                      <span className="text-[11px] text-muted-foreground px-1.5 py-0.5 rounded bg-secondary">
+                      <span className="text-[11px] text-muted-foreground px-1.5 py-0.5 rounded-[2px] bg-secondary">
                         {item.totalUnits} units
                       </span>
                     ) : (
-                      <span className="text-[11px] text-muted-foreground px-1.5 py-0.5 rounded bg-secondary">
+                      <span className="text-[11px] text-muted-foreground px-1.5 py-0.5 rounded-[2px] bg-secondary">
                         no units
                       </span>
                     )}
                     {item.backendPlatform === "APPFOLIO" && (
-                      <span className="text-[11px] text-muted-foreground px-1.5 py-0.5 rounded bg-muted/30">
+                      <span className="text-[11px] text-muted-foreground px-1.5 py-0.5 rounded-[2px] bg-muted/30">
                         AppFolio · {item.backendPropertyId}
                       </span>
                     )}
@@ -397,7 +397,7 @@ export function CurationQueueClient({
                         }
                         disabled={pending}
                         className={cn(
-                          "inline-flex items-center gap-1 px-2 py-1 text-xs rounded border transition-colors disabled:opacity-50",
+                          "inline-flex items-center gap-1 px-2 py-1 text-xs rounded-[2px] border transition-colors disabled:opacity-50",
                           openImageRow === item.id
                             ? "border-foreground bg-muted/60 text-foreground"
                             : "border-border text-muted-foreground hover:bg-secondary",
@@ -412,7 +412,7 @@ export function CurationQueueClient({
                         type="button"
                         onClick={() => actSingle(item.id, "activate")}
                         disabled={pending}
-                        className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-[2px] border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
                         title="Activate this property — will count toward your marketable total and billing"
                       >
                         {pending ? (
@@ -429,7 +429,7 @@ export function CurationQueueClient({
                         type="button"
                         onClick={() => actSingle(item.id, "exclude")}
                         disabled={pending}
-                        className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground rounded border border-border hover:bg-secondary disabled:opacity-50"
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground rounded-[2px] border border-border hover:bg-secondary disabled:opacity-50"
                         title="Exclude — keep in AppFolio mirror but do not bill or display"
                       >
                         <X className="w-3 h-3" aria-hidden="true" />
@@ -441,7 +441,7 @@ export function CurationQueueClient({
                       type="button"
                       onClick={() => actSingle(item.id, "activate")}
                       disabled={pending}
-                      className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
+                      className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-[2px] border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
                       title="Restore — bring back into active properties"
                     >
                       {pending ? (
@@ -619,7 +619,7 @@ function ImageActionsPanel({
             type="button"
             onClick={onScrape}
             disabled={anyBusy}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded border border-border bg-card hover:bg-secondary disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-[2px] border border-border bg-card hover:bg-secondary disabled:opacity-50"
             title={`Pull og:image / logo from ${property.websiteUrl}`}
           >
             {scraping ? (
@@ -649,7 +649,7 @@ function ImageActionsPanel({
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={anyBusy}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded border border-border bg-card hover:bg-secondary disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-[2px] border border-border bg-card hover:bg-secondary disabled:opacity-50"
           title="Upload an image file (PNG/JPG/WebP, up to 10MB)"
         >
           {uploading ? (
@@ -679,7 +679,7 @@ function ImageActionsPanel({
             }}
             placeholder="Paste image URL (https://…)"
             disabled={anyBusy}
-            className="w-full pl-7 pr-2 py-1 text-xs rounded border border-border bg-card focus:outline-none focus:ring-1 focus:ring-foreground disabled:opacity-50"
+            className="w-full pl-7 pr-2 py-1 text-xs rounded-[2px] border border-border bg-card focus:outline-none focus:ring-1 focus:ring-foreground disabled:opacity-50"
             aria-label="Hero image URL"
           />
         </div>
@@ -687,7 +687,7 @@ function ImageActionsPanel({
           type="button"
           onClick={onSaveUrl}
           disabled={anyBusy || !pastedUrl.trim()}
-          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-[2px] border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
         >
           {savingUrl ? (
             <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />
@@ -700,7 +700,7 @@ function ImageActionsPanel({
           type="button"
           onClick={onDone}
           disabled={anyBusy}
-          className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground rounded border border-border hover:bg-secondary disabled:opacity-50"
+          className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground rounded-[2px] border border-border hover:bg-secondary disabled:opacity-50"
           aria-label="Close image actions"
         >
           <X className="w-3 h-3" aria-hidden="true" />

@@ -137,7 +137,7 @@ export function ReportDashboard(props: {
 }) {
   return (
     <Suspense
-      fallback={<div className="h-10 animate-pulse rounded-md bg-muted" />}
+      fallback={<div className="h-10 animate-pulse rounded-[2px] bg-muted" />}
     >
       <DashboardInner {...props} />
     </Suspense>

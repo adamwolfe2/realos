@@ -212,7 +212,7 @@ export default async function PopupsListPage({
 }
 
 function StatusBadge({ status }: { status: string }) {
-  // Lowercase, rounded-md, 11px text — matches the portal-wide status
+  // Lowercase, 2px, 11px text — matches the portal-wide status
   // pill grammar (no emerald/amber rainbow; tone communicated via
   // brand-primary vs neutral instead).
   const tone =

@@ -148,7 +148,7 @@ export default async function ApiKeysPage() {
           <div className="ls-eyebrow">
             Example request
           </div>
-          <pre className="border rounded p-3 bg-muted text-[11px] leading-relaxed overflow-x-auto whitespace-pre-wrap break-all">
+          <pre className="border rounded-[2px] p-3 bg-muted text-[11px] leading-relaxed overflow-x-auto whitespace-pre-wrap break-all">
 {`curl -X POST https://leasestack.co/api/ingest/lead \\
   -H "Authorization: Bearer re_live_..." \\
   -H "Content-Type: application/json" \\
@@ -167,7 +167,7 @@ export default async function ApiKeysPage() {
           <div className="ls-eyebrow">
             Example response (200 OK)
           </div>
-          <pre className="border rounded p-3 bg-muted text-[11px] leading-relaxed overflow-x-auto whitespace-pre-wrap break-all">
+          <pre className="border rounded-[2px] p-3 bg-muted text-[11px] leading-relaxed overflow-x-auto whitespace-pre-wrap break-all">
 {`{
   "ok": true,
   "lead": {
@@ -321,16 +321,16 @@ function ApiKeyRow({
       <div className="min-w-0 flex-1 space-y-1">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-semibold">{name}</span>
-          <code className="font-mono text-[11px] bg-muted px-1.5 py-0.5 rounded">
+          <code className="font-mono text-[11px] bg-muted px-1.5 py-0.5 rounded-[2px]">
             {prefix}…
           </code>
           {isRevoked ? (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-[2px] bg-muted text-muted-foreground">
               Revoked
             </span>
           ) : (
             <span
-              className={`text-[10px] px-1.5 py-0.5 rounded ${expiryToneClass}`}
+              className={`text-[10px] px-1.5 py-0.5 rounded-[2px] ${expiryToneClass}`}
             >
               {expiryLabel}
             </span>

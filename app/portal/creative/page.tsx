@@ -59,7 +59,7 @@ export default async function CreativePage() {
         actions={
           <Link
             href="/portal/creative/new"
-            className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark transition-colors"
+            className="inline-flex items-center rounded-[2px] bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark transition-colors"
           >
             New request
           </Link>
@@ -93,7 +93,7 @@ export default async function CreativePage() {
             <li key={r.id}>
               <Link
                 href={`/portal/creative/${r.id}`}
-                className="block rounded-xl border border-border bg-card p-4 hover:border-foreground/20 hover:bg-accent/30 transition-colors"
+                className="block rounded-[2px] border border-border bg-card p-4 hover:border-foreground/20 hover:bg-accent/30 transition-colors"
               >
                 <div className="flex items-baseline justify-between gap-3">
                   <div className="min-w-0">

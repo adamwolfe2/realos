@@ -283,11 +283,11 @@ function ContentRow({ draft }: { draft: DraftRow }) {
     <li className="flex items-center gap-2">
       <Link
         href={`/portal/content/${draft.id}`}
-        className="group flex min-w-0 flex-1 items-center gap-3 px-1 py-3 -mx-0.5 rounded-md hover:bg-muted/30 transition-colors"
+        className="group flex min-w-0 flex-1 items-center gap-3 px-1 py-3 -mx-0.5 rounded-[2px] hover:bg-muted/30 transition-colors"
       >
         <span
           aria-hidden="true"
-          className="shrink-0 h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center"
+          className="shrink-0 h-9 w-9 rounded-[2px] bg-primary/10 text-primary flex items-center justify-center"
         >
           <FileText className="h-4 w-4" />
         </span>
@@ -330,7 +330,7 @@ function ContentRow({ draft }: { draft: DraftRow }) {
 function NewDraftMenu() {
   return (
     <details className="relative group">
-      <summary className="list-none cursor-pointer inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3.5 py-2 text-sm font-semibold hover:bg-primary/90 transition-colors">
+      <summary className="list-none cursor-pointer inline-flex items-center gap-1.5 rounded-[2px] bg-primary text-primary-foreground px-3.5 py-2 text-sm font-semibold hover:bg-primary/90 transition-colors">
         New Draft
         <svg
           className="w-3.5 h-3.5 opacity-80"

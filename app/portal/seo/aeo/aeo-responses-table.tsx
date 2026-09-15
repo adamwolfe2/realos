@@ -138,7 +138,7 @@ function SourceChips({ urls }: { urls: string[] }) {
         <span
           key={`${u}-${i}`}
           title={u}
-          className="inline-flex items-center rounded-md border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground max-w-[120px] truncate"
+          className="inline-flex items-center rounded-[2px] border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground max-w-[120px] truncate"
         >
           {hostOf(u)}
         </span>
@@ -421,14 +421,14 @@ export function AeoResponsesTable({ rows }: { rows: ResponseRow[] }) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search prompts"
-              className="h-8 w-[200px] rounded-md border border-border bg-card pl-7 pr-2 text-[12.5px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/60"
+              className="h-8 w-[200px] rounded-[2px] border border-border bg-card pl-7 pr-2 text-[12.5px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/60"
             />
           </div>
           <button
             type="button"
             onClick={() => setGrouped((g) => !g)}
             className={
-              "inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border text-[12px] font-medium transition-colors " +
+              "inline-flex items-center gap-1.5 h-8 px-2.5 rounded-[2px] border text-[12px] font-medium transition-colors " +
               (grouped
                 ? "border-primary/40 bg-primary/10 text-primary"
                 : "border-border bg-card text-foreground hover:bg-muted")
@@ -451,7 +451,7 @@ export function AeoResponsesTable({ rows }: { rows: ResponseRow[] }) {
           <button
             type="button"
             onClick={() => downloadCsv(filtered)}
-            className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border border-border bg-card text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
+            className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-[2px] border border-border bg-card text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
           >
             <Download className="h-3.5 w-3.5" />
             Export

@@ -30,11 +30,11 @@ type Props = {
 // don't all flash with the same intensity (mirrors the cadence the eye
 // expects from real content hierarchy).
 const SHIMMER_BASE =
-  "bg-[color:var(--accent-wash)] animate-pulse rounded-md";
+  "bg-[color:var(--accent-wash)] animate-pulse rounded-[2px]";
 const SHIMMER_MUTED =
-  "bg-[color:var(--accent-wash)]/60 animate-pulse rounded-md";
+  "bg-[color:var(--accent-wash)]/60 animate-pulse rounded-[2px]";
 const SHIMMER_FAINT =
-  "bg-[color:var(--accent-wash)]/40 animate-pulse rounded";
+  "bg-[color:var(--accent-wash)]/40 animate-pulse rounded-[2px]";
 
 export function PageSkeleton({
   variant = "list",
@@ -78,7 +78,7 @@ function ListBody() {
         <div className={cn(SHIMMER_MUTED, "h-8 w-32 ml-auto")} />
       </div>
       {/* Table */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="ls-card overflow-hidden">
         <div className="h-10 border-b border-border bg-secondary" />
         {Array.from({ length: 8 }).map((_, i) => (
           <div
@@ -101,13 +101,13 @@ function DetailBody() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
       <div className="lg:col-span-2 space-y-4">
-        <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+        <div className="ls-card p-5 space-y-3">
           <div className={cn(SHIMMER_BASE, "h-5 w-40")} />
           <div className={cn(SHIMMER_FAINT, "h-4 w-full")} />
           <div className={cn(SHIMMER_FAINT, "h-4 w-11/12")} />
           <div className={cn(SHIMMER_FAINT, "h-4 w-4/5")} />
         </div>
-        <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+        <div className="ls-card p-5 space-y-3">
           <div className={cn(SHIMMER_BASE, "h-5 w-32")} />
           <div className="grid grid-cols-2 gap-3">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -120,7 +120,7 @@ function DetailBody() {
         </div>
       </div>
       <div className="space-y-4">
-        <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+        <div className="ls-card p-5 space-y-3">
           <div className={cn(SHIMMER_BASE, "h-5 w-28")} />
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className={cn(SHIMMER_FAINT, "h-4 w-full")} />
@@ -138,7 +138,7 @@ function DashboardBody() {
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-xl border border-border bg-card p-4 space-y-2"
+            className="ls-card p-4 space-y-2"
           >
             <div className={cn(SHIMMER_FAINT, "h-3 w-20")} />
             <div className={cn(SHIMMER_BASE, "h-7 w-14")} />
@@ -147,11 +147,11 @@ function DashboardBody() {
         ))}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <div className="lg:col-span-2 rounded-xl border border-border bg-card p-5 space-y-3">
+        <div className="lg:col-span-2 rounded-[2px] border border-border bg-card p-5 space-y-3">
           <div className={cn(SHIMMER_BASE, "h-5 w-40")} />
           <div className={cn(SHIMMER_FAINT, "h-48 w-full")} />
         </div>
-        <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+        <div className="ls-card p-5 space-y-3">
           <div className={cn(SHIMMER_BASE, "h-5 w-32")} />
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="flex items-center justify-between">
@@ -168,7 +168,7 @@ function DashboardBody() {
 function FormBody() {
   return (
     <div className="max-w-2xl space-y-5">
-      <div className="rounded-xl border border-border bg-card p-6 space-y-5">
+      <div className="ls-card p-6 space-y-5">
         {Array.from({ length: 5 }).map((_, i) => (
           <div key={i} className="space-y-1.5">
             <div className={cn(SHIMMER_FAINT, "h-3 w-24")} />

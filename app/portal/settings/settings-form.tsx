@@ -209,7 +209,7 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
                 // color the operator has set so the preview previews even
                 // before a logo is uploaded.
                 <span
-                  className="inline-flex items-center justify-center h-7 w-7 rounded text-[12px] font-semibold tracking-tight"
+                  className="inline-flex items-center justify-center h-7 w-7 rounded-[2px] text-[12px] font-semibold tracking-tight"
                   style={{
                     background: primaryHex ?? "var(--muted)",
                     color: primaryHex ? "#fff" : "var(--muted-foreground)",

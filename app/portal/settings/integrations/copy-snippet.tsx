@@ -23,7 +23,7 @@ export function CopySnippetButton({ snippet }: { snippet: string }) {
       <button
         type="button"
         onClick={onCopy}
-        className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-3 py-1.5 text-xs font-semibold rounded"
+        className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-3 py-1.5 text-xs font-semibold rounded-[2px]"
       >
         {copied ? "Copied" : "Copy"}
       </button>

@@ -117,7 +117,7 @@ export function buildActivityEvents({
 
 export function ActivityTimeline({ events }: { events: ActivityEvent[] }) {
   return (
-    <section className="rounded-xl border border-border bg-card p-4 md:p-5">
+    <section className="rounded-[2px] border border-border bg-card p-4 md:p-5">
       <div className="flex items-baseline justify-between gap-2 mb-3">
         <div>
           <p className="ls-eyebrow">
@@ -157,7 +157,7 @@ function ActivityRow({ event }: { event: ActivityEvent }) {
   return (
     <li className="flex items-start gap-3 min-w-0">
       <span
-        className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${tone}`}
+        className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[2px] ${tone}`}
       >
         <Icon className="h-3.5 w-3.5" aria-hidden="true" />
       </span>

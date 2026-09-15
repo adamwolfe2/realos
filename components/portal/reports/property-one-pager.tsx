@@ -360,9 +360,9 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
                       <SourceGlyph source={toMentionSource(row.source)} className="h-4 w-4" />
                     </span>
                     <span className="w-[74px] font-medium text-muted-foreground">{row.source}</span>
-                    <span className="h-4 flex-1 overflow-hidden rounded bg-muted">
+                    <span className="h-4 flex-1 overflow-hidden rounded-[2px] bg-muted">
                       <span
-                        className="ls-bar-grow block h-full rounded bg-primary"
+                        className="ls-bar-grow block h-full rounded-[2px] bg-primary"
                         style={{
                           width: `${Math.round((row.count / repMaxCount) * 100)}%`,
                           animationDelay: `${i * 60}ms`,
@@ -418,7 +418,7 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
                       <EngineMark engine={row.engine} />
                     </span>
                     <span className="w-[74px] font-semibold text-foreground">{engineLabel(row.engine)}</span>
-                    <span className="flex h-3 flex-1 overflow-hidden rounded bg-elevated">
+                    <span className="flex h-3 flex-1 overflow-hidden rounded-[2px] bg-elevated">
                       <span
                         className="ls-bar-grow h-full bg-primary"
                         style={{

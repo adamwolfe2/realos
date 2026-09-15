@@ -211,7 +211,7 @@ export function RangeSelector({
     { k: "12mo", label: "12 months" },
   ];
   return (
-    <div className="inline-flex items-center rounded-lg border border-border bg-card p-0.5">
+    <div className="inline-flex items-center rounded-[2px] border border-border bg-card p-0.5">
       {opts.map((o) => {
         const active = o.k === value;
         return (
@@ -219,7 +219,7 @@ export function RangeSelector({
             key={o.k}
             type="button"
             onClick={() => onChange(o.k)}
-            className={`px-3 py-1 text-[11.5px] font-semibold rounded-md transition-colors ${
+            className={`px-3 py-1 text-[11.5px] font-semibold rounded-[2px] transition-colors ${
               active
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"

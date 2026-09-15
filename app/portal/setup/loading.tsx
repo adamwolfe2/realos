@@ -3,8 +3,8 @@ export default function SetupLoading() {
     <div className="space-y-10 animate-pulse">
       <div className="space-y-5">
         <div className="space-y-2">
-          <div className="h-9 w-64 bg-muted rounded-md" />
-          <div className="h-4 w-96 bg-muted/60 rounded" />
+          <div className="h-9 w-64 bg-muted rounded-[2px]" />
+          <div className="h-4 w-96 bg-muted/60 rounded-[2px]" />
         </div>
         <div className="space-y-3">
           <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
@@ -18,7 +18,7 @@ export default function SetupLoading() {
         </div>
       </div>
       <div className="space-y-4">
-        <div className="h-4 w-24 bg-muted/60 rounded" />
+        <div className="h-4 w-24 bg-muted/60 rounded-[2px]" />
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
@@ -26,9 +26,9 @@ export default function SetupLoading() {
           >
             <div className="h-5 w-5 rounded-full bg-muted shrink-0 mt-0.5" />
             <div className="flex-1 space-y-2">
-              <div className="h-5 w-48 bg-muted rounded" />
-              <div className="h-3 w-72 bg-muted/60 rounded" />
-              <div className="h-3 w-56 bg-secondary rounded" />
+              <div className="h-5 w-48 bg-muted rounded-[2px]" />
+              <div className="h-3 w-72 bg-muted/60 rounded-[2px]" />
+              <div className="h-3 w-56 bg-secondary rounded-[2px]" />
             </div>
           </div>
         ))}

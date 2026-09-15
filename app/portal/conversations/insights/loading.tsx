@@ -2,8 +2,8 @@ export default function ChatbotInsightsLoading() {
   return (
     <div className="space-y-6 animate-pulse">
       <div>
-        <div className="h-7 w-52 bg-muted rounded-md" />
-        <div className="h-4 w-96 bg-muted/60 rounded mt-2" />
+        <div className="h-7 w-52 bg-muted rounded-[2px]" />
+        <div className="h-4 w-96 bg-muted/60 rounded-[2px] mt-2" />
       </div>
 
       {/* Period selector */}
@@ -20,9 +20,9 @@ export default function ChatbotInsightsLoading() {
             key={i}
             className="ls-card p-4 space-y-2"
           >
-            <div className="h-3 w-20 bg-muted rounded" />
-            <div className="h-7 w-16 bg-muted/60 rounded" />
-            <div className="h-3 w-24 bg-muted/40 rounded" />
+            <div className="h-3 w-20 bg-muted rounded-[2px]" />
+            <div className="h-7 w-16 bg-muted/60 rounded-[2px]" />
+            <div className="h-3 w-24 bg-muted/40 rounded-[2px]" />
           </div>
         ))}
       </div>
@@ -35,15 +35,15 @@ export default function ChatbotInsightsLoading() {
             className="ls-card p-5 space-y-4"
           >
             <div className="flex items-center gap-2">
-              <div className="h-4 w-4 bg-muted rounded" />
-              <div className="h-4 w-40 bg-muted rounded" />
+              <div className="h-4 w-4 bg-muted rounded-[2px]" />
+              <div className="h-4 w-40 bg-muted rounded-[2px]" />
             </div>
             <div className="space-y-3">
               {Array.from({ length: 5 }).map((_, j) => (
                 <div key={j} className="flex items-center gap-3">
-                  <div className="h-3 w-5 shrink-0 bg-muted/50 rounded" />
-                  <div className="h-3 flex-1 bg-muted/50 rounded" />
-                  <div className="h-3 w-6 shrink-0 bg-muted/40 rounded" />
+                  <div className="h-3 w-5 shrink-0 bg-muted/50 rounded-[2px]" />
+                  <div className="h-3 flex-1 bg-muted/50 rounded-[2px]" />
+                  <div className="h-3 w-6 shrink-0 bg-muted/40 rounded-[2px]" />
                 </div>
               ))}
             </div>

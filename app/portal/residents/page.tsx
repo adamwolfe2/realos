@@ -224,12 +224,12 @@ export default async function ResidentsPage({
             </span>
             <Link
               href="/portal/residents/new"
-              className="inline-flex items-center rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
+              className="inline-flex items-center rounded-[2px] border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
             >
               Add resident
             </Link>
             <RunAppFolioSyncButton label="Sync now" subtle />
-            <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded" />}>
+            <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded-[2px]" />}>
               <PropertyMultiSelect
                 properties={visibleProperties(scope, properties)}
                 orgId={scope.orgId}

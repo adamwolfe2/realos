@@ -68,7 +68,7 @@ export function HeadlineCallout({ signal, bare = false }: HeadlineCalloutProps) 
       <div className="flex items-start gap-3">
         <div
           className={cn(
-            "h-9 w-9 shrink-0 rounded-lg bg-background border border-border flex items-center justify-center",
+            "h-9 w-9 shrink-0 rounded-[2px] bg-background border border-border flex items-center justify-center",
             iconColor,
           )}
         >

@@ -107,7 +107,7 @@ export async function ChatbotTab({
                       <span className="text-[10px] text-muted-foreground tabular-nums">
                         {i + 1}
                       </span>
-                      <span className="relative h-5 rounded-md bg-muted/60 overflow-hidden">
+                      <span className="relative h-5 rounded-[2px] bg-muted/60 overflow-hidden">
                         <span
                           className="absolute left-0 top-0 h-full bg-primary/80"
                           style={{ width: `${width}%` }}

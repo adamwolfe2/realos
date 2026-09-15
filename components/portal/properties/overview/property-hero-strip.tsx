@@ -75,10 +75,10 @@ export function PropertyHeroStrip({
           <img
             src={heroImageUrl}
             alt={name}
-            className="h-20 w-20 rounded-lg object-cover border border-border shrink-0"
+            className="h-20 w-20 rounded-[2px] object-cover border border-border shrink-0"
           />
         ) : (
-          <div className="inline-flex h-20 w-20 items-center justify-center rounded-lg bg-muted text-muted-foreground shrink-0 border border-border">
+          <div className="inline-flex h-20 w-20 items-center justify-center rounded-[2px] bg-muted text-muted-foreground shrink-0 border border-border">
             <Building2 className="h-6 w-6" aria-hidden="true" />
           </div>
         )}

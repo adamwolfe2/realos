@@ -187,7 +187,7 @@ function ViewTab({ view }: { view: ToolbarView }) {
       {view.count != null ? (
         <span
           className={cn(
-            "inline-flex items-center justify-center rounded px-1 min-w-[16px] h-[14px] tabular-nums text-[10px] font-semibold",
+            "inline-flex items-center justify-center rounded-[2px] px-1 min-w-[16px] h-[14px] tabular-nums text-[10px] font-semibold",
             view.active
               ? "bg-primary/20 text-primary"
               : "bg-muted text-muted-foreground group-hover:bg-muted-foreground/10",
@@ -221,7 +221,7 @@ function FilterChip({ filter }: { filter: ToolbarFilter }) {
         href={filter.removeHref}
         scroll={false}
         aria-label={`Remove ${filter.field} filter`}
-        className="inline-flex items-center justify-center w-4 h-4 rounded hover:bg-primary/20 transition-colors"
+        className="inline-flex items-center justify-center w-4 h-4 rounded-[2px] hover:bg-primary/20 transition-colors"
       >
         <X className="h-2.5 w-2.5" />
       </Link>

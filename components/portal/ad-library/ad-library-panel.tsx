@@ -95,7 +95,7 @@ export function AdLibraryPanel({
 
 function NotConfiguredCard() {
   return (
-    <div className="rounded-xl border border-dashed border-border bg-secondary/30 px-4 py-6 text-center">
+    <div className="rounded-[2px] border border-dashed border-border bg-secondary/30 px-4 py-6 text-center">
       <p className="text-sm font-semibold text-foreground">
         Meta Ad Library not configured
       </p>
@@ -153,7 +153,7 @@ function TrackForm({ propertyId }: { propertyId: string | null }) {
       <button
         type="submit"
         disabled={submitting || !raw.trim()}
-        className="inline-flex items-center justify-center gap-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-3 py-1 text-xs font-semibold hover:opacity-90 disabled:opacity-60 transition-opacity"
+        className="inline-flex items-center justify-center gap-1.5 rounded-[2px] bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-3 py-1 text-xs font-semibold hover:opacity-90 disabled:opacity-60 transition-opacity"
       >
         {submitting ? (
           <>
@@ -254,7 +254,7 @@ function AdvertiserCard({
           <button
             onClick={handleRescan}
             disabled={scanning}
-            className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-secondary disabled:opacity-60 transition-colors"
+            className="inline-flex items-center gap-1 rounded-[2px] border border-border bg-card px-2 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-secondary disabled:opacity-60 transition-colors"
           >
             <RefreshCw
               className={cn("h-3 w-3", scanning && "animate-spin")}
@@ -266,7 +266,7 @@ function AdvertiserCard({
             onClick={handleRemove}
             disabled={removing}
             aria-label="Stop tracking"
-            className="inline-flex items-center justify-center rounded-md border border-border bg-card p-1 text-muted-foreground hover:text-destructive hover:border-destructive/30 disabled:opacity-60 transition-colors"
+            className="inline-flex items-center justify-center rounded-[2px] border border-border bg-card p-1 text-muted-foreground hover:text-destructive hover:border-destructive/30 disabled:opacity-60 transition-colors"
           >
             <Trash2 className="h-3 w-3" aria-hidden="true" />
           </button>

@@ -34,7 +34,7 @@ export function PropertyAccessDeniedBanner({
 }) {
   const resetHref = pathname ?? "/portal";
   return (
-    <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 flex items-start gap-3">
+    <div className="rounded-[2px] border border-destructive/30 bg-destructive/10 px-4 py-3 flex items-start gap-3">
       <ShieldAlert
         className="h-4 w-4 text-destructive mt-0.5 shrink-0"
         aria-hidden="true"

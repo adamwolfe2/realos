@@ -193,7 +193,7 @@ export function LeadNotifySettings({
   return (
     <section className="ls-card p-6">
       <header className="flex items-start gap-2.5 mb-5">
-        <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted text-muted-foreground">
+        <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-[2px] bg-muted text-muted-foreground">
           <Bell className="size-4" aria-hidden="true" />
         </span>
         <div>
@@ -267,11 +267,11 @@ export function LeadNotifySettings({
             {TOGGLES.map((t) => (
               <label
                 key={t.key}
-                className="flex items-start gap-3 rounded-md border border-border bg-background px-3 py-2.5 cursor-pointer hover:border-primary/40 transition-colors"
+                className="flex items-start gap-3 rounded-[2px] border border-border bg-background px-3 py-2.5 cursor-pointer hover:border-primary/40 transition-colors"
               >
                 <input
                   type="checkbox"
-                  className="mt-0.5 size-4 rounded border-border text-primary focus:ring-primary"
+                  className="mt-0.5 size-4 rounded-[2px] border-border text-primary focus:ring-primary"
                   checked={toggles[t.key]}
                   onChange={(e) =>
                     setToggles((prev) => ({

@@ -154,7 +154,7 @@ function FilterChip({
       type="button"
       onClick={onClick}
       className={cn(
-        "rounded-md px-2.5 py-1 text-xs font-medium border transition-colors",
+        "rounded-[2px] px-2.5 py-1 text-xs font-medium border transition-colors",
         active
           ? "bg-primary text-primary-foreground border-primary"
           : "bg-card text-foreground border-border hover:bg-muted/50",
@@ -203,7 +203,7 @@ function IntegrationDrawerBody({
           {def.description}
         </p>
 
-        <div className="rounded-xl border border-border bg-muted/30 p-4">
+        <div className="rounded-[2px] border border-border bg-muted/30 p-4">
           <h4 className="text-xs font-semibold text-foreground mb-2">
             What lands in your portal
           </h4>
@@ -237,7 +237,7 @@ function DrawerAction({
   if (state === "connected") {
     if (manageSlot) return <div className="space-y-3">{manageSlot}</div>;
     return (
-      <div className="rounded-xl border border-primary/30 bg-primary/10 p-4">
+      <div className="rounded-[2px] border border-primary/30 bg-primary/10 p-4">
         <p className="text-sm font-medium text-primary">
           {def.name} is connected and live.
         </p>
@@ -256,7 +256,7 @@ function DrawerAction({
     // don't mis-signal a healthy-but-quiet integration as broken.
     return (
       <div className="space-y-3">
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+        <div className="rounded-[2px] border border-amber-200 bg-amber-50 p-4">
           <p className="text-sm font-medium text-amber-900">
             {def.name} is connected, but data is stale.
           </p>
@@ -278,7 +278,7 @@ function DrawerAction({
     // the last sync attempt failed and act on it.
     return (
       <div className="space-y-3">
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4">
+        <div className="rounded-[2px] border border-rose-200 bg-rose-50 p-4">
           <p className="text-sm font-medium text-rose-800">
             {def.name} is connected, but the last sync failed.
           </p>
@@ -327,14 +327,14 @@ function DrawerAction({
         <p className="text-sm text-muted-foreground">
           Generate a scoped API key in settings, then paste it into {def.name}
           &apos;s HTTP / webhook action. The portal accepts posts to the
-          <code className="ml-1 rounded bg-muted px-1 py-0.5 text-[11px]">
+          <code className="ml-1 rounded-[2px] bg-muted px-1 py-0.5 text-[11px]">
             /api/ingest/*
           </code>{" "}
           endpoints.
         </p>
         <Link
           href="/portal/settings/api-keys"
-          className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark transition-colors"
+          className="inline-flex items-center justify-center rounded-[2px] bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark transition-colors"
         >
           Go to API keys →
         </Link>
@@ -405,7 +405,7 @@ function PlanGateBlock({
         accent: "text-foreground",
       };
   return (
-    <div className={`rounded-xl border p-4 space-y-3 ${tone.bg}`}>
+    <div className={`rounded-[2px] border p-4 space-y-3 ${tone.bg}`}>
       <div>
         <p className={`text-sm font-semibold ${tone.accent}`}>
           {provisioning
@@ -421,14 +421,14 @@ function PlanGateBlock({
       <div className="flex flex-wrap items-center gap-2">
         <a
           href={`mailto:team@leasestack.co?subject=${subject}&body=${body}`}
-          className="inline-flex items-center rounded-md bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-3 py-1.5 text-xs font-semibold hover:opacity-90"
+          className="inline-flex items-center rounded-[2px] bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-3 py-1.5 text-xs font-semibold hover:opacity-90"
         >
           {provisioning ? "Email account team" : "Email account team"}
         </a>
         {!provisioning ? (
           <Link
             href="/portal/settings"
-            className="inline-flex items-center rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted/50"
+            className="inline-flex items-center rounded-[2px] border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted/50"
           >
             View current plan
           </Link>

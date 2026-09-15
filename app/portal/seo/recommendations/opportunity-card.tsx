@@ -133,7 +133,7 @@ export function OpportunityRowActions({ id, onResolved }: ActionsProps) {
           type="button"
           disabled={pending || reason.trim().length < 4}
           onClick={() => patch("DISMISSED", { reason: reason.trim() })}
-          className="rounded-md bg-foreground px-2 py-1 text-[11px] font-medium text-background hover:opacity-90 disabled:opacity-50"
+          className="rounded-[2px] bg-foreground px-2 py-1 text-[11px] font-medium text-background hover:opacity-90 disabled:opacity-50"
         >
           OK
         </button>
@@ -157,7 +157,7 @@ export function OpportunityRowActions({ id, onResolved }: ActionsProps) {
         type="button"
         disabled={pending}
         onClick={() => patch("COMPLETED")}
-        className="rounded-md bg-primary px-2.5 py-1 text-[11.5px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+        className="rounded-[2px] bg-primary px-2.5 py-1 text-[11.5px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
       >
         Done
       </button>
@@ -165,7 +165,7 @@ export function OpportunityRowActions({ id, onResolved }: ActionsProps) {
         type="button"
         disabled={pending}
         onClick={() => setShowDecline(true)}
-        className="rounded-md border border-border bg-background px-2.5 py-1 text-[11.5px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+        className="rounded-[2px] border border-border bg-background px-2.5 py-1 text-[11.5px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
       >
         Decline
       </button>

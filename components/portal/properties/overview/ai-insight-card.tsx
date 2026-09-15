@@ -113,7 +113,7 @@ export function AiInsightCard({ insight }: { insight: AiInsightShape }) {
           : "border-border bg-muted/30 text-foreground";
   return (
     <div
-      className={`rounded-xl border px-3 py-2 flex items-start gap-2.5 ${tone}`}
+      className={`rounded-[2px] border px-3 py-2 flex items-start gap-2.5 ${tone}`}
     >
       <Sparkles className="h-4 w-4 shrink-0 mt-0.5 opacity-80" aria-hidden="true" />
       <div className="min-w-0 flex-1">

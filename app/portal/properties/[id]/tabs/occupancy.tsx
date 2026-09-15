@@ -78,7 +78,7 @@ export async function OccupancyTab({
           student housing with per-room rentals and Spring/Fall
           configurations). Hides automatically when the counts agree. */}
       {listingsExceedUnits ? (
-        <p className="text-[11px] text-muted-foreground bg-muted/30 border border-border rounded-md px-3 py-2 leading-snug">
+        <p className="text-[11px] text-muted-foreground bg-muted/30 border border-border rounded-[2px] px-3 py-2 leading-snug">
           <span className="font-semibold text-foreground">
             {totalListings} listings
           </span>{" "}

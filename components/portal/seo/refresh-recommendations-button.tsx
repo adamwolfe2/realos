@@ -51,7 +51,7 @@ export function RefreshRecommendationsButton({
       type="button"
       onClick={go}
       disabled={pending}
-      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted disabled:opacity-50 transition-colors"
+      className="inline-flex items-center gap-1.5 rounded-[2px] border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted disabled:opacity-50 transition-colors"
     >
       {pending ? "Refreshing…" : label}
     </button>

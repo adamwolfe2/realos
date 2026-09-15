@@ -172,7 +172,7 @@ export function SourceProgress({
             <span
               key={k}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium",
+                "inline-flex items-center gap-1.5 rounded-[2px] border px-2.5 py-1 text-xs font-medium",
                 tone,
               )}
               title={s.error ?? undefined}

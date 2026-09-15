@@ -213,7 +213,7 @@ export default async function ReferralsPage() {
           <li>
             When a prospect arrives through that link and submits the contact
             form, the lead is created with source set to{" "}
-            <span className="font-mono text-[11px] bg-muted px-1 py-0.5 rounded">
+            <span className="font-mono text-[11px] bg-muted px-1 py-0.5 rounded-[2px]">
               REFERRAL
             </span>
             .

@@ -284,7 +284,7 @@ export async function ResidentsTab({
   } catch (err) {
     console.error("[ResidentsTab] Failed to load AppFolio data:", err);
     return (
-      <div className="rounded-xl border border-border bg-secondary p-6 text-center">
+      <div className="rounded-[2px] border border-border bg-secondary p-6 text-center">
         <p className="text-sm font-semibold text-foreground">
           Resident data unavailable
         </p>
@@ -341,7 +341,7 @@ function ResidentTable({
 }) {
   if (residents.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center text-xs text-muted-foreground">
+      <div className="rounded-[2px] border border-dashed border-border bg-card p-8 text-center text-xs text-muted-foreground">
         No residents in this view.
       </div>
     );
@@ -416,7 +416,7 @@ function ResidentRow({
             <span
               className={
                 days <= 30
-                  ? "inline-flex items-center rounded-md border border-border bg-secondary text-foreground px-1.5 py-0.5 text-[11px] font-semibold tabular-nums"
+                  ? "inline-flex items-center rounded-[2px] border border-border bg-secondary text-foreground px-1.5 py-0.5 text-[11px] font-semibold tabular-nums"
                   : "tabular-nums text-[12px] text-foreground font-medium"
               }
             >
