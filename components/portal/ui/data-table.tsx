@@ -108,7 +108,7 @@ export function DataTable<T extends { id?: string }>({
                 const headerInner = (
                   <span
                     className={cn(
-                      "inline-flex items-center gap-1.5 text-[10px] tracking-[0.10em] uppercase font-semibold",
+                      "inline-flex items-center gap-1.5 ls-eyebrow",
                       isSorted ? "text-foreground" : "text-[var(--silver-fog)]",
                       sortable && "hover:text-foreground transition-colors",
                     )}

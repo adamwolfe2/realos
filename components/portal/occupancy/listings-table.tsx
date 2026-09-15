@@ -358,7 +358,7 @@ export function ListingsTable({
 
       <div className="overflow-x-auto -mx-5 px-5">
         <table className="w-full text-sm">
-          <thead className="text-[10px] tracking-widest uppercase text-muted-foreground">
+          <thead className="ls-eyebrow">
             <tr>
               <SortableHeader
                 label="Unit"

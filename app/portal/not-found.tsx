@@ -5,7 +5,7 @@ export default function PortalNotFound() {
   return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center px-4">
       <div className="text-center max-w-md space-y-4">
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-primary">
+        <p className="ls-eyebrow ls-eyebrow-accent">
           404
         </p>
         <h1 className="text-3xl font-bold text-foreground">

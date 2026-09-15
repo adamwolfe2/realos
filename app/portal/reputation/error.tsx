@@ -26,7 +26,7 @@ export default function ReputationError({
   return (
     <div className="space-y-4">
       <header>
-        <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+        <p className="ls-eyebrow">
           Brand health
         </p>
         <h1 className="text-xl font-semibold tracking-tight text-foreground">

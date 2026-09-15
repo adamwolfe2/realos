@@ -62,7 +62,7 @@ type SectionDef = {
 
 function SubHead({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+    <div className="mb-2 ls-eyebrow">
       {children}
     </div>
   );
@@ -268,7 +268,7 @@ function HeroStat({
 }) {
   return (
     <div className="rounded-[2px] border border-border bg-card px-3 py-2.5">
-      <div className="font-mono text-[20px] font-semibold leading-none tracking-tight tabular-nums text-foreground">{value}</div>
+      <div className="ls-metric text-[20px] leading-none">{value}</div>
       <div className="mt-1 text-[10.5px] font-medium text-muted-foreground">{label}</div>
       {delta != null ? (
         <div className={`mt-1 text-[10px] font-semibold ${delta >= 0 ? "text-green-600" : "text-destructive"}`}>

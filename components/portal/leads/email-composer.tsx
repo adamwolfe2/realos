@@ -105,7 +105,7 @@ export function LeadEmailComposer({
           >
             <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-border">
               <div className="min-w-0">
-                <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+                <p className="ls-eyebrow">
                   Send email
                 </p>
                 <p className="text-sm font-medium text-foreground truncate">

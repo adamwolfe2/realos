@@ -54,7 +54,7 @@ export function IntegrationStatusRow({
               {i.icon}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.1em] text-muted-foreground leading-tight">
+              <p className="ls-eyebrow leading-tight">
                 {i.label}
               </p>
               <p
@@ -148,7 +148,7 @@ export function HealthScoreCard({
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span
-            className="font-display font-medium tabular-nums leading-none"
+            className="ls-metric leading-none"
             style={{ fontSize: 22 }}
           >
             {composite != null ? composite : "—"}
@@ -159,7 +159,7 @@ export function HealthScoreCard({
         </div>
       </div>
       <div>
-        <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-1">
+        <p className="ls-eyebrow ls-eyebrow-accent mb-1">
           Health · composite
         </p>
         <h3 className="text-base font-semibold text-foreground leading-tight mb-2">
@@ -206,7 +206,7 @@ export function HealthScoreCard({
                     style={{ backgroundColor: dot }}
                     aria-hidden="true"
                   />
-                  <p className="text-[10px] font-mono uppercase tracking-[0.08em] text-muted-foreground leading-tight truncate">
+                  <p className="ls-eyebrow leading-tight truncate">
                     {p.label}
                   </p>
                 </div>
@@ -267,7 +267,7 @@ export function SerpRankingsCard({
     >
       <header className={`flex items-baseline justify-between gap-3 ${sidePad} py-3 border-b border-border`}>
         <div>
-          <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-0.5">
+          <p className="ls-eyebrow ls-eyebrow-accent mb-0.5">
             SERP rankings · live
           </p>
           <h3 className="text-sm font-semibold text-foreground">
@@ -393,7 +393,7 @@ export function LighthouseCard({
     <section className={`rounded-[2px] border ${SUBTLE_BORDER} bg-card p-5`}>
       <header className="flex items-baseline justify-between gap-3 mb-4">
         <div>
-          <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-0.5">
+          <p className="ls-eyebrow ls-eyebrow-accent mb-0.5">
             Lighthouse · audit
           </p>
           <h3 className="text-sm font-semibold text-foreground">
@@ -475,7 +475,7 @@ function ScoreDot({ label, value }: { label: string; value: number | null }) {
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
           <span
-            className="font-display font-semibold tabular-nums"
+            className="ls-metric"
             style={{ fontSize: 13 }}
           >
             {display}
@@ -548,7 +548,7 @@ export function BacklinksCard({
       <section className={cardClass}>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-1">
+            <p className="ls-eyebrow ls-eyebrow-accent mb-1">
               Backlinks
             </p>
             <h3 className="text-sm font-semibold text-foreground">
@@ -573,7 +573,7 @@ export function BacklinksCard({
   return (
     <section className={cardClass}>
       <header className="mb-3">
-        <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-0.5">
+        <p className="ls-eyebrow ls-eyebrow-accent mb-0.5">
           Backlinks · {summary.target}
         </p>
         <h3 className="text-sm font-semibold text-foreground">
@@ -608,7 +608,7 @@ function Stat({
       <p className="text-[9.5px] font-mono uppercase tracking-[0.08em] text-muted-foreground leading-tight">
         {label}
       </p>
-      <p className="text-[18px] font-display font-medium tabular-nums leading-tight text-foreground">
+      <p className="text-[18px] ls-metric leading-tight">
         {value != null ? value.toLocaleString() : "—"}
         {max ? (
           <span className="text-[10px] font-mono text-muted-foreground ml-1">
@@ -649,7 +649,7 @@ export function CompetitorsCard({
       }
     >
       <header className={`${sidePad} py-3 border-b border-border`}>
-        <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-0.5">
+        <p className="ls-eyebrow ls-eyebrow-accent mb-0.5">
           Competitors
         </p>
         <h3 className="text-sm font-semibold text-foreground">
@@ -734,7 +734,7 @@ export function AeoCard({
   return (
     <section className={`rounded-[2px] border ${SUBTLE_BORDER} bg-card p-5`}>
       <header className="mb-3">
-        <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-0.5">
+        <p className="ls-eyebrow ls-eyebrow-accent mb-0.5">
           AEO · AI search visibility
         </p>
         <h3 className="text-sm font-semibold text-foreground">
@@ -746,7 +746,7 @@ export function AeoCard({
           <p className="text-[9.5px] font-mono uppercase tracking-[0.08em] text-muted-foreground leading-tight">
             Citation rate
           </p>
-          <p className="text-[20px] font-display font-medium tabular-nums leading-tight text-foreground">
+          <p className="text-[20px] ls-metric leading-tight">
             {totalChecks > 0 ? `${Math.round(citationRate * 100)}%` : "—"}
           </p>
         </div>

@@ -230,7 +230,7 @@ export function AeoCustomPrompts({
         if (pack.length === 0 || activeCount >= 10) return null;
         return (
           <div className="mt-4 border-t border-border pt-3">
-            <p className="text-[11px] font-mono uppercase tracking-[0.14em] text-muted-foreground">
+            <p className="ls-eyebrow">
               Suggested for this property
             </p>
             <ul className="mt-2 space-y-1.5">

@@ -122,7 +122,7 @@ export default async function SetupHubPage() {
       <section className="space-y-5">
         <div className="space-y-3">
           <div className="flex items-baseline justify-between gap-2">
-            <span className="text-[10px] tracking-[0.14em] uppercase font-semibold text-muted-foreground">
+            <span className="ls-eyebrow">
               Overall progress
             </span>
             <span className="text-[11px] font-semibold tabular-nums text-foreground">

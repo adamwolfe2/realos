@@ -259,7 +259,7 @@ export default async function ContentPage() {
               <>
                 <li
                   aria-hidden="true"
-                  className="px-1 pt-4 pb-1 text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+                  className="px-1 pt-4 pb-1 ls-eyebrow"
                 >
                   Recently shipped
                 </li>

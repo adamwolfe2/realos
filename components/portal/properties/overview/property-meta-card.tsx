@@ -64,7 +64,7 @@ export function PropertyMetaCard({
 
   return (
     <Card className="p-4 md:p-5 gap-0 shadow-none">
-      <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+      <p className="ls-eyebrow">
         Property
       </p>
       <dl className="mt-2 space-y-1.5 text-[12px]">

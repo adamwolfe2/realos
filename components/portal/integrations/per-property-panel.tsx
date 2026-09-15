@@ -91,7 +91,7 @@ export function PerPropertyIntegrationsPanel({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+            <tr className="border-b border-border text-left ls-eyebrow">
               <th className="py-2 pr-3 font-medium">Property</th>
               <th className="py-2 px-3 font-medium">GA4</th>
               <th className="py-2 px-3 font-medium">Search Console</th>

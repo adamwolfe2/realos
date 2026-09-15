@@ -75,7 +75,7 @@ export function LeadConversationPanel({
             <h2 className="text-sm font-semibold tracking-tight text-foreground">
               Chatbot conversation
             </h2>
-            <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+            <span className="ls-eyebrow">
               {primary.messageCount} {primary.messageCount === 1 ? "msg" : "msgs"}
             </span>
           </div>
@@ -157,7 +157,7 @@ function MessageBubble({ message }: { message: LeadConversationMessage }) {
       >
         <div
           className={cn(
-            "text-[9px] uppercase tracking-widest font-semibold mb-0.5 flex items-center gap-1",
+            "ls-eyebrow mb-0.5 flex items-center gap-1",
             isUser ? "text-primary-foreground/80" : "text-muted-foreground",
           )}
         >

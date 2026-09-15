@@ -62,7 +62,7 @@ export async function OnboardingTab({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <Rocket className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-              <span className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+              <span className="ls-eyebrow">
                 Launch status
               </span>
               <StatusChip status={chip.status} label={chip.label} />

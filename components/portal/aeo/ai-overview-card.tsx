@@ -46,7 +46,7 @@ function OverviewItem({ row }: { row: AiOverviewRow }) {
           <div className="text-[13px] font-medium text-foreground" title={row.query}>
             {row.query}
           </div>
-          <div className="text-[10px] uppercase tracking-[0.12em] font-semibold text-muted-foreground mt-0.5">
+          <div className="ls-eyebrow mt-0.5">
             captured {formatDate(row.capturedAt)}
           </div>
         </div>

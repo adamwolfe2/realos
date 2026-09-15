@@ -179,7 +179,7 @@ function PropertyTabsInner({
                     // Tailwind in globals.css and its colour would win over
                     // the active/inactive state colour.
                     "inline-flex shrink-0 items-center gap-1.5 rounded-[2px] px-2.5 py-1",
-                    "font-mono text-[10px] font-semibold uppercase tracking-[0.12em]",
+                    "ls-eyebrow",
                     "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                     isActive
                       ? "text-foreground"

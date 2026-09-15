@@ -451,7 +451,7 @@ function HeroMetric({
   return (
     <div className="p-5">
       <div
-        className="text-[10px] font-semibold uppercase tracking-[0.18em]"
+        className="ls-eyebrow"
         style={{ color: accent ? "var(--terracotta)" : "var(--olive-gray, #6B7280)" }}
       >
         {eyebrow}
@@ -492,7 +492,7 @@ function AvmCard({
   if (mid == null) {
     return (
       <div className="p-5">
-        <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        <div className="flex items-center gap-1.5 ls-eyebrow">
           {icon}
           {label}
         </div>
@@ -505,12 +505,12 @@ function AvmCard({
   const ratio = low != null && high != null && high > low ? ((mid - low) / (high - low)) * 100 : 50;
   return (
     <div className="p-5">
-      <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+      <div className="flex items-center gap-1.5 ls-eyebrow">
         {icon}
         {label}
       </div>
       <div
-        className="mt-1.5 text-[28px] font-semibold tracking-[-0.02em] tabular-nums leading-tight"
+        className="mt-1.5 text-[28px] ls-metric leading-tight"
         style={{ fontFamily: "var(--font-display)" }}
       >
         {fmt(mid)}
@@ -519,7 +519,7 @@ function AvmCard({
         <>
           <div className="mt-2 flex items-center justify-between text-[10.5px] text-muted-foreground font-mono">
             <span>{fmt(low)}</span>
-            <span className="uppercase tracking-widest text-[9px]">Confidence band</span>
+            <span className="ls-eyebrow">Confidence band</span>
             <span>{fmt(high)}</span>
           </div>
           <div className="relative mt-1 h-1.5 rounded-full bg-muted overflow-hidden">
@@ -600,7 +600,7 @@ function CompsStrip({
     <div className="px-5 py-4 border-t border-border">
       <div className="flex items-baseline justify-between mb-3">
         <h4
-          className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground"
+          className="ls-eyebrow"
         >
           {title}
         </h4>
@@ -622,7 +622,7 @@ function CompsStrip({
               {c.squareFootage ? ` · ${c.squareFootage.toLocaleString()} sqft` : ""}
             </div>
             <div
-              className="mt-2 text-[18px] font-semibold tabular-nums"
+              className="mt-2 text-[18px] ls-metric"
               style={{ fontFamily: "var(--font-display)" }}
             >
               {c.price != null
@@ -654,7 +654,7 @@ function ScenarioTable({
   return (
     <div className="px-5 py-4 border-t border-border">
       <div className="flex items-baseline justify-between mb-3">
-        <h4 className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        <h4 className="ls-eyebrow">
           Investor scenarios
         </h4>
         <span className="text-[10.5px] text-muted-foreground font-mono">
@@ -666,12 +666,12 @@ function ScenarioTable({
         <table className="w-full text-[12px]">
           <thead>
             <tr className="text-left text-muted-foreground border-b border-border">
-              <th className="py-2 pr-3 font-semibold uppercase tracking-wider text-[10px]">Down</th>
-              <th className="py-2 px-3 font-semibold uppercase tracking-wider text-[10px]">Down payment</th>
-              <th className="py-2 px-3 font-semibold uppercase tracking-wider text-[10px]">Monthly P&amp;I</th>
-              <th className="py-2 px-3 font-semibold uppercase tracking-wider text-[10px]">Cap rate</th>
-              <th className="py-2 px-3 font-semibold uppercase tracking-wider text-[10px]">Cash-on-cash</th>
-              <th className="py-2 pl-3 font-semibold uppercase tracking-wider text-[10px]">Breakeven occ.</th>
+              <th className="py-2 pr-3 ls-eyebrow">Down</th>
+              <th className="py-2 px-3 ls-eyebrow">Down payment</th>
+              <th className="py-2 px-3 ls-eyebrow">Monthly P&amp;I</th>
+              <th className="py-2 px-3 ls-eyebrow">Cap rate</th>
+              <th className="py-2 px-3 ls-eyebrow">Cash-on-cash</th>
+              <th className="py-2 pl-3 ls-eyebrow">Breakeven occ.</th>
             </tr>
           </thead>
           <tbody>
@@ -846,7 +846,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground mb-1.5">
+      <div className="ls-eyebrow mb-1.5">
         {label}
         {required ? <span className="text-destructive ml-0.5">*</span> : null}
       </div>

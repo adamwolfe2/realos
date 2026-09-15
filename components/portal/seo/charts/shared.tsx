@@ -29,7 +29,7 @@ export function SectionHeader({
 }) {
   return (
     <header className="mb-3">
-      <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-0.5">
+      <p className="ls-eyebrow ls-eyebrow-accent mb-0.5">
         {eyebrow}
       </p>
       <h3 className="text-sm font-semibold text-foreground">{title}</h3>

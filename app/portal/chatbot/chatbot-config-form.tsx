@@ -47,7 +47,7 @@ const CAPTURE_OPTIONS: Array<{
 
 const INPUT_CLASS =
   "rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 w-full";
-const LABEL_CLASS = "text-[10px] tracking-widest uppercase font-semibold text-muted-foreground";
+const LABEL_CLASS = "ls-eyebrow";
 
 export function ChatbotConfigForm({
   initial,

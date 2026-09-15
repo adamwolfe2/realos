@@ -235,7 +235,7 @@ function WelcomeStatusPill({
 }) {
   if (kind === "included") {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary shrink-0">
+      <span className="inline-flex items-center gap-1 ls-eyebrow ls-eyebrow-accent shrink-0">
         <Check className="w-2.5 h-2.5" />
         Included
       </span>
@@ -243,21 +243,21 @@ function WelcomeStatusPill({
   }
   if (kind === "coming") {
     return (
-      <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground shrink-0">
+      <span className="inline-flex items-center ls-eyebrow shrink-0">
         Coming soon
       </span>
     );
   }
   if (kind === "addon") {
     return (
-      <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-[0.12em] text-primary shrink-0">
+      <span className="inline-flex items-center ls-eyebrow ls-eyebrow-accent shrink-0">
         Pro add-on
       </span>
     );
   }
   if (kind === "concierge") {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground shrink-0">
+      <span className="inline-flex items-center gap-1 ls-eyebrow shrink-0">
         <Sparkles className="w-2.5 h-2.5" />
         Concierge
       </span>
@@ -265,7 +265,7 @@ function WelcomeStatusPill({
   }
   if (popular) {
     return (
-      <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground shrink-0">
+      <span className="inline-flex items-center ls-eyebrow shrink-0">
         Popular
       </span>
     );
@@ -286,14 +286,14 @@ function WelcomePriceLine({
 }) {
   if (kind === "included") {
     return (
-      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary">
+      <p className="ls-eyebrow ls-eyebrow-accent">
         Included free
       </p>
     );
   }
   if (kind === "coming") {
     return (
-      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+      <p className="ls-eyebrow">
         Coming soon
       </p>
     );
@@ -320,7 +320,7 @@ function WelcomePriceLine({
   }
   if (isTrialing) {
     return (
-      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+      <p className="ls-eyebrow">
         Free for{" "}
         {trialDaysLeft != null && trialDaysLeft > 0
           ? `${trialDaysLeft} days`

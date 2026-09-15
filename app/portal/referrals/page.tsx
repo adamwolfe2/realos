@@ -202,7 +202,7 @@ export default async function ReferralsPage() {
 
       {/* How it works */}
       <div className="rounded-[2px] border border-border bg-card p-5 space-y-3">
-        <div className="text-xs uppercase tracking-widest font-semibold text-muted-foreground">
+        <div className="ls-eyebrow">
           How it works
         </div>
         <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside">
@@ -246,12 +246,12 @@ function Chip({
           : "border-border bg-card")
       }
     >
-      <div className="text-[9px] uppercase tracking-widest font-semibold text-muted-foreground">
+      <div className="ls-eyebrow">
         {label}
       </div>
       <div
         className={
-          "mt-0.5 text-xl font-semibold tabular-nums " +
+          "mt-0.5 text-xl ls-metric" +
           (accent ? "text-primary" : "text-foreground")
         }
       >

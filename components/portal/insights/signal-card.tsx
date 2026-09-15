@@ -62,7 +62,7 @@ export function SignalCard({
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
       )}
     >
-      <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+      <div className="ls-eyebrow">
         {label}
       </div>
       <div

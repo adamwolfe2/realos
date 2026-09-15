@@ -128,7 +128,7 @@ export function MarketingSection({
     <section className="rounded-xl border border-border bg-card p-4 md:p-5">
       <header className="flex items-baseline justify-between gap-3 mb-3 flex-wrap">
         <div className="min-w-0">
-          <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+          <p className="ls-eyebrow">
             Last 28 days
           </p>
           <h3 className="text-sm font-semibold text-foreground">
@@ -211,7 +211,7 @@ export function MarketingSection({
           empty rail. */}
       {leads28d > 0 || tours28d > 0 || applications28d > 0 ? (
         <div className="mt-4 pt-4 border-t border-border">
-          <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground mb-2">
+          <p className="ls-eyebrow mb-2">
             Funnel
           </p>
           <FunnelMini

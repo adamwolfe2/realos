@@ -345,7 +345,7 @@ export default async function ToursPage({
                   className={`rounded-[2px] border ${isToday ? "border-primary/40 bg-primary/[0.04]" : "border-border bg-card"} p-2.5 min-h-[120px] transition-all`}
                 >
                   <div className="flex items-baseline justify-between gap-2 mb-2">
-                    <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+                    <span className="ls-eyebrow">
                       {format(date, "EEE")}
                     </span>
                     <span className="text-xs font-semibold tabular-nums text-foreground">

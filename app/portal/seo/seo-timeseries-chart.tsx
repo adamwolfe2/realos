@@ -147,7 +147,7 @@ export function SeoTimeseriesChart({
             empty prefix rather than the data being shorter than they
             expected. Renders only when we actually trimmed something. */}
         {trimmedCount > 0 ? (
-          <span className="text-[10px] font-mono uppercase tracking-[0.1em] text-muted-foreground ml-auto">
+          <span className="ls-eyebrow ml-auto">
             Showing {trimmed.length}d ({trimmedCount}d of empty history hidden)
           </span>
         ) : null}

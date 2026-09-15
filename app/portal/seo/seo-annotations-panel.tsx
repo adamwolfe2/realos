@@ -36,7 +36,7 @@ export function SeoAnnotationsPanel({
         >
           Annotations
         </h3>
-        <span className="text-[10px] font-mono uppercase tracking-[0.14em] text-muted-foreground">
+        <span className="ls-eyebrow">
           {annotations.length}
         </span>
       </div>
@@ -60,7 +60,7 @@ export function SeoAnnotationsPanel({
                 style={{ backgroundColor: severityColor(a.severity) }}
               />
               <div className="min-w-0 flex-1">
-                <div className="text-[10px] font-mono uppercase tracking-[0.14em] text-muted-foreground">
+                <div className="ls-eyebrow">
                   {fmtDate(a.date)}
                 </div>
                 <div className="mt-0.5 text-[12px] text-foreground leading-snug line-clamp-2">

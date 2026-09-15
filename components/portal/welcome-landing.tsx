@@ -202,7 +202,7 @@ export function WelcomeLanding({
             </span>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                <p className="ls-eyebrow">
                   Your site is live
                 </p>
                 <span className="inline-flex items-center gap-1.5 rounded-[2px] bg-success/10 px-2 py-0.5 text-[10px] font-mono font-semibold uppercase tracking-[0.1em] text-success">
@@ -265,7 +265,7 @@ export function WelcomeLanding({
                   <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground tabular-nums">
+                  <span className="ls-eyebrow tabular-nums">
                     Step {idx + 1}
                   </span>
                 </div>

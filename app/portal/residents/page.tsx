@@ -358,7 +358,7 @@ export default async function ResidentsPage({
         >
           <div className="overflow-x-auto -mx-4 md:mx-0">
             <table className="w-full text-xs min-w-[600px]">
-              <thead className="text-left text-[10px] tracking-widest uppercase text-muted-foreground">
+              <thead className="text-left ls-eyebrow">
                 <tr className="border-b border-border">
                   <th className="px-4 md:px-2 py-2 font-medium">Resident</th>
                   <th className="px-2 py-2 font-medium">Property</th>
@@ -414,7 +414,7 @@ export default async function ResidentsPage({
       <div>
         <div className="flex items-baseline justify-between mb-2 px-1">
           <div>
-            <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+            <p className="ls-eyebrow">
               {residents.length} of {totalMatchingCount.toLocaleString()}
             </p>
             <h2 className="text-[15px] font-medium tracking-tight text-foreground">

@@ -59,7 +59,7 @@ export function ScoreRing({
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center leading-none" aria-hidden="true">
-        <span className="font-mono text-[20px] font-semibold tabular-nums text-foreground">
+        <span className="ls-metric text-[20px]">
           {Math.round(clamped)}
         </span>
         <span className="mt-0.5 text-[9px] font-medium text-muted-foreground">

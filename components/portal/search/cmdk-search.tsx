@@ -367,7 +367,7 @@ function ResultsList({
     <ul className="py-1">
       {groups.map((grp) => (
         <li key={grp.start}>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 ls-eyebrow">
             {grp.icon}
             <span>{grp.label}</span>
           </div>

@@ -323,7 +323,7 @@ function Field({
     <div className={`flex flex-col gap-1.5 ${className ?? ""}`}>
       <Label
         htmlFor={id}
-        className="text-[11px] tracking-widest uppercase font-medium text-muted-foreground"
+        className="ls-eyebrow"
       >
         {label}
         {required ? (
@@ -364,7 +364,7 @@ function ColorField({
     <div className="flex flex-col gap-1.5">
       <Label
         htmlFor={id}
-        className="text-[11px] tracking-widest uppercase font-medium text-muted-foreground"
+        className="ls-eyebrow"
       >
         {label}
       </Label>

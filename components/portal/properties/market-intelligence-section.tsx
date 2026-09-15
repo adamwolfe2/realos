@@ -180,7 +180,7 @@ function HeroRentAvmCard({
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         <div className="min-w-0">
           <div
-            className="ls-eyebrow text-[11px] font-semibold uppercase tracking-[0.12em]"
+            className="ls-eyebrow ls-eyebrow"
             style={{ color: "var(--terracotta, #1e3a8a)" }}
           >
             Estimated market rent
@@ -388,7 +388,7 @@ function UpsellCard({ used, budget }: { used: number; budget: number }) {
   return (
     <SectionCard label="Market intelligence">
       <div className="rounded-[2px] border border-[var(--hair)] bg-card p-6">
-        <div className="ls-eyebrow text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        <div className="ls-eyebrow ls-eyebrow">
           Upgrade to keep refreshing
         </div>
         <p className="mt-2 text-[20px] md:text-[22px] font-semibold tracking-tight text-foreground">

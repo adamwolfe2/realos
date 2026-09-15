@@ -142,7 +142,7 @@ export default async function IntegrationsStatusPage() {
         aria-label="Connection summary"
       >
         <div className="flex items-baseline gap-3 min-w-0">
-          <span className="text-2xl font-semibold tabular-nums text-foreground">
+          <span className="text-2xl ls-metric">
             {connectedCount}
           </span>
           <span className="text-xs text-muted-foreground">

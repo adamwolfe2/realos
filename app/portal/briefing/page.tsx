@@ -386,7 +386,7 @@ function SetupCard({
     <div className="rounded-[2px] border border-border bg-card p-5">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">
+          <p className="ls-eyebrow mb-1">
             Getting started
           </p>
           <h3 className="text-sm font-semibold text-foreground">

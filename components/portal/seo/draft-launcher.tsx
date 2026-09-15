@@ -141,7 +141,7 @@ export function DraftLauncher({ propertyId, propertyName, prefill }: Props) {
           <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-[2px] border border-border bg-card shadow-xl">
             <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
               <div>
-                <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.12em] text-primary">
+                <p className="ls-eyebrow ls-eyebrow-accent">
                   Content drafter
                 </p>
                 <h2 className="text-base font-semibold text-foreground mt-0.5">
@@ -160,7 +160,7 @@ export function DraftLauncher({ propertyId, propertyName, prefill }: Props) {
 
             <div className="space-y-4 px-5 py-4">
               <div>
-                <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                <label className="ls-eyebrow">
                   Format
                 </label>
                 <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -187,7 +187,7 @@ export function DraftLauncher({ propertyId, propertyName, prefill }: Props) {
               <div>
                 <label
                   htmlFor="brief"
-                  className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide"
+                  className="ls-eyebrow"
                 >
                   Brief
                 </label>
@@ -204,7 +204,7 @@ export function DraftLauncher({ propertyId, propertyName, prefill }: Props) {
               <div>
                 <label
                   htmlFor="targetQuery"
-                  className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide"
+                  className="ls-eyebrow"
                 >
                   Target query (optional)
                 </label>
@@ -222,7 +222,7 @@ export function DraftLauncher({ propertyId, propertyName, prefill }: Props) {
                 <div>
                   <label
                     htmlFor="audience"
-                    className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide"
+                    className="ls-eyebrow"
                   >
                     Audience (optional)
                   </label>
@@ -238,7 +238,7 @@ export function DraftLauncher({ propertyId, propertyName, prefill }: Props) {
                 <div>
                   <label
                     htmlFor="voice"
-                    className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide"
+                    className="ls-eyebrow"
                   >
                     Voice (optional)
                   </label>

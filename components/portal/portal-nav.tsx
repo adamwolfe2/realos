@@ -579,7 +579,7 @@ export function PortalNav({
       {!collapsed && (
         <div className="px-4 py-2.5 border-b border-border">
           <p className="text-xs font-medium text-foreground truncate">{org.name}</p>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">
+          <p className="ls-eyebrow mt-0.5">
             Portal
           </p>
         </div>

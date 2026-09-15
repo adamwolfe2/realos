@@ -120,7 +120,7 @@ export function ActivityTimeline({ events }: { events: ActivityEvent[] }) {
     <section className="rounded-xl border border-border bg-card p-4 md:p-5">
       <div className="flex items-baseline justify-between gap-2 mb-3">
         <div>
-          <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+          <p className="ls-eyebrow">
             Activity
           </p>
           <h3 className="text-sm font-semibold text-foreground">

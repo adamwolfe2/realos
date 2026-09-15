@@ -85,7 +85,7 @@ export function SnoozedRecsPanel({ recommendations }: Props) {
     >
       <summary className="flex items-center justify-between gap-3 px-4 py-2.5 cursor-pointer hover:bg-muted/30 transition-colors list-none">
         <div>
-          <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          <p className="ls-eyebrow">
             Snoozed
           </p>
           <h3 className="text-sm font-semibold text-foreground mt-0.5">

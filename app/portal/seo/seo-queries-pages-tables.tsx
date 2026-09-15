@@ -68,7 +68,7 @@ function RankedTable({
         >
           {title}
         </h3>
-        <span className="text-[10px] font-mono uppercase tracking-[0.14em] text-muted-foreground">
+        <span className="ls-eyebrow">
           Top {visible.length}
         </span>
       </div>

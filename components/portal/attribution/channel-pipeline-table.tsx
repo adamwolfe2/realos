@@ -19,7 +19,7 @@ export function ChannelPipelineTable({ rows }: { rows: ChannelPipelineRow[] }) {
     <div className="overflow-x-auto">
       <table className="w-full text-left text-xs">
         <thead>
-          <tr className="border-b border-border text-[10px] uppercase tracking-wider text-muted-foreground">
+          <tr className="border-b border-border ls-eyebrow">
             <th className="px-2 py-2 font-semibold">Channel</th>
             <th className="px-2 py-2 font-semibold text-right">Leads</th>
             {/* "Toured" column removed 2026-07-29: it was inferred from

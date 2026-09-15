@@ -39,7 +39,7 @@ export function PortfolioSeoActions({ actions }: Props) {
     <section className="rounded-[2px] border border-[#e0e0e0] bg-white overflow-hidden">
       <header className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-[#e0e0e0] bg-[#f4f4f4]">
         <div>
-          <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.12em] text-[#525252]">
+          <p className="ls-eyebrow">
             SEO Agent
           </p>
           <h3 className="text-[13px] font-semibold text-foreground leading-tight mt-0.5">
@@ -65,7 +65,7 @@ export function PortfolioSeoActions({ actions }: Props) {
                 <div className="flex items-baseline gap-1.5 flex-wrap">
                   {a.propertyName ? (
                     <>
-                      <span className="text-[11px] font-mono uppercase tracking-[0.06em] text-muted-foreground">
+                      <span className="ls-eyebrow">
                         {a.propertyName}
                       </span>
                       <span className="text-[10px] text-muted-foreground/60">
@@ -73,7 +73,7 @@ export function PortfolioSeoActions({ actions }: Props) {
                       </span>
                     </>
                   ) : null}
-                  <span className="text-[11px] font-mono uppercase tracking-[0.06em] text-muted-foreground">
+                  <span className="ls-eyebrow">
                     {a.category.toLowerCase().replace(/_/g, " ")}
                   </span>
                   <span className="text-[10px] text-muted-foreground/60">

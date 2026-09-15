@@ -121,7 +121,7 @@ export function Donut({
             </p>
           ) : null}
           {centerSecondary ? (
-            <p className="text-[10px] tracking-widest uppercase text-muted-foreground mt-1 leading-tight">
+            <p className="ls-eyebrow mt-1 leading-tight">
               {centerSecondary}
             </p>
           ) : null}
@@ -353,7 +353,7 @@ export function VBarChart({
               <p className="text-sm font-semibold tabular-nums leading-none text-foreground">
                 {b.value.toLocaleString()}
               </p>
-              <p className="text-[10px] tracking-wider uppercase text-muted-foreground mt-1">
+              <p className="ls-eyebrow mt-1">
                 {b.label}
               </p>
               {b.sublabel ? (

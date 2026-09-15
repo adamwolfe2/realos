@@ -303,7 +303,7 @@ export function AdsDashboard({
                   onSort={setSort(setSortKey, setSortDir)}
                   align="left"
                 />
-                <th className="px-4 py-2 text-left text-[10px] tracking-widest uppercase text-muted-foreground">
+                <th className="px-4 py-2 text-left ls-eyebrow">
                   Property
                 </th>
                 <SortHeader
@@ -314,7 +314,7 @@ export function AdsDashboard({
                   onSort={setSort(setSortKey, setSortDir)}
                   align="center"
                 />
-                <th className="px-4 py-2 text-right text-[10px] tracking-widest uppercase text-muted-foreground">
+                <th className="px-4 py-2 text-right ls-eyebrow">
                   Budget
                 </th>
                 <SortHeader

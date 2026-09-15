@@ -162,7 +162,7 @@ export function DraftsInbox({ propertyId }: Props) {
               </p>
               {d.reviewNotes ? (
                 <div className="mt-2 rounded-[2px] bg-primary/10 px-2.5 py-1.5 border border-primary/20">
-                  <p className="text-[10px] font-mono uppercase tracking-wide text-primary mb-0.5">
+                  <p className="ls-eyebrow ls-eyebrow-accent mb-0.5">
                     Admin notes
                   </p>
                   <p className="text-[12px] text-foreground whitespace-pre-wrap leading-snug">

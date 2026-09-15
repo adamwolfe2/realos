@@ -132,7 +132,7 @@ export function ReportCadenceForm({
       className="space-y-6"
     >
       <fieldset className="space-y-3">
-        <legend className="text-[11px] tracking-widest uppercase font-semibold text-muted-foreground">
+        <legend className="ls-eyebrow">
           Cadence
         </legend>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -193,7 +193,7 @@ export function ReportCadenceForm({
       <div className="space-y-2">
         <label
           htmlFor="recipients"
-          className="block text-[11px] tracking-widest uppercase font-semibold text-muted-foreground"
+          className="block ls-eyebrow"
         >
           Recipients
         </label>

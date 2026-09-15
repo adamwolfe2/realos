@@ -112,10 +112,10 @@ export async function OccupancyTab({
                   key={b.label}
                   className="rounded-[2px] border border-border bg-card p-3 space-y-2"
                 >
-                  <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+                  <div className="ls-eyebrow">
                     {b.label}
                   </div>
-                  <div className="text-2xl leading-none font-semibold tabular-nums text-foreground">
+                  <div className="text-2xl leading-none ls-metric">
                     {availPct}%
                   </div>
                   <div className="text-[11px] text-muted-foreground space-y-0.5">

@@ -412,7 +412,7 @@ export default async function ConversationsList({
                                 <FlagPill key={f} flag={f} />
                               ))}
                               {uniqueFlags.length > 2 ? (
-                                <span className="text-[9px] text-muted-foreground font-semibold uppercase tracking-widest">
+                                <span className="ls-eyebrow">
                                   +{uniqueFlags.length - 2}
                                 </span>
                               ) : null}

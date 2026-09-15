@@ -57,7 +57,7 @@ export default async function HistoryPage() {
           <div className="-mx-5 -mb-5">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                <tr className="ls-eyebrow">
                   <th className="text-left font-semibold py-2 px-5">Segment</th>
                   <th className="text-left font-semibold py-2 px-3">Destination</th>
                   <th className="text-right font-semibold py-2 px-3">Members</th>

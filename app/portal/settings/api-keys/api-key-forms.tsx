@@ -53,7 +53,7 @@ export function CreateApiKeyForm() {
       ) : (
         <form action={formAction} className="space-y-4 border rounded-[2px] p-4">
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-xs tracking-widest uppercase text-muted-foreground">
+            <span className="ls-eyebrow">
               Name
             </span>
             <input
@@ -69,7 +69,7 @@ export function CreateApiKeyForm() {
           </label>
 
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-xs tracking-widest uppercase text-muted-foreground">
+            <span className="ls-eyebrow">
               Expiration
             </span>
             <select
@@ -90,7 +90,7 @@ export function CreateApiKeyForm() {
           </label>
 
           <fieldset className="space-y-2">
-            <legend className="text-xs tracking-widest uppercase text-muted-foreground">
+            <legend className="ls-eyebrow">
               Scopes
             </legend>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

@@ -175,7 +175,7 @@ export function CitationHealthPanel({ data }: { data: CitationHealthData }) {
                 key={e}
                 className="rounded-md border border-border bg-background px-3 py-2"
               >
-                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                <div className="ls-eyebrow">
                   {ENGINE_LABEL[e]}
                 </div>
                 <div className="text-lg font-semibold leading-tight mt-0.5">
@@ -286,7 +286,7 @@ function ClaimRowItem({ row }: { row: ClaimRow }) {
             ) : (
               <div className="space-y-3">
                 <div>
-                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">
+                  <div className="ls-eyebrow mb-1">
                     Prompts derived from this claim
                   </div>
                   <ul className="list-disc pl-5 space-y-0.5">
@@ -311,7 +311,7 @@ function ClaimRowItem({ row }: { row: ClaimRow }) {
                     >
                       <div className="flex items-center justify-between gap-2 flex-wrap">
                         <div className="flex items-center gap-2">
-                          <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                          <span className="ls-eyebrow">
                             {ENGINE_LABEL[c.engine]}
                           </span>
                           <StatusPill status={c.status} />

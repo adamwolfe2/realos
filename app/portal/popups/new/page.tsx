@@ -60,7 +60,7 @@ export default async function NewPopupPage() {
                   <h3 className="text-base font-semibold tracking-tight text-foreground group-hover:text-primary transition-colors">
                     {t.label}
                   </h3>
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground shrink-0">
+                  <span className="ls-eyebrow shrink-0">
                     {t.badge}
                   </span>
                 </div>

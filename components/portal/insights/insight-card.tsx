@@ -126,7 +126,7 @@ export function InsightCard({
             </span>
           ) : null}
           {acked ? (
-            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
+            <span className="inline-flex items-center gap-1 ls-eyebrow">
               <CircleDashed className="h-2.5 w-2.5" />
               Acknowledged
             </span>

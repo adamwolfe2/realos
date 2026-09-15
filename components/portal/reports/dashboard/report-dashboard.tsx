@@ -82,7 +82,7 @@ function DashboardInner({
           </p>
         </div>
         <div className="text-right">
-          <div className="mb-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          <div className="mb-1 ls-eyebrow">
             Prepared by
           </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}

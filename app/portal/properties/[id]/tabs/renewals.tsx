@@ -153,7 +153,7 @@ export async function RenewalsTab({
             {buckets.map((b) => (
               <div key={b.label} className={`rounded-xl border ${b.tone} p-2.5`}>
                 <div className="flex items-center justify-between gap-2 mb-2 px-1">
-                  <span className="text-[10px] tracking-widest uppercase font-semibold">
+                  <span className="ls-eyebrow">
                     {b.label}
                   </span>
                   <span className="text-xs font-semibold tabular-nums">
@@ -205,7 +205,7 @@ export async function RenewalsTab({
         <DashboardSection title="All upcoming renewals" eyebrow="Sorted by end date">
           <div className="overflow-x-auto">
             <table className="w-full text-xs min-w-[560px]">
-              <thead className="text-left text-[10px] tracking-widest uppercase text-muted-foreground">
+              <thead className="text-left ls-eyebrow">
                 <tr className="border-b border-border">
                   <th className="py-2 font-medium">Resident</th>
                   <th className="px-2 py-2 font-medium">Unit</th>

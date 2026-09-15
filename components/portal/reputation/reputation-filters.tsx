@@ -137,7 +137,7 @@ function FilterRow<T extends string>({
 }) {
   return (
     <div className="flex items-center gap-1 flex-wrap">
-      <span className="text-[11px] uppercase tracking-wide text-muted-foreground mr-1">
+      <span className="ls-eyebrow mr-1">
         {label}:
       </span>
       {options.map((opt) => {

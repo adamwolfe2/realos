@@ -56,7 +56,7 @@ export function ResolutionsTable({
     <div className="overflow-x-auto">
       <table className="w-full text-left text-xs">
         <thead>
-          <tr className="border-b border-border text-[10px] uppercase tracking-wider text-muted-foreground">
+          <tr className="border-b border-border ls-eyebrow">
             <Th>When</Th>
             <Th>Source</Th>
             <Th>Referrer</Th>

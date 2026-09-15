@@ -487,7 +487,7 @@ function InviteForm({
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <label className="flex flex-col gap-1 text-sm">
-          <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+          <span className="ls-eyebrow">
             Email
           </span>
           <input
@@ -500,7 +500,7 @@ function InviteForm({
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+          <span className="ls-eyebrow">
             Full name <span className="normal-case text-muted-foreground/70">(optional)</span>
           </span>
           <input
@@ -513,7 +513,7 @@ function InviteForm({
         </label>
       </div>
       <label className="flex flex-col gap-1 text-sm">
-        <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+        <span className="ls-eyebrow">
           Role
         </span>
         <select
@@ -633,7 +633,7 @@ function CopyInviteLink({ link }: { link: string }) {
   return (
     <div className="rounded-[2px] border border-border bg-background p-3 space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+        <span className="ls-eyebrow">
           Manual invite link
         </span>
         <button

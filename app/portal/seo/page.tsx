@@ -368,7 +368,7 @@ export default async function SeoPage({
       >
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-0.5">
+            <p className="ls-eyebrow ls-eyebrow-accent mb-0.5">
               SEO Agent
             </p>
             <p className="text-[13px] font-medium text-foreground">
@@ -585,8 +585,8 @@ function ProviderManageCard({
         <span
           className={
             connected
-              ? "text-[10px] uppercase tracking-wider font-semibold text-primary"
-              : "text-[10px] uppercase tracking-wider font-semibold text-muted-foreground"
+              ? "ls-eyebrow ls-eyebrow-accent"
+              : "ls-eyebrow"
           }
         >
           {connected ? "Connected" : "Not connected"}
@@ -638,7 +638,7 @@ function Detail({
 }) {
   return (
     <div>
-      <dt className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground">
+      <dt className="ls-eyebrow">
         {label}
       </dt>
       <dd

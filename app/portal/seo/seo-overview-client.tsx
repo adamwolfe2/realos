@@ -81,7 +81,7 @@ export function SeoOverviewClient(props: SeoOverviewClientProps) {
             </>
           ) : null}
         </div>
-        <div className="text-[10px] font-mono uppercase tracking-[0.14em] text-muted-foreground">
+        <div className="ls-eyebrow">
           {props.rangeLabel}
         </div>
       </div>

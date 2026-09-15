@@ -574,7 +574,7 @@ export default async function LeadsKanbanPage({
           aria-label="Cross-product signals (28d)"
           className="flex items-center gap-x-4 gap-y-1.5 flex-wrap text-[11px] sm:text-[12px] text-muted-foreground"
         >
-          <span className="text-[10px] uppercase tracking-[0.14em] font-semibold text-foreground/60">
+          <span className="ls-eyebrow">
             Also touched · 28d
           </span>
           {kpiVisitors28d > 0 ? (
@@ -693,7 +693,7 @@ export default async function LeadsKanbanPage({
 
         {/* Source filter pills — each is a link so no JS required */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[9px] uppercase tracking-[0.14em] font-semibold text-muted-foreground shrink-0 mr-0.5 flex items-center gap-1">
+          <span className="ls-eyebrow shrink-0 mr-0.5 flex items-center gap-1">
             <SlidersHorizontal className="h-2.5 w-2.5" />
             Source
           </span>
@@ -732,7 +732,7 @@ export default async function LeadsKanbanPage({
             touched (chatbot transcript, popup conversion, pixel match,
             application). Layered on top of source + property filters. */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[9px] uppercase tracking-[0.14em] font-semibold text-muted-foreground shrink-0 mr-0.5 flex items-center gap-1">
+          <span className="ls-eyebrow shrink-0 mr-0.5 flex items-center gap-1">
             <SlidersHorizontal className="h-2.5 w-2.5" />
             Signal
           </span>
@@ -948,7 +948,7 @@ function SourceMixBar({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
-        <span className="text-[9px] uppercase tracking-[0.14em] font-semibold text-muted-foreground">
+        <span className="ls-eyebrow">
           Source mix
         </span>
         <span className="text-[11px] font-mono tabular-nums text-muted-foreground">

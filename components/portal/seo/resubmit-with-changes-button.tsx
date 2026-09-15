@@ -114,7 +114,7 @@ export function ResubmitWithChangesButton({
   return (
     <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
       <div>
-        <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.12em] text-primary">
+        <p className="ls-eyebrow ls-eyebrow-accent">
           Re-submit
         </p>
         <h3 className="mt-0.5 text-sm font-semibold text-foreground">

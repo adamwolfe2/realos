@@ -132,7 +132,7 @@ export default async function AuditLogPage({
                 <li key={e.id} className="py-3">
                   <div className="flex items-start gap-3 flex-wrap">
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 text-[10px] tracking-widest uppercase font-semibold text-muted-foreground mb-0.5">
+                      <div className="flex items-center gap-1.5 ls-eyebrow mb-0.5">
                         <span>{e.action}</span>
                         <span aria-hidden="true">·</span>
                         <span>{humanEntity(e.entityType)}</span>

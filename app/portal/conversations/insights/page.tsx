@@ -314,7 +314,7 @@ export default async function ChatbotInsightsPage({
               <ul className="space-y-3">
                 {learning.knowledgeSuggestions.map((suggestion) => (
                   <li key={suggestion.id} className="rounded-[2px] border border-border p-3">
-                    <p className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    <p className="ls-eyebrow">
                       {suggestion.patternType.replaceAll("_", " ")} · {suggestion.affectedCount} affected
                     </p>
                     <p className="mt-1 line-clamp-3 text-[12px] leading-5 text-foreground">

@@ -33,7 +33,7 @@ export function TriggerInspector({
 
   return (
     <div className="rounded-xl border border-border bg-muted/30 p-3 text-[12.5px]">
-      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <p className="mb-2 ls-eyebrow">
         When this popup fires
       </p>
       <ul className="space-y-1.5">

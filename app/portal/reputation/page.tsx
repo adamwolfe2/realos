@@ -421,7 +421,7 @@ export default async function PortfolioReputationPage({
         <details className="group rounded-[2px] border border-border bg-card">
           <summary className="flex items-center justify-between gap-3 px-5 py-3 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
             <div className="min-w-0">
-              <div className="text-[10px] tracking-[0.14em] uppercase font-semibold text-muted-foreground mb-0.5">
+              <div className="ls-eyebrow mb-0.5">
                 Historical
               </div>
               <h2
@@ -462,7 +462,7 @@ export default async function PortfolioReputationPage({
                 <h3 className="text-sm font-semibold text-foreground">
                   Sentiment over time
                 </h3>
-                <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                <span className="ls-eyebrow">
                   Last 12 weeks
                 </span>
               </div>

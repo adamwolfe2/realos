@@ -729,7 +729,7 @@ function ActiveFilterChips({
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <span className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+      <span className="ls-eyebrow">
         Filters
       </span>
       {assetClass

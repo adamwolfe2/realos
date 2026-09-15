@@ -288,7 +288,7 @@ export default async function SeoPortfolioPage({
       {/* Sort + filter chips. URL-driven so the state is bookmarkable. */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex flex-wrap gap-1.5">
-          <span className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground mr-1 self-center">
+          <span className="ls-eyebrow mr-1 self-center">
             Sort
           </span>
           {(

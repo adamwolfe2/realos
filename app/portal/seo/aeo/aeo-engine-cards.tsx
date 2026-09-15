@@ -144,7 +144,7 @@ function MetricLine({
 }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <span className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-[0.10em] text-muted-foreground">
+      <span className="inline-flex items-center gap-1 ls-eyebrow">
         <Icon className="w-2.5 h-2.5" />
         {label}
       </span>

@@ -248,7 +248,7 @@ export function KpiCard({
 }) {
   return (
     <div className="rounded-[2px] border border-border bg-card px-3 py-2.5 transition-[border-color,transform] duration-[120ms] hover:-translate-y-px hover:border-[#c6c6c6]">
-      <div className="font-mono text-[20px] font-semibold leading-none tracking-tight tabular-nums">{value}</div>
+      <div className="ls-metric text-[20px] leading-none">{value}</div>
       <div className="mt-1 truncate text-[10.5px] font-medium text-muted-foreground">{label}</div>
       {delta ? (
         <div className={`mt-1 text-[10px] font-semibold ${delta.up ? "text-green-600" : "text-destructive"}`}>

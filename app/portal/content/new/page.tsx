@@ -111,7 +111,7 @@ export default async function NewContentDraftPage(props: {
       </div>
 
       <header>
-        <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
+        <p className="ls-eyebrow ls-eyebrow-accent">
           New draft
         </p>
         <h1 className="text-2xl font-semibold text-foreground mt-1">
@@ -128,7 +128,7 @@ export default async function NewContentDraftPage(props: {
         className="space-y-5 rounded-[2px] border border-border bg-card p-6"
       >
         <div className="space-y-2">
-          <label className="text-[11px] font-mono font-semibold uppercase tracking-wide text-muted-foreground">
+          <label className="ls-eyebrow">
             Format
           </label>
           <select
@@ -145,7 +145,7 @@ export default async function NewContentDraftPage(props: {
         </div>
 
         <div className="space-y-2">
-          <label className="text-[11px] font-mono font-semibold uppercase tracking-wide text-muted-foreground">
+          <label className="ls-eyebrow">
             Title / topic
           </label>
           <input
@@ -158,7 +158,7 @@ export default async function NewContentDraftPage(props: {
         </div>
 
         <div className="space-y-2">
-          <label className="text-[11px] font-mono font-semibold uppercase tracking-wide text-muted-foreground">
+          <label className="ls-eyebrow">
             Brief
           </label>
           <textarea
@@ -174,7 +174,7 @@ export default async function NewContentDraftPage(props: {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-[11px] font-mono font-semibold uppercase tracking-wide text-muted-foreground">
+            <label className="ls-eyebrow">
               Target keyword
             </label>
             <input
@@ -185,7 +185,7 @@ export default async function NewContentDraftPage(props: {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-[11px] font-mono font-semibold uppercase tracking-wide text-muted-foreground">
+            <label className="ls-eyebrow">
               Target word count
             </label>
             <input
@@ -201,7 +201,7 @@ export default async function NewContentDraftPage(props: {
 
         {properties.length > 0 ? (
           <div className="space-y-2">
-            <label className="text-[11px] font-mono font-semibold uppercase tracking-wide text-muted-foreground">
+            <label className="ls-eyebrow">
               Anchor property (optional)
             </label>
             <select

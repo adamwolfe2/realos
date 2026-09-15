@@ -133,7 +133,7 @@ export async function TrafficTab({
         >
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="text-[10px] tracking-widest uppercase text-muted-foreground">
+              <thead className="ls-eyebrow">
                 <tr>
                   <th className="text-left font-semibold pb-2">Source</th>
                   <th className="text-right font-semibold pb-2">Leads</th>
@@ -224,7 +224,7 @@ export async function TrafficTab({
               </p>
             ) : (
               <table className="w-full text-sm">
-                <thead className="text-[10px] tracking-widest uppercase text-muted-foreground">
+                <thead className="ls-eyebrow">
                   <tr>
                     <th className="text-left font-semibold pb-2">Query</th>
                     <th className="text-right font-semibold pb-2">Clicks</th>

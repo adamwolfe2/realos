@@ -182,7 +182,7 @@ export function ConnectWebsiteCard({
             <Sparkles className="h-4 w-4" />
           </span>
           <div>
-            <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-1">
+            <p className="ls-eyebrow ls-eyebrow-accent mb-1">
               Connect your website
             </p>
             <h2 className="text-lg font-semibold text-foreground leading-tight">
@@ -243,7 +243,7 @@ export function ConnectWebsiteCard({
             <Globe className="h-4 w-4" />
           </span>
           <div className="min-w-0">
-            <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-0.5">
+            <p className="ls-eyebrow ls-eyebrow-accent mb-0.5">
               Connected
             </p>
             <a

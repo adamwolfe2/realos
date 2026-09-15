@@ -129,7 +129,7 @@ export function FlagToggle({
               aria-pressed={active}
               className={cn(
                 "group w-full inline-flex items-center justify-between gap-2 rounded-[6px] px-2.5 py-1.5",
-                "text-[10px] font-semibold uppercase tracking-[0.08em] transition-colors",
+                "ls-eyebrow transition-colors",
                 "ring-1 ring-inset",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                 active

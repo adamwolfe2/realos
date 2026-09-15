@@ -64,7 +64,7 @@ export function SourceScoreboard({
           wide timestamp on an unconfigured source card implied that
           source was individually scanned (review 2026-07-31). */}
       <div className="flex items-baseline justify-between">
-        <span className="text-[10px] tracking-[0.14em] uppercase font-semibold text-muted-foreground">
+        <span className="ls-eyebrow">
           Mentions by source
         </span>
         <span className="text-[11px] text-muted-foreground">
@@ -111,7 +111,7 @@ export function SourceScoreboard({
 
             <dl className="mt-3 space-y-1.5">
               <div className="flex items-baseline justify-between gap-2">
-                <dt className="text-[10px] tracking-[0.14em] uppercase font-semibold text-muted-foreground">
+                <dt className="ls-eyebrow">
                   Mentions
                 </dt>
                 <dd className="text-sm font-semibold text-foreground tabular-nums">
@@ -119,7 +119,7 @@ export function SourceScoreboard({
                 </dd>
               </div>
               <div className="flex items-baseline justify-between gap-2">
-                <dt className="text-[10px] tracking-[0.14em] uppercase font-semibold text-muted-foreground">
+                <dt className="ls-eyebrow">
                   Positive
                 </dt>
                 <dd className="text-sm text-foreground tabular-nums">

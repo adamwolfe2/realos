@@ -56,7 +56,7 @@ export function LeadHeatmap({ leadCreatedAt, now = new Date(), bare = false }: L
     <div className={bare ? "" : "rounded-[2px] border border-border bg-card p-5"}>
       <div className="flex items-baseline justify-between mb-3">
         <div>
-          <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+          <div className="ls-eyebrow">
             Last 7 days &middot; by hour
           </div>
           <div className="text-sm font-medium text-foreground">

@@ -288,7 +288,7 @@ export default async function AttributionPage({
                 className="grid gap-3 px-4 py-3 md:grid-cols-[1fr_auto_1fr_auto] md:items-center"
               >
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                  <div className="ls-eyebrow">
                     AppFolio outcome
                   </div>
                   <div className="mt-1 font-semibold text-foreground">
@@ -303,7 +303,7 @@ export default async function AttributionPage({
                   <div className="font-sans text-[10px]">{row.method}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                  <div className="ls-eyebrow">
                     Suggested LeaseStack lead
                   </div>
                   <div className="mt-1 font-semibold text-foreground">

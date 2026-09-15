@@ -297,7 +297,7 @@ function WebhookUrlBlock({ url }: { url: string }) {
   return (
     <div className="space-y-2">
       <div className="flex items-baseline justify-between gap-3">
-        <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+        <span className="ls-eyebrow">
           Cursive webhook URL
         </span>
         <button

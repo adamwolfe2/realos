@@ -75,7 +75,7 @@ export function HeadlineCallout({ signal, bare = false }: HeadlineCalloutProps) 
           <Icon className="h-4 w-4" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+          <div className="ls-eyebrow">
             Today&rsquo;s signal &middot; {kindLabel}
           </div>
           <div className="mt-1 text-base sm:text-lg font-medium text-foreground leading-snug">

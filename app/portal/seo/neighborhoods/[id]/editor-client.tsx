@@ -242,7 +242,7 @@ export function EditorClient({
           {sections.map((s, idx) => (
             <div key={idx} className="ls-card p-5 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                <span className="ls-eyebrow">
                   Section {idx + 1}
                 </span>
                 <button
@@ -292,7 +292,7 @@ export function EditorClient({
           {faqs.map((f, idx) => (
             <div key={idx} className="ls-card p-5 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                <span className="ls-eyebrow">
                   FAQ {idx + 1}
                 </span>
                 <button

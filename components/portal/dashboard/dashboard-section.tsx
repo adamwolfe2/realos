@@ -37,7 +37,7 @@ export function DashboardSection({
       <header className="flex items-start justify-between gap-3 px-5 pt-4">
         <div className="min-w-0">
           {eyebrow ? (
-            <div className="text-[11px] tracking-[0.12em] uppercase font-semibold text-[#525252] mb-0.5">
+            <div className="ls-eyebrow mb-0.5">
               {eyebrow}
             </div>
           ) : null}

@@ -730,6 +730,10 @@ body {
   color: var(--stone-gray);
 }
 
+/* Accent eyebrow. .ls-eyebrow is unlayered CSS, so its colour beats a Tailwind
+   text-* utility on the same element; state colour needs a class, not a token. */
+.ls-eyebrow-accent { color: var(--color-primary); }
+
 /* ── Delta pill (KPI trend indicator) ──────────────────────────────────── */
 .ls-delta {
   display: inline-flex;

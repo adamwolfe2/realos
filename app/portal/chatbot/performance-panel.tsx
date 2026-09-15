@@ -230,7 +230,7 @@ export function ChatbotPerformancePanel({
 
 function SubLabel({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+    <h3 className="ls-eyebrow">
       {children}
     </h3>
   );

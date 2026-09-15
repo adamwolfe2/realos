@@ -95,7 +95,7 @@ export function ShareOfVoiceCard({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Per-engine SoV bars */}
           <div>
-            <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-3">
+            <div className="ls-eyebrow mb-3">
               Per engine (30d avg)
             </div>
             <ul className="space-y-2.5">
@@ -126,7 +126,7 @@ export function ShareOfVoiceCard({
 
           {/* Top entities */}
           <div>
-            <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-3">
+            <div className="ls-eyebrow mb-3">
               Top entities mentioned (30d)
             </div>
             {topEntities.length === 0 ? (
@@ -144,7 +144,7 @@ export function ShareOfVoiceCard({
                       {e.name}
                     </span>
                     <div className="flex items-center gap-3 shrink-0">
-                      <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                      <span className="ls-eyebrow">
                         {e.kind === "self"
                           ? "You"
                           : e.kind === "competitor"

@@ -358,7 +358,7 @@ export default async function BillingPage() {
 
       {billingStatusPending ? (
         <section className="ls-alert ls-alert-warning">
-          <p className="text-[10px] tracking-widest uppercase font-semibold" style={{ color: "#8a6d00" }}>
+          <p className="ls-eyebrow" style={{ color: "#8a6d00" }}>
             Action needed
           </p>
           <h2 className="text-base font-semibold mt-1.5">
@@ -388,7 +388,7 @@ export default async function BillingPage() {
 
       {billingNotConfigured ? (
         <section className="rounded-[2px] border border-dashed border-border bg-muted/30 p-6">
-          <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+          <p className="ls-eyebrow">
             Onboarding
           </p>
           <h2 className="text-base font-semibold mt-1.5">
@@ -513,7 +513,7 @@ export default async function BillingPage() {
                       <p className="text-sm font-medium text-foreground truncate">
                         {item.label}
                         {item.isAddon ? (
-                          <span className="ml-2 text-[10px] font-mono tracking-widest uppercase text-muted-foreground">
+                          <span className="ml-2 ls-eyebrow">
                             add-on
                           </span>
                         ) : null}
@@ -583,7 +583,7 @@ export default async function BillingPage() {
                     {d.hostname}
                   </a>
                   {d.isPrimary ? (
-                    <span className="ml-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                    <span className="ml-2 ls-eyebrow">
                       primary
                     </span>
                   ) : null}

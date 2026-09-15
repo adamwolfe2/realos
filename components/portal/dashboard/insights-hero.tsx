@@ -53,7 +53,7 @@ export function InsightsHero({
       return (
         <section className="rounded-[2px] border border-border bg-muted/30 p-4 lg:p-5">
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#525252]">
+            <p className="ls-eyebrow">
               Insights
             </p>
             <h2 className="text-[16px] font-semibold text-foreground mt-0.5">
@@ -109,7 +109,7 @@ export function InsightsHero({
       <section className="rounded-[2px] border border-border bg-card px-4 py-2.5">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2 min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#525252]">
+            <p className="ls-eyebrow">
               {isProperty ? `Insights for ${propertyName}` : "Insights"}
             </p>
             <span className="text-[11.5px] tabular-nums text-muted-foreground">
@@ -131,7 +131,7 @@ export function InsightsHero({
     <section className="rounded-[2px] border border-border bg-card p-4 lg:p-5">
       <header className="flex items-center justify-between gap-3 mb-3">
         <div className="flex items-center gap-2 min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#525252]">
+          <p className="ls-eyebrow">
             {isProperty ? `Insights for ${propertyName}` : "Insights"}
           </p>
           <span className="text-[11px] tabular-nums text-muted-foreground">

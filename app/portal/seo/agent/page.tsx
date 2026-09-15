@@ -829,7 +829,7 @@ function FooterNote({
   if (dataforSeoOn && googlePlacesOn) return null;
   return (
     <section className="rounded-[2px] border border-primary/20 bg-primary/[0.04] p-4">
-      <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-1">
+      <p className="ls-eyebrow ls-eyebrow-accent mb-1">
         Setup pending
       </p>
       <p className="text-[12px] text-foreground leading-snug">
@@ -930,7 +930,7 @@ function ScoreStrip({
     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
       {cells.map((c) => (
         <div key={c.label} className="rounded-[2px] border border-border p-3">
-          <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-muted-foreground">
+          <p className="ls-eyebrow">
             {c.label}
           </p>
           <p

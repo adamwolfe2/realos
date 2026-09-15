@@ -142,7 +142,7 @@ export default async function ConversationDetail({
             <h2 className="text-sm font-semibold text-foreground">
               Transcript
             </h2>
-            <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+            <span className="ls-eyebrow">
               {messages.length} message{messages.length === 1 ? "" : "s"}
             </span>
           </div>
@@ -221,7 +221,7 @@ function MetaChip({
     <span
       className={`inline-flex items-center gap-1 rounded-[6px] px-2 py-1 text-[11px] ring-1 ring-inset ${toneClass}`}
     >
-      <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+      <span className="ls-eyebrow">
         {label}
       </span>
       <span className="font-semibold">{value}</span>
@@ -369,7 +369,7 @@ function DetailRow({
 }) {
   return (
     <div className="flex items-baseline gap-3 px-4 py-2.5">
-      <dt className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground w-32 shrink-0">
+      <dt className="ls-eyebrow w-32 shrink-0">
         {label}
       </dt>
       <dd className="text-sm text-foreground min-w-0 flex-1 truncate">{value}</dd>

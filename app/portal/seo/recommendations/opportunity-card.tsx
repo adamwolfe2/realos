@@ -64,7 +64,7 @@ export function SeverityChip({ severity }: { severity: Severity }) {
       />
       <span
         className={[
-          "text-[11px] uppercase tracking-wide whitespace-nowrap",
+          "ls-eyebrow whitespace-nowrap",
           SEVERITY_TEXT[severity],
         ].join(" ")}
       >

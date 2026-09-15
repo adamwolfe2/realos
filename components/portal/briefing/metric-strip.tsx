@@ -103,11 +103,11 @@ function MetricRow({ metric, index }: { metric: Metric; index: number }) {
 
   return (
     <div className="min-w-0">
-      <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-muted-foreground truncate">
+      <div className="ls-eyebrow truncate">
         {metric.label}
       </div>
       <div className="flex items-baseline justify-between gap-2 mt-1">
-        <span className="text-xl font-semibold tabular-nums tracking-tight text-foreground leading-none">
+        <span className="text-xl ls-metric leading-none">
           {metric.value}
         </span>
         <motion.span

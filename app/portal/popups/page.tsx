@@ -163,7 +163,7 @@ export default async function PopupsListPage({
                   </span>
                   <span className="hidden md:flex items-baseline gap-4 text-[11px] tabular-nums shrink-0 mr-2">
                     <span>
-                      <span className="block text-[9px] uppercase tracking-widest text-muted-foreground">
+                      <span className="block ls-eyebrow">
                         Shown
                       </span>
                       <span className="block font-semibold text-foreground">
@@ -171,7 +171,7 @@ export default async function PopupsListPage({
                       </span>
                     </span>
                     <span>
-                      <span className="block text-[9px] uppercase tracking-widest text-muted-foreground">
+                      <span className="block ls-eyebrow">
                         Clicks
                       </span>
                       <span className="block font-semibold text-foreground">
@@ -179,7 +179,7 @@ export default async function PopupsListPage({
                       </span>
                     </span>
                     <span>
-                      <span className="block text-[9px] uppercase tracking-widest text-muted-foreground">
+                      <span className="block ls-eyebrow">
                         Converted
                       </span>
                       <span className="block font-semibold text-foreground">

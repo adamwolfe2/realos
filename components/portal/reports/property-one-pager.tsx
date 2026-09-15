@@ -133,7 +133,7 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
           </div>
         </div>
         <div className="text-right">
-          <div className="mb-1.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          <div className="mb-1.5 ls-eyebrow">
             Prepared by
           </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -345,7 +345,7 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
           {reputationStats ? (
             <>
               <div className="mb-3 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-                <span className="font-mono text-[22px] font-semibold leading-none tracking-tight tabular-nums">
+                <span className="ls-metric text-[22px] leading-none">
                   {reputationStats.overallRating != null ? reputationStats.overallRating.toFixed(1) : "—"}
                 </span>
                 <Stars rating={reputationStats.overallRating} className="text-[13px]" />

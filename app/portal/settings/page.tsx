@@ -269,7 +269,7 @@ function NavCard({
           <div className="flex items-baseline justify-between gap-2 flex-wrap">
             <h3 className="text-sm font-semibold text-foreground">{title}</h3>
             {stat ? (
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+              <span className="ls-eyebrow">
                 {stat}
               </span>
             ) : null}

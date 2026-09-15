@@ -83,7 +83,7 @@ export async function InlineTranscript({
             <h2 className="text-sm font-semibold text-foreground truncate">
               {displayName}
             </h2>
-            <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+            <span className="ls-eyebrow">
               {humanChatbotStatus(convo.status)}
             </span>
             {convo.lead ? (
@@ -237,7 +237,7 @@ function CaptureOnlyPanel({
 function Row({ k, v }: { k: string; v: React.ReactNode }) {
   return (
     <div className="flex items-baseline gap-3">
-      <dt className="text-[10px] uppercase tracking-widest text-muted-foreground w-20 shrink-0">
+      <dt className="ls-eyebrow w-20 shrink-0">
         {k}
       </dt>
       <dd className="text-foreground min-w-0 truncate">{v}</dd>

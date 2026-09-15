@@ -140,7 +140,7 @@ export function AttentionQueue({
                       <span className="text-[10px] text-muted-foreground/60">
                         ·
                       </span>
-                      <span className="text-[10px] font-mono uppercase tracking-[0.06em] text-muted-foreground truncate">
+                      <span className="ls-eyebrow truncate">
                         {row.propertyName}
                       </span>
                     </>

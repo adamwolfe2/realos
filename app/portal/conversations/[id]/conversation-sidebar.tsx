@@ -97,7 +97,7 @@ export function ConversationSidebar({
       {/* Flag toggles */}
       <section className="rounded-[2px] border border-border bg-card p-4">
         <header className="mb-3">
-          <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+          <div className="ls-eyebrow">
             Review
           </div>
           <h2 className="text-sm font-semibold text-foreground">
@@ -117,7 +117,7 @@ export function ConversationSidebar({
       {/* Notes */}
       <section className="rounded-[2px] border border-border bg-card p-4">
         <header className="mb-2">
-          <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+          <div className="ls-eyebrow">
             Notes
           </div>
           <h2 className="text-sm font-semibold text-foreground">
@@ -154,7 +154,7 @@ export function ConversationSidebar({
         {/* Prior notes */}
         {flags.some((f) => f.note && f.note.trim().length > 0) ? (
           <div className="mt-3 pt-3 border-t border-border space-y-2">
-            <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+            <div className="ls-eyebrow">
               History
             </div>
             {flags
@@ -165,7 +165,7 @@ export function ConversationSidebar({
                   key={f.id}
                   className="text-[11px] text-muted-foreground"
                 >
-                  <span className="uppercase tracking-widest text-muted-foreground text-[10px]">
+                  <span className="ls-eyebrow">
                     {f.flag.replaceAll("_", " ")}
                   </span>
                   <p className="mt-0.5 text-foreground whitespace-pre-wrap">
@@ -180,7 +180,7 @@ export function ConversationSidebar({
       {/* Context */}
       <section className="rounded-[2px] border border-border bg-card p-4">
         <header className="mb-3">
-          <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+          <div className="ls-eyebrow">
             Context
           </div>
           <h2 className="text-sm font-semibold text-foreground">
@@ -231,7 +231,7 @@ export function ConversationSidebar({
               rel="noopener noreferrer"
               className="flex items-center justify-between gap-2 rounded-[6px] px-2 py-1.5 bg-primary text-primary-foreground hover:bg-primary/80 transition-colors"
             >
-              <span className="text-[11px] uppercase tracking-widest">
+              <span className="ls-eyebrow">
                 Tune chatbot prompt
               </span>
               <span aria-hidden="true">{"\u2197"}</span>

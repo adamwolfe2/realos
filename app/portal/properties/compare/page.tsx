@@ -519,7 +519,7 @@ export default async function ComparePropertiesPage({
         <table className="w-full text-sm min-w-[720px]">
           <thead>
             <tr className="border-b border-border">
-              <th className="text-left px-4 py-3 text-[10px] tracking-widest uppercase font-semibold text-muted-foreground w-[180px]">
+              <th className="text-left px-4 py-3 ls-eyebrow w-[180px]">
                 Metric
               </th>
               {orderedProperties.map((p) => (

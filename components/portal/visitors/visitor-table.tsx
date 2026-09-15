@@ -311,7 +311,7 @@ function VisitorDrawerBody({ row }: { row: VisitorRow }) {
   return (
     <div className="space-y-4 text-sm">
       <section className="space-y-1.5">
-        <h3 className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+        <h3 className="ls-eyebrow">
           Identity
         </h3>
         <dl className="grid grid-cols-1 sm:grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
@@ -333,7 +333,7 @@ function VisitorDrawerBody({ row }: { row: VisitorRow }) {
       </section>
 
       <section className="space-y-1.5">
-        <h3 className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+        <h3 className="ls-eyebrow">
           Activity
         </h3>
         <dl className="grid grid-cols-1 sm:grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
@@ -391,7 +391,7 @@ function Th({
     <th
       scope="col"
       className={
-        "px-3 py-2 text-[10px] tracking-widest uppercase font-semibold text-muted-foreground whitespace-nowrap " +
+        "px-3 py-2 ls-eyebrow whitespace-nowrap" +
         (align === "right" ? "text-right " : "text-left ") +
         (hideOnMobile ? "hidden md:table-cell" : "")
       }

@@ -338,7 +338,7 @@ export default async function ReportsListPage({
           >
             {properties.length > 1 ? (
               <label className="flex flex-col gap-1">
-                <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+                <span className="ls-eyebrow">
                   Scope
                 </span>
                 {/* Property-restricted users can't generate portfolio-wide
@@ -369,7 +369,7 @@ export default async function ReportsListPage({
               <input type="hidden" name="propertyId" value={properties[0].id} />
             ) : null}
             <label className="flex flex-col gap-1">
-              <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+              <span className="ls-eyebrow">
                 Period
               </span>
               <select
@@ -502,7 +502,7 @@ export default async function ReportsListPage({
               the property selection across kind/status submits. */}
           <div className="ls-card p-4 flex flex-wrap items-end gap-3">
             <div className="flex flex-col gap-1.5">
-              <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+              <span className="ls-eyebrow">
                 Properties
               </span>
               <PropertyMultiSelect
@@ -523,7 +523,7 @@ export default async function ReportsListPage({
                 <input type="hidden" name="preview" value={sp.preview} />
               ) : null}
               <label className="flex flex-col gap-1.5">
-                <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+                <span className="ls-eyebrow">
                   Kind
                 </span>
                 <select
@@ -542,7 +542,7 @@ export default async function ReportsListPage({
               // status clamp above means "shared" is the only reachable
               // value, so a filter with unreachable options is just noise.
               <label className="flex flex-col gap-1.5">
-                <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+                <span className="ls-eyebrow">
                   Status
                 </span>
                 <select

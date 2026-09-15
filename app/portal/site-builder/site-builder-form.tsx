@@ -545,7 +545,7 @@ function Field({
   return (
     <label className="flex flex-col gap-1 text-sm">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+        <span className="ls-eyebrow">
           {label}
         </span>
         {counter ? <CharCounter counter={counter} /> : null}
@@ -587,7 +587,7 @@ function TextArea({
   return (
     <label className="flex flex-col gap-1 text-sm">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+        <span className="ls-eyebrow">
           {label}
         </span>
         {counter ? <CharCounter counter={counter} /> : null}

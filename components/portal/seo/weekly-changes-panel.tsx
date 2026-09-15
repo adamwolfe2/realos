@@ -60,7 +60,7 @@ export function WeeklyChangesPanel({ changes }: Props) {
     <section className="rounded-[2px] border border-border bg-card overflow-hidden">
       <header className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-border/60">
         <div>
-          <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
+          <p className="ls-eyebrow ls-eyebrow-accent">
             This week
           </p>
           <h3 className="text-sm font-semibold text-foreground mt-0.5">

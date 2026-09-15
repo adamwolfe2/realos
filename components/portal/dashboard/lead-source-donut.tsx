@@ -78,10 +78,10 @@ export function LeadSourceDonut({ slices }: { slices: LeadSourceSlice[] }) {
       <div className="relative h-[160px] w-[160px] mx-auto">
         <LeadSourceDonutChart data={data as LeadSourceDonutChartDatum[]} />
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+          <span className="ls-eyebrow">
             Total
           </span>
-          <span className="mt-0.5 text-2xl font-semibold tabular-nums text-foreground">
+          <span className="mt-0.5 text-2xl ls-metric">
             {total}
           </span>
         </div>

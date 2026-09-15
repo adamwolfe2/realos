@@ -162,7 +162,7 @@ function ImpactStat({
           : "rounded-md border border-border bg-card px-3 py-2"
       }
     >
-      <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+      <div className="ls-eyebrow">
         {label}
       </div>
       <div

@@ -222,7 +222,7 @@ function AdvertiserCard({
     <section className="rounded-xl border border-border bg-card overflow-hidden">
       <header className="flex items-start justify-between gap-2 px-3 py-2 border-b border-border">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+          <div className="flex items-center gap-2 ls-eyebrow">
             <Activity className="h-3 w-3" aria-hidden="true" />
             Tracking
           </div>
@@ -327,7 +327,7 @@ function AdRow({ ad }: { ad: AdLibraryAdView }) {
         <div className="flex items-baseline justify-between gap-2">
           <p
             className={cn(
-              "text-[11px] font-semibold uppercase tracking-wider",
+              "ls-eyebrow",
               isActive ? "text-primary" : "text-muted-foreground",
             )}
           >

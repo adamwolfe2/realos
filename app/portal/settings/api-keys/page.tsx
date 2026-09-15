@@ -145,7 +145,7 @@ export default async function ApiKeysPage() {
         </p>
 
         <div className="space-y-2">
-          <div className="text-[11px] tracking-widest uppercase font-semibold text-muted-foreground">
+          <div className="ls-eyebrow">
             Example request
           </div>
           <pre className="border rounded p-3 bg-muted text-[11px] leading-relaxed overflow-x-auto whitespace-pre-wrap break-all">
@@ -164,7 +164,7 @@ export default async function ApiKeysPage() {
         </div>
 
         <div className="space-y-2">
-          <div className="text-[11px] tracking-widest uppercase font-semibold text-muted-foreground">
+          <div className="ls-eyebrow">
             Example response (200 OK)
           </div>
           <pre className="border rounded p-3 bg-muted text-[11px] leading-relaxed overflow-x-auto whitespace-pre-wrap break-all">
@@ -180,7 +180,7 @@ export default async function ApiKeysPage() {
         </div>
 
         <div className="space-y-2">
-          <div className="text-[11px] tracking-widest uppercase font-semibold text-muted-foreground">
+          <div className="ls-eyebrow">
             Status codes
           </div>
           <ul className="text-[11px] text-muted-foreground list-none pl-0 space-y-1">
@@ -213,7 +213,7 @@ export default async function ApiKeysPage() {
         </div>
 
         <div className="space-y-2">
-          <div className="text-[11px] tracking-widest uppercase font-semibold text-muted-foreground">
+          <div className="ls-eyebrow">
             Rate limits
           </div>
           <p className="text-[11px] text-muted-foreground leading-snug">
@@ -232,7 +232,7 @@ export default async function ApiKeysPage() {
         </div>
 
         <div className="space-y-2">
-          <div className="text-[11px] tracking-widest uppercase font-semibold text-muted-foreground">
+          <div className="ls-eyebrow">
             Endpoints
           </div>
           <ul className="text-[11px] text-muted-foreground list-disc pl-5 space-y-1">

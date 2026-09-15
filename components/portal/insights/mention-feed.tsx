@@ -59,7 +59,7 @@ export function MentionFeed({
     >
       <div className="flex items-center justify-between px-5 py-3 border-b border-border">
         <div>
-          <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+          <div className="ls-eyebrow">
             Live feed
           </div>
           <div className="text-sm font-medium text-foreground">
@@ -83,7 +83,7 @@ export function MentionFeed({
               <SourceIcon source={m.source} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <span className="ls-eyebrow">
                     {SOURCE_LABELS[m.source]}
                   </span>
                   {m.property ? (

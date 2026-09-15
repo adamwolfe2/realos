@@ -382,7 +382,7 @@ function RevealModal({
           <>
             {state.username ? (
               <div>
-                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                <p className="ls-eyebrow">
                   Username
                 </p>
                 <div className="mt-1 flex items-center gap-2 rounded-[2px] border border-border bg-muted/30 px-3 py-2 font-mono text-sm">
@@ -403,7 +403,7 @@ function RevealModal({
               </div>
             ) : null}
             <div>
-              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+              <p className="ls-eyebrow">
                 Password
               </p>
               <div className="mt-1 flex items-center gap-2 rounded-[2px] border border-border bg-muted/30 px-3 py-2 font-mono text-sm">
@@ -843,7 +843,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+      <span className="ls-eyebrow">
         {label}
         {required ? <span className="ml-0.5 text-rose-600">*</span> : null}
       </span>

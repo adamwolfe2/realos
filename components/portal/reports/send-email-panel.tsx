@@ -68,7 +68,7 @@ export function SendEmailPanel({
       data-no-print
       className="rounded-[2px] border border-border bg-card/60 p-4 space-y-4"
     >
-      <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-widest font-semibold text-muted-foreground">
+      <div className="flex items-center gap-1.5 ls-eyebrow">
         <Mail className="h-3 w-3" />
         Send to client
       </div>
@@ -81,7 +81,7 @@ export function SendEmailPanel({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <label className="flex flex-col gap-1.5">
-          <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+          <span className="ls-eyebrow">
             Recipients
           </span>
           <input
@@ -96,7 +96,7 @@ export function SendEmailPanel({
           </span>
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+          <span className="ls-eyebrow">
             Greeting name
           </span>
           <input

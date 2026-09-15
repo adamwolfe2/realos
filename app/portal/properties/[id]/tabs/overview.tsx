@@ -395,7 +395,7 @@ export async function OverviewTab({
       ) : isEmpty ? (
         <section className="rounded-[2px] border border-border bg-card p-4 md:p-6">
           <div className="mb-4">
-            <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+            <p className="ls-eyebrow">
               Get this property reporting
             </p>
             <h2 className="mt-1 text-base font-semibold text-foreground">

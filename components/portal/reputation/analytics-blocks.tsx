@@ -17,7 +17,7 @@ export function AnalyticsBlock({
       <div className="flex items-baseline justify-between gap-2">
         <h3 className="text-sm font-semibold text-foreground">{title}</h3>
         {eyebrow ? (
-          <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          <span className="ls-eyebrow">
             {eyebrow}
           </span>
         ) : null}

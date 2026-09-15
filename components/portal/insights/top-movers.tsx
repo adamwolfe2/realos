@@ -75,7 +75,7 @@ export function TopMovers({
     >
       <div className="flex items-center justify-between px-5 py-3 border-b border-border">
         <div>
-          <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+          <div className="ls-eyebrow">
             Last 7 days
           </div>
           <div className="text-sm font-medium text-foreground">
@@ -90,7 +90,7 @@ export function TopMovers({
         </Link>
       </div>
       <table className="w-full text-sm">
-        <thead className="text-[10px] uppercase tracking-widest text-muted-foreground">
+        <thead className="ls-eyebrow">
           <tr>
             <th className="text-left font-semibold px-5 py-2">Keyword</th>
             <th className="text-right font-semibold px-3 py-2">From</th>

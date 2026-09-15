@@ -259,7 +259,7 @@ export function MarketplaceClient({
         actions={
           <div className="flex items-center gap-3">
             <div className="hidden md:flex items-center gap-2 rounded-[2px] border border-border bg-card px-3 py-1.5">
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+              <span className="ls-eyebrow">
                 Active
               </span>
               <span className="text-sm font-semibold tabular-nums text-foreground">
@@ -591,14 +591,14 @@ function PriceLine({
 }) {
   if (kind === "included") {
     return (
-      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary">
+      <p className="ls-eyebrow ls-eyebrow-accent">
         Included free
       </p>
     );
   }
   if (kind === "coming") {
     return (
-      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+      <p className="ls-eyebrow">
         Coming soon
       </p>
     );
@@ -622,7 +622,7 @@ function PriceLine({
   // toggle
   if (isTrialing && !isEnabled) {
     return (
-      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+      <p className="ls-eyebrow">
         Free during trial
       </p>
     );

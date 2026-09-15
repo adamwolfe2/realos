@@ -479,7 +479,7 @@ export function ConnectHub({
       {/* Progress bar — flat, border-first (no hover shadow) */}
       <div className="rounded-[2px] border border-border bg-card p-4">
         <div className="flex items-baseline justify-between mb-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+          <p className="ls-eyebrow">
             Sources connected
           </p>
           <p className="text-sm font-semibold tabular-nums text-foreground">

@@ -110,7 +110,7 @@ function TranscriptSearchInner({
         </div>
 
         <div className="flex items-center gap-2">
-          <label className="text-[10px] uppercase tracking-widest text-muted-foreground">
+          <label className="ls-eyebrow">
             Sort
           </label>
           <select

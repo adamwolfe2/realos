@@ -200,7 +200,7 @@ function ActiveView({
         className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end"
       >
         <label className="flex-1 space-y-1">
-          <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+          <span className="ls-eyebrow">
             Page URL to audit
           </span>
           <input
@@ -242,7 +242,7 @@ function ActiveView({
                   {result.excerpt}
                 </div>
               )}
-              <div className="text-[10px] text-muted-foreground/80 mt-1 uppercase tracking-wide">
+              <div className="ls-eyebrow mt-1">
                 {formatDate(result.capturedAt)} ·{" "}
                 {result.checks.filter((c) => c.pass).length} of{" "}
                 {result.checks.length} checks passing
@@ -258,7 +258,7 @@ function ActiveView({
       )}
       {history.length > 0 && (
         <div className="pt-2 border-t border-border">
-          <div className="text-[10px] uppercase tracking-[0.12em] font-semibold text-muted-foreground mb-2">
+          <div className="ls-eyebrow mb-2">
             Recent audits
           </div>
           <ul className="space-y-1.5">

@@ -149,7 +149,7 @@ export function RenewalsClient({ buckets, upcoming }: Props) {
           <div className="space-y-2">
             <div className="overflow-x-auto -mx-4 md:mx-0">
               <table className="w-full text-xs min-w-[760px]">
-                <thead className="text-left text-[10px] tracking-widest uppercase text-muted-foreground">
+                <thead className="text-left ls-eyebrow">
                   <tr className="border-b border-border">
                     <th className="px-2 py-2 font-medium">Resident</th>
                     <th className="px-2 py-2 font-medium">Property</th>
@@ -292,7 +292,7 @@ function RenewalDrawerBody({ lease }: { lease: RenewalLease }) {
   return (
     <div className="space-y-4 text-sm">
       <section className="space-y-1.5">
-        <h3 className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+        <h3 className="ls-eyebrow">
           Lease
         </h3>
         <dl className="grid grid-cols-3 sm:grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
@@ -321,7 +321,7 @@ function RenewalDrawerBody({ lease }: { lease: RenewalLease }) {
       </section>
 
       <section className="space-y-1.5">
-        <h3 className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+        <h3 className="ls-eyebrow">
           Resident
         </h3>
         <dl className="grid grid-cols-3 sm:grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
@@ -343,7 +343,7 @@ function RenewalDrawerBody({ lease }: { lease: RenewalLease }) {
       </section>
 
       <section className="space-y-1.5">
-        <h3 className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+        <h3 className="ls-eyebrow">
           Unit
         </h3>
         <dl className="grid grid-cols-3 sm:grid-cols-3 gap-x-3 gap-y-1.5 text-xs">

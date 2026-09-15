@@ -310,7 +310,7 @@ export function PopupEditor({
 
       {/* RIGHT — live preview */}
       <div className="space-y-3">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        <div className="ls-eyebrow">
           Live preview · updates as you type
         </div>
         <div className="relative h-[640px] rounded-[2px] border border-dashed border-border bg-card overflow-hidden">
@@ -776,7 +776,7 @@ function Field({
 }) {
   return (
     <label className="block space-y-1.5">
-      <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+      <span className="block ls-eyebrow">
         {label}
       </span>
       {children}
@@ -800,7 +800,7 @@ function ColorField({
 }) {
   return (
     <label className="block space-y-1.5">
-      <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+      <span className="block ls-eyebrow">
         {label}
       </span>
       <span className="flex items-center gap-2">
@@ -843,7 +843,7 @@ function GradientStopsField({
   }
   return (
     <div className="space-y-2">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+      <div className="ls-eyebrow">
         Gradient stops
       </div>
       {stops.length >= 2 ? (

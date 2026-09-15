@@ -23,7 +23,7 @@ export function RenewalTimeline({
     <section className="rounded-xl border border-border bg-card p-4 md:p-5">
       <div className="flex items-baseline justify-between gap-2 mb-3">
         <div>
-          <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+          <p className="ls-eyebrow">
             Next 120 days
           </p>
           <h3 className="text-sm font-semibold text-foreground">
@@ -49,7 +49,7 @@ export function RenewalTimeline({
               key={b.label}
               className={`rounded-lg border px-3 py-2.5 min-w-0 ${tones[i]}`}
             >
-              <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+              <p className="ls-eyebrow">
                 {b.label}
               </p>
               <p className="mt-1 text-base font-semibold text-foreground tabular-nums">

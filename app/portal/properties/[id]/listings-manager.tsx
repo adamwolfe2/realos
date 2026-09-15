@@ -11,7 +11,7 @@ import {
 const INPUT =
   "rounded-md border border-border bg-background px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30";
 const LABEL =
-  "text-[10px] tracking-widest uppercase font-semibold text-muted-foreground";
+  "ls-eyebrow";
 
 export function AddListingForm({ propertyId }: { propertyId: string }) {
   const router = useRouter();

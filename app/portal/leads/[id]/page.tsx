@@ -493,7 +493,7 @@ export default async function LeadDetailPage({
             </p>
           </Tile>
           <Tile label="Intent">
-            <p className="text-xl font-semibold tabular-nums text-foreground">
+            <p className="text-xl ls-metric">
               {lead.score}
               <span className="text-sm text-muted-foreground font-sans">
                 {" "}
@@ -519,7 +519,7 @@ export default async function LeadDetailPage({
         <section className="rounded-[2px] border border-border bg-card p-5">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+              <p className="ls-eyebrow">
                 AI follow-up drafts
               </p>
               <h2 className="mt-1 text-lg font-semibold tracking-tight text-foreground">
@@ -780,7 +780,7 @@ function MissingFieldsChip({ missing }: { missing: string[] }) {
       )}
       title={`Lead is missing: ${summary}`}
     >
-      <span className="text-[10px] font-semibold tracking-wider uppercase">
+      <span className="ls-eyebrow">
         Missing
       </span>
       <span className="truncate max-w-[14rem]">{summary}</span>
@@ -806,7 +806,7 @@ function ChannelCostBlock({
   if (paid) {
     return (
       <>
-        <p className="text-xl font-semibold tabular-nums text-foreground">
+        <p className="text-xl ls-metric">
           Paid
         </p>
         <p className="mt-1 text-[11px] text-muted-foreground leading-snug">
@@ -836,7 +836,7 @@ function ChannelCostBlock({
   if (earned) {
     return (
       <>
-        <p className="text-xl font-semibold tabular-nums text-foreground">
+        <p className="text-xl ls-metric">
           $0
         </p>
         <p className="mt-1 text-[11px] text-muted-foreground">
@@ -857,7 +857,7 @@ function ChannelCostBlock({
   }
   return (
     <>
-      <p className="text-xl font-semibold tabular-nums text-foreground">
+      <p className="text-xl ls-metric">
         &mdash;
       </p>
       <p className="mt-1 text-[11px] text-muted-foreground">
@@ -876,7 +876,7 @@ function Tile({
 }) {
   return (
     <div className="rounded-[2px] border border-border bg-card p-4">
-      <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-muted-foreground mb-2">
+      <p className="ls-eyebrow mb-2">
         {label}
       </p>
       {children}

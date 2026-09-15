@@ -37,7 +37,7 @@ export function ReferralLinkCard({ stat }: { stat: ReferralPropertyStat }) {
     <div className="rounded-[2px] border border-border bg-card p-5 space-y-4">
       {/* Property name */}
       <div>
-        <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+        <div className="ls-eyebrow">
           Property
         </div>
         <h3 className="mt-0.5 text-base font-semibold text-foreground">
@@ -66,7 +66,7 @@ export function ReferralLinkCard({ stat }: { stat: ReferralPropertyStat }) {
 
       {/* Referral link */}
       <div className="space-y-1.5">
-        <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+        <div className="ls-eyebrow">
           Resident referral link
         </div>
         <div className="flex items-center gap-2">
@@ -107,7 +107,7 @@ export function ReferralLinkCard({ stat }: { stat: ReferralPropertyStat }) {
       {/* QR Code */}
       {stat.qrDataUrl ? (
         <div className="space-y-2">
-          <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+          <div className="ls-eyebrow">
             QR code
           </div>
           <div className="flex items-start gap-4">
@@ -174,11 +174,11 @@ function StatTile({
     <div className="rounded-[2px] border border-border bg-background px-3 py-2.5">
       <div className="flex items-center gap-1.5 text-muted-foreground">
         {icon}
-        <span className="text-[9px] uppercase tracking-widest font-semibold">
+        <span className="ls-eyebrow">
           {label}
         </span>
       </div>
-      <div className="mt-1 text-xl font-semibold tabular-nums text-foreground">
+      <div className="mt-1 text-xl ls-metric">
         {value}
       </div>
     </div>

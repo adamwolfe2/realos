@@ -112,7 +112,7 @@ export function DashboardActionItems({
       <header className="flex items-start justify-between gap-3 px-4 py-3 border-b border-[#e0e0e0]">
         <div className="min-w-0">
           <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-            <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.12em] text-[#525252]">
+            <p className="ls-eyebrow">
               Action items
             </p>
           </div>
@@ -134,7 +134,7 @@ export function DashboardActionItems({
                 <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline gap-1.5 flex-wrap">
-                    <span className="text-[11px] font-mono uppercase tracking-[0.06em] text-muted-foreground">
+                    <span className="ls-eyebrow">
                       {action.propertyName}
                     </span>
                     <span className="text-[10px] text-muted-foreground/60">

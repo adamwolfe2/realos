@@ -628,10 +628,10 @@ export default async function VisitorsPage({
           page), bucketed server-side. No client fetch. */}
       <section aria-label="Visit pulse" className="ls-card p-4 flex items-center gap-4">
         <div className="shrink-0">
-          <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+          <div className="ls-eyebrow">
             Visit pulse
           </div>
-          <div className="font-mono text-[20px] font-semibold tabular-nums text-foreground mt-0.5">
+          <div className="ls-metric text-[20px] mt-0.5">
             {pulseTotal.toLocaleString()}
           </div>
           <div className="text-[10px] text-muted-foreground">last 30 days</div>
@@ -721,7 +721,7 @@ function LiveChatsPanel({
         <div>
           <div className="flex items-center gap-1.5 mb-0.5">
             <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
+            <span className="ls-eyebrow ls-eyebrow-accent">
               Live
             </span>
           </div>
@@ -833,7 +833,7 @@ function TabGroup({
 }) {
   return (
     <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto">
-      <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground shrink-0">
+      <span className="ls-eyebrow shrink-0">
         {legend}
       </span>
       <div className="inline-flex items-center rounded-[2px] border border-border overflow-x-auto max-w-full">

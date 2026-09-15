@@ -535,7 +535,7 @@ export function ScannerPanel({
       <section className="rounded-xl border border-border bg-card p-5">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="min-w-0">
-            <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+            <div className="ls-eyebrow">
               Search mentions
             </div>
             <h2 className="mt-1 text-base font-semibold tracking-tight text-foreground">
@@ -772,7 +772,7 @@ export function ScannerPanel({
                   aria-label="Reviewed mentions below"
                 >
                   <span className="h-px flex-1 bg-border" aria-hidden="true" />
-                  <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+                  <span className="ls-eyebrow">
                     Reviewed · {reviewed.length}
                   </span>
                   <span className="h-px flex-1 bg-border" aria-hidden="true" />

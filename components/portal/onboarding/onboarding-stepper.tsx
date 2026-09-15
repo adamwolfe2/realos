@@ -207,7 +207,7 @@ export function OnboardingStepper({ progress, connectStatus }: Props) {
       {/* Header row: phase eyebrow left, tabular progress right. */}
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <p
-          className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#525252]"
+          className="ls-eyebrow"
           style={{ fontFamily: "var(--font-mono)" }}
         >
           Setup · {PHASE_LABELS[activePhase]}

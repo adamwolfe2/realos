@@ -116,7 +116,7 @@ export function MobileNavDrawer({
 
         <div className="px-4 py-2.5 border-b border-border shrink-0">
           <p className="text-xs font-medium text-foreground truncate">{org.name}</p>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">
+          <p className="ls-eyebrow mt-0.5">
             Portal
           </p>
         </div>
@@ -137,7 +137,7 @@ export function MobileNavDrawer({
             return (
               <div key={group.label} className="mb-3">
                 <div className="flex items-center gap-2 px-4 mb-1">
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                  <span className="ls-eyebrow">
                     {group.label}
                   </span>
                   <div className="flex-1 h-px bg-border" />

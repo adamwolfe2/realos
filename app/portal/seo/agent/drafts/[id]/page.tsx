@@ -112,7 +112,7 @@ export default async function PortalDraftViewer({
 
       {draft.reviewNotes ? (
         <div className="rounded-[2px] border border-primary/20 bg-primary/[0.06] p-4">
-          <p className="text-[11px] font-mono uppercase tracking-wide text-primary mb-1">
+          <p className="ls-eyebrow ls-eyebrow-accent mb-1">
             Notes from LeaseStack
           </p>
           <p className="text-[13px] text-foreground whitespace-pre-wrap">
@@ -155,7 +155,7 @@ export default async function PortalDraftViewer({
       {/* Generated content */}
       {draft.outputMarkdown ? (
         <article className="rounded-[2px] border border-border bg-card p-6">
-          <h2 className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground mb-3">
+          <h2 className="ls-eyebrow mb-3">
             Generated draft
           </h2>
           <pre className="whitespace-pre-wrap text-[13px] leading-relaxed text-foreground font-sans">

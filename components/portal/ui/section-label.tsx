@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 // SectionLabel — the tiny tracked-out all-caps label that anchors a section
 // (e.g. "JUMP IN", "INSIGHTS", "PORTFOLIO", "RECENT", "PROPERTY DATA"). One
 // component, one type contract, used everywhere. Replaces the assortment of
-// hand-rolled <div className="text-[10px] uppercase tracking-widest …">
+// hand-rolled <div className="ls-eyebrow …">
 // scattered across pages.
 //
 // Accepts an optional right-aligned slot for "View all" / count badges so the
@@ -34,7 +34,7 @@ export function SectionLabel({
         className,
       )}
     >
-      <Tag className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+      <Tag className="ls-eyebrow">
         {children}
       </Tag>
       {trailing ? (

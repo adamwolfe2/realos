@@ -125,10 +125,10 @@ export function ExecSummaryRow({ stats }: { stats: ExecSummaryStat[] }) {
   return (
     <section className="rounded-[2px] border border-border bg-card overflow-hidden">
       <header className="flex items-center justify-between gap-3 px-4 py-2 border-b border-border/60 bg-gradient-to-r from-primary/[0.04] via-card to-card">
-        <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
+        <p className="ls-eyebrow ls-eyebrow-accent">
           Executive summary
         </p>
-        <p className="text-[10px] font-mono uppercase tracking-[0.08em] text-muted-foreground">
+        <p className="ls-eyebrow">
           vs prior period
         </p>
       </header>
@@ -159,7 +159,7 @@ export function ExecSummaryRow({ stats }: { stats: ExecSummaryStat[] }) {
                   {s.label}
                 </p>
               </div>
-              <p className="mt-0.5 text-[20px] font-display font-medium tabular-nums leading-none text-foreground">
+              <p className="mt-0.5 text-[20px] ls-metric leading-none">
                 {s.value}
               </p>
               {isMissing ? (
@@ -281,7 +281,7 @@ export function StrikingDistanceTable({
         className={`flex items-baseline justify-between gap-3 ${sidePad} py-3 border-b border-border bg-gradient-to-r from-primary/[0.04] via-card to-card`}
       >
         <div>
-          <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
+          <p className="ls-eyebrow ls-eyebrow-accent">
             Striking distance
           </p>
           <h3 className="text-sm font-semibold text-foreground">
@@ -613,10 +613,10 @@ export function SiteHealthGauge({
       <div className="mt-2 space-y-4">
         <div>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl font-display font-medium tabular-nums leading-none text-foreground">
+            <span className="text-2xl ls-metric leading-none">
               {Math.round(score)}
             </span>
-            <span className="text-[10px] font-mono uppercase tracking-[0.08em] text-muted-foreground">
+            <span className="ls-eyebrow">
               / 100
             </span>
           </div>
@@ -697,7 +697,7 @@ export function LocalPackCard({
       }
     >
       <header className={`${sidePad} py-3 border-b border-border`}>
-        <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
+        <p className="ls-eyebrow ls-eyebrow-accent">
           Google Maps
         </p>
         <h3 className="text-sm font-semibold text-foreground">
@@ -753,7 +753,7 @@ function SectionHeader({
 }) {
   return (
     <header className="mb-3">
-      <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-0.5">
+      <p className="ls-eyebrow ls-eyebrow-accent mb-0.5">
         {eyebrow}
       </p>
       <h3 className="text-sm font-semibold text-foreground">{title}</h3>

@@ -146,7 +146,7 @@ function NextActions({
             >
               <div className="flex items-center gap-2">
                 <span className={`inline-block w-1.5 h-1.5 rounded-full ${sevTone}`} />
-                <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-muted-foreground">
+                <span className="ls-eyebrow">
                   {sevLabel} priority
                 </span>
               </div>
@@ -213,7 +213,7 @@ function SovBars({ perEngine }: { perEngine: ShareOfVoiceProps["perEngine"] }) {
       : 0;
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-[0.12em] font-semibold text-muted-foreground mb-3">
+      <div className="ls-eyebrow mb-3">
         Per engine (30d avg)
       </div>
       <ul className="space-y-2.5">
@@ -252,7 +252,7 @@ function SovBars({ perEngine }: { perEngine: ShareOfVoiceProps["perEngine"] }) {
 function MergedEntityList({ entities }: { entities: MergedEntity[] }) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-[0.12em] font-semibold text-muted-foreground mb-3">
+      <div className="ls-eyebrow mb-3">
         Who the AI engines mention (30d)
       </div>
       {entities.length === 0 ? (
@@ -279,7 +279,7 @@ function MergedEntityList({ entities }: { entities: MergedEntity[] }) {
                   className={
                     e.kind === "self"
                       ? "inline-flex items-center rounded-[2px] bg-[#edf5ff] px-1.5 py-0.5 text-[10px] font-semibold text-[#0f62fe] uppercase tracking-wide"
-                      : "text-[10px] uppercase tracking-wide text-muted-foreground"
+                      : "ls-eyebrow"
                   }
                 >
                   {e.kind === "self" ? "You" : "Competitor"}
@@ -680,7 +680,7 @@ function AiReferralCard({
                   />
                 ) : null}
                 <div>
-                  <div className="text-xl font-semibold tabular-nums">
+                  <div className="text-xl ls-metric">
                     {fmtNumber(s.value)}
                   </div>
                   <div className="text-[11.5px] text-muted-foreground">
@@ -756,7 +756,7 @@ function VisibilityTrendCard({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-semibold tabular-nums">
+            <span className="text-2xl ls-metric">
               {fmtPercent(latest)}
             </span>
             <span

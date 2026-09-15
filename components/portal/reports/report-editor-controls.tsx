@@ -181,7 +181,7 @@ export function ReportEditorControls({
       </div>
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+        <span className="ls-eyebrow">
           Headline
         </span>
         <input
@@ -195,7 +195,7 @@ export function ReportEditorControls({
       </label>
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+        <span className="ls-eyebrow">
           Personal note
         </span>
         <textarea

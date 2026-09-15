@@ -131,7 +131,7 @@ export function RecommendationManager({ recommendations }: Props) {
             className="h-3.5 w-3.5"
           />
           <div>
-            <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
+            <p className="ls-eyebrow ls-eyebrow-accent">
               Recommendations queue
             </p>
             <h3 className="text-sm font-semibold text-foreground mt-0.5">
