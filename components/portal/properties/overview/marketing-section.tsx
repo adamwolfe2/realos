@@ -1,5 +1,6 @@
 import * as React from "react";
 import { centsToUsdShort } from "@/lib/properties/queries";
+import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 
 // ---------------------------------------------------------------------------
 // Marketing section — promoted from sidebar to a main-column block per
@@ -187,30 +188,19 @@ export function MarketingSection({
           );
         }
         return (
+          // Was a bespoke rounded-lg / bg-muted/20 sub-card with a sans
+          // label and a text-lg sans numeral — a third way of drawing a stat
+          // row on a page that already had two. Now the shared KpiTile.
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {liveMetrics.map((m) => (
-              <div
+              <KpiTile
                 key={m.label}
-                className="rounded-lg border border-border bg-muted/20 p-3 min-w-0"
-              >
-                <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground truncate">
-                  {m.label}
-                </p>
-                <p className="mt-1 text-lg font-semibold text-foreground tabular-nums leading-none">
-                  {m.value}
-                </p>
-                <p className="mt-1.5 text-[11px] text-muted-foreground leading-snug">
-                  {m.hint}
-                </p>
-                {m.cta ? (
-                  <a
-                    href={m.cta.href}
-                    className="mt-2 inline-flex text-[11px] font-semibold text-primary hover:underline"
-                  >
-                    {m.cta.label} →
-                  </a>
-                ) : null}
-              </div>
+                density="dense"
+                label={m.label}
+                value={m.value}
+                hint={m.hint}
+                href={m.cta?.href}
+              />
             ))}
           </div>
         );

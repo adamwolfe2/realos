@@ -126,10 +126,15 @@ function PropertyTabsInner({
 
   return (
     <div className="space-y-4">
-      <div className="border-b border-border">
+      <div>
+        {/* Level 1 — page-level section nav. Underline idiom, matching
+            app/portal/seo/seo-tabs.tsx. The portal reserves the filled
+            bg-primary treatment for segmented controls *inside* a card
+            (components/portal/ui/tabbed-card.tsx); using it here made the
+            property page read as a different product. */}
         <nav
           aria-label="Property section groups"
-          className="flex gap-1 overflow-x-auto py-2 scrollbar-hide"
+          className="flex gap-0.5 overflow-x-auto border-b border-border scrollbar-hide"
         >
           {GROUPS.map((group) => {
             const firstTab = visibleTabs.find((tab) => tab.group === group.id);
@@ -141,10 +146,11 @@ function PropertyTabsInner({
                 type="button"
                 onClick={() => selectTab(firstTab.id)}
                 className={cn(
-                  "shrink-0 px-3 py-1.5 text-[12px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                  "inline-flex h-9 shrink-0 items-center px-3 text-[13px] font-medium",
+                  "relative -mb-px border-b-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                   isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground",
                 )}
                 aria-current={isActive ? "page" : undefined}
               >
@@ -157,7 +163,7 @@ function PropertyTabsInner({
         {groupTabs.length > 1 ? (
           <nav
             aria-label={`${GROUPS.find((group) => group.id === activeGroup)?.label} sections`}
-            className="flex gap-1 overflow-x-auto scrollbar-hide"
+            className="flex gap-0.5 overflow-x-auto pt-2.5 scrollbar-hide"
           >
             {groupTabs.map((tab) => {
               const Icon = tab.icon;
@@ -168,14 +174,20 @@ function PropertyTabsInner({
                   type="button"
                   onClick={() => selectTab(tab.id)}
                   className={cn(
-                    "inline-flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2 text-[12px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                    // Type matches .ls-eyebrow (mono 10px/600/0.12em). Set as
+                    // utilities, not the class: .ls-eyebrow is defined after
+                    // Tailwind in globals.css and its colour would win over
+                    // the active/inactive state colour.
+                    "inline-flex shrink-0 items-center gap-1.5 rounded-[2px] px-2.5 py-1",
+                    "font-mono text-[10px] font-semibold uppercase tracking-[0.12em]",
+                    "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                     isActive
-                      ? "border-primary text-foreground"
-                      : "border-transparent text-muted-foreground hover:text-foreground",
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
                   )}
                   aria-current={isActive ? "page" : undefined}
                 >
-                  <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                  <Icon className="h-3 w-3" aria-hidden="true" />
                   {tab.label}
                 </button>
               );

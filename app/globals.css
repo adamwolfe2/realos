@@ -656,14 +656,12 @@ body {
   background: var(--white);
   border: 1px solid var(--hair);
   border-radius: 2px;
-  box-shadow: var(--shadow-xs);
-  transition:
-    box-shadow 180ms var(--ease-out),
-    border-color 180ms ease;
+  /* Flat. Marketing cards are a 1px #e0e0e0 hairline on white with no shadow;
+     the portal shadow stacked on every nested panel and muddied the grid. */
+  transition: border-color 180ms ease;
 }
 .ls-card:hover {
   border-color: var(--hair-strong);
-  box-shadow: var(--shadow-sm);
 }
 .ls-card-flush { padding: 0; }
 .ls-card-pad   { padding: 20px; }
@@ -720,7 +718,11 @@ body {
 
 /* Tiny tracked-out label used to anchor a metric or section. */
 .ls-eyebrow {
-  font-family: var(--font-sans);
+  /* Mono, matching the marketing site: the mono/sans duality (labels + figures
+     in JetBrains Mono, prose in Inter) is what makes those pages read as one
+     system. Measured on /features, /pricing, /multifamily: mono, uppercase,
+     9-11px, weight 500-700. Size and tracking below already matched. */
+  font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.12em;
@@ -737,14 +739,15 @@ body {
   font-feature-settings: "tnum" 1;
   font-size: 11px;
   font-weight: 600;
-  padding: 2px 7px;
-  border-radius: 2px;
   letter-spacing: 0.005em;
   line-height: 1;
 }
-.ls-delta-up   { background: rgba(36, 161, 72, 0.10); color: #24a148; }
-.ls-delta-down { background: rgba(218, 30, 40, 0.10); color: #da1e28; }
-.ls-delta-flat { background: var(--warm-sand); color: var(--olive-gray); }
+/* Bare coloured mono, not a filled pill. The marketing snapshot renders
+   movement as "^ vs prior" in coloured mono with no chrome; the tinted pill
+   read as a status badge and competed with real badges on the same row. */
+.ls-delta-up   { color: #24a148; }
+.ls-delta-down { color: #da1e28; }
+.ls-delta-flat { color: var(--olive-gray); }
 
 /* ── Sidebar premium polish ────────────────────────────────────────────── */
 .ls-sidebar {

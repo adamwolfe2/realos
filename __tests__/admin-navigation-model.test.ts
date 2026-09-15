@@ -10,6 +10,7 @@ import {
 const LEGACY_ROUTES = [
   "/admin",
   "/admin/insights",
+  "/admin/kit",
   "/admin/intakes",
   "/admin/pipeline",
   "/admin/site-engine",
@@ -35,10 +36,11 @@ const LEGACY_ROUTES = [
 ] as const;
 
 describe("admin navigation model", () => {
-  it("distills the default navigation to eight visible destinations", () => {
+  it("distills the default navigation to nine visible destinations", () => {
     expect(adminNavSections.map(({ label }) => label)).toEqual([
       "Dashboard",
       "Insights",
+      "Sales kit",
       "Pipeline",
       "Sites",
       "Marketplace",
