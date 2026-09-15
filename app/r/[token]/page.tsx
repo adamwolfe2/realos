@@ -1,18 +1,19 @@
 import type { Metadata } from "next";
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { PropertyOnePager } from "@/components/portal/reports/property-one-pager";
+import {
+  PropertyOnePager,
+  type ReportHeroImage,
+} from "@/components/portal/reports/property-one-pager";
 import type { PropertyMeta } from "@/components/portal/reports/snapshot-shared";
+import { periodLabel } from "@/components/portal/reports/snapshot-shared";
 import { ReportPrintStyles } from "@/components/portal/reports/report-print-styles";
 import { PrintExpander } from "@/components/portal/reports/print-expander";
 import { PrintButton } from "@/components/portal/reports/print-button";
 import { isValidShareToken } from "@/lib/reports/token";
+import { loadPropertyHero } from "@/lib/reports/load-property-hero";
 import type { ReportSnapshot } from "@/lib/reports/generate";
-
-export const metadata: Metadata = {
-  title: "Performance report",
-  robots: { index: false, follow: false },
-};
 
 export const dynamic = "force-dynamic";
 
@@ -31,16 +32,18 @@ export const dynamic = "force-dynamic";
 // lives in the portal page wrapper, not here, so nothing privileged leaks
 // here. Print/PDF fidelity comes from the shared ReportPrintStyles +
 // PrintExpander, the same pair the portal page uses.
+//
+// 2026-09-15: the building image is back, but as a framed thumbnail inside
+// the one-pager header — NOT the full-bleed banner Adam rejected above. The
+// link is now sent to prospects, so it also carries a real social preview
+// (title/description/og:image). `robots: noindex` stays: a share token is
+// not a public URL and must never land in a search index.
 // ---------------------------------------------------------------------------
 
-export default async function PublicReportPage({
-  params,
-}: {
-  params: Promise<{ token: string }>;
-}) {
-  const { token } = await params;
-
-  if (!isValidShareToken(token)) notFound();
+// Shared by generateMetadata and the page body so a request runs the report
+// query once, not twice. React `cache` dedupes within a single render pass.
+const loadSharedReport = cache(async (token: string) => {
+  if (!isValidShareToken(token)) return null;
 
   const report = await prisma.clientReport.findUnique({
     where: { shareToken: token },
@@ -59,7 +62,92 @@ export default async function PublicReportPage({
     },
   });
 
-  if (!report || report.status !== "shared") notFound();
+  if (!report || report.status !== "shared") return null;
+
+  const snapshot = report.snapshot as unknown as ReportSnapshot;
+
+  // Portfolio reports (propertyId null) fall back to the org name.
+  const propertyRow = report.propertyId
+    ? await prisma.property.findUnique({
+        where: { id: report.propertyId },
+        select: { name: true, addressLine1: true, city: true, state: true },
+      })
+    : null;
+  const property: PropertyMeta =
+    propertyRow ?? { name: report.org?.name ?? "Portfolio report" };
+
+  // Building image. loadPropertyHero resolves the scoped property first,
+  // then the org's real flagship (LIVE + ACTIVE + has image) — so a
+  // portfolio report still gets a photo instead of a bare header.
+  const heroRow = await loadPropertyHero(snapshot, report.orgId).catch(
+    () => null,
+  );
+  const hero: ReportHeroImage | null = heroRow?.heroImageUrl
+    ? {
+        imageUrl: heroRow.heroImageUrl,
+        name: heroRow.propertyName,
+        // Only caption when the photo names a building the title doesn't
+        // already name — otherwise the caption just repeats the headline.
+        caption:
+          heroRow.propertyName === property.name
+            ? null
+            : [heroRow.propertyName, heroRow.subtitle]
+                .filter(Boolean)
+                .join(" · "),
+      }
+    : null;
+
+  return { report, snapshot, property, hero };
+});
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}): Promise<Metadata> {
+  const { token } = await params;
+  const data = await loadSharedReport(token);
+
+  // Unknown/unshared token: keep the generic title so the 404 path doesn't
+  // confirm whether a token exists.
+  if (!data) {
+    return { title: "Performance report", robots: { index: false, follow: false } };
+  }
+
+  const title = `${data.property.name} — Marketing & Performance Report`;
+  const description = `${periodLabel(data.snapshot)}. Leasing, traffic, and reputation performance, prepared by LeaseStack.`;
+
+  return {
+    title,
+    description,
+    // A share token is a capability URL — never index it, even though the
+    // page is now presentable enough to send to prospects.
+    robots: { index: false, follow: false },
+    openGraph: {
+      title,
+      description,
+      type: "article",
+      images: data.hero ? [{ url: data.hero.imageUrl, alt: data.hero.name }] : [],
+    },
+    twitter: {
+      card: data.hero ? "summary_large_image" : "summary",
+      title,
+      description,
+      images: data.hero ? [data.hero.imageUrl] : [],
+    },
+  };
+}
+
+export default async function PublicReportPage({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}) {
+  const { token } = await params;
+  const data = await loadSharedReport(token);
+  if (!data) notFound();
+
+  const { report, snapshot, property, hero } = data;
 
   // Fire-and-forget view tracking. Errors never block the render.
   await prisma.clientReport
@@ -73,22 +161,6 @@ export default async function PublicReportPage({
     .catch(() => {
       /* intentional: view tracking is best-effort */
     });
-
-  const snapshot = report.snapshot as unknown as ReportSnapshot;
-
-  // 2026-08-01 redesign: render the SAME flat single-scroll PropertyOnePager
-  // body the operator sees and the /portal/reports live preview generates,
-  // instead of the old building-photo banner + branded header band + tabbed
-  // dashboard stack. No operator chrome here — public, read-only.
-  // Portfolio reports (propertyId null) fall back to the org name.
-  const propertyRow = report.propertyId
-    ? await prisma.property.findUnique({
-        where: { id: report.propertyId },
-        select: { name: true, addressLine1: true, city: true, state: true },
-      })
-    : null;
-  const propertyMeta: PropertyMeta =
-    propertyRow ?? { name: report.org?.name ?? "Portfolio report" };
 
   return (
     <div className="report-page min-h-screen bg-[var(--parchment)] py-4 sm:py-10 px-2 sm:px-4">
@@ -120,7 +192,7 @@ export default async function PublicReportPage({
 
         {/* Flat single-scroll snapshot body — the same PropertyOnePager the
             live preview renders, fed from the frozen snapshot. */}
-        <PropertyOnePager snapshot={snapshot} property={propertyMeta} />
+        <PropertyOnePager snapshot={snapshot} property={property} hero={hero} />
       </div>
     </div>
   );

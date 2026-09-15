@@ -32,12 +32,24 @@ import {
 // primitives in snapshot-shared.tsx so they never drift.
 // ---------------------------------------------------------------------------
 
+// Optional building image shown in the report header. Portfolio reports
+// (propertyId null) are titled with the ORG name, so `caption` names the
+// building the photo actually shows — a report headed "SG Real Estate"
+// carrying an unlabelled Telegraph Commons photo would read as if the
+// whole portfolio were that one building.
+export type ReportHeroImage = {
+  imageUrl: string;
+  name: string;
+  caption: string | null;
+};
+
 type Props = {
   snapshot: ReportSnapshot;
   property: PropertyMeta;
+  hero?: ReportHeroImage | null;
 };
 
-export function PropertyOnePager({ snapshot, property }: Props) {
+export function PropertyOnePager({ snapshot, property, hero }: Props) {
   const { kpis, occupancyStats, renewalStats, lifecycleStats, reputationStats, aeoStats, chatbotStatsExtended, leadSources, trafficTrend } =
     snapshot;
 
@@ -87,16 +99,38 @@ export function PropertyOnePager({ snapshot, property }: Props) {
     <div className="ls-stagger mx-auto w-full max-w-[880px] rounded-[2px] border border-border bg-card p-4 text-foreground shadow-sm sm:p-6 print:border-0 print:p-6 print:shadow-none">
       {/* Header */}
       <header className="flex items-start justify-between gap-4 border-b border-border pb-4">
-        <div>
-          <h1 className="text-[21px] font-semibold leading-[1.05] tracking-tight">
-            Marketing &amp; Performance Snapshot
-          </h1>
-          <p className="mt-1.5 text-[12px] font-medium leading-relaxed text-muted-foreground">
-            {property.name}
-            {addr ? ` · ${addr}` : ""}
-            <br />
-            {periodLabel(snapshot)} · First-touch attribution
-          </p>
+        <div className="flex min-w-0 items-start gap-4">
+          {/* Building image. `object-contain` on a tinted tile, not a
+              full-bleed cover crop: the stored hero is a background-removed
+              PNG, so cropping it to fill would clip the roofline. */}
+          {hero ? (
+            <div className="shrink-0">
+              <div className="flex h-[76px] w-[104px] items-center justify-center overflow-hidden rounded-[2px] border border-border bg-muted/40">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={hero.imageUrl}
+                  alt={hero.name}
+                  className="h-full w-full object-contain"
+                />
+              </div>
+              {hero.caption ? (
+                <p className="mt-1 w-[104px] text-[9px] font-medium leading-tight text-muted-foreground">
+                  {hero.caption}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+          <div className="min-w-0">
+            <h1 className="text-[21px] font-semibold leading-[1.05] tracking-tight">
+              Marketing &amp; Performance Snapshot
+            </h1>
+            <p className="mt-1.5 text-[12px] font-medium leading-relaxed text-muted-foreground">
+              {property.name}
+              {addr ? ` · ${addr}` : ""}
+              <br />
+              {periodLabel(snapshot)} · First-touch attribution
+            </p>
+          </div>
         </div>
         <div className="text-right">
           <div className="mb-1.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
