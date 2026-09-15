@@ -20,7 +20,7 @@ export function HeadlineCallout({ signal, bare = false }: HeadlineCalloutProps) 
   if (!signal) {
     return (
       <div
-        className={`${bare ? "" : "rounded-[2px] border border-border bg-card px-5 py-4 "}flex items-center gap-3`}
+        className={`${bare ? "" : "ls-card px-5 py-4"}flex items-center gap-3`}
       >
         <Sparkles className="h-5 w-5 text-muted-foreground shrink-0" />
         <div className="text-sm text-muted-foreground">

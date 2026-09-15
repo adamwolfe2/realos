@@ -110,7 +110,7 @@ export function IntegrationMarketplace({
           />
         ))}
         {filtered.length === 0 ? (
-          <div className="col-span-full rounded-xl border border-border bg-card p-8 text-center">
+          <div className="col-span-full ls-card p-8 text-center">
             <p className="text-sm text-muted-foreground">
               No integrations match this filter.
             </p>

@@ -418,7 +418,7 @@ export default async function PortfolioReputationPage({
 
         {/* Analytics drawer — historical charts + property health table.
           Collapsed by default so Recent Mentions stays the focus. */}
-        <details className="group rounded-[2px] border border-border bg-card">
+        <details className="group ls-card">
           <summary className="flex items-center justify-between gap-3 px-5 py-3 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
             <div className="min-w-0">
               <div className="ls-eyebrow mb-0.5">

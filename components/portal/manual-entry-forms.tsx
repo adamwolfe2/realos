@@ -86,7 +86,7 @@ function FormShell({
   return (
     <form
       action={onSubmit}
-      className="rounded-[2px] border border-border bg-card p-5 space-y-4 max-w-xl"
+      className="ls-card p-5 space-y-4 max-w-xl"
     >
       {children}
       {error ? <p className="text-[12px] text-destructive">{error}</p> : null}

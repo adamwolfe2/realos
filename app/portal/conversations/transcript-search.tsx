@@ -92,7 +92,7 @@ function TranscriptSearchInner({
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search transcripts for any word or phrase..."
             className={cn(
-              "w-full rounded-[6px] border border-border bg-card",
+              "w-full ls-card",
               "pl-8 pr-8 py-2 text-sm text-foreground placeholder:text-muted-foreground",
               "focus:outline-none focus:ring-2 focus:ring-primary/40",
             )}

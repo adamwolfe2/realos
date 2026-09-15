@@ -156,7 +156,7 @@ export default async function ReportDetailPage({
       {/* Operator's headline + personal note for this client, editable
           above via ReportEditorControls. Prints too (no data-no-print). */}
       {report.headline || report.notes ? (
-        <div className="ls-report-section rounded-[2px] border border-border bg-card px-5 py-4">
+        <div className="ls-report-section ls-card px-5 py-4">
           {report.headline ? (
             <p className="text-sm font-semibold text-foreground leading-snug">
               {report.headline}

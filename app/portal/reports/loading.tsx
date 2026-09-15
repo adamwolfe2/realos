@@ -12,14 +12,14 @@ export default function ReportsLoading() {
           <div className="h-9 w-44 bg-muted/60 rounded-md" />
         </div>
       </div>
-      <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+      <div className="ls-card p-4 space-y-3">
         <div className="flex gap-3">
           <div className="h-9 w-32 bg-muted rounded-md" />
           <div className="h-9 w-32 bg-muted/60 rounded-md" />
           <div className="h-9 w-24 bg-secondary rounded-md" />
         </div>
       </div>
-      <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
+      <div className="ls-card overflow-hidden divide-y divide-border">
         {Array.from({ length: 5 }).map((_, i) => (
           <div key={i} className="px-5 py-4 flex items-center justify-between gap-3">
             <div className="space-y-1.5">

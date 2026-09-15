@@ -14,7 +14,7 @@ export default function WelcomeLoading() {
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-[2px] border border-border bg-card p-5 space-y-3"
+            className="ls-card p-5 space-y-3"
           >
             <div className="h-9 w-9 rounded-[2px] bg-muted" />
             <div className="h-4 w-44 bg-muted rounded-[2px]" />

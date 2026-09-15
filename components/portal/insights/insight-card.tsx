@@ -103,7 +103,7 @@ export function InsightCard({
   return (
     <article
       className={cn(
-        "group relative rounded-[2px] border border-border bg-card transition-shadow duration-150",
+        "group relative ls-card transition-shadow duration-150",
         "hover:shadow-[0_4px_24px_rgba(0,0,0,0.04)]",
         // No severity-based card tinting — neutral border on every card.
         // Order conveys urgency; the operator's eye lands on the top card.

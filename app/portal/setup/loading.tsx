@@ -22,7 +22,7 @@ export default function SetupLoading() {
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-[2px] border border-border bg-card p-5 flex gap-5"
+            className="ls-card p-5 flex gap-5"
           >
             <div className="h-5 w-5 rounded-full bg-muted shrink-0 mt-0.5" />
             <div className="flex-1 space-y-2">

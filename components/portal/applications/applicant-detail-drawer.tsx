@@ -86,7 +86,7 @@ export function ApplicantDetailDrawer({
               {group.applicants.map((a) => (
                 <div
                   key={a.applicationId}
-                  className="rounded-[2px] border border-border bg-card p-3"
+                  className="ls-card p-3"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">

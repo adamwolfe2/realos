@@ -347,7 +347,7 @@ function NewDraftMenu() {
           />
         </svg>
       </summary>
-      <div className="absolute right-0 top-full mt-1.5 z-20 w-56 rounded-[2px] border border-border bg-card shadow-lg overflow-hidden">
+      <div className="absolute right-0 top-full mt-1.5 z-20 w-56 ls-card shadow-lg overflow-hidden">
         <ul className="py-1">
           {FORMAT_OPTIONS.map((opt) => (
             <li key={opt.value}>

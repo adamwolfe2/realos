@@ -24,7 +24,7 @@ import type { TimelineEvent } from "./timeline-events";
 export function Timeline({ events }: { events: TimelineEvent[] }) {
   if (events.length === 0) {
     return (
-      <div className="rounded-[12px] border border-border bg-card p-8 text-center">
+      <div className="ls-card p-8 text-center">
         <p className="text-sm text-foreground">
           No activity yet. Install the Cursive pixel and enable the chatbot to
           see every touchpoint here.

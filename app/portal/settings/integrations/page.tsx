@@ -372,7 +372,7 @@ export default async function IntegrationsPage({
                 account · ~2 min
               </PrerequisiteLine>
               <OAuthConnectButton provider="google_ads" />
-              <details className="group rounded-[2px] border border-border bg-card">
+              <details className="group ls-card">
                 <summary className="cursor-pointer text-[11px] font-medium text-muted-foreground px-3 py-2 hover:text-foreground select-none">
                   Advanced — paste credentials manually
                 </summary>
@@ -430,7 +430,7 @@ export default async function IntegrationsPage({
                 to your ad account · ~2 min
               </PrerequisiteLine>
               <OAuthConnectButton provider="meta_ads" />
-              <details className="group rounded-[2px] border border-border bg-card">
+              <details className="group ls-card">
                 <summary className="cursor-pointer text-[11px] font-medium text-muted-foreground px-3 py-2 hover:text-foreground select-none">
                   Advanced — paste a system-user token manually
                 </summary>

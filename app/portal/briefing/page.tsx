@@ -383,7 +383,7 @@ function SetupCard({
 }) {
   const remaining = steps.filter((s) => !s.done);
   return (
-    <div className="rounded-[2px] border border-border bg-card p-5">
+    <div className="ls-card p-5">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <p className="ls-eyebrow mb-1">

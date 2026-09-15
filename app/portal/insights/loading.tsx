@@ -12,7 +12,7 @@ export default function InsightsLoading() {
       </div>
       <div className="space-y-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="rounded-xl border border-border bg-card p-5 space-y-2">
+          <div key={i} className="ls-card p-5 space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="h-5 w-16 bg-muted/60 rounded-full" />

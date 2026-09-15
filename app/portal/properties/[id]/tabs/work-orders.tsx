@@ -206,7 +206,7 @@ export async function WorkOrdersTab({
                     <ul className="space-y-1 max-h-[360px] overflow-y-auto">
                       {items.slice(0, 40).map((w) => (
                         <li key={w.id}>
-                          <div className="rounded border border-border bg-card px-2 py-1.5">
+                          <div className="ls-card px-2 py-1.5">
                             <div className="flex items-center justify-between gap-1">
                               <span className="text-[9px] tabular-nums text-muted-foreground">
                                 {w.workOrderNumber ?? "—"}

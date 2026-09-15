@@ -35,7 +35,7 @@ export function PropertySwitcher({ properties, activeId }: Props) {
   });
 
   return (
-    <nav className="flex flex-wrap gap-1.5 rounded-2xl border border-border bg-card p-1.5">
+    <nav className="flex flex-wrap gap-1.5 ls-card p-1.5">
       {sorted.map((p) => {
         const isActive = p.id === activeId;
         const sub = p.city || p.state ? ` · ${[p.city, p.state].filter(Boolean).join(", ")}` : "";

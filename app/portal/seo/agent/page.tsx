@@ -180,7 +180,7 @@ export default async function SeoAgentPage({
             </>
           }
         />
-        <section className="rounded-[2px] border border-border bg-card p-8 text-center">
+        <section className="ls-card p-8 text-center">
           <p className="text-sm text-muted-foreground">
             Add a property in /portal/properties to start using the SEO Agent.
           </p>

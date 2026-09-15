@@ -29,7 +29,7 @@ export function TopMovers({
 }) {
   const emptyBoxClass = bare
     ? "px-5 py-8 text-center"
-    : "rounded-[2px] border border-border bg-card px-5 py-8 text-center";
+    : "ls-card px-5 py-8 text-center";
 
   if (!hasData) {
     return (
@@ -70,7 +70,7 @@ export function TopMovers({
   return (
     <div
       className={
-        bare ? "overflow-hidden" : "rounded-[2px] border border-border bg-card overflow-hidden"
+        bare ? "overflow-hidden" : "ls-card overflow-hidden"
       }
     >
       <div className="flex items-center justify-between px-5 py-3 border-b border-border">

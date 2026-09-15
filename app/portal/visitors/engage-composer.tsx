@@ -82,7 +82,7 @@ export function EngageComposer({
   }
 
   return (
-    <div className="rounded-[2px] border border-border bg-card p-3 space-y-2 w-full max-w-md">
+    <div className="ls-card p-3 space-y-2 w-full max-w-md">
       <textarea
         value={message}
         onChange={(e) => setMessage(e.target.value)}

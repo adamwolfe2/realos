@@ -65,7 +65,7 @@ export function CustomerPicker({
     return (
       <div className="space-y-5">
         <ConnectStepper current={3} />
-        <div className="rounded-[2px] border border-border bg-card p-4 space-y-3">
+        <div className="ls-card p-4 space-y-3">
           <VerificationRow
             status="live"
             accountLabel={boundLabel ?? "Google Ads account"}

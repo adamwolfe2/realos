@@ -220,7 +220,7 @@ export function ReportCadenceForm({
         ) : null}
       </div>
 
-      <div className="flex items-start justify-between gap-3 rounded-lg border border-border bg-card p-3">
+      <div className="flex items-start justify-between gap-3 ls-card p-3">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-foreground">
             Send automatically when a snapshot is generated

@@ -132,7 +132,7 @@ export function VaultClient({
         <select
           value={propertyFilter}
           onChange={(e) => setPropertyFilter(e.target.value)}
-          className="rounded-[2px] border border-border bg-card px-2 py-1.5 text-xs text-foreground"
+          className="ls-card px-2 py-1.5 text-xs text-foreground"
         >
           <option value="">All properties</option>
           <option value="__org">Org-wide only</option>
@@ -160,7 +160,7 @@ export function VaultClient({
         </div>
       ) : (
         <table className="w-full text-sm">
-          <thead className="bg-muted/30 text-[11px] uppercase tracking-wide text-muted-foreground">
+          <thead className="ls-eyebrow border-b border-border">
             <tr>
               <th className="px-4 py-2 text-left font-medium">Name</th>
               <th className="px-4 py-2 text-left font-medium">Platform</th>

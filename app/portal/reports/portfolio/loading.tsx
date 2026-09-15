@@ -42,7 +42,7 @@ export default function PortfolioFunnelLoading() {
         </div>
         <div className="space-y-3">
           <div className="h-4 w-24 bg-muted rounded" />
-          <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
+          <div className="ls-card overflow-hidden divide-y divide-border">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="px-5 py-3 flex items-center justify-between gap-3">
                 <div className="h-3 w-32 bg-muted rounded" />

@@ -348,7 +348,7 @@ function ResidentTable({
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
+    <div className="ls-card overflow-hidden">
       {/* Header strip */}
       <div
         className={

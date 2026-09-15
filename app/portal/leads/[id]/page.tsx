@@ -393,7 +393,7 @@ export default async function LeadDetailPage({
       {/* B. Hero identity card */}
       <section
         className={cn(
-          "rounded-[2px] border border-border bg-card",
+          "ls-card",
           "p-6 md:p-7",
           "grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,auto)] gap-6"
         )}
@@ -516,7 +516,7 @@ export default async function LeadDetailPage({
       </section>
 
       {followUpTasks.length > 0 ? (
-        <section className="rounded-[2px] border border-border bg-card p-5">
+        <section className="ls-card p-5">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="ls-eyebrow">
@@ -596,7 +596,7 @@ export default async function LeadDetailPage({
               {timeline.length} {timeline.length === 1 ? "event" : "events"}
             </p>
           </div>
-          <div className="rounded-[2px] border border-border bg-card p-4">
+          <div className="ls-card p-4">
             <Timeline events={timeline} />
           </div>
           {timeline.length === 1 ? (
@@ -875,7 +875,7 @@ function Tile({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-[2px] border border-border bg-card p-4">
+    <div className="ls-card p-4">
       <p className="ls-eyebrow mb-2">
         {label}
       </p>

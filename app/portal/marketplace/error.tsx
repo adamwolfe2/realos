@@ -16,7 +16,7 @@ export default function MarketplaceError({
   }, [error]);
 
   return (
-    <div className="max-w-md mx-auto mt-16 rounded-[2px] border border-border bg-card p-8 text-center space-y-3">
+    <div className="max-w-md mx-auto mt-16 ls-card p-8 text-center space-y-3">
       <div className="inline-flex items-center justify-center w-10 h-10 rounded-[2px] bg-primary/10 text-primary mx-auto">
         <ShoppingBag className="h-5 w-5" />
       </div>

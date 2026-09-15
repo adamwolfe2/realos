@@ -31,7 +31,7 @@ export function RecommendationsDrawer({
   return (
     <div
       className={
-        bare ? "overflow-hidden" : "rounded-[2px] border border-border bg-card overflow-hidden"
+        bare ? "overflow-hidden" : "ls-card overflow-hidden"
       }
     >
       <button

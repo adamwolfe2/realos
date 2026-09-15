@@ -6,7 +6,7 @@ export default function SettingsLoading() {
         <div className="h-4 w-64 bg-muted/60 rounded" />
       </div>
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <div key={i} className="ls-card p-5 space-y-4">
           <div className="space-y-1">
             <div className="h-4 w-36 bg-muted rounded" />
             <div className="h-3 w-64 bg-muted/50 rounded" />

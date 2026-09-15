@@ -13,7 +13,7 @@ export default function ConversationsLoading() {
           ))}
         </div>
       </div>
-      <div className="rounded-[2px] border border-border bg-card overflow-hidden divide-y divide-border">
+      <div className="ls-card overflow-hidden divide-y divide-border">
         {Array.from({ length: 8 }).map((_, i) => (
           <div key={i} className="px-4 py-3 flex items-start justify-between gap-3">
             <div className="flex-1 space-y-1.5">

@@ -612,7 +612,7 @@ function CompsStrip({
         {comps.map((c, i) => (
           <div
             key={`${c.formattedAddress ?? i}-${i}`}
-            className="shrink-0 w-[200px] rounded-lg border border-border bg-card p-3"
+            className="shrink-0 w-[200px] ls-card p-3"
           >
             <div className="text-[11.5px] font-semibold truncate" title={c.formattedAddress ?? ""}>
               {c.formattedAddress ?? "Unknown address"}

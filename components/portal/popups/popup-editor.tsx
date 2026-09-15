@@ -202,7 +202,7 @@ export function PopupEditor({
       {/* LEFT — controls */}
       <div className="space-y-3">
         {/* Header + actions */}
-        <div className="rounded-[2px] border border-border bg-card p-4 space-y-3">
+        <div className="ls-card p-4 space-y-3">
           <div className="flex items-center justify-between gap-3">
             <input
               value={state.name}
@@ -268,7 +268,7 @@ export function PopupEditor({
         </div>
 
         {/* Tab bar */}
-        <div className="flex flex-wrap items-center gap-1 rounded-[2px] border border-border bg-card p-1">
+        <div className="flex flex-wrap items-center gap-1 ls-card p-1">
           {(
             [
               ["copy", "Copy"],
@@ -296,7 +296,7 @@ export function PopupEditor({
         </div>
 
         {/* Tab body */}
-        <div className="rounded-[2px] border border-border bg-card p-4 space-y-3.5">
+        <div className="ls-card p-4 space-y-3.5">
           {tab === "copy" ? <CopyTab state={state} set={set} /> : null}
           {tab === "design" ? <DesignTab state={state} set={set} /> : null}
           {tab === "featured" ? <FeaturedTab state={state} set={set} /> : null}

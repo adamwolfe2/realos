@@ -5,7 +5,7 @@ export default function ApiKeysLoading() {
         <div className="h-7 w-24 bg-muted rounded-md" />
         <div className="h-4 w-72 bg-muted/60 rounded" />
       </div>
-      <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+      <div className="ls-card p-5 space-y-4">
         <div className="h-5 w-32 bg-muted rounded" />
         {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} className="flex items-center justify-between py-3 border-b border-border last:border-0">

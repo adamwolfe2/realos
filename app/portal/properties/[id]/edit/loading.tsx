@@ -13,7 +13,7 @@ export default function PropertyEditLoading() {
       {Array.from({ length: 4 }).map((_, i) => (
         <div
           key={i}
-          className="rounded-xl border border-border bg-card p-5 space-y-4"
+          className="ls-card p-5 space-y-4"
         >
           <div className="space-y-1">
             <div className="h-4 w-36 bg-muted rounded" />

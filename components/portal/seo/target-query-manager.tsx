@@ -117,7 +117,7 @@ export function TargetQueryManager({ propertyId }: Props) {
   const inactive = queries?.filter((q) => !q.active) ?? [];
 
   return (
-    <div className="rounded-[2px] border border-border bg-card p-5">
+    <div className="ls-card p-5">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
           <h3 className="text-sm font-semibold text-foreground">

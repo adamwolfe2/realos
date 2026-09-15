@@ -68,7 +68,7 @@ export function PropertyHeroStrip({
     : undefined;
 
   return (
-    <section className="rounded-xl border border-border bg-card overflow-hidden">
+    <section className="ls-card overflow-hidden">
       <div className="flex items-center gap-4 p-4 md:p-5">
         {heroImageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element

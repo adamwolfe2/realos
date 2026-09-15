@@ -125,7 +125,7 @@ export default async function NewContentDraftPage(props: {
 
       <form
         action={createDraftAction}
-        className="space-y-5 rounded-[2px] border border-border bg-card p-6"
+        className="space-y-5 ls-card p-6"
       >
         <div className="space-y-2">
           <label className="ls-eyebrow">

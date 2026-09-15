@@ -79,7 +79,7 @@ export function SnoozedRecsPanel({ recommendations }: Props) {
 
   return (
     <details
-      className="rounded-[2px] border border-border bg-card overflow-hidden"
+      className="ls-card overflow-hidden"
       open={expanded}
       onToggle={(e) => setExpanded((e.target as HTMLDetailsElement).open)}
     >

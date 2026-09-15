@@ -16,14 +16,14 @@ export default function SeoAgentLoading() {
 
       {/* Property switcher (only renders for multi-property orgs but
           reserving the space avoids layout jank when it shows up). */}
-      <div className="flex gap-1.5 rounded-2xl border border-border bg-card p-1.5">
+      <div className="flex gap-1.5 ls-card p-1.5">
         {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} className="h-7 w-32 bg-muted/60 rounded-lg" />
         ))}
       </div>
 
       {/* Connect website card */}
-      <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
+      <div className="ls-card p-5 space-y-3">
         <div className="h-4 w-44 bg-muted rounded" />
         <div className="h-3 w-80 bg-secondary rounded" />
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 mt-3">
@@ -41,7 +41,7 @@ export default function SeoAgentLoading() {
       </div>
 
       {/* Executive summary KPI strip */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="ls-card overflow-hidden">
         <div className="px-4 py-2 border-b border-border/60 flex justify-between">
           <div className="h-3 w-32 bg-muted rounded" />
           <div className="h-3 w-20 bg-muted/50 rounded" />
@@ -65,7 +65,7 @@ export default function SeoAgentLoading() {
       </div>
 
       {/* Health score card */}
-      <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="ls-card p-5">
         <div className="h-4 w-32 bg-muted rounded mb-3" />
         <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -75,7 +75,7 @@ export default function SeoAgentLoading() {
       </div>
 
       {/* Action bar (refresh + draft) */}
-      <div className="rounded-2xl border border-border bg-card px-4 py-3 flex justify-between items-center">
+      <div className="ls-card px-4 py-3 flex justify-between items-center">
         <div className="space-y-1.5">
           <div className="h-3.5 w-24 bg-muted rounded" />
           <div className="h-3 w-72 bg-secondary rounded" />
@@ -87,7 +87,7 @@ export default function SeoAgentLoading() {
       </div>
 
       {/* Recommendations panel */}
-      <div className="rounded-2xl border border-border bg-card p-5 space-y-2">
+      <div className="ls-card p-5 space-y-2">
         <div className="h-4 w-48 bg-muted rounded mb-3" />
         {Array.from({ length: 4 }).map((_, i) => (
           <div
@@ -108,7 +108,7 @@ export default function SeoAgentLoading() {
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-xl border border-border bg-card overflow-hidden"
+            className="ls-card overflow-hidden"
           >
             <div className="px-5 py-3 border-b border-border/60">
               <div className="h-2.5 w-20 bg-muted/60 rounded mb-1" />
@@ -122,7 +122,7 @@ export default function SeoAgentLoading() {
       </div>
 
       {/* Score history line chart */}
-      <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
+      <div className="ls-card p-5 space-y-3">
         <div className="h-4 w-32 bg-muted rounded" />
         <div className="h-56 w-full bg-muted/30 rounded" />
       </div>

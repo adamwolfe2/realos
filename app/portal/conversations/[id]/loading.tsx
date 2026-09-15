@@ -2,7 +2,7 @@ export default function ConversationDetailLoading() {
   return (
     <div className="flex gap-5 h-[calc(100vh-4rem)] animate-pulse">
       {/* Transcript */}
-      <div className="flex-1 rounded-xl border border-border bg-card overflow-hidden flex flex-col">
+      <div className="flex-1 ls-card overflow-hidden flex flex-col">
         <div className="border-b border-border p-4 space-y-1">
           <div className="h-5 w-48 bg-muted rounded" />
           <div className="h-3 w-32 bg-muted/60 rounded" />
@@ -29,7 +29,7 @@ export default function ConversationDetailLoading() {
       {/* Sidebar */}
       <div className="w-72 shrink-0 space-y-4">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="rounded-xl border border-border bg-card p-4 space-y-3">
+          <div key={i} className="ls-card p-4 space-y-3">
             <div className="h-4 w-24 bg-muted rounded" />
             {Array.from({ length: 3 }).map((_, j) => (
               <div key={j} className="h-3 w-full bg-muted/50 rounded" />

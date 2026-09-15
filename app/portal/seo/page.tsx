@@ -474,7 +474,7 @@ function SeoEmptyShell({
         }
       />
 
-      <div className="rounded-[2px] border border-border bg-card overflow-hidden">
+      <div className="ls-card overflow-hidden">
         <div className="px-6 py-9 flex flex-col items-center text-center border-b border-border bg-primary/[0.04]">
           <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-[2px] bg-primary/10 text-primary ring-1 ring-primary/20">
             <Search className="h-6 w-6" />

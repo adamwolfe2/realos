@@ -11,7 +11,7 @@ export default function AttributionLoading() {
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-[2px] border border-border bg-card p-4 space-y-2"
+            className="ls-card p-4 space-y-2"
           >
             <div className="h-3 w-20 rounded-[2px] bg-muted/60" />
             <div className="h-7 w-16 rounded-[2px] bg-muted" />
@@ -20,7 +20,7 @@ export default function AttributionLoading() {
         ))}
       </div>
       {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="rounded-[2px] border border-border bg-card p-4">
+        <div key={i} className="ls-card p-4">
           <div className="h-4 w-40 rounded-[2px] bg-muted" />
           <div className="mt-2 h-3 w-64 max-w-full rounded-[2px] bg-muted/60" />
           <div className="mt-4 h-48 rounded-[2px] bg-muted/30" />

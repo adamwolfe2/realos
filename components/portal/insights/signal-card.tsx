@@ -56,7 +56,7 @@ export function SignalCard({
     <Link
       href={href}
       className={cn(
-        "group relative block rounded-[2px] border border-border bg-card",
+        "group relative block ls-card",
         "px-4 pt-3 pb-2 transition-all overflow-hidden",
         "hover:shadow-[0_2px_12px_rgba(15,23,42,0.06)] hover:-translate-y-0.5",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",

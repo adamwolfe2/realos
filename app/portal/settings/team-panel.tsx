@@ -93,7 +93,7 @@ export function ClientTeamPanel(props: Props) {
           </p>
         </div>
       ) : (
-        <ul className="divide-y divide-border rounded-[2px] border border-border bg-card">
+        <ul className="divide-y divide-border ls-card">
           {members.map((m) => (
             <li key={m.id}>
               <MemberRow

@@ -138,7 +138,7 @@ export function DraftLauncher({ propertyId, propertyName, prefill }: Props) {
             if (e.target === e.currentTarget) setOpen(false);
           }}
         >
-          <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-[2px] border border-border bg-card shadow-xl">
+          <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto ls-card shadow-xl">
             <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
               <div>
                 <p className="ls-eyebrow ls-eyebrow-accent">

@@ -9,7 +9,7 @@ export default function GoogleAdsSelectLoading() {
         <div className="h-7 w-56 bg-muted rounded-md" />
         <div className="h-4 w-[24rem] max-w-full bg-muted/60 rounded" />
       </div>
-      <div className="rounded-xl border border-border bg-card divide-y divide-border">
+      <div className="ls-card divide-y divide-border">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="flex items-center gap-3 px-4 py-3">
             <div className="h-9 w-9 rounded-md bg-muted" />

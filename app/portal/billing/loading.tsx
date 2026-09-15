@@ -5,7 +5,7 @@ export default function BillingLoading() {
         <div className="h-7 w-24 bg-muted rounded-md" />
         <div className="h-4 w-64 bg-muted/60 rounded" />
       </div>
-      <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+      <div className="ls-card p-5 space-y-4">
         <div className="flex items-center justify-between">
           <div className="h-4 w-32 bg-muted rounded" />
           <div className="h-5 w-20 bg-muted/60 rounded-full" />
@@ -24,7 +24,7 @@ export default function BillingLoading() {
           <div className="h-8 w-32 bg-secondary rounded-md" />
         </div>
       </div>
-      <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+      <div className="ls-card p-5 space-y-4">
         <div className="h-4 w-28 bg-muted rounded" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {Array.from({ length: 3 }).map((_, i) => (

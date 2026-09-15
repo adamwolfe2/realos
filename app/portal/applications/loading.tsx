@@ -10,14 +10,14 @@ export default function ApplicationsLoading() {
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="rounded-[2px] border border-border bg-card p-4 space-y-2">
+          <div key={i} className="ls-card p-4 space-y-2">
             <div className="h-3 w-20 bg-muted rounded" />
             <div className="h-7 w-12 bg-muted rounded" />
             <div className="h-3 w-24 bg-muted/60 rounded" />
           </div>
         ))}
       </div>
-      <div className="rounded-[2px] border border-border bg-card overflow-hidden">
+      <div className="ls-card overflow-hidden">
         <div className="h-9 bg-secondary border-b border-border" />
         <div className="h-9 bg-secondary/60 border-b border-border" />
         {Array.from({ length: 8 }).map((_, i) => (

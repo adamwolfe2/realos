@@ -532,7 +532,7 @@ export function ScannerPanel({
   return (
     <div className="space-y-6">
       {/* Scan controls */}
-      <section className="rounded-xl border border-border bg-card p-5">
+      <section className="ls-card p-5">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="min-w-0">
             <div className="ls-eyebrow">
@@ -799,7 +799,7 @@ export function ScannerPanel({
 
       {/* Previous scans */}
       {scans.length > 0 ? (
-        <section className="rounded-xl border border-border bg-card p-5">
+        <section className="ls-card p-5">
           <h3 className="text-sm font-semibold tracking-tight text-foreground mb-3">
             Previous scans
           </h3>

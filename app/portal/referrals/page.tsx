@@ -201,7 +201,7 @@ export default async function ReferralsPage() {
       )}
 
       {/* How it works */}
-      <div className="rounded-[2px] border border-border bg-card p-5 space-y-3">
+      <div className="ls-card p-5 space-y-3">
         <div className="ls-eyebrow">
           How it works
         </div>

@@ -74,7 +74,7 @@ function Panel({ children }: { children: React.ReactNode }) {
 
 function Card({ children }: { children: React.ReactNode }) {
   return (
-    <section className="rounded-[2px] border border-border bg-card p-5">{children}</section>
+    <section className="ls-card p-5">{children}</section>
   );
 }
 
@@ -267,7 +267,7 @@ function HeroStat({
   delta?: number | null;
 }) {
   return (
-    <div className="rounded-[2px] border border-border bg-card px-3 py-2.5">
+    <div className="ls-card px-3 py-2.5">
       <div className="ls-metric text-[20px] leading-none">{value}</div>
       <div className="mt-1 text-[10.5px] font-medium text-muted-foreground">{label}</div>
       {delta != null ? (
@@ -715,7 +715,7 @@ function InsightsSection(s: ReportSnapshot): React.ReactNode {
           <SectionHeading>Recommended actions</SectionHeading>
           <div className="flex flex-col gap-3">
             {ai.actions.map((act, i) => (
-              <div key={i} className="rounded-[2px] border border-border bg-card p-3.5">
+              <div key={i} className="ls-card p-3.5">
                 <div className="mb-1.5 flex items-center gap-2">
                   <span className={`rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide ${PRIORITY_STYLE[act.priority] ?? PRIORITY_STYLE.low}`}>
                     {act.priority}

@@ -650,7 +650,7 @@ export default async function LeadsKanbanPage({
       ) : null}
 
       {/* Premium filter bar — search + pill-based source tabs */}
-      <div className="rounded-[2px] border border-border bg-card p-3 space-y-2.5">
+      <div className="ls-card p-3 space-y-2.5">
         {/* Search row */}
         <form action="/portal/leads" className="flex items-center gap-2">
           {/* Preserve active source + signal + property scope through search submit */}
@@ -1041,8 +1041,8 @@ function IdentifiedVisitorsSection({
   total: number;
 }) {
   return (
-    <section className="rounded-[2px] border border-border bg-card overflow-hidden">
-      <header className="flex items-center justify-between gap-3 border-b border-border bg-muted/30 px-4 py-3">
+    <section className="ls-card overflow-hidden">
+      <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
         <div className="flex items-center gap-2 min-w-0">
           <Eye className="h-4 w-4 text-primary shrink-0" aria-hidden="true" />
           <div className="min-w-0">

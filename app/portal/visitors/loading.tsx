@@ -14,14 +14,14 @@ export default function VisitorsLoading() {
         <Skeleton className="h-6 w-28" />
         <Skeleton className="h-3 w-72 mt-1" />
       </div>
-      <div className="rounded-xl border border-border bg-card px-3 py-2 flex gap-4">
+      <div className="ls-card px-3 py-2 flex gap-4">
         <Skeleton className="h-5 w-40" />
         <Skeleton className="h-5 w-48" />
         <Skeleton className="h-5 w-36" />
       </div>
       {/* Window / Status / Sort filter bar — same rounded-xl card + 3
           legend/pill-group footprint as the real page's TabGroup row. */}
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-border bg-card px-3 py-2.5">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 ls-card px-3 py-2.5">
         {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} className="flex items-center gap-2">
             <Skeleton className="h-2.5 w-12" />
@@ -34,7 +34,7 @@ export default function VisitorsLoading() {
           <SkeletonKpi key={i} />
         ))}
       </div>
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="ls-card overflow-hidden">
         <div className="flex items-center gap-3 border-b border-border bg-secondary/40 px-3 py-2">
           {Array.from({ length: 8 }).map((_, i) => (
             <Skeleton

@@ -62,7 +62,7 @@ export function AlertDialog({
         if (e.target === e.currentTarget) onCancel();
       }}
     >
-      <div className="animate-in fade-in-0 zoom-in-95 w-full max-w-sm rounded-[2px] border border-border bg-card shadow-lg duration-200 ease-[cubic-bezier(0.2,0.8,0.2,1)]">
+      <div className="animate-in fade-in-0 zoom-in-95 w-full max-w-sm ls-card shadow-lg duration-200 ease-[cubic-bezier(0.2,0.8,0.2,1)]">
         <header className="border-b border-border px-4 py-3">
           <p className="text-sm font-semibold text-foreground">{title}</p>
           {body ? (

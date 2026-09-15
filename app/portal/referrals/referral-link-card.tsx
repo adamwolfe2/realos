@@ -34,7 +34,7 @@ export function ReferralLinkCard({ stat }: { stat: ReferralPropertyStat }) {
   }
 
   return (
-    <div className="rounded-[2px] border border-border bg-card p-5 space-y-4">
+    <div className="ls-card p-5 space-y-4">
       {/* Property name */}
       <div>
         <div className="ls-eyebrow">

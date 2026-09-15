@@ -39,7 +39,7 @@ export function LeadHeatmap({ leadCreatedAt, now = new Date(), bare = false }: L
         className={
           bare
             ? "px-5 py-8 text-center"
-            : "rounded-[2px] border border-border bg-card px-5 py-8 text-center"
+            : "ls-card px-5 py-8 text-center"
         }
       >
         <div className="text-sm font-medium text-foreground">
@@ -53,7 +53,7 @@ export function LeadHeatmap({ leadCreatedAt, now = new Date(), bare = false }: L
   }
 
   return (
-    <div className={bare ? "" : "rounded-[2px] border border-border bg-card p-5"}>
+    <div className={bare ? "" : "ls-card p-5"}>
       <div className="flex items-baseline justify-between mb-3">
         <div>
           <div className="ls-eyebrow">

@@ -74,7 +74,7 @@ export async function ChatbotTab({
       </section>
 
       {emptyEverything ? (
-        <div className="rounded-xl border border-border bg-card p-6">
+        <div className="ls-card p-6">
           <p className="text-sm font-semibold text-foreground">
             No chatbot activity yet
           </p>

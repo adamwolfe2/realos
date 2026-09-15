@@ -11,7 +11,7 @@ export default function PortalLoading() {
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-[2px] border border-border bg-card p-4 space-y-2"
+            className="ls-card p-4 space-y-2"
           >
             <div className="h-3 w-20 bg-muted rounded" />
             <div className="h-7 w-16 bg-muted/60 rounded" />
@@ -23,7 +23,7 @@ export default function PortalLoading() {
           source + activity (right). */}
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-2 items-start">
         <div className="space-y-2 min-w-0">
-          <div className="rounded-[2px] border border-border bg-card p-5 h-[300px]">
+          <div className="ls-card p-5 h-[300px]">
             <div className="h-4 w-40 bg-muted rounded" />
           </div>
           <div className="rounded-[2px] border border-border bg-card p-4 h-16">
@@ -31,19 +31,19 @@ export default function PortalLoading() {
           </div>
         </div>
         <div className="space-y-2 min-w-0">
-          <div className="rounded-[2px] border border-border bg-card p-4 space-y-2">
+          <div className="ls-card p-4 space-y-2">
             <div className="h-4 w-40 bg-muted rounded" />
             {Array.from({ length: 4 }).map((_, j) => (
               <div key={j} className="h-3 w-full bg-muted/50 rounded" />
             ))}
           </div>
-          <div className="rounded-[2px] border border-border bg-card p-4 space-y-2">
+          <div className="ls-card p-4 space-y-2">
             <div className="h-4 w-28 bg-muted rounded" />
             {Array.from({ length: 4 }).map((_, j) => (
               <div key={j} className="h-3 w-full bg-muted/50 rounded" />
             ))}
           </div>
-          <div className="rounded-[2px] border border-border bg-card p-4 space-y-2">
+          <div className="ls-card p-4 space-y-2">
             <div className="h-3 w-16 bg-muted rounded" />
             {Array.from({ length: 3 }).map((_, j) => (
               <div key={j} className="h-3 w-full bg-muted/50 rounded" />

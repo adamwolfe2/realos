@@ -124,7 +124,7 @@ const TONE_DOT: Record<"good" | "ok" | "bad", string> = {
 
 export function ExecSummaryRow({ stats }: { stats: ExecSummaryStat[] }) {
   return (
-    <section className="rounded-[2px] border border-border bg-card overflow-hidden">
+    <section className="ls-card overflow-hidden">
       <header className="flex items-center justify-between gap-3 px-4 py-2 border-b border-border/60 bg-gradient-to-r from-primary/[0.04] via-card to-card">
         <p className="ls-eyebrow ls-eyebrow-accent">
           Executive summary
@@ -275,7 +275,7 @@ export function StrikingDistanceTable({
       className={
         bare
           ? "overflow-hidden"
-          : "rounded-[2px] border border-border bg-card overflow-hidden"
+          : "ls-card overflow-hidden"
       }
     >
       <header
@@ -366,7 +366,7 @@ export function ShareOfVoiceDonut({
 }) {
   if (slices.length === 0) {
     return (
-      <section className="rounded-[2px] border border-border bg-card p-5">
+      <section className="ls-card p-5">
         <SectionHeader
           eyebrow="Competitive"
           title="Share of voice"
@@ -387,7 +387,7 @@ export function ShareOfVoiceDonut({
   const ranked = [...slices].sort((a, b) => b.shareOfVoice - a.shareOfVoice);
   const max = Math.max(0.0001, ...ranked.map((s) => s.shareOfVoice));
   return (
-    <section className="rounded-[2px] border border-border bg-card p-5">
+    <section className="ls-card p-5">
       <SectionHeader
         eyebrow="Competitive"
         title="Share of voice"
@@ -441,7 +441,7 @@ export function OpportunityMatrix({
 }) {
   if (points.length === 0) {
     return (
-      <section className="rounded-[2px] border border-border bg-card p-5">
+      <section className="ls-card p-5">
         <SectionHeader
           eyebrow="Strategy"
           title="Opportunity matrix"
@@ -453,7 +453,7 @@ export function OpportunityMatrix({
     );
   }
   return (
-    <section className="rounded-[2px] border border-border bg-card p-5">
+    <section className="ls-card p-5">
       <SectionHeader
         eyebrow="Strategy"
         title="Opportunity matrix"
@@ -541,7 +541,7 @@ export type ContentRoiNode = {
 export function ContentRoiTreemap({ nodes }: { nodes: ContentRoiNode[] }) {
   if (nodes.length === 0) {
     return (
-      <section className="rounded-[2px] border border-border bg-card p-5">
+      <section className="ls-card p-5">
         <SectionHeader
           eyebrow="Content ROI"
           title="Per-URL performance"
@@ -558,7 +558,7 @@ export function ContentRoiTreemap({ nodes }: { nodes: ContentRoiNode[] }) {
   const ranked = [...nodes].sort((a, b) => b.clicks - a.clicks);
   const max = Math.max(1, ...ranked.map((n) => n.clicks));
   return (
-    <section className="rounded-[2px] border border-border bg-card p-5">
+    <section className="ls-card p-5">
       <SectionHeader
         eyebrow="Content ROI"
         title="Per-URL performance"
@@ -609,7 +609,7 @@ export function SiteHealthGauge({
 }) {
   const color = score >= 75 ? SUCCESS : score >= 50 ? BRAND : score >= 25 ? "#F59E0B" : DANGER;
   return (
-    <section className="rounded-[2px] border border-border bg-card p-5">
+    <section className="ls-card p-5">
       <SectionHeader eyebrow="Technical" title="Site health" />
       <div className="mt-2 space-y-4">
         <div>
@@ -680,7 +680,7 @@ export function LocalPackCard({
   const sidePad = bare ? "px-0" : "px-5";
   if (rows.length === 0) {
     return (
-      <section className={bare ? "" : "rounded-[2px] border border-border bg-card p-5"}>
+      <section className={bare ? "" : "ls-card p-5"}>
         <SectionHeader
           eyebrow="Google Maps"
           title="Local pack tracker"
@@ -694,7 +694,7 @@ export function LocalPackCard({
   return (
     <section
       className={
-        bare ? "overflow-hidden" : "rounded-[2px] border border-border bg-card overflow-hidden"
+        bare ? "overflow-hidden" : "ls-card overflow-hidden"
       }
     >
       <header className={`${sidePad} py-3 border-b border-border`}>

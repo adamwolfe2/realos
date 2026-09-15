@@ -20,7 +20,7 @@ export default function PropertyDetailLoading() {
       {/* Tab content */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="rounded-xl border border-border bg-card p-5 space-y-3">
+          <div key={i} className="ls-card p-5 space-y-3">
             <div className="h-4 w-32 bg-muted rounded" />
             {Array.from({ length: 3 }).map((_, j) => (
               <div key={j} className="space-y-1">

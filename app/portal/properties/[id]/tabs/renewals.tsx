@@ -173,7 +173,7 @@ export async function RenewalsTab({
                         l.resident?.email ||
                         "Resident";
                       return (
-                        <li key={l.id} className="rounded-md border border-border bg-card px-2 py-1.5">
+                        <li key={l.id} className="ls-card px-2 py-1.5">
                           <p className="text-[11px] font-medium text-foreground truncate">{name}</p>
                           <div className="flex items-center justify-between mt-0.5 text-[10px] text-muted-foreground tabular-nums">
                             <span>

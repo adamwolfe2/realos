@@ -57,7 +57,7 @@ export function WeeklyChangesPanel({ changes }: Props) {
   );
 
   return (
-    <section className="rounded-[2px] border border-border bg-card overflow-hidden">
+    <section className="ls-card overflow-hidden">
       <header className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-border/60">
         <div>
           <p className="ls-eyebrow ls-eyebrow-accent">

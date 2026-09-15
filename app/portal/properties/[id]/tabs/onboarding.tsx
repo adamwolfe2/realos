@@ -40,7 +40,7 @@ export async function OnboardingTab({
   const checklist = await getLaunchChecklist(orgId, propertyId);
   if (!checklist) {
     return (
-      <div className="rounded-xl border border-border bg-card px-6 py-12 text-center text-sm text-muted-foreground">
+      <div className="ls-card px-6 py-12 text-center text-sm text-muted-foreground">
         Property not found.
       </div>
     );
@@ -57,7 +57,7 @@ export async function OnboardingTab({
   return (
     <div className="space-y-6">
       {/* Status header + actions */}
-      <section className="rounded-xl border border-border bg-card p-5">
+      <section className="ls-card p-5">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
@@ -128,7 +128,7 @@ export async function OnboardingTab({
             metrics in dashboards.
           </p>
         </header>
-        <ul className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+        <ul className="ls-card divide-y divide-border overflow-hidden">
           {checklist.items
             .filter((i) => i.required)
             .map((item) => (
@@ -150,7 +150,7 @@ export async function OnboardingTab({
               on-site popups.
             </p>
           </header>
-          <ul className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+          <ul className="ls-card divide-y divide-border overflow-hidden">
             {checklist.items
               .filter((i) => !i.required)
               .map((item) => (

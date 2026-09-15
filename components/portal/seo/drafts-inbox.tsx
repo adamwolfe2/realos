@@ -92,7 +92,7 @@ export function DraftsInbox({ propertyId }: Props) {
 
   if (!drafts) {
     return (
-      <div className="rounded-[2px] border border-border bg-card p-5">
+      <div className="ls-card p-5">
         <h3 className="text-sm font-semibold text-foreground">Drafts inbox</h3>
         <div className="mt-3 h-16 rounded-[2px] bg-muted/30 animate-pulse" />
       </div>
@@ -106,7 +106,7 @@ export function DraftsInbox({ propertyId }: Props) {
   const visible = showAll ? drafts : drafts.slice(0, 4);
 
   return (
-    <div className="rounded-[2px] border border-border bg-card p-5">
+    <div className="ls-card p-5">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
           <h3 className="text-sm font-semibold text-foreground">

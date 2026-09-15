@@ -90,7 +90,7 @@ export default async function PortalSiteRequestPage() {
       />
 
       {existing ? (
-        <div className="rounded-lg border border-border bg-card p-5">
+        <div className="ls-card p-5">
           <div className="flex items-baseline justify-between gap-3">
             <div>
               <p className="text-sm font-semibold">

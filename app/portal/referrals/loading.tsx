@@ -10,7 +10,7 @@ export default function ReferralsLoading() {
       </div>
       <div className="space-y-5">
         {Array.from({ length: 2 }).map((_, i) => (
-          <div key={i} className="rounded-xl border border-border bg-card p-5 space-y-4">
+          <div key={i} className="ls-card p-5 space-y-4">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 bg-muted rounded-lg" />
               <div className="space-y-1 flex-1">

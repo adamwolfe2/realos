@@ -5,7 +5,7 @@ export default function SeoLoading() {
         <div className="h-7 w-20 bg-muted rounded-md" />
         <div className="h-4 w-80 bg-muted/60 rounded" />
       </div>
-      <div className="rounded-xl border border-border bg-card p-5 flex items-center gap-4">
+      <div className="ls-card p-5 flex items-center gap-4">
         <div className="h-10 w-10 bg-muted rounded-lg" />
         <div className="space-y-1.5 flex-1">
           <div className="h-4 w-48 bg-muted rounded" />
@@ -15,7 +15,7 @@ export default function SeoLoading() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {Array.from({ length: 2 }).map((_, i) => (
-          <div key={i} className="rounded-xl border border-border bg-card overflow-hidden">
+          <div key={i} className="ls-card overflow-hidden">
             <div className="px-5 py-3 border-b border-border flex items-center justify-between">
               <div className="h-4 w-32 bg-muted rounded" />
               <div className="h-3 w-16 bg-muted/50 rounded" />

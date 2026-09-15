@@ -549,7 +549,7 @@ export default async function VisitorsPage({
       {/* Filter controls — single inline row. Window / Status / Sort sit
           side-by-side instead of stacking, with each group flowing to the
           next line only when the viewport actually runs out of width. */}
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-[2px] border border-border bg-card px-3 py-2.5">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 ls-card px-3 py-2.5">
         <TabGroup
           legend="Window"
           items={WINDOWS.map((w) => ({
@@ -655,7 +655,7 @@ export default async function VisitorsPage({
       ) : noVisitorsAtAll ? (
         <EmptyNoVisitors setupHref={pixelSetupHref} />
       ) : visitors.length === 0 ? (
-        <div className="rounded-[2px] border border-border bg-card p-8 text-sm text-muted-foreground text-center">
+        <div className="ls-card p-8 text-sm text-muted-foreground text-center">
           No visitors match these filters. Try widening the time window or the
           status filter.
         </div>

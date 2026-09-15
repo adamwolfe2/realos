@@ -118,7 +118,7 @@ export function RecommendationManager({ recommendations }: Props) {
   const someSelected = selected.size > 0 && !allSelected;
 
   return (
-    <div className="rounded-[2px] border border-border bg-card overflow-hidden">
+    <div className="ls-card overflow-hidden">
       <header className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-border/60">
         <label className="inline-flex items-center gap-2 cursor-pointer">
           <input

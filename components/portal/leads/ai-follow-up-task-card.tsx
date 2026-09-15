@@ -102,7 +102,7 @@ export function AiFollowUpTaskCard({ task }: Props) {
         </p>
       ) : null}
       {draft ? (
-        <div className="mt-3 space-y-2 rounded-[2px] border border-border bg-card p-3">
+        <div className="mt-3 space-y-2 ls-card p-3">
           {draft.channel === "EMAIL" ? (
             <input
               value={subject}

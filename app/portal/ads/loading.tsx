@@ -7,7 +7,7 @@ export default function AdsLoading() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="rounded-xl border border-border bg-card p-4 space-y-2">
+          <div key={i} className="ls-card p-4 space-y-2">
             <div className="h-3 w-24 bg-muted/60 rounded" />
             <div className="h-8 w-20 bg-muted rounded-md" />
             <div className="h-3 w-16 bg-secondary rounded" />
@@ -16,7 +16,7 @@ export default function AdsLoading() {
       </div>
       <div className="space-y-4">
         {Array.from({ length: 2 }).map((_, i) => (
-          <div key={i} className="rounded-xl border border-border bg-card p-5 space-y-4">
+          <div key={i} className="ls-card p-5 space-y-4">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 bg-muted rounded-lg" />
               <div className="space-y-1 flex-1">

@@ -114,7 +114,7 @@ export function ConnectFunnelForm({
         />
       </div>
 
-      <label className="flex items-start gap-2.5 rounded-[2px] border border-border bg-card p-3">
+      <label className="flex items-start gap-2.5 ls-card p-3">
         <input
           type="checkbox"
           name="enabled"

@@ -138,7 +138,7 @@ export default async function IntegrationsStatusPage() {
 
       {/* Summary strip — connected count + the single CTA off this page. */}
       <section
-        className="rounded-[2px] border border-border bg-card p-4 flex flex-wrap items-center justify-between gap-3"
+        className="ls-card p-4 flex flex-wrap items-center justify-between gap-3"
         aria-label="Connection summary"
       >
         <div className="flex items-baseline gap-3 min-w-0">
@@ -342,7 +342,7 @@ function ModuleStateGrid({
           Manage in Marketplace
         </Link>
       </div>
-      <div className="rounded-[2px] border border-border bg-card p-3">
+      <div className="ls-card p-3">
         <ul className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
           {modules.map((m) => {
             const on = org[m.key];

@@ -278,7 +278,7 @@ export function CmdKSearch() {
           onClick={() => setOpen(false)}
         >
           <div
-            className="w-full max-w-xl rounded-[2px] border border-border bg-card shadow-2xl overflow-hidden"
+            className="w-full max-w-xl ls-card shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"

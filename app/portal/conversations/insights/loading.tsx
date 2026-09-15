@@ -18,7 +18,7 @@ export default function ChatbotInsightsLoading() {
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-xl border border-border bg-card p-4 space-y-2"
+            className="ls-card p-4 space-y-2"
           >
             <div className="h-3 w-20 bg-muted rounded" />
             <div className="h-7 w-16 bg-muted/60 rounded" />
@@ -32,7 +32,7 @@ export default function ChatbotInsightsLoading() {
         {Array.from({ length: 2 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-xl border border-border bg-card p-5 space-y-4"
+            className="ls-card p-5 space-y-4"
           >
             <div className="flex items-center gap-2">
               <div className="h-4 w-4 bg-muted rounded" />

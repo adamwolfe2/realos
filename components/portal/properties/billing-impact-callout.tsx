@@ -68,7 +68,7 @@ export function BillingImpactCallout({
       : null;
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div className="ls-card p-4">
       <div className="flex items-start gap-3">
         <span
           aria-hidden="true"
@@ -159,7 +159,7 @@ function ImpactStat({
       className={
         emphasised
           ? "rounded-md border border-primary/30 bg-primary/5 px-3 py-2"
-          : "rounded-md border border-border bg-card px-3 py-2"
+          : "ls-card px-3 py-2"
       }
     >
       <div className="ls-eyebrow">

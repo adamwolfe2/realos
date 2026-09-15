@@ -477,7 +477,7 @@ export function ConnectHub({
       ) : null}
 
       {/* Progress bar — flat, border-first (no hover shadow) */}
-      <div className="rounded-[2px] border border-border bg-card p-4">
+      <div className="ls-card p-4">
         <div className="flex items-baseline justify-between mb-2">
           <p className="ls-eyebrow">
             Sources connected

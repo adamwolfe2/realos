@@ -562,7 +562,7 @@ export function MentionCard({
             if (e.target === e.currentTarget) setDraftOpen(false);
           }}
         >
-          <div className="w-full max-w-lg rounded-[2px] border border-border bg-card shadow-lg">
+          <div className="w-full max-w-lg ls-card shadow-lg">
             <header className="flex items-center justify-between border-b border-border px-4 py-3">
               <div>
                 <p className="text-sm font-semibold text-foreground">

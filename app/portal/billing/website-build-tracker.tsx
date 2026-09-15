@@ -48,7 +48,7 @@ function stageIndex(status: BuildStatus): number {
 
 export function WebsiteBuildTracker({ builds }: { builds: Build[] }) {
   return (
-    <section className="rounded-[2px] border border-border bg-card p-5 space-y-4">
+    <section className="ls-card p-5 space-y-4">
       <div>
         <h2 className="text-sm font-semibold">Your custom website builds</h2>
         <p className="text-xs text-muted-foreground mt-1">

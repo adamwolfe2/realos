@@ -98,7 +98,7 @@ export function LeadEmailComposer({
           onClick={close}
         >
           <div
-            className="w-full max-w-xl rounded-[2px] border border-border bg-card shadow-2xl"
+            className="w-full max-w-xl ls-card shadow-2xl"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
