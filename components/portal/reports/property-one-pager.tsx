@@ -6,6 +6,7 @@ import {
   pct,
   periodLabel,
   addressLine,
+  websiteLink,
   bucketWeekly,
   EngineMark,
   engineLabel,
@@ -63,6 +64,7 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
   const hideUntracked = hidden.has("untracked-sources");
 
   const addr = addressLine(property);
+  const site = websiteLink(property.websiteUrl);
   const sources = leadSources ?? [];
   // Only visitors filed under a launched building reach the snapshot, so 0
   // means "nothing attributable", not "no traffic". See the tile below.
@@ -97,57 +99,97 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
 
   return (
     <div className="ls-stagger mx-auto w-full max-w-[880px] rounded-[2px] border border-border bg-card p-4 text-foreground shadow-sm sm:p-6 print:border-0 print:p-6 print:shadow-none">
-      {/* Header */}
-      <header className="flex items-start justify-between gap-4 border-b border-border pb-4">
-        <div className="flex min-w-0 items-start gap-4">
-          {/* Building image. `object-contain` on a tinted tile, not a
-              full-bleed cover crop: the stored hero is a background-removed
-              PNG, so cropping it to fill would clip the roofline. */}
-          {hero ? (
-            <div className="shrink-0">
-              <div className="flex h-[76px] w-[104px] items-center justify-center overflow-hidden rounded-[2px] border border-border bg-muted/40">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={hero.imageUrl}
-                  alt={hero.name}
-                  className="h-full w-full object-contain"
-                />
-              </div>
-              {hero.caption ? (
-                <p className="mt-1 w-[104px] text-[9px] font-medium leading-tight text-muted-foreground">
-                  {hero.caption}
-                </p>
-              ) : null}
-            </div>
-          ) : null}
-          <div className="min-w-0">
-            <h1 className="text-[21px] font-semibold leading-[1.05] tracking-tight">
-              Marketing &amp; Performance Snapshot
-            </h1>
-            <p className="mt-1.5 text-[12px] font-medium leading-relaxed text-muted-foreground">
-              {property.name}
-              {addr ? ` · ${addr}` : ""}
-              <br />
-              {periodLabel(snapshot)} · First-touch attribution
-            </p>
+      {/* Cover. Bleeds to the card edges (negative margins cancel the card
+          padding) so it reads as the report's title page, not a dashboard
+          strip. Property name is the headline; the document type is a label.
+          The building sits on a flat tinted panel with object-contain +
+          bottom anchoring: stored heroes are small background-removed
+          cutouts (TC is 466x536), so a full-bleed cover crop would blur and
+          clip the roofline — the reason the old wide banner was pulled. */}
+      <header className="-mx-4 -mt-4 mb-6 border-b border-border sm:-mx-6 sm:-mt-6 print:-mx-6 print:-mt-6">
+        <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-1.5 sm:px-6 print:px-6">
+          <span className="ls-eyebrow">Marketing &amp; Performance Report</span>
+          <div className="flex items-center gap-2">
+            <span className="ls-eyebrow hidden sm:inline print:inline">Prepared by</span>
+            {/* The asset is the bare building mark on a padded canvas (no
+                lettering), so the name is set alongside it — a prospect
+                seeing the mark alone wouldn't know who prepared this. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logos/leasestack-wordmark.png"
+              alt=""
+              aria-hidden
+              className="-mx-1 block h-9 w-auto"
+            />
+            <span className="text-[14px] font-semibold tracking-[-0.01em]">
+              LeaseStack
+            </span>
           </div>
         </div>
-        <div className="text-right">
-          <div className="mb-1.5 ls-eyebrow">
-            Prepared by
+
+        <div
+          className={`grid grid-cols-1 ${hero ? "sm:grid-cols-[1fr_280px] print:grid-cols-[1fr_230px]" : ""}`}
+        >
+          <div className="flex min-w-0 flex-col justify-end px-4 pb-6 pt-7 sm:px-6 sm:pb-7 sm:pt-10 print:px-6 print:pt-8">
+            <h1 className="text-[32px] font-semibold leading-[1.02] tracking-[-0.025em] sm:text-[44px] print:text-[36px]">
+              {property.name}
+            </h1>
+            {addr || site ? (
+              <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13.5px] text-muted-foreground">
+                {addr ? <span>{addr}</span> : null}
+                {addr && site ? (
+                  <span aria-hidden className="h-3 w-px bg-border" />
+                ) : null}
+                {site ? (
+                  <a
+                    href={site.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-foreground underline decoration-border underline-offset-4 hover:decoration-foreground"
+                  >
+                    {site.label}
+                  </a>
+                ) : null}
+              </p>
+            ) : null}
+
+            <dl className="mt-7 grid grid-cols-2 gap-x-6 gap-y-3 border-t border-border pt-4 sm:mt-9">
+              <div className="min-w-0">
+                <dt className="ls-eyebrow">Reporting period</dt>
+                <dd className="mt-1 text-[12.5px] font-medium leading-snug">
+                  {periodLabel(snapshot)}
+                </dd>
+              </div>
+              <div className="min-w-0">
+                <dt className="ls-eyebrow">Attribution</dt>
+                <dd className="mt-1 text-[12.5px] font-medium leading-snug">
+                  First-touch
+                </dd>
+              </div>
+            </dl>
           </div>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logos/leasestack-wordmark.png"
-            alt="LeaseStack"
-            className="ml-auto block h-7 w-auto"
-          />
+
+          {hero ? (
+            <figure className="relative order-first flex h-[220px] items-end justify-center overflow-hidden border-b border-border bg-muted/60 pt-5 sm:order-none sm:h-auto sm:min-h-[280px] sm:border-b-0 sm:border-l print:order-none print:h-auto print:min-h-[230px] print:border-b-0 print:border-l">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={hero.imageUrl}
+                alt={hero.name}
+                className="block max-h-full w-auto max-w-[88%] object-contain object-bottom"
+              />
+              {hero.caption ? (
+                <figcaption className="absolute left-3 top-3 rounded-[2px] bg-card/90 px-2 py-1 text-[10px] font-medium leading-tight text-muted-foreground">
+                  {hero.caption}
+                </figcaption>
+              ) : null}
+            </figure>
+          ) : null}
         </div>
       </header>
 
       {/* Headline KPIs. Occupancy (turnover) + rent roll (money) drop out
           when suppressed; the grid tightens to the surviving cards. */}
-      <div className={`mt-5 grid grid-cols-2 gap-2.5 ${TILE_FILL} ${kpiCols[kpiColCount]}`}>
+      <div className={`grid grid-cols-2 gap-2.5 ${TILE_FILL} ${kpiCols[kpiColCount]}`}>
         <KpiCard
           value={num(kpis.leads)}
           label="New leads"

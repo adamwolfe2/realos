@@ -1,6 +1,8 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import type { ReportSnapshot } from "@/lib/reports/generate";
+import type { ReportHeroImage } from "@/components/portal/reports/property-one-pager";
+import type { PropertyMeta } from "@/components/portal/reports/snapshot-shared";
 
 // ---------------------------------------------------------------------------
 // loadPropertyHero — resolves the building image + stats shown above the
@@ -183,4 +185,60 @@ function toHero(property: PropertyRow): PropertyHero {
     imageScale: property.heroImageScale ?? 1,
     googleAggRating: property.googleAggRating ?? null,
   };
+}
+
+// Report-cover image for the one-pager. Shared by the public /r/<token> link
+// and the portal report page so what the operator previews is what the
+// prospect receives. Captions only when the photo names a building the
+// report title doesn't already name.
+export async function loadReportHero(
+  snapshot: ReportSnapshot,
+  orgId: string,
+  titleName: string,
+): Promise<ReportHeroImage | null> {
+  const row = await loadPropertyHero(snapshot, orgId).catch(() => null);
+  if (!row?.heroImageUrl) return null;
+  return {
+    imageUrl: row.heroImageUrl,
+    name: row.propertyName,
+    caption:
+      row.propertyName === titleName
+        ? null
+        : [row.propertyName, row.subtitle].filter(Boolean).join(" · "),
+  };
+}
+
+const REPORT_PROPERTY_SELECT = {
+  name: true,
+  addressLine1: true,
+  city: true,
+  state: true,
+  websiteUrl: true,
+} as const;
+
+// Who the report cover is titled for. A scoped report names its property.
+// An org-wide report for a single-building operator (exactly one ACTIVE
+// property) names that building too: every org-wide snapshot metric is
+// already ACTIVE-property gated (generate.ts sole-ACTIVE-property rule), so
+// the numbers ARE that building's. Only a real multi-building portfolio
+// falls back to the org name.
+export async function loadReportProperty(report: {
+  propertyId: string | null;
+  orgId: string;
+  orgName: string | null | undefined;
+}): Promise<PropertyMeta> {
+  const fallback: PropertyMeta = { name: report.orgName ?? "Portfolio report" };
+  if (report.propertyId) {
+    const row = await prisma.property.findUnique({
+      where: { id: report.propertyId },
+      select: REPORT_PROPERTY_SELECT,
+    });
+    return row ?? fallback;
+  }
+  const active = await prisma.property.findMany({
+    where: { orgId: report.orgId, lifecycle: "ACTIVE" },
+    select: REPORT_PROPERTY_SELECT,
+    take: 2,
+  });
+  return active.length === 1 ? active[0] : fallback;
 }

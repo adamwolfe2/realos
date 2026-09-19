@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { compactUsd, bucketWeekly } from "@/components/portal/reports/snapshot-shared";
+import { compactUsd, bucketWeekly, websiteLink } from "@/components/portal/reports/snapshot-shared";
 
 // ---------------------------------------------------------------------------
 // compactUsd + bucketWeekly — pulled out of the SG Real Estate report review
@@ -49,5 +49,28 @@ describe("bucketWeekly", () => {
 
   it("returns an empty array for an empty trend", () => {
     expect(bucketWeekly([])).toEqual([]);
+  });
+});
+
+// Report cover (2026-09-19): the property website is operator-entered, so
+// the cover link must tolerate a missing scheme and never render a
+// javascript:/garbage href.
+describe("websiteLink", () => {
+  it("strips scheme, www and trailing slash for the label", () => {
+    expect(websiteLink("https://www.telegraphcommons.com/")).toEqual({
+      href: "https://www.telegraphcommons.com/",
+      label: "telegraphcommons.com",
+    });
+  });
+  it("adds https when the scheme is missing and keeps a real path", () => {
+    expect(websiteLink("example.com/berkeley/")).toEqual({
+      href: "https://example.com/berkeley/",
+      label: "example.com/berkeley",
+    });
+  });
+  it("drops empty and non-http values", () => {
+    expect(websiteLink(null)).toBeNull();
+    expect(websiteLink("   ")).toBeNull();
+    expect(websiteLink("javascript:alert(1)")).toBeNull();
   });
 });

@@ -30,7 +30,7 @@ export default async function PropertySnapshotPage({
 
   const property = await prisma.property.findFirst({
     where: { id, ...tenantWhere(scope) },
-    select: { id: true, name: true, addressLine1: true, city: true, state: true },
+    select: { id: true, name: true, addressLine1: true, city: true, state: true, websiteUrl: true },
   });
   if (!property) notFound();
 

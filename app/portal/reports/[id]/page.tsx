@@ -6,7 +6,6 @@ import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { canAccessReport, isReportStatusRestricted } from "@/lib/reports/access";
 import { getSiteUrl } from "@/lib/brand";
 import { PropertyOnePager } from "@/components/portal/reports/property-one-pager";
-import type { PropertyMeta } from "@/components/portal/reports/snapshot-shared";
 import { ReportPrintStyles } from "@/components/portal/reports/report-print-styles";
 import { ReportEditorControls } from "@/components/portal/reports/report-editor-controls";
 import { SendEmailPanel } from "@/components/portal/reports/send-email-panel";
@@ -14,6 +13,7 @@ import { PrintButton } from "@/components/portal/reports/print-button";
 import { PrintExpander } from "@/components/portal/reports/print-expander";
 import { OperatorReviewBar } from "@/components/portal/reports/operator-review-bar";
 import type { ReportSnapshot } from "@/lib/reports/generate";
+import { loadReportHero, loadReportProperty } from "@/lib/reports/load-property-hero";
 
 export const metadata: Metadata = { title: "Report" };
 export const dynamic = "force-dynamic";
@@ -76,18 +76,15 @@ export default async function ReportDetailPage({
   // 2026-08-01 redesign: render the SAME flat single-scroll snapshot body
   // (PropertyOnePager) the /portal/reports live preview generates, instead
   // of the old building-photo banner + branded header band + tabbed
-  // dashboard stack. Adam rejected the old combo outright. Portfolio
-  // reports (propertyId null) don't have a Property row, so PropertyMeta
-  // falls back to the org name — every section already reads snapshot
-  // fields directly and degrades gracefully without a real property.
-  const propertyRow = report.propertyId
-    ? await prisma.property.findUnique({
-        where: { id: report.propertyId },
-        select: { name: true, addressLine1: true, city: true, state: true },
-      })
-    : null;
-  const propertyMeta: PropertyMeta =
-    propertyRow ?? { name: report.org?.name ?? "Portfolio report" };
+  // dashboard stack. Adam rejected the old combo outright. The cover title
+  // and building image resolve through the same helpers as /r/<token>, so
+  // this preview matches what the prospect receives.
+  const propertyMeta = await loadReportProperty({
+    propertyId: report.propertyId,
+    orgId: report.orgId,
+    orgName: report.org?.name,
+  });
+  const hero = await loadReportHero(snapshot, report.orgId, propertyMeta.name);
 
   return (
     <div className="space-y-5 report-page">
@@ -173,7 +170,7 @@ export default async function ReportDetailPage({
       {/* Flat single-scroll snapshot body — the same PropertyOnePager the
           live preview renders, fed from the frozen snapshot instead of a
           fresh query. */}
-      <PropertyOnePager snapshot={snapshot} property={propertyMeta} />
+      <PropertyOnePager snapshot={snapshot} property={propertyMeta} hero={hero} />
     </div>
   );
 }

@@ -2,17 +2,13 @@ import type { Metadata } from "next";
 import { cache } from "react";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import {
-  PropertyOnePager,
-  type ReportHeroImage,
-} from "@/components/portal/reports/property-one-pager";
-import type { PropertyMeta } from "@/components/portal/reports/snapshot-shared";
+import { PropertyOnePager } from "@/components/portal/reports/property-one-pager";
 import { periodLabel } from "@/components/portal/reports/snapshot-shared";
 import { ReportPrintStyles } from "@/components/portal/reports/report-print-styles";
 import { PrintExpander } from "@/components/portal/reports/print-expander";
 import { PrintButton } from "@/components/portal/reports/print-button";
 import { isValidShareToken } from "@/lib/reports/token";
-import { loadPropertyHero } from "@/lib/reports/load-property-hero";
+import { loadReportHero, loadReportProperty } from "@/lib/reports/load-property-hero";
 import type { ReportSnapshot } from "@/lib/reports/generate";
 
 export const dynamic = "force-dynamic";
@@ -33,8 +29,10 @@ export const dynamic = "force-dynamic";
 // here. Print/PDF fidelity comes from the shared ReportPrintStyles +
 // PrintExpander, the same pair the portal page uses.
 //
-// 2026-09-15: the building image is back, but as a framed thumbnail inside
-// the one-pager header — NOT the full-bleed banner Adam rejected above. The
+// 2026-09-15: the building image is back inside the one-pager header — NOT
+// the full-bleed banner Adam rejected above. 2026-09-19: Adam asked for a
+// proper cover (property name as the title, address, website, building on a
+// tinted panel); see PropertyOnePager's header. The
 // link is now sent to prospects, so it also carries a real social preview
 // (title/description/og:image). `robots: noindex` stays: a share token is
 // not a public URL and must never land in a search index.
@@ -66,36 +64,15 @@ const loadSharedReport = cache(async (token: string) => {
 
   const snapshot = report.snapshot as unknown as ReportSnapshot;
 
-  // Portfolio reports (propertyId null) fall back to the org name.
-  const propertyRow = report.propertyId
-    ? await prisma.property.findUnique({
-        where: { id: report.propertyId },
-        select: { name: true, addressLine1: true, city: true, state: true },
-      })
-    : null;
-  const property: PropertyMeta =
-    propertyRow ?? { name: report.org?.name ?? "Portfolio report" };
+  const property = await loadReportProperty({
+    propertyId: report.propertyId,
+    orgId: report.orgId,
+    orgName: report.org?.name,
+  });
 
-  // Building image. loadPropertyHero resolves the scoped property first,
-  // then the org's real flagship (LIVE + ACTIVE + has image) — so a
-  // portfolio report still gets a photo instead of a bare header.
-  const heroRow = await loadPropertyHero(snapshot, report.orgId).catch(
-    () => null,
-  );
-  const hero: ReportHeroImage | null = heroRow?.heroImageUrl
-    ? {
-        imageUrl: heroRow.heroImageUrl,
-        name: heroRow.propertyName,
-        // Only caption when the photo names a building the title doesn't
-        // already name — otherwise the caption just repeats the headline.
-        caption:
-          heroRow.propertyName === property.name
-            ? null
-            : [heroRow.propertyName, heroRow.subtitle]
-                .filter(Boolean)
-                .join(" · "),
-      }
-    : null;
+  // Building image: scoped property first, then the org's real flagship,
+  // so a portfolio report still gets a photo instead of a bare header.
+  const hero = await loadReportHero(snapshot, report.orgId, property.name);
 
   return { report, snapshot, property, hero };
 });

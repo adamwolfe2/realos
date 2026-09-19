@@ -20,6 +20,7 @@ export type PropertyMeta = {
   addressLine1?: string | null;
   city?: string | null;
   state?: string | null;
+  websiteUrl?: string | null;
 };
 
 // --- formatting helpers -----------------------------------------------------
@@ -83,6 +84,24 @@ export function addressLine(p: PropertyMeta): string | null {
     [p.city, p.state].filter(Boolean).join(", ") || null,
   ].filter(Boolean);
   return parts.length ? parts.join(" · ") : null;
+}
+
+// "https://www.telegraphcommons.com/" -> label "telegraphcommons.com" plus a
+// clickable href. Operator-entered, so tolerate a missing scheme; anything
+// that still doesn't parse is dropped rather than rendered as a broken link.
+export function websiteLink(
+  raw: string | null | undefined,
+): { href: string; label: string } | null {
+  const trimmed = raw?.trim();
+  if (!trimmed) return null;
+  try {
+    const url = new URL(/^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+    const path = url.pathname === "/" ? "" : url.pathname.replace(/\/$/, "");
+    return { href: url.toString(), label: url.hostname.replace(/^www\./, "") + path };
+  } catch {
+    return null;
+  }
 }
 
 // --- brand mark mappers -----------------------------------------------------
