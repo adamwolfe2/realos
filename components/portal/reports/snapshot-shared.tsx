@@ -1,3 +1,4 @@
+import type * as React from "react";
 import type { ReportSnapshot } from "@/lib/reports/generate";
 import { SourceGlyph } from "@/components/audit/mentions/source-glyphs";
 import type { AuditMentionSource } from "@/components/audit/mentions/types";
@@ -231,20 +232,34 @@ export function bucketWeekly(values: number[]): number[] {
   return weeks;
 }
 
-export function Sparkline({ values }: { values: number[] }) {
+export function Sparkline({
+  values,
+  // Opt-in: columns grow when the chart scrolls into view instead of
+  // animating on mount. Only surfaces wrapped in <InView> may pass this —
+  // without an ancestor carrying data-inview the columns stay collapsed.
+  reveal = false,
+}: {
+  values: number[];
+  reveal?: boolean;
+}) {
   const max = Math.max(1, ...values);
   return (
     <div className="flex h-11 items-end gap-[3px]">
       {values.map((v, i) => (
         <span
           key={i}
-          className={`ls-col-grow min-h-[2px] flex-1 ${v === max ? "bg-primary" : "bg-primary/25"}`}
-          style={{
-            height: `${Math.max(2, Math.round((v / max) * 100))}%`,
-            // Left-to-right cascade; the print/reduced-motion nets render
-            // the bars finished because ls-col-in declares only `from`.
-            animationDelay: `${i * 25}ms`,
-          }}
+          className={`${reveal ? "ls-grow-y" : "ls-col-grow"} min-h-[2px] flex-1 ${v === max ? "bg-primary" : "bg-primary/25"}`}
+          style={
+            {
+              height: `${Math.max(2, Math.round((v / max) * 100))}%`,
+              // Left-to-right cascade; the print/reduced-motion nets render
+              // the bars finished because ls-col-in declares only `from`
+              // and the print sheet zeroes transforms.
+              ...(reveal
+                ? { "--reveal-delay": `${i * 25}ms` }
+                : { animationDelay: `${i * 25}ms` }),
+            } as React.CSSProperties
+          }
         />
       ))}
     </div>
