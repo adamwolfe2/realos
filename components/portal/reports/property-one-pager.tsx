@@ -1,6 +1,6 @@
 import type * as React from "react";
 import type { ReportSnapshot } from "@/lib/reports/generate";
-import { InView } from "@/components/ui/in-view";
+import { ReportMotionStyles } from "./report-motion-styles";
 import {
   type PropertyMeta,
   compactUsd,
@@ -108,7 +108,8 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
           bottom anchoring: stored heroes are small background-removed
           cutouts (TC is 466x536), so a full-bleed cover crop would blur and
           clip the roofline — the reason the old wide banner was pulled. */}
-      <InView className="ls-reveal">
+      <ReportMotionStyles />
+      <div className="ls-view-rise">
         <header className="-mx-4 -mt-4 mb-6 border-b border-border sm:-mx-6 sm:-mt-6 print:-mx-6 print:-mt-6">
           <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-1.5 sm:px-6 print:px-6">
             <span className="ls-eyebrow">Marketing &amp; Performance Report</span>
@@ -193,11 +194,11 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
             </div>
           </div>
         </header>
-      </InView>
+      </div>
 
       {/* Headline KPIs. Occupancy (turnover) + rent roll (money) drop out
           when suppressed; the grid tightens to the surviving cards. */}
-      <InView className="ls-reveal">
+      <div className="ls-view-rise">
         <div className={`grid grid-cols-2 gap-2.5 ${TILE_FILL} ${kpiCols[kpiColCount]}`}>
           <KpiCard
             value={num(kpis.leads)}
@@ -243,10 +244,10 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
             />
           ) : null}
         </div>
-      </InView>
+      </div>
 
       {/* Acquisition + Leasing momentum */}
-      <InView className="ls-reveal">
+      <div className="ls-view-rise">
         <div className="mt-5 grid grid-cols-1 gap-6 sm:grid-cols-[1.1fr_0.9fr] print:grid-cols-[1.1fr_0.9fr]">
           <section>
             <SectionHeading meta="first-touch">Lead acquisition</SectionHeading>
@@ -363,13 +364,13 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
             ) : null}
           </section>
         </div>
-      </InView>
+      </div>
 
       {/* Renewals + Reputation — same column split as the Acquisition +
           Leasing zone above so the two left/right boundaries line up as
           the page scans down. When turnover is suppressed, reputation
           takes the full width. */}
-      <InView className="ls-reveal">
+      <div className="ls-view-rise">
         <div className={`mt-5 grid grid-cols-1 gap-6 ${hideTurnover ? "" : "sm:grid-cols-[1.1fr_0.9fr] print:grid-cols-[1.1fr_0.9fr]"}`}>
           {!hideTurnover ? (
             <section>
@@ -417,11 +418,11 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
                       <span className="w-[74px] font-medium text-muted-foreground">{row.source}</span>
                       <span className="h-4 flex-1 overflow-hidden rounded-[2px] bg-muted">
                         <span
-                          className="ls-grow-x block h-full rounded-[2px] bg-primary"
+                          className="ls-view-grow-x block h-full rounded-[2px] bg-primary"
                           style={
                             {
                               width: `${Math.round((row.count / repMaxCount) * 100)}%`,
-                              "--reveal-delay": `${i * 60}ms`,
+                              "--reveal-step": i,
                             } as React.CSSProperties
                           }
                         />
@@ -446,13 +447,13 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
             )}
           </section>
         </div>
-      </InView>
+      </div>
 
       {/* AI search visibility — the differentiator. Same 2px card language
           as every other section, just a touch more presence via a faint
           brand tint (no gradient, no side-stripe). */}
       {aeoStats && aeoStats.totalChecks > 0 ? (
-        <InView className="ls-reveal">
+        <div className="ls-view-rise">
           <section className="mt-5 rounded-[2px] border border-primary/20 bg-primary/[0.03] p-5">
             <h2 className="flex items-center gap-2 text-[12.5px] font-bold text-foreground">
               <span className="inline-block h-3.5 w-1 rounded-sm bg-primary" />
@@ -479,11 +480,11 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
                       <span className="w-[74px] font-semibold text-foreground">{engineLabel(row.engine)}</span>
                       <span className="flex h-3 flex-1 overflow-hidden rounded-[2px] bg-elevated">
                         <span
-                          className="ls-grow-x h-full bg-primary"
+                          className="ls-view-grow-x h-full bg-primary"
                           style={
                             {
                               width: `${row.total ? Math.round((row.cited / row.total) * 100) : 0}%`,
-                              "--reveal-delay": `${i * 60}ms`,
+                              "--reveal-step": i,
                             } as React.CSSProperties
                           }
                         />
@@ -518,12 +519,12 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
               </div>
             </div>
           </section>
-        </InView>
+        </div>
       ) : null}
 
       {/* Data-source status — one compact wrapping strip instead of a grid
           + a paragraph re-explaining what each dot color means. */}
-      <InView className="ls-reveal">
+      <div className="ls-view-rise">
         <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-border pt-3.5 text-[10px] font-medium text-muted-foreground">
           {coverageRows(snapshot).map((row) => (
             <span key={row.label} className="flex items-center gap-1.5">
@@ -532,13 +533,13 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
             </span>
           ))}
         </div>
-      </InView>
+      </div>
 
-      <InView className="ls-reveal">
+      <div className="ls-view-rise">
         <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
           Cohort report — reflects leads created in the window and downstream activity for them, even if it occurs later. Green data flowing, blue connected and in progress, grey not yet integrated.
         </p>
-      </InView>
+      </div>
     </div>
   );
 }

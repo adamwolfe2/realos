@@ -234,9 +234,9 @@ export function bucketWeekly(values: number[]): number[] {
 
 export function Sparkline({
   values,
-  // Opt-in: columns grow when the chart scrolls into view instead of
-  // animating on mount. Only surfaces wrapped in <InView> may pass this —
-  // without an ancestor carrying data-inview the columns stay collapsed.
+  // Opt-in: columns grow as the chart scrolls into view (CSS-only, see
+  // .ls-view-grow-y) instead of animating once on mount. Safe anywhere —
+  // without scroll-timeline support the columns simply render finished.
   reveal = false,
 }: {
   values: number[];
@@ -248,7 +248,7 @@ export function Sparkline({
       {values.map((v, i) => (
         <span
           key={i}
-          className={`${reveal ? "ls-grow-y" : "ls-col-grow"} min-h-[2px] flex-1 ${v === max ? "bg-primary" : "bg-primary/25"}`}
+          className={`${reveal ? "ls-view-grow-y" : "ls-col-grow"} min-h-[2px] flex-1 ${v === max ? "bg-primary" : "bg-primary/25"}`}
           style={
             {
               height: `${Math.max(2, Math.round((v / max) * 100))}%`,
@@ -256,7 +256,7 @@ export function Sparkline({
               // the bars finished because ls-col-in declares only `from`
               // and the print sheet zeroes transforms.
               ...(reveal
-                ? { "--reveal-delay": `${i * 25}ms` }
+                ? { "--reveal-step": i * 0.4 }
                 : { animationDelay: `${i * 25}ms` }),
             } as React.CSSProperties
           }

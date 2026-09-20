@@ -88,3 +88,32 @@ describe("report editor — public link affordance", () => {
     expect(content).toContain("Live link (never a PDF)");
   });
 });
+
+// 2026-09-19: the first cut of the animated cover hid every block behind
+// InView + .ls-reveal (opacity:0 until JS stamps data-inview). Hydration
+// failed over a tunnel and the whole report rendered BLANK on a phone. A
+// document we send to clients must be legible without JS, so the one-pager
+// uses the CSS-only .ls-view-* reveals injected by ReportMotionStyles.
+describe("one-pager motion never gates content on JS", () => {
+  const onePager = fs.readFileSync(
+    path.resolve(__dirname, "../components/portal/reports/property-one-pager.tsx"),
+    "utf-8",
+  );
+  it("ships its scroll-reveal CSS with the component", () => {
+    expect(onePager).toContain("<ReportMotionStyles />");
+  });
+  it("uses no JS-gated reveal (InView / ls-reveal / ls-grow-x)", () => {
+    expect(onePager).not.toContain("InView");
+    expect(onePager).not.toMatch(/className="[^"]*\bls-reveal\b/);
+    expect(onePager).not.toMatch(/className="[^"]*\bls-grow-x\b/);
+  });
+  it("keeps the hidden start state inside an @supports gate", () => {
+    const motion = fs.readFileSync(
+      path.resolve(__dirname, "../components/portal/reports/report-motion-styles.tsx"),
+      "utf-8",
+    );
+    expect(motion).toContain("@supports (animation-timeline: view())");
+    // Only `from` keyframes: the base style is the finished state.
+    expect(motion).not.toMatch(/@keyframes[^}]*\bto\s*\{/);
+  });
+});
