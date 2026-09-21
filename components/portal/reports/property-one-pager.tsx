@@ -296,7 +296,7 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
           proof the marketing caused the leases, which is the whole point of
           the document. */}
       <div className="ls-view-rise">
-        <div className="grid grid-cols-2 divide-x divide-y divide-border overflow-hidden rounded-[2px] border border-border bg-card sm:flex sm:divide-y-0 print:flex print:divide-y-0">
+        <div className={`grid grid-cols-2 divide-x divide-y divide-border overflow-hidden rounded-[2px] border border-border bg-card sm:flex sm:divide-y-0 print:flex print:divide-y-0 ${TILE_FILL}`}>
           {headlineResults.map((r) => (
             <div key={r.label} className="min-w-0 flex-1 px-4 py-3.5">
               <div className="ls-metric text-[26px] leading-none sm:text-[30px]">
