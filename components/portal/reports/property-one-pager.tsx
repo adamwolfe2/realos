@@ -216,7 +216,7 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
           clip the roofline — the reason the old wide banner was pulled. */}
       <ReportMotionStyles />
       <div className="ls-view-rise">
-        <header className="-mx-4 -mt-4 mb-5 border-b border-border sm:-mx-6 sm:-mt-6 print:-mx-6 print:-mt-6">
+        <header className="-mx-4 -mt-4 mb-4 border-b border-border sm:-mx-6 sm:-mt-6 print:-mx-6 print:-mt-6">
           <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-1.5 sm:px-6 print:px-6">
             <span className="ls-eyebrow">Marketing &amp; Performance Report</span>
             <div className="flex items-center gap-2">
@@ -229,7 +229,7 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
                 src="/logos/leasestack-wordmark.png"
                 alt=""
                 aria-hidden
-                className="-mx-1 block h-9 w-auto"
+                className="-mx-1 block h-7 w-auto"
               />
               <span className="text-[14px] font-semibold tracking-[-0.01em]">
                 LeaseStack
@@ -238,19 +238,19 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
           </div>
 
           <div
-            className={`grid grid-cols-1 ${hero ? "sm:grid-cols-[210px_1fr] print:grid-cols-[190px_1fr]" : ""}`}
+            className={`grid grid-cols-1 ${hero ? "sm:grid-cols-[158px_1fr] print:grid-cols-[148px_1fr]" : ""}`}
           >
             {hero ? (
               /* Transparent by design: the stored hero is a background-removed
                  cutout, so it sits directly on the card with a soft ground
                  shadow instead of inside a tinted tile. Rendered at ~2x its
                  display width (source is 466px wide) so it stays crisp. */
-              <figure className="flex flex-col items-center justify-end px-4 pb-4 pt-4 sm:items-start sm:px-6 sm:pb-5 sm:pt-6 print:px-6 print:pt-5">
+              <figure className="flex flex-col items-center justify-end px-4 pb-3 pt-3 sm:items-start sm:px-6 sm:pb-4 sm:pt-4 print:px-6 print:pb-3 print:pt-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={hero.imageUrl}
                   alt={hero.name}
-                  className="block h-auto max-h-[150px] w-auto max-w-full object-contain [filter:drop-shadow(0_12px_16px_rgba(22,22,22,0.16))] sm:max-h-[168px] print:max-h-[150px]"
+                  className="block h-auto max-h-[104px] w-auto max-w-full object-contain [filter:drop-shadow(0_8px_12px_rgba(22,22,22,0.16))] sm:max-h-[116px] print:max-h-[104px]"
                 />
                 {hero.caption ? (
                   <figcaption className="mt-2.5 text-[10px] font-medium leading-tight text-muted-foreground">
@@ -260,14 +260,14 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
               </figure>
             ) : null}
 
-            <div className="flex min-w-0 flex-col justify-end px-4 pb-4 pt-1 sm:px-6 sm:pb-5 sm:pt-6 print:px-6 print:pt-5">
+            <div className="flex min-w-0 flex-col justify-end px-4 pb-3 pt-1 sm:px-6 sm:pb-4 sm:pt-4 print:px-6 print:pb-3 print:pt-4">
               <h1 className="text-[27px] font-semibold leading-[1.03] tracking-[-0.025em] sm:text-[34px] print:text-[30px]">
                 {property.name}
               </h1>
               {/* One meta line. The period used to need its own labelled row
                   beside "Attribution: First-touch" — a band of chrome to say
                   what the section headings already say inline. */}
-              <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
+              <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
                 {addr ? <span>{addr}</span> : null}
                 {addr && site ? <span aria-hidden className="h-3 w-px bg-border" /> : null}
                 {site ? (
@@ -283,7 +283,6 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
                 {addr || site ? <span aria-hidden className="h-3 w-px bg-border" /> : null}
                 <span className="font-medium text-foreground">{periodLabel(snapshot)}</span>
               </p>
-
             </div>
           </div>
         </header>
@@ -490,7 +489,7 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
                 <div className="mb-1.5 mt-3.5 text-[10px] font-medium text-muted-foreground">
                   Leases signed, last 12 months
                 </div>
-                <Sparkline values={monthlySigned.map((m) => m.count)} reveal />
+                <Sparkline values={monthlySigned.map((m) => m.count)} reveal heightClass="h-28" />
                 <div className="mt-1.5 flex justify-between text-[9px] font-medium text-muted-foreground">
                   <span>{monthlySigned[0]?.month}</span>
                   <span>{monthlySigned[monthlySigned.length - 1]?.month}</span>
@@ -565,16 +564,6 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
                       <span className="w-6 text-right font-bold">{row.count}</span>
                     </div>
                   ))}
-                </div>
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {reputationStats.responseRatePct != null ? (
-                    // Neutral always — red is reserved for metrics that sell the
-                    // product's value (revenue-at-risk). A low response rate is
-                    // an ops stat, not a risk pill that should draw the eye.
-                    <span className="rounded-full border border-border bg-card px-2.5 py-1 text-[10.5px] font-medium text-muted-foreground">
-                      {Math.round(reputationStats.responseRatePct)}% response rate
-                    </span>
-                  ) : null}
                 </div>
               </>
             ) : (

@@ -238,13 +238,18 @@ export function Sparkline({
   // .ls-view-grow-y) instead of animating once on mount. Safe anywhere —
   // without scroll-timeline support the columns simply render finished.
   reveal = false,
+  // Tailwind height class. Defaults to the compact h-11 every existing call
+  // site expects; a chart that has to hold its own against a taller column
+  // beside it can ask for more rather than leaving the row half empty.
+  heightClass = "h-11",
 }: {
   values: number[];
   reveal?: boolean;
+  heightClass?: string;
 }) {
   const max = Math.max(1, ...values);
   return (
-    <div className="flex h-11 items-end gap-[3px]">
+    <div className={`flex ${heightClass} items-end gap-[3px]`}>
       {values.map((v, i) => (
         <span
           key={i}
