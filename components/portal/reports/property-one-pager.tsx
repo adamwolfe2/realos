@@ -17,7 +17,6 @@ import {
   SectionHeading,
   Stat,
   Sparkline,
-  KpiCard,
   Stars,
   coverageRows,
   COVERAGE_DOT,
@@ -90,14 +89,73 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
   // The print viewport is US Letter minus 0.5in margins ≈ 720px — wider than
   // `sm` (640) but narrower than `md` (768) — so sm: alone would keep print
   // intact today, and the print: pin keeps it intact if margins ever grow.
-  // KPI count is dynamic (2-4 surviving cards); Tailwind needs literal class
-  // names, hence the lookup instead of string interpolation.
-  const kpiColCount = 2 + (hideTurnover ? 0 : 1) + (hideMoney ? 0 : 1);
-  const kpiCols: Record<number, string> = {
-    2: "sm:grid-cols-2 print:grid-cols-2",
-    3: "sm:grid-cols-3 print:grid-cols-3",
-    4: "sm:grid-cols-4 print:grid-cols-4",
-  };
+  // Headline band. Order is the story the report tells: leads came in,
+  // leases got signed, and N of those trace back to a lead we captured.
+  // Occupancy + rent roll join the row when they aren't suppressed.
+  const leasesSigned = lifecycleStats?.leasesSignedInPeriod ?? 0;
+  const priorLeases = lifecycleStats?.priorLeasesSignedInPeriod ?? 0;
+  const headlineResults: Array<{
+    value: string;
+    label: string;
+    delta?: { up: boolean; text: string };
+    note?: string;
+  }> = [
+    {
+      value: num(kpis.leads),
+      label: "New leads",
+      delta:
+        showDeltas && snapshot.kpiDeltas?.leadsPct != null
+          ? {
+              up: snapshot.kpiDeltas.leadsPct >= 0,
+              text: `${snapshot.kpiDeltas.leadsPct >= 0 ? "Up" : "Down"} vs prior period`,
+            }
+          : undefined,
+    },
+    {
+      value: num(leasesSigned),
+      label: "Leases signed",
+      delta:
+        showDeltas && !(leasesSigned === 0 && priorLeases === 0)
+          ? { up: leasesSigned >= priorLeases, text: `From ${priorLeases} prior` }
+          : undefined,
+    },
+    ...(snapshot.tracedSignedLeads
+      ? [
+          {
+            value: num(snapshot.tracedSignedLeads),
+            label: "Traced to a captured lead",
+            note: "Lead \u2192 lease, same resident",
+          },
+        ]
+      : []),
+    ...(hideTurnover
+      ? []
+      : [
+          {
+            value:
+              occupancyStats?.occupancyPct != null
+                ? pct(occupancyStats.occupancyPct)
+                : "\u2014",
+            label: `Occupancy across ${occupancyStats?.totalUnits ?? 0} units`,
+            note:
+              (occupancyStats?.onNotice ?? 0) > 0
+                ? `${occupancyStats?.onNotice} residents on notice`
+                : undefined,
+          },
+        ]),
+    ...(hideMoney
+      ? []
+      : [
+          {
+            value: compactUsd(occupancyStats?.monthlyRentRollUsd),
+            label: "Monthly rent roll",
+            note:
+              occupancyStats?.avgRentPerUnitUsd != null
+                ? `${compactUsd(occupancyStats.avgRentPerUnitUsd)} avg per unit`
+                : undefined,
+          },
+        ]),
+  ];
 
   return (
     <div className="mx-auto w-full max-w-[880px] rounded-[2px] border border-border bg-card p-4 text-foreground shadow-sm sm:p-6 print:border-0 print:p-6 print:shadow-none">
@@ -196,53 +254,38 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
         </header>
       </div>
 
-      {/* Headline KPIs. Occupancy (turnover) + rent roll (money) drop out
-          when suppressed; the grid tightens to the surviving cards. */}
+      {/* Headline results. One band, not a row of half-empty cards: with
+          money + turnover suppressed only two KPIs survive, and two cards
+          stretched across 880px is mostly padding. The band is built from
+          whatever survives, so a full-data report still reads as one row.
+          `traced` sits here rather than beside the leases chart — it is the
+          proof the marketing caused the leases, which is the whole point of
+          the document. */}
       <div className="ls-view-rise">
-        <div className={`grid grid-cols-2 gap-2.5 ${TILE_FILL} ${kpiCols[kpiColCount]}`}>
-          <KpiCard
-            value={num(kpis.leads)}
-            label="New leads"
-            delta={
-              showDeltas && snapshot.kpiDeltas?.leadsPct != null
-                ? { up: snapshot.kpiDeltas.leadsPct >= 0, text: `${snapshot.kpiDeltas.leadsPct >= 0 ? "Up" : "Down"} vs prior period` }
-                : undefined
-            }
-          />
-          <KpiCard
-            value={num(lifecycleStats?.leasesSignedInPeriod ?? 0)}
-            label="Leases signed"
-            delta={(() => {
-              if (!showDeltas) return undefined;
-              const cur = lifecycleStats?.leasesSignedInPeriod ?? 0;
-              const prior = lifecycleStats?.priorLeasesSignedInPeriod ?? 0;
-              return cur === 0 && prior === 0
-                ? undefined
-                : { up: cur >= prior, text: `From ${prior} prior` };
-            })()}
-          />
-          {!hideTurnover ? (
-            <KpiCard
-              value={occupancyStats?.occupancyPct != null ? pct(occupancyStats.occupancyPct) : "—"}
-              label={`Occupancy across ${occupancyStats?.totalUnits ?? 0} units`}
-              deltaNeutral={
-                (occupancyStats?.onNotice ?? 0) > 0
-                  ? `${occupancyStats?.onNotice} residents on notice`
-                  : undefined
-              }
-            />
-          ) : null}
-          {!hideMoney ? (
-            <KpiCard
-              value={compactUsd(occupancyStats?.monthlyRentRollUsd)}
-              label="Monthly rent roll"
-              deltaNeutral={
-                occupancyStats?.avgRentPerUnitUsd != null
-                  ? `${compactUsd(occupancyStats.avgRentPerUnitUsd)} avg per unit`
-                  : undefined
-              }
-            />
-          ) : null}
+        <div className="grid grid-cols-2 divide-x divide-y divide-border overflow-hidden rounded-[2px] border border-border bg-card sm:flex sm:divide-y-0 print:flex print:divide-y-0">
+          {headlineResults.map((r) => (
+            <div key={r.label} className="min-w-0 flex-1 px-4 py-3.5">
+              <div className="ls-metric text-[26px] leading-none sm:text-[30px]">
+                {r.value}
+              </div>
+              <div className="mt-1.5 truncate text-[11px] font-medium text-muted-foreground">
+                {r.label}
+              </div>
+              {r.delta ? (
+                <div
+                  className={`mt-1 truncate text-[10px] font-semibold ${
+                    r.delta.up ? "text-success" : "text-destructive"
+                  }`}
+                >
+                  {r.delta.up ? "\u25b2" : "\u25bc"} {r.delta.text}
+                </div>
+              ) : r.note ? (
+                <div className="mt-1 truncate text-[10px] font-medium text-muted-foreground">
+                  {r.note}
+                </div>
+              ) : null}
+            </div>
+          ))}
         </div>
       </div>
 
@@ -339,17 +382,6 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
                 <Stat value={compactUsd(renewalStats?.pastDueBalanceUsd)} label="Past-due balance" />
               ) : null}
             </div>
-            {/* Traced lead→lease proof. Only rendered when at least one
-                concrete Resident link exists — never a zero-padded claim. */}
-            {snapshot.tracedSignedLeads ? (
-              <p className="mt-3 text-[11.5px] font-semibold text-foreground">
-                {snapshot.tracedSignedLeads}{" "}
-                {snapshot.tracedSignedLeads === 1
-                  ? "signed lease this period traces"
-                  : "signed leases this period trace"}{" "}
-                directly back to a captured lead
-              </p>
-            ) : null}
             {monthlySigned.length ? (
               <>
                 <div className="mb-1.5 mt-3.5 text-[10px] font-medium text-muted-foreground">

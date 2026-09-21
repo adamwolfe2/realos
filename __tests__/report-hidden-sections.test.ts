@@ -24,22 +24,24 @@ describe("PropertyOnePager honors snapshot.hiddenSections", () => {
     expect(src).toContain('hidden.has("untracked-sources")');
   });
 
-  it("gates the rent-roll KPI card behind !hideMoney", () => {
-    expect(src).toMatch(/\{!hideMoney \? \(\s*<KpiCard[\s\S]{0,200}label="Monthly rent roll"/);
+  // 2026-09-20: the four stretched KpiCards became one `headlineResults`
+  // band (two surviving cards across 880px was mostly padding). The
+  // suppression guarantee is unchanged — money/turnover entries are spread
+  // into the band only when their flag is false — so these pin the new shape.
+  it("gates the rent-roll entry behind !hideMoney", () => {
+    expect(src).toMatch(/\.\.\.\(hideMoney[\s\S]{0,400}label: "Monthly rent roll"/);
   });
 
-  it("gates the occupancy KPI card behind !hideTurnover", () => {
-    expect(src).toMatch(/\{!hideTurnover \? \(\s*<KpiCard[\s\S]{0,220}Occupancy across/);
+  it("gates the occupancy entry behind !hideTurnover", () => {
+    expect(src).toMatch(/\.\.\.\(hideTurnover[\s\S]{0,400}label: `Occupancy across/);
   });
 
-  it("reflows the KPI grid instead of leaving holes", () => {
-    // Column count is derived from the surviving cards (2026-08-14: moved
-    // from an inline gridTemplateColumns style to a literal-class lookup so
-    // the grid can stack to 2-up on mobile without the inline style winning).
-    expect(src).toContain(
-      "const kpiColCount = 2 + (hideTurnover ? 0 : 1) + (hideMoney ? 0 : 1)",
-    );
-    expect(src).toContain("${kpiCols[kpiColCount]}");
+  it("builds the band from the surviving entries instead of leaving holes", () => {
+    // No fixed column count: the band is a list, so a suppressed entry is
+    // absent rather than an empty cell.
+    expect(src).toContain("const headlineResults:");
+    expect(src).toContain("headlineResults.map((r)");
+    expect(src).not.toContain("kpiColCount");
   });
 
   it("gates past-due balance and revenue-at-risk behind !hideMoney", () => {
