@@ -84,7 +84,7 @@ describe("visitor tiles omit themselves at zero", () => {
     const src = read("../components/portal/reports/property-one-pager.tsx");
     // The tile must be behind a > 0 check...
     expect(src).toMatch(
-      /identifiedVisitors > 0 \? \(\s*<Stat value=\{num\(identifiedVisitors\)\} label="Identified visitors"/,
+      /identifiedVisitors > 0 \? \(\s*<Stat\b[^>]*\svalue=\{num\(identifiedVisitors\)\} label="Identified visitors"/,
     );
     // ...and the grid must reflow so the omitted tile doesn't leave a hole.
     // (2026-08-14: mobile stacks at 2-up always; sm/print widen to 3 only
@@ -92,9 +92,9 @@ describe("visitor tiles omit themselves at zero", () => {
     expect(src).toContain(
       'identifiedVisitors > 0 ? "sm:grid-cols-3 print:grid-cols-3" : ""',
     );
-    // The old unconditional form must not come back.
-    expect(src).not.toContain(
-      '<Stat value={num(kpis.identifiedVisitors)} label="Identified visitors" />',
+    // The old unconditional form must not come back, with or without props.
+    expect(src).not.toMatch(
+      /<Stat\b[^>]*\svalue=\{num\(kpis\.identifiedVisitors\)\}[^>]*label="Identified visitors"/,
     );
   });
 

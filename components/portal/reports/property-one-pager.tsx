@@ -17,7 +17,7 @@ import {
   Stat,
   Sparkline,
   Stars,
-  TILE_FILL,
+  TILE_DENSE,
 } from "./snapshot-shared";
 
 // ---------------------------------------------------------------------------
@@ -217,9 +217,9 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
       <ReportMotionStyles />
       <div className="ls-view-rise">
         <header className="-mx-4 -mt-4 mb-4 border-b border-border sm:-mx-6 sm:-mt-6 print:-mx-6 print:-mt-6">
-          <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-1.5 sm:px-6 print:px-6">
-            <span className="ls-eyebrow">Marketing &amp; Performance Report</span>
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-1.5 sm:gap-4 sm:px-6 print:px-6">
+            <span className="ls-eyebrow min-w-0 flex-1">Marketing &amp; Performance Report</span>
+            <div className="flex flex-none items-center gap-2">
               <span className="ls-eyebrow hidden sm:inline print:inline">Prepared by</span>
               {/* The asset is the bare building mark on a padded canvas (no
                   lettering), so the name is set alongside it — a prospect
@@ -245,7 +245,7 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
                  cutout, so it sits directly on the card with a soft ground
                  shadow instead of inside a tinted tile. Rendered at ~2x its
                  display width (source is 466px wide) so it stays crisp. */
-              <figure className="flex flex-col items-center justify-end px-4 pb-3 pt-3 sm:items-start sm:px-6 sm:pb-4 sm:pt-4 print:px-6 print:pb-3 print:pt-3">
+              <figure className="flex flex-col items-start justify-end px-4 pb-3 pt-3 sm:px-6 sm:pb-4 sm:pt-4 print:px-6 print:pb-3 print:pt-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={hero.imageUrl}
@@ -296,28 +296,39 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
           proof the marketing caused the leases, which is the whole point of
           the document. */}
       <div className="ls-view-rise">
-        <div className={`grid grid-cols-2 divide-x divide-y divide-border overflow-hidden rounded-[2px] border border-border bg-card sm:flex sm:divide-y-0 print:flex print:divide-y-0 ${TILE_FILL}`}>
+        {/* Phone: one full-width row per result, big number left and its
+            label beside it. The 2-up grid stranded an odd last entry across
+            the full width with nothing next to it -- and with money and
+            turnover suppressed that entry is "46 traced to a captured lead",
+            a 26px number alone in an empty band. Stacking keeps the numbers
+            at headline size instead of shrinking them to fit three columns. */}
+        <div className="grid grid-cols-2 divide-x divide-y divide-border overflow-hidden rounded-[2px] border border-border bg-card max-sm:flex max-sm:flex-col max-sm:divide-x-0 sm:flex sm:divide-y-0 print:flex print:divide-y-0">
           {headlineResults.map((r) => (
-            <div key={r.label} className="min-w-0 flex-1 px-4 py-3.5">
-              <div className="ls-metric text-[26px] leading-none sm:text-[30px]">
+            <div
+              key={r.label}
+              className="min-w-0 flex-1 px-4 py-3.5 max-sm:flex max-sm:items-baseline max-sm:gap-3.5 max-sm:py-2.5"
+            >
+              <div className="ls-metric text-[26px] leading-none max-sm:w-[68px] max-sm:flex-none sm:text-[30px]">
                 {r.value}
               </div>
-              <div className="mt-1.5 truncate text-[11px] font-medium text-muted-foreground">
-                {r.label}
+              <div className="min-w-0 max-sm:flex-1">
+                <div className="mt-1.5 truncate text-[11px] font-medium text-muted-foreground max-sm:mt-0 max-sm:whitespace-normal">
+                  {r.label}
+                </div>
+                {r.delta ? (
+                  <div
+                    className={`mt-1 truncate text-[10px] font-semibold max-sm:whitespace-normal ${
+                      r.delta.up ? "text-success" : "text-destructive"
+                    }`}
+                  >
+                    {r.delta.up ? "\u25b2" : "\u25bc"} {r.delta.text}
+                  </div>
+                ) : r.note ? (
+                  <div className="mt-1 truncate text-[10px] font-medium text-muted-foreground max-sm:whitespace-normal">
+                    {r.note}
+                  </div>
+                ) : null}
               </div>
-              {r.delta ? (
-                <div
-                  className={`mt-1 truncate text-[10px] font-semibold ${
-                    r.delta.up ? "text-success" : "text-destructive"
-                  }`}
-                >
-                  {r.delta.up ? "\u25b2" : "\u25bc"} {r.delta.text}
-                </div>
-              ) : r.note ? (
-                <div className="mt-1 truncate text-[10px] font-medium text-muted-foreground">
-                  {r.note}
-                </div>
-              ) : null}
             </div>
           ))}
         </div>
@@ -439,21 +450,21 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
                 next to real chatbot numbers reads as a measured result instead
                 of absent data. Omit the claim; the coverage strip below still
                 reports the pixel's actual state. */}
-            <div className={`grid grid-cols-2 gap-2.5 ${TILE_FILL} ${identifiedVisitors > 0 ? "sm:grid-cols-3 print:grid-cols-3" : ""}`}>
-              <Stat value={num(chatbotStatsExtended?.conversations)} label="Chatbot conversations" />
-              <Stat value={chatbotStatsExtended?.capturedRatePct != null ? pct(chatbotStatsExtended.capturedRatePct) : "—"} label="Lead capture rate" />
+            <div className={`grid grid-cols-2 gap-2.5 ${TILE_DENSE} ${identifiedVisitors > 0 ? "sm:grid-cols-3 print:grid-cols-3" : ""}`}>
+              <Stat dense value={num(chatbotStatsExtended?.conversations)} label="Chatbot conversations" />
+              <Stat dense value={chatbotStatsExtended?.capturedRatePct != null ? pct(chatbotStatsExtended.capturedRatePct) : "—"} label="Lead capture rate" />
               {identifiedVisitors > 0 ? (
-                <Stat value={num(identifiedVisitors)} label="Identified visitors" />
+                <Stat dense value={num(identifiedVisitors)} label="Identified visitors" />
               ) : null}
             </div>
             {snapshot.popupStats ? (
-              <div className={`mt-3.5 grid grid-cols-2 gap-2.5 ${TILE_FILL} ${snapshot.popupStats.converted > 0 ? "sm:grid-cols-4 print:grid-cols-4" : "sm:grid-cols-3 print:grid-cols-3"}`}>
+              <div className={`mt-3.5 grid grid-cols-2 gap-2.5 ${TILE_DENSE} ${snapshot.popupStats.converted > 0 ? "sm:grid-cols-4 print:grid-cols-4" : "sm:grid-cols-3 print:grid-cols-3"}`}>
                 {snapshot.popupStats.converted > 0 ? (
                   <>
-                    <Stat value={num(snapshot.popupStats.shown)} label="Popups shown" />
-                    <Stat value={num(snapshot.popupStats.ctaClicks)} label="CTA clicks" />
-                    <Stat value={num(snapshot.popupStats.converted)} label="Converted" />
-                    <Stat
+                    <Stat dense value={num(snapshot.popupStats.shown)} label="Popups shown" />
+                    <Stat dense value={num(snapshot.popupStats.ctaClicks)} label="CTA clicks" />
+                    <Stat dense value={num(snapshot.popupStats.converted)} label="Converted" />
+                    <Stat dense
                       value={snapshot.popupStats.conversionRate != null ? pct(snapshot.popupStats.conversionRate) : "—"}
                       label="Conversion rate"
                     />
@@ -463,9 +474,9 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
                   // don't give "0 Converted" / "0% Conversion rate" equal billing
                   // next to real numbers. Show what actually happened instead.
                   <>
-                    <Stat value={num(snapshot.popupStats.shown)} label="Popups shown" />
-                    <Stat value={num(snapshot.popupStats.ctaClicks)} label="CTA clicks" />
-                    <Stat
+                    <Stat dense value={num(snapshot.popupStats.shown)} label="Popups shown" />
+                    <Stat dense value={num(snapshot.popupStats.ctaClicks)} label="CTA clicks" />
+                    <Stat dense
                       value={snapshot.popupStats.shown > 0 ? pct((snapshot.popupStats.ctaClicks / snapshot.popupStats.shown) * 100) : "—"}
                       label="CTA rate"
                     />
@@ -477,11 +488,11 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
 
           <section>
             <SectionHeading>Leasing momentum</SectionHeading>
-            <div className={`grid grid-cols-2 gap-2.5 ${TILE_FILL} ${hideMoney ? "" : "sm:grid-cols-3 print:grid-cols-3"}`}>
-              <Stat value={num(lifecycleStats?.leasesSignedLast180d)} label="Signed, last 180 days" />
-              <Stat value={num(lifecycleStats?.activeLeases)} label="Active leases" />
+            <div className={`grid grid-cols-2 gap-2.5 ${TILE_DENSE} ${hideMoney ? "" : "sm:grid-cols-3 print:grid-cols-3"}`}>
+              <Stat dense value={num(lifecycleStats?.leasesSignedLast180d)} label="Signed, last 180 days" />
+              <Stat dense value={num(lifecycleStats?.activeLeases)} label="Active leases" />
               {!hideMoney ? (
-                <Stat value={compactUsd(renewalStats?.pastDueBalanceUsd)} label="Past-due balance" />
+                <Stat dense value={compactUsd(renewalStats?.pastDueBalanceUsd)} label="Past-due balance" />
               ) : null}
             </div>
             {monthlySigned.length ? (
@@ -509,22 +520,22 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
           {!hideTurnover ? (
             <section>
               <SectionHeading>Renewals at risk</SectionHeading>
-              <div className={`grid grid-cols-2 gap-2.5 sm:grid-cols-3 print:grid-cols-3 ${TILE_FILL}`}>
-                <Stat value={num(renewalStats?.expiringNext30)} label="Expiring within 30 days" />
-                <Stat value={num(renewalStats?.expiringNext60)} label="Expiring within 60 days" />
-                <Stat value={num(renewalStats?.expiringNext120)} label="Expiring within 120 days" />
+              <div className={`grid grid-cols-2 gap-2.5 sm:grid-cols-3 print:grid-cols-3 ${TILE_DENSE}`}>
+                <Stat dense value={num(renewalStats?.expiringNext30)} label="Expiring within 30 days" />
+                <Stat dense value={num(renewalStats?.expiringNext60)} label="Expiring within 60 days" />
+                <Stat dense value={num(renewalStats?.expiringNext120)} label="Expiring within 120 days" />
               </div>
-              <div className={`mt-2.5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 print:grid-cols-3 ${TILE_FILL}`}>
+              <div className={`mt-2.5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 print:grid-cols-3 ${TILE_DENSE}`}>
                 {!hideMoney ? (
                   <div className="col-span-2">
-                    <Stat value={compactUsd(renewalStats?.monthlyAtRiskUsd)} label="Monthly revenue at risk, next 120 days" flag />
+                    <Stat dense value={compactUsd(renewalStats?.monthlyAtRiskUsd)} label="Monthly revenue at risk, next 120 days" flag />
                   </div>
                 ) : null}
                 {/* Money tile above spans both mobile columns, which would
                     strand this one half-width next to a hole — give it the
                     full row on mobile too. */}
                 <div className="max-sm:col-span-2">
-                  <Stat value={num(occupancyStats?.onNotice)} label="Residents on notice" />
+                  <Stat dense value={num(occupancyStats?.onNotice)} label="Residents on notice" />
                 </div>
               </div>
             </section>

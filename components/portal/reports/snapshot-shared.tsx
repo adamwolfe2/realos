@@ -149,6 +149,14 @@ export { SourceGlyph };
 // Scoped to max-sm so the 3/4-column sm+/print layouts are untouched.
 export const TILE_FILL = "max-sm:[&>*:last-child:nth-child(odd)]:col-span-2";
 
+// Phone layout for a grid of <Stat dense />. A 2-up grid of stacked boxes put
+// a 16px number alone in a ~48px-tall card, and an odd count stretched the
+// last one across the full width with nothing beside it -- "277" floating in
+// an empty band. Below sm the grid becomes one column and each tile a single
+// row, label left and value right: the same shape as the page and city lists,
+// which are the densest, most legible thing on the page at phone width.
+export const TILE_DENSE = "max-sm:grid-cols-1 max-sm:gap-1.5";
+
 export function SectionHeading({
   children,
   meta,
@@ -173,19 +181,33 @@ export function Stat({
   value,
   label,
   flag,
+  // Collapse to a single label-left / value-right row below sm. Opt-in: the
+  // dashboard's tile grids have room to stack and should keep doing so.
+  // flex-row-reverse does the swap in CSS so the DOM order stays
+  // value-then-label, which is what a screen reader should hear first.
+  dense,
 }: {
   value: string;
   label: string;
   flag?: boolean;
+  dense?: boolean;
 }) {
   return (
-    <div className="rounded-[2px] border border-border bg-card px-3 py-2 transition-[border-color,transform] duration-[120ms] hover:-translate-y-px hover:border-[#c6c6c6]">
+    <div
+      className={`rounded-[2px] border border-border bg-card px-3 py-2 transition-[border-color,transform] duration-[120ms] hover:-translate-y-px hover:border-[#c6c6c6] ${
+        dense
+          ? "max-sm:flex max-sm:flex-row-reverse max-sm:items-baseline max-sm:justify-between max-sm:gap-3 max-sm:py-1.5"
+          : ""
+      }`}
+    >
       <div
         className={`font-mono text-[16px] font-semibold leading-none tracking-tight tabular-nums ${flag ? "text-destructive" : "text-foreground"}`}
       >
         {value}
       </div>
-      <div className="mt-1 text-[10px] font-medium leading-tight text-muted-foreground">
+      <div
+        className={`mt-1 text-[10px] font-medium leading-tight text-muted-foreground ${dense ? "max-sm:mt-0 max-sm:text-[11px]" : ""}`}
+      >
         {label}
       </div>
     </div>
