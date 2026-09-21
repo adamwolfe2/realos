@@ -216,39 +216,26 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
               <h1 className="text-[27px] font-semibold leading-[1.03] tracking-[-0.025em] sm:text-[34px] print:text-[30px]">
                 {property.name}
               </h1>
-              {addr || site ? (
-                <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
-                  {addr ? <span>{addr}</span> : null}
-                  {addr && site ? (
-                    <span aria-hidden className="h-3 w-px bg-border" />
-                  ) : null}
-                  {site ? (
-                    <a
-                      href={site.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-medium text-foreground underline decoration-border underline-offset-4 hover:decoration-foreground"
-                    >
-                      {site.label}
-                    </a>
-                  ) : null}
-                </p>
-              ) : null}
+              {/* One meta line. The period used to need its own labelled row
+                  beside "Attribution: First-touch" — a band of chrome to say
+                  what the section headings already say inline. */}
+              <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
+                {addr ? <span>{addr}</span> : null}
+                {addr && site ? <span aria-hidden className="h-3 w-px bg-border" /> : null}
+                {site ? (
+                  <a
+                    href={site.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-foreground underline decoration-border underline-offset-4 hover:decoration-foreground"
+                  >
+                    {site.label}
+                  </a>
+                ) : null}
+                {addr || site ? <span aria-hidden className="h-3 w-px bg-border" /> : null}
+                <span className="font-medium text-foreground">{periodLabel(snapshot)}</span>
+              </p>
 
-              <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 border-t border-border pt-3 sm:mt-5">
-                <div className="min-w-0">
-                  <dt className="ls-eyebrow">Reporting period</dt>
-                  <dd className="mt-1 text-[12.5px] font-medium leading-snug">
-                    {periodLabel(snapshot)}
-                  </dd>
-                </div>
-                <div className="min-w-0">
-                  <dt className="ls-eyebrow">Attribution</dt>
-                  <dd className="mt-1 text-[12.5px] font-medium leading-snug">
-                    First-touch
-                  </dd>
-                </div>
-              </dl>
             </div>
           </div>
         </header>
