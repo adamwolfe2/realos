@@ -256,8 +256,8 @@ function InsightSparkline({
   // Currently neutral brand blue across every severity per operator
   // feedback that red/amber treatments felt alarming.
   void severity;
-  const stroke = "#2563EB";
-  const fill = "rgba(37, 99, 235, 0.08)";
+  const stroke = "#0f62fe";
+  const fill = "rgba(15, 98, 254, 0.08)";
 
   const min = Math.min(...data);
   const max = Math.max(...data);

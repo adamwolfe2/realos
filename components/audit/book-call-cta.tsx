@@ -68,7 +68,7 @@ export function BookCallCta({
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center h-9 px-4 rounded-md text-[13px] font-semibold text-white flex-shrink-0"
-              style={{ backgroundColor: "#2563EB" }}
+              style={{ backgroundColor: "#0f62fe" }}
             >
               Book a call →
             </a>
@@ -76,7 +76,7 @@ export function BookCallCta({
             <Link
               href={href}
               className="inline-flex items-center justify-center h-9 px-4 rounded-md text-[13px] font-semibold text-white flex-shrink-0"
-              style={{ backgroundColor: "#2563EB" }}
+              style={{ backgroundColor: "#0f62fe" }}
             >
               Book a call →
             </Link>

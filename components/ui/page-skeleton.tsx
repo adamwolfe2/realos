@@ -25,7 +25,7 @@ type Props = {
   className?: string;
 };
 
-// Brand-tinted shimmer — `--accent-wash` is rgba(37,99,235,0.10). The /60
+// Brand-tinted shimmer — `--accent-wash` is rgba(15, 98, 254,0.10). The /60
 // and /40 variants step the tint down so deeper / smaller skeleton bones
 // don't all flash with the same intensity (mirrors the cadence the eye
 // expects from real content hierarchy).

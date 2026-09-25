@@ -204,8 +204,8 @@ export function MarketplaceSourceForm() {
       <div
         className="p-4 rounded-lg space-y-3"
         style={{
-          backgroundColor: requireFullEnrichment ? "rgba(37,99,235,0.06)" : "#F8FAFC",
-          border: `1px solid ${requireFullEnrichment ? "rgba(37,99,235,0.18)" : "#E2E8F0"}`,
+          backgroundColor: requireFullEnrichment ? "rgba(15, 98, 254,0.06)" : "#F8FAFC",
+          border: `1px solid ${requireFullEnrichment ? "rgba(15, 98, 254,0.18)" : "#E2E8F0"}`,
         }}
       >
         <label className="flex items-start gap-3 text-sm text-slate-800 cursor-pointer">
@@ -258,9 +258,9 @@ export function MarketplaceSourceForm() {
           className="mt-4 rounded-lg p-4"
           style={{
             backgroundColor: result.backgroundStarted
-              ? "rgba(37,99,235,0.06)"
+              ? "rgba(15, 98, 254,0.06)"
               : "#F8FAFC",
-            border: `1px solid ${result.backgroundStarted ? "rgba(37,99,235,0.20)" : "#E2E8F0"}`,
+            border: `1px solid ${result.backgroundStarted ? "rgba(15, 98, 254,0.20)" : "#E2E8F0"}`,
           }}
         >
           <p className="text-xs font-mono uppercase tracking-wider text-blue-600 mb-2 font-bold">
@@ -306,7 +306,7 @@ export function MarketplaceSourceForm() {
         }
         .form-input:focus {
           outline: none;
-          border-color: #2563eb;
+          border-color: #0f62fe;
         }
       `}</style>
     </form>

@@ -70,7 +70,7 @@ export function KitClient({
                 return (
                   <li
                     key={link.href}
-                    className="group flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3 transition-colors hover:bg-[var(--brand-wash,rgba(37,99,235,0.04))]"
+                    className="group flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3 transition-colors hover:bg-[var(--brand-wash,rgba(15, 98, 254,0.04))]"
                   >
                     <div className="min-w-0 flex-1">
                       <a

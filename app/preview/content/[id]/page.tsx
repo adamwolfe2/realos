@@ -169,8 +169,8 @@ export default async function ContentPreviewPage({ params }: Props) {
               .ls-prose ul, .ls-prose ol { margin: 0 0 1em 1.5em; }
               .ls-prose li { margin-bottom: 0.4em; }
               .ls-prose strong { color: #0F172A; font-weight: 600; }
-              .ls-prose a { color: #1D4ED8; text-decoration: underline; text-underline-offset: 2px; }
-              .ls-prose blockquote { border-left: 3px solid #2563EB; padding-left: 12px; margin: 1em 0; color: #475569; font-style: italic; }
+              .ls-prose a { color: #0043ce; text-decoration: underline; text-underline-offset: 2px; }
+              .ls-prose blockquote { border-left: 3px solid #0f62fe; padding-left: 12px; margin: 1em 0; color: #475569; font-style: italic; }
               .ls-prose code { background: #F1F5F9; padding: 1px 5px; border-radius: 3px; font-size: 0.9em; }
               .ls-prose hr { border: none; border-top: 1px solid #E5E7EB; margin: 2em 0; }
             `,

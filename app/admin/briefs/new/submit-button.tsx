@@ -20,7 +20,7 @@ export function GenerateBriefSubmit() {
         type="submit"
         disabled={pending}
         className="inline-flex items-center justify-center h-10 px-6 rounded-md text-[13px] font-semibold text-white disabled:opacity-70 disabled:cursor-not-allowed"
-        style={{ backgroundColor: "#2563EB" }}
+        style={{ backgroundColor: "#0f62fe" }}
       >
         {pending ? (
           <span className="inline-flex items-center gap-2">

@@ -77,7 +77,7 @@ export function AcceptButton({
         type="button"
         onClick={handleClick}
         disabled={submitting}
-        className="inline-flex w-full items-center justify-center rounded-md bg-[#2563EB] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1D4ED8] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+        className="inline-flex w-full items-center justify-center rounded-md bg-[#0f62fe] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0043ce] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f62fe] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         aria-busy={submitting}
       >
         {submitting ? "Starting checkout…" : label}

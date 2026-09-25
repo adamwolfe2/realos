@@ -52,7 +52,7 @@ export default function MarketplaceLayout({
             {BRAND_NAME}{" "}
             <span
               style={{
-                color: "#2563EB",
+                color: "#0f62fe",
                 fontFamily: "var(--font-mono)",
                 fontSize: "11px",
                 letterSpacing: "0.14em",
@@ -106,7 +106,7 @@ export default function MarketplaceLayout({
                 fontWeight: 600,
                 padding: "6px 14px",
                 borderRadius: "8px",
-                backgroundColor: "#2563EB",
+                backgroundColor: "#0f62fe",
                 color: "#fff",
                 textDecoration: "none",
               }}

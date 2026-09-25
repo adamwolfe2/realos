@@ -9,7 +9,7 @@ import { formatDistanceToNowStrict, nextMonday, setHours, setMinutes, setSeconds
 // dashboard while letting each heavy chart land in its own bundle chunk.
 // ---------------------------------------------------------------------------
 
-export const BRAND = "#2563EB";
+export const BRAND = "#0f62fe";
 export const BRAND_LIGHT = "#93C5FD";
 export const BRAND_LIGHTER = "#DBEAFE";
 export const INK = "#1E2A3A";

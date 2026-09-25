@@ -99,8 +99,8 @@ export function CostBackfillBanner({ vendorConsoles }: Props) {
             width: 36,
             height: 36,
             borderRadius: 10,
-            backgroundColor: "rgba(37,99,235,0.10)",
-            color: "#2563EB",
+            backgroundColor: "rgba(15, 98, 254,0.10)",
+            color: "#0f62fe",
           }}
         >
           <History size={18} strokeWidth={1.75} />
@@ -161,7 +161,7 @@ export function CostBackfillBanner({ vendorConsoles }: Props) {
               disabled={busy}
               className="inline-flex items-center justify-center gap-1.5 rounded-md text-sm font-semibold disabled:opacity-60"
               style={{
-                backgroundColor: "#2563EB",
+                backgroundColor: "#0f62fe",
                 color: "#FFFFFF",
                 padding: "8px 16px",
               }}

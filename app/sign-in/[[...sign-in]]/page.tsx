@@ -83,11 +83,11 @@ export default function SignInPage() {
                   socialButtonsVariant: "blockButton",
                 },
                 variables: {
-                  // LeaseStack brand blue (#2563EB) drives Clerk's primary
+                  // LeaseStack brand blue (#0f62fe) drives Clerk's primary
                   // accents — Continue button, focus rings, footer links.
                   // Matches the marketing nav + pricing page so the auth
                   // surface doesn't read as a stock all-black template.
-                  colorPrimary: "#2563EB",
+                  colorPrimary: "#0f62fe",
                   colorText: "#0A0A0A",
                   colorTextSecondary: "#5C5E62",
                   colorBackground: "#FFFFFF",

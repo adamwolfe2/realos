@@ -91,7 +91,7 @@ export default async function SellerDashboardPage() {
         <div>
           <p
             style={{
-              color: "#2563EB",
+              color: "#0f62fe",
               fontFamily: "var(--font-mono)",
               fontSize: "11px",
               letterSpacing: "0.18em",
@@ -126,7 +126,7 @@ export default async function SellerDashboardPage() {
             style={{
               padding: "10px 16px",
               borderRadius: "10px",
-              backgroundColor: "#2563EB",
+              backgroundColor: "#0f62fe",
               color: "#fff",
               fontFamily: "var(--font-sans)",
               fontSize: "13.5px",
@@ -216,7 +216,7 @@ export default async function SellerDashboardPage() {
                 style={{
                   padding: "8px 14px",
                   borderRadius: "8px",
-                  backgroundColor: "#2563EB",
+                  backgroundColor: "#0f62fe",
                   color: "#fff",
                   fontFamily: "var(--font-sans)",
                   fontSize: "13px",
@@ -291,7 +291,7 @@ export default async function SellerDashboardPage() {
           >
             <p
               style={{
-                color: "#2563EB",
+                color: "#0f62fe",
                 fontFamily: "var(--font-mono)",
                 fontSize: "10.5px",
                 letterSpacing: "0.14em",
@@ -412,7 +412,7 @@ export default async function SellerDashboardPage() {
           >
             <p
               style={{
-                color: "#2563EB",
+                color: "#0f62fe",
                 fontFamily: "var(--font-mono)",
                 fontSize: "10.5px",
                 letterSpacing: "0.14em",
@@ -568,7 +568,7 @@ function Tile({
       <p
         className="mt-1.5"
         style={{
-          color: hot ? "#059669" : accent ? "#2563EB" : "#1E2A3A",
+          color: hot ? "#059669" : accent ? "#0f62fe" : "#1E2A3A",
           fontFamily: "var(--font-display)",
           fontSize: "24px",
           fontWeight: 500,
@@ -585,7 +585,7 @@ function LeadStatusBadge({ status }: { status: string }) {
   const palette: Record<string, { bg: string; fg: string }> = {
     AVAILABLE: { bg: "rgba(16,185,129,0.10)", fg: "#059669" },
     RESERVED: { bg: "rgba(245,158,11,0.10)", fg: "#D97706" },
-    SOLD: { bg: "rgba(37,99,235,0.10)", fg: "#2563EB" },
+    SOLD: { bg: "rgba(15, 98, 254,0.10)", fg: "#0f62fe" },
     EXPIRED: { bg: "rgba(148,163,184,0.20)", fg: "#64748B" },
     RETIRED: { bg: "rgba(148,163,184,0.20)", fg: "#64748B" },
   };

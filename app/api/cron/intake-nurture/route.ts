@@ -221,7 +221,7 @@ function buildNurtureEmail(
           your setup together.
         </p>
         <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
-          <a href="${e(bookUrl)}" style="color:#2563EB;">Book a call</a>
+          <a href="${e(bookUrl)}" style="color:#0f62fe;">Book a call</a>
         </p>
       `,
     };
@@ -253,7 +253,7 @@ function buildNurtureEmail(
           a few weeks. Otherwise, grab a time below.
         </p>
         <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
-          <a href="${e(bookUrl)}" style="color:#2563EB;">Book a call</a>
+          <a href="${e(bookUrl)}" style="color:#0f62fe;">Book a call</a>
         </p>
       `,
     };
@@ -277,7 +277,7 @@ function buildNurtureEmail(
         ${e(BRAND_NAME)} is the right fit.
       </p>
       <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
-        <a href="${e(bookUrl)}" style="color:#2563EB;">Book a call</a>
+        <a href="${e(bookUrl)}" style="color:#0f62fe;">Book a call</a>
       </p>
     `,
   };

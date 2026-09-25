@@ -59,7 +59,7 @@ export function EmptyState({
     <section className="mt-12">
       <p
         className="text-[11px] font-mono uppercase tracking-[0.18em]"
-        style={{ color: "#2563EB", fontFamily: "var(--font-mono)" }}
+        style={{ color: "#0f62fe", fontFamily: "var(--font-mono)" }}
       >
         Reputation — past 90 days
       </p>
@@ -107,7 +107,7 @@ export function EmptyState({
               onClick={handleRerun}
               disabled={rerunning || isPending}
               className="inline-flex items-center justify-center h-11 px-6 rounded-md text-sm font-medium text-white disabled:opacity-60"
-              style={{ backgroundColor: "#2563EB" }}
+              style={{ backgroundColor: "#0f62fe" }}
             >
               {rerunning || isPending ? "Re-running…" : "Re-run scan"}
             </button>

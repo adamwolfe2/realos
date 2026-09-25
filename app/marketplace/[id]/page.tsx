@@ -123,7 +123,7 @@ export default async function MarketplaceLeadPage({
             <div className="min-w-0">
               <p
                 style={{
-                  color: owned ? "#2563EB" : "#94A3B8",
+                  color: owned ? "#0f62fe" : "#94A3B8",
                   fontFamily: "var(--font-mono)",
                   fontSize: "10.5px",
                   letterSpacing: "0.14em",
@@ -226,8 +226,8 @@ export default async function MarketplaceLeadPage({
                 <div
                   className="mt-3 mb-1 p-3 rounded-md flex items-center justify-between gap-3"
                   style={{
-                    backgroundColor: "rgba(37,99,235,0.06)",
-                    border: "1px solid rgba(37,99,235,0.18)",
+                    backgroundColor: "rgba(15, 98, 254,0.06)",
+                    border: "1px solid rgba(15, 98, 254,0.18)",
                   }}
                 >
                   <div className="min-w-0">
@@ -237,7 +237,7 @@ export default async function MarketplaceLeadPage({
                         fontSize: "10px",
                         letterSpacing: "0.14em",
                         textTransform: "uppercase",
-                        color: "#2563EB",
+                        color: "#0f62fe",
                         fontWeight: 700,
                       }}
                     >
@@ -262,7 +262,7 @@ export default async function MarketplaceLeadPage({
                     style={{
                       padding: "8px 14px",
                       borderRadius: "8px",
-                      backgroundColor: "#2563EB",
+                      backgroundColor: "#0f62fe",
                       color: "#fff",
                       fontFamily: "var(--font-sans)",
                       fontSize: "13px",
@@ -417,7 +417,7 @@ export default async function MarketplaceLeadPage({
                 }}
               >
                 This lead has been sold or aged out. Browse{" "}
-                <Link href="/marketplace" style={{ color: "#2563EB", fontWeight: 600 }}>
+                <Link href="/marketplace" style={{ color: "#0f62fe", fontWeight: 600 }}>
                   similar leads
                 </Link>{" "}
                 or start a stream subscription.
@@ -432,7 +432,7 @@ export default async function MarketplaceLeadPage({
                   textAlign: "center",
                   padding: "11px 18px",
                   borderRadius: "10px",
-                  backgroundColor: "#2563EB",
+                  backgroundColor: "#0f62fe",
                   color: "#fff",
                   fontFamily: "var(--font-sans)",
                   fontSize: "14px",
@@ -470,7 +470,7 @@ export default async function MarketplaceLeadPage({
                     width: "5px",
                     height: "5px",
                     borderRadius: "1px",
-                    backgroundColor: "#2563EB",
+                    backgroundColor: "#0f62fe",
                   }}
                 />
                 {s}
@@ -515,7 +515,7 @@ function StatTile({
       <p
         className="mt-1"
         style={{
-          color: accent ? "#2563EB" : "#1E2A3A",
+          color: accent ? "#0f62fe" : "#1E2A3A",
           fontFamily: "var(--font-display)",
           fontSize: "20px",
           fontWeight: 500,
@@ -544,7 +544,7 @@ function Row({
   const contentStyle: React.CSSProperties = {
     fontFamily: "var(--font-sans)",
     fontSize: "14px",
-    color: masked ? "#94A3B8" : strong ? "#2563EB" : "#1E2A3A",
+    color: masked ? "#94A3B8" : strong ? "#0f62fe" : "#1E2A3A",
     fontStyle: masked ? "italic" : "normal",
     fontWeight: strong ? 600 : 500,
     textAlign: "right",
@@ -574,7 +574,7 @@ function Row({
           href={link}
           target="_blank"
           rel="noreferrer noopener"
-          style={{ ...contentStyle, color: "#2563EB", textDecoration: "none" }}
+          style={{ ...contentStyle, color: "#0f62fe", textDecoration: "none" }}
         >
           {value} ↗
         </a>

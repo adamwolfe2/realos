@@ -486,7 +486,7 @@ function Contents({ view }: { view: ViewKey }) {
 // Same ramp the real LeaseStack `LeadSourceDonut` palette uses.
 const LEAD_SOURCES: Array<{ label: string; pct: number; color: string }> = [
   { label: "Chat",     pct: 32, color: "#1E40AF" }, // blue-800
-  { label: "Paid",     pct: 26, color: "#2563EB" }, // blue-600 (brand)
+  { label: "Paid",     pct: 26, color: "#0f62fe" }, // blue-600 (brand)
   { label: "Pixel",    pct: 18, color: "#3B82F6" }, // blue-500
   { label: "Form",     pct: 14, color: "#60A5FA" }, // blue-400
   { label: "Referral", pct: 10, color: "#93C5FD" }, // blue-300
@@ -555,7 +555,7 @@ function Dashboard() {
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.boxShadow = `0 0 0 1px ${TOKENS.borderCream}, 0 12px 28px rgba(37,99,235,0.10)`;
+              e.currentTarget.style.boxShadow = `0 0 0 1px ${TOKENS.borderCream}, 0 12px 28px rgba(15, 98, 254,0.10)`;
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = "translateY(0)";
@@ -815,7 +815,7 @@ function FeaturedPropertyStrip({
               fontSize: "9.5px",
               letterSpacing: "0.16em",
               textTransform: "uppercase",
-              color: "#2563EB",
+              color: "#0f62fe",
               fontWeight: 600,
             }}
           >
@@ -946,7 +946,7 @@ function ActivityDot({ kind }: { kind: string }) {
         width: "8px",
         height: "8px",
         backgroundColor: TOKENS.accent,
-        boxShadow: `0 0 0 3px rgba(37,99,235,0.12)`,
+        boxShadow: `0 0 0 3px rgba(15, 98, 254,0.12)`,
       }}
     />
   );
@@ -1340,7 +1340,7 @@ function LeadDrawer({ lead, onClose }: { lead: LeadRow; onClose: () => void }) {
                     style={{
                       width: "22px",
                       height: "22px",
-                      backgroundColor: "rgba(37,99,235,0.12)",
+                      backgroundColor: "rgba(15, 98, 254,0.12)",
                       color: TOKENS.terracotta,
                       marginTop: "1px",
                     }}
@@ -1810,7 +1810,7 @@ function CreativeTypeIcon({ type }: { type: string }) {
       style={{
         width: "32px",
         height: "32px",
-        backgroundColor: "rgba(37,99,235,0.10)",
+        backgroundColor: "rgba(15, 98, 254,0.10)",
         color: TOKENS.terracotta,
         borderRadius: "8px",
         fontFamily: "var(--font-display)",
@@ -2364,7 +2364,7 @@ function PropertyCard({ property }: { property: typeof PROPERTIES[number] }) {
     property.status === "Live"
       ? { bg: TOKENS.accent, fg: TOKENS.white, border: TOKENS.accent }
       : property.status === "Onboarding"
-        ? { bg: "rgba(255,255,255,0.92)", fg: TOKENS.accent, border: "rgba(37,99,235,0.4)" }
+        ? { bg: "rgba(255,255,255,0.92)", fg: TOKENS.accent, border: "rgba(15, 98, 254,0.4)" }
         : { bg: "rgba(255,255,255,0.92)", fg: TOKENS.stone,  border: TOKENS.ring };
 
   return (
@@ -3088,7 +3088,7 @@ function VisitorsView() {
         <span
           className="inline-flex items-center gap-2"
           style={{
-            backgroundColor: "rgba(37,99,235,0.10)",
+            backgroundColor: "rgba(15, 98, 254,0.10)",
             color: TOKENS.accent,
             padding: "5px 10px",
             borderRadius: "999px",
@@ -3411,7 +3411,7 @@ function TourVisitorRow({
                 color: justRevealed ? TOKENS.white : TOKENS.accent,
                 backgroundColor: justRevealed
                   ? TOKENS.accent
-                  : "rgba(37,99,235,0.12)",
+                  : "rgba(15, 98, 254,0.12)",
                 padding: "2px 6px",
                 borderRadius: 4,
                 fontWeight: 600,
@@ -3672,7 +3672,7 @@ function AnimatedSeoChart({ points }: { points: SeoPoint[] }) {
   // works because the trailing dash is invisible anyway.
   const STROKE_LEN = 1800;
 
-  const colorClicks = "#2563EB"; // brand blue, primary metric
+  const colorClicks = "#0f62fe"; // brand blue, primary metric
   const colorImps = "#93C5FD"; // light blue, secondary metric
 
   return (

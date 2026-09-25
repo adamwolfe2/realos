@@ -31,7 +31,7 @@ export const BRAND_LOCATION = trim(process.env.BRAND_LOCATION) || "";
 // (the marketing site / dashboard / report views) so transactional emails
 // render the same blue header as everything else. Override via env if a
 // future re-skin moves the brand.
-export const BRAND_COLOR = trim(process.env.BRAND_PRIMARY_COLOR) || "#2563EB";
+export const BRAND_COLOR = trim(process.env.BRAND_PRIMARY_COLOR) || "#0f62fe";
 
 // Canonical wordmark used as the email header logo. Sender HTML reads this
 // when no white-label logo is in scope. Lives at /public/logos/.

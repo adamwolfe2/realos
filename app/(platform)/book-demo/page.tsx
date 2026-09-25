@@ -30,7 +30,7 @@ export default function BookDemoPage() {
           <div className="mb-10 text-center">
             <p
               className="ls-rise mb-4 text-[11px] font-mono uppercase tracking-[0.18em]"
-              style={{ color: "#2563EB", fontFamily: "var(--font-mono)" }}
+              style={{ color: "#0f62fe", fontFamily: "var(--font-mono)" }}
             >
               Book a demo
             </p>

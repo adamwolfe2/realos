@@ -77,7 +77,7 @@ export async function sendWelcomeEmail(
     </p>
     <p style="margin:16px 0 0;font-size:13px;line-height:1.6;color:#64748B;">
       Your portal will live at
-      <a href="${escapeHtml(portalUrl)}" style="color:#2563EB;text-decoration:underline;">${escapeHtml(portalUrl)}</a>
+      <a href="${escapeHtml(portalUrl)}" style="color:#0f62fe;text-decoration:underline;">${escapeHtml(portalUrl)}</a>
       once you're signed in.
     </p>
     <p style="margin:12px 0 0;font-size:13px;line-height:1.6;color:#64748B;">

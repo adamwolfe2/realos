@@ -27,7 +27,7 @@ export interface ReportEmailInput {
   senderName?: string | null;
 }
 
-const ACCENT = "#2563EB";
+const ACCENT = "#0f62fe";
 const PARCHMENT = "#f3f4f6";
 const IVORY = "#ffffff";
 const BORDER = "#e5e7eb";

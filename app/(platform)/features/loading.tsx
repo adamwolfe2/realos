@@ -58,7 +58,7 @@ export default function FeaturesLoading() {
                     background:
                       "linear-gradient(135deg, #E6F0FF 0%, #D6E4FF 50%, #B8CDFF 100%)",
                     boxShadow:
-                      "0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 32px rgba(37, 99, 235, 0.08)",
+                      "0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 32px rgba(15, 98, 254, 0.08)",
                   }}
                 >
                   <div

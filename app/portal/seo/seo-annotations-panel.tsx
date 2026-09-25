@@ -90,8 +90,8 @@ export function SeoAnnotationsPanel({
 function severityColor(severity: SeoAnnotation["severity"]): string {
   // Single-blue palette. CRITICAL = deepest primary, others step toward grey.
   switch (severity) {
-    case "CRITICAL": return "#1D4ED8";
-    case "HIGH":     return "#2563EB";
+    case "CRITICAL": return "#0043ce";
+    case "HIGH":     return "#0f62fe";
     case "MEDIUM":   return "#93C5FD";
     case "LOW":      return "#D1D5DB";
   }

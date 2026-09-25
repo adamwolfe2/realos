@@ -82,7 +82,7 @@ function OperatorActionsBar({
         <p
           className="text-[11px]"
           style={{
-            color: "#1D4ED8",
+            color: "#0043ce",
             fontFamily: "var(--font-mono)",
             letterSpacing: "0.1em",
             textTransform: "uppercase",
@@ -95,7 +95,7 @@ function OperatorActionsBar({
             href={proposalHref}
             className="inline-flex items-center gap-1.5 rounded-md font-semibold text-[12px]"
             style={{
-              backgroundColor: "#2563EB",
+              backgroundColor: "#0f62fe",
               color: "#FFFFFF",
               padding: "6px 12px",
               letterSpacing: "-0.005em",
@@ -234,7 +234,7 @@ export default async function BriefPage({ params }: RouteContext) {
           Decision-makers may know it by name. But corporate real-estate
           searches now start in ChatGPT and Perplexity, not CoStar — and
           in those conversations, your building doesn&apos;t exist.{" "}
-          <strong style={{ color: "#2563EB" }}>
+          <strong style={{ color: "#0f62fe" }}>
             {data.aeo.competitorCounts.length > 0 ? (
               <>
                 {data.aeo.competitorCounts[0].name} is named in{" "}
@@ -324,11 +324,11 @@ function _legacyPreHeroStrip_DO_NOT_USE({
           style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.14em", textTransform: "uppercase" }}>
           <span
             className="inline-flex items-center gap-1.5"
-            style={{ color: "#2563EB", fontWeight: 600 }}
+            style={{ color: "#0f62fe", fontWeight: 600 }}
           >
             <span
               aria-hidden
-              style={{ width: 6, height: 6, borderRadius: 9999, backgroundColor: "#2563EB" }}
+              style={{ width: 6, height: 6, borderRadius: 9999, backgroundColor: "#0f62fe" }}
             />
             Prospect brief
           </span>
@@ -356,7 +356,7 @@ function Hero({ data }: { data: BriefJson }) {
       <div className="max-w-[1080px] mx-auto px-6">
         <p
           className="text-[11px] font-mono uppercase tracking-[0.18em]"
-          style={{ color: "#2563EB" }}
+          style={{ color: "#0f62fe" }}
         >
           {BRAND_NAME} · AI search visibility brief
         </p>
@@ -365,7 +365,7 @@ function Hero({ data }: { data: BriefJson }) {
           style={{ color: "#1E2A3A", letterSpacing: "-0.022em", maxWidth: 820 }}
         >
           Here&apos;s what AI search engines say about{" "}
-          <span style={{ color: "#2563EB" }}>{data.brand}</span> today.
+          <span style={{ color: "#0f62fe" }}>{data.brand}</span> today.
         </h1>
         <p
           className="mt-5 max-w-2xl"
@@ -388,7 +388,7 @@ function Hero({ data }: { data: BriefJson }) {
           >
             <p
               className="text-[10px] font-mono uppercase tracking-[0.16em]"
-              style={{ color: "#2563EB" }}
+              style={{ color: "#0f62fe" }}
             >
               Headline finding
             </p>
@@ -461,7 +461,7 @@ function MethodologyStrip({ data }: { data: BriefJson }) {
         <div className="flex items-center gap-5 flex-wrap">
           <span
             className="text-[10px] font-mono uppercase tracking-[0.16em] shrink-0"
-            style={{ color: "#2563EB" }}
+            style={{ color: "#0f62fe" }}
           >
             Methodology
           </span>
@@ -756,7 +756,7 @@ function VerbatimQuoteCard({
         className="mt-1 text-[13.5px] leading-relaxed"
         style={{
           color: "#1E2A3A",
-          borderLeft: "3px solid #2563EB",
+          borderLeft: "3px solid #0f62fe",
           paddingLeft: 14,
           fontStyle: "italic",
         }}
@@ -844,7 +844,7 @@ function VerbatimQuoteCard({
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1 text-[11.5px] font-semibold hover:underline"
-          style={{ color: "#2563EB" }}
+          style={{ color: "#0f62fe" }}
         >
           Run this prompt yourself
           <ExternalLink className="w-3 h-3" aria-hidden />
@@ -931,7 +931,7 @@ function CompetitorSection({ data }: { data: BriefJson }) {
                 >
                   <div
                     style={{
-                      backgroundColor: i === 0 ? "#2563EB" : "#94A3B8",
+                      backgroundColor: i === 0 ? "#0f62fe" : "#94A3B8",
                       width: `${(c.count / max) * 100}%`,
                       height: "100%",
                     }}
@@ -1024,7 +1024,7 @@ function PageHealthSection({ data }: { data: BriefJson }) {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-0.5 hover:underline"
-                  style={{ color: "#2563EB", fontWeight: 600 }}
+                  style={{ color: "#0f62fe", fontWeight: 600 }}
                 >
                   View source
                   <ExternalLink className="w-3 h-3" aria-hidden />
@@ -1071,7 +1071,7 @@ function PageHealthSection({ data }: { data: BriefJson }) {
 }
 
 function ScoreRing({ score }: { score: number }) {
-  const tone = score >= 75 ? "#059669" : score >= 50 ? "#2563EB" : "#DC2626";
+  const tone = score >= 75 ? "#059669" : score >= 50 ? "#0f62fe" : "#DC2626";
   return (
     <div
       className="inline-flex items-center justify-center shrink-0"
@@ -1373,7 +1373,7 @@ function ActionPlanSection({ data }: { data: BriefJson }) {
                   className="font-semibold tabular-nums"
                   style={{
                     fontSize: 32,
-                    color: "#2563EB",
+                    color: "#0f62fe",
                     lineHeight: 1,
                     letterSpacing: "-0.02em",
                   }}
@@ -1434,12 +1434,12 @@ function CtaSection({ prospectName }: { prospectName: string }) {
               transform: "translateX(-50%)",
               width: 320,
               height: 4,
-              background: "linear-gradient(90deg, transparent, #2563EB, transparent)",
+              background: "linear-gradient(90deg, transparent, #0f62fe, transparent)",
             }}
           />
           <p
             className="text-[10px] font-mono uppercase tracking-[0.18em]"
-            style={{ color: "#2563EB" }}
+            style={{ color: "#0f62fe" }}
           >
             How {BRAND_NAME} closes this
           </p>
@@ -1466,7 +1466,7 @@ function CtaSection({ prospectName }: { prospectName: string }) {
               href="/onboarding"
               className="inline-flex items-center justify-center gap-2 rounded-md font-semibold"
               style={{
-                backgroundColor: "#2563EB",
+                backgroundColor: "#0f62fe",
                 color: "#FFFFFF",
                 padding: "12px 22px",
                 fontSize: 15,
@@ -1590,7 +1590,7 @@ function SectionEyebrow({ children }: { children: React.ReactNode }) {
   return (
     <p
       className="text-[11px] font-mono uppercase tracking-[0.18em]"
-      style={{ color: "#2563EB" }}
+      style={{ color: "#0f62fe" }}
     >
       {children}
     </p>

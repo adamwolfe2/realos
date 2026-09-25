@@ -237,13 +237,13 @@ export function BooleanCell({
 // (#1F2937, #6B7280, #9CA3AF) which previously rendered ~40% of
 // owner/assignee chips in shades of gray on a blue-branded product.
 const USER_PALETTE = [
-  { bg: "#1E3A8A", fg: "#FFFFFF" },
-  { bg: "#1D4ED8", fg: "#FFFFFF" },
-  { bg: "#2563EB", fg: "#FFFFFF" },
-  { bg: "#3B82F6", fg: "#FFFFFF" },
-  { bg: "#60A5FA", fg: "#0F172A" },
-  { bg: "#93C5FD", fg: "#0F172A" },
-  { bg: "#BFDBFE", fg: "#0F172A" },
+  { bg: "#001d6c", fg: "#FFFFFF" },
+  { bg: "#0043ce", fg: "#FFFFFF" },
+  { bg: "#0f62fe", fg: "#FFFFFF" },
+  { bg: "#4589ff", fg: "#FFFFFF" },
+  { bg: "#78a9ff", fg: "#0F172A" },
+  { bg: "#a6c8ff", fg: "#0F172A" },
+  { bg: "#d0e2ff", fg: "#0F172A" },
 ];
 
 function hashToIndex(s: string, modulo: number): number {

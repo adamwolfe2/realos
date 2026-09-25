@@ -114,7 +114,7 @@ export function BriefShellHeader({
         >
           <span
             className="inline-flex items-center gap-1.5"
-            style={{ color: "#2563EB", fontWeight: 600 }}
+            style={{ color: "#0f62fe", fontWeight: 600 }}
           >
             <span
               aria-hidden
@@ -122,7 +122,7 @@ export function BriefShellHeader({
                 width: 6,
                 height: 6,
                 borderRadius: 9999,
-                backgroundColor: "#2563EB",
+                backgroundColor: "#0f62fe",
               }}
             />
             {label}
@@ -255,7 +255,7 @@ export function BriefNarrativePanel({
       <div className="max-w-[920px] mx-auto px-6">
         <p
           className="text-[11px] font-mono uppercase tracking-[0.18em]"
-          style={{ color: "#2563EB" }}
+          style={{ color: "#0f62fe" }}
         >
           {eyebrow}
         </p>
@@ -276,7 +276,7 @@ export function BriefNarrativePanel({
             fontSize: 15.5,
             lineHeight: 1.65,
             color: "#1E2A3A",
-            borderLeft: "3px solid #2563EB",
+            borderLeft: "3px solid #0f62fe",
             paddingLeft: 22,
           }}
         >
@@ -317,7 +317,7 @@ export function BriefSourcesBlock({
       <div className="max-w-[1080px] mx-auto px-6">
         <p
           className="text-[11px] font-mono uppercase tracking-[0.18em]"
-          style={{ color: "#2563EB" }}
+          style={{ color: "#0f62fe" }}
         >
           How this report was built
         </p>
@@ -388,7 +388,7 @@ export function BriefSourcesBlock({
 // ---------------------------------------------------------------------------
 // Tiny shared icon for source items that don't have a brand mark.
 // ---------------------------------------------------------------------------
-export function SourceBullet({ inner = "#2563EB" }: { inner?: string }) {
+export function SourceBullet({ inner = "#0f62fe" }: { inner?: string }) {
   return (
     <span
       aria-hidden

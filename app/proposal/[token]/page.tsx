@@ -126,7 +126,7 @@ export default async function ProposalSharePage({ params }: PageProps) {
         <span className="font-mono tabular-nums">{proposal.number}</span>
         <a
           href={pdfHref}
-          className="text-[#2563EB] hover:underline"
+          className="text-[#0f62fe] hover:underline"
           rel="noopener"
         >
           Download PDF
@@ -327,13 +327,13 @@ export default async function ProposalSharePage({ params }: PageProps) {
                 <div className="flex items-center justify-between text-xs text-[#6B7280]">
                   <a
                     href={askQuestionHref}
-                    className="hover:text-[#2563EB] hover:underline"
+                    className="hover:text-[#0f62fe] hover:underline"
                   >
                     Ask a question
                   </a>
                   <a
                     href={declineHref}
-                    className="hover:text-[#2563EB] hover:underline"
+                    className="hover:text-[#0f62fe] hover:underline"
                   >
                     Decline
                   </a>
@@ -350,7 +350,7 @@ export default async function ProposalSharePage({ params }: PageProps) {
             Questions?{" "}
             <a
               href={`mailto:${BRAND_EMAIL}`}
-              className="text-[#2563EB] hover:underline"
+              className="text-[#0f62fe] hover:underline"
             >
               {BRAND_EMAIL}
             </a>
@@ -358,19 +358,19 @@ export default async function ProposalSharePage({ params }: PageProps) {
           <div className="flex items-center gap-4">
             <Link
               href="/privacy"
-              className="hover:text-[#2563EB] hover:underline"
+              className="hover:text-[#0f62fe] hover:underline"
             >
               Privacy
             </Link>
             <Link
               href="/terms"
-              className="hover:text-[#2563EB] hover:underline"
+              className="hover:text-[#0f62fe] hover:underline"
             >
               Terms
             </Link>
             <a
               href={BRAND.url}
-              className="hover:text-[#2563EB] hover:underline"
+              className="hover:text-[#0f62fe] hover:underline"
               rel="noopener"
             >
               {BRAND_NAME}

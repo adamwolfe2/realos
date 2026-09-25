@@ -128,10 +128,10 @@ export function buildProspectProfileEmail(
     <div style="margin:0 0 18px 0;">${sentimentBadge}</div>
 
     ${profile.followUpNeeded ? `
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#EFF6FF;border-left:3px solid #2563EB;padding:13px 16px;margin:0 0 18px 0;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#EFF6FF;border-left:3px solid #0f62fe;padding:13px 16px;margin:0 0 18px 0;">
       <tr>
         <td>
-          <div style="font-size:10px;font-weight:700;letter-spacing:0.12em;color:#1D4ED8;text-transform:uppercase;margin-bottom:5px;">NEXT ACTION</div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.12em;color:#0043ce;text-transform:uppercase;margin-bottom:5px;">NEXT ACTION</div>
           <div style="font-size:14px;color:#111827;font-weight:500;line-height:1.55;">${escape(profile.followUpNeeded)}</div>
         </td>
       </tr>
@@ -167,7 +167,7 @@ export function buildProspectProfileEmail(
 
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 8px 0;">
       <tr>
-        <td style="background:#2563EB;border-radius:6px;">
+        <td style="background:#0f62fe;border-radius:6px;">
           <a href="${escape(portalUrl)}"
              style="display:inline-block;padding:12px 24px;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
             Open full transcript
@@ -307,12 +307,12 @@ export function buildProspectProfileDigestEmail(
                   <div style="font-size:14.5px;font-weight:600;color:#111827;">${escape(displayName)}</div>
                   ${propertyLabel ? `<div style="font-size:11.5px;color:#6B7280;margin-top:2px;">${escape(propertyLabel)}</div>` : ""}
                   ${subLine ? `<div style="font-size:12.5px;color:#374151;margin-top:5px;">${escape(subLine)}</div>` : ""}
-                  ${p.followUpNeeded ? `<div style="font-size:12px;color:#1D4ED8;margin-top:6px;"><strong>Next:</strong> ${escape(p.followUpNeeded)}</div>` : ""}
+                  ${p.followUpNeeded ? `<div style="font-size:12px;color:#0043ce;margin-top:6px;"><strong>Next:</strong> ${escape(p.followUpNeeded)}</div>` : ""}
                 </td>
                 <td style="vertical-align:top;text-align:right;white-space:nowrap;padding-left:12px;">
                   <span style="display:inline-block;background:${tone.bg};color:${tone.fg};font-size:10px;font-weight:700;letter-spacing:0.06em;padding:3px 8px;border-radius:999px;">${escape(tone.label.split(" —")[0])}</span>
                   <div style="margin-top:8px;">
-                    <a href="${escape(url)}" style="font-size:12px;color:#2563EB;text-decoration:none;font-weight:600;">Engage →</a>
+                    <a href="${escape(url)}" style="font-size:12px;color:#0f62fe;text-decoration:none;font-weight:600;">Engage →</a>
                   </div>
                 </td>
               </tr>
@@ -334,7 +334,7 @@ export function buildProspectProfileDigestEmail(
 
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 8px 0;">
       <tr>
-        <td style="background:#2563EB;border-radius:6px;">
+        <td style="background:#0f62fe;border-radius:6px;">
           <a href="${escape(portalUrlBase)}/portal/conversations"
              style="display:inline-block;padding:12px 24px;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
             Open all conversations

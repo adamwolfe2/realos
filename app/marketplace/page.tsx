@@ -24,7 +24,7 @@ export default function MarketplacePage() {
         <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-12 md:py-16">
           <p
             style={{
-              color: "#2563EB",
+              color: "#0f62fe",
               fontFamily: "var(--font-mono)",
               fontSize: "11px",
               letterSpacing: "0.18em",
@@ -70,7 +70,7 @@ export default function MarketplacePage() {
                 fontWeight: 600,
                 padding: "10px 18px",
                 borderRadius: "10px",
-                backgroundColor: "#2563EB",
+                backgroundColor: "#0f62fe",
                 color: "#fff",
                 textDecoration: "none",
               }}

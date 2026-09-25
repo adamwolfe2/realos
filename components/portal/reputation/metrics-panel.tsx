@@ -552,7 +552,7 @@ function MonthlyVolumeChart({
             // Most recent month rendered at full brand blue. Older
             // months rendered at a slightly muted tone so the eye lands
             // on the latest reading first.
-            const neutralFill = d.isMostRecent ? "#2563EB" : "#3B82F6";
+            const neutralFill = d.isMostRecent ? "#0f62fe" : "#3B82F6";
             const neutralOpacity = d.isMostRecent ? 1 : 0.55;
 
             return (
@@ -626,7 +626,7 @@ function MonthlyVolumeChart({
           <span
             aria-hidden="true"
             className="h-2 w-2 rounded-sm"
-            style={{ backgroundColor: "#2563EB" }}
+            style={{ backgroundColor: "#0f62fe" }}
           />
           Neutral / positive
         </span>

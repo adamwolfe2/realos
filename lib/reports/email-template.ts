@@ -2,7 +2,7 @@
 // Weekly digest email template.
 //
 // @react-email/components is not installed; this module renders a clean HTML
-// string directly. Colors follow the design spec: primary blue #2563EB, text
+// string directly. Colors follow the design spec: primary blue #0f62fe, text
 // #111, muted #94A3B8, background white. No Tailwind classes, no emojis.
 // ---------------------------------------------------------------------------
 
@@ -297,7 +297,7 @@ export function buildWeeklyDigestEmail(
 
           <!-- Header -->
           <tr>
-            <td style="background-color:#2563EB;padding:24px 32px;">
+            <td style="background-color:#0f62fe;padding:24px 32px;">
               <p style="margin:0;color:#FFFFFF;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;font-weight:600;">LeaseStack</p>
               <p style="margin:8px 0 0;color:#BFDBFE;font-size:13px;">Weekly Leasing Report</p>
             </td>
@@ -348,7 +348,7 @@ export function buildWeeklyDigestEmail(
           <tr>
             <td style="padding:28px 32px 32px;">
               <p style="margin:0 0 16px;font-size:13px;color:#94A3B8;">Full lead history, visitor analytics, and campaign details are in your portal.</p>
-              <a href="${e(portalUrl)}" style="display:inline-block;background-color:#2563EB;color:#FFFFFF;font-size:13px;font-weight:600;text-decoration:none;padding:13px 28px;letter-spacing:0.04em;">
+              <a href="${e(portalUrl)}" style="display:inline-block;background-color:#0f62fe;color:#FFFFFF;font-size:13px;font-weight:600;text-decoration:none;padding:13px 28px;letter-spacing:0.04em;">
                 Open Portal
               </a>
             </td>

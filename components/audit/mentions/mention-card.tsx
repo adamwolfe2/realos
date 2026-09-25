@@ -59,7 +59,7 @@ export function MentionCard({ m }: { m: AuditMention }) {
             target="_blank"
             rel="noopener noreferrer nofollow"
             className="text-xs font-medium mt-3 inline-flex items-center gap-1.5"
-            style={{ color: "#2563EB" }}
+            style={{ color: "#0f62fe" }}
           >
             View source
             <ExternalLink size={14} aria-hidden />

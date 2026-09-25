@@ -46,7 +46,7 @@ export function SellerSignInForm() {
       >
         <p
           style={{
-            color: "#2563EB",
+            color: "#0f62fe",
             fontFamily: "var(--font-mono)",
             fontSize: "10.5px",
             letterSpacing: "0.14em",
@@ -121,7 +121,7 @@ export function SellerSignInForm() {
         style={{
           padding: "11px 18px",
           borderRadius: "10px",
-          backgroundColor: "#2563EB",
+          backgroundColor: "#0f62fe",
           color: "#fff",
           fontFamily: "var(--font-sans)",
           fontSize: "14px",

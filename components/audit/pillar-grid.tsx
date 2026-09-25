@@ -52,7 +52,7 @@ export function PillarGrid({
     <section className="mt-6">
       <p
         className="text-[10px] font-mono uppercase tracking-[0.16em]"
-        style={{ color: "#2563EB", fontFamily: "var(--font-mono)" }}
+        style={{ color: "#0f62fe", fontFamily: "var(--font-mono)" }}
       >
         The six pillars
       </p>

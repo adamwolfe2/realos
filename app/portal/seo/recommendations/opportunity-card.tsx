@@ -13,7 +13,7 @@ import { toast } from "sonner";
 // two pieces that still need their own markup + state: the severity chip
 // and the Done/Decline action cell.
 //
-// Severity treatment: single-blue cohesion (#2563EB) for the dot, with the
+// Severity treatment: single-blue cohesion (#0f62fe) for the dot, with the
 // severity *label* carrying the weight. Saturation steps down for lower
 // severities so the queue still scans visually:
 //   CRITICAL   primary           + bold label

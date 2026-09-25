@@ -56,7 +56,7 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: "/apple-icon.png?v=3", sizes: "180x180" }],
     shortcut: "/favicon.svg?v=3",
-    other: [{ rel: "mask-icon", url: "/favicon.svg?v=3", color: "#2563EB" }],
+    other: [{ rel: "mask-icon", url: "/favicon.svg?v=3", color: "#0f62fe" }],
   },
   openGraph: {
     title: `${BRAND_NAME}: Leasing intelligence for real estate operators`,

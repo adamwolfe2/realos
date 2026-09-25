@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 
 const STATUS_TONE: Record<string, { label: string; bg: string; fg: string }> = {
   QUEUED: { label: "Queued", bg: "#F3F4F6", fg: "#6B7280" },
-  RUNNING: { label: "Running…", bg: "#EFF6FF", fg: "#1D4ED8" },
+  RUNNING: { label: "Running…", bg: "#EFF6FF", fg: "#0043ce" },
   READY: { label: "Ready", bg: "#ECFDF5", fg: "#047857" },
   FAILED: { label: "Failed", bg: "#FEF2F2", fg: "#B91C1C" },
 };
@@ -61,7 +61,7 @@ export default async function AdminBriefsPage() {
           <Link
             href="/admin/briefs/new"
             className="inline-flex items-center justify-center h-9 px-4 rounded-md text-[13px] font-semibold text-white"
-            style={{ backgroundColor: "#2563EB" }}
+            style={{ backgroundColor: "#0f62fe" }}
           >
             Generate brief
           </Link>

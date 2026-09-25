@@ -105,7 +105,7 @@ function Hero() {
                 }}
               >
                 Most operators are running a multi-billion-dollar industry on a
-                patchwork of disconnected tools. We are <span style={{ color: "#2563EB" }}>opening the black box</span>.
+                patchwork of disconnected tools. We are <span style={{ color: "#0f62fe" }}>opening the black box</span>.
               </p>
             </Reveal>
           </div>
@@ -149,7 +149,7 @@ function FounderCard() {
             width: "36px",
             height: "36px",
             borderRadius: "10px",
-            backgroundColor: "#2563EB",
+            backgroundColor: "#0f62fe",
             color: "#ffffff",
             fontFamily: "var(--font-display)",
             fontSize: "15px",

@@ -85,7 +85,7 @@ export function MentionsSection({
     <section className="mt-12">
       <p
         className="text-[11px] font-mono uppercase tracking-[0.18em]"
-        style={{ color: "#2563EB", fontFamily: "var(--font-mono)" }}
+        style={{ color: "#0f62fe", fontFamily: "var(--font-mono)" }}
       >
         Reputation. Past 90 days
       </p>

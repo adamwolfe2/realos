@@ -31,15 +31,15 @@ export default function WebsiteBuildSuccessPage() {
             style={{
               width: 64,
               height: 64,
-              backgroundColor: "rgba(37,99,235,0.08)",
-              color: "#2563EB",
+              backgroundColor: "rgba(15, 98, 254,0.08)",
+              color: "#0f62fe",
             }}
           >
             <CheckCircle2 size={36} strokeWidth={2} aria-hidden="true" />
           </div>
         </div>
 
-        <p className="eyebrow mb-3" style={{ color: "#2563EB" }}>
+        <p className="eyebrow mb-3" style={{ color: "#0f62fe" }}>
           Payment received
         </p>
         <h1
@@ -75,7 +75,7 @@ export default function WebsiteBuildSuccessPage() {
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-colors"
-            style={{ backgroundColor: "#2563EB", color: "#ffffff" }}
+            style={{ backgroundColor: "#0f62fe", color: "#ffffff" }}
           >
             <Calendar size={16} strokeWidth={2.5} aria-hidden="true" />
             Book kickoff call
@@ -142,7 +142,7 @@ export default function WebsiteBuildSuccessPage() {
             <Link
               href="/portal/billing"
               style={{
-                color: "#2563EB",
+                color: "#0f62fe",
                 textDecoration: "underline",
                 textUnderlineOffset: "2px",
               }}

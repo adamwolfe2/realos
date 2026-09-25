@@ -31,7 +31,7 @@ export type DigestPayload = {
   portalUrl: string; // base portal URL for "View all" link
 };
 
-const BRAND_BLUE = "#2563EB";
+const BRAND_BLUE = "#0f62fe";
 const INK = "#0A0A0A";
 const MUTED = "#5C5E62";
 const BORDER = "#E5E5E5";

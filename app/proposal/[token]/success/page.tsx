@@ -116,7 +116,7 @@ export default async function ProposalSuccessPage({ params }: PageProps) {
 
       <div className="mx-auto max-w-3xl px-6 py-12 sm:py-16">
         <section className="mb-10">
-          <p className="text-sm font-medium uppercase tracking-wider text-[#2563EB]">
+          <p className="text-sm font-medium uppercase tracking-wider text-[#0f62fe]">
             Payment received
           </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-[#0F172A] sm:text-4xl">
@@ -129,7 +129,7 @@ export default async function ProposalSuccessPage({ params }: PageProps) {
           </p>
         </section>
 
-        <section className="mb-10 rounded-xl border border-[#2563EB]/30 bg-[#EFF6FF] p-5">
+        <section className="mb-10 rounded-xl border border-[#0f62fe]/30 bg-[#EFF6FF] p-5">
           <h2 className="text-sm font-semibold text-[#0F172A]">
             Check your email for your portal invite
           </h2>
@@ -143,7 +143,7 @@ export default async function ProposalSuccessPage({ params }: PageProps) {
             reach out to us at{" "}
             <a
               href={`mailto:${BRAND_EMAIL}`}
-              className="text-[#2563EB] hover:underline"
+              className="text-[#0f62fe] hover:underline"
             >
               {BRAND_EMAIL}
             </a>
@@ -246,7 +246,7 @@ export default async function ProposalSuccessPage({ params }: PageProps) {
               <p>
                 <a
                   href={`mailto:${BRAND_EMAIL}`}
-                  className="text-[#2563EB] hover:underline"
+                  className="text-[#0f62fe] hover:underline"
                 >
                   {BRAND_EMAIL}
                 </a>
@@ -261,7 +261,7 @@ export default async function ProposalSuccessPage({ params }: PageProps) {
               Need help?{" "}
               <a
                 href={`mailto:${BRAND_EMAIL}`}
-                className="text-[#2563EB] hover:underline"
+                className="text-[#0f62fe] hover:underline"
               >
                 {BRAND_EMAIL}
               </a>
@@ -269,19 +269,19 @@ export default async function ProposalSuccessPage({ params }: PageProps) {
             <div className="flex items-center gap-4">
               <Link
                 href="/privacy"
-                className="hover:text-[#2563EB] hover:underline"
+                className="hover:text-[#0f62fe] hover:underline"
               >
                 Privacy
               </Link>
               <Link
                 href="/terms"
-                className="hover:text-[#2563EB] hover:underline"
+                className="hover:text-[#0f62fe] hover:underline"
               >
                 Terms
               </Link>
               <a
                 href={BRAND.url}
-                className="hover:text-[#2563EB] hover:underline"
+                className="hover:text-[#0f62fe] hover:underline"
                 rel="noopener"
               >
                 {BRAND_NAME}
@@ -320,7 +320,7 @@ function PendingState({ proposalNumber }: { proposalNumber: string }) {
           Questions?{" "}
           <a
             href={`mailto:${BRAND_EMAIL}`}
-            className="text-[#2563EB] hover:underline"
+            className="text-[#0f62fe] hover:underline"
           >
             {BRAND_EMAIL}
           </a>
@@ -343,7 +343,7 @@ function ExpiredFallback() {
         <p className="mt-6 text-xs text-[#6B7280]">
           <a
             href={`mailto:${BRAND_EMAIL}`}
-            className="text-[#2563EB] hover:underline"
+            className="text-[#0f62fe] hover:underline"
           >
             {BRAND_EMAIL}
           </a>

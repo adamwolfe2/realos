@@ -30,7 +30,7 @@ import type { CalculationOutputs } from "@/lib/zillow/calculations";
 // Visual language matches popup-editor's premium feel — uppercase
 // eyebrows, large bold numbers in the hero strip, confidence bands on
 // AVMs, monospace freshness chips. Brand accent is the workspace's
-// terracotta (#2563EB by default, white-label-safe via the css var).
+// terracotta (#0f62fe by default, white-label-safe via the css var).
 // ---------------------------------------------------------------------------
 
 const SAMPLE_ADDRESS = "500 Main St, Austin, TX 78701";
@@ -559,8 +559,8 @@ function TemperaturePill({ temperature }: { temperature: "HOT" | "WARM" | "COOL"
       icon: <TrendingUp className="h-3 w-3" />,
     },
     COOL: {
-      bg: "rgba(37, 99, 235, 0.08)",
-      fg: "#1D4ED8",
+      bg: "rgba(15, 98, 254, 0.08)",
+      fg: "#0043ce",
       label: "Cool market",
       icon: <MapPin className="h-3 w-3" />,
     },

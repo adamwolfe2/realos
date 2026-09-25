@@ -181,10 +181,10 @@ export function DemoQualifyWizard() {
                 aria-pressed={active}
                 className="rounded-[4px] border p-4 text-left transition-all"
                 style={{
-                  borderColor: active ? "#2563EB" : "#E2E8F0",
+                  borderColor: active ? "#0f62fe" : "#E2E8F0",
                   backgroundColor: active ? "#EFF6FF" : "#FFFFFF",
                   boxShadow: active
-                    ? "0 0 0 1px #2563EB inset"
+                    ? "0 0 0 1px #0f62fe inset"
                     : "none",
                 }}
               >
@@ -198,8 +198,8 @@ export function DemoQualifyWizard() {
                   <span
                     className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors"
                     style={{
-                      borderColor: active ? "#2563EB" : "#CBD5E1",
-                      backgroundColor: active ? "#2563EB" : "#FFFFFF",
+                      borderColor: active ? "#0f62fe" : "#CBD5E1",
+                      backgroundColor: active ? "#0f62fe" : "#FFFFFF",
                     }}
                   >
                     {active ? (
@@ -239,7 +239,7 @@ export function DemoQualifyWizard() {
             onClick={submitAndAdvance}
             disabled={submitting || selected.size === 0}
             className="inline-flex items-center gap-2 rounded-[2px] px-6 py-3 text-[14px] font-semibold transition-opacity disabled:opacity-50"
-            style={{ backgroundColor: "#2563EB", color: "#FFFFFF" }}
+            style={{ backgroundColor: "#0f62fe", color: "#FFFFFF" }}
           >
             {submitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -295,7 +295,7 @@ export function DemoQualifyWizard() {
           type="submit"
           disabled={!step1Valid}
           className="mt-1 inline-flex items-center justify-center gap-2 rounded-[2px] px-6 py-3 text-[14px] font-semibold transition-opacity disabled:opacity-50"
-          style={{ backgroundColor: "#2563EB", color: "#FFFFFF" }}
+          style={{ backgroundColor: "#0f62fe", color: "#FFFFFF" }}
         >
           Next
           <ArrowRight className="h-4 w-4" />
@@ -328,7 +328,7 @@ function StepHeader({
             <span
               className="block h-full w-full origin-left rounded-full transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
               style={{
-                backgroundColor: "#2563EB",
+                backgroundColor: "#0f62fe",
                 transform: s <= step ? "scaleX(1)" : "scaleX(0)",
               }}
             />
@@ -379,7 +379,7 @@ function WizardField({
         placeholder={placeholder}
         autoComplete={autoComplete}
         maxLength={200}
-        className="h-11 w-full rounded-[2px] border px-3 text-[14px] outline-none transition-colors focus:border-[#2563EB]"
+        className="h-11 w-full rounded-[2px] border px-3 text-[14px] outline-none transition-colors focus:border-[#0f62fe]"
         style={{
           borderColor: "#CBD5E1",
           color: "#1E2A3A",

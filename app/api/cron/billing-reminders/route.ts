@@ -237,7 +237,7 @@ function buildBillingReminderEmail(opts: {
           we'll get it sorted right away.
         </p>
         <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
-          <a href="${e(billingUrl)}" style="color:#2563EB;font-weight:600;">Update payment method</a>
+          <a href="${e(billingUrl)}" style="color:#0f62fe;font-weight:600;">Update payment method</a>
         </p>
       `,
     };
@@ -257,7 +257,7 @@ function buildBillingReminderEmail(opts: {
         just reply here and we'll take care of it.
       </p>
       <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
-        <a href="${e(billingUrl)}" style="color:#2563EB;font-weight:600;">Update payment method</a>
+        <a href="${e(billingUrl)}" style="color:#0f62fe;font-weight:600;">Update payment method</a>
       </p>
     `,
   };

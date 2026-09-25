@@ -76,7 +76,7 @@ const MAX_RESOLUTIONS = 200;
 const SESSION_SCAN_CAP = 5000;
 
 const OUTCOME_META: Record<string, { label: string; color: string }> = {
-  lead: { label: "Lead", color: "#2563EB" },
+  lead: { label: "Lead", color: "#0f62fe" },
   identified: { label: "Identified", color: "#7C3AED" },
   anon: { label: "Anonymous", color: "#94A3B8" },
 };

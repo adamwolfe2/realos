@@ -86,7 +86,7 @@ export function CalDemoProvider({ children }: { children: React.ReactNode }) {
         hideEventTypeDetails: false,
         layout: "month_view",
         styles: {
-          branding: { brandColor: "#2563EB" },
+          branding: { brandColor: "#0f62fe" },
         },
       });
       // Trigger a render once the API is wired so consumers can show the

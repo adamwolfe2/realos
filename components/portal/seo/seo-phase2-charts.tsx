@@ -24,7 +24,7 @@ import {
 // brand cohesion rule in CLAUDE.md.
 // ---------------------------------------------------------------------------
 
-const BRAND = "#2563EB";
+const BRAND = "#0f62fe";
 const BRAND_LIGHT = "#93C5FD";
 const BRAND_LIGHTER = "#DBEAFE";
 const INK = "#1E2A3A";

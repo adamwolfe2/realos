@@ -265,7 +265,7 @@ function buildDripEmail(
           It takes about two minutes. Head to your portal to get started.
         </p>
         <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
-          <a href="${e(propertiesUrl)}" style="color:#2563EB;">Add a property</a>
+          <a href="${e(propertiesUrl)}" style="color:#0f62fe;">Add a property</a>
         </p>
       `,
     };
@@ -287,7 +287,7 @@ function buildDripEmail(
           shows you which keywords are driving traffic to your properties.
         </p>
         <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
-          <a href="${e(integrationsUrl)}" style="color:#2563EB;">Connect an integration</a>
+          <a href="${e(integrationsUrl)}" style="color:#0f62fe;">Connect an integration</a>
         </p>
       `,
     };
@@ -312,7 +312,7 @@ function buildDripEmail(
         Any questions, just reply here and we'll help you get set up.
       </p>
       <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
-        <a href="${e(portalUrl)}" style="color:#2563EB;">Open your portal</a>
+        <a href="${e(portalUrl)}" style="color:#0f62fe;">Open your portal</a>
       </p>
     `,
   };

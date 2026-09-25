@@ -37,7 +37,7 @@ export async function sendSignInLinkEmail(args: {
       </p>
       <div style="margin:24px 0;">
         <a href="${verifyUrl}"
-           style="display:inline-block;background-color:#2563EB;color:#ffffff;
+           style="display:inline-block;background-color:#0f62fe;color:#ffffff;
                   font-family:Inter,sans-serif;font-size:14px;font-weight:600;
                   padding:12px 22px;border-radius:8px;text-decoration:none;">
           Sign in to the Marketplace →
@@ -97,7 +97,7 @@ export async function sendSellerSignInLinkEmail(args: {
       </p>
       <div style="margin:24px 0;">
         <a href="${verifyUrl}"
-           style="display:inline-block;background-color:#2563EB;color:#ffffff;
+           style="display:inline-block;background-color:#0f62fe;color:#ffffff;
                   font-family:Inter,sans-serif;font-size:14px;font-weight:600;
                   padding:12px 22px;border-radius:8px;text-decoration:none;">
           Sign in to your seller dashboard →
@@ -178,13 +178,13 @@ export async function sendLeadDeliveryEmail(args: {
       </p>
       ${args.receiptUrl
         ? `<p style="font-size:13px;line-height:1.55;color:#64748B;margin:0 0 16px;">
-             <a href="${args.receiptUrl}" style="color:#2563EB;text-decoration:none;">View Stripe receipt →</a>
+             <a href="${args.receiptUrl}" style="color:#0f62fe;text-decoration:none;">View Stripe receipt →</a>
            </p>`
         : ""}
 
       <div style="margin:24px 0;">
         <a href="${dashboardUrl}"
-           style="display:inline-block;background-color:#2563EB;color:#ffffff;
+           style="display:inline-block;background-color:#0f62fe;color:#ffffff;
                   font-family:Inter,sans-serif;font-size:14px;font-weight:600;
                   padding:10px 18px;border-radius:8px;text-decoration:none;">
           Open your dashboard →
@@ -222,7 +222,7 @@ function row(label: string, value: string, strong = false): string {
       </td>
       <td style="padding:10px 14px;border-bottom:1px solid #F1F5F9;
                  font-family:Inter,sans-serif;font-size:14px;
-                 color:${strong ? "#2563EB" : "#1E2A3A"};
+                 color:${strong ? "#0f62fe" : "#1E2A3A"};
                  font-weight:${strong ? "600" : "500"};">
         ${escapeHtml(value)}
       </td>

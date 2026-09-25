@@ -68,7 +68,7 @@ export function AuditTrustStrip({
         <div className="flex items-center gap-5">
           <span
             className="hidden sm:inline-flex shrink-0 items-center text-[10px] font-mono uppercase tracking-[0.16em]"
-            style={{ color: "#2563EB" }}
+            style={{ color: "#0f62fe" }}
           >
             We asked
           </span>

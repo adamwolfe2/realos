@@ -22,12 +22,12 @@ export default function AuditFormPage() {
               <span
                 aria-hidden
                 className="hidden sm:inline-block"
-                style={{ width: 28, height: 1, backgroundColor: "#2563EB" }}
+                style={{ width: 28, height: 1, backgroundColor: "#0f62fe" }}
               />
               <p
                 className="text-[11px] font-mono uppercase tracking-[0.18em]"
                 style={{
-                  color: "#2563EB",
+                  color: "#0f62fe",
                   fontFamily: "var(--font-mono)",
                 }}
               >
@@ -36,7 +36,7 @@ export default function AuditFormPage() {
               <span
                 aria-hidden
                 className="hidden sm:inline-block"
-                style={{ width: 28, height: 1, backgroundColor: "#2563EB" }}
+                style={{ width: 28, height: 1, backgroundColor: "#0f62fe" }}
               />
             </div>
             <h1
@@ -100,7 +100,7 @@ export default function AuditFormPage() {
             <Link
               href="/reputation-report"
               className="font-semibold underline underline-offset-2"
-              style={{ color: "#2563EB" }}
+              style={{ color: "#0f62fe" }}
             >
               Run a free reputation report
             </Link>

@@ -27,7 +27,7 @@ export default function NotFound() {
         <div className="max-w-[720px]">
           <p
             style={{
-              color: "#2563EB",
+              color: "#0f62fe",
               fontFamily: "var(--font-mono)",
               fontSize: "11.5px",
               letterSpacing: "0.22em",
@@ -75,7 +75,7 @@ export default function NotFound() {
                 justifyContent: "center",
                 minHeight: 46,
                 padding: "12px 22px",
-                backgroundColor: "#2563EB",
+                backgroundColor: "#0f62fe",
                 color: "#FFFFFF",
                 fontFamily: "var(--font-sans)",
                 fontSize: 15,

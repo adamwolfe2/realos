@@ -13,11 +13,11 @@ import { cn } from "@/lib/utils";
 // saturation; remaining buckets fall back to gray so absent / "other"
 // segments visually defer to the data that matters.
 export const CHART_PALETTE = [
-  "#1D4ED8", // blue-700 (dominant)
-  "#2563EB", // blue-600 (brand)
-  "#3B82F6", // blue-500
-  "#60A5FA", // blue-400
-  "#93C5FD", // blue-300
+  "#0043ce", // Carbon blue 70 (dominant)
+  "#0f62fe", // Carbon blue 60 (brand)
+  "#4589ff", // Carbon blue 50
+  "#78a9ff", // Carbon blue 40
+  "#a6c8ff", // Carbon blue 30
   "#9CA3AF", // gray-400
   "#D1D5DB", // gray-300
   "#E5E7EB", // gray-200 (other)

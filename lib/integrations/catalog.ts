@@ -159,7 +159,7 @@ export const INTEGRATIONS: IntegrationDefinition[] = [
     description:
       "A lightweight script we provision per-tenant, installed on your custom domain. It matches anonymous visitors against a consented identity graph and drops named leads into your CRM — along with the pages they viewed and how they found you.",
     landsIn: ["Visitors", "Leads", "Retargeting audiences"],
-    brandColor: "#2563EB",
+    brandColor: "#0f62fe",
     initials: "Vi",
     auth: "agency_managed",
   },

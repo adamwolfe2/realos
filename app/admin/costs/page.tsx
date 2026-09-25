@@ -193,17 +193,17 @@ export default async function AdminCostsPage() {
         <CostTile
           label="Last 24 hours"
           usd={total24hUsd}
-          accent="#2563EB"
+          accent="#0f62fe"
         />
         <CostTile
           label="Last 7 days"
           usd={total7dUsd}
-          accent="#2563EB"
+          accent="#0f62fe"
         />
         <CostTile
           label="Month to date"
           usd={mtdSpend.totalUsd}
-          accent="#2563EB"
+          accent="#0f62fe"
           subline={globalCap != null ? `of $${globalCap.toFixed(0)} cap` : null}
         />
         <CapStatus
@@ -656,7 +656,7 @@ function CapStatus({
       ? "#B91C1C"
       : utilization >= 0.7
         ? "#B45309"
-        : "#2563EB";
+        : "#0f62fe";
   return (
     <div
       className="rounded-xl border bg-white p-5"

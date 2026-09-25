@@ -52,7 +52,7 @@ export default async function BuyerDashboardPage() {
         <div>
           <p
             style={{
-              color: "#2563EB",
+              color: "#0f62fe",
               fontFamily: "var(--font-mono)",
               fontSize: "11px",
               letterSpacing: "0.18em",
@@ -104,7 +104,7 @@ export default async function BuyerDashboardPage() {
               fontFamily: "var(--font-sans)",
               fontSize: "13px",
               fontWeight: 600,
-              color: "#2563EB",
+              color: "#0f62fe",
               textDecoration: "none",
             }}
           >
@@ -147,7 +147,7 @@ export default async function BuyerDashboardPage() {
               style={{
                 padding: "8px 14px",
                 borderRadius: "8px",
-                backgroundColor: "#2563EB",
+                backgroundColor: "#0f62fe",
                 color: "#fff",
                 fontFamily: "var(--font-sans)",
                 fontSize: "13px",
@@ -254,7 +254,7 @@ export default async function BuyerDashboardPage() {
               }}
             >
               You haven't purchased any leads yet.{" "}
-              <Link href="/marketplace" style={{ color: "#2563EB", fontWeight: 600 }}>
+              <Link href="/marketplace" style={{ color: "#0f62fe", fontWeight: 600 }}>
                 Browse the marketplace
               </Link>
               .
@@ -387,7 +387,7 @@ function Tile({
       <p
         className="mt-1.5"
         style={{
-          color: accent ? "#2563EB" : "#1E2A3A",
+          color: accent ? "#0f62fe" : "#1E2A3A",
           fontFamily: "var(--font-display)",
           fontSize: "24px",
           fontWeight: 500,

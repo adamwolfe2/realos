@@ -34,7 +34,7 @@ export default async function SellerSignInPage({
       >
         <p
           style={{
-            color: "#2563EB",
+            color: "#0f62fe",
             fontFamily: "var(--font-mono)",
             fontSize: "11px",
             letterSpacing: "0.18em",

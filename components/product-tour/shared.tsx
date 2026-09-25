@@ -42,13 +42,13 @@ export const TOKENS = {
   nearBlack:       "#1E2A3A",
   darkSurface:     "#1E2A3A",
   // Brand accent + step-down scale for category / chart slices.
-  accent:          "#2563EB", // primary  — Tailwind blue-600
-  accentHover:     "#1D4ED8", //          — blue-700
+  accent:          "#0f62fe", // primary  — Tailwind blue-600
+  accentHover:     "#0043ce", //          — blue-700
   accentLight:     "#60A5FA", //          — blue-400
   // Legacy aliases — kept so existing inline references keep working but
   // now all resolve to monochromatic blue ramp stops.
-  terracotta:      "#2563EB",
-  terracottaHover: "#1D4ED8",
+  terracotta:      "#0f62fe",
+  terracottaHover: "#0043ce",
   coral:           "#93C5FD", //          — blue-300
   charcoal:        "#1E2A3A",
   olive:           "#64748B",
@@ -60,7 +60,7 @@ export const TOKENS = {
   // Delta polarity (KPI tiles only). Matches the real product's
   // .ls-delta-up / .ls-delta-down classes in app/globals.css.
   success:         "#15803D",
-  warning:         "#1D4ED8", // ← was amber #F59E0B; remapped to deep blue
+  warning:         "#0043ce", // ← was amber #F59E0B; remapped to deep blue
   error:           "#B91C1C",
   focusBlue:       "#3898ec",
 } as const;
@@ -82,8 +82,8 @@ export function Pill({
   // so polarity can still be implied without leaving the brand ramp.
   const colors = {
     neutral:    { bg: TOKENS.sand,                fg: TOKENS.charcoal,    border: TOKENS.ring },
-    terracotta: { bg: "rgba(37,99,235,0.12)",     fg: TOKENS.accent,      border: "rgba(37,99,235,0.3)" },
-    success:    { bg: "rgba(37,99,235,0.12)",     fg: TOKENS.accent,      border: "rgba(37,99,235,0.3)" },
+    terracotta: { bg: "rgba(15, 98, 254,0.12)",     fg: TOKENS.accent,      border: "rgba(15, 98, 254,0.3)" },
+    success:    { bg: "rgba(15, 98, 254,0.12)",     fg: TOKENS.accent,      border: "rgba(15, 98, 254,0.3)" },
     warning:    { bg: "rgba(96,165,250,0.18)",    fg: TOKENS.accent,      border: "rgba(96,165,250,0.4)" },
     muted:      { bg: TOKENS.borderCream,         fg: TOKENS.stone,       border: TOKENS.borderCream },
   }[tone];
@@ -113,7 +113,7 @@ export function Pill({
 // are a lighter accent shade, low scores are muted.
 export function ScoreBadge({ score }: { score: number }) {
   const color =
-    score >= 85 ? TOKENS.accent      :    // #2563EB
+    score >= 85 ? TOKENS.accent      :    // #0f62fe
     score >= 70 ? TOKENS.accentLight :    // #60A5FA
     TOKENS.stone;                         // #94A3B8
   return (

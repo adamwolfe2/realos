@@ -114,7 +114,7 @@ export function HealthScoreCard({
   const ringC = 2 * Math.PI * ringR;
   const dash = (score / 100) * ringC;
   const color =
-    score >= 75 ? "#10B981" : score >= 50 ? "#2563EB" : score >= 25 ? "#F59E0B" : "#EF4444";
+    score >= 75 ? "#10B981" : score >= 50 ? "#0f62fe" : score >= 25 ? "#F59E0B" : "#EF4444";
 
   return (
     <section
@@ -190,7 +190,7 @@ export function HealthScoreCard({
                 : v >= 75
                   ? "#10B981"
                   : v >= 50
-                    ? "#2563EB"
+                    ? "#0f62fe"
                     : v >= 25
                       ? "#F59E0B"
                       : "#EF4444";
@@ -442,7 +442,7 @@ function ScoreDot({ label, value }: { label: string; value: number | null }) {
     numeric >= 90
       ? "#10B981"
       : numeric >= 70
-        ? "#2563EB"
+        ? "#0f62fe"
         : numeric >= 50
           ? "#F59E0B"
           : "#EF4444";

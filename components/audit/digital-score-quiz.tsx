@@ -267,7 +267,7 @@ function ProgressHeader({
     <div className="flex items-center gap-3">
       <p
         className="text-[11px] font-mono uppercase tracking-[0.18em] whitespace-nowrap"
-        style={{ color: "#2563EB", fontFamily: "var(--font-mono)" }}
+        style={{ color: "#0f62fe", fontFamily: "var(--font-mono)" }}
       >
         Step {current} of {total}
       </p>
@@ -279,7 +279,7 @@ function ProgressHeader({
           className="h-full rounded-full"
           style={{
             width: `${pct}%`,
-            backgroundColor: "#2563EB",
+            backgroundColor: "#0f62fe",
             transition: "width 240ms ease-out",
           }}
         />
@@ -408,8 +408,8 @@ function SingleChoiceRow({
         aria-pressed={selected}
         className="w-full text-left rounded-lg border px-4 py-3.5 sm:py-3 transition-colors active:scale-[0.99]"
         style={{
-          borderColor: selected ? "#2563EB" : "#E5E7EB",
-          backgroundColor: selected ? "rgba(37,99,235,0.06)" : "#FFFFFF",
+          borderColor: selected ? "#0f62fe" : "#E5E7EB",
+          backgroundColor: selected ? "rgba(15, 98, 254,0.06)" : "#FFFFFF",
         }}
       >
         <div className="flex items-center gap-3">
@@ -450,8 +450,8 @@ function MultiChoiceRow({
         aria-pressed={selected}
         className="w-full text-left rounded-lg border px-4 py-3.5 sm:py-3 transition-colors active:scale-[0.99]"
         style={{
-          borderColor: selected ? "#2563EB" : "#E5E7EB",
-          backgroundColor: selected ? "rgba(37,99,235,0.06)" : "#FFFFFF",
+          borderColor: selected ? "#0f62fe" : "#E5E7EB",
+          backgroundColor: selected ? "rgba(15, 98, 254,0.06)" : "#FFFFFF",
         }}
       >
         <div className="flex items-center gap-3">
@@ -483,7 +483,7 @@ function RadioGlyph({ selected }: { selected: boolean }) {
       style={{
         width: 18,
         height: 18,
-        border: `1.5px solid ${selected ? "#2563EB" : "#CBD5E1"}`,
+        border: `1.5px solid ${selected ? "#0f62fe" : "#CBD5E1"}`,
         backgroundColor: "#FFFFFF",
         flexShrink: 0,
       }}
@@ -494,7 +494,7 @@ function RadioGlyph({ selected }: { selected: boolean }) {
             width: 8,
             height: 8,
             borderRadius: 999,
-            backgroundColor: "#2563EB",
+            backgroundColor: "#0f62fe",
           }}
         />
       ) : null}
@@ -511,8 +511,8 @@ function CheckboxGlyph({ selected }: { selected: boolean }) {
         width: 18,
         height: 18,
         borderRadius: 4,
-        border: `1.5px solid ${selected ? "#2563EB" : "#CBD5E1"}`,
-        backgroundColor: selected ? "#2563EB" : "#FFFFFF",
+        border: `1.5px solid ${selected ? "#0f62fe" : "#CBD5E1"}`,
+        backgroundColor: selected ? "#0f62fe" : "#FFFFFF",
         color: "#FFFFFF",
         flexShrink: 0,
       }}

@@ -64,7 +64,7 @@ export function BuyLeadButton({
           textAlign: "center",
           padding: "11px 18px",
           borderRadius: "10px",
-          backgroundColor: "#2563EB",
+          backgroundColor: "#0f62fe",
           color: "#fff",
           fontFamily: "var(--font-sans)",
           fontSize: "14px",

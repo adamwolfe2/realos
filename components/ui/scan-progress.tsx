@@ -83,7 +83,7 @@ export function ScanProgress({
             width: 8,
             height: 8,
             borderRadius: "50%",
-            backgroundColor: "#2563EB",
+            backgroundColor: "#0f62fe",
             animation: "ls-scan-dot 1.4s ease-in-out infinite",
             flexShrink: 0,
           }}
@@ -113,7 +113,7 @@ export function ScanProgress({
           className="h-full"
           style={{
             width: "100%",
-            backgroundColor: "#2563EB",
+            backgroundColor: "#0f62fe",
             animation: "ls-scan-bar 1.2s ease-in-out infinite",
             transformOrigin: "0% 50%",
           }}

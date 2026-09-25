@@ -52,7 +52,7 @@ export function SignInForm({ next }: { next: string | null }) {
       >
         <p
           style={{
-            color: "#2563EB",
+            color: "#0f62fe",
             fontFamily: "var(--font-mono)",
             fontSize: "10.5px",
             letterSpacing: "0.14em",
@@ -87,7 +87,7 @@ export function SignInForm({ next }: { next: string | null }) {
           <button
             type="button"
             onClick={() => setSent(false)}
-            style={{ color: "#2563EB", fontWeight: 600 }}
+            style={{ color: "#0f62fe", fontWeight: 600 }}
           >
             Send another
           </button>
@@ -140,7 +140,7 @@ export function SignInForm({ next }: { next: string | null }) {
         style={{
           padding: "11px 18px",
           borderRadius: "10px",
-          backgroundColor: "#2563EB",
+          backgroundColor: "#0f62fe",
           color: "#fff",
           fontFamily: "var(--font-sans)",
           fontSize: "14px",

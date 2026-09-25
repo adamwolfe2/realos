@@ -83,8 +83,8 @@ export const CANONICAL_SOURCES: CanonicalSource[] = [
   { id: "yahoo", label: "Yahoo", category: "search", color: "#6001D2", logo: "yahoo", matchHosts: ["search.yahoo.", "yahoo."], matchUtm: ["yahoo"] },
 
   // --- Owned capture surfaces ---------------------------------------------
-  { id: "chatbot", label: "Chatbot", category: "owned", color: "#2563EB", logo: "chatbot", matchHosts: [], matchUtm: ["chatbot"] },
-  { id: "web_form", label: "Web form", category: "owned", color: "#1D4ED8", logo: "web_form", matchHosts: [], matchUtm: ["form", "webform"] },
+  { id: "chatbot", label: "Chatbot", category: "owned", color: "#0f62fe", logo: "chatbot", matchHosts: [], matchUtm: ["chatbot"] },
+  { id: "web_form", label: "Web form", category: "owned", color: "#0043ce", logo: "web_form", matchHosts: [], matchUtm: ["form", "webform"] },
   { id: "pixel_outreach", label: "Pixel outreach", category: "owned", color: "#7C3AED", logo: "pixel_outreach", matchHosts: [], matchUtm: ["pixel", "pixel-outreach"] },
   { id: "email", label: "Email", category: "owned", color: "#0EA5E9", logo: "email", matchHosts: ["mail.google.", "outlook."], matchUtm: ["email", "newsletter", "drip", "cold-email"] },
 

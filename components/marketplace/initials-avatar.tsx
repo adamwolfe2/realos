@@ -21,7 +21,7 @@ import React from "react";
 // ---------------------------------------------------------------------------
 
 const PALETTE = [
-  "#2563EB", // brand blue
+  "#0f62fe", // brand blue
   "#1E40AF", // deep blue
   "#5B8CE6", // sky
   "#7C3AED", // violet

@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { CountUp } from "@/components/audit/count-up";
 
 // Tonal palette used across the audit viewer. Matches the marketing
-// brand-blue (`#2563EB`) for the primary tone so all score rings share
+// brand-blue (`#0f62fe`) for the primary tone so all score rings share
 // a single accent with the rest of the site.
 type Tone = "green" | "blue" | "amber" | "red";
 
@@ -17,7 +17,7 @@ export function toneForScore(score: number | null | undefined): Tone {
 
 const TONE: Record<Tone, { ring: string; text: string; bg: string }> = {
   green: { ring: "#0E9F6E", text: "#0E9F6E", bg: "rgba(14,159,110,0.08)" },
-  blue: { ring: "#2563EB", text: "#2563EB", bg: "rgba(37,99,235,0.08)" },
+  blue: { ring: "#0f62fe", text: "#0f62fe", bg: "rgba(15, 98, 254,0.08)" },
   amber: { ring: "#B45309", text: "#B45309", bg: "rgba(180,83,9,0.08)" },
   red: { ring: "#B91C1C", text: "#B91C1C", bg: "rgba(185,28,28,0.08)" },
 };

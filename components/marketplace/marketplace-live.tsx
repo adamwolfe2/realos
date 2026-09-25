@@ -59,7 +59,7 @@ const PRICE_BANDS = [
   { label: "$100+",        min: 10000,      max: undefined },
 ];
 
-const ACCENT = "#2563EB";
+const ACCENT = "#0f62fe";
 const INK = "#1E2A3A";
 const MUTED = "#94A3B8";
 const SLATE = "#64748B";
@@ -523,7 +523,7 @@ function IntentDot({ value }: { value: number }) {
     value >= 85
       ? { bg: "rgba(16,185,129,0.14)", fg: "#059669" }
       : value >= 75
-        ? { bg: "rgba(37,99,235,0.14)", fg: ACCENT }
+        ? { bg: "rgba(15, 98, 254,0.14)", fg: ACCENT }
         : { bg: "rgba(245,158,11,0.14)", fg: "#D97706" };
   return (
     <span

@@ -22,7 +22,7 @@ const POOL: Omit<SyncEvent, "id" | "ago">[] = [
   { segment: "Senior Living Decision Makers",      reach: "198K", destination: "CSV download",        destinationKind: "csv"     },
 ];
 
-const ACCENT = "#2563EB";
+const ACCENT = "#0f62fe";
 const INK = "#1E2A3A";
 const MUTED = "#94A3B8";
 const BORDER = "#E2E8F0";
@@ -126,7 +126,7 @@ export function AudienceSyncStream() {
               display: "flex",
               alignItems: "flex-start",
               gap: "12px",
-              backgroundColor: i === 0 ? "rgba(37,99,235,0.04)" : "transparent",
+              backgroundColor: i === 0 ? "rgba(15, 98, 254,0.04)" : "transparent",
               transition: "background-color 600ms ease",
             }}
           >
@@ -195,12 +195,12 @@ export function AudienceSyncStream() {
 function DestinationIcon({ kind }: { kind: SyncEvent["destinationKind"] }) {
   const bg =
     kind === "meta"
-      ? "rgba(37,99,235,0.10)"
+      ? "rgba(15, 98, 254,0.10)"
       : kind === "google"
-        ? "rgba(37,99,235,0.10)"
+        ? "rgba(15, 98, 254,0.10)"
         : kind === "webhook"
-          ? "rgba(37,99,235,0.10)"
-          : "rgba(37,99,235,0.10)";
+          ? "rgba(15, 98, 254,0.10)"
+          : "rgba(15, 98, 254,0.10)";
   const stroke = ACCENT;
   return (
     <span

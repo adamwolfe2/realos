@@ -180,7 +180,7 @@ function PaywallModal({
     >
       <p
         className="text-[11px] font-mono uppercase tracking-[0.18em]"
-        style={{ color: "#2563EB", fontFamily: "var(--font-mono)" }}
+        style={{ color: "#0f62fe", fontFamily: "var(--font-mono)" }}
       >
         Want the full report?
       </p>
@@ -234,7 +234,7 @@ function PaywallModal({
           aria-busy={busy}
           className="inline-flex items-center justify-center gap-2 rounded-md text-sm font-semibold text-white active:scale-[0.98] motion-reduce:active:scale-100 disabled:opacity-60"
           style={{
-            backgroundColor: "#2563EB",
+            backgroundColor: "#0f62fe",
             padding: "10px 16px",
             transition:
               "background-color 0.15s ease, transform 120ms cubic-bezier(0.2, 0.8, 0.2, 1)",

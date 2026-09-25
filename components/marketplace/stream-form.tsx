@@ -146,7 +146,7 @@ export function StreamForm() {
         }
         .form-input:focus {
           outline: none;
-          border-color: #2563eb;
+          border-color: #0f62fe;
         }
       `}</style>
     </form>

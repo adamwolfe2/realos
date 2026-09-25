@@ -48,7 +48,7 @@ export default function ProposalExpiredPage() {
             href={`mailto:${BRAND_EMAIL}?subject=${encodeURIComponent(
               `${BRAND_NAME} proposal link request`,
             )}`}
-            className="inline-flex w-full items-center justify-center rounded-md bg-[#2563EB] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#1D4ED8] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2 sm:w-auto"
+            className="inline-flex w-full items-center justify-center rounded-md bg-[#0f62fe] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#0043ce] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f62fe] focus-visible:ring-offset-2 sm:w-auto"
           >
             Email {BRAND_NAME}
           </a>
@@ -67,7 +67,7 @@ export default function ProposalExpiredPage() {
           <p>
             <a
               href={`mailto:${BRAND_EMAIL}`}
-              className="text-[#2563EB] hover:underline"
+              className="text-[#0f62fe] hover:underline"
             >
               {BRAND_EMAIL}
             </a>
@@ -75,13 +75,13 @@ export default function ProposalExpiredPage() {
           <div className="flex items-center gap-4">
             <Link
               href="/privacy"
-              className="hover:text-[#2563EB] hover:underline"
+              className="hover:text-[#0f62fe] hover:underline"
             >
               Privacy
             </Link>
             <Link
               href="/terms"
-              className="hover:text-[#2563EB] hover:underline"
+              className="hover:text-[#0f62fe] hover:underline"
             >
               Terms
             </Link>

@@ -57,7 +57,7 @@ export function PlatformShowcase() {
       <div className="absolute inset-0 opacity-[0.025] bg-[linear-gradient(to_right,#000_1px,transparent_1px),linear-gradient(to_bottom,#000_1px,transparent_1px)] bg-[size:48px_48px]" />
       <div
         aria-hidden="true"
-        className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-[rgba(37,99,235,0.10)] blur-3xl"
+        className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-[rgba(15, 98, 254,0.10)] blur-3xl"
       />
       <div
         aria-hidden="true"
@@ -209,7 +209,7 @@ function KpiTile({
       <div className="flex items-center gap-1.5 mb-1.5">
         <span
           className="inline-flex items-center justify-center w-4 h-4 rounded"
-          style={{ backgroundColor: "rgba(37,99,235,0.10)" }}
+          style={{ backgroundColor: "rgba(15, 98, 254,0.10)" }}
         >
           <Icon
             className="w-2.5 h-2.5"
@@ -558,8 +558,8 @@ function ActivityFeed() {
               <div
                 className="mt-0.5 h-5 w-5 rounded-full flex items-center justify-center shrink-0"
                 style={{
-                  backgroundColor: "rgba(37,99,235,0.10)",
-                  border: "1px solid rgba(37,99,235,0.20)",
+                  backgroundColor: "rgba(15, 98, 254,0.10)",
+                  border: "1px solid rgba(15, 98, 254,0.20)",
                 }}
               >
                 <Icon

@@ -129,14 +129,14 @@ export default async function CheckoutSuccessPage({
           className="mx-auto mb-6 inline-flex h-16 w-16 items-center justify-center rounded-full"
           style={{
             backgroundColor: isVerified
-              ? "rgba(37,99,235,0.08)"
+              ? "rgba(15, 98, 254,0.08)"
               : "rgba(138,109,0,0.10)",
-            color: isVerified ? "#2563EB" : "#8a6d00",
+            color: isVerified ? "#0f62fe" : "#8a6d00",
           }}
         >
           <StatusIcon state={state} />
         </div>
-        <p className="eyebrow mb-3" style={{ color: isVerified ? "#2563EB" : "#8a6d00" }}>
+        <p className="eyebrow mb-3" style={{ color: isVerified ? "#0f62fe" : "#8a6d00" }}>
           {content.eyebrow}
         </p>
         <h1 className="heading-section mx-auto max-w-[580px] text-[#1E2A3A]">
@@ -158,7 +158,7 @@ export default async function CheckoutSuccessPage({
           <Link
             href={href}
             className="inline-flex items-center justify-center px-6 py-3 text-sm font-semibold text-white"
-            style={{ backgroundColor: "#2563EB" }}
+            style={{ backgroundColor: "#0f62fe" }}
           >
             {scope ? "Review billing" : "Sign in to verify"}
           </Link>

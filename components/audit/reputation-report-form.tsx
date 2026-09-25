@@ -261,7 +261,7 @@ function Field({
         autoComplete={autoComplete}
         inputMode={inputMode}
         maxLength={200}
-        className="h-11 w-full rounded-[2px] border px-3 text-[14px] outline-none transition-colors focus:border-[#2563EB]"
+        className="h-11 w-full rounded-[2px] border px-3 text-[14px] outline-none transition-colors focus:border-[#0f62fe]"
         style={{
           borderColor: "#CBD5E1",
           color: "#1E2A3A",

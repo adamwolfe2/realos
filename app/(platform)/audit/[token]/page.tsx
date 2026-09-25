@@ -860,7 +860,7 @@ function PendingState({
         <div className="max-w-[800px] mx-auto px-4 md:px-8 pt-24 pb-24">
           <p
             className="text-[11px] font-mono uppercase tracking-[0.18em]"
-            style={{ color: "#2563EB", fontFamily: "var(--font-mono)" }}
+            style={{ color: "#0f62fe", fontFamily: "var(--font-mono)" }}
           >
             {BRAND_NAME} audit
           </p>
@@ -998,7 +998,7 @@ function SourceBreakdown({
       <div className="flex items-baseline justify-between gap-2 flex-wrap">
         <p
           className="text-[10px] font-mono uppercase tracking-[0.16em]"
-          style={{ color: "#2563EB", fontFamily: "var(--font-mono)" }}
+          style={{ color: "#0f62fe", fontFamily: "var(--font-mono)" }}
         >
           Reputation scan · past 90 days
         </p>

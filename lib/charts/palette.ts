@@ -1,7 +1,7 @@
 /**
  * Centralized blue chart palette for LeaseStack.
  *
- * LeaseStack is a blue-branded product (primary #2563EB). Every chart,
+ * LeaseStack is a blue-branded product (primary #0f62fe). Every chart,
  * donut slice, bar fill, activity-feed accent, KPI sparkline, etc.
  * should pull its colors from this file so we never drift back to the
  * grayscale / near-black palette that crept into the platform-showcase
@@ -12,22 +12,22 @@
  */
 
 // Primary brand
-export const BRAND_BLUE = "#2563EB"; // primary — buttons, links, top-of-funnel
-export const BRAND_BLUE_DARK = "#1D4ED8"; // hover / pressed
-export const BRAND_BLUE_LIGHT = "#3B82F6"; // accent / second-tier slice
+export const BRAND_BLUE = "#0f62fe"; // primary — buttons, links, top-of-funnel
+export const BRAND_BLUE_DARK = "#0043ce"; // hover / pressed
+export const BRAND_BLUE_LIGHT = "#4589ff"; // accent / second-tier slice
 
-// Tailwind blue scale, picked for accessibility against white surfaces.
+// IBM Carbon blue scale (see app/globals.css), dark to light.
 // Sorted dark → light so a `.slice(0, n)` for a small dataset still
 // reads as a coherent gradient.
 export const BLUE_SCALE = [
-  "#1E3A8A", // blue-900
-  "#1D4ED8", // blue-700
-  "#2563EB", // blue-600 (primary)
-  "#3B82F6", // blue-500
-  "#60A5FA", // blue-400
-  "#93C5FD", // blue-300
-  "#BFDBFE", // blue-200
-  "#DBEAFE", // blue-100
+  "#001d6c", // Carbon blue 90
+  "#0043ce", // Carbon blue 70
+  "#0f62fe", // Carbon blue 60 (primary)
+  "#4589ff", // Carbon blue 50
+  "#78a9ff", // Carbon blue 40
+  "#a6c8ff", // Carbon blue 30
+  "#d0e2ff", // Carbon blue 20
+  "#edf5ff", // Carbon blue 10
 ] as const;
 
 // Donut chart palette — primary blue first, then descending tints. Use
@@ -36,14 +36,14 @@ export const BLUE_SCALE = [
 // muted gray (#CBD5E1) — the ONLY non-blue color allowed here, kept
 // strictly for the catch-all bucket.
 export const BLUE_DONUT_PALETTE = [
-  "#2563EB", // primary
-  "#3B82F6",
-  "#60A5FA",
-  "#93C5FD",
-  "#1D4ED8",
-  "#1E3A8A",
-  "#BFDBFE",
-  "#DBEAFE",
+  "#0f62fe", // primary
+  "#4589ff",
+  "#78a9ff",
+  "#a6c8ff",
+  "#0043ce",
+  "#001d6c",
+  "#d0e2ff",
+  "#edf5ff",
 ] as const;
 
 // "Other" / unattributed bucket — soft slate so it visually recedes
@@ -54,28 +54,28 @@ export const OTHER_SLICE = "#CBD5E1";
 // subsequent stages step down through the blue scale for a visual
 // drop-off.
 export const FUNNEL_STAGE_FILLS = [
-  "#2563EB",
-  "#3B82F6",
-  "#60A5FA",
-  "#93C5FD",
-  "#BFDBFE",
+  "#0f62fe",
+  "#4589ff",
+  "#78a9ff",
+  "#a6c8ff",
+  "#d0e2ff",
 ] as const;
 
 // Track / empty-bar backgrounds — neutral cool gray so blue bars pop.
-export const TRACK_FILL = "#EFF6FF"; // blue-50, sits under blue bars
+export const TRACK_FILL = "#edf5ff"; // Carbon blue 10, sits under blue bars
 export const TRACK_BORDER = "#E5E7EB"; // standard border
 
 // Sparkline / line-chart stroke
-export const SPARKLINE_STROKE = "#2563EB";
-export const SPARKLINE_AREA = "rgba(37, 99, 235, 0.10)";
+export const SPARKLINE_STROKE = "#0f62fe";
+export const SPARKLINE_AREA = "rgba(15, 98, 254, 0.10)";
 
 // Activity-feed accent dots / icon circles
 export const ACTIVITY_ACCENTS = {
-  lead: "#2563EB",
-  tour: "#1D4ED8",
-  pixel: "#3B82F6",
-  review: "#60A5FA",
-  default: "#2563EB",
+  lead: "#0f62fe",
+  tour: "#0043ce",
+  pixel: "#4589ff",
+  review: "#78a9ff",
+  default: "#0f62fe",
 } as const;
 
 /**

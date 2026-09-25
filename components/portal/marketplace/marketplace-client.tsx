@@ -85,7 +85,7 @@ const LOGO_MAP: Record<string, (props: { size?: number }) => React.JSX.Element> 
 //   coming    — coming soon (Email Nurture, Outbound Email). Greyed,
 //               "Notify me", non-activatable. Honest > overpromise.
 //
-// Single LeaseStack accent (#2563EB / theme.primary) is the only colour
+// Single LeaseStack accent (#0f62fe / theme.primary) is the only colour
 // that ever signals state. No greens, ambers, per-module rainbows. Each
 // card renders the actual brand logos for the tools it integrates with
 // (Google, Meta, Claude, AppFolio, etc.) so operators see the stack at

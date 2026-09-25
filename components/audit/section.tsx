@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 //
 // The report had two competing visual systems: the newer fold/spine
 // (Carbon ink #161616, accent #0f62fe, hairline #e0e0e0, radius 2,
-// display type) and the older premium cards (#1E2A3A / #2563EB /
+// display type) and the older premium cards (#1E2A3A / #0f62fe /
 // rounded-xl). Two systems on one page reads as two products. These
 // primitives are the single system; every AEO surface uses them.
 // ---------------------------------------------------------------------------

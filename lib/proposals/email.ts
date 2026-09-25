@@ -146,7 +146,7 @@ export async function sendProposalEmail(
     <p style="margin:16px 0 0;font-size:14px;line-height:1.6;color:#1E2A3A;">
       Open the proposal to review the full line-item breakdown and accept securely with Stripe.
       A PDF copy is attached for your records, or
-      <a href="${escapeHtml(downloadUrl)}" style="color:#2563EB;text-decoration:underline;">download it here</a>.
+      <a href="${escapeHtml(downloadUrl)}" style="color:#0f62fe;text-decoration:underline;">download it here</a>.
     </p>
     <p style="margin:16px 0 0;font-size:14px;line-height:1.6;color:#1E2A3A;">
       Reply to this email any time with questions — happy to walk through it.
