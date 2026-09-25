@@ -27,7 +27,7 @@ export function PricingHero() {
   return (
     <section
       className="relative"
-      style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}
+      style={{ backgroundColor: "#FFFFFF", color: "var(--color-ink)" }}
     >
       <div className="max-w-[1100px] mx-auto px-4 md:px-8 pt-16 md:pt-24 pb-16 md:pb-24">
         <div className="max-w-3xl mx-auto text-center">
@@ -54,7 +54,7 @@ export function PricingHero() {
           {/* Headline: one platform fee, add what you need. */}
           <h1
             className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.05] tracking-tight"
-            style={{ color: "#1E2A3A" }}
+            style={{ color: "var(--color-ink)" }}
           >
             One platform fee.
             <br />
@@ -84,7 +84,7 @@ export function PricingHero() {
               className="inline-flex items-center justify-center h-11 px-6 rounded-md text-sm font-medium transition-colors active:scale-[0.98]"
               style={{
                 border: "1px solid var(--hair)",
-                color: "#1E2A3A",
+                color: "var(--color-ink)",
                 backgroundColor: "#FFFFFF",
               }}
             >

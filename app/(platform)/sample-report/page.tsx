@@ -3,6 +3,7 @@ import Link from "next/link";
 import { BRAND_NAME } from "@/lib/brand";
 import { WeeklyReport } from "@/components/platform/artifacts/weekly-report";
 import { SoftFramedArtifact } from "@/components/platform/soft-framed-artifact";
+import { LabelChip } from "@/components/home/section-shell";
 
 // ---------------------------------------------------------------------------
 // /sample-report — public sample of the Monday-morning weekly email.
@@ -19,10 +20,13 @@ import { SoftFramedArtifact } from "@/components/platform/soft-framed-artifact";
 // capabilities rail shows on hover so the content stays in sync.
 // ---------------------------------------------------------------------------
 
-const ACCENT = "#2563EB";
-const INK = "#1E2A3A";
-const BORDER = "#E2E8F0";
-const MUTED = "#64748B";
+// Carbon tokens (app/globals.css) — this route predated the marketing site's
+// visual-language adoption (ae3b53df) and carried the pre-Carbon slate/blue
+// palette. Aligned here to match /, /pricing, /audit.
+const ACCENT = "#0f62fe";
+const INK = "#161616";
+const BORDER = "#e0e0e0";
+const MUTED = "#6f6f6f";
 
 export const metadata: Metadata = {
   title: `Sample weekly report | ${BRAND_NAME}`,
@@ -59,25 +63,16 @@ export default function SampleReportPage() {
       {/* Hero — single column, mirrors /audit + /pricing rhythm */}
       <section style={{ borderBottom: `1px solid ${BORDER}` }}>
         <div className="max-w-[1100px] mx-auto px-4 md:px-8 py-20 md:py-24 text-center">
-          <p
-            style={{
-              color: ACCENT,
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              letterSpacing: "0.22em",
-              textTransform: "uppercase",
-              fontWeight: 700,
-            }}
-          >
-            Sample report
-          </p>
+          <div className="flex justify-center">
+            <LabelChip>Sample report</LabelChip>
+          </div>
           <h1
             className="mt-5"
             style={{
               color: INK,
-              fontFamily: "var(--font-sans)",
+              fontFamily: "var(--font-display)",
               fontSize: "clamp(36px, 5.4vw, 68px)",
-              fontWeight: 700,
+              fontWeight: 550,
               lineHeight: 1.04,
               letterSpacing: "-0.028em",
             }}
@@ -98,22 +93,10 @@ export default function SampleReportPage() {
             Monday.
           </p>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href="/audit"
-              className="inline-flex items-center justify-center h-11 px-6 rounded-md text-sm font-semibold text-white"
-              style={{ backgroundColor: ACCENT }}
-            >
+            <Link href="/audit" className="btn-primary">
               Run a free audit
             </Link>
-            <Link
-              href="/pricing"
-              className="inline-flex items-center justify-center h-11 px-6 rounded-md text-sm font-semibold border"
-              style={{
-                borderColor: BORDER,
-                color: INK,
-                backgroundColor: "#FFFFFF",
-              }}
-            >
+            <Link href="/pricing" className="btn-secondary">
               See pricing
             </Link>
           </div>
@@ -154,7 +137,7 @@ export default function SampleReportPage() {
                 color: INK,
                 fontFamily: "var(--font-sans)",
                 fontSize: "clamp(28px, 3.6vw, 44px)",
-                fontWeight: 700,
+                fontWeight: 500,
                 lineHeight: 1.1,
                 letterSpacing: "-0.025em",
               }}
@@ -165,11 +148,7 @@ export default function SampleReportPage() {
 
           <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
             {ANNOTATIONS.map((a) => (
-              <article
-                key={a.eyebrow}
-                className="rounded-2xl border p-6 md:p-8"
-                style={{ borderColor: BORDER, backgroundColor: "#FFFFFF" }}
-              >
+              <article key={a.eyebrow} className="ls-card ls-card-pad md:p-8!">
                 <p
                   style={{
                     color: ACCENT,
@@ -177,7 +156,7 @@ export default function SampleReportPage() {
                     fontSize: 10.5,
                     letterSpacing: "0.18em",
                     textTransform: "uppercase",
-                    fontWeight: 700,
+                    fontWeight: 600,
                   }}
                 >
                   {a.eyebrow}
@@ -188,7 +167,7 @@ export default function SampleReportPage() {
                     color: INK,
                     fontFamily: "var(--font-sans)",
                     fontSize: 20,
-                    fontWeight: 700,
+                    fontWeight: 600,
                     lineHeight: 1.25,
                     letterSpacing: "-0.015em",
                   }}
@@ -225,7 +204,7 @@ export default function SampleReportPage() {
               color: INK,
               fontFamily: "var(--font-sans)",
               fontSize: "clamp(28px, 3.6vw, 40px)",
-              fontWeight: 700,
+              fontWeight: 500,
               lineHeight: 1.15,
               letterSpacing: "-0.022em",
             }}
@@ -246,22 +225,10 @@ export default function SampleReportPage() {
             required.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href="/audit"
-              className="inline-flex items-center justify-center h-11 px-6 rounded-md text-sm font-semibold text-white"
-              style={{ backgroundColor: ACCENT }}
-            >
+            <Link href="/audit" className="btn-primary">
               Run a free audit
             </Link>
-            <Link
-              href="/"
-              className="inline-flex items-center justify-center h-11 px-6 rounded-md text-sm font-semibold border"
-              style={{
-                borderColor: BORDER,
-                color: INK,
-                backgroundColor: "#FFFFFF",
-              }}
-            >
+            <Link href="/" className="btn-secondary">
               Back to overview
             </Link>
           </div>

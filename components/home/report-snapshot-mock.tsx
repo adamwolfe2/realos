@@ -141,7 +141,7 @@ export function ReportSnapshotMock() {
                   <Cell>
                     <Label>{k.label}</Label>
                     <p className="mt-1" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 500, color: INK, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>
-                      {on ? <CountUp to={k.to} prefix={k.prefix ?? ""} suffix={k.suffix ?? ""} decimals={k.decimals ?? 0} locale duration={0.8} /> : "0"}
+                      <CountUp to={k.to} prefix={k.prefix ?? ""} suffix={k.suffix ?? ""} decimals={k.decimals ?? 0} locale duration={0.8} />
                     </p>
                     <p className="mt-0.5" style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 600, color: k.subColor }}>{k.sub}</p>
                   </Cell>
@@ -202,7 +202,7 @@ export function ReportSnapshotMock() {
                       <div>
                         <Label>Renewals at risk</Label>
                         <p className="mt-1" style={{ fontFamily: "var(--font-mono)", fontSize: 17, fontWeight: 600, color: DOWN, fontVariantNumeric: "tabular-nums" }}>
-                          {on ? <CountUp to={36.8} prefix="$" suffix="K" decimals={1} duration={0.7} /> : "$0"}
+                          <CountUp to={36.8} prefix="$" suffix="K" decimals={1} duration={0.7} />
                         </p>
                       </div>
                       <p style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: MUTED, textAlign: "right", lineHeight: 1.5 }}>

@@ -98,14 +98,14 @@ export function AddonsGrid({
           <SectionEyebrow>À la carte</SectionEyebrow>
           <h2
             className="heading-section mt-3"
-            style={{ color: "#1E2A3A", fontSize: "clamp(24px, 3vw, 32px)" }}
+            style={{ color: "var(--color-ink)", fontSize: "clamp(24px, 3vw, 32px)" }}
           >
             One base, then add what each property needs.
           </h2>
           <p
             className="mt-4"
             style={{
-              color: "#64748B",
+              color: "var(--color-muted-foreground)",
               fontFamily: "var(--font-sans)",
               fontSize: "16px",
               lineHeight: 1.55,
@@ -138,7 +138,7 @@ export function AddonsGrid({
             </div>
             <h3
               style={{
-                color: "#1E2A3A",
+                color: "var(--color-ink)",
                 fontFamily: "var(--font-sans)",
                 fontSize: "15px",
                 fontWeight: 600,
@@ -148,7 +148,7 @@ export function AddonsGrid({
             </h3>
             <p
               style={{
-                color: "#64748B",
+                color: "var(--color-muted-foreground)",
                 fontFamily: "var(--font-sans)",
                 fontSize: "13px",
                 lineHeight: 1.55,
@@ -162,7 +162,7 @@ export function AddonsGrid({
           <div className="text-right shrink-0">
             <div
               style={{
-                color: "#1E2A3A",
+                color: "var(--color-ink)",
                 fontFamily: "var(--font-sans)",
                 fontSize: "18px",
                 fontWeight: 700,
@@ -207,7 +207,7 @@ export function AddonsGrid({
                   </div>
                   <h3
                     style={{
-                      color: "#1E2A3A",
+                      color: "var(--color-ink)",
                       fontFamily: "var(--font-sans)",
                       fontSize: "15px",
                       fontWeight: 600,
@@ -220,7 +220,7 @@ export function AddonsGrid({
                 <div className="text-right shrink-0">
                   <div
                     style={{
-                      color: "#1E2A3A",
+                      color: "var(--color-ink)",
                       fontFamily: "var(--font-sans)",
                       fontSize: "15px",
                       fontWeight: 700,
@@ -241,7 +241,7 @@ export function AddonsGrid({
               </div>
               <p
                 style={{
-                  color: "#64748B",
+                  color: "var(--color-muted-foreground)",
                   fontFamily: "var(--font-sans)",
                   fontSize: "13px",
                   lineHeight: 1.55,
@@ -261,7 +261,7 @@ export function AddonsGrid({
             fontSize: "11px",
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: "#64748B",
+            color: "var(--color-muted-foreground)",
             fontWeight: 600,
           }}
         >
@@ -291,7 +291,7 @@ export function AddonsGrid({
                   </div>
                   <h3
                     style={{
-                      color: "#1E2A3A",
+                      color: "var(--color-ink)",
                       fontFamily: "var(--font-sans)",
                       fontSize: "15px",
                       fontWeight: 600,
@@ -304,7 +304,7 @@ export function AddonsGrid({
                 <div className="text-right shrink-0">
                   <div
                     style={{
-                      color: "#1E2A3A",
+                      color: "var(--color-ink)",
                       fontFamily: "var(--font-sans)",
                       fontSize: "15px",
                       fontWeight: 700,
@@ -325,7 +325,7 @@ export function AddonsGrid({
               </div>
               <p
                 style={{
-                  color: "#64748B",
+                  color: "var(--color-muted-foreground)",
                   fontFamily: "var(--font-sans)",
                   fontSize: "13px",
                   lineHeight: 1.55,

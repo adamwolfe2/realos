@@ -99,14 +99,14 @@ export function PricingBuilder({
         <div className="max-w-2xl mb-10">
           <h2
             className="heading-section"
-            style={{ color: "#1E2A3A", fontSize: "clamp(24px, 3vw, 32px)" }}
+            style={{ color: "var(--color-ink)", fontSize: "clamp(24px, 3vw, 32px)" }}
           >
             Build your platform.
           </h2>
           <p
             className="mt-4"
             style={{
-              color: "#64748B",
+              color: "var(--color-muted-foreground)",
               fontFamily: "var(--font-sans)",
               fontSize: "16px",
               lineHeight: 1.55,
@@ -142,7 +142,7 @@ export function PricingBuilder({
                 </div>
                 <h3
                   style={{
-                    color: "#1E2A3A",
+                    color: "var(--color-ink)",
                     fontFamily: "var(--font-sans)",
                     fontSize: "15px",
                     fontWeight: 600,
@@ -153,7 +153,7 @@ export function PricingBuilder({
                 <p
                   className="mt-1"
                   style={{
-                    color: "#64748B",
+                    color: "var(--color-muted-foreground)",
                     fontFamily: "var(--font-sans)",
                     fontSize: "13px",
                     lineHeight: 1.55,
@@ -167,7 +167,7 @@ export function PricingBuilder({
               <div className="text-right shrink-0">
                 <div
                   style={{
-                    color: "#1E2A3A",
+                    color: "var(--color-ink)",
                     fontFamily: "var(--font-sans)",
                     fontSize: "18px",
                     fontWeight: 700,
@@ -241,7 +241,7 @@ export function PricingBuilder({
                       ) : null}
                       <h3
                         style={{
-                          color: "#1E2A3A",
+                          color: "var(--color-ink)",
                           fontFamily: "var(--font-sans)",
                           fontSize: "15px",
                           fontWeight: 600,
@@ -253,7 +253,7 @@ export function PricingBuilder({
                       <p
                         className="mt-1"
                         style={{
-                          color: "#64748B",
+                          color: "var(--color-muted-foreground)",
                           fontFamily: "var(--font-sans)",
                           fontSize: "13px",
                           lineHeight: 1.55,
@@ -267,7 +267,7 @@ export function PricingBuilder({
                   <div className="text-right shrink-0">
                     <div
                       style={{
-                        color: "#1E2A3A",
+                        color: "var(--color-ink)",
                         fontFamily: "var(--font-sans)",
                         fontSize: "15px",
                         fontWeight: 700,
@@ -320,14 +320,14 @@ export function PricingBuilder({
                   disabled={propertyCount <= 1}
                   aria-label="Decrease property count"
                   className="inline-flex items-center justify-center rounded-full text-base font-semibold transition-colors disabled:opacity-30 active:scale-[0.98]"
-                  style={{ width: 32, height: 32, color: "#1E2A3A" }}
+                  style={{ width: 32, height: 32, color: "var(--color-ink)" }}
                 >
                   &minus;
                 </button>
                 <span
                   className="tabular-nums"
                   style={{
-                    color: "#1E2A3A",
+                    color: "var(--color-ink)",
                     fontFamily: "var(--font-sans)",
                     fontSize: "14px",
                     fontWeight: 600,
@@ -347,7 +347,7 @@ export function PricingBuilder({
                   disabled={propertyCount >= MAX_PROPERTIES}
                   aria-label="Increase property count"
                   className="inline-flex items-center justify-center rounded-full text-base font-semibold transition-colors disabled:opacity-30 active:scale-[0.98]"
-                  style={{ width: 32, height: 32, color: "#1E2A3A" }}
+                  style={{ width: 32, height: 32, color: "var(--color-ink)" }}
                 >
                   +
                 </button>
@@ -373,7 +373,7 @@ export function PricingBuilder({
               </p>
               <p
                 style={{
-                  color: "#1E2A3A",
+                  color: "var(--color-ink)",
                   fontFamily: "var(--font-sans)",
                   fontSize: "28px",
                   fontWeight: 700,

@@ -59,14 +59,14 @@ export function PricingFaq() {
         <div className="mb-8 md:mb-10 max-w-2xl">
           <h2
             className="heading-section"
-            style={{ color: "#1E2A3A", fontSize: "clamp(24px, 3vw, 32px)" }}
+            style={{ color: "var(--color-ink)", fontSize: "clamp(24px, 3vw, 32px)" }}
           >
             The questions operators ask before they sign.
           </h2>
           <p
             className="mt-4"
             style={{
-              color: "#64748B",
+              color: "var(--color-muted-foreground)",
               fontFamily: "var(--font-sans)",
               fontSize: "16px",
               lineHeight: 1.6,
@@ -98,7 +98,7 @@ export function PricingFaq() {
                 >
                   <span
                     style={{
-                      color: "#1E2A3A",
+                      color: "var(--color-ink)",
                       fontFamily: "var(--font-sans)",
                       fontSize: "15px",
                       fontWeight: 600,
@@ -117,7 +117,7 @@ export function PricingFaq() {
                       alignItems: "center",
                       justifyContent: "center",
                       backgroundColor: open ? "var(--color-primary)" : "#FFFFFF",
-                      color: open ? "#ffffff" : "#64748B",
+                      color: open ? "#ffffff" : "var(--color-muted-foreground)",
                       transition: "background-color 120ms ease",
                     }}
                   >
@@ -132,7 +132,7 @@ export function PricingFaq() {
                   <div
                     className="px-5 pb-5"
                     style={{
-                      color: "#1E2A3A",
+                      color: "var(--color-ink)",
                       fontFamily: "var(--font-sans)",
                       fontSize: "14.5px",
                       lineHeight: 1.65,

@@ -197,7 +197,7 @@ export function PricingTiers() {
                   width: 32,
                   height: 32,
                   backgroundColor: "#FFFFFF",
-                  color: "#1E2A3A",
+                  color: "var(--color-ink)",
                 }}
               >
                 −
@@ -205,7 +205,7 @@ export function PricingTiers() {
               <div
                 className="text-center tabular-nums"
                 style={{
-                  color: "#1E2A3A",
+                  color: "var(--color-ink)",
                   fontFamily: "var(--font-sans)",
                   fontSize: "14px",
                   fontWeight: 600,
@@ -231,7 +231,7 @@ export function PricingTiers() {
                   width: 32,
                   height: 32,
                   backgroundColor: "#FFFFFF",
-                  color: "#1E2A3A",
+                  color: "var(--color-ink)",
                 }}
               >
                 +
@@ -246,7 +246,6 @@ export function PricingTiers() {
               style={{
                 backgroundColor: "#ffffff",
                 border: "1px solid var(--hair)",
-                boxShadow: "var(--shadow-xs)",
               }}
             >
               {(["monthly", "annual"] as const).map((c) => {
@@ -260,7 +259,7 @@ export function PricingTiers() {
                     onClick={() => setCycle(c)}
                     className="relative inline-flex items-center gap-2 px-4 py-1.5 text-sm rounded-full transition-colors"
                     style={{
-                      backgroundColor: active ? "#1E2A3A" : "transparent",
+                      backgroundColor: active ? "var(--color-ink)" : "transparent",
                       color: active ? "#ffffff" : "var(--olive-gray)",
                       fontWeight: active ? 600 : 500,
                     }}
@@ -424,21 +423,19 @@ function TierCard({
   const cardStyle: React.CSSProperties = highlighted
     ? {
         backgroundColor: "#ffffff",
-        color: "#1E2A3A",
+        color: "var(--color-ink)",
         border: "1px solid var(--color-primary)",
         borderRadius: "2px",
-        boxShadow: "var(--shadow-xs)",
       }
     : {
         backgroundColor: "#ffffff",
-        color: "#1E2A3A",
+        color: "var(--color-ink)",
         border: "1px solid var(--hair)",
         borderRadius: "2px",
-        boxShadow: "var(--shadow-xs)",
       };
 
   const mutedText = "var(--stone-gray)";
-  const bodyText = "#1E2A3A";
+  const bodyText = "var(--color-ink)";
   const accentText = "var(--color-primary)";
 
   return (
@@ -687,7 +684,7 @@ function TierCard({
             style={
               highlighted
                 ? { backgroundColor: "var(--color-primary)", color: "#ffffff" }
-                : { backgroundColor: "#1E2A3A", color: "#ffffff" }
+                : { backgroundColor: "var(--color-ink)", color: "#ffffff" }
             }
             aria-label={`${tier.ctaLabel} (creates your account)`}
           >
@@ -710,8 +707,8 @@ function TierCard({
             className="inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold transition-colors"
             style={{
               backgroundColor: "transparent",
-              color: "#1E2A3A",
-              border: "1px solid #1E2A3A",
+              color: "var(--color-ink)",
+              border: "1px solid var(--color-ink)",
             }}
             ariaLabel={`${tier.ctaLabel} (opens scheduling)`}
           >

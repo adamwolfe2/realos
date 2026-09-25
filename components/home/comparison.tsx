@@ -263,7 +263,7 @@ function FullDashboard({ on }: { on: boolean }) {
             <motion.div key={k.label} {...rise(0.15)} style={{ border: `1px solid ${BORDER}`, borderRadius: 2, padding: "7px 9px" }}>
               <p style={{ fontFamily: "var(--font-mono)", fontSize: 8.5, letterSpacing: "0.08em", textTransform: "uppercase", color: FAINT }}>{k.label}</p>
               <p style={{ fontFamily: "var(--font-mono)", fontSize: 17, fontWeight: 500, color: INK, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em" }}>
-                {on ? <CountUp to={k.to} prefix={k.prefix ?? ""} locale duration={0.8} /> : "0"}
+                <CountUp to={k.to} prefix={k.prefix ?? ""} locale duration={0.8} />
               </p>
             </motion.div>
           ))}

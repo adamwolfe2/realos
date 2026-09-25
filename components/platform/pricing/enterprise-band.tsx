@@ -33,7 +33,7 @@ export function EnterpriseBand() {
             <div>
               <h2
                 style={{
-                  color: "#1E2A3A",
+                  color: "var(--color-ink)",
                   fontFamily: "var(--font-sans)",
                   fontSize: "18px",
                   fontWeight: 600,
@@ -45,7 +45,7 @@ export function EnterpriseBand() {
               <p
                 className="mt-1"
                 style={{
-                  color: "#64748B",
+                  color: "var(--color-muted-foreground)",
                   fontFamily: "var(--font-sans)",
                   fontSize: "14px",
                   lineHeight: 1.55,
@@ -62,7 +62,7 @@ export function EnterpriseBand() {
             className="inline-flex items-center justify-center h-11 px-6 rounded-md text-sm font-semibold shrink-0 transition-colors active:scale-[0.98]"
             style={{
               border: "1px solid var(--hair-strong)",
-              color: "#1E2A3A",
+              color: "var(--color-ink)",
               backgroundColor: "#FFFFFF",
             }}
           >

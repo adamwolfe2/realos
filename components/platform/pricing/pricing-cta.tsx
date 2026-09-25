@@ -19,7 +19,7 @@ export function PricingCta() {
         <h2
           className="heading-section"
           style={{
-            color: "#1E2A3A",
+            color: "var(--color-ink)",
             maxWidth: "720px",
             margin: "0 auto",
             fontSize: "clamp(28px, 4vw, 40px)",
@@ -59,7 +59,7 @@ export function PricingCta() {
             className="inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-semibold transition-colors active:scale-[0.98]"
             style={{
               backgroundColor: "transparent",
-              color: "#1E2A3A",
+              color: "var(--color-ink)",
               border: "1px solid var(--hair-strong)",
             }}
           >

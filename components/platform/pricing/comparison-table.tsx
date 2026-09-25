@@ -215,7 +215,7 @@ function CellContent({ value }: { value: Cell }) {
   return (
     <span
       style={{
-        color: "#1E2A3A",
+        color: "var(--color-ink)",
         fontFamily: "var(--font-sans)",
         fontSize: "12.5px",
         fontWeight: 500,
@@ -242,7 +242,7 @@ export function ComparisonTable() {
           <SectionEyebrow>Compare</SectionEyebrow>
           <h2
             className="heading-section mt-3"
-            style={{ color: "#1E2A3A", fontSize: "clamp(24px, 3vw, 32px)" }}
+            style={{ color: "var(--color-ink)", fontSize: "clamp(24px, 3vw, 32px)" }}
           >
             The rows operators ask about first.
           </h2>
@@ -290,7 +290,7 @@ export function ComparisonTable() {
                         fontFamily: "var(--font-sans)",
                         fontSize: "13.5px",
                         fontWeight: 700,
-                        color: t.highlighted ? "var(--color-primary)" : "#1E2A3A",
+                        color: t.highlighted ? "var(--color-primary)" : "var(--color-ink)",
                         letterSpacing: "-0.005em",
                       }}
                     >
@@ -327,7 +327,7 @@ export function ComparisonTable() {
                     style={{
                       fontFamily: "var(--font-sans)",
                       fontSize: "13px",
-                      color: "#1E2A3A",
+                      color: "var(--color-ink)",
                       lineHeight: 1.4,
                     }}
                   >
@@ -400,7 +400,7 @@ export function ComparisonTable() {
                         fontWeight: 700,
                         color: t.highlighted
                           ? "var(--color-primary)"
-                          : "#1E2A3A",
+                          : "var(--color-ink)",
                         backgroundColor: t.highlighted
                           ? "var(--brand-wash)"
                           : "transparent",
@@ -441,7 +441,7 @@ export function ComparisonTable() {
                           style={{
                             fontFamily: "var(--font-sans)",
                             fontSize: "12.5px",
-                            color: "#1E2A3A",
+                            color: "var(--color-ink)",
                             lineHeight: 1.4,
                           }}
                         >
