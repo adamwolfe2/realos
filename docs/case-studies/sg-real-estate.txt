@@ -1,0 +1,17 @@
+SG Real Estate at Telegraph Commons (Berkeley student housing)
+
+46 leads marked signed and matched to an AppFolio resident.
+
+SG Real Estate runs Telegraph Commons, a student-housing property in Berkeley. LeaseStack records leads there from the website chatbot and AppFolio applications, and matches them to residents in AppFolio. Their client report covers March 21 to September 15, 2026. Lead capture began in May and AppFolio application tracking in June.
+
+What the numbers show:
+- 191 lead records from the chatbot and AppFolio applications.
+- 100 of those records (52%) came from the chatbot on the property website.
+- The chatbot captured contact details on 110 of 238 sessions (46%), 57 of them through the pre-chat form. In sessions with a conversation it was 53 of 181 (29%).
+- 46 leads are marked signed and matched to an AppFolio resident. 8 of those records were created by the chatbot's pre-chat form and 38 from AppFolio applications. That is where the record came from, not what led to the lease.
+
+How it works: LeaseStack links AppFolio residents to lead records automatically, using email, phone, and name. No one reviews each link, so some may be wrong.
+
+How we count: the link and the signed mark are the whole test. 44 of the 46 match a resident at Telegraph Commons. A lead record is not a person.
+
+Report generated September 15, 2026. Numbers re-checked September 25, 2026.

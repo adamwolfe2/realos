@@ -4,6 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { BookDemoLink } from "@/components/marketing/book-demo-link";
+import {
+  CASE_STUDY_PATH,
+  CASE_STUDY_PUBLIC,
+} from "@/lib/case-study/sg-real-estate";
 import type { LucideIcon } from "lucide-react";
 import {
   Bot,
@@ -73,7 +77,7 @@ const PRODUCT_LINKS: ProductLink[] = [
   {
     href: "/ai-visibility",
     label: "Free AI Visibility Audit",
-    description: "See if ChatGPT recommends your property — in 2 minutes",
+    description: "See if ChatGPT recommends your property, in 2 minutes",
     icon: Sparkles,
   },
   {
@@ -243,6 +247,14 @@ export function PlatformNav() {
           <NavLink href="/pricing" active={isActive(pathname, "/pricing")}>
             Pricing
           </NavLink>
+          {CASE_STUDY_PUBLIC ? (
+            <NavLink
+              href={CASE_STUDY_PATH}
+              active={isActive(pathname, CASE_STUDY_PATH)}
+            >
+              Case study
+            </NavLink>
+          ) : null}
         </nav>
 
         <div className="flex items-center gap-1">
@@ -533,6 +545,9 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
     ...PRODUCT_LINKS,
     ...VERTICAL_LINKS,
     { href: "/pricing", label: "Pricing" },
+    ...(CASE_STUDY_PUBLIC
+      ? [{ href: CASE_STUDY_PATH, label: "Case study" }]
+      : []),
     { href: "/about", label: "About" },
     { href: "/sign-in", label: "Sign in" },
   ];

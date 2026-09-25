@@ -3,6 +3,10 @@ import { getSiteUrl } from "@/lib/brand";
 import { BLOG_POSTS } from "@/lib/copy/blog";
 import { prisma } from "@/lib/db";
 import { NeighborhoodPageStatus } from "@prisma/client";
+import {
+  CASE_STUDY_PATH,
+  CASE_STUDY_PUBLIC,
+} from "@/lib/case-study/sg-real-estate";
 
 const BASE_URL = getSiteUrl();
 
@@ -39,6 +43,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/pricing`, lastModified: now, changeFrequency: "monthly", priority: 0.95 },
     { url: `${BASE_URL}/about`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE_URL}/manifesto`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    // Unlisted until the customer signs off on being named.
+    ...(CASE_STUDY_PUBLIC
+      ? [{ url: `${BASE_URL}${CASE_STUDY_PATH}`, lastModified: now, changeFrequency: "monthly" as const, priority: 0.85 }]
+      : []),
     { url: `${BASE_URL}/blog`, lastModified: now, changeFrequency: "weekly", priority: 0.85 },
     // Verticals
     { url: `${BASE_URL}/residential`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
