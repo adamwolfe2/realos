@@ -38,7 +38,7 @@ export function Timeline({ events }: { events: TimelineEvent[] }) {
       {/* Vertical rail — centered behind the icon column (icon is w-9, so x = 18px) */}
       <div
         aria-hidden
-        className="absolute left-[18px] top-3 bottom-3 w-px bg-[var(--border-warm)]"
+        className="absolute left-[18px] top-3 bottom-3 w-px bg-[var(--hair)]"
       />
       {events.map((e) => (
         <li key={e.id} className="relative flex items-start gap-4 py-4">

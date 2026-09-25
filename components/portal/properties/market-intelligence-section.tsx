@@ -181,7 +181,7 @@ function HeroRentAvmCard({
         <div className="min-w-0">
           <div
             className="ls-eyebrow ls-eyebrow"
-            style={{ color: "var(--terracotta, #1e3a8a)" }}
+            style={{ color: "var(--color-primary)" }}
           >
             Estimated market rent
           </div>
@@ -197,10 +197,10 @@ function HeroRentAvmCard({
             ).toLocaleString()}/mo
           </div>
         </div>
-        <div className="shrink-0 inline-flex items-center gap-1.5 self-start md:self-end rounded-full border border-[var(--hair)] bg-muted/30 px-3 py-1 text-[11px] text-muted-foreground">
+        <div className="shrink-0 inline-flex items-center gap-1.5 self-start md:self-end rounded-[2px] border border-[var(--hair)] bg-muted/30 px-3 py-1 text-[11px] text-muted-foreground">
           <span
             className="inline-block w-1.5 h-1.5 rounded-full"
-            style={{ background: "var(--terracotta, #1e3a8a)" }}
+            style={{ background: "var(--color-primary)" }}
             aria-hidden
           />
           {fetchedAt ? freshnessCopy(fetchedAt) : "Just now"} · via RentCast Intelligence
@@ -312,7 +312,7 @@ function MarketTemperatureRow({
   return (
     <div className="flex flex-wrap items-center gap-3">
       <span
-        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${styles}`}
+        className={`inline-flex items-center gap-1.5 rounded-[2px] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${styles}`}
       >
         {label}
       </span>

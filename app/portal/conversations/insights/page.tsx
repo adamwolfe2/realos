@@ -24,7 +24,7 @@ import {
   UserCheck,
   Wrench,
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNowStrict } from "date-fns";
 import { cn } from "@/lib/utils";
 import { RunLearningButton } from "./run-learning-button";
 import { RecommendationActions } from "./recommendation-actions";
@@ -79,10 +79,10 @@ export default async function ChatbotInsightsPage({
   const hasData = totals.conversations > 0;
   const latestRun = learning.latestRun;
   const latestRunLabel = latestRun
-    ? formatDistanceToNow(latestRun.startedAt, { addSuffix: true })
+    ? formatDistanceToNowStrict(latestRun.startedAt)
     : "Not run yet";
   const latestRunHint = latestRun
-    ? `${latestRun.status}${latestRun.recordsProcessed == null ? "" : ` · ${latestRun.recordsProcessed.toLocaleString()} records`}`
+    ? `ago · ${latestRun.status}${latestRun.recordsProcessed == null ? "" : ` · ${latestRun.recordsProcessed.toLocaleString()} records`}`
     : "Daily automation is scheduled";
 
   const periodQS = (days: number) => {
@@ -118,7 +118,7 @@ export default async function ChatbotInsightsPage({
             key={p.days}
             href={periodQS(p.days)}
             className={cn(
-              "rounded-full px-3 py-1 text-[12px] font-semibold ring-1 ring-inset transition",
+              "rounded-[2px] px-3 py-1 text-[12px] font-semibold ring-1 ring-inset transition",
               p.days === periodDays
                 ? "bg-primary text-primary-foreground ring-primary"
                 : "bg-card text-muted-foreground ring-border hover:ring-primary/40",
@@ -162,7 +162,7 @@ export default async function ChatbotInsightsPage({
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <KpiTile
           label="Follow-up tasks"
           value={learning.counts.openTasks.toLocaleString()}

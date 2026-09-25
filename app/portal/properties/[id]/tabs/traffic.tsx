@@ -223,34 +223,36 @@ export async function TrafficTab({
                 No matching queries yet.
               </p>
             ) : (
-              <table className="w-full text-sm">
-                <thead className="ls-eyebrow">
-                  <tr>
-                    <th className="text-left font-semibold pb-2">Query</th>
-                    <th className="text-right font-semibold pb-2">Clicks</th>
-                    <th className="text-right font-semibold pb-2">Impr.</th>
-                    <th className="text-right font-semibold pb-2">Pos</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {traffic.topQueries.map((q) => (
-                    <tr key={q.query}>
-                      <td className="py-2 text-xs truncate max-w-[240px] text-foreground">
-                        {q.query}
-                      </td>
-                      <td className="py-2 text-right tabular-nums text-xs">
-                        {q.clicks.toLocaleString()}
-                      </td>
-                      <td className="py-2 text-right tabular-nums text-xs text-muted-foreground">
-                        {q.impressions.toLocaleString()}
-                      </td>
-                      <td className="py-2 text-right tabular-nums text-xs text-muted-foreground">
-                        {q.position.toFixed(1)}
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm min-w-[380px]">
+                  <thead className="ls-eyebrow">
+                    <tr>
+                      <th className="text-left font-semibold pb-2">Query</th>
+                      <th className="text-right font-semibold pb-2">Clicks</th>
+                      <th className="text-right font-semibold pb-2">Impr.</th>
+                      <th className="text-right font-semibold pb-2">Pos</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {traffic.topQueries.map((q) => (
+                      <tr key={q.query}>
+                        <td className="py-2 text-xs truncate max-w-[240px] text-foreground">
+                          {q.query}
+                        </td>
+                        <td className="py-2 text-right tabular-nums text-xs">
+                          {q.clicks.toLocaleString()}
+                        </td>
+                        <td className="py-2 text-right tabular-nums text-xs text-muted-foreground">
+                          {q.impressions.toLocaleString()}
+                        </td>
+                        <td className="py-2 text-right tabular-nums text-xs text-muted-foreground">
+                          {q.position.toFixed(1)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </DashboardSection>
 

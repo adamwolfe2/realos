@@ -128,7 +128,7 @@ export function AttributesEditor({
               {tags.map((t) => (
                 <li
                   key={t}
-                  className="inline-flex items-center gap-1 rounded-full border border-primary/25 bg-primary/10 pl-2 pr-1 py-0.5 text-[11px] text-primary"
+                  className="inline-flex items-center gap-1 rounded-[2px] border border-primary/25 bg-primary/10 pl-2 pr-1 py-0.5 text-[11px] text-primary"
                 >
                   <Tag className="h-2.5 w-2.5" aria-hidden="true" />
                   <span>{t}</span>
@@ -136,7 +136,7 @@ export function AttributesEditor({
                     type="button"
                     onClick={() => removeTag(t)}
                     aria-label={`Remove ${t}`}
-                    className="inline-flex items-center justify-center h-4 w-4 rounded-full hover:bg-primary/15 transition-colors"
+                    className="inline-flex items-center justify-center h-4 w-4 rounded-[2px] hover:bg-primary/15 transition-colors"
                   >
                     <X className="h-2.5 w-2.5" aria-hidden="true" />
                   </button>
@@ -184,7 +184,7 @@ export function AttributesEditor({
                     <button
                       type="button"
                       onClick={() => addTag(s)}
-                      className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2 py-0.5 text-[11px] text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-primary/5 transition-colors"
+                      className="inline-flex items-center gap-1 rounded-[2px] border border-border bg-background px-2 py-0.5 text-[11px] text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-primary/5 transition-colors"
                     >
                       <Plus className="h-2.5 w-2.5" aria-hidden="true" />
                       <span>{s}</span>

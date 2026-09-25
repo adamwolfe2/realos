@@ -157,7 +157,7 @@ export async function LeadsTab({
             <li key={p.status} className="flex-1 min-w-[110px]">
               <Link
                 href={`/portal/leads?status=${p.status}&property=${propertyId}`}
-                className="group block px-3 py-1 transition-colors hover:bg-[var(--accent-wash)]"
+                className="group block px-3 py-1 transition-colors hover:bg-[var(--brand-wash)]"
               >
                 <p className="ls-eyebrow truncate">{STATUS_LABEL[p.status]}</p>
                 <p

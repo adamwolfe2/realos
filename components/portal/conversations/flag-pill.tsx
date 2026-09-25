@@ -31,8 +31,8 @@ export const FLAG_LABEL: Record<FlagType, string> = {
   handoff_missed: "Handoff missed",
 };
 
-// Matrix of background + foreground classes. Each color aligns with the
-// project palette: warm accents on parchment, cool surfaces on ivory.
+// Matrix of background + foreground classes. Colors align with the Carbon
+// palette (success green, destructive red, brand blue) on a white surface.
 export const FLAG_TONE: Record<
   FlagType,
   { bg: string; text: string; dot: string; ring: string }

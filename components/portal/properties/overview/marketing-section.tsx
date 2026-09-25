@@ -192,7 +192,11 @@ export function MarketingSection({
           // Was a bespoke rounded-lg / bg-muted/20 sub-card with a sans
           // label and a text-lg sans numeral — a third way of drawing a stat
           // row on a page that already had two. Now the shared KpiTile.
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          // This section lives in the page's narrower main column
+          // (sidebar takes the rest), so it must size off its own
+          // container, not the viewport — no lg: breakpoint here, or
+          // 4-wide tiles cramp into ~165px and truncate their labels.
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {liveMetrics.map((m) => (
               <KpiTile
                 key={m.label}
