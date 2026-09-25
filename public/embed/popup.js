@@ -43,7 +43,7 @@
   function log() {
     if (!DEBUG) return;
     try {
-      var args = ["%c[leasestack-popup]", "color:#2563EB;font-weight:600"];
+      var args = ["%c[leasestack-popup]", "color:#0f62fe;font-weight:600"];
       for (var i = 0; i < arguments.length; i++) args.push(arguments[i]);
       console.info.apply(console, args);
     } catch (_) { /* ignore */ }
@@ -341,6 +341,55 @@
   }
 
   // ──────────────────────────────────────────────────────────────────
+  // Clipboard (offer code copy) — Clipboard API with a textarea +
+  // execCommand fallback for iOS Safari / non-secure contexts / old
+  // browsers where navigator.clipboard is missing or rejects.
+  // ──────────────────────────────────────────────────────────────────
+  function legacyCopy(text) {
+    var prevFocus = document.activeElement;
+    try {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      ta.setSelectionRange(0, text.length); // iOS Safari needs an explicit range
+      var ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      return ok;
+    } catch (_) {
+      return false;
+    } finally {
+      if (prevFocus && prevFocus.focus) prevFocus.focus();
+    }
+  }
+  function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).catch(function () {
+        return legacyCopy(text)
+          ? Promise.resolve()
+          : Promise.reject(new Error("copy failed"));
+      });
+    }
+    return legacyCopy(text)
+      ? Promise.resolve()
+      : Promise.reject(new Error("copy failed"));
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // Single-instance guard — only one popup may be on screen at once.
+  // Multiple ACTIVE campaigns each wire their own trigger (exit intent,
+  // timer, scroll, idle); without this, two campaigns can fire close
+  // together and stack. The FIRST trigger to fire wins; render() is the
+  // one choke point every trigger path funnels through.
+  // ──────────────────────────────────────────────────────────────────
+  var activePopup = null;
+
+  // ──────────────────────────────────────────────────────────────────
   // DOM render
   // ──────────────────────────────────────────────────────────────────
   function safe(str) {
@@ -446,6 +495,7 @@
       ".ls-popup-card.ls-theme-dark .ls-popup-dismiss{opacity:.7}",
       ".ls-popup-dismiss:hover{opacity:1}",
       ".ls-popup-year-accent{color:var(--ls-accent)}",
+      ".ls-popup-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}",
       "@keyframes ls-pop-fade{from{opacity:0}to{opacity:1}}",
       "@keyframes ls-pop-in{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}",
       "@media (prefers-reduced-motion:reduce){.ls-popup-wrap,.ls-popup-backdrop{animation:none}}",
@@ -454,6 +504,14 @@
   }
 
   function render(popup) {
+    if (activePopup) {
+      log(
+        "skipped rendering '" + popup.headline + "' — popup '" +
+        activePopup.headline + "' is already open"
+      );
+      return;
+    }
+    activePopup = popup;
     log("rendering popup '" + popup.headline + "' (id=" + popup.id + ")");
     ensureStyles();
 
@@ -461,7 +519,7 @@
     var theme = popup.theme || "LIGHT";
     var themeClass = theme === "DARK" ? "ls-theme-dark" : theme === "GRADIENT" ? "ls-theme-gradient" : "ls-theme-light";
     var isDark = theme === "DARK";
-    var accent = popup.accentColor || popup.primaryColor || "#2563EB";
+    var accent = popup.accentColor || popup.primaryColor || "#0f62fe";
 
     var posClass =
       position === "CENTER" ? "ls-pos-center"
@@ -558,7 +616,8 @@
     }
 
     var codeHtml = popup.offerCode && position !== "TOP_BANNER"
-      ? '<button type="button" class="ls-popup-code" data-ls-action="copy-code" style="border-color:' + safe(accent) + '"><span>' + safe(popup.offerCode) + "</span></button>"
+      ? '<button type="button" class="ls-popup-code" data-ls-action="copy-code" aria-label="Copy code ' + safe(popup.offerCode) + '" style="border-color:' + safe(accent) + '"><span>' + safe(popup.offerCode) + "</span></button>" +
+        '<span class="ls-popup-sr-only" data-ls-code-status aria-live="polite" role="status"></span>'
       : "";
 
     var primaryIcon = iconHtml(popup.primaryCtaIcon);
@@ -638,6 +697,7 @@
 
     function teardown() {
       try { document.body.removeChild(root); } catch (_) { /* ignore */ }
+      if (activePopup === popup) activePopup = null;
     }
 
     function onDismiss() {
@@ -656,18 +716,22 @@
 
     function onCopyCode(btn) {
       if (!popup.offerCode) return;
-      try {
-        navigator.clipboard.writeText(popup.offerCode)
-          .then(function () {
-            var label = btn.querySelector("span");
-            if (label) {
-              var prev = label.textContent;
-              label.textContent = "Copied";
-              setTimeout(function () { label.textContent = prev; }, 1500);
-            }
-          })
-          .catch(function () { /* ignore */ });
-      } catch (_) { /* ignore */ }
+      var label = btn.querySelector("span");
+      var status = root.querySelector("[data-ls-code-status]");
+      copyToClipboard(popup.offerCode)
+        .then(function () {
+          if (label) {
+            var prev = label.textContent;
+            label.textContent = "Copied";
+            setTimeout(function () { label.textContent = prev; }, 1500);
+          }
+          if (status) status.textContent = "Code copied to clipboard";
+        })
+        .catch(function () {
+          if (status) {
+            status.textContent = "Couldn't copy automatically. Your code is " + popup.offerCode;
+          }
+        });
     }
 
     async function onSubmit(form) {
