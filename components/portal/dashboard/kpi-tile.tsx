@@ -98,13 +98,19 @@ function KpiTileInner({
         <div className="flex items-center gap-2 min-w-0">
           {icon ? (
             <span
-              className="inline-flex items-center justify-center h-7 w-7 rounded-[2px] shrink-0 bg-[#edf5ff] text-[#0f62fe]"
+              className="hidden sm:inline-flex items-center justify-center h-7 w-7 rounded-[2px] shrink-0 bg-[#edf5ff] text-[#0f62fe]"
               aria-hidden="true"
             >
               {icon}
             </span>
           ) : null}
-          <div className="ls-eyebrow truncate">{label}</div>
+          {/* Phones: a 2-up tile has ~140px, so drop the icon and a trailing
+              "(28d)"-style window suffix (the range toggle already says it)
+              to keep the title on one readable line. */}
+          <div className="ls-eyebrow truncate">
+            <span className="sm:hidden">{label.replace(/\s*\([^)]*\)\s*$/, "")}</span>
+            <span className="hidden sm:inline">{label}</span>
+          </div>
         </div>
         {live && !locked ? (
           <span className="relative inline-flex h-2 w-2 shrink-0" aria-label="Live">
