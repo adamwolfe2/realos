@@ -117,6 +117,11 @@ export function AttentionQueue({
 
   const visible = all.slice(0, MAX_ROWS);
   const remainder = all.length - visible.length;
+  // Every row carrying the same "Task" source pill in a queue that's ALL
+  // tasks is pure decoration — it stops distinguishing anything. Drop it
+  // when every visible row shares that source; keep it the moment the
+  // queue is mixed (Task/SEO/Insight), where it actually carries meaning.
+  const hideTaskPill = visible.every((row) => row.source === "Task");
 
   return (
     <div className="ls-card overflow-hidden">
@@ -129,47 +134,57 @@ export function AttentionQueue({
         </span>
       </header>
       <ul className="divide-y divide-[var(--hair)]">
-        {visible.map((row) => (
-          <li key={row.id}>
-            <div className="flex items-center gap-3 px-4 py-2.5">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                  <span className={SOURCE_PILL[row.source]}>{row.source}</span>
-                  {showPropertyTag && row.propertyName ? (
-                    <>
-                      <span className="text-[10px] text-muted-foreground/60">
-                        ·
-                      </span>
-                      <span className="ls-eyebrow truncate">
-                        {row.propertyName}
-                      </span>
-                    </>
-                  ) : null}
-                  {row.meta ? (
-                    <>
-                      <span className="text-[10px] text-muted-foreground/60">
-                        ·
-                      </span>
-                      <span className="text-[10px] text-muted-foreground tabular-nums">
-                        {row.meta}
-                      </span>
-                    </>
-                  ) : null}
+        {visible.map((row) => {
+          const showPill = !(hideTaskPill && row.source === "Task");
+          const showPropertyName = showPropertyTag && !!row.propertyName;
+          return (
+            <li key={row.id}>
+              <div className="flex items-center gap-3 px-4 py-2.5">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 mb-0.5 min-w-0 overflow-hidden whitespace-nowrap">
+                    {showPill ? (
+                      <span className={SOURCE_PILL[row.source]}>{row.source}</span>
+                    ) : null}
+                    {showPropertyName ? (
+                      <>
+                        {showPill ? (
+                          <span className="text-[10px] text-muted-foreground/60 shrink-0">
+                            ·
+                          </span>
+                        ) : null}
+                        <span className="ls-eyebrow truncate">
+                          {row.propertyName}
+                        </span>
+                      </>
+                    ) : null}
+                    {row.meta ? (
+                      <>
+                        {showPill || showPropertyName ? (
+                          <span className="text-[10px] text-muted-foreground/60 shrink-0">
+                            ·
+                          </span>
+                        ) : null}
+                        <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+                          {row.meta}
+                        </span>
+                      </>
+                    ) : null}
+                  </div>
+                  <p className="text-[13px] font-medium text-foreground truncate">
+                    {row.title}
+                  </p>
                 </div>
-                <p className="text-[13px] font-medium text-foreground truncate">
-                  {row.title}
-                </p>
+                <Link
+                  href={row.href}
+                  className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
+                >
+                  {row.actionLabel}
+                  <ArrowRight className="h-3 w-3" aria-hidden="true" />
+                </Link>
               </div>
-              <Link
-                href={row.href}
-                className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
-              >
-                {row.actionLabel}
-                <ArrowRight className="h-3 w-3" aria-hidden="true" />
-              </Link>
-            </div>
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ul>
       <Link
         href="/portal/insights"

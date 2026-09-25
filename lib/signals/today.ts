@@ -67,7 +67,7 @@ export function pickHeadlineSignal(
     if (rep.newNegative7d >= 3) {
       candidates.push({
         kind: "reputation",
-        message: `${rep.newNegative7d} negative mentions surfaced this week — review now.`,
+        message: `${rep.newNegative7d} negative mentions surfaced this week. Review now.`,
         href: "/portal/reputation",
         deltaPct: rep.newNegative7d * 10,
         tone: "negative",
@@ -84,7 +84,7 @@ export function pickHeadlineSignal(
     if (wow != null && Math.abs(wow) >= 10) {
       candidates.push({
         kind: "chatbot",
-        message: `Chatbot engagement ${wow >= 0 ? "up" : "down"} ${Math.abs(Math.round(wow))}% week-over-week — ${cb.conversations} conversations in 24h.`,
+        message: `Chatbot engagement ${wow >= 0 ? "up" : "down"} ${Math.abs(Math.round(wow))}% week-over-week, ${cb.conversations} conversations in 24h.`,
         href: "/portal/chatbot",
         deltaPct: wow,
         tone: wow >= 0 ? "positive" : "negative",
@@ -114,8 +114,8 @@ export function pickHeadlineSignal(
         kind: "seo",
         message:
           swing > 0
-            ? `Climbed ${swing} positions for "${top.keyword}" — now #${top.to}.`
-            : `Dropped ${Math.abs(swing)} positions for "${top.keyword}" — now #${top.to}.`,
+            ? `Climbed ${swing} positions for "${top.keyword}", now #${top.to}.`
+            : `Dropped ${Math.abs(swing)} positions for "${top.keyword}", now #${top.to}.`,
         href: "/portal/seo",
         deltaPct: swing * 5,
         tone: swing > 0 ? "positive" : "negative",
@@ -130,7 +130,7 @@ export function pickHeadlineSignal(
     if (wow != null && Math.abs(wow) >= 15) {
       candidates.push({
         kind: "leads",
-        message: `New leads ${wow >= 0 ? "up" : "down"} ${Math.abs(Math.round(wow))}% week-over-week — ${leads.newLeads} fresh in 24h.`,
+        message: `New leads ${wow >= 0 ? "up" : "down"} ${Math.abs(Math.round(wow))}% week-over-week, ${leads.newLeads} fresh in 24h.`,
         href: "/portal/leads",
         deltaPct: wow,
         tone: wow >= 0 ? "positive" : "negative",
@@ -148,8 +148,8 @@ export function pickHeadlineSignal(
         kind: "aeo",
         message:
           swing > 0
-            ? `AI engines now cite you in ${pct}% of target prompts — up from ${Math.round(baseline.aeo.citationRate * 100)}%.`
-            : `AI citations slipped to ${pct}% — down from ${Math.round(baseline.aeo.citationRate * 100)}%.`,
+            ? `AI engines now cite you in ${pct}% of target prompts, up from ${Math.round(baseline.aeo.citationRate * 100)}%.`
+            : `AI citations slipped to ${pct}%, down from ${Math.round(baseline.aeo.citationRate * 100)}%.`,
         href: "/portal/seo",
         deltaPct: swing * 100,
         tone: swing > 0 ? "positive" : "negative",
@@ -161,7 +161,7 @@ export function pickHeadlineSignal(
     // Fall back to an overall score callout so the slot is never empty.
     return {
       kind: "overall",
-      message: `Your overall score is ${latest.overallScore}/100 — steady this week.`,
+      message: `Your overall score is ${latest.overallScore}/100. Steady this week.`,
       href: "/portal/insights",
       deltaPct: 0,
       tone: "neutral",

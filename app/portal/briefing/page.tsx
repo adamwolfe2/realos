@@ -287,7 +287,7 @@ export default async function BriefingPage({
               Chatbot transcripts
             </span>
           }
-          description="Flagged for tuning, captured a lead, or long-form — prioritize these."
+          description="Flagged for tuning, captured a lead, or long-form. Prioritize these."
           href="/portal/conversations"
           hrefLabel="All conversations"
           className="lg:col-span-2"
@@ -333,7 +333,7 @@ export default async function BriefingPage({
         <PageHeader
           eyebrow="Daily briefing"
           title="Briefing temporarily unavailable"
-          description="Briefing data could not be loaded. This is usually temporary — try refreshing."
+          description="Briefing data could not be loaded. This is usually temporary, try refreshing."
         />
         <div className="rounded-[2px] border border-border bg-secondary px-4 py-3 text-sm text-foreground">
           If the issue persists, check{" "}
@@ -440,7 +440,7 @@ function AgingAlertBanner({
       <AlertTriangle className="h-4 w-4 text-primary mt-0.5 shrink-0" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground">
-          {stale} lead{stale === 1 ? "" : "s"} {stale === 1 ? "is" : "are"} 15+ days old — the longer they sit, the colder they get. Contact today.
+          {stale} lead{stale === 1 ? "" : "s"} {stale === 1 ? "is" : "are"} 15+ days old. The longer they sit, the colder they get. Contact today.
         </p>
         {aging > 0 && (
           <p className="text-xs text-muted-foreground mt-0.5">

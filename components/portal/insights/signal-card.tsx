@@ -65,12 +65,10 @@ export function SignalCard({
       <div className="ls-eyebrow">
         {label}
       </div>
-      <div
-        className={cn(
-          "mt-1 flex gap-2",
-          ring ? "items-center justify-between" : "items-baseline justify-between",
-        )}
-      >
+      {/* Fixed height so the ring variant (Overall score) and the plain-text
+          variants sit at the same height in the row, otherwise the ring's
+          68px footprint makes only that card taller than its row-mates. */}
+      <div className="mt-1 flex h-[68px] items-center justify-between gap-2">
         {ring && Number.isFinite(Number.parseFloat(value)) ? (
           <ScoreRing value={Number.parseFloat(value)} />
         ) : (
@@ -108,7 +106,7 @@ function DeltaChip({
   if (deltaPct == null) {
     return (
       <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-muted-foreground tabular-nums">
-        <Minus className="h-3 w-3" />—
+        <Minus className="h-3 w-3" />n/a
       </span>
     );
   }

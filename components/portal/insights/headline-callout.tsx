@@ -24,7 +24,7 @@ export function HeadlineCallout({ signal, bare = false }: HeadlineCalloutProps) 
       >
         <Sparkles className="h-5 w-5 text-muted-foreground shrink-0" />
         <div className="text-sm text-muted-foreground">
-          No standout signal yet — your first daily scan will surface the
+          No standout signal yet. Your first daily scan will surface the
           movement that matters here.
         </div>
       </div>

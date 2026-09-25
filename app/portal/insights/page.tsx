@@ -175,7 +175,7 @@ export default async function InsightsPage({
       <PageHeader
         eyebrow="Daily signal"
         title="Insights"
-        description="Live look at what's moving for your portfolio — mentions, rankings, chatbot engagement, and leads. Updated every morning from a fresh signal scan."
+        description="Live look at what's moving for your portfolio, from mentions and rankings to chatbot engagement and leads. Updated every morning from a fresh signal scan."
         actions={
           <>
             {properties.length > 1 ? (
@@ -241,7 +241,7 @@ export default async function InsightsPage({
                 <EmptyState
                   icon={<Sparkles className="h-5 w-5" />}
                   title="Recommendations coming soon"
-                  body="Connect AppFolio, Google Analytics, your ad accounts, and the pixel — each unlocks a new family of detectors that run continuously in the background."
+                  body="Connect AppFolio, Google Analytics, your ad accounts, and the pixel. Each unlocks a new family of detectors that run continuously in the background."
                   action={{ label: "Connect your data", href: "/portal/connect" }}
                 />
               ) : totalCounts > 0 ? (
@@ -303,7 +303,7 @@ function SignalsTab({
         <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <SignalCard
             label="Overall score"
-            value={latest.overallScore != null ? `${latest.overallScore}` : "—"}
+            value={latest.overallScore != null ? `${latest.overallScore}` : "n/a"}
             caption="out of 100"
             deltaPct={numOrNull(wow.overallScore)}
             series={overallSeries}
@@ -315,7 +315,7 @@ function SignalsTab({
             value={
               latest.seo?.avgPosition != null
                 ? `#${Math.round(latest.seo.avgPosition)}`
-                : "—"
+                : "n/a"
             }
             caption={`${latest.seo?.organicKeywords ?? 0} keywords`}
             deltaPct={numOrNull(wow.seoScore)}
@@ -327,7 +327,7 @@ function SignalsTab({
             value={
               latest.aeo
                 ? `${Math.round(latest.aeo.citationRate * 100)}%`
-                : "—"
+                : "n/a"
             }
             caption={`${latest.aeo?.citationsFound ?? 0} of ${latest.aeo?.enginesChecked ?? 0} engines`}
             deltaPct={numOrNull(wow.aeoScore)}
@@ -339,7 +339,7 @@ function SignalsTab({
             value={
               latest.reputation?.avgRating != null
                 ? latest.reputation.avgRating.toFixed(1)
-                : "—"
+                : "n/a"
             }
             caption={`${latest.reputation?.totalMentions ?? 0} mentions`}
             deltaPct={numOrNull(wow.reputationScore)}
@@ -367,7 +367,7 @@ function SignalsTab({
         <EmptyState
           icon={<Sparkles className="h-5 w-5" />}
           title="First scan coming overnight"
-          body="Your daily signal snapshot computes during off-hours. You'll see ranking, citation, reputation, chatbot, and lead activity here as soon as the first pass finishes — usually before the next morning."
+          body="Your daily signal snapshot computes during off-hours. You'll see ranking, citation, reputation, chatbot, and lead activity here as soon as the first pass finishes, usually before the next morning."
           action={{ label: "Connect more data sources", href: "/portal/connect" }}
         />
       )}

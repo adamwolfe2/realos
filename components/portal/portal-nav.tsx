@@ -636,7 +636,7 @@ export function PortalNav({
                                 className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full text-[10px] font-semibold tabular-nums"
                                 style={{
                                   background: "var(--brand-soft)",
-                                  color: "var(--terracotta)",
+                                  color: "var(--color-primary)",
                                 }}
                                 aria-label={`${count} pending`}
                               >

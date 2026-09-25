@@ -561,6 +561,7 @@ export default async function PortalLayout({
                 appfolioStatus.state === "failed" ? "critical" : "warning" // partial-success and stale both render amber
               }
               flush
+              className="pr-8"
               title={
                 appfolioStatus.state === "failed"
                   ? "AppFolio sync failed."
@@ -699,7 +700,7 @@ function summarizeAppfolioError(raw: string): string {
     lower.includes("econnrefused") ||
     lower.includes("fetch failed")
   ) {
-    return "Network timeout reaching AppFolio. Will retry automatically — if it persists, AppFolio may be down.";
+    return "Network timeout reaching AppFolio. Will retry automatically. If it persists, AppFolio may be down.";
   }
   // Rate limiting
   if (

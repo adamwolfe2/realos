@@ -26,7 +26,7 @@ export default function BriefingError({
         Something went wrong
       </h2>
       <p className="text-sm text-muted-foreground mb-6 max-w-sm">
-        An unexpected error occurred loading this page. Try refreshing — if it
+        An unexpected error occurred loading this page. Try refreshing, if it
         persists, contact your account manager.
       </p>
       <div className="flex gap-3">
