@@ -24,6 +24,11 @@ import { PageHeader } from "@/components/admin/page-header";
 import { SectionLabel } from "@/components/portal/ui/section-label";
 import { StatusChip } from "@/components/portal/ui/status-chip";
 import {
+  getTileViewState,
+  type TileViewState,
+  type TileCta,
+} from "@/components/portal/marketplace/tile-view-state";
+import {
   MetaMark,
   GoogleMark,
   TikTokMark,
@@ -118,6 +123,10 @@ type MarketplaceEntryVM = {
   bullets: string[];
   monthlyPriceCents: number;
   setupHref: string;
+  /** Where "Open" routes once an already-active concierge/addon entry is
+      live for this org (e.g. moduleSEO -> /portal/seo). Null falls back to
+      setupHref. See app/portal/marketplace/page.tsx#activeHrefFor. */
+  activeHref: string | null;
   popular: boolean;
   setupEffort: string | null;
   iconName: string;
@@ -139,12 +148,6 @@ type Props = {
       included / addon / coming entries). Drives "Unlock everything". */
   allToggleableKeys: string[];
 };
-
-function formatPrice(cents: number): string {
-  if (cents === 0) return "Free";
-  if (cents % 100 === 0) return `$${cents / 100}`;
-  return `$${(cents / 100).toFixed(2)}`;
-}
 
 export function MarketplaceClient({
   isTrialing,
@@ -366,8 +369,22 @@ function ModuleCard({
   const Icon = ICON_MAP[m.iconName] ?? Sparkles;
   const isComing = m.kind === "coming";
   const isIncluded = m.kind === "included";
-  const isAddon = m.kind === "addon";
-  const isToggle = m.kind === "toggle";
+  // Single source of truth for status/price/CTA — see tile-view-state.ts.
+  // isEnabled reflects the org's real module flag for every kind (toggle
+  // AND concierge AND addon) that HAS a reliable flag, so a concierge/addon
+  // module the ops team already turned on for this org renders as Active,
+  // not "Request setup" again. Exception: moduleWebsite has no reliable
+  // active signal (its DB column defaults true for every org) so the page
+  // never marks it enabled — see app/portal/marketplace/page.tsx.
+  const view = getTileViewState({
+    kind: m.kind,
+    isEnabled,
+    isTrialing,
+    isPending,
+    isNotified,
+    popular: m.popular,
+    monthlyPriceCents: m.monthlyPriceCents,
+  });
   // Bug #123 (was Norman bug #2): operators couldn't click into a module to
   // read the full pitch — tagline was truncated with "..." and there was no
   // expand. Fix (b) from spec: kept line-clamp-2 on the tagline and added a
@@ -405,7 +422,7 @@ function ModuleCard({
             <h3 className="text-[13px] font-semibold tracking-tight text-foreground truncate">
               {m.name}
             </h3>
-            <StatusPill kind={m.kind} isEnabled={isEnabled} popular={m.popular} />
+            <StatusPill status={view.status} statusNote={view.statusNote} />
           </div>
           <button
             type="button"
@@ -487,25 +504,17 @@ function ModuleCard({
             <span aria-hidden="true" className="text-border">·</span>
           ) : null}
           <PriceLine
-            kind={m.kind}
-            isEnabled={isEnabled}
-            isTrialing={isTrialing}
-            cents={m.monthlyPriceCents}
+            text={view.priceText}
+            suffix={view.priceSuffix}
+            emphasis={view.priceEmphasis}
           />
         </div>
         <div className="shrink-0 whitespace-nowrap">
           <CtaRow
-            kind={m.kind}
-            isEnabled={isEnabled}
-            isPending={isPending}
-            isTrialing={isTrialing}
-            isNotified={isNotified}
+            cta={view.cta}
             setupHref={m.setupHref}
+            activeHref={m.activeHref}
             name={m.name}
-            isToggle={isToggle}
-            isAddon={isAddon}
-            isIncluded={isIncluded}
-            isComing={isComing}
             onActivate={onActivate}
             onDeactivate={onDeactivate}
             onNotifyMe={onNotifyMe}
@@ -517,61 +526,37 @@ function ModuleCard({
   );
 }
 
-// Chip vocabulary now matches the Connection status cards exactly: green
+// Chip vocabulary matches the Connection status cards exactly: green
 // Live-family chip for anything that's on, neutral "Not connected"-family
 // chip otherwise, with the tier rendered as a small plain-text note beside
-// the chip (same pattern integrations use for "Coming soon").
+// the chip (same pattern integrations use for "Coming soon"). Status comes
+// straight from the pure mapping in tile-view-state.ts — it can no longer
+// disagree with the CTA below because both read the same `view`.
 function StatusPill({
-  kind,
-  isEnabled,
-  popular,
+  status,
+  statusNote,
 }: {
-  kind: CatalogEntryKind;
-  isEnabled: boolean;
-  popular: boolean;
+  status: TileViewState["status"];
+  statusNote: string | null;
 }) {
-  if (kind === "included") {
-    return <StatusChip status="live" label="Included" className="shrink-0" />;
-  }
-  if (kind === "coming") {
+  if (status === "active") {
     return (
       <span className="flex items-center gap-1.5 shrink-0">
-        <StatusChip status="not_connected" label="Not active" />
-        <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-          Coming soon
-        </span>
+        <StatusChip status="live" label="Active" />
+        {statusNote ? (
+          <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+            {statusNote}
+          </span>
+        ) : null}
       </span>
     );
-  }
-  if (kind === "addon") {
-    return (
-      <span className="flex items-center gap-1.5 shrink-0">
-        <StatusChip status="not_connected" label="Not active" />
-        <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-          Pro add-on
-        </span>
-      </span>
-    );
-  }
-  if (kind === "concierge") {
-    return (
-      <span className="flex items-center gap-1.5 shrink-0">
-        <StatusChip status="not_connected" label="Not active" />
-        <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-          Guided setup
-        </span>
-      </span>
-    );
-  }
-  if (isEnabled) {
-    return <StatusChip status="live" label="Active" className="shrink-0" />;
   }
   return (
     <span className="flex items-center gap-1.5 shrink-0">
       <StatusChip status="not_connected" label="Not active" />
-      {popular ? (
+      {statusNote ? (
         <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-          Popular
+          {statusNote}
         </span>
       ) : null}
     </span>
@@ -579,173 +564,119 @@ function StatusPill({
 }
 
 function PriceLine({
-  kind,
-  isEnabled,
-  isTrialing,
-  cents,
+  text,
+  suffix,
+  emphasis,
 }: {
-  kind: CatalogEntryKind;
-  isEnabled: boolean;
-  isTrialing: boolean;
-  cents: number;
+  text: string;
+  suffix: TileViewState["priceSuffix"];
+  emphasis: TileViewState["priceEmphasis"];
 }) {
-  if (kind === "included") {
-    return (
-      <p className="ls-eyebrow ls-eyebrow-accent">
-        Included free
-      </p>
-    );
+  if (emphasis === "accent") {
+    return <p className="ls-eyebrow ls-eyebrow-accent">{text}</p>;
   }
-  if (kind === "coming") {
-    return (
-      <p className="ls-eyebrow">
-        Coming soon
-      </p>
-    );
-  }
-  if (kind === "addon") {
-    return (
-      <p className="text-[13px] font-semibold tabular-nums text-foreground">
-        +{formatPrice(cents)}
-        <span className="text-[11px] font-normal text-muted-foreground">/mo</span>
-      </p>
-    );
-  }
-  if (kind === "concierge") {
-    return (
-      <p className="text-[13px] font-semibold tabular-nums text-foreground">
-        from {formatPrice(cents)}
-        <span className="text-[11px] font-normal text-muted-foreground">/mo</span>
-      </p>
-    );
-  }
-  // toggle
-  if (isTrialing && !isEnabled) {
-    return (
-      <p className="ls-eyebrow">
-        Free during trial
-      </p>
-    );
+  if (emphasis === "muted") {
+    return <p className="ls-eyebrow">{text}</p>;
   }
   return (
     <p className="text-[13px] font-semibold tabular-nums text-foreground">
-      {formatPrice(cents)}
-      <span className="text-[11px] font-normal text-muted-foreground">/mo</span>
+      {text}
+      {suffix ? (
+        <span className="text-[11px] font-normal text-muted-foreground">{suffix}</span>
+      ) : null}
     </p>
   );
 }
 
 function CtaRow({
-  kind,
-  isEnabled,
-  isPending,
-  isTrialing,
-  isNotified,
+  cta,
   setupHref,
+  activeHref,
   name,
-  isToggle,
-  isAddon,
-  isIncluded,
-  isComing,
   onActivate,
   onDeactivate,
   onNotifyMe,
 }: {
-  kind: CatalogEntryKind;
-  isEnabled: boolean;
-  isPending: boolean;
-  isTrialing: boolean;
-  isNotified: boolean;
+  cta: TileCta;
   setupHref: string;
+  activeHref: string | null;
   name: string;
-  isToggle: boolean;
-  isAddon: boolean;
-  isIncluded: boolean;
-  isComing: boolean;
   onActivate: () => void;
   onDeactivate: () => void;
   onNotifyMe: () => void;
 }) {
-  void kind;
-  // Coming soon — non-activatable, soft "Notify me" capture.
-  if (isComing) {
-    return (
-      <button
-        type="button"
-        onClick={onNotifyMe}
-        disabled={isNotified}
-        className="inline-flex items-center justify-center h-7 px-3 rounded-[2px] border border-border bg-card text-muted-foreground text-[12px] font-medium hover:border-primary hover:text-primary disabled:opacity-60 disabled:cursor-default transition-colors"
-      >
-        {isNotified ? "Notified" : "Notify me"}
-      </button>
-    );
-  }
-  // Included — straight to the page.
-  if (isIncluded) {
-    return (
-      <Link
-        href={setupHref}
-        className="inline-flex items-center gap-1 h-7 px-3 rounded-[2px] bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary-dark transition-colors"
-      >
-        Open <ArrowRight className="w-3 h-3" />
-      </Link>
-    );
-  }
-  // Pro add-on — always Stripe checkout via billing page.
-  if (isAddon) {
-    return (
-      <Link
-        href={setupHref}
-        className="inline-flex items-center gap-1 h-7 px-3 rounded-[2px] bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary-dark transition-colors"
-      >
-        Add <ArrowRight className="w-3 h-3" />
-      </Link>
-    );
-  }
-  // Concierge — managed service, no toggle. "Request setup" routes to the
-  // marketplace with a request= query param the operator can post about.
-  // Honest UX: this is NOT instant, our team has to wire it up.
-  if (kind === "concierge") {
-    return (
-      <Link
-        href={setupHref}
-        className="inline-flex items-center gap-1 h-7 px-3 rounded-[2px] border border-primary text-primary text-[12px] font-semibold hover:bg-primary hover:text-primary-foreground transition-colors"
-      >
-        Request setup <ArrowRight className="w-3 h-3" />
-      </Link>
-    );
-  }
-  // Toggle, already on — Set up + Remove.
-  if (isToggle && isEnabled) {
-    return (
-      <div className="flex items-center gap-1.5">
-        <Link
-          href={setupHref}
-          className="inline-flex items-center gap-1 h-7 px-3 rounded-[2px] bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary-dark transition-colors"
-        >
-          Set up <ArrowRight className="w-3 h-3" />
-        </Link>
+  const linkClass =
+    "inline-flex items-center gap-1 h-7 px-3 rounded-[2px] bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary-dark transition-colors";
+
+  switch (cta.action) {
+    case "notify":
+      return (
         <button
           type="button"
-          onClick={onDeactivate}
-          disabled={isPending}
-          className="h-7 px-2 text-[11px] font-medium text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
-          aria-label={`Deactivate ${name}`}
+          onClick={onNotifyMe}
+          disabled={cta.disabled}
+          className="inline-flex items-center justify-center h-7 px-3 rounded-[2px] border border-border bg-card text-muted-foreground text-[12px] font-medium hover:border-primary hover:text-primary disabled:opacity-60 disabled:cursor-default transition-colors"
         >
-          {isPending ? "…" : "Remove"}
+          {cta.label}
         </button>
-      </div>
-    );
+      );
+    case "open":
+      // Included, or a concierge/addon module the org already has active —
+      // route to the real feature page (activeHref) rather than the
+      // request/checkout href.
+      return (
+        <Link href={activeHref ?? setupHref} className={linkClass}>
+          Open <ArrowRight className="w-3 h-3" />
+        </Link>
+      );
+    case "add":
+      // Pro add-on, not yet active — always Stripe checkout via billing.
+      return (
+        <Link href={setupHref} className={linkClass}>
+          Add <ArrowRight className="w-3 h-3" />
+        </Link>
+      );
+    case "request":
+      // Concierge, not yet active — no toggle, no instant activation.
+      // "Request setup" routes to the marketplace with a request= query
+      // param the operator can post about. Honest UX: our team wires it up.
+      return (
+        <Link
+          href={setupHref}
+          className="inline-flex items-center gap-1 h-7 px-3 rounded-[2px] border border-primary text-primary text-[12px] font-semibold hover:bg-primary hover:text-primary-foreground transition-colors"
+        >
+          Request setup <ArrowRight className="w-3 h-3" />
+        </Link>
+      );
+    case "manage":
+      // Toggle, already on — Set up + Remove.
+      return (
+        <div className="flex items-center gap-1.5">
+          <Link href={setupHref} className={linkClass}>
+            {cta.setupLabel} <ArrowRight className="w-3 h-3" />
+          </Link>
+          <button
+            type="button"
+            onClick={onDeactivate}
+            disabled={cta.disabled}
+            className="h-7 px-2 text-[11px] font-medium text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
+            aria-label={`Deactivate ${name}`}
+          >
+            {cta.disabled ? "…" : cta.removeLabel}
+          </button>
+        </div>
+      );
+    case "activate":
+      // Toggle, off — Activate.
+      return (
+        <button
+          type="button"
+          onClick={onActivate}
+          disabled={cta.disabled}
+          className="inline-flex items-center justify-center h-7 px-3 rounded-[2px] bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary-dark disabled:opacity-40 transition-colors"
+        >
+          {cta.disabled ? "…" : cta.label}
+        </button>
+      );
   }
-  // Toggle, off — Activate.
-  return (
-    <button
-      type="button"
-      onClick={onActivate}
-      disabled={isPending}
-      className="inline-flex items-center justify-center h-7 px-3 rounded-[2px] bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary-dark disabled:opacity-40 transition-colors"
-    >
-      {isPending ? "…" : isTrialing ? "Activate" : "Unlock"}
-    </button>
-  );
 }

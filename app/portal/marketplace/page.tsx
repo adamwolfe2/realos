@@ -34,7 +34,6 @@ export default async function MarketplacePage() {
       name: true,
       subscriptionStatus: true,
       trialEndsAt: true,
-      moduleWebsite: true,
       modulePixel: true,
       moduleChatbot: true,
       moduleGoogleAds: true,
@@ -46,6 +45,11 @@ export default async function MarketplacePage() {
       moduleCreativeStudio: true,
       moduleLeadCapture: true,
       modulePopups: true,
+      // Only real entitlement flag for a "Pro Add-ons" catalog entry today
+      // (Reputation Pro has none — see lib/marketplace/catalog.ts). Needed
+      // so the White-label tile can show Active instead of always
+      // "Request setup" once ops flips it on for an org.
+      whiteLabel: true,
     },
   });
 
@@ -64,12 +68,20 @@ export default async function MarketplacePage() {
       )
     : null;
 
-  // Snapshot of which toggleable modules are currently on. The client
-  // mirrors this in local state so toggles feel instant. Included +
-  // addon entries don't need a flag — they're rendered from the catalog
-  // kind directly.
+  // Snapshot of which modules are currently on — keyed by catalog `key`,
+  // not just toggleable ones. Concierge entries (moduleSEO) use the same
+  // org.module<X> boolean a toggle would, they just can't be flipped by the
+  // customer; the tile still needs to know it's on so status + CTA agree
+  // ("Active" + "Open", not "Request setup" for a module ops already turned
+  // on). The client mirrors this in local state so toggles feel instant.
+  //
+  // moduleWebsite is excluded on purpose: prisma/schema.prisma declares it
+  // `@default(true)`, so it's true for every org including brand-new trials
+  // and BYO-site orgs — it's schema noise, not a real "ops turned this on"
+  // signal. Feeding it here would show every org a false "Hosted Marketing
+  // Site: Active" tile (review finding, 2026-09-25). There's no reliable
+  // active signal for this tile today; it always renders "Not active".
   const initialEnabled: Record<string, boolean> = {
-    moduleWebsite: org.moduleWebsite,
     modulePixel: org.modulePixel,
     moduleChatbot: org.moduleChatbot,
     moduleGoogleAds: org.moduleGoogleAds,
@@ -81,6 +93,7 @@ export default async function MarketplacePage() {
     moduleCreativeStudio: org.moduleCreativeStudio,
     moduleLeadCapture: org.moduleLeadCapture,
     modulePopups: org.modulePopups,
+    ls_addon_white_label: org.whiteLabel,
   };
 
   const grouped = groupModulesByCategory();
@@ -111,6 +124,7 @@ export default async function MarketplacePage() {
           bullets: m.bullets,
           monthlyPriceCents: m.monthlyPriceCents,
           setupHref: m.setupHref,
+          activeHref: activeHrefFor(m.key),
           popular: m.popular ?? false,
           setupEffort: m.setupEffort ?? null,
           // We can't pass icons across the server/client boundary directly,
@@ -122,6 +136,25 @@ export default async function MarketplacePage() {
       allToggleableKeys={toggleableKeys}
     />
   );
+}
+
+// Where a concierge/addon tile's "Open" CTA routes once the org already has
+// it active (org.module<X> / org.whiteLabel is true). Mirrors the routes
+// components/portal/portal-nav.tsx already uses for the same flags, so the
+// marketplace "Open" button lands on the same page the nav would. null =
+// no dedicated page yet — falls back to setupHref (Reputation Pro has no
+// active-state page or entitlement flag at all; see lib/marketplace/catalog.ts).
+// moduleWebsite has no case here on purpose — see the initialEnabled comment
+// above; it never reports "active" so its Open route is unreachable today.
+function activeHrefFor(key: string): string | null {
+  switch (key) {
+    case "moduleSEO":
+      return "/portal/seo";
+    case "ls_addon_white_label":
+      return "/portal/settings/white-label";
+    default:
+      return null;
+  }
 }
 
 // Keep this in sync with components/portal/marketplace/marketplace-client.tsx
