@@ -37,7 +37,7 @@ describe("report surfaces render the shared PropertyOnePager snapshot body", () 
       // ReportHeroImage type); what matters is that the body comes from
       // the shared one-pager module.
       expect(content).toMatch(
-        /import\s*\{[^}]*\bPropertyOnePager\b[^}]*\}\s*from\s*"@\/components\/portal\/reports\/property-one-pager"/s,
+        /import\s*\{[^}]*\bPropertyOnePager\b[^}]*\}\s*from\s*"@\/components\/portal\/reports\/property-one-pager"/,
       );
       expect(content).toMatch(/<PropertyOnePager\s+snapshot=\{snapshot\}/);
       // Frozen persisted snapshot, not a fresh generateReportSnapshot() call.
