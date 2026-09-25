@@ -333,7 +333,7 @@ export default async function BriefingPage({
         <PageHeader
           eyebrow="Daily briefing"
           title="Briefing temporarily unavailable"
-          description="Briefing data could not be loaded. This is usually temporary, try refreshing."
+          description="Briefing data could not be loaded. This is usually temporary. Try refreshing."
         />
         <div className="rounded-[2px] border border-border bg-secondary px-4 py-3 text-sm text-foreground">
           If the issue persists, check{" "}

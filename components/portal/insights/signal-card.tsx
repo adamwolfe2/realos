@@ -106,7 +106,7 @@ function DeltaChip({
   if (deltaPct == null) {
     return (
       <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-muted-foreground tabular-nums">
-        <Minus className="h-3 w-3" />n/a
+        n/a
       </span>
     );
   }

@@ -996,7 +996,7 @@ export default async function PortalHome({
       featuredStats = [
         {
           label: "Captured · 30d",
-          value: capturedCur > 0 ? capturedCur.toLocaleString("en-US") : "n/a",
+          value: capturedCur.toLocaleString("en-US"),
           hint: breakdownHint || undefined,
           // Captured is an aggregate — send the operator to the surface
           // that holds the LARGEST chunk of it (identified visitors for
@@ -1010,23 +1010,23 @@ export default async function PortalHome({
         },
         {
           label: "Identified visitors",
-          value: identVisCur > 0 ? identVisCur.toLocaleString("en-US") : "n/a",
+          value: identVisCur.toLocaleString("en-US"),
           href: "/portal/visitors",
         },
         {
           label: "Chatbot · 30d",
-          value: fConvosCur > 0 ? fConvosCur.toLocaleString("en-US") : "n/a",
+          value: fConvosCur.toLocaleString("en-US"),
           href: "/portal/chatbot",
         },
         {
           label: "Form leads · 30d",
-          value: fLeadsCur > 0 ? fLeadsCur.toLocaleString("en-US") : "n/a",
+          value: fLeadsCur.toLocaleString("en-US"),
           href: "/portal/leads",
         },
         {
           label: "Active leases",
           value:
-            fActiveLeases > 0 ? fActiveLeases.toLocaleString("en-US") : "n/a",
+            fActiveLeases.toLocaleString("en-US"),
           // No deep-link target — Operations is hidden in nav today and
           // we don't want to surface a leasing module that's intentionally
           // gated. Leave non-interactive.
@@ -1478,7 +1478,7 @@ export default async function PortalHome({
       <div className="space-y-4">
         <PageHeader title="Dashboard" />
         <div className="rounded-[2px] border border-[#e0e0e0] bg-[#f4f4f4] px-4 py-3 text-sm text-foreground">
-          Dashboard data could not be loaded. This is usually temporary, try
+          Dashboard data could not be loaded. This is usually temporary. Try
           refreshing. If the issue persists, check{" "}
           <a
             href="/portal/connect"
