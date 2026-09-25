@@ -269,7 +269,9 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
                   what the section headings already say inline. */}
               <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
                 {addr ? <span>{addr}</span> : null}
-                {addr && site ? <span aria-hidden className="h-3 w-px bg-border" /> : null}
+                {addr && site ? (
+                  <span aria-hidden className="hidden h-3 w-px bg-border sm:inline-block" />
+                ) : null}
                 {site ? (
                   <a
                     href={site.href}
@@ -613,7 +615,7 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
                         <EngineMark engine={row.engine} />
                       </span>
                       <span className="w-[74px] font-semibold text-foreground">{engineLabel(row.engine)}</span>
-                      <span className="flex h-3 flex-1 overflow-hidden rounded-[2px] bg-elevated">
+                      <span className="flex h-3 flex-1 overflow-hidden rounded-[2px] bg-[#c6c6c6]">
                         <span
                           className="ls-view-grow-x h-full bg-primary"
                           style={
@@ -635,7 +637,7 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
                     <i className="inline-block h-2 w-2 rounded-sm bg-primary" /> Times cited
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <i className="inline-block h-2 w-2 rounded-sm bg-elevated" /> Total answers checked
+                    <i className="inline-block h-2 w-2 rounded-sm bg-[#c6c6c6]" /> Total answers checked
                   </span>
                 </div>
               </div>

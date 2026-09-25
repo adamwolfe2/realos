@@ -24,7 +24,7 @@ export function ReportPrintStyles() {
             /* Force a clean white print canvas. */
             html, body {
               background: #ffffff !important;
-              color: #0F172A !important;
+              color: #161616 !important;
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
             }
@@ -79,7 +79,7 @@ export function ReportPrintStyles() {
             article.report-article header,
             article.report-article section {
               box-shadow: none !important;
-              border: 1px solid #E5E7EB !important;
+              border: 1px solid #e0e0e0 !important;
               border-radius: 6pt !important;
               padding: 10pt 12pt !important;
               break-inside: avoid;
@@ -117,8 +117,8 @@ export function ReportPrintStyles() {
             @supports not (-webkit-background-clip: text) {
               .ls-report [style*="WebkitBackgroundClip"],
               .ls-report [style*="-webkit-background-clip"] {
-                -webkit-text-fill-color: #1D4ED8 !important;
-                color: #1D4ED8 !important;
+                -webkit-text-fill-color: #0f62fe !important;
+                color: #0f62fe !important;
               }
             }
 

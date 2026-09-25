@@ -91,7 +91,7 @@ export async function generateMetadata({
     return { title: "Performance report", robots: { index: false, follow: false } };
   }
 
-  const title = `${data.property.name} — Marketing & Performance Report`;
+  const title = `${data.property.name} | Marketing & Performance Report`;
   const description = `${periodLabel(data.snapshot)}. Leasing, traffic, and reputation performance, prepared by LeaseStack.`;
 
   return {
@@ -140,7 +140,7 @@ export default async function PublicReportPage({
     });
 
   return (
-    <div className="report-page min-h-screen bg-[var(--parchment)] py-4 sm:py-10 px-2 sm:px-4">
+    <div className="report-page min-h-screen bg-background py-4 sm:py-10 px-2 sm:px-4">
       <ReportPrintStyles />
 
       <div className="mx-auto max-w-5xl space-y-5">
