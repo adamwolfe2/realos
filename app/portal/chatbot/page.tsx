@@ -10,7 +10,7 @@ import { LeadRoutingPanel } from "./lead-routing-panel";
 import { InstallSnippet } from "./install-snippet";
 import { ChatbotInstallSnippetPicker } from "./chatbot-install-snippet-picker";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
-import { visibleProperties, propertyWhereFragment } from "@/lib/tenancy/property-filter";
+import { visibleProperties, propertyOrOrgLevelWhereFragment } from "@/lib/tenancy/property-filter";
 import { chatbotSnippet } from "@/lib/chatbot/snippet";
 import { PageHeader } from "@/components/admin/page-header";
 import {
@@ -59,11 +59,12 @@ async function resolveAppUrl(): Promise<string> {
 export default async function ChatbotPage() {
   const scope = await requireScope();
   // Property-restricted operators only see conversations from their
-  // buildings ({} for unrestricted users, so their stats are unchanged).
-  const convScope = propertyWhereFragment(
-    scope,
-    null,
-  ) as Prisma.ChatbotConversationWhereInput;
+  // buildings plus org-level (no-property) chats, matching the
+  // conversations list. AND-wrapped: the fragment is an OR and some queries
+  // below carry their own OR. No-op for unrestricted users.
+  const convScope: Prisma.ChatbotConversationWhereInput = {
+    AND: [propertyOrOrgLevelWhereFragment(scope, null)],
+  };
 
   // Window cutoffs for the conversation-stats strip (Norman bug #91:
   // chatbot page should lead with engagement numbers, configuration

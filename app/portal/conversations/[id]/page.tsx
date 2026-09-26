@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { propertyOrOrgLevelWhereFragment } from "@/lib/tenancy/property-filter";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { format, formatDistanceToNow } from "date-fns";
@@ -37,7 +38,7 @@ export default async function ConversationDetail({
   const { id } = await params;
 
   const convo = await prisma.chatbotConversation.findFirst({
-    where: { id, ...tenantWhere(scope) },
+    where: { id, ...tenantWhere(scope), AND: [propertyOrOrgLevelWhereFragment(scope, null)] },
     include: {
       lead: true,
       property: { select: { id: true, name: true } },

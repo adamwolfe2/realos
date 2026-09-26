@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import {
+  propertyWhereFragment,
+  propertyOrOrgLevelWhereFragment,
+} from "@/lib/tenancy/property-filter";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -25,11 +29,18 @@ export async function GET(req: NextRequest) {
   }
 
   const where = tenantWhere(scope);
+  // Property-restricted users only find records from their buildings
+  // (same rules as the list pages; no-ops for unrestricted users). Wrapped
+  // in AND so a fragment's OR can't clobber the search OR below.
+  const leadScope = { AND: [propertyWhereFragment(scope, null)] };
+  const orgLevelScope = { AND: [propertyOrOrgLevelWhereFragment(scope, null)] };
+  const propertyScope = { AND: [propertyWhereFragment(scope, null, "id")] };
 
   const [leads, visitors, properties, conversations] = await Promise.all([
     prisma.lead.findMany({
       where: {
         ...where,
+        ...leadScope,
         OR: [
           { firstName: { contains: q, mode: "insensitive" } },
           { lastName: { contains: q, mode: "insensitive" } },
@@ -53,6 +64,7 @@ export async function GET(req: NextRequest) {
     prisma.visitor.findMany({
       where: {
         ...where,
+        ...orgLevelScope,
         OR: [
           { firstName: { contains: q, mode: "insensitive" } },
           { lastName: { contains: q, mode: "insensitive" } },
@@ -74,6 +86,7 @@ export async function GET(req: NextRequest) {
     prisma.property.findMany({
       where: {
         ...where,
+        ...propertyScope,
         OR: [
           { name: { contains: q, mode: "insensitive" } },
           { addressLine1: { contains: q, mode: "insensitive" } },
@@ -95,6 +108,7 @@ export async function GET(req: NextRequest) {
     prisma.chatbotConversation.findMany({
       where: {
         ...where,
+        ...orgLevelScope,
         OR: [
           { capturedName: { contains: q, mode: "insensitive" } },
           { capturedEmail: { contains: q, mode: "insensitive" } },

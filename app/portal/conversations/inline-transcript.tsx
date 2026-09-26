@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { propertyOrOrgLevelWhereFragment } from "@/lib/tenancy/property-filter";
 import { format, formatDistanceToNow } from "date-fns";
 import { ArrowUpRight, MessageSquare } from "lucide-react";
 import { prisma } from "@/lib/db";
@@ -36,7 +37,7 @@ export async function InlineTranscript({
   const scope = await requireScope();
 
   const convo = await prisma.chatbotConversation.findFirst({
-    where: { id: conversationId, ...tenantWhere(scope) },
+    where: { id: conversationId, ...tenantWhere(scope), AND: [propertyOrOrgLevelWhereFragment(scope, null)] },
     include: {
       property: { select: { id: true, name: true } },
       lead: { select: { id: true, status: true } },

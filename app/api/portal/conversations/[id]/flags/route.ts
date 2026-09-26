@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { propertyOrOrgLevelWhereFragment } from "@/lib/tenancy/property-filter";
+import type { ScopedContext } from "@/lib/tenancy/scope";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireScope, requireWritableWorkspace, ForbiddenError } from "@/lib/tenancy/scope";
@@ -42,9 +44,13 @@ async function loadFlags(conversationId: string, orgId: string) {
   }));
 }
 
-async function assertConversationAccess(id: string, orgId: string) {
+async function assertConversationAccess(id: string, scope: ScopedContext) {
   const row = await prisma.chatbotConversation.findFirst({
-    where: { id, orgId },
+    where: {
+      id,
+      orgId: scope.orgId,
+      AND: [propertyOrOrgLevelWhereFragment(scope, null)],
+    },
     select: { id: true },
   });
   return !!row;
@@ -57,7 +63,7 @@ export async function GET(
   try {
     const scope = await requireScope();
     const { id } = await params;
-    const ok = await assertConversationAccess(id, scope.orgId);
+    const ok = await assertConversationAccess(id, scope);
     if (!ok) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
@@ -79,7 +85,7 @@ export async function POST(
   try {
     const scope = await requireWritableWorkspace();
     const { id } = await params;
-    const ok = await assertConversationAccess(id, scope.orgId);
+    const ok = await assertConversationAccess(id, scope);
     if (!ok) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
@@ -121,7 +127,7 @@ export async function DELETE(
   try {
     const scope = await requireWritableWorkspace();
     const { id } = await params;
-    const ok = await assertConversationAccess(id, scope.orgId);
+    const ok = await assertConversationAccess(id, scope);
     if (!ok) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
