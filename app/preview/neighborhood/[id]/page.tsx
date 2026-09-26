@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { verifyPreviewToken } from "@/lib/security/preview-token";
 
 // ---------------------------------------------------------------------------
 // /preview/neighborhood/[id] — public read-only preview of a
@@ -20,11 +21,16 @@ export const dynamic = "force-dynamic";
 type Section = { heading?: string; body?: string };
 type Faq = { question?: string; answer?: string };
 
-type Props = { params: Promise<{ id: string }> };
+type Props = {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ t?: string | string[] }>;
+};
 
-export default async function NeighborhoodPreviewPage({ params }: Props) {
+export default async function NeighborhoodPreviewPage({ params, searchParams }: Props) {
   const { id } = await params;
   if (!/^[a-z0-9]{20,40}$/i.test(id)) notFound();
+  // Signed share token required; the id alone is not a secret.
+  if (!verifyPreviewToken("neighborhood", id, (await searchParams).t)) notFound();
 
   const page = await prisma.neighborhoodPage
     .findUnique({

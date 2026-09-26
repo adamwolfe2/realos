@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { verifyPreviewToken } from "@/lib/security/preview-token";
 import { sanitizeContentHtml } from "@/lib/security/sanitize-content-html";
 
 // ---------------------------------------------------------------------------
@@ -24,11 +25,16 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-type Props = { params: Promise<{ id: string }> };
+type Props = {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ t?: string | string[] }>;
+};
 
-export default async function ContentPreviewPage({ params }: Props) {
+export default async function ContentPreviewPage({ params, searchParams }: Props) {
   const { id } = await params;
   if (!/^[a-z0-9]{20,40}$/i.test(id)) notFound();
+  // Signed share token required; the id alone is not a secret.
+  if (!verifyPreviewToken("content", id, (await searchParams).t)) notFound();
 
   const draft = await prisma.contentDraft
     .findUnique({

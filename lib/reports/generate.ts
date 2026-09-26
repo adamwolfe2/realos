@@ -20,6 +20,7 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { buildPropertyUrlPatterns } from "@/lib/properties/queries";
 import { realAdAccountWhere } from "@/lib/integrations/real-ad-account";
 import { reportPeriodWindow } from "@/lib/recency";
+import { previewPath } from "@/lib/security/preview-token";
 import {
   CANONICAL_SOURCES,
   classifySource,
@@ -2377,7 +2378,7 @@ async function buildContentStats(
       title,
       format: humanFormat(d.format),
       url,
-      previewUrl: `/preview/content/${d.id}`,
+      previewUrl: previewPath("content", d.id) ?? undefined,
       publishedAt: d.updatedAt.toISOString(),
       status: d.status.toLowerCase(),
     };
@@ -2389,7 +2390,7 @@ async function buildContentStats(
     title: n.title || (n.neighborhood ? `${n.neighborhood}, ${n.city}` : n.city),
     format: "Neighborhood page",
     url: n.status === "PUBLISHED" && n.slug ? `/${n.slug}` : null,
-    previewUrl: `/preview/neighborhood/${n.id}`,
+    previewUrl: previewPath("neighborhood", n.id) ?? undefined,
     publishedAt: (n.publishedAt ?? n.updatedAt).toISOString(),
     status: n.status.toLowerCase(),
   }));
