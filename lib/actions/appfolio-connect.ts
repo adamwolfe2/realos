@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { requireWritableWorkspace, auditPayload } from "@/lib/tenancy/scope";
+import { requireWorkspaceAdmin, requireWritableWorkspace, auditPayload } from "@/lib/tenancy/scope";
 import { encrypt } from "@/lib/crypto";
 import { probeEmbedScrape } from "@/lib/integrations/appfolio";
 import {
@@ -90,7 +90,7 @@ export async function connectAppfolio(
 ): Promise<ConnectAppfolioResult> {
   let scope;
   try {
-    scope = await requireWritableWorkspace();
+    scope = await requireWorkspaceAdmin();
   } catch (err) {
     const message = err instanceof Error ? err.message : "Not authorized";
     return { ok: false, error: message };
@@ -222,7 +222,7 @@ export async function connectAppfolio(
 export async function disconnectAppfolio(): Promise<ConnectAppfolioResult> {
   let scope;
   try {
-    scope = await requireWritableWorkspace();
+    scope = await requireWorkspaceAdmin();
   } catch (err) {
     const message = err instanceof Error ? err.message : "Not authorized";
     return { ok: false, error: message };

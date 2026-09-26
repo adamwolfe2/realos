@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db";
 import { requestAppfolioBackfill } from "@/lib/integrations/appfolio-backfill";
 import {
   requireAgency,
-  requireWritableWorkspace,
+  requireWorkspaceAdmin, requireWritableWorkspace,
   ForbiddenError,
   auditPayload,
   propertyInScope,
@@ -81,7 +81,7 @@ export async function createProperty(
     // bumping the not-yet-paid subscription quantity higher).
     // Agency users impersonating clients bypass this gate inside
     // requireWritableWorkspace so support workflows still work.
-    scope = await requireWritableWorkspace();
+    scope = await requireWorkspaceAdmin();
   } catch (err) {
     if (err instanceof ForbiddenError) return { ok: false, error: err.message };
     throw err;
@@ -381,7 +381,7 @@ export async function setPropertyLifecycle(
 ): Promise<SetLifecycleResult> {
   let scope;
   try {
-    scope = await requireWritableWorkspace();
+    scope = await requireWorkspaceAdmin();
   } catch {
     return { ok: false, error: "Not authenticated." };
   }
@@ -480,7 +480,7 @@ export async function setPropertyLifecycleBulk(
 ): Promise<{ ok: true; updated: number } | { ok: false; error: string }> {
   let scope;
   try {
-    scope = await requireWritableWorkspace();
+    scope = await requireWorkspaceAdmin();
   } catch {
     return { ok: false, error: "Not authenticated." };
   }
@@ -567,7 +567,7 @@ export async function activateAllImportedProperties(): Promise<
 > {
   let scope;
   try {
-    scope = await requireWritableWorkspace();
+    scope = await requireWorkspaceAdmin();
   } catch {
     return { ok: false, error: "Not authenticated." };
   }

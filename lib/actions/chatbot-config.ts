@@ -790,7 +790,7 @@ export async function savePropertyChatbotConfig(
   formData: FormData
 ): Promise<ActionResult> {
   try {
-    const scope = await requireWritableWorkspace();
+    const scope = await requireWorkspaceAdmin();
     const propertyId = firstString(formData.get("propertyId")).trim();
     if (!propertyId) return { ok: false, error: "Missing property" };
 
