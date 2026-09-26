@@ -8,6 +8,9 @@ import { OnboardingWizard } from "@/components/onboarding/wizard";
 import { PublicChatbotOnboarding } from "@/components/onboarding/public-chatbot-onboarding";
 import { getEffectiveFeatureCatalog } from "@/lib/billing/feature-prices";
 import { FEATURE_CATALOG } from "@/lib/billing/features";
+import { canRunWizard } from "@/lib/onboarding/wizard-auth";
+import { WaitingForAdmin } from "@/components/onboarding/waiting-for-admin";
+import { UserRole } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
 // /onboarding — public chatbot-first preview, then signed-in trial wizard.
@@ -44,6 +47,7 @@ export default async function OnboardingPage() {
       email: true,
       firstName: true,
       lastName: true,
+      role: true,
       org: {
         select: {
           id: true,
@@ -90,6 +94,24 @@ export default async function OnboardingPage() {
 
   if (user.org.onboardingStep === "done") {
     redirect("/portal");
+  }
+
+  // Viewers / leasing agents invited mid-setup can't run the wizard (its API
+  // 403s them) and the portal bounces them back here, so show a holding
+  // screen instead of a wizard that can't save.
+  if (!canRunWizard(user.role)) {
+    const admin = await prisma.user.findFirst({
+      where: {
+        orgId: user.org.id,
+        role: { in: [UserRole.CLIENT_OWNER, UserRole.CLIENT_ADMIN] },
+      },
+      orderBy: { createdAt: "asc" },
+      select: { firstName: true, lastName: true },
+    });
+    const adminName = admin
+      ? [admin.firstName, admin.lastName].filter(Boolean).join(" ") || null
+      : null;
+    return <WaitingForAdmin orgName={user.org.name} adminName={adminName} />;
   }
 
   const step = resolveCurrentStep(user.org.onboardingStep);

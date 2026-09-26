@@ -11,9 +11,13 @@ const WIZARD_ROLES: ReadonlySet<UserRole> = new Set([
   UserRole.AGENCY_ADMIN,
 ]);
 
+export function canRunWizard(role: UserRole): boolean {
+  return WIZARD_ROLES.has(role);
+}
+
 /** 403 response when `role` can't run the wizard, else null. */
 export function wizardRoleForbidden(role: UserRole): NextResponse | null {
-  if (WIZARD_ROLES.has(role)) return null;
+  if (canRunWizard(role)) return null;
   return NextResponse.json(
     { ok: false, error: "Only an owner or admin can set up this workspace." },
     { status: 403 },
