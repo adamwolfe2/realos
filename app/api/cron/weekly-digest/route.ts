@@ -150,6 +150,7 @@ export async function GET(req: NextRequest) {
     return {
       result: NextResponse.json({ sent, skipped, errors }),
       recordsProcessed: sent,
+      errorCount: errors.length,
     };
   });
 }

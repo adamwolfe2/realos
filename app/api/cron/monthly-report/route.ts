@@ -176,6 +176,7 @@ export async function GET(req: NextRequest) {
     return {
       result: NextResponse.json({ ok: true, orgs: orgs.length, sent, skipped, errors }),
       recordsProcessed: sent,
+      errorCount: errors.length,
     };
   });
 }

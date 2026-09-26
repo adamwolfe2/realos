@@ -93,6 +93,7 @@ export async function GET(req: NextRequest) {
         errors: errors.length ? errors : undefined,
       }),
       recordsProcessed: updated,
+      errorCount: errors.length,
     };
   });
 }

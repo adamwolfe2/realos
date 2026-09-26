@@ -172,6 +172,7 @@ export async function GET(req: NextRequest) {
         durationMs,
       }),
       recordsProcessed: stats.competitorsWritten,
+      errorCount: stats.errors.length,
     };
   });
 }

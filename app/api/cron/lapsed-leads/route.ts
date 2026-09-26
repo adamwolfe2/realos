@@ -77,6 +77,7 @@ export async function GET(req: NextRequest) {
         errors: errors.length ? errors : undefined,
       }),
       recordsProcessed: moved,
+      errorCount: errors.length,
     };
   });
 }

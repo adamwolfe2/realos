@@ -188,6 +188,7 @@ export async function GET(req: NextRequest) {
         errors,
       }),
       recordsProcessed: drafted,
+      errorCount: errors.length,
     };
   });
 }

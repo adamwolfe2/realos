@@ -107,6 +107,7 @@ export async function GET(req: NextRequest) {
         durationMs,
       }),
       recordsProcessed: aggregate.orgsScanned,
+      errorCount: aggregate.errors.length,
     };
   });
 }

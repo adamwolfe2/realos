@@ -130,6 +130,7 @@ export async function GET(req: NextRequest) {
     return {
       result: NextResponse.json({ tenants: results.length, results }),
       recordsProcessed: totalSent,
+      errorCount: results.reduce((n, r) => n + r.errors.length, 0),
     };
   });
 }

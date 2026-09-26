@@ -185,6 +185,7 @@ export async function GET(req: NextRequest) {
           errors: errors.slice(0, 25),
         }),
         recordsProcessed: propertiesScanned,
+        errorCount: errors.length,
       };
     }),
   );
