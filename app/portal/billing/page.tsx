@@ -33,9 +33,14 @@ export default async function BillingPage({
   const scope = await requireScope();
   const { addon: addonParam } = await searchParams;
   // Marketplace + welcome grid send paid add-ons here as ?addon=<key|slug>.
+  // Paid entries only. Toggle modules are "active" via their Organization
+  // column; addon-kind entries have no column, so they always show the card
+  // (ops confirms against Stripe).
   const requestedAddon = addonParam
     ? (MARKETPLACE_ENTRIES.find(
-        (e) => e.key === addonParam || e.slug === addonParam,
+        (e) =>
+          (e.key === addonParam || e.slug === addonParam) &&
+          Boolean(e.stripeLookupKey),
       ) ?? null)
     : null;
   if (!canManageBilling(scope)) redirect("/portal");

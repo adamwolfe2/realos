@@ -196,6 +196,7 @@ export async function sendModuleRequestOpsEmail(input: {
   orgName: string;
   moduleName: string;
   intent: "notify" | "activate";
+  requestedByEmail?: string | null;
 }): Promise<SendResult> {
   const to = process.env.PIXEL_REQUEST_NOTIFY_EMAIL ?? BRAND_EMAIL;
   if (!isValidEmail(to)) return { ok: false, error: "Invalid ops recipient" };
@@ -209,6 +210,11 @@ export async function sendModuleRequestOpsEmail(input: {
           : `wants to be notified when <strong>${escape(input.moduleName)}</strong> is available.`
       }
     </p>
+    ${
+      input.requestedByEmail
+        ? `<p style="margin:0;font-size:13px;color:#374151;">Requested by ${escape(input.requestedByEmail)}</p>`
+        : ""
+    }
   `;
   return safeSend({
     to,

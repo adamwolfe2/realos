@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireWritableWorkspace, ForbiddenError } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { getModuleByKey } from "@/lib/marketplace/catalog";
+import { canManageBilling } from "@/lib/billing/checkout-policy";
 import { sendModuleRequestOpsEmail } from "@/lib/email/pixel-emails";
 import { AuditAction, Prisma } from "@prisma/client";
 
@@ -50,6 +51,14 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
+    // Activation asks ops to change the paid plan: same gate as the
+    // billing page that renders the button.
+    if (parsed.intent === "activate" && !canManageBilling(scope)) {
+      return NextResponse.json(
+        { ok: false, error: "Only the account owner can change the plan." },
+        { status: 403 },
+      );
+    }
     const entityType =
       parsed.intent === "activate"
         ? "Organization.moduleActivationRequest"
@@ -88,14 +97,20 @@ export async function POST(req: NextRequest) {
     });
     // Without this the request only lands in the audit trail, which nobody
     // watches. Never blocks the response.
-    const org = await prisma.organization
-      .findUnique({ where: { id: scope.orgId }, select: { name: true } })
-      .catch(() => null);
+    const [org, requester] = await Promise.all([
+      prisma.organization
+        .findUnique({ where: { id: scope.orgId }, select: { name: true } })
+        .catch(() => null),
+      prisma.user
+        .findUnique({ where: { id: scope.userId }, select: { email: true } })
+        .catch(() => null),
+    ]);
     const sent = await sendModuleRequestOpsEmail({
       orgId: scope.orgId,
       orgName: org?.name ?? scope.orgId,
       moduleName: moduleDef.name,
       intent: parsed.intent,
+      requestedByEmail: requester?.email ?? null,
     });
     if (!sent.ok) {
       console.error("[api/portal/marketplace/interest] ops email failed:", sent.error);
