@@ -16,11 +16,15 @@ import { INTERNAL_CALL } from "@/lib/security/internal-call";
 
 const h = vi.hoisted(() => ({
   cursiveIntegration: {
-    findFirst: vi.fn(async () => ({
-      cursiveSegmentId: "seg_1",
-      installedOnDomain: "telegraphcommons.com",
-    })),
-    updateMany: vi.fn(async () => ({ count: 1 })),
+    findMany: vi.fn(async () => [
+      {
+        id: "ci_legacy",
+        propertyId: null as string | null,
+        cursiveSegmentId: "seg_1",
+        installedOnDomain: "telegraphcommons.com",
+      },
+    ]),
+    update: vi.fn(async () => ({})),
   },
   visitor: {
     findFirst: vi.fn(async () => null as unknown),
@@ -87,6 +91,35 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
+});
+
+describe("runCursiveSegmentSync — per-property pixel rows", () => {
+  it("syncs a per-property row (no legacy row) and files visitors under that row's property", async () => {
+    // TC regression: its only row was stamped to a property on 2026-07-29 and
+    // the legacy-row-only lookup silently skipped it from then on.
+    h.cursiveIntegration.findMany.mockResolvedValueOnce([
+      {
+        id: "ci_tc",
+        propertyId: "prop_tc",
+        cursiveSegmentId: "seg_tc",
+        installedOnDomain: "telegraphcommons.com",
+      },
+    ]);
+    h.property.findMany.mockResolvedValueOnce([
+      { id: "prop_a", name: "A" },
+      { id: "prop_b", name: "B" },
+    ]);
+
+    const result = await runCursiveSegmentSync("org_1", INTERNAL_CALL);
+
+    expect(result.ok).toBe(true);
+    expect(h.visitor.create.mock.calls[0][0].data).toMatchObject({
+      propertyId: "prop_tc",
+    });
+    expect(h.cursiveIntegration.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "ci_tc" } }),
+    );
+  });
 });
 
 describe("runCursiveSegmentSync — sole-launched-property stamping", () => {

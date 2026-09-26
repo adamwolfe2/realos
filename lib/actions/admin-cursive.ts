@@ -351,7 +351,11 @@ async function fetchAlSegmentPage(
     return {
       ok: false,
       status: res.status,
-      notFound: res.status === 404,
+      // AL answers an unknown ID with 400 "invalid segment id" (seen on TC
+      // since 2026-07-29), not just 404; both mean the binding drifted.
+      notFound:
+        res.status === 404 ||
+        (res.status === 400 && /invalid segment id/i.test(body)),
       message: `Cursive fetch failed (${res.status}) on /${surface}. See server logs for detail.`,
     };
   }
@@ -428,14 +432,21 @@ export async function runCursiveSegmentSync(
   // lib/security/internal-call.ts. This helper takes orgId from its argument
   // and does no scope check, so it must only run behind an authorized caller.
   assertInternalCall(internal);
-  // Segment sync currently runs against the legacy org-wide row.
-  // When per-property segments come online (each property having its
-  // own AL segment) this will need to fan out per row.
-  const integration = await prisma.cursiveIntegration.findFirst({
-    where: { orgId, propertyId: null },
-    select: { cursiveSegmentId: true, installedOnDomain: true },
+  // Every row with a bound segment syncs: the legacy org-wide row
+  // (propertyId = NULL) and per-property rows. Reading only the legacy row
+  // silently stopped Telegraph Commons' sync on 2026-07-29 once its row was
+  // stamped to a property.
+  const integrations = await prisma.cursiveIntegration.findMany({
+    where: { orgId, cursiveSegmentId: { not: null } },
+    select: {
+      id: true,
+      propertyId: true,
+      cursiveSegmentId: true,
+      installedOnDomain: true,
+    },
+    orderBy: { createdAt: "asc" },
   });
-  if (!integration?.cursiveSegmentId) {
+  if (integrations.length === 0) {
     return {
       ok: false,
       error:
@@ -452,27 +463,59 @@ export async function runCursiveSegmentSync(
   }
 
   // Segment items carry no page URL, so per-event property attribution is
-  // impossible here. When the org has exactly one ACTIVE (= launched)
-  // property, visitors are filed under it — see soleActiveProperty for the
-  // rule, its justification, and its accepted ceiling. Multi-property orgs
-  // keep null; never guess.
+  // impossible. A per-property row files visitors under its own property;
+  // the legacy row falls back to the org's sole ACTIVE property (see
+  // soleActiveProperty for the rule and its ceiling). Otherwise null.
   const solePropertyId = (await soleActiveProperty(orgId))?.id ?? null;
 
   let pulled = 0;
   let created = 0;
   let updated = 0;
+  let firstError: string | null = null;
 
-  const resolved = await resolveAlSurface(integration.cursiveSegmentId, apiKey);
-  if (!resolved.ok) {
-    return { ok: false, error: resolved.error };
+  for (const integration of integrations) {
+    const r = await syncOneSegment(
+      orgId,
+      integration.id,
+      integration.cursiveSegmentId as string,
+      integration.installedOnDomain,
+      integration.propertyId ?? solePropertyId,
+      apiKey,
+    );
+    pulled += r.pulled;
+    created += r.created;
+    updated += r.updated;
+    if (r.error && !firstError) firstError = r.error;
   }
 
+  if (firstError) return { ok: false, error: firstError };
+  return { ok: true, pulled, created, updated };
+}
+
+async function syncOneSegment(
+  orgId: string,
+  integrationId: string,
+  segmentId: string,
+  installedOnDomain: string | null,
+  propertyId: string | null,
+  apiKey: string,
+): Promise<{ pulled: number; created: number; updated: number; error?: string }> {
+  let pulled = 0;
+  let created = 0;
+  let updated = 0;
+
+  const resolved = await resolveAlSurface(segmentId, apiKey);
+  if (!resolved.ok) {
+    return { pulled, created, updated, error: resolved.error };
+  }
+
+  let error: string | undefined;
   let items = resolved.firstPage;
   for (let page = 1; page <= MAX_PAGES; page++) {
     if (page > 1) {
       const fetched = await fetchAlSegmentPage(
         resolved.surface,
-        integration.cursiveSegmentId,
+        segmentId,
         page,
         apiKey,
       );
@@ -480,7 +523,8 @@ export async function runCursiveSegmentSync(
         // Mid-pagination failure: keep what we already ingested (the
         // upserts are idempotent) but report the error so the cron/UI
         // shows it instead of a clean success.
-        return { ok: false, error: fetched.message };
+        error = fetched.message;
+        break;
       }
       items = fetched.items;
     }
@@ -491,8 +535,8 @@ export async function runCursiveSegmentSync(
       const result = await upsertResolutionAsVisitor(
         orgId,
         item,
-        integration.installedOnDomain,
-        solePropertyId,
+        installedOnDomain,
+        propertyId,
       );
       if (result === "created") created++;
       else if (result === "updated") updated++;
@@ -500,31 +544,23 @@ export async function runCursiveSegmentSync(
 
     if (items.length < PAGE_SIZE) break;
   }
+  if (error) return { pulled, created, updated, error };
 
-  // Always advance the segment-sync timestamp so the throttle and the
-  // "last pull from the upstream pixel provider" surface reflect this run.
-  //
-  // CRITICAL: also advance lastEventAt when the pull discovered NEW
-  // visitors. Previously this was only bumped by direct webhook events
-  // hitting /api/webhooks/cursive — so when an operator clicked "Sync now"
-  // on /portal/visitors and pulled 12 fresh visitors from the AL segment,
-  // the integration card kept showing "Last event 16d ago" even though
-  // we just proved the pixel was firing. the upstream pixel provider only adds a visitor
-  // to a segment AFTER the pixel sees them, so `created > 0` is direct
-  // evidence the pixel fired recently — we just learned about it via the
-  // pull endpoint instead of the webhook. Updates alone aren't enough
-  // (AL may re-enrich an existing visitor's profile without a new event).
+  // Advance the sync timestamp on this row. Also advance lastEventAt when
+  // the pull found NEW visitors: the upstream only adds a visitor to a
+  // segment after the pixel sees them, so created > 0 proves the pixel
+  // fired recently even if no webhook arrived. Updates alone don't (AL may
+  // re-enrich an existing profile without a new event).
   const now = new Date();
-  const eventBump = created > 0 ? { lastEventAt: now } : {};
-  await prisma.cursiveIntegration.updateMany({
-    where: { orgId, propertyId: null },
+  await prisma.cursiveIntegration.update({
+    where: { id: integrationId },
     data: {
       lastSegmentSyncAt: now,
-      ...eventBump,
+      ...(created > 0 ? { lastEventAt: now } : {}),
     },
   });
 
-  return { ok: true, pulled, created, updated };
+  return { pulled, created, updated };
 }
 
 export async function syncCursiveSegment(

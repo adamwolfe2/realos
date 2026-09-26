@@ -45,6 +45,8 @@ export async function GET(req: NextRequest) {
     const integrations = await prisma.cursiveIntegration.findMany({
       where: { cursiveSegmentId: { not: null } },
       select: { orgId: true },
+      // One sync per org; runCursiveSegmentSync covers all its rows.
+      distinct: ["orgId"],
     });
 
     let synced = 0;
@@ -80,6 +82,7 @@ export async function GET(req: NextRequest) {
         errors,
       }),
       recordsProcessed: totalCreated,
+      errorCount: errors.length,
     };
   });
 }
