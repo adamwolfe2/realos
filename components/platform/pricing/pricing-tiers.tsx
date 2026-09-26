@@ -213,7 +213,7 @@ export function PricingTiers() {
                 }}
               >
                 {propertyCount}{" "}
-                <span style={{ color: "var(--stone-gray)", fontWeight: 500 }}>
+                <span style={{ color: "var(--gray-60)", fontWeight: 500 }}>
                   {propertyCount === 1 ? "property" : "properties"}
                 </span>
               </div>
@@ -260,7 +260,7 @@ export function PricingTiers() {
                     className="relative inline-flex items-center gap-2 px-4 py-1.5 text-sm rounded-full transition-colors"
                     style={{
                       backgroundColor: active ? "var(--color-ink)" : "transparent",
-                      color: active ? "#ffffff" : "var(--olive-gray)",
+                      color: active ? "#ffffff" : "var(--gray-70)",
                       fontWeight: active ? 600 : 500,
                     }}
                   >
@@ -315,7 +315,7 @@ export function PricingTiers() {
             <p
               className="text-center"
               style={{
-                color: "var(--stone-gray)",
+                color: "var(--gray-60)",
                 fontFamily: "var(--font-sans)",
                 fontSize: "12px",
                 maxWidth: "440px",
@@ -357,7 +357,7 @@ export function PricingTiers() {
         <p
           className="mt-8 text-center"
           style={{
-            color: "var(--stone-gray)",
+            color: "var(--gray-60)",
             fontFamily: "var(--font-sans)",
             fontSize: "13px",
             lineHeight: 1.5,
@@ -434,7 +434,7 @@ function TierCard({
         borderRadius: "2px",
       };
 
-  const mutedText = "var(--stone-gray)";
+  const mutedText = "var(--gray-60)";
   const bodyText = "var(--color-ink)";
   const accentText = "var(--color-primary)";
 
@@ -478,7 +478,7 @@ function TierCard({
         <p
           className="mt-2"
           style={{
-            color: "var(--olive-gray)",
+            color: "var(--gray-70)",
             fontFamily: "var(--font-sans)",
             fontSize: "14px",
             lineHeight: 1.5,

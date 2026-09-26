@@ -135,7 +135,7 @@ export default function AuthRedirectPage() {
   // forceRedirectUrl bounce.
   if (signedOut && !userId) {
     return (
-      <div className="min-h-screen bg-cream flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center max-w-sm">
           <p className="text-sm text-ink/60 mb-4">
             You&apos;re signed out. Sign in to continue.
@@ -153,7 +153,7 @@ export default function AuthRedirectPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-cream flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center max-w-sm">
           <p className="text-sm text-ink/60 mb-4">
             {error === "no-role"
@@ -163,7 +163,7 @@ export default function AuthRedirectPage() {
           <div className="flex gap-3 justify-center">
             <a
               href="/"
-              className="px-4 py-2 text-sm font-medium border border-shell bg-white hover:bg-cream transition-colors"
+              className="px-4 py-2 text-sm font-medium border border-border bg-white hover:bg-white transition-colors"
             >
               Go home
             </a>
@@ -183,7 +183,7 @@ export default function AuthRedirectPage() {
   }
 
   return (
-    <div className="min-h-screen bg-cream flex items-center justify-center">
+    <div className="min-h-screen bg-white flex items-center justify-center">
       <p className="text-sm text-ink/40">Redirecting…</p>
     </div>
   );

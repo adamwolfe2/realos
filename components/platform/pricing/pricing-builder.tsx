@@ -178,7 +178,7 @@ export function PricingBuilder({
                 </div>
                 <div
                   style={{
-                    color: "var(--stone-gray)",
+                    color: "var(--gray-60)",
                     fontFamily: "var(--font-sans)",
                     fontSize: "11px",
                   }}
@@ -278,7 +278,7 @@ export function PricingBuilder({
                     </div>
                     <div
                       style={{
-                        color: "var(--stone-gray)",
+                        color: "var(--gray-60)",
                         fontFamily: "var(--font-sans)",
                         fontSize: "11px",
                       }}
@@ -304,7 +304,7 @@ export function PricingBuilder({
                   fontSize: "10px",
                   letterSpacing: "0.14em",
                   textTransform: "uppercase",
-                  color: "var(--stone-gray)",
+                  color: "var(--gray-60)",
                   fontWeight: 600,
                   marginBottom: "8px",
                 }}
@@ -336,7 +336,7 @@ export function PricingBuilder({
                 >
                   {propertyCount}
                   {isVolume ? "+" : ""}{" "}
-                  <span style={{ color: "var(--stone-gray)", fontWeight: 500 }}>
+                  <span style={{ color: "var(--gray-60)", fontWeight: 500 }}>
                     {propertyCount === 1 ? "property" : "properties"}
                   </span>
                 </span>
@@ -365,7 +365,7 @@ export function PricingBuilder({
                   fontSize: "10px",
                   letterSpacing: "0.14em",
                   textTransform: "uppercase",
-                  color: "var(--stone-gray)",
+                  color: "var(--gray-60)",
                   fontWeight: 600,
                   marginBottom: "6px",
                 }}
@@ -387,7 +387,7 @@ export function PricingBuilder({
                   style={{
                     fontSize: "14px",
                     fontWeight: 500,
-                    color: "var(--stone-gray)",
+                    color: "var(--gray-60)",
                   }}
                 >
                   /mo for {propertyCount}
@@ -417,7 +417,7 @@ export function PricingBuilder({
 
             <p
               style={{
-                color: "var(--stone-gray)",
+                color: "var(--gray-60)",
                 fontFamily: "var(--font-sans)",
                 fontSize: "11.5px",
                 lineHeight: 1.5,

@@ -31,7 +31,7 @@ export function PricingCta() {
         <p
           className="mt-5 mx-auto"
           style={{
-            color: "var(--olive-gray)",
+            color: "var(--gray-70)",
             fontFamily: "var(--font-sans)",
             fontSize: "17px",
             lineHeight: 1.55,
@@ -70,7 +70,7 @@ export function PricingCta() {
         <p
           className="mt-8"
           style={{
-            color: "var(--stone-gray)",
+            color: "var(--gray-60)",
             fontFamily: "var(--font-mono)",
             fontSize: "11px",
             letterSpacing: "0.14em",

@@ -62,7 +62,7 @@ export default async function NeighborhoodPreviewPage({ params, searchParams }: 
   const faqs: Faq[] = Array.isArray(page.faqs) ? (page.faqs as Faq[]) : [];
 
   return (
-    <div className="min-h-screen bg-[var(--parchment,#FAF8F2)] py-4 sm:py-8 px-3 sm:px-6">
+    <div className="min-h-screen bg-[var(--canvas,#FAF8F2)] py-4 sm:py-8 px-3 sm:px-6">
       <div className="max-w-3xl mx-auto space-y-4">
         <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
           <div className="flex items-center justify-between gap-3 flex-wrap">

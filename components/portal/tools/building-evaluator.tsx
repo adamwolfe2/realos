@@ -108,7 +108,7 @@ export function BuildingEvaluator({ recent }: { recent: RecentRow[] }) {
         className="ls-card p-5 space-y-4 self-start lg:sticky lg:top-4"
       >
         <div>
-          <div className="ls-eyebrow mb-1" style={{ color: "var(--terracotta)" }}>
+          <div className="ls-eyebrow mb-1" style={{ color: "var(--blue-60)" }}>
             Acquisitions
           </div>
           <h2
@@ -130,7 +130,7 @@ export function BuildingEvaluator({ recent }: { recent: RecentRow[] }) {
             placeholder={SAMPLE_ADDRESS}
             required
             disabled={pending}
-            className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--terracotta)]/30"
+            className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--blue-60)]/30"
           />
           <button
             type="button"
@@ -153,7 +153,7 @@ export function BuildingEvaluator({ recent }: { recent: RecentRow[] }) {
               onChange={(e) => set("askingPrice", e.target.value)}
               placeholder="475000"
               disabled={pending}
-              className="w-full rounded-[2px] border border-border bg-background pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--terracotta)]/30"
+              className="w-full rounded-[2px] border border-border bg-background pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--blue-60)]/30"
             />
           </div>
         </Field>
@@ -168,7 +168,7 @@ export function BuildingEvaluator({ recent }: { recent: RecentRow[] }) {
               onChange={(e) => set("bedrooms", e.target.value)}
               placeholder="2"
               disabled={pending}
-              className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--terracotta)]/30"
+              className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--blue-60)]/30"
             />
           </Field>
           <Field label="Baths">
@@ -181,7 +181,7 @@ export function BuildingEvaluator({ recent }: { recent: RecentRow[] }) {
               onChange={(e) => set("bathrooms", e.target.value)}
               placeholder="1"
               disabled={pending}
-              className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--terracotta)]/30"
+              className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--blue-60)]/30"
             />
           </Field>
         </div>
@@ -196,7 +196,7 @@ export function BuildingEvaluator({ recent }: { recent: RecentRow[] }) {
               onChange={(e) => set("squareFootage", e.target.value)}
               placeholder="900"
               disabled={pending}
-              className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--terracotta)]/30"
+              className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--blue-60)]/30"
             />
           </Field>
           <Field label="Type">
@@ -204,7 +204,7 @@ export function BuildingEvaluator({ recent }: { recent: RecentRow[] }) {
               value={form.propertyType}
               onChange={(e) => set("propertyType", e.target.value)}
               disabled={pending}
-              className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--terracotta)]/30"
+              className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--blue-60)]/30"
             >
               <option value="">Any</option>
               <option value="Single Family">Single family</option>
@@ -221,8 +221,8 @@ export function BuildingEvaluator({ recent }: { recent: RecentRow[] }) {
           disabled={pending || !form.address}
           className="w-full inline-flex items-center justify-center gap-2 rounded-[2px] px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-50"
           style={{
-            background: "var(--terracotta)",
-            color: "var(--ivory)",
+            background: "var(--blue-60)",
+            color: "var(--gray-10)",
           }}
         >
           {pending ? (
@@ -290,7 +290,7 @@ function ResultCard({ result }: { result: EvaluationResult }) {
         <div className="min-w-0">
           <div
             className="ls-eyebrow mb-1.5"
-            style={{ color: "var(--terracotta)" }}
+            style={{ color: "var(--blue-60)" }}
           >
             Evaluation report
           </div>
@@ -314,7 +314,7 @@ function ResultCard({ result }: { result: EvaluationResult }) {
             className="shrink-0 inline-flex items-center gap-1.5 text-[10.5px] font-medium px-2.5 py-1 rounded-full"
             style={{
               background: "var(--color-elevated)",
-              color: "var(--olive-gray, #6B7280)",
+              color: "var(--gray-70, #6B7280)",
               fontFamily: "var(--font-mono)",
             }}
             title="Most recent RentCast fetch"
@@ -452,7 +452,7 @@ function HeroMetric({
     <div className="p-5">
       <div
         className="ls-eyebrow"
-        style={{ color: accent ? "var(--terracotta)" : "var(--olive-gray, #6B7280)" }}
+        style={{ color: accent ? "var(--blue-60)" : "var(--gray-70, #6B7280)" }}
       >
         {eyebrow}
       </div>
@@ -462,7 +462,7 @@ function HeroMetric({
         )}
         style={{
           fontFamily: "var(--font-display)",
-          color: accent ? "var(--terracotta)" : "var(--color-foreground)",
+          color: accent ? "var(--blue-60)" : "var(--color-foreground)",
         }}
       >
         {value}
@@ -528,13 +528,13 @@ function AvmCard({
               style={{
                 left: 0,
                 right: 0,
-                background: "linear-gradient(90deg, transparent, var(--terracotta) 50%, transparent)",
+                background: "linear-gradient(90deg, transparent, var(--blue-60) 50%, transparent)",
                 opacity: 0.6,
               }}
             />
             <div
               className="absolute top-0 bottom-0 w-[2px]"
-              style={{ left: `${Math.max(2, Math.min(98, ratio))}%`, background: "var(--terracotta)" }}
+              style={{ left: `${Math.max(2, Math.min(98, ratio))}%`, background: "var(--blue-60)" }}
             />
           </div>
         </>

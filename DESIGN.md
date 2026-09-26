@@ -2,7 +2,7 @@
 
 > Single source of truth for the LeaseStack portal + marketing surfaces. Tokens live in `app/globals.css` (`@theme` + `:root`), fonts in `app/layout.tsx`, charts in `components/portal/ui/chart-theme.ts`. **Reuse the tokens and components below — never reinvent them inline.**
 
-> **Heritage note:** This system began as a warm-parchment "inspired by Claude" theme (terracotta + Fraunces serif). That era is **gone**. The portal now reads as a clean white/blue software product. Several variables keep their old names for back-compat (`--terracotta`, `--coral`, `--warm-sand`, `--parchment`) but are **retargeted to blue/cool-gray values** — trust the value, not the name.
+> **Heritage note:** This system began as a warm-parchment "inspired by Claude" theme (terracotta + Fraunces serif). That era is **gone**. The portal now reads as a clean white/blue software product. Several variables keep their old names for back-compat (`--blue-60`, `--blue-50`, `--gray-10-hover`, `--canvas`) but are **retargeted to blue/cool-gray values** — trust the value, not the name.
 
 > **⚑ Carbon-forward retarget (2026-07-09):** the token *values* below were retargeted toward IBM Carbon (light) for an enterprise, production-grade read. **Brand blue `#2563EB → #0f62fe`** (hover `#0043ce`); **ink `#0F172A → #161616`**; hairlines/surfaces → Carbon grays (`#e0e0e0`, `#f4f4f4`); semantic → Carbon (`#24a148` / `#f1c21b` / `#da1e28`). **Shape sharpened:** cards `14px → 2px`, buttons/inputs/select `8/6px → 0`, alerts `12px → 2px` (pills stay `999px`); elevation is **flat #e0e0e0 border over soft shadow** (no gradient/glow on buttons or default cards). Display weights lightened (`700 → 400/600`), eyebrow `.22em → .12em` Gray-70. New primitives: **`StatusChip` / `VerificationRow`** (`components/portal/ui/status-chip.tsx`) — the one connection-status vocabulary (Live = green, never blue). Full spec + fix-wave plan: `.claude/specs/2026-07-09-ibm-carbon-forward-design.md` + `-carbon-audit-findings.md`. The tables below still show the *pre-retarget* hexes in places — trust the CSS token values in `app/globals.css`.
 
@@ -26,29 +26,29 @@ Brand is **blue `#2563EB`**, not terracotta. Defined twice: as Tailwind v4 `@the
 ### Brand / accent
 | Token | Value | Role |
 |---|---|---|
-| `--color-primary` / `--terracotta` / `--accent` / `--blue` | `#2563EB` | Primary brand blue — CTAs, active states, series 1, eyebrows |
-| `--color-primary-dark` / `--terracotta-hover` | `#1D4ED8` | Hover / pressed brand |
-| `--color-primary-light` / `--coral` | `#3B82F6` | Lighter brand / 3rd series |
+| `--color-primary` / `--blue-60` / `--accent` / `--blue` | `#2563EB` | Primary brand blue — CTAs, active states, series 1, eyebrows |
+| `--color-primary-dark` / `--blue-70` | `#1D4ED8` | Hover / pressed brand |
+| `--color-primary-light` / `--blue-50` | `#3B82F6` | Lighter brand / 3rd series |
 | `--color-accent` | `#EFF6FF` | Brand wash / accent surface |
 | `--brand-soft` / `--brand-wash` / `--brand-glow` / `--brand-strong` | `rgba(37,99,235, .08 / .04 / .18 / .28)` | Tints, hover layers, glow (used by `ls-card-accent`, sidebar active) |
 
 ### Canvas / surfaces
 | Token | Value | Role |
 |---|---|---|
-| `--color-background` / `--parchment` / `--white` | `#FFFFFF` | Page + card background |
-| `--color-secondary` / `--ivory` / `--color-surface` | `#F9FAFB` | App background, subtle panels |
-| `--warm-sand` / `--color-muted` | `#F3F4F6` | Chips, neutral pill bg |
+| `--color-background` / `--canvas` / `--white` | `#FFFFFF` | Page + card background |
+| `--color-secondary` / `--gray-10` / `--color-surface` | `#F9FAFB` | App background, subtle panels |
+| `--gray-10-hover` / `--color-muted` | `#F3F4F6` | Chips, neutral pill bg |
 | `--color-elevated` | `#F4F6F8` | Sidebar item hover, meta pill bg |
 | `--color-overlay` | `#EDF0F4` | Dropdown / overlay layer |
 
 ### Text
 | Token | Value | Role |
 |---|---|---|
-| `--color-foreground` / `--near-black` | `#0F172A` | Primary text + "dark" section ink |
-| `--charcoal-warm` | `#1F2937` | Body text |
-| `--olive-gray` | `#4B5563` | Secondary / muted text |
-| `--stone-gray` / `--color-muted-foreground` | `#6B7280` | Tertiary text, eyebrow labels, select chevron |
-| `--warm-silver` | `#D1D5DB` | Disabled / on-dark light gray |
+| `--color-foreground` / `--gray-100` | `#0F172A` | Primary text + "dark" section ink |
+| `--gray-80` | `#1F2937` | Body text |
+| `--gray-70` | `#4B5563` | Secondary / muted text |
+| `--gray-60` / `--color-muted-foreground` | `#6B7280` | Tertiary text, eyebrow labels, select chevron |
+| `--silver` | `#D1D5DB` | Disabled / on-dark light gray |
 
 ### Borders / rings
 | Token | Value | Role |
@@ -56,8 +56,8 @@ Brand is **blue `#2563EB`**, not terracotta. Defined twice: as Tailwind v4 `@the
 | `--hair` | `#EEF0F3` | Default hairline on white (cards, headers, table rules) |
 | `--hair-strong` | `#DEE2E8` | Card-on-card boundary, select border, hover border |
 | `--hair-active` | `rgba(37,99,235,.32)` | Active hairline |
-| `--color-border` / `--border` / `--border-cream` | `#EAECEF` / `#E5E7EB` | shadcn border / legacy border |
-| `--border-warm` / `--ring-warm` | `#D1D5DB` | Stronger border, hover ring |
+| `--color-border` / `--border` / `--border-light` | `#EAECEF` / `#E5E7EB` | shadcn border / legacy border |
+| `--border-mid` / `--ring-light` | `#D1D5DB` | Stronger border, hover ring |
 | `--focus-blue` / `--color-ring` | `#2563EB` | Focus ring color |
 
 ### Semantic status
@@ -179,7 +179,7 @@ Canonical metric tile. White floating card (`ls-card`) with mono tabular hero nu
 ### `PageHeader` — `components/admin/page-header.tsx`
 Canonical page chrome at the top of every admin/portal page. Replaces all hand-rolled `text-xl`/serif "Welcome" headers.
 
-**Props:** `title`, `description?`, `eyebrow?`, `meta?` (freshness pill), `breadcrumb?`, `actions?`, `bordered?` (default true). Title = `var(--font-display)` (Inter) semibold `28px md:34px`, tracking `-0.022em`; eyebrow tinted `var(--terracotta)` (blue); bottom border `var(--hair)`.
+**Props:** `title`, `description?`, `eyebrow?`, `meta?` (freshness pill), `breadcrumb?`, `actions?`, `bordered?` (default true). Title = `var(--font-display)` (Inter) semibold `28px md:34px`, tracking `-0.022em`; eyebrow tinted `var(--blue-60)` (blue); bottom border `var(--hair)`.
 
 ```tsx
 <PageHeader eyebrow="Portfolio" title="Performance"
@@ -207,7 +207,7 @@ Single "no data yet" primitive: centered icon (in `bg-primary/10 text-primary` r
 | `.ls-card-accent` | Adds top-right radial brand-glow `::after`. Hero KPI / anchor cards. |
 | `.ls-card-pad` (`20px`) / `.ls-card-flush` (`0`) | Padding variants. |
 | `.ls-metric` + `.ls-metric-xl/lg/md` (`2.5 / 2 / 1.5rem`) | Mono tabular figures (`tnum`,`lnum`), weight 500, tight tracking. Big numbers. |
-| `.ls-eyebrow` | Sans 10px uppercase, `letter-spacing .12em`, `--stone-gray`. Anchors a metric/section. |
+| `.ls-eyebrow` | Sans 10px uppercase, `letter-spacing .12em`, `--gray-60`. Anchors a metric/section. |
 | `.ls-delta` + `-up`/`-down`/`-flat` | Mono trend pill: up = green wash, down = red wash, flat = sand. |
 | `.ls-select` | Styled native `<select>`: `appearance-none`, painted chevron, `1px var(--hair-strong)`, radius 8px, focus ring `0 0 0 3px var(--brand-glow)`. Keeps native a11y/keyboard. Add `h-9 px-3 text-sm`. |
 | `.ls-pill` + `-neutral/-info/-active/-success/-warning/-danger` | Status pills with dot. |
@@ -241,5 +241,5 @@ Single "no data yet" primitive: centered icon (in `bg-primary/10 text-primary` r
 - Hand-rolled headers / metric tiles / empty states — use `PageHeader`, `KpiTile`, `EmptyState`, `SectionCard`.
 - Hardcoded chart colors — import `CHART_COLORS`.
 - Raw `dangerouslySetInnerHTML` JSON-LD — always run structured data through `serializeJsonLd` (`lib/seo/serialize-json-ld.ts`; XSS-tested) as `layout.tsx` does.
-- Trusting variable names over values — `--terracotta`/`--coral`/`--warm-sand`/`--parchment` are retargeted to blue/cool-gray; check §2.
+- Trusting variable names over values — `--blue-60`/`--blue-50`/`--gray-10-hover`/`--canvas` are retargeted to blue/cool-gray; check §2.
 - Querying tenant data without `requireScope()` / property-gate filtering.

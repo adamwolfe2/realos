@@ -91,7 +91,7 @@ export default async function ContentPreviewPage({ params, searchParams }: Props
     : null;
 
   return (
-    <div className="min-h-screen bg-[var(--parchment,#FAF8F2)] py-4 sm:py-8 px-3 sm:px-6">
+    <div className="min-h-screen bg-[var(--canvas,#FAF8F2)] py-4 sm:py-8 px-3 sm:px-6">
       <div className="max-w-3xl mx-auto space-y-4">
         {/* Preview chrome — explicit banner so the reader knows this is
             a draft, not the live published page. */}

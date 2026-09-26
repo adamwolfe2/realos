@@ -172,7 +172,7 @@ export function AddonsGrid({
             </div>
             <div
               style={{
-                color: "var(--stone-gray)",
+                color: "var(--gray-60)",
                 fontFamily: "var(--font-sans)",
                 fontSize: "11px",
               }}
@@ -198,7 +198,7 @@ export function AddonsGrid({
                       fontSize: "10px",
                       letterSpacing: "0.16em",
                       textTransform: "uppercase",
-                      color: item.recommended ? "var(--color-primary)" : "var(--stone-gray)",
+                      color: item.recommended ? "var(--color-primary)" : "var(--gray-60)",
                       fontWeight: 600,
                       marginBottom: "4px",
                     }}
@@ -230,7 +230,7 @@ export function AddonsGrid({
                   </div>
                   <div
                     style={{
-                      color: "var(--stone-gray)",
+                      color: "var(--gray-60)",
                       fontFamily: "var(--font-sans)",
                       fontSize: "11px",
                     }}
@@ -314,7 +314,7 @@ export function AddonsGrid({
                   </div>
                   <div
                     style={{
-                      color: "var(--stone-gray)",
+                      color: "var(--gray-60)",
                       fontFamily: "var(--font-sans)",
                       fontSize: "11px",
                     }}

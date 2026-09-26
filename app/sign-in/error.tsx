@@ -16,7 +16,7 @@ export default function SignInError({
   }, [error])
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-cream text-ink px-4">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-white text-ink px-4">
       <h1 className="font-serif text-2xl mb-3">Sign-in unavailable</h1>
       <p className="font-mono text-sm text-ink/60 mb-8 max-w-sm text-center leading-relaxed">
         We could not load the sign-in page. Please try again.
@@ -24,7 +24,7 @@ export default function SignInError({
       <div className="flex gap-3">
         <button
           onClick={reset}
-          className="font-mono text-sm border border-shell px-5 py-2.5 bg-cream text-ink hover:border-ink transition-colors"
+          className="font-mono text-sm border border-border px-5 py-2.5 bg-white text-ink hover:border-ink transition-colors"
         >
           Try again
         </button>

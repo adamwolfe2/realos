@@ -268,7 +268,7 @@ export function ComparisonTable() {
                     fontSize: "10px",
                     letterSpacing: "0.16em",
                     textTransform: "uppercase",
-                    color: "var(--stone-gray)",
+                    color: "var(--gray-60)",
                     fontWeight: 600,
                   }}
                 >
@@ -301,7 +301,7 @@ export function ComparisonTable() {
                         fontFamily: "var(--font-sans)",
                         fontSize: "11.5px",
                         fontWeight: 500,
-                        color: "var(--stone-gray)",
+                        color: "var(--gray-60)",
                         marginTop: "1px",
                       }}
                     >

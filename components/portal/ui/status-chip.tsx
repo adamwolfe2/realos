@@ -109,7 +109,7 @@ export function VerificationRow({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-[var(--olive-gray)]",
+        "flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-[var(--gray-70)]",
         className,
       )}
     >

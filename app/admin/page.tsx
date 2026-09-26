@@ -434,7 +434,7 @@ function OpsChip({ href, label, count }: { href: string; label: string; count: n
 const SEVERITY_GROUP_LABEL: Record<AdminActionSeverity, { label: string; color: string }> = {
   critical: { label: "Critical", color: "var(--error)" },
   warning: { label: "Warning", color: "#8a6d00" },
-  info: { label: "Info", color: "var(--terracotta)" },
+  info: { label: "Info", color: "var(--blue-60)" },
 };
 
 function ActionGroup({
@@ -481,7 +481,7 @@ function ageBucket(occurredAt?: string): "fresh" | "aging" | "stale" {
 }
 
 const AGE_COLOR: Record<ReturnType<typeof ageBucket>, string> = {
-  fresh: "var(--olive-gray)",
+  fresh: "var(--gray-70)",
   aging: "#8a6d00",
   stale: "var(--error)",
 };
