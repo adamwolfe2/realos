@@ -39,6 +39,18 @@ import { buildPopupStats, type ReportPopupStats } from "@/lib/reports/popup-stat
 // entry point fans them out via Promise.all.
 // ---------------------------------------------------------------------------
 
+
+// A report section that throws renders as "hidden" (undefined), same as a
+// section with no data. Log it so a blank section is never silent: the
+// Sep 2026 AI-search gap took a week to notice because this was
+// `.catch(() => undefined)`.
+function sectionFailed(section: string) {
+  return (err: unknown): undefined => {
+    console.error(`[reports/generate] ${section} failed; section hidden:`, err);
+    return undefined;
+  };
+}
+
 export type ReportKind = "weekly" | "monthly" | "custom";
 
 export type ReportKpis = {
@@ -1732,19 +1744,17 @@ export async function generateReportSnapshot(
     periodEnd,
     priorStart,
     priorEnd,
-  ).catch(() => undefined);
+  ).catch(sectionFailed("buildReputationStats"));
 
   // Occupancy — point-in-time snapshot. Scoped to the property when set.
-  const occupancyStats = await buildOccupancyStats(orgId, scope.propertyId).catch(
-    () => undefined,
-  );
+  const occupancyStats = await buildOccupancyStats(orgId, scope.propertyId).catch(sectionFailed("buildOccupancyStats"));
 
   // Renewals — forward-looking 120-day window from periodEnd.
   const renewalStats = await buildRenewalStats(
     orgId,
     scope.propertyId,
     periodEnd,
-  ).catch(() => undefined);
+  ).catch(sectionFailed("buildRenewalStats"));
 
   // Visitor identification — pixel-driven, period-scoped.
   const visitorStats = await buildVisitorStats(
@@ -1768,7 +1778,7 @@ export async function generateReportSnapshot(
     periodStart,
     periodEnd,
     chatbotStats,
-  ).catch(() => undefined);
+  ).catch(sectionFailed("buildChatbotExtended"));
 
   // AEO stats — how often we got cited vs how often a competitor was
   // cited instead, across all AI engines in the period. Headline insight
@@ -1778,7 +1788,7 @@ export async function generateReportSnapshot(
     scope.propertyId,
     periodStart,
     periodEnd,
-  ).catch(() => undefined);
+  ).catch(sectionFailed("buildAeoStats"));
 
   // Content stats — blog posts + neighborhood pages published.
   const contentStats = await buildContentStats(
@@ -1786,7 +1796,7 @@ export async function generateReportSnapshot(
     scope.propertyId,
     periodStart,
     periodEnd,
-  ).catch(() => undefined);
+  ).catch(sectionFailed("buildContentStats"));
 
   // Popup performance — Shown/CTA clicks/Converted/Dismissed for the period.
   const popupStats = await buildPopupStats(
@@ -1807,7 +1817,7 @@ export async function generateReportSnapshot(
     scope.propertyId,
     periodStart,
     periodEnd,
-  ).catch(() => undefined);
+  ).catch(sectionFailed("buildDataSources"));
 
   // AppFolio lifecycle layer — populated whenever there's at least one
   // active lease OR any in-period lease/application activity. We never

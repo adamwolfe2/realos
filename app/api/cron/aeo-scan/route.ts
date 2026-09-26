@@ -5,6 +5,7 @@ import { recordCronRun } from "@/lib/health/cron-run";
 import { runAeoScan, runNeighborhoodScan } from "@/lib/aeo/orchestrate";
 import { resolveEngineSource } from "@/lib/aeo/engines";
 import { scoreOrgOpportunities } from "@/lib/aeo/score-opportunities";
+import { orderOrgsForAeoScan } from "@/lib/aeo/scan-order";
 
 // Skip per-page sampling if scanned within this window. The weekly cron
 // runs Mondays — 6 days keeps us re-scanning every Monday without ever
@@ -37,9 +38,18 @@ export async function GET(req: NextRequest) {
   if (authError) return authError;
 
   return recordCronRun("aeo-scan", async () => {
+    // Stop starting new work with headroom before maxDuration (300s): a run
+    // the platform kills never records its result, and every week's scan
+    // used to die that way. Unscanned orgs are simply first next run.
+    const deadline = Date.now() + 200_000;
     const eligibleOrgs = await prisma.organization.findMany({
-      where: { moduleSEO: true },
-      select: { id: true, name: true },
+      where: {
+        moduleSEO: true,
+        orgType: "CLIENT",
+        // Demo orgs (slug "*-demo") are seeded fixtures, not customers.
+        NOT: { slug: { endsWith: "-demo" } },
+      },
+      select: { id: true, name: true, subscriptionStatus: true },
     });
 
     // P0-8/P1-23: same oldest-first bounded-batch pattern as
@@ -70,12 +80,12 @@ export async function GET(req: NextRequest) {
     const lastScanByOrg = new Map(
       lastScans.map((s) => [s.orgId, s._max.queryRunAt?.getTime() ?? 0]),
     );
-    const orgs = [...eligibleOrgs]
-      .sort(
-        (a, b) =>
-          (lastScanByOrg.get(a.id) ?? 0) - (lastScanByOrg.get(b.id) ?? 0),
-      )
-      .slice(0, BATCH_SIZE);
+    const orgs = orderOrgsForAeoScan(
+      eligibleOrgs,
+      lastScanByOrg,
+      Date.now(),
+    ).slice(0, BATCH_SIZE);
+    const scannedOrgIds: string[] = [];
 
     const summary: Array<{
       orgId: string;
@@ -96,6 +106,8 @@ export async function GET(req: NextRequest) {
     let errorCount = 0;
 
     for (const org of orgs) {
+      if (Date.now() > deadline) break;
+      scannedOrgIds.push(org.id);
       try {
         const result = await runAeoScan({ orgId: org.id });
         totalRows += result.rowsWritten;
@@ -137,6 +149,7 @@ export async function GET(req: NextRequest) {
         );
 
         for (const page of pages) {
+          if (Date.now() > deadline) break;
           const recent = await prisma.aeoCitationCheck.count({
             where: {
               orgId: org.id,
@@ -194,22 +207,23 @@ export async function GET(req: NextRequest) {
     let totalOverviewsCaptured = 0;
     let totalOpportunityCostUsd = 0;
     if (engineSource === "dataforseo") {
-      for (const org of orgs) {
+      for (const orgId of scannedOrgIds) {
+        if (Date.now() > deadline) break;
         try {
-          const r = await scoreOrgOpportunities(org.id);
+          const r = await scoreOrgOpportunities(orgId);
           totalKeywordsScored += r.keywordsScored;
           totalOverviewsCaptured += r.overviewsCaptured;
           totalOpportunityCostUsd += r.totalCostUsd;
           if (r.errors.length > 0) {
             console.warn(
-              `[cron/aeo-scan] org ${org.id} opportunity-score errors:`,
+              `[cron/aeo-scan] org ${orgId} opportunity-score errors:`,
               r.errors.slice(0, 5),
             );
           }
         } catch (err) {
           errorCount += 1;
           console.error(
-            `[cron/aeo-scan] opportunity-score crash for org ${org.id}:`,
+            `[cron/aeo-scan] opportunity-score crash for org ${orgId}:`,
             err instanceof Error ? err.message : err,
           );
         }
@@ -223,6 +237,7 @@ export async function GET(req: NextRequest) {
         errorCount,
         orgsEligible: eligibleOrgs.length,
         orgsBatched: orgs.length,
+        orgsScanned: scannedOrgIds.length,
         batchSize: BATCH_SIZE,
         engineSource,
         recentSnapshotCount,
