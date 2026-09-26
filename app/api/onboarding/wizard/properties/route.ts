@@ -14,6 +14,7 @@ import { computeTrialEndsAt } from "@/lib/onboarding/steps";
 import { SELF_SERVE_PROPERTY_CAP } from "@/lib/billing/catalog";
 import { scaffoldPropertyIntegrations } from "@/lib/onboarding/scaffold";
 import * as Sentry from "@sentry/nextjs";
+import { wizardRoleForbidden } from "@/lib/onboarding/wizard-auth";
 
 // ---------------------------------------------------------------------------
 // POST /api/onboarding/wizard/properties
@@ -112,7 +113,7 @@ export async function POST(req: NextRequest) {
 
   const user = await prisma.user.findUnique({
     where: { clerkUserId: userId },
-    select: {
+    select: { role: true,
       id: true,
       orgId: true,
       org: {
@@ -135,6 +136,8 @@ export async function POST(req: NextRequest) {
       { status: 404 },
     );
   }
+  const roleDenied = wizardRoleForbidden(user.role);
+  if (roleDenied) return roleDenied;
   const orgId = user.orgId;
   const org = user.org;
 

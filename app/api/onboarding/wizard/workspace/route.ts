@@ -7,6 +7,7 @@ import {
   CommercialSubtype,
 } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { wizardRoleForbidden } from "@/lib/onboarding/wizard-auth";
 
 // ---------------------------------------------------------------------------
 // POST /api/onboarding/wizard/workspace
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
 
   const user = await prisma.user.findUnique({
     where: { clerkUserId: userId },
-    select: { id: true, orgId: true },
+    select: { role: true, id: true, orgId: true },
   });
   if (!user) {
     return NextResponse.json(
@@ -58,6 +59,8 @@ export async function POST(req: NextRequest) {
       { status: 404 },
     );
   }
+  const roleDenied = wizardRoleForbidden(user.role);
+  if (roleDenied) return roleDenied;
 
   // Subtype must match the chosen type. Drop the other one to avoid
   // contradictory state.

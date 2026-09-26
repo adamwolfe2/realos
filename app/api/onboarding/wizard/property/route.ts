@@ -7,6 +7,7 @@ import {
   PropertyLifecycleSource,
 } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { wizardRoleForbidden } from "@/lib/onboarding/wizard-auth";
 
 // ---------------------------------------------------------------------------
 // POST /api/onboarding/wizard/property
@@ -65,7 +66,7 @@ export async function POST(req: NextRequest) {
 
   const user = await prisma.user.findUnique({
     where: { clerkUserId: userId },
-    select: {
+    select: { role: true,
       id: true,
       orgId: true,
       org: {
@@ -83,6 +84,8 @@ export async function POST(req: NextRequest) {
       { status: 404 },
     );
   }
+  const roleDenied = wizardRoleForbidden(user.role);
+  if (roleDenied) return roleDenied;
 
   // Reuse the first property if the user is editing during a wizard
   // resume; otherwise create a new one. Slug is best-effort unique

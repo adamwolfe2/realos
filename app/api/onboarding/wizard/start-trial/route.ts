@@ -8,6 +8,7 @@ import {
   buildModuleStateFromSelection,
   inferTierFromSelection,
 } from "@/lib/billing/features";
+import { wizardRoleForbidden } from "@/lib/onboarding/wizard-auth";
 
 // ---------------------------------------------------------------------------
 // POST /api/onboarding/wizard/start-trial
@@ -72,7 +73,7 @@ export async function POST(req: NextRequest) {
 
   const user = await prisma.user.findUnique({
     where: { clerkUserId: userId },
-    select: {
+    select: { role: true,
       id: true,
       orgId: true,
       org: {
@@ -90,6 +91,8 @@ export async function POST(req: NextRequest) {
       { status: 404 },
     );
   }
+  const roleDenied = wizardRoleForbidden(user.role);
+  if (roleDenied) return roleDenied;
 
   // Preserve the original trial start if one already exists; only stamp
   // it on the first time the user clears this step. This prevents

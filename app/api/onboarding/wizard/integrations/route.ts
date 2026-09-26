@@ -4,6 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
 import { connectAppfolio } from "@/lib/actions/appfolio-connect";
 import { getPmsById } from "@/lib/integrations/pms/registry";
+import { wizardRoleForbidden } from "@/lib/onboarding/wizard-auth";
 
 // ---------------------------------------------------------------------------
 // POST /api/onboarding/wizard/integrations
@@ -64,7 +65,7 @@ export async function POST(req: NextRequest) {
 
   const user = await prisma.user.findUnique({
     where: { clerkUserId: userId },
-    select: { id: true, orgId: true },
+    select: { role: true, id: true, orgId: true },
   });
   if (!user) {
     return NextResponse.json(
@@ -72,6 +73,8 @@ export async function POST(req: NextRequest) {
       { status: 404 },
     );
   }
+  const roleDenied = wizardRoleForbidden(user.role);
+  if (roleDenied) return roleDenied;
 
   if (parsed.action === "skip") {
     await prisma.organization.update({

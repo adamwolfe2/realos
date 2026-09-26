@@ -50,6 +50,7 @@ beforeEach(() => {
 describe("onboarding back route (P1-3)", () => {
   it("uses an atomic NOT-done guard and reports done when the org is terminal", async () => {
     h.user.findUnique.mockResolvedValue({
+      role: "CLIENT_OWNER",
       org: { id: "org_1", onboardingStep: "properties" },
     });
     h.org.updateMany.mockResolvedValue({ count: 0 }); // org concurrently done
@@ -62,6 +63,7 @@ describe("onboarding back route (P1-3)", () => {
 
   it("walks a mid-wizard org back one step", async () => {
     h.user.findUnique.mockResolvedValue({
+      role: "CLIENT_OWNER",
       org: { id: "org_1", onboardingStep: "properties" },
     });
     h.org.updateMany.mockResolvedValue({ count: 1 });
@@ -71,6 +73,7 @@ describe("onboarding back route (P1-3)", () => {
 
   it("is a no-op for a done org without writing", async () => {
     h.user.findUnique.mockResolvedValue({
+      role: "CLIENT_OWNER",
       org: { id: "org_1", onboardingStep: "done" },
     });
     const res = await backPOST(req() as never);
@@ -81,7 +84,7 @@ describe("onboarding back route (P1-3)", () => {
 
 describe("onboarding features route (P1-4)", () => {
   it("gates the entitlement write on a non-paid subscription status", async () => {
-    h.user.findUnique.mockResolvedValue({ id: "u_1", orgId: "org_1" });
+    h.user.findUnique.mockResolvedValue({ id: "u_1", orgId: "org_1", role: "CLIENT_OWNER" });
     await featuresPOST(req({ selectedModules: [] }) as never);
     // First updateMany call = the entitlement write; must carry the status guard.
     const where = callArg(h.org.updateMany).where;
@@ -91,6 +94,16 @@ describe("onboarding features route (P1-4)", () => {
       { subscriptionStatus: { notIn: ["ACTIVE", "PAST_DUE"] } },
     ]);
     // Never uses the unconditional update().
+    expect(h.org.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("onboarding wizard role gate (AUTHZ-WIZ)", () => {
+  it("refuses a view-only seat before any write", async () => {
+    h.user.findUnique.mockResolvedValue({ id: "u_2", orgId: "org_1", role: "CLIENT_VIEWER" });
+    const res = await featuresPOST(req({ selectedModules: [] }) as never);
+    expect(res.status).toBe(403);
+    expect(h.org.updateMany).not.toHaveBeenCalled();
     expect(h.org.update).not.toHaveBeenCalled();
   });
 });

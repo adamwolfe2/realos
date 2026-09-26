@@ -6,6 +6,7 @@ import {
   resolveCurrentStep,
   type OnboardingStep,
 } from "@/lib/onboarding/steps";
+import { wizardRoleForbidden } from "@/lib/onboarding/wizard-auth";
 
 // ---------------------------------------------------------------------------
 // POST /api/onboarding/wizard/back
@@ -35,7 +36,7 @@ export async function POST(_req: NextRequest) {
 
   const user = await prisma.user.findUnique({
     where: { clerkUserId: userId },
-    select: { org: { select: { id: true, onboardingStep: true } } },
+    select: { role: true, org: { select: { id: true, onboardingStep: true } } },
   });
   if (!user?.org) {
     return NextResponse.json(
@@ -43,6 +44,8 @@ export async function POST(_req: NextRequest) {
       { status: 404 },
     );
   }
+  const roleDenied = wizardRoleForbidden(user.role);
+  if (roleDenied) return roleDenied;
 
   const current = resolveCurrentStep(user.org.onboardingStep);
   const target: OnboardingStep = previousStep(current);
