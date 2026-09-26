@@ -135,3 +135,17 @@ describe("getTileViewState", () => {
     }
   });
 });
+
+describe("marketplace page active signals", () => {
+  it("Hosted Marketing Site is active only from a DNS-configured domain, never moduleWebsite", async () => {
+    const fs = await import("fs");
+    const path = await import("path");
+    const src = fs.readFileSync(
+      path.resolve(__dirname, "../app/portal/marketplace/page.tsx"),
+      "utf-8",
+    );
+    expect(src).toContain("moduleWebsite: liveSiteDomains > 0");
+    expect(src).toMatch(/domainBinding\.count\(\{\s*where: \{ orgId: org\.id, dnsConfigured: true \}/);
+    expect(src).not.toMatch(/moduleWebsite: org\.moduleWebsite/);
+  });
+});

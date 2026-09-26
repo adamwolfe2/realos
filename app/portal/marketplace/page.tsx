@@ -55,6 +55,12 @@ export default async function MarketplacePage() {
 
   if (!org) notFound();
 
+  // Hosted Marketing Site is live when a customer domain we serve has DNS
+  // pointed at us. moduleWebsite can't answer that (see below).
+  const liveSiteDomains = await prisma.domainBinding.count({
+    where: { orgId: org.id, dnsConfigured: true },
+  });
+
   const isTrialing =
     org.subscriptionStatus === "TRIALING" || org.subscriptionStatus === null;
 
@@ -79,8 +85,11 @@ export default async function MarketplacePage() {
   // `@default(true)`, so it's true for every org including brand-new trials
   // and BYO-site orgs — it's schema noise, not a real "ops turned this on"
   // signal. Feeding it here would show every org a false "Hosted Marketing
-  // Site: Active" tile (review finding, 2026-09-25). There's no reliable
-  // active signal for this tile today; it always renders "Not active".
+  // Site: Active" tile (review finding, 2026-09-25). The real signal is a
+  // DomainBinding with DNS configured (liveSiteDomains above).
+  //
+  // Reputation Pro still has no signal: nothing records the purchase until
+  // add-on checkout + its Stripe webhook exist, so it renders "Not active".
   const initialEnabled: Record<string, boolean> = {
     modulePixel: org.modulePixel,
     moduleChatbot: org.moduleChatbot,
@@ -94,6 +103,7 @@ export default async function MarketplacePage() {
     moduleLeadCapture: org.moduleLeadCapture,
     modulePopups: org.modulePopups,
     ls_addon_white_label: org.whiteLabel,
+    moduleWebsite: liveSiteDomains > 0,
   };
 
   const grouped = groupModulesByCategory();
@@ -144,14 +154,14 @@ export default async function MarketplacePage() {
 // marketplace "Open" button lands on the same page the nav would. null =
 // no dedicated page yet — falls back to setupHref (Reputation Pro has no
 // active-state page or entitlement flag at all; see lib/marketplace/catalog.ts).
-// moduleWebsite has no case here on purpose — see the initialEnabled comment
-// above; it never reports "active" so its Open route is unreachable today.
 function activeHrefFor(key: string): string | null {
   switch (key) {
     case "moduleSEO":
       return "/portal/seo";
     case "ls_addon_white_label":
       return "/portal/settings/white-label";
+    case "moduleWebsite":
+      return "/portal/site-builder";
     default:
       return null;
   }
