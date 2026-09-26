@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { BookDemoLink } from "@/components/marketing/book-demo-link";
+import { savePricingIntent } from "@/lib/onboarding/pricing-intent";
 
 // ---------------------------------------------------------------------------
 // PricingBuilder — the centerpiece of the pricing page. Replaces the old
@@ -406,6 +407,7 @@ export function PricingBuilder({
             ) : (
               <Link
                 href={ctaHref}
+                onClick={() => savePricingIntent(selectedFeatures.map((f) => f.key))}
                 className="inline-flex items-center justify-center h-11 px-6 rounded-md text-sm font-semibold text-white transition-colors active:scale-[0.98]"
                 style={{ backgroundColor: "var(--color-primary)" }}
               >

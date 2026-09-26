@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { readPricingIntent } from "@/lib/onboarding/pricing-intent";
 import {
   Bot,
   Eye,
@@ -82,6 +83,16 @@ export function FeaturesStep({
           features.filter((f) => f.recommended).map((f) => f.key as string),
         ),
   );
+
+  // First visit from the pricing builder: pre-select what the prospect
+  // picked there (Clerk sign-up drops URL params, so it rides localStorage).
+  React.useEffect(() => {
+    if (initialSelected !== undefined) return;
+    const picked = readPricingIntent(features.map((f) => f.key as string));
+    if (picked) setSelected(new Set(picked));
+    // Mount-only: never overwrite choices made on this step.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const toggle = React.useCallback((key: string) => {
     setSelected((prev) => {
