@@ -5,10 +5,10 @@ import { z } from "zod";
 import { AuditAction, ChatbotCaptureMode, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import {
-  requireScope,
   requireWritableWorkspace,
   ForbiddenError,
   auditPayload,
+  requireWorkspaceAdmin,
 } from "@/lib/tenancy/scope";
 
 // ---------------------------------------------------------------------------
@@ -117,7 +117,7 @@ export async function saveChatbotConfig(
   formData: FormData
 ): Promise<ActionResult> {
   try {
-    const scope = await requireWritableWorkspace();
+    const scope = await requireWorkspaceAdmin();
 
     const org = await prisma.organization.findUnique({
       where: { id: scope.orgId },
@@ -259,7 +259,7 @@ export async function updateLeadRouting(
   formData: FormData,
 ): Promise<LeadRoutingActionResult> {
   try {
-    const scope = await requireWritableWorkspace();
+    const scope = await requireWorkspaceAdmin();
 
     const raw = {
       notifyLeadEmail: firstString(formData.get("notifyLeadEmail")),
@@ -462,7 +462,7 @@ export async function backfillChatbotLeadEmails(args: {
   dryRun?: boolean;
 }): Promise<BackfillResult> {
   try {
-    const scope = await requireScope();
+    const scope = await requireWorkspaceAdmin();
     const days = Math.min(365, Math.max(1, args.dayRange ?? 30));
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
     const dryRun = args.dryRun ?? false;
@@ -859,7 +859,7 @@ export async function toggleChatbotEnabled(
   enabled: boolean
 ): Promise<ActionResult> {
   try {
-    const scope = await requireWritableWorkspace();
+    const scope = await requireWorkspaceAdmin();
 
     const org = await prisma.organization.findUnique({
       where: { id: scope.orgId },

@@ -6,8 +6,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import {
   requireScope,
-  requireWritableWorkspace,
   ForbiddenError,
+  requireWorkspaceAdmin,
 } from "@/lib/tenancy/scope";
 import { OrgType, PixelRequestStatus } from "@prisma/client";
 
@@ -72,7 +72,7 @@ async function requireClientScope() {
 // disconnectPixel). getCursiveSetupStatus stays on the read-only
 // requireClientScope so a lapsed trial can still poll install status.
 async function requireWritableClientScope() {
-  const scope = await requireWritableWorkspace();
+  const scope = await requireWorkspaceAdmin();
   if (scope.orgType !== OrgType.CLIENT) {
     throw new ForbiddenError("Client context required");
   }

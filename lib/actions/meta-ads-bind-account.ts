@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { requireWritableWorkspace, auditPayload } from "@/lib/tenancy/scope";
+import { auditPayload, requireWorkspaceAdmin } from "@/lib/tenancy/scope";
 import { runAdsSyncForAccount } from "@/lib/integrations/ads-sync";
 import { AdPlatform, AuditAction, Prisma } from "@prisma/client";
 
@@ -41,7 +41,7 @@ export async function bindMetaAdsAccount(
 ): Promise<BindMetaAdsResult> {
   let scope;
   try {
-    scope = await requireWritableWorkspace();
+    scope = await requireWorkspaceAdmin();
   } catch (err) {
     return {
       ok: false,

@@ -526,6 +526,26 @@ export class TrialExpiredError extends ForbiddenError {
 // requireScope() to enforce the read-only gate. Read-only routes (GET
 // endpoints, dashboard queries) keep using requireScope() so customers
 // can still review and export their data after a trial lapse.
+// Seats allowed to change workspace settings, integrations and lead routing.
+// Same list as the marketplace toggle: viewers, leasing agents and AL
+// partners read but never reconfigure.
+const WORKSPACE_ADMIN_ROLES: ReadonlySet<UserRole> = new Set([
+  UserRole.CLIENT_OWNER,
+  UserRole.CLIENT_ADMIN,
+  UserRole.AGENCY_OWNER,
+  UserRole.AGENCY_ADMIN,
+  UserRole.AGENCY_OPERATOR,
+]);
+
+/** requireWritableWorkspace + an admin-level seat. Throws ForbiddenError. */
+export async function requireWorkspaceAdmin(): Promise<ScopedContext> {
+  const scope = await requireWritableWorkspace();
+  if (!WORKSPACE_ADMIN_ROLES.has(scope.role)) {
+    throw new ForbiddenError("Only an owner or admin can change this setting.");
+  }
+  return scope;
+}
+
 export async function requireWritableWorkspace(): Promise<ScopedContext> {
   const scope = await requireScope();
   if (scope.isImpersonating) return scope;
