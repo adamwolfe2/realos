@@ -43,7 +43,13 @@ export async function GET(req: NextRequest) {
 
   return recordCronRun("pixel-segment-sync", async () => {
     const integrations = await prisma.cursiveIntegration.findMany({
-      where: { cursiveSegmentId: { not: null } },
+      where: {
+        cursiveSegmentId: { not: null },
+        // Demo orgs (slug "*-demo", same rule as the admin Demo badge) carry
+        // fake segment IDs like "seg-tc-demo-hot". Syncing them 404s every
+        // run and pins this job at "partial", which hides real failures.
+        org: { NOT: { slug: { endsWith: "-demo" } } },
+      },
       select: { orgId: true },
       // One sync per org; runCursiveSegmentSync covers all its rows.
       distinct: ["orgId"],
