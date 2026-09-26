@@ -81,6 +81,10 @@
       "schedule": "*/5 * * * *"
     },
     {
+      "path": "/api/cron/cron-health",
+      "schedule": "7 * * * *"
+    },
+    {
       "path": "/api/cron/property-images",
       "schedule": "0 4 * * *"
     },
