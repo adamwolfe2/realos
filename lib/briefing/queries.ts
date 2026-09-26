@@ -39,17 +39,45 @@ export type CallPriorityLead = {
  *
  * Priority: 100 - daysSinceActivity + score/10, clamped.
  */
+/**
+ * Lead scope for the briefing's lead lists. An explicit selection wins. With
+ * no selection, default to the org's marketable (ACTIVE) buildings plus
+ * unassigned leads — never the whole AppFolio-synced portfolio. SG's briefing
+ * said "686 leads are 15+ days old"; 545 sat on buildings they excluded.
+ * AND-wrapped so the OR can't collide with another OR in the caller's where.
+ */
+export function leadPropertyScope(opts: {
+  propertyIds?: string[] | null;
+  marketablePropertyIds?: string[] | null;
+}): Record<string, unknown> {
+  if (opts.propertyIds && opts.propertyIds.length > 0) {
+    return propertyFilterOf(opts.propertyIds);
+  }
+  if (opts.marketablePropertyIds && opts.marketablePropertyIds.length > 0) {
+    return {
+      AND: [
+        {
+          OR: [
+            { propertyId: { in: opts.marketablePropertyIds } },
+            { propertyId: null },
+          ],
+        },
+      ],
+    };
+  }
+  return {};
+}
+
 export async function getCallPriorityLeads(
   orgId: string,
-  opts: { limit?: number; propertyIds?: string[] | null } = {},
+  opts: {
+    limit?: number;
+    propertyIds?: string[] | null;
+    marketablePropertyIds?: string[] | null;
+  } = {},
 ): Promise<CallPriorityLead[]> {
   const limit = opts.limit ?? 10;
-  const propertyFilter =
-    opts.propertyIds && opts.propertyIds.length > 0
-      ? opts.propertyIds.length === 1
-        ? { propertyId: opts.propertyIds[0] }
-        : { propertyId: { in: opts.propertyIds } }
-      : {};
+  const propertyFilter = leadPropertyScope(opts);
   const now = new Date();
   const since24h = new Date(now.getTime() - DAY);
   const since48h = new Date(now.getTime() - 2 * DAY);
@@ -345,7 +373,10 @@ const TERMINAL_LEAD_STATUSES = [
 
 export async function getAgingLeadsSummary(
   orgId: string,
-  opts: { propertyIds?: string[] | null } = {},
+  opts: {
+    propertyIds?: string[] | null;
+    marketablePropertyIds?: string[] | null;
+  } = {},
 ): Promise<{
   fresh: number;
   aging: number;
@@ -354,7 +385,7 @@ export async function getAgingLeadsSummary(
   const activeLeads = await prisma.lead.findMany({
     where: {
       orgId,
-      ...propertyFilterOf(opts.propertyIds),
+      ...leadPropertyScope(opts),
       status: { notIn: TERMINAL_LEAD_STATUSES },
     },
     select: { createdAt: true },

@@ -85,6 +85,8 @@ export default async function BriefingPage({
       : scope.allowedPropertyIds && scope.allowedPropertyIds.length > 0
         ? scope.allowedPropertyIds
         : null;
+  // Default lead scope when nothing is selected: the marketable list above.
+  const marketablePropertyIds = properties.map((p) => p.id);
   const activeProperty =
     activePropertyIds && activePropertyIds.length === 1
       ? properties.find((p) => p.id === activePropertyIds[0]) ?? null
@@ -111,13 +113,20 @@ export default async function BriefingPage({
     getSinceLastViewed(scope.orgId, user?.lastBriefingViewedAt ?? null, {
       propertyIds: activePropertyIds,
     }),
-    getCallPriorityLeads(scope.orgId, { limit: 10, propertyIds: activePropertyIds }),
+    getCallPriorityLeads(scope.orgId, {
+      limit: 10,
+      propertyIds: activePropertyIds,
+      marketablePropertyIds,
+    }),
     getTranscriptsWorthReading(scope.orgId, { limit: 6, propertyIds: activePropertyIds }),
     getBriefingMetrics(scope.orgId, { propertyIds: activePropertyIds }),
     getRecentInsightsForBriefing(scope.orgId, user?.lastBriefingViewedAt ?? null, 8, {
       propertyIds: activePropertyIds,
     }),
-    getAgingLeadsSummary(scope.orgId, { propertyIds: activePropertyIds }),
+    getAgingLeadsSummary(scope.orgId, {
+      propertyIds: activePropertyIds,
+      marketablePropertyIds,
+    }),
     // "Connect data sources" step — ANY connected source counts, mirroring
     // the canonical CONNECT_DATA_SOURCE onboarding detector
     // (lib/onboarding/step-detectors.ts). Previously AppFolio-only, which
