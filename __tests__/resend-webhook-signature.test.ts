@@ -1,40 +1,127 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
+import crypto from "node:crypto";
+
+// ---------------------------------------------------------------------------
+// Coverage gap: /api/webhooks/resend was the outlier among the four
+// webhook routes (clerk/cursive/stripe all have dedicated test files) with
+// zero test coverage on its Svix-style HMAC signature verification. Unlike
+// the other three (structural string-matching only), this test drives the
+// real POST handler end-to-end with a genuine HMAC signature — the
+// verifySignature() function isn't exported, so this is the only way to
+// actually exercise it rather than just asserting the source contains
+// certain strings.
+// ---------------------------------------------------------------------------
+
+// Real Svix format: "whsec_<base64 key>". The HMAC key is the decoded bytes.
+const WEBHOOK_SECRET = "whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw";
+const keyOf = (secret: string) =>
+  Buffer.from(secret.replace(/^whsec_/, ""), "base64");
+
+const h = vi.hoisted(() => ({
+  db: {
+    lead: { findMany: vi.fn(), updateMany: vi.fn() },
+    auditEvent: { create: vi.fn() },
+  },
+}));
+
+vi.mock("@/lib/db", () => ({ prisma: h.db }));
+vi.mock("@/lib/rate-limit", () => ({
+  webhookLimiter: {},
+  checkRateLimit: async () => ({ allowed: true }),
+  getIp: () => "127.0.0.1",
+  rateLimited: (message: string) =>
+    new Response(JSON.stringify({ error: message }), { status: 429 }),
+}));
+
+import { POST } from "@/app/api/webhooks/resend/route";
 import { Webhook } from "svix";
-import { verifySignature } from "@/lib/email/resend-webhook-signature";
 
-// Resend signs with Svix. The secret is "whsec_<base64>"; using the literal
-// string as the HMAC key rejected every genuine event.
-const SECRET = "whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw";
+function signedRequest(body: string, opts?: { secret?: string; ageMs?: number }) {
+  const secret = opts?.secret ?? WEBHOOK_SECRET;
+  const svixId = "msg_test123";
+  const tsSeconds = Math.floor((Date.now() - (opts?.ageMs ?? 0)) / 1000);
+  const toSign = `${svixId}.${tsSeconds}.${body}`;
+  const signature = crypto
+    .createHmac("sha256", keyOf(secret))
+    .update(toSign)
+    .digest("base64");
 
-function signed(body: string) {
-  const id = "msg_1";
-  const ts = new Date();
-  const sig = new Webhook(SECRET).sign(id, ts, body);
-  return new Headers({
-    "svix-id": id,
-    "svix-timestamp": String(Math.floor(ts.getTime() / 1000)),
-    "svix-signature": sig,
-  });
+  return new Request("https://x/api/webhooks/resend", {
+    method: "POST",
+    body,
+    headers: {
+      "svix-id": svixId,
+      "svix-timestamp": String(tsSeconds),
+      "svix-signature": `v1,${signature}`,
+    },
+  }) as unknown as import("next/server").NextRequest;
 }
 
-describe("verifySignature (Resend/Svix)", () => {
-  afterEach(() => vi.unstubAllEnvs());
+const originalSecret = process.env.RESEND_WEBHOOK_SECRET;
 
-  it("accepts a genuine Svix signature", () => {
-    vi.stubEnv("RESEND_WEBHOOK_SECRET", SECRET);
-    const body = JSON.stringify({ type: "email.bounced" });
-    expect(verifySignature(body, signed(body))).toBe(true);
+beforeEach(() => {
+  vi.clearAllMocks();
+  process.env.RESEND_WEBHOOK_SECRET = WEBHOOK_SECRET;
+  h.db.lead.findMany.mockResolvedValue([]);
+});
+
+afterAll(() => {
+  process.env.RESEND_WEBHOOK_SECRET = originalSecret;
+});
+
+describe("POST /api/webhooks/resend — signature verification", () => {
+  it("accepts a request with a valid HMAC signature", async () => {
+    const body = JSON.stringify({ type: "email.opened", data: { to: "a@example.com" } });
+    const res = (await POST(signedRequest(body))) as Response;
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.ok).toBe(true);
   });
 
-  it("rejects a tampered body", () => {
-    vi.stubEnv("RESEND_WEBHOOK_SECRET", SECRET);
-    const headers = signed('{"a":1}');
-    expect(verifySignature('{"a":2}', headers)).toBe(false);
+  it("rejects a request with an invalid signature", async () => {
+    const body = JSON.stringify({ type: "email.opened", data: { to: "a@example.com" } });
+    const res = (await POST(signedRequest(body, { secret: "whsec_d3Jvbmdfc2VjcmV0X2tleV9ieXRlcw==" }))) as Response;
+    expect(res.status).toBe(401);
   });
 
-  it("fails closed without a secret", () => {
-    vi.stubEnv("RESEND_WEBHOOK_SECRET", "");
-    const body = "{}";
-    expect(verifySignature(body, signed(body))).toBe(false);
+  it("rejects a request signed with a stale timestamp (replay guard)", async () => {
+    const body = JSON.stringify({ type: "email.opened", data: { to: "a@example.com" } });
+    // 10 minutes old — outside the 5-minute Svix tolerance window.
+    const res = (await POST(signedRequest(body, { ageMs: 10 * 60 * 1000 }))) as Response;
+    expect(res.status).toBe(401);
+  });
+
+  it("fails closed when RESEND_WEBHOOK_SECRET is not configured", async () => {
+    delete process.env.RESEND_WEBHOOK_SECRET;
+    const body = JSON.stringify({ type: "email.opened", data: { to: "a@example.com" } });
+    const res = (await POST(signedRequest(body))) as Response;
+    expect(res.status).toBe(401);
+  });
+
+  it("rejects a request missing svix headers entirely", async () => {
+    const body = JSON.stringify({ type: "email.opened", data: { to: "a@example.com" } });
+    const res = (await POST(
+      new Request("https://x/api/webhooks/resend", {
+        method: "POST",
+        body,
+      }) as unknown as import("next/server").NextRequest,
+    )) as Response;
+    expect(res.status).toBe(401);
+  });
+
+  it("accepts a signature produced by the official svix signer", async () => {
+    const body = JSON.stringify({ type: "email.opened", data: { to: "a@example.com" } });
+    const ts = new Date();
+    const req = new Request("https://x/api/webhooks/resend", {
+      method: "POST",
+      body,
+      headers: {
+        "svix-id": "msg_svix",
+        "svix-timestamp": String(Math.floor(ts.getTime() / 1000)),
+        "svix-signature": new Webhook(WEBHOOK_SECRET).sign("msg_svix", ts, body),
+      },
+    }) as unknown as import("next/server").NextRequest;
+    const res = (await POST(req)) as Response;
+    expect(res.status).toBe(200);
   });
 });
