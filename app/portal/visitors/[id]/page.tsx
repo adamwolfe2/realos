@@ -7,7 +7,6 @@ import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import {
   propertyOrOrgLevelWhereFragment,
-  propertyWhereFragment,
 } from "@/lib/tenancy/property-filter";
 import { VisitorIdentificationStatus } from "@prisma/client";
 import {
@@ -72,7 +71,7 @@ export default async function VisitorDetailPage({
     where: {
       id,
       ...tenantWhere(scope),
-      ...propertyOrOrgLevelWhereFragment(scope, null),
+      AND: [propertyOrOrgLevelWhereFragment(scope, null)],
     },
     include: {
       // Capped to the 20 most recent sessions — this page previously
@@ -117,7 +116,11 @@ export default async function VisitorDetailPage({
 
   // Linked lead (first match by visitorId)
   const linkedLead = await prisma.lead.findFirst({
-    where: { orgId: scope.orgId, visitorId: id },
+    where: {
+      orgId: scope.orgId,
+      visitorId: id,
+      AND: [propertyOrOrgLevelWhereFragment(scope, null)],
+    },
     select: {
       id: true,
       firstName: true,
@@ -129,15 +132,16 @@ export default async function VisitorDetailPage({
     },
   });
 
-  // Linked chatbot conversation (match by visitorHash). Property-gated:
-  // the transcript + captured contact info must not leak to a
-  // property-restricted agent just because the visitor row is org-level.
+  // Linked chatbot conversation (match by visitorHash). Property-gated the
+  // same way as /portal/conversations/[id]: a restricted agent sees their
+  // properties plus org-level (null-property) conversations. AND-wrapped so
+  // the fragment's OR can never collide with another OR key.
   const linkedConversation = visitor.visitorHash
     ? await prisma.chatbotConversation.findFirst({
         where: {
           orgId: scope.orgId,
           visitorHash: visitor.visitorHash,
-          ...propertyWhereFragment(scope, null),
+          AND: [propertyOrOrgLevelWhereFragment(scope, null)],
         },
         orderBy: { lastMessageAt: "desc" },
         select: {

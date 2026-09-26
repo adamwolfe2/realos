@@ -8,7 +8,6 @@ import {
   auditPayload,
 } from "@/lib/tenancy/scope";
 import {
-  propertyWhereFragment,
   propertyOrOrgLevelWhereFragment,
 } from "@/lib/tenancy/property-filter";
 import { AuditAction, EngagementStatus } from "@prisma/client";
@@ -82,7 +81,7 @@ export async function POST(
         where: {
           id: visitorId,
           ...tenantWhere(scope),
-          ...propertyOrOrgLevelWhereFragment(scope, null),
+          AND: [propertyOrOrgLevelWhereFragment(scope, null)],
         },
         select: { id: true },
       }),
@@ -90,7 +89,7 @@ export async function POST(
         where: {
           sessionId: parsed.data.sessionId,
           ...tenantWhere(scope),
-          ...propertyWhereFragment(scope, null),
+          AND: [propertyOrOrgLevelWhereFragment(scope, null)],
         },
         select: { id: true },
       }),
