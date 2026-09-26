@@ -5,6 +5,7 @@ import { PostHogProvider as PHProvider, usePostHog } from "posthog-js/react";
 import { useEffect, Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
+import { isPlatformBrowserHost } from "@/lib/tenancy/platform-host";
 
 // Tracks route changes as pageviews — must be wrapped in Suspense because of useSearchParams
 function PostHogPageView() {
@@ -49,6 +50,8 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
         if (!key) return;
+        // Never track a customer's tenant-site visitors in LeaseStack's project.
+        if (!isPlatformBrowserHost(window.location.hostname)) return;
         posthog.init(key, {
             api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com",
             person_profiles: "identified_only",

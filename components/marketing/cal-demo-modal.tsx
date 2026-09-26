@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { usePlatformHost } from "@/components/analytics/platform-only";
 import Cal, { getCalApi } from "@calcom/embed-react";
 
 // ---------------------------------------------------------------------------
@@ -72,9 +73,11 @@ const CalDemoContext = React.createContext<CalContextValue | null>(null);
 export function CalDemoProvider({ children }: { children: React.ReactNode }) {
   const slug = parseCalSlug(process.env.NEXT_PUBLIC_CAL_BOOK_URL);
   const [, forceRerender] = React.useState(0);
+  // LeaseStack's demo embed must not pre-warm on customer tenant sites.
+  const onPlatform = usePlatformHost();
 
   React.useEffect(() => {
-    if (!slug) return;
+    if (!slug || !onPlatform) return;
     let cancelled = false;
     (async () => {
       const cal = await getCalApi({ namespace: NAMESPACE });
@@ -97,7 +100,7 @@ export function CalDemoProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [slug]);
+  }, [slug, onPlatform]);
 
   const open = React.useCallback(() => {
     if (!slug) return;
@@ -121,7 +124,7 @@ export function CalDemoProvider({ children }: { children: React.ReactNode }) {
       {/* Pre-render the Cal embed off-screen so the iframe is warm by
           the time a user clicks. On first call to cal("modal", ...) the
           API uses this pre-warmed instance instead of cold-starting. */}
-      {slug ? (
+      {slug && onPlatform ? (
         <div aria-hidden="true" className="hidden">
           <Cal
             namespace={NAMESPACE}

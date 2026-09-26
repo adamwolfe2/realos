@@ -25,7 +25,7 @@ const securityHeaders = [
       "img-src 'self' data: blob: https:",
       "font-src 'self' data: https:",
       "connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://clerk.leasestack.co https://clerk-telemetry.com https://*.stripe.com https://*.sentry.io https://*.ingest.sentry.io https://*.posthog.com https://*.vercel-insights.com https://cal.com https://app.cal.com https://*.neon.tech https://collector.idpixel.app https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://client.crisp.chat wss://client.relay.crisp.chat",
-      "frame-src 'self' https://app.cal.com https://cal.com https://www.googletagmanager.com https://*.clerk.accounts.dev https://*.clerk.com https://clerk.leasestack.co https://challenges.cloudflare.com https://js.stripe.com https://hooks.stripe.com",
+      "frame-src 'self' https://app.cal.com https://cal.com https://*.clerk.accounts.dev https://*.clerk.com https://clerk.leasestack.co https://challenges.cloudflare.com https://js.stripe.com https://hooks.stripe.com",
       "worker-src 'self' blob:",
       "frame-ancestors 'none'",
       "object-src 'none'",

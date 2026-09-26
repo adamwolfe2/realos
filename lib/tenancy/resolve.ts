@@ -1,5 +1,8 @@
 import { prisma } from "@/lib/db";
 import type { Organization } from "@prisma/client";
+import { normalizeHost, isDevelopmentHostname } from "./platform-host";
+
+export { isDevelopmentHostname };
 
 export type TenantContext = {
   orgId: string;
@@ -40,15 +43,6 @@ function getPlatformDomain(): string {
   }
 }
 
-function normalizeHost(input: string): string {
-  return input
-    .trim()
-    .replace(/^https?:\/\//, "")
-    .split("/")[0]
-    .split(":")[0]
-    .toLowerCase()
-    .trim();
-}
 
 // ---------------------------------------------------------------------------
 // Hostname -> tenant resolution.
@@ -106,19 +100,6 @@ export function isPlatformHostname(hostname: string): boolean {
   return host === platform || host === `www.${platform}`;
 }
 
-// Vercel preview + localhost hostnames always count as the platform surface.
-// DECISION: preview URLs must stay usable for internal QA without us having to
-// pre-attach a DomainBinding for every preview deployment.
-export function isDevelopmentHostname(hostname: string): boolean {
-  const host = normalizeHost(hostname);
-  return (
-    host === "localhost" ||
-    host.endsWith(".vercel.app") ||
-    host.endsWith(".local") ||
-    host.endsWith(".ngrok.io") ||
-    host.endsWith(".ngrok-free.app")
-  );
-}
 
 function toContext(org: Organization): TenantContext {
   return {
