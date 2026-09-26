@@ -44,4 +44,9 @@ describe("findNewlyStuckCrons", () => {
     ];
     expect(findNewlyStuckCrons(atReminder, reminderAt)).toMatchObject([{ jobName: "daily", badRuns: 2 }]);
   });
+
+  it("treats a run stuck in 'running' past 20 min as a timeout (killed at maxDuration)", () => {
+    const runs = [run("appfolio", 200, "ok"), run("appfolio", 65, "running"), run("appfolio", 5, "running")];
+    expect(findNewlyStuckCrons(runs, NOW)).toMatchObject([{ jobName: "appfolio", status: "timeout", badRuns: 1 }]);
+  });
 });

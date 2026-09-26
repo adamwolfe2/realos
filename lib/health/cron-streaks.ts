@@ -22,6 +22,8 @@ export type StuckCron = {
 export const STUCK_AFTER_MS = 60 * 60 * 1000;
 export const CHECK_INTERVAL_MS = 60 * 60 * 1000;
 export const DAILY_REMINDER_UTC_HOUR = 14;
+/** Longest cron maxDuration is 300s; a run still "running" after this was killed. */
+export const STALE_RUNNING_MS = 20 * 60 * 1000;
 
 const BAD = new Set(["partial", "error", "timeout"]);
 
@@ -31,9 +33,16 @@ export function findNewlyStuckCrons(
 ): StuckCron[] {
   const byJob = new Map<string, CronRunRow[]>();
   for (const r of runs) {
-    if (r.status === "running") continue;
-    const list = byJob.get(r.jobName) ?? [];
-    list.push(r);
+    // recordCronRun can't update a run the platform killed at maxDuration, so
+    // it stays "running" forever. Past STALE_RUNNING_MS it's a timeout;
+    // younger rows may still be in flight and are ignored.
+    let row = r;
+    if (r.status === "running") {
+      if (now.getTime() - r.startedAt.getTime() < STALE_RUNNING_MS) continue;
+      row = { ...r, status: "timeout" };
+    }
+    const list = byJob.get(row.jobName) ?? [];
+    list.push(row);
     byJob.set(r.jobName, list);
   }
 
