@@ -4,6 +4,8 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
 import { OrgType, ProductLine, UserRole, Prisma } from "@prisma/client";
 
+const IMPERSONATION_MAX_MS = 8 * 60 * 60 * 1000;
+
 // ---------------------------------------------------------------------------
 // ScopedContext. The single source of truth for "whose data is this request
 // allowed to see?" for every tenant-scoped Prisma query and API handler.
@@ -327,10 +329,21 @@ async function getScopeUncached(): Promise<ScopedContext | null> {
     typeof publicMetadata.impersonateSessionId === "string"
       ? (publicMetadata.impersonateSessionId as string)
       : null;
+  // Documented 8h cap (impersonate.ts stamps impersonateStartedAt): an
+  // impersonation older than that is treated like a stale session and
+  // cleared below. Missing/garbled stamps fall back to the session binding.
+  const startedAtMs =
+    typeof publicMetadata.impersonateStartedAt === "string"
+      ? Date.parse(publicMetadata.impersonateStartedAt)
+      : NaN;
+  const impersonationExpired =
+    Number.isFinite(startedAtMs) &&
+    Date.now() - startedAtMs > IMPERSONATION_MAX_MS;
   const sessionMatchesImpersonation =
     !!storedSessionId &&
     !!currentSessionId &&
-    storedSessionId === currentSessionId;
+    storedSessionId === currentSessionId &&
+    !impersonationExpired;
 
   // Stale impersonation on a different session: clear it asynchronously so
   // it can't leak again on the next page load, and ignore it for this
