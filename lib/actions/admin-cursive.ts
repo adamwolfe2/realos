@@ -9,6 +9,7 @@ import { AuditAction, PixelRequestStatus, Prisma } from "@prisma/client";
 import { sendPixelReadyCustomerEmail } from "@/lib/email/pixel-emails";
 import { soleActiveProperty } from "@/lib/properties/sole-active";
 import { backfillPropertyId } from "@/lib/tenancy/property-filter";
+import { idpixelScriptUrl } from "@/lib/pixel/detect-install";
 
 // ---------------------------------------------------------------------------
 // Agency-only Cursive (the upstream pixel provider) integration management.
@@ -295,7 +296,7 @@ function buildInstallSnippet(pixelId: string): string {
   // the upstream pixel provider serves the V4 pixel script via cdn.idpixel.app. The URL
   // pattern is what the AL "Install Pixel" modal hands operators today; if
   // AL changes the canonical URL we update this single helper.
-  return `<script src="https://cdn.idpixel.app/v1/idp-analytics-${pixelId}.min.js" defer></script>`;
+  return `<script src="${idpixelScriptUrl(pixelId)}" defer></script>`;
 }
 
 // ---------------------------------------------------------------------------

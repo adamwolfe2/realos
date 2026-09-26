@@ -4,6 +4,7 @@ import { PostHogProvider } from "@/components/posthog-provider";
 import { CrispChat } from "@/components/crisp-chat";
 import { CalDemoProvider } from "@/components/marketing/cal-demo-modal";
 import { GoogleTags, GoogleTagManagerNoScript } from "@/components/analytics/google-tags";
+import { PlatformOnly } from "@/components/analytics/platform-only";
 import { Toaster } from "@/components/ui/sonner";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
@@ -152,8 +153,10 @@ export default function RootLayout({
             <CalDemoProvider>{children}</CalDemoProvider>
           </PostHogProvider>
           <Toaster />
-          <CrispChat />
-          <GoogleTags />
+          <PlatformOnly>
+            <CrispChat />
+            <GoogleTags />
+          </PlatformOnly>
           <Analytics />
           <SpeedInsights />
         </body>

@@ -70,6 +70,7 @@ export default async function TenantLayout({
   if (tenant.bringYourOwnSite) {
     return (
       <>
+        <meta name="ls-tenant-site" content="1" />
         {config?.chatbotEnabled ? (
           <ChatbotLoaderFor tenant={tenant} config={config} />
         ) : null}
@@ -94,6 +95,7 @@ export default async function TenantLayout({
       className="min-h-screen flex flex-col bg-white text-slate-900"
       style={brandStyle}
     >
+      <meta name="ls-tenant-site" content="1" />
       <TenantAnalytics
         ga4MeasurementId={config?.ga4MeasurementId ?? null}
         gtmContainerId={readGtmContainerId(config?.customJson)}

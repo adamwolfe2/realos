@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { idpixelScriptUrl } from "@/lib/pixel/detect-install";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -199,7 +200,7 @@ export default async function IntegrationsPage({
 
   const pixelProvisioned = Boolean(pixel?.cursivePixelId);
   const pixelInstallSnippet = pixel?.cursivePixelId
-    ? `<script src="https://cdn.idpixel.app/v1/idp-analytics-${pixel.cursivePixelId}.min.js" defer></script>`
+    ? `<script src="${idpixelScriptUrl(pixel.cursivePixelId)}" defer></script>`
     : null;
   const pixelEligible = org.modulePixel || org.moduleChatbot;
   // The setup wizard is mid-flow when we minted a webhook token but

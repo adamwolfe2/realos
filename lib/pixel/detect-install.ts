@@ -13,6 +13,11 @@ export interface PixelInstallDetection {
   detectedPixelId: string | null;
 }
 
+/** Canonical Cursive (IDPixel V4) loader URL for a pixel ID. */
+export function idpixelScriptUrl(pixelId: string): string {
+  return `https://cdn.idpixel.app/v1/idp-analytics-${pixelId}.min.js`;
+}
+
 /**
  * Look for a `cdn.idpixel.app` `idp-analytics-<id>` loader script tag in the
  * page HTML. When `expectedPixelId` is known, distinguishes a correct install
