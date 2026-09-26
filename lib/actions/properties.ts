@@ -382,7 +382,10 @@ export async function setPropertyLifecycle(
   let scope;
   try {
     scope = await requireWorkspaceAdmin();
-  } catch {
+  } catch (err) {
+    // A signed-in seat without the admin role (or an expired trial) gets the
+    // real reason; anything else is an auth failure.
+    if (err instanceof ForbiddenError) return { ok: false, error: err.message };
     return { ok: false, error: "Not authenticated." };
   }
 
@@ -481,7 +484,10 @@ export async function setPropertyLifecycleBulk(
   let scope;
   try {
     scope = await requireWorkspaceAdmin();
-  } catch {
+  } catch (err) {
+    // A signed-in seat without the admin role (or an expired trial) gets the
+    // real reason; anything else is an auth failure.
+    if (err instanceof ForbiddenError) return { ok: false, error: err.message };
     return { ok: false, error: "Not authenticated." };
   }
   const parsed = bulkSchema.safeParse(raw);
@@ -568,7 +574,10 @@ export async function activateAllImportedProperties(): Promise<
   let scope;
   try {
     scope = await requireWorkspaceAdmin();
-  } catch {
+  } catch (err) {
+    // A signed-in seat without the admin role (or an expired trial) gets the
+    // real reason; anything else is an auth failure.
+    if (err instanceof ForbiddenError) return { ok: false, error: err.message };
     return { ok: false, error: "Not authenticated." };
   }
 

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { requireWorkspaceAdmin } from "@/lib/tenancy/scope";
+import { ForbiddenError, requireWorkspaceAdmin } from "@/lib/tenancy/scope";
 import { isReportStatusRestricted, REPORT_OPERATOR_ONLY_ERROR } from "@/lib/reports/access";
 
 // ---------------------------------------------------------------------------
@@ -56,7 +56,13 @@ export type SaveReportCadenceResult =
 export async function saveReportCadence(
   raw: unknown,
 ): Promise<SaveReportCadenceResult> {
-  const scope = await requireWorkspaceAdmin();
+  let scope;
+  try {
+    scope = await requireWorkspaceAdmin();
+  } catch (err) {
+    if (err instanceof ForbiddenError) return { ok: false, error: err.message };
+    throw err;
+  }
   // Ungated, a real CLIENT_* user could set reportAutoSend + recipients here
   // and the weekly/monthly cron would then generate, email, and share a
   // report with zero operator review — same policy as every other report

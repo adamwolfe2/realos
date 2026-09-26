@@ -6,8 +6,9 @@
  * (partial / error / timeout). The streak starts at the oldest run in that
  * trailing non-ok run. We alert exactly once per streak: when the streak
  * start falls in (now - 2h, now - 1h], which an hourly checker hits once.
- * A streak that reaches the edge of the fetched window started earlier and
- * was already alerted on, so it stays quiet.
+ * A streak that reaches the edge of the fetched window started earlier; it
+ * is re-reported once a day (the check at DAILY_REMINDER_UTC_HOUR) so a
+ * chronic failure never goes quiet for good.
  */
 export type CronRunRow = { jobName: string; startedAt: Date; status: string };
 
@@ -20,6 +21,7 @@ export type StuckCron = {
 
 export const STUCK_AFTER_MS = 60 * 60 * 1000;
 export const CHECK_INTERVAL_MS = 60 * 60 * 1000;
+export const DAILY_REMINDER_UTC_HOUR = 14;
 
 const BAD = new Set(["partial", "error", "timeout"]);
 
@@ -46,8 +48,14 @@ export function findNewlyStuckCrons(
     let i = 0;
     while (i < newestFirst.length && BAD.has(newestFirst[i].status)) i += 1;
     if (i === 0) continue; // latest run is ok
-    if (i === newestFirst.length) continue; // streak reaches window edge: already alerted
     const badSince = newestFirst[i - 1].startedAt;
+    if (i === newestFirst.length) {
+      // Streak reaches the window edge: failing since before the lookback.
+      if (now.getUTCHours() === DAILY_REMINDER_UTC_HOUR) {
+        stuck.push({ jobName, status: newestFirst[0].status, badSince, badRuns: i });
+      }
+      continue;
+    }
     const t = badSince.getTime();
     if (t > lower && t <= upper) {
       stuck.push({

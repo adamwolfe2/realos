@@ -34,8 +34,14 @@ describe("findNewlyStuckCrons", () => {
     expect(findNewlyStuckCrons(runs, NOW)).toMatchObject([{ jobName: "a", status: "timeout", badRuns: 2 }]);
   });
 
-  it("does not re-alert a streak that reaches the lookback edge", () => {
+  it("does not re-alert a streak that reaches the lookback edge, except the daily reminder", () => {
     const runs = [run("daily", 1440, "partial"), run("daily", 90, "partial")];
     expect(findNewlyStuckCrons(runs, NOW)).toEqual([]);
+    const reminderAt = new Date("2026-09-26T14:07:00Z");
+    const atReminder = [
+      { jobName: "daily", startedAt: new Date(reminderAt.getTime() - 1440 * 60_000), status: "partial" },
+      { jobName: "daily", startedAt: new Date(reminderAt.getTime() - 90 * 60_000), status: "partial" },
+    ];
+    expect(findNewlyStuckCrons(atReminder, reminderAt)).toMatchObject([{ jobName: "daily", badRuns: 2 }]);
   });
 });

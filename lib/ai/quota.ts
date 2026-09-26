@@ -132,7 +132,8 @@ export async function checkAiQuota(
   }
 
   if (count > limit && opts.neverBlock) {
-    console.error(
+    // Log the crossing, then every 500 calls, instead of on every request.
+    if ((count - limit - 1) % 500 === 0) console.error(
       `[ai-quota] EXCEEDED org=${orgId} count=${count} limit=${limit} date=${todayUtc()} — paying customer, NOT blocked. Check spend on /admin/costs.`
     );
     return { allowed: true, count, limit };
