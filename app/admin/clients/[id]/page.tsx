@@ -413,6 +413,9 @@ export default async function ClientDetail({
         title={org.name}
         description={
           <span className="flex items-center gap-2 flex-wrap">
+            {org.slug.endsWith("-demo") ? (
+              <StatusBadge tone="danger">Demo workspace</StatusBadge>
+            ) : null}
             <span>{propertyTypeLabel}</span>
             <span className="text-muted-foreground/60">·</span>
             <StatusBadge tone={tenantStatusTone(org.status)}>

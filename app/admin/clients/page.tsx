@@ -378,6 +378,13 @@ export default async function ClientsList({
                         >
                           {c.name}
                         </Link>
+                        {/* Demo orgs share real customers' names
+                            (telegraph-commons-demo is "Telegraph Commons"). */}
+                        {c.slug.endsWith("-demo") ? (
+                          <StatusBadge tone="danger" className="ml-2">
+                            Demo
+                          </StatusBadge>
+                        ) : null}
                         <div className="text-[11px] text-muted-foreground">
                           {c.slug}
                         </div>

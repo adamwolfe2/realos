@@ -134,7 +134,7 @@ export default async function AttributionPage({
         />
         <nav
           aria-label="Filter leads by source"
-          className="flex min-w-0 flex-1 gap-1 overflow-x-auto border border-border bg-background p-1"
+          className="flex min-w-0 flex-1 flex-wrap gap-1 border border-border bg-background p-1"
         >
           {SOURCE_FILTERS.map((option) => {
             const active = source === option.value;
