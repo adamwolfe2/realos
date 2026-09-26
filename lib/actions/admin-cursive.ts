@@ -418,7 +418,13 @@ async function resolveAlSurface(
 
 export type SyncSegmentResult =
   | { ok: true; pulled: number; created: number; updated: number }
-  | { ok: false; error: string };
+  | {
+      ok: false;
+      error: string;
+      // Rows that did sync before/after the failing one still count.
+      pulled?: number;
+      created?: number;
+    };
 
 // Internal: shared sync routine usable by both the agency action and the
 // per-tenant operator action. Caller is responsible for auth + audit
@@ -488,7 +494,7 @@ export async function runCursiveSegmentSync(
     if (r.error && !firstError) firstError = r.error;
   }
 
-  if (firstError) return { ok: false, error: firstError };
+  if (firstError) return { ok: false, error: firstError, pulled, created };
   return { ok: true, pulled, created, updated };
 }
 

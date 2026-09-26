@@ -62,6 +62,8 @@ export async function GET(req: NextRequest) {
           totalPulled += r.pulled;
           totalCreated += r.created;
         } else {
+          totalPulled += r.pulled ?? 0;
+          totalCreated += r.created ?? 0;
           errors.push({ orgId: i.orgId, error: r.error });
         }
       } catch (err) {
