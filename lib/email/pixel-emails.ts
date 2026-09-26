@@ -187,3 +187,38 @@ export async function sendPixelReadyCustomerEmail(input: {
     }),
   });
 }
+
+// Ops heads-up for marketplace module requests: paid add-on activation
+// (billing page) or "notify me" interest in an unreleased module. Lives here
+// because it shares this file's ops recipient + safeSend.
+export async function sendModuleRequestOpsEmail(input: {
+  orgId: string;
+  orgName: string;
+  moduleName: string;
+  intent: "notify" | "activate";
+}): Promise<SendResult> {
+  const to = process.env.PIXEL_REQUEST_NOTIFY_EMAIL ?? BRAND_EMAIL;
+  if (!isValidEmail(to)) return { ok: false, error: "Invalid ops recipient" };
+  const clientUrl = `${APP_URL}/admin/clients/${input.orgId}`;
+  const activate = input.intent === "activate";
+  const bodyHtml = `
+    <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
+      <strong>${escape(input.orgName)}</strong> ${
+        activate
+          ? `asked to add <strong>${escape(input.moduleName)}</strong> to their paid plan. Add the Stripe item, enable the module, and confirm with them.`
+          : `wants to be notified when <strong>${escape(input.moduleName)}</strong> is available.`
+      }
+    </p>
+  `;
+  return safeSend({
+    to,
+    subject: `${activate ? "Add-on request" : "Module interest"}: ${input.orgName} / ${input.moduleName}`,
+    html: buildBaseHtml({
+      headline: activate ? "Add-on activation request" : "Module interest",
+      bodyHtml,
+      ctaText: "Open client",
+      ctaUrl: clientUrl,
+    }),
+    template: activate ? "addon-request-ops" : "module-interest-ops",
+  });
+}

@@ -11,6 +11,8 @@ import { subscriptionItemMonthlyCents } from "@/lib/billing/catalog";
 import { getEffectiveFeatureCatalog } from "@/lib/billing/feature-prices";
 import type Stripe from "stripe";
 import { TrialActivationCard } from "./trial-activation-card";
+import { AddonRequestCard } from "./addon-request-card";
+import { MARKETPLACE_ENTRIES } from "@/lib/marketplace/catalog";
 // WebsiteBuildCard import removed per Norman bug #106 — replaced with a
 // quiet link to /portal/marketplace. The card is still available for
 // other surfaces (marketplace, onboarding) where the full pitch belongs.
@@ -23,8 +25,19 @@ import { visibleWebsiteBuilds, toBuildStatus } from "@/lib/billing/website-build
 export const metadata: Metadata = { title: "Billing" };
 export const dynamic = "force-dynamic";
 
-export default async function BillingPage() {
+export default async function BillingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ addon?: string }>;
+}) {
   const scope = await requireScope();
+  const { addon: addonParam } = await searchParams;
+  // Marketplace + welcome grid send paid add-ons here as ?addon=<key|slug>.
+  const requestedAddon = addonParam
+    ? (MARKETPLACE_ENTRIES.find(
+        (e) => e.key === addonParam || e.slug === addonParam,
+      ) ?? null)
+    : null;
   if (!canManageBilling(scope)) redirect("/portal");
   const org = await prisma.organization.findUnique({
     where: { id: scope.orgId },
@@ -316,6 +329,16 @@ export default async function BillingPage() {
         // not selling.
         description="Review your current plan, line items, and Stripe portal access."
       />
+
+      {requestedAddon &&
+      !(org as Record<string, unknown>)[requestedAddon.key] ? (
+        <AddonRequestCard
+          moduleKey={requestedAddon.key}
+          name={requestedAddon.name}
+          tagline={requestedAddon.tagline}
+          monthlyPriceCents={requestedAddon.monthlyPriceCents}
+        />
+      ) : null}
 
       {/* Trial activation card. Renders when subscriptionStatus is
           TRIALING. Shows the property count, the tier the trial

@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireWritableWorkspace, ForbiddenError } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
-import { isValidModuleKey, getModuleByKey } from "@/lib/marketplace/catalog";
+import { getModuleByKey } from "@/lib/marketplace/catalog";
+import { sendModuleRequestOpsEmail } from "@/lib/email/pixel-emails";
 import { AuditAction, Prisma } from "@prisma/client";
 
 export const runtime = "nodejs";
@@ -20,7 +21,12 @@ export const dynamic = "force-dynamic";
 // starts driving roadmap decisions.
 // ---------------------------------------------------------------------------
 
-const bodySchema = z.object({ moduleKey: z.string().max(64) });
+const bodySchema = z.object({
+  moduleKey: z.string().max(64),
+  // "activate" = a paid add-on the operator wants on their plan now (billing
+  // page); "notify" = interest in a module that is not available yet.
+  intent: z.enum(["notify", "activate"]).default("notify"),
+});
 
 export async function POST(req: NextRequest) {
   try {
@@ -37,37 +43,63 @@ export async function POST(req: NextRequest) {
       }
       throw err;
     }
-    if (!isValidModuleKey(parsed.moduleKey)) {
+    const moduleDef = getModuleByKey(parsed.moduleKey);
+    if (!moduleDef) {
       return NextResponse.json(
         { ok: false, error: `Unknown module "${parsed.moduleKey}"` },
         { status: 400 },
       );
     }
+    const entityType =
+      parsed.intent === "activate"
+        ? "Organization.moduleActivationRequest"
+        : "Organization.moduleInterest";
     // Dedupe per org+module — repeat clicks (or a spamming client) must
     // not flood the org's audit trail (review 2026-07-31).
     const existing = await prisma.auditEvent.findFirst({
       where: {
         orgId: scope.orgId,
-        entityType: "Organization.moduleInterest",
+        entityType,
         diff: { path: ["module"], equals: parsed.moduleKey },
+        // Activation requests can legitimately repeat (e.g. after a
+        // cancel), so only dedupe them within a week.
+        ...(parsed.intent === "activate"
+          ? { createdAt: { gte: new Date(Date.now() - 7 * 86_400_000) } }
+          : {}),
       },
       select: { id: true },
     });
     if (existing) {
       return NextResponse.json({ ok: true, deduped: true });
     }
-    const moduleDef = getModuleByKey(parsed.moduleKey);
     await prisma.auditEvent.create({
       data: {
         orgId: scope.orgId,
         userId: scope.userId,
         action: AuditAction.SETTING_CHANGE,
-        entityType: "Organization.moduleInterest",
+        entityType,
         entityId: scope.orgId,
-        description: `Requested notification for ${moduleDef?.name ?? parsed.moduleKey} availability`,
+        description:
+          parsed.intent === "activate"
+            ? `Requested activation of ${moduleDef.name}`
+            : `Requested notification for ${moduleDef.name} availability`,
         diff: { module: parsed.moduleKey } as Prisma.InputJsonValue,
       },
     });
+    // Without this the request only lands in the audit trail, which nobody
+    // watches. Never blocks the response.
+    const org = await prisma.organization
+      .findUnique({ where: { id: scope.orgId }, select: { name: true } })
+      .catch(() => null);
+    const sent = await sendModuleRequestOpsEmail({
+      orgId: scope.orgId,
+      orgName: org?.name ?? scope.orgId,
+      moduleName: moduleDef.name,
+      intent: parsed.intent,
+    });
+    if (!sent.ok) {
+      console.error("[api/portal/marketplace/interest] ops email failed:", sent.error);
+    }
     return NextResponse.json({ ok: true });
   } catch (err) {
     if (err instanceof ForbiddenError) {
