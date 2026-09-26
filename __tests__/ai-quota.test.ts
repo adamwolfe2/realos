@@ -17,7 +17,7 @@ vi.mock("@upstash/redis", () => ({
   },
 }));
 
-import { checkAiQuota, __resetForTest } from "@/lib/ai/quota";
+import { checkAiQuota, isPayingSubscription, __resetForTest } from "@/lib/ai/quota";
 
 describe("checkAiQuota", () => {
   const originalEnv = { ...process.env };
@@ -83,6 +83,27 @@ describe("checkAiQuota", () => {
     expect(result.count).toBe(6);
     expect(result.limit).toBe(5);
     expect(result.reason).toBe("quota_exceeded");
+  });
+
+  it("never blocks a paying customer over the cap", async () => {
+    process.env.UPSTASH_REDIS_REST_URL = "https://example.upstash.io";
+    process.env.UPSTASH_REDIS_REST_TOKEN = "tok";
+    process.env.AI_DAILY_QUOTA_PER_ORG = "5";
+    incrMock.mockResolvedValueOnce(6);
+    expireMock.mockResolvedValueOnce(1);
+
+    const result = await checkAiQuota("org_paying", { neverBlock: true });
+
+    expect(result.allowed).toBe(true);
+    expect(result.count).toBe(6);
+  });
+
+  it("treats only ACTIVE and PAST_DUE as paying", () => {
+    expect(isPayingSubscription("ACTIVE")).toBe(true);
+    expect(isPayingSubscription("PAST_DUE")).toBe(true);
+    expect(isPayingSubscription("TRIALING")).toBe(false);
+    expect(isPayingSubscription("CANCELED")).toBe(false);
+    expect(isPayingSubscription(null)).toBe(false);
   });
 
   it("falls back to default when AI_DAILY_QUOTA_PER_ORG is invalid", async () => {

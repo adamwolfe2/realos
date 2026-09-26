@@ -8,7 +8,8 @@ import {
   checkRateLimit,
   getIp,
 } from "@/lib/rate-limit";
-import { checkAiQuota } from "@/lib/ai/quota";
+import { checkAiQuota, isPayingSubscription } from "@/lib/ai/quota";
+import { logChatUsage } from "@/lib/chatbot/log-chat-usage";
 import {
   exceedsChatInputBudget,
   MAX_CHAT_OUTPUT_TOKENS,
@@ -117,7 +118,9 @@ export async function POST(req: NextRequest) {
   // Per-org daily AI quota backstop. See lib/ai/quota.ts — set well above
   // legitimate volume so this only catches a runaway tenant or bad actor,
   // not real customers. Fails OPEN on Redis errors.
-  const quota = await checkAiQuota(orgId);
+  const quota = await checkAiQuota(orgId, {
+    neverBlock: isPayingSubscription(org.subscriptionStatus),
+  });
   if (!quota.allowed) {
     return NextResponse.json(
       { error: "Chatbot temporarily unavailable", code: "ai_quota_exceeded" },
@@ -159,13 +162,22 @@ export async function POST(req: NextRequest) {
   });
   const userAgent = req.headers.get("user-agent") ?? undefined;
 
+  const chatStartedAt = Date.now();
   const result = streamText({
     model: anthropic("claude-haiku-4-5-20251001"),
     system: systemPrompt,
     messages,
     // Denial-of-Wallet: bound the reply length per call.
     maxOutputTokens: MAX_CHAT_OUTPUT_TOKENS,
-    onFinish: async ({ text }) => {
+    onFinish: async ({ text, totalUsage }) => {
+      await logChatUsage({
+        endpoint: "chatbot.chat",
+        model: "claude-haiku-4-5-20251001",
+        orgId,
+        propertyId: resolvedPropertyId,
+        startedAt: chatStartedAt,
+        usage: totalUsage,
+      });
       try {
         await persistConversation({
           orgId,

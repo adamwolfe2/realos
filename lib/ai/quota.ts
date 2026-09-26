@@ -60,6 +60,11 @@ function quotaKey(orgId: string): string {
   return `ai-quota:${orgId}:${todayUtc()}`;
 }
 
+/** ACTIVE or PAST_DUE: a customer we bill. Never cut their chatbot off. */
+export function isPayingSubscription(status: string | null | undefined): boolean {
+  return status === "ACTIVE" || status === "PAST_DUE";
+}
+
 export type AiQuotaResult = {
   allowed: boolean;
   count: number;
@@ -78,7 +83,14 @@ export type AiQuotaResult = {
  * Fails OPEN on any Redis error (logged warning, request proceeds) — this is
  * deliberately a soft backstop, not a hard gate.
  */
-export async function checkAiQuota(orgId: string): Promise<AiQuotaResult> {
+export async function checkAiQuota(
+  orgId: string,
+  opts: {
+    /// Paying customers (see isPayingSubscription) are never switched off by
+    /// this backstop: over the limit we log loudly and let the call through.
+    neverBlock?: boolean;
+  } = {},
+): Promise<AiQuotaResult> {
   const limit = getQuota();
   const redis = getRedis();
   if (!redis) {
@@ -117,6 +129,13 @@ export async function checkAiQuota(orgId: string): Promise<AiQuotaResult> {
       limit,
       reason: "redis_unavailable_fail_open",
     };
+  }
+
+  if (count > limit && opts.neverBlock) {
+    console.error(
+      `[ai-quota] EXCEEDED org=${orgId} count=${count} limit=${limit} date=${todayUtc()} — paying customer, NOT blocked. Check spend on /admin/costs.`
+    );
+    return { allowed: true, count, limit };
   }
 
   if (count > limit) {

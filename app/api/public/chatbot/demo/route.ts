@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { streamText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
+import { logChatUsage } from "@/lib/chatbot/log-chat-usage";
 import { scrape } from "@/lib/intelligence/firecrawl";
 import {
   normalizeDemoUrl,
@@ -185,12 +186,23 @@ ${ctx.facts}`;
 }
 
 async function handleChat(data: z.infer<typeof chatBody>) {
+  const startedAt = Date.now();
   const result = streamText({
     model: anthropic("claude-haiku-4-5-20251001"),
     system: buildDemoSystemPrompt(data.context),
     messages: data.messages,
     // Denial-of-wallet: bound the reply. Demo answers are 1-3 sentences.
     maxOutputTokens: 400,
+    // No org: the demo runs on LeaseStack's dime. Logged so the spend
+    // shows on /admin/costs under chatbot.demo.
+    onFinish: async ({ totalUsage }) => {
+      await logChatUsage({
+        endpoint: "chatbot.demo",
+        model: "claude-haiku-4-5-20251001",
+        startedAt,
+        usage: totalUsage,
+      });
+    },
   });
   return result.toTextStreamResponse({
     headers: { "Cache-Control": "no-store" },

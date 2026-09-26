@@ -28,7 +28,8 @@ import {
   getIp,
   WIDGET_FALLBACK,
 } from "@/lib/rate-limit";
-import { checkAiQuota } from "@/lib/ai/quota";
+import { checkAiQuota, isPayingSubscription } from "@/lib/ai/quota";
+import { logChatUsage } from "@/lib/chatbot/log-chat-usage";
 import {
   requireMatchingOrigin,
   chatbotOriginBypassEnabled,
@@ -202,7 +203,9 @@ export async function POST(req: NextRequest) {
   // above. This exists so a single tenant can't quietly drain the
   // Anthropic budget before anyone notices. Fails OPEN on Redis errors;
   // see lib/ai/quota.ts.
-  const quota = await checkAiQuota(orgId);
+  const quota = await checkAiQuota(orgId, {
+    neverBlock: isPayingSubscription(org.subscriptionStatus),
+  });
   if (!quota.allowed) {
     return NextResponse.json(
       {
@@ -348,6 +351,7 @@ export async function POST(req: NextRequest) {
   );
   const userAgent = req.headers.get("user-agent") ?? undefined;
 
+  const chatStartedAt = Date.now();
   const result = streamText({
     model: anthropic("claude-haiku-4-5-20251001"),
     system: systemPrompt,
@@ -355,7 +359,15 @@ export async function POST(req: NextRequest) {
     // Denial-of-Wallet: bound the reply so a single call can't be prompted
     // into an unbounded (expensive) generation.
     maxOutputTokens: MAX_CHAT_OUTPUT_TOKENS,
-    onFinish: async ({ text }) => {
+    onFinish: async ({ text, totalUsage }) => {
+      await logChatUsage({
+        endpoint: "chatbot.public-chat",
+        model: "claude-haiku-4-5-20251001",
+        orgId,
+        propertyId: resolvedPropertyId,
+        startedAt: chatStartedAt,
+        usage: totalUsage,
+      });
       try {
         // Same markdown stripper the client renderer uses, so the
         // persisted transcript matches what the visitor actually saw on
