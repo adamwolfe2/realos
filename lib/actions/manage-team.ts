@@ -649,10 +649,34 @@ export async function updatePropertyAccessAsClient(
   // Verify target user is in the same org.
   const target = await prisma.user.findUnique({
     where: { id: parsed.data.userId },
-    select: { orgId: true },
+    select: {
+      orgId: true,
+      role: true,
+      propertyAccess: { select: { propertyId: true } },
+    },
   });
   if (!target || target.orgId !== caller.orgId) {
     return { ok: false, error: "User not in your organization." };
+  }
+  // Only the Owner can change the Owner's access (mirrors
+  // updateUserRoleAsClient), so an admin can't lock the Owner out.
+  if (
+    target.role === UserRole.CLIENT_OWNER &&
+    caller.role !== UserRole.CLIENT_OWNER
+  ) {
+    return { ok: false, error: "Only the Owner can change the Owner's access." };
+  }
+  // A restricted admin may only edit teammates already inside their own
+  // buildings; an unrestricted teammate (no rows) is out of reach.
+  if (scope.allowedPropertyIds) {
+    const held = new Set(scope.allowedPropertyIds);
+    const current = target.propertyAccess.map((r) => r.propertyId);
+    if (current.length === 0 || current.some((id) => !held.has(id))) {
+      return {
+        ok: false,
+        error: "You can only manage teammates within your properties.",
+      };
+    }
   }
   // A property-restricted admin can only hand out buildings they hold, and
   // can't edit their own grant: an empty list means "all properties", so

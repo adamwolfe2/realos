@@ -172,7 +172,25 @@ describe("updatePropertyAccessAsClient — restricted admin can't widen access (
       orgId: "client-org",
       role: UserRole.CLIENT_ADMIN,
       email: "admin@client.test",
+      propertyAccess: [{ propertyId: "prop-a" }],
     });
+  });
+
+  it("blocks restricting the Owner (owner lockout)", async () => {
+    mockPrisma.user.findUnique
+      .mockResolvedValueOnce({ id: VALID_CUID, orgId: "client-org", role: UserRole.CLIENT_ADMIN })
+      .mockResolvedValueOnce({ orgId: "client-org", role: UserRole.CLIENT_OWNER, propertyAccess: [] });
+    const r = await updatePropertyAccessAsClient({ userId: OTHER, propertyIds: ["prop-a"] });
+    expect(r.ok).toBe(false);
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("blocks restricting an unrestricted peer", async () => {
+    mockPrisma.user.findUnique
+      .mockResolvedValueOnce({ id: VALID_CUID, orgId: "client-org", role: UserRole.CLIENT_ADMIN })
+      .mockResolvedValueOnce({ orgId: "client-org", role: UserRole.CLIENT_ADMIN, propertyAccess: [] });
+    const r = await updatePropertyAccessAsClient({ userId: OTHER, propertyIds: ["prop-a"] });
+    expect(r.ok).toBe(false);
   });
 
   it("blocks clearing their own grant (empty = all properties)", async () => {
