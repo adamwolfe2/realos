@@ -654,5 +654,23 @@ export async function updatePropertyAccessAsClient(
   if (!target || target.orgId !== caller.orgId) {
     return { ok: false, error: "User not in your organization." };
   }
+  // A property-restricted admin can only hand out buildings they hold, and
+  // can't edit their own grant: an empty list means "all properties", so
+  // either path would lift their own restriction (SECURITY_AUDIT AUTHZ-SELF).
+  if (scope.allowedPropertyIds) {
+    if (parsed.data.userId === scope.userId) {
+      return { ok: false, error: "You can't change your own property access." };
+    }
+    const held = new Set(scope.allowedPropertyIds);
+    if (
+      parsed.data.propertyIds.length === 0 ||
+      parsed.data.propertyIds.some((id) => !held.has(id))
+    ) {
+      return {
+        ok: false,
+        error: "You can only grant access to properties you have access to.",
+      };
+    }
+  }
   return applyPropertyAccess(scope, parsed.data.userId, parsed.data.propertyIds);
 }

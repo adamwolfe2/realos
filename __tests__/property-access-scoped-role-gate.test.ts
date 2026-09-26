@@ -43,7 +43,7 @@ vi.mock("@/lib/tenancy/scope", () => ({
   ) => ({ ...scope, ...rest }),
 }));
 
-const { updatePropertyAccessAsAgency } = await import(
+const { updatePropertyAccessAsAgency, updatePropertyAccessAsClient } = await import(
   "@/lib/actions/manage-team"
 );
 const { UserRole, OrgType } = await import("@prisma/client");
@@ -147,5 +147,48 @@ describe("applyPropertyAccess — scoped-role org-wide escalation guard", () => 
 
     expect(result.ok).toBe(true);
     expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("updatePropertyAccessAsClient — restricted admin can't widen access (AUTHZ-SELF)", () => {
+  const OTHER = "ckyyyyyyyyyyyyyyyyyyyyyyy";
+  function restrictedAdmin() {
+    return {
+      ...agencyScope(),
+      userId: VALID_CUID,
+      orgId: "client-org",
+      actualOrgId: "client-org",
+      orgType: OrgType.CLIENT,
+      actualOrgType: OrgType.CLIENT,
+      role: UserRole.CLIENT_ADMIN,
+      isAgency: false,
+      allowedPropertyIds: ["prop-a"],
+    };
+  }
+  beforeEach(() => {
+    mockRequireAgency.mockResolvedValue(restrictedAdmin());
+    mockPrisma.user.findUnique.mockResolvedValue({
+      id: VALID_CUID,
+      orgId: "client-org",
+      role: UserRole.CLIENT_ADMIN,
+      email: "admin@client.test",
+    });
+  });
+
+  it("blocks clearing their own grant (empty = all properties)", async () => {
+    const r = await updatePropertyAccessAsClient({ userId: VALID_CUID, propertyIds: [] });
+    expect(r.ok).toBe(false);
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("blocks granting a teammate org-wide access", async () => {
+    const r = await updatePropertyAccessAsClient({ userId: OTHER, propertyIds: [] });
+    expect(r.ok).toBe(false);
+  });
+
+  it("blocks granting a property the admin doesn't hold", async () => {
+    const r = await updatePropertyAccessAsClient({ userId: OTHER, propertyIds: ["prop-b"] });
+    expect(r.ok).toBe(false);
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
   });
 });
