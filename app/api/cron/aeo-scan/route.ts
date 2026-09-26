@@ -6,6 +6,7 @@ import { runAeoScan, runNeighborhoodScan } from "@/lib/aeo/orchestrate";
 import { resolveEngineSource } from "@/lib/aeo/engines";
 import { scoreOrgOpportunities } from "@/lib/aeo/score-opportunities";
 import { orderOrgsForAeoScan } from "@/lib/aeo/scan-order";
+import { notDemoOrg } from "@/lib/tenancy/demo-org";
 
 // Skip per-page sampling if scanned within this window. The weekly cron
 // runs Mondays — 6 days keeps us re-scanning every Monday without ever
@@ -46,8 +47,7 @@ export async function GET(req: NextRequest) {
       where: {
         moduleSEO: true,
         orgType: "CLIENT",
-        // Demo orgs (slug "*-demo") are seeded fixtures, not customers.
-        NOT: { slug: { endsWith: "-demo" } },
+        ...notDemoOrg,
       },
       select: { id: true, name: true, subscriptionStatus: true },
     });

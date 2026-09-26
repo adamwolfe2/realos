@@ -45,9 +45,13 @@ describe("Cursive module — cron + freshness", () => {
     expect(src).toContain("runCursiveSegmentSync");
   });
 
+  it("seo-sync skips demo orgs (placeholder creds read as partial)", () => {
+    expect(readFile("app/api/cron/seo-sync/route.ts")).toContain("where: { org: notDemoOrg }");
+  });
+
   it("pixel-segment-sync skips demo orgs (fake segment IDs read as partial)", () => {
     const src = readFile("app/api/cron/pixel-segment-sync/route.ts");
-    expect(src).toMatch(/org: \{ NOT: \{ slug: \{ endsWith: "-demo" \} \} \}/);
+    expect(src).toContain("org: notDemoOrg");
   });
 
   it("cursive_pixel freshness budget is tight (<=5 min stale)", async () => {

@@ -4,6 +4,7 @@ import { recordCronRun } from "@/lib/health/cron-run";
 import { runCursiveSegmentSync } from "@/lib/actions/admin-cursive";
 import { INTERNAL_CALL } from "@/lib/security/internal-call";
 import { verifyCronAuth } from "@/lib/cron/auth";
+import { notDemoOrg } from "@/lib/tenancy/demo-org";
 
 export const maxDuration = 300;
 
@@ -48,7 +49,7 @@ export async function GET(req: NextRequest) {
         // Demo orgs (slug "*-demo", same rule as the admin Demo badge) carry
         // fake segment IDs like "seg-tc-demo-hot". Syncing them 404s every
         // run and pins this job at "partial", which hides real failures.
-        org: { NOT: { slug: { endsWith: "-demo" } } },
+        org: notDemoOrg,
       },
       select: { orgId: true },
       // One sync per org; runCursiveSegmentSync covers all its rows.

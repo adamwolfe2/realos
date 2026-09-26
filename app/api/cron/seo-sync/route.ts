@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { runSeoSync } from "@/lib/integrations/seo-sync";
 import { recordCronRun } from "@/lib/health/cron-run";
 import { verifyCronAuth } from "@/lib/cron/auth";
+import { notDemoOrg } from "@/lib/tenancy/demo-org";
 
 export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for unbounded loops
 
@@ -31,6 +32,7 @@ export async function GET(req: NextRequest) {
   return recordCronRun("seo-sync", async () => {
     // Find every distinct orgId with at least one SEO integration.
     const orgs = await prisma.seoIntegration.findMany({
+      where: { org: notDemoOrg },
       distinct: ["orgId"],
       select: { orgId: true },
     });
