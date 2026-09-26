@@ -100,9 +100,12 @@ export function VisitorStream({
 }: VisitorStreamProps = {}) {
   const cap = Math.max(1, Math.min(visibleRows, POOL.length));
   const [rows, setRows] = useState<Visitor[]>(() =>
+    // Newest row on top carries the HIGHEST id: each tick adds top.id + 1,
+    // so ascending seed ids (0 on top) made the new row collide with an
+    // existing one (duplicate React keys) and repeat a visitor on screen.
     POOL.slice(0, cap).map((p, i) => ({
       ...p,
-      id: i,
+      id: cap - 1 - i,
       ago: `${(i + 1) * 2}m`,
     })),
   );

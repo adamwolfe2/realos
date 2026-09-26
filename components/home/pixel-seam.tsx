@@ -62,13 +62,15 @@ export function PixelSeam({
       style={{ height }}
     >
       {CELLS.map(({ col, row }) => {
-        const delayMs = (col / COLS) * 240 + hash(row, col) * 60;
+        // Rounded: long floats serialize differently on the server and in
+        // the browser's style parser, which read as a hydration mismatch.
+        const delayMs = Math.round((col / COLS) * 240 + hash(row, col) * 60);
         return (
           <span
             key={`${col}-${row}`}
             className="absolute"
             style={{
-              left: `${(col / COLS) * 100}%`,
+              left: `${((col / COLS) * 100).toFixed(3)}%`,
               top: `${(row / (ROWS - 1)) * (height - SQUARE)}px`,
               width: SQUARE,
               height: SQUARE,
