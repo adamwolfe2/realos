@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { requireModule } from "@/lib/portal/module-gate";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   marketableScopedPropertyClause,
@@ -50,6 +51,11 @@ export default async function AdsPage({
   searchParams: Promise<{ properties?: string; property?: string }>;
 }) {
   const scope = await requireScope();
+  // Either ads module unlocks the page; only gate when both are off.
+  const gate =
+    (await requireModule("moduleGoogleAds")) &&
+    (await requireModule("moduleMetaAds"));
+  if (gate) return gate;
   const sp = await searchParams;
   const propertyIds = await parsePropertyFilter(sp, scope.orgId);
 
