@@ -151,6 +151,7 @@ function topDist(counts: Map<string, number>, limit: number): DistRow[] {
 
 export async function getProspectIntel(params: {
   orgId: string;
+  propertyWhere?: Prisma.ChatbotConversationWhereInput;
   periodDays?: number;
 }): Promise<ProspectIntel> {
   const periodDays = params.periodDays ?? 30;
@@ -158,6 +159,7 @@ export async function getProspectIntel(params: {
   const rows = await prisma.chatbotConversation.findMany({
     where: {
       orgId: params.orgId,
+      ...(params.propertyWhere ?? {}),
       lastMessageAt: { gte: since },
       prospectProfile: { not: Prisma.JsonNull },
     },

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { ChatbotCaptureMode } from "@prisma/client";
+import { ChatbotCaptureMode, type Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
 import { ChatbotConfigForm } from "./chatbot-config-form";
@@ -10,7 +10,7 @@ import { LeadRoutingPanel } from "./lead-routing-panel";
 import { InstallSnippet } from "./install-snippet";
 import { ChatbotInstallSnippetPicker } from "./chatbot-install-snippet-picker";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
-import { visibleProperties } from "@/lib/tenancy/property-filter";
+import { visibleProperties, propertyWhereFragment } from "@/lib/tenancy/property-filter";
 import { chatbotSnippet } from "@/lib/chatbot/snippet";
 import { PageHeader } from "@/components/admin/page-header";
 import {
@@ -58,6 +58,12 @@ async function resolveAppUrl(): Promise<string> {
 
 export default async function ChatbotPage() {
   const scope = await requireScope();
+  // Property-restricted operators only see conversations from their
+  // buildings ({} for unrestricted users, so their stats are unchanged).
+  const convScope = propertyWhereFragment(
+    scope,
+    null,
+  ) as Prisma.ChatbotConversationWhereInput;
 
   // Window cutoffs for the conversation-stats strip (Norman bug #91:
   // chatbot page should lead with engagement numbers, configuration
@@ -113,17 +119,18 @@ export default async function ChatbotPage() {
     // contribution to pipeline reads at a glance. Run in parallel.
     Promise.all([
       prisma.chatbotConversation.count({
-        where: { orgId: scope.orgId, lastMessageAt: { gte: since1d } },
+        where: { orgId: scope.orgId, ...convScope, lastMessageAt: { gte: since1d } },
       }),
       prisma.chatbotConversation.count({
-        where: { orgId: scope.orgId, lastMessageAt: { gte: since7d } },
+        where: { orgId: scope.orgId, ...convScope, lastMessageAt: { gte: since7d } },
       }),
       prisma.chatbotConversation.count({
-        where: { orgId: scope.orgId, lastMessageAt: { gte: since30d } },
+        where: { orgId: scope.orgId, ...convScope, lastMessageAt: { gte: since30d } },
       }),
       prisma.chatbotConversation.count({
         where: {
           orgId: scope.orgId,
+          ...convScope,
           lastMessageAt: { gte: since30d },
           OR: [
             { capturedEmail: { not: null } },
@@ -141,6 +148,7 @@ export default async function ChatbotPage() {
       .findMany({
         where: {
           orgId: scope.orgId,
+          ...convScope,
           lastMessageAt: { gte: new Date(now - 60 * 24 * 60 * 60 * 1000) },
         },
         select: { lastMessageAt: true },
@@ -161,8 +169,8 @@ export default async function ChatbotPage() {
     // Questions tab — top opening questions + topic keywords (heuristic,
     // no AI cost). Prospects tab — aggregates over the Haiku-extracted
     // profiles the digest cron already produced.
-    getChatbotAnalytics({ orgId: scope.orgId, periodDays: 30 }).catch(() => null),
-    getProspectIntel({ orgId: scope.orgId, periodDays: 30 }).catch(() => null),
+    getChatbotAnalytics({ orgId: scope.orgId, propertyWhere: convScope, periodDays: 30 }).catch(() => null),
+    getProspectIntel({ orgId: scope.orgId, propertyWhere: convScope, periodDays: 30 }).catch(() => null),
     // Multi-property picker (Wave 3 phase 6): only fetched/shown when the
     // org actually has more than one marketable property — single-property
     // orgs keep the plain org-wide snippet, matching every other

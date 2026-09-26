@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { visibleProperties } from "@/lib/tenancy/property-filter";
 import { Share2 } from "lucide-react";
 import QRCode from "qrcode";
 import { prisma } from "@/lib/db";
@@ -52,7 +53,7 @@ export default async function ReferralsPage() {
 
   const thirty_days_ago = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-  const [properties, referralLeadsAll, referralLeads30d] = await Promise.all([
+  const [allProperties, referralLeadsAll, referralLeads30d] = await Promise.all([
     prisma.property.findMany({
       where: tenantWhere(scope),
       orderBy: { name: "asc" },
@@ -82,6 +83,10 @@ export default async function ReferralsPage() {
       _count: { id: true },
     }),
   ]);
+
+  // Property-restricted operators only see their buildings; every stat
+  // and total below is built from this list.
+  const properties = visibleProperties(scope, allProperties);
 
   // Fetch all applications joined to referral leads in TWO queries
   // total (one for applications, one for approved subset) instead of
