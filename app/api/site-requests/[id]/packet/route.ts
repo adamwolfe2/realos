@@ -4,6 +4,10 @@ import { join } from "node:path";
 import JSZip from "jszip";
 import { prisma } from "@/lib/db";
 import { requireAgency } from "@/lib/tenancy/scope";
+import {
+  assertPublicHttpUrl,
+  safeFetchFollowingRedirects,
+} from "@/lib/security/ssrf-guard";
 import { logPacketDownload } from "@/app/admin/site-engine/[id]/actions";
 
 // ---------------------------------------------------------------------------
@@ -198,7 +202,14 @@ ${sr.intake?.anythingElse ?? "_(none)_"}
         ? `inspiration-screenshots/${safe}`
         : `assets/${asset.type.toLowerCase()}/${safe}`;
       try {
-        const r = await fetch(asset.blobUrl);
+        // Defense in depth: the intake schema already pins blobUrl to the
+        // Vercel public-blob host, but re-validate against the SSRF allowlist
+        // (DNS-resolved, private/metadata ranges blocked, redirect hops
+        // re-checked) before fetching bytes that get returned to the operator
+        // in the packet zip. A stored row that predates the schema pin, or a
+        // future write path, can't turn this into a readable SSRF.
+        await assertPublicHttpUrl(asset.blobUrl);
+        const r = await safeFetchFollowingRedirects(asset.blobUrl);
         if (r.ok) {
           const buf = Buffer.from(await r.arrayBuffer());
           return {

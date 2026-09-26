@@ -42,12 +42,16 @@ const INTERNAL_ID = "ckq1internalcuid0000";
 /**
  * Stands in for the User table: a single row whose internal id and Clerk id
  * differ. Resolves on `where.clerkUserId` only — a lookup by `where.id` (or by
- * any other Clerk id) returns null, exactly as Postgres would.
+ * any other Clerk id) returns null, exactly as Postgres would. The row carries
+ * an `org.orgType` because requireAdmin now requires BOTH an agency role AND an
+ * AGENCY-typed org (mirrors requireAgency).
  */
-function seedUser(role: string) {
+function seedUser(role: string, orgType: string = "AGENCY") {
   mockPrisma.user.findUnique.mockImplementation(
     async ({ where }: { where: { id?: string; clerkUserId?: string } }) =>
-      where.clerkUserId === CLERK_ID ? { id: INTERNAL_ID, role } : null,
+      where.clerkUserId === CLERK_ID
+        ? { id: INTERNAL_ID, role, org: { orgType } }
+        : null,
   );
 }
 
@@ -124,5 +128,39 @@ describe("require-admin resolves the caller by clerkUserId", () => {
     expect(result.userId).toBeNull();
     const body = await result.error!.json();
     expect(body.error).toBe("Forbidden");
+  });
+
+  // security-audit-remediation: requireAdmin must require an AGENCY-typed org,
+  // not an agency ROLE alone. The Clerk membership.deleted handler re-homes
+  // removed client users into the agency org, and other flows can leave an
+  // agency-ish role on a CLIENT-typed org — a role-only check would hand that
+  // user cross-tenant admin over the 13 routes behind this helper.
+  it("requireAdmin refuses an agency ROLE attached to a CLIENT-typed org", async () => {
+    seedUser("AGENCY_OWNER", "CLIENT");
+
+    const result = await requireAdmin();
+
+    expect(result.userId).toBeNull();
+    const body = await result.error!.json();
+    expect(body.error).toBe("Forbidden");
+  });
+
+  it("requireAdminOrRep refuses an agency role attached to a CLIENT-typed org", async () => {
+    seedUser("AGENCY_OPERATOR", "CLIENT");
+
+    const result = await requireAdminOrRep();
+
+    expect(result.userId).toBeNull();
+    const body = await result.error!.json();
+    expect(body.error).toBe("Forbidden");
+  });
+
+  it("requireAdmin admits an agency role on an AGENCY-typed org", async () => {
+    seedUser("AGENCY_OWNER", "AGENCY");
+
+    const result = await requireAdmin();
+
+    expect(result.error).toBeNull();
+    expect(result.userId).toBe(INTERNAL_ID);
   });
 });

@@ -65,7 +65,7 @@ describe("auth boundaries", () => {
     // the fact that every real user was 403'd. Real enum values only.
     it("returns userId and null error for AGENCY_OWNER role", async () => {
       mockAuth.mockResolvedValue({ userId: "admin-1" });
-      mockPrisma.user.findUnique.mockResolvedValue({ id: "admin-1", role: "AGENCY_OWNER" });
+      mockPrisma.user.findUnique.mockResolvedValue({ id: "admin-1", role: "AGENCY_OWNER", org: { orgType: "AGENCY" } });
 
       const result = await requireAdmin();
 
@@ -75,7 +75,7 @@ describe("auth boundaries", () => {
 
     it("returns userId and null error for AGENCY_ADMIN role", async () => {
       mockAuth.mockResolvedValue({ userId: "ops-1" });
-      mockPrisma.user.findUnique.mockResolvedValue({ id: "ops-1", role: "AGENCY_ADMIN" });
+      mockPrisma.user.findUnique.mockResolvedValue({ id: "ops-1", role: "AGENCY_ADMIN", org: { orgType: "AGENCY" } });
 
       const result = await requireAdmin();
 
@@ -85,7 +85,7 @@ describe("auth boundaries", () => {
 
     it("rejects AGENCY_OPERATOR role", async () => {
       mockAuth.mockResolvedValue({ userId: "rep-1" });
-      mockPrisma.user.findUnique.mockResolvedValue({ id: "rep-1", role: "AGENCY_OPERATOR" });
+      mockPrisma.user.findUnique.mockResolvedValue({ id: "rep-1", role: "AGENCY_OPERATOR", org: { orgType: "AGENCY" } });
 
       const result = await requireAdmin();
 
@@ -109,7 +109,7 @@ describe("auth boundaries", () => {
 
     it("allows AGENCY_OWNER role", async () => {
       mockAuth.mockResolvedValue({ userId: "admin-1" });
-      mockPrisma.user.findUnique.mockResolvedValue({ id: "admin-1", role: "AGENCY_OWNER" });
+      mockPrisma.user.findUnique.mockResolvedValue({ id: "admin-1", role: "AGENCY_OWNER", org: { orgType: "AGENCY" } });
 
       const result = await requireAdminOrRep();
 
@@ -119,7 +119,7 @@ describe("auth boundaries", () => {
 
     it("allows AGENCY_ADMIN role", async () => {
       mockAuth.mockResolvedValue({ userId: "ops-1" });
-      mockPrisma.user.findUnique.mockResolvedValue({ id: "ops-1", role: "AGENCY_ADMIN" });
+      mockPrisma.user.findUnique.mockResolvedValue({ id: "ops-1", role: "AGENCY_ADMIN", org: { orgType: "AGENCY" } });
 
       const result = await requireAdminOrRep();
 
@@ -129,7 +129,7 @@ describe("auth boundaries", () => {
 
     it("allows AGENCY_OPERATOR role", async () => {
       mockAuth.mockResolvedValue({ userId: "rep-1" });
-      mockPrisma.user.findUnique.mockResolvedValue({ id: "rep-1", role: "AGENCY_OPERATOR" });
+      mockPrisma.user.findUnique.mockResolvedValue({ id: "rep-1", role: "AGENCY_OPERATOR", org: { orgType: "AGENCY" } });
 
       const result = await requireAdminOrRep();
 

@@ -1,5 +1,27 @@
 import { z } from "zod";
 
+// Uploaded assets are always stored on the Vercel PUBLIC blob store by
+// /api/site-requests/upload (putPublic), whose URLs are always
+// `https://<store>.public.blob.vercel-storage.com/...`. Pin blobUrl to that
+// host so an anonymous intake submitter cannot smuggle in:
+//   - an internal/metadata URL (http://169.254.169.254/...) that the build
+//     packet route (/api/site-requests/[id]/packet) later fetches and returns
+//     verbatim to an agency admin — a readable SSRF, and
+//   - a `javascript:`/`data:` value (z.string().url() accepts those) that the
+//     admin console renders as an <a href>/<img src> — stored XSS.
+// A plain host check keeps this usable in the shared client resolver too.
+const VERCEL_PUBLIC_BLOB_HOST = /\.public\.blob\.vercel-storage\.com$/i;
+function isVercelPublicBlobUrl(u: string): boolean {
+  try {
+    const url = new URL(u);
+    return (
+      url.protocol === "https:" && VERCEL_PUBLIC_BLOB_HOST.test(url.hostname)
+    );
+  } catch {
+    return false;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Canonical validation schema for the site-engine intake form. The same
 // schema is enforced on the client (react-hook-form resolver) and on the
@@ -91,7 +113,12 @@ const assetInputSchema = z.object({
   filename: z.string().min(1).max(255),
   mimeType: z.string().min(1).max(255),
   size: z.number().int().min(0).max(50 * 1024 * 1024),
-  blobUrl: z.string().url(),
+  blobUrl: z
+    .string()
+    .url()
+    .refine(isVercelPublicBlobUrl, {
+      message: "blobUrl must be an https URL on the Vercel public blob store",
+    }),
   pathname: z.string().optional(),
   label: z.string().max(300).optional(),
 });

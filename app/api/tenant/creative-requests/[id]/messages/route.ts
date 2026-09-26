@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import {
   requireWritableWorkspace,
   tenantWhere,
+  propertyInScope,
   ForbiddenError,
 } from "@/lib/tenancy/scope";
 import { CreativeRequestStatus, Prisma } from "@prisma/client";
@@ -35,9 +36,14 @@ export async function POST(
     // /api/admin/* agency-scoped access lives in its own route.
     const current = await prisma.creativeRequest.findFirst({
       where: { id, ...tenantWhere(scope) },
-      select: { id: true, messages: true, status: true },
+      select: { id: true, messages: true, status: true, propertyId: true },
     });
     if (!current) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    // Property-level RBAC gate — see the status route. A property-restricted
+    // user must not post on a creative request outside their property grant.
+    if (!propertyInScope(scope, current.propertyId)) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 

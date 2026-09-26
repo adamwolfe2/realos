@@ -21,7 +21,10 @@ import { notifyNewIntake as notifyNewLeadSlack } from "@/lib/integrations/slack"
 import { notifyLeadCreated } from "@/lib/notifications/create";
 import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
 import { LeadNotifyChannel } from "@prisma/client";
-import { requireMatchingOrigin } from "@/lib/tenancy/origin-guard";
+import {
+  requireMatchingOrigin,
+  chatbotOriginBypassEnabled,
+} from "@/lib/tenancy/origin-guard";
 import { recordPopupEvent } from "@/lib/popups/queries";
 
 // ---------------------------------------------------------------------------
@@ -148,7 +151,7 @@ export async function POST(req: NextRequest) {
   // own site (custom domain / {slug}.{PLATFORM_DOMAIN}); dev/preview bypasses
   // via CHATBOT_ALLOW_ANY_ORIGIN. Soft-deny on mismatch so a misconfigured
   // embed fails quiet rather than erroring. (Codex.)
-  if (process.env.CHATBOT_ALLOW_ANY_ORIGIN !== "true") {
+  if (!chatbotOriginBypassEnabled()) {
     const guard = await requireMatchingOrigin(req, org.id);
     if (!guard.ok) {
       return NextResponse.json(

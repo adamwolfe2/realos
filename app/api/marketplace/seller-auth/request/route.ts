@@ -2,10 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createSellerSignInLink } from "@/lib/marketplace/seller-auth";
 import { sendSellerSignInLinkEmail } from "@/lib/marketplace/emails";
+import { publicSignupLimiter, checkRateLimit, getIp } from "@/lib/rate-limit";
 
 const Schema = z.object({ email: z.string().email().max(200) });
 
 export async function POST(req: NextRequest) {
+  // Rate-limit per IP (fail-closed in prod) — same abuse surface as the buyer
+  // magic-link route: unbounded MarketplaceSeller creation + email bombing.
+  const { allowed } = await checkRateLimit(publicSignupLimiter, getIp(req));
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "rate_limited" },
+      { status: 429, headers: { "Retry-After": "3600" } },
+    );
+  }
+
   let body: unknown;
   try {
     body = await req.json();

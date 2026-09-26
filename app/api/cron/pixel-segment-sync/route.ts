@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { recordCronRun } from "@/lib/health/cron-run";
 import { runCursiveSegmentSync } from "@/lib/actions/admin-cursive";
+import { INTERNAL_CALL } from "@/lib/security/internal-call";
 import { verifyCronAuth } from "@/lib/cron/auth";
 
 export const maxDuration = 300;
@@ -53,7 +54,7 @@ export async function GET(req: NextRequest) {
 
     for (const i of integrations) {
       try {
-        const r = await runCursiveSegmentSync(i.orgId);
+        const r = await runCursiveSegmentSync(i.orgId, INTERNAL_CALL);
         if (r.ok) {
           synced += 1;
           totalPulled += r.pulled;

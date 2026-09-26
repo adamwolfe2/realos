@@ -10,6 +10,7 @@
  */
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { OrgType } from "@prisma/client";
 import { prisma } from "@/lib/db";
 
 // Audit P1-1 (2026-07-31): these previously checked "ADMIN"/"OPS", which
@@ -36,10 +37,19 @@ export async function requireAdmin(): Promise<
   // every route behind this helper return 403 for real admins.
   const user = await prisma.user.findUnique({
     where: { clerkUserId: userId },
-    select: { id: true, role: true },
+    select: { id: true, role: true, org: { select: { orgType: true } } },
   });
 
-  if (!user || !(ADMIN_ROLES as readonly string[]).includes(user.role)) {
+  // Agency privilege requires BOTH an agency-typed org AND an agency role —
+  // mirrors requireAgency() in lib/tenancy/scope.ts. The Clerk
+  // membership.deleted handler re-homes removed client users into the agency
+  // org, so a role-only check could hand a CLIENT-typed user cross-tenant
+  // admin over the 13 routes behind this helper. (security-audit-remediation.)
+  if (
+    !user ||
+    user.org?.orgType !== OrgType.AGENCY ||
+    !(ADMIN_ROLES as readonly string[]).includes(user.role)
+  ) {
     return {
       userId: null,
       error: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
@@ -70,12 +80,14 @@ export async function requireAdminOrRep(): Promise<
   // Same Clerk-id-vs-internal-id correction as requireAdmin above.
   const user = await prisma.user.findUnique({
     where: { clerkUserId: userId },
-    select: { id: true, role: true },
+    select: { id: true, role: true, org: { select: { orgType: true } } },
   });
 
   // AGENCY_OPERATOR is the limited agency role (the old "SALES_REP" intent).
+  // Require an AGENCY-typed org too — see requireAdmin above.
   if (
     !user ||
+    user.org?.orgType !== OrgType.AGENCY ||
     !["AGENCY_OWNER", "AGENCY_ADMIN", "AGENCY_OPERATOR"].includes(user.role)
   ) {
     return {

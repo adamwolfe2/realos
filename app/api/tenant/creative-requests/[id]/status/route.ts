@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import {
   requireWritableWorkspace,
   tenantWhere,
+  propertyInScope,
   ForbiddenError,
   auditPayload,
 } from "@/lib/tenancy/scope";
@@ -28,9 +29,16 @@ export async function POST(
 
     const current = await prisma.creativeRequest.findFirst({
       where: { id, ...tenantWhere(scope) },
-      select: { id: true, status: true, revisionCount: true },
+      select: { id: true, status: true, revisionCount: true, propertyId: true },
     });
     if (!current) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    // Property-level RBAC: tenantWhere() is org-only. A property-restricted
+    // user (LEASING_AGENT / CLIENT_VIEWER) must not approve/reject/deliver a
+    // creative request for a property outside their grant. The sibling create
+    // route already gates propertyId this way. (security-audit-remediation.)
+    if (!propertyInScope(scope, current.propertyId)) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 

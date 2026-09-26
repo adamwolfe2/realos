@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { requireWritableWorkspace, auditPayload } from "@/lib/tenancy/scope";
 import { AuditAction } from "@prisma/client";
 import { runCursiveSegmentSync } from "./admin-cursive";
+import { INTERNAL_CALL } from "@/lib/security/internal-call";
 
 // ---------------------------------------------------------------------------
 // Tenant-scoped pixel sync.
@@ -67,7 +68,7 @@ export async function syncPixelFromSegment(): Promise<TenantPixelSyncResult> {
     return { ok: true, pulled: 0, created: 0, updated: 0, throttled: true };
   }
 
-  const result = await runCursiveSegmentSync(scope.orgId);
+  const result = await runCursiveSegmentSync(scope.orgId, INTERNAL_CALL);
   if (!result.ok) return result;
 
   // Audit so operators can see who pulled when.

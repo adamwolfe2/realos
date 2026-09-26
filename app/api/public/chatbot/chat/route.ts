@@ -29,7 +29,10 @@ import {
   WIDGET_FALLBACK,
 } from "@/lib/rate-limit";
 import { checkAiQuota } from "@/lib/ai/quota";
-import { requireMatchingOrigin } from "@/lib/tenancy/origin-guard";
+import {
+  requireMatchingOrigin,
+  chatbotOriginBypassEnabled,
+} from "@/lib/tenancy/origin-guard";
 import {
   exceedsChatInputBudget,
   MAX_CHAT_OUTPUT_TOKENS,
@@ -171,7 +174,7 @@ export async function POST(req: NextRequest) {
   // CHATBOT_ALLOW_ANY_ORIGIN=true bypasses the check for local dev where
   // the widget is loaded from localhost or a Vercel preview URL that isn't
   // bound to any tenant.
-  if (process.env.CHATBOT_ALLOW_ANY_ORIGIN !== "true") {
+  if (!chatbotOriginBypassEnabled()) {
     const guard = await requireMatchingOrigin(req, orgId);
     if (!guard.ok) {
       // Sentry breadcrumb at warning level so we can spot abuse patterns

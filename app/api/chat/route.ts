@@ -217,6 +217,20 @@ async function persistConversation(args: {
     ts: new Date().toISOString(),
   })) as unknown as Prisma.InputJsonValue;
 
+  // Cross-tenant guard: sessionId is @unique, so an upsert keyed on it alone
+  // would let a caller who learns another tenant's sessionId overwrite that
+  // tenant's transcript + captured contact. Mirror the refusal the hardened
+  // public route (app/api/public/chatbot/chat) already performs. Origin was
+  // already validated against args.orgId above; this closes the residual
+  // reuse-of-a-known-sessionId case. (security-audit-remediation.)
+  const existing = await prisma.chatbotConversation.findUnique({
+    where: { sessionId: args.sessionId },
+    select: { orgId: true },
+  });
+  if (existing && existing.orgId !== args.orgId) {
+    return null;
+  }
+
   const conversation = await prisma.chatbotConversation.upsert({
     where: { sessionId: args.sessionId },
     create: {

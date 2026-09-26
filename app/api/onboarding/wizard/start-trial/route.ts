@@ -107,6 +107,15 @@ export async function POST(req: NextRequest) {
   // Atomic where-clause (no read-then-write race) — matches the /properties
   // guard. NULL status = brand-new = eligible. (launch-critical-sweep P1:
   // legacy start-trial could trial-overwrite an active subscription.)
+  //
+  // CANCELED and PAUSED are also excluded (security-audit-remediation): both
+  // are terminal/read-only states set only by the Stripe lifecycle (churn,
+  // 14-day-overdue dunning). Letting any signed-in seat POST here to flip a
+  // churned/paused workspace back to TRIALING — re-granting the à-la-carte
+  // module set and, for a never-trialed proposal-provisioned org, a fresh
+  // 14-day window — is an entitlement self-grant with no Stripe event. Only
+  // NULL (brand-new) and TRIALING (idempotent re-run of onboarding) stay
+  // eligible.
   await prisma.organization.updateMany({
     where: {
       id: user.orgId,
@@ -114,7 +123,12 @@ export async function POST(req: NextRequest) {
         { subscriptionStatus: null },
         {
           subscriptionStatus: {
-            notIn: [SubscriptionStatus.ACTIVE, SubscriptionStatus.PAST_DUE],
+            notIn: [
+              SubscriptionStatus.ACTIVE,
+              SubscriptionStatus.PAST_DUE,
+              SubscriptionStatus.CANCELED,
+              SubscriptionStatus.PAUSED,
+            ],
           },
         },
       ],

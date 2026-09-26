@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { recordCronRun } from "@/lib/health/cron-run";
 import { executeSegmentPush } from "@/lib/actions/audiences";
+import { INTERNAL_CALL } from "@/lib/security/internal-call";
 import { computeNextRunAt } from "@/lib/audiences/schedule";
 import type { GeoFilter } from "@/lib/integrations/al-segments";
 import { verifyCronAuth } from "@/lib/cron/auth";
@@ -58,14 +59,17 @@ export async function GET(req: NextRequest) {
     for (const schedule of due) {
       try {
         const filter = (schedule.filterSnapshot as GeoFilter | null) ?? undefined;
-        const result = await executeSegmentPush({
-          orgId: schedule.orgId,
-          segmentId: schedule.segmentId,
-          destinationId: schedule.destinationId,
-          geoFilter: filter,
-          // System-triggered runs have no userId.
-          triggeredByUserId: null,
-        });
+        const result = await executeSegmentPush(
+          {
+            orgId: schedule.orgId,
+            segmentId: schedule.segmentId,
+            destinationId: schedule.destinationId,
+            geoFilter: filter,
+            // System-triggered runs have no userId.
+            triggeredByUserId: null,
+          },
+          INTERNAL_CALL,
+        );
         if (result.ok) {
           successes++;
         } else {
