@@ -43,6 +43,9 @@ class ForbiddenErrorStub extends Error {}
 vi.mock("@/lib/tenancy/scope", () => ({
   requireAgency: vi.fn(),
   requireWritableWorkspace: () => mockRequireWritableWorkspace(),
+  // createProperty now requires an admin seat; the role check itself lives
+  // in scope.ts, so the stub resolves the same scope for this guard test.
+  requireWorkspaceAdmin: () => mockRequireWritableWorkspace(),
   ForbiddenError: ForbiddenErrorStub,
   auditPayload: (
     scope: Record<string, unknown>,
