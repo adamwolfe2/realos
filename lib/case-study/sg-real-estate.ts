@@ -20,7 +20,8 @@
  * false the page is noindex, left out of the sitemap, and left out of the
  * nav. Flip to true to publish all three at once.
  */
-export const CASE_STUDY_PUBLIC = false;
+// Adam 2026-09-27: SG/Norman OK'd using the case study for outreach.
+export const CASE_STUDY_PUBLIC = true;
 
 export const CASE_STUDY_PATH = "/case-study";
 

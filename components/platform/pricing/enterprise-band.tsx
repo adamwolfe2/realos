@@ -59,12 +59,7 @@ export function EnterpriseBand() {
             </div>
           </div>
           <BookDemoLink
-            className="inline-flex items-center justify-center h-11 px-6 rounded-md text-sm font-semibold shrink-0 transition-colors active:scale-[0.98]"
-            style={{
-              border: "1px solid var(--hair-strong)",
-              color: "var(--color-ink)",
-              backgroundColor: "#FFFFFF",
-            }}
+            className="btn-secondary shrink-0"
           >
             Book a demo
           </BookDemoLink>

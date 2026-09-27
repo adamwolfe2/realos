@@ -74,8 +74,7 @@ export default function WebsiteBuildSuccessPage() {
             href={WEBSITE_BUILD_CAL_LINK}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-colors"
-            style={{ backgroundColor: "#0f62fe", color: "#ffffff" }}
+            className="btn-primary gap-2"
           >
             <Calendar size={16} strokeWidth={2.5} aria-hidden="true" />
             Book kickoff call

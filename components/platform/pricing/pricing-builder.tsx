@@ -398,8 +398,7 @@ export function PricingBuilder({
 
             {isVolume ? (
               <BookDemoLink
-                className="inline-flex items-center justify-center h-11 px-6 rounded-md text-sm font-semibold text-white transition-colors active:scale-[0.98]"
-                style={{ backgroundColor: "var(--color-primary)" }}
+                className="btn-primary w-full"
                 ariaLabel="Talk to us about volume pricing"
               >
                 Talk to us about volume pricing
@@ -408,8 +407,7 @@ export function PricingBuilder({
               <Link
                 href={ctaHref}
                 onClick={() => savePricingIntent(selectedFeatures.map((f) => f.key))}
-                className="inline-flex items-center justify-center h-11 px-6 rounded-md text-sm font-semibold text-white transition-colors active:scale-[0.98]"
-                style={{ backgroundColor: "var(--color-primary)" }}
+                className="btn-primary w-full"
               >
                 Start free trial
               </Link>
@@ -423,7 +421,10 @@ export function PricingBuilder({
                 lineHeight: 1.5,
               }}
             >
-              14-day free trial. No card required.
+              14-day free trial. No card required. Prefer a walkthrough?{" "}
+              <BookDemoLink className="font-semibold text-primary hover:underline underline-offset-4">
+                Book a demo
+              </BookDemoLink>
             </p>
           </div>
         </div>

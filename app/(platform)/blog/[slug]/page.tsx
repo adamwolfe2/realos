@@ -99,13 +99,7 @@ export default async function BlogPostPage({
           </p>
           <Link
             href="/book-demo"
-            className="mt-6 inline-block font-mono text-xs font-semibold px-6 py-4 rounded-none"
-            style={{
-              backgroundColor: "var(--color-primary)",
-              color: "#FFFFFF",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-            }}
+            className="mt-6 btn-primary"
           >
             Book a demo
           </Link>

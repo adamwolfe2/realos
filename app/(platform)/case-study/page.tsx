@@ -25,7 +25,7 @@ const MUTED = "#6f6f6f";
 const HAIRLINE = "#e0e0e0";
 const BLUE = "#0f62fe";
 
-const TITLE = `${CS.customer}: ${CS.tracedSignedLeases} leads marked signed and matched to an AppFolio resident`;
+const TITLE = `${CS.customer}: ${CS.chatbotLeads} of ${CS.leads} lead records came from the website chatbot`;
 const DESCRIPTION = `How ${CS.customer} records leads at ${CS.property}, a ${CS.market} property, from the website chatbot and AppFolio applications, and matches them to residents in AppFolio.`;
 
 export const metadata: Metadata = {
@@ -182,8 +182,8 @@ export default function CaseStudyPage() {
               letterSpacing: "-0.035em",
             }}
           >
-            {CS.tracedSignedLeases} leads marked signed,{" "}
-            <Mark>matched to an AppFolio resident.</Mark>
+            {CS.chatbotLeads} of {CS.leads} lead records{" "}
+            <Mark>came from the website chatbot.</Mark>
           </h1>
           <p
             className="mt-6"

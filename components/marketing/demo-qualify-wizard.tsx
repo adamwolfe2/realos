@@ -238,8 +238,7 @@ export function DemoQualifyWizard() {
             type="button"
             onClick={submitAndAdvance}
             disabled={submitting || selected.size === 0}
-            className="inline-flex items-center gap-2 rounded-[2px] px-6 py-3 text-[14px] font-semibold transition-opacity disabled:opacity-50"
-            style={{ backgroundColor: "#0f62fe", color: "#FFFFFF" }}
+            className="btn-primary gap-2 disabled:opacity-50"
           >
             {submitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -294,8 +293,7 @@ export function DemoQualifyWizard() {
         <button
           type="submit"
           disabled={!step1Valid}
-          className="mt-1 inline-flex items-center justify-center gap-2 rounded-[2px] px-6 py-3 text-[14px] font-semibold transition-opacity disabled:opacity-50"
-          style={{ backgroundColor: "#0f62fe", color: "#FFFFFF" }}
+          className="mt-1 btn-primary gap-2 disabled:opacity-50"
         >
           Next
           <ArrowRight className="h-4 w-4" />

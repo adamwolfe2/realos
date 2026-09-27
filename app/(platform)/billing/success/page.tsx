@@ -157,8 +157,7 @@ export default async function CheckoutSuccessPage({
         <div className="mt-10">
           <Link
             href={href}
-            className="inline-flex items-center justify-center px-6 py-3 text-sm font-semibold text-white"
-            style={{ backgroundColor: "#0f62fe" }}
+            className="btn-primary"
           >
             {scope ? "Review billing" : "Sign in to verify"}
           </Link>

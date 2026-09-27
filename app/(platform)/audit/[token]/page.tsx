@@ -663,8 +663,7 @@ export default async function AuditViewerPage({
               <div className="mt-3">
                 <Link
                   href="/book-demo"
-                  className="inline-flex h-10 items-center justify-center px-5 text-[13px] font-medium text-white"
-                  style={{ backgroundColor: "#0f62fe", borderRadius: 2 }}
+                  className="btn-primary"
                 >
                   Talk to us
                 </Link>

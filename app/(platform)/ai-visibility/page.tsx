@@ -270,14 +270,12 @@ export default function AiVisibilityPage() {
           <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <a
               href="#run-audit"
-              className="inline-flex items-center justify-center px-6 py-3 text-[14px] font-semibold transition-colors"
-              style={{ backgroundColor: "#0f62fe", color: "#ffffff", borderRadius: 2 }}
+              className="btn-primary"
             >
               Run my free audit
             </a>
             <BookDemoLink
-              className="inline-flex items-center justify-center border px-6 py-3 text-[14px] font-semibold"
-              style={{ borderColor: "#161616", color: "#161616", borderRadius: 2 }}
+              className="btn-secondary"
               ariaLabel="Book a 15-minute call (opens scheduling)"
             >
               Book a 15-min call

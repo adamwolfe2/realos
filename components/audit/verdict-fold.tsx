@@ -154,16 +154,14 @@ export function VerdictFold({
               style={{ animationDelay: "240ms" }}
             >
               <BookDemoLink
-                className="inline-flex items-center justify-center px-6 py-3 text-[14px] font-semibold text-white"
-                style={{ backgroundColor: "#0f62fe", borderRadius: 2 }}
+                className="btn-primary"
                 ariaLabel="Book a 15-minute call about this report"
               >
                 Book a 15-min call
               </BookDemoLink>
               <a
                 href={secondaryCta.href}
-                className="inline-flex items-center justify-center border px-6 py-3 text-[14px] font-semibold"
-                style={{ borderColor: "#161616", color: "#161616", borderRadius: 2 }}
+                className="btn-secondary"
               >
                 {secondaryCta.label}
               </a>
