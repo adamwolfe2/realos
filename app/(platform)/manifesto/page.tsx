@@ -436,9 +436,9 @@ function Close() {
           If it does not, you close the tab and keep what you saw.
         </p>
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Link href="/sign-up" className="btn-primary">
-            Request pilot
-          </Link>
+          <Link href="/book-demo" className="btn-primary">
+                Book a demo
+              </Link>
           <Link href="/demo" className="btn-secondary">
             See it on a live property
           </Link>

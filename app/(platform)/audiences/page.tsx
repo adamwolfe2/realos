@@ -17,7 +17,7 @@ export default function AudiencesPage() {
       subhead="Verified buyer, seller, and lease-intent segments synced to your ad accounts, CRM, or any webhook. Book a demo."
       caption="Managed onboarding. Live segments, live destinations. Built for residential and commercial."
       artifact={<AudienceSyncStream />}
-      ctaHref="/onboarding"
+      ctaHref="/book-demo"
       painsHeading="The three things operators ask us first."
       modulesHeading="One product. Every push surface."
       pains={[

@@ -9,7 +9,6 @@ import { getEffectiveBrand } from "@/lib/brand/effective";
 import { PortalNav } from "@/components/portal/portal-nav";
 import { MobileNavDrawer } from "@/components/portal/mobile-nav-drawer";
 import { deriveSetupProgress } from "@/lib/setup/derive-progress";
-import Image from "next/image";
 import Link from "next/link";
 import { NotificationBell } from "@/components/portal/notification-bell";
 import { CmdKSearch } from "@/components/portal/search/cmdk-search";
@@ -25,6 +24,7 @@ import { getActivePropertyId } from "@/lib/portal/active-property";
 import { visibleProperties } from "@/lib/tenancy/property-filter";
 import { ScopeRecovery } from "@/components/auth/scope-recovery";
 import { isReportStatusRestricted } from "@/lib/reports/access";
+import { LeaseStackLogo } from "@/components/brand/leasestack-logo";
 
 export const metadata: Metadata = {
   title: {
@@ -465,14 +465,7 @@ export default async function PortalLayout({
                 {brand.name}
               </span>
             ) : (
-              <Image
-                src="/logos/leasestack-wordmark.png"
-                alt={BRAND_NAME}
-                width={110}
-                height={20}
-                className="h-5 w-auto"
-                priority
-              />
+              <LeaseStackLogo size={22} />
             )}
           </Link>
         </div>

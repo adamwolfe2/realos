@@ -20,8 +20,8 @@ export default function PixelFeaturePage() {
         headlineAccent="not just how many."
         subhead="We give you the name and email behind a meaningful share of your sessions before they fill out a form."
         ctas={[
-          { label: "Request pilot", href: "/sign-up" },
-          { label: "Book a demo", href: "/onboarding", variant: "secondary" },
+          { label: "Book a demo", href: "/book-demo" },
+          { label: "Start free trial", href: "/sign-up", variant: "secondary" },
         ]}
         caption="Live on your site, consented identity graph, fully compliant"
         artifact={<VisitorStream />}

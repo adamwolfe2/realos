@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { BRAND_NAME } from "@/lib/brand";
 import { AdminNavList } from "./admin-nav-list";
+import { LeaseStackLogo } from "@/components/brand/leasestack-logo";
 
 export function AdminSidebar({
   navBadges,
@@ -69,14 +70,7 @@ export function AdminSidebar({
             />
           ) : (
             <div className="min-w-0">
-              <Image
-                src="/logos/leasestack-wordmark.png"
-                alt={BRAND_NAME}
-                width={140}
-                height={28}
-                className="h-7 w-auto"
-                priority
-              />
+              <LeaseStackLogo size={24} />
               <span className="block text-[10px] font-semibold text-primary uppercase tracking-widest mt-0.5">
                 Admin
               </span>

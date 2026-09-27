@@ -25,6 +25,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
+import { LeaseStackLogo } from "@/components/brand/leasestack-logo";
 
 // Tesla-inspired: a transparent sticky nav that floats over the hero, turning
 // to frosted white on scroll. Wordmark left, nav links centered, two utility
@@ -224,11 +225,7 @@ export function PlatformNav() {
         }}
       >
         <Link href="/" className="flex items-center" aria-label="LeaseStack home">
-          <img
-            src="/logos/leasestack-wordmark.png"
-            alt="LeaseStack"
-            className="h-7 md:h-10 w-auto block"
-          />
+<LeaseStackLogo size={28} />
         </Link>
 
         <nav className="hidden md:flex items-center gap-1" aria-label="Primary">
@@ -578,11 +575,7 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
         <div className="menu-panel flex flex-col h-full px-5 pt-5 pb-8">
           <div className="flex items-center justify-between mb-6">
             <Link href="/" onClick={onClose} aria-label="LeaseStack home">
-              <img
-                src="/logos/leasestack-wordmark.png"
-                alt="LeaseStack"
-                className="h-8 w-auto block"
-              />
+<LeaseStackLogo size={26} />
             </Link>
             <button
               type="button"

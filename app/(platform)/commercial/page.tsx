@@ -26,7 +26,7 @@ export default function CommercialPage() {
         headlineAccent="Audience Sync, live."
         subhead="Verified office, retail, and industrial segments push to your ad accounts and CRM. Full leasing modules ship via design partners."
         ctas={[
-          { label: "Apply as a design partner", href: "/onboarding" },
+          { label: "Apply as a design partner", href: "/book-demo" },
           { label: "See the residential platform", href: "/residential", variant: "secondary" },
         ]}
         caption="Attribution that survives a six-month sales process."
@@ -124,7 +124,7 @@ export default function CommercialPage() {
           </Reveal>
           <Reveal delay={140}>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href="/onboarding" className="btn-primary">
+              <Link href="/book-demo" className="btn-primary">
                 Apply as a design partner
               </Link>
               <Link href="/residential" className="btn-secondary">

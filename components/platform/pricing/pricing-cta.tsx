@@ -25,8 +25,8 @@ export function PricingCta() {
             fontSize: "clamp(28px, 4vw, 40px)",
           }}
         >
-          Configure your platform.{" "}
-          <span style={{ color: "var(--color-primary)" }}>Start free trial today.</span>
+          See it on your property.{" "}
+          <span style={{ color: "var(--color-primary)" }}>Book a demo.</span>
         </h2>
         <p
           className="mt-5 mx-auto"
@@ -38,33 +38,16 @@ export function PricingCta() {
             maxWidth: "620px",
           }}
         >
-          Every week you wait is another week of after-hours leads touring
-          the competitor who answered at 2am. Connect your stack, pick what
-          each property needs, and go live on a 14-day free trial. No card
-          required.
+          We connect to your stack, show you your own numbers, and set up
+          the features each property needs with you. Prefer to explore on
+          your own first? The 14-day free trial needs no card.
         </p>
 
         <div className="mt-9 flex flex-col sm:flex-row gap-3 justify-center items-center">
-          <Link
-            href="#builder"
-            className="inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-semibold transition-colors active:scale-[0.98]"
-            style={{
-              backgroundColor: "var(--color-primary)",
-              color: "#ffffff",
-            }}
-          >
+          <BookDemoLink className="btn-primary">Book a demo</BookDemoLink>
+          <Link href="#builder" className="btn-secondary">
             Start free trial
           </Link>
-          <BookDemoLink
-            className="inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-semibold transition-colors active:scale-[0.98]"
-            style={{
-              backgroundColor: "transparent",
-              color: "var(--color-ink)",
-              border: "1px solid var(--hair-strong)",
-            }}
-          >
-            Book a demo
-          </BookDemoLink>
         </div>
 
         <p

@@ -556,7 +556,7 @@ function CompletionRibbon({ visible }: { visible: boolean }) {
           Previously pointed at /demo, which is the live-property
           showcase, not the pilot. */}
       <Link
-        href="/sign-up"
+        href="/book-demo"
         style={{
           color: ACCENT,
           fontFamily: "var(--font-mono)",
@@ -568,7 +568,7 @@ function CompletionRibbon({ visible }: { visible: boolean }) {
         }}
         className="hover:underline underline-offset-4"
       >
-        ↗ Request pilot
+        ↗ Book a demo
       </Link>
     </motion.div>
   );

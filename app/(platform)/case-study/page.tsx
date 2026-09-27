@@ -204,12 +204,12 @@ export default function CaseStudyPage() {
             tracking in June.
           </p>
           <div className="mt-8 flex flex-col items-stretch sm:flex-row sm:items-center gap-3">
-            <Link href="/sign-up" className="btn-primary sm:w-auto">
-              Request pilot
-            </Link>
-            <BookDemoLink className="btn-secondary sm:w-auto">
+            <BookDemoLink className="btn-primary sm:w-auto">
               Book a demo
             </BookDemoLink>
+            <Link href="/sign-up" className="btn-secondary sm:w-auto">
+              Start free trial
+            </Link>
           </div>
         </div>
 

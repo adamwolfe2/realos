@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PopupsDemoSection } from "@/components/platform/popups-demo-section";
 import { BRAND_NAME } from "@/lib/brand";
 
@@ -29,18 +30,12 @@ export default function PopupsFeaturePage() {
             full editor below.
           </p>
           <div className="mt-8 inline-flex items-center gap-3">
-            <a
-              href="/sign-up"
-              className="inline-flex items-center rounded-none bg-primary text-primary-foreground px-5 py-3 text-sm font-semibold hover:bg-primary/90 transition-colors"
-            >
-              Request pilot
-            </a>
-            <a
-              href="/onboarding"
-              className="inline-flex items-center rounded-none border border-border bg-white px-5 py-3 text-sm font-semibold hover:bg-muted transition-colors"
-            >
+            <Link href="/book-demo" className="btn-primary">
               Book a demo
-            </a>
+            </Link>
+            <Link href="/sign-up" className="btn-secondary">
+              Start free trial
+            </Link>
           </div>
         </div>
       </section>

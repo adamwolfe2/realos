@@ -57,21 +57,21 @@ export function PilotCta() {
             </div>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
-              <Link
-                href="/sign-up"
-                className="btn-primary"
-                style={{ display: "inline-flex", justifyContent: "center" }}
-                aria-label="Request pilot (creates your account)"
-              >
-                Request pilot
-              </Link>
               <BookDemoLink
-                className="btn-secondary"
+                className="btn-primary"
                 style={{ display: "inline-flex", justifyContent: "center" }}
                 ariaLabel="Book a demo (opens scheduling)"
               >
                 Book a demo
               </BookDemoLink>
+              <Link
+                href="/sign-up"
+                className="btn-secondary"
+                style={{ display: "inline-flex", justifyContent: "center" }}
+                aria-label="Start free trial (creates your account)"
+              >
+                Start free trial
+              </Link>
             </div>
           </div>
         </div>

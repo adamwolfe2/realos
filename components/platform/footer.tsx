@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BRAND_NAME } from "@/lib/brand";
 import { getBookDemoHref, isExternalBookDemoHref } from "@/lib/marketing/book-demo";
 import { PixelWordmark } from "@/components/home/pixel-wordmark";
+import { LeaseStackLogo } from "@/components/brand/leasestack-logo";
 
 // Flat, organized footer: wordmark + one link column per group, single
 // hairline divider from the content above, plain copyright row below.
@@ -51,11 +52,7 @@ export function PlatformFooter() {
         <div className="grid grid-cols-2 md:grid-cols-6 gap-8">
           <div className="col-span-2">
             <Link href="/" className="flex items-center" aria-label="LeaseStack home">
-              <img
-                src="/logos/leasestack-wordmark.png"
-                alt="LeaseStack"
-                style={{ height: "36px", width: "auto", display: "block" }}
-              />
+<LeaseStackLogo size={26} />
             </Link>
           </div>
           {columns.map((col) => (

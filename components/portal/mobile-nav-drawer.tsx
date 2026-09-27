@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -17,6 +16,7 @@ import {
   ActivePropertySwitcher,
   type ActivePropertyOption,
 } from "./active-property-switcher";
+import { LeaseStackLogo } from "@/components/brand/leasestack-logo";
 
 export function MobileNavDrawer({
   org,
@@ -94,14 +94,7 @@ export function MobileNavDrawer({
                 {org.brand.name}
               </span>
             ) : (
-              <Image
-                src="/logos/leasestack-wordmark.png"
-                alt={BRAND_NAME}
-                width={110}
-                height={20}
-                className="h-5 w-auto"
-                priority
-              />
+              <LeaseStackLogo size={22} />
             )}
           </Link>
           <button

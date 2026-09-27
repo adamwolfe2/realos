@@ -59,10 +59,10 @@ export function FeaturePage({
             {subhead}
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/sign-up" className="btn-primary">
-              Request pilot
+            <BookDemoLink className="btn-primary">Book a demo</BookDemoLink>
+            <Link href="/sign-up" className="btn-secondary">
+              Start free trial
             </Link>
-            <BookDemoLink className="btn-secondary">Book a demo</BookDemoLink>
           </div>
         </div>
       </header>

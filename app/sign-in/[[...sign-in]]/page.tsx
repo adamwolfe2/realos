@@ -1,9 +1,9 @@
 import { SignIn } from "@clerk/nextjs";
 import Link from "next/link";
-import Image from "next/image";
 import type { Metadata } from "next";
 import { BRAND_NAME } from "@/lib/brand";
 import { PlatformShowcase } from "@/components/auth/platform-showcase";
+import { LeaseStackLogo } from "@/components/brand/leasestack-logo";
 
 export const metadata: Metadata = {
   title: `Sign in | ${BRAND_NAME}`,
@@ -42,14 +42,7 @@ export default function SignInPage() {
             aria-label={BRAND_NAME}
             className="inline-flex items-center hover:opacity-80 transition-opacity"
           >
-            <Image
-              src="/logos/leasestack-wordmark.png"
-              alt={BRAND_NAME}
-              width={180}
-              height={40}
-              priority
-              className="h-9 w-auto"
-            />
+            <LeaseStackLogo size={30} />
           </Link>
         </header>
 

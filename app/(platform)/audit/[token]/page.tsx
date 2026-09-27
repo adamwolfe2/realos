@@ -662,7 +662,7 @@ export default async function AuditViewerPage({
               </p>
               <div className="mt-3">
                 <Link
-                  href="/onboarding"
+                  href="/book-demo"
                   className="inline-flex h-10 items-center justify-center px-5 text-[13px] font-medium text-white"
                   style={{ backgroundColor: "#0f62fe", borderRadius: 2 }}
                 >

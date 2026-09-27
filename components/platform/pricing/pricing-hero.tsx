@@ -66,30 +66,18 @@ export function PricingHero() {
             className="mt-5 text-lg md:text-xl leading-relaxed mx-auto max-w-2xl"
             style={{ color: "#525252" }}
           >
-            See it running on your own property's data first. Pick the
-            features it needs, start a 14-day free trial, no card required.
+            We walk through it on your own property's data first, then you
+            pick the features it needs. Prefer to explore alone? Start a
+            14-day free trial, no card required.
           </p>
 
           {/* Primary + secondary CTA — the one canonical buying pair on
-              this page: "Start free trial" and "Book a demo". */}
+              this page: "Book a demo" (primary) and "Start free trial". */}
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href={PRIMARY_HREF}
-              className="inline-flex items-center justify-center h-11 px-6 rounded-md text-sm font-medium text-white transition-colors hover:opacity-90 active:scale-[0.98]"
-              style={{ backgroundColor: "var(--color-primary)" }}
-            >
+            <BookDemoLink className="btn-primary">Book a demo</BookDemoLink>
+            <Link href={PRIMARY_HREF} className="btn-secondary">
               Start free trial
             </Link>
-            <BookDemoLink
-              className="inline-flex items-center justify-center h-11 px-6 rounded-md text-sm font-medium transition-colors active:scale-[0.98]"
-              style={{
-                border: "1px solid var(--hair)",
-                color: "var(--color-ink)",
-                backgroundColor: "#FFFFFF",
-              }}
-            >
-              Book a demo
-            </BookDemoLink>
           </div>
         </div>
       </div>

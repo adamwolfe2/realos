@@ -98,7 +98,7 @@ export default async function BlogPostPage({
             website activity in one view.
           </p>
           <Link
-            href="/onboarding"
+            href="/book-demo"
             className="mt-6 inline-block font-mono text-xs font-semibold px-6 py-4 rounded-none"
             style={{
               backgroundColor: "var(--color-primary)",

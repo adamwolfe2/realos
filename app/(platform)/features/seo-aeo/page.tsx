@@ -21,7 +21,7 @@ export default function SEOAEOFeaturePage() {
         headlineAccent="and get quoted by AI search."
         subhead="Prospects ask ChatGPT and Perplexity before opening Google. We build per-location pages that rank in both, from the same content."
         ctas={[
-          { label: "Request pilot", href: "/sign-up" },
+          { label: "Book a demo", href: "/book-demo" },
           {
             label: "Run a free AI visibility audit",
             href: "/ai-visibility",

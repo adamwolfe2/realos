@@ -152,12 +152,12 @@ export default function FeaturesIndexPage() {
             Click any feature for the full pitch.
           </p>
           <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/sign-up" className="btn-primary">
-              Request pilot
-            </Link>
-            <BookDemoLink className="btn-secondary">
+            <BookDemoLink className="btn-primary">
               Book a demo
             </BookDemoLink>
+            <Link href="/sign-up" className="btn-secondary">
+              Start free trial
+            </Link>
           </div>
         </div>
       </section>
@@ -391,12 +391,12 @@ export default function FeaturesIndexPage() {
             find inside an hour, no call required.
           </p>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-            <Link href="/sign-up" className="btn-primary">
-              Request pilot
-            </Link>
-            <BookDemoLink className="btn-secondary">
+            <BookDemoLink className="btn-primary">
               Book a demo
             </BookDemoLink>
+            <Link href="/sign-up" className="btn-secondary">
+              Start free trial
+            </Link>
           </div>
         </div>
       </section>

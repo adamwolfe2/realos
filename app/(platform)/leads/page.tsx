@@ -60,7 +60,7 @@ export default function LeadsPage() {
         headlineAccent="one inbox, fully scored."
         subhead="Every listing inquiry, DM, form fill, and voicemail lands in one inbox with property and source attached, then gets scored so your team calls the right one first."
         ctas={[
-          { label: "Request pilot", href: "/sign-up" },
+          { label: "Book a demo", href: "/book-demo" },
           { label: "See how it's scored", href: "#scoring", variant: "secondary" },
         ]}
         caption="Interactive demo on this page. No signup required."
@@ -343,12 +343,12 @@ export default function LeadsPage() {
           </Reveal>
           <Reveal delay={220}>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href="/sign-up" className="btn-primary">
-                Request pilot
-              </Link>
-              <BookDemoLink className="btn-secondary">
+              <BookDemoLink className="btn-primary">
                 Book a demo
               </BookDemoLink>
+              <Link href="/sign-up" className="btn-secondary">
+                Start free trial
+              </Link>
             </div>
           </Reveal>
         </div>

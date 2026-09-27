@@ -142,8 +142,8 @@ function BeatText({ beat, showCta }: { beat: number; showCta: boolean }) {
       </p>
       {showCta ? (
         <div className="mt-6">
-          <Link href="/sign-up" className="btn-primary" style={{ display: "inline-flex" }}>
-            Request pilot
+          <Link href="/book-demo" className="btn-primary" style={{ display: "inline-flex" }}>
+            Book a demo
           </Link>
         </div>
       ) : null}

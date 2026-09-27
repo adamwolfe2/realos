@@ -46,6 +46,7 @@ import {
   ActivePropertySwitcher,
   type ActivePropertyOption,
 } from "@/components/portal/active-property-switcher";
+import { LeaseStackLogo } from "@/components/brand/leasestack-logo";
 
 export type PortalNavOrg = {
   name: string;
@@ -563,14 +564,7 @@ export function PortalNav({
               {org.brand.name}
             </span>
           ) : (
-            <Image
-              src="/logos/leasestack-wordmark.png"
-              alt={BRAND_NAME}
-              width={140}
-              height={32}
-              className="h-8 w-auto shrink-0"
-              priority
-            />
+            <LeaseStackLogo size={26} />
           )}
         </Link>
       </div>

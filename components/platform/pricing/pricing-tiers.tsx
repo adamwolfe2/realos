@@ -62,7 +62,7 @@ const TIERS: Tier[] = [
     annual: 0,
     setupFee: null,
     highlighted: false,
-    ctaLabel: "Request pilot",
+    ctaLabel: "Start free trial",
     audienceCallout: "Operators evaluating LeaseStack on a single property",
     features: [
       { label: "14-day trial window" },

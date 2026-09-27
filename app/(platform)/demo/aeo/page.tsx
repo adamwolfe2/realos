@@ -421,8 +421,8 @@ export default function DemoAeoPage() {
         headlineAccent="ChatGPT, Perplexity, Claude, and Gemini do."
         subhead="Every Monday morning, LeaseStack asks the same questions your prospects type into AI search — and shows you who got named, who got cited, and which competitor won the answer instead. This is the real dashboard, powered by a sample portfolio."
         ctas={[
-          { label: "Run this on my portfolio", href: "/onboarding" },
-          { label: "Talk to us", href: "/onboarding", variant: "secondary" },
+          { label: "Run this on my portfolio", href: "/book-demo" },
+          { label: "Start free trial", href: "/sign-up", variant: "secondary" },
         ]}
         caption="Updated weekly · 4 engines · per-property + per-keyword scoring"
         artifact={
@@ -585,7 +585,7 @@ function SampleNotice() {
           </p>
         </div>
         <Link
-          href="/onboarding"
+          href="/book-demo"
           className="btn-primary shrink-0 inline-flex items-center gap-1.5"
           style={{ fontSize: 13, padding: "8px 14px" }}
         >
@@ -890,7 +890,7 @@ function AeoBoostBand() {
               content drafted for every recommendation the scanner fires.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Link href="/onboarding" className="btn-primary">
+              <Link href="/book-demo" className="btn-primary">
                 Add AEO Boost
               </Link>
               <Link href="/pricing" className="btn-secondary">
@@ -1120,8 +1120,8 @@ function FinalCta() {
             anytime.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/onboarding" className="btn-primary inline-flex items-center justify-center gap-2">
-              Start free
+            <Link href="/sign-up" className="btn-primary inline-flex items-center justify-center gap-2">
+              Start free trial
               <ArrowRight className="w-4 h-4" />
             </Link>
             <Link href="/ai-visibility" className="btn-secondary">

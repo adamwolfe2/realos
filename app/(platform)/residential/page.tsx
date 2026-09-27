@@ -54,8 +54,8 @@ export default function ResidentialHub() {
         headlineAccent="Every vertical."
         subhead="One data engine for student housing, multifamily, senior living, SFR, and BTR. Same pacing models, different playbooks."
         ctas={[
-          { label: "Request pilot", href: "/sign-up" },
-          { label: "Book a demo", href: "/onboarding", variant: "secondary" },
+          { label: "Book a demo", href: "/book-demo" },
+          { label: "Start free trial", href: "/sign-up", variant: "secondary" },
         ]}
         caption="Live today on a real lease-up. SFR and build-to-rent on the same engine."
         artifact={<PortfolioOccupancy label="Your residential portfolio" />}
@@ -167,8 +167,8 @@ export default function ResidentialHub() {
           </Reveal>
           <Reveal delay={140}>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href="/sign-up" className="btn-primary">
-                Request pilot
+              <Link href="/book-demo" className="btn-primary">
+                Book a demo
               </Link>
               <Link href="/commercial" className="btn-secondary">
                 Commercial roadmap

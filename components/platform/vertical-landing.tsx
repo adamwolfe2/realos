@@ -45,8 +45,8 @@ export function VerticalLanding({
         headlineAccent={headlineAccent}
         subhead={subhead}
         ctas={[
-          { label: "Request pilot", href: "/sign-up" },
-          { label: "Book a demo", href: ctaHref, variant: "secondary" },
+          { label: "Book a demo", href: ctaHref },
+          { label: "Start free trial", href: "/sign-up", variant: "secondary" },
         ]}
         caption={caption}
         artifact={artifact}
@@ -228,12 +228,12 @@ export function VerticalLanding({
           </Reveal>
           <Reveal delay={220}>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href="/sign-up" className="btn-primary">
-                Request pilot
-              </Link>
-              <BookDemoLink className="btn-secondary">
+              <BookDemoLink className="btn-primary">
                 Book a demo
               </BookDemoLink>
+              <Link href="/sign-up" className="btn-secondary">
+                Start free trial
+              </Link>
             </div>
           </Reveal>
         </div>

@@ -1,9 +1,9 @@
 import { SignUp } from "@clerk/nextjs";
 import Link from "next/link";
-import Image from "next/image";
 import type { Metadata } from "next";
 import { BRAND_NAME } from "@/lib/brand";
 import { PlatformShowcase } from "@/components/auth/platform-showcase";
+import { LeaseStackLogo } from "@/components/brand/leasestack-logo";
 
 export const metadata: Metadata = {
   title: `Create account | ${BRAND_NAME}`,
@@ -58,14 +58,7 @@ export default async function SignUpPage({
             aria-label={BRAND_NAME}
             className="inline-flex items-center hover:opacity-80 transition-opacity"
           >
-            <Image
-              src="/logos/leasestack-wordmark.png"
-              alt={BRAND_NAME}
-              width={180}
-              height={40}
-              priority
-              className="h-9 w-auto"
-            />
+            <LeaseStackLogo size={30} />
           </Link>
         </header>
 
@@ -76,10 +69,12 @@ export default async function SignUpPage({
                 Create account
               </p>
               <h1 className="font-sans text-[clamp(28px,3.4vw,36px)] font-bold tracking-[-0.025em] leading-[1.08] text-foreground">
-                Start the pilot.
+                {prefillEmail ? "Create your account." : "Start your free trial."}
               </h1>
               <p className="mt-2 font-sans text-[14.5px] leading-[1.5] text-muted-foreground">
-                Set up your {BRAND_NAME} operator portal in under a minute.
+                {prefillEmail
+                  ? `Finish setting up your ${BRAND_NAME} portal.`
+                  : "14 days, no card required. Set up your first property in a few minutes."}
               </p>
             </div>
 
@@ -178,18 +173,19 @@ export default async function SignUpPage({
               .
             </p>
 
-            {/* Primary footer action — the "Sign in" path that used to
-                float orphaned at the top now lives here, directly under
-                the form it relates to. */}
-            <p className="mt-5 text-center text-[12.5px] text-muted-foreground">
-              Already have an account?{" "}
-              <Link
-                href="/sign-in"
-                className="font-semibold text-primary hover:underline underline-offset-4"
-              >
-                Sign in →
-              </Link>
-            </p>
+            {/* Clerk's card footer already carries "Already have an
+                account? Sign in", so this slot offers the guided path. */}
+            {prefillEmail ? null : (
+              <p className="mt-5 text-center text-[12.5px] text-muted-foreground">
+                Prefer a guided setup?{" "}
+                <Link
+                  href="/book-demo"
+                  className="font-semibold text-primary hover:underline underline-offset-4"
+                >
+                  Book a demo →
+                </Link>
+              </p>
+            )}
           </div>
         </div>
 

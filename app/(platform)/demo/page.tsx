@@ -64,7 +64,7 @@ export default function DemoPage() {
               or book a demo and we'll walk you through it, no cost, no card.
             </p>
             <Link
-              href="/onboarding"
+              href="/book-demo"
               className="inline-block font-mono text-xs font-semibold px-6 py-4 rounded-none"
               style={{
                 backgroundColor: "var(--color-primary)",
@@ -100,7 +100,7 @@ export default function DemoPage() {
               on the call. No cost, no card, no deck.
             </p>
             <Link
-              href="/onboarding"
+              href="/book-demo"
               className="mt-6 inline-block font-mono text-xs font-semibold px-6 py-4 rounded-none"
               style={{
                 backgroundColor: "var(--color-primary)",

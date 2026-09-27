@@ -18,7 +18,7 @@ export default function AboutPage() {
         headlineAccent="not by vendors."
         subhead={`${BRAND_NAME} is the dashboard that runs a rental property's online leasing and shows which ad produced every signed lease. Built with operators running a live lease-up at Telegraph Commons in Berkeley.`}
         ctas={[
-          { label: "Request pilot", href: "/sign-up" },
+          { label: "Book a demo", href: "/book-demo" },
           { label: "Read the manifesto", href: "/manifesto", variant: "secondary" },
         ]}
         caption="Built with SG Real Estate at Telegraph Commons, Berkeley"
@@ -105,8 +105,8 @@ export default function AboutPage() {
           </Reveal>
           <Reveal delay={140}>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href="/sign-up" className="btn-primary">
-                Request pilot
+              <Link href="/book-demo" className="btn-primary">
+                Book a demo
               </Link>
               <Link href="/manifesto" className="btn-secondary">
                 Read the manifesto
