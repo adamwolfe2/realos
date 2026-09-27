@@ -11,6 +11,7 @@ import {
   addressLine,
 } from "../snapshot-shared";
 import { SECTIONS, type SectionId } from "./sections";
+import { LeaseStackLogo } from "@/components/brand/leasestack-logo";
 
 // ---------------------------------------------------------------------------
 // ReportDashboard — the interactive Marketing & Performance Snapshot. An
@@ -85,12 +86,7 @@ function DashboardInner({
           <div className="mb-1 ls-eyebrow">
             Prepared by
           </div>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logos/leasestack-wordmark.png"
-            alt="LeaseStack"
-            className="ml-auto block h-7 w-auto"
-          />
+          <LeaseStackLogo size={24} />
         </div>
       </header>
 

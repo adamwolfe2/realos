@@ -11,6 +11,7 @@ import {
   Settings,
   type LucideIcon,
 } from "lucide-react";
+import { LeaseStackLogo } from "@/components/brand/leasestack-logo";
 
 // ---------------------------------------------------------------------------
 // Walkthrough shell + primitives — static marketing replicas of the REAL
@@ -163,7 +164,7 @@ export function WalkthroughShell({
         }}
       >
         <div className="flex items-center gap-2 px-2 pb-3 mb-1" style={{ borderBottom: `1px solid ${BORDER}` }}>
-          <img src="/logos/leasestack-wordmark.png" alt="LeaseStack" style={{ height: 18, width: "auto" }} />
+          <LeaseStackLogo size={16} />
         </div>
         <nav className="flex flex-col gap-0.5 mt-2">
           {SIDEBAR.map((item, i) => {

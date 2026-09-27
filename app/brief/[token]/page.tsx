@@ -24,6 +24,7 @@ import { BRIEF_REGISTRY } from "@/lib/brief/registry";
 import { getScope } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import brief255Cal from "@/prospects/255-cal.json" assert { type: "json" };
+import { LeaseStackLogo } from "@/components/brand/leasestack-logo";
 
 // ---------------------------------------------------------------------------
 // /brief/[token] — prospect brief page.
@@ -313,12 +314,7 @@ function _legacyPreHeroStrip_DO_NOT_USE({
       <div className="max-w-[1080px] mx-auto px-6 flex items-center justify-between gap-4">
         {/* LeaseStack wordmark — drives brand identity at first paint */}
         <Link href="/" aria-label="LeaseStack home" className="block">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logos/leasestack-wordmark.png"
-            alt="LeaseStack"
-            className="h-7 md:h-9 w-auto block"
-          />
+          <LeaseStackLogo size={24} />
         </Link>
         <div className="flex items-center gap-3 text-[10.5px]"
           style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.14em", textTransform: "uppercase" }}>

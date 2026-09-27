@@ -28,6 +28,7 @@ import { LiveTicker } from "@/components/platform/live-ticker";
 // portal uses so the demo and the product are visually identical.
 import { LeadSourceDonut } from "@/components/portal/dashboard/lead-source-donut";
 import { ConversionFunnel } from "@/components/portal/dashboard/conversion-funnel";
+import { LeaseStackLogo } from "@/components/brand/leasestack-logo";
 
 // ---------------------------------------------------------------------------
 // ProductTour
@@ -165,11 +166,7 @@ function Topbar() {
       }}
     >
       <div className="flex items-center gap-3">
-        <img
-          src="/logos/leasestack-wordmark.png"
-          alt="LeaseStack"
-          style={{ height: "22px", width: "auto", display: "block" }}
-        />
+        <LeaseStackLogo size={20} />
         <span
           className="inline-block"
           style={{

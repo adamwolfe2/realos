@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LeaseStackLogo } from "@/components/brand/leasestack-logo";
 
 // ---------------------------------------------------------------------------
 // 404 — brand-aligned, editorial. Single-column, left-justified, large
@@ -15,11 +16,7 @@ export default function NotFound() {
     >
       <header className="py-8">
         <Link href="/" aria-label="LeaseStack home" className="inline-flex">
-          <img
-            src="/logos/leasestack-wordmark.png"
-            alt="LeaseStack"
-            style={{ height: 36, width: "auto", display: "block" }}
-          />
+          <LeaseStackLogo size={28} />
         </Link>
       </header>
 

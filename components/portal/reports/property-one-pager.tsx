@@ -19,6 +19,7 @@ import {
   Stars,
   TILE_DENSE,
 } from "./snapshot-shared";
+import { LeaseStackMark } from "@/components/brand/leasestack-logo";
 
 // ---------------------------------------------------------------------------
 // PropertyOnePager — a single-page "Marketing & Performance Snapshot" for one
@@ -224,13 +225,7 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
               {/* The asset is the bare building mark on a padded canvas (no
                   lettering), so the name is set alongside it — a prospect
                   seeing the mark alone wouldn't know who prepared this. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/logos/leasestack-wordmark.png"
-                alt=""
-                aria-hidden
-                className="-mx-1 block h-7 w-auto"
-              />
+              <LeaseStackMark className="block h-6 w-auto" />
               <span className="text-[14px] font-semibold tracking-[-0.01em]">
                 LeaseStack
               </span>

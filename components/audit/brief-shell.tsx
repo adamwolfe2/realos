@@ -9,6 +9,7 @@ import {
   GoogleMark,
 } from "@/components/platform/artifacts/brand-logos";
 import { BRAND_NAME } from "@/lib/brand";
+import { LeaseStackLogo } from "@/components/brand/leasestack-logo";
 
 // ---------------------------------------------------------------------------
 // Shared visual shell for both /brief/[token] (hand-curated) and
@@ -97,12 +98,7 @@ export function BriefShellHeader({
     >
       <div className="max-w-[1080px] mx-auto px-6 flex items-center justify-between gap-4">
         <Link href="/" aria-label={`${BRAND_NAME} home`} className="block">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logos/leasestack-wordmark.png"
-            alt={BRAND_NAME}
-            className="h-7 md:h-9 w-auto block"
-          />
+          <LeaseStackLogo size={24} />
         </Link>
         <div
           className="flex items-center gap-3 text-[10.5px]"
@@ -180,13 +176,7 @@ export function BriefShellFooter({
     >
       <div className="max-w-[1080px] mx-auto px-6 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
         <Link href="/" aria-label={`${BRAND_NAME} home`} className="block">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logos/leasestack-wordmark.png"
-            alt={BRAND_NAME}
-            className="h-6 w-auto block"
-            style={{ opacity: 0.7 }}
-          />
+          <span style={{ opacity: 0.7 }}><LeaseStackLogo size={22} /></span>
         </Link>
         <div
           className="flex flex-col md:flex-row gap-1 md:gap-3 md:items-center text-[11px]"
