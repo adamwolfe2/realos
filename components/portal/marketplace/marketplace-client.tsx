@@ -263,7 +263,7 @@ export function MarketplaceClient({
           <div className="flex items-center gap-3">
             <div className="hidden md:flex items-center gap-2 rounded-[2px] border border-border bg-card px-3 py-1.5">
               <span className="ls-eyebrow">
-                Active
+                Paid add-ons on
               </span>
               <span className="text-sm font-semibold tabular-nums text-foreground">
                 {enabledCount}
@@ -294,7 +294,7 @@ export function MarketplaceClient({
 
       {/* Categories — each group anchored by a SectionLabel for cohesion
           with the rest of the portal (no more serif inline H2s). */}
-      <section className="space-y-6">
+      <section className="grid grid-cols-1 xl:grid-cols-2 gap-x-6 gap-y-6">
         {grouped.map((group) =>
           group.modules.length === 0 ? null : (
             <div key={group.category}>
@@ -304,7 +304,7 @@ export function MarketplaceClient({
                 {group.category}
               </SectionLabel>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {group.modules.map((m) => (
                   <ModuleCard
                     key={m.key}
