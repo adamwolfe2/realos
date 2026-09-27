@@ -15,6 +15,7 @@ import {
   COMMERCIAL_SUBTYPES,
   MODULE_CATALOG,
 } from "@/components/intake/constants";
+import { TIERS as CATALOG_TIERS } from "@/lib/billing/catalog";
 
 // ---------------------------------------------------------------------------
 // NewClientForm — agency white-glove "create client from scratch" form.
@@ -24,11 +25,13 @@ import {
 
 const TIERS = [
   { key: "", label: "No tier yet" },
-  { key: "STARTER", label: "Starter" },
-  { key: "GROWTH", label: "Growth" },
-  { key: "SCALE", label: "Scale" },
-  { key: "CUSTOM", label: "Custom" },
-] as const;
+  // Same names + list prices as /pricing, straight from the catalog.
+  ...CATALOG_TIERS.map((t) => ({
+    key: t.tier,
+    label: `${t.productName.replace(/^LeaseStack\s+/, "")} · $${(t.monthly.unitAmountCents / 100).toLocaleString()}/property`,
+  })),
+  { key: "CUSTOM", label: "Enterprise · custom" },
+];
 
 const selectCls =
   "h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]";

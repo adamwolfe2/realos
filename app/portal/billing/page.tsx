@@ -3,7 +3,8 @@ import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
-import { DollarSign, Receipt, Wallet, Percent } from "lucide-react";
+import { Building2, DollarSign, Layers } from "lucide-react";
+import { packageName } from "@/lib/billing/features";
 import { BillingPortalButton } from "./billing-portal-button";
 import { getStripeClient, isStripeConfigured } from "@/lib/stripe/config";
 import { ADDONS, TIERS } from "@/lib/billing/plans";
@@ -428,9 +429,18 @@ export default async function BillingPage({
         </section>
       ) : (
         <>
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <KpiTile
-            label="Monthly retainer"
+            label="Plan"
+            value={
+              org.subscriptionTier
+                ? (packageName(org.subscriptionTier) ?? "Custom")
+                : "—"
+            }
+            icon={<Layers className="h-3.5 w-3.5" />}
+          />
+          <KpiTile
+            label="Monthly total"
             value={
               org.mrrCents != null && org.mrrCents > 0
                 ? `$${Math.round(org.mrrCents / 100).toLocaleString()}`
@@ -439,25 +449,10 @@ export default async function BillingPage({
             icon={<DollarSign className="h-3.5 w-3.5" />}
           />
           <KpiTile
-            label="Build fee paid"
-            value={
-              org.buildFeePaidCents != null && org.buildFeePaidCents > 0
-                ? `$${Math.round(org.buildFeePaidCents / 100).toLocaleString()}`
-                : "—"
-            }
-            hint="One-time"
-            icon={<Receipt className="h-3.5 w-3.5" />}
-          />
-          <KpiTile
-            label="Active ad budgets"
-            value={`$${Math.round(monthlySpendCents / 100).toLocaleString()}`}
-            hint="Per month"
-            icon={<Wallet className="h-3.5 w-3.5" />}
-          />
-          <KpiTile
-            label="Ad spend markup"
-            value={`${Math.round((org.adSpendMarkupPct ?? 0) * 100)}%`}
-            icon={<Percent className="h-3.5 w-3.5" />}
+            label="Properties"
+            value={marketablePropertyCount.toLocaleString()}
+            hint="Billed per property"
+            icon={<Building2 className="h-3.5 w-3.5" />}
           />
         </section>
 
@@ -467,9 +462,25 @@ export default async function BillingPage({
         <SectionCard label="Plan & invoice">
           <div className="divide-y divide-[var(--hair)]">
             <PlanRow
-              label="Subscription tier"
-              value={humanizeEnum(org.subscriptionTier)}
+              label="Plan"
+              value={
+                org.subscriptionTier
+                  ? (packageName(org.subscriptionTier) ?? humanizeEnum(org.subscriptionTier))
+                  : "—"
+              }
             />
+            {org.buildFeePaidCents != null && org.buildFeePaidCents > 0 ? (
+              <PlanRow
+                label="Website build (one-time)"
+                value={`$${Math.round(org.buildFeePaidCents / 100).toLocaleString()}`}
+              />
+            ) : null}
+            {monthlySpendCents > 0 ? (
+              <PlanRow
+                label="Managed ad budgets"
+                value={`$${Math.round(monthlySpendCents / 100).toLocaleString()}/mo · ${Math.round((org.adSpendMarkupPct ?? 0) * 100)}% management`}
+              />
+            ) : null}
             <PlanRow
               label="Subscription status"
               value={

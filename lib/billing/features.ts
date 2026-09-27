@@ -205,7 +205,8 @@ export function featureKeysForTier(tier: SubscriptionTier): FeatureKey[] {
   return FEATURE_CATALOG.filter((f) => TIER_RANK[f.tier] <= rank).map((f) => f.key);
 }
 
-function packageName(tier: SubscriptionTier): string | null {
+/** Customer-facing plan name for a tier (Foundation / Growth / Scale). */
+export function packageName(tier: SubscriptionTier): string | null {
   const def = TIERS.find((t) => t.tier === tier);
   return def ? def.productName.replace(/^LeaseStack\s+/, "") : null;
 }
