@@ -34,22 +34,18 @@ export function TrialActivationCard({
   tierId,
   propertyCount,
   trialEndsAt,
-  selectedModuleKeys,
-  perPropertyCents,
+  monthlyTotalCents,
 }: {
   tierId: "starter" | "growth" | "scale";
   propertyCount: number;
   trialEndsAt: Date | null;
-  // The exact features the operator enabled + the effective per-property price
-  // for them. Drives both the quoted total and the per-feature checkout so
-  // billing matches their à-la-carte selection (no tier clobber).
-  selectedModuleKeys: string[];
-  perPropertyCents: number;
+  // The package's graduated monthly total for this property count: the same
+  // number Stripe charges for the tier price checkout creates.
+  monthlyTotalCents: number;
 }) {
   const [submitting, setSubmitting] = React.useState(false);
 
-  // Per-feature total = the effective per-property price × property count.
-  const totalMonthly = Math.round((perPropertyCents * propertyCount) / 100);
+  const totalMonthly = Math.round(monthlyTotalCents / 100);
   const days = daysLeft(trialEndsAt);
   const expired = days === 0;
 
@@ -64,9 +60,6 @@ export function TrialActivationCard({
           tierId,
           cycle: "monthly",
           propertyCount,
-          // Bill the exact à-la-carte selection (per-feature pricing), not the
-          // tier default.
-          selectedModuleKeys,
           source: "trial_activation",
         }),
       });

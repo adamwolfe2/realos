@@ -8,7 +8,7 @@ import { BillingPortalButton } from "./billing-portal-button";
 import { getStripeClient, isStripeConfigured } from "@/lib/stripe/config";
 import { ADDONS, TIERS } from "@/lib/billing/plans";
 import { subscriptionItemMonthlyCents } from "@/lib/billing/catalog";
-import { getEffectiveFeatureCatalog } from "@/lib/billing/feature-prices";
+import { computeGraduatedMonthlyCents, getTierById } from "@/lib/billing/catalog";
 import type Stripe from "stripe";
 import { TrialActivationCard } from "./trial-activation-card";
 import { AddonRequestCard } from "./addon-request-card";
@@ -81,19 +81,6 @@ export default async function BillingPage({
     },
   });
   if (!org) return null;
-
-  // Per-feature conversion pricing: which features are enabled + the effective
-  // (admin-set) per-property monthly total for exactly those features.
-  const { features: effectiveFeatures, basePlatformCents } =
-    await getEffectiveFeatureCatalog();
-  const enabledFeatureKeys = effectiveFeatures
-    .filter((f) => (org as Record<string, unknown>)[f.key] === true)
-    .map((f) => f.key as string);
-  const activationPerPropertyCents =
-    basePlatformCents +
-    effectiveFeatures
-      .filter((f) => enabledFeatureKeys.includes(f.key))
-      .reduce((acc, f) => acc + f.monthlyCents, 0);
 
   // Property count drives trial-activation pricing. Match the
   // dashboard's "marketable" filter so we don't quote a price that
@@ -354,8 +341,10 @@ export default async function BillingPage({
           tierId={activationTierId}
           propertyCount={Math.max(1, marketablePropertyCount)}
           trialEndsAt={trialEndsAt}
-          selectedModuleKeys={enabledFeatureKeys}
-          perPropertyCents={activationPerPropertyCents}
+          monthlyTotalCents={computeGraduatedMonthlyCents(
+            getTierById(activationTierId)?.monthly.unitAmountCents ?? 0,
+            Math.max(1, marketablePropertyCount),
+          )}
         />
       ) : null}
 

@@ -5,17 +5,14 @@ import { prisma } from "@/lib/db";
 import { getStripeClient, isStripeConfigured } from "@/lib/stripe/config";
 import { getScope } from "@/lib/tenancy/scope";
 import { getSiteUrl } from "@/lib/brand";
-import { BASE_PLATFORM_KEY } from "@/lib/billing/feature-prices";
-import { getFeatureStripePriceId } from "@/lib/billing/feature-stripe";
 import { captureWithContext } from "@/lib/sentry";
-import { getEffectiveFeatureCatalog } from "@/lib/billing/feature-prices";
 import {
   billingCheckoutIdempotencyKey,
   canManageBilling,
-  canonicalFeatureKeys,
   stripeTrialSchedule,
 } from "@/lib/billing/checkout-policy";
 import { isPlatformSubscriptionForOrg } from "@/lib/billing/stripe-state";
+import { getTierById, resolveLineItems } from "@/lib/billing/plans";
 
 // ---------------------------------------------------------------------------
 // POST /api/billing/checkout
@@ -175,29 +172,6 @@ export async function POST(req: NextRequest) {
       { status: 409 },
     );
   }
-  let activeFeatures;
-  try {
-    ({ features: activeFeatures } = await getEffectiveFeatureCatalog({
-      strict: true,
-    }));
-  } catch (error) {
-    captureWithContext(error, {
-      route: "api/billing/checkout/catalog",
-      orgId: org.id,
-    });
-    return NextResponse.json(
-      {
-        ok: false,
-        error: "Billing prices are temporarily unavailable. Please try again.",
-      },
-      { status: 503 },
-    );
-  }
-  const selectedModuleKeys = canonicalFeatureKeys(
-    activeFeatures.filter(
-      (feature) => (org as Record<string, unknown>)[feature.key] === true,
-    ).map((feature) => feature.key),
-  );
   const orgTier = org.chosenTier ?? org.subscriptionTier;
   const tierId =
     orgTier === "STARTER"
@@ -258,34 +232,35 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Bill the base platform plus every enabled catalog feature. The browser's
-  // posted module list is deliberately ignored; only Organization flags can
-  // create line items.
-  const checkoutLineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
-  const basePriceId = await getFeatureStripePriceId(BASE_PLATFORM_KEY);
-  if (!basePriceId) {
+  // Bill the org's stored package: one graduated tier price, quantity =
+  // live property count. Enabled module flags and the posted body never add
+  // line items; entitlements follow the tier via the Stripe webhook.
+  const tier = getTierById(tierId);
+  let checkoutLineItems: Stripe.Checkout.SessionCreateParams.LineItem[];
+  try {
+    if (!tier) throw new Error(`Unknown tier ${tierId}`);
+    checkoutLineItems = resolveLineItems({
+      tier,
+      cycle: parsed.cycle,
+      propertyCount,
+    }).map((item) =>
+      item.kind === "subscription_tiered"
+        ? { price: item.priceId, quantity: item.quantity }
+        : { price: item.priceId },
+    );
+  } catch (error) {
+    captureWithContext(error, {
+      route: "api/billing/checkout/tier-price",
+      orgId: org.id,
+      tierId,
+    });
     return NextResponse.json(
       {
         ok: false,
-        error:
-          "Feature prices aren't synced to Stripe yet. An admin must click \"Sync to Stripe\" on /admin/pricing first.",
+        error: "Billing prices are temporarily unavailable. Please try again.",
       },
       { status: 503 },
     );
-  }
-  checkoutLineItems.push({ price: basePriceId, quantity: propertyCount });
-  for (const key of selectedModuleKeys) {
-    const priceId = await getFeatureStripePriceId(key);
-    if (!priceId) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: `Feature "${key}" isn't priced in Stripe yet. Sync prices on /admin/pricing.`,
-        },
-        { status: 503 },
-      );
-    }
-    checkoutLineItems.push({ price: priceId, quantity: propertyCount });
   }
 
   const siteUrl = getSiteUrl();
@@ -303,7 +278,6 @@ export async function POST(req: NextRequest) {
     property_count: String(propertyCount),
     intent: "trial_activation",
     org_id: org.id,
-    feature_keys: selectedModuleKeys.join(","),
     ...(parsed.source ? { source: parsed.source } : {}),
   };
 
@@ -342,7 +316,7 @@ export async function POST(req: NextRequest) {
         tierId,
         cycle: parsed.cycle,
         propertyCount,
-        featureKeys: selectedModuleKeys,
+        featureKeys: [],
         priceIds: checkoutLineItems.map((item) => String(item.price)),
         trialEndsAt: org.trialEndsAt,
       }),

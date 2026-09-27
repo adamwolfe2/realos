@@ -30,6 +30,9 @@ vi.mock("@/lib/billing/feature-stripe", () => ({
 vi.mock("@/lib/sentry", () => ({ captureWithContext: vi.fn() }));
 
 import { POST } from "@/app/api/billing/checkout/route";
+import { getPriceId } from "@/lib/billing/plans";
+
+const SCALE_MONTHLY = getPriceId("ls_scale_graduated_monthly_v1");
 
 const NOW = new Date("2026-08-04T12:00:00.000Z");
 const TRIAL_END = new Date("2026-08-08T12:00:00.000Z");
@@ -122,7 +125,7 @@ describe("POST /api/billing/checkout", () => {
     expect(response.status).toBe(200);
   });
 
-  it("derives quantity, enabled features, and trial end from the organization", async () => {
+  it("derives tier, quantity, and trial end from the organization", async () => {
     const response = await POST(
       request(
         activationBody({
@@ -141,10 +144,9 @@ describe("POST /api/billing/checkout", () => {
     });
     expect(checkoutCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        line_items: [
-          { price: "price_base", quantity: 3 },
-          { price: "price_moduleChatbot", quantity: 3 },
-        ],
+        // The posted tierId ("starter") is ignored: the org's stored tier
+        // (SCALE) picks the price, and quantity is the live property count.
+        line_items: [{ price: SCALE_MONTHLY, quantity: 3 }],
         subscription_data: expect.objectContaining({
           trial_end: Math.floor(TRIAL_END.getTime() / 1000),
           metadata: expect.objectContaining({ tier: "SCALE", tier_id: "scale" }),
@@ -174,15 +176,31 @@ describe("POST /api/billing/checkout", () => {
     expect(checkoutCreate).not.toHaveBeenCalled();
   });
 
-  it("does not bill a feature that an admin deactivated", async () => {
-    mockPrisma.featurePrice.findMany.mockResolvedValue([
-      { key: "moduleChatbot", active: false, monthlyCents: 14900 },
-    ]);
+  it("bills only the package price, never per-feature items on top", async () => {
+    mockPrisma.organization.findUnique.mockResolvedValue({
+      ...org,
+      moduleSEO: true,
+      modulePixel: true,
+      moduleReferrals: true,
+    });
     const response = await POST(request(activationBody()));
     expect(response.status).toBe(200);
     expect(checkoutCreate.mock.calls[0][0].line_items).toEqual([
-      { price: "price_base", quantity: 3 },
+      { price: SCALE_MONTHLY, quantity: 3 },
     ]);
+    expect(getFeatureStripePriceId).not.toHaveBeenCalled();
+  });
+
+  it("refuses to bill a workspace with no chosen package", async () => {
+    mockPrisma.organization.findUnique.mockResolvedValue({
+      ...org,
+      chosenTier: null,
+      subscriptionTier: null,
+    });
+    const response = await POST(request(activationBody()));
+    expect(response.status).toBe(409);
+    expect(customerCreate).not.toHaveBeenCalled();
+    expect(checkoutCreate).not.toHaveBeenCalled();
   });
 
   it("does not expose a Stripe error in the customer response", async () => {
@@ -195,14 +213,15 @@ describe("POST /api/billing/checkout", () => {
     });
   });
 
-  it("fails closed when the authoritative active-feature catalog cannot load", async () => {
+  it("does not depend on the a-la-carte feature catalog", async () => {
     mockPrisma.featurePrice.findMany.mockRejectedValue(
       new Error("catalog unavailable"),
     );
     const response = await POST(request(activationBody()));
-    expect(response.status).toBe(503);
-    expect(customerCreate).not.toHaveBeenCalled();
-    expect(checkoutCreate).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    expect(checkoutCreate.mock.calls[0][0].line_items).toEqual([
+      { price: SCALE_MONTHLY, quantity: 3 },
+    ]);
   });
 
   it("rejects a workspace that is not awaiting trial activation", async () => {
