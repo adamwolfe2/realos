@@ -21,3 +21,22 @@ describe("featureKeysForTier", () => {
     }
   });
 });
+
+import { packageLabelFor } from "@/lib/billing/features";
+
+describe("packageLabelFor", () => {
+  it("says the org's plan includes a module at or below its tier", () => {
+    expect(packageLabelFor("moduleChatbot", "GROWTH")).toBe("Included in Growth");
+    expect(packageLabelFor("modulePixel", "GROWTH")).toBe("Included in Growth");
+  });
+
+  it("names the lowest plan that unlocks a higher-tier module", () => {
+    expect(packageLabelFor("moduleReferrals", "GROWTH")).toBe("Scale plan");
+    expect(packageLabelFor("modulePixel", "STARTER")).toBe("Growth plan");
+  });
+
+  it("returns null for keys outside the package catalog or with no plan", () => {
+    expect(packageLabelFor("whiteLabel", "SCALE")).toBeNull();
+    expect(packageLabelFor("moduleChatbot", null)).toBeNull();
+  });
+});

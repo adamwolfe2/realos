@@ -122,6 +122,8 @@ type MarketplaceEntryVM = {
   tagline: string;
   bullets: string[];
   monthlyPriceCents: number;
+  /** "Included in Growth" / "Scale plan" for package-catalog modules. */
+  packageLabel: string | null;
   setupHref: string;
   /** Where "Open" routes once an already-active concierge/addon entry is
       live for this org (e.g. moduleSEO -> /portal/seo). Null falls back to
@@ -257,7 +259,7 @@ export function MarketplaceClient({
         description={
           isTrialing
             ? `Activate any module free for the next ${trialDaysLeft ?? 14} days. Each ships with its own setup — most take 1–10 minutes.`
-            : "Bolt on modules whenever you're ready. Each is a standalone subscription you can start, pause, or cancel from billing."
+            : "What your plan includes, and what the next plan unlocks. Pro add-ons and guided services are billed separately."
         }
         actions={
           <div className="flex items-center gap-3">
@@ -294,7 +296,7 @@ export function MarketplaceClient({
 
       {/* Categories — each group anchored by a SectionLabel for cohesion
           with the rest of the portal (no more serif inline H2s). */}
-      <section className="grid grid-cols-1 xl:grid-cols-2 gap-x-6 gap-y-6">
+      <section className="grid grid-cols-1 2xl:grid-cols-2 gap-x-6 gap-y-6">
         {grouped.map((group) =>
           group.modules.length === 0 ? null : (
             <div key={group.category}>
@@ -384,6 +386,7 @@ function ModuleCard({
     isNotified,
     popular: m.popular,
     monthlyPriceCents: m.monthlyPriceCents,
+    packageLabel: m.packageLabel,
   });
   // Bug #123 (was Norman bug #2): operators couldn't click into a module to
   // read the full pitch — tagline was truncated with "..." and there was no

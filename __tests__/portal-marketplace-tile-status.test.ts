@@ -29,6 +29,29 @@ describe("getTileViewState", () => {
     expect(formatPrice(24950)).toBe("$249.50");
   });
 
+  it("toggle with a package label shows the plan, not a per-module price", () => {
+    const on = getTileViewState({ ...BASE, kind: "toggle", isEnabled: true, packageLabel: "Included in Growth" });
+    expect(on.priceText).toBe("Included in Growth");
+    expect(on.priceSuffix).toBeNull();
+    expect(on.cta).toEqual({ action: "manage", setupLabel: "Set up", removeLabel: "Remove", disabled: false });
+    const off = getTileViewState({ ...BASE, kind: "toggle", isEnabled: false, packageLabel: "Scale plan" });
+    expect(off.priceText).toBe("Scale plan");
+    expect(off.priceSuffix).toBeNull();
+    expect(off.cta).toEqual({ action: "activate", label: "Unlock", disabled: false });
+  });
+
+  it("concierge catalog module shows its plan label instead of a price", () => {
+    const v = getTileViewState({ ...BASE, kind: "concierge", isEnabled: true, packageLabel: "Included in Growth" });
+    expect(v.priceText).toBe("Included in Growth");
+    expect(v.priceSuffix).toBeNull();
+    expect(v.cta).toEqual({ action: "open", label: "Open" });
+  });
+
+  it("trial keeps its free label even when a package label is known", () => {
+    const v = getTileViewState({ ...BASE, kind: "toggle", isEnabled: false, isTrialing: true, packageLabel: "Scale plan" });
+    expect(v.priceText).toBe("Free during trial");
+  });
+
   it("toggle, off, trialing -> Not active / Free during trial / Activate", () => {
     const v = getTileViewState({ ...BASE, kind: "toggle", isEnabled: false, isTrialing: true });
     expect(v.status).toBe("not_active");

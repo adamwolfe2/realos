@@ -16,6 +16,7 @@
 // ---------------------------------------------------------------------------
 
 import type { SubscriptionTier } from "@prisma/client";
+import { TIERS } from "@/lib/billing/catalog";
 
 // Module flag keys that are always on for every workspace — the base platform.
 // Not shown as toggles; included in the base platform fee.
@@ -202,6 +203,31 @@ const TIER_RANK: Record<string, number> = { STARTER: 0, GROWTH: 1, SCALE: 2 };
 export function featureKeysForTier(tier: SubscriptionTier): FeatureKey[] {
   const rank = TIER_RANK[tier] ?? TIER_RANK.SCALE;
   return FEATURE_CATALOG.filter((f) => TIER_RANK[f.tier] <= rank).map((f) => f.key);
+}
+
+function packageName(tier: SubscriptionTier): string | null {
+  const def = TIERS.find((t) => t.tier === tier);
+  return def ? def.productName.replace(/^LeaseStack\s+/, "") : null;
+}
+
+/**
+ * Portal copy for a module under the package model: "Included in Growth" when
+ * the org's plan covers it, "Scale plan" naming the lowest plan that does
+ * otherwise. Null for keys outside the package catalog (add-ons, services)
+ * or orgs without a plan, so callers keep their existing label.
+ */
+export function packageLabelFor(
+  key: string,
+  orgTier: SubscriptionTier | null,
+): string | null {
+  const feature = FEATURE_CATALOG.find((f) => f.key === key);
+  if (!feature || !orgTier || TIER_RANK[orgTier] === undefined) return null;
+  if (TIER_RANK[feature.tier] <= TIER_RANK[orgTier]) {
+    const name = packageName(orgTier);
+    return name ? `Included in ${name}` : null;
+  }
+  const name = packageName(feature.tier);
+  return name ? `${name} plan` : null;
 }
 
 export function inferTierFromSelection(selected: string[]): SubscriptionTier {

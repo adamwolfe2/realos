@@ -63,8 +63,12 @@ export function getTileViewState(input: {
   isNotified: boolean;
   popular: boolean;
   monthlyPriceCents: number;
+  /** Package-model label for catalog modules ("Included in Growth" /
+      "Scale plan"). Replaces the per-module price on toggle tiles. */
+  packageLabel?: string | null;
 }): TileViewState {
   const { kind, isEnabled, isTrialing, isPending, isNotified, popular, monthlyPriceCents } = input;
+  const packageLabel = input.packageLabel ?? null;
 
   if (kind === "coming") {
     return {
@@ -103,11 +107,13 @@ export function getTileViewState(input: {
     return {
       status: isEnabled ? "active" : "not_active",
       statusNote: isEnabled ? null : "Guided setup",
-      priceText: isEnabled
-        ? formatPrice(monthlyPriceCents)
-        : `from ${formatPrice(monthlyPriceCents)}`,
-      priceSuffix: "/mo",
-      priceEmphasis: "value",
+      priceText:
+        packageLabel ??
+        (isEnabled
+          ? formatPrice(monthlyPriceCents)
+          : `from ${formatPrice(monthlyPriceCents)}`),
+      priceSuffix: packageLabel ? null : "/mo",
+      priceEmphasis: packageLabel && isEnabled ? "accent" : "value",
       cta: isEnabled ? { action: "open", label: "Open" } : { action: "request", label: "Request setup" },
     };
   }
@@ -117,17 +123,19 @@ export function getTileViewState(input: {
     return {
       status: "active",
       statusNote: null,
-      priceText: formatPrice(monthlyPriceCents),
-      priceSuffix: "/mo",
-      priceEmphasis: "value",
+      priceText: packageLabel ?? formatPrice(monthlyPriceCents),
+      priceSuffix: packageLabel ? null : "/mo",
+      priceEmphasis: packageLabel ? "accent" : "value",
       cta: { action: "manage", setupLabel: "Set up", removeLabel: "Remove", disabled: isPending },
     };
   }
   return {
     status: "not_active",
     statusNote: popular ? "Popular" : null,
-    priceText: isTrialing ? "Free during trial" : formatPrice(monthlyPriceCents),
-    priceSuffix: isTrialing ? null : "/mo",
+    priceText: isTrialing
+      ? "Free during trial"
+      : (packageLabel ?? formatPrice(monthlyPriceCents)),
+    priceSuffix: isTrialing || packageLabel ? null : "/mo",
     priceEmphasis: isTrialing ? "accent" : "value",
     cta: { action: "activate", label: isTrialing ? "Activate" : "Unlock", disabled: isPending },
   };

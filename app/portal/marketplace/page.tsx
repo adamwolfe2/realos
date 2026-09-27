@@ -4,6 +4,7 @@ import { requireScope } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { groupModulesByCategory } from "@/lib/marketplace/catalog";
 import { MarketplaceClient } from "@/components/portal/marketplace/marketplace-client";
+import { packageLabelFor } from "@/lib/billing/features";
 
 export const metadata: Metadata = {
   title: "Marketplace · LeaseStack",
@@ -33,6 +34,8 @@ export default async function MarketplacePage() {
       id: true,
       name: true,
       subscriptionStatus: true,
+      subscriptionTier: true,
+      chosenTier: true,
       trialEndsAt: true,
       modulePixel: true,
       moduleChatbot: true,
@@ -63,6 +66,8 @@ export default async function MarketplacePage() {
 
   const isTrialing =
     org.subscriptionStatus === "TRIALING" || org.subscriptionStatus === null;
+  // Paid orgs are billed their subscriptionTier; a trial's pick is chosenTier.
+  const orgTier = org.subscriptionTier ?? org.chosenTier ?? null;
 
   const daysLeft = org.trialEndsAt
     ? Math.max(
@@ -133,6 +138,7 @@ export default async function MarketplacePage() {
           tagline: m.tagline,
           bullets: m.bullets,
           monthlyPriceCents: m.monthlyPriceCents,
+          packageLabel: packageLabelFor(m.key, orgTier),
           setupHref: m.setupHref,
           activeHref: activeHrefFor(m.key),
           popular: m.popular ?? false,
