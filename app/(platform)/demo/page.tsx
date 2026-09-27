@@ -90,7 +90,7 @@ export default function DemoPage() {
               className="text-sm leading-relaxed mt-3 max-w-xl mx-auto"
               style={{ color: "#393939" }}
             >
-              30 minutes on Zoom. We look at your property's marketing live
+              15 minutes on a video call. We look at your property's marketing live
               on the call. No cost, no card, no deck.
             </p>
             <Link

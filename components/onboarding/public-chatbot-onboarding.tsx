@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { BRAND_NAME } from "@/lib/brand";
 import { cn } from "@/lib/utils";
+import { LeaseStackLogo } from "@/components/brand/leasestack-logo";
 
 type StepId = "property" | "answers" | "preview";
 
@@ -58,15 +59,17 @@ export function PublicChatbotOnboarding() {
     <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex min-h-screen w-full max-w-[1180px] flex-col px-4 py-5 sm:px-6 lg:px-8">
         <header className="flex h-12 items-center justify-between">
-          <Link href="/" className="text-[15px] font-semibold tracking-[-0.01em]">
-            {BRAND_NAME}
+          <Link href="/" aria-label={BRAND_NAME}>
+            <LeaseStackLogo size={26} />
           </Link>
-          <Link
-            href="/sign-in"
-            className="text-[13px] font-semibold text-primary hover:underline"
-          >
-            Sign in
-          </Link>
+          <div className="flex items-center gap-5 text-[13px] font-semibold">
+            <Link href="/book-demo" className="text-foreground hover:underline underline-offset-4">
+              Book a demo
+            </Link>
+            <Link href="/sign-in" className="text-primary hover:underline underline-offset-4">
+              Sign in
+            </Link>
+          </div>
         </header>
 
         <section className="grid flex-1 items-center gap-8 py-8 lg:grid-cols-[minmax(0,0.96fr)_minmax(420px,1.04fr)] lg:py-10">

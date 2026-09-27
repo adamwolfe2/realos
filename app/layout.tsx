@@ -50,14 +50,14 @@ export const metadata: Metadata = {
     // next page load without requiring users to clear their cache.
     // Increment ?v= any time the icon files change.
     icon: [
-      { url: "/favicon.svg?v=3", type: "image/svg+xml" },
-      { url: "/icon-32x32.png?v=3", sizes: "32x32", type: "image/png" },
-      { url: "/icon-192.png?v=3", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512.png?v=3", sizes: "512x512", type: "image/png" },
+      { url: "/favicon.svg?v=4", type: "image/svg+xml" },
+      { url: "/icon-32x32.png?v=4", sizes: "32x32", type: "image/png" },
+      { url: "/icon-192.png?v=4", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png?v=4", sizes: "512x512", type: "image/png" },
     ],
-    apple: [{ url: "/apple-icon.png?v=3", sizes: "180x180" }],
-    shortcut: "/favicon.svg?v=3",
-    other: [{ rel: "mask-icon", url: "/favicon.svg?v=3", color: "#0f62fe" }],
+    apple: [{ url: "/apple-icon.png?v=4", sizes: "180x180" }],
+    shortcut: "/favicon.svg?v=4",
+    other: [{ rel: "mask-icon", url: "/favicon.svg?v=4", color: "#0f62fe" }],
   },
   openGraph: {
     title: `${BRAND_NAME}: Leasing intelligence for real estate operators`,

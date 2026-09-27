@@ -52,7 +52,7 @@ export function PilotCta() {
                   lineHeight: 1.6,
                 }}
               >
-                No sales pitch. No deck. Thirty minutes with the operator who built this.
+                No sales pitch. No deck. Fifteen minutes with the operator who built this.
               </p>
             </div>
 

@@ -1,18 +1,4 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect width="512" height="512" rx="96" fill="#FFFFFF"/>
-  <!-- LeaseStack mark: stacked building / floors silhouette in brand blue -->
-  <g fill="#2A4DBC">
-    <!-- Floor 1 (top) -->
-    <path d="M168 128 L344 128 L320 168 L168 168 Z"/>
-    <!-- Floor 2 -->
-    <path d="M168 192 L344 192 L320 232 L168 232 Z"/>
-    <!-- Floor 3 -->
-    <path d="M168 256 L344 256 L320 296 L168 296 Z"/>
-    <!-- Floor 4 -->
-    <path d="M168 320 L344 320 L320 360 L168 360 Z"/>
-    <!-- Floor 5 (bottom) -->
-    <path d="M168 384 L344 384 L320 384 L168 384 Z"/>
-    <!-- Left vertical column (building edge) -->
-    <rect x="148" y="120" width="24" height="272"/>
-  </g>
+  <g fill="#2A4DBC" transform="translate(128.5 91.0) scale(0.7285)"><path d="M0 95L198 0H350V25H216Q206 25 200 33L0 140Z"/><path d="M0 175L198 80H350V105H216Q206 105 200 113L0 220Z"/><path d="M0 255L198 160H350V185H216Q206 185 200 193L0 300Z"/><path d="M0 335L198 240H350V265H216Q206 265 200 273L0 380Z"/><path d="M0 415L198 320H350V345H216Q206 345 200 353L0 460Z"/><path d="M0 495L198 400H350V425H216Q206 425 200 433L0 540Z"/></g>
 </svg>
