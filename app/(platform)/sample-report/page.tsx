@@ -96,8 +96,8 @@ export default function SampleReportPage() {
             <Link href="/audit" className="btn-primary">
               Run a free audit
             </Link>
-            <Link href="/pricing" className="btn-secondary">
-              See pricing
+            <Link href="/book-demo" className="btn-secondary">
+              Book a demo
             </Link>
           </div>
         </div>
