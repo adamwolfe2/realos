@@ -17,15 +17,15 @@ import { Plus, Minus } from "lucide-react";
 const FAQS: Array<{ q: string; a: string }> = [
   {
     q: "How does this compare to a marketing-agency retainer?",
-    a: "A typical residential leasing-marketing retainer runs $3,500 to $8,000 per property per month and gives you a deck of impressions, clicks, and reach. LeaseStack starts at $99 per property per month for the base platform, plus only the features you turn on, and you get a full read on every channel your spend is touching plus a written recommendation on what to do about it. The math is straightforward: we replace your retainer and give you more insights for a more economical monthly fee.",
+    a: "A typical residential leasing-marketing retainer runs $3,500 to $8,000 per property per month and gives you a deck of impressions, clicks, and reach. LeaseStack starts at $499 per property per month on Foundation, and you get a full read on every channel your spend is touching plus a written recommendation on what to do about it. The math is straightforward: we replace your retainer and give you more insights for a more economical monthly fee.",
   },
   {
     q: "What is the free trial, exactly?",
-    a: "Zero dollars for 14 days. We connect to your existing stack (PMS, Google Ads, Meta, GSC, GA4, your site) and show you what your dashboard actually says. You get a weekly snapshot, the underlying insights, and one operator-written recommendation on what to fix first. No card on file, no commitment. If you like what you see, your selection carries over. If you do not, you close the tab.",
+    a: "Zero dollars for 14 days. We connect to your existing stack (PMS, Google Ads, Meta, GSC, GA4, your site) and show you what your dashboard actually says. You get a weekly snapshot, the underlying insights, and one operator-written recommendation on what to fix first. No card on file, no commitment. If you like what you see, your plan carries over. If you do not, you close the tab.",
   },
   {
-    q: "Do I have to buy every feature?",
-    a: "No. The base platform is the only required fee. Every feature on the builder above is optional, priced per property per month, and can be turned on or off any time from the billing portal. Pick the features each property actually needs instead of paying for a bundle built for someone else's portfolio.",
+    q: "Which plan should I pick?",
+    a: "Most single-property operators start on Growth: it adds the visitor pixel, SEO and AI search visibility, and ads recommendations on top of Foundation's chatbot and weekly report. Foundation is the lighter way to prove it on one building. Scale is for five or more properties that want a portfolio rollup. Not sure? Book a demo and we will recommend one from your own numbers. You can change plans any time.",
   },
   {
     q: "Does LeaseStack replace my leasing staff?",
@@ -37,7 +37,7 @@ const FAQS: Array<{ q: string; a: string }> = [
   },
   {
     q: "Are there any contracts?",
-    a: "No long-term contracts. Every plan is month-to-month and flexible, managed from the Stripe billing portal in two clicks. Annual prepay is optional and saves you about 17 percent. Enterprise can opt into annual or multi-year terms if it helps the asset-side accounting, but it is never required.",
+    a: "No long-term contracts. Every plan is month-to-month and flexible, managed from the Stripe billing portal in two clicks. Enterprise can opt into annual or multi-year terms if it helps the asset-side accounting, but it is never required.",
   },
   {
     q: "What happens if I leave?",

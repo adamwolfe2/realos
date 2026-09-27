@@ -21,7 +21,7 @@ import { BookDemoLink } from "@/components/marketing/book-demo-link";
 // in the subhead and again next to the builder's CTA.
 // ---------------------------------------------------------------------------
 
-const PRIMARY_HREF = "#builder";
+const PRIMARY_HREF = "#plans";
 
 export function PricingHero() {
   return (
@@ -56,9 +56,9 @@ export function PricingHero() {
             className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.05] tracking-tight"
             style={{ color: "var(--color-ink)" }}
           >
-            One platform fee.
+            Three plans.
             <br />
-            <span style={{ color: "var(--color-primary)" }}>Add only what you need.</span>
+            <span style={{ color: "var(--color-primary)" }}>Priced per property.</span>
           </h1>
 
           {/* Subhead, capped at 20 words. */}
@@ -66,9 +66,9 @@ export function PricingHero() {
             className="mt-5 text-lg md:text-xl leading-relaxed mx-auto max-w-2xl"
             style={{ color: "#525252" }}
           >
-            We walk through it on your own property's data first, then you
-            pick the features it needs. Prefer to explore alone? Start a
-            14-day free trial, no card required.
+            Every plan includes the AI leasing chatbot and a weekly report.
+            We walk through it on your own property's data first. Prefer to
+            explore alone? Start a 14-day free trial, no card required.
           </p>
 
           {/* Primary + secondary CTA — the one canonical buying pair on

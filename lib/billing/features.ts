@@ -196,6 +196,14 @@ export function cartMonthlyCentsPerProperty(selected: string[]): number {
 
 // Infer the billing tier label from the selection: the highest tier any
 // selected feature implies. Empty selection = STARTER (base platform only).
+const TIER_RANK: Record<string, number> = { STARTER: 0, GROWTH: 1, SCALE: 2 };
+
+/** Catalog feature keys a package includes: every feature whose tier is at or below it. */
+export function featureKeysForTier(tier: SubscriptionTier): FeatureKey[] {
+  const rank = TIER_RANK[tier] ?? TIER_RANK.SCALE;
+  return FEATURE_CATALOG.filter((f) => TIER_RANK[f.tier] <= rank).map((f) => f.key);
+}
+
 export function inferTierFromSelection(selected: string[]): SubscriptionTier {
   let tier: SubscriptionTier = "STARTER";
   for (const f of FEATURE_CATALOG) {

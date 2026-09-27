@@ -45,7 +45,7 @@ export function PricingCta() {
 
         <div className="mt-9 flex flex-col sm:flex-row gap-3 justify-center items-center">
           <BookDemoLink className="btn-primary">Book a demo</BookDemoLink>
-          <Link href="#builder" className="btn-secondary">
+          <Link href="#plans" className="btn-secondary">
             Start free trial
           </Link>
         </div>

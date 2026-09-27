@@ -1,6 +1,9 @@
 "use client";
 
 import * as React from "react";
+import type { SubscriptionTier } from "@prisma/client";
+import { featureKeysForTier } from "@/lib/billing/features";
+import { savePricingIntent } from "@/lib/onboarding/pricing-intent";
 import Link from "next/link";
 import { Check } from "lucide-react";
 import {
@@ -54,18 +57,17 @@ const TIERS: Tier[] = [
     id: "foundation",
     checkoutTierId: "starter",
     name: PLAN_DISPLAY.foundation.name,
-    tagline: "Free 14-day trial. We connect to your stack and show you what we see.",
+    tagline: "Prove it on one property: chatbot, lead capture, and a weekly read.",
     // The public card leads with the free 14-day trial (no card), so the
     // headline price is $0; PLAN_DISPLAY.foundation carries the catalog
     // post-trial rate for surfaces that need it.
-    monthly: 0,
-    annual: 0,
+    monthly: PLAN_DISPLAY.foundation.monthlyDollars,
+    annual: PLAN_DISPLAY.foundation.annualDollars,
     setupFee: null,
     highlighted: false,
     ctaLabel: "Start free trial",
-    audienceCallout: "Operators evaluating LeaseStack on a single property",
+    audienceCallout: "Operators proving LeaseStack on a single property",
     features: [
-      { label: "14-day trial window" },
       { label: "Connect to your existing PMS, ad accounts, and site" },
       { label: "Full read on what your digital marketing is actually doing" },
       { label: "Weekly snapshot of spend, traffic, and lead source mix" },
@@ -84,7 +86,7 @@ const TIERS: Tier[] = [
     annual: PLAN_DISPLAY.growth.annualDollars,
     setupFee: null,
     highlighted: true,
-    ctaLabel: `Start with ${PLAN_DISPLAY.growth.name}`,
+    ctaLabel: "Start free trial",
     audienceCallout: "Single-property operators running a paid program today",
     features: [
       { label: "Everything in Foundation, plus:" },
@@ -111,7 +113,7 @@ const TIERS: Tier[] = [
     annual: PLAN_DISPLAY.scale.annualDollars,
     setupFee: null,
     highlighted: false,
-    ctaLabel: `Start with ${PLAN_DISPLAY.scale.name}`,
+    ctaLabel: "Start free trial",
     audienceCallout: "Owners and asset managers running 5 or more properties",
     features: [
       { label: "Everything in Growth, plus:" },
@@ -138,7 +140,7 @@ const TIERS: Tier[] = [
     annual: null,
     setupFee: null,
     highlighted: false,
-    ctaLabel: "Book intro call",
+    ctaLabel: "Book a demo",
     audienceCallout: "20+ properties or multi-brand owners",
     features: [
       { label: "Everything in Scale, plus:" },
@@ -159,11 +161,13 @@ const TIERS: Tier[] = [
 const MAX_PROPERTIES_STEPPER = SELF_SERVE_PROPERTY_CAP;
 
 export function PricingTiers() {
-  const [cycle, setCycle] = React.useState<BillingCycle>("monthly");
+  // ponytail: annual prepay hidden until trial checkout bills annual prices
+  // (bodySchema accepts monthly only); restore the toggle with that change.
+  const cycle: BillingCycle = "monthly";
   const [propertyCount, setPropertyCount] = React.useState<number>(1);
 
   return (
-    <section style={{ backgroundColor: "#FFFFFF" }}>
+    <section id="plans" style={{ backgroundColor: "#FFFFFF", scrollMarginTop: 80 }}>
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 pt-16 md:pt-24 pb-16 md:pb-24">
         {/* CEO brief (2026-05-28): the hero already owns the "start free
             trial / book a demo" conversion moment, so the previous
@@ -238,51 +242,6 @@ export function PricingTiers() {
               </button>
             </div>
 
-            {/* Billing cycle toggle */}
-            <div
-              role="tablist"
-              aria-label="Billing cycle"
-              className="inline-flex items-center p-1 rounded-full"
-              style={{
-                backgroundColor: "#ffffff",
-                border: "1px solid var(--hair)",
-              }}
-            >
-              {(["monthly", "annual"] as const).map((c) => {
-                const active = cycle === c;
-                return (
-                  <button
-                    key={c}
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    onClick={() => setCycle(c)}
-                    className="relative inline-flex items-center gap-2 px-4 py-1.5 text-sm rounded-full transition-colors"
-                    style={{
-                      backgroundColor: active ? "var(--color-ink)" : "transparent",
-                      color: active ? "#ffffff" : "var(--gray-70)",
-                      fontWeight: active ? 600 : 500,
-                    }}
-                  >
-                    <span>{c === "monthly" ? "Monthly" : "Annual"}</span>
-                    {c === "annual" ? (
-                      <span
-                        className="inline-flex items-center rounded-full px-1.5 text-[10px] font-semibold"
-                        style={{
-                          backgroundColor: active
-                            ? "rgba(255,255,255,0.16)"
-                            : "var(--brand-soft)",
-                          color: active ? "#ffffff" : "var(--color-primary)",
-                          letterSpacing: "0.02em",
-                        }}
-                      >
-                        Save 17%
-                      </span>
-                    ) : null}
-                  </button>
-                );
-              })}
-            </div>
           </div>
 
           {propertyCount > 1 ? (
@@ -680,12 +639,18 @@ function TierCard({
         <div className="mt-auto pt-6 flex flex-col items-stretch">
           <Link
             href={signUpHref}
-            className="inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors"
-            style={
-              highlighted
-                ? { backgroundColor: "var(--color-primary)", color: "#ffffff" }
-                : { backgroundColor: "var(--color-ink)", color: "#ffffff" }
-            }
+            onClick={() => {
+              // Clerk's sign-up redirect drops URL params; the onboarding
+              // features step reads this to preselect the package.
+              if (tier.checkoutTierId) {
+                savePricingIntent(
+                  featureKeysForTier(
+                    tier.checkoutTierId.toUpperCase() as SubscriptionTier,
+                  ),
+                );
+              }
+            }}
+            className={highlighted ? "btn-primary" : "btn-secondary"}
             aria-label={`${tier.ctaLabel} (creates your account)`}
           >
             {tier.ctaLabel}
@@ -704,12 +669,7 @@ function TierCard({
       ) : (
         <div className="mt-auto pt-6 flex flex-col items-stretch">
           <BookDemoLink
-            className="inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold transition-colors"
-            style={{
-              backgroundColor: "transparent",
-              color: "var(--color-ink)",
-              border: "1px solid var(--color-ink)",
-            }}
+            className="btn-secondary"
             ariaLabel={`${tier.ctaLabel} (opens scheduling)`}
           >
             {tier.ctaLabel}
