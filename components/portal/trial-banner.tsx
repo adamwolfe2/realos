@@ -89,17 +89,29 @@ export function TrialBanner({
           dashboard range-pill controls and the AppFolio "Connect" CTA
           (components/portal/attribution/range-preset-control.tsx,
           appfolio-status-banner.tsx), not a rounded-full pill. */}
-      <Link
-        href="/portal/billing"
-        className={cn(
-          "shrink-0 inline-flex items-center rounded-none transition-colors px-3 py-1.5 text-xs font-semibold",
-          expired
-            ? "bg-[#8a6d00] text-white hover:bg-[#6f5800]"
-            : "bg-primary text-primary-foreground hover:bg-primary-dark",
+      <div className="shrink-0 flex items-center gap-3">
+        {expired ? null : (
+          <a
+            href={process.env.NEXT_PUBLIC_CAL_BOOK_URL || "/book-demo"}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden sm:inline font-semibold underline-offset-4 hover:underline"
+          >
+            Book a setup call
+          </a>
         )}
-      >
-        {expired ? "Activate now" : "Activate subscription"}
-      </Link>
+        <Link
+          href="/portal/billing"
+          className={cn(
+            "shrink-0 inline-flex items-center rounded-none transition-colors px-3 py-1.5 text-xs font-semibold",
+            expired
+              ? "bg-[#8a6d00] text-white hover:bg-[#6f5800]"
+              : "bg-primary text-primary-foreground hover:bg-primary-dark",
+          )}
+        >
+          {expired ? "Activate now" : "Activate subscription"}
+        </Link>
+      </div>
     </div>
   );
 }
