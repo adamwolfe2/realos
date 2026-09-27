@@ -30,10 +30,10 @@ export const MARKETING = {
       highlight: "One system.",
       subhead:
         "Built for multifamily and student-housing operators: every ad dollar, website visitor, and after-hours lead traced to the signed lease, in one dashboard.",
-      primaryCta: "Request pilot",
-      primaryHref: "/sign-up",
-      secondaryCta: "Book a demo",
-      secondaryHref: "/demo",
+      primaryCta: "Book a demo",
+      primaryHref: "/book-demo",
+      secondaryCta: "Start free trial",
+      secondaryHref: "/sign-up",
       microProof: "Running on a real property today",
       proofStats: [
         "3,007 residents synced",
@@ -124,11 +124,11 @@ export const MARKETING = {
       ],
     },
     final: {
-      heading: "Free pilot. No commitment.",
+      heading: "See it on your own property.",
       body:
-        "Every week you wait, a competitor answers the leads you miss. Free 14-day pilot, no card required. We connect to your PMS and ad accounts and show you exactly what we see, then you decide. Keep everything if you walk away.",
-      primaryCta: "Request pilot",
-      primaryHref: "/sign-up",
+        "Book a short demo and we connect to your PMS and ad accounts, show you your own numbers, and set up what each property needs with you. Prefer to explore first? The 14-day free trial needs no card.",
+      primaryCta: "Book a demo",
+      primaryHref: "/book-demo",
     },
     // Operating Rhythm — back on the homepage per Norman brief (2026-05-28).
     weekly: {

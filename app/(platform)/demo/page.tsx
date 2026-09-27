@@ -21,7 +21,7 @@ export default function DemoPage() {
             Interactive product walkthrough
           </p>
           <h1
-            className="text-4xl md:text-5xl lg:text-6xl font-normal leading-[1.05]"
+            className="text-4xl md:text-5xl lg:text-6xl font-[550] leading-[1.05] tracking-[-0.035em]"
             style={{ color: "var(--text-headline)", fontFamily: "var(--font-display)" }}
           >
             See {BRAND_NAME} in action

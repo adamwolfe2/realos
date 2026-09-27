@@ -85,7 +85,7 @@ export default function TermsPage() {
             Legal
           </p>
           <h1
-            className="text-4xl md:text-5xl font-normal leading-[1.05]"
+            className="text-4xl md:text-5xl font-[550] leading-[1.05] tracking-[-0.035em]"
             style={{ color: "var(--text-headline)", fontFamily: "var(--font-display)" }}
           >
             Terms of use

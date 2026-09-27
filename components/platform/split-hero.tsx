@@ -92,7 +92,7 @@ export function SplitHero({
                     color: "#161616",
                     fontFamily: "var(--font-display)",
                     fontSize: "clamp(38px, 6.4vw, 68px)",
-                    fontWeight: 400,
+                    fontWeight: 550,
                     lineHeight: 1.04,
                     letterSpacing: "-0.035em",
                   }}

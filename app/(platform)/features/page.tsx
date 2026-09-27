@@ -132,9 +132,9 @@ export default function FeaturesIndexPage() {
               color: INK,
               fontFamily: "var(--font-sans)",
               fontSize: "clamp(36px, 5.4vw, 60px)",
-              fontWeight: 500,
+              fontWeight: 550,
               lineHeight: 1.08,
-              letterSpacing: "-0.02em",
+              letterSpacing: "-0.035em",
             }}
           >
             Everything {BRAND_NAME} does, in one place.

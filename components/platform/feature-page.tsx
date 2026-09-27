@@ -40,9 +40,9 @@ export function FeaturePage({
               color: "#161616",
               fontFamily: "var(--font-display)",
               fontSize: "clamp(36px, 5vw, 60px)",
-              fontWeight: 500,
+              fontWeight: 550,
               lineHeight: 1.08,
-              letterSpacing: "-0.005em",
+              letterSpacing: "-0.035em",
             }}
           >
             {headline}

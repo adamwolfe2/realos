@@ -84,9 +84,9 @@ function Hero() {
                   color: "#1E2A3A",
                   fontFamily: "var(--font-display)",
                   fontSize: "clamp(40px, 5vw, 62px)",
-                  fontWeight: 500,
+                  fontWeight: 550,
                   lineHeight: 1.06,
-                  letterSpacing: "-0.005em",
+                  letterSpacing: "-0.035em",
                 }}
               >
                 Why we built {BRAND_NAME}.

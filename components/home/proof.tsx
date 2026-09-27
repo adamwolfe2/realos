@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRef } from "react";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 import { MARKETING } from "@/lib/copy/marketing";
-import { BookDemoLink } from "@/components/marketing/book-demo-link";
 import { Mark } from "./mark";
 
 // ---------------------------------------------------------------------------
@@ -149,7 +148,8 @@ export function Proof() {
             />
           ) : null}
           </span>
-          <BookDemoLink
+          <Link
+            href="/sign-up"
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -168,8 +168,8 @@ export function Proof() {
               transition: "background-color 0.2s ease",
             }}
           >
-            Book a demo
-          </BookDemoLink>
+            Start free trial
+          </Link>
         </div>
 
         {/* Trust strip removed 2026-07-24 (Adam: cut the 3-stat row). */}
