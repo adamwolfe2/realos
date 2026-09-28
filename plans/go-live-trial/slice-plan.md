@@ -38,7 +38,7 @@ after a card is added; pausing a paying or card-on-file customer's chatbot; drop
 |---|---|---|---|
 | 1 | Trial clock at go-live: pure computeGoLiveTrialEnd + applyGoLive (signals, marker, monotonic update); start-trial/properties set signup+30; cron + portal layout call it | 1 | done |
 | 2 | Go-live card prompt: banner "$0 today, first charge on <date>, cancel in one click" -> /api/billing/checkout; hide activation card when card on file | 1 | done |
-| 3 | Reminder emails: day_7 recap, t_minus_3 amount/date/manage, expired soft landing | 2 | pending |
+| 3 | Reminder emails: day_7 recap, t_minus_3 amount/date/manage, expired soft landing | 2 | done |
 | 4 | Soft landing: liveFeaturesPaused() gate on chatbot + pixel; one-click reactivate banner | 1 | pending |
 
 ## Slice details
