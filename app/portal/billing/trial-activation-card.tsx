@@ -52,7 +52,8 @@ export function TrialActivationCard({
 
   const totalMonthly = formatUsd(monthlyTotalCents);
   const days = daysLeft(trialEndsAt);
-  const expired = days === 0;
+  // Card on file past trial end = awaiting Stripe's first invoice, not lapsed.
+  const expired = days === 0 && !cardOnFile;
 
   return (
     <section

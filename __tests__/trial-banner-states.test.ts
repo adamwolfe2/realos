@@ -62,4 +62,11 @@ describe("TrialBanner soft landing", () => {
     expect(html).toContain("Reactivate for $899/month, starting today.");
     expect(html).toContain("Reactivate");
   });
+
+  it("card on file past trial end shows the charge state, not the lapsed state", () => {
+    const html = render({ trialEndsAt: new Date(Date.now() - 60_000), live: true, cardOnFile: true });
+    expect(html).not.toContain("nothing was charged");
+    expect(html).not.toContain("Reactivate");
+    expect(html).toContain("Manage or cancel");
+  });
 });

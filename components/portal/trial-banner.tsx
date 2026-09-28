@@ -48,7 +48,9 @@ export function TrialBanner({
 }) {
   const now = new Date();
   const daysLeft = daysLeftBetween(now, trialEndsAt);
-  const expired = daysLeft === 0;
+  // A card-on-file trial past its end is waiting on Stripe's first invoice,
+  // not lapsed: keep showing the card-on-file state.
+  const expired = daysLeft === 0 && !cardOnFile;
   const chargeDate = formatChargeDate(trialEndsAt);
   const charge = quote ? formatUsd(quote.monthlyCents) : null;
   const canAddCard = canManageBilling && quote !== null && !cardOnFile;
