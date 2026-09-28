@@ -16,6 +16,8 @@ import { BugReportButton } from "@/components/feedback/bug-report-button";
 import { TrialBanner } from "@/components/portal/trial-banner";
 import { resolveTrialState } from "@/lib/billing/trial-status";
 import { canManageBilling } from "@/lib/billing/checkout-policy";
+import { applyGoLive } from "@/lib/billing/go-live-trial";
+import { captureWithContext } from "@/lib/sentry";
 import { AlertBanner } from "@/components/portal/ui/alert-banner";
 import { getAppFolioStatus } from "@/lib/integrations/appfolio-status";
 import { DismissibleStrip } from "@/components/portal/dismissible-strip";
@@ -306,6 +308,19 @@ export default async function PortalLayout({
     return <ScopeRecovery />;
   }
 
+  // Go-live trial: the first visit after the chatbot/pixel/AppFolio starts
+  // producing data starts the 14-day clock (lib/billing/go-live-trial.ts).
+  // A failure here must not take the portal down; it is logged and the
+  // daily trial-reminders cron retries.
+  const trial =
+    org.subscriptionStatus === "TRIALING"
+      ? await applyGoLive(org.id).catch((err: unknown) => {
+          console.error("[portal/layout] applyGoLive failed:", err);
+          captureWithContext(err, { route: "portal/layout/go-live", orgId: org.id });
+          return null;
+        })
+      : null;
+
   // Self-serve onboarding gate. If the org is still mid-wizard (set by
   // lib/auth/provision.ts on signup; advanced by the wizard's own API
   // endpoints), bounce them back so they can finish setup before the
@@ -480,18 +495,19 @@ export default async function PortalLayout({
           / CANCELED. The banner copy and the activate CTA adapt to
           the expired vs. active state via the daysLeft computation. */}
       {(() => {
+        const trialEndsAt = trial?.trialEndsAt ?? org.trialEndsAt;
         const trialState = resolveTrialState({
           subscriptionStatus: org.subscriptionStatus,
           trialStartedAt: null,
-          trialEndsAt: org.trialEndsAt,
+          trialEndsAt,
         });
         if (
           (trialState === "trial_active" || trialState === "trial_expired") &&
-          org.trialEndsAt
+          trialEndsAt
         ) {
           return (
             <TrialBanner
-              trialEndsAt={org.trialEndsAt}
+              trialEndsAt={trialEndsAt}
               propertyCount={propertyCount}
               tier={org.chosenTier ?? org.subscriptionTier ?? null}
             />

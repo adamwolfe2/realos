@@ -69,12 +69,17 @@ export function resolveCurrentStep(
   return isValidStep(raw) ? raw : "welcome";
 }
 
-// Trial window for newly-activated workspaces. 14 days from the moment
-// the user clears the plan step.
+// Go-live trial (plans/go-live-trial): the 14-day clock starts when the
+// workspace goes live (lib/billing/go-live-trial.ts), capped at 30 days from
+// signup. Until go-live the stored trialEndsAt is the 30-day setup window.
 export const TRIAL_DAYS = 14;
+export const TRIAL_CAP_DAYS = 30;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function computeTrialEndsAt(startedAt: Date = new Date()): Date {
-  const end = new Date(startedAt);
-  end.setDate(end.getDate() + TRIAL_DAYS);
-  return end;
+  return new Date(startedAt.getTime() + TRIAL_CAP_DAYS * DAY_MS);
+}
+
+export function addTrialDays(from: Date, days: number): Date {
+  return new Date(from.getTime() + days * DAY_MS);
 }

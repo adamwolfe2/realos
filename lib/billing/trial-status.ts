@@ -34,6 +34,13 @@ export type TrialState =
   | "canceled"
   | "none";
 
+import {
+  TRIAL_CAP_DAYS,
+  TRIAL_DAYS,
+  addTrialDays,
+  computeTrialEndsAt,
+} from "@/lib/onboarding/steps";
+
 export type TrialStatusInput = Pick<
   Organization,
   "subscriptionStatus" | "trialStartedAt" | "trialEndsAt"
@@ -101,4 +108,47 @@ export function trialEndsWithinDays(
   const left = daysLeftInTrial(org);
   if (left === null) return false;
   return left > 0 && left <= days;
+}
+
+// Card on file: the trialing org has a live Stripe platform subscription that
+// will bill at trial end. The Stripe webhook writes currentPeriodEnd only when
+// a platform subscription exists, and cancelAtPeriodEnd means it won't bill.
+export type CardOnFileInput = Pick<
+  Organization,
+  "subscriptionStatus" | "currentPeriodEnd" | "cancelAtPeriodEnd"
+>;
+
+export function hasCardOnFile(org: CardOnFileInput): boolean {
+  return (
+    org.subscriptionStatus === "TRIALING" &&
+    org.currentPeriodEnd !== null &&
+    !org.cancelAtPeriodEnd
+  );
+}
+
+// New trial end at go-live, or null when nothing should change.
+// min(goLive + 14d, signup + 30d). Any existing end other than the 30-day
+// setup placeholder is a floor, so a trial never gets shorter. Once a card is
+// on file Stripe's trial_end is the source of truth, so we never move it.
+export function computeGoLiveTrialEnd(input: {
+  trialStartedAt: Date | null;
+  trialEndsAt: Date | null;
+  goLiveAt: Date;
+  cardOnFile: boolean;
+}): Date | null {
+  const { trialStartedAt, trialEndsAt, goLiveAt, cardOnFile } = input;
+  if (cardOnFile || !trialStartedAt) return null;
+  if (trialEndsAt && trialEndsAt.getTime() <= goLiveAt.getTime()) return null;
+
+  const cap = addTrialDays(trialStartedAt, TRIAL_CAP_DAYS);
+  const formula = new Date(
+    Math.min(addTrialDays(goLiveAt, TRIAL_DAYS).getTime(), cap.getTime()),
+  );
+  const isPlaceholder =
+    trialEndsAt?.getTime() === computeTrialEndsAt(trialStartedAt).getTime();
+  const next =
+    trialEndsAt && !isPlaceholder && trialEndsAt > formula
+      ? trialEndsAt
+      : formula;
+  return next.getTime() === trialEndsAt?.getTime() ? null : next;
 }

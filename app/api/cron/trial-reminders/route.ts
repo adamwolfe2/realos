@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { OrgType, SubscriptionStatus } from "@prisma/client";
 import { recordCronRun } from "@/lib/health/cron-run";
 import { verifyCronAuth } from "@/lib/cron/auth";
+import { applyGoLive } from "@/lib/billing/go-live-trial";
 import {
   buildBaseHtml,
   getResend,
@@ -87,8 +88,20 @@ export async function GET(req: NextRequest) {
       stage: Stage;
       dedupId: string;
     }> = [];
-    for (const org of orgs) {
+    for (const rawOrg of orgs) {
       scanned += 1;
+      // Go-live sweep for operators who don't log in (the portal layout
+      // does the same on visit). May extend trialEndsAt; never shortens.
+      let snap: Awaited<ReturnType<typeof applyGoLive>> = null;
+      try {
+        snap = await applyGoLive(rawOrg.id, now);
+      } catch (err) {
+        errors += 1;
+        errorMessages.push(
+          `${rawOrg.id} go-live: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+      const org = { ...rawOrg, trialEndsAt: snap?.trialEndsAt ?? rawOrg.trialEndsAt };
       if (!org.trialEndsAt || !org.primaryContactEmail) continue;
       if (!isValidEmail(org.primaryContactEmail)) continue;
       const stage = pickStage(now, org.trialEndsAt);
