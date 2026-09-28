@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { liveFeaturesPaused } from "@/lib/billing/trial-status";
 import { z } from "zod";
 import { streamText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
@@ -108,7 +109,8 @@ export async function POST(req: NextRequest) {
   if (!org || org.orgType !== "CLIENT") {
     return NextResponse.json({ error: "Unknown tenant" }, { status: 404 });
   }
-  if (!org.moduleChatbot) {
+  // Soft landing: paused for an expired trial with no card.
+  if (!org.moduleChatbot || liveFeaturesPaused(org)) {
     return NextResponse.json(
       { error: "Chatbot module is not enabled for this tenant." },
       { status: 403 }

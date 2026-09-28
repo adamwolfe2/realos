@@ -152,3 +152,23 @@ export function computeGoLiveTrialEnd(input: {
       : formula;
   return next.getTime() === trialEndsAt?.getTime() ? null : next;
 }
+
+// Soft landing (plans/go-live-trial slice 4): an expired trial with no card
+// pauses only the live, outward-facing features (public chatbot + pixel
+// identity ingestion). Dashboard and lead history stay readable. A
+// card-on-file trial past its end is waiting on Stripe's first invoice and
+// keeps running.
+export function liveFeaturesPaused(
+  org: TrialStatusInput & CardOnFileInput,
+): boolean {
+  return resolveTrialState(org) === "trial_expired" && !hasCardOnFile(org);
+}
+
+// Prisma select for liveFeaturesPaused, so every gate reads the same fields.
+export const LIVE_FEATURE_GATE_SELECT = {
+  subscriptionStatus: true,
+  trialStartedAt: true,
+  trialEndsAt: true,
+  currentPeriodEnd: true,
+  cancelAtPeriodEnd: true,
+} as const;

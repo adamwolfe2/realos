@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   computeGoLiveTrialEnd,
   hasCardOnFile,
+  liveFeaturesPaused,
 } from "@/lib/billing/trial-status";
 import { computeTrialEndsAt } from "@/lib/onboarding/steps";
 
@@ -96,5 +97,36 @@ describe("hasCardOnFile", () => {
   });
   it("is false outside the trial", () => {
     expect(hasCardOnFile({ ...base, subscriptionStatus: "ACTIVE" })).toBe(false);
+  });
+});
+
+describe("liveFeaturesPaused (soft landing, slice 4)", () => {
+  const past = new Date(Date.now() - DAY);
+  const future = new Date(Date.now() + DAY);
+  const org: Parameters<typeof liveFeaturesPaused>[0] = {
+    subscriptionStatus: "TRIALING",
+    trialStartedAt: at(0),
+    trialEndsAt: past,
+    currentPeriodEnd: null,
+    cancelAtPeriodEnd: false,
+  };
+  it("pauses an expired trial with no card", () => {
+    expect(liveFeaturesPaused(org)).toBe(true);
+  });
+  it("never pauses a card-on-file trial waiting on its first invoice", () => {
+    expect(liveFeaturesPaused({ ...org, currentPeriodEnd: past })).toBe(false);
+  });
+  it("pauses when the scheduled subscription was set to cancel", () => {
+    expect(
+      liveFeaturesPaused({ ...org, currentPeriodEnd: past, cancelAtPeriodEnd: true }),
+    ).toBe(true);
+  });
+  it("never pauses an active trial or a paying customer", () => {
+    expect(liveFeaturesPaused({ ...org, trialEndsAt: future })).toBe(false);
+    expect(liveFeaturesPaused({ ...org, subscriptionStatus: "ACTIVE" })).toBe(false);
+    expect(liveFeaturesPaused({ ...org, subscriptionStatus: "PAST_DUE" })).toBe(false);
+  });
+  it("leaves legacy no-status orgs alone", () => {
+    expect(liveFeaturesPaused({ ...org, subscriptionStatus: null })).toBe(false);
   });
 });

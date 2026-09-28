@@ -114,6 +114,12 @@ export function createCursivePrismaMock() {
   };
 
   const prisma = {
+    // Soft-landing gate lookup (plans/go-live-trial slice 4). The mock has
+    // no Organization rows, so the gate never pauses: tests that need a
+    // paused trial override this.
+    organization: {
+      findUnique: vi.fn(async () => null),
+    },
     cursiveIntegration: {
       findFirst: vi.fn(async (args: { where: Record<string, unknown> }) => {
         return (

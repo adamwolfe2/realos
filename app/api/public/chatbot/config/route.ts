@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { LIVE_FEATURE_GATE_SELECT, liveFeaturesPaused } from "@/lib/billing/trial-status";
+import type { SubscriptionStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { resolveChatbotConfig } from "@/lib/chatbot/resolve-config";
 import {
@@ -107,6 +109,11 @@ export async function GET(req: NextRequest) {
     shortName: string | null;
     orgType: string;
     moduleChatbot: boolean;
+    subscriptionStatus: SubscriptionStatus | null;
+    trialStartedAt: Date | null;
+    trialEndsAt: Date | null;
+    currentPeriodEnd: Date | null;
+    cancelAtPeriodEnd: boolean;
     primaryColor: string | null;
     logoUrl: string | null;
     properties: Array<{ id: string; name: string; slug: string }>;
@@ -137,6 +144,7 @@ export async function GET(req: NextRequest) {
         shortName: true,
         orgType: true,
         moduleChatbot: true,
+        ...LIVE_FEATURE_GATE_SELECT,
         primaryColor: true,
         logoUrl: true,
         // Pull all properties so we can scope to the one whose slug matches
@@ -177,7 +185,14 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  if (!org || org.orgType !== "CLIENT" || !org.moduleChatbot) {
+  // Soft landing: an expired trial with no card hides the widget (data and
+  // portal stay; plans/go-live-trial slice 4).
+  if (
+    !org ||
+    org.orgType !== "CLIENT" ||
+    !org.moduleChatbot ||
+    liveFeaturesPaused(org)
+  ) {
     // Cache "unknown slug" / "module off" for 60s too — protects the
     // limiter and DB from drive-by probes hitting the same slug.
     return NextResponse.json(

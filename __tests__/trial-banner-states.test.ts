@@ -52,3 +52,14 @@ describe("TrialBanner", () => {
     expect(html).toContain('href="/portal/billing"');
   });
 });
+
+describe("TrialBanner soft landing", () => {
+  it("expired: says nothing was charged, what paused, what stays, and that reactivating charges today", () => {
+    const html = render({ trialEndsAt: new Date(Date.now() - DAY), live: true });
+    expect(html).toContain("nothing was charged");
+    expect(html).toContain("chatbot and");
+    expect(html).toContain("lead history are still here");
+    expect(html).toContain("Reactivate for $899/month, starting today.");
+    expect(html).toContain("Reactivate");
+  });
+});

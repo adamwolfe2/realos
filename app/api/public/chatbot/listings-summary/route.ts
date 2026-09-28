@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { LIVE_FEATURE_GATE_SELECT, liveFeaturesPaused } from "@/lib/billing/trial-status";
 import { prisma } from "@/lib/db";
 import {
   chatbotConfigLimiter,
@@ -60,6 +61,7 @@ export async function GET(req: NextRequest) {
       id: true,
       orgType: true,
       moduleChatbot: true,
+      ...LIVE_FEATURE_GATE_SELECT,
       tenantSiteConfig: { select: { chatbotEnabled: true } },
       properties: {
         orderBy: { updatedAt: "desc" },
@@ -83,6 +85,7 @@ export async function GET(req: NextRequest) {
     !org ||
     org.orgType !== "CLIENT" ||
     !org.moduleChatbot ||
+    liveFeaturesPaused(org) ||
     !org.tenantSiteConfig?.chatbotEnabled
   ) {
     return NextResponse.json(

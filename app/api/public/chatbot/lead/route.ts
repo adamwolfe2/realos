@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { liveFeaturesPaused } from "@/lib/billing/trial-status";
 import { z } from "zod";
 import crypto from "crypto";
 import { prisma } from "@/lib/db";
@@ -113,7 +114,13 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  if (!org || org.orgType !== "CLIENT" || !org.moduleChatbot) {
+  // Soft landing: paused for an expired trial with no card.
+  if (
+    !org ||
+    org.orgType !== "CLIENT" ||
+    !org.moduleChatbot ||
+    liveFeaturesPaused(org)
+  ) {
     return NextResponse.json(
       { error: "Chatbot not enabled for this tenant" },
       { status: 403, headers: CORS_HEADERS }

@@ -10,6 +10,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // ---------------------------------------------------------------------------
 
 const h = vi.hoisted(() => ({
+  // Soft-landing gate lookup (plans/go-live-trial slice 4). null = no gate.
+  organization: { findUnique: vi.fn(async () => null as any) },
   cursiveIntegration: { updateMany: vi.fn(async () => ({ count: 1 })) },
   visitor: {
     findFirst: vi.fn(async () => null as any),
@@ -66,6 +68,43 @@ function pageViewEvent(pageUrl: string) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+});
+
+describe("soft landing: paused trial", () => {
+  it("drops identity events for an expired trial with no card", async () => {
+    h.organization.findUnique.mockResolvedValueOnce({
+      subscriptionStatus: "TRIALING",
+      trialStartedAt: new Date("2026-08-01T00:00:00Z"),
+      trialEndsAt: new Date(Date.now() - 60_000),
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
+    });
+    const res = await processCursiveEvent(baseEvent("https://example.com/"), {
+      orgId: ORG,
+      cursivePixelId: "px_bound",
+      installedOnDomain: "example.com",
+      propertyId: "prop_bound",
+    });
+    expect(res.skipped).toBe("trial paused");
+    expect(h.visitor.create).not.toHaveBeenCalled();
+  });
+
+  it("keeps ingesting for a card-on-file trial past its end", async () => {
+    h.organization.findUnique.mockResolvedValueOnce({
+      subscriptionStatus: "TRIALING",
+      trialStartedAt: new Date("2026-08-01T00:00:00Z"),
+      trialEndsAt: new Date(Date.now() - 60_000),
+      currentPeriodEnd: new Date(Date.now() - 60_000),
+      cancelAtPeriodEnd: false,
+    });
+    await processCursiveEvent(baseEvent("https://example.com/"), {
+      orgId: ORG,
+      cursivePixelId: "px_bound",
+      installedOnDomain: "example.com",
+      propertyId: "prop_bound",
+    });
+    expect(h.visitor.create).toHaveBeenCalled();
+  });
 });
 
 describe("cursive pixel property attribution", () => {

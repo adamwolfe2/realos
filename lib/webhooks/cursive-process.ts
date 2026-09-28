@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { LIVE_FEATURE_GATE_SELECT, liveFeaturesPaused } from "@/lib/billing/trial-status";
 import { prisma } from "@/lib/db";
 import {
   LeadSource,
@@ -227,6 +228,17 @@ export async function processCursiveEvent(
   );
   if (!isResolution) {
     return { visitorId: null, leadId: null, skipped: "unresolved event" };
+  }
+
+  // Soft landing (plans/go-live-trial slice 4): an expired trial with no
+  // card pauses pixel identity ingestion. Checked after the resolution gate
+  // so the lookup only runs for the rare events that would create data.
+  const gateOrg = await prisma.organization.findUnique({
+    where: { id: integration.orgId },
+    select: LIVE_FEATURE_GATE_SELECT,
+  });
+  if (gateOrg && liveFeaturesPaused(gateOrg)) {
+    return { visitorId: null, leadId: null, skipped: "trial paused" };
   }
 
   // For path-token routes pixel_id may be absent in the event (AL only

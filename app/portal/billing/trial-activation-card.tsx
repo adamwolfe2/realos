@@ -2,6 +2,7 @@
 
 import { Loader2, Sparkles } from "lucide-react";
 import { useStartTrialCheckout } from "@/components/portal/billing/use-start-trial-checkout";
+import { formatUsd } from "@/lib/billing/trial-quote";
 
 // ---------------------------------------------------------------------------
 // TrialActivationCard
@@ -49,7 +50,7 @@ export function TrialActivationCard({
 }) {
   const { submitting, start } = useStartTrialCheckout();
 
-  const totalMonthly = Math.round(monthlyTotalCents / 100);
+  const totalMonthly = formatUsd(monthlyTotalCents);
   const days = daysLeft(trialEndsAt);
   const expired = days === 0;
 
@@ -103,10 +104,10 @@ export function TrialActivationCard({
             }}
           >
             {expired
-              ? "Your trial has ended. Activate the workspace to restore full access."
+              ? `Your trial ended and nothing was charged. Your chatbot and pixel are paused; your dashboard and lead history are kept. Reactivate to switch them back on: ${totalMonthly}/month, starting today.`
               : cardOnFile
-                ? `First charge of $${totalMonthly.toLocaleString()} on ${chargeDateLabel ?? "the day your trial ends"}, then monthly. Manage or cancel any time from the Stripe portal on this page.`
-                : `$0 today. First charge of $${totalMonthly.toLocaleString()} on ${chargeDateLabel ?? "the day your trial ends"}, then monthly. Cancel in one click before then and you pay nothing.`}
+                ? `First charge of ${totalMonthly} on ${chargeDateLabel ?? "the day your trial ends"}, then monthly. Manage or cancel any time from the Stripe portal on this page.`
+                : `$0 today. First charge of ${totalMonthly} on ${chargeDateLabel ?? "the day your trial ends"}, then monthly. Cancel in one click before then and you pay nothing.`}
           </p>
         </div>
         <div
@@ -124,7 +125,7 @@ export function TrialActivationCard({
               lineHeight: 1,
             }}
           >
-            ${totalMonthly.toLocaleString()}
+            {totalMonthly}
           </div>
           <div
             style={{
@@ -166,7 +167,7 @@ export function TrialActivationCard({
                 Starting checkout…
               </>
             ) : expired ? (
-              "Activate subscription"
+              "Reactivate"
             ) : (
               "Add card"
             )}
