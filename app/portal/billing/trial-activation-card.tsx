@@ -1,8 +1,7 @@
 "use client";
 
-import * as React from "react";
-import { toast } from "sonner";
 import { Loader2, Sparkles } from "lucide-react";
+import { useStartTrialCheckout } from "@/components/portal/billing/use-start-trial-checkout";
 
 // ---------------------------------------------------------------------------
 // TrialActivationCard
@@ -13,10 +12,10 @@ import { Loader2, Sparkles } from "lucide-react";
 // property count (so the quoted monthly total reflects what they'll
 // actually be billed, including bracket discounts).
 //
-// Clicking "Activate now" POSTs to /api/billing/checkout with the
-// current tier + count + monthly cycle. The endpoint mints a Stripe
-// Checkout session against the graduated tiered price; on completion
-// the webhook flips subscriptionStatus from TRIALING to ACTIVE.
+// "Add card" POSTs to /api/billing/checkout (useStartTrialCheckout). The
+// endpoint mints a Stripe Checkout session with trial_end = the org's trial
+// end, so nothing is charged today. Once a card is on file the card shows the
+// first charge amount and date instead of the button.
 // ---------------------------------------------------------------------------
 
 function tierLabel(id: "starter" | "growth" | "scale"): string {
@@ -35,6 +34,8 @@ export function TrialActivationCard({
   propertyCount,
   trialEndsAt,
   monthlyTotalCents,
+  cardOnFile,
+  chargeDateLabel,
 }: {
   tierId: "starter" | "growth" | "scale";
   propertyCount: number;
@@ -42,48 +43,15 @@ export function TrialActivationCard({
   // The package's graduated monthly total for this property count: the same
   // number Stripe charges for the tier price checkout creates.
   monthlyTotalCents: number;
+  cardOnFile: boolean;
+  // Server-formatted (Pacific) so server and client render the same date.
+  chargeDateLabel: string | null;
 }) {
-  const [submitting, setSubmitting] = React.useState(false);
+  const { submitting, start } = useStartTrialCheckout();
 
   const totalMonthly = Math.round(monthlyTotalCents / 100);
   const days = daysLeft(trialEndsAt);
   const expired = days === 0;
-
-  const handle = async () => {
-    if (submitting) return;
-    setSubmitting(true);
-    try {
-      const res = await fetch("/api/billing/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tierId,
-          cycle: "monthly",
-          propertyCount,
-          source: "trial_activation",
-        }),
-      });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok || !json?.url) {
-        toast.error(
-          json?.error ??
-            `Couldn't start checkout (HTTP ${res.status}). Try again in a minute or email team@leasestack.co.`,
-        );
-        setSubmitting(false);
-        return;
-      }
-      window.location.assign(json.url as string);
-    } catch (err) {
-      toast.error(
-        err instanceof Error
-          ? err.message
-          : "Network error. Try again shortly.",
-      );
-      setSubmitting(false);
-    }
-    // Keep submitting=true through the navigation so the button stays
-    // in its loading state until the Stripe page replaces this view.
-  };
 
   return (
     <section
@@ -107,7 +75,11 @@ export function TrialActivationCard({
             }}
           >
             <Sparkles size={12} strokeWidth={2.5} aria-hidden="true" />
-            {expired ? "Trial expired" : `Free trial · ${days ?? 0} days left`}
+            {expired
+              ? "Trial expired"
+              : cardOnFile
+                ? "Card on file"
+                : `Free trial · ${days ?? 0} days left`}
           </div>
           <h2
             style={{
@@ -132,7 +104,9 @@ export function TrialActivationCard({
           >
             {expired
               ? "Your trial has ended. Activate the workspace to restore full access."
-              : `Add your payment method today. You won't be charged until the trial ends; then your $${totalMonthly.toLocaleString()}/month subscription begins.`}
+              : cardOnFile
+                ? `First charge of $${totalMonthly.toLocaleString()} on ${chargeDateLabel ?? "the day your trial ends"}, then monthly. Manage or cancel any time from the Stripe portal on this page.`
+                : `$0 today. First charge of $${totalMonthly.toLocaleString()} on ${chargeDateLabel ?? "the day your trial ends"}, then monthly. Cancel in one click before then and you pay nothing.`}
           </p>
         </div>
         <div
@@ -165,38 +139,40 @@ export function TrialActivationCard({
         </div>
       </div>
 
-      <div className="flex items-center justify-end gap-2">
-        <button
-          type="button"
-          onClick={handle}
-          disabled={submitting}
-          className="inline-flex items-center gap-2 rounded-none transition-colors disabled:opacity-60 disabled:cursor-progress"
-          style={{
-            backgroundColor: expired ? "#8a6d00" : "#0f62fe",
-            color: "#ffffff",
-            padding: "9px 18px",
-            fontFamily: "var(--font-sans)",
-            fontSize: "13.5px",
-            fontWeight: 600,
-          }}
-        >
-          {submitting ? (
-            <>
-              <Loader2
-                className="animate-spin"
-                size={14}
-                strokeWidth={2.5}
-                aria-hidden="true"
-              />
-              Starting checkout…
-            </>
-          ) : expired ? (
-            "Activate subscription"
-          ) : (
-            "Schedule subscription"
-          )}
-        </button>
-      </div>
+      {cardOnFile ? null : (
+        <div className="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => start(tierId, propertyCount)}
+            disabled={submitting}
+            className="inline-flex items-center gap-2 rounded-none transition-colors disabled:opacity-60 disabled:cursor-progress"
+            style={{
+              backgroundColor: expired ? "#8a6d00" : "#0f62fe",
+              color: "#ffffff",
+              padding: "9px 18px",
+              fontFamily: "var(--font-sans)",
+              fontSize: "13.5px",
+              fontWeight: 600,
+            }}
+          >
+            {submitting ? (
+              <>
+                <Loader2
+                  className="animate-spin"
+                  size={14}
+                  strokeWidth={2.5}
+                  aria-hidden="true"
+                />
+                Starting checkout…
+              </>
+            ) : expired ? (
+              "Activate subscription"
+            ) : (
+              "Add card"
+            )}
+          </button>
+        </div>
+      )}
     </section>
   );
 }

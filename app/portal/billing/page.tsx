@@ -20,6 +20,8 @@ import { MARKETPLACE_ENTRIES } from "@/lib/marketplace/catalog";
 import { WebsiteBuildTracker } from "./website-build-tracker";
 import { redirect } from "next/navigation";
 import { canManageBilling } from "@/lib/billing/checkout-policy";
+import { hasCardOnFile } from "@/lib/billing/trial-status";
+import { formatChargeDate } from "@/lib/billing/trial-quote";
 import { selectPlatformSubscriptionForOrg } from "@/lib/billing/stripe-state";
 import { visibleWebsiteBuilds, toBuildStatus } from "@/lib/billing/website-builds";
 
@@ -342,6 +344,8 @@ export default async function BillingPage({
           tierId={activationTierId}
           propertyCount={Math.max(1, marketablePropertyCount)}
           trialEndsAt={trialEndsAt}
+          cardOnFile={hasCardOnFile(org)}
+          chargeDateLabel={trialEndsAt ? formatChargeDate(trialEndsAt) : null}
           monthlyTotalCents={computeGraduatedMonthlyCents(
             getTierById(activationTierId)?.monthly.unitAmountCents ?? 0,
             Math.max(1, marketablePropertyCount),

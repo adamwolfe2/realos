@@ -17,6 +17,7 @@ import { TrialBanner } from "@/components/portal/trial-banner";
 import { resolveTrialState } from "@/lib/billing/trial-status";
 import { canManageBilling } from "@/lib/billing/checkout-policy";
 import { applyGoLive } from "@/lib/billing/go-live-trial";
+import { BILLABLE_LIFECYCLES, trialQuote } from "@/lib/billing/trial-quote";
 import { captureWithContext } from "@/lib/sentry";
 import { AlertBanner } from "@/components/portal/ui/alert-banner";
 import { getAppFolioStatus } from "@/lib/integrations/appfolio-status";
@@ -320,6 +321,16 @@ export default async function PortalLayout({
           return null;
         })
       : null;
+  // Quote uses the same property count checkout bills (IMPORTED + ACTIVE),
+  // not the ACTIVE-only sidebar count.
+  const trialQuoteValue = trial
+    ? trialQuote(
+        org.chosenTier ?? org.subscriptionTier ?? null,
+        await prisma.property.count({
+          where: { orgId: org.id, lifecycle: { in: [...BILLABLE_LIFECYCLES] } },
+        }),
+      )
+    : null;
 
   // Self-serve onboarding gate. If the org is still mid-wizard (set by
   // lib/auth/provision.ts on signup; advanced by the wizard's own API
@@ -510,6 +521,10 @@ export default async function PortalLayout({
               trialEndsAt={trialEndsAt}
               propertyCount={propertyCount}
               tier={org.chosenTier ?? org.subscriptionTier ?? null}
+              live={trial?.goLiveAt != null}
+              cardOnFile={trial?.cardOnFile ?? false}
+              quote={trialQuoteValue}
+              canManageBilling={canManageBilling(scope)}
             />
           );
         }

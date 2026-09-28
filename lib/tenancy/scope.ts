@@ -91,8 +91,16 @@ async function getDemoScope(): Promise<ScopedContext | null> {
   const agencyOrg = await prisma.organization
     .findFirst({ where: { orgType: OrgType.AGENCY } })
     .catch(() => null);
+  // DEMO_ORG_SLUG pins a specific client org for local QA (e.g. a trialing
+  // workspace). Dev-only: this whole function returns null in production.
+  const demoOrgSlug = process.env.DEMO_ORG_SLUG;
   const clientOrg = await prisma.organization
-    .findFirst({ where: { orgType: OrgType.CLIENT } })
+    .findFirst({
+      where: {
+        orgType: OrgType.CLIENT,
+        ...(demoOrgSlug ? { slug: demoOrgSlug } : {}),
+      },
+    })
     .catch(() => null);
 
   // DEMO_TARGET=client forces the demo to render the client-side /portal

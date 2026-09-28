@@ -1,14 +1,20 @@
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AddCardButton } from "@/components/portal/billing/add-card-button";
+import {
+  formatChargeDate,
+  formatUsd,
+  type TrialQuote,
+} from "@/lib/billing/trial-quote";
 
 // Trial banner. Renders at the top of every portal page when the
-// workspace is in the TRIALING subscription state. Shows:
-//   * how many days are left
-//   * a CTA to activate the subscription early
-//
-// Hidden completely outside the trial window (paid, paused, canceled
-// states get their own banners elsewhere).
+// workspace is TRIALING. Go-live trial states (plans/go-live-trial):
+//   * not live yet: the 14-day clock starts at go-live, set up by <date>
+//   * live, no card: "$0 today, first charge of $X on <date>" + Add card
+//   * card on file: first charge amount/date + manage/cancel link
+//   * expired: activate CTA
+// Hidden outside the trial (paid, paused, canceled have their own banners).
 
 function daysLeftBetween(now: Date, end: Date): number {
   const ms = end.getTime() - now.getTime();
@@ -22,6 +28,10 @@ export function TrialBanner({
   trialEndsAt,
   propertyCount,
   tier,
+  live,
+  cardOnFile,
+  quote,
+  canManageBilling,
 }: {
   trialEndsAt: Date;
   propertyCount: number;
@@ -29,10 +39,19 @@ export function TrialBanner({
   // the four valid values; we only render a friendly label for the
   // three public tiers and fall back to "your plan" otherwise.
   tier: "STARTER" | "GROWTH" | "SCALE" | "CUSTOM" | null;
+  // Go-live trial (plans/go-live-trial): the 14-day clock started.
+  live: boolean;
+  // A Stripe subscription is scheduled to bill at trial end.
+  cardOnFile: boolean;
+  quote: TrialQuote | null;
+  canManageBilling: boolean;
 }) {
   const now = new Date();
   const daysLeft = daysLeftBetween(now, trialEndsAt);
   const expired = daysLeft === 0;
+  const chargeDate = formatChargeDate(trialEndsAt);
+  const charge = quote ? formatUsd(quote.monthlyCents) : null;
+  const canAddCard = canManageBilling && quote !== null && !cardOnFile;
 
   // Friendly tier label for the inline cost line.
   const tierLabel =
@@ -43,6 +62,39 @@ export function TrialBanner({
         : tier === "SCALE"
           ? "Scale"
           : null;
+
+  const message = expired ? (
+    <>
+      <strong>Your trial ended.</strong> Activate your subscription
+      to keep using your workspace.
+    </>
+  ) : cardOnFile ? (
+    <>
+      <strong>Card on file.</strong>{" "}
+      {charge ? `First charge of ${charge} on ${chargeDate}.` : `Your plan starts ${chargeDate}.`}
+    </>
+  ) : live ? (
+    <>
+      <strong>You&apos;re live.</strong> Add a card to keep everything running
+      after {chargeDate}.{" "}
+      {charge
+        ? `$0 today, first charge of ${charge} on ${chargeDate}, cancel in one click.`
+        : "$0 today, cancel in one click."}
+    </>
+  ) : (
+    <>
+      <strong>Your 14-day trial starts when you go live</strong>
+      {tierLabel ? ` on ${tierLabel}` : ""}
+      {propertyCount > 0
+        ? ` · ${propertyCount} ${propertyCount === 1 ? "property" : "properties"}`
+        : ""}
+      {` · set up by ${chargeDate}`}
+    </>
+  );
+
+  const ctaClass = expired
+    ? "bg-[#8a6d00] text-white hover:bg-[#6f5800]"
+    : "bg-primary text-primary-foreground hover:bg-primary-dark";
 
   // Tone classes use the Carbon kit warning family (#f1c21b wash / #8a6d00
   // text — same pair as .ls-pill-warning/.ls-alert-warning in globals.css
@@ -65,32 +117,14 @@ export function TrialBanner({
           className={cn("shrink-0", expired ? "text-[#8a6d00]" : "text-primary")}
           aria-hidden="true"
         />
-        <span className="truncate">
-          {expired ? (
-            <>
-              <strong>Your trial ended.</strong> Activate your subscription
-              to keep using your workspace.
-            </>
-          ) : (
-            <>
-              <strong>
-                {daysLeft} day{daysLeft === 1 ? "" : "s"} left
-              </strong>{" "}
-              in your free trial
-              {tierLabel ? ` of ${tierLabel}` : ""}
-              {propertyCount > 0
-                ? ` · ${propertyCount} ${propertyCount === 1 ? "property" : "properties"}`
-                : ""}
-            </>
-          )}
-        </span>
+        <span className="truncate">{message}</span>
       </div>
       {/* Flat 0-radius CTA — same treatment as the PageHeader action /
           dashboard range-pill controls and the AppFolio "Connect" CTA
           (components/portal/attribution/range-preset-control.tsx,
           appfolio-status-banner.tsx), not a rounded-full pill. */}
       <div className="shrink-0 flex items-center gap-3">
-        {expired ? null : (
+        {expired || cardOnFile ? null : (
           <a
             href={process.env.NEXT_PUBLIC_CAL_BOOK_URL || "/book-demo"}
             target="_blank"
@@ -100,17 +134,31 @@ export function TrialBanner({
             Book a setup call
           </a>
         )}
-        <Link
-          href="/portal/billing"
-          className={cn(
-            "shrink-0 inline-flex items-center rounded-none transition-colors px-3 py-1.5 text-xs font-semibold",
-            expired
-              ? "bg-[#8a6d00] text-white hover:bg-[#6f5800]"
-              : "bg-primary text-primary-foreground hover:bg-primary-dark",
-          )}
-        >
-          {expired ? "Activate now" : "Activate subscription"}
-        </Link>
+        {cardOnFile ? (
+          <Link
+            href="/portal/billing"
+            className="shrink-0 font-semibold underline-offset-4 hover:underline"
+          >
+            Manage or cancel
+          </Link>
+        ) : canAddCard && quote ? (
+          <AddCardButton
+            tierId={quote.tierId}
+            propertyCount={quote.propertyCount}
+            label={expired ? "Activate now" : "Add card"}
+            className={ctaClass}
+          />
+        ) : (
+          <Link
+            href="/portal/billing"
+            className={cn(
+              "shrink-0 inline-flex items-center rounded-none transition-colors px-3 py-1.5 text-xs font-semibold",
+              ctaClass,
+            )}
+          >
+            {expired ? "Activate now" : "Activate subscription"}
+          </Link>
+        )}
       </div>
     </div>
   );
