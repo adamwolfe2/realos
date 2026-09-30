@@ -92,6 +92,7 @@ export async function GET(req: NextRequest) {
       }),
       recordsProcessed: totalCreated,
       errorCount: errors.length,
+      errorSummary: errors.map((e) => `${e.orgId}: ${e.error}`).join("; "),
     };
   });
 }

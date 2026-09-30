@@ -89,6 +89,10 @@ export async function GET(req: NextRequest) {
       recordsProcessed: results.filter((r) => r.ok).length,
       // Per-org sync failures → record the run `partial`, not clean `ok`.
       errorCount: failed,
+      errorSummary: results
+        .filter((r) => !r.ok)
+        .map((r) => `${r.orgId}: ${r.error ?? "unknown"}`)
+        .join("; "),
     };
   });
 }

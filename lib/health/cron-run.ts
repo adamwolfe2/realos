@@ -29,6 +29,10 @@ export interface CronRunHandlerReturn<T> {
   // that swallowed material failures no longer reads as a clean success on the
   // health dashboard.
   errorCount?: number;
+  // Why the run was partial, stored in CronRun.error. Without it a partial
+  // run is undiagnosable from the DB (181 seo-sync partials in Sep 2026,
+  // zero with a reason).
+  errorSummary?: string;
 }
 
 export async function recordCronRun<T>(
@@ -56,6 +60,10 @@ export async function recordCronRun<T>(
     const recordsProcessed = handlerReturn.recordsProcessed ?? null;
     const errorCount = handlerReturn.errorCount ?? 0;
     const status: CronStatus = errorCount > 0 ? "partial" : "ok";
+    const errorSummary =
+      errorCount > 0 && handlerReturn.errorSummary
+        ? handlerReturn.errorSummary.slice(0, 2000)
+        : null;
 
     if (runId) {
       await prisma
@@ -64,7 +72,8 @@ export async function recordCronRun<T>(
           SET "finishedAt" = ${finishedAt},
               "status" = ${status},
               "durationMs" = ${durationMs},
-              "recordsProcessed" = ${recordsProcessed}
+              "recordsProcessed" = ${recordsProcessed},
+              "error" = ${errorSummary}
           WHERE "id" = ${runId}
         `.catch(() => 0);
     }
