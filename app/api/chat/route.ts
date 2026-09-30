@@ -17,7 +17,6 @@ import {
 } from "@/lib/chatbot/input-budget";
 import {
   ChatbotConversationStatus,
-  LeadSource,
   Prisma,
 } from "@prisma/client";
 import { buildSystemPrompt, type ChatbotTenant } from "@/lib/chatbot/build-system-prompt";
@@ -28,6 +27,7 @@ import { resolvePropertyForChatPage } from "@/lib/chatbot/property-attribution";
 import { requireMatchingOrigin } from "@/lib/tenancy/origin-guard";
 import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
 import { LeadNotifyChannel } from "@prisma/client";
+import { findOrCreateChatbotLead } from "@/lib/chatbot/find-or-create-lead";
 import { notifyChatbotLeadCaptured } from "@/lib/notifications/create";
 
 export const maxDuration = 30;
@@ -278,18 +278,14 @@ async function persistConversation(args: {
 
   // First-time lead capture: create the Lead row and link it.
   if (isLeadCaptured && !conversation.leadId && extracted.email) {
-    const lead = await prisma.lead.create({
-      data: {
-        orgId: args.orgId,
-        propertyId: args.propertyId ?? null,
-        source: LeadSource.CHATBOT,
-        sourceDetail: args.pageUrl ? `chatbot:${args.pageUrl}` : "chatbot",
-        firstName: extracted.firstName ?? null,
-        lastName: extracted.lastName ?? null,
-        email: extracted.email,
-        phone: extracted.phone ?? null,
-        notes: `Captured by chatbot on ${args.pageUrl ?? "site"}`,
-      },
+    const lead = await findOrCreateChatbotLead({
+      orgId: args.orgId,
+      propertyId: args.propertyId ?? null,
+      email: extracted.email,
+      firstName: extracted.firstName ?? null,
+      lastName: extracted.lastName ?? null,
+      phone: extracted.phone ?? null,
+      pageUrl: args.pageUrl,
     });
     await prisma.chatbotConversation.update({
       where: { id: conversation.id },
@@ -303,6 +299,8 @@ async function persistConversation(args: {
     // the stream is already closed by the SDK so the user-perceived
     // latency is unaffected, but the lambda stays alive long enough
     // for these to complete.
+    // Reused lead: already notified when first captured.
+    if (!lead.created) return;
     const fullName =
       [extracted.firstName, extracted.lastName].filter(Boolean).join(" ") ||
       null;

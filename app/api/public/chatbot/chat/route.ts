@@ -6,7 +6,6 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { prisma } from "@/lib/db";
 import {
   ChatbotConversationStatus,
-  LeadSource,
   Prisma,
   TenantStatus,
 } from "@prisma/client";
@@ -19,6 +18,7 @@ import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
 import { notifyChatbotLeadCaptured } from "@/lib/notifications/create";
 import { sendProspectProfileForConversation } from "@/lib/chatbot/send-prospect-profile";
 import { LeadNotifyChannel } from "@prisma/client";
+import { findOrCreateChatbotLead } from "@/lib/chatbot/find-or-create-lead";
 import { stripChatbotMarkdown } from "@/lib/chatbot/strip-markdown";
 import { resolvePropertyForChatPage } from "@/lib/chatbot/property-attribution";
 import { resolveChatbotConfig } from "@/lib/chatbot/resolve-config";
@@ -492,18 +492,14 @@ async function persistConversation(args: {
   }
 
   if (isLeadCaptured && !conversation.leadId && extracted.email) {
-    const lead = await prisma.lead.create({
-      data: {
-        orgId: args.orgId,
-        propertyId: args.propertyId ?? null,
-        source: LeadSource.CHATBOT,
-        sourceDetail: args.pageUrl ? `chatbot:${args.pageUrl}` : "chatbot",
-        firstName: extracted.firstName ?? null,
-        lastName: extracted.lastName ?? null,
-        email: extracted.email.toLowerCase(),
-        phone: extracted.phone ?? null,
-        notes: `Captured by chatbot on ${args.pageUrl ?? "site"}`,
-      },
+    const lead = await findOrCreateChatbotLead({
+      orgId: args.orgId,
+      propertyId: args.propertyId ?? null,
+      email: extracted.email,
+      firstName: extracted.firstName ?? null,
+      lastName: extracted.lastName ?? null,
+      phone: extracted.phone ?? null,
+      pageUrl: args.pageUrl,
     });
     await prisma.chatbotConversation.update({
       where: { id: conversation.id },
@@ -519,32 +515,36 @@ async function persistConversation(args: {
     // bell badge in /portal. Pre-fix this branch only sent email — the
     // POST_CHAT bell notification was silently dropped (PRE_CHAT path in
     // /api/public/chatbot/lead already sends both).
-    void notifyLeadCaptured({
-      orgId: args.orgId,
-      leadId: lead.id,
-      propertyId: args.propertyId ?? null,
-      channel: LeadNotifyChannel.CHATBOT,
-      lead: {
-        name: [extracted.firstName, extracted.lastName]
-          .filter(Boolean)
-          .join(" ") || null,
-        email: extracted.email ?? null,
-        phone: extracted.phone ?? null,
-        sourceLabel: args.pageUrl ? `Chatbot on ${args.pageUrl}` : "Chatbot",
-      },
-      conversationId: conversation.id,
-    }).catch((err) => {
-      console.warn("[public/chatbot/chat] notify email error:", err);
-    });
-    void notifyChatbotLeadCaptured({
-      id: conversation.id,
-      orgId: args.orgId,
-      capturedName: extracted.name ?? null,
-      capturedEmail: extracted.email,
-      leadId: lead.id,
-    }).catch((err) => {
-      console.warn("[public/chatbot/chat] notify bell error:", err);
-    });
+    // Reused lead (pre-chat form already captured this email): it was
+    // notified then. Only the prospect-profile below carries the chat.
+    if (lead.created) {
+      void notifyLeadCaptured({
+        orgId: args.orgId,
+        leadId: lead.id,
+        propertyId: args.propertyId ?? null,
+        channel: LeadNotifyChannel.CHATBOT,
+        lead: {
+          name: [extracted.firstName, extracted.lastName]
+            .filter(Boolean)
+            .join(" ") || null,
+          email: extracted.email ?? null,
+          phone: extracted.phone ?? null,
+          sourceLabel: args.pageUrl ? `Chatbot on ${args.pageUrl}` : "Chatbot",
+        },
+        conversationId: conversation.id,
+      }).catch((err) => {
+        console.warn("[public/chatbot/chat] notify email error:", err);
+      });
+      void notifyChatbotLeadCaptured({
+        id: conversation.id,
+        orgId: args.orgId,
+        capturedName: extracted.name ?? null,
+        capturedEmail: extracted.email,
+        leadId: lead.id,
+      }).catch((err) => {
+        console.warn("[public/chatbot/chat] notify bell error:", err);
+      });
+    }
 
     // Adam 2026-06-03: when the bot auto-detects a lead mid-conversation
     // (regex finds email/phone), ALSO immediately fire the rich
