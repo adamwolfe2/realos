@@ -4,6 +4,7 @@ import { verifyCronAuth } from "@/lib/cron/auth";
 import { recordCronRun } from "@/lib/health/cron-run";
 import { syncPropertyFromDataforSeo } from "@/lib/seo/sync-orchestrator";
 import { isDataforSeoConfigured } from "@/lib/seo/dataforseo";
+import { notDemoOrg } from "@/lib/tenancy/demo-org";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -49,6 +50,11 @@ export async function GET(req: NextRequest) {
     }
 
     const startedAt = Date.now();
+    // A property is ~12 sequential DataForSEO calls (~100s). Stop starting
+    // new ones with headroom before maxDuration (300s): a killed run never
+    // records its result, which is how every run in Sep 2026 ended.
+    // Unscanned properties keep stale serpRankings, so they stay eligible.
+    const deadline = startedAt + 180_000;
     const cutoff = new Date(Date.now() - SCAN_INTERVAL_MS);
 
     // Pick LIVE properties that haven't been scanned today. Order by
@@ -57,6 +63,8 @@ export async function GET(req: NextRequest) {
       where: {
         lifecycle: "ACTIVE",
         launchStatus: "LIVE",
+        // Demo fixtures have .example domains: paid calls that always fail.
+        org: notDemoOrg,
         OR: [
           // Property has no SerpRanking rows yet.
           { serpRankings: { none: {} } },
@@ -84,6 +92,7 @@ export async function GET(req: NextRequest) {
     };
 
     for (const p of candidates) {
+      if (Date.now() > deadline) break;
       try {
         const stats = await syncPropertyFromDataforSeo({
           orgId: p.orgId,
