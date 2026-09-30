@@ -69,6 +69,11 @@ Constraints:
  * (no key, API error, schema mismatch) returns the original insights
  * unchanged so the caller always gets usable output.
  */
+// ~75 output tokens per polished insight. The old single call sent 25-97
+// insights against maxOutputTokens 2048, got truncated JSON, and failed
+// ~85% of runs (ApiUsage, May-Sep 2026). 10 per call leaves ~2.5x headroom.
+export const POLISH_CHUNK_SIZE = 10;
+
 export async function polishInsights(
   insights: DetectedInsight[],
   /** Optional cost-attribution scope. signals-daily passes the orgId
@@ -80,6 +85,19 @@ export async function polishInsights(
   if (!process.env.ANTHROPIC_API_KEY) {
     return insights;
   }
+  const chunks: DetectedInsight[][] = [];
+  for (let i = 0; i < insights.length; i += POLISH_CHUNK_SIZE) {
+    chunks.push(insights.slice(i, i + POLISH_CHUNK_SIZE));
+  }
+  // Each chunk falls back to raw copy on its own failure.
+  const polished = await Promise.all(chunks.map((c) => polishBatch(c, cost)));
+  return polished.flat();
+}
+
+async function polishBatch(
+  insights: DetectedInsight[],
+  cost?: { orgId?: string | null; propertyId?: string | null },
+): Promise<DetectedInsight[]> {
 
   // Build a stable id for each insight in the batch so Claude can
   // address them by id without us depending on array order.
