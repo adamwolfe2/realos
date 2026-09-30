@@ -109,7 +109,7 @@ export async function GET(req: NextRequest) {
       if (Date.now() > deadline) break;
       scannedOrgIds.push(org.id);
       try {
-        const result = await runAeoScan({ orgId: org.id });
+        const result = await runAeoScan({ orgId: org.id, deadline });
         totalRows += result.rowsWritten;
         summary.push({
           orgId: org.id,

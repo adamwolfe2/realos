@@ -64,6 +64,10 @@ export interface ScanOptions {
   engines?: EngineModule[];
   /** Cap on number of properties per run (top-N most recently updated). */
   maxProperties?: number;
+  /** Epoch ms. Stop starting new prompts after this; rows already written
+   *  stay. The cron passes its own deadline so a single org can't run the
+   *  function past maxDuration (runs died "running" in Sep 2026). */
+  deadline?: number;
 }
 
 export interface ScanResult {
@@ -117,7 +121,7 @@ export async function runAeoScan(opts: ScanOptions): Promise<ScanResult> {
   // Per-engine rolling next-allowed-at timestamp for the simple throttle.
   const engineNextAllowedAt = new Map<string, number>();
 
-  for (const property of properties) {
+  scan: for (const property of properties) {
     const generated = generatePromptsWithKinds({
       city: property.city,
       state: property.state,
@@ -177,6 +181,7 @@ export async function runAeoScan(opts: ScanOptions): Promise<ScanResult> {
     }
 
     for (const prompt of prompts) {
+      if (opts.deadline && Date.now() > opts.deadline) break scan;
       promptsRun += 1;
       for (const engine of engines) {
         await throttleEngine(engineNextAllowedAt, engine.engine);
