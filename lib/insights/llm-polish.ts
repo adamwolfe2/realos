@@ -89,9 +89,16 @@ export async function polishInsights(
   for (let i = 0; i < insights.length; i += POLISH_CHUNK_SIZE) {
     chunks.push(insights.slice(i, i + POLISH_CHUNK_SIZE));
   }
-  // Each chunk falls back to raw copy on its own failure.
-  const polished = await Promise.all(chunks.map((c) => polishBatch(c, cost)));
-  return polished.flat();
+  // Each chunk falls back to raw copy on its own failure. At most 3 calls
+  // in flight so a large org doesn't burst the Anthropic rate limit.
+  const polished: DetectedInsight[] = [];
+  for (let i = 0; i < chunks.length; i += 3) {
+    const group = await Promise.all(
+      chunks.slice(i, i + 3).map((c) => polishBatch(c, cost)),
+    );
+    polished.push(...group.flat());
+  }
+  return polished;
 }
 
 async function polishBatch(

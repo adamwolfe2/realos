@@ -14,6 +14,8 @@ import { prisma } from "@/lib/db";
 // pre-chat path.
 // ---------------------------------------------------------------------------
 
+const PRE_CHAT_TWIN_WINDOW_MS = 24 * 60 * 60 * 1000;
+
 export async function findOrCreateChatbotLead(args: {
   orgId: string;
   propertyId: string | null;
@@ -22,12 +24,20 @@ export async function findOrCreateChatbotLead(args: {
   lastName: string | null;
   phone: string | null;
   pageUrl?: string | null;
-}): Promise<{ id: string; created: boolean }> {
+}): Promise<{ id: string; created: boolean; notify: boolean }> {
   const email = args.email.trim().toLowerCase();
 
   const existing = await prisma.lead.findFirst({
     where: { orgId: args.orgId, email: { equals: email, mode: "insensitive" } },
-    select: { id: true, phone: true, firstName: true, lastName: true },
+    select: {
+      id: true,
+      phone: true,
+      firstName: true,
+      lastName: true,
+      propertyId: true,
+      source: true,
+      createdAt: true,
+    },
     orderBy: { createdAt: "asc" },
   });
 
@@ -40,9 +50,16 @@ export async function findOrCreateChatbotLead(args: {
         phone: existing.phone ?? args.phone,
         firstName: existing.firstName ?? args.firstName,
         lastName: existing.lastName ?? args.lastName,
+        propertyId: existing.propertyId ?? args.propertyId,
       },
     });
-    return { id: existing.id, created: false };
+    // Only the pre-chat twin (same email, chatbot, minutes earlier) was
+    // already announced. An older lead from any source coming back through
+    // chat is a re-engagement the operator should hear about.
+    const isPreChatTwin =
+      existing.source === LeadSource.CHATBOT &&
+      Date.now() - existing.createdAt.getTime() < PRE_CHAT_TWIN_WINDOW_MS;
+    return { id: existing.id, created: false, notify: !isPreChatTwin };
   }
 
   const lead = await prisma.lead.create({
@@ -59,5 +76,5 @@ export async function findOrCreateChatbotLead(args: {
     },
     select: { id: true },
   });
-  return { id: lead.id, created: true };
+  return { id: lead.id, created: true, notify: true };
 }

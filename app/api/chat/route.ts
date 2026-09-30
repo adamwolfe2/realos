@@ -299,8 +299,8 @@ async function persistConversation(args: {
     // the stream is already closed by the SDK so the user-perceived
     // latency is unaffected, but the lambda stays alive long enough
     // for these to complete.
-    // Reused lead: already notified when first captured.
-    if (!lead.created) return;
+    // Pre-chat twin: already announced when the form captured it.
+    if (!lead.notify) return;
     const fullName =
       [extracted.firstName, extracted.lastName].filter(Boolean).join(" ") ||
       null;

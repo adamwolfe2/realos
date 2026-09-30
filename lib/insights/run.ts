@@ -162,10 +162,10 @@ export async function runInsightDetectors(
     }
   }
 
-  // Phase 2: polish every detected insight via Claude Haiku in ONE
-  // batched call. Falls back to raw rule copy when no API key or on
-  // any failure (see lib/insights/llm-polish.ts). Cost: ~$0.005 per
-  // run regardless of org size.
+  // Phase 2: polish every detected insight via Claude Haiku in batches of
+  // POLISH_CHUNK_SIZE. Each batch falls back to raw rule copy when no API
+  // key or on failure (see lib/insights/llm-polish.ts). Cost: ~$0.002 per
+  // batch.
   const flat = allDetected.flatMap((d) => d.insights);
   const polished =
     flat.length > 0 ? await polishInsights(flat) : flat;

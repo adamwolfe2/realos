@@ -515,9 +515,9 @@ async function persistConversation(args: {
     // bell badge in /portal. Pre-fix this branch only sent email — the
     // POST_CHAT bell notification was silently dropped (PRE_CHAT path in
     // /api/public/chatbot/lead already sends both).
-    // Reused lead (pre-chat form already captured this email): it was
+    // Pre-chat twin (form captured this email minutes ago): it was
     // notified then. Only the prospect-profile below carries the chat.
-    if (lead.created) {
+    if (lead.notify) {
       void notifyLeadCaptured({
         orgId: args.orgId,
         leadId: lead.id,

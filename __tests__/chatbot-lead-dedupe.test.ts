@@ -41,11 +41,15 @@ describe("findOrCreateChatbotLead", () => {
       phone: null,
       firstName: "Jane",
       lastName: "Doe",
+      propertyId: null,
+      source: "CHATBOT",
+      createdAt: new Date(Date.now() - 5 * 60_000),
     });
 
     const res = await findOrCreateChatbotLead(ARGS);
 
-    expect(res).toEqual({ id: "lead_prechat", created: false });
+    // Pre-chat twin: already announced, don't notify again.
+    expect(res).toEqual({ id: "lead_prechat", created: false, notify: false });
     expect(lead.create).not.toHaveBeenCalled();
     expect(lead.findFirst.mock.calls[0][0].where).toEqual({
       orgId: "org_1",
@@ -56,6 +60,24 @@ describe("findOrCreateChatbotLead", () => {
     expect(data.phone).toBe("5105550100");
     expect(data.firstName).toBe("Jane");
     expect(data.lastName).toBe("Doe");
+    expect(data.propertyId).toBe("prop_1");
+  });
+
+  it("notifies when an older or non-chatbot lead comes back through chat", async () => {
+    lead.findFirst.mockResolvedValue({
+      id: "lead_march_form",
+      phone: "1",
+      firstName: "Jane",
+      lastName: "Doe",
+      propertyId: "prop_0",
+      source: "WEBSITE",
+      createdAt: new Date("2026-03-01"),
+    });
+
+    const res = await findOrCreateChatbotLead(ARGS);
+
+    expect(res).toEqual({ id: "lead_march_form", created: false, notify: true });
+    expect(lead.update.mock.calls[0][0].data.propertyId).toBe("prop_0");
   });
 
   it("creates a CHATBOT lead with a normalized email when none exists", async () => {
@@ -64,7 +86,7 @@ describe("findOrCreateChatbotLead", () => {
 
     const res = await findOrCreateChatbotLead(ARGS);
 
-    expect(res).toEqual({ id: "lead_new", created: true });
+    expect(res).toEqual({ id: "lead_new", created: true, notify: true });
     const data = lead.create.mock.calls[0][0].data;
     expect(data.email).toBe("jane@example.com");
     expect(data.source).toBe("CHATBOT");
