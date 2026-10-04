@@ -827,7 +827,7 @@ export default async function LeadsKanbanPage({
       )}
 
       {totalCount === 0 && identifiedVisitorCount === 0 ? (
-        <EmptyLeadsState />
+        <EmptyLeadsState orgId={scope.orgId} />
       ) : (
         <>
           {totalCount > 0 ? <LeadKanban items={items} /> : null}
@@ -1001,12 +1001,28 @@ function SourceMixBar({
   );
 }
 
-function EmptyLeadsState() {
+async function EmptyLeadsState({ orgId }: { orgId: string }) {
+  // The site builder is a wall when the managed website module is off or the
+  // workspace brings its own site; send those users to the chatbot instead.
+  const org = await prisma.organization
+    .findUnique({
+      where: { id: orgId },
+      select: { moduleWebsite: true, bringYourOwnSite: true },
+    })
+    .catch((err: unknown) => {
+      console.error("[portal/leads] empty-state org lookup failed:", err);
+      return null;
+    });
+  const hasSite = Boolean(org?.moduleWebsite) && !org?.bringYourOwnSite;
   return (
     <EmptyState
       title="Your pipeline is empty."
       body="Leads from chatbot conversations, contact forms, ads, or AppFolio sync land here. Pick a starting point below."
-      action={{ label: "Set up lead capture", href: "/portal/site-builder" }}
+      action={
+        hasSite
+          ? { label: "Set up lead capture", href: "/portal/site-builder" }
+          : { label: "Install the chatbot", href: "/portal/chatbot" }
+      }
       secondary={{
         label: "Connect data sources",
         href: "/portal/connect",

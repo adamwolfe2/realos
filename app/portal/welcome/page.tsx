@@ -7,6 +7,8 @@ import {
   CheckCircle2,
   Clock,
   Sparkles,
+  MessageSquare,
+  Radar,
   Calendar,
   Link2,
 } from "lucide-react";
@@ -60,6 +62,8 @@ export default async function PortalWelcomePage() {
         name: true,
         subscriptionStatus: true,
         subscriptionTier: true,
+        moduleWebsite: true,
+        bringYourOwnSite: true,
         trialStartedAt: true,
         trialEndsAt: true,
         ...(Object.fromEntries(
@@ -104,6 +108,7 @@ export default async function PortalWelcomePage() {
     label: f.name,
   }));
 
+  const hasSite = org.moduleWebsite && !org.bringYourOwnSite;
   const firstProperty = org.properties[0] ?? null;
 
   return (
@@ -270,7 +275,7 @@ export default async function PortalWelcomePage() {
                 ? `Open your property: ${firstProperty.name}`
                 : "Add your first property"
             }
-            description="Where AppFolio sync, marketing site, and reporting all start."
+            description="Where AppFolio sync, your chatbot and pixel, and reporting all start."
           />
           <NextStepLink
             href="/portal/connect"
@@ -278,12 +283,29 @@ export default async function PortalWelcomePage() {
             label="Connect AppFolio (or your PMS)"
             description="Pulls residents, leases, and listings every hour. Skip if you've already connected."
           />
-          <NextStepLink
-            href="/portal/site-builder"
-            icon={Sparkles}
-            label="Build your marketing site"
-            description="A per-property site goes live as soon as you pick a style and add basics."
-          />
+          {hasSite ? (
+            <NextStepLink
+              href="/portal/site-builder"
+              icon={Sparkles}
+              label="Build your marketing site"
+              description="A per-property site goes live as soon as you pick a style and add basics."
+            />
+          ) : (
+            <>
+              <NextStepLink
+                href="/portal/chatbot"
+                icon={MessageSquare}
+                label="Install your chatbot"
+                description="Answers prospects around the clock and turns conversations into leads."
+              />
+              <NextStepLink
+                href="/portal/connect"
+                icon={Radar}
+                label="Install the visitor pixel"
+                description="Identifies who is visiting your site so you can follow up."
+              />
+            </>
+          )}
           <NextStepLink
             href={process.env.NEXT_PUBLIC_CAL_BOOK_URL || "/book-demo"}
             icon={Calendar}

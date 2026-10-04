@@ -129,9 +129,8 @@ export function PropertiesStep({
           className="mt-2"
           style={{ color: MUTED, fontFamily: "var(--font-sans)", fontSize: "14px", lineHeight: 1.55 }}
         >
-          Add each property you want to market. Every one gets its own site,
-          pixel, and chatbot. You&apos;ll set those up per property inside the
-          workspace.
+          Add each property you want to market. Each one gets its own pixel and
+          chatbot. You&apos;ll set those up per property inside the workspace.
         </p>
       </header>
 
