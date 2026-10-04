@@ -1445,8 +1445,9 @@ async function _maybeLiftDunningSuspension(orgId: string): Promise<void> {
 //        - if the invoice's subscription metadata carries a proposalId AND
 //          the proposal is not yet ACCEPTED: accept + provision
 //   3. customer.subscription.trial_will_end
-//        - if subscription.metadata.proposalId: email prospect + agency (v1
-//          logs + Sentry warning; v2 will wire the real send via lib/proposals/email)
+//        - proposal subscriptions: email prospect + agency (v1 logs + Sentry
+//          warning; v2 will wire the real send via lib/proposals/email).
+//          Platform trials are emailed only by the trial-reminders cron.
 //
 // Every branch routes through processStripeEventOnce so a Stripe retry can
 // never double-provision. Sentry breadcrumbs include the proposalId tag for
@@ -1861,96 +1862,15 @@ async function acceptProposalAndProvision(args: {
   }
 }
 
-async function sendTrialEndingSoonEmail(input: {
-  orgId: string;
-  orgName: string;
-  toEmail: string;
-  trialEnd: number | null;
-  subscriptionId: string;
-}): Promise<void> {
-  const { getResend } = await import("@/lib/email/shared");
-  const resend = getResend();
-  if (!resend) return;
-
-  const to = input.toEmail;
-  const from =
-    process.env.RESEND_FROM_EMAIL?.trim() || `LeaseStack <team@leasestack.co>`;
-  const trialEndDate = input.trialEnd
-    ? new Date(input.trialEnd * 1000).toLocaleDateString()
-    : "soon";
-
-  const text = [
-    `Hi ${input.orgName},`,
-    "",
-    "Your LeaseStack trial is ending " + trialEndDate + ".",
-    "To keep your access and continue using all platform features, please activate your subscription.",
-    "",
-    "Log into your portal and visit Billing to subscribe.",
-    "",
-    "Questions? Reply to this email or contact team@leasestack.co.",
-  ].join("\n");
-
-  await resend.emails.send({
-    from,
-    to,
-    subject: `Your LeaseStack trial ends ${trialEndDate}`,
-    text,
-  });
-}
-
-async function notifyOrgTrialWillEnd(
-  subscription: Stripe.Subscription,
-): Promise<void> {
-  const stripeCustomerId =
-    typeof subscription.customer === "string"
-      ? subscription.customer
-      : subscription.customer?.id ?? null;
-  if (!stripeCustomerId) return;
-
-  const org = await prisma.organization.findUnique({
-    where: { stripeCustomerId },
-    select: { id: true, name: true, primaryContactEmail: true },
-  });
-  if (!org) return;
-
-  if (!org.primaryContactEmail) {
-    captureWithContext(
-      new Error("trial_will_end: org has no email to notify"),
-      {
-        route: "api/webhooks/stripe",
-        handler: "notifyOrgTrialWillEnd",
-        orgId: org.id,
-        subscriptionId: subscription.id,
-        level: "warning",
-      },
-    );
-    return;
-  }
-
-  void sendTrialEndingSoonEmail({
-    orgId: org.id,
-    orgName: org.name,
-    toEmail: org.primaryContactEmail,
-    trialEnd: subscription.trial_end ?? null,
-    subscriptionId: subscription.id,
-  }).catch((err) => {
-    captureWithContext(err, {
-      route: "api/webhooks/stripe",
-      handler: "notifyOrgTrialWillEnd.email",
-      orgId: org.id,
-    });
-  });
-}
-
 async function handleProposalTrialWillEnd(
   subscription: Stripe.Subscription,
 ): Promise<void> {
+  // Platform (non-proposal) trials: the trial-reminders cron is the single
+  // sender of the T-3 email (it dedupes via AuditEvent and quotes the exact
+  // charge). Classify by subscription metadata, never by customer ID, since
+  // proposals and the platform can share a Stripe Customer.
+  if (!isProposalSubscription(subscription.metadata)) return;
   const proposalId = subscription.metadata?.proposalId ?? null;
-  if (!proposalId) {
-    // Non-proposal trial: send a generic "trial ends soon" email to the org.
-    await notifyOrgTrialWillEnd(subscription);
-    return;
-  }
 
   // v1: log + Sentry warning so the agency operator gets a notification
   // through their existing Sentry pipeline. v2 wires the real prospect +
