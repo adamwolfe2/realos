@@ -211,9 +211,11 @@ describe("POST /api/public/leads dedupe (F-024)", () => {
     const data = h.lead.update.mock.calls[0][0].data;
     expect(data.firstName).toBe("Jamie"); // never overwritten
     expect(data.lastName).toBe("Doe"); // gap filled
-    expect(data.phone).toBe("5105550100");
+    expect(data).not.toHaveProperty("phone"); // no phone gap-fill on a merge
     expect(data.propertyId).toBe("prop_first");
-    expect(data.notes).toBe("First message\n\nSecond message");
+    expect(data.notes).toMatch(
+      /^First message\n\n\[\d{4}-\d{2}-\d{2} FORM\] Second message$/,
+    );
     expect(data).not.toHaveProperty("source");
     expect(data).not.toHaveProperty("sourceDetail");
 
@@ -243,6 +245,19 @@ describe("POST /api/public/leads dedupe (F-024)", () => {
     expect(input.lead.sourceLabel).toBe("Repeat inquiry (FORM)");
     expect(input.lead.intent).toBe("Is the 2BR still open?");
     expect(sendLeadAutoReplyEmail).not.toHaveBeenCalled();
+  });
+
+  it("does not re-append a message already in notes, and stops appending past the 10k cap", async () => {
+    h.lead.update.mockResolvedValue({ id: "lead_existing" });
+
+    h.lead.findFirst.mockResolvedValue(EXISTING);
+    await POST(makeRequest({ ...VALID_BODY, notes: "First message" }));
+    expect(h.lead.update.mock.calls[0][0].data.notes).toBe("First message");
+
+    const full = "x".repeat(9_990);
+    h.lead.findFirst.mockResolvedValue({ ...EXISTING, notes: full });
+    await POST(makeRequest({ ...VALID_BODY, notes: "One more question" }));
+    expect(h.lead.update.mock.calls[1][0].data.notes).toBe(full);
   });
 
   it("a different email creates a new lead and notifies", async () => {

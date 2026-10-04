@@ -44,6 +44,26 @@ const schema = z.object({
 // lead has been quiet this long (suppresses double-clicks / resubmits).
 const REPEAT_NOTIFY_AFTER_MS = 10 * 60 * 1000;
 
+// Total notes length past which repeat submits stop appending. Keeps a
+// rotated-IP flood from growing one lead's notes without bound.
+const MAX_LEAD_NOTES_CHARS = 10_000;
+
+// Append a public-form message to an existing lead's notes as
+// "[YYYY-MM-DD <source>] text", so operators can tell later public text
+// from what the lead first wrote. Skips repeats of the same text and stops
+// appending once the cap would be exceeded (the original notes are kept).
+function appendLeadNote(
+  existing: string | null,
+  message: string | undefined,
+  source: string,
+): string | null {
+  const text = message?.trim();
+  if (!text || existing?.includes(text)) return existing;
+  const entry = `[${new Date().toISOString().slice(0, 10)} ${source}] ${text}`;
+  const next = existing ? `${existing}\n\n${entry}` : entry;
+  return next.length > MAX_LEAD_NOTES_CHARS ? existing : next;
+}
+
 // POST /api/public/leads
 // Called by tenant marketing site forms (apply, contact, exit-intent).
 // Rate-limited by IP so a competitor can't flood a tenant.
@@ -148,8 +168,10 @@ export async function POST(req: NextRequest) {
 
   // Dedupe by (orgId, email), exact but case-insensitive (shared helper,
   // same as the popup/tours/chatbot routes). A resubmit or double-click merges
-  // into the existing lead: fill gaps only, keep original source/property
-  // attribution, append the new message to notes.
+  // into the existing lead: fill name/unit/move-in/budget gaps only (not
+  // phone: an unauthenticated submit must not plant contact details on a
+  // known lead), keep original source/property attribution, and append the
+  // new message to notes as a dated, labelled entry.
   // ponytail: findFirst-then-create still races on truly concurrent submits;
   // a partial unique index on (orgId, lower(email)) closes it (schema change).
   const existing = data.email
@@ -158,7 +180,6 @@ export async function POST(req: NextRequest) {
         propertyId: true,
         firstName: true,
         lastName: true,
-        phone: true,
         preferredUnitType: true,
         desiredMoveIn: true,
         budgetMaxCents: true,
@@ -175,14 +196,15 @@ export async function POST(req: NextRequest) {
           propertyId: existing.propertyId ?? data.propertyId ?? null,
           firstName: existing.firstName ?? (data.firstName || null),
           lastName: existing.lastName ?? (data.lastName || null),
-          phone: existing.phone ?? (data.phone || null),
           preferredUnitType:
             existing.preferredUnitType ?? (data.preferredUnitType || null),
           desiredMoveIn: existing.desiredMoveIn ?? desiredMoveIn,
           budgetMaxCents: existing.budgetMaxCents ?? budgetMaxCents,
-          notes: data.notes
-            ? [existing.notes, data.notes].filter(Boolean).join("\n\n")
-            : existing.notes,
+          notes: appendLeadNote(
+            existing.notes,
+            data.notes,
+            data.sourceDetail ?? data.source,
+          ),
         },
       })
     : await prisma.lead.create({
