@@ -66,6 +66,18 @@ describe("POST /api/public/chatbot/demo chat", () => {
     expect(h.streamText).not.toHaveBeenCalled();
   });
 
+  it("503s with a distinct message when the daily limiter is unavailable", async () => {
+    h.checkRateLimit
+      .mockResolvedValueOnce(ok)
+      .mockResolvedValueOnce({ allowed: false, limit: 0, remaining: 0, reset: Date.now() + 60_000, unavailable: true });
+    const res = await chat();
+    expect(res.status).toBe(503);
+    const msg = (await res.json()).error;
+    expect(msg).toMatch(/temporarily unavailable/);
+    expect(msg).not.toMatch(/demo limit/);
+    expect(h.streamText).not.toHaveBeenCalled();
+  });
+
   it("503s when the Anthropic spend cap is hit", async () => {
     h.checkRateLimit.mockResolvedValue(ok);
     h.withSpendCap.mockResolvedValueOnce({

@@ -121,6 +121,12 @@ export async function POST(req: NextRequest) {
   }
   const daily = await checkRateLimit(chatbotDemoDailyLimiter, ip);
   if (!daily.allowed) {
+    if (daily.unavailable) {
+      return NextResponse.json(
+        { error: "The demo is temporarily unavailable. Please try again shortly." },
+        { status: 503, headers: { "Retry-After": "60" } },
+      );
+    }
     const retryAfter = Math.max(1, Math.ceil((daily.reset - Date.now()) / 1000));
     return NextResponse.json(
       {

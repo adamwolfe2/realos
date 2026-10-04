@@ -224,7 +224,7 @@ export async function checkRateLimit(
   limiter: Ratelimit | null,
   identifier: string,
   options?: { softFallback?: { requests: number; windowMs: number } },
-): Promise<{ allowed: boolean; limit: number; remaining: number; reset: number }> {
+): Promise<{ allowed: boolean; limit: number; remaining: number; reset: number; unavailable?: true }> {
   if (!limiter) {
     // Soft fallback: low-stakes operator-facing tools (Zillow lookup,
     // CSV export, etc.) opt in by passing softFallback. When Redis is
@@ -255,6 +255,8 @@ export async function checkRateLimit(
         limit: 0,
         remaining: 0,
         reset: Date.now() + 60_000,
+        // Distinguishes "limiter down/unset" from a real over-limit result.
+        unavailable: true,
       };
     }
     // Development: fail open.
