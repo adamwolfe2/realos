@@ -128,10 +128,10 @@ export default async function NewContentDraftPage(props: {
         className="space-y-5 ls-card p-6"
       >
         <div className="space-y-2">
-          <label className="ls-eyebrow">
+          <label htmlFor="cnew-format" className="ls-eyebrow">
             Format
           </label>
-          <select
+          <select id="cnew-format"
             name="format"
             defaultValue={selected}
             className="block w-full rounded-[2px] border border-input bg-background px-3 py-2 text-[14px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
@@ -145,10 +145,10 @@ export default async function NewContentDraftPage(props: {
         </div>
 
         <div className="space-y-2">
-          <label className="ls-eyebrow">
+          <label htmlFor="cnew-title" className="ls-eyebrow">
             Title / topic
           </label>
-          <input
+          <input id="cnew-title"
             name="title"
             required
             maxLength={140}
@@ -158,10 +158,10 @@ export default async function NewContentDraftPage(props: {
         </div>
 
         <div className="space-y-2">
-          <label className="ls-eyebrow">
+          <label htmlFor="cnew-brief" className="ls-eyebrow">
             Brief
           </label>
-          <textarea
+          <textarea id="cnew-brief"
             name="brief"
             required
             minLength={8}
@@ -174,10 +174,10 @@ export default async function NewContentDraftPage(props: {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="ls-eyebrow">
+            <label htmlFor="cnew-targetQuery" className="ls-eyebrow">
               Target keyword
             </label>
-            <input
+            <input id="cnew-targetQuery"
               name="targetQuery"
               maxLength={200}
               placeholder="apartments in midtown"
@@ -185,10 +185,10 @@ export default async function NewContentDraftPage(props: {
             />
           </div>
           <div className="space-y-2">
-            <label className="ls-eyebrow">
+            <label htmlFor="cnew-targetWordCount" className="ls-eyebrow">
               Target word count
             </label>
-            <input
+            <input id="cnew-targetWordCount"
               name="targetWordCount"
               type="number"
               min={0}
@@ -201,10 +201,10 @@ export default async function NewContentDraftPage(props: {
 
         {properties.length > 0 ? (
           <div className="space-y-2">
-            <label className="ls-eyebrow">
+            <label htmlFor="cnew-propertyId" className="ls-eyebrow">
               Anchor property (optional)
             </label>
-            <select
+            <select id="cnew-propertyId"
               name="propertyId"
               defaultValue=""
               className="block w-full rounded-[2px] border border-input bg-background px-3 py-2 text-[14px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
