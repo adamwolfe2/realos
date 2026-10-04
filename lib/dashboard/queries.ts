@@ -1,11 +1,13 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { leadDayBucketsByProperty } from "@/lib/dashboard/lead-day-buckets";
+import { propertyClauseSql } from "@/lib/dashboard/property-clause-sql";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { marketableOrgClause } from "@/lib/tenancy/property-filter";
 import {
   AdPlatform,
   LeadSource,
+  Prisma,
   LeadStatus,
   MentionSource,
   Sentiment,
@@ -288,19 +290,43 @@ export async function getConversationsOverTime(
   scope: DashboardScope = {},
 ): Promise<ConversationTrendPoint[]> {
   const days = scope.periodDays ?? WINDOW_DAYS;
-  const since = new Date(Date.now() - days * DAY_MS);
-  const rows = await prisma.chatbotConversation.findMany({
-    where: {
-      orgId,
-      lastMessageAt: { gte: since },
-      ...(scope.propertyClause ?? {}),
-    },
-    select: { lastMessageAt: true },
-  });
-  const buckets = bucketDailyTotals(
-    rows.map((r) => ({ date: r.lastMessageAt, value: 1 })),
-    days,
-  );
+  const now = new Date();
+  const since = new Date(now.getTime() - days * DAY_MS);
+  const clauseSql = propertyClauseSql(scope.propertyClause ?? {});
+  let buckets: number[];
+  if (clauseSql) {
+    // Same rolling-window indexing as dayBucketIndex, aggregated in Postgres.
+    const nowUtc = Prisma.sql`(${now}::timestamptz at time zone 'UTC')`;
+    const grouped = await prisma.$queryRaw<Array<{ days_ago: number; n: bigint }>>(
+      Prisma.sql`
+        select greatest(floor(extract(epoch from (${nowUtc} - "lastMessageAt")) / 86400), 0)::int as days_ago,
+          count(*) as n
+        from "ChatbotConversation"
+        where "orgId" = ${orgId}
+          and "lastMessageAt" >= (${since}::timestamptz at time zone 'UTC')
+          ${clauseSql}
+        group by 1`,
+    );
+    buckets = new Array<number>(days).fill(0);
+    for (const r of grouped) {
+      const idx = days - 1 - Number(r.days_ago);
+      if (idx >= 0 && idx < days) buckets[idx] += Number(r.n);
+    }
+  } else {
+    // Unrecognised clause shape: keep the Prisma path rather than guess.
+    const rows = await prisma.chatbotConversation.findMany({
+      where: {
+        orgId,
+        lastMessageAt: { gte: since },
+        ...(scope.propertyClause ?? {}),
+      },
+      select: { lastMessageAt: true },
+    });
+    buckets = bucketDailyTotals(
+      rows.map((r) => ({ date: r.lastMessageAt, value: 1 })),
+      days,
+    );
+  }
   const fmt = new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
