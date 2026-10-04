@@ -19,8 +19,8 @@ import {
 //   - status === ACCEPTED → render the receipt-style recap
 //   - any other valid status → render a "Finalizing your account" pending
 //     state (webhook hasn't fired yet, or sub-mode session completed
-//     pre-invoice-paid). The page does NOT auto-refresh in v1 — the
-//     prospect will get an email once provisioning finishes.
+//     pre-invoice-paid). The page meta-refreshes every 5s and the
+//     prospect also gets an email once provisioning finishes.
 //
 // Anti-enumeration: the share-token resolver returns null for not-found /
 // revoked / expired. We also resolve revoked tokens whose underlying
@@ -297,6 +297,7 @@ export default async function ProposalSuccessPage({ params }: PageProps) {
 function PendingState({ proposalNumber }: { proposalNumber: string }) {
   return (
     <main className="min-h-screen bg-white text-[#0F172A]">
+      <meta httpEquiv="refresh" content="5" />
       <header className="border-b border-[#EAECEF]">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-5">
           <span className="text-sm font-semibold tracking-tight">
@@ -309,7 +310,7 @@ function PendingState({ proposalNumber }: { proposalNumber: string }) {
       </header>
       <div className="mx-auto max-w-xl px-6 py-20 text-center">
         <h1 className="text-2xl font-semibold tracking-tight">
-          Payment received — finalizing your account…
+          Confirming your payment…
         </h1>
         <p className="mt-3 text-sm leading-relaxed text-[#6B7280]">
           We&apos;re confirming the payment with our payment processor. You
