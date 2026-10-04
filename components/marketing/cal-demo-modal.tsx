@@ -4,6 +4,7 @@ import * as React from "react";
 import { usePlatformHost } from "@/components/analytics/platform-only";
 import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
+import { track } from "@/lib/analytics";
 
 // @calcom/embed-react stays out of the root-layout chunk: the embed loads
 // lazily (pre-warm on marketing pages, or on first open()).
@@ -90,7 +91,10 @@ export function CalDemoProvider({ children }: { children: React.ReactNode }) {
     // Call the API directly so arbitrary buttons (not just
     // <a data-cal-link>) can trigger it.
     void import("./cal-embed")
-      .then((m) => m.openCalModal(slug))
+      .then((m) => {
+        track("demo_modal_opened", m.demoContext());
+        return m.openCalModal(slug);
+      })
       .catch((err) => {
         console.error("[cal-demo] failed to open Cal modal", err);
       });
