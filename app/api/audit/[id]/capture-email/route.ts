@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { trackServer } from "@/lib/analytics-server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import {
-  AGENCY_ADMIN_EMAIL,
-  APP_URL,
-  buildBaseHtml,
-  escapeHtml,
-  sendBrandedEmail,
-} from "@/lib/email/shared";
+import { notifyAuditLead } from "@/lib/audit/notify";
 import {
   auditEmailCaptureLimiter,
   checkRateLimit,
@@ -96,30 +89,10 @@ export async function POST(
       { status: 409 },
     );
   }
-  // Fire-and-forget internal alert: a prospect who scored their own site and
-  // left an email is a hot lead. Never blocks or fails the capture.
-  const { domain } = audit;
-  const email = parsed.data.email;
-  void sendBrandedEmail({
-    to: AGENCY_ADMIN_EMAIL,
-    subject: `Audit lead: ${domain}`,
-    html: buildBaseHtml({
-      headline: "New audit lead",
-      bodyHtml: `<p><strong>${escapeHtml(email)}</strong> left their email after auditing <strong>${escapeHtml(domain)}</strong>.</p>`,
-      ctaText: "See audit leads",
-      ctaUrl: `${APP_URL}/admin/audit-leads`,
-    }),
-    template: "audit-lead-alert",
-  })
-    .then((r) => {
-      if (!r.ok) console.warn("[audit capture-email] alert not sent:", r.error);
-    })
-    .catch((err) => {
-      console.error("[audit capture-email] alert failed:", err);
-    });
-  await trackServer({
-    event: "audit_email_captured",
-    distinctId: `audit:${id}`,
+  await notifyAuditLead({
+    auditId: id,
+    domain: audit.domain,
+    email: parsed.data.email,
   });
   return NextResponse.json({ ok: true });
 }
