@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
 import { cn } from "@/lib/utils";
 import { Send, FileDown, Webhook, Facebook, BarChart3 } from "lucide-react";
 
@@ -50,33 +51,18 @@ export function RecentSyncs({ rows }: { rows: RecentSyncRow[] }) {
               </div>
             ) : null}
           </div>
-          <StatusPill status={r.status} />
+          <StatusPill label={r.status.toLowerCase()} tone={SYNC_TONE[r.status] ?? "neutral"} className="shrink-0" />
         </li>
       ))}
     </ul>
   );
 }
 
-function StatusPill({ status }: { status: RecentSyncRow["status"] }) {
-  const tone =
-    status === "SUCCESS"
-      ? "text-emerald-700 bg-emerald-50"
-      : status === "FAILED"
-        ? "text-rose-700 bg-rose-50"
-        : status === "RUNNING"
-          ? "text-amber-700 bg-amber-50"
-          : "text-muted-foreground bg-muted";
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums shrink-0",
-        tone,
-      )}
-    >
-      {status.toLowerCase()}
-    </span>
-  );
-}
+const SYNC_TONE: Record<RecentSyncRow["status"], StatusTone> = {
+  SUCCESS: "success",
+  FAILED: "danger",
+  RUNNING: "warning",
+} as Record<RecentSyncRow["status"], StatusTone>;
 
 function DestinationIcon({
   type,

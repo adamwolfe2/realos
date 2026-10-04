@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
 import { Suspense } from "react";
 import Link from "next/link";
 import { ArrowRight, BarChart3 } from "lucide-react";
@@ -239,7 +240,7 @@ export default async function ReportsListPage({
       key: "status",
       header: "Status",
       width: "110px",
-      accessor: (r) => <StatusPill status={r.status} dim={isDim(r)} />,
+      accessor: (r) => <StatusPill {...reportPill(r.status, isDim(r))} />,
     },
     {
       key: "version",
@@ -629,23 +630,14 @@ async function generateReport(formData: FormData): Promise<void> {
 // Local helpers
 // ---------------------------------------------------------------------------
 
-function StatusPill({ status, dim }: { status: string; dim?: boolean }) {
-  // Wave-3 tone mapping preserved, routed through the ls-pill system
-  // (StatusChip convention, status-chip.tsx): a shared report is a positive
-  // terminal state → success green; draft is neutral gray (work in
-  // progress, no signal); archived is dimmed neutral.
-  const tone = status === "shared" ? "ls-pill-success" : "ls-pill-neutral";
-  return (
-    <span
-      className={cn(
-        "ls-pill uppercase tracking-wide",
-        tone,
-        (status === "archived" || dim) && "opacity-60",
-      )}
-    >
-      {status}
-    </span>
-  );
+function reportPill(status: string, dim?: boolean) {
+  // A shared report is a positive terminal state (success); draft is neutral;
+  // archived is dimmed neutral.
+  return {
+    label: status,
+    tone: (status === "shared" ? "success" : "neutral") as StatusTone,
+    className: cn("uppercase tracking-wide", (status === "archived" || dim) && "opacity-60"),
+  };
 }
 
 function kindLabel(kind: string): string {

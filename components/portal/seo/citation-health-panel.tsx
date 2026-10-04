@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { StatusPill } from "@/components/portal/ui/status-pill";
 import { useRouter } from "next/navigation";
 import {
   RefreshCcw,
@@ -270,7 +271,7 @@ function ClaimRowItem({ row }: { row: ClaimRow }) {
           )}
         </td>
         <td className="px-4 py-3">
-          <StatusPill status={worstStatus} />
+          <CitationPill status={worstStatus} />
         </td>
         <td className="px-4 py-3 text-right text-muted-foreground">
           {lastAt ? formatTimestamp(lastAt) : "—"}
@@ -314,7 +315,7 @@ function ClaimRowItem({ row }: { row: ClaimRow }) {
                           <span className="ls-eyebrow">
                             {ENGINE_LABEL[c.engine]}
                           </span>
-                          <StatusPill status={c.status} />
+                          <CitationPill status={c.status} />
                         </div>
                         <span className="text-[11px] text-muted-foreground">
                           {formatTimestamp(c.queryRunAt)}
@@ -348,7 +349,7 @@ function ClaimRowItem({ row }: { row: ClaimRow }) {
   );
 }
 
-function StatusPill({ status }: { status: CitationStatus | null }) {
+function CitationPill({ status }: { status: CitationStatus | null }) {
   if (status === null) {
     return (
       <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
@@ -357,27 +358,9 @@ function StatusPill({ status }: { status: CitationStatus | null }) {
       </span>
     );
   }
-  if (status === "CITED") {
-    return (
-      <span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-[2px] border border-primary/40 text-primary">
-        <CheckCircle2 className="h-3 w-3" />
-        Cited
-      </span>
-    );
-  }
-  if (status === "COMPETITOR_CITED") {
-    return (
-      <span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-[2px] border border-border text-foreground">
-        <AlertCircle className="h-3 w-3" />
-        Competitor cited
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-[2px] border border-border text-muted-foreground">
-      Not cited
-    </span>
-  );
+  if (status === "CITED") return <StatusPill label="Cited" tone="success" />;
+  if (status === "COMPETITOR_CITED") return <StatusPill label="Competitor cited" tone="warning" />;
+  return <StatusPill label="Not cited" tone="neutral" />;
 }
 
 function uniqueEngines(checks: EngineCheck[]): EngineName[] {

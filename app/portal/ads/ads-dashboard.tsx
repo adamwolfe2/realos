@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
 import dynamic from "next/dynamic";
 import { formatDistanceToNow } from "date-fns";
 import { AdPlatform } from "@prisma/client";
@@ -401,7 +402,7 @@ export function AdsDashboard({
                       {c.propertyName ?? "Org-wide"}
                     </td>
                     <td className="px-4 py-2 text-center">
-                      <StatusPill status={c.status} />
+                      <StatusPill label={c.status.toUpperCase()} tone={campaignTone(c.status)} />
                     </td>
                     <td className="px-4 py-2 text-right tabular-nums">
                       {c.budgetCents ? `${formatCents(c.budgetCents)}/mo` : "—"}
@@ -579,24 +580,10 @@ function SortHeader({
   );
 }
 
-function StatusPill({ status }: { status: string }) {
+function campaignTone(status: string): StatusTone {
+  // ENABLED/ACTIVE is live -> success green (matches StatusChip semantics).
   const norm = status.toUpperCase();
-  const tone =
-    norm === "ENABLED" || norm === "ACTIVE"
-      ? "bg-primary/10 text-primary border-primary/30"
-      : norm === "PAUSED"
-        ? "bg-secondary text-foreground border-border"
-        : "bg-muted text-muted-foreground border-border";
-  return (
-    <span
-      className={cn(
-        "inline-block text-[10px] font-medium px-2 py-0.5 rounded-[2px] border",
-        tone
-      )}
-    >
-      {norm}
-    </span>
-  );
+  return norm === "ENABLED" || norm === "ACTIVE" ? "success" : "neutral";
 }
 
 // ---------------------------------------------------------------------------
