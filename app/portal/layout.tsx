@@ -535,30 +535,26 @@ export default async function PortalLayout({
           rather than competing with content. Still uses the destructive
           token because impersonation is a security-critical state, but
           the visual weight is dialed back per the design audit.
-          Dismissible per-session: signing out and back in re-surfaces
-          the strip so the operator is re-confirmed they're acting in
-          someone else's context every session. */}
+          Not dismissible: it is the only cue and the only exit. */}
       {scope.isImpersonating ? (
-        <DismissibleStrip storageKey={`leasestack:impersonating:${org.id}`}>
-          <div
-            data-no-print
-            role="status"
-            className="shrink-0 h-7 bg-destructive/10 border-b border-destructive/30 text-destructive text-[11px] px-4 pr-9 flex items-center justify-between gap-3"
-          >
-            <span className="truncate">
-              Impersonating <strong>{org.name}</strong>. Changes attributed to
-              you.
-            </span>
-            <form action="/api/admin/impersonate/end" method="post">
-              <button
-                type="submit"
-                className="underline underline-offset-2 font-semibold hover:no-underline whitespace-nowrap"
-              >
-                End impersonation
-              </button>
-            </form>
-          </div>
-        </DismissibleStrip>
+        <div
+          data-no-print
+          role="status"
+          className="shrink-0 h-7 bg-destructive/10 border-b border-destructive/30 text-destructive text-[11px] px-4 flex items-center justify-between gap-3"
+        >
+          <span className="truncate">
+            Impersonating <strong>{org.name}</strong>. Changes attributed to
+            you.
+          </span>
+          <form action="/api/admin/impersonate/end" method="post">
+            <button
+              type="submit"
+              className="underline underline-offset-2 font-semibold hover:no-underline whitespace-nowrap"
+            >
+              End impersonation
+            </button>
+          </form>
+        </div>
       ) : null}
 
       {/* Portfolio-wide data-health banner. Slim 28px chrome strip so it
