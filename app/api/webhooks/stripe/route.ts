@@ -1170,7 +1170,7 @@ async function notifyOpsOfDispute(input: {
 }): Promise<void> {
   const { getResend, BRAND_EMAIL } = await import("@/lib/email/shared");
   const resend = getResend();
-  if (!resend) return;
+  if (!resend) throw new Error("Resend not configured; dispute ops email not sent");
 
   const to =
     process.env.BUG_REPORT_EMAIL?.trim() ||
@@ -1192,12 +1192,13 @@ async function notifyOpsOfDispute(input: {
     "Sentry handler: handleDisputeCreated",
   ].join("\n");
 
-  await resend.emails.send({
+  const { error } = await resend.emails.send({
     from,
     to,
     subject: `[LeaseStack ops] Dispute OPENED — $${(input.amountCents / 100).toFixed(2)} — ${input.disputeId}`,
     text,
   });
+  if (error) throw new Error(`Resend rejected dispute ops email: ${error.message}`);
 }
 
 // `charge.dispute.created` — chargeback opened. Highest-urgency event
@@ -1217,43 +1218,45 @@ async function handleDisputeCreated(
       })
     : null;
 
-  // Dedupe-fenced so the chargeback record survives a transient insert
-  // failure (re-throw → outer 500 → Stripe retry) instead of being lost.
-  if (org) {
-    await processStripeEventOnce(
-      { eventId, eventType, orgId: org.id },
-      async (tx) => {
-        await tx.auditEvent.create({
-          data: {
-            orgId: org.id,
-            action: AuditAction.UPDATE,
-            entityType: "Organization",
-            entityId: org.id,
-            description: `Dispute ${dispute.id} OPENED — $${(dispute.amount / 100).toFixed(2)}, reason: ${dispute.reason}`,
-            diff: {
-              disputeId: dispute.id,
-              amountCents: dispute.amount,
-              reason: dispute.reason,
-              status: dispute.status,
-            },
+  // Fence every dispute (org-linked or not) so a redelivered event neither
+  // rewrites the audit row nor emails ops twice. The audit row needs an org.
+  const { status } = await processStripeEventOnce(
+    { eventId, eventType, orgId: org?.id ?? null },
+    async (tx) => {
+      if (!org) return;
+      await tx.auditEvent.create({
+        data: {
+          orgId: org.id,
+          action: AuditAction.UPDATE,
+          entityType: "Organization",
+          entityId: org.id,
+          description: `Dispute ${dispute.id} OPENED — $${(dispute.amount / 100).toFixed(2)}, reason: ${dispute.reason}`,
+          diff: {
+            disputeId: dispute.id,
+            amountCents: dispute.amount,
+            reason: dispute.reason,
+            status: dispute.status,
           },
-        });
-      },
-    );
-  }
+        },
+      });
+    },
+  );
+  if (status === "skipped") return;
 
   // Alert ops for every dispute, org-linked or not: chargeback response
-  // windows are tight.
+  // windows are tight. A failed send is logged and reported, never a 500.
   await notifyOpsOfDispute({
     disputeId: dispute.id,
     amountCents: dispute.amount,
     reason: dispute.reason,
     orgId: org?.id ?? null,
   }).catch((err) => {
+    console.error(`[stripe-webhook] dispute ${dispute.id} ops email failed`, err);
     captureWithContext(err, {
       route: "api/webhooks/stripe",
       handler: "handleDisputeCreated.notify",
       orgId: org?.id,
+      disputeId: dispute.id,
     });
   });
 }
