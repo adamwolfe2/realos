@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { leadDayBucketsByProperty } from "@/lib/dashboard/lead-day-buckets";
 import {
   ApplicationStatus,
   LeadSource,
@@ -198,9 +199,11 @@ export async function getPropertyOverviewKpis(
       },
       _sum: { spendCents: true },
     }),
-    prisma.lead.findMany({
-      where: { orgId, propertyId, firstSeenAt: { gte: since28d } },
-      select: { firstSeenAt: true },
+    leadDayBucketsByProperty({
+      orgId,
+      propertyIds: [propertyId],
+      column: "firstSeenAt",
+      windowDays: WINDOW_DAYS,
     }),
     patterns.length === 0
       ? Promise.resolve(null)
@@ -215,10 +218,8 @@ export async function getPropertyOverviewKpis(
     adSpendCents28d: adSpend._sum.spendCents ?? 0,
     organicSessions28d: organicSessions,
     organicMapped: patterns.length > 0 && organicSessions !== null,
-    leadsSparkline: bucketDailyCounts(
-      leadRowsForSpark.map((r) => r.firstSeenAt),
-      WINDOW_DAYS,
-    ),
+    leadsSparkline:
+      leadRowsForSpark.get(propertyId) ?? new Array<number>(WINDOW_DAYS).fill(0),
   };
 }
 
@@ -1032,15 +1033,6 @@ function buildByBedType(
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function bucketDailyCounts(dates: Date[], windowDays: number): number[] {
-  const buckets = new Array<number>(windowDays).fill(0);
-  for (const d of dates) {
-    const idx = dayBucketIndex(d, windowDays);
-    if (idx >= 0 && idx < windowDays) buckets[idx] += 1;
-  }
-  return buckets;
-}
 
 function bucketDailyTotals(
   rows: Array<{ date: Date; value: number }>,

@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { leadDayBucketsByProperty } from "@/lib/dashboard/lead-day-buckets";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { marketableOrgClause } from "@/lib/tenancy/property-filter";
 import {
@@ -466,13 +467,11 @@ export async function getPropertyMetrics(
       },
       _count: { _all: true },
     }),
-    prisma.lead.findMany({
-      where: {
-        orgId,
-        createdAt: { gte: since28d },
-        propertyId: { in: propertyIds },
-      },
-      select: { propertyId: true, createdAt: true },
+    leadDayBucketsByProperty({
+      orgId,
+      propertyIds,
+      column: "createdAt",
+      windowDays: WINDOW_DAYS,
     }),
     prisma.propertyMention.groupBy({
       by: ["propertyId"],
@@ -511,15 +510,7 @@ export async function getPropertyMetrics(
     campaignCountByProp.set(row.propertyId, row._count._all);
   }
 
-  const sparkByProp = new Map<string, number[]>();
-  for (const row of allLeadDates) {
-    if (!row.propertyId) continue;
-    const arr =
-      sparkByProp.get(row.propertyId) ?? new Array<number>(WINDOW_DAYS).fill(0);
-    const idx = dayBucketIndex(row.createdAt, WINDOW_DAYS);
-    if (idx >= 0 && idx < WINDOW_DAYS) arr[idx] += 1;
-    sparkByProp.set(row.propertyId, arr);
-  }
+  const sparkByProp = allLeadDates;
 
   const mentionTotalByProp = new Map<string, number>();
   for (const row of mentionTotals) {
@@ -564,20 +555,14 @@ export async function getPortfolioLeadsSpark(
   const spark = new Array<number>(WINDOW_DAYS).fill(0);
   if (propertyIds.length === 0) return spark;
 
-  const since28d = new Date(Date.now() - WINDOW_DAYS * DAY_MS);
-
-  const leadDates = await prisma.lead.findMany({
-    where: {
-      orgId,
-      createdAt: { gte: since28d },
-      propertyId: { in: propertyIds },
-    },
-    select: { createdAt: true },
+  const byProp = await leadDayBucketsByProperty({
+    orgId,
+    propertyIds,
+    column: "createdAt",
+    windowDays: WINDOW_DAYS,
   });
-
-  for (const row of leadDates) {
-    const idx = dayBucketIndex(row.createdAt, WINDOW_DAYS);
-    if (idx >= 0 && idx < WINDOW_DAYS) spark[idx] += 1;
+  for (const arr of byProp.values()) {
+    for (let i = 0; i < WINDOW_DAYS; i += 1) spark[i] += arr[i];
   }
 
   return spark;
