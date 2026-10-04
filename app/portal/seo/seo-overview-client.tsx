@@ -1,13 +1,28 @@
 "use client";
 
 import * as React from "react";
+import dynamic from "next/dynamic";
 import { KpiTile, type Trend } from "@/components/portal/dashboard/kpi-tile";
-import { SeoTimeseriesChart, type TimeseriesPoint } from "./seo-timeseries-chart";
+import type { TimeseriesPoint } from "./seo-timeseries-chart";
 import { SeoAnnotationsPanel, type SeoAnnotation } from "./seo-annotations-panel";
 import {
   SeoQueriesPagesTables,
   type RankedRow,
 } from "./seo-queries-pages-tables";
+
+// Recharts loads only when this chart renders (mirrors conversations-trend.tsx).
+const SeoTimeseriesChart = dynamic(
+  () => import("./seo-timeseries-chart").then((m) => m.SeoTimeseriesChart),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        className="h-72 w-full border border-dashed border-border"
+        aria-hidden="true"
+      />
+    ),
+  },
+);
 
 // Pre-formatted delta produced by page.tsx's buildDelta/buildPositionDelta.
 // "positive" is already brand-aware (true only for a genuine improvement);
