@@ -100,6 +100,10 @@ body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-ins
 }
 
 :root {
+  /* Motion durations (DESIGN.md §4): micro hover/press, UI transitions, entrances. */
+  --dur-micro: 120ms;
+  --dur-ui: 200ms;
+  --dur-enter: 300ms;
   /* ── Canvas (clean white, cool gray scale) ─────────────────────────── */
   --canvas:      #ffffff;
   --gray-10:          #f4f4f4;
@@ -270,7 +274,7 @@ body {
 
 /* Page surfaces opt in via `.ls-page-fade` */
 .ls-page-fade {
-  animation: ls-fade-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: ls-fade-in var(--dur-enter) cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 /* Cards in a grid get a slight stagger via :nth-child delays. Capped at
@@ -420,7 +424,7 @@ body {
   letter-spacing: 0.005em;
   border-radius: 0; border: 1px solid #0f62fe;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 2px 8px -2px rgba(15,98,254,0.4);
-  transition: background 140ms ease, box-shadow 200ms ease, transform 160ms cubic-bezier(0.2,0.8,0.2,1);
+  transition: background var(--dur-micro) ease, box-shadow 200ms ease, transform var(--dur-micro) cubic-bezier(0.2,0.8,0.2,1);
   cursor: pointer;
 }
 .btn-primary:hover {
@@ -438,7 +442,7 @@ body {
   font-family: var(--font-sans); font-size: 14px; font-weight: 600; line-height: 1.2;
   border-radius: 0; border: 1px solid #d6d6d6;
   box-shadow: 0 1px 2px rgba(22, 22, 22, 0.05);
-  transition: transform 160ms cubic-bezier(0.2,0.8,0.2,1), border-color 160ms ease, box-shadow 200ms ease;
+  transition: transform var(--dur-micro) cubic-bezier(0.2,0.8,0.2,1), border-color var(--dur-micro) ease, box-shadow 200ms ease;
   cursor: pointer;
 }
 .btn-secondary:hover {
@@ -594,7 +598,7 @@ body {
   border-radius: 2px;
   /* Flat. Marketing cards are a 1px #e0e0e0 hairline on white with no shadow;
      the portal shadow stacked on every nested panel and muddied the grid. */
-  transition: border-color 180ms ease;
+  transition: border-color var(--dur-ui) ease;
 }
 .ls-card:hover {
   border-color: var(--hair-strong);
@@ -619,8 +623,8 @@ body {
   border-radius: 0;
   cursor: pointer;
   transition:
-    border-color 160ms ease,
-    box-shadow 160ms ease;
+    border-color var(--dur-micro) ease,
+    box-shadow var(--dur-micro) ease;
 }
 .ls-select:hover { border-color: var(--ring-light); }
 .ls-select:focus,
@@ -850,7 +854,7 @@ body {
   border-radius: 2px;
   border: 1px solid transparent;
   cursor: pointer;
-  transition: transform 120ms var(--ease-out), background 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+  transition: transform 120ms var(--ease-out), background var(--dur-micro) ease, box-shadow var(--dur-micro) ease, border-color var(--dur-micro) ease;
 }
 .ls-btn:active { transform: translateY(0.5px); }
 
@@ -901,7 +905,7 @@ body {
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 140ms ease, transform 140ms ease;
+  transition: opacity var(--dur-micro) ease, transform var(--dur-micro) ease;
   z-index: 100;
   box-shadow: var(--shadow-md);
 }

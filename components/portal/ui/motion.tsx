@@ -22,6 +22,8 @@ import { motion, useInView, useReducedMotion, type Variants } from "framer-motio
 // ---------------------------------------------------------------------------
 
 export const EASE_OUT = [0.2, 0.8, 0.2, 1] as const;
+// Seconds; mirrors --dur-micro / --dur-ui / --dur-enter in globals.css.
+export const DUR = { micro: 0.12, ui: 0.2, enter: 0.3 } as const;
 export const SPRING_POP = { type: "spring" as const, stiffness: 380, damping: 24 };
 
 // ---------------------------------------------------------------------------
