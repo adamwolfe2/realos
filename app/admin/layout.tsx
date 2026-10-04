@@ -157,13 +157,6 @@ export default async function AdminLayout({
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:z-50 focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:text-sm focus:font-medium focus:rounded-md"
-      >
-        Skip to main content
-      </a>
-
       {/* Mobile top header */}
       <div className="lg:hidden flex items-center justify-between h-14 px-4 bg-card border-b border-border sticky top-0 z-40">
         <div className="flex items-center gap-3">
