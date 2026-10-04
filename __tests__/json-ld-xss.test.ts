@@ -38,7 +38,6 @@ describe("serializeJsonLdForTemplateLiteral (generated MDX/JSX)", () => {
   // Faithfully simulate what MDX does: the generated source embeds the result
   // in a backtick template literal that is evaluated at render time.
   function evalAsTemplateLiteral(body: string): string {
-    // eslint-disable-next-line no-new-func
     return new Function(`return \`${body}\`;`)() as string;
   }
 

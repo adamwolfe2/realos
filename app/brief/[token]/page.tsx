@@ -295,7 +295,6 @@ export default async function BriefPage({ params }: RouteContext) {
 // canonical. The same applies below to NarrativeSection / Footer /
 // SourcesSection / SourceBullet — all moved to brief-shell.tsx.
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function _legacyPreHeroStrip_DO_NOT_USE({
   prospectName,
   generatedAtIso,
@@ -1493,7 +1492,6 @@ function CtaSection({ prospectName }: { prospectName: string }) {
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function _legacySourceBullet_DO_NOT_USE({ color, inner }: { color: string; inner: string }) {
   return (
     <span

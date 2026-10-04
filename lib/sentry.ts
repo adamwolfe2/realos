@@ -16,7 +16,7 @@ export function captureWithContext(
     if (context?.userId) scope.setUser({ id: context.userId });
     if (context?.orgId) scope.setTag("organizationId", context.orgId);
     if (context) {
-      const { userId, orgId, ...extras } = context;
+      const { userId: _userId, orgId: _orgId, ...extras } = context;
       scope.setExtras(extras);
     }
     Sentry.captureException(
@@ -46,7 +46,6 @@ export function withApiSentry<
       return await handler(...args);
     } catch (err) {
       captureWithContext(err, { route: routeName });
-      // eslint-disable-next-line no-console
       console.error(`[api:${routeName}]`, err);
       return NextResponse.json(
         {

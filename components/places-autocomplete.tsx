@@ -90,7 +90,6 @@ export function PlacesAutocomplete({
     };
     // runSearch is stable per-render; eslint disable not needed since it's
     // declared inline below and captures setters that React guarantees stable.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, serviceDisabled, disabled]);
 
   async function runSearch(q: string) {

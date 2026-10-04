@@ -9,7 +9,7 @@ import {
   Target,
 } from "lucide-react";
 import { prisma } from "@/lib/db";
-import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { requireScope } from "@/lib/tenancy/scope";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   effectivePropertyIds,

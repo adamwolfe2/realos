@@ -65,7 +65,6 @@ async function main() {
   }
 
   const total = await prisma.proposalCatalogItem.count();
-  // eslint-disable-next-line no-console -- seed script intentionally prints
   console.log(
     `Proposal catalog seeded: ${upserted} upserts, ${total} rows total.`,
   );
@@ -73,7 +72,6 @@ async function main() {
 
 main()
   .catch((err) => {
-    // eslint-disable-next-line no-console -- seed script intentionally prints
     console.error("Proposal catalog seed failed:", err);
     process.exit(1);
   })

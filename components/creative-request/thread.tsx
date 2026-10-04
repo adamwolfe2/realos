@@ -166,7 +166,6 @@ export function CreativeRequestThread({
         ) : (
           <div className="flex flex-wrap gap-2">
             {deliverables.map((u) => (
-              // eslint-disable-next-line @next/next/no-img-element
               <a key={u} href={u} target="_blank" rel="noreferrer">
                 <img
                   src={u}
@@ -249,7 +248,6 @@ export function CreativeRequestThread({
                 </div>
                 <p className="whitespace-pre-wrap">{m.content}</p>
                 {(m.attachmentUrls ?? []).map((u) => (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <a key={u} href={u} target="_blank" rel="noreferrer">
                     <img
                       src={u}
@@ -300,7 +298,6 @@ function AssetGrid({ label, urls }: { label: string; urls: string[] }) {
       <h3 className="font-serif text-sm font-semibold mb-3">{label}</h3>
       <div className="flex flex-wrap gap-2">
         {urls.map((u) => (
-          // eslint-disable-next-line @next/next/no-img-element
           <a key={u} href={u} target="_blank" rel="noreferrer">
             <img
               src={u}

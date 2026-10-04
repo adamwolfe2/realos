@@ -202,7 +202,6 @@ export function PropertyMultiSelect({
                 placeholder="Search properties"
                 className="w-full rounded-[2px] border border-border bg-background py-1.5 pl-7 pr-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                 aria-label="Search properties"
-                /* eslint-disable-next-line jsx-a11y/no-autofocus */
                 autoFocus
               />
             </div>
