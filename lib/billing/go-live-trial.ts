@@ -2,6 +2,8 @@ import "server-only";
 
 import { AuditAction, OrgType, SubscriptionStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { trackServer } from "@/lib/analytics-server";
+import { buildGoLiveEmail } from "@/lib/billing/trial-reminders";
 import {
   computeGoLiveTrialEnd,
   hasCardOnFile,
@@ -55,6 +57,9 @@ export async function applyGoLive(
   const org = await prisma.organization.findUnique({
     where: { id: orgId },
     select: {
+      name: true,
+      primaryContactName: true,
+      primaryContactEmail: true,
       orgType: true,
       subscriptionStatus: true,
       trialStartedAt: true,
@@ -132,5 +137,50 @@ export async function applyGoLive(
     }),
   ]);
 
+  // First marker write only (the early return above covers every later call).
+  await trackServer({ event: "went_live", distinctId: orgId });
+  await sendGoLiveEmail(orgId, org, next ?? org.trialEndsAt);
+
   return snapshot(now, next ?? org.trialEndsAt);
+}
+
+// Best-effort: the marker is already written, so a failed send is logged, not
+// retried, and never fails the portal render or the cron sweep.
+async function sendGoLiveEmail(
+  orgId: string,
+  org: {
+    name: string;
+    primaryContactName: string | null;
+    primaryContactEmail: string | null;
+  },
+  trialEndsAt: Date | null,
+): Promise<void> {
+  if (!org.primaryContactEmail) return;
+  try {
+    const { sendBrandedEmail, buildBaseHtml, APP_URL } = await import(
+      "@/lib/email/shared"
+    );
+    const mail = buildGoLiveEmail({
+      recipientName: org.primaryContactName ?? org.name,
+      orgName: org.name,
+      trialEndsAt,
+      appUrl: APP_URL,
+    });
+    const result = await sendBrandedEmail({
+      to: org.primaryContactEmail,
+      subject: mail.subject,
+      html: buildBaseHtml({
+        headline: mail.headline,
+        bodyHtml: mail.bodyHtml,
+        ctaText: mail.ctaText,
+        ctaUrl: mail.ctaUrl,
+      }),
+      template: "go-live",
+      entityRefId: `go-live-${orgId}`,
+      orgId,
+    });
+    if (!result.ok) console.warn("[go-live] email not sent:", result.error);
+  } catch (err) {
+    console.error("[go-live] email failed:", err);
+  }
 }
