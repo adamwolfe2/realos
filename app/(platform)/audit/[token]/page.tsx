@@ -182,15 +182,6 @@ export default async function AuditViewerPage({
   const audit = await loadAudit(token);
   if (!audit) notFound();
 
-  // Fire-and-forget view counter. Swallow errors so a transient DB hiccup
-  // never fails the render of an otherwise-good audit.
-  void prisma.prospectAudit
-    .update({
-      where: { id: audit.id },
-      data: { viewCount: { increment: 1 }, lastViewedAt: new Date() },
-    })
-    .catch(() => undefined);
-
   if (audit.status !== ProspectAuditStatus.READY) {
     // Self-heal on view (2026-08-13): share-link viewers land here
     // without ever hitting the form's status poll, so a stranded QUEUED
@@ -206,6 +197,23 @@ export default async function AuditViewerPage({
       />
     );
   }
+
+  // Fire-and-forget view counter, READY views only: the pending state's 5s
+  // meta-refresh would otherwise log ~12 "views" per waiting minute, and
+  // the update's @updatedAt bump would keep resetting the self-heal stall
+  // clock. Errors are logged, never fail the render.
+  // ponytail: Prisma bumps updatedAt on this write too; avoiding that needs raw SQL.
+  void prisma.prospectAudit
+    .update({
+      where: { id: audit.id },
+      data: { viewCount: { increment: 1 }, lastViewedAt: new Date() },
+    })
+    .catch((err: unknown) => {
+      console.error("[audit-viewer] view counter update failed", {
+        auditId: audit.id,
+        err,
+      });
+    });
 
   const findings = (audit.findings as Findings | null) ?? {
     quickWins: [],
