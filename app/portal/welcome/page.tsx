@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { requireScope } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
+import { FEATURE_CATALOG, type FeatureKey } from "@/lib/billing/features";
 
 // ---------------------------------------------------------------------------
 // /portal/welcome — first-run landing for a freshly-trialing user.
@@ -58,15 +59,9 @@ export default async function PortalWelcomePage() {
         subscriptionTier: true,
         trialStartedAt: true,
         trialEndsAt: true,
-        moduleChatbot: true,
-        modulePixel: true,
-        moduleGoogleAds: true,
-        moduleMetaAds: true,
-        moduleSEO: true,
-        moduleCreativeStudio: true,
-        moduleReferrals: true,
-        moduleEmail: true,
-        moduleOutboundEmail: true,
+        ...(Object.fromEntries(
+          FEATURE_CATALOG.map((f) => [f.key, true]),
+        ) as Record<FeatureKey, true>),
         properties: {
           where: { lifecycle: { in: ["IMPORTED", "ACTIVE"] } },
           take: 1,
@@ -88,17 +83,10 @@ export default async function PortalWelcomePage() {
       )
     : null;
 
-  const activeModules: Array<{ key: string; label: string }> = [
-    org.moduleChatbot && { key: "chatbot", label: "AI leasing chatbot" },
-    org.modulePixel && { key: "pixel", label: "Visitor pixel" },
-    org.moduleGoogleAds && { key: "google-ads", label: "Google Ads" },
-    org.moduleMetaAds && { key: "meta-ads", label: "Meta Ads" },
-    org.moduleSEO && { key: "seo", label: "SEO + AI discovery" },
-    org.moduleCreativeStudio && { key: "creative", label: "Creative studio" },
-    org.moduleReferrals && { key: "referrals", label: "Resident referrals" },
-    org.moduleEmail && { key: "email", label: "Email" },
-    org.moduleOutboundEmail && { key: "outbound", label: "Outbound email" },
-  ].filter(Boolean) as Array<{ key: string; label: string }>;
+  const activeModules = FEATURE_CATALOG.filter((f) => org[f.key]).map((f) => ({
+    key: f.key,
+    label: f.name,
+  }));
 
   const firstProperty = org.properties[0] ?? null;
 
