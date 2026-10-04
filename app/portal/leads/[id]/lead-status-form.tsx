@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { LeadStatus } from "@prisma/client";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const STATUSES: LeadStatus[] = [
@@ -50,17 +51,24 @@ export function LeadStatusForm({
     setStatus(next);
     setError(null);
     startTransition(async () => {
-      const res = await fetch(`/api/tenant/leads/${leadId}/status`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: next }),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        setError(body.error ?? "Failed to update status");
+      try {
+        const res = await fetch(`/api/tenant/leads/${leadId}/status`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: next }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          setError(body.error ?? "Failed to update status");
+          setStatus(prev);
+        } else {
+          toast.success("Status updated");
+          router.refresh();
+        }
+      } catch (err) {
+        console.error("[lead-status] update failed", err);
+        setError("Network error. Try again.");
         setStatus(prev);
-      } else {
-        router.refresh();
       }
     });
   }

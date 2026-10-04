@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export function AddNoteForm({ leadId }: { leadId: string }) {
@@ -15,18 +16,24 @@ export function AddNoteForm({ leadId }: { leadId: string }) {
     if (!body.trim()) return;
     setError(null);
     startTransition(async () => {
-      const res = await fetch(`/api/tenant/leads/${leadId}/notes`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body: body.trim() }),
-      });
-      if (!res.ok) {
-        const rb = await res.json().catch(() => ({}));
-        setError(rb.error ?? "Failed to add note");
-        return;
+      try {
+        const res = await fetch(`/api/tenant/leads/${leadId}/notes`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ body: body.trim() }),
+        });
+        if (!res.ok) {
+          const rb = await res.json().catch(() => ({}));
+          setError(rb.error ?? "Failed to add note");
+          return;
+        }
+        setBody("");
+        toast.success("Note added");
+        router.refresh();
+      } catch (err) {
+        console.error("[lead-note] add failed", err);
+        setError("Network error. Try again.");
       }
-      setBody("");
-      router.refresh();
     });
   }
 
