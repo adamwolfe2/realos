@@ -151,12 +151,16 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       "Content-Type": "application/json",
       "x-internal-trigger": cronSecret,
     },
-  }).catch(async (err) => {
-    // The viewer polls and surfaces stuck-QUEUED to the user; log so a
-    // broken trigger is visible.
-    soft(undefined, "audit.rerun.trigger")(err);
-    await release();
-  });
+  })
+    .then((res) => {
+      if (!res.ok) throw new Error(`audit run trigger returned ${res.status}`);
+    })
+    .catch(async (err) => {
+      // The viewer polls and surfaces stuck-QUEUED to the user; log so a
+      // broken trigger is visible.
+      soft(undefined, "audit.rerun.trigger")(err);
+      await release();
+    });
 
   return NextResponse.json({ ok: true, status: ProspectAuditStatus.QUEUED });
 }

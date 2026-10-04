@@ -92,6 +92,16 @@ describe("POST /api/audit/[id]/rerun rate limits", () => {
     );
   });
 
+  it("releases the per-audit cooldown when the trigger returns non-2xx", async () => {
+    h.checkRateLimit.mockResolvedValue(ok);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 500 })));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    await call();
+    await vi.waitFor(() =>
+      expect(h.releaseRateLimit).toHaveBeenCalledWith("audit-limiter", "audit_1"),
+    );
+  });
+
   it("releases the cooldown when the reset update throws, and does not on success", async () => {
     h.checkRateLimit.mockResolvedValue(ok);
     await call();
