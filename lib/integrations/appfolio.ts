@@ -713,7 +713,7 @@ export async function fetchAllPages(
       } while (nextPageUrl);
 
       if (attempt > 0) {
-        console.log(
+        console.info(
           `[appfolio] fetchAllPages(${reportName}) recovered after cursor-expiry retry; ${out.length} rows across ${pages} pages`
         );
       }

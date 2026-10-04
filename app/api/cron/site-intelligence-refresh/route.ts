@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
     }
 
     const durationMs = Date.now() - startedAt;
-    console.log(
+    console.info(
       `[site-intelligence-refresh] scanned=${aggregate.orgsScanned}/${batch.length} ` +
         `pages=${aggregate.pagesIngested} ` +
         `cost=$${aggregate.costUsd.toFixed(4)} ` +

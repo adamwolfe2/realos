@@ -1855,7 +1855,7 @@ async function acceptProposalAndProvision(args: {
   );
 
   if (dedupe.status === "processed") {
-    console.log(
+    console.info(
       `[stripe-webhook] proposal accepted — proposalId=${args.proposalId} via=${args.eventType}`,
     );
   }

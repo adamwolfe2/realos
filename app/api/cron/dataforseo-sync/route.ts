@@ -115,7 +115,7 @@ export async function GET(req: NextRequest) {
     }
 
     const durationMs = Date.now() - startedAt;
-    console.log(
+    console.info(
       `[dataforseo-sync] scanned=${aggregate.propertiesScanned}/${candidates.length} ` +
         `serps=${aggregate.serpQueriesScanned} ` +
         `lighthouse=${aggregate.lighthouseAudits} ` +

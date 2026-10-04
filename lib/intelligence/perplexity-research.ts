@@ -110,16 +110,10 @@ export async function researchCompany(args: {
         positioningCues: "",
         citations,
       };
-      console.log(
-        `[perplexity-research] $${COST_PER_CALL_USD.toFixed(4)} ${args.domain} (unparsed)`,
-      );
       return { ok: true, data, costUsd: COST_PER_CALL_USD };
     }
 
     const data: CompanyResearch = { ...parsed, citations };
-    console.log(
-      `[perplexity-research] $${COST_PER_CALL_USD.toFixed(4)} ${args.domain} ${citations.length} citations`,
-    );
     return { ok: true, data, costUsd: COST_PER_CALL_USD };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
