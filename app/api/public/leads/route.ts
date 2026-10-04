@@ -22,6 +22,7 @@ import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
 import { LeadNotifyChannel } from "@prisma/client";
 import { requireMatchingOrigin } from "@/lib/tenancy/origin-guard";
 import { getSiteUrl } from "@/lib/brand";
+import { soft } from "@/lib/soft";
 import { findOldestLeadByEmail } from "@/lib/leads/find-by-email";
 
 const schema = z.object({
@@ -237,7 +238,7 @@ export async function POST(req: NextRequest) {
 
   // Repeat submit from a known lead (popup/tours/chatbot only notify on
   // net-new leads). Exception: a new message on a lead untouched for 10+
-  // minutes still pings the bell + operator email so it isn't lost in
+  // minutes still sends the operator email so it isn't lost in
   // notes. Double-clicks and quick resubmits stay silent. Slack, tenant
   // email and the prospect auto-reply never fire for a repeat.
   // updatedAt is from the findFirst, i.e. read before our update.
@@ -249,10 +250,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, leadId: lead.id }, { status: 201 });
   }
 
-  void notifyLeadCreated(lead).catch(() => {});
+  // The bell is kind `lead_created` ("New lead: X"), so only net-new leads
+  // get it; a repeat inquiry surfaces via the labelled operator email only.
+  if (!existing) {
+    void notifyLeadCreated(lead).catch(soft(undefined, "public.leads.notifyLeadCreated"));
+  }
 
   // Instant operator email — centralized lead-notify helper. Fire-and-forget;
-  // every error path inside is swallowed so the response never blocks.
+  // failures are logged and reported so the response never blocks.
   const sourceLabel = data.sourceDetail ?? data.source;
   void notifyLeadCaptured({
     orgId: data.orgId,
@@ -269,7 +274,7 @@ export async function POST(req: NextRequest) {
       sourceLabel: isRepeatInquiry ? `Repeat inquiry (${sourceLabel})` : sourceLabel,
       intent: data.notes ?? data.preferredUnitType ?? null,
     },
-  }).catch(() => {});
+  }).catch(soft(undefined, "public.leads.notifyLeadCaptured"));
 
   if (isRepeatInquiry) {
     return NextResponse.json({ ok: true, leadId: lead.id }, { status: 201 });

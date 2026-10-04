@@ -64,7 +64,10 @@ const { POST } = await import("@/app/api/public/leads/route");
 const { requireMatchingOrigin } = await import("@/lib/tenancy/origin-guard");
 const { notifyLeadCaptured } = await import("@/lib/notifications/lead-notify");
 const { notifyLeadCreated } = await import("@/lib/notifications/create");
-const { sendLeadAutoReplyEmail } = await import("@/lib/email/lead-emails");
+const { sendLeadAutoReplyEmail, notifyTenantOfLeadEmail } = await import(
+  "@/lib/email/lead-emails"
+);
+const { notifyNewIntake } = await import("@/lib/integrations/slack");
 
 function makeRequest(body: unknown): NextRequest {
   return new NextRequest("http://localhost/api/public/leads", {
@@ -237,7 +240,7 @@ describe("POST /api/public/leads dedupe (F-024)", () => {
 
     expect(res.status).toBe(201);
     expect(h.lead.create).not.toHaveBeenCalled();
-    expect(notifyLeadCreated).toHaveBeenCalledTimes(1);
+    expect(notifyLeadCreated).not.toHaveBeenCalled(); // no "New lead" bell for a repeat
     expect(notifyLeadCaptured).toHaveBeenCalledTimes(1);
     const input = vi.mocked(notifyLeadCaptured).mock.calls[0][0];
     expect(input.leadId).toBe("lead_existing");
@@ -245,6 +248,8 @@ describe("POST /api/public/leads dedupe (F-024)", () => {
     expect(input.lead.sourceLabel).toBe("Repeat inquiry (FORM)");
     expect(input.lead.intent).toBe("Is the 2BR still open?");
     expect(sendLeadAutoReplyEmail).not.toHaveBeenCalled();
+    expect(notifyTenantOfLeadEmail).not.toHaveBeenCalled();
+    expect(notifyNewIntake).not.toHaveBeenCalled();
   });
 
   it("does not re-append a message already in notes, and stops appending past the 10k cap", async () => {
