@@ -51,6 +51,7 @@ const nextConfig = {
       "@clerk/nextjs",
       "sonner",
       "zod",
+      "simple-icons",
     ],
   },
   async redirects() {

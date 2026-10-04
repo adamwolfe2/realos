@@ -8,7 +8,7 @@ export default function AdminNotFound() {
         <p className="text-[11px] font-semibold uppercase tracking-widest text-primary">
           404
         </p>
-        <h1 className="font-serif text-3xl font-bold text-foreground">
+        <h1 className="text-3xl font-semibold text-foreground">
           Page not found
         </h1>
         <p className="text-sm text-muted-foreground">
@@ -18,13 +18,13 @@ export default function AdminNotFound() {
         <div className="flex flex-wrap gap-3 justify-center pt-2">
           <Link
             href="/admin"
-            className="inline-flex items-center h-9 px-4 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary-dark transition-colors"
+            className="inline-flex items-center h-9 px-4 text-sm font-medium rounded-card bg-primary text-primary-foreground hover:bg-primary-dark transition-colors"
           >
             Admin home
           </Link>
           <Link
             href="/admin/clients"
-            className="inline-flex items-center h-9 px-4 text-sm font-medium rounded-md border border-border bg-card hover:bg-accent transition-colors"
+            className="inline-flex items-center h-9 px-4 text-sm font-medium rounded-card border border-border bg-card hover:bg-accent transition-colors"
           >
             All clients
           </Link>

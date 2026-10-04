@@ -47,7 +47,7 @@ export default async function TenantsPage() {
         <Stat label="DNS configured" value={dnsConfigured} />
       </div>
 
-      <div className="rounded-lg border border-border bg-card overflow-hidden">
+      <div className="rounded-card border border-border bg-card overflow-hidden">
         <div className="overflow-x-auto">
         <table className="w-full text-sm min-w-[720px]">
           <thead className="bg-secondary text-xs uppercase tracking-wide text-muted-foreground">
@@ -121,7 +121,7 @@ export default async function TenantsPage() {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
+    <div className="rounded-card border border-border bg-card p-4">
       <div className="text-xs uppercase tracking-wide text-muted-foreground">
         {label}
       </div>

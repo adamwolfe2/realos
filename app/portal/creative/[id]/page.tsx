@@ -52,7 +52,7 @@ export default async function CreativeRequestDetail({
       </Link>
       <CreativeRequestThread
         request={thread}
-        viewer={scope.isImpersonating ? "agency" : "client"}
+        viewer={scope.isAgency ? "agency" : "client"}
       />
     </div>
   );

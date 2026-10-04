@@ -161,17 +161,17 @@ export default async function SiteIntelligenceDetailPage({
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <Link
           href="/admin/site-intelligence"
-          className="inline-flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground transition-colors"
+          className="inline-flex items-center gap-1 text-caption text-muted-foreground hover:text-foreground transition-colors"
         >
           <ChevronLeft className="h-3.5 w-3.5" />
           All orgs
         </Link>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[12px] font-medium text-foreground">
+          <span className="text-caption font-medium text-foreground">
             {org.name}
           </span>
-          <span className="text-[11px] font-mono text-muted-foreground">
+          <span className="text-label font-mono text-muted-foreground">
             {org.slug}
           </span>
           {domain ? (
@@ -179,14 +179,14 @@ export default async function SiteIntelligenceDetailPage({
               href={`https://${domain}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-[11px] font-mono text-muted-foreground hover:text-primary"
+              className="inline-flex items-center gap-1 text-label font-mono text-muted-foreground hover:text-primary"
             >
               <Globe className="h-3 w-3" aria-hidden />
               {domain}
               <ExternalLink className="h-3 w-3" aria-hidden />
             </a>
           ) : (
-            <span className="text-[11px] font-mono text-muted-foreground italic">
+            <span className="text-label font-mono text-muted-foreground italic">
               no domain bound
             </span>
           )}
@@ -195,15 +195,15 @@ export default async function SiteIntelligenceDetailPage({
       </div>
 
       {/* Header summary card */}
-      <header className="rounded-2xl border border-border bg-card p-5">
-        <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
+      <header className="rounded-card border border-border bg-card p-5">
+        <p className="text-2xs font-mono font-semibold uppercase tracking-[0.14em] text-primary">
           Site intelligence
         </p>
         <h1 className="mt-1 text-xl font-semibold text-foreground leading-tight">
           {org.name}
         </h1>
         {si?.rootUrl ? (
-          <p className="mt-1.5 text-[12px] font-mono text-muted-foreground break-all">
+          <p className="mt-1.5 text-caption font-mono text-muted-foreground break-all">
             Root URL:{" "}
             <a
               href={si.rootUrl}
@@ -233,11 +233,11 @@ export default async function SiteIntelligenceDetailPage({
       </header>
 
       {!si ? (
-        <div className="rounded-2xl border border-dashed border-border bg-card p-12 text-center">
+        <div className="rounded-card border border-dashed border-border bg-card p-12 text-center">
           <p className="text-[14px] font-medium text-foreground">
             No site intelligence yet
           </p>
-          <p className="mt-1 text-[12px] text-muted-foreground max-w-md mx-auto">
+          <p className="mt-1 text-caption text-muted-foreground max-w-md mx-auto">
             Run a refresh to crawl the bound domain with Firecrawl, fetch
             Perplexity research, and extract brand voice with Claude. First
             ingest usually takes 60–180 seconds.
@@ -250,24 +250,24 @@ export default async function SiteIntelligenceDetailPage({
 
       {/* Brand voice */}
       {si ? (
-        <section className="rounded-2xl border border-border bg-card p-5">
+        <section className="rounded-card border border-border bg-card p-5">
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <div>
-              <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
+              <p className="text-2xs font-mono font-semibold uppercase tracking-[0.14em] text-primary">
                 Brand voice
               </p>
               <h2 className="mt-1 text-[15px] font-semibold text-foreground">
                 Claude-extracted voice notes
               </h2>
             </div>
-            <span className="text-[11px] font-mono text-muted-foreground">
+            <span className="text-label font-mono text-muted-foreground">
               {(si.brandVoice?.length ?? 0)} chars · last run{" "}
               {fmtRelative(si.brandVoiceAt)}
             </span>
           </div>
 
           {si.brandVoice && si.brandVoice.trim().length > 0 ? (
-            <blockquote className="mt-4 rounded-xl border-l-2 border-primary bg-secondary p-4 text-[13px] leading-relaxed text-foreground whitespace-pre-wrap">
+            <blockquote className="mt-4 rounded-card border-l-2 border-primary bg-secondary p-4 text-body-sm leading-relaxed text-foreground whitespace-pre-wrap">
               {si.brandVoice}
             </blockquote>
           ) : (
@@ -278,17 +278,17 @@ export default async function SiteIntelligenceDetailPage({
 
       {/* Research */}
       {si ? (
-        <section className="rounded-2xl border border-border bg-card p-5">
+        <section className="rounded-card border border-border bg-card p-5">
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <div>
-              <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
+              <p className="text-2xs font-mono font-semibold uppercase tracking-[0.14em] text-primary">
                 Research
               </p>
               <h2 className="mt-1 text-[15px] font-semibold text-foreground">
                 Perplexity Sonar briefing
               </h2>
             </div>
-            <span className="text-[11px] font-mono text-muted-foreground">
+            <span className="text-label font-mono text-muted-foreground">
               {fmtRelative(si.researchedAt)}
             </span>
           </div>
@@ -314,14 +314,14 @@ export default async function SiteIntelligenceDetailPage({
 
               {research.citations && research.citations.length > 0 ? (
                 <div className="border-t border-border pt-3">
-                  <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  <p className="text-2xs font-mono font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                     Citations
                   </p>
                   <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
                     {research.citations.map((c, i) => (
                       <li
                         key={`${c}-${i}`}
-                        className="text-[11px] font-mono text-muted-foreground"
+                        className="text-label font-mono text-muted-foreground"
                       >
                         <a
                           href={c}
@@ -345,17 +345,17 @@ export default async function SiteIntelligenceDetailPage({
 
       {/* Crawled pages */}
       {si ? (
-        <section className="rounded-2xl border border-border bg-card p-5">
+        <section className="rounded-card border border-border bg-card p-5">
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <div>
-              <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
+              <p className="text-2xs font-mono font-semibold uppercase tracking-[0.14em] text-primary">
                 Crawled pages
               </p>
               <h2 className="mt-1 text-[15px] font-semibold text-foreground">
                 Firecrawl content cache
               </h2>
             </div>
-            <span className="text-[11px] font-mono text-muted-foreground">
+            <span className="text-label font-mono text-muted-foreground">
               {pages.length} pages
             </span>
           </div>
@@ -363,9 +363,9 @@ export default async function SiteIntelligenceDetailPage({
           {pages.length === 0 ? (
             <EmptyInline copy="No crawled pages yet. Refresh to populate the cache." />
           ) : (
-            <div className="mt-4 overflow-hidden rounded-xl border border-border">
-              <table className="w-full text-left text-[12px]">
-                <thead className="bg-secondary text-[10px] font-mono uppercase tracking-wide text-muted-foreground">
+            <div className="mt-4 overflow-hidden rounded-card border border-border">
+              <table className="w-full text-left text-caption">
+                <thead className="bg-secondary text-2xs font-mono uppercase tracking-wide text-muted-foreground">
                   <tr>
                     <th className="px-3 py-2 font-medium">URL</th>
                     <th className="px-3 py-2 font-medium">Title</th>
@@ -382,11 +382,11 @@ export default async function SiteIntelligenceDetailPage({
                     <tr className="border-t border-border bg-muted/20">
                       <td colSpan={4} className="px-3 py-2">
                         <details>
-                          <summary className="cursor-pointer text-[11px] font-mono text-muted-foreground hover:text-foreground">
+                          <summary className="cursor-pointer text-label font-mono text-muted-foreground hover:text-foreground">
                             Show {pagesOverflow.length} more pages
                           </summary>
-                          <div className="mt-2 overflow-hidden rounded-lg border border-border">
-                            <table className="w-full text-left text-[12px]">
+                          <div className="mt-2 overflow-hidden rounded-card border border-border">
+                            <table className="w-full text-left text-caption">
                               <tbody>
                                 {pagesOverflow.map((p) => (
                                   <PageRow key={p.url} page={p} />
@@ -407,17 +407,17 @@ export default async function SiteIntelligenceDetailPage({
 
       {/* Sitemap */}
       {si ? (
-        <section className="rounded-2xl border border-border bg-card p-5">
+        <section className="rounded-card border border-border bg-card p-5">
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <div>
-              <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
+              <p className="text-2xs font-mono font-semibold uppercase tracking-[0.14em] text-primary">
                 Sitemap
               </p>
               <h2 className="mt-1 text-[15px] font-semibold text-foreground">
                 Discovered URLs
               </h2>
             </div>
-            <span className="text-[11px] font-mono text-muted-foreground">
+            <span className="text-label font-mono text-muted-foreground">
               {sitemapUrls.length} total
             </span>
           </div>
@@ -427,7 +427,7 @@ export default async function SiteIntelligenceDetailPage({
           ) : (
             <ul className="mt-4 space-y-1">
               {sitemapVisible.map((u) => (
-                <li key={u} className="text-[11px] font-mono text-muted-foreground">
+                <li key={u} className="text-label font-mono text-muted-foreground">
                   <a
                     href={u}
                     target="_blank"
@@ -439,7 +439,7 @@ export default async function SiteIntelligenceDetailPage({
                 </li>
               ))}
               {sitemapOverflowCount > 0 ? (
-                <li className="text-[11px] font-mono text-muted-foreground italic">
+                <li className="text-label font-mono text-muted-foreground italic">
                   + {sitemapOverflowCount} more
                 </li>
               ) : null}
@@ -450,17 +450,17 @@ export default async function SiteIntelligenceDetailPage({
 
       {/* Last run stats */}
       {si ? (
-        <section className="rounded-2xl border border-border bg-card p-5">
+        <section className="rounded-card border border-border bg-card p-5">
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <div>
-              <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
+              <p className="text-2xs font-mono font-semibold uppercase tracking-[0.14em] text-primary">
                 Last run stats
               </p>
               <h2 className="mt-1 text-[15px] font-semibold text-foreground">
                 Ingest telemetry
               </h2>
             </div>
-            <span className="text-[11px] font-mono text-muted-foreground">
+            <span className="text-label font-mono text-muted-foreground">
               {fmtRelative(si.updatedAt)}
             </span>
           </div>
@@ -472,10 +472,10 @@ export default async function SiteIntelligenceDetailPage({
                   key={k}
                   className="flex items-start justify-between gap-3 border-b border-border/50 py-1.5"
                 >
-                  <dt className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground">
+                  <dt className="text-label font-mono uppercase tracking-wide text-muted-foreground">
                     {k}
                   </dt>
-                  <dd className="text-right text-[12px] font-mono text-foreground break-all whitespace-pre-wrap max-w-[60%]">
+                  <dd className="text-right text-caption font-mono text-foreground break-all whitespace-pre-wrap max-w-[60%]">
                     {formatStatValue(v)}
                   </dd>
                 </div>
@@ -504,13 +504,13 @@ function Stat({
   sub?: string;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-background p-3">
-      <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+    <div className="rounded-card border border-border bg-background p-3">
+      <p className="text-2xs font-mono font-semibold uppercase tracking-[0.14em] text-muted-foreground">
         {label}
       </p>
       <p className="mt-1 text-[14px] font-semibold text-foreground">{value}</p>
       {sub ? (
-        <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">
+        <p className="mt-0.5 text-2xs font-mono text-muted-foreground">
           {sub}
         </p>
       ) : null}
@@ -528,10 +528,10 @@ function ResearchBlock({
   if (!text || !text.trim()) return null;
   return (
     <div>
-      <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+      <p className="text-2xs font-mono font-semibold uppercase tracking-[0.14em] text-muted-foreground">
         {label}
       </p>
-      <p className="mt-1 text-[13px] leading-relaxed text-foreground whitespace-pre-wrap">
+      <p className="mt-1 text-body-sm leading-relaxed text-foreground whitespace-pre-wrap">
         {text}
       </p>
     </div>
@@ -541,7 +541,7 @@ function ResearchBlock({
 function PageRow({ page }: { page: IngestPersistedPage }) {
   return (
     <tr className="border-t border-border align-top">
-      <td className="px-3 py-2 font-mono text-[11px] text-muted-foreground max-w-[18ch] truncate">
+      <td className="px-3 py-2 font-mono text-label text-muted-foreground max-w-[18ch] truncate">
         <a
           href={page.url}
           target="_blank"
@@ -552,15 +552,15 @@ function PageRow({ page }: { page: IngestPersistedPage }) {
           {truncate(page.url, 60)}
         </a>
       </td>
-      <td className="px-3 py-2 text-[12px] text-foreground max-w-[24ch]">
+      <td className="px-3 py-2 text-caption text-foreground max-w-[24ch]">
         <span className="block truncate" title={page.title || page.h1}>
           {page.title || page.h1 || "—"}
         </span>
       </td>
-      <td className="px-3 py-2 text-right font-mono text-[11px] text-muted-foreground">
+      <td className="px-3 py-2 text-right font-mono text-label text-muted-foreground">
         {page.wordCount || Math.round((page.markdown?.length ?? 0) / 5)}
       </td>
-      <td className="px-3 py-2 text-[12px] text-muted-foreground">
+      <td className="px-3 py-2 text-caption text-muted-foreground">
         {page.markdown ? preview(page.markdown) : "—"}
       </td>
     </tr>
@@ -569,6 +569,6 @@ function PageRow({ page }: { page: IngestPersistedPage }) {
 
 function EmptyInline({ copy }: { copy: string }) {
   return (
-    <p className="mt-3 text-[12px] text-muted-foreground italic">{copy}</p>
+    <p className="mt-3 text-caption text-muted-foreground italic">{copy}</p>
   );
 }

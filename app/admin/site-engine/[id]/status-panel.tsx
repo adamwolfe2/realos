@@ -108,7 +108,7 @@ export function StatusPanel(props: StatusPanelProps) {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border border-border bg-card p-5 space-y-3">
+      <div className="rounded-card border border-border bg-card p-5 space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold">Transition status</h3>
           <span className="text-xs text-muted-foreground">
@@ -122,7 +122,7 @@ export function StatusPanel(props: StatusPanelProps) {
               type="button"
               onClick={() => setPickerStatus(s)}
               className={cn(
-                "px-2.5 py-1 rounded-md text-xs font-medium border transition-colors",
+                "px-2.5 py-1 rounded-card text-xs font-medium border transition-colors",
                 pickerStatus === s
                   ? "border-primary bg-primary/10 text-foreground"
                   : "border-border bg-background hover:bg-secondary",
@@ -173,7 +173,7 @@ export function StatusPanel(props: StatusPanelProps) {
         </div>
       </div>
 
-      <div className="rounded-lg border border-border bg-card p-5 space-y-3">
+      <div className="rounded-card border border-border bg-card p-5 space-y-3">
         <h3 className="text-sm font-semibold">Internal notes</h3>
         <p className="text-xs text-muted-foreground">
           Never shown to the client. Use it as a scratchpad while you work the
@@ -183,7 +183,7 @@ export function StatusPanel(props: StatusPanelProps) {
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={5}
-          className="w-full rounded-md border border-input bg-transparent p-3 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+          className="w-full rounded-card border border-input bg-transparent p-3 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
         />
         <div className="flex justify-end">
           <Button variant="outline" onClick={onSaveNotes} disabled={savingNotes}>
@@ -192,7 +192,7 @@ export function StatusPanel(props: StatusPanelProps) {
         </div>
       </div>
 
-      <div className="rounded-lg border border-border bg-card p-5 space-y-3">
+      <div className="rounded-card border border-border bg-card p-5 space-y-3">
         <h3 className="text-sm font-semibold">Build artifacts</h3>
         <p className="text-xs text-muted-foreground">
           Paste these in once you've spun up the repo + Vercel project. They

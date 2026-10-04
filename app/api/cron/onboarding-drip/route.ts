@@ -22,6 +22,7 @@ import {
   buildOnboardingAutomationEmail,
   type OnboardingAutomationStep,
 } from "@/lib/email/onboarding-automation";
+import { getSiteUrl } from "@/lib/brand";
 
 export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for unbounded loops
 
@@ -59,8 +60,7 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    const portalBase =
-      process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const portalBase = getSiteUrl();
 
     const results: Array<{ orgId: string; action: string; error?: string }> =
       [];
@@ -258,7 +258,7 @@ function buildDripEmail(
         <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">Hi ${e(firstName)},</p>
         <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
           Your ${e(BRAND_NAME)} portal for ${e(orgName)} is ready, but we noticed you
-          haven't added a property yet. Adding your first property unlocks lead
+          haven't added a property yet. Adding your first property turns on lead
           tracking, visitor analytics, and the chatbot.
         </p>
         <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
@@ -301,7 +301,7 @@ function buildDripEmail(
       <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">Hi ${e(firstName)},</p>
       <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
         You've had your ${e(BRAND_NAME)} portal for ${e(orgName)} for about 10 days. Here's
-        a quick summary of what would help unlock the most value right away:
+        a quick summary of what would help you get value right away:
       </p>
       <ul style="margin:0 0 12px;padding-left:20px;font-size:14px;line-height:1.8;">
         <li>Add at least one property if you haven't yet</li>

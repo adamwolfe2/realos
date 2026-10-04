@@ -2,6 +2,9 @@ import "server-only";
 
 import { AuditAction, OrgType, SubscriptionStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { runAfter } from "@/lib/after";
+import { trackServer } from "@/lib/analytics-server";
+import { buildGoLiveEmail } from "@/lib/billing/trial-reminders";
 import {
   computeGoLiveTrialEnd,
   hasCardOnFile,
@@ -55,6 +58,9 @@ export async function applyGoLive(
   const org = await prisma.organization.findUnique({
     where: { id: orgId },
     select: {
+      name: true,
+      primaryContactName: true,
+      primaryContactEmail: true,
       orgType: true,
       subscriptionStatus: true,
       trialStartedAt: true,
@@ -94,25 +100,30 @@ export async function applyGoLive(
     cardOnFile,
   });
 
-  // ponytail: two concurrent first calls can both write a marker; the
-  // earliest wins on read and the trialEndsAt guard below keeps the date
-  // write single. Add a unique marker row if duplicates ever matter.
-  await prisma.$transaction([
-    ...(next
-      ? [
-          prisma.organization.updateMany({
-            // Optimistic guard: only move the end we just read, and only
-            // while still trialing (a webhook may have landed in between).
-            where: {
-              id: orgId,
-              subscriptionStatus: SubscriptionStatus.TRIALING,
-              trialEndsAt: org.trialEndsAt,
-            },
-            data: { trialEndsAt: next },
-          }),
-        ]
-      : []),
-    prisma.auditEvent.create({
+  // Exactly-once: the layout and welcome page (and the cron) can call this
+  // concurrently. A per-org advisory lock serialises them, the marker is
+  // re-read under the lock, and only the call that writes it reports `won`
+  // (and so sends the email / event). No schema change needed.
+  const won = await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`go-live:${orgId}`}))`;
+    const already = await tx.auditEvent.findFirst({
+      where: { entityType: GO_LIVE_MARKER, entityId: orgId },
+      select: { id: true },
+    });
+    if (already) return false;
+    if (next) {
+      await tx.organization.updateMany({
+        // Optimistic guard: only move the end we just read, and only
+        // while still trialing (a webhook may have landed in between).
+        where: {
+          id: orgId,
+          subscriptionStatus: SubscriptionStatus.TRIALING,
+          trialEndsAt: org.trialEndsAt,
+        },
+        data: { trialEndsAt: next },
+      });
+    }
+    await tx.auditEvent.create({
       data: {
         orgId,
         action: AuditAction.UPDATE,
@@ -129,8 +140,59 @@ export async function applyGoLive(
           cardOnFile,
         },
       },
-    }),
-  ]);
+    });
+    return true;
+  });
+
+  if (won) {
+    await trackServer({ event: "went_live", distinctId: orgId });
+    await runAfter("go-live-email", () =>
+      sendGoLiveEmail(orgId, org, next ?? org.trialEndsAt),
+    );
+  }
 
   return snapshot(now, next ?? org.trialEndsAt);
+}
+
+// Best-effort: the marker is already written, so a failed send is logged, not
+// retried, and never fails the portal render or the cron sweep.
+async function sendGoLiveEmail(
+  orgId: string,
+  org: {
+    name: string;
+    primaryContactName: string | null;
+    primaryContactEmail: string | null;
+  },
+  trialEndsAt: Date | null,
+): Promise<void> {
+  if (!org.primaryContactEmail) return;
+  try {
+    const { sendBrandedEmail, buildBaseHtml, APP_URL } = await import(
+      "@/lib/email/shared"
+    );
+    const mail = buildGoLiveEmail({
+      recipientName: org.primaryContactName ?? org.name,
+      orgName: org.name,
+      trialEndsAt,
+      appUrl: APP_URL,
+    });
+    const result = await sendBrandedEmail({
+      to: org.primaryContactEmail,
+      subject: mail.subject,
+      html: buildBaseHtml({
+        headline: mail.headline,
+        bodyHtml: mail.bodyHtml,
+        ctaText: mail.ctaText,
+        ctaUrl: mail.ctaUrl,
+      }),
+      template: "go-live",
+      entityRefId: `go-live-${orgId}`,
+      // Defense in depth: Resend dedupes a repeat of the same key.
+      idempotencyKey: `golive_${orgId}`,
+      orgId,
+    });
+    if (!result.ok) console.warn("[go-live] email not sent:", result.error);
+  } catch (err) {
+    console.error("[go-live] email failed:", err);
+  }
 }

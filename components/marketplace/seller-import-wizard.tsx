@@ -325,7 +325,7 @@ export function SellerImportWizard() {
         progress={progress}
       />
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 md:p-8 shadow-sm">
+      <div className="rounded-card border border-slate-200 bg-white p-4 sm:p-6 md:p-8 shadow-sm">
         {step === "source" && (
           <StepSource
             source={source}
@@ -453,7 +453,7 @@ function SourceCard({
       type="button"
       onClick={onClick}
       className={[
-        "text-left rounded-xl border p-5 transition-colors",
+        "text-left rounded-card border p-5 transition-colors",
         active
           ? "border-blue-500 bg-blue-50/50"
           : "border-slate-200 bg-white hover:border-slate-300",
@@ -461,7 +461,7 @@ function SourceCard({
     >
       <div
         className={[
-          "flex items-center justify-center w-10 h-10 rounded-lg mb-3",
+          "flex items-center justify-center w-10 h-10 rounded-card mb-3",
           active ? "text-white" : "text-slate-600",
         ].join(" ")}
         style={{ background: active ? "#3B82F6" : "#F1F5F9" }}
@@ -491,7 +491,7 @@ function StepUploadCsv({
       <p className="mt-1 text-sm text-slate-600">
         Max 5,000 rows per upload. We'll auto-detect the columns on the next step.
       </p>
-      <label className="mt-6 block w-full p-10 text-center cursor-pointer rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 hover:border-slate-400 transition-colors">
+      <label className="mt-6 block w-full p-10 text-center cursor-pointer rounded-card border-2 border-dashed border-slate-300 bg-slate-50 hover:border-slate-400 transition-colors">
         <input
           type="file"
           accept=".csv,text/csv"
@@ -546,7 +546,7 @@ function StepUploadCursive({
             type="text"
             value={config.name}
             onChange={(e) => onChange({ ...config, name: e.target.value })}
-            className="w-full h-10 px-3 rounded-md border border-slate-300 text-sm"
+            className="w-full h-10 px-3 rounded-card border border-slate-300 text-sm"
             placeholder="Texas high-intent buyers"
           />
         </Field>
@@ -555,7 +555,7 @@ function StepUploadCursive({
             type="text"
             value={config.segmentId}
             onChange={(e) => onChange({ ...config, segmentId: e.target.value })}
-            className="w-full h-10 px-3 rounded-md border border-slate-300 text-sm font-mono"
+            className="w-full h-10 px-3 rounded-card border border-slate-300 text-sm font-mono"
             placeholder="ba8c9817-f91c-4955-b2b0-53b933a15f7d"
           />
         </Field>
@@ -569,7 +569,7 @@ function StepUploadCursive({
                   defaultPropertyType: e.target.value as typeof config.defaultPropertyType,
                 })
               }
-              className="w-full h-10 px-3 rounded-md border border-slate-300 text-sm"
+              className="w-full h-10 px-3 rounded-card border border-slate-300 text-sm"
             >
               <option value="SALE">Sale</option>
               <option value="RENTAL">Rental</option>
@@ -584,7 +584,7 @@ function StepUploadCursive({
               onChange={(e) =>
                 onChange({ ...config, defaultMarket: e.target.value })
               }
-              className="w-full h-10 px-3 rounded-md border border-slate-300 text-sm"
+              className="w-full h-10 px-3 rounded-card border border-slate-300 text-sm"
             />
           </Field>
         </div>
@@ -614,7 +614,7 @@ function StepMap({
         <Badge color="slate">{skipped} skipped</Badge>
       </div>
 
-      <div className="mt-6 overflow-x-auto rounded-xl border border-slate-200">
+      <div className="mt-6 overflow-x-auto rounded-card border border-slate-200">
         <table className="w-full text-sm min-w-[640px]">
           <thead className="bg-slate-50 text-xs uppercase tracking-widest text-slate-500 font-semibold">
             <tr>
@@ -643,7 +643,7 @@ function StepMap({
                         (e.target.value as MarketplaceField) || null,
                       )
                     }
-                    className="h-9 w-full max-w-[220px] px-2 rounded-md border border-slate-300 bg-white text-sm"
+                    className="h-9 w-full max-w-[220px] px-2 rounded-card border border-slate-300 bg-white text-sm"
                   >
                     <option value="">-- Skip this column --</option>
                     {MARKETPLACE_FIELDS.map((f) => (
@@ -826,7 +826,7 @@ function DedupGroup({
           </button>
         </div>
       </div>
-      <div className="rounded-lg border border-slate-200 max-h-[320px] overflow-y-auto divide-y divide-slate-100">
+      <div className="rounded-card border border-slate-200 max-h-[320px] overflow-y-auto divide-y divide-slate-100">
         {rows.map((r) => (
           <div
             key={r.rowIndex}
@@ -951,13 +951,13 @@ function StepImportSummary({
         <div className="mt-6 flex gap-2">
           <a
             href="/marketplace/seller"
-            className="inline-flex items-center px-4 py-2 rounded-md bg-slate-900 text-white text-sm font-medium"
+            className="inline-flex items-center px-4 py-2 rounded-card bg-slate-900 text-white text-sm font-medium"
           >
             Back to dashboard
           </a>
           <a
             href="/marketplace/seller/import"
-            className="inline-flex items-center px-4 py-2 rounded-md border border-slate-300 text-sm font-medium"
+            className="inline-flex items-center px-4 py-2 rounded-card border border-slate-300 text-sm font-medium"
           >
             Import more
           </a>
@@ -978,7 +978,7 @@ function StepImportSummary({
         <div className="mt-6">
           <a
             href="/marketplace/seller"
-            className="inline-flex items-center px-4 py-2 rounded-md bg-slate-900 text-white text-sm font-medium"
+            className="inline-flex items-center px-4 py-2 rounded-card bg-slate-900 text-white text-sm font-medium"
           >
             Back to dashboard
           </a>
@@ -1085,7 +1085,7 @@ function WizardFooter({
         type="button"
         onClick={onBack}
         disabled={!canGoBack || submitting}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-card border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40"
       >
         ← Back
       </button>
@@ -1095,7 +1095,7 @@ function WizardFooter({
           type="button"
           onClick={onSubmit}
           disabled={!canGoNext || submitting}
-          className="inline-flex items-center gap-2 px-5 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-5 py-2 rounded-card bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
         >
           {submitting ? "Importing…" : "Import data →"}
         </button>
@@ -1104,7 +1104,7 @@ function WizardFooter({
           type="button"
           onClick={onNext}
           disabled={!canGoNext || submitting}
-          className="inline-flex items-center gap-2 px-5 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-5 py-2 rounded-card bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
         >
           Next →
         </button>
@@ -1123,11 +1123,11 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <div>
-      <label className="block text-sm font-medium text-slate-900">{label}</label>
-      {hint ? <p className="text-xs text-slate-500 mb-1.5">{hint}</p> : null}
+    <label className="block">
+      <span className="block text-sm font-medium text-slate-900">{label}</span>
+      {hint ? <span className="block text-xs text-slate-500 mb-1.5">{hint}</span> : null}
       <div className="mt-1">{children}</div>
-    </div>
+    </label>
   );
 }
 
@@ -1192,7 +1192,7 @@ function Stat({
     red: "text-red-700",
   }[color];
   return (
-    <div className="rounded-lg border border-slate-200 p-3 bg-white">
+    <div className="rounded-card border border-slate-200 p-3 bg-white">
       <div className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">
         {label}
       </div>

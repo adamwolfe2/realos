@@ -272,5 +272,5 @@ function FunnelMini({
 // ---------------------------------------------------------------------------
 
 function DimZero() {
-  return <span className="text-muted-foreground/40 tabular-nums">—</span>;
+  return <span className="text-muted-foreground tabular-nums">—</span>;
 }

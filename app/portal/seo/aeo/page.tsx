@@ -48,34 +48,160 @@ export default async function AeoPage() {
   const sixtyDaysAgo = new Date(now - 60 * DAY_MS);
   const sevenDaysAgo = new Date(now - 7 * DAY_MS);
 
+  const ECHO_SEMANTICS_CUTOVER = new Date("2026-08-13T09:00:00Z");
+  const trendFloor =
+    ECHO_SEMANTICS_CUTOVER > sixtyDaysAgo ? ECHO_SEMANTICS_CUTOVER : sixtyDaysAgo;
+  const aiSources = CANONICAL_SOURCES.filter((s) => s.category === "ai");
+  const aiHostFilters = aiSources.flatMap((s) =>
+    s.matchHosts.map((h) => ({
+      firstReferrer: { contains: h, mode: "insensitive" as const },
+    })),
+  );
+  const aiUtmFilters = aiSources.flatMap((s) =>
+    s.matchUtm.map((m) => ({
+      utmSource: { contains: m, mode: "insensitive" as const },
+    })),
+  );
+
+  // Independent reads run in parallel; customPromptRows depends on
+  // promptProperties so that pair stays sequential inside one branch.
   // Pull every check from the last 60d in one query, partition in memory.
   // For an org with N properties × M engines × 3 prompts/week ≈ a few hundred
   // rows at most — well below any pagination concern.
-  const checks = await prisma.aeoCitationCheck.findMany({
-    where: {
-      ...where,
-      queryRunAt: { gte: sixtyDaysAgo },
-      // Property visibility only (2026-08-14): neighborhood-page content
-      // scans have different prompt semantics and were silently mixed
-      // into every rate on this page.
-      neighborhoodPageId: null,
-    },
-    select: {
-      id: true,
-      engine: true,
-      prompt: true,
-      status: true,
-      mentioned: true,
-      position: true,
-      responseText: true,
-      citedUrl: true,
-      competitorsCited: true,
-      queryRunAt: true,
-      propertyId: true,
-    },
-    orderBy: { queryRunAt: "desc" },
-    take: 2000,
-  });
+  const [
+    checks,
+    trendRows,
+    aiSessions,
+    [promptProperties, customPromptRows],
+    snapshots,
+    opportunityRowsRaw,
+    overviewRowsRaw,
+  ] = await Promise.all([
+    prisma.aeoCitationCheck.findMany({
+        where: {
+          ...where,
+          queryRunAt: { gte: sixtyDaysAgo },
+          // Property visibility only (2026-08-14): neighborhood-page content
+          // scans have different prompt semantics and were silently mixed
+          // into every rate on this page.
+          neighborhoodPageId: null,
+        },
+        select: {
+          id: true,
+          engine: true,
+          prompt: true,
+          status: true,
+          mentioned: true,
+          position: true,
+          responseText: true,
+          citedUrl: true,
+          competitorsCited: true,
+          queryRunAt: true,
+          propertyId: true,
+        },
+        orderBy: { queryRunAt: "desc" },
+        take: 2000,
+      }),
+    prisma.aeoCitationCheck.findMany({
+        where: {
+          ...where,
+          neighborhoodPageId: null,
+          queryRunAt: { gte: trendFloor },
+        },
+        select: { queryRunAt: true, mentioned: true, engine: true },
+      }),
+    prisma.visitorSession.findMany({
+        where: {
+          ...where,
+          startedAt: { gte: sixtyDaysAgo },
+          OR: [...aiHostFilters, ...aiUtmFilters],
+        },
+        select: {
+          visitorId: true,
+          firstReferrer: true,
+          utmSource: true,
+          utmMedium: true,
+          startedAt: true,
+        },
+        orderBy: { startedAt: "desc" },
+        take: 2000,
+      }),
+    (async () => {
+      const promptProperties = await prisma.property.findMany({
+          where: {
+            ...withMarketableLifecycle(tenantWhere(scope)),
+            ...(scope.allowedPropertyIds
+              ? { id: { in: scope.allowedPropertyIds } }
+              : {}),
+          },
+          select: {
+            id: true,
+            name: true,
+            city: true,
+            state: true,
+            propertyType: true,
+            residentialSubtype: true,
+            commercialSubtype: true,
+          },
+          orderBy: { name: "asc" },
+          take: 50,
+        });
+      const customPromptRows = await prisma.aeoCustomPrompt.findMany({
+          where: {
+            ...where,
+            propertyId: { in: promptProperties.map((p) => p.id) },
+          },
+          orderBy: [{ active: "desc" }, { createdAt: "desc" }],
+          take: 100,
+          select: { id: true, propertyId: true, prompt: true, tag: true, active: true },
+        });
+      return [promptProperties, customPromptRows] as const;
+    })(),
+    prisma.aeoMentionSnapshot.findMany({
+        where: {
+          ...where,
+          capturedAt: { gte: thirtyDaysAgo },
+        },
+        select: {
+          engine: true,
+          shareOfVoice: true,
+          mentions: true,
+        },
+        orderBy: { capturedAt: "desc" },
+        take: 2000,
+      }),
+    prisma.aeoOpportunityScore.findMany({
+        where: { ...where },
+        orderBy: { score: "desc" },
+        take: 30,
+        select: {
+          keyword: true,
+          score: true,
+          gscClicks28d: true,
+          gscImpressions28d: true,
+          gscAvgPosition: true,
+          aiSearchVolume: true,
+          yourMentionCount: true,
+          competitorMentionCount: true,
+          onPageSeoScore: true,
+        },
+      }),
+    prisma.aeoOverviewSnapshot.findMany({
+        where: {
+          ...where,
+          capturedAt: { gte: thirtyDaysAgo },
+        },
+        orderBy: { capturedAt: "desc" },
+        take: 100,
+        select: {
+          query: true,
+          summary: true,
+          citedUrls: true,
+          cited: true,
+          capturedAt: true,
+        },
+      }),
+  ]);
 
   const last30 = checks.filter((c) => c.queryRunAt >= thirtyDaysAgo);
   const prior30 = checks.filter(
@@ -92,19 +218,8 @@ export default async function AeoPage() {
   // on 2026-08-13. Pre-cutover weeks would render the semantic change as
   // a real visibility cliff, so the trend starts at the cutover and the
   // card stays hidden until two post-cutover scan weeks exist.
-  const ECHO_SEMANTICS_CUTOVER = new Date("2026-08-13T09:00:00Z");
   const TREND_WEEKS = 8;
   const WEEK_MS = 7 * DAY_MS;
-  const trendFloor =
-    ECHO_SEMANTICS_CUTOVER > sixtyDaysAgo ? ECHO_SEMANTICS_CUTOVER : sixtyDaysAgo;
-  const trendRows = await prisma.aeoCitationCheck.findMany({
-    where: {
-      ...where,
-      neighborhoodPageId: null,
-      queryRunAt: { gte: trendFloor },
-    },
-    select: { queryRunAt: true, mentioned: true, engine: true },
-  });
   const trendWeeks = Array.from({ length: TREND_WEEKS }, (_, i) => {
     const start = new Date(now - (TREND_WEEKS - i) * WEEK_MS);
     const end = new Date(start.getTime() + WEEK_MS);
@@ -132,33 +247,6 @@ export default async function AeoPage() {
   // (classifySource) — the same waterfall /portal/attribution uses — so
   // the two surfaces can never disagree on the same session (the exact
   // dual-waterfall bug consolidated after the 2026-07-22 audit).
-  const aiSources = CANONICAL_SOURCES.filter((s) => s.category === "ai");
-  const aiHostFilters = aiSources.flatMap((s) =>
-    s.matchHosts.map((h) => ({
-      firstReferrer: { contains: h, mode: "insensitive" as const },
-    })),
-  );
-  const aiUtmFilters = aiSources.flatMap((s) =>
-    s.matchUtm.map((m) => ({
-      utmSource: { contains: m, mode: "insensitive" as const },
-    })),
-  );
-  const aiSessions = await prisma.visitorSession.findMany({
-    where: {
-      ...where,
-      startedAt: { gte: sixtyDaysAgo },
-      OR: [...aiHostFilters, ...aiUtmFilters],
-    },
-    select: {
-      visitorId: true,
-      firstReferrer: true,
-      utmSource: true,
-      utmMedium: true,
-      startedAt: true,
-    },
-    orderBy: { startedAt: "desc" },
-    take: 2000,
-  });
   const aiByEngine = new Map<string, number>();
   // visitorId → earliest AI-referred session start, so a lead created
   // BEFORE the visitor ever arrived from an AI engine is never counted.
@@ -489,34 +577,6 @@ export default async function AeoPage() {
   // orchestrator targets (marketable only), intersected with the user's
   // property grants.
   // ---------------------------------------------------------------------
-  const promptProperties = await prisma.property.findMany({
-    where: {
-      ...withMarketableLifecycle(tenantWhere(scope)),
-      ...(scope.allowedPropertyIds
-        ? { id: { in: scope.allowedPropertyIds } }
-        : {}),
-    },
-    select: {
-      id: true,
-      name: true,
-      city: true,
-      state: true,
-      propertyType: true,
-      residentialSubtype: true,
-      commercialSubtype: true,
-    },
-    orderBy: { name: "asc" },
-    take: 50,
-  });
-  const customPromptRows = await prisma.aeoCustomPrompt.findMany({
-    where: {
-      ...where,
-      propertyId: { in: promptProperties.map((p) => p.id) },
-    },
-    orderBy: [{ active: "desc" }, { createdAt: "desc" }],
-    take: 100,
-    select: { id: true, propertyId: true, prompt: true, tag: true, active: true },
-  });
 
   // Suggested hyperlocal packs (2026-08-14, slice 8): the generator's own
   // city/campus prompts, funnel-tagged, minus anything already tracked.
@@ -545,19 +605,6 @@ export default async function AeoPage() {
   // list. Empty arrays when DataForSEO source is off — widget renders
   // its own empty state.
   // ---------------------------------------------------------------------
-  const snapshots = await prisma.aeoMentionSnapshot.findMany({
-    where: {
-      ...where,
-      capturedAt: { gte: thirtyDaysAgo },
-    },
-    select: {
-      engine: true,
-      shareOfVoice: true,
-      mentions: true,
-    },
-    orderBy: { capturedAt: "desc" },
-    take: 2000,
-  });
 
   type SnapshotMention = {
     name: string;
@@ -625,22 +672,6 @@ export default async function AeoPage() {
   // top-10 after a formula change. 30 rows max per tenant ensures the
   // window covers any sensible re-ranking even if the formula reshapes
   // ordering significantly.
-  const opportunityRowsRaw = await prisma.aeoOpportunityScore.findMany({
-    where: { ...where },
-    orderBy: { score: "desc" },
-    take: 30,
-    select: {
-      keyword: true,
-      score: true,
-      gscClicks28d: true,
-      gscImpressions28d: true,
-      gscAvgPosition: true,
-      aiSearchVolume: true,
-      yourMentionCount: true,
-      competitorMentionCount: true,
-      onPageSeoScore: true,
-    },
-  });
   // Re-derive both score and breakdown from the persisted inputs so the
   // UI is always consistent with the current formula. The DB's `score`
   // column is the value AT THE TIME the cron last computed it; if we
@@ -674,21 +705,6 @@ export default async function AeoPage() {
 
   // Latest AI Overview row per query (top-5 distinct queries). Subquery
   // pattern: pull last-30d rows, reduce in memory to the latest per query.
-  const overviewRowsRaw = await prisma.aeoOverviewSnapshot.findMany({
-    where: {
-      ...where,
-      capturedAt: { gte: thirtyDaysAgo },
-    },
-    orderBy: { capturedAt: "desc" },
-    take: 100,
-    select: {
-      query: true,
-      summary: true,
-      citedUrls: true,
-      cited: true,
-      capturedAt: true,
-    },
-  });
   const latestByQuery = new Map<string, (typeof overviewRowsRaw)[number]>();
   for (const row of overviewRowsRaw) {
     const key = row.query.toLowerCase();

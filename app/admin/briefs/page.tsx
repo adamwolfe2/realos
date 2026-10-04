@@ -60,7 +60,7 @@ export default async function AdminBriefsPage() {
         actions={
           <Link
             href="/admin/briefs/new"
-            className="inline-flex items-center justify-center h-9 px-4 rounded-md text-[13px] font-semibold text-white"
+            className="inline-flex items-center justify-center h-9 px-4 rounded-card text-[13px] font-semibold text-white"
             style={{ backgroundColor: "#0f62fe" }}
           >
             Generate brief
@@ -129,7 +129,7 @@ export default async function AdminBriefsPage() {
                   </div>
                   <div className="col-span-1 text-[11.5px] text-muted-foreground tabular-nums">
                     {r.viewCount}{" "}
-                    <span className="text-muted-foreground/70">views</span>
+                    <span className="text-muted-foreground">views</span>
                   </div>
                   <div className="col-span-2 text-right">
                     {r.status === "READY" ? (

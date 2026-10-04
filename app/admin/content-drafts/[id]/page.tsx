@@ -50,14 +50,14 @@ export default async function AdminContentDraftDetailPage({
         </Link>
       </div>
 
-      <header className="rounded-2xl border border-border bg-card p-5">
+      <header className="rounded-card border border-border bg-card p-5">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono text-primary uppercase tracking-wide">
+              <span className="rounded-card bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono text-primary uppercase tracking-wide">
                 {draft.format.replace(/_/g, " ").toLowerCase()}
               </span>
-              <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground uppercase">
+              <span className="rounded-card bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground uppercase">
                 {draft.status.replace(/_/g, " ").toLowerCase()}
               </span>
               {draft.estimatedScore != null ? (
@@ -101,7 +101,7 @@ export default async function AdminContentDraftDetailPage({
       </header>
 
       {/* The actual generated content */}
-      <article className="rounded-2xl border border-border bg-card p-6">
+      <article className="rounded-card border border-border bg-card p-6">
         <h2 className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground mb-3">
           Generated draft
         </h2>
@@ -117,7 +117,7 @@ export default async function AdminContentDraftDetailPage({
       </article>
 
       {draft.reviewNotes ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+        <div className="rounded-card border border-amber-200 bg-amber-50 p-4">
           <p className="text-[11px] font-mono uppercase tracking-wide text-amber-700 mb-1">
             Review notes
           </p>
@@ -130,7 +130,7 @@ export default async function AdminContentDraftDetailPage({
       {canReview ? (
         <DraftReviewControls draftId={draft.id} />
       ) : (
-        <div className="rounded-2xl border border-dashed border-border bg-card p-4 text-center text-[12px] text-muted-foreground">
+        <div className="rounded-card border border-dashed border-border bg-card p-4 text-center text-[12px] text-muted-foreground">
           This draft is {draft.status.toLowerCase().replace(/_/g, " ")}. No
           further review actions available.
         </div>

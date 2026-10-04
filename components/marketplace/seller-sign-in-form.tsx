@@ -87,7 +87,7 @@ export function SellerSignInForm() {
           fontSize: "10px",
           letterSpacing: "0.14em",
           textTransform: "uppercase",
-          color: "#94A3B8",
+          color: "var(--color-muted-foreground)",
           fontWeight: 600,
         }}
       >

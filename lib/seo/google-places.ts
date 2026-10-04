@@ -172,9 +172,6 @@ export async function findNearbyCompetitors(input: {
     };
   });
 
-  console.log(
-    `[google-places] nearby search returned ${competitors.length} candidates within ${radius}m`,
-  );
 
   return { ok: true, competitors };
 }

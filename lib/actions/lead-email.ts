@@ -18,6 +18,7 @@ import {
   FROM_EMAIL,
   BRAND_EMAIL,
 } from "@/lib/email/shared";
+import { escapeHtml } from "@/lib/escape-html";
 
 // ---------------------------------------------------------------------------
 // Server action: send a one-off email from the operator to a lead.
@@ -171,14 +172,6 @@ export async function sendLeadEmail(input: unknown): Promise<SendResult> {
   return { ok: true, messageId };
 }
 
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
 
 function formatBodyAsHtml(body: string): string {
   // Convert plain text body into a sequence of paragraphs preserving

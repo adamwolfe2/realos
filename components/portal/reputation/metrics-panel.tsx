@@ -302,7 +302,7 @@ function SentimentBars({
               />
             </div>
             <span className="w-16 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
-              {d.count} <span className="text-muted-foreground/70">({pct}%)</span>
+              {d.count} <span className="text-muted-foreground">({pct}%)</span>
             </span>
           </li>
         );
@@ -377,7 +377,7 @@ function SourceCountBars({
               />
             </div>
             <span className="w-16 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
-              {d.count} <span className="text-muted-foreground/70">({pct}%)</span>
+              {d.count} <span className="text-muted-foreground">({pct}%)</span>
             </span>
           </li>
         );

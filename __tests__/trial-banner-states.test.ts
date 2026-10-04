@@ -58,7 +58,8 @@ describe("TrialBanner soft landing", () => {
     const html = render({ trialEndsAt: new Date(Date.now() - DAY), live: true });
     expect(html).toContain("nothing was charged");
     expect(html).toContain("chatbot and");
-    expect(html).toContain("lead history are still here");
+    expect(html).toContain("Your data is still");
+    expect(html).toContain("read-only");
     expect(html).toContain("Reactivate for $899/month, starting today.");
     expect(html).toContain("Reactivate");
   });

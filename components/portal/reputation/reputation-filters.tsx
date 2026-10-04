@@ -160,7 +160,7 @@ function FilterRow<T extends string>({
                 className={
                   isActive
                     ? "ml-1 text-muted-foreground"
-                    : "ml-1 text-muted-foreground/70"
+                    : "ml-1 text-muted-foreground"
                 }
               >
                 ({opt.count})

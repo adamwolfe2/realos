@@ -297,7 +297,7 @@ describe("Stripe webhook — money/audit writes must not be swallowed (Batch A)"
     // its dedupe boundary so it can't silently regress.
     const fn = content.slice(
       content.indexOf("async function acceptProposalAndProvision"),
-      content.indexOf("async function sendTrialEndingSoonEmail"),
+      content.indexOf("async function handleProposalTrialWillEnd"),
     );
     expect(fn.length).toBeGreaterThan(0);
     expect(fn).toContain("auditEvent.create");
@@ -341,16 +341,17 @@ describe("Stripe webhook — billing correctness fixes (Batch C)", () => {
     expect(content).toContain("current_period_end");
   });
 
-  it("Fix 2: non-proposal trial_will_end notifies org via email", () => {
+  it("Fix 2: non-proposal trial_will_end sends no webhook email (trial-reminders cron owns T-3)", () => {
     const content = readRoute();
-    expect(content).toContain("notifyOrgTrialWillEnd");
-    expect(content).toContain("sendTrialEndingSoonEmail");
-    expect(content).toContain("trial ends");
+    expect(content).not.toContain("notifyOrgTrialWillEnd");
+    expect(content).not.toContain("sendTrialEndingSoonEmail");
   });
 
-  it("Fix 2: non-proposal trial_will_end logs to Sentry when org has no email", () => {
+  it("Fix 2: trial_will_end classifies proposal vs platform by subscription metadata", () => {
     const content = readRoute();
-    expect(content).toContain("trial_will_end: org has no email to notify");
+    expect(content).toContain(
+      "if (!isProposalSubscription(subscription.metadata)) return;",
+    );
   });
 
   it("Fix 3: handleSubscriptionUpserted uses processStripeEventOnce for audit", () => {

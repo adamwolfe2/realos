@@ -1,6 +1,7 @@
 "use client";
 
 import posthog from "posthog-js";
+import { MotionConfig } from "framer-motion";
 import { PostHogProvider as PHProvider, usePostHog } from "posthog-js/react";
 import { useEffect, Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -72,7 +73,8 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
                 <PostHogPageView />
             </Suspense>
             <PostHogUserIdentifier />
-            {children}
+            {/* App-wide: honour prefers-reduced-motion for all framer-motion transforms/loops. */}
+            <MotionConfig reducedMotion="user">{children}</MotionConfig>
         </PHProvider>
     );
 }

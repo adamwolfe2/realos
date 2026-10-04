@@ -8,7 +8,6 @@ import {
   canAccessReport,
   REPORT_PORTFOLIO_ACCESS_ERROR,
   assertOperatorScope,
-  REPORT_OPERATOR_ONLY_ERROR,
 } from "@/lib/reports/access";
 import { checkAiBillingGate, aiBillingDeniedResponseBody } from "@/lib/billing/gate";
 import { aiCallLimiter, notifyLimiter, checkRateLimit } from "@/lib/rate-limit";

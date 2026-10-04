@@ -98,6 +98,20 @@ export function UnitApplicationsBoard({
                         propertyName: unit.propertyName,
                       })
                     }
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (
+                        e.target === e.currentTarget &&
+                        (e.key === "Enter" || e.key === " ")
+                      ) {
+                        e.preventDefault();
+                        setSelected({
+                          group,
+                          unitName: unit.unitName,
+                          propertyName: unit.propertyName,
+                        });
+                      }
+                    }}
                     className="h-11 cursor-pointer transition-colors hover:bg-muted/30"
                   >
                     <td className="max-w-[220px] truncate px-4 font-medium text-foreground">

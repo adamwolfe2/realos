@@ -922,19 +922,11 @@ export async function runAppfolioSync(
       tenantEmails.add(mapped.email);
       tenantsByEmail.set(mapped.email, mapped);
     }
-    if (tenantEmails.size > 0) {
-      const matchingLeads = await prisma.lead.findMany({
-        where: { orgId, email: { in: Array.from(tenantEmails) } },
-        select: { email: true },
-      });
-      for (const lead of matchingLeads) {
-        if (!lead.email) continue;
-        const tenant = tenantsByEmail.get(lead.email);
-        if (!tenant) continue;
-        const matched = await tenantMatchesExistingLead(orgId, tenant);
-        if (matched) stats.tenantsMatched += 1;
-      }
-    }
+    stats.tenantsMatched += await countTenantLeadMatches(
+      orgId,
+      tenantEmails,
+      tenantsByEmail,
+    );
     phasesCompleted += 1;
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
@@ -1158,33 +1150,41 @@ export async function runAppfolioSync(
   // 7. DELINQUENCY — denormalize past-due balance onto each Lease.
   try {
     const rows = await fetchAllPages(client, "delinquency");
-    for (const row of rows) {
+    const mappedRows = rows.flatMap((row) => {
       const mapped = mapDelinquencyPayload(row);
-      if (!mapped) continue;
-      const leaseId = leaseByExternalId.get(mapped.leaseExternalId);
-      if (!leaseId) {
-        // Try to find by external id directly in case rent_roll didn't
-        // include this row (e.g., terminated lease still owing money).
-        const existing = await prisma.lease.findFirst({
-          where: {
-            orgId,
-            externalSystem: EXTERNAL_SYSTEM,
-            externalId: mapped.leaseExternalId,
-          },
-          select: { id: true },
-        });
-        if (!existing) continue;
-        await prisma.lease.update({
-          where: { id: existing.id },
-          data: {
-            currentBalanceCents: mapped.currentBalanceCents,
-            isPastDue: mapped.isPastDue,
-            pastDueAsOf: mapped.asOf,
-          },
-        });
-        stats.delinquenciesUpdated += 1;
-        continue;
+      return mapped ? [mapped] : [];
+    });
+    // Leases rent_roll didn't include (e.g. terminated but still owing):
+    // resolve them all with one query instead of a findFirst per row.
+    const missingExternalIds = [
+      ...new Set(
+        mappedRows
+          .map((m) => m.leaseExternalId)
+          .filter((id) => !leaseByExternalId.has(id)),
+      ),
+    ];
+    const extraLeases =
+      missingExternalIds.length > 0
+        ? await prisma.lease.findMany({
+            where: {
+              orgId,
+              externalSystem: EXTERNAL_SYSTEM,
+              externalId: { in: missingExternalIds },
+            },
+            select: { id: true, externalId: true },
+          })
+        : [];
+    const extraLeaseIds = new Map<string, string>();
+    for (const l of extraLeases) {
+      if (l.externalId && !extraLeaseIds.has(l.externalId)) {
+        extraLeaseIds.set(l.externalId, l.id);
       }
+    }
+    for (const mapped of mappedRows) {
+      const leaseId =
+        leaseByExternalId.get(mapped.leaseExternalId) ??
+        extraLeaseIds.get(mapped.leaseExternalId);
+      if (!leaseId) continue;
       await prisma.lease.update({
         where: { id: leaseId },
         data: {
@@ -1523,30 +1523,26 @@ export async function upsertAppfolioLead(
 }
 
 // COUNTER ONLY — does not mutate (2026-08-02). This used to promote the
-// matched lead to SIGNED with `convertedAt: new Date()`, i.e. sync time.
-// That silently broke the report's new traced-signings number: the report
-// buckets by convertedAt, so an org's FIRST sync stamped every historical
-// signing with today's date and spiked the current period — exactly the
-// bug the backfill script anchors around.
-//
-// SIGNED promotion now belongs to the residents phase (upsertResident →
-// promoteLinkedLead), which is the only place that has the real signing
-// evidence (mapped.moveInDate) AND writes the Resident.leadId proof link
-// at the same time. Its email tier is case-insensitive, so it matches a
-// superset of what this exact-match phase finds.
-async function tenantMatchesExistingLead(
+// matched lead to SIGNED with `convertedAt: new Date()`, i.e. sync time,
+// which spiked the report's traced-signings number on first sync. SIGNED
+// promotion now belongs to the residents phase (upsertResident ->
+// promoteLinkedLead). One query: every lead returned by the exact `in`
+// match is by definition a match, so no per-lead re-lookup is needed.
+export async function countTenantLeadMatches(
   orgId: string,
-  tenant: MappedTenant
-): Promise<boolean> {
-  if (!tenant.email) return false;
-  // Case-insensitive: tenant emails are lowercased at map time, but legacy
-  // Lead rows store emails as-typed (deep-audit P0 — exact match left
-  // mixed-case leads permanently unlinked from their signed lease).
-  const lead = await prisma.lead.findFirst({
-    where: { orgId, email: { equals: tenant.email, mode: "insensitive" } },
-    select: { id: true },
+  tenantEmails: Set<string>,
+  tenantsByEmail: Map<string, MappedTenant>,
+): Promise<number> {
+  if (tenantEmails.size === 0) return 0;
+  const matchingLeads = await prisma.lead.findMany({
+    where: { orgId, email: { in: Array.from(tenantEmails) } },
+    select: { email: true },
   });
-  return Boolean(lead);
+  let matched = 0;
+  for (const lead of matchingLeads) {
+    if (lead.email && tenantsByEmail.has(lead.email)) matched += 1;
+  }
+  return matched;
 }
 
 // ---------------------------------------------------------------------------

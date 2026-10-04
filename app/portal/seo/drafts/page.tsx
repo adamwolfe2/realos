@@ -47,7 +47,7 @@ const STATUS_TONE: Record<string, string> = {
   CHANGES_REQUESTED: "bg-muted text-foreground",
   REJECTED:          "bg-muted text-muted-foreground line-through",
   SHIPPED:           "bg-success text-success-foreground",
-  EXPIRED:           "bg-muted text-muted-foreground/70",
+  EXPIRED:           "bg-muted text-muted-foreground",
 };
 
 function fmtAge(d: Date | null): string {
@@ -270,7 +270,7 @@ export default async function PortalDraftsListPage({
       <DataTable<DraftRow>
         columns={columns}
         rows={drafts}
-        getRowHref={(d) => `/portal/seo/agent/drafts/${d.id}`}
+        getRowHref={(d) => `/portal/seo/agent/drafts/${d.id}?from=drafts`}
         density="compact"
         emptyState={
           <div className="rounded-[2px] border border-dashed border-border bg-card p-8 text-center">

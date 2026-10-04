@@ -25,16 +25,10 @@ import { parseStored } from "@/lib/actions/neighborhood-pages-helpers";
 // ---------------------------------------------------------------------------
 
 export async function generateStaticParams() {
-  // We can't filter by orgId here (static params run once across all
-  // tenant rewrites), so just return every published page's slug. Next
-  // will pair them with the appropriate org at request time via the
-  // hostname-rewritten tenant headers.
-  const pages = await prisma.neighborhoodPage.findMany({
-    where: { status: NeighborhoodPageStatus.PUBLISHED },
-    select: { slug: true },
-    take: 5000,
-  });
-  return pages.map((p) => ({ slug: p.slug }));
+  // Return no params so `next build` never needs a database. dynamicParams
+  // defaults to true, so each slug renders on first request (paired with the
+  // org via hostname-rewritten tenant headers) and is then cached.
+  return [];
 }
 
 async function loadPublishedPage(orgId: string, slug: string) {

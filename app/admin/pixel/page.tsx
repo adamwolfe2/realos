@@ -67,7 +67,7 @@ export default async function PixelHealthPage() {
         <StatTile label="Unconfigured" value={counts.unconfigured} tone="neutral" />
       </div>
 
-      <div className="border border-border bg-card rounded-lg overflow-hidden">
+      <div className="border border-border bg-card rounded-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -177,7 +177,7 @@ function StatTile({
     neutral: "text-muted-foreground",
   };
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
+    <div className="rounded-card border border-border bg-card p-4">
       <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
       <div className={cn("text-2xl font-semibold mt-1 tabular-nums", styles[tone])}>{value}</div>
     </div>

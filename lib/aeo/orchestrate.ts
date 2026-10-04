@@ -358,7 +358,7 @@ function sleep(ms: number): Promise<void> {
  *
  * Future: when NeighborhoodPage rows exist for a property, prefer that.
  */
-function deriveNeighborhood(p: PropertyRow): string | null {
+function deriveNeighborhood(_p: PropertyRow): string | null {
   // For now we don't have a structured neighborhood field. Returning null
   // is safe — the prompt generator handles city-only seeds.
   return null;

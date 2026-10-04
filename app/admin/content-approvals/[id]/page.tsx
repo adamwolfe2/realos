@@ -102,10 +102,10 @@ export default async function ContentApprovalDetailPage({
               {domain}
             </a>
           ) : null}
-          <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono font-medium uppercase tracking-wide text-primary">
+          <span className="rounded-card bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono font-medium uppercase tracking-wide text-primary">
             {draft.format.replace(/_/g, " ").toLowerCase()}
           </span>
-          <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wide text-muted-foreground">
+          <span className="rounded-card bg-muted px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wide text-muted-foreground">
             {draft.status.replace(/_/g, " ").toLowerCase()}
           </span>
           <span className="text-[11px] font-mono text-muted-foreground">
@@ -115,7 +115,7 @@ export default async function ContentApprovalDetailPage({
       </div>
 
       {/* Title card */}
-      <header className="rounded-2xl border border-border bg-card p-5">
+      <header className="rounded-card border border-border bg-card p-5">
         <h1 className="text-xl font-semibold text-foreground leading-tight">
           {rendered.title}
         </h1>
@@ -132,7 +132,7 @@ export default async function ContentApprovalDetailPage({
       </header>
 
       {draft.reviewNotes ? (
-        <div className="rounded-2xl border border-border bg-secondary p-4">
+        <div className="rounded-card border border-border bg-secondary p-4">
           <p className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground mb-1">
             Prior review notes
           </p>

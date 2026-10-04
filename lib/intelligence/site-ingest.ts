@@ -366,7 +366,7 @@ export async function ingestOrgIntelligence(args: {
     },
   });
 
-  console.log(
+  console.info(
     `[site-ingest] orgId=${orgId} pages=${stats.pagesIngested} ` +
       `crawl=${stats.stages.crawl} research=${stats.stages.research} ` +
       `voice=${stats.stages.voice} cost=$${stats.costUsd.toFixed(4)} ` +

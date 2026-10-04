@@ -1,5 +1,6 @@
 "use client";
 
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -124,10 +125,11 @@ export function VaultClient({
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border bg-muted/20">
         <input
           type="text"
+          aria-label="Search vault"
           placeholder="Search by name, platform, username, tag…"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          className="flex-1 rounded-[2px] border border-border bg-card px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary"
+          className="flex-1 rounded-[2px] border border-border bg-card px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
         />
         <select
           value={propertyFilter}
@@ -159,7 +161,8 @@ export function VaultClient({
           </p>
         </div>
       ) : (
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[720px]">
           <thead className="ls-eyebrow border-b border-border">
             <tr>
               <th className="px-4 py-2 text-left font-medium">Name</th>
@@ -196,7 +199,7 @@ export function VaultClient({
                 </td>
                 <td className="px-4 py-2 text-muted-foreground">
                   {entry.property?.name ?? (
-                    <span className="text-muted-foreground/60">Org-wide</span>
+                    <span className="text-muted-foreground">Org-wide</span>
                   )}
                 </td>
                 <td className="px-4 py-2 text-muted-foreground">
@@ -237,6 +240,7 @@ export function VaultClient({
             ))}
           </tbody>
         </table>
+        </div>
       )}
 
       {revealing ? (
@@ -355,9 +359,9 @@ function RevealModal({
   return (
     <Modal onClose={onClose} width="md">
       <div className="px-6 py-5 border-b border-border">
-        <h2 className="text-base font-semibold text-foreground">
+        <DialogTitle className="text-base font-semibold text-foreground">
           {entry.name}
-        </h2>
+        </DialogTitle>
         {entry.platform || entry.property ? (
           <p className="mt-1 text-xs text-muted-foreground">
             {entry.platform ?? ""}
@@ -512,9 +516,9 @@ function EditorModal({
     <Modal onClose={onClose} width="lg">
       <form onSubmit={onSubmit}>
         <div className="px-6 py-5 border-b border-border">
-          <h2 className="text-base font-semibold text-foreground">
+          <DialogTitle className="text-base font-semibold text-foreground">
             {mode === "create" ? "New credential" : `Edit "${entry?.name}"`}
-          </h2>
+          </DialogTitle>
         </div>
 
         <div className="px-6 py-5 space-y-3">
@@ -702,9 +706,9 @@ function ImportModal({
     <Modal onClose={onClose} width="lg">
       <form onSubmit={onSubmit}>
         <div className="px-6 py-5 border-b border-border">
-          <h2 className="text-base font-semibold text-foreground">
+          <DialogTitle className="text-base font-semibold text-foreground">
             Import credentials from CSV
-          </h2>
+          </DialogTitle>
           <p className="mt-1 text-xs text-muted-foreground">
             Required columns: <code>name, password</code>. Optional:{" "}
             <code>url, username, notes, platform, property_slug</code>. First
@@ -861,27 +865,15 @@ function Modal({
   onClose: () => void;
   width?: "md" | "lg";
 }) {
-  React.useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
   const maxWidth = width === "lg" ? "max-w-2xl" : "max-w-md";
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      onClick={onClose}
-    >
-      <div
-        className={`relative w-full ${maxWidth} rounded-[2px] border border-border bg-card shadow-xl overflow-hidden`}
-        onClick={(e) => e.stopPropagation()}
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent
+        className={`${maxWidth} rounded-[2px] border border-border bg-card shadow-xl overflow-hidden`}
       >
         {children}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

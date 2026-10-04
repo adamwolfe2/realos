@@ -295,7 +295,9 @@ export default async function PortalLayout({
   const rawScopeProperties = marketableProps;
 
   if (!org) {
-    if (scope.isAgency || scope.isAlPartner) redirect("/admin");
+    // AL_PARTNER has no /admin access (requireAgency); /admin would bounce
+    // it back here in a loop, so it falls through to ScopeRecovery.
+    if (scope.isAgency) redirect("/admin");
     // Authenticated client whose Organization row is missing/unresolved.
     // NEVER bounce to /sign-in here — middleware already verified the Clerk
     // session, so Clerk would bounce the signed-in user straight back →
@@ -528,6 +530,30 @@ export default async function PortalLayout({
             />
           );
         }
+        if (trialState === "paused" || trialState === "canceled") {
+          const canBill = canManageBilling(scope);
+          return (
+            <div data-no-print>
+              <AlertBanner
+                severity="warning"
+                flush
+                title={
+                  trialState === "paused"
+                    ? "Your subscription is paused."
+                    : "Your subscription is canceled."
+                }
+                action={
+                  canBill
+                    ? { label: "Open billing", href: "/portal/billing" }
+                    : undefined
+                }
+              >
+                This workspace is read-only. Your data is safe, and changes are
+                disabled until billing is updated.
+              </AlertBanner>
+            </div>
+          );
+        }
         return null;
       })()}
 
@@ -535,30 +561,26 @@ export default async function PortalLayout({
           rather than competing with content. Still uses the destructive
           token because impersonation is a security-critical state, but
           the visual weight is dialed back per the design audit.
-          Dismissible per-session: signing out and back in re-surfaces
-          the strip so the operator is re-confirmed they're acting in
-          someone else's context every session. */}
+          Not dismissible: it is the only cue and the only exit. */}
       {scope.isImpersonating ? (
-        <DismissibleStrip storageKey={`leasestack:impersonating:${org.id}`}>
-          <div
-            data-no-print
-            role="status"
-            className="shrink-0 h-7 bg-destructive/10 border-b border-destructive/30 text-destructive text-[11px] px-4 pr-9 flex items-center justify-between gap-3"
-          >
-            <span className="truncate">
-              Impersonating <strong>{org.name}</strong>. Changes attributed to
-              you.
-            </span>
-            <form action="/api/admin/impersonate/end" method="post">
-              <button
-                type="submit"
-                className="underline underline-offset-2 font-semibold hover:no-underline whitespace-nowrap"
-              >
-                End impersonation
-              </button>
-            </form>
-          </div>
-        </DismissibleStrip>
+        <div
+          data-no-print
+          role="status"
+          className="shrink-0 h-7 bg-destructive/10 border-b border-destructive/30 text-destructive text-[11px] px-4 flex items-center justify-between gap-3"
+        >
+          <span className="truncate">
+            Impersonating <strong>{org.name}</strong>. Changes attributed to
+            you.
+          </span>
+          <form action="/api/admin/impersonate/end" method="post">
+            <button
+              type="submit"
+              className="underline underline-offset-2 font-semibold hover:no-underline whitespace-nowrap"
+            >
+              End impersonation
+            </button>
+          </form>
+        </div>
       ) : null}
 
       {/* Portfolio-wide data-health banner. Slim 28px chrome strip so it

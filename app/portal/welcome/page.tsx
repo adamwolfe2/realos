@@ -7,11 +7,17 @@ import {
   CheckCircle2,
   Clock,
   Sparkles,
+  MessageSquare,
+  Radar,
   Calendar,
   Link2,
 } from "lucide-react";
 import { requireScope } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
+import { FEATURE_CATALOG, type FeatureKey } from "@/lib/billing/features";
+import { PageHeader } from "@/components/admin/page-header";
+import { applyGoLive } from "@/lib/billing/go-live-trial";
+import { formatChargeDate } from "@/lib/billing/trial-quote";
 
 // ---------------------------------------------------------------------------
 // /portal/welcome — first-run landing for a freshly-trialing user.
@@ -56,17 +62,13 @@ export default async function PortalWelcomePage() {
         name: true,
         subscriptionStatus: true,
         subscriptionTier: true,
+        moduleWebsite: true,
+        bringYourOwnSite: true,
         trialStartedAt: true,
         trialEndsAt: true,
-        moduleChatbot: true,
-        modulePixel: true,
-        moduleGoogleAds: true,
-        moduleMetaAds: true,
-        moduleSEO: true,
-        moduleCreativeStudio: true,
-        moduleReferrals: true,
-        moduleEmail: true,
-        moduleOutboundEmail: true,
+        ...(Object.fromEntries(
+          FEATURE_CATALOG.map((f) => [f.key, true]),
+        ) as Record<FeatureKey, true>),
         properties: {
           where: { lifecycle: { in: ["IMPORTED", "ACTIVE"] } },
           take: 1,
@@ -78,70 +80,48 @@ export default async function PortalWelcomePage() {
 
   if (!org) redirect("/portal");
 
-  // Compute days remaining on the trial — null when no trial active.
-  const trialDaysLeft = org.trialEndsAt
-    ? Math.max(
-        0,
-        Math.ceil(
-          (org.trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
-        ),
-      )
-    : null;
+  // The 14-day clock starts at go-live (same source the layout banner uses),
+  // so only show a countdown once live; before that, show the setup deadline.
+  const trial =
+    org.subscriptionStatus === "TRIALING"
+      ? await applyGoLive(scope.orgId).catch((err: unknown) => {
+          console.error("[portal/welcome] applyGoLive failed:", err);
+          return null;
+        })
+      : null;
+  const live = trial?.goLiveAt != null;
+  const trialEndsAt = trial?.trialEndsAt ?? org.trialEndsAt;
+  const trialDaysLeft =
+    live && trialEndsAt
+      ? Math.max(
+          0,
+          Math.ceil((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
+        )
+      : null;
+  const setupDeadline =
+    !live && org.subscriptionStatus === "TRIALING" && trialEndsAt
+      ? formatChargeDate(trialEndsAt)
+      : null;
 
-  const activeModules: Array<{ key: string; label: string }> = [
-    org.moduleChatbot && { key: "chatbot", label: "AI leasing chatbot" },
-    org.modulePixel && { key: "pixel", label: "Visitor pixel" },
-    org.moduleGoogleAds && { key: "google-ads", label: "Google Ads" },
-    org.moduleMetaAds && { key: "meta-ads", label: "Meta Ads" },
-    org.moduleSEO && { key: "seo", label: "SEO + AI discovery" },
-    org.moduleCreativeStudio && { key: "creative", label: "Creative studio" },
-    org.moduleReferrals && { key: "referrals", label: "Resident referrals" },
-    org.moduleEmail && { key: "email", label: "Email" },
-    org.moduleOutboundEmail && { key: "outbound", label: "Outbound email" },
-  ].filter(Boolean) as Array<{ key: string; label: string }>;
+  const activeModules = FEATURE_CATALOG.filter((f) => org[f.key]).map((f) => ({
+    key: f.key,
+    label: f.name,
+  }));
 
+  const hasSite = org.moduleWebsite && !org.bringYourOwnSite;
   const firstProperty = org.properties[0] ?? null;
 
   return (
     <div className="max-w-[800px] mx-auto px-4 md:px-8 py-12 md:py-16">
-      <header className="mb-8">
-        <p
-          style={{
-            color: ACCENT,
-            fontFamily: "var(--font-mono)",
-            fontSize: "10.5px",
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            fontWeight: 600,
-          }}
-        >
-          Welcome to LeaseStack
-        </p>
-        <h1
-          className="mt-2 leading-tight"
-          style={{
-            color: INK,
-            fontFamily: "var(--font-display)",
-            fontSize: "clamp(28px, 3.8vw, 38px)",
-            fontWeight: 600,
-            letterSpacing: "0",
-          }}
-        >
-          {org.name}, you&rsquo;re in.
-        </h1>
-        <p
-          className="mt-3 max-w-xl"
-          style={{
-            color: MUTED,
-            fontFamily: "var(--font-sans)",
-            fontSize: "15px",
-            lineHeight: 1.6,
-          }}
-        >
-          Your workspace is live and your free trial is running. Here&rsquo;s
-          what just happened and where to go next.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="Welcome to LeaseStack"
+        title={<>{org.name}, you&rsquo;re in.</>}
+        description={
+          live
+            ? "Your workspace is live and your free trial is running. Here\u2019s what just happened and where to go next."
+            : "Your workspace is set up. Your 14-day trial starts when your chatbot, pixel, or AppFolio produces data. Here\u2019s where to go next."
+        }
+      />
 
       {/* Trial status strip */}
       {trialDaysLeft != null ? (
@@ -181,7 +161,34 @@ export default async function PortalWelcomePage() {
               textTransform: "uppercase",
             }}
           >
-            No card required
+            $0 today
+          </span>
+        </section>
+      ) : setupDeadline ? (
+        <section
+          className="mb-6 rounded-[2px] flex items-center gap-3"
+          style={{
+            padding: "14px 16px",
+            border: `1px solid ${BORDER}`,
+            backgroundColor: "var(--color-accent)",
+          }}
+        >
+          <Clock
+            className="w-4 h-4 shrink-0"
+            strokeWidth={1.75}
+            style={{ color: ACCENT }}
+            aria-hidden="true"
+          />
+          <span
+            style={{
+              color: INK,
+              fontFamily: "var(--font-sans)",
+              fontSize: "13.5px",
+              fontWeight: 600,
+              letterSpacing: "-0.008em",
+            }}
+          >
+            Your trial starts when you go live. Set up by {setupDeadline}.
           </span>
         </section>
       ) : null}
@@ -209,7 +216,7 @@ export default async function PortalWelcomePage() {
                 fontSize: "13.5px",
               }}
             >
-              Core platform is on — pick modules to test from{" "}
+              Core platform is on. Pick modules to test from{" "}
               <Link
                 href="/portal/marketplace"
                 style={{ color: ACCENT, textDecoration: "underline" }}
@@ -265,10 +272,10 @@ export default async function PortalWelcomePage() {
             icon={Building2}
             label={
               firstProperty
-                ? `Open your property — ${firstProperty.name}`
+                ? `Open your property: ${firstProperty.name}`
                 : "Add your first property"
             }
-            description="Where AppFolio sync, marketing site, and reporting all start."
+            description="Where AppFolio sync, your chatbot and pixel, and reporting all start."
           />
           <NextStepLink
             href="/portal/connect"
@@ -276,16 +283,33 @@ export default async function PortalWelcomePage() {
             label="Connect AppFolio (or your PMS)"
             description="Pulls residents, leases, and listings every hour. Skip if you've already connected."
           />
+          {hasSite ? (
+            <NextStepLink
+              href="/portal/site-builder"
+              icon={Sparkles}
+              label="Build your marketing site"
+              description="A per-property site goes live as soon as you pick a style and add basics."
+            />
+          ) : (
+            <>
+              <NextStepLink
+                href="/portal/chatbot"
+                icon={MessageSquare}
+                label="Install your chatbot"
+                description="Answers prospects around the clock and turns conversations into leads."
+              />
+              <NextStepLink
+                href="/portal/connect"
+                icon={Radar}
+                label="Install the visitor pixel"
+                description="Identifies who is visiting your site so you can follow up."
+              />
+            </>
+          )}
           <NextStepLink
-            href="/portal/site-builder"
-            icon={Sparkles}
-            label="Build your marketing site"
-            description="A per-property site goes live as soon as you pick a style and add basics."
-          />
-          <NextStepLink
-            href={`mailto:team@leasestack.co?subject=Walkthrough%20for%20${encodeURIComponent(org.name)}`}
+            href={process.env.NEXT_PUBLIC_CAL_BOOK_URL || "/book-demo"}
             icon={Calendar}
-            label="Book a 30-min walkthrough"
+            label="Book a walkthrough"
             description="Our team walks you through what's most valuable for your portfolio."
             external
           />

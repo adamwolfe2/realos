@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { captureWithContext } from "@/lib/sentry";
 
 /**
  * Validates required environment variables at startup.
@@ -27,6 +28,13 @@ const envSchema = z.object({
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
 
+  // Webhook / crypto secrets whose absence silently breaks a feature (see
+  // SILENT_FAILURE_SECRETS below). Optional at the schema level so a
+  // missing value never fails boot.
+  RESEND_WEBHOOK_SECRET: z.string().optional(),
+  CURSIVE_WEBHOOK_SECRET: z.string().optional(),
+  ENCRYPTION_KEY: z.string().optional(),
+
   // AI — required for AI-powered routes (quote generation, assistant, etc.)
   ANTHROPIC_API_KEY: z.string().min(1, "ANTHROPIC_API_KEY is required for AI features"),
 
@@ -49,6 +57,33 @@ const envSchema = z.object({
 
 export type Env = z.infer<typeof envSchema>;
 
+// Secrets that don't crash anything when missing, they just make a
+// feature quietly stop working (webhooks rejected/ignored, crons 401,
+// tenant credential decrypt failing). Never fail boot on these.
+export const SILENT_FAILURE_SECRETS = [
+  "STRIPE_WEBHOOK_SECRET",
+  "RESEND_WEBHOOK_SECRET",
+  "CURSIVE_WEBHOOK_SECRET",
+  "CRON_SECRET",
+  "ENCRYPTION_KEY",
+] as const;
+
+function reportMissingSilentSecrets(): void {
+  const missing = SILENT_FAILURE_SECRETS.filter((k) => !process.env[k]?.trim());
+  if (missing.length === 0) return;
+  const message = `[env] Missing secrets, dependent webhooks/crons/decryption will silently fail: ${missing.join(", ")}`;
+  if (process.env.NODE_ENV === "production") {
+    console.error(message);
+    // Report once per Node instance only (edge cold starts are far more
+    // frequent and would just repeat the same grouped event).
+    if (process.env.NEXT_RUNTIME !== "edge") {
+      captureWithContext(new Error(message), { missingEnv: missing });
+    }
+  } else {
+    console.warn(message);
+  }
+}
+
 let _validated = false;
 
 export function validateEnv(): Env {
@@ -69,13 +104,15 @@ export function validateEnv(): Env {
     );
   }
 
-  // Warn if KV (rate limiting) is missing in production
-  if (
-    process.env.NODE_ENV === "production" &&
-    (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN)
-  ) {
+  reportMissingSilentSecrets();
+
+  // Warn if KV (rate limiting) is missing in production. Mirrors
+  // lib/rate-limit.ts, which also accepts the UPSTASH_* names.
+  const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (process.env.NODE_ENV === "production" && (!kvUrl || !kvToken)) {
     console.warn(
-      "[env] KV_REST_API_URL / KV_REST_API_TOKEN not set — rate limiting will be disabled in production"
+      "[env] KV_REST_API_URL / KV_REST_API_TOKEN (or UPSTASH_REDIS_REST_*) not set — rate limiting will be disabled in production"
     );
   }
 

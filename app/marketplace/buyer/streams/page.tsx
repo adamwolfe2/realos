@@ -166,7 +166,7 @@ export default async function BuyerStreamsPage() {
                   style={{
                     fontFamily: "var(--font-sans)",
                     fontSize: "12px",
-                    color: "#94A3B8",
+                    color: "var(--color-muted-foreground)",
                   }}
                 >
                   {s.totalPurchases} auto-purchases lifetime

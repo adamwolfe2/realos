@@ -102,9 +102,9 @@ function SourceRow({ source }: { source: Source }) {
   const lastSyncAgo = lastRun?.ago ?? null;
 
   return (
-    <li className="bg-white border border-slate-200 rounded-xl p-5">
+    <li className="bg-white border border-slate-200 rounded-card p-5">
       {showAlert ? (
-        <div className="mb-4 -mt-1 flex items-start gap-2 p-3 rounded-md bg-amber-50 border border-amber-200 text-xs leading-relaxed">
+        <div className="mb-4 -mt-1 flex items-start gap-2 p-3 rounded-card bg-amber-50 border border-amber-200 text-xs leading-relaxed">
           <AlertTriangle aria-hidden="true" className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" strokeWidth={1.5} />
           <div className="text-amber-800">
             <strong className="font-semibold">Pool dropped sharply.</strong>{" "}
@@ -160,7 +160,7 @@ function SourceRow({ source }: { source: Source }) {
             type="button"
             onClick={syncNow}
             disabled={syncing}
-            className="px-4 py-1.5 rounded-md bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-1.5 rounded-card bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {syncing ? "Syncing…" : "Sync now"}
           </button>
@@ -199,7 +199,7 @@ function SourceRow({ source }: { source: Source }) {
         lastRun.fetchedCount > 0 &&
         lastRun.newCount === 0 &&
         lastRun.refreshedCount === 0 && (
-          <div className="mt-3 p-3 rounded-md bg-amber-50 border border-amber-200 text-xs leading-relaxed">
+          <div className="mt-3 p-3 rounded-card bg-amber-50 border border-amber-200 text-xs leading-relaxed">
             <p className="font-semibold text-amber-800">
               Sync ran but 0 leads passed the strict enrichment gate.
             </p>
@@ -269,7 +269,7 @@ function Tile({
   accent?: boolean;
 }) {
   return (
-    <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
+    <div className="bg-slate-50 border border-slate-100 rounded-card p-3">
       <p className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
         {label}
       </p>
@@ -314,7 +314,7 @@ function ToggleEnrichmentButton({ source }: { source: Source }) {
           ? "Currently: only ingest fully-enriched leads. Click to allow partial leads."
           : "Currently: ingest any verified lead. Click to require all 12 fields."
       }
-      className={`px-3 py-1.5 rounded-md text-xs font-mono uppercase tracking-wider font-bold border disabled:opacity-50 disabled:cursor-not-allowed ${
+      className={`px-3 py-1.5 rounded-card text-xs font-mono uppercase tracking-wider font-bold border disabled:opacity-50 disabled:cursor-not-allowed ${
         active
           ? "text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100"
           : "text-slate-600 bg-slate-50 border-slate-200 hover:bg-slate-100"
@@ -358,7 +358,7 @@ function DeleteSourceButton({
       onClick={remove}
       disabled={busy}
       title="Delete source"
-      className="px-2 py-1.5 rounded-md border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      className="px-2 py-1.5 rounded-card border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
     >
       {busy ? "..." : <Trash2 className="w-4 h-4" strokeWidth={1.5} />}
     </button>

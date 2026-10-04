@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export function AddNoteForm({ leadId }: { leadId: string }) {
@@ -15,18 +16,24 @@ export function AddNoteForm({ leadId }: { leadId: string }) {
     if (!body.trim()) return;
     setError(null);
     startTransition(async () => {
-      const res = await fetch(`/api/tenant/leads/${leadId}/notes`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body: body.trim() }),
-      });
-      if (!res.ok) {
-        const rb = await res.json().catch(() => ({}));
-        setError(rb.error ?? "Failed to add note");
-        return;
+      try {
+        const res = await fetch(`/api/tenant/leads/${leadId}/notes`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ body: body.trim() }),
+        });
+        if (!res.ok) {
+          const rb = await res.json().catch(() => ({}));
+          setError(rb.error ?? "Failed to add note");
+          return;
+        }
+        setBody("");
+        toast.success("Note added");
+        router.refresh();
+      } catch (err) {
+        console.error("[lead-note] add failed", err);
+        setError("Network error. Try again.");
       }
-      setBody("");
-      router.refresh();
     });
   }
 
@@ -36,6 +43,7 @@ export function AddNoteForm({ leadId }: { leadId: string }) {
         value={body}
         onChange={(e) => setBody(e.target.value)}
         rows={3}
+        aria-label="Note"
         placeholder="Log a call, email, or context about this lead."
         className={cn(
           "w-full resize-none rounded-[2px] bg-card px-3 py-2 text-sm",
@@ -53,7 +61,7 @@ export function AddNoteForm({ leadId }: { leadId: string }) {
             "rounded-[2px] bg-primary px-3 py-1.5 text-xs font-medium",
             "text-background",
             "transition-colors duration-200",
-            "hover:bg-[hsl(var(--primary)/0.9)]",
+            "hover:bg-primary-dark",
             "disabled:opacity-40 disabled:cursor-not-allowed"
           )}
         >

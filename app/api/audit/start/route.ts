@@ -1,3 +1,5 @@
+import { trackServer } from "@/lib/analytics-server";
+import { notifyAuditLead } from "@/lib/audit/notify";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
@@ -162,6 +164,20 @@ export async function POST(req: NextRequest) {
       },
       select: { id: true, shareToken: true, status: true },
     });
+
+    await trackServer({
+      event: "audit_started",
+      distinctId: `audit:${audit.id}`,
+      props: { domain, emailAtStart: Boolean(parsed.data.email) },
+    });
+
+    if (parsed.data.email) {
+      await notifyAuditLead({
+        auditId: audit.id,
+        domain,
+        email: parsed.data.email,
+      });
+    }
 
     // Fire-and-forget trigger to the run route. We can't use `after()` here
     // because the scan can outlast a Vercel function timeout — the run

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
+import { AlertBanner } from "@/components/portal/ui/alert-banner";
 import { Building2, DollarSign, Layers } from "lucide-react";
 import { packageName } from "@/lib/billing/features";
 import { BillingPortalButton } from "./billing-portal-button";
@@ -31,10 +32,10 @@ export const dynamic = "force-dynamic";
 export default async function BillingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ addon?: string }>;
+  searchParams: Promise<{ addon?: string; canceled?: string }>;
 }) {
   const scope = await requireScope();
-  const { addon: addonParam } = await searchParams;
+  const { addon: addonParam, canceled } = await searchParams;
   // Marketplace + welcome grid send paid add-ons here as ?addon=<key|slug>.
   // Paid entries only. Toggle modules are "active" via their Organization
   // column; addon-kind entries have no column, so they always show the card
@@ -47,52 +48,87 @@ export default async function BillingPage({
       ) ?? null)
     : null;
   if (!canManageBilling(scope)) redirect("/portal");
-  const org = await prisma.organization.findUnique({
-    where: { id: scope.orgId },
-    select: {
-      id: true,
-      name: true,
-      subscriptionTier: true,
-      subscriptionStatus: true,
-      subscriptionStartedAt: true,
-      chosenTier: true,
-      trialStartedAt: true,
-      trialEndsAt: true,
-      mrrCents: true,
-      cancelAtPeriodEnd: true,
-      currentPeriodEnd: true,
-      buildFeePaidCents: true,
-      adSpendMarkupPct: true,
-      stripeCustomerId: true,
-      // Feature flags drive per-feature conversion pricing — the operator pays
-      // for exactly what's enabled, not a tier default.
-      moduleChatbot: true,
-      modulePixel: true,
-      moduleSEO: true,
-      moduleReputation: true,
-      moduleGoogleAds: true,
-      moduleMetaAds: true,
-      modulePopups: true,
-      moduleCreativeStudio: true,
-      moduleEmail: true,
-      moduleOutboundEmail: true,
-      moduleReferrals: true,
-      moduleInsights: true,
-      moduleMarketIntelligence: true,
-      moduleAttribution: true,
-      _count: { select: { properties: true } },
-    },
-  });
+  // Independent reads (all keyed only on scope.orgId) run in parallel.
+  const [
+    org,
+    marketablePropertyCount,
+    websiteBuildRows,
+    domains,
+    adCampaigns,
+  ] = await Promise.all([
+    prisma.organization.findUnique({
+        where: { id: scope.orgId },
+        select: {
+          id: true,
+          name: true,
+          subscriptionTier: true,
+          subscriptionStatus: true,
+          subscriptionStartedAt: true,
+          chosenTier: true,
+          trialStartedAt: true,
+          trialEndsAt: true,
+          mrrCents: true,
+          cancelAtPeriodEnd: true,
+          currentPeriodEnd: true,
+          buildFeePaidCents: true,
+          adSpendMarkupPct: true,
+          stripeCustomerId: true,
+          // Feature flags drive per-feature conversion pricing — the operator pays
+          // for exactly what's enabled, not a tier default.
+          moduleChatbot: true,
+          modulePixel: true,
+          moduleSEO: true,
+          moduleReputation: true,
+          moduleGoogleAds: true,
+          moduleMetaAds: true,
+          modulePopups: true,
+          moduleCreativeStudio: true,
+          moduleEmail: true,
+          moduleOutboundEmail: true,
+          moduleReferrals: true,
+          moduleInsights: true,
+          moduleMarketIntelligence: true,
+          moduleAttribution: true,
+          _count: { select: { properties: true } },
+        },
+      }),
+    prisma.property
+        .count({
+          where: { orgId: scope.orgId, lifecycle: { in: ["IMPORTED", "ACTIVE"] } },
+        })
+        .catch(() => 0),
+    prisma.websiteBuildRequest.findMany({
+        where: { orgId: scope.orgId },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+        select: {
+          id: true,
+          status: true,
+          amountPaidCents: true,
+          calBookingUrl: true,
+          calBookedAt: true,
+          kickoffCallAt: true,
+          launchedAt: true,
+          cancelledAt: true,
+          createdAt: true,
+          property: { select: { name: true } },
+        },
+      }),
+    prisma.domainBinding.findMany({
+        where: { orgId: scope.orgId },
+        orderBy: [{ isPrimary: "desc" }, { hostname: "asc" }],
+        select: { hostname: true, isPrimary: true, sslStatus: true, dnsConfigured: true },
+      }),
+    prisma.adCampaign.findMany({
+        where: { orgId: scope.orgId, status: "active" },
+        select: { spendToDateCents: true, monthlyBudgetCents: true },
+      }),
+  ]);
   if (!org) return null;
 
   // Property count drives trial-activation pricing. Match the
   // dashboard's "marketable" filter so we don't quote a price that
   // counts excluded sub-records.
-  const marketablePropertyCount = await prisma.property
-    .count({
-      where: { orgId: scope.orgId, lifecycle: { in: ["IMPORTED", "ACTIVE"] } },
-    })
-    .catch(() => 0);
 
   // Active website-build requests for this org. Shown above the
   // billing details so customers can see fulfillment status at a
@@ -101,43 +137,17 @@ export default async function BillingPage({
   // expired-checkout rows never appear at all — see
   // lib/billing/website-builds.ts for why (this page rendered two
   // dead 2026-07-30 checkout sessions as in-flight builds).
-  const websiteBuildRows = await prisma.websiteBuildRequest.findMany({
-    where: { orgId: scope.orgId },
-    orderBy: { createdAt: "desc" },
-    take: 10,
-    select: {
-      id: true,
-      status: true,
-      amountPaidCents: true,
-      calBookingUrl: true,
-      calBookedAt: true,
-      kickoffCallAt: true,
-      launchedAt: true,
-      cancelledAt: true,
-      createdAt: true,
-      property: { select: { name: true } },
-    },
-  });
   const websiteBuilds = visibleWebsiteBuilds(websiteBuildRows).slice(0, 5);
 
   // Live custom domains we host for this org. A customer whose site we
   // already built and maintain should see that on the billing page —
   // and must not be pitched a build they already bought.
-  const domains = await prisma.domainBinding.findMany({
-    where: { orgId: scope.orgId },
-    orderBy: [{ isPrimary: "desc" }, { hostname: "asc" }],
-    select: { hostname: true, isPrimary: true, sslStatus: true, dnsConfigured: true },
-  });
   const primaryDomain = domains.find((d) => d.isPrimary) ?? domains[0] ?? null;
   const hasLiveSite =
     primaryDomain != null &&
     primaryDomain.dnsConfigured &&
     primaryDomain.sslStatus === "active";
 
-  const adCampaigns = await prisma.adCampaign.findMany({
-    where: { orgId: scope.orgId, status: "active" },
-    select: { spendToDateCents: true, monthlyBudgetCents: true },
-  });
   const monthlySpendCents = adCampaigns.reduce(
     (sum, c) => sum + (c.monthlyBudgetCents ?? 0),
     0
@@ -324,6 +334,10 @@ export default async function BillingPage({
         // not selling.
         description="Review your current plan, line items, and Stripe portal access."
       />
+
+      {canceled ? (
+        <AlertBanner severity="info" title="Checkout canceled. Nothing was charged." />
+      ) : null}
 
       {requestedAddon &&
       !(org as Record<string, unknown>)[requestedAddon.key] ? (

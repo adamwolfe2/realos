@@ -223,7 +223,7 @@ export default async function AdminInsightsPage({
       {/* SEO recommendations rollup — separate model from Insight but
           shown alongside so Adam triages the whole portfolio from one view. */}
       {seoRecs.length > 0 ? (
-        <section className="rounded-xl border border-border bg-card p-4">
+        <section className="rounded-card border border-border bg-card p-4">
           <header className="mb-3 flex items-start justify-between gap-3 flex-wrap">
             <div>
               <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
@@ -237,7 +237,7 @@ export default async function AdminInsightsPage({
               {(["CRITICAL", "HIGH", "MEDIUM", "LOW"] as const).map((sev) => (
                 <span
                   key={sev}
-                  className={`rounded-md px-2 py-0.5 ${
+                  className={`rounded-card px-2 py-0.5 ${
                     sev === "CRITICAL"
                       ? "bg-red-50 text-red-700"
                       : sev === "HIGH"
@@ -256,7 +256,7 @@ export default async function AdminInsightsPage({
             {seoRecs.slice(0, 12).map((r) => (
               <li
                 key={r.id}
-                className="flex items-start gap-3 rounded-md border border-border bg-background px-3 py-2"
+                className="flex items-start gap-3 rounded-card border border-border bg-background px-3 py-2"
               >
                 <span
                   className={`mt-0.5 inline-block h-2 w-2 rounded-full shrink-0 ${
@@ -294,7 +294,7 @@ export default async function AdminInsightsPage({
 
       {/* Top orgs by insight load — quick triage shortcut */}
       {orgRankings.length > 0 ? (
-        <section className="rounded-xl border border-border bg-card p-4">
+        <section className="rounded-card border border-border bg-card p-4">
           <header className="mb-3">
             <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
               Most on fire
@@ -310,7 +310,7 @@ export default async function AdminInsightsPage({
                 <Link
                   key={o.orgId}
                   href={`/admin/insights?org=${o.orgId}`}
-                  className="group flex items-center justify-between gap-2 rounded-md border border-border bg-muted/20 px-3 py-2 hover:border-primary/40 hover:bg-primary/[0.03] transition-colors"
+                  className="group flex items-center justify-between gap-2 rounded-card border border-border bg-muted/20 px-3 py-2 hover:border-primary/40 hover:bg-primary/[0.03] transition-colors"
                 >
                   <span className="text-sm font-medium text-foreground truncate">
                     {name}
@@ -327,7 +327,7 @@ export default async function AdminInsightsPage({
 
       {/* Insight feed */}
       {insights.length === 0 ? (
-        <div className="rounded-xl border border-border bg-muted/30 p-8 text-center">
+        <div className="rounded-card border border-border bg-muted/30 p-8 text-center">
           <Sparkles className="mx-auto h-6 w-6 text-muted-foreground" />
           <h2 className="mt-3 text-base font-semibold text-foreground">
             {severityFilter || orgFilter
@@ -341,7 +341,7 @@ export default async function AdminInsightsPage({
           </p>
         </div>
       ) : (
-        <section className="rounded-xl border border-border bg-card overflow-hidden">
+        <section className="rounded-card border border-border bg-card overflow-hidden">
           <div className="hidden lg:flex items-center gap-3 px-4 py-2 border-b border-border bg-muted/30 text-[9px] tracking-widest uppercase font-semibold text-muted-foreground">
             <div className="w-20 shrink-0">Severity</div>
             <div className="w-40 shrink-0">Client</div>

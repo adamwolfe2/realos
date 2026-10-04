@@ -162,7 +162,7 @@ export async function LeadsTab({
                 <p className="ls-eyebrow truncate">{STATUS_LABEL[p.status]}</p>
                 <p
                   className={`ls-metric ls-metric-md mt-1 ${
-                    p.count > 0 ? "" : "text-muted-foreground/50"
+                    p.count > 0 ? "" : "text-muted-foreground"
                   }`}
                 >
                   {p.count.toLocaleString()}

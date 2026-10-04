@@ -4,6 +4,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import type { IntegrationDefinition } from "@/lib/integrations/catalog";
 import type { IntegrationState } from "@/lib/integrations/status";
+import { StatusChip, type ConnectionStatus } from "@/components/portal/ui/status-chip";
 import { IntegrationIcon } from "./integration-icon";
 
 // Single marketplace tile. The full card is clickable; the state badge in
@@ -12,7 +13,7 @@ import { IntegrationIcon } from "./integration-icon";
 
 type StateStyle = {
   badgeLabel: string;
-  badgeClass: string;
+  status: ConnectionStatus;
   cta: string;
   ctaClass: string;
 };
@@ -20,7 +21,7 @@ type StateStyle = {
 const STATE_STYLES: Record<IntegrationState, StateStyle> = {
   connected: {
     badgeLabel: "Connected",
-    badgeClass: "bg-primary/10 text-primary",
+    status: "live",
     cta: "Manage",
     ctaClass: "text-foreground hover:text-primary",
   },
@@ -31,7 +32,7 @@ const STATE_STYLES: Record<IntegrationState, StateStyle> = {
     // by clicking into the drawer (or noticing zero data on
     // dependent pages). Now the badge tells the truth.
     badgeLabel: "Sync error",
-    badgeClass: "bg-rose-50 text-rose-700",
+    status: "error",
     cta: "Fix sync",
     ctaClass: "text-rose-700 hover:underline underline-offset-2",
   },
@@ -42,7 +43,7 @@ const STATE_STYLES: Record<IntegrationState, StateStyle> = {
     // (which is what a rose "Sync error" pill implies). Clicking the
     // tile lets them trigger a manual sync.
     badgeLabel: "Stale",
-    badgeClass: "bg-amber-50 text-amber-800",
+    status: "stale",
     cta: "Refresh",
     ctaClass: "text-amber-700 hover:underline underline-offset-2",
   },
@@ -51,7 +52,7 @@ const STATE_STYLES: Record<IntegrationState, StateStyle> = {
     // labelled "Active" which lied — the integration wasn't actually
     // active yet, just provisioned. (audit BUG #1)
     badgeLabel: "Provisioning",
-    badgeClass: "bg-amber-50 text-amber-800",
+    status: "provisioning",
     cta: "View status",
     ctaClass: "text-foreground hover:text-primary",
   },
@@ -60,25 +61,25 @@ const STATE_STYLES: Record<IntegrationState, StateStyle> = {
     // the previous mislabelled "Active" → "drawer says upgrade required"
     // dead-end so the badge tells the truth from the marketplace itself.
     badgeLabel: "Upgrade required",
-    badgeClass: "bg-slate-100 text-slate-700",
+    status: "not_connected",
     cta: "Talk to your AM",
     ctaClass: "text-primary hover:underline underline-offset-2",
   },
   available: {
     badgeLabel: "Available",
-    badgeClass: "bg-slate-100 text-slate-700",
+    status: "not_connected",
     cta: "Connect",
     ctaClass: "text-primary hover:underline underline-offset-2",
   },
   requested: {
     badgeLabel: "Requested",
-    badgeClass: "bg-amber-50 text-amber-800",
+    status: "provisioning",
     cta: "View request",
     ctaClass: "text-foreground hover:text-primary",
   },
   coming_soon: {
     badgeLabel: "Soon",
-    badgeClass: "bg-slate-100 text-slate-500",
+    status: "not_connected",
     cta: "Notify me",
     ctaClass: "text-muted-foreground",
   },
@@ -110,14 +111,7 @@ export function IntegrationTile({
     >
       <div className="flex items-start justify-between gap-3">
         <IntegrationIcon def={def} />
-        <span
-          className={cn(
-            "rounded-full px-2 py-0.5 text-[10px] font-medium whitespace-nowrap",
-            style.badgeClass,
-          )}
-        >
-          {style.badgeLabel}
-        </span>
+        <StatusChip status={style.status} label={style.badgeLabel} />
       </div>
 
       <div className="flex-1 min-w-0">

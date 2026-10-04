@@ -3,6 +3,7 @@ import { cache } from "react";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
 import { OrgType, ProductLine, UserRole, Prisma } from "@prisma/client";
+import { ALLOWED_WRITE_ROLES } from "@/lib/auth/write-roles";
 
 const IMPERSONATION_MAX_MS = 8 * 60 * 60 * 1000;
 
@@ -156,7 +157,7 @@ async function getDemoScope(): Promise<ScopedContext | null> {
 async function getScopeUncached(): Promise<ScopedContext | null> {
   // Defensive: auth() throws if the request didn't pass through
   // clerkMiddleware (e.g. a route inadvertently added to a bypass list
-  // in middleware.ts). Treat that as "no session" instead of bubbling
+  // in proxy.ts). Treat that as "no session" instead of bubbling
   // a 500 — callers that genuinely need auth use requireScope() and
   // will surface a 403 from the null result.
   let clerkUserId: string | null = null;
@@ -466,7 +467,8 @@ const AGENCY_ROLES: ReadonlySet<UserRole> = new Set([
   UserRole.AGENCY_OWNER,
   UserRole.AGENCY_ADMIN,
   UserRole.AGENCY_OPERATOR, // "limited agency role" — still a real agency seat
-  UserRole.AL_PARTNER, // agency-typed org already; preserves its prior access
+  // AL_PARTNER is deliberately NOT here: it's an external partner scoped to
+  // AUDIENCE_SYNC orgs via isAlPartner / requireAudienceSync, not agency admin.
 ]);
 
 const AGENCY_STAFF_READ_ROLES: ReadonlySet<UserRole> = new Set([
@@ -556,6 +558,11 @@ export async function requireWorkspaceAdmin(): Promise<ScopedContext> {
 
 export async function requireWritableWorkspace(): Promise<ScopedContext> {
   const scope = await requireScope();
+  // Read-only seats (CLIENT_VIEWER, AL_PARTNER) never mutate, impersonating
+  // or not. Agency impersonators keep their AGENCY_* role, which is in the set.
+  if (!ALLOWED_WRITE_ROLES.has(scope.role)) {
+    throw new ForbiddenError("Your role is read-only in this workspace.");
+  }
   if (scope.isImpersonating) return scope;
   const { isWorkspaceReadOnly } = await import("@/lib/billing/trial-status");
   const { prisma } = await import("@/lib/db");

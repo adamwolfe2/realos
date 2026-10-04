@@ -24,7 +24,7 @@ import { cn } from '@/lib/utils'
 // ---------------------------------------------------------------------------
 
 const badgeVariants = cva(
-  'inline-flex items-center justify-center rounded-[2px] border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden',
+  'inline-flex items-center justify-center rounded-control border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden',
   {
     variants: {
       variant: {
@@ -45,19 +45,19 @@ const badgeVariants = cva(
         statusActive:
           'border-transparent bg-primary/10 text-primary',
         statusSuccess:
-          'border-transparent bg-emerald-50 text-emerald-700',
+          'border-transparent bg-success/10 text-success-dark',
         statusMuted:
           'border-transparent bg-muted text-muted-foreground',
 
         // severity — urgency tokens (use the `severity` prop for cleanest API).
         severityCritical:
-          'border-transparent bg-red-50 text-red-700',
+          'border-transparent bg-destructive/10 text-destructive-dark',
         severityWarning:
-          'border-transparent bg-amber-50 text-amber-800',
+          'border-transparent bg-warning/15 text-warning-foreground',
         severityInfo:
-          'border-transparent bg-blue-50 text-blue-700',
+          'border-transparent bg-primary/10 text-primary',
         severitySuccess:
-          'border-transparent bg-emerald-50 text-emerald-700',
+          'border-transparent bg-success/10 text-success-dark',
 
         // category — taxonomy / tag.
         category:

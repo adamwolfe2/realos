@@ -105,7 +105,7 @@ export default async function AdminWebsiteBuildsPage() {
         {STATUS_ORDER.map((s) => (
           <div
             key={s}
-            className="rounded-lg border border-border bg-card p-3"
+            className="rounded-card border border-border bg-card p-3"
           >
             <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
               {STATUS_LABEL[s]}
@@ -118,7 +118,7 @@ export default async function AdminWebsiteBuildsPage() {
       </section>
 
       {builds.length === 0 ? (
-        <section className="rounded-lg border border-dashed border-border bg-muted/30 p-6">
+        <section className="rounded-card border border-dashed border-border bg-muted/30 p-6">
           <p className="text-sm font-semibold">No builds yet</p>
           <p className="text-xs text-muted-foreground mt-1 max-w-md">
             When a customer pays for a custom website build through{" "}
@@ -133,7 +133,7 @@ export default async function AdminWebsiteBuildsPage() {
           </p>
         </section>
       ) : (
-        <section className="rounded-lg border border-border bg-card overflow-hidden">
+        <section className="rounded-card border border-border bg-card overflow-hidden">
           <table className="w-full">
             <thead className="bg-muted/30">
               <tr className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
@@ -209,7 +209,7 @@ export default async function AdminWebsiteBuildsPage() {
         </section>
       )}
 
-      <section className="rounded-lg border border-border bg-card p-5">
+      <section className="rounded-card border border-border bg-card p-5">
         <h2 className="text-sm font-semibold">Kickoff call link</h2>
         <p className="text-xs text-muted-foreground mt-1">
           Customers are sent here after paying. Update it via{" "}

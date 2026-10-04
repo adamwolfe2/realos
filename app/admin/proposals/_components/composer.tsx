@@ -255,7 +255,7 @@ export function Composer({
         />
 
         {softReadOnly ? (
-          <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-800">
+          <div className="rounded-card border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-800">
             This proposal has been sent. Line items and pricing are locked —
             use Duplicate to revise. You can still update the public message
             and expiry below.
@@ -263,7 +263,7 @@ export function Composer({
         ) : null}
 
         {readOnly ? (
-          <div className="rounded-md border border-border bg-secondary px-3 py-2 text-[12px] text-muted-foreground">
+          <div className="rounded-card border border-border bg-secondary px-3 py-2 text-[12px] text-muted-foreground">
             This proposal is {labelStatus(localProposal.status)} — read-only.
           </div>
         ) : null}
@@ -275,7 +275,7 @@ export function Composer({
               <button
                 type="button"
                 onClick={addBlankLine}
-                className="text-xs px-2 py-1 rounded-md border border-border bg-card hover:bg-secondary"
+                className="text-xs px-2 py-1 rounded-card border border-border bg-card hover:bg-secondary"
               >
                 + Custom line
               </button>

@@ -1,10 +1,13 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { leadDayBucketsByProperty } from "@/lib/dashboard/lead-day-buckets";
+import { propertyClauseSql } from "@/lib/dashboard/property-clause-sql";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { marketableOrgClause } from "@/lib/tenancy/property-filter";
 import {
   AdPlatform,
   LeadSource,
+  Prisma,
   LeadStatus,
   MentionSource,
   Sentiment,
@@ -287,19 +290,43 @@ export async function getConversationsOverTime(
   scope: DashboardScope = {},
 ): Promise<ConversationTrendPoint[]> {
   const days = scope.periodDays ?? WINDOW_DAYS;
-  const since = new Date(Date.now() - days * DAY_MS);
-  const rows = await prisma.chatbotConversation.findMany({
-    where: {
-      orgId,
-      lastMessageAt: { gte: since },
-      ...(scope.propertyClause ?? {}),
-    },
-    select: { lastMessageAt: true },
-  });
-  const buckets = bucketDailyTotals(
-    rows.map((r) => ({ date: r.lastMessageAt, value: 1 })),
-    days,
-  );
+  const now = new Date();
+  const since = new Date(now.getTime() - days * DAY_MS);
+  const clauseSql = propertyClauseSql(scope.propertyClause ?? {});
+  let buckets: number[];
+  if (clauseSql) {
+    // Same rolling-window indexing as dayBucketIndex, aggregated in Postgres.
+    const nowUtc = Prisma.sql`${now.toISOString()}::timestamp`;
+    const grouped = await prisma.$queryRaw<Array<{ days_ago: number; n: bigint }>>(
+      Prisma.sql`
+        select greatest(floor(extract(epoch from (${nowUtc} - "lastMessageAt")) / 86400), 0)::int as days_ago,
+          count(*) as n
+        from "ChatbotConversation"
+        where "orgId" = ${orgId}
+          and "lastMessageAt" >= ${since.toISOString()}::timestamp
+          ${clauseSql}
+        group by 1`,
+    );
+    buckets = new Array<number>(days).fill(0);
+    for (const r of grouped) {
+      const idx = days - 1 - Number(r.days_ago);
+      if (idx >= 0 && idx < days) buckets[idx] += Number(r.n);
+    }
+  } else {
+    // Unrecognised clause shape: keep the Prisma path rather than guess.
+    const rows = await prisma.chatbotConversation.findMany({
+      where: {
+        orgId,
+        lastMessageAt: { gte: since },
+        ...(scope.propertyClause ?? {}),
+      },
+      select: { lastMessageAt: true },
+    });
+    buckets = bucketDailyTotals(
+      rows.map((r) => ({ date: r.lastMessageAt, value: 1 })),
+      days,
+    );
+  }
   const fmt = new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
@@ -466,13 +493,11 @@ export async function getPropertyMetrics(
       },
       _count: { _all: true },
     }),
-    prisma.lead.findMany({
-      where: {
-        orgId,
-        createdAt: { gte: since28d },
-        propertyId: { in: propertyIds },
-      },
-      select: { propertyId: true, createdAt: true },
+    leadDayBucketsByProperty({
+      orgId,
+      propertyIds,
+      column: "createdAt",
+      windowDays: WINDOW_DAYS,
     }),
     prisma.propertyMention.groupBy({
       by: ["propertyId"],
@@ -511,15 +536,7 @@ export async function getPropertyMetrics(
     campaignCountByProp.set(row.propertyId, row._count._all);
   }
 
-  const sparkByProp = new Map<string, number[]>();
-  for (const row of allLeadDates) {
-    if (!row.propertyId) continue;
-    const arr =
-      sparkByProp.get(row.propertyId) ?? new Array<number>(WINDOW_DAYS).fill(0);
-    const idx = dayBucketIndex(row.createdAt, WINDOW_DAYS);
-    if (idx >= 0 && idx < WINDOW_DAYS) arr[idx] += 1;
-    sparkByProp.set(row.propertyId, arr);
-  }
+  const sparkByProp = allLeadDates;
 
   const mentionTotalByProp = new Map<string, number>();
   for (const row of mentionTotals) {
@@ -564,20 +581,14 @@ export async function getPortfolioLeadsSpark(
   const spark = new Array<number>(WINDOW_DAYS).fill(0);
   if (propertyIds.length === 0) return spark;
 
-  const since28d = new Date(Date.now() - WINDOW_DAYS * DAY_MS);
-
-  const leadDates = await prisma.lead.findMany({
-    where: {
-      orgId,
-      createdAt: { gte: since28d },
-      propertyId: { in: propertyIds },
-    },
-    select: { createdAt: true },
+  const byProp = await leadDayBucketsByProperty({
+    orgId,
+    propertyIds,
+    column: "createdAt",
+    windowDays: WINDOW_DAYS,
   });
-
-  for (const row of leadDates) {
-    const idx = dayBucketIndex(row.createdAt, WINDOW_DAYS);
-    if (idx >= 0 && idx < WINDOW_DAYS) spark[idx] += 1;
+  for (const arr of byProp.values()) {
+    for (let i = 0; i < WINDOW_DAYS; i += 1) spark[i] += arr[i];
   }
 
   return spark;

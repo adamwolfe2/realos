@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PropertyPhoto } from "./property-photo";
 
 // ---------------------------------------------------------------------------
 // PropertyAvatar — shared visual for the small avatar that sits to the left
@@ -60,8 +61,8 @@ export function PropertyAvatar({
   const iconClass = ICON_SIZE_CLASSES[size];
   const tintBg = accent
     ? `${accent}14`
-    : "hsl(var(--primary) / 0.08)";
-  const iconColor = accent ?? "hsl(var(--primary))";
+    : "color-mix(in oklab, var(--color-primary) 8%, transparent)";
+  const iconColor = accent ?? "var(--color-primary)";
 
   // Path A: full hero photo + (optional) logo badge.
   if (src) {
@@ -79,12 +80,10 @@ export function PropertyAvatar({
           style={{ color: iconColor }}
           aria-hidden="true"
         />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <PropertyPhoto
           src={src}
-          alt=""
+          sizes="48px"
           className="relative h-full w-full object-cover"
-          loading="lazy"
         />
         {logoSrc ? <LogoBadge src={logoSrc} size={size} /> : null}
       </div>

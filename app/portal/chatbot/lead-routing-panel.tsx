@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Mail, RefreshCw } from "lucide-react";
+import { CheckCircle2, Mail, RefreshCw, XCircle } from "lucide-react";
 import {
   backfillChatbotLeadEmails,
   sendTestLeadEmail,
@@ -38,7 +38,10 @@ export function LeadRoutingPanel({
   const [error, setError] = useState<string | null>(null);
   const [backfillDayRange, setBackfillDayRange] = useState<7 | 30 | 90>(30);
   const [candidateCount, setCandidateCount] = useState<number | null>(null);
-  const [diagnostic, setDiagnostic] = useState<string | null>(null);
+  const [diagnostic, setDiagnostic] = useState<{
+    ok: boolean;
+    message: string;
+  } | null>(null);
   // Backfill is expensive (real emails go out) — confirm via the shared
   // AlertDialog instead of window.confirm.
   const [confirmBackfill, setConfirmBackfill] = useState(false);
@@ -97,14 +100,15 @@ export function LeadRoutingPanel({
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         toast.error(`Backfill request failed: ${msg}`);
-        setDiagnostic(
-          `✗ Backfill request failed before returning: ${msg}\n\nThis usually means the serverless function timed out. Try a shorter time window (Last 7 days) or wait a minute and retry.`,
-        );
+        setDiagnostic({
+          ok: false,
+          message: `Backfill request failed before returning: ${msg}\n\nThis usually means the serverless function timed out. Try a shorter time window (Last 7 days) or wait a minute and retry.`,
+        });
         return;
       }
       if (!result.ok) {
         toast.error(result.error);
-        setDiagnostic(`✗ Backfill failed: ${result.error}`);
+        setDiagnostic({ ok: false, message: `Backfill failed: ${result.error}` });
         return;
       }
       toast.success(
@@ -133,9 +137,9 @@ export function LeadRoutingPanel({
         );
         const clean = result.failed === 0 && result.skipped === 0;
         const summary = clean
-          ? `✓ Sent 1 digest covering ${result.sent} profile${result.sent === 1 ? "" : "s"} to all ${recipients.length} recipient${recipients.length === 1 ? "" : "s"}.`
+          ? `Sent 1 digest covering ${result.sent} profile${result.sent === 1 ? "" : "s"} to all ${recipients.length} recipient${recipients.length === 1 ? "" : "s"}.`
           : `Sent ${result.sent}/${result.candidateCount}. ${result.failed} failed${result.skipped ? `, ${result.skipped} skipped` : ""}:\n  · ${[...new Set(problems)].slice(0, 5).join("\n  · ")}`;
-        setDiagnostic(summary);
+        setDiagnostic({ ok: clean, message: summary });
       }
       // Refresh the candidate count for a UX confirmation
       // ("0 captured conversations ready to email" after).
@@ -229,15 +233,16 @@ export function LeadRoutingPanel({
                 if (!result.ok) {
                   const detail = result.details ? ` · ${result.details}` : "";
                   toast.error(`Test failed: ${result.error}${detail}`);
-                  setDiagnostic(`✗ ${result.error}${detail}`);
+                  setDiagnostic({ ok: false, message: `${result.error}${detail}` });
                   return;
                 }
                 toast.success(
                   `Test sent to ${result.sentTo.join(", ")} · Resend id ${result.resendId ?? "(none)"}`,
                 );
-                setDiagnostic(
-                  `✓ Test sent to ${result.sentTo.join(", ")} · Resend id ${result.resendId ?? "(none)"}. If you don't see it in 60 seconds, check spam.`,
-                );
+                setDiagnostic({
+                  ok: true,
+                  message: `Test sent to ${result.sentTo.join(", ")} · Resend id ${result.resendId ?? "(none)"}. If you don't see it in 60 seconds, check spam.`,
+                });
               });
             }}
             className="font-semibold text-primary hover:underline disabled:opacity-40 disabled:no-underline disabled:cursor-not-allowed"
@@ -251,15 +256,20 @@ export function LeadRoutingPanel({
         ) : null}
 
         {diagnostic ? (
-          <pre
-            className={`text-[11.5px] font-mono whitespace-pre-wrap leading-relaxed ${
-              diagnostic.startsWith("✓")
-                ? "text-[#24a148]"
-                : "text-destructive"
+          <div
+            className={`flex items-start gap-1.5 text-[11.5px] ${
+              diagnostic.ok ? "text-[var(--success)]" : "text-destructive"
             }`}
           >
-            {diagnostic}
-          </pre>
+            {diagnostic.ok ? (
+              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+            ) : (
+              <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+            )}
+            <pre className="font-mono whitespace-pre-wrap leading-relaxed">
+              {diagnostic.message}
+            </pre>
+          </div>
         ) : null}
       </form>
 

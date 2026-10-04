@@ -1,6 +1,8 @@
 import "server-only";
 import { prisma } from "@/lib/db";
-import { LeadSource } from "@prisma/client";
+import { LeadSource, Prisma } from "@prisma/client";
+import { propertyClauseSql } from "@/lib/dashboard/property-clause-sql";
+import { captureWithContext } from "@/lib/sentry";
 import {
   classifyLeadChannel,
   classifySource,
@@ -345,26 +347,26 @@ export async function getLeadsPerDeviceTrend(
 export async function getLeadsPerModuleTrend(
   filters: AttributionFilters
 ): Promise<ModuleTrendPoint[]> {
-  const leads = await prisma.lead.findMany({
-    where: {
-      orgId: filters.orgId,
-      ...propertyIdsToWhere(filters.propertyIds ?? null),
-      createdAt: { gte: filters.fromDate, lte: filters.toDate },
-    },
-    select: { createdAt: true, source: true },
-  });
+  // Grouped in Postgres by UTC day (same key as toDayKey) and source.
+  const rows = await prisma.$queryRaw<
+    Array<{ day: string; source: LeadSource; n: bigint }>
+  >(Prisma.sql`
+    select to_char("createdAt", 'YYYY-MM-DD') as day, "source"::text as source,
+      count(*) as n
+    from "Lead"
+    where ${leadWindowSql(filters)}
+    group by 1, 2`);
 
   const dayKeys = enumerateDays(filters.fromDate, filters.toDate);
   const buckets = new Map<string, ModuleTrendPoint>();
   for (const k of dayKeys) {
     buckets.set(k, { date: k, bySource: {} });
   }
-  for (const lead of leads) {
-    const key = toDayKey(lead.createdAt);
-    const bucket = buckets.get(key);
+  for (const r of rows) {
+    const bucket = buckets.get(r.day);
     if (!bucket) continue;
-    const label = LEAD_SOURCE_LABEL[lead.source];
-    bucket.bySource[label] = (bucket.bySource[label] ?? 0) + 1;
+    const label = LEAD_SOURCE_LABEL[r.source];
+    bucket.bySource[label] = (bucket.bySource[label] ?? 0) + Number(r.n);
   }
   return Array.from(buckets.values());
 }
@@ -377,18 +379,19 @@ export async function getLeadsPerModuleTrend(
 export async function getLeadsPerTouchFrequency(
   filters: AttributionFilters
 ): Promise<TouchBucket[]> {
-  const leads = await prisma.lead.findMany({
-    where: {
-      orgId: filters.orgId,
-      ...propertyIdsToWhere(filters.propertyIds ?? null),
-      createdAt: { gte: filters.fromDate, lte: filters.toDate },
-    },
-    select: {
-      visitor: {
-        select: { _count: { select: { sessions: true } } },
-      },
-    },
-  });
+  // Session count per lead's visitor (all sessions, as _count did), binned
+  // in Postgres. No visitor -> 0 sessions -> the "1" bucket, as before.
+  const rows = await prisma.$queryRaw<
+    Array<{ bucket: TouchBucket["bucket"]; n: bigint }>
+  >(Prisma.sql`
+    select case when c <= 1 then '1' when c = 2 then '2' when c = 3 then '3'
+      when c = 4 then '4' else '5+' end as bucket, count(*) as n
+    from (
+      select (select count(*) from "VisitorSession" s where s."visitorId" = l."visitorId") as c
+      from "Lead" l
+      where ${leadWindowSql(filters)}
+    ) t
+    group by 1`);
 
   const counts: Record<TouchBucket["bucket"], number> = {
     "1": 0,
@@ -397,14 +400,7 @@ export async function getLeadsPerTouchFrequency(
     "4": 0,
     "5+": 0,
   };
-  for (const lead of leads) {
-    const sessionCount = lead.visitor?._count.sessions ?? 1;
-    if (sessionCount <= 1) counts["1"] += 1;
-    else if (sessionCount === 2) counts["2"] += 1;
-    else if (sessionCount === 3) counts["3"] += 1;
-    else if (sessionCount === 4) counts["4"] += 1;
-    else counts["5+"] += 1;
-  }
+  for (const r of rows) counts[r.bucket] += Number(r.n);
   return (["1", "2", "3", "4", "5+"] as const).map((bucket) => ({
     bucket,
     count: counts[bucket],
@@ -703,6 +699,27 @@ function classifyDevice(userAgent: string): "desktop" | "mobile" | "tablet" {
   if (/ipad|tablet/.test(ua)) return "tablet";
   if (/iphone|android.*mobile|mobile/.test(ua)) return "mobile";
   return "desktop";
+}
+
+// Raw-SQL twin of { orgId, ...propertyIdsToWhere(ids), createdAt: { gte, lte } }
+// on "Lead". Columns are unqualified; "Lead" must be the only table in scope
+// that has them (sub-selects reference their own columns by alias).
+function leadWindowSql(filters: AttributionFilters): Prisma.Sql {
+  const clause = propertyIdsToWhere(filters.propertyIds ?? null);
+  const property = propertyClauseSql(clause);
+  if (!property) {
+    // Fail closed rather than drop the property filter.
+    const err = new Error("leadWindowSql: unsupported property filter");
+    captureWithContext(err, {
+      orgId: filters.orgId,
+      clauseKeys: Object.keys(clause),
+    });
+    throw err;
+  }
+  return Prisma.sql`"orgId" = ${filters.orgId}
+    and "createdAt" >= ${filters.fromDate.toISOString()}::timestamp
+    and "createdAt" <= ${filters.toDate.toISOString()}::timestamp
+    ${property}`;
 }
 
 function toDayKey(d: Date): string {

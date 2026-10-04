@@ -233,7 +233,7 @@ export default async function ClientsList({
       {topClient ? (
         <Link
           href={`/admin/clients/${topClient.id}`}
-          className="block rounded-xl border border-primary/30 bg-gradient-to-r from-primary/[0.08] via-primary/[0.04] to-transparent px-4 py-3 hover:border-primary/50 transition-colors group"
+          className="block rounded-card border border-primary/30 bg-gradient-to-r from-primary/[0.08] via-primary/[0.04] to-transparent px-4 py-3 hover:border-primary/50 transition-colors group"
         >
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -262,6 +262,7 @@ export default async function ClientsList({
         <Input
           name="q"
           defaultValue={q ?? ""}
+          aria-label="Search clients by name"
           placeholder="Search by name"
           className="w-56"
         />
@@ -306,7 +307,7 @@ export default async function ClientsList({
       </nav>
 
       {clients.length === 0 ? (
-        <div className="rounded-lg border border-border bg-card p-6 text-center space-y-2">
+        <div className="rounded-card border border-border bg-card p-6 text-center space-y-2">
           <p className="text-sm font-semibold text-foreground">
             {status || type || q
               ? "No clients match these filters."
@@ -334,7 +335,7 @@ export default async function ClientsList({
           )}
         </div>
       ) : (
-        <div className="rounded-lg border border-border bg-card overflow-hidden">
+        <div className="rounded-card border border-border bg-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[720px]">
               <thead className="bg-secondary text-xs uppercase tracking-wide text-muted-foreground">
@@ -473,7 +474,7 @@ function StatusLink({
     <Link
       href={href}
       className={cn(
-        "px-2.5 py-1 rounded-md text-xs font-medium border transition-colors",
+        "px-2.5 py-1 rounded-card text-xs font-medium border transition-colors",
         active
           ? "bg-primary text-primary-foreground border-primary"
           : "bg-card text-foreground border-border hover:bg-muted/50"
@@ -495,7 +496,7 @@ function InsightCountCell({
   if (total === 0) {
     return <span className="text-xs text-muted-foreground">—</span>;
   }
-  // Chip styling: rectangular `rounded-md` so single-digit and
+  // Chip styling: rectangular `rounded-card` so single-digit and
   // multi-digit counts have the same shape language (no
   // pill-vs-circle visual jangle). Fixed height + tabular-nums so a
   // column of rows reads as a clean stack of identical tags.
@@ -507,7 +508,7 @@ function InsightCountCell({
       {counts.critical > 0 ? (
         <span
           title={`${counts.critical} critical insight${counts.critical === 1 ? "" : "s"}`}
-          className="inline-flex h-5 items-center rounded-md bg-destructive/10 px-1.5 text-[10px] font-semibold tabular-nums text-destructive"
+          className="inline-flex h-5 items-center rounded-card bg-destructive/10 px-1.5 text-[10px] font-semibold tabular-nums text-destructive"
         >
           {counts.critical} crit
         </span>
@@ -515,7 +516,7 @@ function InsightCountCell({
       {counts.warning > 0 ? (
         <span
           title={`${counts.warning} warning insight${counts.warning === 1 ? "" : "s"}`}
-          className="inline-flex h-5 items-center rounded-md bg-primary/10 px-1.5 text-[10px] font-semibold tabular-nums text-primary"
+          className="inline-flex h-5 items-center rounded-card bg-primary/10 px-1.5 text-[10px] font-semibold tabular-nums text-primary"
         >
           {counts.warning} warn
         </span>
@@ -608,7 +609,7 @@ function SeoRecCountCell({
       {counts.critical > 0 ? (
         <span
           title={`${counts.critical} critical SEO action${counts.critical === 1 ? "" : "s"}`}
-          className="inline-flex h-5 items-center rounded-md bg-destructive/10 px-1.5 text-[10px] font-semibold tabular-nums text-destructive"
+          className="inline-flex h-5 items-center rounded-card bg-destructive/10 px-1.5 text-[10px] font-semibold tabular-nums text-destructive"
         >
           <span className="opacity-70 mr-0.5">C</span>
           {counts.critical}
@@ -617,7 +618,7 @@ function SeoRecCountCell({
       {counts.high > 0 ? (
         <span
           title={`${counts.high} high-priority SEO action${counts.high === 1 ? "" : "s"}`}
-          className="inline-flex h-5 items-center rounded-md bg-amber-100 px-1.5 text-[10px] font-semibold tabular-nums text-amber-800"
+          className="inline-flex h-5 items-center rounded-card bg-amber-100 px-1.5 text-[10px] font-semibold tabular-nums text-amber-800"
         >
           <span className="opacity-70 mr-0.5">H</span>
           {counts.high}
@@ -626,7 +627,7 @@ function SeoRecCountCell({
       {lowCombined > 0 ? (
         <span
           title={`${lowCombined} medium/low SEO action${lowCombined === 1 ? "" : "s"}`}
-          className="inline-flex h-5 items-center rounded-md bg-muted px-1.5 text-[10px] font-semibold tabular-nums text-muted-foreground"
+          className="inline-flex h-5 items-center rounded-card bg-muted px-1.5 text-[10px] font-semibold tabular-nums text-muted-foreground"
         >
           <span className="opacity-70 mr-0.5">M</span>
           {lowCombined}

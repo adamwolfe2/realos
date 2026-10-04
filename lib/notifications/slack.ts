@@ -55,7 +55,7 @@ export interface SiteRequestSlackInput {
 export async function notifySiteRequestSubmitted(
   input: SiteRequestSlackInput,
 ): Promise<SlackResult> {
-  const text = `🌐 New site request: *${input.brandName}* (${input.tier}) — ${input.adminUrl}`;
+  const text = `New site request: *${input.brandName}* (${input.tier}) — ${input.adminUrl}`;
   const blocks = [
     {
       type: "header",

@@ -162,7 +162,7 @@ export function SEOTrendChart() {
                 letterSpacing: "0.14em",
                 textTransform: "uppercase",
                 fontWeight: 600,
-                color: "#8d8d8d",
+                color: "var(--color-muted-foreground)",
               }}
             >
               Organic + AI discovery · last 90 days
@@ -321,7 +321,7 @@ export function SEOTrendChart() {
               letterSpacing: "0.14em",
               textTransform: "uppercase",
               fontWeight: 500,
-              color: "#8d8d8d",
+              color: "var(--color-muted-foreground)",
             }}
           >
             Sessions · attributed to /n/ pages

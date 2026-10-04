@@ -28,6 +28,8 @@ const AUTH_HELPERS = [
   "requireScope",
   // requireScope + expired-trial write gate (strictly stronger than requireScope)
   "requireWritableWorkspace",
+  // requireWritableWorkspace + admin-seat role gate (strictly stronger)
+  "requireWorkspaceAdmin",
   "requireAgency",
   "requireUser",
   "requireSuperAdmin",

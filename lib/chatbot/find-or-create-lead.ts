@@ -1,6 +1,7 @@
 import "server-only";
 import { LeadSource } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { findOldestLeadByEmail } from "@/lib/leads/find-by-email";
 
 // ---------------------------------------------------------------------------
 // One Lead per (orgId, email) for chatbot captures.
@@ -27,18 +28,14 @@ export async function findOrCreateChatbotLead(args: {
 }): Promise<{ id: string; created: boolean; notify: boolean }> {
   const email = args.email.trim().toLowerCase();
 
-  const existing = await prisma.lead.findFirst({
-    where: { orgId: args.orgId, email: { equals: email, mode: "insensitive" } },
-    select: {
-      id: true,
-      phone: true,
-      firstName: true,
-      lastName: true,
-      propertyId: true,
-      source: true,
-      createdAt: true,
-    },
-    orderBy: { createdAt: "asc" },
+  const existing = await findOldestLeadByEmail(args.orgId, email, {
+    id: true,
+    phone: true,
+    firstName: true,
+    lastName: true,
+    propertyId: true,
+    source: true,
+    createdAt: true,
   });
 
   if (existing) {

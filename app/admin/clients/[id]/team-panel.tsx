@@ -58,7 +58,7 @@ export function TeamPanel({
 
   if (rows.length === 0) {
     return (
-      <div className="rounded-md border border-dashed border-border bg-muted/20 px-4 py-5 text-center">
+      <div className="rounded-card border border-dashed border-border bg-muted/20 px-4 py-5 text-center">
         <p className="text-sm text-foreground font-medium">No team members yet.</p>
         <p className="mt-1 text-xs text-muted-foreground">
           Click &quot;Invite user&quot; above to send the first invite.
@@ -68,7 +68,7 @@ export function TeamPanel({
   }
 
   return (
-    <ul className="divide-y divide-border rounded-md border border-border bg-card">
+    <ul className="divide-y divide-border rounded-card border border-border bg-card">
       {rows.map((m) => (
         <li key={m.id}>
           <MemberRow
@@ -187,7 +187,7 @@ function MemberRow({
         value={role}
         onChange={(e) => onRoleChangeAction(e.target.value as UserRole)}
         disabled={pending}
-        className="rounded-md border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50"
+        className="rounded-card border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50"
       >
         {ALL_ROLES.map((opt) => (
           <option key={opt.value} value={opt.value}>
@@ -288,7 +288,7 @@ function PropertyAccessEditor({
   }
 
   return (
-    <div className="mt-3 rounded-md border border-border bg-muted/20 p-3">
+    <div className="mt-3 rounded-card border border-border bg-muted/20 p-3">
       <div className="flex items-baseline justify-between gap-2 mb-2">
         <p className="text-xs font-medium text-foreground">
           Property access — {email}
@@ -332,7 +332,7 @@ function PropertyAccessEditor({
           type="button"
           onClick={save}
           disabled={pending}
-          className="rounded-md bg-primary text-primary-foreground px-3 py-1 text-[11px] font-semibold disabled:opacity-60"
+          className="rounded-card bg-primary text-primary-foreground px-3 py-1 text-[11px] font-semibold disabled:opacity-60"
         >
           {pending ? "Saving…" : "Save"}
         </button>

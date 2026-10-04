@@ -61,7 +61,7 @@ const PRICE_BANDS = [
 
 const ACCENT = "#0f62fe";
 const INK = "#1E2A3A";
-const MUTED = "#94A3B8";
+const MUTED = "var(--color-muted-foreground)";
 const SLATE = "#64748B";
 const BORDER = "#E2E8F0";
 const PARCHMENT = "#F1F5F9";
@@ -248,7 +248,7 @@ export function MarketplaceLive() {
           </FilterGroup>
 
           <div
-            className="mt-6 p-3 rounded-md"
+            className="mt-6 p-3 rounded-card"
             style={{
               backgroundColor: PARCHMENT,
               border: `1px dashed ${BORDER}`,

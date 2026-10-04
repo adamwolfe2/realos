@@ -170,7 +170,7 @@ export function AdminNotifications() {
         <div className="absolute right-0 top-full mt-2 z-50 w-80 sm:w-96 border border-border bg-white shadow-lg rounded-none">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <h3 className="font-serif font-bold text-sm text-ink">
+            <h3 className="font-semibold text-sm text-ink">
               Notifications
             </h3>
             <div className="flex items-center gap-2">
@@ -209,8 +209,8 @@ export function AdminNotifications() {
                     key={n.id}
                     href={n.link}
                     onClick={() => setOpen(false)}
-                    className={`flex items-start gap-3 px-4 py-3 border-b border-border last:border-b-0 hover:bg-cream-hover transition-colors ${
-                      isUnread ? "bg-cream-hover/50" : ""
+                    className={`flex items-start gap-3 px-4 py-3 border-b border-border last:border-b-0 hover:bg-secondary transition-colors ${
+                      isUnread ? "bg-accent" : ""
                     }`}
                   >
                     <div

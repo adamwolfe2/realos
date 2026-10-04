@@ -202,6 +202,7 @@ function Topbar() {
         <Icons.search color={TOKENS.stone} />
         <input
           type="search"
+          aria-label="Search leads, tours, creative"
           placeholder="Search leads, tours, creative..."
           className="bg-transparent outline-none w-full"
           style={{
@@ -1603,6 +1604,7 @@ function ConversationsView() {
           >
             <input
               type="text"
+              aria-label="Reply"
               placeholder="Reply as Acme leasing..."
               className="flex-1 bg-transparent outline-none"
               style={{
@@ -1964,8 +1966,8 @@ function NewRequestModal({ onClose }: { onClose: () => void }) {
 
 function FormRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div>
-      <label
+    <label style={{ display: "block" }}>
+      <span
         style={{
           fontFamily: "var(--font-sans)",
           fontSize: "12px",
@@ -1976,9 +1978,9 @@ function FormRow({ label, children }: { label: string; children: React.ReactNode
         }}
       >
         {label}
-      </label>
+      </span>
       {children}
-    </div>
+    </label>
   );
 }
 

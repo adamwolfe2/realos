@@ -421,7 +421,7 @@ function OpsChip({ href, label, count }: { href: string; label: string; count: n
       <span
         className={cn(
           "tabular-nums font-semibold",
-          count > 0 ? "text-foreground" : "text-muted-foreground/50",
+          count > 0 ? "text-foreground" : "text-muted-foreground",
         )}
       >
         {count}

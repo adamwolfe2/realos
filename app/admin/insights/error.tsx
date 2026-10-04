@@ -16,8 +16,8 @@ export default function AdminInsightsError({
   }, [error]);
 
   return (
-    <div className="max-w-md mx-auto mt-16 rounded-xl border border-border bg-card p-8 text-center space-y-3">
-      <div className="inline-flex items-center justify-center w-10 h-10 rounded-md bg-primary/10 text-primary mx-auto">
+    <div className="max-w-md mx-auto mt-16 rounded-card border border-border bg-card p-8 text-center space-y-3">
+      <div className="inline-flex items-center justify-center w-10 h-10 rounded-card bg-primary/10 text-primary mx-auto">
         <Sparkles className="h-5 w-5" />
       </div>
       <h2 className="text-base font-semibold text-foreground">
@@ -37,13 +37,13 @@ export default function AdminInsightsError({
         <button
           type="button"
           onClick={reset}
-          className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-4 h-9 text-xs font-semibold hover:bg-primary-dark transition-colors"
+          className="inline-flex items-center rounded-card bg-primary text-primary-foreground px-4 h-9 text-xs font-semibold hover:bg-primary-dark transition-colors"
         >
           Try again
         </button>
         <Link
           href="/admin"
-          className="inline-flex items-center rounded-md border border-border bg-card px-4 h-9 text-xs font-medium text-foreground hover:bg-secondary transition-colors"
+          className="inline-flex items-center rounded-card border border-border bg-card px-4 h-9 text-xs font-medium text-foreground hover:bg-secondary transition-colors"
         >
           Back to overview
         </Link>

@@ -21,6 +21,9 @@ import { notifyLeadCreated } from "@/lib/notifications/create";
 import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
 import { LeadNotifyChannel } from "@prisma/client";
 import { requireMatchingOrigin } from "@/lib/tenancy/origin-guard";
+import { getSiteUrl } from "@/lib/brand";
+import { soft } from "@/lib/soft";
+import { findOldestLeadByEmail } from "@/lib/leads/find-by-email";
 
 const schema = z.object({
   orgId: z.string().min(1),
@@ -29,7 +32,7 @@ const schema = z.object({
   sourceDetail: z.string().max(200).optional(),
   firstName: z.string().max(100).optional(),
   lastName: z.string().max(100).optional(),
-  email: z.string().email().optional(),
+  email: z.string().trim().toLowerCase().email().optional(),
   phone: z.string().max(40).optional(),
   preferredUnitType: z.string().max(100).optional(),
   desiredMoveIn: z.string().optional(),
@@ -37,6 +40,30 @@ const schema = z.object({
   notes: z.string().max(2000).optional(),
   visitorHash: z.string().optional(),
 });
+
+// A repeat inquiry from a known lead only re-notifies the operator when the
+// lead has been quiet this long (suppresses double-clicks / resubmits).
+const REPEAT_NOTIFY_AFTER_MS = 10 * 60 * 1000;
+
+// Total notes length past which repeat submits stop appending. Keeps a
+// rotated-IP flood from growing one lead's notes without bound.
+const MAX_LEAD_NOTES_CHARS = 10_000;
+
+// Append a public-form message to an existing lead's notes as
+// "[YYYY-MM-DD <source>] text", so operators can tell later public text
+// from what the lead first wrote. Skips repeats of the same text and stops
+// appending once the cap would be exceeded (the original notes are kept).
+function appendLeadNote(
+  existing: string | null,
+  message: string | undefined,
+  source: string,
+): string | null {
+  const text = message?.trim();
+  if (!text || existing?.includes(text)) return existing;
+  const entry = `[${new Date().toISOString().slice(0, 10)} ${source}] ${text}`;
+  const next = existing ? `${existing}\n\n${entry}` : entry;
+  return next.length > MAX_LEAD_NOTES_CHARS ? existing : next;
+}
 
 // POST /api/public/leads
 // Called by tenant marketing site forms (apply, contact, exit-intent).
@@ -135,25 +162,68 @@ export async function POST(req: NextRequest) {
     budgetMaxCents = Math.round(Number(data.budgetMax) * 100);
   }
 
-  const lead = await prisma.lead.create({
-    data: {
-      orgId: data.orgId,
-      propertyId: data.propertyId ?? null,
-      source: data.source,
-      sourceDetail: data.sourceDetail ?? null,
-      firstName: data.firstName || null,
-      lastName: data.lastName || null,
-      email: data.email || null,
-      phone: data.phone || null,
-      preferredUnitType: data.preferredUnitType || null,
-      desiredMoveIn:
-        data.desiredMoveIn && !Number.isNaN(Date.parse(data.desiredMoveIn))
-          ? new Date(data.desiredMoveIn)
-          : null,
-      budgetMaxCents,
-      notes: data.notes ?? null,
-    },
-  });
+  const desiredMoveIn =
+    data.desiredMoveIn && !Number.isNaN(Date.parse(data.desiredMoveIn))
+      ? new Date(data.desiredMoveIn)
+      : null;
+
+  // Dedupe by (orgId, email), exact but case-insensitive (shared helper,
+  // same as the popup/tours/chatbot routes). A resubmit or double-click merges
+  // into the existing lead: fill name/unit/move-in/budget gaps only (not
+  // phone: an unauthenticated submit must not plant contact details on a
+  // known lead), keep original source/property attribution, and append the
+  // new message to notes as a dated, labelled entry.
+  // ponytail: findFirst-then-create still races on truly concurrent submits;
+  // a partial unique index on (orgId, lower(email)) closes it (schema change).
+  const existing = data.email
+    ? await findOldestLeadByEmail(data.orgId, data.email, {
+        id: true,
+        propertyId: true,
+        firstName: true,
+        lastName: true,
+        preferredUnitType: true,
+        desiredMoveIn: true,
+        budgetMaxCents: true,
+        notes: true,
+        updatedAt: true,
+      })
+    : null;
+
+  const lead = existing
+    ? await prisma.lead.update({
+        where: { id: existing.id },
+        data: {
+          lastActivityAt: new Date(),
+          propertyId: existing.propertyId ?? data.propertyId ?? null,
+          firstName: existing.firstName ?? (data.firstName || null),
+          lastName: existing.lastName ?? (data.lastName || null),
+          preferredUnitType:
+            existing.preferredUnitType ?? (data.preferredUnitType || null),
+          desiredMoveIn: existing.desiredMoveIn ?? desiredMoveIn,
+          budgetMaxCents: existing.budgetMaxCents ?? budgetMaxCents,
+          notes: appendLeadNote(
+            existing.notes,
+            data.notes,
+            data.sourceDetail ?? data.source,
+          ),
+        },
+      })
+    : await prisma.lead.create({
+        data: {
+          orgId: data.orgId,
+          propertyId: data.propertyId ?? null,
+          source: data.source,
+          sourceDetail: data.sourceDetail ?? null,
+          firstName: data.firstName || null,
+          lastName: data.lastName || null,
+          email: data.email || null,
+          phone: data.phone || null,
+          preferredUnitType: data.preferredUnitType || null,
+          desiredMoveIn,
+          budgetMaxCents,
+          notes: data.notes ?? null,
+        },
+      });
 
   // Link to Visitor if we have a hash.
   if (data.visitorHash) {
@@ -166,18 +236,33 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Fire-and-forget side effects.
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  const moduleCount = 1;
+  // Repeat submit from a known lead (popup/tours/chatbot only notify on
+  // net-new leads). Exception: a new message on a lead untouched for 10+
+  // minutes still sends the operator email so it isn't lost in
+  // notes. Double-clicks and quick resubmits stay silent. Slack, tenant
+  // email and the prospect auto-reply never fire for a repeat.
+  // updatedAt is from the findFirst, i.e. read before our update.
+  const isRepeatInquiry =
+    !!existing &&
+    !!data.notes?.trim() &&
+    existing.updatedAt.getTime() < Date.now() - REPEAT_NOTIFY_AFTER_MS;
+  if (existing && !isRepeatInquiry) {
+    return NextResponse.json({ ok: true, leadId: lead.id }, { status: 201 });
+  }
 
-  void notifyLeadCreated(lead).catch(() => {});
+  // The bell is kind `lead_created` ("New lead: X"), so only net-new leads
+  // get it; a repeat inquiry surfaces via the labelled operator email only.
+  if (!existing) {
+    void notifyLeadCreated(lead).catch(soft(undefined, "public.leads.notifyLeadCreated"));
+  }
 
   // Instant operator email — centralized lead-notify helper. Fire-and-forget;
-  // every error path inside is swallowed so the response never blocks.
+  // failures are logged and reported so the response never blocks.
+  const sourceLabel = data.sourceDetail ?? data.source;
   void notifyLeadCaptured({
     orgId: data.orgId,
     leadId: lead.id,
-    propertyId: data.propertyId ?? null,
+    propertyId: lead.propertyId,
     channel: LeadNotifyChannel.FORM,
     lead: {
       name:
@@ -186,10 +271,18 @@ export async function POST(req: NextRequest) {
         null,
       email: data.email ?? null,
       phone: data.phone ?? null,
-      sourceLabel: data.sourceDetail ?? data.source,
+      sourceLabel: isRepeatInquiry ? `Repeat inquiry (${sourceLabel})` : sourceLabel,
       intent: data.notes ?? data.preferredUnitType ?? null,
     },
-  }).catch(() => {});
+  }).catch(soft(undefined, "public.leads.notifyLeadCaptured"));
+
+  if (isRepeatInquiry) {
+    return NextResponse.json({ ok: true, leadId: lead.id }, { status: 201 });
+  }
+
+  // Fire-and-forget side effects.
+  const appUrl = getSiteUrl();
+  const moduleCount = 1;
 
   void Promise.allSettled([
     notifyNewLeadSlack({

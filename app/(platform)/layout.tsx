@@ -9,7 +9,7 @@ export default function PlatformLayout({
   return (
     <div className="min-h-screen flex flex-col bg-white text-slate-900">
       <PlatformNav />
-      <main className="flex-1">{children}</main>
+      <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">{children}</main>
       <PlatformFooter />
     </div>
   );

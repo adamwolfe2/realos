@@ -4,6 +4,7 @@ import type Stripe from "stripe";
 import { prisma } from "@/lib/db";
 import { getStripeClient, isStripeConfigured } from "@/lib/stripe/config";
 import { getScope } from "@/lib/tenancy/scope";
+import { canManageBilling } from "@/lib/billing/checkout-policy";
 import { getSiteUrl } from "@/lib/brand";
 import {
   WEBSITE_BUILD_CAL_LINK,
@@ -11,6 +12,7 @@ import {
 } from "@/lib/billing/catalog";
 import { getPriceId } from "@/lib/billing/plans";
 import { captureWithContext } from "@/lib/sentry";
+import { ensureOrgStripeCustomer } from "@/lib/billing/org-stripe-customer";
 
 // ---------------------------------------------------------------------------
 // POST /api/billing/website-build
@@ -62,6 +64,15 @@ export async function POST(req: NextRequest) {
           "Sign in to LeaseStack before purchasing a website build. We tie every build to your workspace so fulfillment can start immediately.",
       },
       { status: 401 },
+    );
+  }
+
+  // Same billing gate as app/api/billing/checkout (owner, or agency billing
+  // seat while impersonating). Viewers and agents can't start a Stripe charge.
+  if (!canManageBilling(scope)) {
+    return NextResponse.json(
+      { ok: false, error: "Only the workspace owner can manage billing." },
+      { status: 403 },
     );
   }
 
@@ -125,19 +136,7 @@ export async function POST(req: NextRequest) {
   // Reuse or create the Stripe customer. We use the same customer
   // record across SaaS subscription + website build so the customer
   // sees a single billing history on their portal.
-  let stripeCustomerId = org.stripeCustomerId;
-  if (!stripeCustomerId) {
-    const customer = await stripe.customers.create({
-      email: org.primaryContactEmail ?? scope.email,
-      name: org.name,
-      metadata: { org_id: org.id },
-    });
-    await prisma.organization.update({
-      where: { id: org.id },
-      data: { stripeCustomerId: customer.id },
-    });
-    stripeCustomerId = customer.id;
-  }
+  const stripeCustomerId = await ensureOrgStripeCustomer(stripe, org);
 
   const siteUrl = getSiteUrl();
   const successUrl = `${siteUrl}/billing/website-build/success?session_id={CHECKOUT_SESSION_ID}`;

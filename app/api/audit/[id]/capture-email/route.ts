@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { notifyAuditLead } from "@/lib/audit/notify";
 import {
   auditEmailCaptureLimiter,
   checkRateLimit,
@@ -61,7 +62,7 @@ export async function POST(
   // and updating it is what we're eliminating.
   const audit = await prisma.prospectAudit.findUnique({
     where: { id },
-    select: { id: true },
+    select: { id: true, domain: true },
   });
   if (!audit) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -88,5 +89,10 @@ export async function POST(
       { status: 409 },
     );
   }
+  await notifyAuditLead({
+    auditId: id,
+    domain: audit.domain,
+    email: parsed.data.email,
+  });
   return NextResponse.json({ ok: true });
 }

@@ -12,6 +12,7 @@ import {
   stripeTrialSchedule,
 } from "@/lib/billing/checkout-policy";
 import { isPlatformSubscriptionForOrg } from "@/lib/billing/stripe-state";
+import { ensureOrgStripeCustomer } from "@/lib/billing/org-stripe-customer";
 import { getTierById, resolveLineItems } from "@/lib/billing/plans";
 
 // ---------------------------------------------------------------------------
@@ -107,8 +108,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Resolve or create the Stripe Customer.
-  let stripeCustomerId: string | null = null;
   const stripe = getStripeClient();
   const org = await prisma.organization.findUnique({
     where: { id: scope.orgId },
@@ -191,23 +190,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (org.stripeCustomerId) {
-    stripeCustomerId = org.stripeCustomerId;
-  } else {
-    const customer = await stripe.customers.create(
-      {
-        email: org.primaryContactEmail ?? scope.email,
-        name: org.name,
-        metadata: { org_id: org.id },
-      },
-      { idempotencyKey: `cust_${org.id}` },
-    );
-    await prisma.organization.update({
-      where: { id: org.id },
-      data: { stripeCustomerId: customer.id },
-    });
-    stripeCustomerId = customer.id;
-  }
+  // Resolve or create the Stripe Customer.
+  const stripeCustomerId = await ensureOrgStripeCustomer(stripe, org);
 
   const existingSubs = await stripe.subscriptions.list({
     customer: stripeCustomerId,

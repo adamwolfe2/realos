@@ -24,7 +24,7 @@ const fieldStyle: React.CSSProperties = {
 };
 
 const CRM_OPTIONS = [
-  { value: "none", label: "No CRM — set up manually" },
+  { value: "none", label: "No CRM, set up manually" },
   { value: "appfolio", label: "AppFolio" },
   { value: "yardi", label: "Yardi" },
   { value: "buildium", label: "Buildium" },
@@ -129,9 +129,8 @@ export function PropertiesStep({
           className="mt-2"
           style={{ color: MUTED, fontFamily: "var(--font-sans)", fontSize: "14px", lineHeight: 1.55 }}
         >
-          Add each property you want to market. Every one gets its own site,
-          pixel, and chatbot — you&apos;ll set those up per property inside the
-          workspace.
+          Add each property you want to market. Each one gets its own pixel and
+          chatbot. You&apos;ll set those up per property inside the workspace.
         </p>
       </header>
 
@@ -162,6 +161,8 @@ export function PropertiesStep({
             <input
               className={FIELD}
               style={fieldStyle}
+              aria-label="Property name"
+              autoComplete="off"
               placeholder="Property name (e.g. The Lofts at Main)"
               value={row.name}
               onChange={(e) => update(i, { name: e.target.value })}
@@ -171,6 +172,8 @@ export function PropertiesStep({
               <input
                 className={FIELD}
                 style={fieldStyle}
+                aria-label="City"
+                autoComplete="address-level2"
                 placeholder="City (optional)"
                 value={row.city}
                 onChange={(e) => update(i, { city: e.target.value })}
@@ -179,6 +182,8 @@ export function PropertiesStep({
               <input
                 className={FIELD}
                 style={fieldStyle}
+                aria-label="State"
+                autoComplete="address-level1"
                 placeholder="State (optional)"
                 value={row.state}
                 onChange={(e) => update(i, { state: e.target.value })}
@@ -203,12 +208,14 @@ export function PropertiesStep({
       {/* CRM / PMS — last, with a no-CRM default */}
       <div>
         <label
+          htmlFor="onboarding-crm"
           className="block mb-1"
           style={{ color: INK, fontFamily: "var(--font-mono)", fontSize: "10.5px", letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 600 }}
         >
           How do you manage these?
         </label>
         <select
+          id="onboarding-crm"
           className={FIELD}
           style={fieldStyle}
           value={crm}
@@ -222,7 +229,7 @@ export function PropertiesStep({
           ))}
         </select>
         <p className="mt-1" style={{ color: MUTED, fontFamily: "var(--font-sans)", fontSize: "11.5px" }}>
-          You can connect or skip this anytime — properties work fully manual
+          You can connect or skip this anytime. Properties work fully manual
           without a CRM.
         </p>
       </div>

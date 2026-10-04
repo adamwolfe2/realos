@@ -5,7 +5,7 @@ import { NeighborhoodPageStatus } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
 // Per-tenant sitemap. Served at each tenant hostname's /sitemap.xml (the
-// hostname-rewrite branch in middleware.ts maps it into this file). Lists
+// hostname-rewrite branch in proxy.ts maps it into this file). Lists
 // the tenant's standard marketing pages plus every PUBLISHED neighborhood
 // landing page.
 // ---------------------------------------------------------------------------

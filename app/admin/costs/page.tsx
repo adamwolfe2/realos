@@ -213,12 +213,12 @@ export default async function AdminCostsPage() {
       </div>
 
       {/* Per-provider rollup */}
-      <section className="rounded-xl border bg-white" style={{ borderColor: "#E5E7EB" }}>
+      <section className="rounded-card border bg-white" style={{ borderColor: "#E5E7EB" }}>
         <div
           className="px-5 py-3 flex items-center justify-between"
           style={{ borderBottom: "1px solid #E5E7EB" }}
         >
-          <h2 className="text-sm font-semibold" style={{ color: "#1E2A3A" }}>
+          <h2 className="text-sm font-semibold" style={{ color: "var(--color-deep-slate)" }}>
             By provider
           </h2>
           <span
@@ -263,7 +263,7 @@ export default async function AdminCostsPage() {
               <tr key={row.provider} style={{ borderTop: "1px solid #F3F4F6" }}>
                 <td
                   className="px-5 py-3 font-medium"
-                  style={{ color: "#1E2A3A" }}
+                  style={{ color: "var(--color-deep-slate)" }}
                 >
                   {row.provider}
                 </td>
@@ -275,7 +275,7 @@ export default async function AdminCostsPage() {
                 </td>
                 <td
                   className="px-5 py-3 text-right tabular-nums font-semibold"
-                  style={{ color: "#1E2A3A" }}
+                  style={{ color: "var(--color-deep-slate)" }}
                 >
                   {formatUsd(row.usdMtd)}
                 </td>
@@ -289,7 +289,7 @@ export default async function AdminCostsPage() {
                 <td
                   colSpan={5}
                   className="px-5 py-8 text-center text-sm"
-                  style={{ color: "#9CA3AF" }}
+                  style={{ color: "var(--color-muted-foreground)" }}
                 >
                   No usage logged yet. Provider wrappers start logging after
                   the next deploy carries the migration.
@@ -303,12 +303,12 @@ export default async function AdminCostsPage() {
 
       {/* Per-org + per-audit two-up */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <section className="rounded-xl border bg-white" style={{ borderColor: "#E5E7EB" }}>
+        <section className="rounded-card border bg-white" style={{ borderColor: "#E5E7EB" }}>
           <div
             className="px-5 py-3"
             style={{ borderBottom: "1px solid #E5E7EB" }}
           >
-            <h2 className="text-sm font-semibold" style={{ color: "#1E2A3A" }}>
+            <h2 className="text-sm font-semibold" style={{ color: "var(--color-deep-slate)" }}>
               Top 10 orgs · MTD
             </h2>
           </div>
@@ -336,7 +336,7 @@ export default async function AdminCostsPage() {
                   <td
                     colSpan={3}
                     className="px-5 py-8 text-center text-sm"
-                    style={{ color: "#9CA3AF" }}
+                    style={{ color: "var(--color-muted-foreground)" }}
                   >
                     No tenant calls logged yet.
                   </td>
@@ -346,14 +346,14 @@ export default async function AdminCostsPage() {
                   const org = row.orgId ? orgsById.get(row.orgId) : null;
                   return (
                     <tr key={row.orgId} style={{ borderTop: "1px solid #F3F4F6" }}>
-                      <td className="px-5 py-3" style={{ color: "#1E2A3A" }}>
+                      <td className="px-5 py-3" style={{ color: "var(--color-deep-slate)" }}>
                         {org ? (
                           <div className="flex flex-col">
                             <span className="font-medium">{org.name}</span>
                             <span
                               className="text-[11px]"
                               style={{
-                                color: "#9CA3AF",
+                                color: "var(--color-muted-foreground)",
                                 fontFamily: "var(--font-mono)",
                               }}
                             >
@@ -361,7 +361,7 @@ export default async function AdminCostsPage() {
                             </span>
                           </div>
                         ) : (
-                          <span style={{ color: "#9CA3AF" }}>(deleted)</span>
+                          <span style={{ color: "var(--color-muted-foreground)" }}>(deleted)</span>
                         )}
                       </td>
                       <td
@@ -372,7 +372,7 @@ export default async function AdminCostsPage() {
                       </td>
                       <td
                         className="px-5 py-3 text-right tabular-nums font-semibold"
-                        style={{ color: "#1E2A3A" }}
+                        style={{ color: "var(--color-deep-slate)" }}
                       >
                         {formatUsd(microCentsToUsd(row._sum.costMicroCents ?? 0))}
                       </td>
@@ -385,12 +385,12 @@ export default async function AdminCostsPage() {
           </div>
         </section>
 
-        <section className="rounded-xl border bg-white" style={{ borderColor: "#E5E7EB" }}>
+        <section className="rounded-card border bg-white" style={{ borderColor: "#E5E7EB" }}>
           <div
             className="px-5 py-3"
             style={{ borderBottom: "1px solid #E5E7EB" }}
           >
-            <h2 className="text-sm font-semibold" style={{ color: "#1E2A3A" }}>
+            <h2 className="text-sm font-semibold" style={{ color: "var(--color-deep-slate)" }}>
               Top 10 prospect audits · MTD
             </h2>
           </div>
@@ -418,7 +418,7 @@ export default async function AdminCostsPage() {
                   <td
                     colSpan={3}
                     className="px-5 py-8 text-center text-sm"
-                    style={{ color: "#9CA3AF" }}
+                    style={{ color: "var(--color-muted-foreground)" }}
                   >
                     No prospect audits logged yet.
                   </td>
@@ -433,7 +433,7 @@ export default async function AdminCostsPage() {
                       key={row.prospectAuditId}
                       style={{ borderTop: "1px solid #F3F4F6" }}
                     >
-                      <td className="px-5 py-3" style={{ color: "#1E2A3A" }}>
+                      <td className="px-5 py-3" style={{ color: "var(--color-deep-slate)" }}>
                         {audit ? (
                           <div className="flex flex-col">
                             <span className="font-medium">
@@ -442,7 +442,7 @@ export default async function AdminCostsPage() {
                             <span
                               className="text-[11px]"
                               style={{
-                                color: "#9CA3AF",
+                                color: "var(--color-muted-foreground)",
                                 fontFamily: "var(--font-mono)",
                               }}
                             >
@@ -450,7 +450,7 @@ export default async function AdminCostsPage() {
                             </span>
                           </div>
                         ) : (
-                          <span style={{ color: "#9CA3AF" }}>(deleted)</span>
+                          <span style={{ color: "var(--color-muted-foreground)" }}>(deleted)</span>
                         )}
                       </td>
                       <td
@@ -461,7 +461,7 @@ export default async function AdminCostsPage() {
                       </td>
                       <td
                         className="px-5 py-3 text-right tabular-nums font-semibold"
-                        style={{ color: "#1E2A3A" }}
+                        style={{ color: "var(--color-deep-slate)" }}
                       >
                         {formatUsd(microCentsToUsd(row._sum.costMicroCents ?? 0))}
                       </td>
@@ -476,12 +476,12 @@ export default async function AdminCostsPage() {
       </div>
 
       {/* Recent calls audit log */}
-      <section className="rounded-xl border bg-white" style={{ borderColor: "#E5E7EB" }}>
+      <section className="rounded-card border bg-white" style={{ borderColor: "#E5E7EB" }}>
         <div
           className="px-5 py-3"
           style={{ borderBottom: "1px solid #E5E7EB" }}
         >
-          <h2 className="text-sm font-semibold" style={{ color: "#1E2A3A" }}>
+          <h2 className="text-sm font-semibold" style={{ color: "var(--color-deep-slate)" }}>
             Recent calls
           </h2>
         </div>
@@ -512,7 +512,7 @@ export default async function AdminCostsPage() {
                 <td
                   colSpan={6}
                   className="px-5 py-8 text-center text-sm"
-                  style={{ color: "#9CA3AF" }}
+                  style={{ color: "var(--color-muted-foreground)" }}
                 >
                   No calls yet — instrumentation lands with the next deploy.
                 </td>
@@ -526,12 +526,12 @@ export default async function AdminCostsPage() {
                   >
                     {formatRelative(row.createdAt)}
                   </td>
-                  <td className="px-5 py-2.5 text-xs font-medium" style={{ color: "#1E2A3A" }}>
+                  <td className="px-5 py-2.5 text-xs font-medium" style={{ color: "var(--color-deep-slate)" }}>
                     {row.provider}
                   </td>
                   <td
                     className="px-5 py-2.5 text-xs"
-                    style={{ color: "#1E2A3A", fontFamily: "var(--font-mono)" }}
+                    style={{ color: "var(--color-deep-slate)", fontFamily: "var(--font-mono)" }}
                   >
                     {row.endpoint}
                   </td>
@@ -546,7 +546,7 @@ export default async function AdminCostsPage() {
                   </td>
                   <td
                     className="px-5 py-2.5 text-xs text-right tabular-nums font-semibold"
-                    style={{ color: "#1E2A3A", fontFamily: "var(--font-mono)" }}
+                    style={{ color: "var(--color-deep-slate)", fontFamily: "var(--font-mono)" }}
                   >
                     ${microCentsToUsd(row.costMicroCents).toFixed(5)}
                   </td>
@@ -591,7 +591,7 @@ function CostTile({
 }) {
   return (
     <div
-      className="rounded-xl border bg-white p-5"
+      className="rounded-card border bg-white p-5"
       style={{ borderColor: "#E5E7EB" }}
     >
       <p
@@ -602,7 +602,7 @@ function CostTile({
       </p>
       <p
         className="text-3xl font-semibold tabular-nums mt-1"
-        style={{ color: "#1E2A3A" }}
+        style={{ color: "var(--color-deep-slate)" }}
       >
         {formatUsd(usd)}
       </p>
@@ -628,7 +628,7 @@ function CapStatus({
   if (capUsd == null) {
     return (
       <div
-        className="rounded-xl border bg-white p-5"
+        className="rounded-card border bg-white p-5"
         style={{ borderColor: "#E5E7EB" }}
       >
         <p
@@ -637,12 +637,12 @@ function CapStatus({
         >
           Monthly cap
         </p>
-        <p className="text-base mt-1" style={{ color: "#9CA3AF" }}>
+        <p className="text-base mt-1" style={{ color: "var(--color-muted-foreground)" }}>
           Not configured
         </p>
         <p
           className="text-[11px] mt-1"
-          style={{ color: "#9CA3AF" }}
+          style={{ color: "var(--color-muted-foreground)" }}
         >
           Set COST_MONTHLY_CAP_USD env to enforce
         </p>
@@ -659,7 +659,7 @@ function CapStatus({
         : "#0f62fe";
   return (
     <div
-      className="rounded-xl border bg-white p-5"
+      className="rounded-card border bg-white p-5"
       style={{ borderColor: "#E5E7EB" }}
     >
       <p

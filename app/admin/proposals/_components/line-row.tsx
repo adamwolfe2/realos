@@ -34,7 +34,7 @@ export function LineRow({
   return (
     <div
       className={cn(
-        "rounded-md border border-border bg-card p-3 space-y-2",
+        "rounded-card border border-border bg-card p-3 space-y-2",
         disabled ? "opacity-70" : "",
       )}
     >
@@ -53,7 +53,7 @@ export function LineRow({
             disabled={disabled}
             placeholder="Optional description shown on the proposal"
             rows={1}
-            className="mt-1 w-full bg-transparent border-0 outline-none text-[11.5px] text-muted-foreground placeholder:text-muted-foreground/60 resize-none px-0"
+            className="mt-1 w-full bg-transparent border-0 outline-none text-[11.5px] text-muted-foreground placeholder:text-muted-foreground resize-none px-0"
           />
         </div>
         <div className="flex flex-col items-end gap-1 shrink-0">
@@ -115,7 +115,7 @@ export function LineRow({
                   ),
                 });
               }}
-              className="w-24 rounded-md border border-border bg-card px-2 py-1 text-xs tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="w-24 rounded-card border border-border bg-card px-2 py-1 text-xs tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
         </Field>
@@ -135,7 +135,7 @@ export function LineRow({
               );
               onPatch({ quantity: v });
             }}
-            className="w-16 rounded-md border border-border bg-card px-2 py-1 text-xs tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="w-16 rounded-card border border-border bg-card px-2 py-1 text-xs tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </Field>
 
@@ -146,7 +146,7 @@ export function LineRow({
             onChange={(e) =>
               onPatch({ recurring: e.target.value === "recurring" })
             }
-            className="rounded-md border border-border bg-card px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="rounded-card border border-border bg-card px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
           >
             <option value="recurring">Recurring</option>
             <option value="one_time">One-time</option>

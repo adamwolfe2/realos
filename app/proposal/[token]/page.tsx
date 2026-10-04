@@ -112,7 +112,7 @@ export default async function ProposalSharePage({ params }: PageProps) {
     proposal.prospectCompany || proposal.prospectName || "Prospect";
   const generatedAtIso = (proposal.sentAt ?? proposal.createdAt).toISOString();
   return (
-    <main className="min-h-screen bg-white text-[#0F172A]">
+    <main className="min-h-screen bg-white text-foreground">
       <ViewPing token={token} />
       {/* Shared LeaseStack-branded header — same shell the /brief and
           /audit routes use so prospects see the same visual identity
@@ -122,11 +122,11 @@ export default async function ProposalSharePage({ params }: PageProps) {
         generatedAtIso={generatedAtIso}
         label="Proposal"
       />
-      <div className="mx-auto flex max-w-3xl items-center justify-between px-6 pt-5 text-xs text-[#6B7280]">
+      <div className="mx-auto flex max-w-3xl items-center justify-between px-6 pt-5 text-xs text-muted-foreground">
         <span className="font-mono tabular-nums">{proposal.number}</span>
         <a
           href={pdfHref}
-          className="text-[#0f62fe] hover:underline"
+          className="text-primary hover:underline"
           rel="noopener"
         >
           Download PDF
@@ -135,9 +135,9 @@ export default async function ProposalSharePage({ params }: PageProps) {
 
       <div className="mx-auto max-w-3xl px-6 py-6 sm:py-10">
         {/* Status pill */}
-        <div className="mb-6 flex items-center gap-2 text-xs text-[#6B7280]">
+        <div className="mb-6 flex items-center gap-2 text-xs text-muted-foreground">
           <span
-            className={`inline-flex items-center rounded-full border border-[#EAECEF] bg-[#F9FAFB] px-2.5 py-0.5 font-medium text-[#374151]`}
+            className={`inline-flex items-center rounded-full border border-border bg-secondary px-2.5 py-0.5 font-medium text-[var(--gray-70)]`}
           >
             {proposal.status === ProposalStatus.SENT ? "New" : "Reviewed"}
           </span>
@@ -151,14 +151,14 @@ export default async function ProposalSharePage({ params }: PageProps) {
 
         {/* Greeting */}
         <section className="mb-10">
-          <p className="text-sm font-medium uppercase tracking-wider text-[#6B7280]">
+          <p className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
             Prepared for
           </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[#0F172A] sm:text-3xl">
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
             {proposal.prospectCompany || proposal.prospectName}
           </h1>
           {proposal.prospectCompany ? (
-            <p className="mt-1 text-sm text-[#6B7280]">
+            <p className="mt-1 text-sm text-muted-foreground">
               Attn: {proposal.prospectName}
             </p>
           ) : null}
@@ -166,7 +166,7 @@ export default async function ProposalSharePage({ params }: PageProps) {
 
         {/* Public message */}
         {proposal.publicMessage ? (
-          <section className="mb-10 rounded-lg border border-[#EAECEF] bg-[#F9FAFB] p-5 text-[15px] leading-relaxed text-[#374151]">
+          <section className="mb-10 rounded-lg border border-border bg-secondary p-5 text-[15px] leading-relaxed text-[var(--gray-70)]">
             <p className="whitespace-pre-line">{proposal.publicMessage}</p>
           </section>
         ) : null}
@@ -174,10 +174,10 @@ export default async function ProposalSharePage({ params }: PageProps) {
         {/* Scope of work */}
         {proposal.scopeNarrative ? (
           <section className="mb-10">
-            <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6B7280] mb-3">
+            <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground mb-3">
               Scope of work
             </h2>
-            <div className="prose prose-sm max-w-none text-[#1F2937] leading-relaxed whitespace-pre-line text-[15px]">
+            <div className="prose prose-sm max-w-none text-[var(--gray-80)] leading-relaxed whitespace-pre-line text-[15px]">
               {proposal.scopeNarrative}
             </div>
           </section>
@@ -186,20 +186,20 @@ export default async function ProposalSharePage({ params }: PageProps) {
         {/* Delivery timeline */}
         {timeline.length > 0 ? (
           <section className="mb-10">
-            <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6B7280] mb-3">
+            <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground mb-3">
               Delivery timeline
             </h2>
-            <ol className="border border-[#EAECEF] rounded-lg overflow-hidden bg-white">
+            <ol className="border border-border rounded-lg overflow-hidden bg-white">
               {timeline.map((p, idx) => (
                 <li
                   key={idx}
-                  className="grid grid-cols-12 gap-4 p-4 border-b border-[#EAECEF] last:border-b-0"
+                  className="grid grid-cols-12 gap-4 p-4 border-b border-border last:border-b-0"
                 >
                   <div className="col-span-12 md:col-span-3">
-                    <div className="font-semibold text-[15px] text-[#111827]">
+                    <div className="font-semibold text-[15px] text-foreground">
                       {p.phase}
                     </div>
-                    <div className="text-[12px] text-[#6B7280] mt-0.5 tabular-nums">
+                    <div className="text-[12px] text-muted-foreground mt-0.5 tabular-nums">
                       {p.startWeek === p.endWeek
                         ? `Week ${p.startWeek}`
                         : `Week ${p.startWeek}–${p.endWeek}`}
@@ -207,12 +207,12 @@ export default async function ProposalSharePage({ params }: PageProps) {
                   </div>
                   <div className="col-span-12 md:col-span-9">
                     {p.deliverables.length === 0 ? (
-                      <span className="text-[13px] text-[#9CA3AF]">—</span>
+                      <span className="text-[13px] text-muted-foreground">—</span>
                     ) : (
-                      <ul className="space-y-1 text-[14px] text-[#374151] leading-relaxed">
+                      <ul className="space-y-1 text-[14px] text-[var(--gray-70)] leading-relaxed">
                         {p.deliverables.map((d, dIdx) => (
                           <li key={dIdx} className="flex gap-2">
-                            <span className="text-[#9CA3AF] shrink-0">•</span>
+                            <span className="text-muted-foreground shrink-0">•</span>
                             <span>{d}</span>
                           </li>
                         ))}
@@ -222,7 +222,7 @@ export default async function ProposalSharePage({ params }: PageProps) {
                 </li>
               ))}
             </ol>
-            <p className="mt-2 text-[11.5px] text-[#9CA3AF]">
+            <p className="mt-2 text-[11.5px] text-muted-foreground">
               Weeks count from the day this proposal is signed and paid.
             </p>
           </section>
@@ -258,12 +258,12 @@ export default async function ProposalSharePage({ params }: PageProps) {
             list on the left, "Due today" big number + button on the
             right. Sticky-on-the-right card is gone. */}
         <section
-          className="mt-12 rounded-2xl border border-[#EAECEF] bg-white p-6 sm:p-8 shadow-sm"
+          className="mt-12 rounded-2xl border border-border bg-white p-6 sm:p-8 shadow-sm"
           aria-label="Accept and pay"
         >
           <div className="grid gap-8 sm:grid-cols-[1fr_auto] sm:items-end">
             <div>
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-[#6B7280]">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Summary
               </h2>
               <dl className="mt-3 space-y-2 text-sm">
@@ -305,7 +305,7 @@ export default async function ProposalSharePage({ params }: PageProps) {
                 ) : null}
               </dl>
               {totals.hasTrial && totals.recurringTotal > 0 ? (
-                <p className="mt-4 max-w-md text-xs leading-relaxed text-[#6B7280]">
+                <p className="mt-4 max-w-md text-xs leading-relaxed text-muted-foreground">
                   Your {totals.trialDays}-day trial starts at acceptance.
                   Your card will be charged{" "}
                   {formatCents(totals.recurringTotal, currency)}
@@ -316,24 +316,24 @@ export default async function ProposalSharePage({ params }: PageProps) {
             </div>
 
             <div className="sm:text-right">
-              <span className="block text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">
+              <span className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Due today
               </span>
-              <span className="mt-1 block text-3xl font-semibold tabular-nums text-[#0F172A]">
+              <span className="mt-1 block text-3xl font-semibold tabular-nums text-foreground">
                 {formatCents(totals.firstInvoiceTotal, currency)}
               </span>
               <div className="mt-5 sm:max-w-[280px] sm:ml-auto space-y-3">
                 <AcceptButton token={token} agencyEmail={BRAND_EMAIL} />
-                <div className="flex items-center justify-between text-xs text-[#6B7280]">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <a
                     href={askQuestionHref}
-                    className="hover:text-[#0f62fe] hover:underline"
+                    className="hover:text-primary hover:underline"
                   >
                     Ask a question
                   </a>
                   <a
                     href={declineHref}
-                    className="hover:text-[#0f62fe] hover:underline"
+                    className="hover:text-primary hover:underline"
                   >
                     Decline
                   </a>
@@ -345,12 +345,12 @@ export default async function ProposalSharePage({ params }: PageProps) {
 
         {/* Contact line — kept above the shared shell footer for the
             "Questions / Privacy / Terms" affordances. */}
-        <div className="mt-12 border-t border-[#EAECEF] pt-5 flex flex-wrap items-center justify-between gap-3 text-xs text-[#6B7280]">
+        <div className="mt-12 border-t border-border pt-5 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
           <p>
             Questions?{" "}
             <a
               href={`mailto:${BRAND_EMAIL}`}
-              className="text-[#0f62fe] hover:underline"
+              className="text-primary hover:underline"
             >
               {BRAND_EMAIL}
             </a>
@@ -358,19 +358,19 @@ export default async function ProposalSharePage({ params }: PageProps) {
           <div className="flex items-center gap-4">
             <Link
               href="/privacy"
-              className="hover:text-[#0f62fe] hover:underline"
+              className="hover:text-primary hover:underline"
             >
               Privacy
             </Link>
             <Link
               href="/terms"
-              className="hover:text-[#0f62fe] hover:underline"
+              className="hover:text-primary hover:underline"
             >
               Terms
             </Link>
             <a
               href={BRAND.url}
-              className="hover:text-[#0f62fe] hover:underline"
+              className="hover:text-primary hover:underline"
               rel="noopener"
             >
               {BRAND_NAME}

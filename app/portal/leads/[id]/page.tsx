@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { trackServer } from "@/lib/analytics-server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { ALLOWED_WRITE_ROLES } from "@/lib/auth/write-roles";
 import { propertyWhereFragment } from "@/lib/tenancy/property-filter";
 import { avatarPaletteFor, extractIdentity } from "@/lib/visitors/enrichment";
 import { cn } from "@/lib/utils";
@@ -74,6 +76,9 @@ export default async function LeadDetailPage({
 }) {
   const scope = await requireScope();
   const { id } = await params;
+  // Read-only seats (CLIENT_VIEWER) see no write controls. Display only: the
+  // routes behind each control enforce the same set via requireWritableWorkspace.
+  const canWrite = ALLOWED_WRITE_ROLES.has(scope.role);
 
   // Lead + notes + lead-scoped insights run in parallel: notes and the
   // insight feed key off lead.id, but lead.id is identical to the URL
@@ -196,6 +201,11 @@ export default async function LeadDetailPage({
     }),
   ]);
   if (!lead) notFound();
+  // ponytail: no per-org "first view" marker without a schema column, so this
+  // fires on every view; dedupe by org in PostHog (first occurrence).
+  if (!scope.isAgency && !scope.isImpersonating) {
+    await trackServer({ event: "first_lead_viewed", distinctId: scope.orgId });
+  }
 
   // Conversation discovery — primary path is lead.conversations (the
   // FK relation set during chatbot capture). For historical leads from
@@ -374,19 +384,23 @@ export default async function LeadDetailPage({
         </nav>
         <div className="flex items-center gap-2">
           <CopyButton value={lead.email} label="Copy email" />
-          <LeadEmailComposer
-            leadId={lead.id}
-            to={lead.email}
-            unsubscribed={lead.unsubscribedFromEmails}
-            defaultSubject={`Following up on your interest in ${
-              lead.property?.name ?? "our properties"
-            }`}
-          />
-          <LeadSmsComposer
-            leadId={lead.id}
-            to={lead.phone}
-            smsEnabled={isSmsConfigured()}
-          />
+          {canWrite ? (
+            <>
+              <LeadEmailComposer
+                leadId={lead.id}
+                to={lead.email}
+                unsubscribed={lead.unsubscribedFromEmails}
+                defaultSubject={`Following up on your interest in ${
+                  lead.property?.name ?? "our properties"
+                }`}
+              />
+              <LeadSmsComposer
+                leadId={lead.id}
+                to={lead.phone}
+                smsEnabled={isSmsConfigured()}
+              />
+            </>
+          ) : null}
         </div>
       </div>
 
@@ -423,7 +437,7 @@ export default async function LeadDetailPage({
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground leading-tight">
+            <h1 className="text-[28px] md:text-[34px] font-semibold tracking-[-0.022em] text-foreground leading-[1.08]">
               {displayName}
             </h1>
             {subtitle ? (
@@ -527,23 +541,28 @@ export default async function LeadDetailPage({
               </h2>
             </div>
             <div className="flex items-center gap-2">
-              <LeadEmailComposer
-                leadId={lead.id}
-                to={lead.email}
-                unsubscribed={lead.unsubscribedFromEmails}
-                defaultSubject={followUpTasks[0]?.drafts[0]?.subject ?? undefined}
-              />
-              <LeadSmsComposer
-                leadId={lead.id}
-                to={lead.phone}
-                smsEnabled={isSmsConfigured()}
-              />
+              {canWrite ? (
+                <>
+                  <LeadEmailComposer
+                    leadId={lead.id}
+                    to={lead.email}
+                    unsubscribed={lead.unsubscribedFromEmails}
+                    defaultSubject={followUpTasks[0]?.drafts[0]?.subject ?? undefined}
+                  />
+                  <LeadSmsComposer
+                    leadId={lead.id}
+                    to={lead.phone}
+                    smsEnabled={isSmsConfigured()}
+                  />
+                </>
+              ) : null}
             </div>
           </div>
           <div className="mt-4 grid grid-cols-1 gap-3">
             {followUpTasks.map((task) => (
               <AiFollowUpTaskCard
                 key={task.id}
+                readOnly={!canWrite}
                 task={{
                   id: task.id,
                   taskType: task.taskType,
@@ -631,40 +650,60 @@ export default async function LeadDetailPage({
           </SidebarCard>
 
           <SidebarCard label="Status">
-            <LeadStatusForm
-              leadId={lead.id}
-              initialStatus={lead.status}
-              score={lead.score}
-            />
+            {canWrite ? (
+              <LeadStatusForm
+                leadId={lead.id}
+                initialStatus={lead.status}
+                score={lead.score}
+              />
+            ) : (
+              <p className="text-sm text-foreground">
+                {humanizeStatus(lead.status)}
+              </p>
+            )}
           </SidebarCard>
 
           <SidebarCard label="Signed lease">
-            <LinkResidentForm
-              leadId={lead.id}
-              linked={lead.residents.map((r) => ({
-                id: r.id,
-                name:
-                  [r.firstName, r.lastName].filter(Boolean).join(" ") ||
-                  "Resident",
-                unitNumber: r.unitNumber,
-                leaseStart: r.currentLease?.startDate
-                  ? r.currentLease.startDate.toISOString()
-                  : null,
-              }))}
-              candidates={residentCandidates.map((r) => ({
-                id: r.id,
-                name:
-                  [r.firstName, r.lastName].filter(Boolean).join(" ") ||
-                  "Resident",
-                unitNumber: r.unitNumber,
-                propertyName: r.property?.name ?? null,
-                moveInDate: r.moveInDate ? r.moveInDate.toISOString() : null,
-              }))}
-            />
+            {canWrite ? (
+              <LinkResidentForm
+                leadId={lead.id}
+                linked={lead.residents.map((r) => ({
+                  id: r.id,
+                  name:
+                    [r.firstName, r.lastName].filter(Boolean).join(" ") ||
+                    "Resident",
+                  unitNumber: r.unitNumber,
+                  leaseStart: r.currentLease?.startDate
+                    ? r.currentLease.startDate.toISOString()
+                    : null,
+                }))}
+                candidates={residentCandidates.map((r) => ({
+                  id: r.id,
+                  name:
+                    [r.firstName, r.lastName].filter(Boolean).join(" ") ||
+                    "Resident",
+                  unitNumber: r.unitNumber,
+                  propertyName: r.property?.name ?? null,
+                  moveInDate: r.moveInDate ? r.moveInDate.toISOString() : null,
+                }))}
+              />
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                {lead.residents.length > 0
+                  ? lead.residents
+                      .map(
+                        (r) =>
+                          [r.firstName, r.lastName].filter(Boolean).join(" ") ||
+                          "Resident",
+                      )
+                      .join(", ")
+                  : "No lease linked."}
+              </p>
+            )}
           </SidebarCard>
 
           <SidebarCard label="Notes">
-            <AddNoteForm leadId={lead.id} />
+            {canWrite ? <AddNoteForm leadId={lead.id} /> : null}
             {notes.length === 0 ? (
               <p className="mt-3 text-xs text-muted-foreground">
                 No notes yet.
@@ -700,18 +739,22 @@ export default async function LeadDetailPage({
                 label="Call"
                 icon={<Phone className="h-3.5 w-3.5" />}
               />
-              <ReviewRequestButton
-                leadId={lead.id}
-                alreadySentAt={
-                  lead.reviewRequestSentAt
-                    ? lead.reviewRequestSentAt.toISOString()
-                    : null
-                }
-                hasEmail={Boolean(lead.email)}
-                hasReviewUrl={Boolean(lead.property?.googleReviewUrl)}
-                unsubscribed={lead.unsubscribedFromEmails}
-              />
-              <MarkLostButton leadId={lead.id} />
+              {canWrite ? (
+                <ReviewRequestButton
+                  leadId={lead.id}
+                  alreadySentAt={
+                    lead.reviewRequestSentAt
+                      ? lead.reviewRequestSentAt.toISOString()
+                      : null
+                  }
+                  hasEmail={Boolean(lead.email)}
+                  hasReviewUrl={Boolean(lead.property?.googleReviewUrl)}
+                  unsubscribed={lead.unsubscribedFromEmails}
+                />
+              ) : null}
+              {canWrite && lead.status !== "LOST" ? (
+                <MarkLostButton leadId={lead.id} />
+              ) : null}
             </div>
           </SidebarCard>
         </aside>

@@ -39,7 +39,7 @@ export default function ConnectLoading() {
                     <div className="h-3 w-3/4 bg-muted/60 rounded-[2px]" />
                   </div>
                 </div>
-                <div className="border-t border-border-soft/40 pt-3 space-y-2">
+                <div className="border-t border-border pt-3 space-y-2">
                   <div className="h-3 w-16 bg-muted rounded-[2px]" />
                   <div className="h-3 w-2/3 bg-muted/60 rounded-[2px]" />
                   <div className="h-3 w-1/2 bg-muted/60 rounded-[2px]" />

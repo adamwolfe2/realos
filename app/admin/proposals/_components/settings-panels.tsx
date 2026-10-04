@@ -40,7 +40,7 @@ export function SettingsPanels({
                         : null,
                 });
               }}
-              className="w-full rounded-md border border-border bg-card px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="w-full rounded-card border border-border bg-card px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
             >
               <option value="MONTHLY">Monthly</option>
               <option value="ANNUAL">Annual</option>
@@ -62,7 +62,7 @@ export function SettingsPanels({
                   ),
                 })
               }
-              className="w-full rounded-md border border-border bg-card px-2 py-1.5 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="w-full rounded-card border border-border bg-card px-2 py-1.5 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </Field>
           <Field label="Expires at">
@@ -79,7 +79,7 @@ export function SettingsPanels({
                     : null,
                 })
               }
-              className="w-full rounded-md border border-border bg-card px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="w-full rounded-card border border-border bg-card px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </Field>
         </div>
@@ -95,7 +95,7 @@ export function SettingsPanels({
           onChange={(e) => onPatch({ publicMessage: e.target.value })}
           rows={4}
           placeholder="A note to the prospect — what this proposal covers and why it's tailored to them."
-          className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+          className="w-full rounded-card border border-border bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
       </SectionCard>
 
@@ -111,7 +111,7 @@ export function SettingsPanels({
           }
           rows={8}
           placeholder={`We'll build and launch a per-property marketing surface — hosted property pages, the AI Leasing Chatbot trained on your unit data, and the Cursive visitor pixel for identity resolution. Includes weekly performance reviews and a dedicated Slack channel for the first 60 days.`}
-          className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary/30 font-sans"
+          className="w-full rounded-card border border-border bg-card px-3 py-2 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary/30 font-sans"
         />
       </SectionCard>
 
@@ -131,7 +131,7 @@ export function SettingsPanels({
           onChange={(e) => onPatch({ internalNotes: e.target.value })}
           rows={3}
           placeholder="Negotiation context, follow-up reminders, etc."
-          className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+          className="w-full rounded-card border border-border bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
       </SectionCard>
     </>
@@ -216,7 +216,7 @@ function TimelineEditor({
         {phases.map((p, idx) => (
           <div
             key={idx}
-            className="rounded-md border border-border bg-card p-3 space-y-2"
+            className="rounded-card border border-border bg-card p-3 space-y-2"
           >
             <div className="grid grid-cols-12 gap-2 items-end">
               <div className="col-span-12 md:col-span-5">
@@ -229,7 +229,7 @@ function TimelineEditor({
                       patchPhase(idx, { phase: e.target.value })
                     }
                     placeholder="Kickoff"
-                    className="w-full rounded-md border border-border bg-card px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="w-full rounded-card border border-border bg-card px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </Field>
               </div>
@@ -249,7 +249,7 @@ function TimelineEditor({
                         ),
                       })
                     }
-                    className="w-full rounded-md border border-border bg-card px-2 py-1.5 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="w-full rounded-card border border-border bg-card px-2 py-1.5 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </Field>
               </div>
@@ -269,7 +269,7 @@ function TimelineEditor({
                         ),
                       })
                     }
-                    className="w-full rounded-md border border-border bg-card px-2 py-1.5 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="w-full rounded-card border border-border bg-card px-2 py-1.5 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </Field>
               </div>
@@ -324,7 +324,7 @@ function TimelineEditor({
                       patchDeliverable(idx, dIdx, e.target.value)
                     }
                     placeholder="Site live on staging URL"
-                    className="flex-1 rounded-md border border-border bg-card px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="flex-1 rounded-card border border-border bg-card px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                   <button
                     type="button"
@@ -380,7 +380,7 @@ export function PreviewMini({
   firstInvoiceCents: number;
 }) {
   return (
-    <div className="rounded-md border border-border bg-background p-4 space-y-2">
+    <div className="rounded-card border border-border bg-background p-4 space-y-2">
       <div className="text-xs text-muted-foreground uppercase tracking-widest">
         LeaseStack
       </div>

@@ -88,7 +88,7 @@ export function CostBackfillBanner({ vendorConsoles }: Props) {
 
   return (
     <section
-      className="rounded-xl border bg-white p-5"
+      className="rounded-card border bg-white p-5"
       style={{ borderColor: "#E5E7EB" }}
     >
       <div className="flex items-start gap-3 flex-wrap">
@@ -159,7 +159,7 @@ export function CostBackfillBanner({ vendorConsoles }: Props) {
               type="button"
               onClick={runBackfill}
               disabled={busy}
-              className="inline-flex items-center justify-center gap-1.5 rounded-md text-sm font-semibold disabled:opacity-60"
+              className="inline-flex items-center justify-center gap-1.5 rounded-card text-sm font-semibold disabled:opacity-60"
               style={{
                 backgroundColor: "#0f62fe",
                 color: "#FFFFFF",
@@ -192,7 +192,7 @@ export function CostBackfillBanner({ vendorConsoles }: Props) {
           {/* Success summary */}
           {result ? (
             <div
-              className="mt-3 rounded-md p-3 text-xs"
+              className="mt-3 rounded-card p-3 text-xs"
               style={{
                 backgroundColor: "rgba(22,163,74,0.06)",
                 border: "1px solid rgba(22,163,74,0.2)",
@@ -224,7 +224,7 @@ export function CostBackfillBanner({ vendorConsoles }: Props) {
           {/* Error */}
           {error ? (
             <div
-              className="mt-3 rounded-md p-3 text-xs flex items-start gap-2"
+              className="mt-3 rounded-card p-3 text-xs flex items-start gap-2"
               style={{
                 backgroundColor: "rgba(185,28,28,0.06)",
                 border: "1px solid rgba(185,28,28,0.2)",

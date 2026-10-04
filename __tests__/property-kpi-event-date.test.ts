@@ -13,6 +13,7 @@ const h = vi.hoisted(() => {
   const count = vi.fn(async () => 0);
   return {
     db: {
+      $queryRaw: vi.fn(async () => []),
       domainBinding: { findMany: vi.fn(async () => []) },
       lead: { count, findMany: vi.fn(async () => []) },
       tour: { count: vi.fn(async () => 0) },

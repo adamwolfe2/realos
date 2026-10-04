@@ -24,7 +24,7 @@ type SiIcon = { path: string; title: string };
 // ---------------------------------------------------------------------------
 
 const INK = "#161616";
-const MUTED = "#8d8d8d";
+const MUTED = "var(--color-muted-foreground)";
 const BORDER = "#e0e0e0";
 const BORDER_SOFT = "#e0e0e0";
 const CARD_BG = "#FFFFFF";

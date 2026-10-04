@@ -122,7 +122,7 @@ export default function MarketplaceLayout({
           as the LeaseStack /leads hero. <main> is relative + overflow-
           hidden so the absolute-positioned swirls fill the entire
           scrollable content area, and children sit above on z-10. */}
-      <main className="flex-1 relative overflow-hidden">
+      <main id="main-content" tabIndex={-1} className="flex-1 relative overflow-hidden focus:outline-none">
         <PixelSwirl />
         <GlyphSwirl />
         <div className="relative z-10">{children}</div>
@@ -139,19 +139,19 @@ export default function MarketplaceLayout({
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "11px",
-            color: "#94A3B8",
+            color: "var(--color-muted-foreground)",
             letterSpacing: "0.08em",
           }}
         >
           <span>© {new Date().getFullYear()} {BRAND_NAME}</span>
           <span className="flex items-center gap-4">
-            <Link href="/leads" style={{ color: "#94A3B8" }}>
+            <Link href="/leads" style={{ color: "var(--color-muted-foreground)" }}>
               Product
             </Link>
-            <Link href="/privacy" style={{ color: "#94A3B8" }}>
+            <Link href="/privacy" style={{ color: "var(--color-muted-foreground)" }}>
               Privacy
             </Link>
-            <Link href="/terms" style={{ color: "#94A3B8" }}>
+            <Link href="/terms" style={{ color: "var(--color-muted-foreground)" }}>
               Terms
             </Link>
           </span>

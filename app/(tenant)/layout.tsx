@@ -81,7 +81,6 @@ export default async function TenantLayout({
   }
 
   const brandStyle = {
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     ...({
       "--tenant-primary": tenant.primaryColor ?? "#111827",
       "--tenant-secondary": tenant.secondaryColor ?? "#f9fafb",
@@ -99,7 +98,7 @@ export default async function TenantLayout({
         gtmContainerId={readGtmContainerId(config?.customJson)}
       />
       <TenantNav tenant={tenant} />
-      <main className="flex-1">{children}</main>
+      <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">{children}</main>
       <TenantFooter tenant={tenant} />
       {config?.chatbotEnabled ? (
         <ChatbotLoaderFor tenant={tenant} config={config} />

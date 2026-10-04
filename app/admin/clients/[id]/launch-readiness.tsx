@@ -27,7 +27,7 @@ export function LaunchReadiness({ items }: Props) {
 
   return (
     <section
-      className="rounded-lg border border-border bg-card p-4 space-y-3"
+      className="rounded-card border border-border bg-card p-4 space-y-3"
       aria-labelledby="launch-readiness-title"
     >
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -61,7 +61,7 @@ export function LaunchReadiness({ items }: Props) {
           <li key={item.label}>
             <div
               className={[
-                "flex items-start gap-2.5 rounded-md border px-3 py-2",
+                "flex items-start gap-2.5 rounded-card border px-3 py-2",
                 item.status === "ok"
                   ? "border-border bg-card"
                   : item.status === "warn"

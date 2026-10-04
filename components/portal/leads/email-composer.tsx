@@ -1,5 +1,6 @@
 "use client";
 
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import * as React from "react";
 import { useTransition } from "react";
 import { Send, X, Loader2, Check } from "lucide-react";
@@ -92,22 +93,12 @@ export function LeadEmailComposer({
         <Send className="h-4 w-4" />
       </button>
 
-      {open ? (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4"
-          onClick={close}
-        >
-          <div
-            className="w-full max-w-xl ls-card shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-          >
+      <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : close())}>
+        <DialogContent className="max-w-xl ls-card shadow-2xl">
+          <div>
             <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-border">
               <div className="min-w-0">
-                <p className="ls-eyebrow">
-                  Send email
-                </p>
+                <DialogTitle className="ls-eyebrow">Send email</DialogTitle>
                 <p className="text-sm font-medium text-foreground truncate">
                   To: {to}
                 </p>
@@ -212,8 +203,8 @@ export function LeadEmailComposer({
               </div>
             </form>
           </div>
-        </div>
-      ) : null}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

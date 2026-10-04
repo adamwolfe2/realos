@@ -3,8 +3,10 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import {
   requireScope,
+  requireWritableWorkspace,
   ForbiddenError,
   tenantWhere,
+  type ScopedContext,
 } from "@/lib/tenancy/scope";
 import { DraftStatus, Prisma } from "@prisma/client";
 
@@ -42,8 +44,13 @@ const patchSchema = z.object({
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-async function loadDraft(id: string) {
-  const scope = await requireScope();
+// GET reads with requireScope; PATCH/DELETE pass requireWritableWorkspace
+// (write seat + trial gate).
+async function loadDraft(
+  id: string,
+  gate: () => Promise<ScopedContext> = requireScope,
+) {
+  const scope = await gate();
   const draft = await prisma.contentDraft.findFirst({
     where: { id, ...tenantWhere<{ orgId?: string }>(scope) } as never,
     select: {
@@ -86,7 +93,7 @@ export async function GET(_req: NextRequest, ctx: RouteContext) {
     return NextResponse.json({ draft });
   } catch (err) {
     if (err instanceof ForbiddenError) {
-      return NextResponse.json({ error: err.message }, { status: 403 });
+      return NextResponse.json({ error: err.message }, { status: err.status });
     }
     throw err;
   }
@@ -95,7 +102,7 @@ export async function GET(_req: NextRequest, ctx: RouteContext) {
 export async function PATCH(req: NextRequest, ctx: RouteContext) {
   try {
     const { id } = await ctx.params;
-    const { draft } = await loadDraft(id);
+    const { draft } = await loadDraft(id, requireWritableWorkspace);
     if (!draft) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
@@ -143,7 +150,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
     return NextResponse.json({ ok: true, draft: updated });
   } catch (err) {
     if (err instanceof ForbiddenError) {
-      return NextResponse.json({ error: err.message }, { status: 403 });
+      return NextResponse.json({ error: err.message }, { status: err.status });
     }
     throw err;
   }
@@ -152,7 +159,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
 export async function DELETE(_req: NextRequest, ctx: RouteContext) {
   try {
     const { id } = await ctx.params;
-    const { draft } = await loadDraft(id);
+    const { draft } = await loadDraft(id, requireWritableWorkspace);
     if (!draft) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
@@ -172,7 +179,7 @@ export async function DELETE(_req: NextRequest, ctx: RouteContext) {
     return NextResponse.json({ ok: true });
   } catch (err) {
     if (err instanceof ForbiddenError) {
-      return NextResponse.json({ error: err.message }, { status: 403 });
+      return NextResponse.json({ error: err.message }, { status: err.status });
     }
     throw err;
   }

@@ -86,7 +86,7 @@ If you are running a student housing lease-up and looking at your numbers monthl
 
 We wanted to build the platform those operators should have been buying all along. One login. One dashboard. Every module owned by the same team that built the others, so the handoffs between site, pixel, chatbot, ads, and CRM all work because they were designed to work together.
 
-The result is a single managed platform: a custom site on your domain, live listings synced from your PMS, an identity graph pixel that names a meaningful share of your anonymous visitors, an AI chatbot that captures leads around the clock, managed ads with 48 hour creative turnaround, and a lead pipeline that shows lease velocity instead of vanity metrics.
+The result is a single managed platform: a custom site on your domain, live listings synced from your PMS, an identity graph pixel that names a meaningful share of your anonymous visitors, an AI chatbot that captures leads around the clock, ad attribution that ties spend to signed leases, and a lead pipeline that shows lease velocity instead of vanity metrics.
 
 Operators get software that pays its own invoice. We earn the retainer every month, or the contract ends. This blog is the build log.`,
   },

@@ -283,7 +283,7 @@ export async function crawl(args: {
       if (poll.status === "completed") {
         const pages = Array.isArray(poll.data) ? poll.data : [];
         const costUsd = pages.length * COST_PER_PAGE_USD;
-        console.log(
+        console.info(
           `[firecrawl.crawl] $${costUsd.toFixed(4)} ${args.url} ${pages.length} pages`,
         );
         return {

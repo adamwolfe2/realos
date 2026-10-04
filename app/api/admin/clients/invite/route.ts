@@ -3,7 +3,7 @@ import { z } from "zod";
 import { clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
 import {
-  requireScope,
+  requireWorkspaceAdmin,
   auditPayload,
   ForbiddenError,
   type ScopedContext,
@@ -56,7 +56,8 @@ function normalizeRole(input: z.infer<typeof body>["role"]): UserRole {
 export async function POST(req: NextRequest) {
   let scope: ScopedContext;
   try {
-    scope = await requireScope();
+    // Admin seat + trial gate: only owners/admins (client or agency) invite.
+    scope = await requireWorkspaceAdmin();
   } catch (err) {
     if (err instanceof ForbiddenError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
@@ -107,7 +108,17 @@ export async function POST(req: NextRequest) {
     where: { clerkUserId: scope.clerkUserId },
     select: { role: true, orgId: true, firstName: true, lastName: true, email: true },
   });
-  const callerIsAgency = !!caller && AGENCY_ROLES.has(caller.role);
+  // scope.isAgency = AGENCY-typed org AND agency role. A role-only check let a
+  // client-org user holding an AGENCY_* role act as agency here.
+  const callerIsAgency = scope.isAgency;
+  // Target is always a CLIENT org (checked above): agency roles never belong
+  // there, whoever is inviting. SALES_REP normalizes to AGENCY_OPERATOR.
+  if (AGENCY_ROLES.has(role)) {
+    return NextResponse.json(
+      { error: "Agency roles can't be invited into a client workspace." },
+      { status: 400 },
+    );
+  }
   if (!callerIsAgency) {
     if (!caller || caller.orgId !== org.id) {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
@@ -123,6 +134,25 @@ export async function POST(req: NextRequest) {
         { error: "You can only invite client-team roles." },
         { status: 400 }
       );
+    }
+    // Mirrors manage-team.ts: only an Owner can mint another Owner.
+    if (role === UserRole.CLIENT_OWNER && caller.role !== UserRole.CLIENT_OWNER) {
+      return NextResponse.json(
+        { error: "Only an Owner can invite another Owner." },
+        { status: 403 },
+      );
+    }
+    // A property-restricted admin can only hand out buildings they hold; an
+    // empty list means org-wide access, which would lift their own restriction.
+    if (scope.allowedPropertyIds) {
+      const held = new Set(scope.allowedPropertyIds);
+      const requested = parsed.propertyIds ?? [];
+      if (requested.length === 0 || requested.some((id) => !held.has(id))) {
+        return NextResponse.json(
+          { error: "You can only grant access to properties you have access to." },
+          { status: 403 },
+        );
+      }
     }
   }
 
@@ -175,14 +205,18 @@ export async function POST(req: NextRequest) {
   // return an early 409 without opening a write path. An invite must NEVER
   // silently reassign a real user who already belongs to another workspace,
   // nor touch an agency user — that was an account-hijack vector (set their
-  // orgId/role to the inviter's org). Only a same-org re-invite (role/name
-  // change) or an unclaimed pending seed may be updated here; anything else
-  // needs an explicit transfer.
+  // orgId/role to the inviter's org). Only an unclaimed pending seed in the
+  // SAME org may be updated here (resend); anything else needs an explicit
+  // transfer.
   if (existing) {
     const isPendingSeed = existing.clerkUserId.startsWith("seed_pending_");
     const isAgencyUser =
       existing.role.startsWith("AGENCY_") || existing.role === "AL_PARTNER";
-    if (isAgencyUser || (existing.orgId !== org.id && !isPendingSeed)) {
+    // Any row in another org, claimed or still a pending seed, is a 409 for
+    // every caller: an invite never moves a user row across tenants. (Pending
+    // seeds used to be re-homed silently, which let one tenant take over
+    // another's outstanding invite.) Remove them from the other org first.
+    if (isAgencyUser || existing.orgId !== org.id) {
       return NextResponse.json(
         {
           error:
@@ -190,6 +224,42 @@ export async function POST(req: NextRequest) {
         },
         { status: 409 },
       );
+    }
+    // A claimed teammate is changed through the role / property-access
+    // editors (manage-team.ts), which carry the owner and last-owner guards.
+    // Re-invite never rewrites their role or grants.
+    if (!isPendingSeed) {
+      return NextResponse.json(
+        {
+          error:
+            "That person is already on this team. Change their role or property access from the team settings instead.",
+        },
+        { status: 409 },
+      );
+    }
+    // Unclaimed same-org seed: re-invite doubles as "resend" and may update
+    // the pending role. Same guards as manage-team.ts updateUserRoleAsClient.
+    if (existing.orgId === org.id && existing.role === UserRole.CLIENT_OWNER) {
+      if (!callerIsAgency && caller?.role !== UserRole.CLIENT_OWNER) {
+        return NextResponse.json(
+          { error: "Only an Owner can assign or change the Owner role." },
+          { status: 403 },
+        );
+      }
+      if (role !== UserRole.CLIENT_OWNER) {
+        const ownerCount = await prisma.user.count({
+          where: { orgId: org.id, role: UserRole.CLIENT_OWNER },
+        });
+        if (ownerCount <= 1) {
+          return NextResponse.json(
+            {
+              error:
+                "You can't remove the last Owner. Invite or promote another Owner first.",
+            },
+            { status: 409 },
+          );
+        }
+      }
     }
   }
 

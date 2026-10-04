@@ -219,7 +219,7 @@ async function call<T>(
 
   // Cost audit log + DB row. The console line stays so existing log
   // tooling still works; the DB row backs /admin/costs rollups.
-  console.log(
+  console.info(
     `[dataforseo] ${label} cost=$${task.cost.toFixed(5)} ok`,
   );
   await logUsage({

@@ -53,8 +53,10 @@ describe("API route structure", () => {
         const hasNamed = AUTH_PATTERNS.some((p) => content.includes(p));
         // requireScope() (auth) + inline isAgency/orgType check (authz) is
         // the explicit-inline equivalent of using the requireAgency helper.
+        // requireWorkspaceAdmin = requireScope + trial gate + admin-seat gate.
         const hasInline =
-          content.includes("requireScope") &&
+          (content.includes("requireScope") ||
+            content.includes("requireWorkspaceAdmin")) &&
           (content.includes("isAgency") ||
             content.includes("scope.orgType") ||
             content.includes("callerIsAgency") ||

@@ -25,3 +25,4 @@ github.com/adamwolfe2/realos · Ship: `cap`. Review: `dual-review`.
 - Repo is "realos", domain is leasestack.co. Key customer: Telegraph Commons / SG Real Estate (Norman Gensinger).
 - Track NOT manage — copy frames everything as tracking/intel, never property management.
 - Recurring proposals and the LeaseStack platform may share a Stripe Customer. Every subscription/invoice state transition must classify the exact subscription metadata; customer ID alone is never a platform-billing boundary.
+- Prisma `{ equals, mode: "insensitive" }` compiles to an unescaped `ILIKE` on Postgres (`_`/`%` are wildcards). Look up leads by email only via `lib/leads/find-by-email.ts`.

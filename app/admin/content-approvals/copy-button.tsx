@@ -34,7 +34,7 @@ export function CopyButton({ value, label = "Copy", className = "" }: Props) {
       type="button"
       onClick={onCopy}
       className={
-        "inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-muted transition-colors " +
+        "inline-flex items-center gap-1.5 rounded-card border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-muted transition-colors " +
         className
       }
       aria-label={label}

@@ -68,7 +68,13 @@ export function PropertyChatbotConfigForm({
   const captureValue = config?.chatbotCaptureMode ?? "";
 
   return (
-    <form action={onSubmit} className="space-y-4 rounded-[2px] border border-border bg-card p-4 sm:p-6">
+    <form
+      // onSubmit (not action=) so React 19 does not reset typed fields on error.
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit(new FormData(e.currentTarget));
+      }}
+      className="space-y-4 rounded-[2px] border border-border bg-card p-4 sm:p-6">
       <input type="hidden" name="propertyId" value={propertyId} />
 
       <div>
@@ -81,8 +87,8 @@ export function PropertyChatbotConfigForm({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className={LABEL}>Status</label>
-          <select name="chatbotEnabled" defaultValue={enabledValue} className={FIELD}>
+          <label htmlFor="pcc-chatbotEnabled" className={LABEL}>Status</label>
+          <select id="pcc-chatbotEnabled" name="chatbotEnabled" defaultValue={enabledValue} className={FIELD}>
             <option value="inherit">
               Inherit workspace ({orgDefaults.chatbotEnabled ? "On" : "Off"})
             </option>
@@ -92,8 +98,8 @@ export function PropertyChatbotConfigForm({
         </div>
 
         <div>
-          <label className={LABEL}>Capture mode</label>
-          <select name="chatbotCaptureMode" defaultValue={captureValue} className={FIELD}>
+          <label htmlFor="pcc-chatbotCaptureMode" className={LABEL}>Capture mode</label>
+          <select id="pcc-chatbotCaptureMode" name="chatbotCaptureMode" defaultValue={captureValue} className={FIELD}>
             <option value="">Inherit ({orgDefaults.chatbotCaptureMode})</option>
             <option value="PRE_CHAT">Pre-chat</option>
             <option value="ON_INTENT">On intent</option>
@@ -102,8 +108,8 @@ export function PropertyChatbotConfigForm({
         </div>
 
         <div>
-          <label className={LABEL}>Persona name</label>
-          <input
+          <label htmlFor="pcc-chatbotPersonaName" className={LABEL}>Persona name</label>
+          <input id="pcc-chatbotPersonaName"
             name="chatbotPersonaName"
             defaultValue={config?.chatbotPersonaName ?? ""}
             placeholder={inheritHint(orgDefaults.chatbotPersonaName)}
@@ -112,8 +118,8 @@ export function PropertyChatbotConfigForm({
         </div>
 
         <div>
-          <label className={LABEL}>Brand color (hex)</label>
-          <input
+          <label htmlFor="pcc-chatbotBrandColor" className={LABEL}>Brand color (hex)</label>
+          <input id="pcc-chatbotBrandColor"
             name="chatbotBrandColor"
             defaultValue={config?.chatbotBrandColor ?? ""}
             placeholder="#1a1a2e"
@@ -123,8 +129,8 @@ export function PropertyChatbotConfigForm({
       </div>
 
       <div>
-        <label className={LABEL}>Greeting</label>
-        <input
+        <label htmlFor="pcc-chatbotGreeting" className={LABEL}>Greeting</label>
+        <input id="pcc-chatbotGreeting"
           name="chatbotGreeting"
           defaultValue={config?.chatbotGreeting ?? ""}
           placeholder={inheritHint(orgDefaults.chatbotGreeting)}
@@ -133,8 +139,8 @@ export function PropertyChatbotConfigForm({
       </div>
 
       <div>
-        <label className={LABEL}>Knowledge base (facts about this property)</label>
-        <textarea
+        <label htmlFor="pcc-chatbotKnowledgeBase" className={LABEL}>Knowledge base (facts about this property)</label>
+        <textarea id="pcc-chatbotKnowledgeBase"
           name="chatbotKnowledgeBase"
           defaultValue={config?.chatbotKnowledgeBase ?? ""}
           rows={5}
@@ -153,8 +159,8 @@ export function PropertyChatbotConfigForm({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className={LABEL}>Teaser text</label>
-          <input
+          <label htmlFor="pcc-chatbotTeaserText" className={LABEL}>Teaser text</label>
+          <input id="pcc-chatbotTeaserText"
             name="chatbotTeaserText"
             defaultValue={config?.chatbotTeaserText ?? ""}
             placeholder="Questions? I'm here."
@@ -162,8 +168,8 @@ export function PropertyChatbotConfigForm({
           />
         </div>
         <div>
-          <label className={LABEL}>Follow-up message</label>
-          <input
+          <label htmlFor="pcc-chatbotFollowUpMessage" className={LABEL}>Follow-up message</label>
+          <input id="pcc-chatbotFollowUpMessage"
             name="chatbotFollowUpMessage"
             defaultValue={config?.chatbotFollowUpMessage ?? ""}
             placeholder="Optional second message"
@@ -171,8 +177,10 @@ export function PropertyChatbotConfigForm({
           />
         </div>
         <div>
-          <label className={LABEL}>Contact phone</label>
-          <input
+          <label htmlFor="pcc-phoneNumber" className={LABEL}>Contact phone</label>
+          <input id="pcc-phoneNumber"
+            type="tel"
+            inputMode="tel"
             name="phoneNumber"
             defaultValue={config?.phoneNumber ?? ""}
             placeholder={inheritHint(orgDefaults.phoneNumber)}
@@ -180,8 +188,9 @@ export function PropertyChatbotConfigForm({
           />
         </div>
         <div>
-          <label className={LABEL}>Contact email</label>
-          <input
+          <label htmlFor="pcc-contactEmail" className={LABEL}>Contact email</label>
+          <input id="pcc-contactEmail"
+            type="email"
             name="contactEmail"
             defaultValue={config?.contactEmail ?? ""}
             placeholder={inheritHint(orgDefaults.contactEmail)}
@@ -189,8 +198,8 @@ export function PropertyChatbotConfigForm({
           />
         </div>
         <div>
-          <label className={LABEL}>Primary CTA text</label>
-          <input
+          <label htmlFor="pcc-primaryCtaText" className={LABEL}>Primary CTA text</label>
+          <input id="pcc-primaryCtaText"
             name="primaryCtaText"
             defaultValue={config?.primaryCtaText ?? ""}
             placeholder={inheritHint(orgDefaults.primaryCtaText)}
@@ -198,8 +207,8 @@ export function PropertyChatbotConfigForm({
           />
         </div>
         <div>
-          <label className={LABEL}>Primary CTA URL</label>
-          <input
+          <label htmlFor="pcc-primaryCtaUrl" className={LABEL}>Primary CTA URL</label>
+          <input id="pcc-primaryCtaUrl"
             name="primaryCtaUrl"
             defaultValue={config?.primaryCtaUrl ?? ""}
             placeholder={inheritHint(orgDefaults.primaryCtaUrl)}

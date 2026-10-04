@@ -526,7 +526,7 @@ export function EmptyCell() {
   return (
     <span
       aria-hidden="true"
-      className="inline-flex items-center text-muted-foreground/50 text-[12px] leading-tight"
+      className="inline-flex items-center text-muted-foreground text-[12px] leading-tight"
     >
       —
     </span>

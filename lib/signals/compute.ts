@@ -198,13 +198,6 @@ async function computeProspectSignals(
       domain,
       crawl,
     });
-    if (identity.nameSource !== "supplied") {
-      console.log(
-        `[audit.identity] ${domain} -> "${identity.name}" ` +
-          `(${identity.nameSource}, ${identity.confidence}, ` +
-          `+${Date.now() - startedAt}ms before the name-keyed fan-outs)`,
-      );
-    }
     return identity;
   })();
 

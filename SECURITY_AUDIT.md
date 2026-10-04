@@ -29,7 +29,7 @@ All confirmed Critical/High findings, plus several Medium ones, were **fixed on 
 
 **Stack:** Next.js 16 (App Router, Turbopack), TypeScript strict, React 19, Prisma 7 + Neon Postgres, Clerk (multi-org auth), Stripe (billing), Resend (email), Anthropic Claude (chatbot + SEO drafter), Upstash Redis (rate limiting), Vercel Blob (storage), Vercel hosting, Sentry + PostHog.
 
-**Four surfaces, one app, routed by hostname in `middleware.ts`:**
+**Four surfaces, one app, routed by hostname in `proxy.ts`:**
 1. Platform marketing site (`leasestack.co`)
 2. Master admin (`/admin`) — agency staff, cross-tenant, impersonation
 3. Client portal (`/portal`) — operator dashboard

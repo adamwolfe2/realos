@@ -7,6 +7,7 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import { ContentFormat, DraftStatus } from "@prisma/client";
+import { escapeHtml } from "@/lib/escape-html";
 
 // ---------------------------------------------------------------------------
 // /portal/content/[id] — TipTap-backed inline editor with streaming chat
@@ -310,7 +311,6 @@ export function EditorClient(props: Props) {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
-      // eslint-disable-next-line no-constant-condition
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -578,7 +578,7 @@ export function EditorClient(props: Props) {
            TipTap's render path.
            ----------------------------------------------------------------- */
         .content-editor .content-editor-prose {
-          font-family: var(--font-serif, "Instrument Serif"), Georgia, serif;
+          font-family: var(--font-sans);
           color: var(--color-foreground);
           font-size: 17px;
           line-height: 1.65;
@@ -752,10 +752,3 @@ function TypingIndicator() {
   );
 }
 
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}

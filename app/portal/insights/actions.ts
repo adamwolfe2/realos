@@ -2,10 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
-import { requireScope } from "@/lib/tenancy/scope";
+import { requireScope, requireWritableWorkspace } from "@/lib/tenancy/scope";
 
+// Mutations on org-shared insights: write seat + trial gate.
 async function getOwnedInsight(id: string) {
-  const scope = await requireScope();
+  const scope = await requireWritableWorkspace();
   const insight = await prisma.insight.findFirst({
     where: { id, orgId: scope.orgId },
     select: { id: true },
@@ -86,7 +87,7 @@ export async function markActed(id: string) {
 
 export async function runDetectorsNow() {
   try {
-    const scope = await requireScope();
+    const scope = await requireWritableWorkspace();
     const { runInsightDetectors } = await import("@/lib/insights/run");
     const summary = await runInsightDetectors(scope.orgId);
     revalidatePath("/portal/insights");
@@ -105,6 +106,8 @@ export async function runDetectorsNow() {
 
 export async function markBriefingViewed() {
   try {
+    // requireScope on purpose: stamps only the caller's own user row, so
+    // read-only seats and lapsed trials still clear their briefing badge.
     const scope = await requireScope();
     await prisma.user.update({
       where: { id: scope.userId },

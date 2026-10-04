@@ -25,9 +25,13 @@ export type InsightCardData = {
 export function InsightCard({
   insight,
   dense,
+  readOnly = false,
 }: {
   insight: InsightCardData;
   dense?: boolean;
+  /** Read-only seats (role outside ALLOWED_WRITE_ROLES): hide lifecycle
+   *  actions. Display only; the server actions enforce the same gate. */
+  readOnly?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
 
@@ -172,6 +176,7 @@ export function InsightCard({
       ) : null}
 
       <footer className="mt-3 flex items-center justify-between gap-2">
+        {readOnly ? <div /> : (
         <div className="flex items-center gap-1">
           {!acked ? (
             <ActionBtn
@@ -197,6 +202,7 @@ export function InsightCard({
             accent
           />
         </div>
+        )}
         {insight.href ? (
           <Link
             href={insight.href}

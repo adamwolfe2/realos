@@ -4,6 +4,15 @@ import { prisma } from "@/lib/db";
 import { ProspectAuditStatus, Prisma } from "@prisma/client";
 import { isValidShareToken } from "@/lib/audit/token";
 import { getSiteUrl } from "@/lib/brand";
+import { soft } from "@/lib/soft";
+import {
+  auditRerunLimiter,
+  auditStartLimiter,
+  checkRateLimit,
+  releaseRateLimit,
+  getIp,
+  rateLimited,
+} from "@/lib/rate-limit";
 
 // POST /api/audit/[id]/rerun
 // Public — gated by shareToken match, not Clerk. The viewer's empty-state
@@ -21,10 +30,25 @@ const BodySchema = z.object({
 
 const RERUN_GRACE_MS = 60_000;
 
+function retryAfterSec(reset: number): number {
+  return Math.max(1, Math.ceil((reset - Date.now()) / 1000));
+}
+
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function POST(req: NextRequest, ctx: RouteContext) {
   const { id: tokenFromPath } = await ctx.params;
+
+  // Per-IP cap (same budget as /audit/start, separate key so re-runs never
+  // eat into a prospect's start quota). Fails closed in prod like siblings.
+  const ipLimit = await checkRateLimit(auditStartLimiter, `rerun:${getIp(req)}`);
+  if (!ipLimit.allowed) {
+    const sec = retryAfterSec(ipLimit.reset);
+    return rateLimited(
+      "Too many re-run requests. Please try again later.",
+      sec,
+    );
+  }
 
   let body: unknown;
   try {
@@ -78,20 +102,45 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     return NextResponse.json({ ok: true, status: audit.status });
   }
 
+  // Per-audit cooldown: at most one re-run per audit per hour. Keyed in
+  // Redis rather than on updatedAt because every viewer page load bumps
+  // updatedAt (view counter), which would block the button indefinitely.
+  const auditLimit = await checkRateLimit(auditRerunLimiter, audit.id);
+  if (!auditLimit.allowed) {
+    const sec = retryAfterSec(auditLimit.reset);
+    const minutes = Math.ceil(sec / 60);
+    return rateLimited(
+      `This scan was re-run recently. You can re-run it again in about ${minutes} minute${minutes === 1 ? "" : "s"}.`,
+      sec,
+    );
+  }
+
   // Reset the synthesized payload. We keep brandName + email so the viewer
   // doesn't lose state between runs. The run route will overwrite everything
   // when it finishes.
-  await prisma.prospectAudit.update({
-    where: { id: audit.id },
-    data: {
-      status: ProspectAuditStatus.QUEUED,
-      errorMessage: null,
-      overallScore: null,
-      sectionScores: Prisma.JsonNull,
-      claudeSummary: null,
-      findings: Prisma.JsonNull,
-    },
-  });
+  // If the run can't start, give the cooldown slot back so the prospect
+  // isn't locked out of retrying for an hour.
+  const release = () =>
+    releaseRateLimit(auditRerunLimiter, audit.id).catch(
+      soft(undefined, "audit.rerun.release"),
+    );
+
+  try {
+    await prisma.prospectAudit.update({
+      where: { id: audit.id },
+      data: {
+        status: ProspectAuditStatus.QUEUED,
+        errorMessage: null,
+        overallScore: null,
+        sectionScores: Prisma.JsonNull,
+        claudeSummary: null,
+        findings: Prisma.JsonNull,
+      },
+    });
+  } catch (err) {
+    await release();
+    throw err;
+  }
 
   // Fire-and-forget trigger — same pattern as /api/audit/start.
   const triggerUrl = `${getSiteUrl()}/api/audit/run/${audit.id}`;
@@ -102,9 +151,16 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       "Content-Type": "application/json",
       "x-internal-trigger": cronSecret,
     },
-  }).catch(() => {
-    /* swallow — the viewer polls and surfaces stuck-QUEUED to the user */
-  });
+  })
+    .then((res) => {
+      if (!res.ok) throw new Error(`audit run trigger returned ${res.status}`);
+    })
+    .catch(async (err) => {
+      // The viewer polls and surfaces stuck-QUEUED to the user; log so a
+      // broken trigger is visible.
+      soft(undefined, "audit.rerun.trigger")(err);
+      await release();
+    });
 
   return NextResponse.json({ ok: true, status: ProspectAuditStatus.QUEUED });
 }

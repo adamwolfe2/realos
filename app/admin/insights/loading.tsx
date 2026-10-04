@@ -16,19 +16,19 @@ export default function AdminInsightsLoading() {
         ))}
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+      <div className="rounded-card border border-border bg-card p-4 space-y-3">
         <div className="h-3 w-40 bg-muted rounded" />
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
           {[0, 1, 2, 3].map((i) => (
             <div
               key={i}
-              className="h-10 rounded-md border border-border bg-muted/20"
+              className="h-10 rounded-card border border-border bg-muted/20"
             />
           ))}
         </div>
       </div>
 
-      <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
+      <div className="rounded-card border border-border bg-card overflow-hidden divide-y divide-border">
         {[0, 1, 2, 3, 4, 5, 6].map((i) => (
           <div
             key={i}

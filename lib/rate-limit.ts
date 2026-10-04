@@ -44,6 +44,18 @@ export const publicSignupLimiter = createLimiter(redis, 5, '1 h')
 // abuse / multi-domain scraping attempts.
 export const auditStartLimiter = createLimiter(redis, 5, '1 h')
 
+// 1 public /audit re-run per audit per hour (keyed by audit id). The rerun
+// route is gated only by the public share token, so without this anyone
+// holding a share link could re-fire the paid fan-out as soon as each run
+// finished. Per-IP pressure on the same route reuses auditStartLimiter.
+export const auditRerunLimiter = createLimiter(redis, 1, '1 h')
+
+// 50 /build-a-chatbot demo chat turns per IP per day. The demo is an
+// unauthenticated Claude call on LeaseStack's key; the per-minute
+// publicApiLimiter alone allowed ~86k calls/IP/day. No softFallback:
+// fails closed in prod like the other public lead-magnet limiters.
+export const chatbotDemoDailyLimiter = createLimiter(redis, 50, '1 d')
+
 // 3 drop notify blasts per userId per minute
 export const notifyLimiter = createLimiter(redis, 3, '1 m')
 
@@ -212,7 +224,7 @@ export async function checkRateLimit(
   limiter: Ratelimit | null,
   identifier: string,
   options?: { softFallback?: { requests: number; windowMs: number } },
-): Promise<{ allowed: boolean; limit: number; remaining: number; reset: number }> {
+): Promise<{ allowed: boolean; limit: number; remaining: number; reset: number; unavailable?: true }> {
   if (!limiter) {
     // Soft fallback: low-stakes operator-facing tools (Zillow lookup,
     // CSV export, etc.) opt in by passing softFallback. When Redis is
@@ -243,6 +255,8 @@ export async function checkRateLimit(
         limit: 0,
         remaining: 0,
         reset: Date.now() + 60_000,
+        // Distinguishes "limiter down/unset" from a real over-limit result.
+        unavailable: true,
       };
     }
     // Development: fail open.
@@ -255,6 +269,18 @@ export async function checkRateLimit(
     remaining: result.remaining,
     reset: result.reset,
   }
+}
+
+/**
+ * Give back a consumed slot (e.g. the guarded action failed to start).
+ * No-op when the limiter is unconfigured.
+ */
+export async function releaseRateLimit(
+  limiter: Ratelimit | null,
+  identifier: string,
+): Promise<void> {
+  if (!limiter) return
+  await limiter.resetUsedTokens(identifier)
 }
 
 // ---------------------------------------------------------------------------

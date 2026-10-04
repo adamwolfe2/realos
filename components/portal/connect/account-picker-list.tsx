@@ -167,7 +167,7 @@ export function AccountPickerList({
                 <p
                   className={cn(
                     "text-[11px] mt-0.5 font-mono",
-                    item.disabled ? "text-muted-foreground/70" : "text-muted-foreground",
+                    item.disabled ? "text-muted-foreground" : "text-muted-foreground",
                   )}
                 >
                   {item.detail}

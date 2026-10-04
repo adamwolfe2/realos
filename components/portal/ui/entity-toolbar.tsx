@@ -156,7 +156,8 @@ export function EntityToolbar({
                 name={search.name ?? "q"}
                 defaultValue={search.defaultValue ?? ""}
                 placeholder={search.placeholder ?? "Search…"}
-                className="h-7 w-44 rounded-[2px] border border-border bg-background px-2 text-[11px] placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                aria-label={search.placeholder ?? "Search"}
+                className="h-7 w-44 rounded-[2px] border border-border bg-background px-2 text-[11px] placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </form>
           ) : null}
@@ -221,7 +222,7 @@ function FilterChip({ filter }: { filter: ToolbarFilter }) {
         href={filter.removeHref}
         scroll={false}
         aria-label={`Remove ${filter.field} filter`}
-        className="inline-flex items-center justify-center w-4 h-4 rounded-[2px] hover:bg-primary/20 transition-colors"
+        className="relative inline-flex items-center justify-center w-4 h-4 rounded-[2px] hover:bg-primary/20 transition-colors before:absolute before:-inset-2"
       >
         <X className="h-2.5 w-2.5" />
       </Link>

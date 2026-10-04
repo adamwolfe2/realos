@@ -67,7 +67,7 @@ function Hero() {
               <p
                 className="mb-6"
                 style={{
-                  color: "#94A3B8",
+                  color: "var(--color-muted-foreground)",
                   fontFamily: "var(--font-mono)",
                   fontSize: "11px",
                   letterSpacing: "0.18em",
@@ -177,7 +177,7 @@ function FounderCard() {
               fontSize: "10px",
               letterSpacing: "0.1em",
               textTransform: "uppercase",
-              color: "#94A3B8",
+              color: "var(--color-muted-foreground)",
               marginTop: "2px",
               fontWeight: 500,
             }}
@@ -199,7 +199,7 @@ function FounderCard() {
                 fontSize: "11px",
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
-                color: "#94A3B8",
+                color: "var(--color-muted-foreground)",
                 fontWeight: 500,
               }}
             >
@@ -228,7 +228,7 @@ function FounderCard() {
             fontSize: "10px",
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#94A3B8",
+            color: "var(--color-muted-foreground)",
             fontWeight: 500,
           }}
         >
@@ -365,7 +365,7 @@ function Body() {
               fontSize: "12px",
               letterSpacing: "0.12em",
               textTransform: "uppercase",
-              color: "#94A3B8",
+              color: "var(--color-muted-foreground)",
               fontWeight: 500,
             }}
           >

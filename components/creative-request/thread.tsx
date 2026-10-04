@@ -122,7 +122,7 @@ export function CreativeRequestThread({
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <header className="space-y-1">
-        <h1 className="font-serif text-3xl font-bold">{request.title}</h1>
+        <h1 className="text-3xl font-semibold">{request.title}</h1>
         <p className="text-xs opacity-60">
           {request.format} · {request.status}
           {request.revisionCount
@@ -160,13 +160,12 @@ export function CreativeRequestThread({
       ) : null}
 
       <section className="border rounded-md p-5 space-y-3">
-        <h2 className="font-serif text-lg font-bold">Deliverables</h2>
+        <h2 className="text-lg font-semibold">Deliverables</h2>
         {deliverables.length === 0 ? (
           <p className="text-sm opacity-70">No deliverables uploaded yet.</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {deliverables.map((u) => (
-              // eslint-disable-next-line @next/next/no-img-element
               <a key={u} href={u} target="_blank" rel="noreferrer">
                 <img
                   src={u}
@@ -224,7 +223,7 @@ export function CreativeRequestThread({
       </section>
 
       <section className="border rounded-md p-5 space-y-4">
-        <h2 className="font-serif text-lg font-bold">Conversation</h2>
+        <h2 className="text-lg font-semibold">Conversation</h2>
         <div className="space-y-3">
           {request.messages.length === 0 ? (
             <p className="text-xs opacity-60">
@@ -249,7 +248,6 @@ export function CreativeRequestThread({
                 </div>
                 <p className="whitespace-pre-wrap">{m.content}</p>
                 {(m.attachmentUrls ?? []).map((u) => (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <a key={u} href={u} target="_blank" rel="noreferrer">
                     <img
                       src={u}
@@ -297,10 +295,9 @@ export function CreativeRequestThread({
 function AssetGrid({ label, urls }: { label: string; urls: string[] }) {
   return (
     <section className="border rounded-md p-5">
-      <h3 className="font-serif text-sm font-semibold mb-3">{label}</h3>
+      <h3 className="text-sm font-semibold mb-3">{label}</h3>
       <div className="flex flex-wrap gap-2">
         {urls.map((u) => (
-          // eslint-disable-next-line @next/next/no-img-element
           <a key={u} href={u} target="_blank" rel="noreferrer">
             <img
               src={u}

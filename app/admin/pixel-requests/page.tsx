@@ -124,7 +124,7 @@ export default async function PixelRequestsPage({
         <FilterTab href="?filter=all" active={filter === "all"} label="All" count={pendingCount + fulfilledCount + cancelledCount} />
       </div>
 
-      <div className="border border-border bg-card rounded-lg overflow-hidden">
+      <div className="border border-border bg-card rounded-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -199,7 +199,7 @@ export default async function PixelRequestsPage({
                         <div className="flex items-center justify-end gap-2">
                           <Link
                             href={`/admin/clients/${r.org.id}#cursive-panel`}
-                            className="text-xs text-foreground bg-primary text-primary-foreground rounded-md px-3 py-1.5 hover:bg-primary/90 transition-colors"
+                            className="text-xs text-foreground bg-primary text-primary-foreground rounded-card px-3 py-1.5 hover:bg-primary/90 transition-colors"
                             style={{ borderRadius: 6 }}
                           >
                             Fulfill in AL →
@@ -248,8 +248,8 @@ function FilterTab({
       href={href}
       className={
         active
-          ? "inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-border bg-primary text-primary-foreground hover:bg-primary-dark transition-colors"
-          : "inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-border hover:bg-secondary transition-colors"
+          ? "inline-flex items-center gap-2 px-3 py-1.5 rounded-card border border-border bg-primary text-primary-foreground hover:bg-primary-dark transition-colors"
+          : "inline-flex items-center gap-2 px-3 py-1.5 rounded-card border border-border hover:bg-secondary transition-colors"
       }
       style={{ borderRadius: 6 }}
     >

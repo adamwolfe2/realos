@@ -10,7 +10,7 @@
 // We polyfill instead of swallowing the error so that any OTHER bug in
 // the page surfaces normally.
 //
-// See BUILD_LOG.md for the underlying product bug. Once the chatbot
+// See docs/archive/BUILD_LOG.md for the underlying product bug. Once the chatbot
 // widget guards its own randomUUID call, this polyfill becomes dead code
 // and can be removed.
 

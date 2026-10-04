@@ -142,7 +142,7 @@ function NumberField({
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="h-12 w-full border px-3 text-[18px] font-semibold tabular-nums outline-none transition-colors focus:border-[#0f62fe]"
+        className="h-12 w-full border px-3 text-[18px] font-semibold tabular-nums outline-none transition-colors focus:border-[#0f62fe] focus-visible:ring-2 focus-visible:ring-[#0f62fe]/30"
         style={{
           borderColor: "#c6c6c6",
           borderRadius: 2,
@@ -259,7 +259,7 @@ function SendMathGate({
             onChange={(e) => setName(e.target.value)}
             autoComplete="name"
             required
-            className="h-11 w-full border px-3 text-[14px] outline-none transition-colors focus:border-[#0f62fe]"
+            className="h-11 w-full border px-3 text-[14px] outline-none transition-colors focus:border-[#0f62fe] focus-visible:ring-2 focus-visible:ring-[#0f62fe]/30"
             style={{ borderColor: "#c6c6c6", borderRadius: 2, color: "#161616" }}
           />
         </label>
@@ -272,7 +272,7 @@ function SendMathGate({
             onChange={(e) => setCompany(e.target.value)}
             autoComplete="organization"
             required
-            className="h-11 w-full border px-3 text-[14px] outline-none transition-colors focus:border-[#0f62fe]"
+            className="h-11 w-full border px-3 text-[14px] outline-none transition-colors focus:border-[#0f62fe] focus-visible:ring-2 focus-visible:ring-[#0f62fe]/30"
             style={{ borderColor: "#c6c6c6", borderRadius: 2, color: "#161616" }}
           />
         </label>
@@ -288,7 +288,7 @@ function SendMathGate({
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
           required
-          className="h-11 w-full border px-3 text-[14px] outline-none transition-colors focus:border-[#0f62fe]"
+          className="h-11 w-full border px-3 text-[14px] outline-none transition-colors focus:border-[#0f62fe] focus-visible:ring-2 focus-visible:ring-[#0f62fe]/30"
           style={{ borderColor: "#c6c6c6", borderRadius: 2, color: "#161616" }}
         />
       </label>

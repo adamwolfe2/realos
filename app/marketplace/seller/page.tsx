@@ -265,7 +265,7 @@ export default async function SellerDashboardPage() {
                         style={{
                           fontFamily: "var(--font-mono)",
                           fontSize: "10.5px",
-                          color: "#94A3B8",
+                          color: "var(--color-muted-foreground)",
                           marginTop: "1px",
                         }}
                       >
@@ -339,7 +339,7 @@ export default async function SellerDashboardPage() {
                           style={{
                             fontFamily: "var(--font-mono)",
                             fontSize: "10px",
-                            color: "#94A3B8",
+                            color: "var(--color-muted-foreground)",
                           }}
                         >
                           {new Date(p.createdAt).toLocaleDateString()}
@@ -367,7 +367,7 @@ export default async function SellerDashboardPage() {
               <div className="mt-5 pt-4 border-t border-slate-200">
                 <p
                   style={{
-                    color: "#94A3B8",
+                    color: "var(--color-muted-foreground)",
                     fontFamily: "var(--font-mono)",
                     fontSize: "9.5px",
                     letterSpacing: "0.14em",
@@ -559,7 +559,7 @@ function Tile({
           fontSize: "10px",
           letterSpacing: "0.14em",
           textTransform: "uppercase",
-          color: "#94A3B8",
+          color: "var(--color-muted-foreground)",
           fontWeight: 600,
         }}
       >

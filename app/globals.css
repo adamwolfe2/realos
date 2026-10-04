@@ -16,8 +16,11 @@
 /* Mobile device support */
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); padding-bottom: env(safe-area-inset-bottom); }
-@media (pointer: coarse) {
-  button, [role="button"], a, input[type="checkbox"], input[type="radio"] { min-height: 44px; min-width: 44px; }
+/* 44x44 touch targets: small touch screens only (phones, < 768px), so iPads
+   (768px+) keep dense portal/admin layouts. Dense table content is exempt, and
+   checkbox/radio sizing is left to the native control plus its label. */
+@media (pointer: coarse) and (max-width: 767px) {
+  :where(button, [role="button"], a):not(:where(table *)) { min-height: 44px; min-width: 44px; }
 }
 
 /* =============================================================================
@@ -97,9 +100,29 @@ body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-ins
 
   /* Ink alias (same value as foreground), used by the pricing components. */
   --color-ink: #161616;
+
+  /* Carbon shape tokens (DESIGN.md §4): cards/panels 2px, app controls 2px.
+     Use rounded-card / rounded-control instead of rounded-[2px] or the
+     Tailwind rounded-md/lg/xl defaults (6/8/12px), which are off-spec. */
+  --radius-card: 2px;
+  --radius-control: 2px;
+
+  /* Micro type scale: names for the most-used arbitrary sizes so nothing
+     shifts. No line-height is set (matches text-[Npx], which only sets size).
+     Use text-2xs / text-label / text-caption / text-body-sm instead of
+     text-[10px] / [11px] / [12px] / [13px]. Tailwind's own text-xs/sm keep
+     their defaults. */
+  --text-2xs: 10px;
+  --text-label: 11px;
+  --text-caption: 12px;
+  --text-body-sm: 13px;
 }
 
 :root {
+  /* Motion durations (DESIGN.md §4): micro hover/press, UI transitions, entrances. */
+  --dur-micro: 120ms;
+  --dur-ui: 200ms;
+  --dur-enter: 300ms;
   /* ── Canvas (clean white, cool gray scale) ─────────────────────────── */
   --canvas:      #ffffff;
   --gray-10:          #f4f4f4;
@@ -268,9 +291,23 @@ body {
   .ls-hl { animation: none; background-size: 100% 84%; }
 }
 
+/* Portal route change: opacity-only enter fade on a pathname-keyed wrapper
+   (replaces the framer-motion PageTransition). No fill-mode forwards so no
+   lingering stacking context. */
+@keyframes ls-route-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.ls-route-fade {
+  animation: ls-route-fade 200ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ls-route-fade { animation: none; }
+}
+
 /* Page surfaces opt in via `.ls-page-fade` */
 .ls-page-fade {
-  animation: ls-fade-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: ls-fade-in var(--dur-enter) cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 /* Cards in a grid get a slight stagger via :nth-child delays. Capped at
@@ -288,19 +325,6 @@ body {
 .ls-stagger > *:nth-child(7) { animation-delay: 180ms; }
 .ls-stagger > *:nth-child(8) { animation-delay: 210ms; }
 
-/* Soft hover elevation for any interactive card. Pairs with hover:bg
-   utilities already in the components. The transform pulls the card up
-   1px which reads as "lifted" without breaking grid alignment. */
-.ls-hover-lift {
-  transition:
-    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    box-shadow 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    border-color 180ms ease;
-}
-.ls-hover-lift:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 24px -12px rgba(20, 20, 19, 0.12);
-}
 
 /* ── Print-safe entrance utilities ───────────────────────────────────────
    Every keyframe here declares ONLY a `from` state, so the element's base
@@ -427,21 +451,17 @@ body {
 .btn-primary {
   display: inline-flex; align-items: center; justify-content: center;
   min-height: 44px; padding: 10px 20px;
-  background: linear-gradient(180deg, #1668ff 0%, #0f62fe 100%);
+  background: var(--color-primary);
   color: #ffffff;
   font-family: var(--font-sans); font-size: 14px; font-weight: 600; line-height: 1.2;
   letter-spacing: 0.005em;
   border-radius: 0; border: 1px solid #0f62fe;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 2px 8px -2px rgba(15,98,254,0.4);
-  transition: background 140ms ease, box-shadow 200ms ease, transform 160ms cubic-bezier(0.2,0.8,0.2,1);
+  box-shadow: none;
+  transition: background var(--dur-micro) ease;
   cursor: pointer;
 }
-.btn-primary:hover {
-  background: linear-gradient(180deg, #0f62fe 0%, #0043ce 100%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 6px 16px -4px rgba(15,98,254,0.48);
-  transform: translateY(-1px);
-}
-.btn-primary:active { transform: scale(0.98); background: #002d9c; }
+.btn-primary:hover { background: var(--color-primary-dark); }
+.btn-primary:active { background: #002d9c; }
 
 .btn-secondary {
   display: inline-flex; align-items: center; justify-content: center;
@@ -451,7 +471,7 @@ body {
   font-family: var(--font-sans); font-size: 14px; font-weight: 600; line-height: 1.2;
   border-radius: 0; border: 1px solid #d6d6d6;
   box-shadow: 0 1px 2px rgba(22, 22, 22, 0.05);
-  transition: transform 160ms cubic-bezier(0.2,0.8,0.2,1), border-color 160ms ease, box-shadow 200ms ease;
+  transition: transform var(--dur-micro) cubic-bezier(0.2,0.8,0.2,1), border-color var(--dur-micro) ease, box-shadow 200ms ease;
   cursor: pointer;
 }
 .btn-secondary:hover {
@@ -466,27 +486,7 @@ body {
    gone per Adam — the section now uses a sticky left visual + free-scrolling
    right rail (Juicebox pattern) implemented in product-hero-shot.tsx. */
 
-.btn-white {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-height: 44px; padding: 10px 20px;
-  background-color: var(--white); color: var(--gray-100);
-  font-family: var(--font-sans); font-size: 14px; font-weight: 600; line-height: 1.2;
-  border-radius: 0; border: 1px solid #c6c6c6;
-  box-shadow: 0 1px 1px rgba(15, 23, 42, 0.03);
-  transition: transform 140ms cubic-bezier(0.2,0.8,0.2,1), background 160ms ease, border-color 160ms ease;
-}
-.btn-white:hover { background-color: #F4F6F8; border-color: var(--silver-fog); transform: translateY(-0.5px); }
 
-.btn-secondary-dark {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-height: 44px; padding: 10px 20px;
-  background-color: var(--dark-surface); color: var(--gray-10);
-  font-family: var(--font-sans); font-size: 15px; font-weight: 500; line-height: 1.2;
-  border-radius: 0; border: none;
-  box-shadow: 0 0 0 1px var(--dark-surface);
-  transition: background-color 0.2s ease;
-}
-.btn-secondary-dark:hover { background-color: var(--gray-100); }
 
 .btn-nav {
   display: inline-flex; align-items: center;
@@ -498,37 +498,7 @@ body {
   cursor: pointer;
 }
 .btn-nav:hover { background-color: var(--gray-10-hover); }
-.btn-nav-on-dark { color: var(--gray-10); }
-.btn-nav-on-dark:hover { background-color: rgba(255,255,255,0.10); }
 
-/* Back-compat names — route through the premium gradient look */
-.btn-accent {
-  display: inline-flex; align-items: center; justify-content: center;
-  padding: 10px 20px; color: var(--gray-10);
-  background: #0f62fe;
-  border: 1px solid #0f62fe;
-  font-family: var(--font-sans); font-size: 14px; font-weight: 600;
-  border-radius: 0;
-  box-shadow: none;
-  transition: transform 140ms cubic-bezier(0.2,0.8,0.2,1), background 160ms ease, box-shadow 160ms ease;
-}
-.btn-accent:hover {
-  background: #0043ce;
-  box-shadow: none;
-}
-.btn-ghost {
-  display: inline-flex; align-items: center; justify-content: center;
-  padding: 10px 20px; background-color: var(--white); color: var(--gray-100);
-  font-family: var(--font-sans); font-size: 14px; font-weight: 600;
-  border-radius: 0; border: 1px solid #c6c6c6;
-  box-shadow: 0 1px 1px rgba(15,23,42,0.03);
-  transition: transform 140ms cubic-bezier(0.2,0.8,0.2,1), background 160ms ease, border-color 160ms ease;
-}
-.btn-ghost:hover { background-color: #F4F6F8; border-color: var(--silver-fog); transform: translateY(-0.5px); }
-.btn-blue { composes: btn-accent; }
-.btn-outline { composes: btn-ghost; }
-.btn-outline-white { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; border: 1px solid rgba(255,255,255,0.7); color: var(--gray-10); background: transparent; font-size: 15px; font-weight: 500; border-radius: 0; }
-.btn-outline-white:hover { background-color: rgba(255,255,255,0.10); }
 
 .link-body { color: var(--gray-80); transition: color 0.2s; }
 .link-body:hover { color: var(--gray-100); }
@@ -574,8 +544,7 @@ body {
 /* ── Mobile global size reductions (< 768px) ─────────────────────────── */
 @media (max-width: 767px) {
   /* Buttons: shorter, tighter padding, smaller text */
-  .btn-primary, .btn-secondary, .btn-white, .btn-secondary-dark,
-  .btn-accent, .btn-ghost, .btn-outline, .btn-outline-white {
+  .btn-primary, .btn-secondary {
     min-height: 40px;
     padding: 8px 14px;
     font-size: 14px;
@@ -658,12 +627,11 @@ body {
   border-radius: 2px;
   /* Flat. Marketing cards are a 1px #e0e0e0 hairline on white with no shadow;
      the portal shadow stacked on every nested panel and muddied the grid. */
-  transition: border-color 180ms ease;
+  transition: border-color var(--dur-ui) ease;
 }
 .ls-card:hover {
   border-color: var(--hair-strong);
 }
-.ls-card-flush { padding: 0; }
 .ls-card-pad   { padding: 20px; }
 
 /* ls-select — styled native <select>. Kills the dated OS dropdown chrome via
@@ -684,8 +652,8 @@ body {
   border-radius: 0;
   cursor: pointer;
   transition:
-    border-color 160ms ease,
-    box-shadow 160ms ease;
+    border-color var(--dur-micro) ease,
+    box-shadow var(--dur-micro) ease;
 }
 .ls-select:hover { border-color: var(--ring-light); }
 .ls-select:focus,
@@ -712,7 +680,6 @@ body {
   line-height: 1;
   color: var(--gray-100);
 }
-.ls-metric-xl { font-size: 2.5rem; }
 .ls-metric-lg { font-size: 2rem; }
 .ls-metric-md { font-size: 1.5rem; }
 
@@ -852,7 +819,7 @@ body {
   width: 3px;
   border-radius: 0 2px 2px 0;
 }
-.ls-alert-info    { background: linear-gradient(180deg, var(--brand-wash), var(--white)); border-color: rgba(15, 98, 254,0.20); }
+.ls-alert-info    { background: var(--brand-wash); border-color: rgba(15, 98, 254,0.20); }
 .ls-alert-info::before    { background: var(--blue-60); }
 .ls-alert-warning { background: linear-gradient(180deg, rgba(241, 194, 27,0.05), var(--white)); border-color: rgba(241, 194, 27,0.30); }
 .ls-alert-warning::before { background: var(--warning); }
@@ -900,24 +867,6 @@ body {
 .ls-row-stagger > *:nth-child(7) { animation-delay: 200ms; }
 .ls-row-stagger > *:nth-child(8) { animation-delay: 230ms; }
 
-/* ── Occupancy / progress bar ──────────────────────────────────────────── */
-.ls-progress {
-  height: 6px;
-  background: var(--color-elevated);
-  border-radius: 2px;
-  overflow: hidden;
-  position: relative;
-}
-.ls-progress > span {
-  display: block;
-  height: 100%;
-  border-radius: 2px;
-  background: linear-gradient(90deg, var(--blue-60), var(--blue-50));
-  transition: width 800ms var(--ease-spring);
-}
-.ls-progress.is-high > span   { background: linear-gradient(90deg, #24a148, #4ade80); }
-.ls-progress.is-warn > span   { background: linear-gradient(90deg, #f1c21b, #fbbf24); }
-.ls-progress.is-danger > span { background: linear-gradient(90deg, #da1e28, #f87171); }
 
 /* ── Refined buttons (additive — leaves existing .btn-* classes intact) ─ */
 .ls-btn {
@@ -934,19 +883,18 @@ body {
   border-radius: 2px;
   border: 1px solid transparent;
   cursor: pointer;
-  transition: transform 120ms var(--ease-out), background 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+  transition: transform 120ms var(--ease-out), background var(--dur-micro) ease, box-shadow var(--dur-micro) ease, border-color var(--dur-micro) ease;
 }
 .ls-btn:active { transform: translateY(0.5px); }
 
 .ls-btn-primary {
-  background: linear-gradient(180deg, #4589ff, var(--blue-60));
+  background: var(--color-primary);
   color: var(--gray-10);
-  border-color: var(--blue-60);
-  box-shadow: 0 1px 0 rgba(255,255,255,0.25) inset, 0 1px 2px rgba(15, 98, 254,0.30), 0 0 0 0 var(--brand-glow);
+  border-color: var(--color-primary);
 }
 .ls-btn-primary:hover {
-  box-shadow: 0 1px 0 rgba(255,255,255,0.25) inset, 0 4px 14px var(--brand-strong);
-  transform: translateY(-0.5px);
+  background: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
 }
 
 .ls-btn-secondary {
@@ -960,12 +908,6 @@ body {
   border-color: var(--silver-fog);
 }
 
-/* Copy-button "copied" flash */
-.ls-copied {
-  background: rgba(36, 161, 72,0.12) !important;
-  color: #24a148 !important;
-  animation: ls-copy-flash 280ms var(--ease-out);
-}
 @keyframes ls-copy-flash {
   0%   { transform: scale(1); }
   50%  { transform: scale(0.96); }
@@ -991,7 +933,7 @@ body {
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 140ms ease, transform 140ms ease;
+  transition: opacity var(--dur-micro) ease, transform var(--dur-micro) ease;
   z-index: 100;
   box-shadow: var(--shadow-md);
 }
@@ -1055,17 +997,17 @@ body {
   display: block;
   width: 100%;
   border-radius: 0.375rem;
-  border: 1px solid hsl(var(--border));
-  background: hsl(var(--card));
+  border: 1px solid var(--color-border);
+  background: var(--color-background);
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
-  color: hsl(var(--foreground));
+  color: var(--color-foreground);
 }
 .input:focus {
   outline: none;
-  border-color: hsl(var(--primary));
+  border-color: var(--color-primary);
 }
-.input::placeholder { color: hsl(var(--muted-foreground) / 0.6); }
+.input::placeholder { color: var(--color-muted-foreground); }
 
 /* Tabular-numerals utility — apply to any numeric/metric text where digit
    alignment across rows matters (stat tiles, data-table cells, chart ticks). */

@@ -8,6 +8,7 @@ import {
 import { AuditAction, UserRole } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { buildCsv, csvFileResponse } from "@/lib/csv";
+import { propertyOrOrgLevelWhereFragment } from "@/lib/tenancy/property-filter";
 import { adsExportLimiter, checkRateLimit, rateLimited } from "@/lib/rate-limit";
 import { realAdAccountWhere } from "@/lib/integrations/real-ad-account";
 
@@ -61,11 +62,12 @@ export async function GET() {
   // window — the operator asked for "full historical," and the retention
   // job already caps how much daily data exists per tier.
   const realAccountFilter = await realAdAccountWhere(scope.orgId);
-  const [daily, monthly, accounts] = await Promise.all([
+  const [daily, allMonthly, accounts] = await Promise.all([
     prisma.adMetricDaily.findMany({
       where: {
         ...tenantWhere(scope),
         adAccount: realAccountFilter,
+        campaign: propertyOrOrgLevelWhereFragment(scope, null),
       },
       orderBy: [{ date: "asc" }, { adAccountId: "asc" }],
       select: {
@@ -103,6 +105,10 @@ export async function GET() {
       },
     }),
   ]);
+
+  // Monthly rollups are account-level (no campaign/property), so a
+  // property-restricted user gets none rather than org-wide spend.
+  const monthly = scope.allowedPropertyIds ? [] : allMonthly;
 
   const accountInfo = new Map(
     accounts.map((a) => [

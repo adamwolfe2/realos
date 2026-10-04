@@ -74,7 +74,7 @@ export function TenantPipelineCard({ item }: { item: TenantPipelineItem }) {
   });
 
   return (
-    <article className="rounded-lg border border-border bg-card p-3 space-y-1.5 shadow-sm hover:border-primary/40 hover:shadow-md transition-all">
+    <article className="rounded-card border border-border bg-card p-3 space-y-1.5 shadow-sm hover:border-primary/40 hover:shadow-md transition-all">
       <Link
         href={`/admin/clients/${item.id}`}
         className="font-medium text-sm text-foreground hover:text-primary transition-colors block truncate"
@@ -102,7 +102,7 @@ export function TenantPipelineCard({ item }: { item: TenantPipelineItem }) {
           disabled={pending}
           value={status}
           onChange={(e) => move(e.target.value as TenantStatus)}
-          className="w-full text-[11px] border border-border rounded-md px-2 py-1 bg-background text-foreground hover:border-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors"
+          className="w-full text-[11px] border border-border rounded-card px-2 py-1 bg-background text-foreground hover:border-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors"
         >
           {STATUS_ORDER.map((s) => (
             <option key={s} value={s}>

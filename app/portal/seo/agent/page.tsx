@@ -41,6 +41,7 @@ import { RecommendationManager } from "@/components/portal/seo/recommendation-ma
 import { SnoozedRecsPanel } from "@/components/portal/seo/snoozed-recs-panel";
 import { WeeklyChangesPanel } from "@/components/portal/seo/weekly-changes-panel";
 import { TabbedCard } from "@/components/portal/ui/tabbed-card";
+import { soft } from "@/lib/soft";
 
 export const metadata: Metadata = { title: "SEO Agent" };
 export const dynamic = "force-dynamic";
@@ -225,13 +226,13 @@ export default async function SeoAgentPage({
         where: { orgId: scope.orgId, propertyId: property.id, active: true },
         orderBy: { createdAt: "asc" },
       })
-      .catch(() => []),
+      .catch(soft([], "portal.seo-agent:228")),
     prisma.serpRanking
       .findMany({
         where: { orgId: scope.orgId, propertyId: property.id, date: today },
         orderBy: { createdAt: "asc" },
       })
-      .catch(() => []),
+      .catch(soft([], "portal.seo-agent:234")),
     prisma.serpRanking
       .findMany({
         where: {
@@ -240,19 +241,19 @@ export default async function SeoAgentPage({
           date: new Date(today.getTime() - 24 * 60 * 60 * 1000),
         },
       })
-      .catch(() => []),
+      .catch(soft([], "portal.seo-agent:243")),
     prisma.onPageAudit
       .findFirst({
         where: { orgId: scope.orgId, propertyId: property.id },
         orderBy: { date: "desc" },
       })
-      .catch(() => null),
+      .catch(soft(null, "portal.seo-agent:249")),
     prisma.backlinkSummary
       .findFirst({
         where: { orgId: scope.orgId, propertyId: property.id },
         orderBy: { date: "desc" },
       })
-      .catch(() => null),
+      .catch(soft(null, "portal.seo-agent:255")),
     prisma.propertyCompetitorScan
       .findMany({
         where: {
@@ -262,7 +263,7 @@ export default async function SeoAgentPage({
         orderBy: { distanceMeters: "asc" },
         take: 5,
       })
-      .catch(() => []),
+      .catch(soft([], "portal.seo-agent:265")),
     prisma.propertyCompetitorScan
       .findMany({
         where: {
@@ -272,7 +273,7 @@ export default async function SeoAgentPage({
         orderBy: { scannedAt: "desc" },
         take: 5,
       })
-      .catch(() => []),
+      .catch(soft([], "portal.seo-agent:275")),
     prisma.aeoCitationCheck
       .findMany({
         where: {
@@ -284,11 +285,11 @@ export default async function SeoAgentPage({
         },
         select: { status: true },
       })
-      .catch(() => []),
+      .catch(soft([], "portal.seo-agent:287")),
     getCachedOrGenerateRecommendations({
       orgId: scope.orgId,
       propertyId: property.id,
-    }).catch(() => []),
+    }).catch(soft([], "portal.seo-agent:291")),
     // Persisted recommendations for the operator's status workflow.
     // OPEN + IN_PROGRESS + SNOOZED. Manager filters to the first two,
     // SnoozedRecsPanel handles the third.
@@ -316,18 +317,18 @@ export default async function SeoAgentPage({
           snoozedReason: true,
         },
       })
-      .catch(() => []),
+      .catch(soft([], "portal.seo-agent:319")),
     prisma.seoIntegration
       .findMany({
         where: { orgId: scope.orgId },
         select: { provider: true, lastSyncAt: true, propertyId: true },
       })
-      .catch(() => []),
+      .catch(soft([], "portal.seo-agent:325")),
     prisma.seoTargetQuery
       .count({
         where: { orgId: scope.orgId, propertyId: property.id, active: true },
       })
-      .catch(() => 0),
+      .catch(soft(0, "portal.seo-agent:330")),
   ]);
 
   // ──────────────────────────────────────────────────────────────────────

@@ -34,7 +34,7 @@ const TIERS = [
 ];
 
 const selectCls =
-  "h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]";
+  "h-9 w-full rounded-card border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]";
 
 export function NewClientForm() {
   const router = useRouter();
@@ -234,6 +234,8 @@ export function NewClientForm() {
           </Field>
           <Field label="Phone">
             <Input
+              type="tel"
+              inputMode="tel"
               value={contactPhone}
               onChange={(e) => setContactPhone(e.target.value)}
               placeholder="(503) 555-0123"
@@ -276,7 +278,7 @@ export function NewClientForm() {
               <label
                 key={m.key}
                 className={cn(
-                  "flex items-start gap-3 rounded-md border p-3 cursor-pointer transition-colors",
+                  "flex items-start gap-3 rounded-card border p-3 cursor-pointer transition-colors",
                   checked
                     ? "border-primary/40 bg-primary/[0.04]"
                     : "border-input hover:bg-accent/40",
@@ -393,16 +395,22 @@ function Field({
   required?: boolean;
   children: React.ReactNode;
 }) {
+  const autoId = React.useId();
+  const childId =
+    React.isValidElement<{ id?: string }>(children) ? children.props.id : undefined;
+  const id = childId ?? autoId;
   return (
     <div className="space-y-1.5">
-      <Label className="text-[12px] font-medium">
+      <Label htmlFor={id} className="text-[12px] font-medium">
         {label}
         {required ? <span className="text-destructive"> *</span> : null}
         {hint ? (
           <span className="ml-2 font-normal text-muted-foreground">{hint}</span>
         ) : null}
       </Label>
-      {children}
+      {React.isValidElement<{ id?: string }>(children) && !childId
+        ? React.cloneElement(children, { id })
+        : children}
     </div>
   );
 }

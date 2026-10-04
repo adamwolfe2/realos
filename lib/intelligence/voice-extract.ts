@@ -91,7 +91,7 @@ export async function extractBrandVoice(
       (inputTokens / 1_000_000) * COST_INPUT_PER_MTOK +
       (outputTokens / 1_000_000) * COST_OUTPUT_PER_MTOK;
 
-    console.log(
+    console.info(
       `[voice-extract] $${costUsd.toFixed(4)} ${input.orgName} in=${inputTokens} out=${outputTokens}`,
     );
     return { ok: true, brandVoice, costUsd };

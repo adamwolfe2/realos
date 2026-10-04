@@ -16,7 +16,7 @@ const h = vi.hoisted(() => ({
   allowed: true,
   org: null as Record<string, unknown> | null,
   property: null as Record<string, unknown> | null,
-  lead: { create: vi.fn(), findFirst: vi.fn() },
+  lead: { create: vi.fn(), findFirst: vi.fn(), update: vi.fn() },
   visitor: { updateMany: vi.fn() },
 }));
 
@@ -62,6 +62,12 @@ vi.mock("@/lib/notifications/lead-notify", () => ({
 
 const { POST } = await import("@/app/api/public/leads/route");
 const { requireMatchingOrigin } = await import("@/lib/tenancy/origin-guard");
+const { notifyLeadCaptured } = await import("@/lib/notifications/lead-notify");
+const { notifyLeadCreated } = await import("@/lib/notifications/create");
+const { sendLeadAutoReplyEmail, notifyTenantOfLeadEmail } = await import(
+  "@/lib/email/lead-emails"
+);
+const { notifyNewIntake } = await import("@/lib/integrations/slack");
 
 function makeRequest(body: unknown): NextRequest {
   return new NextRequest("http://localhost/api/public/leads", {
@@ -163,5 +169,120 @@ describe("POST /api/public/leads", () => {
         data: expect.objectContaining({ orgId: "org_1", email: "renter@example.com" }),
       }),
     );
+  });
+});
+
+// F-024: the contact form created a new Lead on every submit. It now dedupes
+// by (orgId, email), case-insensitive, like the chatbot/popup/tours routes,
+// and only net-new leads fire notifications + the auto-reply.
+describe("POST /api/public/leads dedupe (F-024)", () => {
+  const EXISTING = {
+    id: "lead_existing",
+    propertyId: "prop_first",
+    firstName: "Jamie",
+    lastName: null,
+    phone: null,
+    preferredUnitType: null,
+    desiredMoveIn: null,
+    budgetMaxCents: null,
+    notes: "First message",
+    updatedAt: new Date(), // just touched: a double-submit
+  };
+
+  it("a resubmit with the same email (different case) merges into the existing lead without notifying", async () => {
+    h.lead.findFirst.mockResolvedValue(EXISTING);
+    h.lead.update.mockResolvedValue({ id: "lead_existing" });
+
+    const res = (await POST(
+      makeRequest({
+        ...VALID_BODY,
+        email: "Renter@Example.COM",
+        firstName: "Someone Else",
+        lastName: "Doe",
+        phone: "5105550100",
+        notes: "Second message",
+      }),
+    )) as Response;
+
+    expect(res.status).toBe(201);
+    expect(await res.json()).toEqual({ ok: true, leadId: "lead_existing" });
+    expect(h.lead.create).not.toHaveBeenCalled();
+    expect(h.lead.findFirst.mock.calls[0][0].where).toEqual({
+      orgId: "org_1",
+      email: { equals: "renter@example.com", mode: "insensitive" },
+    });
+    const data = h.lead.update.mock.calls[0][0].data;
+    expect(data.firstName).toBe("Jamie"); // never overwritten
+    expect(data.lastName).toBe("Doe"); // gap filled
+    expect(data).not.toHaveProperty("phone"); // no phone gap-fill on a merge
+    expect(data.propertyId).toBe("prop_first");
+    expect(data.notes).toMatch(
+      /^First message\n\n\[\d{4}-\d{2}-\d{2} FORM\] Second message$/,
+    );
+    expect(data).not.toHaveProperty("source");
+    expect(data).not.toHaveProperty("sourceDetail");
+
+    expect(notifyLeadCaptured).not.toHaveBeenCalled();
+    expect(notifyLeadCreated).not.toHaveBeenCalled();
+    expect(sendLeadAutoReplyEmail).not.toHaveBeenCalled();
+  });
+
+  it("a repeat with a message on a lead quiet for 10+ minutes notifies the operator as a repeat inquiry, but no auto-reply", async () => {
+    h.lead.findFirst.mockResolvedValue({
+      ...EXISTING,
+      updatedAt: new Date(Date.now() - 11 * 60 * 1000),
+    });
+    h.lead.update.mockResolvedValue({ id: "lead_existing", propertyId: "prop_first" });
+
+    const res = (await POST(
+      makeRequest({ ...VALID_BODY, notes: "Is the 2BR still open?" }),
+    )) as Response;
+
+    expect(res.status).toBe(201);
+    expect(h.lead.create).not.toHaveBeenCalled();
+    expect(notifyLeadCreated).not.toHaveBeenCalled(); // no "New lead" bell for a repeat
+    expect(notifyLeadCaptured).toHaveBeenCalledTimes(1);
+    const input = vi.mocked(notifyLeadCaptured).mock.calls[0][0];
+    expect(input.leadId).toBe("lead_existing");
+    expect(input.propertyId).toBe("prop_first");
+    expect(input.lead.sourceLabel).toBe("Repeat inquiry (FORM)");
+    expect(input.lead.intent).toBe("Is the 2BR still open?");
+    expect(sendLeadAutoReplyEmail).not.toHaveBeenCalled();
+    expect(notifyTenantOfLeadEmail).not.toHaveBeenCalled();
+    expect(notifyNewIntake).not.toHaveBeenCalled();
+  });
+
+  it("does not re-append a message already in notes, and stops appending past the 10k cap", async () => {
+    h.lead.update.mockResolvedValue({ id: "lead_existing" });
+
+    h.lead.findFirst.mockResolvedValue(EXISTING);
+    await POST(makeRequest({ ...VALID_BODY, notes: "First message" }));
+    expect(h.lead.update.mock.calls[0][0].data.notes).toBe("First message");
+
+    const full = "x".repeat(9_990);
+    h.lead.findFirst.mockResolvedValue({ ...EXISTING, notes: full });
+    await POST(makeRequest({ ...VALID_BODY, notes: "One more question" }));
+    expect(h.lead.update.mock.calls[1][0].data.notes).toBe(full);
+  });
+
+  it("a different email creates a new lead and notifies", async () => {
+    h.lead.findFirst.mockResolvedValue(null);
+
+    const res = (await POST(
+      makeRequest({ ...VALID_BODY, email: "other@example.com" }),
+    )) as Response;
+
+    expect(res.status).toBe(201);
+    expect(h.lead.update).not.toHaveBeenCalled();
+    expect(h.lead.create).toHaveBeenCalledTimes(1);
+    expect(notifyLeadCaptured).toHaveBeenCalledTimes(1);
+    expect(notifyLeadCreated).toHaveBeenCalledTimes(1);
+    expect(sendLeadAutoReplyEmail).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not look up a match when no email is given", async () => {
+    await POST(makeRequest({ orgId: "org_1", source: "FORM", phone: "5105550100" }));
+    expect(h.lead.findFirst).not.toHaveBeenCalled();
+    expect(h.lead.create).toHaveBeenCalledTimes(1);
   });
 });

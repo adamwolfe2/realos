@@ -88,7 +88,7 @@ export default async function BugReportDetailPage({
               href={report.githubIssueUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-card border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
               <ExternalLink className="h-3 w-3" />
               GitHub #{report.githubIssueNumber}
@@ -127,7 +127,7 @@ export default async function BugReportDetailPage({
                 {attachments.map((a, i) => (
                   <li
                     key={a.url}
-                    className="rounded-lg border border-border bg-muted/30 overflow-hidden"
+                    className="rounded-card border border-border bg-muted/30 overflow-hidden"
                   >
                     <a
                       href={a.url}
@@ -287,7 +287,7 @@ function TriageControls({
             <input type="hidden" name="id" value={id} />
             <button
               type="submit"
-              className="inline-flex items-center rounded-md bg-amber-600 text-white px-3 py-2 text-xs font-semibold hover:bg-amber-700 transition-colors"
+              className="inline-flex items-center rounded-card bg-amber-600 text-white px-3 py-2 text-xs font-semibold hover:bg-amber-700 transition-colors"
             >
               Start work
             </button>
@@ -298,7 +298,7 @@ function TriageControls({
             <input type="hidden" name="id" value={id} />
             <button
               type="submit"
-              className="inline-flex items-center rounded-md bg-blue-600 text-white px-3 py-2 text-xs font-semibold hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center rounded-card bg-blue-600 text-white px-3 py-2 text-xs font-semibold hover:bg-blue-700 transition-colors"
             >
               Mark fixed
             </button>
@@ -312,7 +312,7 @@ function TriageControls({
               <input type="hidden" name="id" value={id} />
               <button
                 type="submit"
-                className="inline-flex items-center rounded-md border border-border bg-card px-3 py-2 text-xs font-medium hover:bg-muted transition-colors"
+                className="inline-flex items-center rounded-card border border-border bg-card px-3 py-2 text-xs font-medium hover:bg-muted transition-colors"
               >
                 Re-open
               </button>
@@ -325,7 +325,7 @@ function TriageControls({
             <input type="hidden" name="id" value={id} />
             <button
               type="submit"
-              className="inline-flex items-center rounded-md border border-border bg-card px-3 py-2 text-xs font-medium hover:bg-muted transition-colors"
+              className="inline-flex items-center rounded-card border border-border bg-card px-3 py-2 text-xs font-medium hover:bg-muted transition-colors"
             >
               Re-open
             </button>
@@ -333,7 +333,7 @@ function TriageControls({
         )}
       </div>
       {resolutionNote ? (
-        <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+        <div className="rounded-card border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
           <span className="font-semibold text-foreground">Resolution note:</span>{" "}
           {resolutionNote}
         </div>
@@ -361,12 +361,12 @@ function ApprovalForm({
         name="note"
         maxLength={2000}
         placeholder={`Why are you ${verb.toLowerCase()}ing this? (optional)`}
-        className="rounded-md border border-border bg-background px-2.5 py-2 text-xs w-56"
+        className="rounded-card border border-border bg-background px-2.5 py-2 text-xs w-56"
       />
       <button
         type="submit"
         className={cn(
-          "inline-flex items-center rounded-md px-3 py-2 text-xs font-semibold text-white transition-colors",
+          "inline-flex items-center rounded-card px-3 py-2 text-xs font-semibold text-white transition-colors",
           tone === "emerald"
             ? "bg-emerald-600 hover:bg-emerald-700"
             : "bg-destructive hover:bg-destructive/90",
@@ -419,7 +419,7 @@ function SeverityChip({ severity }: { severity: BugReportSeverity }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-widest",
+        "inline-flex items-center rounded-card border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-widest",
         tone,
       )}
     >

@@ -414,7 +414,7 @@ const COMPETITOR_ROLLUP = [
 
 export default function DemoAeoPage() {
   return (
-    <div style={{ backgroundColor: "#FFFFFF", color: "#161616" }}>
+    <div style={{ backgroundColor: "#FFFFFF", color: "var(--color-foreground)" }}>
       <SplitHero
         eyebrow="Product demo · AI Search Visibility"
         headline="See your buildings the way"
@@ -454,13 +454,13 @@ function PreviewCard() {
         backgroundColor: "#FFFFFF",
         borderRadius: 2,
         boxShadow:
-          "0 0 0 1px #e0e0e0",
+          "0 0 0 1px var(--color-border)",
         overflow: "hidden",
       }}
     >
       <div
         className="px-5 py-3 flex items-center justify-between"
-        style={{ borderBottom: "1px solid #e0e0e0", backgroundColor: "#f4f4f4" }}
+        style={{ borderBottom: "1px solid var(--color-border)", backgroundColor: "var(--color-secondary)" }}
       >
         <span
           style={{
@@ -468,7 +468,7 @@ function PreviewCard() {
             fontSize: 10,
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: "#6f6f6f",
+            color: "var(--color-muted-foreground)",
             fontWeight: 600,
           }}
         >
@@ -478,7 +478,7 @@ function PreviewCard() {
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,
-            color: "#0f62fe",
+            color: "var(--color-primary)",
             fontWeight: 600,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
@@ -494,7 +494,7 @@ function PreviewCard() {
             fontSize: 64,
             fontWeight: 600,
             lineHeight: 1,
-            color: "#161616",
+            color: "var(--color-foreground)",
             letterSpacing: "-0.02em",
           }}
         >
@@ -503,7 +503,7 @@ function PreviewCard() {
         <span
           style={{
             fontSize: 18,
-            color: "#8d8d8d",
+            color: "var(--color-muted-foreground)",
             fontFamily: "var(--font-display)",
           }}
         >
@@ -519,7 +519,7 @@ function PreviewCard() {
                 flex: 1,
                 height: 6,
                 borderRadius: 2,
-                backgroundColor: i < 6 ? "#0f62fe" : "#e0e0e0",
+                backgroundColor: i < 6 ? "var(--color-primary)" : "var(--color-border)",
               }}
             />
           ))}
@@ -528,7 +528,7 @@ function PreviewCard() {
           className="mt-3"
           style={{
             fontSize: 12.5,
-            color: "#6f6f6f",
+            color: "var(--color-muted-foreground)",
             lineHeight: 1.5,
           }}
         >
@@ -537,7 +537,7 @@ function PreviewCard() {
         </p>
       </div>
       <div
-        style={{ borderTop: "1px solid #e0e0e0", backgroundColor: "#f4f4f4" }}
+        style={{ borderTop: "1px solid var(--color-border)", backgroundColor: "var(--color-secondary)" }}
         className="px-5 py-3 grid grid-cols-4 gap-3"
       >
         {[
@@ -552,7 +552,7 @@ function PreviewCard() {
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
-                color: "#161616",
+                color: "var(--color-foreground)",
                 fontWeight: 600,
                 fontVariantNumeric: "tabular-nums",
               }}
@@ -571,12 +571,12 @@ function PreviewCard() {
 function SampleNotice() {
   return (
     <section
-      style={{ backgroundColor: "#f4f4f4", borderTop: "1px solid #e0e0e0", borderBottom: "1px solid #e0e0e0" }}
+      style={{ backgroundColor: "var(--color-secondary)", borderTop: "1px solid var(--color-border)", borderBottom: "1px solid var(--color-border)" }}
     >
       <div className="max-w-[1180px] mx-auto px-4 md:px-10 py-5 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
         <div className="flex items-start gap-3">
-          <Sparkles className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#0f62fe" }} />
-          <p style={{ fontSize: 13.5, color: "#161616", lineHeight: 1.5 }}>
+          <Sparkles className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "var(--color-primary)" }} />
+          <p style={{ fontSize: 13.5, color: "var(--color-foreground)", lineHeight: 1.5 }}>
             <span style={{ fontWeight: 600 }}>This is the real product.</span>{" "}
             Same widgets your team uses inside LeaseStack, populated with a
             sample portfolio (4 properties · 4 engines · 160 weekly AI
@@ -692,7 +692,7 @@ function DemoDashboard() {
                       <span className="text-[11px] tabular-nums text-muted-foreground">
                         {count}×
                       </span>
-                      <span className="text-[11px] font-medium" style={{ color: "#0f62fe" }}>
+                      <span className="text-[11px] font-medium" style={{ color: "var(--color-primary)" }}>
                         Counter →
                       </span>
                     </div>
@@ -738,7 +738,7 @@ function VisibilityScoreHero() {
         <p className="text-[13px] text-muted-foreground">
           Strong — you are regularly named, with growth room on discovery
           prompts.
-          <span className="text-muted-foreground/70">
+          <span className="text-muted-foreground">
             {" "}
             · Based on {TOTAL_RESPONSES} AI responses (last 30 days)
           </span>
@@ -788,7 +788,7 @@ function Annotation({
             style={{
               width: 3,
               borderRadius: 2,
-              backgroundColor: "#0f62fe",
+              backgroundColor: "var(--color-primary)",
               alignSelf: "stretch",
               marginTop: 4,
               marginBottom: 4,
@@ -799,7 +799,7 @@ function Annotation({
             style={{
               fontSize: 12.5,
               lineHeight: 1.55,
-              color: "#525252",
+              color: "var(--gray-70)",
               fontFamily: "var(--font-sans)",
               maxWidth: 760,
               paddingLeft: 8,
@@ -811,7 +811,7 @@ function Annotation({
                 fontSize: 10,
                 letterSpacing: "0.12em",
                 textTransform: "uppercase",
-                color: "#0f62fe",
+                color: "var(--color-primary)",
                 fontWeight: 600,
                 marginRight: 8,
               }}
@@ -855,9 +855,9 @@ function AeoBoostBand() {
   return (
     <section
       style={{
-        backgroundColor: "#f4f4f4",
-        borderTop: "1px solid #e0e0e0",
-        borderBottom: "1px solid #e0e0e0",
+        backgroundColor: "var(--color-secondary)",
+        borderTop: "1px solid var(--color-border)",
+        borderBottom: "1px solid var(--color-border)",
       }}
     >
       <div className="max-w-[1180px] mx-auto px-4 md:px-10 py-16 md:py-20">
@@ -871,7 +871,7 @@ function AeoBoostBand() {
                 fontWeight: 400,
                 letterSpacing: "-0.025em",
                 lineHeight: 1.08,
-                color: "#161616",
+                color: "var(--color-foreground)",
               }}
             >
               The managed AI search add-on.
@@ -880,7 +880,7 @@ function AeoBoostBand() {
               style={{
                 fontSize: 16,
                 lineHeight: 1.6,
-                color: "#525252",
+                color: "var(--gray-70)",
                 maxWidth: 480,
               }}
             >
@@ -900,7 +900,7 @@ function AeoBoostBand() {
             <p
               style={{
                 fontSize: 12,
-                color: "#8d8d8d",
+                color: "var(--color-muted-foreground)",
                 fontFamily: "var(--font-mono)",
                 letterSpacing: "0.06em",
                 paddingTop: 14,
@@ -916,7 +916,7 @@ function AeoBoostBand() {
                   key={f.title}
                   style={{
                     backgroundColor: "#FFFFFF",
-                    border: "1px solid #e0e0e0",
+                    border: "1px solid var(--color-border)",
                     borderRadius: 2,
                     padding: 18,
                   }}
@@ -926,7 +926,7 @@ function AeoBoostBand() {
                       fontFamily: "var(--font-display)",
                       fontSize: 15.5,
                       fontWeight: 600,
-                      color: "#161616",
+                      color: "var(--color-foreground)",
                       letterSpacing: "-0.01em",
                       lineHeight: 1.3,
                     }}
@@ -937,7 +937,7 @@ function AeoBoostBand() {
                     style={{
                       fontSize: 13,
                       lineHeight: 1.55,
-                      color: "#6f6f6f",
+                      color: "var(--color-muted-foreground)",
                       marginTop: 8,
                     }}
                   >
@@ -963,21 +963,21 @@ function BackgroundBand() {
     body: string;
   }> = [
     {
-      icon: <Calendar className="w-4 h-4" style={{ color: "#0f62fe" }} />,
+      icon: <Calendar className="w-4 h-4" style={{ color: "var(--color-primary)" }} />,
       label: "Weekly cron · Mondays 02:00 UTC",
       title: "Your visibility is never stale.",
       body:
         "Every Monday morning we sample 5 prompts × 4 engines × every marketable property. AEO Boost runs the same loop daily.",
     },
     {
-      icon: <Database className="w-4 h-4" style={{ color: "#0f62fe" }} />,
+      icon: <Database className="w-4 h-4" style={{ color: "var(--color-primary)" }} />,
       label: "DataForSEO",
       title: "10 search-intelligence APIs, billed in one place.",
       body:
         "LLM Responses, AI Overview capture, AI keyword volume, SERP, on-page Lighthouse, backlinks, keyword suggestions. We absorb the cost; you see the answers.",
     },
     {
-      icon: <Zap className="w-4 h-4" style={{ color: "#0f62fe" }} />,
+      icon: <Zap className="w-4 h-4" style={{ color: "var(--color-primary)" }} />,
       label: "Per-prompt logging",
       title: "Every AI answer, archived.",
       body:
@@ -997,7 +997,7 @@ function BackgroundBand() {
               fontWeight: 400,
               letterSpacing: "-0.022em",
               lineHeight: 1.1,
-              color: "#161616",
+              color: "var(--color-foreground)",
             }}
           >
             The plumbing that makes the dashboard honest.
@@ -1009,7 +1009,7 @@ function BackgroundBand() {
               key={t.title}
               style={{
                 backgroundColor: "#FFFFFF",
-                border: "1px solid #e0e0e0",
+                border: "1px solid var(--color-border)",
                 borderRadius: 2,
                 padding: 22,
                 boxShadow: "0 1px 2px rgba(22, 22, 22, 0.03)",
@@ -1023,7 +1023,7 @@ function BackgroundBand() {
                     fontSize: 10,
                     letterSpacing: "0.12em",
                     textTransform: "uppercase",
-                    color: "#0f62fe",
+                    color: "var(--color-primary)",
                     fontWeight: 600,
                   }}
                 >
@@ -1036,7 +1036,7 @@ function BackgroundBand() {
                   fontFamily: "var(--font-display)",
                   fontSize: 17,
                   fontWeight: 600,
-                  color: "#161616",
+                  color: "var(--color-foreground)",
                   letterSpacing: "-0.012em",
                   lineHeight: 1.3,
                 }}
@@ -1048,7 +1048,7 @@ function BackgroundBand() {
                 style={{
                   fontSize: 13.5,
                   lineHeight: 1.6,
-                  color: "#6f6f6f",
+                  color: "var(--color-muted-foreground)",
                 }}
               >
                 {t.body}
@@ -1065,12 +1065,12 @@ function BackgroundBand() {
 
 function FinalCta() {
   return (
-    <section style={{ backgroundColor: "#FFFFFF", borderTop: "1px solid #e0e0e0" }}>
+    <section style={{ backgroundColor: "#FFFFFF", borderTop: "1px solid var(--color-border)" }}>
       <div className="max-w-[1180px] mx-auto px-4 md:px-10 py-16 md:py-24">
         <div
           style={{
-            backgroundColor: "#f4f4f4",
-            border: "1px solid #e0e0e0",
+            backgroundColor: "var(--color-secondary)",
+            border: "1px solid var(--color-border)",
             borderRadius: 2,
             padding: "56px 32px",
             textAlign: "center",
@@ -1087,7 +1087,7 @@ function FinalCta() {
               transform: "translateX(-50%)",
               width: 280,
               height: 4,
-              background: "linear-gradient(90deg, transparent, #0f62fe, transparent)",
+              background: "linear-gradient(90deg, transparent, var(--color-primary), transparent)",
               opacity: 0.6,
             }}
           />
@@ -1098,7 +1098,7 @@ function FinalCta() {
               fontWeight: 400,
               letterSpacing: "-0.028em",
               lineHeight: 1.08,
-              color: "#161616",
+              color: "var(--color-foreground)",
               maxWidth: 820,
               margin: "0 auto",
             }}
@@ -1110,7 +1110,7 @@ function FinalCta() {
             style={{
               fontSize: 16.5,
               lineHeight: 1.6,
-              color: "#6f6f6f",
+              color: "var(--color-muted-foreground)",
               maxWidth: 600,
               margin: "20px auto 0",
             }}

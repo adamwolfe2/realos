@@ -22,7 +22,7 @@ vi.mock("@/lib/db", () => ({
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
 vi.mock("@/lib/tenancy/scope", () => ({
-  requireWritableWorkspace: vi.fn(async () => ({
+  requireWorkspaceAdmin: vi.fn(async () => ({
     userId: "user_1",
     orgId: "org_1",
   })),

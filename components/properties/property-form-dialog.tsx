@@ -1,5 +1,6 @@
 "use client";
 
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useState, useTransition } from "react";
 import { X } from "lucide-react";
 import {
@@ -136,18 +137,16 @@ export function PropertyFormDialog({
         )}
       </span>
 
-      {open ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/30 p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget && !pending) setOpen(false);
-          }}
+      <Dialog open={open} onOpenChange={(o) => !(pending && !o) && setOpen(o)}>
+        <DialogContent
+          overlayClassName="bg-foreground/30"
+          className="bg-card border border-border rounded-lg shadow-lg max-w-2xl max-h-[90vh] overflow-auto"
         >
-          <div className="bg-card border border-border rounded-lg shadow-lg max-w-2xl w-full max-h-[90vh] overflow-auto">
+          <div>
             <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-              <h2 className="text-base font-semibold">
+              <DialogTitle className="text-base font-semibold">
                 {initial ? `Edit ${initial.name}` : "Add property"}
-              </h2>
+              </DialogTitle>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
@@ -272,9 +271,9 @@ export function PropertyFormDialog({
               </fieldset>
 
               <div>
-                <label className="block text-xs font-medium text-foreground mb-1.5">
+                <span className="block text-xs font-medium text-foreground mb-1.5">
                   Hero image
-                </label>
+                </span>
                 <ImageUploader
                   value={data.heroImageUrl}
                   onChange={(url) => set("heroImageUrl", url)}
@@ -331,8 +330,8 @@ export function PropertyFormDialog({
               </button>
             </div>
           </div>
-        </div>
-      ) : null}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

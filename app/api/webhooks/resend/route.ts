@@ -7,7 +7,7 @@ import { webhookLimiter, checkRateLimit, getIp, rateLimited } from "@/lib/rate-l
 // POST /api/webhooks/resend
 // Ingests Resend webhook events (email.sent, email.delivered, email.opened,
 // email.clicked, email.bounced, email.complained). Updates the Lead's
-// lastActivityAt on engagement events and logs an audit row for traceability.
+// lastActivityAt on engagement events (opened/clicked, not delivered) and logs an audit row for traceability.
 //
 // Verify signature with Svix-style headers when a secret is configured.
 export async function POST(req: NextRequest) {
@@ -58,11 +58,10 @@ export async function POST(req: NextRequest) {
 
     const leadIds = leads.map((l) => l.id);
 
-    if (
-      type === "email.opened" ||
-      type === "email.clicked" ||
-      type === "email.delivered"
-    ) {
+    // Only recipient engagement counts as lead activity. email.delivered is
+    // a receipt for our own outbound send (nurture, auto-reply, review
+    // request); counting it kept nurtured leads "active" forever.
+    if (type === "email.opened" || type === "email.clicked") {
       await prisma.lead.updateMany({
         where: { id: { in: leadIds } },
         data: { lastActivityAt: new Date() },

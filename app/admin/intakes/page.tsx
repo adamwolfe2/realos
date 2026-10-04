@@ -88,7 +88,7 @@ export default async function IntakeList({
       />
 
       {submissions.length === 0 ? (
-        <div className="rounded-lg border border-border bg-card p-8 text-center">
+        <div className="rounded-card border border-border bg-card p-8 text-center">
           <p className="text-sm text-muted-foreground">
             No submissions match this filter.
           </p>
@@ -103,7 +103,7 @@ export default async function IntakeList({
               <li key={s.id}>
                 <Link
                   href={`/admin/intakes/${s.id}`}
-                  className="block rounded-lg border border-border bg-card p-4 hover:bg-muted/20 transition-colors"
+                  className="block rounded-card border border-border bg-card p-4 hover:bg-muted/20 transition-colors"
                 >
                   <div className="flex items-baseline justify-between gap-3">
                     <div className="min-w-0">
@@ -175,7 +175,7 @@ function FilterLink({
         value === "open" ? "/admin/intakes" : `/admin/intakes?filter=${value}`
       }
       className={cn(
-        "px-2.5 py-1 rounded-md text-xs font-medium border transition-colors",
+        "px-2.5 py-1 rounded-card text-xs font-medium border transition-colors",
         active
           ? "bg-primary text-primary-foreground border-primary"
           : "bg-card text-foreground border-border hover:bg-muted/50",

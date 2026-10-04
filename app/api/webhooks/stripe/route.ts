@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { trackServer } from "@/lib/analytics-server";
 import Stripe from "stripe";
 import { captureWithContext } from "@/lib/sentry";
 import { isStripeConfigured, parseWebhookEvent, getStripeClient } from "@/lib/stripe/config";
@@ -63,6 +64,29 @@ function resolveTierFromSubscription(
 // Event handlers
 // ============================================================================
 
+// A subscription whose metadata names an org but whose customer is linked to
+// no org means the org's stripeCustomerId points at a different (orphaned)
+// customer: billing state for that org has stopped syncing. Surface it.
+function warnUnlinkedPlatformSubscription(
+  subscription: Stripe.Subscription,
+  stripeCustomerId: string,
+  handler: string,
+): void {
+  const orgId = subscription.metadata?.org_id;
+  if (!orgId) return;
+  console.warn(
+    `[stripe-webhook] ${handler}: no org for customer ${stripeCustomerId} but subscription ${subscription.id} names org ${orgId}`,
+  );
+  captureWithContext(new Error("Stripe subscription names an org not linked to its customer"), {
+    route: "api/webhooks/stripe",
+    handler,
+    orgId,
+    stripeCustomerId,
+    subscriptionId: subscription.id,
+    level: "warning",
+  });
+}
+
 async function handleSubscriptionUpserted(
   subscription: Stripe.Subscription,
   eventId: string,
@@ -94,6 +118,7 @@ async function handleSubscriptionUpserted(
     // completed` handler creates the link for signup flows; this guard
     // covers the edge case where Stripe fires subscription events
     // before our checkout handler runs.
+    warnUnlinkedPlatformSubscription(subscription, stripeCustomerId, "handleSubscriptionUpserted");
     return;
   }
   if (!isPlatformSubscriptionForOrg(subscription.metadata, org.id)) return;
@@ -204,6 +229,20 @@ async function handleSubscriptionUpserted(
     where: { id: org.id },
     data: updateData,
   });
+
+  // Funnel: card added = a platform subscription created with the card
+  // collected (trialing or paid). Proposal subs returned early above.
+  if (
+    eventType === "customer.subscription.created" &&
+    (subscription.status === "trialing" || subscription.status === "active")
+  ) {
+    await trackServer({
+      event: "card_added",
+      distinctId: org.id,
+      props: { status: subscription.status },
+      dedupeKey: `${eventId}:card_added`,
+    });
+  }
 
   const oldStatus = org.subscriptionStatus ?? "none";
   const descParts = [
@@ -521,7 +560,10 @@ async function handleSubscriptionDeleted(
     select: { id: true, subscriptionStatus: true },
   });
 
-  if (!org) return;
+  if (!org) {
+    warnUnlinkedPlatformSubscription(subscription, stripeCustomerId, "handleSubscriptionDeleted");
+    return;
+  }
   if (!isPlatformSubscriptionForOrg(subscription.metadata, org.id)) return;
 
   // On cancel, revoke module entitlements except for the always-on
@@ -1445,8 +1487,9 @@ async function _maybeLiftDunningSuspension(orgId: string): Promise<void> {
 //        - if the invoice's subscription metadata carries a proposalId AND
 //          the proposal is not yet ACCEPTED: accept + provision
 //   3. customer.subscription.trial_will_end
-//        - if subscription.metadata.proposalId: email prospect + agency (v1
-//          logs + Sentry warning; v2 will wire the real send via lib/proposals/email)
+//        - proposal subscriptions: email prospect + agency (v1 logs + Sentry
+//          warning; v2 will wire the real send via lib/proposals/email).
+//          Platform trials are emailed only by the trial-reminders cron.
 //
 // Every branch routes through processStripeEventOnce so a Stripe retry can
 // never double-provision. Sentry breadcrumbs include the proposalId tag for
@@ -1855,102 +1898,21 @@ async function acceptProposalAndProvision(args: {
   );
 
   if (dedupe.status === "processed") {
-    console.log(
+    console.info(
       `[stripe-webhook] proposal accepted — proposalId=${args.proposalId} via=${args.eventType}`,
     );
   }
 }
 
-async function sendTrialEndingSoonEmail(input: {
-  orgId: string;
-  orgName: string;
-  toEmail: string;
-  trialEnd: number | null;
-  subscriptionId: string;
-}): Promise<void> {
-  const { getResend } = await import("@/lib/email/shared");
-  const resend = getResend();
-  if (!resend) return;
-
-  const to = input.toEmail;
-  const from =
-    process.env.RESEND_FROM_EMAIL?.trim() || `LeaseStack <team@leasestack.co>`;
-  const trialEndDate = input.trialEnd
-    ? new Date(input.trialEnd * 1000).toLocaleDateString()
-    : "soon";
-
-  const text = [
-    `Hi ${input.orgName},`,
-    "",
-    "Your LeaseStack trial is ending " + trialEndDate + ".",
-    "To keep your access and continue using all platform features, please activate your subscription.",
-    "",
-    "Log into your portal and visit Billing to subscribe.",
-    "",
-    "Questions? Reply to this email or contact team@leasestack.co.",
-  ].join("\n");
-
-  await resend.emails.send({
-    from,
-    to,
-    subject: `Your LeaseStack trial ends ${trialEndDate}`,
-    text,
-  });
-}
-
-async function notifyOrgTrialWillEnd(
-  subscription: Stripe.Subscription,
-): Promise<void> {
-  const stripeCustomerId =
-    typeof subscription.customer === "string"
-      ? subscription.customer
-      : subscription.customer?.id ?? null;
-  if (!stripeCustomerId) return;
-
-  const org = await prisma.organization.findUnique({
-    where: { stripeCustomerId },
-    select: { id: true, name: true, primaryContactEmail: true },
-  });
-  if (!org) return;
-
-  if (!org.primaryContactEmail) {
-    captureWithContext(
-      new Error("trial_will_end: org has no email to notify"),
-      {
-        route: "api/webhooks/stripe",
-        handler: "notifyOrgTrialWillEnd",
-        orgId: org.id,
-        subscriptionId: subscription.id,
-        level: "warning",
-      },
-    );
-    return;
-  }
-
-  void sendTrialEndingSoonEmail({
-    orgId: org.id,
-    orgName: org.name,
-    toEmail: org.primaryContactEmail,
-    trialEnd: subscription.trial_end ?? null,
-    subscriptionId: subscription.id,
-  }).catch((err) => {
-    captureWithContext(err, {
-      route: "api/webhooks/stripe",
-      handler: "notifyOrgTrialWillEnd.email",
-      orgId: org.id,
-    });
-  });
-}
-
 async function handleProposalTrialWillEnd(
   subscription: Stripe.Subscription,
 ): Promise<void> {
+  // Platform (non-proposal) trials: the trial-reminders cron is the single
+  // sender of the T-3 email (it dedupes via AuditEvent and quotes the exact
+  // charge). Classify by subscription metadata, never by customer ID, since
+  // proposals and the platform can share a Stripe Customer.
+  if (!isProposalSubscription(subscription.metadata)) return;
   const proposalId = subscription.metadata?.proposalId ?? null;
-  if (!proposalId) {
-    // Non-proposal trial: send a generic "trial ends soon" email to the org.
-    await notifyOrgTrialWillEnd(subscription);
-    return;
-  }
 
   // v1: log + Sentry warning so the agency operator gets a notification
   // through their existing Sentry pipeline. v2 wires the real prospect +
@@ -1983,6 +1945,23 @@ export async function POST(req: NextRequest) {
   }
 
   if (!isStripeConfigured()) {
+    // In production a missing secret is a deploy/rotation error: return 503
+    // so Stripe retries (for up to 3 days) instead of dropping the event.
+    // Dev/preview keep the 200 so unconfigured envs stay quiet. Not the
+    // `VERCEL_ENV || NODE_ENV` guard from lib/tenancy (that one fails closed
+    // on previews, which run with NODE_ENV=production): off Vercel, NODE_ENV
+    // decides; on Vercel, only VERCEL_ENV=production counts.
+    if (
+      process.env.VERCEL_ENV === "production" ||
+      (!process.env.VERCEL && process.env.NODE_ENV === "production")
+    ) {
+      console.error("Stripe webhook received but Stripe is not configured");
+      captureWithContext(new Error("Stripe webhook received but Stripe is not configured"), {
+        route: "api/webhooks/stripe",
+        level: "error",
+      });
+      return NextResponse.json({ error: "Stripe not configured" }, { status: 503 });
+    }
     return NextResponse.json({ received: true });
   }
 

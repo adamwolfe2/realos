@@ -29,7 +29,8 @@ import {
   getIp,
   WIDGET_FALLBACK,
 } from "@/lib/rate-limit";
-import { checkAiQuota, isPayingSubscription } from "@/lib/ai/quota";
+import { checkAiQuota, isCapExempt } from "@/lib/ai/quota";
+import { withSpendCap, secondsUntilCapReset } from "@/lib/cost-tracker/cap";
 import { logChatUsage } from "@/lib/chatbot/log-chat-usage";
 import {
   requireMatchingOrigin,
@@ -211,7 +212,7 @@ export async function POST(req: NextRequest) {
   // Anthropic budget before anyone notices. Fails OPEN on Redis errors;
   // see lib/ai/quota.ts.
   const quota = await checkAiQuota(orgId, {
-    neverBlock: isPayingSubscription(org.subscriptionStatus),
+    neverBlock: isCapExempt(org),
   });
   if (!quota.allowed) {
     return NextResponse.json(
@@ -359,7 +360,15 @@ export async function POST(req: NextRequest) {
   const userAgent = req.headers.get("user-agent") ?? undefined;
 
   const chatStartedAt = Date.now();
-  const result = streamText({
+  const capped = await withSpendCap(
+    {
+      provider: "anthropic",
+      endpoint: "chatbot.public-chat",
+      orgId,
+      neverBlock: isCapExempt(org),
+    },
+    async () =>
+  streamText({
     model: anthropic("claude-haiku-4-5-20251001"),
     system: systemPrompt,
     messages,
@@ -397,9 +406,26 @@ export async function POST(req: NextRequest) {
         console.error("[public/chatbot/chat] persistence error:", err);
       }
     },
-  });
+  }),
+  );
+  if (capped.status === "skipped_cap") {
+    console.warn("[public/chatbot/chat] spend cap reached", {
+      orgId,
+      reason: capped.reason,
+    });
+    return NextResponse.json(
+      { error: "Chatbot temporarily unavailable", code: "spend_cap_reached" },
+      {
+        status: 503,
+        headers: {
+          ...CORS_HEADERS,
+          "Retry-After": String(secondsUntilCapReset()),
+        },
+      }
+    );
+  }
 
-  return result.toTextStreamResponse({
+  return capped.data.toTextStreamResponse({
     headers: { ...CORS_HEADERS, "Cache-Control": "no-store" },
   });
 }

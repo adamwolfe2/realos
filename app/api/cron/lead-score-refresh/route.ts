@@ -34,6 +34,9 @@ export async function GET(req: NextRequest) {
       emailsSent: true,
       cadenceStage: true,
     },
+    // Stalest first: the update below bumps updatedAt, so successive runs
+    // rotate through every open lead. id breaks ties deterministically.
+    orderBy: [{ updatedAt: "asc" }, { id: "asc" }],
     take: 1000,
   });
 

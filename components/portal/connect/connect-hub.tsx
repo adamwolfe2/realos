@@ -514,7 +514,7 @@ export function ConnectHub({
 
       {/* Per-property context — makes the active scope explicit so operators
           set up each building in isolation. Blue 10 wash, Carbon-flat. */}
-      <div className="rounded-[2px] border border-[#a6c8ff] bg-[#edf5ff] px-4 py-2.5 text-[12px] text-foreground flex items-start gap-2">
+      <div className="rounded-[2px] border border-[#a6c8ff] bg-accent px-4 py-2.5 text-[12px] text-foreground flex items-start gap-2">
         <Building2 className="w-3.5 h-3.5 mt-0.5 text-primary shrink-0" />
         {activePropertyName ? (
           <span>
@@ -586,7 +586,7 @@ export function ConnectHub({
           write-capable); disconnect affordances exist for every connected
           account under Settings → Integrations. */}
       {variant === "page" ? (
-        <div className="mt-8 border-t border-[#e0e0e0] pt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-[11px] text-[#525252]">
+        <div className="mt-8 border-t border-border pt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-[11px] text-[var(--gray-70)]">
           <span className="inline-flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 shrink-0" strokeWidth={1.75} />
             Credentials encrypted at rest (AES-256)
@@ -638,7 +638,7 @@ function SourceCard({
     <article
       className={`rounded-[2px] p-4 ${
         isConnected
-          ? "border border-[#c6c6c6] bg-card"
+          ? "border border-[var(--hair-strong)] bg-card"
           : isBlocked
             ? "border border-dashed border-border bg-muted/30"
             : "border border-border bg-card"
@@ -679,8 +679,8 @@ function SourceCard({
 
       {/* Value prop + unlocks — what connecting this source buys. Checks are
           Gray 70, not blue: blue stays reserved for actions. */}
-      <div className="mt-2.5 pt-2.5 border-t border-[#e0e0e0]">
-        <p className="text-[12px] text-[#393939] leading-snug">{meta.payoff}</p>
+      <div className="mt-2.5 pt-2.5 border-t border-border">
+        <p className="text-[12px] text-[var(--gray-80)] leading-snug">{meta.payoff}</p>
         <div className="mt-1.5 grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-0.5">
           {meta.unlocks.map((u) => (
             <p
@@ -688,7 +688,7 @@ function SourceCard({
               className="flex items-start gap-1.5 text-[11px] text-foreground/75 leading-snug"
             >
               <Check
-                className="w-2.5 h-2.5 mt-0.5 shrink-0 text-[#525252]"
+                className="w-2.5 h-2.5 mt-0.5 shrink-0 text-[var(--gray-70)]"
                 strokeWidth={2.5}
               />
               <span className="line-clamp-2">{u}</span>
@@ -699,7 +699,7 @@ function SourceCard({
 
       {/* Bottom band — connected cards get the VerificationRow proof line;
           not-yet-connected cards get the "what you'll need" prerequisite. */}
-      <div className="mt-2.5 pt-2 border-t border-[#e0e0e0] space-y-2">
+      <div className="mt-2.5 pt-2 border-t border-border space-y-2">
         {isConnected ? (
           <>
             {/* Verification — "prove it worked": account + last sync.
@@ -713,7 +713,7 @@ function SourceCard({
               }
             />
             {source.scopedPropertyIds && source.scopedPropertyIds.length > 0 ? (
-              <p className="text-[11px] text-[#525252]">
+              <p className="text-[11px] text-[var(--gray-70)]">
                 Connected for {source.scopedPropertyIds.length}{" "}
                 {source.scopedPropertyIds.length === 1 ? "property" : "properties"}
               </p>
@@ -723,11 +723,11 @@ function SourceCard({
             {source.healthNote ? (
               <Link
                 href={source.healthNote.href}
-                className="inline-flex items-center gap-1.5 rounded-[2px] border border-[#f1c21b]/60 bg-[rgba(241,194,27,0.16)] px-2 py-1 text-[11px] font-medium text-[#8a6d00] hover:bg-[rgba(241,194,27,0.24)] transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-[2px] border border-warning/60 bg-[rgba(241,194,27,0.16)] px-2 py-1 text-[11px] font-medium text-[#8a6d00] hover:bg-[rgba(241,194,27,0.24)] transition-colors"
               >
                 <span
                   aria-hidden="true"
-                  className="inline-block h-1.5 w-1.5 rounded-full bg-[#f1c21b]"
+                  className="inline-block h-1.5 w-1.5 rounded-full bg-warning"
                 />
                 {source.healthNote.label}
                 <ArrowRight className="w-2.5 h-2.5" />
@@ -741,7 +741,7 @@ function SourceCard({
             request is already on file (provisioning), the line flips to the
             persisted status copy instead of re-asking for prerequisites. */}
         {!isConnected && !isBlocked ? (
-          <p className="text-[11px] text-[#525252] leading-snug">
+          <p className="text-[11px] text-[var(--gray-70)] leading-snug">
             {source.provisioning
               ? "Requested — provisioning (≤4 business hrs). We'll email you when it's live."
               : PREREQUISITES[source.id]}
@@ -775,7 +775,7 @@ function SourceCard({
             are write-capable and therefore excluded from the footer's
             "read-only" claim. */}
         {scopeNote ? (
-          <p className="text-[10px] text-[#6f6f6f] leading-snug">{scopeNote}</p>
+          <p className="text-[10px] text-muted-foreground leading-snug">{scopeNote}</p>
         ) : null}
 
         {/* Actions */}

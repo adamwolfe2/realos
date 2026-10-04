@@ -24,16 +24,20 @@ const STATUS_TONE: Record<string, string> = {
   CHANGES_REQUESTED: "bg-muted text-foreground",
   REJECTED:          "bg-muted text-muted-foreground line-through",
   SHIPPED:           "bg-success text-success-foreground",
-  EXPIRED:           "bg-muted text-muted-foreground/70",
+  EXPIRED:           "bg-muted text-muted-foreground",
 };
 
 export default async function PortalDraftViewer({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ from?: string }>;
 }) {
   const scope = await requireScope();
   const { id } = await params;
+  const { from } = await searchParams;
+  const fromDrafts = from === "drafts";
 
   const draft = await prisma.contentDraft.findFirst({
     where: { id, ...tenantWhere(scope) },
@@ -59,10 +63,10 @@ export default async function PortalDraftViewer({
     <div className="space-y-5 max-w-3xl">
       <div>
         <Link
-          href="/portal/seo/agent"
+          href={fromDrafts ? "/portal/seo/drafts" : "/portal/seo/agent"}
           className="text-[11px] text-muted-foreground hover:text-foreground"
         >
-          &larr; Back to SEO Agent
+          &larr; {fromDrafts ? "Back to Drafts" : "Back to SEO Agent"}
         </Link>
       </div>
 
@@ -84,7 +88,7 @@ export default async function PortalDraftViewer({
                 </span>
               ) : null}
             </div>
-            <h1 className="mt-2 text-lg font-semibold text-foreground">
+            <h1 className="mt-2 text-[28px] md:text-[34px] font-semibold tracking-[-0.022em] text-foreground leading-[1.08]">
               {draft.property?.name ?? "Draft"}
             </h1>
             <p className="mt-2 text-[13px] text-foreground leading-snug whitespace-pre-wrap">

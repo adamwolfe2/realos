@@ -124,7 +124,7 @@ export function ScanProgress({
         <div className="mt-4">
           <p
             className="text-[10px] font-mono uppercase tracking-[0.14em] mb-1.5"
-            style={{ color: "#9CA3AF" }}
+            style={{ color: "var(--color-muted-foreground)" }}
           >
             Recent steps
           </p>
@@ -134,7 +134,7 @@ export function ScanProgress({
                 key={`${msg}-${animKey}-${i}`}
                 className="text-xs"
                 style={{
-                  color: "#9CA3AF",
+                  color: "var(--color-muted-foreground)",
                   opacity: 0.85 - i * 0.22,
                   fontFamily: "var(--font-mono)",
                   animation: i === 0 ? "ls-scan-fade 420ms ease-out" : "none",
@@ -153,7 +153,7 @@ export function ScanProgress({
       {footer ? (
         <p
           className="text-xs mt-4 pt-3 border-t"
-          style={{ color: "#9CA3AF", borderColor: "#F3F4F6" }}
+          style={{ color: "var(--color-muted-foreground)", borderColor: "#F3F4F6" }}
         >
           {footer}
         </p>

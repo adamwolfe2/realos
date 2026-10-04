@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { findOldestLeadByEmail } from "@/lib/leads/find-by-email";
 import {
   LeadSource,
   LeadStatus,
@@ -26,6 +27,7 @@ import {
   chatbotOriginBypassEnabled,
 } from "@/lib/tenancy/origin-guard";
 import { recordPopupEvent } from "@/lib/popups/queries";
+import { getSiteUrl } from "@/lib/brand";
 
 // ---------------------------------------------------------------------------
 // POST /api/public/popup/lead
@@ -199,9 +201,10 @@ export async function POST(req: NextRequest) {
   const notesLine = `Captured by popup on ${data.pageUrl ?? "site"}`;
 
   const existing = data.email
-    ? await prisma.lead.findFirst({
-        where: { orgId: org.id, email: data.email },
-        select: { id: true, phone: true, propertyId: true },
+    ? await findOldestLeadByEmail(org.id, data.email, {
+        id: true,
+        phone: true,
+        propertyId: true,
       })
     : data.phone
       ? await prisma.lead.findFirst({
@@ -317,7 +320,7 @@ export async function POST(req: NextRequest) {
   // conversion. The fan-out adds ~200-400ms to the response, which
   // is acceptable for a one-shot conversion form (operator submits
   // and waits for the success state anyway).
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const appUrl = getSiteUrl();
   const notifyResults = await Promise.allSettled([
     notifyNewLeadSlack({
       companyName: org.name,

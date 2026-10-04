@@ -100,24 +100,17 @@ export default async function SetupHubPage() {
     return { phase: p, done, total: inPhase.length };
   });
 
-  // Celebrate the moment everything is done with a slightly larger,
-  // greeting-style title; otherwise use the canonical PageHeader so
-  // Setup reads as the same chrome as every other page.
+  // Greeting-style title once everything is done; the canonical PageHeader
+  // keeps Setup in the same chrome as every other page.
   const isComplete = phase === "done";
 
   return (
     <div className="space-y-8">
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      {isComplete ? (
-        <section className="space-y-2 border-b border-border pb-4">
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-            All set, {org.name}.
-          </h1>
-          <p className="text-sm text-muted-foreground">{phaseSubtitle}</p>
-        </section>
-      ) : (
-        <PageHeader title="Setup" description={phaseSubtitle} />
-      )}
+      <PageHeader
+        title={isComplete ? `All set, ${org.name}.` : "Setup"}
+        description={phaseSubtitle}
+      />
 
       <section className="space-y-5">
         <div className="space-y-3">

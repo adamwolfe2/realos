@@ -135,7 +135,7 @@ export default async function IntakeDetail({
             <StatusBadge tone={intakeStatusTone(status)}>
               {humanIntakeStatus(status)}
             </StatusBadge>
-            <span className="text-muted-foreground/60">·</span>
+            <span className="text-muted-foreground">·</span>
             <span>
               {intake.primaryContactName}, {intake.primaryContactEmail}
               {intake.primaryContactPhone
@@ -162,7 +162,7 @@ export default async function IntakeDetail({
           action={
             <Link
               href={`/admin/clients/${intake.org.id}`}
-              className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium hover:bg-primary-dark transition-colors"
+              className="inline-flex items-center rounded-card bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium hover:bg-primary-dark transition-colors"
             >
               Open client →
             </Link>
@@ -247,7 +247,7 @@ export default async function IntakeDetail({
               {selected.map((m) => (
                 <li
                   key={m}
-                  className="text-[11px] px-2 py-1 rounded-md border border-border bg-secondary text-foreground"
+                  className="text-[11px] px-2 py-1 rounded-card border border-border bg-secondary text-foreground"
                 >
                   {m}
                 </li>
@@ -286,7 +286,7 @@ export default async function IntakeDetail({
         </SectionCard>
       </section>
 
-      <details className="rounded-lg border border-border bg-card p-4">
+      <details className="rounded-card border border-border bg-card p-4">
         <summary className="text-xs tracking-widest uppercase text-muted-foreground cursor-pointer">
           Raw payload
         </summary>

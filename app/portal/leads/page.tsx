@@ -41,6 +41,7 @@ import { ExportButton } from "@/components/ui/export-button";
 import { humanLeadSource } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { CHART_COLORS } from "@/components/portal/ui/chart-theme";
+import { soft } from "@/lib/soft";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -203,7 +204,7 @@ export default async function LeadsKanbanPage({
     }),
     prisma.lead
       .count({ where: { ...kpiWhere, createdAt: { gte: since28d } } })
-      .catch(() => 0),
+      .catch(soft(0, "portal.leads:206")),
     prisma.lead
       .count({
         where: {
@@ -212,7 +213,7 @@ export default async function LeadsKanbanPage({
           score: { gte: 70 },
         },
       })
-      .catch(() => 0),
+      .catch(soft(0, "portal.leads:215")),
     prisma.lead
       .count({
         where: {
@@ -227,7 +228,7 @@ export default async function LeadsKanbanPage({
           },
         },
       })
-      .catch(() => 0),
+      .catch(soft(0, "portal.leads:230")),
     prisma.lead
       .count({
         where: {
@@ -236,7 +237,7 @@ export default async function LeadsKanbanPage({
           createdAt: { gte: since28d },
         },
       })
-      .catch(() => 0),
+      .catch(soft(0, "portal.leads:239")),
     // Group all-time lead counts by source so we can hide filter chips
     // that have zero data. With low-volume tenants (e.g. day-1 launch
     // tenants with 4 leads) the full 12-source chip strip otherwise
@@ -247,9 +248,7 @@ export default async function LeadsKanbanPage({
         where: kpiWhere,
         _count: { _all: true },
       })
-      .catch(
-        () => [] as Array<{ source: LeadSource; _count: { _all: number } }>,
-      ),
+      .catch(soft([] as Array<{ source: LeadSource; _count: { _all: number } }>, "portal.leads:250")),
     // --- Cross-product signal KPIs (28d) ----------------------------------
     // Each is org + property scoped. .catch fall-back so a single bad
     // query never blanks the strip.
@@ -261,7 +260,7 @@ export default async function LeadsKanbanPage({
           createdAt: { gte: since28d },
         },
       })
-      .catch(() => 0),
+      .catch(soft(0, "portal.leads:264")),
     prisma.popupEvent
       .count({
         where: {
@@ -270,7 +269,7 @@ export default async function LeadsKanbanPage({
           occurredAt: { gte: since28d },
         },
       })
-      .catch(() => 0),
+      .catch(soft(0, "portal.leads:273")),
     prisma.application
       .count({
         where: {
@@ -278,7 +277,7 @@ export default async function LeadsKanbanPage({
           createdAt: { gte: since28d },
         },
       })
-      .catch(() => 0),
+      .catch(soft(0, "portal.leads:281")),
     prisma.visitor
       .count({
         where: {
@@ -287,7 +286,7 @@ export default async function LeadsKanbanPage({
           firstSeenAt: { gte: since28d },
         },
       })
-      .catch(() => 0),
+      .catch(soft(0, "portal.leads:290")),
   ]);
 
   // ---------------------------------------------------------------------
@@ -314,7 +313,7 @@ export default async function LeadsKanbanPage({
               select: { leadId: true },
               distinct: ["leadId"],
             })
-            .catch(() => [] as Array<{ leadId: string | null }>),
+            .catch(soft([] as Array<{ leadId: string | null }>, "portal.leads:317")),
       visibleLeadIds.length === 0
         ? []
         : prisma.popupEvent
@@ -327,7 +326,7 @@ export default async function LeadsKanbanPage({
               select: { leadId: true },
               distinct: ["leadId"],
             })
-            .catch(() => [] as Array<{ leadId: string | null }>),
+            .catch(soft([] as Array<{ leadId: string | null }>, "portal.leads:330")),
       visibleLeadIds.length === 0
         ? []
         : prisma.application
@@ -336,7 +335,7 @@ export default async function LeadsKanbanPage({
               select: { leadId: true },
               distinct: ["leadId"],
             })
-            .catch(() => [] as Array<{ leadId: string }>),
+            .catch(soft([] as Array<{ leadId: string }>, "portal.leads:339")),
       visibleEmails.length === 0
         ? []
         : prisma.visitor
@@ -348,13 +347,10 @@ export default async function LeadsKanbanPage({
               },
               _sum: { sessionCount: true },
             })
-            .catch(
-              () =>
-                [] as Array<{
+            .catch(soft([] as Array<{
                   email: string | null;
                   _sum: { sessionCount: number | null };
-                }>,
-            ),
+                }>, "portal.leads:351")),
     ]);
 
   const chatbotSet = new Set(
@@ -427,8 +423,8 @@ export default async function LeadsKanbanPage({
           sessionCount: true,
         },
       })
-      .catch(() => []),
-    prisma.visitor.count({ where: visitorLeadWhere }).catch(() => 0),
+      .catch(soft([], "portal.leads:430")),
+    prisma.visitor.count({ where: visitorLeadWhere }).catch(soft(0, "portal.leads:431")),
   ]);
   const trackedTotal = totalCount + identifiedVisitorCount;
 
@@ -671,6 +667,7 @@ export default async function LeadsKanbanPage({
             <input
               name="q"
               defaultValue={sp.q ?? ""}
+              aria-label="Search leads"
               placeholder="Search name, email, phone…"
               className="w-full rounded-none border border-border bg-background pl-8 pr-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
             />
@@ -830,7 +827,7 @@ export default async function LeadsKanbanPage({
       )}
 
       {totalCount === 0 && identifiedVisitorCount === 0 ? (
-        <EmptyLeadsState />
+        <EmptyLeadsState orgId={scope.orgId} />
       ) : (
         <>
           {totalCount > 0 ? <LeadKanban items={items} /> : null}
@@ -1004,12 +1001,28 @@ function SourceMixBar({
   );
 }
 
-function EmptyLeadsState() {
+async function EmptyLeadsState({ orgId }: { orgId: string }) {
+  // The site builder is a wall when the managed website module is off or the
+  // workspace brings its own site; send those users to the chatbot instead.
+  const org = await prisma.organization
+    .findUnique({
+      where: { id: orgId },
+      select: { moduleWebsite: true, bringYourOwnSite: true },
+    })
+    .catch((err: unknown) => {
+      console.error("[portal/leads] empty-state org lookup failed:", err);
+      return null;
+    });
+  const hasSite = Boolean(org?.moduleWebsite) && !org?.bringYourOwnSite;
   return (
     <EmptyState
       title="Your pipeline is empty."
       body="Leads from chatbot conversations, contact forms, ads, or AppFolio sync land here. Pick a starting point below."
-      action={{ label: "Set up lead capture", href: "/portal/site-builder" }}
+      action={
+        hasSite
+          ? { label: "Set up lead capture", href: "/portal/site-builder" }
+          : { label: "Install the chatbot", href: "/portal/chatbot" }
+      }
       secondary={{
         label: "Connect data sources",
         href: "/portal/connect",

@@ -120,7 +120,7 @@ export function SetupStepCard({ step }: Props) {
 function StatusDot({ status }: { status: ResolvedSetupStep["status"] }) {
   if (status === "done") {
     return (
-      <span className="relative z-10 w-5 h-5 rounded-full bg-[#24a148] flex items-center justify-center shadow-[0_0_0_3px_hsl(var(--background))]">
+      <span className="relative z-10 w-5 h-5 rounded-full bg-[#24a148] flex items-center justify-center shadow-[0_0_0_3px_var(--color-background)]">
         <Check className="w-3 h-3 text-white" aria-hidden="true" />
       </span>
     );
@@ -132,14 +132,14 @@ function StatusDot({ status }: { status: ResolvedSetupStep["status"] }) {
   }
   if (status === "locked") {
     return (
-      <span className="relative z-10 w-5 h-5 rounded-full bg-muted flex items-center justify-center shadow-[0_0_0_3px_hsl(var(--background))]">
+      <span className="relative z-10 w-5 h-5 rounded-full bg-muted flex items-center justify-center shadow-[0_0_0_3px_var(--color-background)]">
         <Lock className="w-2.5 h-2.5 text-muted-foreground" aria-hidden="true" />
       </span>
     );
   }
   // pending
   return (
-    <span className="relative z-10 w-5 h-5 rounded-full border-2 border-border bg-card shadow-[0_0_0_3px_hsl(var(--background))]" />
+    <span className="relative z-10 w-5 h-5 rounded-full border-2 border-border bg-card shadow-[0_0_0_3px_var(--color-background)]" />
   );
 }
 

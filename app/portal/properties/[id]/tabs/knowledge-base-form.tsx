@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useMemo, useState, useTransition } from "react";
+import { useId, useMemo, useState, useTransition } from "react";
 import { Plus, Trash2, X, CheckCircle2, Circle, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -190,7 +190,7 @@ export function KnowledgeBaseForm({
         {/* Floor plans repeater */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-semibold text-foreground">Floor plans</label>
+            <span className="text-xs font-semibold text-foreground">Floor plans</span>
             <button
               type="button"
               onClick={addRow}
@@ -218,8 +218,8 @@ export function KnowledgeBaseForm({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div className="sm:col-span-2">
-                  <label className={LABEL}>Type (required)</label>
-                  <input
+                  <label htmlFor={`fp-${i}-type`} className={LABEL}>Type (required)</label>
+                  <input id={`fp-${i}-type`}
                     value={r.type}
                     onChange={(e) => updateRow(i, "type", e.target.value)}
                     placeholder="Single, Double, Triple, Studio, 1 Bedroom…"
@@ -227,8 +227,8 @@ export function KnowledgeBaseForm({
                   />
                 </div>
                 <div>
-                  <label className={LABEL}>Bedrooms</label>
-                  <input
+                  <label htmlFor={`fp-${i}-bedrooms`} className={LABEL}>Bedrooms</label>
+                  <input id={`fp-${i}-bedrooms`}
                     type="number"
                     min={0}
                     step={1}
@@ -239,8 +239,8 @@ export function KnowledgeBaseForm({
                   />
                 </div>
                 <div>
-                  <label className={LABEL}>Bathrooms</label>
-                  <input
+                  <label htmlFor={`fp-${i}-bathrooms`} className={LABEL}>Bathrooms</label>
+                  <input id={`fp-${i}-bathrooms`}
                     type="number"
                     min={0}
                     step={0.5}
@@ -251,8 +251,8 @@ export function KnowledgeBaseForm({
                   />
                 </div>
                 <div>
-                  <label className={LABEL}>Square feet</label>
-                  <input
+                  <label htmlFor={`fp-${i}-squareFeet`} className={LABEL}>Square feet</label>
+                  <input id={`fp-${i}-squareFeet`}
                     type="number"
                     min={1}
                     step={1}
@@ -264,8 +264,8 @@ export function KnowledgeBaseForm({
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className={LABEL}>Rent min ($/mo)</label>
-                    <input
+                    <label htmlFor={`fp-${i}-priceMinDollars`} className={LABEL}>Rent min ($/mo)</label>
+                    <input id={`fp-${i}-priceMinDollars`}
                       type="number"
                       min={0}
                       step={1}
@@ -276,8 +276,8 @@ export function KnowledgeBaseForm({
                     />
                   </div>
                   <div>
-                    <label className={LABEL}>Rent max ($/mo)</label>
-                    <input
+                    <label htmlFor={`fp-${i}-priceMaxDollars`} className={LABEL}>Rent max ($/mo)</label>
+                    <input id={`fp-${i}-priceMaxDollars`}
                       type="number"
                       min={0}
                       step={1}
@@ -289,8 +289,8 @@ export function KnowledgeBaseForm({
                   </div>
                 </div>
                 <div className="sm:col-span-2">
-                  <label className={LABEL}>Notes</label>
-                  <input
+                  <label htmlFor={`fp-${i}-notes`} className={LABEL}>Notes</label>
+                  <input id={`fp-${i}-notes`}
                     value={r.notes}
                     onChange={(e) => updateRow(i, "notes", e.target.value)}
                     placeholder="Optional — e.g. corner units, top floor only"
@@ -401,7 +401,7 @@ function CompletenessBanner({
               <Circle
                 className={cn(
                   "h-3 w-3 shrink-0",
-                  it.critical ? "text-[#8a6d00]" : "text-muted-foreground/50",
+                  it.critical ? "text-[#8a6d00]" : "text-muted-foreground",
                 )}
                 aria-hidden="true"
               />
@@ -426,10 +426,11 @@ function Field({
   value: string;
   onChange: (v: string) => void;
 }) {
+  const id = useId();
   return (
     <div>
-      <label className={LABEL}>{label}</label>
-      <input value={value} onChange={(e) => onChange(e.target.value)} className={FIELD} />
+      <label htmlFor={id} className={LABEL}>{label}</label>
+      <input id={id} value={value} onChange={(e) => onChange(e.target.value)} className={FIELD} />
     </div>
   );
 }
@@ -443,10 +444,12 @@ function TextArea({
   value: string;
   onChange: (v: string) => void;
 }) {
+  const id = useId();
   return (
     <div>
-      <label className={LABEL}>{label}</label>
+      <label htmlFor={id} className={LABEL}>{label}</label>
       <textarea
+        id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={3}
@@ -468,6 +471,7 @@ function TagInput({
   placeholder?: string;
 }) {
   const [draft, setDraft] = useState("");
+  const id = useId();
 
   function add() {
     const v = draft.trim();
@@ -487,7 +491,7 @@ function TagInput({
 
   return (
     <div>
-      <label className={LABEL}>{label}</label>
+      <label htmlFor={id} className={LABEL}>{label}</label>
       <div className="rounded-[2px] border border-border bg-background px-2 py-1.5">
         {values.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-1.5">
@@ -510,6 +514,7 @@ function TagInput({
           </div>
         )}
         <input
+          id={id}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={onKeyDown}

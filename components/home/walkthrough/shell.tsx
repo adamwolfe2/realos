@@ -269,8 +269,8 @@ export function WalkthroughShell({
               borderRadius: 2,
             }}
           >
-            <Search className="w-3.5 h-3.5" style={{ color: "#8d8d8d" }} aria-hidden />
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "#8d8d8d" }}>
+            <Search className="w-3.5 h-3.5" style={{ color: "var(--color-muted-foreground)" }} aria-hidden />
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--color-muted-foreground)" }}>
               Search leads, properties, transcripts
             </span>
           </div>
@@ -283,7 +283,7 @@ export function WalkthroughShell({
                 fontWeight: 600,
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
-                color: "#8d8d8d",
+                color: "var(--color-muted-foreground)",
                 border: `1px solid ${BORDER}`,
                 borderRadius: 2,
                 padding: "2px 6px",

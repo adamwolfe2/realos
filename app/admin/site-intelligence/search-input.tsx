@@ -39,7 +39,7 @@ export function SearchInput({ placeholder = "Search by org, slug, or domain…" 
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder={placeholder}
-        className="w-72 rounded-lg border border-border bg-background pl-8 pr-3 py-1.5 text-[12px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+        className="w-72 rounded-card border border-border bg-background pl-8 pr-3 py-1.5 text-[12px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
         aria-label="Search organizations"
       />
     </label>

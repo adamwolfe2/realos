@@ -363,7 +363,7 @@ export function BriefSourcesBlock({
                 </span>
                 <ExternalLink
                   className="w-3.5 h-3.5 shrink-0"
-                  style={{ color: "#94A3B8" }}
+                  style={{ color: "var(--color-muted-foreground)" }}
                   aria-hidden
                 />
               </a>

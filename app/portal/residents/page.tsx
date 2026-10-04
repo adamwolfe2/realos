@@ -330,6 +330,7 @@ export default async function ResidentsPage({
         <input
           name="q"
           defaultValue={sp.q ?? ""}
+          aria-label="Search residents"
           placeholder="Name, email, phone, unit"
           className="rounded-none border border-border bg-background px-3 py-2 text-sm md:col-span-3"
         />

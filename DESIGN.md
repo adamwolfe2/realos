@@ -4,7 +4,7 @@
 
 > **Heritage note:** This system began as a warm-parchment "inspired by Claude" theme (terracotta + Fraunces serif). That era is **gone**. The portal now reads as a clean white/blue software product. Several variables keep their old names for back-compat (`--blue-60`, `--blue-50`, `--gray-10-hover`, `--canvas`) but are **retargeted to blue/cool-gray values** — trust the value, not the name.
 
-> **⚑ Carbon-forward retarget (2026-07-09):** the token *values* below were retargeted toward IBM Carbon (light) for an enterprise, production-grade read. **Brand blue `#2563EB → #0f62fe`** (hover `#0043ce`); **ink `#0F172A → #161616`**; hairlines/surfaces → Carbon grays (`#e0e0e0`, `#f4f4f4`); semantic → Carbon (`#24a148` / `#f1c21b` / `#da1e28`). **Shape sharpened:** cards `14px → 2px`, buttons/inputs/select `8/6px → 0`, alerts `12px → 2px` (pills stay `999px`); elevation is **flat #e0e0e0 border over soft shadow** (no gradient/glow on buttons or default cards). Display weights lightened (`700 → 400/600`), eyebrow `.22em → .12em` Gray-70. New primitives: **`StatusChip` / `VerificationRow`** (`components/portal/ui/status-chip.tsx`) — the one connection-status vocabulary (Live = green, never blue). Full spec + fix-wave plan: `.claude/specs/2026-07-09-ibm-carbon-forward-design.md` + `-carbon-audit-findings.md`. The tables below still show the *pre-retarget* hexes in places — trust the CSS token values in `app/globals.css`.
+> **⚑ Carbon-forward retarget (2026-07-09):** the token *values* below were retargeted toward IBM Carbon (light) for an enterprise, production-grade read. **Brand blue `#2563EB → #0f62fe`** (hover `#0043ce`); **ink `#0F172A → #161616`**; hairlines/surfaces → Carbon grays (`#e0e0e0`, `#f4f4f4`); semantic → Carbon (`#24a148` / `#f1c21b` / `#da1e28`). **Shape sharpened:** cards `14px → 2px`, buttons/inputs/select `8/6px → 0`, alerts `12px → 2px` (pills stay `999px`); elevation is **flat #e0e0e0 border over soft shadow** (no gradient/glow on buttons or default cards). Display weights lightened (`700 → 400/600`), eyebrow `.22em → .12em` Gray-70. New primitives: **`StatusChip` / `VerificationRow`** (`components/portal/ui/status-chip.tsx`) — the one connection-status vocabulary (Live = green, never blue). Full spec + fix-wave plan: `.claude/specs/2026-07-09-ibm-carbon-forward-design.md` + `-carbon-audit-findings.md`.
 
 ---
 
@@ -21,72 +21,71 @@
 
 ## 2. Color
 
-Brand is **blue `#2563EB`**, not terracotta. Defined twice: as Tailwind v4 `@theme` `--color-*` tokens (shadcn-mirrored, line 18+) and as legacy `:root` aliases (line 78+). Source: `app/globals.css`.
+Brand is **Carbon blue `#0f62fe`**. Defined twice: as Tailwind v4 `@theme` `--color-*` tokens (shadcn-mirrored) and as legacy `:root` aliases. Source of truth: `app/globals.css`. Do not copy hexes from other files; use the tokens.
 
 ### Brand / accent
 | Token | Value | Role |
 |---|---|---|
-| `--color-primary` / `--blue-60` / `--accent` / `--blue` | `#2563EB` | Primary brand blue — CTAs, active states, series 1, eyebrows |
-| `--color-primary-dark` / `--blue-70` | `#1D4ED8` | Hover / pressed brand |
-| `--color-primary-light` / `--blue-50` | `#3B82F6` | Lighter brand / 3rd series |
-| `--color-accent` | `#EFF6FF` | Brand wash / accent surface |
-| `--brand-soft` / `--brand-wash` / `--brand-glow` / `--brand-strong` | `rgba(37,99,235, .08 / .04 / .18 / .28)` | Tints, hover layers, glow (used by `ls-card-accent`, sidebar active) |
+| `--color-primary` / `--blue-60` / `--accent` / `--blue` | `#0f62fe` | Primary brand blue: CTAs, active states, series 1, eyebrows |
+| `--color-primary-dark` / `--blue-70` | `#0043ce` | Hover / pressed brand |
+| `--color-primary-light` / `--blue-50` | `#4589ff` | Lighter brand / 3rd series |
+| `--color-accent` | `#edf5ff` | Brand wash / accent surface |
+| `--brand-soft` / `--brand-wash` / `--brand-glow` / `--brand-strong` | `rgba(15,98,254, .08 / .04 / .18 / .28)` | Tints and hover layers |
 
 ### Canvas / surfaces
 | Token | Value | Role |
 |---|---|---|
-| `--color-background` / `--canvas` / `--white` | `#FFFFFF` | Page + card background |
-| `--color-secondary` / `--gray-10` / `--color-surface` | `#F9FAFB` | App background, subtle panels |
-| `--gray-10-hover` / `--color-muted` | `#F3F4F6` | Chips, neutral pill bg |
+| `--color-background` / `--canvas` / `--white` | `#ffffff` | Page + card background |
+| `--color-secondary` / `--gray-10` / `--color-surface` | `#f4f4f4` | App background, subtle panels |
+| `--gray-10-hover` / `--color-muted` | `#e8e8e8` | Chips, neutral pill bg |
 | `--color-elevated` | `#F4F6F8` | Sidebar item hover, meta pill bg |
 | `--color-overlay` | `#EDF0F4` | Dropdown / overlay layer |
 
 ### Text
 | Token | Value | Role |
 |---|---|---|
-| `--color-foreground` / `--gray-100` | `#0F172A` | Primary text + "dark" section ink |
-| `--gray-80` | `#1F2937` | Body text |
-| `--gray-70` | `#4B5563` | Secondary / muted text |
-| `--gray-60` / `--color-muted-foreground` | `#6B7280` | Tertiary text, eyebrow labels, select chevron |
-| `--silver` | `#D1D5DB` | Disabled / on-dark light gray |
+| `--color-foreground` / `--gray-100` | `#161616` | Primary text |
+| `--gray-80` | `#393939` | Body text |
+| `--gray-70` | `#525252` | Secondary text |
+| `--gray-60` / `--color-muted-foreground` | `#6f6f6f` | Tertiary text, eyebrow labels (4.95:1 on white, the lightest allowed text grey) |
+| `--silver` | `#d1d5db` | Disabled / decorative only |
 
 ### Borders / rings
 | Token | Value | Role |
 |---|---|---|
-| `--hair` | `#EEF0F3` | Default hairline on white (cards, headers, table rules) |
-| `--hair-strong` | `#DEE2E8` | Card-on-card boundary, select border, hover border |
-| `--hair-active` | `rgba(37,99,235,.32)` | Active hairline |
-| `--color-border` / `--border` / `--border-light` | `#EAECEF` / `#E5E7EB` | shadcn border / legacy border |
-| `--border-mid` / `--ring-light` | `#D1D5DB` | Stronger border, hover ring |
-| `--focus-blue` / `--color-ring` | `#2563EB` | Focus ring color |
+| `--hair` / `--color-border` / `--border-light` | `#e0e0e0` | Default hairline on white (cards, headers, table rules) |
+| `--hair-strong` | `#c6c6c6` | Card-on-card boundary, select border, hover border |
+| `--hair-active` | `rgba(15,98,254,.32)` | Active hairline |
+| `--border-mid` / `--ring-light` | `#d1d5db` | Stronger border, hover ring |
+| `--focus-blue` / `--color-ring` | `#0f62fe` | Focus ring color |
 
 ### Semantic status
 | Token | Value | Role |
 |---|---|---|
-| `--success` | `#16A34A` | Success / positive delta |
-| `--warning` | `#F59E0B` | Warning |
-| `--error` / `--danger` / `--color-destructive` | `#DC2626` | Error / negative delta |
+| `--success` | `#24a148` | Success / positive delta (`--color-success-dark` `#0e6027` for text) |
+| `--warning` | `#f1c21b` | Warning |
+| `--error` / `--danger` / `--color-destructive` | `#da1e28` | Error / negative delta (`--color-destructive-dark` `#a2191f` for text) |
 
 ### Chart colors — `components/portal/ui/chart-theme.ts`
 **All Recharts visuals import `CHART_COLORS`. Never hardcode chart hex.**
 
 | Key | Hex | Use |
 |---|---|---|
-| `brand` | `#2563EB` | Primary series |
-| `brandDeep` | `#1D4ED8` | 2nd series |
-| `brandSoft` | `#3B82F6` | 3rd series |
-| `brandFog` | `#93C5FD` | 4th / background fill |
-| `success` | `#16A34A` | Positive |
-| `warning` | `#F59E0B` | Caution |
-| `danger` | `#DC2626` | Negative |
-| `ink` | `#0F172A` | Darkest text |
-| `body` | `#1F2937` | Tooltip body text |
-| `muted` | `#6B7280` | Axis ticks, legend |
-| `silver` | `#9CA3AF` | De-emphasized |
-| `grid` | `#EEF0F3` | Horizontal grid lines |
-| `axis` | `#94A3B8` | Axis tick labels |
+| `brand` | `#0f62fe` | Primary series |
+| `brandDeep` | `#002d9c` | 2nd series |
+| `brandSoft` | `#4589ff` | 3rd series |
+| `brandFog` | `#a6c8ff` | 4th / background fill |
+| `success` | `#24a148` | Positive |
+| `warning` | `#f1c21b` | Caution |
+| `danger` | `#da1e28` | Negative |
+| `ink` | `#161616` | Darkest text |
+| `body` | `#393939` | Tooltip body text |
+| `muted` | `#6f6f6f` | Axis ticks, legend |
+| `silver` | `#8d8d8d` | De-emphasized (non-text only) |
+| `grid` | `#e0e0e0` | Horizontal grid lines |
+| `axis` | `#8d8d8d` | Axis tick labels |
 
-Also exports ready-made `CHART_AXIS_TICK`, `CHART_GRID_PROPS`, `CHART_TOOLTIP_STYLE`, `CHART_TOOLTIP_LABEL_STYLE`, `CHART_TOOLTIP_ITEM_STYLE`, `CHART_LEGEND_STYLE`, and `CHART_GRADIENTS` (`#lsBrandFill` linear gradient). KPI sparkline/bars/gauge in `kpi-tile.tsx` use the same blue (`#2563EB`) + `#93C5FD` family.
+Also exports ready-made `CHART_AXIS_TICK`, `CHART_GRID_PROPS`, `CHART_TOOLTIP_STYLE`, `CHART_TOOLTIP_LABEL_STYLE`, `CHART_TOOLTIP_ITEM_STYLE`, `CHART_LEGEND_STYLE`, and `CHART_GRADIENTS` (`#lsBrandFill` linear gradient). KPI sparkline/bars/gauge in `kpi-tile.tsx` use the same blue (`#0f62fe`) + `#a6c8ff` family.
 
 ---
 
@@ -116,7 +115,8 @@ Setup in `app/layout.tsx` → mapped to `@theme` variables in `app/globals.css` 
 | Context | Value | Source |
 |---|---|---|
 | `ls-card` (default card), `ls-alert`, `EmptyState`, KpiTile | `2px` | `globals.css` `.ls-card` (Carbon retarget) |
-| Buttons, inputs, `ls-select`, sidebar items | `0` | `globals.css` |
+| Marketing buttons (`.btn-primary`/`.btn-secondary`), inputs, `ls-select`, sidebar items | `0` | `globals.css` |
+| App `Button` / `buttonVariants`, `.ls-btn` | `2px` | `components/ui/button.tsx` |
 | Icon tiles / avatars (not card wrappers) | `rounded-lg`/`rounded-xl` OK | e.g. lead detail logo tiles |
 | Pills / deltas / status chips | `999px` | `globals.css` |
 | Loading skeleton placeholder blocks | `rounded-xl` (established idiom, pending review) | `app/portal/**/loading.tsx` |
@@ -142,7 +142,7 @@ All shadows are cool-toned (`rgba(15,23,42,…)`) — the warm shadows in the ol
   (`EASE_OUT` in `components/portal/ui/motion.tsx`) share it. `--ease-spring:
   cubic-bezier(.34,1.56,.64,1)` / `SPRING_POP` are reserved for celebratory
   pops (a step completing, a check landing) — never for plain entrances.
-- Duration scale: **120ms** micro (hover, press, focus) · **200ms** small UI
+- Duration scale (CSS tokens `--dur-micro` / `--dur-ui` / `--dur-enter`; framer `DUR`): **120ms** micro (hover, press, focus) · **200ms** small UI
   state (tabs, dialogs, chips, card hovers) · **300ms** entrances, drawers,
   height changes · **600–900ms** data reveals (bars, arcs, count-ups). Motion
   plays ONCE; no infinite loops outside loading indicators.
@@ -200,16 +200,19 @@ Single "no data yet" primitive: centered icon (in `bg-primary/10 text-primary` r
   action={{ label: "View setup", href: "/portal/settings" }} />
 ```
 
+### Buttons
+Live classes: `.btn-primary` / `.btn-secondary` (marketing) and `Button` / `buttonVariants` (app). Primary is a flat `--color-primary` fill (hover `--color-primary-dark`), no gradient, glow or lift. Use one filled primary per view; secondary row actions use `variant="outline"`.
+
 ### `ls-*` utilities — `app/globals.css`
 | Class | Purpose |
 |---|---|
-| `.ls-card` | Floating white card: `bg #FFF`, `1px var(--hair)`, radius `14px`, `--shadow-sm + --inner-hi`, hover deepens to `--shadow-hover` + `--hair-strong`. Base for KpiTile/SectionCard/alerts. |
+| `.ls-card` | Floating white card: `bg #FFF`, `1px var(--hair)`, radius `2px`, flat (no shadow), hover darkens the border to `--hair-strong`. Base for KpiTile/SectionCard/alerts. |
 | `.ls-card-accent` | Adds top-right radial brand-glow `::after`. Hero KPI / anchor cards. |
-| `.ls-card-pad` (`20px`) / `.ls-card-flush` (`0`) | Padding variants. |
-| `.ls-metric` + `.ls-metric-xl/lg/md` (`2.5 / 2 / 1.5rem`) | Mono tabular figures (`tnum`,`lnum`), weight 500, tight tracking. Big numbers. |
+| `.ls-card-pad` (`20px`) | Padding variant. |
+| `.ls-metric` + `.ls-metric-lg/md` (`2 / 1.5rem`) | Mono tabular figures (`tnum`,`lnum`), weight 500, tight tracking. Big numbers. |
 | `.ls-eyebrow` | Sans 10px uppercase, `letter-spacing .12em`, `--gray-60`. Anchors a metric/section. |
 | `.ls-delta` + `-up`/`-down`/`-flat` | Mono trend pill: up = green wash, down = red wash, flat = sand. |
-| `.ls-select` | Styled native `<select>`: `appearance-none`, painted chevron, `1px var(--hair-strong)`, radius 8px, focus ring `0 0 0 3px var(--brand-glow)`. Keeps native a11y/keyboard. Add `h-9 px-3 text-sm`. |
+| `.ls-select` | Styled native `<select>`: `appearance-none`, painted chevron, `1px var(--hair-strong)`, radius 0, focus ring `0 0 0 3px var(--brand-glow)`. Keeps native a11y/keyboard. Add `h-9 px-3 text-sm`. |
 | `.ls-pill` + `-neutral/-info/-active/-success/-warning/-danger` | Status pills with dot. |
 | `.ls-alert` + `-info/-warning/-success` | Insight cards with left accent bar. |
 | `.ls-sidebar`, `.ls-sidebar-item`, `.ls-sidebar-section-label` | Sidebar nav (active = brand bar + glow). |
@@ -226,7 +229,7 @@ Single "no data yet" primitive: centered icon (in `bg-primary/10 text-primary` r
 
 - **Tenant scoping (mandatory on every data surface).** Every portal page/action/query resolves access via `requireScope()` / `getScope()` / `requireAgency()` / `requireClient()` from `lib/tenancy/scope.ts`. Queries must filter by `orgId` **and** the property gate (`propertyIdsToWhere` / `propertyWhereFragment`) — never widen scope in a query module, and fail **closed** on an empty allowed-list (a restricted user with nothing in scope must match no rows, not org-wide).
 - **`loading.tsx` per route.** Every portal/admin route ships a skeleton `loading.tsx` so streaming renders instantly (no flash of nothing). Use `KpiTile loading` and shadcn skeletons for the placeholder.
-- **Charts via `chart-theme.ts` only.** Import `CHART_COLORS` + the `CHART_*` style objects; reuse `#lsBrandFill` gradient. Mono axis ticks, soft `#EEF0F3` grid, brand-blue series.
+- **Charts via `chart-theme.ts` only.** Import `CHART_COLORS` + the `CHART_*` style objects; reuse `#lsBrandFill` gradient. Mono axis ticks, `#e0e0e0` grid, brand-blue series.
 - **Responsive.** Mobile-first; PageHeader stacks `flex-col md:flex-row`, titles scale `28px → md:34px`, KPI grids collapse to single column at `sm`/`md`. Generous touch targets.
 - **Accessibility.** Native `<select>` (`ls-select`) keeps keyboard/screen-reader behavior; every interactive element gets a focus ring (`focus-visible:ring-2 ring-primary/40`); icons are `aria-hidden` with text labels; live dots carry `aria-label="Live"`; semantic `<header>`/`<section>`/`<table>`; skip-link in `layout.tsx`.
 

@@ -30,7 +30,7 @@ export default function SignInPage() {
           looks pinned to the top at zoomed-out / tall-viewport sizes.
           Forcing each column to min-h-screen guarantees vertical
           centering at any zoom level. */}
-      <main className="w-full lg:w-[42%] xl:w-[38%] 2xl:w-[34%] lg:min-h-screen flex flex-col bg-white border-r border-border border-t-[3px] border-t-primary">
+      <main id="main-content" tabIndex={-1} className="w-full lg:w-[42%] xl:w-[38%] 2xl:w-[34%] lg:min-h-screen flex flex-col bg-white border-r border-border border-t-[3px] border-t-primary">
         {/* Adam 2026-07-24: the top-right "Create account →" link used to
             float here, orphaned above the whole form — it had nothing to
             do with the logo next to it and competed with the real footer

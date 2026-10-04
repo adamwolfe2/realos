@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
+    <div style={{ backgroundColor: "#FFFFFF", color: "var(--color-deep-slate)" }}>
       <SplitHero
         eyebrow={`About ${BRAND_NAME}`}
         headline="Built by operators,"
@@ -47,7 +47,7 @@ export default function AboutPage() {
           <Reveal>
             <h2
               style={{
-                color: "#161616",
+                color: "var(--color-foreground)",
                 fontFamily: "var(--font-display)",
                 fontSize: "clamp(28px, 3.6vw, 42px)",
                 fontWeight: 500,
@@ -65,7 +65,7 @@ export default function AboutPage() {
                 fontFamily: "var(--font-sans)",
                 fontSize: "17px",
                 lineHeight: 1.65,
-                color: "#6f6f6f",
+                color: "var(--color-muted-foreground)",
                 maxWidth: "620px",
               }}
             >
@@ -84,13 +84,13 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section style={{ backgroundColor: "#F1F5F9", borderTop: "1px solid #E2E8F0" }}>
+      <section style={{ backgroundColor: "var(--color-secondary)", borderTop: "1px solid var(--color-border)" }}>
         <div className="max-w-[1000px] mx-auto px-4 md:px-8 py-20 md:py-24 text-center">
           <Reveal delay={60}>
             <p
               className="mx-auto max-w-[780px]"
               style={{
-                color: "#1E2A3A",
+                color: "var(--color-deep-slate)",
                 fontFamily: "var(--font-display)",
                 fontSize: "clamp(24px, 3.2vw, 38px)",
                 fontWeight: 500,
@@ -134,13 +134,13 @@ function StackCard() {
       style={{
         backgroundColor: "#ffffff",
         borderRadius: "16px",
-        boxShadow: "0 0 0 1px #E2E8F0, 0 20px 60px rgba(30, 42, 58,0.06)",
+        boxShadow: "var(--shadow-md)",
         overflow: "hidden",
       }}
     >
       <div
         className="px-5 md:px-6 py-3 flex items-center justify-between gap-3"
-        style={{ borderBottom: "1px solid #E2E8F0", backgroundColor: "#F1F5F9" }}
+        style={{ borderBottom: "1px solid var(--color-border)", backgroundColor: "var(--color-secondary)" }}
       >
         <span
           style={{
@@ -148,7 +148,7 @@ function StackCard() {
             fontSize: "10px",
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: "#94A3B8",
+            color: "var(--color-muted-foreground)",
             fontWeight: 600,
           }}
         >
@@ -158,7 +158,7 @@ function StackCard() {
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "10px",
-            color: "#0f62fe",
+            color: "var(--color-primary)",
             fontWeight: 600,
           }}
         >
@@ -171,14 +171,14 @@ function StackCard() {
             key={s.k}
             className="grid grid-cols-[160px_1fr_auto] items-center gap-3 px-5 md:px-6 py-3.5"
             style={{
-              borderBottom: i < surfaces.length - 1 ? "1px solid #E2E8F0" : "none",
+              borderBottom: i < surfaces.length - 1 ? "1px solid var(--color-border)" : "none",
             }}
           >
             <span
               style={{
                 fontFamily: "var(--font-sans)",
                 fontSize: "13.5px",
-                color: "#1E2A3A",
+                color: "var(--color-deep-slate)",
                 fontWeight: 600,
               }}
             >
@@ -189,7 +189,7 @@ function StackCard() {
               style={{
                 fontFamily: "var(--font-sans)",
                 fontSize: "13px",
-                color: "#64748B",
+                color: "var(--color-muted-foreground)",
               }}
             >
               {s.v}
@@ -201,7 +201,7 @@ function StackCard() {
                 height: "18px",
                 borderRadius: "50%",
                 backgroundColor: "rgba(15, 98, 254,0.12)",
-                color: "#0f62fe",
+                color: "var(--color-primary)",
               }}
             >
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
@@ -213,7 +213,7 @@ function StackCard() {
       </ul>
       <div
         className="px-5 md:px-6 py-3"
-        style={{ borderTop: "1px solid #E2E8F0", backgroundColor: "#F1F5F9" }}
+        style={{ borderTop: "1px solid var(--color-border)", backgroundColor: "var(--color-secondary)" }}
       >
         <span
           style={{
@@ -221,7 +221,7 @@ function StackCard() {
             fontSize: "10px",
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#94A3B8",
+            color: "var(--color-muted-foreground)",
             fontWeight: 500,
           }}
         >
@@ -250,7 +250,7 @@ function VendorCollapse() {
         style={{
           backgroundColor: "#ffffff",
           borderRadius: "16px",
-          boxShadow: "0 0 0 1px #E2E8F0",
+          boxShadow: "0 0 0 1px var(--color-border)",
         }}
       >
         <p
@@ -259,7 +259,7 @@ function VendorCollapse() {
             fontSize: "10px",
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: "#94A3B8",
+            color: "var(--color-muted-foreground)",
             fontWeight: 600,
           }}
         >
@@ -272,9 +272,9 @@ function VendorCollapse() {
               style={{
                 fontFamily: "var(--font-sans)",
                 fontSize: "12px",
-                color: "#94A3B8",
+                color: "var(--color-muted-foreground)",
                 padding: "4px 10px",
-                border: "1px dashed #94A3B8",
+                border: "1px dashed var(--color-muted-foreground)",
                 borderRadius: "999px",
                 textDecoration: "line-through",
                 textDecorationColor: "rgba(135,134,127,0.55)",
@@ -288,7 +288,7 @@ function VendorCollapse() {
       <div
         className="p-5 text-center"
         style={{
-          backgroundColor: "#0f62fe",
+          backgroundColor: "var(--color-primary)",
           color: "#ffffff",
           borderRadius: "16px",
         }}
@@ -346,13 +346,13 @@ function OperatorWeek() {
       style={{
         backgroundColor: "#ffffff",
         borderRadius: "16px",
-        boxShadow: "0 0 0 1px #E2E8F0, 0 20px 60px rgba(30, 42, 58,0.06)",
+        boxShadow: "var(--shadow-md)",
         overflow: "hidden",
       }}
     >
       <div
         className="px-5 md:px-6 py-3 flex items-center justify-between"
-        style={{ borderBottom: "1px solid #E2E8F0", backgroundColor: "#F1F5F9" }}
+        style={{ borderBottom: "1px solid var(--color-border)", backgroundColor: "var(--color-secondary)" }}
       >
         <span
           style={{
@@ -360,7 +360,7 @@ function OperatorWeek() {
             fontSize: "10px",
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: "#94A3B8",
+            color: "var(--color-muted-foreground)",
             fontWeight: 600,
           }}
         >
@@ -370,7 +370,7 @@ function OperatorWeek() {
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "10px",
-            color: "#0f62fe",
+            color: "var(--color-primary)",
             fontWeight: 600,
           }}
         >
@@ -379,13 +379,13 @@ function OperatorWeek() {
       </div>
       <ul>
         {rows.map((r, i) => {
-          const color = r.tag === "you" ? "#0f62fe" : r.tag === "us" ? "#F59E0B" : "#94A3B8";
+          const color = r.tag === "you" ? "var(--color-primary)" : r.tag === "us" ? "#F59E0B" : "var(--color-muted-foreground)";
           return (
             <li
               key={`${r.day}-${r.item}`}
               className="grid grid-cols-[90px_1fr_auto] items-center gap-3 px-5 md:px-6 py-3.5"
               style={{
-                borderBottom: i < rows.length - 1 ? "1px solid #E2E8F0" : "none",
+                borderBottom: i < rows.length - 1 ? "1px solid var(--color-border)" : "none",
               }}
             >
               <span
@@ -394,7 +394,7 @@ function OperatorWeek() {
                   fontSize: "11px",
                   letterSpacing: "0.08em",
                   textTransform: "uppercase",
-                  color: "#94A3B8",
+                  color: "var(--color-muted-foreground)",
                   fontWeight: 600,
                 }}
               >
@@ -404,7 +404,7 @@ function OperatorWeek() {
                 style={{
                   fontFamily: "var(--font-sans)",
                   fontSize: "13.5px",
-                  color: "#1E2A3A",
+                  color: "var(--color-deep-slate)",
                   fontWeight: 500,
                 }}
               >

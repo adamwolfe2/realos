@@ -106,11 +106,12 @@ export function ConnectSeoForm({
           lands on the legacy org-wide row. */}
       {showPicker ? (
         <div className="rounded-[2px] border border-border bg-muted/30 px-4 py-3 space-y-2">
-          <label className="block text-xs font-medium text-foreground">
+          <label htmlFor={`${isGsc ? "gsc" : "ga4"}-property`} className="block text-xs font-medium text-foreground">
             Which property is this {isGsc ? "Search Console" : "GA4"}{" "}
             connection for?
           </label>
           <select
+            id={`${isGsc ? "gsc" : "ga4"}-property`}
             name="leasestackPropertyId"
             defaultValue={defaultPropertyId ?? ""}
             className="ls-select w-full px-3 py-2 text-sm"

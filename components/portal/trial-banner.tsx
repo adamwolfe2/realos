@@ -69,8 +69,8 @@ export function TrialBanner({
   // only; everything already collected stays readable.
   const message = expired ? (
     <>
-      <strong>Your trial ended, nothing was charged.</strong> Your chatbot and
-      pixel are paused; your dashboard and lead history are still here.
+      <strong>Your trial ended, nothing was charged.</strong> Your data is still
+      here (read-only); chatbot and pixel are paused.
       {charge ? ` Reactivate for ${charge}/month, starting today.` : ""}
     </>
   ) : cardOnFile ? (

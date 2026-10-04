@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import { Building2 } from "lucide-react";
+import { PropertyPhoto } from "./property-photo";
 
 // ---------------------------------------------------------------------------
 // PortfolioStrip — horizontal building-photo strip rendered above the
@@ -79,12 +80,10 @@ function PortfolioCard({ property: p }: { property: StripProperty }) {
     >
       <div className="relative h-24 w-full bg-secondary">
         {imageSrc ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <PropertyPhoto
             src={imageSrc}
-            alt=""
+            sizes="(min-width: 1024px) 20vw, (min-width: 640px) 33vw, 50vw"
             className="h-full w-full object-cover"
-            loading="lazy"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center">

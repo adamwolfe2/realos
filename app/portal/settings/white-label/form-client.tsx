@@ -22,7 +22,7 @@ import { saveWhiteLabelSettings } from "@/lib/actions/white-label";
 // action in lib/actions/white-label.ts.
 // ---------------------------------------------------------------------------
 
-const ALLOWED_LOGO_MIME = "image/png,image/jpeg,image/svg+xml";
+const ALLOWED_LOGO_MIME = "image/png,image/jpeg";
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 
 export function WhiteLabelFormClient({
@@ -49,8 +49,8 @@ export function WhiteLabelFormClient({
       toast.error("Logo too large — files must be 2MB or smaller.");
       return;
     }
-    if (!["image/png", "image/jpeg", "image/svg+xml"].includes(file.type)) {
-      toast.error("Use PNG, JPEG, or SVG.");
+    if (!["image/png", "image/jpeg"].includes(file.type)) {
+      toast.error("Use PNG or JPEG.");
       return;
     }
     setIsUploading(true);
@@ -158,7 +158,7 @@ export function WhiteLabelFormClient({
 
       <SectionCard
         label="Logo"
-        description="PNG, JPEG, or SVG. 2MB max. Recommended height 32px at @2x."
+        description="PNG or JPEG. 2MB max. Recommended height 32px at @2x."
       >
         <div className="space-y-4">
           {logoUrl ? (

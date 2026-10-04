@@ -49,8 +49,8 @@ export const FEATURE_CATALOG: Record<string, FeatureCatalogEntry> = {
   },
   ads: {
     slug: "ads",
-    title: "Managed Ads",
-    blurb: "Spend tied to signed leases, not impressions.",
+    title: "Ad Attribution",
+    blurb: "Every ad dollar traced to a signed lease.",
     pillar: "tracking",
     hasPage: true,
   },

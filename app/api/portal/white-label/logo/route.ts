@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { putPublic, delPublic } from "@/lib/blob-public";
-import { requireWritableWorkspace, ForbiddenError } from "@/lib/tenancy/scope";
+import { requireWorkspaceAdmin, ForbiddenError } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
+import { soft } from "@/lib/soft";
 import { AuditAction, UserRole } from "@prisma/client";
 
 export const runtime = "nodejs";
@@ -12,10 +13,11 @@ export const dynamic = "force-dynamic";
 //
 // Tenant-scoped logo upload for the white-label workspace add-on.
 // Multipart upload with a single `file` field. Validates:
-//   * image MIME (png / jpeg / svg+xml only — narrower than the chatbot
+//   * image MIME (png / jpeg only — narrower than the chatbot
 //     avatar route because the logo gets dropped into the portal chrome
 //     and outbound email bodies, where animated GIFs and webp aren't
-//     reliably rendered by every mail client)
+//     reliably rendered by every mail client). SVG is rejected: it's
+//     script-capable and would be served as-is from the public blob host.
 //   * 2MB max
 //   * org has whiteLabel === true (gates the upload to paying customers)
 //   * actor is a workspace admin (CLIENT_OWNER / CLIENT_ADMIN / AGENCY_*)
@@ -31,7 +33,6 @@ export const dynamic = "force-dynamic";
 const ALLOWED_LOGO_TYPES = new Set([
   "image/png",
   "image/jpeg",
-  "image/svg+xml",
 ]);
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024; // 2MB
@@ -86,7 +87,7 @@ async function assertWritable(
 export async function POST(req: NextRequest) {
   let scope;
   try {
-    scope = await requireWritableWorkspace();
+    scope = await requireWorkspaceAdmin();
   } catch (err) {
     if (err instanceof ForbiddenError) {
       return NextResponse.json({ error: err.message }, { status: 403 });
@@ -126,7 +127,7 @@ export async function POST(req: NextRequest) {
   }
   if (!ALLOWED_LOGO_TYPES.has(file.type)) {
     return NextResponse.json(
-      { error: "Unsupported logo type. Use PNG, JPEG, or SVG." },
+      { error: "Unsupported logo type. Use PNG or JPEG." },
       { status: 415 },
     );
   }
@@ -139,12 +140,14 @@ export async function POST(req: NextRequest) {
       where: { id: scope.orgId },
       select: { whiteLabelLogoUrl: true },
     })
-    .catch(() => null);
+    .catch(soft(null, "white-label.logo.read-existing"));
   if (
     existing?.whiteLabelLogoUrl &&
     /\.public\.blob\.vercel-storage\.com\//.test(existing.whiteLabelLogoUrl)
   ) {
-    await delPublic(existing.whiteLabelLogoUrl).catch(() => undefined);
+    await delPublic(existing.whiteLabelLogoUrl).catch(
+      soft(undefined, "white-label.logo.delete-old-blob"),
+    );
   }
 
   const safeName =
@@ -181,7 +184,7 @@ export async function POST(req: NextRequest) {
         },
       },
     })
-    .catch(() => undefined);
+    .catch(soft(undefined, "white-label.logo.audit-event"));
 
   return NextResponse.json({ ok: true, url: blob.url });
 }
@@ -189,7 +192,7 @@ export async function POST(req: NextRequest) {
 export async function DELETE() {
   let scope;
   try {
-    scope = await requireWritableWorkspace();
+    scope = await requireWorkspaceAdmin();
   } catch (err) {
     if (err instanceof ForbiddenError) {
       return NextResponse.json({ error: err.message }, { status: 403 });
@@ -205,13 +208,15 @@ export async function DELETE() {
       where: { id: scope.orgId },
       select: { whiteLabelLogoUrl: true },
     })
-    .catch(() => null);
+    .catch(soft(null, "white-label.logo.read-existing"));
 
   if (
     existing?.whiteLabelLogoUrl &&
     /\.public\.blob\.vercel-storage\.com\//.test(existing.whiteLabelLogoUrl)
   ) {
-    await delPublic(existing.whiteLabelLogoUrl).catch(() => undefined);
+    await delPublic(existing.whiteLabelLogoUrl).catch(
+      soft(undefined, "white-label.logo.delete-old-blob"),
+    );
   }
 
   // Do NOT swallow: a swallowed failure here reports a successful logo delete
@@ -232,7 +237,7 @@ export async function DELETE() {
         description: "White-label logo removed",
       },
     })
-    .catch(() => undefined);
+    .catch(soft(undefined, "white-label.logo.audit-event"));
 
   return NextResponse.json({ ok: true });
 }

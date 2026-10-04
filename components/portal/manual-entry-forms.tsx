@@ -85,7 +85,12 @@ function FormShell({
 }) {
   return (
     <form
-      action={onSubmit}
+      // onSubmit (not action=) so React 19 does not reset typed fields when
+      // the server returns an error.
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit(new FormData(e.currentTarget));
+      }}
       className="ls-card p-5 space-y-4 max-w-xl"
     >
       {children}
@@ -165,7 +170,7 @@ export function AddResidentForm({
           <input name="email" type="email" className={inputCls} />
         </Field>
         <Field label="Phone" optional>
-          <input name="phone" maxLength={40} className={inputCls} />
+          <input name="phone" type="tel" inputMode="tel" maxLength={40} className={inputCls} />
         </Field>
         <Field label="Unit" optional>
           <input name="unitNumber" maxLength={60} className={inputCls} />
@@ -313,7 +318,7 @@ export function LogApplicationForm({
           <input name="email" type="email" className={inputCls} />
         </Field>
         <Field label="Phone" optional>
-          <input name="phone" maxLength={40} className={inputCls} />
+          <input name="phone" type="tel" inputMode="tel" maxLength={40} className={inputCls} />
         </Field>
         <Field label="Unit applied for" optional>
           <input name="unitName" maxLength={60} className={inputCls} />

@@ -261,7 +261,7 @@ export default async function ProposalListPage({
         actions={
           <Link
             href="/admin/proposals/new"
-            className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium hover:bg-primary-dark transition-colors"
+            className="inline-flex items-center rounded-card bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium hover:bg-primary-dark transition-colors"
           >
             New proposal
           </Link>
@@ -305,8 +305,9 @@ export default async function ProposalListPage({
           <input
             name="q"
             defaultValue={q}
+            aria-label="Search proposals"
             placeholder="Search prospect, email, number"
-            className="w-full sm:w-72 rounded-md border border-border bg-card px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="w-full sm:w-72 rounded-card border border-border bg-card px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </form>
         <Link
@@ -318,13 +319,13 @@ export default async function ProposalListPage({
       </div>
 
       {proposals.length === 0 ? (
-        <div className="rounded-lg border border-border bg-card p-8 text-center">
+        <div className="rounded-card border border-border bg-card p-8 text-center">
           <p className="text-sm text-muted-foreground">
             No proposals match this filter.
           </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border bg-card">
+        <div className="overflow-hidden rounded-card border border-border bg-card">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
@@ -425,7 +426,7 @@ function FilterLink({
     <Link
       href={href}
       className={cn(
-        "px-2.5 py-1 rounded-md text-xs font-medium border transition-colors",
+        "px-2.5 py-1 rounded-card text-xs font-medium border transition-colors",
         isActive
           ? "bg-primary text-primary-foreground border-primary"
           : "bg-card text-foreground border-border hover:bg-muted/50",

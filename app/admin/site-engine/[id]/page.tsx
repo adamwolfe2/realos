@@ -253,7 +253,7 @@ export default async function SiteEngineDetailPage({
                           .map((a) => (
                             <li
                               key={a.id}
-                              className="rounded-md border border-border overflow-hidden bg-background"
+                              className="rounded-card border border-border overflow-hidden bg-background"
                             >
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
@@ -271,7 +271,7 @@ export default async function SiteEngineDetailPage({
                   ) : null}
 
                   {sr.intake.negativeInputs ? (
-                    <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
+                    <div className="rounded-card border border-amber-200 bg-amber-50 p-3">
                       <div className="text-xs uppercase tracking-widest text-amber-700 font-semibold mb-1">
                         Things to avoid
                       </div>
@@ -291,7 +291,7 @@ export default async function SiteEngineDetailPage({
                     {sr.assets.map((a) => (
                       <li
                         key={a.id}
-                        className="rounded-md border border-border p-2 bg-background"
+                        className="rounded-card border border-border p-2 bg-background"
                       >
                         {a.mimeType.startsWith("image/") ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -450,7 +450,7 @@ export default async function SiteEngineDetailPage({
                 {sr.events.map((e) => (
                   <li
                     key={e.id}
-                    className="flex items-start justify-between gap-3 rounded-md border border-border bg-background p-3 text-sm"
+                    className="flex items-start justify-between gap-3 rounded-card border border-border bg-background p-3 text-sm"
                   >
                     <div className="min-w-0">
                       <div className="font-medium">
@@ -668,7 +668,7 @@ async function DesignLanguageCard({ slug }: { slug: string }) {
 
   if (!entry) {
     return (
-      <div className="rounded-md border border-dashed border-border bg-muted/20 p-3 text-sm text-muted-foreground">
+      <div className="rounded-card border border-dashed border-border bg-muted/20 p-3 text-sm text-muted-foreground">
         Design language <code className="text-foreground">{slug}</code> wasn&apos;t
         found in the bundled catalog. Run{" "}
         <code className="text-foreground">pnpm sync:site-engine-data</code> after
@@ -678,7 +678,7 @@ async function DesignLanguageCard({ slug }: { slug: string }) {
   }
 
   return (
-    <details className="rounded-md border border-border bg-background p-3 open:bg-card">
+    <details className="rounded-card border border-border bg-background p-3 open:bg-card">
       <summary className="cursor-pointer flex items-center justify-between gap-3 text-sm">
         <div className="flex items-center gap-2.5 min-w-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -769,7 +769,7 @@ async function PaletteCard({ slug }: { slug: string }) {
 
   if (!palette) {
     return (
-      <div className="rounded-md border border-dashed border-border bg-muted/20 p-3 text-sm text-muted-foreground">
+      <div className="rounded-card border border-dashed border-border bg-muted/20 p-3 text-sm text-muted-foreground">
         Palette <code className="text-foreground">{slug}</code> not found.
       </div>
     );
@@ -791,7 +791,7 @@ async function PaletteCard({ slug }: { slug: string }) {
   ];
 
   return (
-    <details className="rounded-md border border-border bg-background p-3 open:bg-card">
+    <details className="rounded-card border border-border bg-background p-3 open:bg-card">
       <summary className="cursor-pointer flex items-center justify-between gap-3 text-sm">
         <div className="min-w-0">
           <div className="font-medium text-foreground">{palette.name}</div>

@@ -324,7 +324,7 @@ function DraftStatCell({
   tone?: "success";
 }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-3">
+    <div className="rounded-card border border-border bg-card p-3">
       <p className="text-[10px] font-mono uppercase tracking-wide text-muted-foreground">
         {label}
       </p>
@@ -354,7 +354,7 @@ function RecStatCell({
     medium: "text-foreground",
   };
   return (
-    <div className="rounded-lg border border-border bg-card p-3">
+    <div className="rounded-card border border-border bg-card p-3">
       <p className="text-[10px] font-mono uppercase tracking-wide text-muted-foreground">
         {label}
       </p>
@@ -375,7 +375,7 @@ function UsageCell({
   unitCost: string;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-3">
+    <div className="rounded-card border border-border bg-card p-3">
       <p className="text-[10px] font-mono uppercase tracking-wide text-muted-foreground">
         {label}
       </p>

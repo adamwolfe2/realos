@@ -87,11 +87,11 @@ export function ProspectPicker() {
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder="Search email, name, company"
-        className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary/30"
+        className="w-full rounded-card border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
       />
 
       {q.trim().length >= 2 ? (
-        <div className="rounded-md border border-border bg-card">
+        <div className="rounded-card border border-border bg-card">
           {loading ? (
             <div className="p-4 text-xs text-muted-foreground">Searching…</div>
           ) : results.length === 0 ? (
@@ -146,7 +146,7 @@ export function ProspectPicker() {
           type="button"
           disabled={pending}
           onClick={startBlank}
-          className="inline-flex items-center rounded-md bg-card border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary transition-colors disabled:opacity-60"
+          className="inline-flex items-center rounded-card bg-card border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary transition-colors disabled:opacity-60"
         >
           Start from blank
         </button>

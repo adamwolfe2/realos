@@ -131,7 +131,7 @@ export function HealthScoreCard({
             cy="32"
             r={ringR}
             fill="none"
-            stroke="hsl(var(--muted))"
+            stroke="var(--color-muted)"
             strokeWidth="6"
           />
           <circle
@@ -458,7 +458,7 @@ function ScoreDot({ label, value }: { label: string; value: number | null }) {
             cy="20"
             r={ringR}
             fill="none"
-            stroke="hsl(var(--muted))"
+            stroke="var(--color-muted)"
             strokeWidth="4"
           />
           <circle
@@ -466,7 +466,7 @@ function ScoreDot({ label, value }: { label: string; value: number | null }) {
             cy="20"
             r={ringR}
             fill="none"
-            stroke={score == null ? "hsl(var(--muted))" : color}
+            stroke={score == null ? "var(--color-muted)" : color}
             strokeWidth="4"
             strokeLinecap="round"
             strokeDasharray={`${score == null ? 0 : dash} ${ringC}`}

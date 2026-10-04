@@ -1,5 +1,6 @@
 "use client";
 
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import * as React from "react";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -552,22 +553,14 @@ export function MentionCard({
           reply tuned to the sentiment + author name. The operator
           edits, copies, and pastes into wherever they handle the
           source (email, internal handoff, manual response form). */}
-      {draftOpen ? (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Draft response for ${responseTarget.platform}`}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setDraftOpen(false);
-          }}
-        >
-          <div className="w-full max-w-lg ls-card shadow-lg">
+      <Dialog open={draftOpen} onOpenChange={setDraftOpen}>
+        <DialogContent className="max-w-lg ls-card shadow-lg">
+          <div>
             <header className="flex items-center justify-between border-b border-border px-4 py-3">
               <div>
-                <p className="text-sm font-semibold text-foreground">
+                <DialogTitle className="text-sm font-semibold text-foreground">
                   Draft response
-                </p>
+                </DialogTitle>
                 <p className="text-[11px] text-muted-foreground">
                   {responseTarget.platform} has no public reply API —
                   copy this draft into the response surface.
@@ -621,8 +614,8 @@ export function MentionCard({
               </Button>
             </footer>
           </div>
-        </div>
-      ) : null}
+        </DialogContent>
+      </Dialog>
     </article>
   );
 }

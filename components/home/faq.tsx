@@ -96,7 +96,7 @@ export function Faq() {
                       style={{
                         width: "18px",
                         height: "18px",
-                        color: "#8d8d8d",
+                        color: "var(--color-muted-foreground)",
                       }}
                     >
                       <svg width="12" height="12" viewBox="0 0 14 14" fill="none">

@@ -87,7 +87,7 @@ const TOOL_COLOR: Record<Tool, string> = {
 
 const ACCENT = "#0f62fe";
 const INK = "#161616";
-const MUTED = "#8d8d8d";
+const MUTED = "var(--color-muted-foreground)";
 const BORDER = "#e0e0e0";
 
 export function LiveTicker({

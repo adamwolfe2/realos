@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
+import { requireScope, ForbiddenError, propertyInScope } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 
 export const runtime = "nodejs";
@@ -45,9 +45,10 @@ export async function GET(
   // 404 leaks no event data on a wrong-org request. Cheap PK lookup.
   const campaign = await prisma.popupCampaign.findFirst({
     where: { id, orgId: scope.orgId },
-    select: { id: true },
+    select: { id: true, propertyId: true },
   });
-  if (!campaign) {
+  // Same 404 for out-of-grant campaigns as the page (propertyInScope).
+  if (!campaign || !propertyInScope(scope, campaign.propertyId)) {
     return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
   }
 

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
+import vercelConfig from "@/vercel.json";
 import { requireAgency } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { PageHeader } from "@/components/admin/page-header";
@@ -41,33 +42,42 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 // ---------------------------------------------------------------------------
-// Cron schedule mirrors vercel.json. Kept inline so the page renders even if
-// vercel.json is unreachable from the runtime (it is at build time only).
+// Cron schedule is derived from vercel.json (bundled at build time) so the
+// table cannot drift from what is actually scheduled. Descriptions live in a
+// keyed map; jobs without an entry still render with a generic label.
 // ---------------------------------------------------------------------------
-const CRON_SCHEDULE: Array<{ jobName: string; schedule: string; description: string }> = [
-  { jobName: "billing-reminders", schedule: "0 9 * * *", description: "Daily — past-due tenant billing reminders" },
-  { jobName: "lapsed-leads", schedule: "0 11 * * *", description: "Daily — close leads inactive for 14 days" },
-  { jobName: "intake-nurture", schedule: "0 12 * * *", description: "Daily — intake follow-up email sequence" },
-  { jobName: "onboarding-drip", schedule: "0 13 * * *", description: "Daily — new-tenant onboarding nudges" },
-  { jobName: "lead-nurture", schedule: "0 14 * * *", description: "Daily — lead lifecycle email cadence" },
-  { jobName: "review-requests", schedule: "0 15 * * *", description: "Daily — Google review requests to signed residents" },
-  { jobName: "lead-score-refresh", schedule: "*/30 * * * *", description: "Every 30 min — recompute lead intent scores" },
-  { jobName: "insight-detector", schedule: "*/30 * * * *", description: "Every 30 min — anomaly detection across all orgs" },
-  { jobName: "weekly-report", schedule: "0 7 * * 1", description: "Mondays — client weekly performance report" },
-  { jobName: "weekly-digest", schedule: "0 8 * * 1", description: "Mondays — tenant weekly digest email" },
-  { jobName: "pixel-weekly-digest", schedule: "0 9 * * 1", description: "Mondays — visitor pixel digest summary" },
-  { jobName: "monthly-report", schedule: "0 8 1 * *", description: "1st of month — client monthly report" },
-  { jobName: "webhook-retry", schedule: "*/5 * * * *", description: "Every 5 min — retry failed webhook deliveries" },
-  { jobName: "appfolio-sync", schedule: "0 * * * *", description: "Hourly — AppFolio property/listing sync" },
-  { jobName: "seo-sync", schedule: "0 6 * * *", description: "Daily — GSC + GA4 search console snapshot" },
-  { jobName: "ads-sync", schedule: "0 7 * * *", description: "Daily — Google Ads + Meta ad metrics sync" },
-  { jobName: "pixel-segment-sync", schedule: "*/5 * * * *", description: "Every 5 min — pull resolved visitors from the upstream pixel segment (Cursive self-heal)" },
-  { jobName: "reputation-scan", schedule: "0 8 * * *", description: "Daily — per-property reputation refresh (Reddit + Yelp + Google + Tavily)" },
-  { jobName: "dataforseo-sync", schedule: "0 5 * * *", description: "Daily — search intelligence sync (ranked keywords + backlinks)" },
-  { jobName: "aeo-scan", schedule: "0 2 * * 1", description: "Weekly — AEO 4-engine brand-mention scan (Claude/ChatGPT/Gemini/Perplexity)" },
-  { jobName: "site-intelligence-refresh", schedule: "0 3 * * *", description: "Daily — Firecrawl re-crawl of every tenant root domain" },
-  { jobName: "daily-insight-digest", schedule: "0 13 * * 1-5", description: "Weekdays 1pm — operator insights digest email" },
-];
+const CRON_DESCRIPTIONS: Record<string, string> = {
+  "billing-reminders": "Past-due tenant billing reminders",
+  "lapsed-leads": "Close leads inactive for 14 days",
+  "intake-nurture": "Intake follow-up email sequence",
+  "onboarding-drip": "New-tenant onboarding nudges",
+  "lead-nurture": "Lead lifecycle email cadence",
+  "review-requests": "Google review requests to signed residents",
+  "lead-score-refresh": "Recompute lead intent scores",
+  "insight-detector": "Anomaly detection across all orgs",
+  "weekly-report": "Client weekly performance report",
+  "weekly-digest": "Tenant weekly digest email",
+  "monthly-report": "Client monthly report",
+  "webhook-retry": "Retry failed webhook deliveries",
+  "appfolio-sync": "AppFolio property/listing sync",
+  "seo-sync": "GSC + GA4 search console snapshot",
+  "ads-sync": "Google Ads + Meta ad metrics sync",
+  "pixel-segment-sync": "Pull resolved visitors from the upstream pixel segment (Cursive self-heal)",
+  "reputation-scan": "Per-property reputation refresh (Reddit + Yelp + Google + Tavily)",
+  "dataforseo-sync": "Search intelligence sync (ranked keywords + backlinks)",
+  "aeo-scan": "AEO 4-engine brand-mention scan (Claude/ChatGPT/Gemini/Perplexity)",
+  "site-intelligence-refresh": "Firecrawl re-crawl of every tenant root domain",
+};
+
+const CRON_SCHEDULE: Array<{ jobName: string; schedule: string; description: string }> =
+  vercelConfig.crons.map((c) => {
+    const jobName = c.path.split("/").pop() ?? c.path;
+    return {
+      jobName,
+      schedule: c.schedule,
+      description: CRON_DESCRIPTIONS[jobName] ?? "Scheduled job",
+    };
+  });
 
 // ---------------------------------------------------------------------------
 // Tone helpers — semantic colors mirror /admin/audit-log + /admin/tenants.
@@ -135,7 +145,7 @@ export default async function SystemHealthPage() {
         actions={
           <Link
             href="/api/health/deep"
-            className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/30"
+            className="rounded-card border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/30"
           >
             View JSON
           </Link>
@@ -143,7 +153,7 @@ export default async function SystemHealthPage() {
       />
 
       {/* Overall status banner */}
-      <div className={`rounded-lg border p-5 ${bannerToneFor(health.status)}`}>
+      <div className={`rounded-card border p-5 ${bannerToneFor(health.status)}`}>
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             {health.status === "ok" ? (
@@ -228,7 +238,7 @@ export default async function SystemHealthPage() {
       <section>
         <h2 className="text-sm font-semibold text-foreground mb-3">Recent activity</h2>
         <div className="grid gap-4 lg:grid-cols-3">
-          <div className="lg:col-span-2 rounded-lg border border-border bg-card overflow-hidden">
+          <div className="lg:col-span-2 rounded-card border border-border bg-card overflow-hidden">
             <div className="px-4 py-3 border-b border-border bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
               Last 20 audit events
             </div>
@@ -261,7 +271,7 @@ export default async function SystemHealthPage() {
             )}
           </div>
 
-          <div className="rounded-lg border border-border bg-card p-5">
+          <div className="rounded-card border border-border bg-card p-5">
             <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
               Errors + observability
             </div>
@@ -275,13 +285,13 @@ export default async function SystemHealthPage() {
                 href={sentryDashboardUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted/30 text-center"
+                className="block w-full rounded-card border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted/30 text-center"
               >
                 Open Sentry dashboard
               </a>
               <Link
                 href="/admin/audit-log"
-                className="block w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted/30 text-center"
+                className="block w-full rounded-card border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted/30 text-center"
               >
                 Full audit log
               </Link>
@@ -307,7 +317,7 @@ function CheckCard({
   check: CheckResult;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
+    <div className="rounded-card border border-border bg-card p-4">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -364,7 +374,7 @@ const STATE_LABEL: Record<CheckState, string> = {
 function DemoReadinessTable({ rows }: { rows: TenantReadiness[] }) {
   if (rows.length === 0) {
     return (
-      <div className="rounded-lg border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+      <div className="rounded-card border border-border bg-card p-8 text-center text-sm text-muted-foreground">
         No client tenants found.
       </div>
     );
@@ -378,7 +388,7 @@ function DemoReadinessTable({ rows }: { rows: TenantReadiness[] }) {
   });
 
   return (
-    <div className="rounded-lg border border-border bg-card overflow-hidden">
+    <div className="rounded-card border border-border bg-card overflow-hidden">
       <ul className="divide-y divide-border">
         {sorted.map((row) => {
           const overall: CheckState =
@@ -446,7 +456,7 @@ function DemoReadinessTable({ rows }: { rows: TenantReadiness[] }) {
 
 function PulseStat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
+    <div className="rounded-card border border-border bg-card p-4">
       <div className="text-xs uppercase tracking-wide text-muted-foreground">
         {label}
       </div>
@@ -472,7 +482,7 @@ function CronTable({
   const cutoff = Date.now() - 24 * 60 * 60 * 1000;
 
   return (
-    <div className="rounded-lg border border-border bg-card overflow-hidden">
+    <div className="rounded-card border border-border bg-card overflow-hidden">
       <div className="overflow-x-auto">
       <table className="w-full text-sm min-w-[720px]">
         <thead className="bg-secondary text-xs uppercase tracking-wide text-muted-foreground">

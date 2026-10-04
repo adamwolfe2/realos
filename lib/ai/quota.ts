@@ -1,5 +1,6 @@
 import { Redis } from "@upstash/redis";
 import { reportAiQuotaCrossing } from "@/lib/billing/gate";
+import { hasCardOnFile, type CardOnFileInput } from "@/lib/billing/trial-status";
 
 // ---------------------------------------------------------------------------
 // Per-org daily AI call quota — a BACKSTOP against a runaway Anthropic bill
@@ -63,6 +64,13 @@ function quotaKey(orgId: string): string {
 /** ACTIVE or PAST_DUE: a customer we bill. Never cut their chatbot off. */
 export function isPayingSubscription(status: string | null | undefined): boolean {
   return status === "ACTIVE" || status === "PAST_DUE";
+}
+
+/** Never cut off by AI backstops/caps: billed customers, plus trials with a
+ *  card on file (Stripe will charge them). Single definition for both chat
+ *  routes' checkAiQuota and withSpendCap calls. */
+export function isCapExempt(org: CardOnFileInput): boolean {
+  return isPayingSubscription(org.subscriptionStatus) || hasCardOnFile(org);
 }
 
 export type AiQuotaResult = {

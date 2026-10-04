@@ -166,7 +166,7 @@ function RoadmapCard() {
             fontSize: "10px",
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: "#8d8d8d",
+            color: "var(--color-muted-foreground)",
             fontWeight: 600,
           }}
         >
@@ -211,7 +211,7 @@ function RoadmapCard() {
                 fontSize: "10px",
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
-                color: "#8d8d8d",
+                color: "var(--color-muted-foreground)",
                 fontWeight: 600,
                 minWidth: "90px",
                 textAlign: "right",

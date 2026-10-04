@@ -2,15 +2,15 @@ export default function PixelRequestsLoading() {
   return (
     <div className="space-y-6 animate-pulse">
       <div className="space-y-1">
-        <div className="h-7 w-44 bg-muted rounded-md" />
+        <div className="h-7 w-44 bg-muted rounded-card" />
         <div className="h-4 w-[28rem] bg-muted/60 rounded" />
       </div>
       <div className="flex gap-2">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-7 w-24 bg-muted rounded-md" />
+          <div key={i} className="h-7 w-24 bg-muted rounded-card" />
         ))}
       </div>
-      <div className="rounded-lg border border-border bg-card overflow-hidden">
+      <div className="rounded-card border border-border bg-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>

@@ -58,7 +58,7 @@ export function buildOnboardingAutomationEmail(
           <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
             Welcome to ${e(BRAND_NAME)}! The first step to lighting up your
             ${e(orgName)} workspace is adding a property. It takes about two
-            minutes and unlocks lead tracking, visitor analytics, and your
+            minutes and turns on lead tracking, visitor analytics, and your
             AI chatbot.
           </p>
           <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
@@ -85,7 +85,7 @@ export function buildOnboardingAutomationEmail(
           <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
             Google Search Console takes under five minutes and immediately
             shows which keywords drive traffic to your properties. AppFolio
-            is the most powerful option if you use it as your PMS.
+            is the most flexible option if you use it as your PMS.
           </p>
         `,
       };

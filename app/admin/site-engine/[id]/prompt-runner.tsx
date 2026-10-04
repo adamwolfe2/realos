@@ -39,7 +39,7 @@ export function PromptRunner({
   const [tab, setTab] = React.useState<"triage" | "prd">("triage");
 
   return (
-    <div className="rounded-lg border border-border bg-card overflow-hidden">
+    <div className="rounded-card border border-border bg-card overflow-hidden">
       <div className="flex border-b border-border">
         <button
           type="button"
@@ -188,7 +188,7 @@ function TriagePanel({
           onBlur={parse}
           rows={8}
           placeholder='{"totalScore": 24, "verdict": "GO", ...}'
-          className="mt-2 w-full rounded-md border border-input bg-transparent p-3 text-sm font-mono shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+          className="mt-2 w-full rounded-card border border-input bg-transparent p-3 text-sm font-mono shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
         />
         {error ? (
           <p className="mt-2 text-sm text-destructive">{error}</p>
@@ -196,7 +196,7 @@ function TriagePanel({
       </div>
 
       {parsedVerdict ? (
-        <div className="rounded-md border border-border bg-background p-4 space-y-3">
+        <div className="rounded-card border border-border bg-background p-4 space-y-3">
           <div className="flex items-baseline justify-between gap-3">
             <div>
               <div className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
@@ -350,7 +350,7 @@ function PrdUrlRow({
   };
 
   return (
-    <div className="rounded-md border border-border bg-background p-4">
+    <div className="rounded-card border border-border bg-background p-4">
       <div className="flex items-baseline justify-between gap-2 mb-2">
         <Label className="text-xs font-medium">
           {index}.{" "}
@@ -372,7 +372,7 @@ function PrdUrlRow({
         onChange={(e) => setPrd(e.target.value)}
         rows={5}
         placeholder="Paste the PRD JSON Claude returned..."
-        className="w-full rounded-md border border-input bg-transparent p-2 text-xs font-mono shadow-xs"
+        className="w-full rounded-card border border-input bg-transparent p-2 text-xs font-mono shadow-xs"
       />
       {error ? (
         <p className="mt-2 text-xs text-destructive">{error}</p>

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export function MarkLostButton({ leadId }: { leadId: string }) {
@@ -10,18 +11,25 @@ export function MarkLostButton({ leadId }: { leadId: string }) {
   const [error, setError] = useState<string | null>(null);
 
   function handleClick() {
+    if (!window.confirm("Mark this lead as lost?")) return;
     setError(null);
     startTransition(async () => {
-      const res = await fetch(`/api/tenant/leads/${leadId}/status`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "LOST" }),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        setError(body.error ?? "Failed to update");
-      } else {
-        router.refresh();
+      try {
+        const res = await fetch(`/api/tenant/leads/${leadId}/status`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "LOST" }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          setError(body.error ?? "Failed to update");
+        } else {
+          toast.success("Status updated");
+          router.refresh();
+        }
+      } catch (err) {
+        console.error("[lead-mark-lost] update failed", err);
+        setError("Network error. Try again.");
       }
     });
   }

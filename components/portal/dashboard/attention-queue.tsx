@@ -148,7 +148,7 @@ export function AttentionQueue({
                     {showPropertyName ? (
                       <>
                         {showPill ? (
-                          <span className="text-[10px] text-muted-foreground/60 shrink-0">
+                          <span className="text-[10px] text-muted-foreground shrink-0">
                             ·
                           </span>
                         ) : null}
@@ -160,7 +160,7 @@ export function AttentionQueue({
                     {row.meta ? (
                       <>
                         {showPill || showPropertyName ? (
-                          <span className="text-[10px] text-muted-foreground/60 shrink-0">
+                          <span className="text-[10px] text-muted-foreground shrink-0">
                             ·
                           </span>
                         ) : null}

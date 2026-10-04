@@ -406,7 +406,7 @@ export function ChatbotConfigForm({
                         .replace(/\{open_count\}/gi, "5")
                         .replace(/\{next_available\}/gi, "Aug 15")}
                     </p>
-                    <p className="text-[10px] text-muted-foreground/70 mt-1.5 italic">
+                    <p className="text-[10px] text-muted-foreground mt-1.5 italic">
                       Preview placeholders resolved against sample data.
                     </p>
                   </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
 import { useRouter } from "next/navigation";
 import {
   PopupPosition,
@@ -210,7 +211,7 @@ export function PopupEditor({
               className="flex-1 min-w-0 bg-transparent text-base font-semibold tracking-tight text-foreground focus:outline-none"
               placeholder="Popup name"
             />
-            <StatusPill status={state.status} />
+            <StatusPill label={state.status} tone={popupTone(state.status)} className="uppercase tracking-widest shrink-0" />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -959,23 +960,9 @@ function CheckRow({
   );
 }
 
-function StatusPill({ status }: { status: PopupStatus }) {
-  const tone =
-    status === PopupStatus.ACTIVE
-      ? "bg-[rgba(36,161,72,0.10)] text-[#24a148]"
-      : status === PopupStatus.PAUSED
-        ? "bg-[rgba(241,194,27,0.16)] text-[#8a6d00]"
-        : status === PopupStatus.ARCHIVED
-          ? "bg-muted text-muted-foreground"
-          : "bg-primary/10 text-primary";
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest shrink-0",
-        tone,
-      )}
-    >
-      {status}
-    </span>
-  );
+function popupTone(status: PopupStatus): StatusTone {
+  if (status === PopupStatus.ACTIVE) return "success";
+  if (status === PopupStatus.PAUSED) return "warning";
+  if (status === PopupStatus.ARCHIVED) return "neutral";
+  return "info";
 }

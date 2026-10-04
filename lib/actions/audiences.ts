@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 import crypto from "node:crypto";
 import { prisma } from "@/lib/db";
-import { ForbiddenError, requireAudienceSync } from "@/lib/tenancy/scope";
+import {
+  ForbiddenError,
+  requireAudienceSync,
+  requireWritableWorkspace,
+  requireWorkspaceAdmin,
+} from "@/lib/tenancy/scope";
 import { encrypt, maybeDecrypt, maybeEncrypt } from "@/lib/crypto";
 import {
   alSurfaceFromMeta,
@@ -163,7 +168,7 @@ export type AddSegmentResult =
 export async function addAudienceSegmentById(
   input: AddSegmentInput,
 ): Promise<AddSegmentResult> {
-  const scope = await requireAudienceSyncOrThrow();
+  const scope = await requireAudienceWrite();
   const trimmedId = input.alSegmentId.trim();
   const trimmedName = input.name.trim();
   if (!trimmedId) {
@@ -268,7 +273,7 @@ export type RefreshInsightsResult =
 export async function refreshSegmentInsights(
   segmentId: string,
 ): Promise<RefreshInsightsResult> {
-  const scope = await requireAudienceSyncOrThrow();
+  const scope = await requireAudienceWrite();
 
   const segment = await prisma.audienceSegment.findFirst({
     where: { id: segmentId, orgId: scope.orgId },
@@ -333,7 +338,7 @@ export type RefreshSegmentsResult =
   | { ok: false; error: string };
 
 export async function refreshAudienceSegments(): Promise<RefreshSegmentsResult> {
-  const scope = await requireAudienceSyncOrThrow();
+  const scope = await requireAudienceWrite();
   const orgKey = await getOrgApiKeyOverride(scope.orgId);
 
   // Page through up to 200 audiences. Anything past that is rare and the
@@ -440,7 +445,7 @@ export type CreateDestinationInput = {
 export async function createAudienceDestination(
   input: CreateDestinationInput,
 ): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
-  const scope = await requireAudienceSyncOrThrow();
+  const scope = await requireAudienceWrite();
   const name = input.name.trim();
   if (!name) return { ok: false, error: "Name is required." };
 
@@ -491,7 +496,7 @@ export async function createAudienceDestination(
 export async function deleteAudienceDestination(
   id: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const scope = await requireAudienceSyncOrThrow();
+  const scope = await requireAudienceWrite();
   const dest = await prisma.audienceDestination.findFirst({
     where: { id, orgId: scope.orgId },
     select: { id: true, segmentId: true },
@@ -530,7 +535,7 @@ export type PushResult =
 export async function pushSegmentToDestination(
   input: PushSegmentInput,
 ): Promise<PushResult> {
-  const scope = await requireAudienceSyncOrThrow();
+  const scope = await requireAudienceWrite();
   return executeSegmentPush(
     {
       orgId: scope.orgId,
@@ -801,6 +806,24 @@ async function requireAudienceSyncOrThrow() {
   }
 }
 
+// Mutations: Audience Sync access AND a write seat (blocks CLIENT_VIEWER).
+// EXCEPTION: AL_PARTNER is the Cursive/AudienceLab partner and manages
+// audiences across AUDIENCE_SYNC orgs by design. It's outside
+// ALLOWED_WRITE_ROLES, so it keeps its existing access explicitly here.
+async function requireAudienceWrite() {
+  const scope = await requireAudienceSync();
+  if (scope.isAlPartner) return scope;
+  return requireWritableWorkspace();
+}
+
+// Org Cursive API key: workspace admin (or AL_PARTNER, same exception as
+// above; whether partners should keep this is an open product question).
+async function requireAudienceAdmin() {
+  const scope = await requireAudienceSync();
+  if (scope.isAlPartner) return scope;
+  return requireWorkspaceAdmin();
+}
+
 async function getOrgApiKeyOverride(orgId: string): Promise<string | undefined> {
   const org = await prisma.organization.findUnique({
     where: { id: orgId },
@@ -985,7 +1008,7 @@ export type CreateScheduleInput = {
 export async function createAudienceSchedule(
   input: CreateScheduleInput,
 ): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
-  const scope = await requireAudienceSyncOrThrow();
+  const scope = await requireAudienceWrite();
 
   if (!input.segmentId || !input.destinationId) {
     return { ok: false, error: "Segment and destination are required." };
@@ -1063,7 +1086,7 @@ export async function createAudienceSchedule(
 export async function deleteAudienceSchedule(
   id: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const scope = await requireAudienceSyncOrThrow();
+  const scope = await requireAudienceWrite();
   const sched = await prisma.audienceSyncSchedule.findFirst({
     where: { id, orgId: scope.orgId },
     select: { id: true, segmentId: true },
@@ -1079,7 +1102,7 @@ export async function toggleAudienceSchedule(
   id: string,
   enabled: boolean,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const scope = await requireAudienceSyncOrThrow();
+  const scope = await requireAudienceWrite();
   const sched = await prisma.audienceSyncSchedule.findFirst({
     where: { id, orgId: scope.orgId },
     select: {
@@ -1154,7 +1177,7 @@ export type SetOrgAlApiKeyResult =
 export async function setOrgAlApiKey(
   rawKey: string,
 ): Promise<SetOrgAlApiKeyResult> {
-  const scope = await requireAudienceSyncOrThrow();
+  const scope = await requireAudienceAdmin();
   try {
     assertCanWriteOrgKey(scope);
   } catch (err) {
@@ -1193,7 +1216,7 @@ export type ClearOrgAlApiKeyResult =
   | { ok: false; error: string };
 
 export async function clearOrgAlApiKey(): Promise<ClearOrgAlApiKeyResult> {
-  const scope = await requireAudienceSyncOrThrow();
+  const scope = await requireAudienceAdmin();
   try {
     assertCanWriteOrgKey(scope);
   } catch (err) {

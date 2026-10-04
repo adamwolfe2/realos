@@ -25,7 +25,7 @@ export default function RootError({
         <p className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground mb-2">
           Error
         </p>
-        <h2 className="font-serif text-3xl sm:text-4xl font-bold">
+        <h2 className="text-3xl sm:text-4xl font-semibold">
           Something went wrong.
         </h2>
       </div>
@@ -45,7 +45,7 @@ export default function RootError({
         </Button>
       </div>
       {error.digest ? (
-        <p className="text-[10px] text-muted-foreground/50 font-mono mt-2">
+        <p className="text-[10px] text-muted-foreground font-mono mt-2">
           Error ID: {error.digest}
         </p>
       ) : null}

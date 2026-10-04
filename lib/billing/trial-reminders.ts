@@ -133,3 +133,24 @@ export function buildTrialReminder(input: {
     ctaUrl: billingUrl,
   };
 }
+
+// One-time "You're live" note, sent when the go-live marker is first written.
+export function buildGoLiveEmail(input: {
+  recipientName: string;
+  orgName: string;
+  trialEndsAt: Date | null;
+  appUrl: string;
+}): { subject: string; headline: string; bodyHtml: string; ctaText: string; ctaUrl: string } {
+  const name = escapeHtml(input.recipientName);
+  const org = escapeHtml(input.orgName);
+  const clock = input.trialEndsAt
+    ? `Your trial clock started today and runs through ${formatChargeDate(input.trialEndsAt)}.`
+    : "Your trial clock started today.";
+  return {
+    subject: `${input.orgName} is live on ${BRAND_NAME}`,
+    headline: "You're live.",
+    bodyHtml: `<p>Hi ${name},</p><p>${org} just got its first real activity, so ${BRAND_NAME} is now tracking it: leads, conversations, and where they came from show up on your dashboard.</p><p>${clock}</p>`,
+    ctaText: "See your dashboard",
+    ctaUrl: `${input.appUrl}/portal`,
+  };
+}

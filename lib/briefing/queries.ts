@@ -382,26 +382,20 @@ export async function getAgingLeadsSummary(
   aging: number;
   stale: number;
 }> {
-  const activeLeads = await prisma.lead.findMany({
-    where: {
-      orgId,
-      ...leadPropertyScope(opts),
-      status: { notIn: TERMINAL_LEAD_STATUSES },
-    },
-    select: { createdAt: true },
-  });
-
+  const base = {
+    orgId,
+    ...leadPropertyScope(opts),
+    status: { notIn: TERMINAL_LEAD_STATUSES },
+  };
+  // Bucket boundaries match floor(ageDays): fresh <7d, aging 7-14d, stale >=15d.
   const now = Date.now();
-  let fresh = 0;
-  let aging = 0;
-  let stale = 0;
-
-  for (const { createdAt } of activeLeads) {
-    const days = Math.floor((now - createdAt.getTime()) / 86_400_000);
-    if (days < 7) fresh += 1;
-    else if (days < 15) aging += 1;
-    else stale += 1;
-  }
+  const d7 = new Date(now - 7 * DAY);
+  const d15 = new Date(now - 15 * DAY);
+  const [fresh, aging, stale] = await Promise.all([
+    prisma.lead.count({ where: { ...base, createdAt: { gt: d7 } } }),
+    prisma.lead.count({ where: { ...base, createdAt: { lte: d7, gt: d15 } } }),
+    prisma.lead.count({ where: { ...base, createdAt: { lte: d15 } } }),
+  ]);
 
   return { fresh, aging, stale };
 }

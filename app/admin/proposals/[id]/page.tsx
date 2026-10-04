@@ -131,15 +131,15 @@ export default async function ProposalDetailPage({
             <StatusBadge tone={statusTone(proposal.status)}>
               {statusLabel(proposal.status)}
             </StatusBadge>
-            <span className="text-muted-foreground/60">·</span>
+            <span className="text-muted-foreground">·</span>
             <span>
               {proposal.prospectName}, {proposal.prospectEmail || "(no email)"}
             </span>
-            <span className="text-muted-foreground/60">·</span>
+            <span className="text-muted-foreground">·</span>
             <span>Created {formatDistanceToNow(proposal.createdAt)} ago</span>
             {proposal.createdBy ? (
               <>
-                <span className="text-muted-foreground/60">·</span>
+                <span className="text-muted-foreground">·</span>
                 <span>by {proposal.createdBy.email}</span>
               </>
             ) : null}

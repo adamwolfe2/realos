@@ -54,8 +54,8 @@ export default async function HistoryPage() {
             No syncs yet. Pick a segment and push it to a destination.
           </div>
         ) : (
-          <div className="-mx-5 -mb-5">
-            <table className="w-full text-sm">
+          <div className="-mx-5 -mb-5 overflow-x-auto">
+            <table className="w-full text-sm min-w-[640px]">
               <thead>
                 <tr className="ls-eyebrow">
                   <th className="text-left font-semibold py-2 px-5">Segment</th>

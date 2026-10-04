@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere, ForbiddenError } from "@/lib/tenancy/scope";
+import { propertyWhereFragment } from "@/lib/tenancy/property-filter";
 import { buildIcs } from "@/lib/calendar/ics";
 import { BRAND_NAME } from "@/lib/brand";
 
@@ -30,7 +31,8 @@ export async function GET(
   const { id } = await ctx.params;
 
   const tour = await prisma.tour.findFirst({
-    where: { id, lead: tenantWhere(scope) },
+    // Property gate: restricted users only get tours at their buildings.
+    where: { id, lead: tenantWhere(scope), ...propertyWhereFragment(scope, null) },
     select: {
       id: true,
       scheduledAt: true,

@@ -182,6 +182,16 @@ export function RenewalsClient({ buckets, upcoming }: Props) {
                             return;
                           setOpenId(l.id);
                         }}
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (
+                            e.target === e.currentTarget &&
+                            (e.key === "Enter" || e.key === " ")
+                          ) {
+                            e.preventDefault();
+                            setOpenId(l.id);
+                          }
+                        }}
                         className="border-b border-border last:border-0 cursor-pointer transition-colors hover:bg-secondary"
                       >
                         <td className="px-2 py-2 text-foreground">

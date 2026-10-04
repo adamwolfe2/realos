@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
 import { Suspense } from "react";
 import Link from "next/link";
 import { ArrowRight, BarChart3 } from "lucide-react";
@@ -25,6 +26,7 @@ import {
   PreviewSkeleton,
 } from "@/components/portal/reports/live-preview-body";
 import { cn } from "@/lib/utils";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { Prisma } from "@prisma/client";
 
 export const metadata: Metadata = { title: "Client reports" };
@@ -108,18 +110,38 @@ export default async function ReportsListPage({
   // Property list for the picker. Hidden when the org only has one
   // property (single-asset tenants don't need to choose). Narrowed to
   // the user's allowed set via UserPropertyAccess.
-  const allProperties = await prisma.property.findMany({
-    where: marketablePropertyWhere(scope.orgId),
-    orderBy: { name: "asc" },
-    select: {
-      id: true,
-      name: true,
-      addressLine1: true,
-      city: true,
-      state: true,
-      launchStatus: true,
-    },
-  });
+  // Independent reads: property picker list and the report table.
+  const [allProperties, reports] = await Promise.all([
+    prisma.property.findMany({
+      where: marketablePropertyWhere(scope.orgId),
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        addressLine1: true,
+        city: true,
+        state: true,
+        launchStatus: true,
+      },
+    }),
+    prisma.clientReport.findMany({
+      where,
+      orderBy,
+      take: 100,
+      select: {
+        id: true,
+        kind: true,
+        status: true,
+        periodStart: true,
+        periodEnd: true,
+        generatedAt: true,
+        sharedAt: true,
+        viewCount: true,
+        headline: true,
+        property: { select: { id: true, name: true } },
+      },
+    }),
+  ]);
   const properties = visibleProperties(scope, allProperties);
 
   // Live preview panel: resolve which property it renders for. Prefer the
@@ -148,23 +170,6 @@ export default async function ReportsListPage({
     return `/portal/reports?${params.toString()}`;
   };
 
-  const reports = await prisma.clientReport.findMany({
-    where,
-    orderBy,
-    take: 100,
-    select: {
-      id: true,
-      kind: true,
-      status: true,
-      periodStart: true,
-      periodEnd: true,
-      generatedAt: true,
-      sharedAt: true,
-      viewCount: true,
-      headline: true,
-      property: { select: { id: true, name: true } },
-    },
-  });
   type ReportRow = (typeof reports)[number];
 
   // Bug #115 (was #8): three reports with identical title "End of Month
@@ -235,7 +240,7 @@ export default async function ReportsListPage({
       key: "status",
       header: "Status",
       width: "110px",
-      accessor: (r) => <StatusPill status={r.status} dim={isDim(r)} />,
+      accessor: (r) => <StatusPill {...reportPill(r.status, isDim(r))} />,
     },
     {
       key: "version",
@@ -264,7 +269,7 @@ export default async function ReportsListPage({
             </span>
           );
         }
-        return <span className="text-muted-foreground/50">—</span>;
+        return <span className="text-muted-foreground">—</span>;
       },
     },
     {
@@ -291,7 +296,7 @@ export default async function ReportsListPage({
             {formatDate(r.sharedAt)}
           </span>
         ) : (
-          <span className="text-muted-foreground/50">—</span>
+          <span className="text-muted-foreground">—</span>
         ),
     },
     {
@@ -306,7 +311,7 @@ export default async function ReportsListPage({
             {r.viewCount.toLocaleString()}
           </span>
         ) : (
-          <span className="text-muted-foreground/50">0</span>
+          <span className="text-muted-foreground">0</span>
         ),
     },
   ];
@@ -382,12 +387,12 @@ export default async function ReportsListPage({
                 <option value="monthly">Monthly (28d)</option>
               </select>
             </label>
-            <button
-              type="submit"
+            <SubmitButton
+              pendingLabel="Generating…"
               className="inline-flex items-center rounded-[2px] bg-primary text-primary-foreground px-3.5 py-2 text-sm font-medium hover:bg-primary/90 transition-colors"
             >
               Generate report
-            </button>
+            </SubmitButton>
           </form>
           </>
           )
@@ -470,13 +475,13 @@ export default async function ReportsListPage({
                 <p className="text-[11px] text-muted-foreground">
                   Freezes this exact view into a shareable report.
                 </p>
-                <button
-                  type="submit"
+                <SubmitButton
+                  pendingLabel="Generating…"
                   className="inline-flex flex-none items-center gap-1.5 rounded-[2px] bg-primary px-3 py-1.5 text-[13px] font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                 >
                   Generate &amp; share
                   <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-                </button>
+                </SubmitButton>
               </form>
             </div>
             )}
@@ -589,7 +594,7 @@ export default async function ReportsListPage({
               ) : (
                 <EmptyState
                   title="Generate your first report"
-                  body="Use the Generate report button up top to capture this period's leads, tours, ad spend, and organic traffic as a frozen snapshot. Add a note, then copy a shareable link for your client. Nothing is sent automatically."
+                  body="Use the Generate report button up top to capture this period's leads, tours, ad spend, and organic traffic as a frozen snapshot. Add a note, then copy a shareable link for your owners. Nothing is sent automatically."
                 />
               )
             }
@@ -625,23 +630,14 @@ async function generateReport(formData: FormData): Promise<void> {
 // Local helpers
 // ---------------------------------------------------------------------------
 
-function StatusPill({ status, dim }: { status: string; dim?: boolean }) {
-  // Wave-3 tone mapping preserved, routed through the ls-pill system
-  // (StatusChip convention, status-chip.tsx): a shared report is a positive
-  // terminal state → success green; draft is neutral gray (work in
-  // progress, no signal); archived is dimmed neutral.
-  const tone = status === "shared" ? "ls-pill-success" : "ls-pill-neutral";
-  return (
-    <span
-      className={cn(
-        "ls-pill uppercase tracking-wide",
-        tone,
-        (status === "archived" || dim) && "opacity-60",
-      )}
-    >
-      {status}
-    </span>
-  );
+function reportPill(status: string, dim?: boolean) {
+  // A shared report is a positive terminal state (success); draft is neutral;
+  // archived is dimmed neutral.
+  return {
+    label: status,
+    tone: (status === "shared" ? "success" : "neutral") as StatusTone,
+    className: cn("uppercase tracking-wide", (status === "archived" || dim) && "opacity-60"),
+  };
 }
 
 function kindLabel(kind: string): string {

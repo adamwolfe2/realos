@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SubmitButton } from "@/components/ui/submit-button";
 import Link from "next/link";
 import { requireModule } from "@/lib/portal/module-gate";
 import { PageHeader } from "@/components/admin/page-header";
@@ -48,8 +49,7 @@ export default async function NewPopupPage() {
           <form key={t.id} action={createPopupFromForm} className="contents">
             <input type="hidden" name="templateId" value={t.id} />
             <input type="hidden" name="name" value={t.defaults.name} />
-            <button
-              type="submit"
+            <SubmitButton
               className="group text-left rounded-[2px] border border-border bg-card overflow-hidden hover:border-primary/40 hover:shadow-[0_8px_24px_-12px_rgba(15,23,42,0.18)] transition-all focus:outline-none focus:ring-2 focus:ring-primary/40"
             >
               <div className="aspect-[16/10] bg-secondary border-b border-border relative overflow-hidden">
@@ -68,19 +68,19 @@ export default async function NewPopupPage() {
                   {t.description}
                 </p>
               </div>
-            </button>
+            </SubmitButton>
           </form>
         ))}
       </section>
 
       <div className="pt-2 text-center">
         <form action={createPopupFromForm} className="inline-block">
-          <button
-            type="submit"
+          <SubmitButton
+            pendingLabel="Creating…"
             className="text-xs font-medium text-muted-foreground hover:text-foreground underline underline-offset-2"
           >
             Or start from scratch with a blank popup →
-          </button>
+          </SubmitButton>
         </form>
       </div>
     </div>

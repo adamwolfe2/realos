@@ -192,9 +192,9 @@ export function computeRecommendations(
   if (usesLeadSource("paid_ads")) {
     recs.push({
       id: "rec-ads",
-      title: "Managed ads with spend tied to signed leases",
+      title: "Ad spend tied to signed leases",
       why:
-        "You said paid ads are a meaningful lead source. We optimize against signed leases, not impressions. Most operators see CAC drop 20-40% in the first quarter.",
+        "You said paid ads are a meaningful lead source. LeaseStack tracks ad spend against signed leases, not impressions, so you can see which campaigns earn their budget.",
       featureSlug: "ads",
       pillar: "tracking",
       severity: "medium",

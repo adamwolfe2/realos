@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { leadDayBucketsByProperty } from "@/lib/dashboard/lead-day-buckets";
 import {
   ApplicationStatus,
   LeadSource,
@@ -198,9 +199,11 @@ export async function getPropertyOverviewKpis(
       },
       _sum: { spendCents: true },
     }),
-    prisma.lead.findMany({
-      where: { orgId, propertyId, firstSeenAt: { gte: since28d } },
-      select: { firstSeenAt: true },
+    leadDayBucketsByProperty({
+      orgId,
+      propertyIds: [propertyId],
+      column: "firstSeenAt",
+      windowDays: WINDOW_DAYS,
     }),
     patterns.length === 0
       ? Promise.resolve(null)
@@ -215,10 +218,8 @@ export async function getPropertyOverviewKpis(
     adSpendCents28d: adSpend._sum.spendCents ?? 0,
     organicSessions28d: organicSessions,
     organicMapped: patterns.length > 0 && organicSessions !== null,
-    leadsSparkline: bucketDailyCounts(
-      leadRowsForSpark.map((r) => r.firstSeenAt),
-      WINDOW_DAYS,
-    ),
+    leadsSparkline:
+      leadRowsForSpark.get(propertyId) ?? new Array<number>(WINDOW_DAYS).fill(0),
   };
 }
 
@@ -320,13 +321,17 @@ export async function getPropertyTraffic(
       orderBy: { _sum: { sessions: "desc" } },
       take: 10,
     }),
-    prisma.seoLandingPage.findMany({
+    // One row per distinct date (not per page-day); every row in a group
+    // shares a date, so it lands in the same spark bucket.
+    prisma.seoLandingPage.groupBy({
+      by: ["date"],
       where: { orgId, date: { gte: since28d }, OR: landingOr },
-      select: { date: true, sessions: true },
+      _sum: { sessions: true },
     }),
     // Top queries — we can't filter queries by URL directly. We approximate by
     // requiring the query text itself to include the property name or slug.
-    prisma.seoQuery.findMany({
+    prisma.seoQuery.groupBy({
+      by: ["query"],
       where: {
         orgId,
         date: { gte: since28d },
@@ -334,34 +339,20 @@ export async function getPropertyTraffic(
           query: { contains: p.replace(/%/g, ""), mode: "insensitive" as const },
         })),
       },
-      select: { query: true, clicks: true, impressions: true, ctr: true, position: true },
+      _sum: { clicks: true, impressions: true },
+      _avg: { ctr: true, position: true },
+      orderBy: [{ _sum: { clicks: "desc" } }, { _sum: { impressions: "desc" } }],
+      take: 10,
     }),
   ]);
 
-  // Aggregate queries by text
-  const queryMap = new Map<
-    string,
-    { clicks: number; impressions: number; ctrSum: number; positionSum: number; n: number }
-  >();
-  for (const r of queryRows) {
-    const row =
-      queryMap.get(r.query) ??
-      { clicks: 0, impressions: 0, ctrSum: 0, positionSum: 0, n: 0 };
-    row.clicks += r.clicks;
-    row.impressions += r.impressions;
-    row.ctrSum += r.ctr;
-    row.positionSum += r.position;
-    row.n += 1;
-    queryMap.set(r.query, row);
-  }
-
-  const topQueries = Array.from(queryMap.entries())
-    .map(([query, v]) => ({
-      query,
-      clicks: v.clicks,
-      impressions: v.impressions,
-      ctr: v.n > 0 ? v.ctrSum / v.n : 0,
-      position: v.n > 0 ? v.positionSum / v.n : 0,
+  const topQueries = queryRows
+    .map((r) => ({
+      query: r.query,
+      clicks: r._sum.clicks ?? 0,
+      impressions: r._sum.impressions ?? 0,
+      ctr: r._avg.ctr ?? 0,
+      position: r._avg.position ?? 0,
     }))
     .sort((a, b) => b.clicks - a.clicks || b.impressions - a.impressions)
     .slice(0, 10);
@@ -374,12 +365,12 @@ export async function getPropertyTraffic(
   }));
 
   const sessionsSparkline = bucketDailyTotals(
-    landingPageAggRows.map((r) => ({ date: r.date, value: r.sessions })),
+    landingPageAggRows.map((r) => ({ date: r.date, value: r._sum.sessions ?? 0 })),
     WINDOW_DAYS,
   );
 
   const totalSessions28d = landingPageAggRows.reduce(
-    (acc, r) => acc + (r.sessions ?? 0),
+    (acc, r) => acc + (r._sum.sessions ?? 0),
     0,
   );
   const totalClicks28d = topQueries.reduce((acc, q) => acc + q.clicks, 0);
@@ -1032,15 +1023,6 @@ function buildByBedType(
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function bucketDailyCounts(dates: Date[], windowDays: number): number[] {
-  const buckets = new Array<number>(windowDays).fill(0);
-  for (const d of dates) {
-    const idx = dayBucketIndex(d, windowDays);
-    if (idx >= 0 && idx < windowDays) buckets[idx] += 1;
-  }
-  return buckets;
-}
 
 function bucketDailyTotals(
   rows: Array<{ date: Date; value: number }>,

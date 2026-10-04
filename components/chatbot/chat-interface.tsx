@@ -170,8 +170,12 @@ export function ChatInterface({
         }),
       });
       if (!res.ok || !res.body) {
-        const body = await res.text().catch(() => "");
-        throw new Error(body || `Chat failed, ${res.status}`);
+        // Never surface the raw response body to visitors.
+        throw new Error(
+          res.status === 503 || res.status === 429
+            ? "Chat is unavailable right now. Please try again later."
+            : "Chat failed, try again."
+        );
       }
 
       const reader = res.body.getReader();

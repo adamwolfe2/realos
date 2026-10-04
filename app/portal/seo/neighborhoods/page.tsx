@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
 import { formatDistanceToNow } from "date-fns";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
@@ -76,7 +77,7 @@ export default async function NeighborhoodPagesIndex() {
       key: "status",
       header: "Status",
       width: "110px",
-      accessor: (p) => <StatusPill status={p.status} />,
+      accessor: (p) => <StatusPill label={p.status.toLowerCase()} tone={NEIGHBORHOOD_TONE[p.status]} className="lowercase" />,
     },
     {
       key: "updated",
@@ -131,20 +132,8 @@ export default async function NeighborhoodPagesIndex() {
   );
 }
 
-function StatusPill({ status }: { status: "DRAFT" | "PUBLISHED" | "ARCHIVED" }) {
-  // Lowercase, 2px, 11px — matches the portal-wide status pill
-  // grammar (no amber/emerald rainbow; brand-primary vs neutral only).
-  const map = {
-    DRAFT: { label: "draft", className: "bg-muted text-muted-foreground border border-border" },
-    PUBLISHED: { label: "published", className: "bg-primary/10 text-primary" },
-    ARCHIVED: { label: "archived", className: "bg-muted text-muted-foreground" },
-  } as const;
-  const v = map[status];
-  return (
-    <span
-      className={`text-[11px] font-medium lowercase rounded-[2px] px-1.5 py-0.5 ${v.className}`}
-    >
-      {v.label}
-    </span>
-  );
-}
+const NEIGHBORHOOD_TONE: Record<"DRAFT" | "PUBLISHED" | "ARCHIVED", StatusTone> = {
+  DRAFT: "neutral",
+  PUBLISHED: "active",
+  ARCHIVED: "neutral",
+};

@@ -86,7 +86,7 @@ export function ClientDetailTabs({
           >
             {t.label}
             {t.count != null ? (
-              <span className="text-[11px] text-muted-foreground/70 tabular-nums">
+              <span className="text-[11px] text-muted-foreground tabular-nums">
                 ({t.count})
               </span>
             ) : null}

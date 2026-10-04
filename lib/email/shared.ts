@@ -4,6 +4,7 @@
 // the hard fork; env vars are read directly here.
 // ---------------------------------------------------------------------------
 import { Resend } from "resend";
+import { escapeHtml } from "@/lib/escape-html";
 import {
   getSiteUrl,
   BRAND_NAME,
@@ -129,6 +130,8 @@ type BrandedSendInput = {
    * receipts) that should always read as LeaseStack.
    */
   orgId?: string | null;
+  /** Resend idempotency key: a repeat send with the same key is deduped. */
+  idempotencyKey?: string;
 };
 
 export type BrandedSendResult =
@@ -249,7 +252,7 @@ export async function sendBrandedEmail(
       replyTo: opts.replyTo ?? BRAND_EMAIL,
       headers,
       tags,
-    });
+    }, opts.idempotencyKey ? { idempotencyKey: opts.idempotencyKey } : undefined);
     if (r.error) {
       console.error(`[email:${template}] Resend rejected send:`, r.error);
       return { ok: false, error: r.error.message ?? "Resend API error" };
@@ -284,16 +287,9 @@ export function sanitizeSubject(subject: string): string {
 }
 
 // Escape user-provided strings before interpolating them into HTML
-// email bodies. Mirrors the helper in report-email.ts so any caller of
-// buildBaseHtml can sanitize without re-implementing.
-export function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
+// email bodies. Re-exported from lib/escape-html (the canonical copy) so
+// existing callers of this module keep working.
+export { escapeHtml };
 
 // ---------------------------------------------------------------------------
 // buildBaseHtml -- branded email shell used by every transactional email.
