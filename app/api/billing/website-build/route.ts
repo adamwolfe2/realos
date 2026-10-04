@@ -11,6 +11,7 @@ import {
 } from "@/lib/billing/catalog";
 import { getPriceId } from "@/lib/billing/plans";
 import { captureWithContext } from "@/lib/sentry";
+import { ensureOrgStripeCustomer } from "@/lib/billing/org-stripe-customer";
 
 // ---------------------------------------------------------------------------
 // POST /api/billing/website-build
@@ -125,24 +126,7 @@ export async function POST(req: NextRequest) {
   // Reuse or create the Stripe customer. We use the same customer
   // record across SaaS subscription + website build so the customer
   // sees a single billing history on their portal.
-  let stripeCustomerId = org.stripeCustomerId;
-  if (!stripeCustomerId) {
-    // Same key as app/api/billing/checkout so concurrent paths converge on
-    // one Stripe customer instead of orphaning one.
-    const customer = await stripe.customers.create(
-      {
-        email: org.primaryContactEmail ?? scope.email,
-        name: org.name,
-        metadata: { org_id: org.id },
-      },
-      { idempotencyKey: `cust_${org.id}` },
-    );
-    await prisma.organization.update({
-      where: { id: org.id },
-      data: { stripeCustomerId: customer.id },
-    });
-    stripeCustomerId = customer.id;
-  }
+  const stripeCustomerId = await ensureOrgStripeCustomer(stripe, org);
 
   const siteUrl = getSiteUrl();
   const successUrl = `${siteUrl}/billing/website-build/success?session_id={CHECKOUT_SESSION_ID}`;

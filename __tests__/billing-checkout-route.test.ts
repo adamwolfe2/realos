@@ -31,6 +31,7 @@ vi.mock("@/lib/sentry", () => ({ captureWithContext: vi.fn() }));
 
 import { POST } from "@/app/api/billing/checkout/route";
 import { getPriceId } from "@/lib/billing/plans";
+import { orgCustomerCreateParams } from "@/lib/billing/org-stripe-customer";
 
 const SCALE_MONTHLY = getPriceId("ls_scale_graduated_monthly_v1");
 
@@ -123,6 +124,25 @@ describe("POST /api/billing/checkout", () => {
     });
     const response = await POST(request(activationBody()));
     expect(response.status).toBe(200);
+  });
+
+  it("creates the org customer from org data only, not the caller's email (F-082)", async () => {
+    const unlinked = { ...org, stripeCustomerId: null, primaryContactEmail: null };
+    mockPrisma.organization.findUnique.mockResolvedValue(unlinked);
+    customerCreate.mockResolvedValue({ id: "cus_new" });
+    getScope.mockResolvedValue({
+      ...ownerScope,
+      email: "staff@leasestack.co",
+      role: UserRole.AGENCY_OPERATOR,
+      isAgency: true,
+      isImpersonating: true,
+    });
+    const response = await POST(request(activationBody()));
+    expect(response.status).toBe(200);
+    expect(customerCreate).toHaveBeenCalledWith(orgCustomerCreateParams(unlinked), {
+      idempotencyKey: "cust_org_1",
+    });
+    expect(customerCreate.mock.calls[0][0].email).toBeUndefined();
   });
 
   it("derives tier, quantity, and trial end from the organization", async () => {
