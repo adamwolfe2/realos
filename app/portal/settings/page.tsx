@@ -8,6 +8,7 @@ import {
   Users,
   Check,
   Palette,
+  ScrollText,
 } from "lucide-react";
 import { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/db";
@@ -159,6 +160,12 @@ export default async function SettingsPage() {
           title="White-label"
           description="Swap LeaseStack branding for your own across the portal, public tenant site, and outbound emails. Requires the $499/mo add-on."
           stat={org.whiteLabel ? "Active" : "Off"}
+        />
+        <NavCard
+          href="/portal/settings/audit-log"
+          icon={<ScrollText className="size-4" aria-hidden="true" />}
+          title="Audit log"
+          description="See who changed what across your workspace, including property, integration, and role changes."
         />
       </div>
 

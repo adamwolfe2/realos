@@ -226,7 +226,14 @@ export default async function VaultPage() {
       <p className="px-1 text-[11px] text-muted-foreground inline-flex items-center gap-1.5">
         <Lock className="h-3 w-3" />
         Stored with AES-256-GCM. Master key never leaves the server.
-        Every reveal writes an audit row visible in /portal/settings/audit-log.
+        Every reveal writes an audit row visible in the{" "}
+        <Link
+          href="/portal/settings/audit-log"
+          className="underline underline-offset-2 hover:text-foreground"
+        >
+          audit log
+        </Link>
+        .
       </p>
     </div>
   );
