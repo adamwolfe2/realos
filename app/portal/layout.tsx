@@ -528,6 +528,30 @@ export default async function PortalLayout({
             />
           );
         }
+        if (trialState === "paused" || trialState === "canceled") {
+          const canBill = canManageBilling(scope);
+          return (
+            <div data-no-print>
+              <AlertBanner
+                severity="warning"
+                flush
+                title={
+                  trialState === "paused"
+                    ? "Your subscription is paused."
+                    : "Your subscription is canceled."
+                }
+                action={
+                  canBill
+                    ? { label: "Open billing", href: "/portal/billing" }
+                    : undefined
+                }
+              >
+                This workspace is read-only. Your data is safe, and changes are
+                disabled until billing is updated.
+              </AlertBanner>
+            </div>
+          );
+        }
         return null;
       })()}
 
