@@ -16,8 +16,11 @@
 /* Mobile device support */
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); padding-bottom: env(safe-area-inset-bottom); }
-@media (pointer: coarse) {
-  button, [role="button"], a, input[type="checkbox"], input[type="radio"] { min-height: 44px; min-width: 44px; }
+/* 44x44 touch targets: small touch screens only (phones, < 768px), so iPads
+   (768px+) keep dense portal/admin layouts. Dense table content is exempt, and
+   checkbox/radio sizing is left to the native control plus its label. */
+@media (pointer: coarse) and (max-width: 767px) {
+  :where(button, [role="button"], a):not(:where(table *)) { min-height: 44px; min-width: 44px; }
 }
 
 /* =============================================================================
