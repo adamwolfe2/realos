@@ -1150,33 +1150,41 @@ export async function runAppfolioSync(
   // 7. DELINQUENCY — denormalize past-due balance onto each Lease.
   try {
     const rows = await fetchAllPages(client, "delinquency");
-    for (const row of rows) {
+    const mappedRows = rows.flatMap((row) => {
       const mapped = mapDelinquencyPayload(row);
-      if (!mapped) continue;
-      const leaseId = leaseByExternalId.get(mapped.leaseExternalId);
-      if (!leaseId) {
-        // Try to find by external id directly in case rent_roll didn't
-        // include this row (e.g., terminated lease still owing money).
-        const existing = await prisma.lease.findFirst({
-          where: {
-            orgId,
-            externalSystem: EXTERNAL_SYSTEM,
-            externalId: mapped.leaseExternalId,
-          },
-          select: { id: true },
-        });
-        if (!existing) continue;
-        await prisma.lease.update({
-          where: { id: existing.id },
-          data: {
-            currentBalanceCents: mapped.currentBalanceCents,
-            isPastDue: mapped.isPastDue,
-            pastDueAsOf: mapped.asOf,
-          },
-        });
-        stats.delinquenciesUpdated += 1;
-        continue;
+      return mapped ? [mapped] : [];
+    });
+    // Leases rent_roll didn't include (e.g. terminated but still owing):
+    // resolve them all with one query instead of a findFirst per row.
+    const missingExternalIds = [
+      ...new Set(
+        mappedRows
+          .map((m) => m.leaseExternalId)
+          .filter((id) => !leaseByExternalId.has(id)),
+      ),
+    ];
+    const extraLeases =
+      missingExternalIds.length > 0
+        ? await prisma.lease.findMany({
+            where: {
+              orgId,
+              externalSystem: EXTERNAL_SYSTEM,
+              externalId: { in: missingExternalIds },
+            },
+            select: { id: true, externalId: true },
+          })
+        : [];
+    const extraLeaseIds = new Map<string, string>();
+    for (const l of extraLeases) {
+      if (l.externalId && !extraLeaseIds.has(l.externalId)) {
+        extraLeaseIds.set(l.externalId, l.id);
       }
+    }
+    for (const mapped of mappedRows) {
+      const leaseId =
+        leaseByExternalId.get(mapped.leaseExternalId) ??
+        extraLeaseIds.get(mapped.leaseExternalId);
+      if (!leaseId) continue;
       await prisma.lease.update({
         where: { id: leaseId },
         data: {

@@ -36,4 +36,21 @@ describe("cron dedup batching — no per-org findFirst inside the loop", () => {
     const src = readRoute("app/api/cron/weekly-report/route.ts");
     expect(src).toMatch(/clientReport\.findMany\(\{[\s\S]*?kind:\s*"weekly"/);
   });
+
+  // F-123: per-row count/findFirst inside sync loops replaced with one batch.
+  it("trial-reminders and aeo-scan batch their per-row counts", () => {
+    const trial = readRoute("app/api/cron/trial-reminders/route.ts");
+    expect(trial).toMatch(/property\.groupBy\(/);
+    expect(trial).not.toMatch(/property\.count\(/);
+    const aeo = readRoute("app/api/cron/aeo-scan/route.ts");
+    expect(aeo).toMatch(/aeoCitationCheck\.groupBy\(/);
+    expect(aeo).not.toMatch(/aeoCitationCheck\.count\(/);
+  });
+
+  it("appfolio delinquency phase resolves missing leases with one findMany", () => {
+    const src = readRoute("lib/integrations/appfolio-sync.ts");
+    const phase = src.slice(src.indexOf("// 7. DELINQUENCY"), src.indexOf("// 8. WORK ORDERS"));
+    expect(phase).toMatch(/lease\.findMany\(/);
+    expect(phase).not.toMatch(/lease\.findFirst\(/);
+  });
 });

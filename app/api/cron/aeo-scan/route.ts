@@ -148,16 +148,25 @@ export async function GET(req: NextRequest) {
           Date.now() - NEIGHBORHOOD_SCAN_SKIP_WINDOW_MS,
         );
 
+        // One grouped query replaces a count per page.
+        const recentGroups =
+          pages.length > 0
+            ? await prisma.aeoCitationCheck.groupBy({
+                by: ["neighborhoodPageId"],
+                where: {
+                  orgId: org.id,
+                  neighborhoodPageId: { in: pages.map((p) => p.id) },
+                  queryRunAt: { gte: cutoff },
+                },
+              })
+            : [];
+        const recentPageIds = new Set(
+          recentGroups.map((g) => g.neighborhoodPageId),
+        );
+
         for (const page of pages) {
           if (Date.now() > deadline) break;
-          const recent = await prisma.aeoCitationCheck.count({
-            where: {
-              orgId: org.id,
-              neighborhoodPageId: page.id,
-              queryRunAt: { gte: cutoff },
-            },
-          });
-          if (recent > 0) {
+          if (recentPageIds.has(page.id)) {
             neighborhoodPagesSkipped += 1;
             continue;
           }

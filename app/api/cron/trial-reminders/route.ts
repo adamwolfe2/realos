@@ -145,6 +145,22 @@ export async function GET(req: NextRequest) {
       existingEvents.map((e) => `${e.orgId}:${e.entityId}`),
     );
 
+    // One grouped query replaces a property.count per org in the send loop.
+    const propertyCountRows =
+      candidates.length > 0
+        ? await prisma.property.groupBy({
+            by: ["orgId"],
+            where: {
+              orgId: { in: candidateOrgIds },
+              lifecycle: { in: [...BILLABLE_LIFECYCLES] },
+            },
+            _count: { _all: true },
+          })
+        : [];
+    const propertyCountByOrg = new Map(
+      propertyCountRows.map((r) => [r.orgId, r._count._all]),
+    );
+
     for (const { org, stage, dedupId, goLiveAt, cardOnFile } of candidates) {
       if (alreadySent.has(`${org.id}:${dedupId}`)) continue;
 
@@ -152,9 +168,7 @@ export async function GET(req: NextRequest) {
         if (!resend) throw new Error("Resend not configured");
         const quote = trialQuote(
           org.chosenTier ?? org.subscriptionTier ?? null,
-          await prisma.property.count({
-            where: { orgId: org.id, lifecycle: { in: [...BILLABLE_LIFECYCLES] } },
-          }),
+          propertyCountByOrg.get(org.id) ?? 0,
         );
         const recap =
           stage === "day_7"
