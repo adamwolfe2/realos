@@ -66,7 +66,7 @@ describe("public /r/[token] — one-pager share view", () => {
     const content = readPublic();
     expect(content).toContain("isValidShareToken");
     expect(content).toContain('report.status !== "shared"');
-    expect(content).toContain("notFound()");
+    expect(content).toContain("if (!data) return <InactiveLink />");
   });
 
   it("keeps view-count tracking on open", () => {

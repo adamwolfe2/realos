@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { cache } from "react";
-import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { PropertyOnePager } from "@/components/portal/reports/property-one-pager";
 import { periodLabel } from "@/components/portal/reports/snapshot-shared";
@@ -122,7 +121,7 @@ export default async function PublicReportPage({
 }) {
   const { token } = await params;
   const data = await loadSharedReport(token);
-  if (!data) notFound();
+  if (!data) return <InactiveLink />;
 
   const { report, snapshot, property, hero } = data;
 
@@ -172,5 +171,20 @@ export default async function PublicReportPage({
         <PropertyOnePager snapshot={snapshot} property={property} hero={hero} />
       </div>
     </div>
+  );
+}
+
+function InactiveLink() {
+  return (
+    <main className="min-h-screen bg-white text-[#0F172A]">
+      <div className="mx-auto max-w-xl px-6 py-20 text-center">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          This report link is no longer active
+        </h1>
+        <p className="mt-3 text-sm leading-relaxed text-[#6B7280]">
+          Ask the sender for a fresh link.
+        </p>
+      </div>
+    </main>
   );
 }
