@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { usePathname } from "next/navigation";
 
 // ---------------------------------------------------------------------------
@@ -12,8 +13,14 @@ import { usePathname } from "next/navigation";
 
 export function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  // Skip the fade on the first paint (matches the old framer-motion
+  // initial={false}); only client-side route changes animate.
+  const firstPath = useRef(pathname);
   return (
-    <div key={pathname} className="ls-route-fade">
+    <div
+      key={pathname}
+      className={pathname === firstPath.current ? undefined : "ls-route-fade"}
+    >
       {children}
     </div>
   );
