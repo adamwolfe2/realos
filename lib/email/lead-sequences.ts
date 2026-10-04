@@ -1,6 +1,7 @@
 import "server-only";
 import crypto from "node:crypto";
 import { buildBaseHtml, getResend, isValidEmail } from "./shared";
+import { escapeHtml as esc } from "@/lib/escape-html";
 
 export type CadenceStage =
   | null
@@ -148,14 +149,6 @@ function intro(p: SendParams): string {
   return `<p style="margin:0 0 12px;font-size:14px;line-height:1.6;">${greeting}</p>`;
 }
 
-function esc(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
 
 // ---------------------------------------------------------------------------
 // Unsubscribe token helper. HMAC so we don't have to persist a token per

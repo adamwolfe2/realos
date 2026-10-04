@@ -11,6 +11,7 @@ import {
   checkRateLimit,
   rateLimited,
 } from "@/lib/rate-limit";
+import { escapeHtml } from "@/lib/escape-html";
 
 // ---------------------------------------------------------------------------
 // POST /api/bug-report
@@ -526,11 +527,3 @@ async function sendEmailNotification(input: {
   }
 }
 
-function escapeHtml(input: string): string {
-  return input
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}

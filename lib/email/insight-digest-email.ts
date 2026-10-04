@@ -1,5 +1,6 @@
 import "server-only";
 import type { InsightSeverity } from "@/lib/insights/types";
+import { escapeHtml } from "@/lib/escape-html";
 
 // ---------------------------------------------------------------------------
 // Daily insight digest — email template.
@@ -162,14 +163,6 @@ function insightRow(i: DigestInsightVM, portalUrl: string): string {
     </tr>`;
 }
 
-function escapeHtml(input: string): string {
-  return input
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
 
 function escapeAttr(input: string): string {
   return escapeHtml(input);

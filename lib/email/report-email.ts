@@ -2,6 +2,7 @@ import "server-only";
 import { buildBaseHtml, BRAND_NAME } from "./shared";
 import { getSiteUrl } from "@/lib/brand";
 import type { ReportSnapshot } from "@/lib/reports/generate";
+import { escapeHtml } from "@/lib/escape-html";
 
 // ---------------------------------------------------------------------------
 // Weekly / Monthly client report email.
@@ -697,14 +698,6 @@ function formatPeriod(startIso: string, endIso: string): string {
   return `${fmt(s)} — ${fmt(e)}`;
 }
 
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
 
 /**
  * Compose an absolute share URL for the public /r/[token] viewer.

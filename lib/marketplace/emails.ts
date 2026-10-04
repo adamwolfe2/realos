@@ -7,6 +7,7 @@ import {
   APP_URL,
   BRAND_NAME,
 } from "@/lib/email/shared";
+import { escapeHtml } from "@/lib/escape-html";
 
 // ---------------------------------------------------------------------------
 // Marketplace transactional emails
@@ -234,10 +235,3 @@ function prettyType(t: string): string {
   return t.charAt(0).toUpperCase() + t.slice(1).toLowerCase();
 }
 
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
