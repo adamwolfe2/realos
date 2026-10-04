@@ -108,4 +108,19 @@ describe("F-080 write gates", () => {
     expect(del.status).toBe(200);
     expect(mocks.draftDelete).toHaveBeenCalled();
   });
+
+  it("content PATCH keeps the 402 status of a trial-expired gate error", async () => {
+    const trial = new scopeMod.ForbiddenError("Your free trial has ended.");
+    (trial as unknown as { status: number }).status = 402;
+    mocks.requireWritableWorkspace.mockRejectedValue(trial);
+    const res = await route.PATCH(
+      new NextRequest("http://localhost/x", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ brief: "x" }),
+      }),
+      ctx,
+    );
+    expect(res.status).toBe(402);
+  });
 });

@@ -93,7 +93,7 @@ export async function GET(_req: NextRequest, ctx: RouteContext) {
     return NextResponse.json({ draft });
   } catch (err) {
     if (err instanceof ForbiddenError) {
-      return NextResponse.json({ error: err.message }, { status: 403 });
+      return NextResponse.json({ error: err.message }, { status: err.status });
     }
     throw err;
   }
@@ -150,7 +150,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
     return NextResponse.json({ ok: true, draft: updated });
   } catch (err) {
     if (err instanceof ForbiddenError) {
-      return NextResponse.json({ error: err.message }, { status: 403 });
+      return NextResponse.json({ error: err.message }, { status: err.status });
     }
     throw err;
   }
@@ -179,7 +179,7 @@ export async function DELETE(_req: NextRequest, ctx: RouteContext) {
     return NextResponse.json({ ok: true });
   } catch (err) {
     if (err instanceof ForbiddenError) {
-      return NextResponse.json({ error: err.message }, { status: 403 });
+      return NextResponse.json({ error: err.message }, { status: err.status });
     }
     throw err;
   }
