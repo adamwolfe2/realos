@@ -183,7 +183,7 @@ export function CurationQueueClient({
             type="button"
             onClick={() => setConfirmAllOpen(true)}
             disabled={pending}
-            className="ml-auto shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-[2px] border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
+            className="ml-auto shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-[2px] bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
             title="Activate every imported building in your portfolio — counts toward billing"
           >
             {pending ? (
@@ -275,7 +275,7 @@ export function CurationQueueClient({
                   type="button"
                   onClick={() => actBulk("activate")}
                   disabled={pending}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-[2px] border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-[2px] bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
                   title="Activate selected — these will count toward your marketable property total and billing"
                 >
                   <Check className="w-3.5 h-3.5" aria-hidden="true" />
@@ -298,7 +298,7 @@ export function CurationQueueClient({
                 type="button"
                 onClick={() => actBulk("activate")}
                 disabled={pending}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-[2px] border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-[2px] border border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50"
               >
                 <Check className="w-3.5 h-3.5" aria-hidden="true" />
                 Restore as active
@@ -412,7 +412,7 @@ export function CurationQueueClient({
                         type="button"
                         onClick={() => actSingle(item.id, "activate")}
                         disabled={pending}
-                        className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-[2px] border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-[2px] border border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50"
                         title="Activate this property — will count toward your marketable total and billing"
                       >
                         {pending ? (
@@ -441,7 +441,7 @@ export function CurationQueueClient({
                       type="button"
                       onClick={() => actSingle(item.id, "activate")}
                       disabled={pending}
-                      className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-[2px] border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
+                      className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-[2px] border border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50"
                       title="Restore — bring back into active properties"
                     >
                       {pending ? (
@@ -687,7 +687,7 @@ function ImageActionsPanel({
           type="button"
           onClick={onSaveUrl}
           disabled={anyBusy || !pastedUrl.trim()}
-          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-[2px] border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-[2px] border border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50"
         >
           {savingUrl ? (
             <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />
