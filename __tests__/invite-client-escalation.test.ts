@@ -53,13 +53,15 @@ function req(body: Record<string, unknown>) {
 function seedCaller(
   role: (typeof UserRole)[keyof typeof UserRole],
   allowedPropertyIds: string[] | null,
+  existing: Record<string, unknown> | null = null,
+  isAgency = false,
 ) {
   mockRequireWorkspaceAdmin.mockResolvedValue({
     userId: "u1",
     clerkUserId: "clerk_u1",
     orgId: "org-1",
     role,
-    isAgency: false,
+    isAgency,
     isImpersonating: false,
     allowedPropertyIds,
   });
@@ -68,7 +70,7 @@ function seedCaller(
       Promise.resolve(
         args?.where?.clerkUserId === "clerk_u1"
           ? { role, orgId: "org-1", firstName: "A", lastName: "B", email: "a@t.test" }
-          : null,
+          : existing,
       ),
   );
 }
@@ -110,5 +112,74 @@ describe("invite route client escalation guards (F-001)", () => {
     seedCaller(UserRole.CLIENT_ADMIN, ["p1"]);
     const res = await POST(req({ role: "LEASING_AGENT", propertyIds: ["p1"] }));
     expect(res.status).toBe(200);
+  });
+
+  it("re-invite of a claimed same-org user is a 409, never a role rewrite", async () => {
+    seedCaller(UserRole.CLIENT_ADMIN, null, {
+      id: "owner-1",
+      clerkUserId: "user_real",
+      orgId: "org-1",
+      role: UserRole.CLIENT_OWNER,
+    });
+    const res = await POST(req({ role: "CLIENT_VIEWER", propertyIds: ["p1"] }));
+    expect(res.status).toBe(409);
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("CLIENT_ADMIN can't change a pending Owner seed", async () => {
+    seedCaller(UserRole.CLIENT_ADMIN, null, {
+      id: "seed-1",
+      clerkUserId: "seed_pending_new@t.test",
+      orgId: "org-1",
+      role: UserRole.CLIENT_OWNER,
+    });
+    const res = await POST(req({ role: "CLIENT_ADMIN" }));
+    expect(res.status).toBe(403);
+  });
+
+  it("re-inviting the last pending Owner as a lower role is refused", async () => {
+    seedCaller(UserRole.CLIENT_OWNER, null, {
+      id: "seed-1",
+      clerkUserId: "seed_pending_new@t.test",
+      orgId: "org-1",
+      role: UserRole.CLIENT_OWNER,
+    });
+    mockPrisma.user.count.mockResolvedValue(1);
+    const res = await POST(req({ role: "CLIENT_ADMIN" }));
+    expect(res.status).toBe(409);
+  });
+
+  it("pending same-org seed can still be re-invited (resend)", async () => {
+    seedCaller(UserRole.CLIENT_ADMIN, null, {
+      id: "seed-2",
+      clerkUserId: "seed_pending_new@t.test",
+      orgId: "org-1",
+      role: UserRole.CLIENT_ADMIN,
+    });
+    mockPrisma.$transaction.mockImplementation(
+      async (fn: (tx: MockPrisma) => Promise<string>) => fn(mockPrisma),
+    );
+    mockPrisma.user.update.mockResolvedValue({ id: "seed-2" });
+    mockPrisma.userPropertyAccess = {
+      deleteMany: vi.fn().mockResolvedValue({}),
+      createMany: vi.fn().mockResolvedValue({}),
+    } as unknown as MockPrisma["userPropertyAccess"];
+    const res = await POST(req({ role: "CLIENT_ADMIN" }));
+    expect(res.status).toBe(200);
+  });
+
+  it("client-org user holding an AGENCY_* role is not treated as agency", async () => {
+    // isAgency false (CLIENT org), role AGENCY_OPERATOR: falls into the
+    // client branch, which only allows CLIENT_OWNER / CLIENT_ADMIN callers.
+    seedCaller(UserRole.AGENCY_OPERATOR, null, null, false);
+    const res = await POST(req({ role: "CLIENT_ADMIN" }));
+    expect(res.status).toBe(403);
+  });
+
+  it.each(["SALES_REP"])("agency can't invite %s into a client org", async (r) => {
+    seedCaller(UserRole.AGENCY_ADMIN, null, null, true);
+    const res = await POST(req({ role: r }));
+    expect(res.status).toBe(400);
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
   });
 });

@@ -108,7 +108,17 @@ export async function POST(req: NextRequest) {
     where: { clerkUserId: scope.clerkUserId },
     select: { role: true, orgId: true, firstName: true, lastName: true, email: true },
   });
-  const callerIsAgency = !!caller && AGENCY_ROLES.has(caller.role);
+  // scope.isAgency = AGENCY-typed org AND agency role. A role-only check let a
+  // client-org user holding an AGENCY_* role act as agency here.
+  const callerIsAgency = scope.isAgency;
+  // Target is always a CLIENT org (checked above): agency roles never belong
+  // there, whoever is inviting. SALES_REP normalizes to AGENCY_OPERATOR.
+  if (AGENCY_ROLES.has(role)) {
+    return NextResponse.json(
+      { error: "Agency roles can't be invited into a client workspace." },
+      { status: 400 },
+    );
+  }
   if (!callerIsAgency) {
     if (!caller || caller.orgId !== org.id) {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
@@ -210,6 +220,42 @@ export async function POST(req: NextRequest) {
         },
         { status: 409 },
       );
+    }
+    // A claimed teammate is changed through the role / property-access
+    // editors (manage-team.ts), which carry the owner and last-owner guards.
+    // Re-invite never rewrites their role or grants.
+    if (!isPendingSeed) {
+      return NextResponse.json(
+        {
+          error:
+            "That person is already on this team. Change their role or property access from the team settings instead.",
+        },
+        { status: 409 },
+      );
+    }
+    // Unclaimed same-org seed: re-invite doubles as "resend" and may update
+    // the pending role. Same guards as manage-team.ts updateUserRoleAsClient.
+    if (existing.orgId === org.id && existing.role === UserRole.CLIENT_OWNER) {
+      if (!callerIsAgency && caller?.role !== UserRole.CLIENT_OWNER) {
+        return NextResponse.json(
+          { error: "Only an Owner can assign or change the Owner role." },
+          { status: 403 },
+        );
+      }
+      if (role !== UserRole.CLIENT_OWNER) {
+        const ownerCount = await prisma.user.count({
+          where: { orgId: org.id, role: UserRole.CLIENT_OWNER },
+        });
+        if (ownerCount <= 1) {
+          return NextResponse.json(
+            {
+              error:
+                "You can't remove the last Owner. Invite or promote another Owner first.",
+            },
+            { status: 409 },
+          );
+        }
+      }
     }
   }
 
