@@ -2,6 +2,10 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 import QRCode from "qrcode";
 import { runOnPageAuditChecks } from "@/lib/aeo/onpage-audit";
+import {
+  assertPublicHttpUrl,
+  safeFetchFollowingRedirects,
+} from "@/lib/security/ssrf-guard";
 
 // ---------------------------------------------------------------------------
 // Brief data collector — the production version of what
@@ -215,9 +219,11 @@ async function rawFetch(
   error: string | null;
 }> {
   try {
-    const res = await fetch(url, {
+    // SSRF: validate the agency-supplied URL (DNS-resolved) and re-check
+    // every redirect hop instead of fetch's blind `redirect: "follow"`.
+    await assertPublicHttpUrl(url);
+    const res = await safeFetchFollowingRedirects(url, {
       method: "GET",
-      redirect: "follow",
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
