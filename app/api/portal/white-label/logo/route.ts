@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { putPublic, delPublic } from "@/lib/blob-public";
 import { requireWritableWorkspace, ForbiddenError } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
+import { soft } from "@/lib/soft";
 import { AuditAction, UserRole } from "@prisma/client";
 
 export const runtime = "nodejs";
@@ -139,12 +140,14 @@ export async function POST(req: NextRequest) {
       where: { id: scope.orgId },
       select: { whiteLabelLogoUrl: true },
     })
-    .catch(() => null);
+    .catch(soft(null, "white-label.logo.read-existing"));
   if (
     existing?.whiteLabelLogoUrl &&
     /\.public\.blob\.vercel-storage\.com\//.test(existing.whiteLabelLogoUrl)
   ) {
-    await delPublic(existing.whiteLabelLogoUrl).catch(() => undefined);
+    await delPublic(existing.whiteLabelLogoUrl).catch(
+      soft(undefined, "white-label.logo.delete-old-blob"),
+    );
   }
 
   const safeName =
@@ -181,7 +184,7 @@ export async function POST(req: NextRequest) {
         },
       },
     })
-    .catch(() => undefined);
+    .catch(soft(undefined, "white-label.logo.audit-event"));
 
   return NextResponse.json({ ok: true, url: blob.url });
 }
@@ -205,13 +208,15 @@ export async function DELETE() {
       where: { id: scope.orgId },
       select: { whiteLabelLogoUrl: true },
     })
-    .catch(() => null);
+    .catch(soft(null, "white-label.logo.read-existing"));
 
   if (
     existing?.whiteLabelLogoUrl &&
     /\.public\.blob\.vercel-storage\.com\//.test(existing.whiteLabelLogoUrl)
   ) {
-    await delPublic(existing.whiteLabelLogoUrl).catch(() => undefined);
+    await delPublic(existing.whiteLabelLogoUrl).catch(
+      soft(undefined, "white-label.logo.delete-old-blob"),
+    );
   }
 
   // Do NOT swallow: a swallowed failure here reports a successful logo delete
@@ -232,7 +237,7 @@ export async function DELETE() {
         description: "White-label logo removed",
       },
     })
-    .catch(() => undefined);
+    .catch(soft(undefined, "white-label.logo.audit-event"));
 
   return NextResponse.json({ ok: true });
 }

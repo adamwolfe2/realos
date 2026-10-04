@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { ProspectAuditStatus, Prisma } from "@prisma/client";
 import { isValidShareToken } from "@/lib/audit/token";
 import { getSiteUrl } from "@/lib/brand";
+import { soft } from "@/lib/soft";
 import {
   auditRerunLimiter,
   auditStartLimiter,
@@ -137,9 +138,11 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       "Content-Type": "application/json",
       "x-internal-trigger": cronSecret,
     },
-  }).catch(() => {
-    /* swallow — the viewer polls and surfaces stuck-QUEUED to the user */
-  });
+  }).catch(
+    // The viewer polls and surfaces stuck-QUEUED to the user; log so a
+    // broken trigger is visible.
+    soft(undefined, "audit.rerun.trigger"),
+  );
 
   return NextResponse.json({ ok: true, status: ProspectAuditStatus.QUEUED });
 }
