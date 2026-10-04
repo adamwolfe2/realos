@@ -81,7 +81,7 @@ function OperatorActionsBar({
     >
       <div className="max-w-[1080px] mx-auto px-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <p
-          className="text-[11px]"
+          className="text-label"
           style={{
             color: "var(--color-primary-dark)",
             fontFamily: "var(--font-mono)",
@@ -94,7 +94,7 @@ function OperatorActionsBar({
         <div className="flex flex-wrap gap-2">
           <Link
             href={proposalHref}
-            className="inline-flex items-center gap-1.5 rounded-md font-semibold text-[12px]"
+            className="inline-flex items-center gap-1.5 rounded-md font-semibold text-caption"
             style={{
               backgroundColor: "var(--color-primary)",
               color: "#FFFFFF",
@@ -107,7 +107,7 @@ function OperatorActionsBar({
           </Link>
           <Link
             href="/admin/proposals"
-            className="inline-flex items-center rounded-md text-[12px]"
+            className="inline-flex items-center rounded-md text-caption"
             style={{
               backgroundColor: "#FFFFFF",
               color: "var(--color-deep-slate)",
@@ -350,7 +350,7 @@ function Hero({ data }: { data: BriefJson }) {
     <section className="border-b" style={{ borderColor: "var(--color-border)", paddingTop: 64, paddingBottom: 56 }}>
       <div className="max-w-[1080px] mx-auto px-6">
         <p
-          className="text-[11px] font-mono uppercase tracking-[0.18em]"
+          className="text-label font-mono uppercase tracking-[0.18em]"
           style={{ color: "var(--color-primary)" }}
         >
           {BRAND_NAME} · AI search visibility brief
@@ -382,7 +382,7 @@ function Hero({ data }: { data: BriefJson }) {
             style={{ backgroundColor: "#FBFBFD" }}
           >
             <p
-              className="text-[10px] font-mono uppercase tracking-[0.16em]"
+              className="text-2xs font-mono uppercase tracking-[0.16em]"
               style={{ color: "var(--color-primary)" }}
             >
               Headline finding
@@ -411,7 +411,7 @@ function Hero({ data }: { data: BriefJson }) {
           >
             <div>
               <p
-                className="text-[10px] font-mono uppercase tracking-[0.16em]"
+                className="text-2xs font-mono uppercase tracking-[0.16em]"
                 style={{ color: "var(--color-muted-foreground)" }}
               >
                 Total citation rate
@@ -423,14 +423,14 @@ function Hero({ data }: { data: BriefJson }) {
                 {totalCites}/{totalChecks}
               </p>
               <p
-                className="mt-1 text-[12px]"
+                className="mt-1 text-caption"
                 style={{ color: "var(--color-muted-foreground)" }}
               >
                 Across all live engines × prompts
               </p>
             </div>
             <p
-              className="mt-4 text-[11px]"
+              className="mt-4 text-label"
               style={{ color: "var(--color-muted-foreground)", fontFamily: "var(--font-mono)" }}
             >
               {data.vertical}
@@ -455,7 +455,7 @@ function MethodologyStrip({ data }: { data: BriefJson }) {
       <div className="max-w-[1080px] mx-auto px-6 py-7 flex flex-col md:flex-row md:items-center gap-5 md:justify-between">
         <div className="flex items-center gap-5 flex-wrap">
           <span
-            className="text-[10px] font-mono uppercase tracking-[0.16em] shrink-0"
+            className="text-2xs font-mono uppercase tracking-[0.16em] shrink-0"
             style={{ color: "var(--color-primary)" }}
           >
             Methodology
@@ -729,7 +729,7 @@ function VerbatimQuoteCard({
       </header>
 
       <p
-        className="mt-3 text-[11px] font-mono uppercase tracking-[0.12em]"
+        className="mt-3 text-label font-mono uppercase tracking-[0.12em]"
         style={{ color: "var(--color-muted-foreground)" }}
       >
         Prompt we sent
@@ -742,7 +742,7 @@ function VerbatimQuoteCard({
       </p>
 
       <p
-        className="mt-4 text-[11px] font-mono uppercase tracking-[0.12em]"
+        className="mt-4 text-label font-mono uppercase tracking-[0.12em]"
         style={{ color: "var(--color-muted-foreground)" }}
       >
         What the engine said
@@ -762,7 +762,7 @@ function VerbatimQuoteCard({
       {row.competitorsCited.length > 0 ? (
         <div className="mt-4 pt-3" style={{ borderTop: "1px solid var(--color-secondary)" }}>
           <p
-            className="text-[11px] font-mono uppercase tracking-[0.12em]"
+            className="text-label font-mono uppercase tracking-[0.12em]"
             style={{ color: "var(--color-muted-foreground)" }}
           >
             Competitors named instead
@@ -905,7 +905,7 @@ function CompetitorSection({ data }: { data: BriefJson }) {
             return (
               <li key={c.name} className="flex items-center gap-4">
                 <span
-                  className="text-[11px] font-mono tabular-nums text-right shrink-0"
+                  className="text-label font-mono tabular-nums text-right shrink-0"
                   style={{ color: "var(--color-muted-foreground)", width: 24 }}
                 >
                   {String(i + 1).padStart(2, "0")}
@@ -999,7 +999,7 @@ function PageHealthSection({ data }: { data: BriefJson }) {
                 passing × 12.5 = {data.onPage.score}.
               </p>
               <p
-                className="mt-1.5 text-[12px] truncate"
+                className="mt-1.5 text-caption truncate"
                 style={{ color: "var(--color-muted-foreground)" }}
                 title={data.onPage.excerpt || data.firecrawl.title || ""}
               >
@@ -1044,7 +1044,7 @@ function PageHealthSection({ data }: { data: BriefJson }) {
                 </span>
                 <div className="min-w-0 flex-1">
                   <p
-                    className="text-[13px]"
+                    className="text-body-sm"
                     style={{ color: "var(--color-deep-slate)", fontWeight: 500 }}
                   >
                     {c.label}
@@ -1142,7 +1142,7 @@ function ColumnCard({
       }}
     >
       <span
-        className="text-[10px] font-mono uppercase tracking-[0.14em]"
+        className="text-2xs font-mono uppercase tracking-[0.14em]"
         style={{ color: accent }}
       >
         {eyebrow}
@@ -1244,7 +1244,7 @@ function StackSection({ data }: { data: BriefJson }) {
                 </p>
               </div>
               <span
-                className="inline-flex items-center text-[10px] font-mono uppercase tracking-[0.14em] shrink-0"
+                className="inline-flex items-center text-2xs font-mono uppercase tracking-[0.14em] shrink-0"
                 style={{
                   color: r.detected ? "#059669" : "var(--color-muted-foreground)",
                 }}
@@ -1257,7 +1257,7 @@ function StackSection({ data }: { data: BriefJson }) {
 
         {allMissing ? (
           <p
-            className="mt-6 text-[13px] max-w-2xl"
+            className="mt-6 text-body-sm max-w-2xl"
             style={{ color: "var(--gray-70)" }}
           >
             <strong style={{ color: "var(--color-deep-slate)" }}>
@@ -1376,7 +1376,7 @@ function ActionPlanSection({ data }: { data: BriefJson }) {
                   {String(a.no).padStart(2, "0")}
                 </span>
                 <span
-                  className="text-[10px] font-mono uppercase tracking-[0.14em]"
+                  className="text-2xs font-mono uppercase tracking-[0.14em]"
                   style={{ color: "var(--color-muted-foreground)" }}
                 >
                   {a.days}
@@ -1433,7 +1433,7 @@ function CtaSection({ prospectName }: { prospectName: string }) {
             }}
           />
           <p
-            className="text-[10px] font-mono uppercase tracking-[0.18em]"
+            className="text-2xs font-mono uppercase tracking-[0.18em]"
             style={{ color: "var(--color-primary)" }}
           >
             How {BRAND_NAME} closes this
@@ -1583,7 +1583,7 @@ function buildSources(data: BriefJson): BriefSource[] {
 function SectionEyebrow({ children }: { children: React.ReactNode }) {
   return (
     <p
-      className="text-[11px] font-mono uppercase tracking-[0.18em]"
+      className="text-label font-mono uppercase tracking-[0.18em]"
       style={{ color: "var(--color-primary)" }}
     >
       {children}

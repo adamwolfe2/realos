@@ -103,6 +103,16 @@ body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-ins
      Tailwind rounded-md/lg/xl defaults (6/8/12px), which are off-spec. */
   --radius-card: 2px;
   --radius-control: 2px;
+
+  /* Micro type scale: names for the most-used arbitrary sizes so nothing
+     shifts. No line-height is set (matches text-[Npx], which only sets size).
+     Use text-2xs / text-label / text-caption / text-body-sm instead of
+     text-[10px] / [11px] / [12px] / [13px]. Tailwind's own text-xs/sm keep
+     their defaults. */
+  --text-2xs: 10px;
+  --text-label: 11px;
+  --text-caption: 12px;
+  --text-body-sm: 13px;
 }
 
 :root {
