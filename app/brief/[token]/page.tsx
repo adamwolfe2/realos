@@ -73,7 +73,7 @@ function OperatorActionsBar({
   return (
     <section
       style={{
-        backgroundColor: "#EFF6FF",
+        backgroundColor: "var(--color-accent)",
         borderBottom: "1px solid #CFE2FF",
         padding: "10px 0",
       }}
@@ -83,7 +83,7 @@ function OperatorActionsBar({
         <p
           className="text-[11px]"
           style={{
-            color: "#0043ce",
+            color: "var(--color-primary-dark)",
             fontFamily: "var(--font-mono)",
             letterSpacing: "0.1em",
             textTransform: "uppercase",
@@ -96,7 +96,7 @@ function OperatorActionsBar({
             href={proposalHref}
             className="inline-flex items-center gap-1.5 rounded-md font-semibold text-[12px]"
             style={{
-              backgroundColor: "#0f62fe",
+              backgroundColor: "var(--color-primary)",
               color: "#FFFFFF",
               padding: "6px 12px",
               letterSpacing: "-0.005em",
@@ -110,7 +110,7 @@ function OperatorActionsBar({
             className="inline-flex items-center rounded-md text-[12px]"
             style={{
               backgroundColor: "#FFFFFF",
-              color: "#1E2A3A",
+              color: "var(--color-deep-slate)",
               border: "1px solid #CFE2FF",
               padding: "6px 12px",
               fontWeight: 500,
@@ -207,7 +207,7 @@ export default async function BriefPage({ params }: RouteContext) {
   const isOperator = scope?.role === "AGENCY_OWNER";
 
   return (
-    <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
+    <div style={{ backgroundColor: "#FFFFFF", color: "var(--color-deep-slate)" }}>
       <BriefShellHeader
         subjectName={entry.prospectName}
         generatedAtIso={data.generatedAtIso}
@@ -235,7 +235,7 @@ export default async function BriefPage({ params }: RouteContext) {
           Decision-makers may know it by name. But corporate real-estate
           searches now start in ChatGPT and Perplexity, not CoStar — and
           in those conversations, your building doesn&apos;t exist.{" "}
-          <strong style={{ color: "#0f62fe" }}>
+          <strong style={{ color: "var(--color-primary)" }}>
             {data.aeo.competitorCounts.length > 0 ? (
               <>
                 {data.aeo.competitorCounts[0].name} is named in{" "}
@@ -306,7 +306,7 @@ function _legacyPreHeroStrip_DO_NOT_USE({
     <header
       style={{
         backgroundColor: "#FFFFFF",
-        borderBottom: "1px solid #E5E7EB",
+        borderBottom: "1px solid var(--color-border)",
         padding: "16px 0",
       }}
     >
@@ -319,20 +319,20 @@ function _legacyPreHeroStrip_DO_NOT_USE({
           style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.14em", textTransform: "uppercase" }}>
           <span
             className="inline-flex items-center gap-1.5"
-            style={{ color: "#0f62fe", fontWeight: 600 }}
+            style={{ color: "var(--color-primary)", fontWeight: 600 }}
           >
             <span
               aria-hidden
-              style={{ width: 6, height: 6, borderRadius: 9999, backgroundColor: "#0f62fe" }}
+              style={{ width: 6, height: 6, borderRadius: 9999, backgroundColor: "var(--color-primary)" }}
             />
             Prospect brief
           </span>
           <span aria-hidden style={{ color: "#CBD5E1" }}>·</span>
-          <span style={{ color: "#6B7280" }}>Confidential</span>
+          <span style={{ color: "var(--color-muted-foreground)" }}>Confidential</span>
           <span aria-hidden style={{ color: "#CBD5E1" }} className="hidden sm:inline">·</span>
-          <span style={{ color: "#6B7280" }} className="hidden sm:inline">{prospectName}</span>
+          <span style={{ color: "var(--color-muted-foreground)" }} className="hidden sm:inline">{prospectName}</span>
           <span aria-hidden style={{ color: "#CBD5E1" }} className="hidden md:inline">·</span>
-          <span style={{ color: "#6B7280" }} className="hidden md:inline">{formatDate(generatedAtIso)}</span>
+          <span style={{ color: "var(--color-muted-foreground)" }} className="hidden md:inline">{formatDate(generatedAtIso)}</span>
         </div>
       </div>
     </header>
@@ -347,24 +347,24 @@ function Hero({ data }: { data: BriefJson }) {
   const unbrandedTotal = unbrandedDiscoveryTotal(data);
   const unbrandedCites = unbrandedDiscoveryCites(data);
   return (
-    <section className="border-b" style={{ borderColor: "#E5E7EB", paddingTop: 64, paddingBottom: 56 }}>
+    <section className="border-b" style={{ borderColor: "var(--color-border)", paddingTop: 64, paddingBottom: 56 }}>
       <div className="max-w-[1080px] mx-auto px-6">
         <p
           className="text-[11px] font-mono uppercase tracking-[0.18em]"
-          style={{ color: "#0f62fe" }}
+          style={{ color: "var(--color-primary)" }}
         >
           {BRAND_NAME} · AI search visibility brief
         </p>
         <h1
           className="mt-3 text-4xl md:text-6xl font-semibold leading-[1.04] tracking-tight"
-          style={{ color: "#1E2A3A", letterSpacing: "-0.022em", maxWidth: 820 }}
+          style={{ color: "var(--color-deep-slate)", letterSpacing: "-0.022em", maxWidth: 820 }}
         >
           Here&apos;s what AI search engines say about{" "}
-          <span style={{ color: "#0f62fe" }}>{data.brand}</span> today.
+          <span style={{ color: "var(--color-primary)" }}>{data.brand}</span> today.
         </h1>
         <p
           className="mt-5 max-w-2xl"
-          style={{ fontSize: 17, lineHeight: 1.55, color: "#475569" }}
+          style={{ fontSize: 17, lineHeight: 1.55, color: "var(--gray-70)" }}
         >
           We asked the four major AI search engines and Google&apos;s AI
           Overview the same questions your future tenants are typing in
@@ -375,7 +375,7 @@ function Hero({ data }: { data: BriefJson }) {
         {/* Big shock metric */}
         <div
           className="mt-10 rounded-2xl flex flex-col md:flex-row md:items-stretch overflow-hidden"
-          style={{ border: "1px solid #E5E7EB", backgroundColor: "#FFFFFF" }}
+          style={{ border: "1px solid var(--color-border)", backgroundColor: "#FFFFFF" }}
         >
           <div
             className="flex-1 px-7 py-7"
@@ -383,13 +383,13 @@ function Hero({ data }: { data: BriefJson }) {
           >
             <p
               className="text-[10px] font-mono uppercase tracking-[0.16em]"
-              style={{ color: "#0f62fe" }}
+              style={{ color: "var(--color-primary)" }}
             >
               Headline finding
             </p>
             <p
               className="mt-2 text-2xl md:text-[28px] font-semibold leading-snug"
-              style={{ color: "#1E2A3A", letterSpacing: "-0.012em" }}
+              style={{ color: "var(--color-deep-slate)", letterSpacing: "-0.012em" }}
             >
               <span style={{ color: "#DC2626" }}>
                 {unbrandedCites} of {unbrandedTotal}
@@ -398,7 +398,7 @@ function Hero({ data }: { data: BriefJson }) {
             </p>
             <p
               className="mt-3 text-[14px]"
-              style={{ color: "#475569", maxWidth: 520 }}
+              style={{ color: "var(--gray-70)", maxWidth: 520 }}
             >
               When corporate decision-makers ask AI assistants about
               Class-A office space in your market, your building does not
@@ -407,24 +407,24 @@ function Hero({ data }: { data: BriefJson }) {
           </div>
           <div
             className="md:w-[260px] flex flex-col justify-between px-7 py-6"
-            style={{ borderLeft: "1px solid #E5E7EB" }}
+            style={{ borderLeft: "1px solid var(--color-border)" }}
           >
             <div>
               <p
                 className="text-[10px] font-mono uppercase tracking-[0.16em]"
-                style={{ color: "#6B7280" }}
+                style={{ color: "var(--color-muted-foreground)" }}
               >
                 Total citation rate
               </p>
               <p
                 className="mt-1 text-[40px] font-semibold tabular-nums leading-none"
-                style={{ color: "#1E2A3A" }}
+                style={{ color: "var(--color-deep-slate)" }}
               >
                 {totalCites}/{totalChecks}
               </p>
               <p
                 className="mt-1 text-[12px]"
-                style={{ color: "#6B7280" }}
+                style={{ color: "var(--color-muted-foreground)" }}
               >
                 Across all live engines × prompts
               </p>
@@ -450,13 +450,13 @@ function MethodologyStrip({ data }: { data: BriefJson }) {
   ).length;
   return (
     <section
-      style={{ backgroundColor: "#F8FAFC", borderBottom: "1px solid #E5E7EB" }}
+      style={{ backgroundColor: "#F8FAFC", borderBottom: "1px solid var(--color-border)" }}
     >
       <div className="max-w-[1080px] mx-auto px-6 py-7 flex flex-col md:flex-row md:items-center gap-5 md:justify-between">
         <div className="flex items-center gap-5 flex-wrap">
           <span
             className="text-[10px] font-mono uppercase tracking-[0.16em] shrink-0"
-            style={{ color: "#0f62fe" }}
+            style={{ color: "var(--color-primary)" }}
           >
             Methodology
           </span>
@@ -467,11 +467,11 @@ function MethodologyStrip({ data }: { data: BriefJson }) {
             <EngineLabel engine="GEMINI" />
             <span
               aria-hidden
-              style={{ width: 1, height: 18, backgroundColor: "#E5E7EB" }}
+              style={{ width: 1, height: 18, backgroundColor: "var(--color-border)" }}
             />
             <li className="flex items-center gap-1.5">
               <GoogleMark size={20} />
-              <span style={{ fontSize: 12.5, color: "#1E2A3A", fontWeight: 500 }}>
+              <span style={{ fontSize: 12.5, color: "var(--color-deep-slate)", fontWeight: 500 }}>
                 Google AI Overview
               </span>
             </li>
@@ -479,7 +479,7 @@ function MethodologyStrip({ data }: { data: BriefJson }) {
         </div>
         <p
           className="text-[11.5px]"
-          style={{ color: "#475569", fontFamily: "var(--font-mono)", letterSpacing: "0.02em", maxWidth: 360 }}
+          style={{ color: "var(--gray-70)", fontFamily: "var(--font-mono)", letterSpacing: "0.02em", maxWidth: 360 }}
         >
           {data.aeo.rows.filter((r) => !r.skipped).length} live API calls ·{" "}
           {enginesLive} engines · {data.firecrawl.htmlBytes.toLocaleString()}{" "}
@@ -509,7 +509,7 @@ function EngineLabel({
       style={{ opacity: muted ? 0.45 : 1 }}
     >
       <EngineMark engine={engine} size={20} />
-      <span style={{ fontSize: 12.5, color: "#1E2A3A", fontWeight: 500 }}>
+      <span style={{ fontSize: 12.5, color: "var(--color-deep-slate)", fontWeight: 500 }}>
         {labels[engine]}
       </span>
     </li>
@@ -575,7 +575,7 @@ function GapSection({ data }: { data: BriefJson }) {
     })
     .slice(0, 2);
   return (
-    <section style={{ padding: "64px 0", borderBottom: "1px solid #F1F5F9" }}>
+    <section style={{ padding: "64px 0", borderBottom: "1px solid var(--color-secondary)" }}>
       <div className="max-w-[1080px] mx-auto px-6">
         <SectionEyebrow>1. The AI discovery gap</SectionEyebrow>
         <SectionHeading>
@@ -583,7 +583,7 @@ function GapSection({ data }: { data: BriefJson }) {
         </SectionHeading>
         <p
           className="mt-2 max-w-2xl"
-          style={{ fontSize: 15, lineHeight: 1.6, color: "#475569" }}
+          style={{ fontSize: 15, lineHeight: 1.6, color: "var(--gray-70)" }}
         >
           We ran five buyer-intent prompts across each engine — the same
           questions a 200-person tenant exec types into ChatGPT or
@@ -638,7 +638,7 @@ function EngineSummaryCard({
     <li
       className="rounded-xl flex flex-col gap-2"
       style={{
-        border: `1px solid ${allMissed ? "#FECACA" : skipped ? "#E5E7EB" : "#CFE2FF"}`,
+        border: `1px solid ${allMissed ? "#FECACA" : skipped ? "var(--color-border)" : "#CFE2FF"}`,
         backgroundColor: "#FFFFFF",
         padding: "14px 14px",
         opacity: skipped ? 0.7 : 1,
@@ -646,26 +646,26 @@ function EngineSummaryCard({
     >
       <div className="flex items-center gap-2">
         <EngineMark engine={engine} size={20} />
-        <span style={{ fontSize: 13, fontWeight: 600, color: "#1E2A3A" }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-deep-slate)" }}>
           {labels[engine]}
         </span>
       </div>
       {skipped ? (
-        <p style={{ fontSize: 11.5, color: "#6B7280" }}>
+        <p style={{ fontSize: 11.5, color: "var(--color-muted-foreground)" }}>
           Scan available in production
         </p>
       ) : (
         <>
           <p
             className="text-[24px] font-semibold tabular-nums leading-none"
-            style={{ color: allMissed ? "#B91C1C" : "#1E2A3A" }}
+            style={{ color: allMissed ? "#B91C1C" : "var(--color-deep-slate)" }}
           >
             {cited}
             <span style={{ fontSize: 14, color: "var(--color-muted-foreground)", fontWeight: 400 }}>
               /{total}
             </span>
           </p>
-          <p style={{ fontSize: 11.5, color: "#6B7280" }}>
+          <p style={{ fontSize: 11.5, color: "var(--color-muted-foreground)" }}>
             {allMissed
               ? "Did not name the brand"
               : `Named the brand in ${cited} of ${total} prompts`}
@@ -695,7 +695,7 @@ function VerbatimQuoteCard({
     <article
       className="rounded-2xl"
       style={{
-        border: "1px solid #E5E7EB",
+        border: "1px solid var(--color-border)",
         backgroundColor: "#FFFFFF",
         padding: "20px 22px",
       }}
@@ -704,7 +704,7 @@ function VerbatimQuoteCard({
         <div className="flex items-center gap-2">
           <EngineMark engine={row.engine as "CHATGPT" | "PERPLEXITY" | "CLAUDE" | "GEMINI"} size={20} />
           <span
-            style={{ fontSize: 13, fontWeight: 600, color: "#1E2A3A" }}
+            style={{ fontSize: 13, fontWeight: 600, color: "var(--color-deep-slate)" }}
           >
             {labels[row.engine as keyof typeof labels]}
           </span>
@@ -730,28 +730,28 @@ function VerbatimQuoteCard({
 
       <p
         className="mt-3 text-[11px] font-mono uppercase tracking-[0.12em]"
-        style={{ color: "#6B7280" }}
+        style={{ color: "var(--color-muted-foreground)" }}
       >
         Prompt we sent
       </p>
       <p
         className="mt-1 text-[13.5px]"
-        style={{ color: "#1E2A3A", fontWeight: 500 }}
+        style={{ color: "var(--color-deep-slate)", fontWeight: 500 }}
       >
         &ldquo;{row.prompt}&rdquo;
       </p>
 
       <p
         className="mt-4 text-[11px] font-mono uppercase tracking-[0.12em]"
-        style={{ color: "#6B7280" }}
+        style={{ color: "var(--color-muted-foreground)" }}
       >
         What the engine said
       </p>
       <blockquote
         className="mt-1 text-[13.5px] leading-relaxed"
         style={{
-          color: "#1E2A3A",
-          borderLeft: "3px solid #0f62fe",
+          color: "var(--color-deep-slate)",
+          borderLeft: "3px solid var(--color-primary)",
           paddingLeft: 14,
           fontStyle: "italic",
         }}
@@ -760,10 +760,10 @@ function VerbatimQuoteCard({
       </blockquote>
 
       {row.competitorsCited.length > 0 ? (
-        <div className="mt-4 pt-3" style={{ borderTop: "1px solid #F1F5F9" }}>
+        <div className="mt-4 pt-3" style={{ borderTop: "1px solid var(--color-secondary)" }}>
           <p
             className="text-[11px] font-mono uppercase tracking-[0.12em]"
-            style={{ color: "#6B7280" }}
+            style={{ color: "var(--color-muted-foreground)" }}
           >
             Competitors named instead
           </p>
@@ -783,8 +783,8 @@ function VerbatimQuoteCard({
                         fontSize: 12,
                         fontWeight: 500,
                         backgroundColor: "#F8FAFC",
-                        border: "1px solid #E5E7EB",
-                        color: "#1E2A3A",
+                        border: "1px solid var(--color-border)",
+                        color: "var(--color-deep-slate)",
                       }}
                       title={`${c} — visit website`}
                     >
@@ -807,8 +807,8 @@ function VerbatimQuoteCard({
                     fontSize: 12,
                     fontWeight: 500,
                     backgroundColor: "#F8FAFC",
-                    border: "1px solid #E5E7EB",
-                    color: "#1E2A3A",
+                    border: "1px solid var(--color-border)",
+                    color: "var(--color-deep-slate)",
                   }}
                 >
                   {c}
@@ -823,7 +823,7 @@ function VerbatimQuoteCard({
           with the same prompt pre-filled. Trust by traceability. */}
       <div
         className="mt-4 pt-3 flex flex-wrap items-center justify-between gap-2"
-        style={{ borderTop: "1px solid #F1F5F9" }}
+        style={{ borderTop: "1px solid var(--color-secondary)" }}
       >
         <p
           className="text-[10.5px] font-mono uppercase tracking-[0.12em]"
@@ -839,7 +839,7 @@ function VerbatimQuoteCard({
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1 text-[11.5px] font-semibold hover:underline"
-          style={{ color: "#0f62fe" }}
+          style={{ color: "var(--color-primary)" }}
         >
           Run this prompt yourself
           <ExternalLink className="w-3 h-3" aria-hidden />
@@ -856,7 +856,7 @@ function CompetitorSection({ data }: { data: BriefJson }) {
   if (top.length === 0) return null;
   const max = Math.max(...top.map((c) => c.count));
   return (
-    <section style={{ padding: "64px 0", borderBottom: "1px solid #F1F5F9", backgroundColor: "#FBFBFD" }}>
+    <section style={{ padding: "64px 0", borderBottom: "1px solid var(--color-secondary)", backgroundColor: "#FBFBFD" }}>
       <div className="max-w-[1080px] mx-auto px-6">
         <SectionEyebrow>2. Buildings AI search named instead</SectionEyebrow>
         <SectionHeading>
@@ -866,7 +866,7 @@ function CompetitorSection({ data }: { data: BriefJson }) {
         </SectionHeading>
         <p
           className="mt-2 max-w-2xl"
-          style={{ fontSize: 15, lineHeight: 1.6, color: "#475569" }}
+          style={{ fontSize: 15, lineHeight: 1.6, color: "var(--gray-70)" }}
         >
           Each row is the number of times the building appeared across
           our {data.aeo.rows.filter((r) => !r.skipped).length} AI
@@ -885,7 +885,7 @@ function CompetitorSection({ data }: { data: BriefJson }) {
                   rel: "noopener noreferrer",
                   className: "text-[14px] truncate hover:underline inline-flex items-center gap-1",
                   style: {
-                    color: "#1E2A3A",
+                    color: "var(--color-deep-slate)",
                     fontWeight: 500,
                     width: 220,
                     maxWidth: 220,
@@ -895,7 +895,7 @@ function CompetitorSection({ data }: { data: BriefJson }) {
               : {
                   className: "text-[14px] truncate",
                   style: {
-                    color: "#1E2A3A",
+                    color: "var(--color-deep-slate)",
                     fontWeight: 500,
                     width: 220,
                     maxWidth: 220,
@@ -922,11 +922,11 @@ function CompetitorSection({ data }: { data: BriefJson }) {
                 </NameTag>
                 <div
                   className="flex-1 rounded-full overflow-hidden"
-                  style={{ backgroundColor: "#F1F5F9", height: 10 }}
+                  style={{ backgroundColor: "var(--color-secondary)", height: 10 }}
                 >
                   <div
                     style={{
-                      backgroundColor: i === 0 ? "#0f62fe" : "#94A3B8",
+                      backgroundColor: i === 0 ? "var(--color-primary)" : "var(--color-muted-foreground)",
                       width: `${(c.count / max) * 100}%`,
                       height: "100%",
                     }}
@@ -934,7 +934,7 @@ function CompetitorSection({ data }: { data: BriefJson }) {
                 </div>
                 <span
                   className="text-[14px] font-semibold tabular-nums shrink-0"
-                  style={{ color: "#1E2A3A", width: 36, textAlign: "right" }}
+                  style={{ color: "var(--color-deep-slate)", width: 36, textAlign: "right" }}
                 >
                   {c.count}×
                 </span>
@@ -945,9 +945,9 @@ function CompetitorSection({ data }: { data: BriefJson }) {
 
         <p
           className="mt-6 text-[12.5px] max-w-2xl"
-          style={{ color: "#475569" }}
+          style={{ color: "var(--gray-70)" }}
         >
-          <strong style={{ color: "#1E2A3A" }}>
+          <strong style={{ color: "var(--color-deep-slate)" }}>
             {top[0].name} is named in every {top[0].count} of {data.aeo.rows.filter((r) => !r.skipped).length} answers.
           </strong>{" "}
           That&apos;s a structural moat your team can close, but only by
@@ -964,7 +964,7 @@ function PageHealthSection({ data }: { data: BriefJson }) {
   const passCount = data.onPage.checks.filter((c) => c.pass).length;
   const total = data.onPage.checks.length;
   return (
-    <section style={{ padding: "64px 0", borderBottom: "1px solid #F1F5F9" }}>
+    <section style={{ padding: "64px 0", borderBottom: "1px solid var(--color-secondary)" }}>
       <div className="max-w-[1080px] mx-auto px-6">
         <SectionEyebrow>3. AEO page health · {data.brand} homepage</SectionEyebrow>
         <SectionHeading>
@@ -972,7 +972,7 @@ function PageHealthSection({ data }: { data: BriefJson }) {
         </SectionHeading>
         <p
           className="mt-2 max-w-2xl"
-          style={{ fontSize: 15, lineHeight: 1.6, color: "#475569" }}
+          style={{ fontSize: 15, lineHeight: 1.6, color: "var(--gray-70)" }}
         >
           Same scorecard our paying tenants run daily on every page.
           We ran it once against your homepage.
@@ -980,27 +980,27 @@ function PageHealthSection({ data }: { data: BriefJson }) {
 
         <div
           className="mt-7 rounded-2xl"
-          style={{ border: "1px solid #E5E7EB", padding: "22px 24px" }}
+          style={{ border: "1px solid var(--color-border)", padding: "22px 24px" }}
         >
           <div className="flex items-start gap-5">
             <ScoreRing score={data.onPage.score} />
             <div className="flex-1 min-w-0">
               <p
                 className="text-[14px]"
-                style={{ color: "#1E2A3A", fontWeight: 500 }}
+                style={{ color: "var(--color-deep-slate)", fontWeight: 500 }}
               >
                 {data.onPage.score} / 100 · {passCount} of {total} checks passing
               </p>
               <p
                 className="mt-0.5 text-[11.5px]"
-                style={{ color: "#6B7280" }}
+                style={{ color: "var(--color-muted-foreground)" }}
               >
                 Each of the {total} checks is worth 12.5 points. {passCount}{" "}
                 passing × 12.5 = {data.onPage.score}.
               </p>
               <p
                 className="mt-1.5 text-[12px] truncate"
-                style={{ color: "#6B7280" }}
+                style={{ color: "var(--color-muted-foreground)" }}
                 title={data.onPage.excerpt || data.firecrawl.title || ""}
               >
                 {data.onPage.excerpt ||
@@ -1019,7 +1019,7 @@ function PageHealthSection({ data }: { data: BriefJson }) {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-0.5 hover:underline"
-                  style={{ color: "#0f62fe", fontWeight: 600 }}
+                  style={{ color: "var(--color-primary)", fontWeight: 600 }}
                 >
                   View source
                   <ExternalLink className="w-3 h-3" aria-hidden />
@@ -1045,13 +1045,13 @@ function PageHealthSection({ data }: { data: BriefJson }) {
                 <div className="min-w-0 flex-1">
                   <p
                     className="text-[13px]"
-                    style={{ color: "#1E2A3A", fontWeight: 500 }}
+                    style={{ color: "var(--color-deep-slate)", fontWeight: 500 }}
                   >
                     {c.label}
                   </p>
                   <p
                     className="mt-0.5 text-[11.5px]"
-                    style={{ color: "#6B7280" }}
+                    style={{ color: "var(--color-muted-foreground)" }}
                   >
                     {c.reason}
                   </p>
@@ -1066,7 +1066,7 @@ function PageHealthSection({ data }: { data: BriefJson }) {
 }
 
 function ScoreRing({ score }: { score: number }) {
-  const tone = score >= 75 ? "#059669" : score >= 50 ? "#0f62fe" : "#DC2626";
+  const tone = score >= 75 ? "#059669" : score >= 50 ? "var(--color-primary)" : "#DC2626";
   return (
     <div
       className="inline-flex items-center justify-center shrink-0"
@@ -1080,7 +1080,7 @@ function ScoreRing({ score }: { score: number }) {
     >
       <span
         className="text-[18px] font-semibold tabular-nums"
-        style={{ color: "#1E2A3A" }}
+        style={{ color: "var(--color-deep-slate)" }}
       >
         {score}
       </span>
@@ -1093,7 +1093,7 @@ function ScoreRing({ score }: { score: number }) {
 function SchemaSection({ data }: { data: BriefJson }) {
   const { present, missing } = data.schemaGap;
   return (
-    <section style={{ padding: "64px 0", borderBottom: "1px solid #F1F5F9", backgroundColor: "#FBFBFD" }}>
+    <section style={{ padding: "64px 0", borderBottom: "1px solid var(--color-secondary)", backgroundColor: "#FBFBFD" }}>
       <div className="max-w-[1080px] mx-auto px-6">
         <SectionEyebrow>4. Structured data · schema.org</SectionEyebrow>
         <SectionHeading>
@@ -1101,7 +1101,7 @@ function SchemaSection({ data }: { data: BriefJson }) {
         </SectionHeading>
         <p
           className="mt-2 max-w-2xl"
-          style={{ fontSize: 15, lineHeight: 1.6, color: "#475569" }}
+          style={{ fontSize: 15, lineHeight: 1.6, color: "var(--gray-70)" }}
         >
           AI engines disproportionately quote pages with structured data
           they can attribute to a real entity. Here&apos;s the gap.
@@ -1137,7 +1137,7 @@ function ColumnCard({
       className="rounded-xl"
       style={{
         backgroundColor: "#FFFFFF",
-        border: "1px solid #E5E7EB",
+        border: "1px solid var(--color-border)",
         padding: "16px 18px",
       }}
     >
@@ -1150,7 +1150,7 @@ function ColumnCard({
       {items.length === 0 ? (
         <p
           className="mt-2 text-[12.5px]"
-          style={{ color: "#6B7280" }}
+          style={{ color: "var(--color-muted-foreground)" }}
         >
           {empty}
         </p>
@@ -1165,11 +1165,11 @@ function ColumnCard({
                 className="inline-flex items-center gap-1 rounded-full hover:underline"
                 style={{
                   backgroundColor: "#F8FAFC",
-                  border: "1px solid #E5E7EB",
+                  border: "1px solid var(--color-border)",
                   padding: "4px 10px",
                   fontSize: 12,
                   fontWeight: 500,
-                  color: "#1E2A3A",
+                  color: "var(--color-deep-slate)",
                 }}
                 title={`View ${t} on schema.org`}
               >
@@ -1193,7 +1193,7 @@ function ColumnCard({
 function StackSection({ data }: { data: BriefJson }) {
   const allMissing = data.detectedStack.every((r) => !r.detected);
   return (
-    <section style={{ padding: "64px 0", borderBottom: "1px solid #F1F5F9" }}>
+    <section style={{ padding: "64px 0", borderBottom: "1px solid var(--color-secondary)" }}>
       <div className="max-w-[1080px] mx-auto px-6">
         <SectionEyebrow>5. What we observed on your site</SectionEyebrow>
         <SectionHeading>
@@ -1201,7 +1201,7 @@ function StackSection({ data }: { data: BriefJson }) {
         </SectionHeading>
         <p
           className="mt-2 max-w-2xl"
-          style={{ fontSize: 15, lineHeight: 1.6, color: "#475569" }}
+          style={{ fontSize: 15, lineHeight: 1.6, color: "var(--gray-70)" }}
         >
           We scanned the rendered HTML for known chatbot, popup, pixel,
           analytics, and CRM widgets. These are facts about your live
@@ -1215,7 +1215,7 @@ function StackSection({ data }: { data: BriefJson }) {
               className="flex items-start gap-3 rounded-xl"
               style={{
                 backgroundColor: "#FFFFFF",
-                border: "1px solid #E5E7EB",
+                border: "1px solid var(--color-border)",
                 padding: "13px 17px",
               }}
             >
@@ -1232,13 +1232,13 @@ function StackSection({ data }: { data: BriefJson }) {
               <div className="min-w-0 flex-1">
                 <p
                   className="text-[13.5px]"
-                  style={{ color: "#1E2A3A", fontWeight: 500 }}
+                  style={{ color: "var(--color-deep-slate)", fontWeight: 500 }}
                 >
                   {r.label}
                 </p>
                 <p
                   className="mt-0.5 text-[11.5px]"
-                  style={{ color: r.detected ? "#1E2A3A" : "#6B7280" }}
+                  style={{ color: r.detected ? "var(--color-deep-slate)" : "var(--color-muted-foreground)" }}
                 >
                   {r.note}
                 </p>
@@ -1246,7 +1246,7 @@ function StackSection({ data }: { data: BriefJson }) {
               <span
                 className="inline-flex items-center text-[10px] font-mono uppercase tracking-[0.14em] shrink-0"
                 style={{
-                  color: r.detected ? "#059669" : "#9CA3AF",
+                  color: r.detected ? "#059669" : "var(--color-muted-foreground)",
                 }}
               >
                 {r.detected ? "Detected" : "Not detected"}
@@ -1258,9 +1258,9 @@ function StackSection({ data }: { data: BriefJson }) {
         {allMissing ? (
           <p
             className="mt-6 text-[13px] max-w-2xl"
-            style={{ color: "#475569" }}
+            style={{ color: "var(--gray-70)" }}
           >
-            <strong style={{ color: "#1E2A3A" }}>
+            <strong style={{ color: "var(--color-deep-slate)" }}>
               No conversion infrastructure detected on the homepage.
             </strong>{" "}
             For a Class-A workplace pitching to corporate tenants, that
@@ -1339,13 +1339,13 @@ function buildActions(
 function ActionPlanSection({ data }: { data: BriefJson }) {
   const actions = buildActions(data);
   return (
-    <section style={{ padding: "72px 0", borderBottom: "1px solid #F1F5F9" }}>
+    <section style={{ padding: "72px 0", borderBottom: "1px solid var(--color-secondary)" }}>
       <div className="max-w-[1080px] mx-auto px-6">
         <SectionEyebrow>6. The 30-day action plan</SectionEyebrow>
         <SectionHeading>What we&apos;d ship for {data.brand} in 30 days.</SectionHeading>
         <p
           className="mt-2 max-w-2xl"
-          style={{ fontSize: 15, lineHeight: 1.6, color: "#475569" }}
+          style={{ fontSize: 15, lineHeight: 1.6, color: "var(--gray-70)" }}
         >
           Concrete, sequenced, and outcomes-attached. None of this is
           aspirational — every step below is something LeaseStack&apos;s
@@ -1359,7 +1359,7 @@ function ActionPlanSection({ data }: { data: BriefJson }) {
               className="rounded-2xl flex flex-col md:flex-row gap-4 md:gap-7"
               style={{
                 backgroundColor: "#FFFFFF",
-                border: "1px solid #E5E7EB",
+                border: "1px solid var(--color-border)",
                 padding: "20px 22px",
               }}
             >
@@ -1368,7 +1368,7 @@ function ActionPlanSection({ data }: { data: BriefJson }) {
                   className="font-semibold tabular-nums"
                   style={{
                     fontSize: 32,
-                    color: "#0f62fe",
+                    color: "var(--color-primary)",
                     lineHeight: 1,
                     letterSpacing: "-0.02em",
                   }}
@@ -1377,7 +1377,7 @@ function ActionPlanSection({ data }: { data: BriefJson }) {
                 </span>
                 <span
                   className="text-[10px] font-mono uppercase tracking-[0.14em]"
-                  style={{ color: "#6B7280" }}
+                  style={{ color: "var(--color-muted-foreground)" }}
                 >
                   {a.days}
                 </span>
@@ -1385,13 +1385,13 @@ function ActionPlanSection({ data }: { data: BriefJson }) {
               <div className="flex-1">
                 <h3
                   className="text-[16.5px] font-semibold"
-                  style={{ color: "#1E2A3A", letterSpacing: "-0.01em" }}
+                  style={{ color: "var(--color-deep-slate)", letterSpacing: "-0.01em" }}
                 >
                   {a.title}
                 </h3>
                 <p
                   className="mt-2 text-[13.5px]"
-                  style={{ color: "#475569", lineHeight: 1.6 }}
+                  style={{ color: "var(--gray-70)", lineHeight: 1.6 }}
                 >
                   {a.body}
                 </p>
@@ -1413,8 +1413,8 @@ function CtaSection({ prospectName }: { prospectName: string }) {
         <div
           className="rounded-3xl text-center"
           style={{
-            backgroundColor: "#F1F5F9",
-            border: "1px solid #E5E7EB",
+            backgroundColor: "var(--color-secondary)",
+            border: "1px solid var(--color-border)",
             padding: "56px 32px",
             position: "relative",
             overflow: "hidden",
@@ -1429,25 +1429,25 @@ function CtaSection({ prospectName }: { prospectName: string }) {
               transform: "translateX(-50%)",
               width: 320,
               height: 4,
-              background: "linear-gradient(90deg, transparent, #0f62fe, transparent)",
+              background: "linear-gradient(90deg, transparent, var(--color-primary), transparent)",
             }}
           />
           <p
             className="text-[10px] font-mono uppercase tracking-[0.18em]"
-            style={{ color: "#0f62fe" }}
+            style={{ color: "var(--color-primary)" }}
           >
             How {BRAND_NAME} closes this
           </p>
           <h2
             className="mt-3 text-3xl md:text-[40px] font-semibold leading-tight"
-            style={{ color: "#1E2A3A", letterSpacing: "-0.022em", maxWidth: 720, margin: "12px auto 0" }}
+            style={{ color: "var(--color-deep-slate)", letterSpacing: "-0.022em", maxWidth: 720, margin: "12px auto 0" }}
           >
             We do all 6 steps for {prospectName}.
             <br className="hidden md:inline" /> One team. Thirty days.
           </h2>
           <p
             className="mt-5 max-w-xl mx-auto"
-            style={{ fontSize: 15.5, lineHeight: 1.6, color: "#475569" }}
+            style={{ fontSize: 15.5, lineHeight: 1.6, color: "var(--gray-70)" }}
           >
             White-glove engagement. We work alongside your existing
             agency, web team, and broker — ship the structured data,
@@ -1461,7 +1461,7 @@ function CtaSection({ prospectName }: { prospectName: string }) {
               href="/onboarding"
               className="inline-flex items-center justify-center gap-2 rounded-md font-semibold"
               style={{
-                backgroundColor: "#0f62fe",
+                backgroundColor: "var(--color-primary)",
                 color: "#FFFFFF",
                 padding: "12px 22px",
                 fontSize: 15,
@@ -1476,8 +1476,8 @@ function CtaSection({ prospectName }: { prospectName: string }) {
               className="inline-flex items-center justify-center rounded-md font-semibold"
               style={{
                 backgroundColor: "transparent",
-                color: "#1E2A3A",
-                border: "1px solid #E5E7EB",
+                color: "var(--color-deep-slate)",
+                border: "1px solid var(--color-border)",
                 padding: "12px 22px",
                 fontSize: 15,
                 letterSpacing: "-0.005em",
@@ -1567,7 +1567,7 @@ function buildSources(data: BriefJson): BriefSource[] {
       label: "schema.org",
       description: "Reference vocabulary for AI-readable structured data",
       href: "https://schema.org",
-      icon: <SourceBullet inner="#475569" />,
+      icon: <SourceBullet inner="var(--gray-70)" />,
     },
     {
       label: `${data.resolvedUrl ?? data.url}`,
@@ -1584,7 +1584,7 @@ function SectionEyebrow({ children }: { children: React.ReactNode }) {
   return (
     <p
       className="text-[11px] font-mono uppercase tracking-[0.18em]"
-      style={{ color: "#0f62fe" }}
+      style={{ color: "var(--color-primary)" }}
     >
       {children}
     </p>
@@ -1595,7 +1595,7 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
     <h2
       className="mt-3 text-2xl md:text-[34px] font-semibold leading-tight tracking-tight"
-      style={{ color: "#1E2A3A", letterSpacing: "-0.018em", maxWidth: 760 }}
+      style={{ color: "var(--color-deep-slate)", letterSpacing: "-0.018em", maxWidth: 760 }}
     >
       {children}
     </h2>

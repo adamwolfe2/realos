@@ -383,7 +383,7 @@ export default async function AuditViewerPage({
     mentions.length > 0 ? (
       <>
         <SourceBreakdown counts={perSourceCounts} totalMentions={mentions.length} />
-        <p className="mt-3 text-[12.5px]" style={{ color: "#6f6f6f" }}>
+        <p className="mt-3 text-[12.5px]" style={{ color: "var(--color-muted-foreground)" }}>
           All {mentions.length} mentions, with links, are in the full report
           below.
         </p>
@@ -465,13 +465,13 @@ export default async function AuditViewerPage({
       label: "Tavily",
       description: `${mentions.length} public mention${mentions.length === 1 ? "" : "s"} sourced across Reddit, Yelp, BBB, ApartmentRatings, Facebook, and the open web`,
       href: "https://tavily.com",
-      icon: <SourceBullet inner="#475569" />,
+      icon: <SourceBullet inner="var(--gray-70)" />,
     },
     {
       label: "schema.org",
       description: "Reference vocabulary for AI-readable structured data",
       href: "https://schema.org",
-      icon: <SourceBullet inner="#475569" />,
+      icon: <SourceBullet inner="var(--gray-70)" />,
     },
     {
       label: `https://${audit.domain}`,
@@ -484,7 +484,7 @@ export default async function AuditViewerPage({
   ];
 
   return (
-    <div style={{ backgroundColor: "#FFFFFF", color: "#161616" }}>
+    <div style={{ backgroundColor: "#FFFFFF", color: "var(--color-foreground)" }}>
       <BriefShellHeader
         subjectName={displaySubject}
         generatedAtIso={audit.createdAt.toISOString()}
@@ -601,7 +601,7 @@ export default async function AuditViewerPage({
         <section id="full-report" className="mt-12 scroll-mt-24">
           <p
             className="text-[11px] font-mono uppercase tracking-[0.18em]"
-            style={{ color: "#0f62fe", fontFamily: "var(--font-mono)" }}
+            style={{ color: "var(--color-primary)", fontFamily: "var(--font-mono)" }}
           >
             The full report
           </p>
@@ -613,7 +613,7 @@ export default async function AuditViewerPage({
               fontWeight: 550,
               letterSpacing: "-0.025em",
               lineHeight: 1.1,
-              color: "#161616",
+              color: "var(--color-foreground)",
             }}
           >
             Every mention. Every action item.
@@ -639,23 +639,23 @@ export default async function AuditViewerPage({
 
             <section
               className="mt-10 border p-5 sm:p-6"
-              style={{ borderColor: "#e0e0e0", borderRadius: 2, backgroundColor: "#FBFBFD" }}
+              style={{ borderColor: "var(--color-border)", borderRadius: 2, backgroundColor: "#FBFBFD" }}
             >
               <p
                 className="text-[10px] font-mono uppercase tracking-[0.16em]"
-                style={{ color: "#0f62fe", fontFamily: "var(--font-mono)" }}
+                style={{ color: "var(--color-primary)", fontFamily: "var(--font-mono)" }}
               >
                 Next step
               </p>
               <h3
                 className="mt-1 max-w-xl text-lg font-semibold sm:text-xl"
-                style={{ color: "#161616" }}
+                style={{ color: "var(--color-foreground)" }}
               >
                 Want this monitored daily for your whole portfolio?
               </h3>
               <p
                 className="mt-1.5 max-w-xl text-[13px] sm:text-sm"
-                style={{ color: "#525252" }}
+                style={{ color: "var(--gray-70)" }}
               >
                 {BRAND_NAME} runs this report every day for every property,
                 watches the deltas, and tells your team what to do about it.
@@ -688,7 +688,7 @@ export default async function AuditViewerPage({
           `}</style>
           <p
             className="text-[11px] font-mono uppercase tracking-[0.18em]"
-            style={{ color: "#0f62fe", fontFamily: "var(--font-mono)" }}
+            style={{ color: "var(--color-primary)", fontFamily: "var(--font-mono)" }}
           >
             Appendix
           </p>
@@ -787,18 +787,18 @@ function AppendixItem({
       className="apx-det mt-3 scroll-mt-24"
       id={id}
       open={defaultOpen}
-      style={{ borderTop: "1px solid #e0e0e0" }}
+      style={{ borderTop: "1px solid var(--color-border)" }}
     >
       <summary className="flex items-baseline justify-between gap-3 py-4">
         <span className="inline-flex items-center gap-2.5">
           <ChevronDown
             className="apx-chev h-4 w-4"
-            style={{ color: "#0f62fe" }}
+            style={{ color: "var(--color-primary)" }}
             aria-hidden
           />
           <span
             className="text-[14.5px] font-semibold"
-            style={{ color: "#161616" }}
+            style={{ color: "var(--color-foreground)" }}
           >
             {label}
           </span>
@@ -806,7 +806,7 @@ function AppendixItem({
         {sublabel ? (
           <span
             className="hidden text-[11px] font-mono sm:inline"
-            style={{ color: "#6f6f6f", fontFamily: "var(--font-mono)" }}
+            style={{ color: "var(--color-muted-foreground)", fontFamily: "var(--font-mono)" }}
           >
             {sublabel}
           </span>
@@ -855,17 +855,17 @@ function PendingState({
       {!isFailed ? (
         <meta httpEquiv="refresh" content="5" />
       ) : null}
-      <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
+      <div style={{ backgroundColor: "#FFFFFF", color: "var(--color-deep-slate)" }}>
         <div className="max-w-[800px] mx-auto px-4 md:px-8 pt-24 pb-24">
           <p
             className="text-[11px] font-mono uppercase tracking-[0.18em]"
-            style={{ color: "#0f62fe", fontFamily: "var(--font-mono)" }}
+            style={{ color: "var(--color-primary)", fontFamily: "var(--font-mono)" }}
           >
             {BRAND_NAME} audit
           </p>
           <h1
             className="text-3xl md:text-4xl font-semibold mt-3"
-            style={{ color: "#1E2A3A" }}
+            style={{ color: "var(--color-deep-slate)" }}
           >
             {isFailed
               ? "We couldn't finish this audit."
@@ -921,14 +921,14 @@ function PendingState({
                         className="text-sm font-medium"
                         style={{
                           color:
-                            state === "pending" ? "#6B7280" : "#1E2A3A",
+                            state === "pending" ? "var(--color-muted-foreground)" : "var(--color-deep-slate)",
                         }}
                       >
                         {stage.label}
                         {state === "active" ? "…" : ""}
                       </p>
                       {state === "active" ? (
-                        <p className="text-[13px] mt-0.5" style={{ color: "#6B7280" }}>
+                        <p className="text-[13px] mt-0.5" style={{ color: "var(--color-muted-foreground)" }}>
                           {stage.hint}
                         </p>
                       ) : null}
@@ -997,13 +997,13 @@ function SourceBreakdown({
       <div className="flex items-baseline justify-between gap-2 flex-wrap">
         <p
           className="text-[10px] font-mono uppercase tracking-[0.16em]"
-          style={{ color: "#0f62fe", fontFamily: "var(--font-mono)" }}
+          style={{ color: "var(--color-primary)", fontFamily: "var(--font-mono)" }}
         >
           Reputation scan · past 90 days
         </p>
         <p
           className="text-[10px]"
-          style={{ color: "#6B7280", fontFamily: "var(--font-mono)" }}
+          style={{ color: "var(--color-muted-foreground)", fontFamily: "var(--font-mono)" }}
         >
           {totalMentions} mention{totalMentions === 1 ? "" : "s"} · {SOURCE_DISPLAY.length} sources
         </p>
@@ -1018,10 +1018,10 @@ function SourceBreakdown({
               className="inline-flex items-center gap-1.5 rounded-full h-7 px-2.5"
               style={{
                 backgroundColor: has ? "#FFFFFF" : "#FBFBFD",
-                border: `1px solid ${has ? "#e0e0e0" : "#f4f4f4"}`,
-                // AA: zero-count chips were #9CA3AF at 0.85 opacity —
+                border: `1px solid ${has ? "var(--color-border)" : "var(--color-secondary)"}`,
+                // AA: zero-count chips were var(--color-muted-foreground) at 0.85 opacity —
                 // 2.12:1 once the accordion default-opened (axe, 2026-08-13).
-                color: has ? "#161616" : "#5f6b7c",
+                color: has ? "var(--color-foreground)" : "#5f6b7c",
                 fontFamily: "var(--font-sans)",
                 fontSize: 12,
                 fontWeight: 500,
@@ -1045,7 +1045,7 @@ function SourceBreakdown({
               <span>{label}</span>
               <span
                 className="tabular-nums"
-                style={{ color: has ? "#6f6f6f" : "#5f6b7c" }}
+                style={{ color: has ? "var(--color-muted-foreground)" : "#5f6b7c" }}
               >
                 {count}
               </span>
