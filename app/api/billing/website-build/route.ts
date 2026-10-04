@@ -127,11 +127,16 @@ export async function POST(req: NextRequest) {
   // sees a single billing history on their portal.
   let stripeCustomerId = org.stripeCustomerId;
   if (!stripeCustomerId) {
-    const customer = await stripe.customers.create({
-      email: org.primaryContactEmail ?? scope.email,
-      name: org.name,
-      metadata: { org_id: org.id },
-    });
+    // Same key as app/api/billing/checkout so concurrent paths converge on
+    // one Stripe customer instead of orphaning one.
+    const customer = await stripe.customers.create(
+      {
+        email: org.primaryContactEmail ?? scope.email,
+        name: org.name,
+        metadata: { org_id: org.id },
+      },
+      { idempotencyKey: `cust_${org.id}` },
+    );
     await prisma.organization.update({
       where: { id: org.id },
       data: { stripeCustomerId: customer.id },

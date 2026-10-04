@@ -108,11 +108,14 @@ export async function POST(
   // Lazy-create the Stripe Customer.
   let stripeCustomerId = buyer.stripeCustomerId;
   if (!stripeCustomerId) {
-    const customer = await stripe.customers.create({
-      email: buyer.email,
-      name: buyer.fullName ?? undefined,
-      metadata: { marketplaceBuyerId: buyer.id },
-    });
+    const customer = await stripe.customers.create(
+      {
+        email: buyer.email,
+        name: buyer.fullName ?? undefined,
+        metadata: { marketplaceBuyerId: buyer.id },
+      },
+      { idempotencyKey: `mpbuyer_cust_${buyer.id}` },
+    );
     stripeCustomerId = customer.id;
     await prisma.marketplaceBuyer.update({
       where: { id: buyer.id },

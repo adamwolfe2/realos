@@ -63,6 +63,29 @@ function resolveTierFromSubscription(
 // Event handlers
 // ============================================================================
 
+// A subscription whose metadata names an org but whose customer is linked to
+// no org means the org's stripeCustomerId points at a different (orphaned)
+// customer: billing state for that org has stopped syncing. Surface it.
+function warnUnlinkedPlatformSubscription(
+  subscription: Stripe.Subscription,
+  stripeCustomerId: string,
+  handler: string,
+): void {
+  const orgId = subscription.metadata?.org_id;
+  if (!orgId) return;
+  console.warn(
+    `[stripe-webhook] ${handler}: no org for customer ${stripeCustomerId} but subscription ${subscription.id} names org ${orgId}`,
+  );
+  captureWithContext(new Error("Stripe subscription names an org not linked to its customer"), {
+    route: "api/webhooks/stripe",
+    handler,
+    orgId,
+    stripeCustomerId,
+    subscriptionId: subscription.id,
+    level: "warning",
+  });
+}
+
 async function handleSubscriptionUpserted(
   subscription: Stripe.Subscription,
   eventId: string,
@@ -94,6 +117,7 @@ async function handleSubscriptionUpserted(
     // completed` handler creates the link for signup flows; this guard
     // covers the edge case where Stripe fires subscription events
     // before our checkout handler runs.
+    warnUnlinkedPlatformSubscription(subscription, stripeCustomerId, "handleSubscriptionUpserted");
     return;
   }
   if (!isPlatformSubscriptionForOrg(subscription.metadata, org.id)) return;
@@ -521,7 +545,10 @@ async function handleSubscriptionDeleted(
     select: { id: true, subscriptionStatus: true },
   });
 
-  if (!org) return;
+  if (!org) {
+    warnUnlinkedPlatformSubscription(subscription, stripeCustomerId, "handleSubscriptionDeleted");
+    return;
+  }
   if (!isPlatformSubscriptionForOrg(subscription.metadata, org.id)) return;
 
   // On cancel, revoke module entitlements except for the always-on

@@ -81,3 +81,40 @@ describe("customer.subscription.trial_will_end", () => {
     );
   });
 });
+
+// F-082: a subscription event whose customer maps to no org, while its
+// metadata names an org, means the org is linked to an orphaned customer.
+// It must alert instead of returning silently.
+describe("subscription event for a customer linked to no org", () => {
+  beforeEach(() => {
+    captureWithContext.mockClear();
+    findUnique.mockReset();
+    findUnique.mockResolvedValue(null);
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  it.each(["customer.subscription.updated", "customer.subscription.deleted"])(
+    "%s alerts when metadata carries org_id",
+    async (type) => {
+      parseWebhookEvent.mockResolvedValue({
+        ...trialWillEnd({ org_id: "org_1" }),
+        type,
+      });
+      const res = await post();
+      expect(res.status).toBe(200);
+      expect(captureWithContext).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ orgId: "org_1", stripeCustomerId: "cus_shared" }),
+      );
+    },
+  );
+
+  it("stays quiet when metadata has no org_id", async () => {
+    parseWebhookEvent.mockResolvedValue({
+      ...trialWillEnd({}),
+      type: "customer.subscription.updated",
+    });
+    await post();
+    expect(captureWithContext).not.toHaveBeenCalled();
+  });
+});
