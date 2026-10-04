@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
+import { AlertBanner } from "@/components/portal/ui/alert-banner";
 import { Building2, DollarSign, Layers } from "lucide-react";
 import { packageName } from "@/lib/billing/features";
 import { BillingPortalButton } from "./billing-portal-button";
@@ -31,10 +32,10 @@ export const dynamic = "force-dynamic";
 export default async function BillingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ addon?: string }>;
+  searchParams: Promise<{ addon?: string; canceled?: string }>;
 }) {
   const scope = await requireScope();
-  const { addon: addonParam } = await searchParams;
+  const { addon: addonParam, canceled } = await searchParams;
   // Marketplace + welcome grid send paid add-ons here as ?addon=<key|slug>.
   // Paid entries only. Toggle modules are "active" via their Organization
   // column; addon-kind entries have no column, so they always show the card
@@ -324,6 +325,10 @@ export default async function BillingPage({
         // not selling.
         description="Review your current plan, line items, and Stripe portal access."
       />
+
+      {canceled ? (
+        <AlertBanner severity="info" title="Checkout canceled. Nothing was charged." />
+      ) : null}
 
       {requestedAddon &&
       !(org as Record<string, unknown>)[requestedAddon.key] ? (
