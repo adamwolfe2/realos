@@ -377,7 +377,7 @@ function WizardField({
         placeholder={placeholder}
         autoComplete={autoComplete}
         maxLength={200}
-        className="h-11 w-full rounded-[2px] border px-3 text-[14px] outline-none transition-colors focus:border-[#0f62fe]"
+        className="h-11 w-full rounded-[2px] border px-3 text-[14px] outline-none transition-colors focus:border-[#0f62fe] focus-visible:ring-2 focus-visible:ring-[#0f62fe]/30"
         style={{
           borderColor: "#CBD5E1",
           color: "#1E2A3A",
