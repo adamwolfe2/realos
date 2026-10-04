@@ -24,7 +24,7 @@ const fieldStyle: React.CSSProperties = {
 };
 
 const CRM_OPTIONS = [
-  { value: "none", label: "No CRM — set up manually" },
+  { value: "none", label: "No CRM, set up manually" },
   { value: "appfolio", label: "AppFolio" },
   { value: "yardi", label: "Yardi" },
   { value: "buildium", label: "Buildium" },
@@ -130,7 +130,7 @@ export function PropertiesStep({
           style={{ color: MUTED, fontFamily: "var(--font-sans)", fontSize: "14px", lineHeight: 1.55 }}
         >
           Add each property you want to market. Every one gets its own site,
-          pixel, and chatbot — you&apos;ll set those up per property inside the
+          pixel, and chatbot. You&apos;ll set those up per property inside the
           workspace.
         </p>
       </header>
@@ -222,7 +222,7 @@ export function PropertiesStep({
           ))}
         </select>
         <p className="mt-1" style={{ color: MUTED, fontFamily: "var(--font-sans)", fontSize: "11.5px" }}>
-          You can connect or skip this anytime — properties work fully manual
+          You can connect or skip this anytime. Properties work fully manual
           without a CRM.
         </p>
       </div>

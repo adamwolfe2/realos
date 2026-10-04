@@ -197,7 +197,7 @@ export default async function PortalWelcomePage() {
                 fontSize: "13.5px",
               }}
             >
-              Core platform is on — pick modules to test from{" "}
+              Core platform is on. Pick modules to test from{" "}
               <Link
                 href="/portal/marketplace"
                 style={{ color: ACCENT, textDecoration: "underline" }}
@@ -253,7 +253,7 @@ export default async function PortalWelcomePage() {
             icon={Building2}
             label={
               firstProperty
-                ? `Open your property — ${firstProperty.name}`
+                ? `Open your property: ${firstProperty.name}`
                 : "Add your first property"
             }
             description="Where AppFolio sync, marketing site, and reporting all start."
