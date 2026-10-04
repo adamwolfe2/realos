@@ -25,6 +25,7 @@ import {
   PreviewSkeleton,
 } from "@/components/portal/reports/live-preview-body";
 import { cn } from "@/lib/utils";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { Prisma } from "@prisma/client";
 
 export const metadata: Metadata = { title: "Client reports" };
@@ -382,12 +383,12 @@ export default async function ReportsListPage({
                 <option value="monthly">Monthly (28d)</option>
               </select>
             </label>
-            <button
-              type="submit"
+            <SubmitButton
+              pendingLabel="Generating…"
               className="inline-flex items-center rounded-[2px] bg-primary text-primary-foreground px-3.5 py-2 text-sm font-medium hover:bg-primary/90 transition-colors"
             >
               Generate report
-            </button>
+            </SubmitButton>
           </form>
           </>
           )
@@ -470,13 +471,13 @@ export default async function ReportsListPage({
                 <p className="text-[11px] text-muted-foreground">
                   Freezes this exact view into a shareable report.
                 </p>
-                <button
-                  type="submit"
+                <SubmitButton
+                  pendingLabel="Generating…"
                   className="inline-flex flex-none items-center gap-1.5 rounded-[2px] bg-primary px-3 py-1.5 text-[13px] font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                 >
                   Generate &amp; share
                   <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-                </button>
+                </SubmitButton>
               </form>
             </div>
             )}
