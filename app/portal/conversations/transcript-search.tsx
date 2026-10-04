@@ -110,10 +110,11 @@ function TranscriptSearchInner({
         </div>
 
         <div className="flex items-center gap-2">
-          <label className="ls-eyebrow">
+          <label htmlFor="transcript-sort" className="ls-eyebrow">
             Sort
           </label>
           <select
+            id="transcript-sort"
             value={initialSort}
             onChange={(e) => pushParams({ sort: e.target.value })}
             className={cn(

@@ -272,9 +272,9 @@ export function PropertyFormDialog({
               </fieldset>
 
               <div>
-                <label className="block text-xs font-medium text-foreground mb-1.5">
+                <span className="block text-xs font-medium text-foreground mb-1.5">
                   Hero image
-                </label>
+                </span>
                 <ImageUploader
                   value={data.heroImageUrl}
                   onChange={(url) => set("heroImageUrl", url)}

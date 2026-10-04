@@ -286,10 +286,11 @@ export function DomainsPanel({
 
       <form onSubmit={onAdd} className="flex flex-wrap items-end gap-2 pt-2 border-t border-border">
         <div className="flex-1 min-w-[200px]">
-          <label className="text-[11px] uppercase tracking-wide text-muted-foreground">
+          <label htmlFor="custom-domain-hostname" className="text-[11px] uppercase tracking-wide text-muted-foreground">
             Add custom domain
           </label>
           <input
+            id="custom-domain-hostname"
             type="text"
             value={hostname}
             onChange={(e) => setHostname(e.target.value)}

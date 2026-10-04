@@ -1123,11 +1123,11 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <div>
-      <label className="block text-sm font-medium text-slate-900">{label}</label>
-      {hint ? <p className="text-xs text-slate-500 mb-1.5">{hint}</p> : null}
+    <label className="block">
+      <span className="block text-sm font-medium text-slate-900">{label}</span>
+      {hint ? <span className="block text-xs text-slate-500 mb-1.5">{hint}</span> : null}
       <div className="mt-1">{children}</div>
-    </div>
+    </label>
   );
 }
 

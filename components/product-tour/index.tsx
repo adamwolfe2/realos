@@ -1966,8 +1966,8 @@ function NewRequestModal({ onClose }: { onClose: () => void }) {
 
 function FormRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div>
-      <label
+    <label style={{ display: "block" }}>
+      <span
         style={{
           fontFamily: "var(--font-sans)",
           fontSize: "12px",
@@ -1978,9 +1978,9 @@ function FormRow({ label, children }: { label: string; children: React.ReactNode
         }}
       >
         {label}
-      </label>
+      </span>
       {children}
-    </div>
+    </label>
   );
 }
 

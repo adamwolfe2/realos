@@ -160,9 +160,9 @@ export function DraftLauncher({ propertyId, propertyName, prefill }: Props) {
 
             <div className="space-y-4 px-5 py-4">
               <div>
-                <label className="ls-eyebrow">
+                <span className="ls-eyebrow">
                   Format
-                </label>
+                </span>
                 <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {FORMATS.map((f) => (
                     <button

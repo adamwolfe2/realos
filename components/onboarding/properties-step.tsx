@@ -206,12 +206,14 @@ export function PropertiesStep({
       {/* CRM / PMS — last, with a no-CRM default */}
       <div>
         <label
+          htmlFor="onboarding-crm"
           className="block mb-1"
           style={{ color: INK, fontFamily: "var(--font-mono)", fontSize: "10.5px", letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 600 }}
         >
           How do you manage these?
         </label>
         <select
+          id="onboarding-crm"
           className={FIELD}
           style={fieldStyle}
           value={crm}

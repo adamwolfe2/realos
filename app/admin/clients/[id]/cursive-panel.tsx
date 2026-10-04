@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   saveCursiveSettings,
@@ -470,10 +470,12 @@ function Field({
   readOnly?: boolean;
   mono?: boolean;
 }) {
+  const id = useId();
   return (
     <div>
-      <label className="text-xs font-medium text-foreground">{label}</label>
+      <label htmlFor={id} className="text-xs font-medium text-foreground">{label}</label>
       <input
+        id={id}
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}

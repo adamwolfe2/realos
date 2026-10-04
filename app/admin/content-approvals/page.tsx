@@ -121,10 +121,11 @@ export default async function ContentApprovalsPage({
 
         {orgOptions.length > 1 ? (
           <form className="flex items-center gap-2" action="/admin/content-approvals">
-            <label className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground">
+            <label htmlFor="approvals-org" className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground">
               Org
             </label>
             <select
+              id="approvals-org"
               name="org"
               defaultValue={orgFilter ?? ""}
               className="rounded-lg border border-border bg-background px-2.5 py-1.5 text-[12px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"

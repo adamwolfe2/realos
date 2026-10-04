@@ -260,10 +260,11 @@ export function ComposerToolbar({
             Voiding revokes the share link and marks the proposal canceled. The
             prospect can no longer accept.
           </p>
-          <label className="block text-xs text-muted-foreground mb-1">
+          <label htmlFor="void-reason" className="block text-xs text-muted-foreground mb-1">
             Reason
           </label>
           <input
+            id="void-reason"
             value={voidReason}
             onChange={(e) => setVoidReason(e.target.value)}
             placeholder="e.g. replaced by Proposal #2 / mispriced"
