@@ -175,7 +175,7 @@ export default async function SegmentDetailPage({
       </DashboardSection>
 
       <DashboardSection
-        eyebrow="Sample data"
+        eyebrow="Preview"
         title="Member preview"
         description="Five anonymized members so you can see what's in this segment before you push."
       >
