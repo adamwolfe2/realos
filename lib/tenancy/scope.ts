@@ -157,7 +157,7 @@ async function getDemoScope(): Promise<ScopedContext | null> {
 async function getScopeUncached(): Promise<ScopedContext | null> {
   // Defensive: auth() throws if the request didn't pass through
   // clerkMiddleware (e.g. a route inadvertently added to a bypass list
-  // in middleware.ts). Treat that as "no session" instead of bubbling
+  // in proxy.ts). Treat that as "no session" instead of bubbling
   // a 500 — callers that genuinely need auth use requireScope() and
   // will surface a 403 from the null result.
   let clerkUserId: string | null = null;
