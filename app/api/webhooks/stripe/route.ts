@@ -240,6 +240,7 @@ async function handleSubscriptionUpserted(
       event: "card_added",
       distinctId: org.id,
       props: { status: subscription.status },
+      dedupeKey: `${eventId}:card_added`,
     });
   }
 
