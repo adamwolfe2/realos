@@ -202,7 +202,7 @@ export function ReportEditorControls({
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={5}
-          placeholder="A quick context-setting note from you: what's working, what to double down on next, anything the client should know before skimming the numbers."
+          placeholder="A quick context-setting note from you: what's working, what to double down on next, anything your owners should know before skimming the numbers."
           className="rounded-[2px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
           maxLength={2000}
         />

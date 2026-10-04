@@ -590,7 +590,7 @@ export default async function ReportsListPage({
               ) : (
                 <EmptyState
                   title="Generate your first report"
-                  body="Use the Generate report button up top to capture this period's leads, tours, ad spend, and organic traffic as a frozen snapshot. Add a note, then copy a shareable link for your client. Nothing is sent automatically."
+                  body="Use the Generate report button up top to capture this period's leads, tours, ad spend, and organic traffic as a frozen snapshot. Add a note, then copy a shareable link for your owners. Nothing is sent automatically."
                 />
               )
             }

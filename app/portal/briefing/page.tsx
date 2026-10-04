@@ -209,7 +209,7 @@ export default async function BriefingPage({
             : (org?.name ?? "Workspace")
         }
         title={greeting}
-        description="Everything that moved since you last looked. Triage the call sheet, read the transcripts, and act on the insights before your next client touch."
+        description="Everything that moved since you last looked. Triage the call sheet, read the transcripts, and act on the insights before your next owner update."
         actions={
           <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-muted rounded-[2px]" />}>
             <PropertyMultiSelect
