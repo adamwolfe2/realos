@@ -124,6 +124,7 @@ export function VaultClient({
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border bg-muted/20">
         <input
           type="text"
+          aria-label="Search vault"
           placeholder="Search by name, platform, username, tag…"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}

@@ -156,6 +156,7 @@ export function EntityToolbar({
                 name={search.name ?? "q"}
                 defaultValue={search.defaultValue ?? ""}
                 placeholder={search.placeholder ?? "Search…"}
+                aria-label={search.placeholder ?? "Search"}
                 className="h-7 w-44 rounded-[2px] border border-border bg-background px-2 text-[11px] placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </form>

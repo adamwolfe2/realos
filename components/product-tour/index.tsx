@@ -202,6 +202,7 @@ function Topbar() {
         <Icons.search color={TOKENS.stone} />
         <input
           type="search"
+          aria-label="Search leads, tours, creative"
           placeholder="Search leads, tours, creative..."
           className="bg-transparent outline-none w-full"
           style={{
@@ -1603,6 +1604,7 @@ function ConversationsView() {
           >
             <input
               type="text"
+              aria-label="Reply"
               placeholder="Reply as Acme leasing..."
               className="flex-1 bg-transparent outline-none"
               style={{

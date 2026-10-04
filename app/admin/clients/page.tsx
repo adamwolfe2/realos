@@ -262,6 +262,7 @@ export default async function ClientsList({
         <Input
           name="q"
           defaultValue={q ?? ""}
+          aria-label="Search clients by name"
           placeholder="Search by name"
           className="w-56"
         />

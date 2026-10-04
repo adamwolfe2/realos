@@ -128,6 +128,8 @@ export function ExitIntentPopup({
                 name="email"
                 type="email"
                 required
+                aria-label="Email address"
+                autoComplete="email"
                 placeholder="you@example.com"
                 className="w-full border rounded-md px-3 py-2 text-sm"
               />

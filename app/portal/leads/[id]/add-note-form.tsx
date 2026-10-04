@@ -43,6 +43,7 @@ export function AddNoteForm({ leadId }: { leadId: string }) {
         value={body}
         onChange={(e) => setBody(e.target.value)}
         rows={3}
+        aria-label="Note"
         placeholder="Log a call, email, or context about this lead."
         className={cn(
           "w-full resize-none rounded-[2px] bg-card px-3 py-2 text-sm",

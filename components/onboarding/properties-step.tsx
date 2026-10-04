@@ -162,6 +162,7 @@ export function PropertiesStep({
             <input
               className={FIELD}
               style={fieldStyle}
+              aria-label="Property name"
               placeholder="Property name (e.g. The Lofts at Main)"
               value={row.name}
               onChange={(e) => update(i, { name: e.target.value })}
@@ -171,6 +172,7 @@ export function PropertiesStep({
               <input
                 className={FIELD}
                 style={fieldStyle}
+                aria-label="City"
                 placeholder="City (optional)"
                 value={row.city}
                 onChange={(e) => update(i, { city: e.target.value })}
@@ -179,6 +181,7 @@ export function PropertiesStep({
               <input
                 className={FIELD}
                 style={fieldStyle}
+                aria-label="State"
                 placeholder="State (optional)"
                 value={row.state}
                 onChange={(e) => update(i, { state: e.target.value })}

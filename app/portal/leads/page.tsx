@@ -671,6 +671,7 @@ export default async function LeadsKanbanPage({
             <input
               name="q"
               defaultValue={sp.q ?? ""}
+              aria-label="Search leads"
               placeholder="Search name, email, phone…"
               className="w-full rounded-none border border-border bg-background pl-8 pr-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
             />
