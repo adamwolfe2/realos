@@ -109,18 +109,38 @@ export default async function ReportsListPage({
   // Property list for the picker. Hidden when the org only has one
   // property (single-asset tenants don't need to choose). Narrowed to
   // the user's allowed set via UserPropertyAccess.
-  const allProperties = await prisma.property.findMany({
-    where: marketablePropertyWhere(scope.orgId),
-    orderBy: { name: "asc" },
-    select: {
-      id: true,
-      name: true,
-      addressLine1: true,
-      city: true,
-      state: true,
-      launchStatus: true,
-    },
-  });
+  // Independent reads: property picker list and the report table.
+  const [allProperties, reports] = await Promise.all([
+    prisma.property.findMany({
+      where: marketablePropertyWhere(scope.orgId),
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        addressLine1: true,
+        city: true,
+        state: true,
+        launchStatus: true,
+      },
+    }),
+    prisma.clientReport.findMany({
+      where,
+      orderBy,
+      take: 100,
+      select: {
+        id: true,
+        kind: true,
+        status: true,
+        periodStart: true,
+        periodEnd: true,
+        generatedAt: true,
+        sharedAt: true,
+        viewCount: true,
+        headline: true,
+        property: { select: { id: true, name: true } },
+      },
+    }),
+  ]);
   const properties = visibleProperties(scope, allProperties);
 
   // Live preview panel: resolve which property it renders for. Prefer the
@@ -149,23 +169,6 @@ export default async function ReportsListPage({
     return `/portal/reports?${params.toString()}`;
   };
 
-  const reports = await prisma.clientReport.findMany({
-    where,
-    orderBy,
-    take: 100,
-    select: {
-      id: true,
-      kind: true,
-      status: true,
-      periodStart: true,
-      periodEnd: true,
-      generatedAt: true,
-      sharedAt: true,
-      viewCount: true,
-      headline: true,
-      property: { select: { id: true, name: true } },
-    },
-  });
   type ReportRow = (typeof reports)[number];
 
   // Bug #115 (was #8): three reports with identical title "End of Month
