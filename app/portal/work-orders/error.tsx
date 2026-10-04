@@ -1,52 +1,18 @@
 "use client";
 
-import { useEffect } from "react";
-import * as Sentry from "@sentry/nextjs";
-import { Button } from "@/components/ui/button";
-import { AlertTriangle } from "lucide-react";
+import { RouteErrorBoundary } from "@/components/ui/route-error-boundary";
 
 // AppFolio-backed; work_orders endpoint is one of the slower ones and
 // sometimes times out. Boundary keeps the rest of the portal navigable.
-export default function WorkOrdersError({
-  error,
-  reset,
-}: {
+export default function WorkOrdersError(props: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  useEffect(() => {
-    Sentry.captureException(error, {
-      tags: { surface: "portal/work-orders" },
-      extra: { digest: error.digest },
-    });
-  }, [error]);
-
   return (
-    <div className="flex flex-col items-center justify-center py-24 text-center">
-      <AlertTriangle className="h-10 w-10 text-muted-foreground mb-4" />
-      <h2 className="text-xl font-semibold tracking-tight mb-2">
-        Something went wrong
-      </h2>
-      <p className="text-sm text-muted-foreground mb-6 max-w-sm">
-        We couldn&apos;t load your work orders. AppFolio&apos;s work-orders
-        endpoint occasionally times out — try a refresh.
-      </p>
-      <div className="flex gap-3">
-        <Button variant="outline" onClick={reset}>
-          Try again
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => (window.location.href = "/portal")}
-        >
-          Back to dashboard
-        </Button>
-      </div>
-      {error.digest && (
-        <p className="mt-6 text-[10px] text-muted-foreground font-mono">
-          Error ID: {error.digest}
-        </p>
-      )}
-    </div>
+    <RouteErrorBoundary
+      {...props}
+      surface="portal/work-orders"
+      body="We couldn't load your work orders. AppFolio's work-orders endpoint occasionally times out — try a refresh."
+    />
   );
 }
