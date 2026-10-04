@@ -9,8 +9,8 @@ import {
   checkRateLimit,
   getIp,
 } from "@/lib/rate-limit";
-import { checkAiQuota, isPayingSubscription } from "@/lib/ai/quota";
-import { withSpendCap } from "@/lib/cost-tracker/cap";
+import { checkAiQuota, isCapExempt } from "@/lib/ai/quota";
+import { withSpendCap, secondsUntilCapReset } from "@/lib/cost-tracker/cap";
 import { logChatUsage } from "@/lib/chatbot/log-chat-usage";
 import {
   exceedsChatInputBudget,
@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
   // legitimate volume so this only catches a runaway tenant or bad actor,
   // not real customers. Fails OPEN on Redis errors.
   const quota = await checkAiQuota(orgId, {
-    neverBlock: isPayingSubscription(org.subscriptionStatus),
+    neverBlock: isCapExempt(org),
   });
   if (!quota.allowed) {
     return NextResponse.json(
@@ -171,7 +171,7 @@ export async function POST(req: NextRequest) {
       provider: "anthropic",
       endpoint: "chatbot.chat",
       orgId,
-      neverBlock: isPayingSubscription(org.subscriptionStatus),
+      neverBlock: isCapExempt(org),
     },
     async () =>
   streamText({
@@ -210,10 +210,13 @@ export async function POST(req: NextRequest) {
   }),
   );
   if (capped.status === "skipped_cap") {
-    console.error("[chatbot] spend cap reached", { orgId, reason: capped.reason });
+    console.warn("[chatbot] spend cap reached", { orgId, reason: capped.reason });
     return NextResponse.json(
       { error: "Chatbot temporarily unavailable", code: "spend_cap_reached" },
-      { status: 503, headers: { "Retry-After": "3600" } }
+      {
+        status: 503,
+        headers: { "Retry-After": String(secondsUntilCapReset()) },
+      }
     );
   }
 

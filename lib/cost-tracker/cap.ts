@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/lib/db";
+import { captureWithContext } from "@/lib/sentry";
 import { logUsage, microCentsToUsd } from "./log";
 
 // ---------------------------------------------------------------------------
@@ -83,6 +84,48 @@ export async function getMonthToDateSpend(): Promise<MonthToDateSpend> {
   };
 }
 
+// ponytail: per-process 60s cache of the month total. Ceiling: each warm
+// instance can overshoot the cap by up to 60s of its own spend, and
+// instances don't share it. Move to Upstash if the cap becomes a hard limit.
+const SPEND_CACHE_MS = 60_000;
+let spendCache: { at: number; value: MonthToDateSpend } | null = null;
+
+async function getCachedMonthToDateSpend(): Promise<MonthToDateSpend> {
+  if (spendCache && Date.now() - spendCache.at < SPEND_CACHE_MS) {
+    return spendCache.value;
+  }
+  const value = await getMonthToDateSpend();
+  spendCache = { at: Date.now(), value };
+  return value;
+}
+
+/** Seconds until the monthly cap window resets (start of next UTC month). */
+export function secondsUntilCapReset(now: Date = new Date()): number {
+  const next = Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1);
+  return Math.max(1, Math.ceil((next - now.getTime()) / 1000));
+}
+
+// One alert per process per cap window (UTC month) so a tripped cap pages
+// once, not on every blocked message.
+let alertedWindow: string | null = null;
+function alertCapTripped(opts: { provider: string; endpoint: string; orgId?: string | null }, reason: string) {
+  const d = new Date();
+  const win = `${d.getUTCFullYear()}-${d.getUTCMonth()}`;
+  if (alertedWindow === win) return;
+  alertedWindow = win;
+  captureWithContext(new Error(`Spend cap tripped: ${reason}`), {
+    orgId: opts.orgId ?? undefined,
+    provider: opts.provider,
+    endpoint: opts.endpoint,
+  });
+}
+
+/** Test-only: reset the memoized spend total and alert latch. */
+export function __resetCapStateForTest(): void {
+  spendCache = null;
+  alertedWindow = null;
+}
+
 export type CapDecision =
   | { allowed: true }
   | {
@@ -104,7 +147,7 @@ export type CapDecision =
 export async function checkSpendCap(
   provider: string,
 ): Promise<CapDecision> {
-  const mtd = await getMonthToDateSpend();
+  const mtd = await getCachedMonthToDateSpend();
   const globalCap = readEnvUsdCap("COST_MONTHLY_CAP_USD", DEFAULT_GLOBAL_CAP_USD);
   if (globalCap != null && mtd.totalUsd >= globalCap) {
     return {
@@ -136,8 +179,8 @@ interface WithSpendCapOptions {
   orgId?: string | null;
   propertyId?: string | null;
   prospectAuditId?: string | null;
-  /** Paying customers (isPayingSubscription in lib/ai/quota.ts): never
-   *  blocked by the global cap, same rule as checkAiQuota's neverBlock. */
+  /** Exempt orgs (isCapExempt in lib/ai/quota.ts): never blocked by the
+   *  global cap and never trigger a spend lookup. */
   neverBlock?: boolean;
 }
 
@@ -176,8 +219,27 @@ export async function withSpendCap<T>(
   fn: () => Promise<T>,
 ): Promise<WithSpendCapResult<T>> {
   if (opts.neverBlock) return { status: "ok", data: await fn() };
-  const decision = await checkSpendCap(opts.provider);
+  let decision: CapDecision;
+  try {
+    decision = await checkSpendCap(opts.provider);
+  } catch (err) {
+    // Fail OPEN, matching checkAiQuota: a DB blip must not switch off a
+    // customer-facing path. Logged with context so it is still visible.
+    console.error("[spend-cap] spend lookup failed, failing open", {
+      provider: opts.provider,
+      endpoint: opts.endpoint,
+      orgId: opts.orgId ?? null,
+      err,
+    });
+    captureWithContext(err, {
+      orgId: opts.orgId ?? undefined,
+      provider: opts.provider,
+      endpoint: opts.endpoint,
+    });
+    decision = { allowed: true };
+  }
   if (!decision.allowed) {
+    alertCapTripped(opts, decision.reason);
     await logUsage({
       provider: opts.provider,
       endpoint: opts.endpoint,
