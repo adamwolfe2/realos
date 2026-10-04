@@ -1,18 +1,19 @@
 # LeaseStack
 
-**Managed marketing SaaS for real estate operators.** Website, live listings,
-AI chatbot, ad pixel, lead capture, ad creative, reporting. Built and managed
-by us. Launched in two weeks.
+**Leasing intelligence for rental operators (track, not manage).** LeaseStack
+traces every ad dollar, website visitor, lead, and tour to the signed lease and
+shows it in one dashboard the operator logs into. It tracks performance; it
+does not run ads or create creative. Live at [leasestack.co](https://www.leasestack.co).
 
-> `LeaseStack` is a temporary working name. See `NAMING.md` for how to rename
-> globally once the product name is final.
+Positioning and tone: see `PRODUCT.md`. Repo rules for contributors and
+agents: `AGENTS.md`. Design tokens: `DESIGN.md`.
 
 ## What this is
 
 A single Next.js app that serves four surfaces from one codebase:
 
 1. **Platform marketing site** (`leasestack.co`), sells the product to operators.
-2. **Master admin** (`leasestack.co/admin`), our agency team's dashboard across
+2. **Master admin** (`leasestack.co/admin`), the LeaseStack operations team's dashboard across
    every tenant: intake queue, fulfillment pipeline, creative requests,
    cross-tenant analytics, impersonation.
 3. **Client portal** (`leasestack.co/portal`), the client's dashboard: leads,
@@ -53,8 +54,8 @@ Domain rebuilt from scratch around the real-estate model: properties,
 listings, leads, visitors, applications, chatbot conversations, creative
 requests, ad campaigns.
 
-Sprint plan lives in `prd/` (12 sprints, roughly two weeks end to end).
-Sprint summaries append to `BUILD_LOG.md` as each one ships.
+Original sprint plan lives in `prd/`. Historical sprint notes are archived in
+`docs/archive/BUILD_LOG.md`.
 
 ## Quick start
 
@@ -62,7 +63,7 @@ Sprint summaries append to `BUILD_LOG.md` as each one ships.
 pnpm install
 cp .env.example .env.local        # fill in real secrets
 pnpm db:push                      # requires DATABASE_URL set
-pnpm db:seed                      # seeds Agency org + Telegraph Commons (foundation)
+pnpm db:seed                      # seeds the LeaseStack operator org + Telegraph Commons (foundation)
 pnpm dev
 ```
 
@@ -130,7 +131,7 @@ components/
   ui/            shadcn/ui
 prisma/
   schema.prisma  real-estate domain schema
-  seed.ts        agency + Telegraph Commons seed
+  seed.ts        operator org + Telegraph Commons seed
 prd/             product requirements (12 sprints)
 ```
 
@@ -205,8 +206,3 @@ for the full design. Highlights:
 - Required env: `DATAFORSEO_LOGIN`, `DATAFORSEO_PASSWORD`. Engine degrades
   gracefully when keys are absent (every DataforSEO call returns
   `{ skipped: true }`).
-
-## Naming
-
-`LeaseStack`, `leasestack`, `leasestack.co` are temporary placeholders. See `NAMING.md`
-for the rename recipe.
