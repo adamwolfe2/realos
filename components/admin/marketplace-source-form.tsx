@@ -202,7 +202,7 @@ export function MarketplaceSourceForm() {
       </div>
 
       <div
-        className="p-4 rounded-lg space-y-3"
+        className="p-4 rounded-card space-y-3"
         style={{
           backgroundColor: requireFullEnrichment ? "rgba(15, 98, 254,0.06)" : "#F8FAFC",
           border: `1px solid ${requireFullEnrichment ? "rgba(15, 98, 254,0.18)" : "#E2E8F0"}`,
@@ -242,7 +242,7 @@ export function MarketplaceSourceForm() {
         <button
           type="submit"
           disabled={submitting || !externalId}
-          className="px-5 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-5 py-2.5 rounded-card bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting ? "Creating + syncing…" : "Create source"}
         </button>
@@ -255,7 +255,7 @@ export function MarketplaceSourceForm() {
 
       {result && (
         <div
-          className="mt-4 rounded-lg p-4"
+          className="mt-4 rounded-card p-4"
           style={{
             backgroundColor: result.backgroundStarted
               ? "rgba(15, 98, 254,0.06)"
@@ -375,7 +375,7 @@ function DiagnoseButton({
           setLoading(false);
         }
       }}
-      className="px-3 py-2 text-xs font-semibold border border-slate-300 rounded-md text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+      className="px-3 py-2 text-xs font-semibold border border-slate-300 rounded-card text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
     >
       {loading ? "Probing…" : "Diagnose"}
     </button>
@@ -384,7 +384,7 @@ function DiagnoseButton({
 
 function DiagnosisDisplay({ diagnosis }: { diagnosis: DiagnosisResult }) {
   return (
-    <div className="mt-2 p-3 rounded-md bg-slate-50 border border-slate-200 space-y-2">
+    <div className="mt-2 p-3 rounded-card bg-slate-50 border border-slate-200 space-y-2">
       <div className="flex items-center justify-between text-[11px] font-mono uppercase tracking-wider">
         <span className="text-slate-500">CURSIVE_API_KEY:</span>
         <span

@@ -122,7 +122,7 @@ export default async function AuditLogPage({
                 <Link
                   key={a}
                   href={`/admin/audit-log?action=${a}`}
-                  className={`rounded-lg border bg-card p-3 transition-colors ${
+                  className={`rounded-card border bg-card p-3 transition-colors ${
                     active
                       ? "border-primary/40 ring-1 ring-primary/20"
                       : "border-border hover:bg-muted/20"
@@ -183,7 +183,7 @@ export default async function AuditLogPage({
             <Link
               key={opt.label}
               href={`/admin/audit-log${qs ? `?${qs}` : ""}`}
-              className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors ${
+              className={`inline-flex items-center gap-1 rounded-card border px-2.5 py-1 text-[11px] font-medium transition-colors ${
                 isActive
                   ? "border-primary bg-primary/10 text-foreground"
                   : "border-border bg-background text-foreground hover:bg-muted"
@@ -195,7 +195,7 @@ export default async function AuditLogPage({
         })}
       </div>
 
-      <div className="rounded-lg border border-border bg-card overflow-hidden">
+      <div className="rounded-card border border-border bg-card overflow-hidden">
         <div className="overflow-x-auto">
         <table className="w-full text-sm min-w-[720px]">
           <thead className="bg-secondary text-xs uppercase tracking-wide text-muted-foreground">

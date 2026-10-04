@@ -145,7 +145,7 @@ export default async function SystemHealthPage() {
         actions={
           <Link
             href="/api/health/deep"
-            className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/30"
+            className="rounded-card border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/30"
           >
             View JSON
           </Link>
@@ -153,7 +153,7 @@ export default async function SystemHealthPage() {
       />
 
       {/* Overall status banner */}
-      <div className={`rounded-lg border p-5 ${bannerToneFor(health.status)}`}>
+      <div className={`rounded-card border p-5 ${bannerToneFor(health.status)}`}>
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             {health.status === "ok" ? (
@@ -238,7 +238,7 @@ export default async function SystemHealthPage() {
       <section>
         <h2 className="text-sm font-semibold text-foreground mb-3">Recent activity</h2>
         <div className="grid gap-4 lg:grid-cols-3">
-          <div className="lg:col-span-2 rounded-lg border border-border bg-card overflow-hidden">
+          <div className="lg:col-span-2 rounded-card border border-border bg-card overflow-hidden">
             <div className="px-4 py-3 border-b border-border bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
               Last 20 audit events
             </div>
@@ -271,7 +271,7 @@ export default async function SystemHealthPage() {
             )}
           </div>
 
-          <div className="rounded-lg border border-border bg-card p-5">
+          <div className="rounded-card border border-border bg-card p-5">
             <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
               Errors + observability
             </div>
@@ -285,13 +285,13 @@ export default async function SystemHealthPage() {
                 href={sentryDashboardUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted/30 text-center"
+                className="block w-full rounded-card border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted/30 text-center"
               >
                 Open Sentry dashboard
               </a>
               <Link
                 href="/admin/audit-log"
-                className="block w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted/30 text-center"
+                className="block w-full rounded-card border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted/30 text-center"
               >
                 Full audit log
               </Link>
@@ -317,7 +317,7 @@ function CheckCard({
   check: CheckResult;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
+    <div className="rounded-card border border-border bg-card p-4">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -374,7 +374,7 @@ const STATE_LABEL: Record<CheckState, string> = {
 function DemoReadinessTable({ rows }: { rows: TenantReadiness[] }) {
   if (rows.length === 0) {
     return (
-      <div className="rounded-lg border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+      <div className="rounded-card border border-border bg-card p-8 text-center text-sm text-muted-foreground">
         No client tenants found.
       </div>
     );
@@ -388,7 +388,7 @@ function DemoReadinessTable({ rows }: { rows: TenantReadiness[] }) {
   });
 
   return (
-    <div className="rounded-lg border border-border bg-card overflow-hidden">
+    <div className="rounded-card border border-border bg-card overflow-hidden">
       <ul className="divide-y divide-border">
         {sorted.map((row) => {
           const overall: CheckState =
@@ -456,7 +456,7 @@ function DemoReadinessTable({ rows }: { rows: TenantReadiness[] }) {
 
 function PulseStat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
+    <div className="rounded-card border border-border bg-card p-4">
       <div className="text-xs uppercase tracking-wide text-muted-foreground">
         {label}
       </div>
@@ -482,7 +482,7 @@ function CronTable({
   const cutoff = Date.now() - 24 * 60 * 60 * 1000;
 
   return (
-    <div className="rounded-lg border border-border bg-card overflow-hidden">
+    <div className="rounded-card border border-border bg-card overflow-hidden">
       <div className="overflow-x-auto">
       <table className="w-full text-sm min-w-[720px]">
         <thead className="bg-secondary text-xs uppercase tracking-wide text-muted-foreground">

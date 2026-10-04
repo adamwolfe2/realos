@@ -60,7 +60,7 @@ export default async function AdminBriefsPage() {
         actions={
           <Link
             href="/admin/briefs/new"
-            className="inline-flex items-center justify-center h-9 px-4 rounded-md text-[13px] font-semibold text-white"
+            className="inline-flex items-center justify-center h-9 px-4 rounded-card text-[13px] font-semibold text-white"
             style={{ backgroundColor: "#0f62fe" }}
           >
             Generate brief

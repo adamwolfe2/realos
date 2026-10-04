@@ -251,7 +251,7 @@ export function DomainsPanel({
       )}
 
       {pendingVerification ? (
-        <div className="rounded-md border border-border bg-secondary p-3 space-y-2">
+        <div className="rounded-card border border-border bg-secondary p-3 space-y-2">
           <div className="text-xs font-semibold text-foreground">
             Set these DNS records at the registrar for {pendingVerification.hostname}
           </div>
@@ -295,7 +295,7 @@ export function DomainsPanel({
             value={hostname}
             onChange={(e) => setHostname(e.target.value)}
             placeholder="example.com"
-            className="mt-1 w-full text-sm rounded-md border border-border bg-card px-2.5 py-1.5"
+            className="mt-1 w-full text-sm rounded-card border border-border bg-card px-2.5 py-1.5"
           />
         </div>
         <label className="flex items-center gap-1.5 text-xs text-muted-foreground pb-1.5">
@@ -309,7 +309,7 @@ export function DomainsPanel({
         <button
           type="submit"
           disabled={pending || !hostname.trim()}
-          className="text-xs px-3 py-1.5 bg-primary text-primary-foreground hover:bg-primary-dark transition-colors rounded-md disabled:opacity-40"
+          className="text-xs px-3 py-1.5 bg-primary text-primary-foreground hover:bg-primary-dark transition-colors rounded-card disabled:opacity-40"
         >
           {pending ? "Working…" : "Add domain"}
         </button>

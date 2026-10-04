@@ -219,7 +219,7 @@ export function CursivePanel({
               <button
                 type="button"
                 onClick={() => onCopy("tenant", tenantWebhookUrl)}
-                className="text-xs px-3 py-1.5 border border-border rounded-md hover:bg-secondary"
+                className="text-xs px-3 py-1.5 border border-border rounded-card hover:bg-secondary"
               >
                 {copied === "tenant" ? "Copied" : "Copy"}
               </button>
@@ -231,7 +231,7 @@ export function CursivePanel({
             </p>
           </>
         ) : (
-          <p className="text-[11px] text-muted-foreground rounded-md border border-dashed border-border bg-muted/20 px-2.5 py-2">
+          <p className="text-[11px] text-muted-foreground rounded-card border border-dashed border-border bg-muted/20 px-2.5 py-2">
             Save a Cursive pixel ID below to mint a per-tenant webhook token.
           </p>
         )}
@@ -248,7 +248,7 @@ export function CursivePanel({
           <button
             type="button"
             onClick={() => onCopy("shared", webhookUrl)}
-            className="text-xs px-3 py-1.5 border border-border rounded-md hover:bg-secondary"
+            className="text-xs px-3 py-1.5 border border-border rounded-card hover:bg-secondary"
           >
             {copied === "shared" ? "Copied" : "Copy"}
           </button>
@@ -365,7 +365,7 @@ export function CursivePanel({
             type="button"
             onClick={onTest}
             disabled={pending || !initial.cursivePixelId}
-            className="text-xs px-3 py-1.5 border border-border rounded-md hover:bg-secondary disabled:opacity-40"
+            className="text-xs px-3 py-1.5 border border-border rounded-card hover:bg-secondary disabled:opacity-40"
             title={
               initial.cursivePixelId
                 ? "Send a synthetic event through /api/webhooks/cursive to verify auth + pixel routing"
@@ -378,7 +378,7 @@ export function CursivePanel({
             type="button"
             onClick={onSync}
             disabled={pending || !segmentId.trim()}
-            className="text-xs px-3 py-1.5 border border-border rounded-md hover:bg-secondary disabled:opacity-40"
+            className="text-xs px-3 py-1.5 border border-border rounded-card hover:bg-secondary disabled:opacity-40"
             title={
               segmentId.trim()
                 ? "Pull resolved visitors from the Cursive segment"
@@ -391,7 +391,7 @@ export function CursivePanel({
             type="button"
             onClick={onSave}
             disabled={pending}
-            className="text-xs px-3 py-1.5 bg-primary text-primary-foreground hover:bg-primary-dark transition-colors rounded-md hover:bg-foreground/90 disabled:opacity-40"
+            className="text-xs px-3 py-1.5 bg-primary text-primary-foreground hover:bg-primary-dark transition-colors rounded-card hover:bg-foreground/90 disabled:opacity-40"
           >
             {pending ? "Saving…" : "Save"}
           </button>
@@ -417,7 +417,7 @@ export function CursivePanel({
         </p>
       )}
       {testMsg && testMsg.kind === "ok" && (
-        <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-[11px] text-primary space-y-1">
+        <div className="rounded-card border border-primary/30 bg-primary/5 p-3 text-[11px] text-primary space-y-1">
           <p className="font-medium">
             Webhook round-trip succeeded ({testMsg.status}). The pixel binding
             is wired correctly on our side.
@@ -442,7 +442,7 @@ export function CursivePanel({
         </div>
       )}
       {testMsg && testMsg.kind === "error" && (
-        <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-[11px] text-destructive space-y-1">
+        <div className="rounded-card border border-destructive/30 bg-destructive/5 p-3 text-[11px] text-destructive space-y-1">
           <p className="font-medium">
             Webhook test failed{testMsg.status ? ` (${testMsg.status})` : ""}.
           </p>
@@ -481,7 +481,7 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         readOnly={readOnly}
-        className={`mt-1 w-full text-sm rounded-md border border-border bg-card px-2.5 py-1.5 ${
+        className={`mt-1 w-full text-sm rounded-card border border-border bg-card px-2.5 py-1.5 ${
           mono ? "font-mono text-xs" : ""
         } ${readOnly ? "bg-muted/30 text-muted-foreground" : ""}`}
       />

@@ -69,7 +69,7 @@ export default async function AdminMarketplacePage() {
       />
 
       {stalePaidWebhook ? (
-        <div className="flex items-start gap-2.5 p-4 rounded-lg bg-amber-50 border border-amber-200">
+        <div className="flex items-start gap-2.5 p-4 rounded-card bg-amber-50 border border-amber-200">
           <AlertTriangle aria-hidden="true" className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" strokeWidth={1.5} />
           <div className="text-sm leading-relaxed text-amber-900">
             <strong className="font-semibold">
@@ -106,7 +106,7 @@ export default async function AdminMarketplacePage() {
         <StatTile label="Total leads (all states)" value={totalLeads.toLocaleString()} />
       </div>
 
-      <section className="bg-white border border-slate-200 rounded-2xl p-6 md:p-8">
+      <section className="bg-white border border-slate-200 rounded-card p-6 md:p-8">
         <h2 className="text-lg font-medium text-slate-900 mb-1">
           Add a new source
         </h2>
@@ -123,7 +123,7 @@ export default async function AdminMarketplacePage() {
           Configured sources
         </h2>
         {sources.length === 0 ? (
-          <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-10 text-center">
+          <div className="bg-slate-50 border border-dashed border-slate-200 rounded-card p-10 text-center">
             <p className="text-sm text-slate-500">
               No sources yet. Add your first one above.
             </p>
@@ -175,7 +175,7 @@ export default async function AdminMarketplacePage() {
 
 function StatTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-4">
+    <div className="bg-white border border-slate-200 rounded-card p-4">
       <p className="text-xs font-mono uppercase tracking-wider text-slate-400">
         {label}
       </p>

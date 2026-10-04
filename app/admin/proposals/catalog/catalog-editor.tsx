@@ -47,7 +47,7 @@ export function CatalogEditor({ items }: { items: ComposerCatalogItem[] }) {
           type="button"
           onClick={seed}
           disabled={seeding}
-          className="inline-flex items-center rounded-md bg-card border border-border px-3 py-1.5 text-xs font-medium hover:bg-secondary transition-colors disabled:opacity-60"
+          className="inline-flex items-center rounded-card bg-card border border-border px-3 py-1.5 text-xs font-medium hover:bg-secondary transition-colors disabled:opacity-60"
         >
           {seeding ? "Seeding…" : "Seed from defaults"}
         </button>
@@ -112,7 +112,7 @@ function CatalogRow({
   }
 
   return (
-    <div className="rounded-md border border-border bg-card p-3">
+    <div className="rounded-card border border-border bg-card p-3">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           {editing ? (
@@ -135,7 +135,7 @@ function CatalogRow({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
-              className="mt-2 w-full rounded-md border border-border bg-card px-2 py-1 text-xs"
+              className="mt-2 w-full rounded-card border border-border bg-card px-2 py-1 text-xs"
             />
           ) : (
             <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
@@ -158,7 +158,7 @@ function CatalogRow({
                     Math.max(0, Math.round(Number(e.target.value) * 100) || 0),
                   )
                 }
-                className="w-24 rounded-md border border-border bg-card px-2 py-1 text-xs tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="w-24 rounded-card border border-border bg-card px-2 py-1 text-xs tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
           ) : (
@@ -192,7 +192,7 @@ function CatalogRow({
                 setDescription(item.description);
                 setPriceCents(item.defaultPriceCents);
               }}
-              className="text-xs px-2 py-1 rounded-md border border-border bg-card hover:bg-secondary"
+              className="text-xs px-2 py-1 rounded-card border border-border bg-card hover:bg-secondary"
             >
               Cancel
             </button>
@@ -200,7 +200,7 @@ function CatalogRow({
               type="button"
               onClick={save}
               disabled={saving}
-              className="text-xs px-2 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary-dark disabled:opacity-60"
+              className="text-xs px-2 py-1 rounded-card bg-primary text-primary-foreground hover:bg-primary-dark disabled:opacity-60"
             >
               {saving ? "Saving…" : "Save"}
             </button>
@@ -209,7 +209,7 @@ function CatalogRow({
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="text-xs px-2 py-1 rounded-md border border-border bg-card hover:bg-secondary"
+            className="text-xs px-2 py-1 rounded-card border border-border bg-card hover:bg-secondary"
           >
             Edit
           </button>

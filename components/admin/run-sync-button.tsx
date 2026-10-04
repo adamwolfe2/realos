@@ -70,7 +70,7 @@ export function RunSyncButton({ provider, cronJobName, scope, orgId }: Props) {
         type="button"
         onClick={handleClick}
         disabled={pending}
-        className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-muted/30 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="inline-flex items-center gap-1.5 rounded-card border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-muted/30 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {pending ? (
           <Loader2 className="h-3 w-3 animate-spin" />

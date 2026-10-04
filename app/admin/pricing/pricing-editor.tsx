@@ -38,7 +38,7 @@ export function PricingEditor({ rows }: { rows: FeaturePriceRow[] }) {
   }
 
   return (
-    <form action={onSubmit} className="rounded-xl border border-border bg-card overflow-hidden">
+    <form action={onSubmit} className="rounded-card border border-border bg-card overflow-hidden">
       <div className="hidden sm:grid grid-cols-[1fr_140px_90px] gap-3 px-4 py-2.5 border-b border-border bg-muted/30 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
         <span>Feature</span>
         <span>Price / property / mo</span>
@@ -81,7 +81,7 @@ export function PricingEditor({ rows }: { rows: FeaturePriceRow[] }) {
                 max={100000}
                 step="1"
                 inputMode="decimal"
-                className="w-full rounded-md border border-border bg-background pl-6 pr-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className="w-full rounded-card border border-border bg-background pl-6 pr-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                 aria-label={`${row.label} price`}
               />
             </div>
@@ -113,7 +113,7 @@ export function PricingEditor({ rows }: { rows: FeaturePriceRow[] }) {
           <button
             type="submit"
             disabled={pending || syncing}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            className="rounded-card bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
             {pending ? "Saving…" : "Save pricing"}
           </button>
@@ -121,7 +121,7 @@ export function PricingEditor({ rows }: { rows: FeaturePriceRow[] }) {
             type="button"
             onClick={onSync}
             disabled={pending || syncing}
-            className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-secondary disabled:opacity-50"
+            className="rounded-card border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-secondary disabled:opacity-50"
             title="Create/update the per-feature prices in Stripe from the amounts above"
           >
             {syncing ? "Syncing…" : "Sync to Stripe"}

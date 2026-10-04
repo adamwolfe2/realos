@@ -128,7 +128,7 @@ export default async function ContentApprovalsPage({
               id="approvals-org"
               name="org"
               defaultValue={orgFilter ?? ""}
-              className="rounded-lg border border-border bg-background px-2.5 py-1.5 text-[12px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="rounded-card border border-border bg-background px-2.5 py-1.5 text-[12px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
             >
               <option value="">All orgs</option>
               {orgOptions.map((o) => (
@@ -139,7 +139,7 @@ export default async function ContentApprovalsPage({
             </select>
             <button
               type="submit"
-              className="rounded-lg border border-border bg-background px-2.5 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted"
+              className="rounded-card border border-border bg-background px-2.5 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted"
             >
               Apply
             </button>
@@ -148,7 +148,7 @@ export default async function ContentApprovalsPage({
       </header>
 
       {drafts.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-card p-12 text-center">
+        <div className="rounded-card border border-dashed border-border bg-card p-12 text-center">
           <div className="mx-auto mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <Inbox className="h-5 w-5 text-primary" />
           </div>
@@ -176,7 +176,7 @@ export default async function ContentApprovalsPage({
             return (
               <li
                 key={d.id}
-                className="group rounded-2xl border border-border bg-card p-4 hover:border-primary/40 hover:shadow-sm transition-all"
+                className="group rounded-card border border-border bg-card p-4 hover:border-primary/40 hover:shadow-sm transition-all"
               >
                 <div className="flex items-start gap-4">
                   {/* Severity dot — single LeaseStack blue, no rainbow. */}
@@ -189,7 +189,7 @@ export default async function ContentApprovalsPage({
 
                   <div className="min-w-0 flex-1 space-y-1.5">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono font-medium uppercase tracking-wide text-primary">
+                      <span className="rounded-card bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono font-medium uppercase tracking-wide text-primary">
                         {d.format.replace(/_/g, " ").toLowerCase()}
                       </span>
                       <span className="text-[12px] font-medium text-foreground">
@@ -221,7 +221,7 @@ export default async function ContentApprovalsPage({
                   <div className="flex-none">
                     <Link
                       href={`/admin/content-approvals/${d.id}`}
-                      className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+                      className="inline-flex items-center gap-1 rounded-card bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
                     >
                       Open
                       <ArrowUpRight className="h-3.5 w-3.5" />

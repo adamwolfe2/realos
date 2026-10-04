@@ -84,7 +84,7 @@ export function PlatformBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-md bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap",
+        "inline-flex items-center rounded-card bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap",
         className,
       )}
     >

@@ -75,7 +75,7 @@ export default async function SupportPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-lg border border-border bg-card overflow-hidden">
+        <section className="rounded-card border border-border bg-card overflow-hidden">
           <div className="px-4 py-3 border-b border-border">
             <h2 className="text-sm font-semibold">Live conversations</h2>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -127,7 +127,7 @@ export default async function SupportPage() {
           )}
         </section>
 
-        <section className="rounded-lg border border-border bg-card overflow-hidden">
+        <section className="rounded-card border border-border bg-card overflow-hidden">
           <div className="px-4 py-3 border-b border-border">
             <h2 className="text-sm font-semibold">Recent engagements</h2>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -166,7 +166,7 @@ export default async function SupportPage() {
         </section>
       </div>
 
-      <section className="rounded-lg border border-border bg-card overflow-hidden">
+      <section className="rounded-card border border-border bg-card overflow-hidden">
         <div className="px-4 py-3 border-b border-border">
           <h2 className="text-sm font-semibold">All recent conversations</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
@@ -238,7 +238,7 @@ function Stat({
   hint?: string;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
+    <div className="rounded-card border border-border bg-card p-4">
       <div className="text-xs uppercase tracking-wide text-muted-foreground">
         {label}
       </div>

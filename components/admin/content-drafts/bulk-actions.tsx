@@ -131,7 +131,7 @@ export function BulkActions({ drafts }: Props) {
   return (
     <>
       {/* Select-all header bar */}
-      <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2">
+      <div className="flex items-center justify-between gap-3 rounded-card border border-border bg-card px-3 py-2">
         <label className="inline-flex items-center gap-2 text-[12px] text-foreground">
           <input
             type="checkbox"
@@ -152,7 +152,7 @@ export function BulkActions({ drafts }: Props) {
               type="button"
               disabled={pending}
               onClick={() => openNotesModal("reject")}
-              className="rounded-md border border-red-300 bg-red-50 px-2.5 py-1 text-[11.5px] font-medium text-red-700 hover:bg-red-100 disabled:opacity-50"
+              className="rounded-card border border-red-300 bg-red-50 px-2.5 py-1 text-[11.5px] font-medium text-red-700 hover:bg-red-100 disabled:opacity-50"
             >
               Reject
             </button>
@@ -160,7 +160,7 @@ export function BulkActions({ drafts }: Props) {
               type="button"
               disabled={pending}
               onClick={() => openNotesModal("request_changes")}
-              className="rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 text-[11.5px] font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-50"
+              className="rounded-card border border-amber-300 bg-amber-50 px-2.5 py-1 text-[11.5px] font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-50"
             >
               Request changes
             </button>
@@ -168,7 +168,7 @@ export function BulkActions({ drafts }: Props) {
               type="button"
               disabled={pending}
               onClick={() => call("approve")}
-              className="rounded-md bg-primary px-2.5 py-1 text-[11.5px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              className="rounded-card bg-primary px-2.5 py-1 text-[11.5px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
               {pending ? "Working…" : "Approve"}
             </button>
@@ -184,7 +184,7 @@ export function BulkActions({ drafts }: Props) {
           return (
             <li
               key={d.id}
-              className={`rounded-2xl border bg-card p-4 transition-colors ${
+              className={`rounded-card border bg-card p-4 transition-colors ${
                 isSelected ? "border-primary" : "border-border hover:border-primary/40"
               }`}
             >
@@ -202,11 +202,11 @@ export function BulkActions({ drafts }: Props) {
                 >
                   <div className="flex items-start justify-between gap-3 mb-1.5">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wide text-primary">
+                      <span className="rounded-card bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wide text-primary">
                         {d.format.replace(/_/g, " ").toLowerCase()}
                       </span>
                       <span
-                        className={`rounded-md px-1.5 py-0.5 text-[10px] font-mono uppercase ${meta}`}
+                        className={`rounded-card px-1.5 py-0.5 text-[10px] font-mono uppercase ${meta}`}
                       >
                         {d.status.replace(/_/g, " ").toLowerCase()}
                       </span>
@@ -252,7 +252,7 @@ export function BulkActions({ drafts }: Props) {
       >
         <DialogContent
           overlayClassName="z-[80]"
-          className="z-[80] max-w-md rounded-2xl border border-border bg-card shadow-xl"
+          className="z-[80] max-w-md rounded-card border border-border bg-card shadow-xl"
         >
           <div>
             <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
@@ -276,7 +276,7 @@ export function BulkActions({ drafts }: Props) {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Notes (applied to every selected draft, sent to operator via bell + email)"
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                className="w-full rounded-card border border-border bg-background px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
               />
               <p className="text-[11px] text-muted-foreground">
                 Same notes go to every selected draft. Make them generic enough
@@ -287,7 +287,7 @@ export function BulkActions({ drafts }: Props) {
               <button
                 type="button"
                 onClick={() => setShowNotesModal(null)}
-                className="rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted"
+                className="rounded-card border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted"
               >
                 Cancel
               </button>
@@ -295,7 +295,7 @@ export function BulkActions({ drafts }: Props) {
                 type="button"
                 disabled={pending || notes.trim().length < 4}
                 onClick={() => showNotesModal && call(showNotesModal, notes.trim())}
-                className="rounded-lg bg-foreground px-3 py-1.5 text-[12px] font-medium text-background hover:opacity-90 disabled:opacity-50"
+                className="rounded-card bg-foreground px-3 py-1.5 text-[12px] font-medium text-background hover:opacity-90 disabled:opacity-50"
               >
                 {pending ? "Working…" : "Confirm"}
               </button>

@@ -29,7 +29,7 @@ export default async function MarketplaceSignInPage({
   return (
     <div className="min-h-[calc(100vh-9rem)] flex items-center justify-center px-4 py-12">
       <div
-        className="w-full max-w-md p-8 md:p-10 bg-card rounded-2xl"
+        className="w-full max-w-md p-8 md:p-10 bg-card rounded-card"
         style={{
           boxShadow: "0 0 0 1px #E2E8F0, 0 20px 60px rgba(30, 42, 58,0.08)",
         }}
@@ -46,7 +46,7 @@ export default async function MarketplaceSignInPage({
         </p>
 
         {errorMessage && (
-          <div className="mt-5 p-3 bg-destructive/[0.08] border border-destructive/20 rounded-lg text-red-700 text-[13px] leading-[1.5]">
+          <div className="mt-5 p-3 bg-destructive/[0.08] border border-destructive/20 rounded-card text-red-700 text-[13px] leading-[1.5]">
             {errorMessage}
           </div>
         )}

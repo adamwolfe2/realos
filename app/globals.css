@@ -97,6 +97,12 @@ body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-ins
 
   /* Ink alias (same value as foreground), used by the pricing components. */
   --color-ink: #161616;
+
+  /* Carbon shape tokens (DESIGN.md §4): cards/panels 2px, app controls 2px.
+     Use rounded-card / rounded-control instead of rounded-[2px] or the
+     Tailwind rounded-md/lg/xl defaults (6/8/12px), which are off-spec. */
+  --radius-card: 2px;
+  --radius-control: 2px;
 }
 
 :root {

@@ -118,7 +118,7 @@ export function InviteUserButton({
 
       {open && !disabled ? (
         result ? (
-          <div className="mt-2 w-[340px] rounded-lg border border-border bg-card p-3 space-y-3 text-left">
+          <div className="mt-2 w-[340px] rounded-card border border-border bg-card p-3 space-y-3 text-left">
             <div>
               <p className="text-[11px] uppercase tracking-widest font-semibold text-muted-foreground">
                 Invite created
@@ -174,7 +174,7 @@ export function InviteUserButton({
         ) : (
         <form
           onSubmit={submit}
-          className="mt-2 w-[340px] rounded-lg border border-border bg-card p-3 space-y-2 text-left"
+          className="mt-2 w-[340px] rounded-card border border-border bg-card p-3 space-y-2 text-left"
         >
           <label className="block space-y-1">
             <span className="text-[11px] uppercase tracking-widest font-semibold text-muted-foreground">

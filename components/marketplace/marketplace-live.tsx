@@ -248,7 +248,7 @@ export function MarketplaceLive() {
           </FilterGroup>
 
           <div
-            className="mt-6 p-3 rounded-md"
+            className="mt-6 p-3 rounded-card"
             style={{
               backgroundColor: PARCHMENT,
               border: `1px dashed ${BORDER}`,

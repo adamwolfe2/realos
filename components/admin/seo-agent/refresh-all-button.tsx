@@ -44,7 +44,7 @@ export function AdminRefreshAllButton() {
         type="button"
         onClick={() => setConfirming(true)}
         disabled={pending}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-primary/15 transition-colors disabled:opacity-50"
+        className="inline-flex items-center gap-1.5 rounded-card border border-primary/30 bg-primary/10 px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-primary/15 transition-colors disabled:opacity-50"
       >
         {pending ? "Refreshing all clients…" : "Force-refresh all clients"}
       </button>

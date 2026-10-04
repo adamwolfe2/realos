@@ -139,7 +139,7 @@ export function ComposerToolbar({
         <button
           type="button"
           onClick={copyShareUrl}
-          className="inline-flex items-center rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium hover:bg-secondary transition-colors"
+          className="inline-flex items-center rounded-card border border-border bg-card px-2.5 py-1 text-xs font-medium hover:bg-secondary transition-colors"
           title={shareUrl}
         >
           {copied ? "Copied" : "Copy share link"}
@@ -150,7 +150,7 @@ export function ComposerToolbar({
         href={`/api/admin/proposals/${proposal.id}/pdf`}
         target="_blank"
         rel="noreferrer"
-        className="inline-flex items-center rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium hover:bg-secondary transition-colors"
+        className="inline-flex items-center rounded-card border border-border bg-card px-2.5 py-1 text-xs font-medium hover:bg-secondary transition-colors"
       >
         Download PDF
       </a>
@@ -159,7 +159,7 @@ export function ComposerToolbar({
         type="button"
         onClick={doDuplicate}
         disabled={working === "dup"}
-        className="inline-flex items-center rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium hover:bg-secondary transition-colors disabled:opacity-60"
+        className="inline-flex items-center rounded-card border border-border bg-card px-2.5 py-1 text-xs font-medium hover:bg-secondary transition-colors disabled:opacity-60"
       >
         Duplicate
       </button>
@@ -168,7 +168,7 @@ export function ComposerToolbar({
         <button
           type="button"
           onClick={() => setConfirmVoid(true)}
-          className="inline-flex items-center rounded-md border border-destructive/40 text-destructive bg-card px-2.5 py-1 text-xs font-medium hover:bg-destructive/10 transition-colors"
+          className="inline-flex items-center rounded-card border border-destructive/40 text-destructive bg-card px-2.5 py-1 text-xs font-medium hover:bg-destructive/10 transition-colors"
         >
           Void
         </button>
@@ -183,7 +183,7 @@ export function ComposerToolbar({
             type="button"
             onClick={() => setConfirmSend(true)}
             disabled={!hasLines}
-            className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium hover:bg-primary-dark transition-colors disabled:opacity-50"
+            className="inline-flex items-center rounded-card bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium hover:bg-primary-dark transition-colors disabled:opacity-50"
             title={
               sendIsPublishOnly
                 ? "Publish: mints a share URL anyone can pay (no email sent)"
@@ -237,7 +237,7 @@ export function ComposerToolbar({
             <button
               type="button"
               onClick={() => setConfirmSend(false)}
-              className="px-3 py-1.5 text-xs rounded-md border border-border bg-card hover:bg-secondary"
+              className="px-3 py-1.5 text-xs rounded-card border border-border bg-card hover:bg-secondary"
             >
               Cancel
             </button>
@@ -245,7 +245,7 @@ export function ComposerToolbar({
               type="button"
               onClick={doSend}
               disabled={working === "send"}
-              className="px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground hover:bg-primary-dark disabled:opacity-60"
+              className="px-3 py-1.5 text-xs rounded-card bg-primary text-primary-foreground hover:bg-primary-dark disabled:opacity-60"
             >
               {working === "send"
                 ? sendIsPublishOnly
@@ -273,13 +273,13 @@ export function ComposerToolbar({
             value={voidReason}
             onChange={(e) => setVoidReason(e.target.value)}
             placeholder="e.g. replaced by Proposal #2 / mispriced"
-            className="w-full rounded-md border border-border bg-card px-2 py-1.5 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="w-full rounded-card border border-border bg-card px-2 py-1.5 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
           <div className="flex justify-end gap-2">
             <button
               type="button"
               onClick={() => setConfirmVoid(false)}
-              className="px-3 py-1.5 text-xs rounded-md border border-border bg-card hover:bg-secondary"
+              className="px-3 py-1.5 text-xs rounded-card border border-border bg-card hover:bg-secondary"
             >
               Cancel
             </button>
@@ -287,7 +287,7 @@ export function ComposerToolbar({
               type="button"
               onClick={doVoid}
               disabled={working === "void"}
-              className="px-3 py-1.5 text-xs rounded-md bg-destructive text-destructive-foreground hover:opacity-90 disabled:opacity-60"
+              className="px-3 py-1.5 text-xs rounded-card bg-destructive text-destructive-foreground hover:opacity-90 disabled:opacity-60"
             >
               {working === "void" ? "Voiding…" : "Void proposal"}
             </button>
@@ -309,7 +309,7 @@ function Dialog({
 }) {
   return (
     <UiDialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="bg-card rounded-lg border border-border shadow-xl max-w-md p-5">
+      <DialogContent className="bg-card rounded-card border border-border shadow-xl max-w-md p-5">
         <DialogTitle className="text-base font-semibold text-foreground mb-3">
           {title}
         </DialogTitle>

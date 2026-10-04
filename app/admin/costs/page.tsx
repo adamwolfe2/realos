@@ -213,7 +213,7 @@ export default async function AdminCostsPage() {
       </div>
 
       {/* Per-provider rollup */}
-      <section className="rounded-xl border bg-white" style={{ borderColor: "#E5E7EB" }}>
+      <section className="rounded-card border bg-white" style={{ borderColor: "#E5E7EB" }}>
         <div
           className="px-5 py-3 flex items-center justify-between"
           style={{ borderBottom: "1px solid #E5E7EB" }}
@@ -303,7 +303,7 @@ export default async function AdminCostsPage() {
 
       {/* Per-org + per-audit two-up */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <section className="rounded-xl border bg-white" style={{ borderColor: "#E5E7EB" }}>
+        <section className="rounded-card border bg-white" style={{ borderColor: "#E5E7EB" }}>
           <div
             className="px-5 py-3"
             style={{ borderBottom: "1px solid #E5E7EB" }}
@@ -385,7 +385,7 @@ export default async function AdminCostsPage() {
           </div>
         </section>
 
-        <section className="rounded-xl border bg-white" style={{ borderColor: "#E5E7EB" }}>
+        <section className="rounded-card border bg-white" style={{ borderColor: "#E5E7EB" }}>
           <div
             className="px-5 py-3"
             style={{ borderBottom: "1px solid #E5E7EB" }}
@@ -476,7 +476,7 @@ export default async function AdminCostsPage() {
       </div>
 
       {/* Recent calls audit log */}
-      <section className="rounded-xl border bg-white" style={{ borderColor: "#E5E7EB" }}>
+      <section className="rounded-card border bg-white" style={{ borderColor: "#E5E7EB" }}>
         <div
           className="px-5 py-3"
           style={{ borderBottom: "1px solid #E5E7EB" }}
@@ -591,7 +591,7 @@ function CostTile({
 }) {
   return (
     <div
-      className="rounded-xl border bg-white p-5"
+      className="rounded-card border bg-white p-5"
       style={{ borderColor: "#E5E7EB" }}
     >
       <p
@@ -628,7 +628,7 @@ function CapStatus({
   if (capUsd == null) {
     return (
       <div
-        className="rounded-xl border bg-white p-5"
+        className="rounded-card border bg-white p-5"
         style={{ borderColor: "#E5E7EB" }}
       >
         <p
@@ -659,7 +659,7 @@ function CapStatus({
         : "#0f62fe";
   return (
     <div
-      className="rounded-xl border bg-white p-5"
+      className="rounded-card border bg-white p-5"
       style={{ borderColor: "#E5E7EB" }}
     >
       <p

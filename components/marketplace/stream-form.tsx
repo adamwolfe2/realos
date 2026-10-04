@@ -126,7 +126,7 @@ export function StreamForm() {
         <button
           type="submit"
           disabled={submitting || !name}
-          className="px-5 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-5 py-2.5 rounded-card bg-blue-600 text-white text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting ? "Saving…" : "Create stream"}
         </button>

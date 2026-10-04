@@ -18,13 +18,13 @@ export default function AdminNotFound() {
         <div className="flex flex-wrap gap-3 justify-center pt-2">
           <Link
             href="/admin"
-            className="inline-flex items-center h-9 px-4 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary-dark transition-colors"
+            className="inline-flex items-center h-9 px-4 text-sm font-medium rounded-card bg-primary text-primary-foreground hover:bg-primary-dark transition-colors"
           >
             Admin home
           </Link>
           <Link
             href="/admin/clients"
-            className="inline-flex items-center h-9 px-4 text-sm font-medium rounded-md border border-border bg-card hover:bg-accent transition-colors"
+            className="inline-flex items-center h-9 px-4 text-sm font-medium rounded-card border border-border bg-card hover:bg-accent transition-colors"
           >
             All clients
           </Link>

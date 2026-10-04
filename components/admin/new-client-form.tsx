@@ -34,7 +34,7 @@ const TIERS = [
 ];
 
 const selectCls =
-  "h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]";
+  "h-9 w-full rounded-card border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]";
 
 export function NewClientForm() {
   const router = useRouter();
@@ -278,7 +278,7 @@ export function NewClientForm() {
               <label
                 key={m.key}
                 className={cn(
-                  "flex items-start gap-3 rounded-md border p-3 cursor-pointer transition-colors",
+                  "flex items-start gap-3 rounded-card border p-3 cursor-pointer transition-colors",
                   checked
                     ? "border-primary/40 bg-primary/[0.04]"
                     : "border-input hover:bg-accent/40",

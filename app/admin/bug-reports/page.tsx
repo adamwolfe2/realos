@@ -150,7 +150,7 @@ export default async function BugReportsListPage({
               key={f.key}
               href={`/admin/bug-reports?status=${f.key}${sp.severity ? `&severity=${sp.severity}` : ""}`}
               className={cn(
-                "px-2.5 py-1 rounded-md text-xs font-medium border transition-colors",
+                "px-2.5 py-1 rounded-card text-xs font-medium border transition-colors",
                 active
                   ? "bg-primary text-primary-foreground border-primary"
                   : "bg-card text-foreground border-border hover:bg-muted/50",
@@ -190,7 +190,7 @@ export default async function BugReportsListPage({
                 <li key={r.id}>
                   <Link
                     href={`/admin/bug-reports/${r.id}`}
-                    className="group flex items-start gap-3 px-1 py-3 -mx-0.5 rounded-md hover:bg-muted/30 transition-colors"
+                    className="group flex items-start gap-3 px-1 py-3 -mx-0.5 rounded-card hover:bg-muted/30 transition-colors"
                   >
                     <SeverityChip severity={r.severity} />
                     <span className="min-w-0 flex-1">
@@ -244,7 +244,7 @@ function SeverityChip({ severity }: { severity: BugReportSeverity }) {
   return (
     <span
       className={cn(
-        "shrink-0 inline-flex items-center justify-center w-12 text-center rounded-md border px-1 py-1 text-[9px] font-bold uppercase tracking-widest mt-0.5",
+        "shrink-0 inline-flex items-center justify-center w-12 text-center rounded-card border px-1 py-1 text-[9px] font-bold uppercase tracking-widest mt-0.5",
         tone,
       )}
     >

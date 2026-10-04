@@ -143,7 +143,7 @@ export default async function CampaignsPage({
         ))}
       </div>
 
-      <div className="rounded-lg border border-border bg-card overflow-hidden">
+      <div className="rounded-card border border-border bg-card overflow-hidden">
         <div className="overflow-x-auto">
         <table className="w-full text-sm min-w-[900px]">
           <thead className="bg-secondary text-xs uppercase tracking-wide text-muted-foreground">
@@ -256,7 +256,7 @@ function FilterChip({
     <Link
       href={href}
       className={cn(
-        "text-xs px-2.5 py-1 rounded-md border transition-colors",
+        "text-xs px-2.5 py-1 rounded-card border transition-colors",
         active
           ? "bg-primary text-primary-foreground border-primary"
           : "border-border bg-card text-foreground hover:bg-muted/30",

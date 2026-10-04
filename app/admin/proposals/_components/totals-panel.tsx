@@ -22,7 +22,7 @@ export function TotalsPanel({
   const cadenceLabel = totals.cadence === "ANNUAL" ? "/yr" : "/mo";
 
   return (
-    <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+    <div className="rounded-card border border-border bg-card p-4 space-y-3">
       <div className="text-[10px] tracking-[0.14em] uppercase font-semibold text-muted-foreground">
         Totals
       </div>

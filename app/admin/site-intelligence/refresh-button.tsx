@@ -63,8 +63,8 @@ export function RefreshButton({
 
   const base =
     variant === "primary"
-      ? "inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-      : "inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-[11px] font-medium text-foreground hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors";
+      ? "inline-flex items-center gap-1.5 rounded-card bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      : "inline-flex items-center gap-1.5 rounded-card border border-border bg-background px-2.5 py-1.5 text-[11px] font-medium text-foreground hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors";
 
   return (
     <div className="flex items-center gap-2">

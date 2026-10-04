@@ -97,7 +97,7 @@ export default async function CreativeQueue() {
             <div className="h-px bg-border" />
             <div className="flex flex-col gap-2 min-h-[48px]">
               {col.items.length === 0 ? (
-                <p className="rounded-md border border-dashed border-border p-3 text-[11px] text-muted-foreground text-center">
+                <p className="rounded-card border border-dashed border-border p-3 text-[11px] text-muted-foreground text-center">
                   Empty
                 </p>
               ) : (
@@ -105,7 +105,7 @@ export default async function CreativeQueue() {
                   <Link
                     key={r.id}
                     href={`/admin/creative-requests/${r.id}`}
-                    className="block rounded-lg border border-border bg-card p-3 hover:bg-secondary transition-colors"
+                    className="block rounded-card border border-border bg-card p-3 hover:bg-secondary transition-colors"
                   >
                     <div className="font-medium text-sm text-foreground truncate">
                       {r.title}

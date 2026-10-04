@@ -246,7 +246,7 @@ export default async function AppfolioDiagnosisPage() {
         <Stat label="Syncing now" value={totals.syncing} />
       </section>
 
-      <section className="rounded-lg border border-border bg-card overflow-hidden">
+      <section className="rounded-card border border-border bg-card overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-muted/30 text-[10px] uppercase tracking-widest text-muted-foreground">
             <tr>
@@ -380,7 +380,7 @@ export default async function AppfolioDiagnosisPage() {
         </table>
       </section>
 
-      <section className="rounded-lg border border-border bg-muted/20 p-5">
+      <section className="rounded-card border border-border bg-muted/20 p-5">
         <h2 className="text-sm font-semibold text-foreground mb-2">
           Diagnosis cheat sheet
         </h2>
@@ -429,7 +429,7 @@ function Stat({
   tone?: "ok" | "bad";
 }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
+    <div className="rounded-card border border-border bg-card p-4">
       <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
         {label}
       </div>

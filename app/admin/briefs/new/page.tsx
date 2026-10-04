@@ -108,7 +108,7 @@ function Field({
         name={name}
         placeholder={placeholder}
         required={required}
-        className="w-full h-10 px-3 rounded-md border border-border bg-background text-[13.5px] focus:outline-none focus:ring-1 focus:ring-foreground/30"
+        className="w-full h-10 px-3 rounded-card border border-border bg-background text-[13.5px] focus:outline-none focus:ring-1 focus:ring-foreground/30"
       />
       {hint ? (
         <span className="block mt-1 text-[11.5px] text-muted-foreground leading-snug">
@@ -139,7 +139,7 @@ function TextareaField({
         name={name}
         placeholder={placeholder}
         rows={5}
-        className="w-full px-3 py-2 rounded-md border border-border bg-background text-[13px] focus:outline-none focus:ring-1 focus:ring-foreground/30 font-mono"
+        className="w-full px-3 py-2 rounded-card border border-border bg-background text-[13px] focus:outline-none focus:ring-1 focus:ring-foreground/30 font-mono"
       />
       {hint ? (
         <span className="block mt-1 text-[11.5px] text-muted-foreground leading-snug">

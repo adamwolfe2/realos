@@ -2,7 +2,7 @@ export default function PipelineLoading() {
   return (
     <div className="space-y-6 animate-pulse">
       <div className="space-y-1">
-        <div className="h-7 w-24 bg-muted rounded-md" />
+        <div className="h-7 w-24 bg-muted rounded-card" />
         <div className="h-4 w-80 bg-muted/60 rounded" />
       </div>
       <div className="overflow-x-auto">
@@ -16,7 +16,7 @@ export default function PipelineLoading() {
               {Array.from({ length: i < 3 ? 2 : 1 }).map((_, j) => (
                 <div
                   key={j}
-                  className="rounded-lg border border-border bg-card p-3 space-y-2"
+                  className="rounded-card border border-border bg-card p-3 space-y-2"
                 >
                   <div className="h-4 w-32 bg-muted rounded" />
                   <div className="h-3 w-20 bg-muted/50 rounded" />

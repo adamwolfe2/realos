@@ -34,7 +34,7 @@ export function LineRow({
   return (
     <div
       className={cn(
-        "rounded-md border border-border bg-card p-3 space-y-2",
+        "rounded-card border border-border bg-card p-3 space-y-2",
         disabled ? "opacity-70" : "",
       )}
     >
@@ -115,7 +115,7 @@ export function LineRow({
                   ),
                 });
               }}
-              className="w-24 rounded-md border border-border bg-card px-2 py-1 text-xs tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="w-24 rounded-card border border-border bg-card px-2 py-1 text-xs tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
         </Field>
@@ -135,7 +135,7 @@ export function LineRow({
               );
               onPatch({ quantity: v });
             }}
-            className="w-16 rounded-md border border-border bg-card px-2 py-1 text-xs tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="w-16 rounded-card border border-border bg-card px-2 py-1 text-xs tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </Field>
 
@@ -146,7 +146,7 @@ export function LineRow({
             onChange={(e) =>
               onPatch({ recurring: e.target.value === "recurring" })
             }
-            className="rounded-md border border-border bg-card px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="rounded-card border border-border bg-card px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
           >
             <option value="recurring">Recurring</option>
             <option value="one_time">One-time</option>

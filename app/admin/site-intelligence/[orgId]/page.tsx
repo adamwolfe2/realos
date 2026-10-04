@@ -195,7 +195,7 @@ export default async function SiteIntelligenceDetailPage({
       </div>
 
       {/* Header summary card */}
-      <header className="rounded-2xl border border-border bg-card p-5">
+      <header className="rounded-card border border-border bg-card p-5">
         <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
           Site intelligence
         </p>
@@ -233,7 +233,7 @@ export default async function SiteIntelligenceDetailPage({
       </header>
 
       {!si ? (
-        <div className="rounded-2xl border border-dashed border-border bg-card p-12 text-center">
+        <div className="rounded-card border border-dashed border-border bg-card p-12 text-center">
           <p className="text-[14px] font-medium text-foreground">
             No site intelligence yet
           </p>
@@ -250,7 +250,7 @@ export default async function SiteIntelligenceDetailPage({
 
       {/* Brand voice */}
       {si ? (
-        <section className="rounded-2xl border border-border bg-card p-5">
+        <section className="rounded-card border border-border bg-card p-5">
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <div>
               <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
@@ -267,7 +267,7 @@ export default async function SiteIntelligenceDetailPage({
           </div>
 
           {si.brandVoice && si.brandVoice.trim().length > 0 ? (
-            <blockquote className="mt-4 rounded-xl border-l-2 border-primary bg-secondary p-4 text-[13px] leading-relaxed text-foreground whitespace-pre-wrap">
+            <blockquote className="mt-4 rounded-card border-l-2 border-primary bg-secondary p-4 text-[13px] leading-relaxed text-foreground whitespace-pre-wrap">
               {si.brandVoice}
             </blockquote>
           ) : (
@@ -278,7 +278,7 @@ export default async function SiteIntelligenceDetailPage({
 
       {/* Research */}
       {si ? (
-        <section className="rounded-2xl border border-border bg-card p-5">
+        <section className="rounded-card border border-border bg-card p-5">
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <div>
               <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
@@ -345,7 +345,7 @@ export default async function SiteIntelligenceDetailPage({
 
       {/* Crawled pages */}
       {si ? (
-        <section className="rounded-2xl border border-border bg-card p-5">
+        <section className="rounded-card border border-border bg-card p-5">
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <div>
               <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
@@ -363,7 +363,7 @@ export default async function SiteIntelligenceDetailPage({
           {pages.length === 0 ? (
             <EmptyInline copy="No crawled pages yet. Refresh to populate the cache." />
           ) : (
-            <div className="mt-4 overflow-hidden rounded-xl border border-border">
+            <div className="mt-4 overflow-hidden rounded-card border border-border">
               <table className="w-full text-left text-[12px]">
                 <thead className="bg-secondary text-[10px] font-mono uppercase tracking-wide text-muted-foreground">
                   <tr>
@@ -385,7 +385,7 @@ export default async function SiteIntelligenceDetailPage({
                           <summary className="cursor-pointer text-[11px] font-mono text-muted-foreground hover:text-foreground">
                             Show {pagesOverflow.length} more pages
                           </summary>
-                          <div className="mt-2 overflow-hidden rounded-lg border border-border">
+                          <div className="mt-2 overflow-hidden rounded-card border border-border">
                             <table className="w-full text-left text-[12px]">
                               <tbody>
                                 {pagesOverflow.map((p) => (
@@ -407,7 +407,7 @@ export default async function SiteIntelligenceDetailPage({
 
       {/* Sitemap */}
       {si ? (
-        <section className="rounded-2xl border border-border bg-card p-5">
+        <section className="rounded-card border border-border bg-card p-5">
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <div>
               <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
@@ -450,7 +450,7 @@ export default async function SiteIntelligenceDetailPage({
 
       {/* Last run stats */}
       {si ? (
-        <section className="rounded-2xl border border-border bg-card p-5">
+        <section className="rounded-card border border-border bg-card p-5">
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <div>
               <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
@@ -504,7 +504,7 @@ function Stat({
   sub?: string;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-background p-3">
+    <div className="rounded-card border border-border bg-background p-3">
       <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-muted-foreground">
         {label}
       </p>

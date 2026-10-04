@@ -40,12 +40,12 @@ export function AddNoteForm({ reportId }: { reportId: string }) {
         maxLength={2000}
         rows={2}
         placeholder="Add a note — visible to anyone with admin access."
-        className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
+        className="flex-1 rounded-card border border-border bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
       />
       <button
         type="submit"
         disabled={pending || !text.trim()}
-        className="shrink-0 inline-flex items-center rounded-md bg-primary text-primary-foreground px-3 py-2 text-xs font-semibold hover:bg-primary/90 disabled:opacity-40 transition-colors"
+        className="shrink-0 inline-flex items-center rounded-card bg-primary text-primary-foreground px-3 py-2 text-xs font-semibold hover:bg-primary/90 disabled:opacity-40 transition-colors"
       >
         {pending ? "Adding…" : "Add note"}
       </button>

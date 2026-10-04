@@ -234,7 +234,7 @@ export function OverviewTab({
                 </span>
               </div>
               {appfolio.lastError ? (
-                <p className="text-[11px] text-destructive rounded-md border border-destructive/30 bg-destructive/5 p-2 break-words">
+                <p className="text-[11px] text-destructive rounded-card border border-destructive/30 bg-destructive/5 p-2 break-words">
                   {appfolio.lastError}
                 </p>
               ) : null}

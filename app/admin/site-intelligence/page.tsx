@@ -195,7 +195,7 @@ export default async function SiteIntelligenceListPage({
       </header>
 
       {filtered.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-card p-12 text-center">
+        <div className="rounded-card border border-dashed border-border bg-card p-12 text-center">
           <div className="mx-auto mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <SatelliteDish className="h-5 w-5 text-primary" />
           </div>
@@ -215,7 +215,7 @@ export default async function SiteIntelligenceListPage({
             return (
               <li
                 key={r.id}
-                className="group rounded-2xl border border-border bg-card p-4 hover:border-primary/40 hover:shadow-sm transition-all"
+                className="group rounded-card border border-border bg-card p-4 hover:border-primary/40 hover:shadow-sm transition-all"
               >
                 <div className="flex items-start gap-4">
                   <div className="mt-2 flex-none">
@@ -250,7 +250,7 @@ export default async function SiteIntelligenceListPage({
 
                     <div className="flex items-center gap-2 flex-wrap">
                       <span
-                        className={`rounded-md px-1.5 py-0.5 text-[10px] font-mono font-medium uppercase tracking-wide ${statusBadgeClass(status.kind)}`}
+                        className={`rounded-card px-1.5 py-0.5 text-[10px] font-mono font-medium uppercase tracking-wide ${statusBadgeClass(status.kind)}`}
                       >
                         {status.label}
                       </span>
@@ -270,7 +270,7 @@ export default async function SiteIntelligenceListPage({
                     <RefreshButton orgId={r.id} variant="secondary" />
                     <Link
                       href={`/admin/site-intelligence/${r.id}`}
-                      className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+                      className="inline-flex items-center gap-1 rounded-card bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
                     >
                       Open
                       <ArrowUpRight className="h-3.5 w-3.5" />

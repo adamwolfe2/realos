@@ -2,14 +2,14 @@ export default function AuditLogLoading() {
   return (
     <div className="space-y-6 animate-pulse">
       <div className="space-y-1">
-        <div className="h-7 w-24 bg-muted rounded-md" />
+        <div className="h-7 w-24 bg-muted rounded-card" />
         <div className="h-4 w-64 bg-muted/60 rounded" />
       </div>
       <div className="flex gap-2">
-        <div className="h-8 w-48 bg-muted rounded-md" />
-        <div className="h-8 w-32 bg-muted rounded-md" />
+        <div className="h-8 w-48 bg-muted rounded-card" />
+        <div className="h-8 w-32 bg-muted rounded-card" />
       </div>
-      <div className="rounded-lg border border-border bg-card overflow-hidden">
+      <div className="rounded-card border border-border bg-card overflow-hidden">
         <table className="w-full">
           <thead>
             <tr className="border-b border-border bg-muted/30">

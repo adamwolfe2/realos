@@ -168,7 +168,7 @@ export default async function AdminSiteEnginePage({
                         key={s}
                         href={active ? "/admin/site-engine" : `/admin/site-engine?status=${s}`}
                         className={cn(
-                          "rounded-lg border p-3 text-left transition-colors",
+                          "rounded-card border p-3 text-left transition-colors",
                           active
                             ? "border-primary bg-primary/5"
                             : "border-border bg-card hover:bg-muted/30",
@@ -191,7 +191,7 @@ export default async function AdminSiteEnginePage({
       ) : null}
 
       {requests.length === 0 ? (
-        <section className="rounded-lg border border-dashed border-border bg-muted/30 p-6">
+        <section className="rounded-card border border-dashed border-border bg-muted/30 p-6">
           <p className="text-sm font-semibold">No site requests yet.</p>
           <p className="text-xs text-muted-foreground mt-1 max-w-md">
             Share the public form at{" "}
@@ -200,7 +200,7 @@ export default async function AdminSiteEnginePage({
           </p>
         </section>
       ) : (
-        <section className="rounded-lg border border-border bg-card overflow-hidden">
+        <section className="rounded-card border border-border bg-card overflow-hidden">
           <table className="w-full">
             <thead className="bg-muted/30">
               <tr className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">

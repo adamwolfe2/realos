@@ -149,7 +149,7 @@ export function ApprovalDetailClient({
 
       {/* Tab content */}
       {tab === "preview" ? (
-        <article className="rounded-2xl border border-border bg-card p-6 md:p-8">
+        <article className="rounded-card border border-border bg-card p-6 md:p-8">
           {htmlBody ? (
             <div
               className="prose-content"
@@ -183,7 +183,7 @@ export function ApprovalDetailClient({
       ) : null}
 
       {tab === "mdx" ? (
-        <div className="relative rounded-2xl border border-border bg-card p-4">
+        <div className="relative rounded-card border border-border bg-card p-4">
           <div className="absolute right-3 top-3 z-10">
             <CopyButton value={mdxOutput} label="Copy MDX" />
           </div>
@@ -191,7 +191,7 @@ export function ApprovalDetailClient({
             readOnly
             value={mdxOutput}
             spellCheck={false}
-            className="w-full min-h-[420px] resize-y rounded-lg border border-border bg-background px-3 py-2 text-[12px] font-mono leading-relaxed text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="w-full min-h-[420px] resize-y rounded-card border border-border bg-background px-3 py-2 text-[12px] font-mono leading-relaxed text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
           <p className="mt-2 text-[11px] text-muted-foreground">
             Paste this into the client&apos;s repo. Frontmatter, body, and inline
@@ -201,7 +201,7 @@ export function ApprovalDetailClient({
       ) : null}
 
       {tab === "prompt" ? (
-        <div className="relative rounded-2xl border border-border bg-card p-4">
+        <div className="relative rounded-card border border-border bg-card p-4">
           <div className="absolute right-3 top-3 z-10">
             <CopyButton value={claudePrompt} label="Copy prompt" />
           </div>
@@ -209,7 +209,7 @@ export function ApprovalDetailClient({
             readOnly
             value={claudePrompt}
             spellCheck={false}
-            className="w-full min-h-[420px] resize-y rounded-lg border border-border bg-background px-3 py-2 text-[12px] font-mono leading-relaxed text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="w-full min-h-[420px] resize-y rounded-card border border-border bg-background px-3 py-2 text-[12px] font-mono leading-relaxed text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
           <p className="mt-2 text-[11px] text-muted-foreground">
             Paste into Claude Code with the client&apos;s repo open. Claude will
@@ -220,7 +220,7 @@ export function ApprovalDetailClient({
 
       {/* Notes panel for request-changes / reject */}
       {canReview && notesMode ? (
-        <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
+        <div className="rounded-card border border-border bg-card p-4 space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground">
               {notesMode === "REJECTED"
@@ -243,7 +243,7 @@ export function ApprovalDetailClient({
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="What needs to change? Be specific — they'll see this in email + portal."
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+            className="w-full rounded-card border border-border bg-background px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
           />
           <div className="flex items-center justify-end gap-2">
             <button
@@ -252,8 +252,8 @@ export function ApprovalDetailClient({
               onClick={submitNotes}
               className={
                 notesMode === "REJECTED"
-                  ? "rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
-                  : "rounded-lg bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                  ? "rounded-card border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
+                  : "rounded-card bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
               }
             >
               {notesMode === "REJECTED" ? "Confirm reject" : "Send back"}
@@ -264,7 +264,7 @@ export function ApprovalDetailClient({
 
       {/* Footer actions */}
       {canReview ? (
-        <div className="sticky bottom-0 z-10 flex flex-wrap items-center justify-end gap-2 rounded-2xl border border-border bg-card/95 backdrop-blur p-3 shadow-sm">
+        <div className="sticky bottom-0 z-10 flex flex-wrap items-center justify-end gap-2 rounded-card border border-border bg-card/95 backdrop-blur p-3 shadow-sm">
           <button
             type="button"
             disabled={pending || notesMode !== null}
@@ -272,7 +272,7 @@ export function ApprovalDetailClient({
               setNotesMode("CHANGES_REQUESTED");
               setNotes("");
             }}
-            className="rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
+            className="rounded-card border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
           >
             Request changes
           </button>
@@ -283,7 +283,7 @@ export function ApprovalDetailClient({
               setNotesMode("REJECTED");
               setNotes("");
             }}
-            className="rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-muted-foreground hover:bg-muted disabled:opacity-50"
+            className="rounded-card border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-muted-foreground hover:bg-muted disabled:opacity-50"
           >
             Reject
           </button>
@@ -295,7 +295,7 @@ export function ApprovalDetailClient({
               setDeployUrl(defaultDeployUrl);
               setDeployOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-[12px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm"
+            className="inline-flex items-center gap-1.5 rounded-card bg-primary px-3.5 py-1.5 text-[12px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm"
           >
             <Rocket className="h-3.5 w-3.5" />
             Mark as deployed
@@ -305,7 +305,7 @@ export function ApprovalDetailClient({
 
       {/* Deploy confirmation modal */}
       <Dialog open={deployOpen} onOpenChange={setDeployOpen}>
-        <DialogContent className="max-w-md rounded-2xl border border-border bg-card p-5 shadow-xl">
+        <DialogContent className="max-w-md rounded-card border border-border bg-card p-5 shadow-xl">
           <div>
             <div className="flex items-start gap-3">
               <div className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-primary/10">
@@ -339,7 +339,7 @@ export function ApprovalDetailClient({
                 value={deployUrl}
                 onChange={(e) => setDeployUrl(e.target.value)}
                 placeholder="https://client-domain.com/blog/your-slug"
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="w-full rounded-card border border-border bg-background px-3 py-2 text-[13px] font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                 autoFocus
               />
               <p className="text-[11px] text-muted-foreground">
@@ -351,7 +351,7 @@ export function ApprovalDetailClient({
               <button
                 type="button"
                 onClick={() => setDeployOpen(false)}
-                className="rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted"
+                className="rounded-card border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted"
               >
                 Cancel
               </button>
@@ -359,7 +359,7 @@ export function ApprovalDetailClient({
                 type="button"
                 disabled={pending}
                 onClick={submitDeploy}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-[12px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm"
+                className="inline-flex items-center gap-1.5 rounded-card bg-primary px-3.5 py-1.5 text-[12px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm"
               >
                 <Rocket className="h-3.5 w-3.5" />
                 Confirm — deployed

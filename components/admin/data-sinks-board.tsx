@@ -24,7 +24,7 @@ import { RunSyncButton } from "./run-sync-button";
 // "Run sync now" button that POSTs to /api/admin/data-sinks/[provider]/run.
 //
 // Design rules:
-//   - Match app/admin/system/page.tsx visual language (rounded-lg, border,
+//   - Match app/admin/system/page.tsx visual language (rounded-card, border,
 //     bg-card, semantic color tones — no emoji).
 //   - Status pill tones mirror the system page (fresh = primary, stale =
 //     muted, erroring/dead = destructive).
@@ -78,7 +78,7 @@ const STATUS_LABEL: Record<SinkStatus, string> = {
 export function DataSinksBoard({ sinks, scope, orgId }: Props) {
   if (sinks.length === 0) {
     return (
-      <div className="rounded-lg border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+      <div className="rounded-card border border-border bg-card p-8 text-center text-sm text-muted-foreground">
         No data sinks configured.
       </div>
     );
@@ -131,7 +131,7 @@ function SinkCard({
     sink.lastSuccessAt.getTime() === sink.lastRunAt.getTime();
 
   return (
-    <div className="rounded-lg border border-border bg-card p-4 flex flex-col gap-3">
+    <div className="rounded-card border border-border bg-card p-4 flex flex-col gap-3">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -191,7 +191,7 @@ function SinkCard({
       ) : null}
 
       {sink.lastErrorMessage ? (
-        <div className="rounded-md border border-destructive/30 bg-secondary p-2 text-[11px] text-destructive">
+        <div className="rounded-card border border-destructive/30 bg-secondary p-2 text-[11px] text-destructive">
           <div className="line-clamp-2 break-words">
             {sink.lastErrorMessage}
           </div>

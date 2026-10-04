@@ -89,7 +89,7 @@ export default async function CrossTenantLeads({
 
       <form
         action="/admin/leads"
-        className="rounded-lg border border-border bg-card p-4"
+        className="rounded-card border border-border bg-card p-4"
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
           <SelectField
@@ -138,13 +138,13 @@ export default async function CrossTenantLeads({
         <div className="flex gap-2 mt-4">
           <button
             type="submit"
-            className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark transition-colors"
+            className="inline-flex items-center rounded-card bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark transition-colors"
           >
             Apply filters
           </button>
           <Link
             href="/admin/leads"
-            className="inline-flex items-center rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
+            className="inline-flex items-center rounded-card border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
           >
             Reset
           </Link>
@@ -152,13 +152,13 @@ export default async function CrossTenantLeads({
       </form>
 
       {leads.length === 0 ? (
-        <div className="rounded-lg border border-border bg-card p-8 text-center">
+        <div className="rounded-card border border-border bg-card p-8 text-center">
           <p className="text-sm text-muted-foreground">
             No leads match this filter.
           </p>
         </div>
       ) : (
-        <div className="rounded-lg border border-border bg-card overflow-hidden">
+        <div className="rounded-card border border-border bg-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[640px]">
               <thead>
@@ -259,7 +259,7 @@ function SelectField({
       <select
         name={name}
         defaultValue={defaultValue}
-        className="rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+        className="rounded-card border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>

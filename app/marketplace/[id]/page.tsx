@@ -89,7 +89,7 @@ export default async function MarketplaceLeadPage({
 
       {sp.canceled && (
         <div
-          className="mt-5 p-3 rounded-lg"
+          className="mt-5 p-3 rounded-card"
           style={{
             backgroundColor: "rgba(245, 158, 11, 0.10)",
             border: "1px solid rgba(245, 158, 11, 0.25)",
@@ -224,7 +224,7 @@ export default async function MarketplaceLeadPage({
               </h2>
               {owned && lead.linkedinUrl && (
                 <div
-                  className="mt-3 mb-1 p-3 rounded-md flex items-center justify-between gap-3"
+                  className="mt-3 mb-1 p-3 rounded-card flex items-center justify-between gap-3"
                   style={{
                     backgroundColor: "rgba(15, 98, 254,0.06)",
                     border: "1px solid rgba(15, 98, 254,0.18)",

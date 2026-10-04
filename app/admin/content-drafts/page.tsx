@@ -95,7 +95,7 @@ export default async function AdminContentDraftsPage({
             <Link
               key={opt.value}
               href={`/admin/content-drafts?status=${opt.value}`}
-              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] font-medium transition-colors ${
+              className={`inline-flex items-center gap-1.5 rounded-card border px-3 py-1.5 text-[12px] font-medium transition-colors ${
                 isActive
                   ? "border-primary bg-primary/10 text-foreground"
                   : "border-border bg-background text-foreground hover:bg-muted"
@@ -111,7 +111,7 @@ export default async function AdminContentDraftsPage({
       </div>
 
       {drafts.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
+        <div className="rounded-card border border-dashed border-border bg-card p-8 text-center">
           <p className="text-[13px] font-medium text-foreground">
             Nothing in {STATUS_OPTIONS.find((o) => o.value === status)?.label.toLowerCase()}.
           </p>
@@ -142,7 +142,7 @@ export default async function AdminContentDraftsPage({
           {drafts.map((d) => (
             <li
               key={d.id}
-              className="rounded-2xl border border-border bg-card p-4 hover:border-primary/40 transition-colors"
+              className="rounded-card border border-border bg-card p-4 hover:border-primary/40 transition-colors"
             >
               <Link
                 href={`/admin/content-drafts/${d.id}`}
@@ -151,7 +151,7 @@ export default async function AdminContentDraftsPage({
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono text-primary uppercase tracking-wide">
+                      <span className="rounded-card bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono text-primary uppercase tracking-wide">
                         {d.format.replace(/_/g, " ").toLowerCase()}
                       </span>
                       <span className="text-[12px] font-medium text-foreground truncate">
