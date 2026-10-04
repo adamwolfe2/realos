@@ -149,9 +149,9 @@ export async function GET(req: NextRequest) {
                 });
                 autoSent += 1;
               } else {
-                autoSendSkipped.push({
+                errors.push({
                   orgId: org.id,
-                  reason:
+                  error:
                     result.error ??
                     (result.skipped === "no_resend_key"
                       ? "RESEND_API_KEY not configured"
@@ -159,9 +159,9 @@ export async function GET(req: NextRequest) {
                 });
               }
             } catch (sendErr) {
-              autoSendSkipped.push({
+              errors.push({
                 orgId: org.id,
-                reason:
+                error:
                   sendErr instanceof Error
                     ? `send failed: ${sendErr.message}`
                     : "send failed",
