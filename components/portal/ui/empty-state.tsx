@@ -1,6 +1,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
 
 // ---------------------------------------------------------------------------
 // EmptyState — single primitive for "no data yet" surfaces. Centered icon
@@ -55,7 +56,7 @@ export function EmptyState({
           {action ? (
             <Link
               href={action.href}
-              className="inline-flex items-center rounded-[2px] bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold hover:bg-primary-dark transition-colors"
+              className={buttonVariants({ size: "sm" })}
             >
               {action.label}
             </Link>
