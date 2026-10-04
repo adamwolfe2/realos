@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { putPublic, delPublic } from "@/lib/blob-public";
-import { requireWritableWorkspace, ForbiddenError } from "@/lib/tenancy/scope";
+import { requireWorkspaceAdmin, ForbiddenError } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { soft } from "@/lib/soft";
 import { AuditAction, UserRole } from "@prisma/client";
@@ -87,7 +87,7 @@ async function assertWritable(
 export async function POST(req: NextRequest) {
   let scope;
   try {
-    scope = await requireWritableWorkspace();
+    scope = await requireWorkspaceAdmin();
   } catch (err) {
     if (err instanceof ForbiddenError) {
       return NextResponse.json({ error: err.message }, { status: 403 });
@@ -192,7 +192,7 @@ export async function POST(req: NextRequest) {
 export async function DELETE() {
   let scope;
   try {
-    scope = await requireWritableWorkspace();
+    scope = await requireWorkspaceAdmin();
   } catch (err) {
     if (err instanceof ForbiddenError) {
       return NextResponse.json({ error: err.message }, { status: 403 });

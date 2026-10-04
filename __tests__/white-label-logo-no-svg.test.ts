@@ -25,7 +25,7 @@ vi.mock("@/lib/tenancy/scope", async () => {
   );
   return {
     ...actual,
-    requireWritableWorkspace: vi.fn().mockResolvedValue({
+    requireWorkspaceAdmin: vi.fn().mockResolvedValue({
       orgId: "org_1",
       userId: "u_1",
       clerkUserId: "clerk_1",
