@@ -467,7 +467,8 @@ const AGENCY_ROLES: ReadonlySet<UserRole> = new Set([
   UserRole.AGENCY_OWNER,
   UserRole.AGENCY_ADMIN,
   UserRole.AGENCY_OPERATOR, // "limited agency role" — still a real agency seat
-  UserRole.AL_PARTNER, // agency-typed org already; preserves its prior access
+  // AL_PARTNER is deliberately NOT here: it's an external partner scoped to
+  // AUDIENCE_SYNC orgs via isAlPartner / requireAudienceSync, not agency admin.
 ]);
 
 const AGENCY_STAFF_READ_ROLES: ReadonlySet<UserRole> = new Set([

@@ -295,7 +295,9 @@ export default async function PortalLayout({
   const rawScopeProperties = marketableProps;
 
   if (!org) {
-    if (scope.isAgency || scope.isAlPartner) redirect("/admin");
+    // AL_PARTNER has no /admin access (requireAgency); /admin would bounce
+    // it back here in a loop, so it falls through to ScopeRecovery.
+    if (scope.isAgency) redirect("/admin");
     // Authenticated client whose Organization row is missing/unresolved.
     // NEVER bounce to /sign-in here — middleware already verified the Clerk
     // session, so Clerk would bounce the signed-in user straight back →
