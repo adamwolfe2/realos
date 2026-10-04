@@ -1,5 +1,6 @@
 "use client";
 
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
@@ -611,19 +612,14 @@ function ConfirmModal({
       ? "The unit will appear in the chatbot and in marketing surfaces as live inventory."
       : "The unit will be hidden from chatbot suggestions and surface as leased on the public site.";
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={title}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onCancel();
-      }}
-    >
-      <div className="w-full max-w-sm ls-card shadow-lg">
+    <Dialog open onOpenChange={(o) => !o && onCancel()}>
+      <DialogContent className="max-w-sm ls-card shadow-lg">
+        <div>
         <header className="flex items-start justify-between border-b border-border px-4 py-3">
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-foreground">{title}</p>
+            <DialogTitle className="text-sm font-semibold text-foreground">
+              {title}
+            </DialogTitle>
             <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">
               {body}
             </p>
@@ -663,7 +659,8 @@ function ConfirmModal({
                   : "Mark leased"}
           </Button>
         </footer>
-      </div>
-    </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

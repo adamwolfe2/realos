@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useTransition } from "react";
 import { MessageSquare, Loader2, Check, X } from "lucide-react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { sendLeadSms } from "@/lib/actions/lead-sms";
 
 // Lead-detail SMS composer. Hidden when Twilio isn't configured (parent
@@ -74,22 +75,12 @@ export function LeadSmsComposer({ leadId, to, smsEnabled }: Props) {
         <MessageSquare className="h-4 w-4" />
       </button>
 
-      {open ? (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4"
-          onClick={close}
-        >
-          <div
-            className="w-full max-w-lg ls-card shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-          >
+      <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : close())}>
+        <DialogContent className="max-w-lg ls-card shadow-2xl">
+          <div>
             <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-border">
               <div className="min-w-0">
-                <p className="ls-eyebrow">
-                  Send SMS
-                </p>
+                <DialogTitle className="ls-eyebrow">Send SMS</DialogTitle>
                 <p className="text-sm font-medium text-foreground truncate">
                   To: {to}
                 </p>
@@ -157,8 +148,8 @@ export function LeadSmsComposer({ leadId, to, smsEnabled }: Props) {
               </div>
             </form>
           </div>
-        </div>
-      ) : null}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

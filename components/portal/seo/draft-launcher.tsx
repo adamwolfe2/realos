@@ -1,5 +1,6 @@
 "use client";
 
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -129,24 +130,20 @@ export function DraftLauncher({ propertyId, propertyName, prefill }: Props) {
         Generate draft
       </button>
 
-      {open ? (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setOpen(false);
-          }}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent
+          overlayClassName="z-[80]"
+          className="z-[80] max-w-lg max-h-[90vh] overflow-y-auto ls-card shadow-xl"
         >
-          <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto ls-card shadow-xl">
+          <div>
             <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
               <div>
                 <p className="ls-eyebrow ls-eyebrow-accent">
                   Content drafter
                 </p>
-                <h2 className="text-base font-semibold text-foreground mt-0.5">
+                <DialogTitle className="text-base font-semibold text-foreground mt-0.5">
                   New draft for {propertyName}
-                </h2>
+                </DialogTitle>
               </div>
               <button
                 type="button"
@@ -277,8 +274,8 @@ export function DraftLauncher({ propertyId, propertyName, prefill }: Props) {
               </div>
             </div>
           </div>
-        </div>
-      ) : null}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
