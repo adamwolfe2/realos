@@ -47,7 +47,7 @@ export function ChatTranscript({ rawMessages }: { rawMessages: unknown }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="text-xs font-medium text-primary hover:text-[hsl(var(--primary)/0.9)] transition-colors duration-200"
+        className="text-xs font-medium text-primary hover:text-primary-dark transition-colors duration-200"
       >
         {open ? "Hide conversation" : "View conversation"}
       </button>

@@ -60,8 +60,8 @@ export function PropertyAvatar({
   const iconClass = ICON_SIZE_CLASSES[size];
   const tintBg = accent
     ? `${accent}14`
-    : "hsl(var(--primary) / 0.08)";
-  const iconColor = accent ?? "hsl(var(--primary))";
+    : "color-mix(in oklab, var(--color-primary) 8%, transparent)";
+  const iconColor = accent ?? "var(--color-primary)";
 
   // Path A: full hero photo + (optional) logo badge.
   if (src) {

@@ -1055,17 +1055,17 @@ body {
   display: block;
   width: 100%;
   border-radius: 0.375rem;
-  border: 1px solid hsl(var(--border));
-  background: hsl(var(--card));
+  border: 1px solid var(--color-border);
+  background: var(--color-background);
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
-  color: hsl(var(--foreground));
+  color: var(--color-foreground);
 }
 .input:focus {
   outline: none;
-  border-color: hsl(var(--primary));
+  border-color: var(--color-primary);
 }
-.input::placeholder { color: hsl(var(--muted-foreground) / 0.6); }
+.input::placeholder { color: var(--color-muted-foreground); }
 
 /* Tabular-numerals utility — apply to any numeric/metric text where digit
    alignment across rows matters (stat tiles, data-table cells, chart ticks). */

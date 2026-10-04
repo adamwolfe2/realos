@@ -99,7 +99,7 @@ export function EnrichmentCard({ visitor }: { visitor: Visitor | null }) {
             href={linkedIn}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-[hsl(var(--primary)/0.9)] transition-colors duration-200"
+            className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-primary-dark transition-colors duration-200"
           >
             LinkedIn profile
             <ExternalLink className="h-3 w-3" />

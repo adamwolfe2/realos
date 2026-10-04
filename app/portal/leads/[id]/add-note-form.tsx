@@ -61,7 +61,7 @@ export function AddNoteForm({ leadId }: { leadId: string }) {
             "rounded-[2px] bg-primary px-3 py-1.5 text-xs font-medium",
             "text-background",
             "transition-colors duration-200",
-            "hover:bg-[hsl(var(--primary)/0.9)]",
+            "hover:bg-primary-dark",
             "disabled:opacity-40 disabled:cursor-not-allowed"
           )}
         >
