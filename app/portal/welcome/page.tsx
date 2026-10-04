@@ -13,6 +13,7 @@ import {
 import { requireScope } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { FEATURE_CATALOG, type FeatureKey } from "@/lib/billing/features";
+import { PageHeader } from "@/components/admin/page-header";
 
 // ---------------------------------------------------------------------------
 // /portal/welcome — first-run landing for a freshly-trialing user.
@@ -92,44 +93,11 @@ export default async function PortalWelcomePage() {
 
   return (
     <div className="max-w-[800px] mx-auto px-4 md:px-8 py-12 md:py-16">
-      <header className="mb-8">
-        <p
-          style={{
-            color: ACCENT,
-            fontFamily: "var(--font-mono)",
-            fontSize: "10.5px",
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            fontWeight: 600,
-          }}
-        >
-          Welcome to LeaseStack
-        </p>
-        <h1
-          className="mt-2 leading-tight"
-          style={{
-            color: INK,
-            fontFamily: "var(--font-display)",
-            fontSize: "clamp(28px, 3.8vw, 38px)",
-            fontWeight: 600,
-            letterSpacing: "0",
-          }}
-        >
-          {org.name}, you&rsquo;re in.
-        </h1>
-        <p
-          className="mt-3 max-w-xl"
-          style={{
-            color: MUTED,
-            fontFamily: "var(--font-sans)",
-            fontSize: "15px",
-            lineHeight: 1.6,
-          }}
-        >
-          Your workspace is live and your free trial is running. Here&rsquo;s
-          what just happened and where to go next.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="Welcome to LeaseStack"
+        title={<>{org.name}, you&rsquo;re in.</>}
+        description="Your workspace is live and your free trial is running. Here&rsquo;s what just happened and where to go next."
+      />
 
       {/* Trial status strip */}
       {trialDaysLeft != null ? (

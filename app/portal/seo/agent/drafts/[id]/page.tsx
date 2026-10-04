@@ -88,7 +88,7 @@ export default async function PortalDraftViewer({
                 </span>
               ) : null}
             </div>
-            <h1 className="mt-2 text-lg font-semibold text-foreground">
+            <h1 className="mt-2 text-[28px] md:text-[34px] font-semibold tracking-[-0.022em] text-foreground leading-[1.08]">
               {draft.property?.name ?? "Draft"}
             </h1>
             <p className="mt-2 text-[13px] text-foreground leading-snug whitespace-pre-wrap">

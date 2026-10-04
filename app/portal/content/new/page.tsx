@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { PageHeader } from "@/components/admin/page-header";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { ContentFormat } from "@prisma/client";
 
@@ -110,18 +111,11 @@ export default async function NewContentDraftPage(props: {
         </Link>
       </div>
 
-      <header>
-        <p className="ls-eyebrow ls-eyebrow-accent">
-          New draft
-        </p>
-        <h1 className="text-2xl font-semibold text-foreground mt-1">
-          Scaffold a new piece
-        </h1>
-        <p className="text-[12px] text-muted-foreground mt-1">
-          Tell the AI what you want. The assistant will draft the first
-          pass, then you can refine it inline.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="New draft"
+        title="Scaffold a new piece"
+        description="Tell the AI what you want. The assistant will draft the first pass, then you can refine it inline."
+      />
 
       <form
         action={createDraftAction}

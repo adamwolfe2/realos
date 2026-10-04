@@ -8,7 +8,7 @@ export default function PortalNotFound() {
         <p className="ls-eyebrow ls-eyebrow-accent">
           404
         </p>
-        <h1 className="text-3xl font-bold text-foreground">
+        <h1 className="text-[28px] md:text-[34px] font-semibold tracking-[-0.022em] text-foreground leading-[1.08]">
           Page not found
         </h1>
         <p className="text-sm text-muted-foreground">

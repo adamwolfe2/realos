@@ -74,7 +74,7 @@ function DashboardInner({
       {/* Report header */}
       <header className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-4">
         <div>
-          <h1 className="text-[22px] font-bold leading-tight tracking-tight text-foreground">
+          <h1 className="text-[28px] md:text-[34px] font-semibold tracking-[-0.022em] text-foreground leading-[1.08]">
             Marketing &amp; Performance Snapshot
           </h1>
           <p className="mt-1.5 text-[12.5px] font-medium text-muted-foreground">

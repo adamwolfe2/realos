@@ -423,7 +423,7 @@ export default async function LeadDetailPage({
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground leading-tight">
+            <h1 className="text-[28px] md:text-[34px] font-semibold tracking-[-0.022em] text-foreground leading-[1.08]">
               {displayName}
             </h1>
             {subtitle ? (
