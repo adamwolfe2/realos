@@ -21,7 +21,7 @@ export async function leadDayBucketsByProperty(args: {
   const now = args.now ?? new Date();
   const since = new Date(now.getTime() - windowDays * DAY_MS);
   const col = Prisma.raw(`"${column}"`);
-  const nowUtc = Prisma.sql`(${now}::timestamptz at time zone 'UTC')`;
+  const nowUtc = Prisma.sql`${now.toISOString()}::timestamp`;
 
   const rows = await prisma.$queryRaw<
     Array<{ propertyId: string; idx: number; n: bigint }>
@@ -33,7 +33,7 @@ export async function leadDayBucketsByProperty(args: {
       from "Lead"
       where "orgId" = ${orgId}
         and "propertyId" in (${Prisma.join(propertyIds)})
-        and ${col} >= (${since}::timestamptz at time zone 'UTC')
+        and ${col} >= ${since.toISOString()}::timestamp
     ) t
     group by 1, 2`);
 

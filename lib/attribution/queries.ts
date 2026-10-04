@@ -2,6 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { LeadSource, Prisma } from "@prisma/client";
 import { propertyClauseSql } from "@/lib/dashboard/property-clause-sql";
+import { captureWithContext } from "@/lib/sentry";
 import {
   classifyLeadChannel,
   classifySource,
@@ -704,13 +705,20 @@ function classifyDevice(userAgent: string): "desktop" | "mobile" | "tablet" {
 // on "Lead". Columns are unqualified; "Lead" must be the only table in scope
 // that has them (sub-selects reference their own columns by alias).
 function leadWindowSql(filters: AttributionFilters): Prisma.Sql {
-  const property = propertyClauseSql(
-    propertyIdsToWhere(filters.propertyIds ?? null),
-  );
-  if (!property) throw new Error("leadWindowSql: unsupported property filter");
+  const clause = propertyIdsToWhere(filters.propertyIds ?? null);
+  const property = propertyClauseSql(clause);
+  if (!property) {
+    // Fail closed rather than drop the property filter.
+    const err = new Error("leadWindowSql: unsupported property filter");
+    captureWithContext(err, {
+      orgId: filters.orgId,
+      clauseKeys: Object.keys(clause),
+    });
+    throw err;
+  }
   return Prisma.sql`"orgId" = ${filters.orgId}
-    and "createdAt" >= (${filters.fromDate}::timestamptz at time zone 'UTC')
-    and "createdAt" <= (${filters.toDate}::timestamptz at time zone 'UTC')
+    and "createdAt" >= ${filters.fromDate.toISOString()}::timestamp
+    and "createdAt" <= ${filters.toDate.toISOString()}::timestamp
     ${property}`;
 }
 

@@ -31,6 +31,22 @@ const { getPropertyTraffic } = await import("@/lib/properties/queries");
 
 beforeEach(() => vi.clearAllMocks());
 
+type SqlArg = { text: string; values: unknown[] };
+const lastSql = () => queryRaw.mock.calls[0][0] as SqlArg;
+// Tenant + property predicates must reach the SQL, and timestamps must be
+// bound as UTC ISO strings cast to plain timestamp (session-TZ independent).
+function expectScoped(sql: SqlArg, propertyId: string) {
+  const orgIdx = sql.values.indexOf("o") + 1;
+  expect(orgIdx).toBeGreaterThan(0);
+  expect(sql.text).toContain(`"orgId" = $${orgIdx}`);
+  const propIdx = sql.values.indexOf(propertyId) + 1;
+  expect(propIdx).toBeGreaterThan(0);
+  expect(sql.text).toContain(`"propertyId" = $${propIdx}`);
+  expect(sql.text).not.toContain("timestamptz");
+  expect(sql.text).toMatch(/\$\d+::timestamp/);
+  expect(sql.values.some((v) => typeof v === "string" && /Z$/.test(v))).toBe(true);
+}
+
 describe("propertyClauseSql", () => {
   it("translates the property-filter shapes and rejects others", () => {
     expect(propertyClauseSql({})?.text).toBe("");
@@ -61,6 +77,7 @@ describe("getConversationsOverTime", () => {
     });
     expect(out.map((p) => p.count)).toEqual([2, 0, 0, 0, 0, 0, 4]);
     expect(convFindMany).not.toHaveBeenCalled();
+    expectScoped(lastSql(), "p1");
   });
 
   it("falls back to findMany for an unrecognised clause", async () => {
@@ -94,6 +111,7 @@ describe("attribution grouped helpers", () => {
       { date: "2026-09-02", bySource: { Chatbot: 3, "Web form": 1 } },
       { date: "2026-09-03", bySource: {} },
     ]);
+    expectScoped(lastSql(), "p1");
   });
 
   it("touch frequency maps grouped buckets, zero-filling the rest", async () => {
@@ -109,6 +127,7 @@ describe("attribution grouped helpers", () => {
       { bucket: "4", count: 0 },
       { bucket: "5+", count: 2 },
     ]);
+    expectScoped(lastSql(), "p1");
   });
 });
 

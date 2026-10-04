@@ -296,14 +296,14 @@ export async function getConversationsOverTime(
   let buckets: number[];
   if (clauseSql) {
     // Same rolling-window indexing as dayBucketIndex, aggregated in Postgres.
-    const nowUtc = Prisma.sql`(${now}::timestamptz at time zone 'UTC')`;
+    const nowUtc = Prisma.sql`${now.toISOString()}::timestamp`;
     const grouped = await prisma.$queryRaw<Array<{ days_ago: number; n: bigint }>>(
       Prisma.sql`
         select greatest(floor(extract(epoch from (${nowUtc} - "lastMessageAt")) / 86400), 0)::int as days_ago,
           count(*) as n
         from "ChatbotConversation"
         where "orgId" = ${orgId}
-          and "lastMessageAt" >= (${since}::timestamptz at time zone 'UTC')
+          and "lastMessageAt" >= ${since.toISOString()}::timestamp
           ${clauseSql}
         group by 1`,
     );

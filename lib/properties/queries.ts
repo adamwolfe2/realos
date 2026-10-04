@@ -341,6 +341,8 @@ export async function getPropertyTraffic(
       },
       _sum: { clicks: true, impressions: true },
       _avg: { ctr: true, position: true },
+      orderBy: [{ _sum: { clicks: "desc" } }, { _sum: { impressions: "desc" } }],
+      take: 10,
     }),
   ]);
 
