@@ -191,7 +191,7 @@ export function InviteUserButton({
           </label>
           <label className="block space-y-1">
             <span className="text-[11px] uppercase tracking-widest font-semibold text-muted-foreground">
-              Full name <span className="normal-case text-muted-foreground/70">(optional)</span>
+              Full name <span className="normal-case text-muted-foreground">(optional)</span>
             </span>
             <input
               type="text"

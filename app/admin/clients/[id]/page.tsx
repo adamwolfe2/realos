@@ -417,13 +417,13 @@ export default async function ClientDetail({
               <StatusBadge tone="danger">Demo workspace</StatusBadge>
             ) : null}
             <span>{propertyTypeLabel}</span>
-            <span className="text-muted-foreground/60">·</span>
+            <span className="text-muted-foreground">·</span>
             <StatusBadge tone={tenantStatusTone(org.status)}>
               {humanTenantStatus(org.status)}
             </StatusBadge>
             {org.subscriptionTier ? (
               <>
-                <span className="text-muted-foreground/60">·</span>
+                <span className="text-muted-foreground">·</span>
                 <span className="text-xs">
                   {humanSubscriptionTier(org.subscriptionTier)} tier
                 </span>

@@ -135,7 +135,7 @@ export default async function IntakeDetail({
             <StatusBadge tone={intakeStatusTone(status)}>
               {humanIntakeStatus(status)}
             </StatusBadge>
-            <span className="text-muted-foreground/60">·</span>
+            <span className="text-muted-foreground">·</span>
             <span>
               {intake.primaryContactName}, {intake.primaryContactEmail}
               {intake.primaryContactPhone

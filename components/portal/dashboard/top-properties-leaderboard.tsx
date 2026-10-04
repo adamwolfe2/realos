@@ -74,7 +74,7 @@ export function TopPropertiesLeaderboard({
                   URBN realtor leaderboard uses to anchor the row. */}
               <span
                 aria-hidden="true"
-                className="text-[11px] font-mono text-muted-foreground/70 tabular-nums tracking-tight"
+                className="text-[11px] font-mono text-muted-foreground tabular-nums tracking-tight"
               >
                 {String(idx + 1).padStart(2, "0")}
               </span>

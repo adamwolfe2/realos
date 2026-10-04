@@ -450,7 +450,7 @@ export function ListingsTable({
                   ) : (
                     // Bug #47 — explicit tooltip on "Contact for pricing"
                     <span
-                      className="text-muted-foreground/70 italic font-normal text-[11px] underline decoration-dotted decoration-muted-foreground/40 underline-offset-2 cursor-help"
+                      className="text-muted-foreground italic font-normal text-[11px] underline decoration-dotted decoration-muted-foreground/40 underline-offset-2 cursor-help"
                       title="No rent value set in AppFolio for this unit. AppFolio returns null when the unit hasn't been priced (typical for off-market or per-bed configurations). Set a market_rent in AppFolio to populate this."
                     >
                       Contact for pricing

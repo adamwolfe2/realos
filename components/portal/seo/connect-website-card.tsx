@@ -204,7 +204,7 @@ export function ConnectWebsiteCard({
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://yourdomain.com"
               disabled={scanning}
-              className="w-full h-10 pl-10 pr-3 rounded-[2px] border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-50"
+              className="w-full h-10 pl-10 pr-3 rounded-[2px] border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-50"
               aria-label="Website URL"
             />
           </div>

@@ -307,7 +307,7 @@ export default async function ProposalListPage({
             defaultValue={q}
             aria-label="Search proposals"
             placeholder="Search prospect, email, number"
-            className="w-full sm:w-72 rounded-md border border-border bg-card px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="w-full sm:w-72 rounded-md border border-border bg-card px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </form>
         <Link

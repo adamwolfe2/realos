@@ -129,7 +129,7 @@ export default async function AdminBriefsPage() {
                   </div>
                   <div className="col-span-1 text-[11.5px] text-muted-foreground tabular-nums">
                     {r.viewCount}{" "}
-                    <span className="text-muted-foreground/70">views</span>
+                    <span className="text-muted-foreground">views</span>
                   </div>
                   <div className="col-span-2 text-right">
                     {r.status === "READY" ? (

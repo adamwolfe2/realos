@@ -97,7 +97,7 @@ export default async function CreativeQueue() {
             <div className="h-px bg-border" />
             <div className="flex flex-col gap-2 min-h-[48px]">
               {col.items.length === 0 ? (
-                <p className="rounded-md border border-dashed border-border p-3 text-[11px] text-muted-foreground/60 text-center">
+                <p className="rounded-md border border-dashed border-border p-3 text-[11px] text-muted-foreground text-center">
                   Empty
                 </p>
               ) : (

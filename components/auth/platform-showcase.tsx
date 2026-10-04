@@ -576,7 +576,7 @@ function ActivityFeed() {
                   {item.body}
                 </p>
               </div>
-              <span className="text-[9px] text-muted-foreground/70 tabular-nums shrink-0">
+              <span className="text-[9px] text-muted-foreground tabular-nums shrink-0">
                 {item.time}
               </span>
             </li>

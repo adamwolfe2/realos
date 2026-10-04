@@ -738,7 +738,7 @@ function VisibilityScoreHero() {
         <p className="text-[13px] text-muted-foreground">
           Strong — you are regularly named, with growth room on discovery
           prompts.
-          <span className="text-muted-foreground/70">
+          <span className="text-muted-foreground">
             {" "}
             · Based on {TOTAL_RESPONSES} AI responses (last 30 days)
           </span>

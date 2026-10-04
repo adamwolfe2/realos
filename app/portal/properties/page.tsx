@@ -814,7 +814,7 @@ function PropertiesPagination({
             ← Previous
           </Link>
         ) : (
-          <span className="inline-flex items-center rounded-[2px] border border-border bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground/60">
+          <span className="inline-flex items-center rounded-[2px] border border-border bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground">
             ← Previous
           </span>
         )}
@@ -829,7 +829,7 @@ function PropertiesPagination({
             Next →
           </Link>
         ) : (
-          <span className="inline-flex items-center rounded-[2px] border border-border bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground/60">
+          <span className="inline-flex items-center rounded-[2px] border border-border bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground">
             Next →
           </span>
         )}

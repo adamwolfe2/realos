@@ -47,7 +47,7 @@ const STATUS_TONE: Record<string, string> = {
   CHANGES_REQUESTED: "bg-muted text-foreground",
   REJECTED:          "bg-muted text-muted-foreground line-through",
   SHIPPED:           "bg-success text-success-foreground",
-  EXPIRED:           "bg-muted text-muted-foreground/70",
+  EXPIRED:           "bg-muted text-muted-foreground",
 };
 
 function fmtAge(d: Date | null): string {

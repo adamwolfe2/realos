@@ -53,7 +53,7 @@ export function LineRow({
             disabled={disabled}
             placeholder="Optional description shown on the proposal"
             rows={1}
-            className="mt-1 w-full bg-transparent border-0 outline-none text-[11.5px] text-muted-foreground placeholder:text-muted-foreground/60 resize-none px-0"
+            className="mt-1 w-full bg-transparent border-0 outline-none text-[11.5px] text-muted-foreground placeholder:text-muted-foreground resize-none px-0"
           />
         </div>
         <div className="flex flex-col items-end gap-1 shrink-0">

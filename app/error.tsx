@@ -45,7 +45,7 @@ export default function RootError({
         </Button>
       </div>
       {error.digest ? (
-        <p className="text-[10px] text-muted-foreground/50 font-mono mt-2">
+        <p className="text-[10px] text-muted-foreground font-mono mt-2">
           Error ID: {error.digest}
         </p>
       ) : null}

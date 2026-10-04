@@ -501,7 +501,7 @@ function InviteForm({
         </label>
         <label className="flex flex-col gap-1 text-sm">
           <span className="ls-eyebrow">
-            Full name <span className="normal-case text-muted-foreground/70">(optional)</span>
+            Full name <span className="normal-case text-muted-foreground">(optional)</span>
           </span>
           <input
             type="text"

@@ -265,7 +265,7 @@ export default async function ReportsListPage({
             </span>
           );
         }
-        return <span className="text-muted-foreground/50">—</span>;
+        return <span className="text-muted-foreground">—</span>;
       },
     },
     {
@@ -292,7 +292,7 @@ export default async function ReportsListPage({
             {formatDate(r.sharedAt)}
           </span>
         ) : (
-          <span className="text-muted-foreground/50">—</span>
+          <span className="text-muted-foreground">—</span>
         ),
     },
     {
@@ -307,7 +307,7 @@ export default async function ReportsListPage({
             {r.viewCount.toLocaleString()}
           </span>
         ) : (
-          <span className="text-muted-foreground/50">0</span>
+          <span className="text-muted-foreground">0</span>
         ),
     },
   ];

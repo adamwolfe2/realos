@@ -41,7 +41,7 @@ export function CatalogRail({
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search catalog"
-          className="w-full rounded-md border border-border bg-card px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary/30"
+          className="w-full rounded-md border border-border bg-card px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
       </div>
 

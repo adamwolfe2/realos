@@ -41,7 +41,7 @@ export default function LeadsError({
         </Button>
       </div>
       {error.digest && (
-        <p className="mt-6 text-[10px] text-muted-foreground/50 font-mono">
+        <p className="mt-6 text-[10px] text-muted-foreground font-mono">
           Error ID: {error.digest}
         </p>
       )}

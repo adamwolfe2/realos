@@ -107,7 +107,7 @@ export function ShareOfVoiceCard({
                     </span>
                     <span className="tabular-nums text-muted-foreground">
                       {fmtPercent(row.avgSov)}
-                      <span className="text-[10px] ml-2 text-muted-foreground/70">
+                      <span className="text-[10px] ml-2 text-muted-foreground">
                         n={row.snapshotCount}
                       </span>
                     </span>

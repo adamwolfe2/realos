@@ -128,7 +128,7 @@ export function VaultClient({
           placeholder="Search by name, platform, username, tag…"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          className="flex-1 rounded-[2px] border border-border bg-card px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary"
+          className="flex-1 rounded-[2px] border border-border bg-card px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
         />
         <select
           value={propertyFilter}
@@ -198,7 +198,7 @@ export function VaultClient({
                 </td>
                 <td className="px-4 py-2 text-muted-foreground">
                   {entry.property?.name ?? (
-                    <span className="text-muted-foreground/60">Org-wide</span>
+                    <span className="text-muted-foreground">Org-wide</span>
                   )}
                 </td>
                 <td className="px-4 py-2 text-muted-foreground">

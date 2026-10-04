@@ -338,7 +338,7 @@ export function CursivePanel({
               </span>
             ) : (
               <span
-                className="text-[10px] uppercase tracking-wider text-muted-foreground/70"
+                className="text-[10px] uppercase tracking-wider text-muted-foreground"
                 title="A background cron pulls the segment every 5 minutes. This panel also auto-pulls when you open it if the data is older than 2 minutes — no manual sync needed under normal use."
               >
                 Auto-syncs every 5 min

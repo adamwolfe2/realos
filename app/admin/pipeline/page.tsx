@@ -210,7 +210,7 @@ function PipelineColumn({
           className={
             "shrink-0 inline-flex items-center justify-center min-w-[20px] h-5 rounded-full px-1.5 text-[10px] font-semibold tabular-nums " +
             (col.items.length === 0
-              ? "bg-muted text-muted-foreground/50"
+              ? "bg-muted text-muted-foreground"
               : "bg-primary/10 text-primary")
           }
         >
@@ -219,7 +219,7 @@ function PipelineColumn({
       </header>
       <div className="flex flex-col gap-2 min-h-[40px]">
         {col.items.length === 0 ? (
-          <p className="text-[10px] text-muted-foreground/60 italic px-1 py-2">
+          <p className="text-[10px] text-muted-foreground italic px-1 py-2">
             No tenants here yet.
           </p>
         ) : (

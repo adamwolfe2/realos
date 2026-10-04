@@ -401,7 +401,7 @@ function CompletenessBanner({
               <Circle
                 className={cn(
                   "h-3 w-3 shrink-0",
-                  it.critical ? "text-[#8a6d00]" : "text-muted-foreground/50",
+                  it.critical ? "text-[#8a6d00]" : "text-muted-foreground",
                 )}
                 aria-hidden="true"
               />
