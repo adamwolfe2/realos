@@ -85,7 +85,12 @@ function FormShell({
 }) {
   return (
     <form
-      action={onSubmit}
+      // onSubmit (not action=) so React 19 does not reset typed fields when
+      // the server returns an error.
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit(new FormData(e.currentTarget));
+      }}
       className="ls-card p-5 space-y-4 max-w-xl"
     >
       {children}

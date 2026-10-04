@@ -68,7 +68,13 @@ export function PropertyChatbotConfigForm({
   const captureValue = config?.chatbotCaptureMode ?? "";
 
   return (
-    <form action={onSubmit} className="space-y-4 rounded-[2px] border border-border bg-card p-4 sm:p-6">
+    <form
+      // onSubmit (not action=) so React 19 does not reset typed fields on error.
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit(new FormData(e.currentTarget));
+      }}
+      className="space-y-4 rounded-[2px] border border-border bg-card p-4 sm:p-6">
       <input type="hidden" name="propertyId" value={propertyId} />
 
       <div>
