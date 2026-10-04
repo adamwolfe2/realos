@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { findOldestLeadByEmail } from "@/lib/leads/find-by-email";
 import {
   LeadSource,
   LeadStatus,
@@ -200,9 +201,10 @@ export async function POST(req: NextRequest) {
   const notesLine = `Captured by popup on ${data.pageUrl ?? "site"}`;
 
   const existing = data.email
-    ? await prisma.lead.findFirst({
-        where: { orgId: org.id, email: data.email },
-        select: { id: true, phone: true, propertyId: true },
+    ? await findOldestLeadByEmail(org.id, data.email, {
+        id: true,
+        phone: true,
+        propertyId: true,
       })
     : data.phone
       ? await prisma.lead.findFirst({

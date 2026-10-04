@@ -3,6 +3,7 @@ import { liveFeaturesPaused } from "@/lib/billing/trial-status";
 import { z } from "zod";
 import crypto from "crypto";
 import { prisma } from "@/lib/db";
+import { findOldestLeadByEmail } from "@/lib/leads/find-by-email";
 import {
   ChatbotConversationStatus,
   LeadSource,
@@ -179,9 +180,9 @@ export async function POST(req: NextRequest) {
   try {
     // Upsert Lead keyed by (orgId, email). Prisma has no compound unique on
     // (orgId, email), so we handle the upsert manually.
-    const existing = await prisma.lead.findFirst({
-      where: { orgId, email },
-      select: { id: true, phone: true },
+    const existing = await findOldestLeadByEmail(orgId, email, {
+      id: true,
+      phone: true,
     });
 
     const notesLine = `Captured by chatbot on ${pageUrl ?? "site"}`;

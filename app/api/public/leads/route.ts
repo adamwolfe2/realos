@@ -22,6 +22,7 @@ import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
 import { LeadNotifyChannel } from "@prisma/client";
 import { requireMatchingOrigin } from "@/lib/tenancy/origin-guard";
 import { getSiteUrl } from "@/lib/brand";
+import { findOldestLeadByEmail } from "@/lib/leads/find-by-email";
 
 const schema = z.object({
   orgId: z.string().min(1),
@@ -30,7 +31,7 @@ const schema = z.object({
   sourceDetail: z.string().max(200).optional(),
   firstName: z.string().max(100).optional(),
   lastName: z.string().max(100).optional(),
-  email: z.string().email().optional(),
+  email: z.string().trim().toLowerCase().email().optional(),
   phone: z.string().max(40).optional(),
   preferredUnitType: z.string().max(100).optional(),
   desiredMoveIn: z.string().optional(),
@@ -145,19 +146,24 @@ export async function POST(req: NextRequest) {
       ? new Date(data.desiredMoveIn)
       : null;
 
-  // Dedupe by (orgId, email), case-insensitive, same as the chatbot helper
-  // (lib/chatbot/find-or-create-lead.ts). A resubmit or double-click merges
+  // Dedupe by (orgId, email), exact but case-insensitive (shared helper,
+  // same as the popup/tours/chatbot routes). A resubmit or double-click merges
   // into the existing lead: fill gaps only, keep original source/property
   // attribution, append the new message to notes.
   // ponytail: findFirst-then-create still races on truly concurrent submits;
   // a partial unique index on (orgId, lower(email)) closes it (schema change).
   const existing = data.email
-    ? await prisma.lead.findFirst({
-        where: {
-          orgId: data.orgId,
-          email: { equals: data.email.trim().toLowerCase(), mode: "insensitive" },
-        },
-        orderBy: { createdAt: "asc" },
+    ? await findOldestLeadByEmail(data.orgId, data.email, {
+        id: true,
+        propertyId: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        preferredUnitType: true,
+        desiredMoveIn: true,
+        budgetMaxCents: true,
+        notes: true,
+        updatedAt: true,
       })
     : null;
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { findOldestLeadByEmail } from "@/lib/leads/find-by-email";
 import {
   publicSignupLimiter,
   checkRateLimit,
@@ -23,7 +24,7 @@ const schema = z.object({
   propertyId: z.string().min(1),
   firstName: z.string().max(100).optional(),
   lastName: z.string().max(100).optional(),
-  email: z.string().email(),
+  email: z.string().trim().toLowerCase().email(),
   phone: z.string().max(40).optional(),
   scheduledAt: z.string().datetime().optional(),
   tourType: z.enum(["in_person", "virtual", "self_guided"]).optional(),
@@ -79,9 +80,8 @@ export async function POST(req: NextRequest) {
   }
 
   // Find or create the lead.
-  const existing = await prisma.lead.findFirst({
-    where: { orgId: data.orgId, email: data.email },
-    select: { id: true },
+  const existing = await findOldestLeadByEmail(data.orgId, data.email, {
+    id: true,
   });
 
   const lead = existing
