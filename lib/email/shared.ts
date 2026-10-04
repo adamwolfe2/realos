@@ -130,6 +130,8 @@ type BrandedSendInput = {
    * receipts) that should always read as LeaseStack.
    */
   orgId?: string | null;
+  /** Resend idempotency key: a repeat send with the same key is deduped. */
+  idempotencyKey?: string;
 };
 
 export type BrandedSendResult =
@@ -250,7 +252,7 @@ export async function sendBrandedEmail(
       replyTo: opts.replyTo ?? BRAND_EMAIL,
       headers,
       tags,
-    });
+    }, opts.idempotencyKey ? { idempotencyKey: opts.idempotencyKey } : undefined);
     if (r.error) {
       console.error(`[email:${template}] Resend rejected send:`, r.error);
       return { ok: false, error: r.error.message ?? "Resend API error" };
