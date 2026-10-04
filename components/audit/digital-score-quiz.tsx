@@ -152,9 +152,9 @@ export function DigitalScoreQuiz() {
             return;
           }
           if (Date.now() - startedAt > POLL_TIMEOUT_MS) {
+            // The report page self-refreshes while the scan finishes.
             if (pollRef.current) clearInterval(pollRef.current);
-            setError("Still working. Open the report from this link.");
-            setPhase("error");
+            redirect(token);
           }
         } catch {
           // Transient. Keep polling until timeout.
