@@ -21,6 +21,7 @@ import { notifyLeadCreated } from "@/lib/notifications/create";
 import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
 import { LeadNotifyChannel } from "@prisma/client";
 import { requireMatchingOrigin } from "@/lib/tenancy/origin-guard";
+import { getSiteUrl } from "@/lib/brand";
 
 const schema = z.object({
   orgId: z.string().min(1),
@@ -167,7 +168,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Fire-and-forget side effects.
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const appUrl = getSiteUrl();
   const moduleCount = 1;
 
   void notifyLeadCreated(lead).catch(() => {});

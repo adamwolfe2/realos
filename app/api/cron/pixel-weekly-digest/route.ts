@@ -5,6 +5,7 @@ import { sendVisitorWeeklyDigest } from "@/lib/email/visitor-emails";
 import { recordCronRun } from "@/lib/health/cron-run";
 import { verifyCronAuth } from "@/lib/cron/auth";
 import { marketableOrgClause } from "@/lib/tenancy/property-filter";
+import { getSiteUrl } from "@/lib/brand";
 
 export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for unbounded loops
 
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
   });
 
   const sinceWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const portalBase = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const portalBase = getSiteUrl();
   const results: Array<{
     orgId: string;
     sent: number;

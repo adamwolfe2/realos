@@ -4,6 +4,7 @@ import { LeadStatus, Prisma } from "@prisma/client";
 import { sendLeadCadenceEmail } from "@/lib/email/lead-sequences";
 import { recordCronRun } from "@/lib/health/cron-run";
 import { verifyCronAuth } from "@/lib/cron/auth";
+import { getSiteUrl } from "@/lib/brand";
 
 export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for unbounded loops
 
@@ -66,7 +67,7 @@ export async function GET(req: NextRequest) {
   return recordCronRun("lead-nurture", async () => {
   const now = Date.now();
   const results: Array<{ stage: string; fired: number; errors: number }> = [];
-  const appBase = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const appBase = getSiteUrl();
   const platformDomain =
     process.env.NEXT_PUBLIC_PLATFORM_DOMAIN ?? "leasestack.co";
 

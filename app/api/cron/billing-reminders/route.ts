@@ -11,6 +11,7 @@ import {
   BRAND_NAME,
   BRAND_EMAIL,
 } from "@/lib/email/shared";
+import { getSiteUrl } from "@/lib/brand";
 
 export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for unbounded loops
 
@@ -67,8 +68,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const portalBase =
-      process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const portalBase = getSiteUrl();
     const billingUrl = `${portalBase}/portal/billing`;
 
     const results: Array<{

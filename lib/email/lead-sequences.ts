@@ -2,6 +2,7 @@ import "server-only";
 import crypto from "node:crypto";
 import { buildBaseHtml, getResend, isValidEmail } from "./shared";
 import { escapeHtml as esc } from "@/lib/escape-html";
+import { getSiteUrl } from "@/lib/brand";
 
 export type CadenceStage =
   | null
@@ -184,7 +185,7 @@ export function verifyUnsubscribeToken(
 }
 
 export function buildUnsubUrl(leadId: string): string {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const base = getSiteUrl();
   const token = unsubscribeToken(leadId);
   return `${base}/unsub?lead=${leadId}&token=${token}`;
 }
