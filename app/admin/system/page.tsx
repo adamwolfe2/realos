@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
+import vercelConfig from "@/vercel.json";
 import { requireAgency } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { PageHeader } from "@/components/admin/page-header";
@@ -41,33 +42,42 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 // ---------------------------------------------------------------------------
-// Cron schedule mirrors vercel.json. Kept inline so the page renders even if
-// vercel.json is unreachable from the runtime (it is at build time only).
+// Cron schedule is derived from vercel.json (bundled at build time) so the
+// table cannot drift from what is actually scheduled. Descriptions live in a
+// keyed map; jobs without an entry still render with a generic label.
 // ---------------------------------------------------------------------------
-const CRON_SCHEDULE: Array<{ jobName: string; schedule: string; description: string }> = [
-  { jobName: "billing-reminders", schedule: "0 9 * * *", description: "Daily — past-due tenant billing reminders" },
-  { jobName: "lapsed-leads", schedule: "0 11 * * *", description: "Daily — close leads inactive for 14 days" },
-  { jobName: "intake-nurture", schedule: "0 12 * * *", description: "Daily — intake follow-up email sequence" },
-  { jobName: "onboarding-drip", schedule: "0 13 * * *", description: "Daily — new-tenant onboarding nudges" },
-  { jobName: "lead-nurture", schedule: "0 14 * * *", description: "Daily — lead lifecycle email cadence" },
-  { jobName: "review-requests", schedule: "0 15 * * *", description: "Daily — Google review requests to signed residents" },
-  { jobName: "lead-score-refresh", schedule: "*/30 * * * *", description: "Every 30 min — recompute lead intent scores" },
-  { jobName: "insight-detector", schedule: "*/30 * * * *", description: "Every 30 min — anomaly detection across all orgs" },
-  { jobName: "weekly-report", schedule: "0 7 * * 1", description: "Mondays — client weekly performance report" },
-  { jobName: "weekly-digest", schedule: "0 8 * * 1", description: "Mondays — tenant weekly digest email" },
-  { jobName: "pixel-weekly-digest", schedule: "0 9 * * 1", description: "Mondays — visitor pixel digest summary" },
-  { jobName: "monthly-report", schedule: "0 8 1 * *", description: "1st of month — client monthly report" },
-  { jobName: "webhook-retry", schedule: "*/5 * * * *", description: "Every 5 min — retry failed webhook deliveries" },
-  { jobName: "appfolio-sync", schedule: "0 * * * *", description: "Hourly — AppFolio property/listing sync" },
-  { jobName: "seo-sync", schedule: "0 6 * * *", description: "Daily — GSC + GA4 search console snapshot" },
-  { jobName: "ads-sync", schedule: "0 7 * * *", description: "Daily — Google Ads + Meta ad metrics sync" },
-  { jobName: "pixel-segment-sync", schedule: "*/5 * * * *", description: "Every 5 min — pull resolved visitors from the upstream pixel segment (Cursive self-heal)" },
-  { jobName: "reputation-scan", schedule: "0 8 * * *", description: "Daily — per-property reputation refresh (Reddit + Yelp + Google + Tavily)" },
-  { jobName: "dataforseo-sync", schedule: "0 5 * * *", description: "Daily — search intelligence sync (ranked keywords + backlinks)" },
-  { jobName: "aeo-scan", schedule: "0 2 * * 1", description: "Weekly — AEO 4-engine brand-mention scan (Claude/ChatGPT/Gemini/Perplexity)" },
-  { jobName: "site-intelligence-refresh", schedule: "0 3 * * *", description: "Daily — Firecrawl re-crawl of every tenant root domain" },
-  { jobName: "daily-insight-digest", schedule: "0 13 * * 1-5", description: "Weekdays 1pm — operator insights digest email" },
-];
+const CRON_DESCRIPTIONS: Record<string, string> = {
+  "billing-reminders": "Past-due tenant billing reminders",
+  "lapsed-leads": "Close leads inactive for 14 days",
+  "intake-nurture": "Intake follow-up email sequence",
+  "onboarding-drip": "New-tenant onboarding nudges",
+  "lead-nurture": "Lead lifecycle email cadence",
+  "review-requests": "Google review requests to signed residents",
+  "lead-score-refresh": "Recompute lead intent scores",
+  "insight-detector": "Anomaly detection across all orgs",
+  "weekly-report": "Client weekly performance report",
+  "weekly-digest": "Tenant weekly digest email",
+  "monthly-report": "Client monthly report",
+  "webhook-retry": "Retry failed webhook deliveries",
+  "appfolio-sync": "AppFolio property/listing sync",
+  "seo-sync": "GSC + GA4 search console snapshot",
+  "ads-sync": "Google Ads + Meta ad metrics sync",
+  "pixel-segment-sync": "Pull resolved visitors from the upstream pixel segment (Cursive self-heal)",
+  "reputation-scan": "Per-property reputation refresh (Reddit + Yelp + Google + Tavily)",
+  "dataforseo-sync": "Search intelligence sync (ranked keywords + backlinks)",
+  "aeo-scan": "AEO 4-engine brand-mention scan (Claude/ChatGPT/Gemini/Perplexity)",
+  "site-intelligence-refresh": "Firecrawl re-crawl of every tenant root domain",
+};
+
+const CRON_SCHEDULE: Array<{ jobName: string; schedule: string; description: string }> =
+  vercelConfig.crons.map((c) => {
+    const jobName = c.path.split("/").pop() ?? c.path;
+    return {
+      jobName,
+      schedule: c.schedule,
+      description: CRON_DESCRIPTIONS[jobName] ?? "Scheduled job",
+    };
+  });
 
 // ---------------------------------------------------------------------------
 // Tone helpers — semantic colors mirror /admin/audit-log + /admin/tenants.
