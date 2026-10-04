@@ -247,7 +247,7 @@ export async function POST(req: NextRequest) {
     !!data.notes?.trim() &&
     existing.updatedAt.getTime() < Date.now() - REPEAT_NOTIFY_AFTER_MS;
   if (existing && !isRepeatInquiry) {
-    return NextResponse.json({ ok: true, leadId: lead.id }, { status: 201 });
+    return NextResponse.json({ ok: true }, { status: 201 });
   }
 
   // The bell is kind `lead_created` ("New lead: X"), so only net-new leads
@@ -277,7 +277,7 @@ export async function POST(req: NextRequest) {
   }).catch(soft(undefined, "public.leads.notifyLeadCaptured"));
 
   if (isRepeatInquiry) {
-    return NextResponse.json({ ok: true, leadId: lead.id }, { status: 201 });
+    return NextResponse.json({ ok: true }, { status: 201 });
   }
 
   // Fire-and-forget side effects.
@@ -332,8 +332,5 @@ export async function POST(req: NextRequest) {
     }
   });
 
-  return NextResponse.json(
-    { ok: true, leadId: lead.id },
-    { status: 201 }
-  );
+  return NextResponse.json({ ok: true }, { status: 201 });
 }
