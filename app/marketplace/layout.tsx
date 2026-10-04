@@ -122,7 +122,7 @@ export default function MarketplaceLayout({
           as the LeaseStack /leads hero. <main> is relative + overflow-
           hidden so the absolute-positioned swirls fill the entire
           scrollable content area, and children sit above on z-10. */}
-      <main className="flex-1 relative overflow-hidden">
+      <main id="main-content" tabIndex={-1} className="flex-1 relative overflow-hidden focus:outline-none">
         <PixelSwirl />
         <GlyphSwirl />
         <div className="relative z-10">{children}</div>
