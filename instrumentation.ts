@@ -1,4 +1,16 @@
+import * as Sentry from "@sentry/nextjs";
+
 export async function register() {
+  // Sentry server/edge SDK init. Next only runs these configs when
+  // register() imports them; without this, server-side captureException
+  // (incl. lib/sentry.ts captureWithContext) was a no-op.
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    await import("./sentry.server.config");
+  }
+  if (process.env.NEXT_RUNTIME === "edge") {
+    await import("./sentry.edge.config");
+  }
+
   // Validate env vars on server startup (fail-fast in production)
   const { validateEnv } = await import("@/lib/env");
   validateEnv();
@@ -27,3 +39,6 @@ export async function register() {
     }
   }
 }
+
+// Report errors from Server Components, route handlers and middleware.
+export const onRequestError = Sentry.captureRequestError;
