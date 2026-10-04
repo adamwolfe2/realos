@@ -15,7 +15,9 @@ import {
   TourStatus,
   VisitorIdentificationStatus,
 } from "@prisma/client";
+import { z } from "zod";
 import { generateText } from "ai";
+import { captureWithContext } from "@/lib/sentry";
 import { anthropic } from "@ai-sdk/anthropic";
 import { buildPropertyUrlPatterns } from "@/lib/properties/queries";
 import { realAdAccountWhere } from "@/lib/integrations/real-ad-account";
@@ -608,6 +610,27 @@ function isBrandedQuery(query: string): boolean {
 // AI analysis
 // ---------------------------------------------------------------------------
 
+const AiAnalysisSchema = z.object({
+  summary: z.string(),
+  actions: z.array(
+    z.object({
+      priority: z.enum(["high", "medium", "low"]),
+      title: z.string(),
+      observation: z.string(),
+      action: z.string(),
+    }),
+  ),
+});
+
+// Pure + exported for tests. Tolerates ```json fences / surrounding prose by
+// extracting the first {...} span, then validates the shape. Throws on bad input.
+export function parseAiAnalysis(text: string): AiAnalysis {
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start === -1 || end <= start) throw new Error("No JSON object in AI response");
+  return AiAnalysisSchema.parse(JSON.parse(text.slice(start, end + 1))) as AiAnalysis;
+}
+
 async function generateAiAnalysis(
   snapshot: Omit<ReportSnapshot, "aiAnalysis">,
 ): Promise<AiAnalysis | null> {
@@ -655,8 +678,10 @@ Respond with ONLY valid JSON (no markdown, no explanation):
       messages: [{ role: "user", content: prompt }],
       maxOutputTokens: 800,
     });
-    return JSON.parse(text) as AiAnalysis;
-  } catch {
+    return parseAiAnalysis(text);
+  } catch (err) {
+    console.warn("[reports] AI analysis failed; shipping report without it", err);
+    captureWithContext(err, { area: "reports.generateAiAnalysis", kind: snapshot.kind });
     return null;
   }
 }
