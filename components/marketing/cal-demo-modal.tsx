@@ -2,7 +2,12 @@
 
 import * as React from "react";
 import { usePlatformHost } from "@/components/analytics/platform-only";
-import Cal, { getCalApi } from "@calcom/embed-react";
+import dynamic from "next/dynamic";
+import { usePathname } from "next/navigation";
+
+// @calcom/embed-react stays out of the root-layout chunk: the embed loads
+// lazily (pre-warm on marketing pages, or on first open()).
+const CalWarmEmbed = dynamic(() => import("./cal-embed"), { ssr: false });
 
 // ---------------------------------------------------------------------------
 // Cal.com inline modal — single embed used by every "Book a demo" CTA.
@@ -56,8 +61,6 @@ export function parseCalSlug(rawUrl: string | undefined): string | null {
   }
 }
 
-const NAMESPACE = "leasestack-intro";
-
 type CalContextValue = {
   open: () => void;
   isAvailable: boolean;
@@ -72,45 +75,25 @@ const CalDemoContext = React.createContext<CalContextValue | null>(null);
  */
 export function CalDemoProvider({ children }: { children: React.ReactNode }) {
   const slug = parseCalSlug(process.env.NEXT_PUBLIC_CAL_BOOK_URL);
-  const [, forceRerender] = React.useState(0);
   // LeaseStack's demo embed must not pre-warm on customer tenant sites.
   const onPlatform = usePlatformHost();
-
-  React.useEffect(() => {
-    if (!slug || !onPlatform) return;
-    let cancelled = false;
-    (async () => {
-      const cal = await getCalApi({ namespace: NAMESPACE });
-      if (cancelled) return;
-      cal("ui", {
-        // Light, brand-neutral UI on the embed. Cal's defaults are good;
-        // we just hide layout chrome we don't need and set the brand
-        // color so the picker reads as ours.
-        hideEventTypeDetails: false,
-        layout: "month_view",
-        styles: {
-          branding: { brandColor: "#0f62fe" },
-        },
-      });
-      // Trigger a render once the API is wired so consumers can show the
-      // button (no point rendering "Book a demo" CTAs if the embed
-      // hasn't been initialised yet).
-      forceRerender((n) => n + 1);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [slug, onPlatform]);
+  // Logged-in surfaces never show the demo CTA; skip the pre-warm there so
+  // they don't download the Cal embed. open() still works (lazy import).
+  const pathname = usePathname() ?? "";
+  const warm =
+    onPlatform &&
+    !pathname.startsWith("/portal") &&
+    !pathname.startsWith("/admin");
 
   const open = React.useCallback(() => {
     if (!slug) return;
-    // `cal-link` is the data attribute Cal's API watches. We call the
-    // API directly here rather than relying on data attributes so
-    // arbitrary buttons (not just <a data-cal-link>) can trigger it.
-    (async () => {
-      const cal = await getCalApi({ namespace: NAMESPACE });
-      cal("modal", { calLink: slug, config: { layout: "month_view" } });
-    })();
+    // Call the API directly so arbitrary buttons (not just
+    // <a data-cal-link>) can trigger it.
+    void import("./cal-embed")
+      .then((m) => m.openCalModal(slug))
+      .catch((err) => {
+        console.error("[cal-demo] failed to open Cal modal", err);
+      });
   }, [slug]);
 
   const value = React.useMemo<CalContextValue>(
@@ -122,18 +105,8 @@ export function CalDemoProvider({ children }: { children: React.ReactNode }) {
     <CalDemoContext.Provider value={value}>
       {children}
       {/* Pre-render the Cal embed off-screen so the iframe is warm by
-          the time a user clicks. On first call to cal("modal", ...) the
-          API uses this pre-warmed instance instead of cold-starting. */}
-      {slug && onPlatform ? (
-        <div aria-hidden="true" className="hidden">
-          <Cal
-            namespace={NAMESPACE}
-            calLink={slug}
-            style={{ width: "100%", height: "100%" }}
-            config={{ layout: "month_view" }}
-          />
-        </div>
-      ) : null}
+          the time a user clicks. */}
+      {slug && warm ? <CalWarmEmbed slug={slug} /> : null}
     </CalDemoContext.Provider>
   );
 }
