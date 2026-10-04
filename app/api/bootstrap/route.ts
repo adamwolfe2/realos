@@ -1,8 +1,5 @@
-// Edge runtime — stateless lookup, no DB, no Clerk session.
-// Cold start ~30ms vs ~2s on Node.
+// Retired endpoint: always 410, points callers at /api/admin/bootstrap.
 import { NextResponse } from "next/server";
-
-export const runtime = "edge";
 
 export async function POST() {
   return NextResponse.json(

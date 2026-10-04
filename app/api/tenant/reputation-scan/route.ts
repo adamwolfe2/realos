@@ -72,9 +72,7 @@ export async function POST(req: NextRequest) {
   // Billing gate — reputation scans fan out to Tavily + Claude Haiku.
   // Block delinquent tenants from triggering paid scans. The dedicated
   // reputationScanLimiter (3/hr) below handles per-user pressure.
-  const billingGate = await checkAiBillingGate(scope.orgId, {
-    isImpersonating: scope.isImpersonating,
-  });
+  const billingGate = await checkAiBillingGate(scope.orgId, scope);
   if (!billingGate.allowed) {
     return NextResponse.json(aiBillingDeniedResponseBody(billingGate), {
       status: 402,

@@ -63,9 +63,7 @@ export async function createReport(
   // this server action enforces the same two spend controls as the API
   // route: the billing gate (delinquent orgs must not burn Anthropic
   // budget) and the per-user hourly AI rate limit.
-  const billingGate = await checkAiBillingGate(scope.orgId, {
-    isImpersonating: scope.isImpersonating,
-  });
+  const billingGate = await checkAiBillingGate(scope.orgId, scope);
   if (!billingGate.allowed) {
     throw new Error(aiBillingDeniedResponseBody(billingGate).error);
   }

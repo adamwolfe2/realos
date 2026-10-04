@@ -74,9 +74,7 @@ export async function POST(req: NextRequest) {
 
   // Billing gate — block AI generation for delinquent tenants so we
   // don't quietly burn Anthropic budget on a past_due account.
-  const billingGate = await checkAiBillingGate(scope.orgId, {
-    isImpersonating: scope.isImpersonating,
-  });
+  const billingGate = await checkAiBillingGate(scope.orgId, scope);
   if (!billingGate.allowed) {
     return NextResponse.json(aiBillingDeniedResponseBody(billingGate), {
       status: 402,

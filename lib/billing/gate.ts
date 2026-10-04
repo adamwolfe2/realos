@@ -45,8 +45,13 @@ export type BillingGateResult =
     };
 
 export type BillingGateOptions = {
-  /** Agency users impersonating a client should bypass the gate. */
+  /**
+   * Only agency staff impersonating a client bypass the gate (support can
+   * debug AI during dunning). AL_PARTNER impersonation does not. Pass the
+   * scope itself so both flags travel together.
+   */
   isImpersonating?: boolean;
+  isAgency?: boolean;
 };
 
 const BILLING_PORTAL_URL = "/portal/billing";
@@ -67,7 +72,7 @@ export async function checkAiBillingGate(
   orgId: string,
   options: BillingGateOptions = {},
 ): Promise<BillingGateResult> {
-  if (options.isImpersonating) {
+  if (options.isImpersonating && options.isAgency) {
     return { allowed: true, reason: "impersonating" };
   }
 
@@ -79,8 +84,9 @@ export async function checkAiBillingGate(
     });
     if (!org) return { allowed: true, reason: "unknown_org" };
     status = org.subscriptionStatus;
-  } catch {
+  } catch (err) {
     // DB error — fail open so the AI feature isn't broken by infra.
+    console.error(`[billing-gate] org lookup failed (orgId=${orgId}); failing open`, err);
     return { allowed: true, reason: "unknown_org" };
   }
 

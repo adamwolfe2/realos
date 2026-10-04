@@ -51,9 +51,7 @@ export async function POST(req: NextRequest) {
 
   // Billing gate — backfill can chew through 200 mentions in batches of
   // 50 against Claude Haiku. Block delinquent tenants from running it.
-  const billingGate = await checkAiBillingGate(scope.orgId, {
-    isImpersonating: scope.isImpersonating,
-  });
+  const billingGate = await checkAiBillingGate(scope.orgId, scope);
   if (!billingGate.allowed) {
     return NextResponse.json(aiBillingDeniedResponseBody(billingGate), {
       status: 402,

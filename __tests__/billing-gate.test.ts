@@ -28,10 +28,18 @@ beforeEach(() => {
 
 describe("checkAiBillingGate", () => {
   it("bypasses the gate entirely for an impersonating agency user", async () => {
-    const result = await checkAiBillingGate("org_1", { isImpersonating: true });
+    const result = await checkAiBillingGate("org_1", { isImpersonating: true, isAgency: true });
     expect(result).toEqual({ allowed: true, reason: "impersonating" });
     // Never even queries the org — impersonation short-circuits first.
     expect(h.db.organization.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("does not bypass for a non-agency impersonator (AL_PARTNER)", async () => {
+    h.db.organization.findUnique.mockResolvedValue({
+      subscriptionStatus: SubscriptionStatus.PAST_DUE,
+    });
+    const result = await checkAiBillingGate("org_1", { isImpersonating: true, isAgency: false });
+    expect(result.allowed).toBe(false);
   });
 
   it("fails open (allowed: true) when the org doesn't exist", async () => {

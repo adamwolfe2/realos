@@ -9,7 +9,7 @@ import { NextRequest } from "next/server";
 // forges leads / spams a tenant's Resend templates against an arbitrary
 // org"), unknown-tenant handling, the property-belongs-to-org check
 // (cross-tenant propertyId can't be attached to a lead), and the success
-// path returning 201 + leadId.
+// path returning 201.
 // ---------------------------------------------------------------------------
 
 const h = vi.hoisted(() => ({
@@ -158,12 +158,12 @@ describe("POST /api/public/leads", () => {
     expect(h.lead.create).not.toHaveBeenCalled();
   });
 
-  it("creates the lead and returns 201 + leadId on a valid request", async () => {
+  it("creates the lead and returns 201 on a valid request", async () => {
     const res = (await POST(makeRequest(VALID_BODY))) as Response;
     const json = await res.json();
 
     expect(res.status).toBe(201);
-    expect(json).toEqual({ ok: true, leadId: "lead_1" });
+    expect(json).toEqual({ ok: true });
     expect(h.lead.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ orgId: "org_1", email: "renter@example.com" }),
@@ -205,7 +205,8 @@ describe("POST /api/public/leads dedupe (F-024)", () => {
     )) as Response;
 
     expect(res.status).toBe(201);
-    expect(await res.json()).toEqual({ ok: true, leadId: "lead_existing" });
+    // Same body as a new lead: the response must not reveal that the email exists.
+    expect(await res.json()).toEqual({ ok: true });
     expect(h.lead.create).not.toHaveBeenCalled();
     expect(h.lead.findFirst.mock.calls[0][0].where).toEqual({
       orgId: "org_1",
