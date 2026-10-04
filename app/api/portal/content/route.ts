@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     scope = await requireWritableWorkspace();
   } catch (err) {
     if (err instanceof ForbiddenError) {
-      return NextResponse.json({ error: err.message }, { status: 403 });
+      return NextResponse.json({ error: err.message }, { status: err.status });
     }
     throw err;
   }
