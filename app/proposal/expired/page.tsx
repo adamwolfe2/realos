@@ -20,24 +20,24 @@ export const metadata: Metadata = {
 
 export default function ProposalExpiredPage() {
   return (
-    <main className="min-h-screen bg-white text-[#0F172A]">
-      <header className="border-b border-[#EAECEF]">
+    <main className="min-h-screen bg-white text-foreground">
+      <header className="border-b border-border">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-5 sm:py-6">
-          <span className="text-sm font-semibold tracking-tight text-[#0F172A]">
+          <span className="text-sm font-semibold tracking-tight text-foreground">
             {BRAND_NAME}
           </span>
-          <span className="text-xs text-[#6B7280]">Proposal</span>
+          <span className="text-xs text-muted-foreground">Proposal</span>
         </div>
       </header>
 
       <div className="mx-auto max-w-xl px-6 py-20 text-center sm:py-28">
-        <p className="text-sm font-medium uppercase tracking-wider text-[#6B7280]">
+        <p className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
           Link unavailable
         </p>
         <h1 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
           This proposal link is no longer active.
         </h1>
-        <p className="mt-4 text-[15px] leading-relaxed text-[#374151]">
+        <p className="mt-4 text-[15px] leading-relaxed text-[var(--gray-70)]">
           The link may have expired, been replaced with a newer version, or
           been retracted. Contact your {BRAND_NAME} account rep to receive
           a fresh link.
@@ -48,13 +48,13 @@ export default function ProposalExpiredPage() {
             href={`mailto:${BRAND_EMAIL}?subject=${encodeURIComponent(
               `${BRAND_NAME} proposal link request`,
             )}`}
-            className="inline-flex w-full items-center justify-center rounded-md bg-[#0f62fe] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#0043ce] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f62fe] focus-visible:ring-offset-2 sm:w-auto"
+            className="inline-flex w-full items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:w-auto"
           >
             Email {BRAND_NAME}
           </a>
           <a
             href={BRAND.url}
-            className="inline-flex w-full items-center justify-center rounded-md border border-[#EAECEF] bg-white px-6 py-3 text-sm font-medium text-[#0F172A] transition hover:bg-[#F9FAFB] sm:w-auto"
+            className="inline-flex w-full items-center justify-center rounded-md border border-border bg-white px-6 py-3 text-sm font-medium text-foreground transition hover:bg-secondary sm:w-auto"
             rel="noopener"
           >
             Visit {BRAND_NAME}
@@ -62,12 +62,12 @@ export default function ProposalExpiredPage() {
         </div>
       </div>
 
-      <footer className="mt-8 border-t border-[#EAECEF]">
-        <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3 px-6 py-6 text-xs text-[#6B7280]">
+      <footer className="mt-8 border-t border-border">
+        <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3 px-6 py-6 text-xs text-muted-foreground">
           <p>
             <a
               href={`mailto:${BRAND_EMAIL}`}
-              className="text-[#0f62fe] hover:underline"
+              className="text-primary hover:underline"
             >
               {BRAND_EMAIL}
             </a>
@@ -75,13 +75,13 @@ export default function ProposalExpiredPage() {
           <div className="flex items-center gap-4">
             <Link
               href="/privacy"
-              className="hover:text-[#0f62fe] hover:underline"
+              className="hover:text-primary hover:underline"
             >
               Privacy
             </Link>
             <Link
               href="/terms"
-              className="hover:text-[#0f62fe] hover:underline"
+              className="hover:text-primary hover:underline"
             >
               Terms
             </Link>
