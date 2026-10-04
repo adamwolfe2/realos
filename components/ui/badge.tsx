@@ -45,19 +45,19 @@ const badgeVariants = cva(
         statusActive:
           'border-transparent bg-primary/10 text-primary',
         statusSuccess:
-          'border-transparent bg-emerald-50 text-emerald-700',
+          'border-transparent bg-success/10 text-success-dark',
         statusMuted:
           'border-transparent bg-muted text-muted-foreground',
 
         // severity — urgency tokens (use the `severity` prop for cleanest API).
         severityCritical:
-          'border-transparent bg-red-50 text-red-700',
+          'border-transparent bg-destructive/10 text-destructive-dark',
         severityWarning:
-          'border-transparent bg-amber-50 text-amber-800',
+          'border-transparent bg-warning/15 text-warning-foreground',
         severityInfo:
-          'border-transparent bg-blue-50 text-blue-700',
+          'border-transparent bg-primary/10 text-primary',
         severitySuccess:
-          'border-transparent bg-emerald-50 text-emerald-700',
+          'border-transparent bg-success/10 text-success-dark',
 
         // category — taxonomy / tag.
         category:

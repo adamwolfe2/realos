@@ -99,7 +99,7 @@ function BarRow({
       {glyph ? (
         <span className="flex h-4 w-4 flex-none items-center justify-center">{glyph}</span>
       ) : null}
-      <span className="w-[120px] flex-none truncate font-medium text-slate-600">{label}</span>
+      <span className="w-[120px] flex-none truncate font-medium text-muted-foreground">{label}</span>
       <span className="h-4 flex-1 overflow-hidden rounded-[2px] bg-muted">
         <span
           className="ls-bar-grow block h-full rounded-[2px] bg-primary"
@@ -217,7 +217,7 @@ function OverviewSection(s: ReportSnapshot, p: PropertyMeta, navTo: NavTo): Reac
                   <span className={`block font-mono text-[16px] font-semibold leading-tight tabular-nums ${c.danger ? "text-destructive" : "text-foreground"}`}>
                     {c.value}
                   </span>
-                  <span className="block truncate text-[11px] text-slate-600">{c.context}</span>
+                  <span className="block truncate text-[11px] text-muted-foreground">{c.context}</span>
                 </span>
                 <ChevronRight className="h-4 w-4 flex-none text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" aria-hidden="true" />
               </button>
@@ -230,7 +230,7 @@ function OverviewSection(s: ReportSnapshot, p: PropertyMeta, navTo: NavTo): Reac
       {s.aiAnalysis?.summary ? (
         <Card>
           <SectionHeading meta="AI analysis">Executive summary</SectionHeading>
-          <p className="text-[13px] leading-relaxed text-slate-600">{s.aiAnalysis.summary}</p>
+          <p className="text-[13px] leading-relaxed text-muted-foreground">{s.aiAnalysis.summary}</p>
           {s.aiAnalysis.actions.length ? (
             <button
               type="button"
@@ -247,7 +247,7 @@ function OverviewSection(s: ReportSnapshot, p: PropertyMeta, navTo: NavTo): Reac
       {/* Coverage strip */}
       <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 border-t border-border pt-4 sm:grid-cols-4">
         {coverageRows(s).map((row) => (
-          <div key={row.label} className="flex items-center gap-2 text-[10.5px] font-medium text-slate-600">
+          <div key={row.label} className="flex items-center gap-2 text-[10.5px] font-medium text-muted-foreground">
             <span className={`h-[7px] w-[7px] flex-none rounded-full ${COVERAGE_DOT[row.state]}`} />
             {row.label}
           </div>
@@ -347,7 +347,7 @@ function AcquisitionSection(s: ReportSnapshot): React.ReactNode {
             <Stat value={num(s.popupStats.dismissed)} label="Dismissed" />
           </div>
           {s.popupStats.conversionRate != null ? (
-            <p className="mt-3 text-[11px] text-slate-600">
+            <p className="mt-3 text-[11px] text-muted-foreground">
               {pct(s.popupStats.conversionRate)} conversion rate
             </p>
           ) : null}
@@ -405,7 +405,7 @@ function TrafficSection(s: ReportSnapshot): React.ReactNode {
             <div className="flex flex-col gap-2 text-[12px]">
               {pages.slice(0, 8).map((pg) => (
                 <div key={pg.url} className="flex items-center gap-2.5">
-                  <span className="min-w-0 flex-1 truncate font-medium text-slate-600">{pg.url}</span>
+                  <span className="min-w-0 flex-1 truncate font-medium text-muted-foreground">{pg.url}</span>
                   <span className="flex-none font-semibold text-foreground">{num(pg.sessions)} sessions</span>
                 </div>
               ))}
@@ -556,7 +556,7 @@ function ReputationSection(s: ReportSnapshot): React.ReactNode {
             {num(r.totalReviews)} reviews · {num(r.positiveCount)} positive, {num(r.negativeCount)} negative
           </span>
           {r.responseRatePct != null ? (
-            <span className={`ml-auto rounded-full border px-2.5 py-1 text-[10.5px] font-medium ${r.responseRatePct < 50 ? "border-destructive/30 bg-destructive/5 font-semibold text-destructive" : "border-border bg-card text-slate-600"}`}>
+            <span className={`ml-auto rounded-full border px-2.5 py-1 text-[10.5px] font-medium ${r.responseRatePct < 50 ? "border-destructive/30 bg-destructive/5 font-semibold text-destructive" : "border-border bg-card text-muted-foreground"}`}>
               {Math.round(r.responseRatePct)}% response rate
             </span>
           ) : null}
@@ -610,7 +610,7 @@ function MentionList({ items }: { items: Mention[] }) {
             {m.authorName || m.source}
             {m.rating != null ? <span className="text-primary">{m.rating.toFixed(1)}★</span> : null}
           </div>
-          <p className="line-clamp-3 text-[12px] leading-relaxed text-slate-600">{m.excerpt}</p>
+          <p className="line-clamp-3 text-[12px] leading-relaxed text-muted-foreground">{m.excerpt}</p>
         </div>
       ))}
     </div>
@@ -632,7 +632,7 @@ function AiVisibilitySection(s: ReportSnapshot, p: PropertyMeta): React.ReactNod
             LeaseStack exclusive
           </span>
         </div>
-        <p className="my-3.5 text-[12px] leading-relaxed text-slate-600">
+        <p className="my-3.5 text-[12px] leading-relaxed text-muted-foreground">
           {p.name} was cited in{" "}
           <b className="text-foreground">{a.cited} of {a.totalChecks}</b> AI answers (
           {pct((a.cited / a.totalChecks) * 100)}) across {a.enginesUsed.length} engines. Competitor properties appeared in {a.competitorCited}.
@@ -647,7 +647,7 @@ function AiVisibilitySection(s: ReportSnapshot, p: PropertyMeta): React.ReactNod
               <span className="flex h-3 flex-1 overflow-hidden rounded-[2px] bg-muted">
                 <span className="h-full bg-primary" style={{ width: `${row.total ? Math.round((row.cited / row.total) * 100) : 0}%` }} />
               </span>
-              <span className="w-14 flex-none text-right font-semibold text-slate-600">{row.cited} / {row.total}</span>
+              <span className="w-14 flex-none text-right font-semibold text-muted-foreground">{row.cited} / {row.total}</span>
             </div>
           ))}
         </div>
@@ -661,7 +661,7 @@ function AiVisibilitySection(s: ReportSnapshot, p: PropertyMeta): React.ReactNod
           ) : (
             <div className="flex flex-col gap-2 text-[12px]">
               {a.topCompetitors.slice(0, 8).map((c) => (
-                <div key={c.name} className="flex justify-between font-medium text-slate-600">
+                <div key={c.name} className="flex justify-between font-medium text-muted-foreground">
                   <span>{c.name}</span>
                   <b className="font-bold text-foreground">{c.mentions}</b>
                 </div>
@@ -695,7 +695,7 @@ function AiVisibilitySection(s: ReportSnapshot, p: PropertyMeta): React.ReactNod
 const PRIORITY_STYLE: Record<string, string> = {
   high: "border-destructive/30 bg-destructive/5 text-destructive",
   medium: "border-amber-500/30 bg-amber-500/5 text-amber-600",
-  low: "border-border bg-card text-slate-600",
+  low: "border-border bg-card text-muted-foreground",
 };
 
 function InsightsSection(s: ReportSnapshot): React.ReactNode {
@@ -707,7 +707,7 @@ function InsightsSection(s: ReportSnapshot): React.ReactNode {
       {ai?.summary ? (
         <Card>
           <SectionHeading meta="AI analysis">Executive summary</SectionHeading>
-          <p className="text-[13px] leading-relaxed text-slate-600">{ai.summary}</p>
+          <p className="text-[13px] leading-relaxed text-muted-foreground">{ai.summary}</p>
         </Card>
       ) : null}
       {ai?.actions?.length ? (
@@ -722,7 +722,7 @@ function InsightsSection(s: ReportSnapshot): React.ReactNode {
                   </span>
                   <span className="text-[13px] font-semibold text-foreground">{act.title}</span>
                 </div>
-                <p className="text-[12px] leading-relaxed text-slate-600">{act.observation}</p>
+                <p className="text-[12px] leading-relaxed text-muted-foreground">{act.observation}</p>
                 <p className="mt-1.5 text-[12px] font-medium leading-relaxed text-foreground">→ {act.action}</p>
               </div>
             ))}
@@ -738,7 +738,7 @@ function InsightsSection(s: ReportSnapshot): React.ReactNode {
                 <Lightbulb className="mt-0.5 h-3.5 w-3.5 flex-none text-primary" aria-hidden="true" />
                 <div>
                   <span className="font-semibold text-foreground">{ins.title}. </span>
-                  <span className="text-slate-600">{ins.body}</span>
+                  <span className="text-muted-foreground">{ins.body}</span>
                 </div>
               </div>
             ))}
@@ -755,7 +755,7 @@ function Th({ children, left }: { children: React.ReactNode; left?: boolean }) {
   return <th className={`px-3 py-2 font-semibold ${left ? "text-left" : "text-right"}`}>{children}</th>;
 }
 function Td({ children, left }: { children: React.ReactNode; left?: boolean }) {
-  return <td className={`px-3 py-2 ${left ? "text-left font-medium text-slate-600" : "text-right font-semibold text-foreground"} ${left ? "max-w-[220px] truncate" : ""}`}>{children}</td>;
+  return <td className={`px-3 py-2 ${left ? "text-left font-medium text-muted-foreground" : "text-right font-semibold text-foreground"} ${left ? "max-w-[220px] truncate" : ""}`}>{children}</td>;
 }
 
 // --- registry ---------------------------------------------------------------
