@@ -44,7 +44,9 @@ vi.mock("@/lib/db", () => ({
 
 const { bulkDeleteLeads } = await import("@/lib/actions/lead-bulk");
 const { PATCH: appfolioPatch } = await import("@/app/api/tenant/appfolio/route");
-const { requireWritableWorkspace } = await import("@/lib/tenancy/scope");
+const { requireWritableWorkspace, requireWorkspaceAdmin } = await import(
+  "@/lib/tenancy/scope"
+);
 
 function seed(role: UserRole, orgType: OrgType = OrgType.CLIENT) {
   mocks.userFindUnique.mockResolvedValue({
@@ -102,6 +104,32 @@ describe("viewer write gate (F-010)", () => {
     seed(UserRole.AL_PARTNER, OrgType.AGENCY);
     await expect(requireWritableWorkspace()).rejects.toMatchObject({
       status: 403,
+    });
+  });
+
+  it("agency admin impersonating a client passes both write gates", async () => {
+    seed(UserRole.AGENCY_ADMIN, OrgType.AGENCY);
+    mocks.auth.mockResolvedValue({
+      userId: "clerk_u1",
+      sessionClaims: {
+        sid: "s1",
+        publicMetadata: {
+          impersonateOrgId: "client-org",
+          impersonateSessionId: "s1",
+          impersonateStartedAt: new Date().toISOString(),
+        },
+      },
+    });
+    mocks.orgFindUnique.mockResolvedValue({
+      id: "client-org",
+      orgType: OrgType.CLIENT,
+      productLine: ProductLine.STUDENT_HOUSING,
+    });
+    const writable = await requireWritableWorkspace();
+    expect(writable).toMatchObject({ isImpersonating: true, orgId: "client-org" });
+    await expect(requireWorkspaceAdmin()).resolves.toMatchObject({
+      isImpersonating: true,
+      role: UserRole.AGENCY_ADMIN,
     });
   });
 });
