@@ -72,19 +72,43 @@ function warnUnlinkedPlatformSubscription(
   stripeCustomerId: string,
   handler: string,
 ): void {
-  const orgId = subscription.metadata?.org_id;
+  warnUnlinkedOrg(handler, stripeCustomerId, subscription.metadata?.org_id, {
+    subscriptionId: subscription.id,
+  });
+}
+
+/**
+ * The event names an org (metadata.org_id) but no org is linked to its
+ * Stripe customer, so the handler is about to drop it. Customers with no
+ * org_id (proposal-only, marketplace buyers) are expected and stay silent.
+ */
+function warnUnlinkedOrg(
+  handler: string,
+  stripeCustomerId: string,
+  orgId: string | undefined,
+  refs: Record<string, string>,
+): void {
   if (!orgId) return;
   console.warn(
-    `[stripe-webhook] ${handler}: no org for customer ${stripeCustomerId} but subscription ${subscription.id} names org ${orgId}`,
+    `[stripe-webhook] ${handler}: no org for customer ${stripeCustomerId} but the event names org ${orgId}`,
+    refs,
   );
-  captureWithContext(new Error("Stripe subscription names an org not linked to its customer"), {
+  captureWithContext(new Error("Stripe event names an org not linked to its customer"), {
     route: "api/webhooks/stripe",
     handler,
     orgId,
     stripeCustomerId,
-    subscriptionId: subscription.id,
+    ...refs,
     level: "warning",
   });
+}
+
+function invoiceOrgId(invoice: Stripe.Invoice): string | undefined {
+  return (
+    invoice.parent?.subscription_details?.metadata?.org_id ??
+    invoice.metadata?.org_id ??
+    undefined
+  );
 }
 
 async function handleSubscriptionUpserted(
@@ -657,7 +681,10 @@ async function handleInvoicePaid(
     },
   });
 
-  if (!org) return;
+  if (!org) {
+    warnUnlinkedOrg("handleInvoicePaid", stripeCustomerId, invoiceOrgId(invoice), { invoiceId: invoice.id ?? "" });
+    return;
+  }
 
   const subscriptionId = extractSubscriptionId(invoice);
   if (!subscriptionId) return;
@@ -764,7 +791,10 @@ async function handleInvoicePaymentFailed(
     select: { id: true, subscriptionStatus: true },
   });
 
-  if (!org) return;
+  if (!org) {
+    warnUnlinkedOrg("handleInvoicePaymentFailed", stripeCustomerId, invoiceOrgId(invoice), { invoiceId: invoice.id ?? "" });
+    return;
+  }
 
   const subscriptionId = extractSubscriptionId(invoice);
   if (!subscriptionId) return;
@@ -960,7 +990,10 @@ async function handlePaymentIntentSucceeded(
     where: { stripeCustomerId },
     select: { id: true },
   });
-  if (!org) return;
+  if (!org) {
+    warnUnlinkedOrg("handlePaymentIntentSucceeded", stripeCustomerId, intent.metadata?.org_id, { paymentIntentId: intent.id });
+    return;
+  }
 
   // Wrap the money-state write + audit in a first-write-wins dedupe fence.
   // Previously this handler swallowed ALL errors and returned void, so the
@@ -1021,7 +1054,10 @@ async function handlePaymentIntentFailed(
     where: { stripeCustomerId },
     select: { id: true },
   });
-  if (!org) return;
+  if (!org) {
+    warnUnlinkedOrg("handlePaymentIntentFailed", stripeCustomerId, intent.metadata?.org_id, { paymentIntentId: intent.id });
+    return;
+  }
 
   const errorMsg =
     intent.last_payment_error?.message ?? "payment_failed";
@@ -1082,7 +1118,10 @@ async function handleChargeRefunded(
     where: { stripeCustomerId },
     select: { id: true },
   });
-  if (!org) return;
+  if (!org) {
+    warnUnlinkedOrg("handleChargeRefunded", stripeCustomerId, charge.metadata?.org_id, { chargeId: charge.id });
+    return;
+  }
 
   // Dedupe-fenced: a failed audit insert now re-throws so Stripe retries the
   // refund record instead of the handler swallowing it and 200-ing.
@@ -1108,11 +1147,26 @@ async function handleChargeRefunded(
   );
 }
 
+/**
+ * Webhook payloads carry `dispute.charge` as an id string (unexpanded), so
+ * the customer has to be read from the charge. A retrieve failure throws
+ * so Stripe retries the event instead of the dispute going unrecorded.
+ */
+async function disputeCustomerId(dispute: Stripe.Dispute): Promise<string | null> {
+  const charge =
+    typeof dispute.charge === "string"
+      ? await getStripeClient().charges.retrieve(dispute.charge)
+      : dispute.charge;
+  const customer = charge?.customer;
+  if (!customer) return null;
+  return typeof customer === "string" ? customer : customer.id;
+}
+
 async function notifyOpsOfDispute(input: {
   disputeId: string;
   amountCents: number;
   reason: string;
-  orgId: string;
+  orgId: string | null;
 }): Promise<void> {
   const { getResend, BRAND_EMAIL } = await import("@/lib/email/shared");
   const resend = getResend();
@@ -1132,7 +1186,7 @@ async function notifyOpsOfDispute(input: {
     `Dispute ID:   ${input.disputeId}`,
     `Amount:       $${(input.amountCents / 100).toFixed(2)}`,
     `Reason:       ${input.reason}`,
-    `Org ID:       ${input.orgId}`,
+    `Org ID:       ${input.orgId ?? "none linked (proposal, marketplace or unlinked customer)"}`,
     "",
     "Log into the Stripe dashboard to submit evidence.",
     "Sentry handler: handleDisputeCreated",
@@ -1154,14 +1208,7 @@ async function handleDisputeCreated(
   eventId: string,
   eventType: string,
 ): Promise<void> {
-  const stripeCustomerId =
-    typeof dispute.charge === "string"
-      ? null
-      : dispute.charge?.customer
-        ? typeof dispute.charge.customer === "string"
-          ? dispute.charge.customer
-          : dispute.charge.customer.id
-        : null;
+  const stripeCustomerId = await disputeCustomerId(dispute);
 
   const org = stripeCustomerId
     ? await prisma.organization.findUnique({
@@ -1170,42 +1217,43 @@ async function handleDisputeCreated(
       })
     : null;
 
-  if (!org) return;
-
   // Dedupe-fenced so the chargeback record survives a transient insert
   // failure (re-throw → outer 500 → Stripe retry) instead of being lost.
-  await processStripeEventOnce(
-    { eventId, eventType, orgId: org.id },
-    async (tx) => {
-      await tx.auditEvent.create({
-        data: {
-          orgId: org.id,
-          action: AuditAction.UPDATE,
-          entityType: "Organization",
-          entityId: org.id,
-          description: `Dispute ${dispute.id} OPENED — $${(dispute.amount / 100).toFixed(2)}, reason: ${dispute.reason}`,
-          diff: {
-            disputeId: dispute.id,
-            amountCents: dispute.amount,
-            reason: dispute.reason,
-            status: dispute.status,
+  if (org) {
+    await processStripeEventOnce(
+      { eventId, eventType, orgId: org.id },
+      async (tx) => {
+        await tx.auditEvent.create({
+          data: {
+            orgId: org.id,
+            action: AuditAction.UPDATE,
+            entityType: "Organization",
+            entityId: org.id,
+            description: `Dispute ${dispute.id} OPENED — $${(dispute.amount / 100).toFixed(2)}, reason: ${dispute.reason}`,
+            diff: {
+              disputeId: dispute.id,
+              amountCents: dispute.amount,
+              reason: dispute.reason,
+              status: dispute.status,
+            },
           },
-        },
-      });
-    },
-  );
+        });
+      },
+    );
+  }
 
-  // Alert ops immediately — chargeback response windows are tight.
-  void notifyOpsOfDispute({
+  // Alert ops for every dispute, org-linked or not: chargeback response
+  // windows are tight.
+  await notifyOpsOfDispute({
     disputeId: dispute.id,
     amountCents: dispute.amount,
     reason: dispute.reason,
-    orgId: org.id,
+    orgId: org?.id ?? null,
   }).catch((err) => {
     captureWithContext(err, {
       route: "api/webhooks/stripe",
       handler: "handleDisputeCreated.notify",
-      orgId: org.id,
+      orgId: org?.id,
     });
   });
 }
@@ -1217,14 +1265,7 @@ async function handleDisputeClosed(
   eventId: string,
   eventType: string,
 ): Promise<void> {
-  const stripeCustomerId =
-    typeof dispute.charge === "string"
-      ? null
-      : dispute.charge?.customer
-        ? typeof dispute.charge.customer === "string"
-          ? dispute.charge.customer
-          : dispute.charge.customer.id
-        : null;
+  const stripeCustomerId = await disputeCustomerId(dispute);
 
   const org = stripeCustomerId
     ? await prisma.organization.findUnique({
