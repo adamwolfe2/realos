@@ -16,8 +16,11 @@ export function RecommendationsDrawer({
   insights,
   defaultOpen = false,
   bare = false,
+  readOnly = false,
 }: {
   insights: InsightCardData[];
+  /** Hide insight lifecycle actions for read-only seats. */
+  readOnly?: boolean;
   defaultOpen?: boolean;
   /** Render without the outer bordered box — for use inside a parent that
    *  already provides its own card chrome (e.g. TabbedCard tab panels). */
@@ -64,7 +67,7 @@ export function RecommendationsDrawer({
         <div className="border-t border-border p-4 sm:p-5 bg-secondary">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {insights.map((insight) => (
-              <InsightCard key={insight.id} insight={insight} />
+              <InsightCard key={insight.id} insight={insight} readOnly={readOnly} />
             ))}
           </div>
         </div>

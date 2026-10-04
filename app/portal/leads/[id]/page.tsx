@@ -529,7 +529,7 @@ export default async function LeadDetailPage({
         </div>
       </section>
 
-      {canWrite && followUpTasks.length > 0 ? (
+      {followUpTasks.length > 0 ? (
         <section className="ls-card p-5">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div>
@@ -541,23 +541,28 @@ export default async function LeadDetailPage({
               </h2>
             </div>
             <div className="flex items-center gap-2">
-              <LeadEmailComposer
-                leadId={lead.id}
-                to={lead.email}
-                unsubscribed={lead.unsubscribedFromEmails}
-                defaultSubject={followUpTasks[0]?.drafts[0]?.subject ?? undefined}
-              />
-              <LeadSmsComposer
-                leadId={lead.id}
-                to={lead.phone}
-                smsEnabled={isSmsConfigured()}
-              />
+              {canWrite ? (
+                <>
+                  <LeadEmailComposer
+                    leadId={lead.id}
+                    to={lead.email}
+                    unsubscribed={lead.unsubscribedFromEmails}
+                    defaultSubject={followUpTasks[0]?.drafts[0]?.subject ?? undefined}
+                  />
+                  <LeadSmsComposer
+                    leadId={lead.id}
+                    to={lead.phone}
+                    smsEnabled={isSmsConfigured()}
+                  />
+                </>
+              ) : null}
             </div>
           </div>
           <div className="mt-4 grid grid-cols-1 gap-3">
             {followUpTasks.map((task) => (
               <AiFollowUpTaskCard
                 key={task.id}
+                readOnly={!canWrite}
                 task={{
                   id: task.id,
                   taskType: task.taskType,

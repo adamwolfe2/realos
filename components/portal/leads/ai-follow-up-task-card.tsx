@@ -27,9 +27,12 @@ type Props = {
     drafts: Draft[];
     learningCase: { reasonSummary: string } | null;
   };
+  /** Read-only seats (role outside ALLOWED_WRITE_ROLES): show the draft but
+   *  no edit/send/triage controls. Display only; server actions enforce. */
+  readOnly?: boolean;
 };
 
-export function AiFollowUpTaskCard({ task }: Props) {
+export function AiFollowUpTaskCard({ task, readOnly = false }: Props) {
   const draft = task.drafts[0] ?? null;
   const [subject, setSubject] = React.useState(draft?.subject ?? "");
   const [body, setBody] = React.useState(draft?.body ?? "");
@@ -108,6 +111,7 @@ export function AiFollowUpTaskCard({ task }: Props) {
               value={subject}
               onChange={(event) => setSubject(event.target.value)}
               disabled={disabled}
+            readOnly={readOnly}
               maxLength={200}
               className="w-full rounded-[2px] border border-border bg-background px-2 py-1.5 text-xs font-semibold text-foreground"
             />
@@ -116,6 +120,7 @@ export function AiFollowUpTaskCard({ task }: Props) {
             value={body}
             onChange={(event) => setBody(event.target.value)}
             disabled={disabled}
+            readOnly={readOnly}
             rows={draft.channel === "SMS" ? 4 : 7}
             maxLength={bodyLimit}
             className="w-full resize-none rounded-[2px] border border-border bg-background px-2 py-1.5 text-xs leading-5 text-muted-foreground"
@@ -131,6 +136,7 @@ export function AiFollowUpTaskCard({ task }: Props) {
           </div>
         </div>
       ) : null}
+      {readOnly ? null : (
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {canSend ? (
           <button
@@ -175,6 +181,7 @@ export function AiFollowUpTaskCard({ task }: Props) {
           Dismiss
         </button>
       </div>
+      )}
     </article>
   );
 }

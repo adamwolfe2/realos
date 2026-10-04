@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { Sparkles } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
+import { ALLOWED_WRITE_ROLES } from "@/lib/auth/write-roles";
 import { requireModule } from "@/lib/portal/module-gate";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
@@ -50,6 +51,8 @@ export default async function InsightsPage({
   if (gate) return gate;
 
   const scope = await requireScope();
+  // Read-only seats see insights without lifecycle actions (server enforces).
+  const readOnly = !ALLOWED_WRITE_ROLES.has(scope.role);
   const params = await searchParams;
 
   // Tenancy / property scoping — unchanged from the prior page. Norman's
@@ -183,7 +186,7 @@ export default async function InsightsPage({
                 <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
               </Suspense>
             ) : null}
-            <RunDetectorsButton />
+            {readOnly ? null : <RunDetectorsButton />}
           </>
         }
       />
@@ -236,6 +239,7 @@ export default async function InsightsPage({
                   insights={openInsights}
                   defaultOpen
                   bare
+                  readOnly={readOnly}
                 />
               ) : totalCounts === 0 && !latest ? (
                 <EmptyState

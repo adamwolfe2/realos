@@ -18,7 +18,6 @@ describe("lead detail page hides write controls for viewers (F-011)", () => {
   it.each([
     "LeadEmailComposer",
     "LeadSmsComposer",
-    "AiFollowUpTaskCard",
     "LeadStatusForm",
     "LinkResidentForm",
     "AddNoteForm",
@@ -34,5 +33,9 @@ describe("lead detail page hides write controls for viewers (F-011)", () => {
       expect(lastGate).toBeGreaterThan(-1);
       expect((m.index ?? 0) - lastGate).toBeLessThan(2000);
     }
+  });
+
+  it("AI follow-up cards render read-only for viewers", () => {
+    expect(src).toMatch(/<AiFollowUpTaskCard[\s\S]{0,80}readOnly=\{!canWrite\}/);
   });
 });
