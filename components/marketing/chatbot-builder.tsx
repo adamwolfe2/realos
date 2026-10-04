@@ -151,12 +151,15 @@ export function ChatbotBuilder() {
         }),
       });
       if (!res.ok || !res.body) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
         setMessages((prev) => [
           ...prev,
           {
             role: "assistant",
             content:
-              "I hit a snag answering that. Give it another try in a moment.",
+              res.status === 429 || res.status === 503
+                ? data.error ?? "I hit a snag answering that. Give it another try in a moment."
+                : "I hit a snag answering that. Give it another try in a moment.",
           },
         ]);
         return;

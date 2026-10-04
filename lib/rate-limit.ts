@@ -50,6 +50,12 @@ export const auditStartLimiter = createLimiter(redis, 5, '1 h')
 // finished. Per-IP pressure on the same route reuses auditStartLimiter.
 export const auditRerunLimiter = createLimiter(redis, 1, '1 h')
 
+// 50 /build-a-chatbot demo chat turns per IP per day. The demo is an
+// unauthenticated Claude call on LeaseStack's key; the per-minute
+// publicApiLimiter alone allowed ~86k calls/IP/day. No softFallback:
+// fails closed in prod like the other public lead-magnet limiters.
+export const chatbotDemoDailyLimiter = createLimiter(redis, 50, '1 d')
+
 // 3 drop notify blasts per userId per minute
 export const notifyLimiter = createLimiter(redis, 3, '1 m')
 
