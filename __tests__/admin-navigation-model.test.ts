@@ -15,6 +15,7 @@ const LEGACY_ROUTES = [
   "/admin/pipeline",
   "/admin/site-engine",
   "/admin/leads",
+  "/admin/audit-leads",
   "/admin/marketplace",
   "/admin/proposals",
   "/admin/pricing",
