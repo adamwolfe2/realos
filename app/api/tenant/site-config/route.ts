@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import {
-  requireWritableWorkspace,
+  requireWorkspaceAdmin,
   ForbiddenError,
   auditPayload,
 } from "@/lib/tenancy/scope";
@@ -44,7 +44,7 @@ const patchSchema = z.object({
 
 export async function PATCH(req: NextRequest) {
   try {
-    const scope = await requireWritableWorkspace();
+    const scope = await requireWorkspaceAdmin();
     const parsed = patchSchema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) {
       return NextResponse.json(

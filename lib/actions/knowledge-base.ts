@@ -5,7 +5,7 @@ import { z } from "zod";
 import { AuditAction, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import {
-  requireWritableWorkspace,
+  requireWorkspaceAdmin,
   ForbiddenError,
   auditPayload,
 } from "@/lib/tenancy/scope";
@@ -15,7 +15,7 @@ import {
 // row per property — structured floor plans + amenities + policies + lease +
 // application + neighborhood facts that ground the chatbot (see
 // lib/chatbot/build-system-prompt.ts). Mirrors savePropertyChatbotConfig:
-// requireWritableWorkspace -> allowedPropertyIds RBAC -> ownership findFirst ->
+// requireWorkspaceAdmin -> allowedPropertyIds RBAC -> ownership findFirst ->
 // zod -> upsert -> auditEvent -> revalidatePath. Tenant isolation is the top
 // concern: orgId comes ONLY from scope, never the client.
 // ---------------------------------------------------------------------------
@@ -104,7 +104,7 @@ export async function savePropertyKnowledgeBase(
   input: SaveKnowledgeBaseInput,
 ): Promise<ActionResult> {
   try {
-    const scope = await requireWritableWorkspace();
+    const scope = await requireWorkspaceAdmin();
 
     const propertyId =
       typeof input?.propertyId === "string" ? input.propertyId.trim() : "";

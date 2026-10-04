@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
+import { requireWorkspaceAdmin, ForbiddenError } from "@/lib/tenancy/scope";
 import { OrgType } from "@prisma/client";
 import { getAuthUrl } from "@/lib/oauth/meta";
 import { OAuthConfigError } from "@/lib/oauth/types";
@@ -25,7 +25,7 @@ function getCallbackUrl(req: NextRequest): string {
 export async function GET(req: NextRequest): Promise<NextResponse> {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWorkspaceAdmin();
   } catch (err) {
     if (err instanceof ForbiddenError) {
       return NextResponse.json({ error: err.message }, { status: err.status });

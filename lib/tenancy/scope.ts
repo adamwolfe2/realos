@@ -3,6 +3,7 @@ import { cache } from "react";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
 import { OrgType, ProductLine, UserRole, Prisma } from "@prisma/client";
+import { ALLOWED_WRITE_ROLES } from "@/lib/auth/write-roles";
 
 const IMPERSONATION_MAX_MS = 8 * 60 * 60 * 1000;
 
@@ -556,6 +557,11 @@ export async function requireWorkspaceAdmin(): Promise<ScopedContext> {
 
 export async function requireWritableWorkspace(): Promise<ScopedContext> {
   const scope = await requireScope();
+  // Read-only seats (CLIENT_VIEWER, AL_PARTNER) never mutate, impersonating
+  // or not. Agency impersonators keep their AGENCY_* role, which is in the set.
+  if (!ALLOWED_WRITE_ROLES.has(scope.role)) {
+    throw new ForbiddenError("Your role is read-only in this workspace.");
+  }
   if (scope.isImpersonating) return scope;
   const { isWorkspaceReadOnly } = await import("@/lib/billing/trial-status");
   const { prisma } = await import("@/lib/db");

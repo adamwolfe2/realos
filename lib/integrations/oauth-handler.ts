@@ -13,7 +13,7 @@ import {
 } from "./oauth-config";
 import { prisma } from "@/lib/db";
 import { encrypt } from "@/lib/crypto";
-import { requireScope, ForbiddenError, propertyInScope } from "@/lib/tenancy/scope";
+import { requireWorkspaceAdmin, ForbiddenError, propertyInScope } from "@/lib/tenancy/scope";
 import { OrgType } from "@prisma/client";
 import { timingSafeEqual } from "@/lib/auth/timing-safe";
 
@@ -50,7 +50,7 @@ export async function handleOAuthStart(
 
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWorkspaceAdmin();
   } catch (err) {
     if (err instanceof ForbiddenError) {
       return NextResponse.json({ error: err.message }, { status: err.status });

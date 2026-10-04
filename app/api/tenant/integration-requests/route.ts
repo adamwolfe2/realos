@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { requireWritableWorkspace, auditPayload, ForbiddenError } from "@/lib/tenancy/scope";
+import { requireWorkspaceAdmin, auditPayload, ForbiddenError } from "@/lib/tenancy/scope";
 import {
   AuditAction,
   IntegrationRequestStatus,
@@ -26,7 +26,7 @@ const body = z.object({
 export async function POST(req: NextRequest) {
   let scope;
   try {
-    scope = await requireWritableWorkspace();
+    scope = await requireWorkspaceAdmin();
   } catch (err) {
     if (err instanceof ForbiddenError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
