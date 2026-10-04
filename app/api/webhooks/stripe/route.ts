@@ -1983,6 +1983,17 @@ export async function POST(req: NextRequest) {
   }
 
   if (!isStripeConfigured()) {
+    // In production a missing secret is a deploy/rotation error: return 503
+    // so Stripe retries (for up to 3 days) instead of dropping the event.
+    // Dev/preview keep the 200 so unconfigured envs stay quiet.
+    if (process.env.VERCEL_ENV === "production") {
+      console.error("Stripe webhook received but Stripe is not configured");
+      captureWithContext(new Error("Stripe webhook received but Stripe is not configured"), {
+        route: "api/webhooks/stripe",
+        level: "error",
+      });
+      return NextResponse.json({ error: "Stripe not configured" }, { status: 503 });
+    }
     return NextResponse.json({ received: true });
   }
 
