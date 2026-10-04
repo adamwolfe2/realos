@@ -79,6 +79,14 @@ describe("POST /api/webhooks/resend: engagement mapping", () => {
     expect(call.data.unsubscribedFromEmails).toBeUndefined();
   });
 
+  it("does not treat email.delivered (our own outbound receipt) as lead activity", async () => {
+    h.db.lead.findMany.mockResolvedValue([{ id: "l1", orgId: "o1" }]);
+    const res = (await POST(signed("email.delivered", "a@example.com"))) as Response;
+    expect(res.status).toBe(200);
+    expect(h.db.lead.updateMany).not.toHaveBeenCalled();
+    expect(h.db.auditEvent.create).toHaveBeenCalledTimes(1);
+  });
+
   it("unsubscribes matching leads on email.bounced without touching lastActivityAt", async () => {
     h.db.lead.findMany.mockResolvedValue([{ id: "l1", orgId: "o1" }]);
     await POST(signed("email.bounced", "a@example.com"));
