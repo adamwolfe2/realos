@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
+import { captureWithContext } from "@/lib/sentry";
 import { prisma } from "@/lib/db";
 import { getBuyerSession } from "@/lib/marketplace/auth";
 import { getStripeClient, isStripeConfigured } from "@/lib/stripe/config";
@@ -91,8 +93,22 @@ export async function POST(
       if (session.status === "open" && session.url) {
         return NextResponse.json({ ok: true, checkoutUrl: session.url });
       }
-    } catch {
-      // Fall through to create a new session.
+    } catch (err) {
+      // A deleted/expired session id is expected: treat it as "no session"
+      // and fall through to create a new one. Anything else (outage, auth)
+      // still falls through, but is surfaced.
+      const missing =
+        err instanceof Stripe.errors.StripeInvalidRequestError &&
+        err.code === "resource_missing";
+      if (!missing) {
+        console.error("marketplace checkout: retrieving pending session failed", err);
+        captureWithContext(err, {
+          route: "api/marketplace/leads/checkout",
+          handler: "retrievePendingSession",
+          purchaseId: pending.id,
+          level: "warning",
+        });
+      }
     }
   }
 
