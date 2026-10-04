@@ -9,6 +9,7 @@ import {
   auditRerunLimiter,
   auditStartLimiter,
   checkRateLimit,
+  releaseRateLimit,
   getIp,
   rateLimited,
 } from "@/lib/rate-limit";
@@ -117,17 +118,29 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
   // Reset the synthesized payload. We keep brandName + email so the viewer
   // doesn't lose state between runs. The run route will overwrite everything
   // when it finishes.
-  await prisma.prospectAudit.update({
-    where: { id: audit.id },
-    data: {
-      status: ProspectAuditStatus.QUEUED,
-      errorMessage: null,
-      overallScore: null,
-      sectionScores: Prisma.JsonNull,
-      claudeSummary: null,
-      findings: Prisma.JsonNull,
-    },
-  });
+  // If the run can't start, give the cooldown slot back so the prospect
+  // isn't locked out of retrying for an hour.
+  const release = () =>
+    releaseRateLimit(auditRerunLimiter, audit.id).catch(
+      soft(undefined, "audit.rerun.release"),
+    );
+
+  try {
+    await prisma.prospectAudit.update({
+      where: { id: audit.id },
+      data: {
+        status: ProspectAuditStatus.QUEUED,
+        errorMessage: null,
+        overallScore: null,
+        sectionScores: Prisma.JsonNull,
+        claudeSummary: null,
+        findings: Prisma.JsonNull,
+      },
+    });
+  } catch (err) {
+    await release();
+    throw err;
+  }
 
   // Fire-and-forget trigger — same pattern as /api/audit/start.
   const triggerUrl = `${getSiteUrl()}/api/audit/run/${audit.id}`;
@@ -138,11 +151,12 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       "Content-Type": "application/json",
       "x-internal-trigger": cronSecret,
     },
-  }).catch(
+  }).catch(async (err) => {
     // The viewer polls and surfaces stuck-QUEUED to the user; log so a
     // broken trigger is visible.
-    soft(undefined, "audit.rerun.trigger"),
-  );
+    soft(undefined, "audit.rerun.trigger")(err);
+    await release();
+  });
 
   return NextResponse.json({ ok: true, status: ProspectAuditStatus.QUEUED });
 }

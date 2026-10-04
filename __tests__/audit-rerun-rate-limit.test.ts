@@ -7,6 +7,7 @@ import { NextRequest } from "next/server";
 const h = vi.hoisted(() => ({
   db: { prospectAudit: { findUnique: vi.fn(), update: vi.fn() } },
   checkRateLimit: vi.fn(),
+  releaseRateLimit: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({ prisma: h.db }));
@@ -21,6 +22,7 @@ vi.mock("@/lib/rate-limit", async () => {
     auditStartLimiter: "ip-limiter",
     auditRerunLimiter: "audit-limiter",
     checkRateLimit: h.checkRateLimit,
+    releaseRateLimit: h.releaseRateLimit,
   };
 });
 
@@ -46,6 +48,7 @@ const blocked = (ms: number) => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  h.releaseRateLimit.mockResolvedValue(undefined);
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null)));
   h.db.prospectAudit.findUnique.mockResolvedValue({
     id: "audit_1",
@@ -77,5 +80,24 @@ describe("POST /api/audit/[id]/rerun rate limits", () => {
     const res = await call();
     expect(res.status).toBe(200);
     expect(h.db.prospectAudit.update).toHaveBeenCalledTimes(1);
+  });
+
+  it("releases the per-audit cooldown when the trigger fails", async () => {
+    h.checkRateLimit.mockResolvedValue(ok);
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("boom")));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    await call();
+    await vi.waitFor(() =>
+      expect(h.releaseRateLimit).toHaveBeenCalledWith("audit-limiter", "audit_1"),
+    );
+  });
+
+  it("releases the cooldown when the reset update throws, and does not on success", async () => {
+    h.checkRateLimit.mockResolvedValue(ok);
+    await call();
+    expect(h.releaseRateLimit).not.toHaveBeenCalled();
+    h.db.prospectAudit.update.mockRejectedValueOnce(new Error("db down"));
+    await expect(call()).rejects.toThrow("db down");
+    expect(h.releaseRateLimit).toHaveBeenCalledWith("audit-limiter", "audit_1");
   });
 });

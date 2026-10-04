@@ -271,6 +271,18 @@ export async function checkRateLimit(
   }
 }
 
+/**
+ * Give back a consumed slot (e.g. the guarded action failed to start).
+ * No-op when the limiter is unconfigured.
+ */
+export async function releaseRateLimit(
+  limiter: Ratelimit | null,
+  identifier: string,
+): Promise<void> {
+  if (!limiter) return
+  await limiter.resetUsedTokens(identifier)
+}
+
 // ---------------------------------------------------------------------------
 // In-memory sliding-window fallback. Single-instance only (per lambda /
 // per Node process) — not coordinated across Vercel functions, so a
