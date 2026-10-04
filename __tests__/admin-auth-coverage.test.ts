@@ -52,7 +52,12 @@ const AUTH_PATTERNS = [
 function hasInlineScopeAndAgencyCheck(content: string): boolean {
   // requireScope() (auth) + inline isAgency / orgType / callerIsAgency check
   // (authorisation). Any route using this pattern is genuinely guarded.
-  if (!content.includes("requireScope")) return false;
+  // requireWorkspaceAdmin = requireScope + trial gate + admin-seat role gate.
+  if (
+    !content.includes("requireScope") &&
+    !content.includes("requireWorkspaceAdmin")
+  )
+    return false;
   return (
     content.includes("isAgency") ||
     content.includes("scope.orgType") ||

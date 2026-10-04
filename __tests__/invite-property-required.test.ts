@@ -24,7 +24,7 @@ class ForbiddenErrorStub extends Error {
 }
 
 vi.mock("@/lib/tenancy/scope", () => ({
-  requireScope: () => mockRequireScope(),
+  requireWorkspaceAdmin: () => mockRequireScope(),
   ForbiddenError: ForbiddenErrorStub,
   auditPayload: (
     scope: Record<string, unknown>,

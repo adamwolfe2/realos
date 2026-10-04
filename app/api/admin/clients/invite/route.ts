@@ -3,7 +3,7 @@ import { z } from "zod";
 import { clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
 import {
-  requireScope,
+  requireWorkspaceAdmin,
   auditPayload,
   ForbiddenError,
   type ScopedContext,
@@ -56,7 +56,8 @@ function normalizeRole(input: z.infer<typeof body>["role"]): UserRole {
 export async function POST(req: NextRequest) {
   let scope: ScopedContext;
   try {
-    scope = await requireScope();
+    // Admin seat + trial gate: only owners/admins (client or agency) invite.
+    scope = await requireWorkspaceAdmin();
   } catch (err) {
     if (err instanceof ForbiddenError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
@@ -123,6 +124,25 @@ export async function POST(req: NextRequest) {
         { error: "You can only invite client-team roles." },
         { status: 400 }
       );
+    }
+    // Mirrors manage-team.ts: only an Owner can mint another Owner.
+    if (role === UserRole.CLIENT_OWNER && caller.role !== UserRole.CLIENT_OWNER) {
+      return NextResponse.json(
+        { error: "Only an Owner can invite another Owner." },
+        { status: 403 },
+      );
+    }
+    // A property-restricted admin can only hand out buildings they hold; an
+    // empty list means org-wide access, which would lift their own restriction.
+    if (scope.allowedPropertyIds) {
+      const held = new Set(scope.allowedPropertyIds);
+      const requested = parsed.propertyIds ?? [];
+      if (requested.length === 0 || requested.some((id) => !held.has(id))) {
+        return NextResponse.json(
+          { error: "You can only grant access to properties you have access to." },
+          { status: 403 },
+        );
+      }
     }
   }
 
