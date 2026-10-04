@@ -165,7 +165,7 @@ Before merging anything that touches:
       with `psql` before merging the PR
 - [ ] `vercel.json` — verify every cron path resolves to a built route
       (`pnpm build` and check the route list)
-- [ ] `middleware.ts` — test `/admin`, `/portal`, `/api/public/*`,
+- [ ] `proxy.ts` — test `/admin`, `/portal`, `/api/public/*`,
       `/api/webhooks/*`, and a tenant subdomain locally
 - [ ] `lib/tenancy/scope.ts` — every change here can break impersonation
       or tenant isolation; test agency + operator + impersonating-agency
