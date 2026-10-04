@@ -11,6 +11,7 @@ export function MarkLostButton({ leadId }: { leadId: string }) {
   const [error, setError] = useState<string | null>(null);
 
   function handleClick() {
+    if (!window.confirm("Mark this lead as lost?")) return;
     setError(null);
     startTransition(async () => {
       try {

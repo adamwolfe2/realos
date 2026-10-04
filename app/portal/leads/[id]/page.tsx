@@ -711,7 +711,7 @@ export default async function LeadDetailPage({
                 hasReviewUrl={Boolean(lead.property?.googleReviewUrl)}
                 unsubscribed={lead.unsubscribedFromEmails}
               />
-              <MarkLostButton leadId={lead.id} />
+              {lead.status !== "LOST" ? <MarkLostButton leadId={lead.id} /> : null}
             </div>
           </SidebarCard>
         </aside>
