@@ -165,7 +165,7 @@ export function AddResidentForm({
           <input name="email" type="email" className={inputCls} />
         </Field>
         <Field label="Phone" optional>
-          <input name="phone" maxLength={40} className={inputCls} />
+          <input name="phone" type="tel" inputMode="tel" maxLength={40} className={inputCls} />
         </Field>
         <Field label="Unit" optional>
           <input name="unitNumber" maxLength={60} className={inputCls} />
@@ -313,7 +313,7 @@ export function LogApplicationForm({
           <input name="email" type="email" className={inputCls} />
         </Field>
         <Field label="Phone" optional>
-          <input name="phone" maxLength={40} className={inputCls} />
+          <input name="phone" type="tel" inputMode="tel" maxLength={40} className={inputCls} />
         </Field>
         <Field label="Unit applied for" optional>
           <input name="unitName" maxLength={60} className={inputCls} />

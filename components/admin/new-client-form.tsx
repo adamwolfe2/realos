@@ -234,6 +234,8 @@ export function NewClientForm() {
           </Field>
           <Field label="Phone">
             <Input
+              type="tel"
+              inputMode="tel"
               value={contactPhone}
               onChange={(e) => setContactPhone(e.target.value)}
               placeholder="(503) 555-0123"
@@ -393,16 +395,22 @@ function Field({
   required?: boolean;
   children: React.ReactNode;
 }) {
+  const autoId = React.useId();
+  const childId =
+    React.isValidElement<{ id?: string }>(children) ? children.props.id : undefined;
+  const id = childId ?? autoId;
   return (
     <div className="space-y-1.5">
-      <Label className="text-[12px] font-medium">
+      <Label htmlFor={id} className="text-[12px] font-medium">
         {label}
         {required ? <span className="text-destructive"> *</span> : null}
         {hint ? (
           <span className="ml-2 font-normal text-muted-foreground">{hint}</span>
         ) : null}
       </Label>
-      {children}
+      {React.isValidElement<{ id?: string }>(children) && !childId
+        ? React.cloneElement(children, { id })
+        : children}
     </div>
   );
 }

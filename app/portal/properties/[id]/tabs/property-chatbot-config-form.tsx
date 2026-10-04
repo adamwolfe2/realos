@@ -173,6 +173,8 @@ export function PropertyChatbotConfigForm({
         <div>
           <label htmlFor="pcc-phoneNumber" className={LABEL}>Contact phone</label>
           <input id="pcc-phoneNumber"
+            type="tel"
+            inputMode="tel"
             name="phoneNumber"
             defaultValue={config?.phoneNumber ?? ""}
             placeholder={inheritHint(orgDefaults.phoneNumber)}
@@ -182,6 +184,7 @@ export function PropertyChatbotConfigForm({
         <div>
           <label htmlFor="pcc-contactEmail" className={LABEL}>Contact email</label>
           <input id="pcc-contactEmail"
+            type="email"
             name="contactEmail"
             defaultValue={config?.contactEmail ?? ""}
             placeholder={inheritHint(orgDefaults.contactEmail)}
