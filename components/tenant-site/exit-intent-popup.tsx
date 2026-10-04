@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export function ExitIntentPopup({
   orgId,
@@ -20,6 +25,19 @@ export function ExitIntentPopup({
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Radix portals to <body>, outside the tenant wrapper that defines
+  // --tenant-primary. Read the resolved value from a sentinel inside the
+  // wrapper and re-apply it on the dialog content.
+  const sentinelRef = useRef<HTMLSpanElement>(null);
+  const [tenantPrimary, setTenantPrimary] = useState<string | undefined>();
+
+  useEffect(() => {
+    if (!open || !sentinelRef.current) return;
+    const v = getComputedStyle(sentinelRef.current)
+      .getPropertyValue("--tenant-primary")
+      .trim();
+    if (v) setTenantPrimary(v);
+  }, [open]);
 
   useEffect(() => {
     try {
@@ -84,25 +102,24 @@ export function ExitIntentPopup({
     }
   }
 
-  if (!open) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="exit-intent-headline"
-      onClick={() => setOpen(false)}
-    >
-      <div
-        className="bg-white rounded-lg max-w-md w-full p-6 md:p-8 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <>
+      <span ref={sentinelRef} hidden aria-hidden="true" />
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent
+          overlayClassName="bg-black/60"
+          className="bg-white rounded-lg max-w-md p-6 md:p-8 shadow-2xl"
+          style={
+            tenantPrimary
+              ? ({ "--tenant-primary": tenantPrimary } as React.CSSProperties)
+              : undefined
+          }
+        >
         {submitted ? (
           <div className="text-center py-4">
-            <h2 id="exit-intent-headline" className="font-serif text-2xl font-bold mb-2">
+            <DialogTitle className="font-serif text-2xl font-bold mb-2">
               Got it, thanks.
-            </h2>
+            </DialogTitle>
             <p className="text-sm opacity-70">
               We'll email you when the next term opens up.
             </p>
@@ -116,9 +133,9 @@ export function ExitIntentPopup({
           </div>
         ) : (
           <>
-            <h2 id="exit-intent-headline" className="font-serif text-2xl font-bold mb-2">
+            <DialogTitle className="font-serif text-2xl font-bold mb-2">
               {headline ?? "Before you go."}
-            </h2>
+            </DialogTitle>
             <p className="text-sm opacity-80 mb-5">
               {body ??
                 "Drop your email and we'll send you next term's openings the moment they're live."}
@@ -150,7 +167,8 @@ export function ExitIntentPopup({
             </form>
           </>
         )}
-      </div>
-    </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
