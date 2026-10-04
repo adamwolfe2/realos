@@ -85,9 +85,7 @@ export async function POST(req: NextRequest) {
 
   // Billing gate — portfolio scans fan out to Tavily + Claude Haiku
   // across up to 5 properties per run. Block delinquent tenants.
-  const billingGate = await checkAiBillingGate(scope.orgId, {
-    isImpersonating: scope.isImpersonating,
-  });
+  const billingGate = await checkAiBillingGate(scope.orgId, scope);
   if (!billingGate.allowed) {
     return NextResponse.json(aiBillingDeniedResponseBody(billingGate), {
       status: 402,

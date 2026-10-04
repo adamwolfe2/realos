@@ -55,9 +55,7 @@ export async function POST(req: NextRequest) {
     // Billing gate — report generation invokes the LLM polish helper
     // (lib/insights/llm-polish.ts) which calls Claude Haiku. Block
     // delinquent tenants from spending Anthropic budget.
-    const billingGate = await checkAiBillingGate(scope.orgId, {
-      isImpersonating: scope.isImpersonating,
-    });
+    const billingGate = await checkAiBillingGate(scope.orgId, scope);
     if (!billingGate.allowed) {
       return NextResponse.json(aiBillingDeniedResponseBody(billingGate), {
         status: 402,

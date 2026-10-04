@@ -124,9 +124,7 @@ export async function POST(req: NextRequest) {
 
   // Billing gate — block draft generation for delinquent tenants.
   // Anthropic spend per draft is non-trivial (8-15s of Claude time).
-  const billingGate = await checkAiBillingGate(scope.orgId, {
-    isImpersonating: scope.isImpersonating,
-  });
+  const billingGate = await checkAiBillingGate(scope.orgId, scope);
   if (!billingGate.allowed) {
     return NextResponse.json(aiBillingDeniedResponseBody(billingGate), {
       status: 402,

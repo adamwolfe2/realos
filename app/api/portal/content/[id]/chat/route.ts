@@ -112,9 +112,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
   // for a week racks up Anthropic spend the platform absorbs. Agency
   // impersonation bypasses so support can debug AI on a customer's
   // behalf during dunning.
-  const billingGate = await checkAiBillingGate(scope.orgId, {
-    isImpersonating: scope.isImpersonating,
-  });
+  const billingGate = await checkAiBillingGate(scope.orgId, scope);
   if (!billingGate.allowed) {
     return NextResponse.json(aiBillingDeniedResponseBody(billingGate), {
       status: 402,
