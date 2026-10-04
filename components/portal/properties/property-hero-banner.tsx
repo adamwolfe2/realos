@@ -418,7 +418,7 @@ export function PropertyHeroBanner({
                     onClick={handleRemove}
                     disabled={uploading}
                     aria-label="Remove image"
-                    className="inline-flex items-center justify-center h-6 w-6 rounded-[2px] bg-card text-muted-foreground hover:text-destructive border border-border shadow-sm hover:bg-muted transition-colors disabled:opacity-50"
+                    className="relative before:absolute before:-inset-2 inline-flex items-center justify-center h-6 w-6 rounded-[2px] bg-card text-muted-foreground hover:text-destructive border border-border shadow-sm hover:bg-muted transition-colors disabled:opacity-50"
                   >
                     <XIcon className="h-3 w-3" />
                   </button>

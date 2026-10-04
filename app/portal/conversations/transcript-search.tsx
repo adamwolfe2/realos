@@ -102,7 +102,7 @@ function TranscriptSearchInner({
               type="button"
               onClick={clearQuery}
               aria-label="Clear search"
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-[2px] text-muted-foreground hover:text-foreground"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-[2px] text-muted-foreground hover:text-foreground before:absolute before:-inset-2.5"
             >
               <X className="h-3.5 w-3.5" />
             </button>

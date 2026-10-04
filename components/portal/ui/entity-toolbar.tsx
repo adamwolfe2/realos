@@ -222,7 +222,7 @@ function FilterChip({ filter }: { filter: ToolbarFilter }) {
         href={filter.removeHref}
         scroll={false}
         aria-label={`Remove ${filter.field} filter`}
-        className="inline-flex items-center justify-center w-4 h-4 rounded-[2px] hover:bg-primary/20 transition-colors"
+        className="relative inline-flex items-center justify-center w-4 h-4 rounded-[2px] hover:bg-primary/20 transition-colors before:absolute before:-inset-2"
       >
         <X className="h-2.5 w-2.5" />
       </Link>
