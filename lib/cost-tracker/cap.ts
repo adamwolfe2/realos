@@ -136,6 +136,9 @@ interface WithSpendCapOptions {
   orgId?: string | null;
   propertyId?: string | null;
   prospectAuditId?: string | null;
+  /** Paying customers (isPayingSubscription in lib/ai/quota.ts): never
+   *  blocked by the global cap, same rule as checkAiQuota's neverBlock. */
+  neverBlock?: boolean;
 }
 
 export type WithSpendCapResult<T> =
@@ -172,6 +175,7 @@ export async function withSpendCap<T>(
   opts: WithSpendCapOptions,
   fn: () => Promise<T>,
 ): Promise<WithSpendCapResult<T>> {
+  if (opts.neverBlock) return { status: "ok", data: await fn() };
   const decision = await checkSpendCap(opts.provider);
   if (!decision.allowed) {
     await logUsage({

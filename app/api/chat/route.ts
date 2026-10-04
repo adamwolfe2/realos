@@ -10,6 +10,7 @@ import {
   getIp,
 } from "@/lib/rate-limit";
 import { checkAiQuota, isPayingSubscription } from "@/lib/ai/quota";
+import { withSpendCap } from "@/lib/cost-tracker/cap";
 import { logChatUsage } from "@/lib/chatbot/log-chat-usage";
 import {
   exceedsChatInputBudget,
@@ -165,7 +166,15 @@ export async function POST(req: NextRequest) {
   const userAgent = req.headers.get("user-agent") ?? undefined;
 
   const chatStartedAt = Date.now();
-  const result = streamText({
+  const capped = await withSpendCap(
+    {
+      provider: "anthropic",
+      endpoint: "chatbot.chat",
+      orgId,
+      neverBlock: isPayingSubscription(org.subscriptionStatus),
+    },
+    async () =>
+  streamText({
     model: anthropic("claude-haiku-4-5-20251001"),
     system: systemPrompt,
     messages,
@@ -198,9 +207,17 @@ export async function POST(req: NextRequest) {
         console.error("[chatbot] persistence error:", err);
       }
     },
-  });
+  }),
+  );
+  if (capped.status === "skipped_cap") {
+    console.error("[chatbot] spend cap reached", { orgId, reason: capped.reason });
+    return NextResponse.json(
+      { error: "Chatbot temporarily unavailable", code: "spend_cap_reached" },
+      { status: 503, headers: { "Retry-After": "3600" } }
+    );
+  }
 
-  return result.toTextStreamResponse({
+  return capped.data.toTextStreamResponse({
     headers: { "Cache-Control": "no-store" },
   });
 }

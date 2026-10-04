@@ -3,6 +3,7 @@ import "server-only";
 import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { logUsage } from "@/lib/cost-tracker/log";
+import { withSpendCap } from "@/lib/cost-tracker/cap";
 import type {
   AeoSignal,
   ReputationSignal,
@@ -1034,7 +1035,10 @@ async function writeNarrative(
   const startedAt = Date.now();
 
   try {
-    const { text, usage } = await generateText({
+    const capped = await withSpendCap(
+      { provider: "anthropic", endpoint: "claude-haiku-4.5/audit-narrative" },
+      async () =>
+    generateText({
       model: anthropic("claude-haiku-4-5-20251001"),
       system:
         "You are a senior property marketing analyst writing directly to the property operator. Plain text only: no markdown, no headings, no asterisks, no bullet markers, no em dashes. Never invent statistics; every number must come from the fact sheet.",
@@ -1043,7 +1047,13 @@ async function writeNarrative(
 FACT SHEET
 ${factSheet}`,
       maxOutputTokens: 300,
-    });
+    }),
+    );
+    // Cap hit: the audit still completes with the deterministic narrative.
+    if (capped.status === "skipped_cap") {
+      return fallbackNarrative(signals, provider, findings);
+    }
+    const { text, usage } = capped.data;
 
     // Log the cost. The AI SDK returns `usage` with inputTokens +
     // outputTokens; we compute the dollar cost from the published
