@@ -136,25 +136,61 @@ export async function POST(req: NextRequest) {
     budgetMaxCents = Math.round(Number(data.budgetMax) * 100);
   }
 
-  const lead = await prisma.lead.create({
-    data: {
-      orgId: data.orgId,
-      propertyId: data.propertyId ?? null,
-      source: data.source,
-      sourceDetail: data.sourceDetail ?? null,
-      firstName: data.firstName || null,
-      lastName: data.lastName || null,
-      email: data.email || null,
-      phone: data.phone || null,
-      preferredUnitType: data.preferredUnitType || null,
-      desiredMoveIn:
-        data.desiredMoveIn && !Number.isNaN(Date.parse(data.desiredMoveIn))
-          ? new Date(data.desiredMoveIn)
-          : null,
-      budgetMaxCents,
-      notes: data.notes ?? null,
-    },
-  });
+  const desiredMoveIn =
+    data.desiredMoveIn && !Number.isNaN(Date.parse(data.desiredMoveIn))
+      ? new Date(data.desiredMoveIn)
+      : null;
+
+  // Dedupe by (orgId, email), case-insensitive, same as the chatbot helper
+  // (lib/chatbot/find-or-create-lead.ts). A resubmit or double-click merges
+  // into the existing lead: fill gaps only, keep original source/property
+  // attribution, append the new message to notes.
+  // ponytail: findFirst-then-create still races on truly concurrent submits;
+  // a partial unique index on (orgId, lower(email)) closes it (schema change).
+  const existing = data.email
+    ? await prisma.lead.findFirst({
+        where: {
+          orgId: data.orgId,
+          email: { equals: data.email.trim().toLowerCase(), mode: "insensitive" },
+        },
+        orderBy: { createdAt: "asc" },
+      })
+    : null;
+
+  const lead = existing
+    ? await prisma.lead.update({
+        where: { id: existing.id },
+        data: {
+          lastActivityAt: new Date(),
+          propertyId: existing.propertyId ?? data.propertyId ?? null,
+          firstName: existing.firstName ?? (data.firstName || null),
+          lastName: existing.lastName ?? (data.lastName || null),
+          phone: existing.phone ?? (data.phone || null),
+          preferredUnitType:
+            existing.preferredUnitType ?? (data.preferredUnitType || null),
+          desiredMoveIn: existing.desiredMoveIn ?? desiredMoveIn,
+          budgetMaxCents: existing.budgetMaxCents ?? budgetMaxCents,
+          notes: data.notes
+            ? [existing.notes, data.notes].filter(Boolean).join("\n\n")
+            : existing.notes,
+        },
+      })
+    : await prisma.lead.create({
+        data: {
+          orgId: data.orgId,
+          propertyId: data.propertyId ?? null,
+          source: data.source,
+          sourceDetail: data.sourceDetail ?? null,
+          firstName: data.firstName || null,
+          lastName: data.lastName || null,
+          email: data.email || null,
+          phone: data.phone || null,
+          preferredUnitType: data.preferredUnitType || null,
+          desiredMoveIn,
+          budgetMaxCents,
+          notes: data.notes ?? null,
+        },
+      });
 
   // Link to Visitor if we have a hash.
   if (data.visitorHash) {
@@ -165,6 +201,13 @@ export async function POST(req: NextRequest) {
         convertedAt: new Date(),
       },
     });
+  }
+
+  // Repeat submit from a known lead: no bell, operator email, Slack, tenant
+  // email or auto-reply. Matches the popup, tours and chatbot routes, which
+  // only notify on net-new leads; the new message is appended to notes.
+  if (existing) {
+    return NextResponse.json({ ok: true, leadId: lead.id }, { status: 201 });
   }
 
   // Fire-and-forget side effects.
