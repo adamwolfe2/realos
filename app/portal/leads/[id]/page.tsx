@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { trackServer } from "@/lib/analytics-server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -196,6 +197,9 @@ export default async function LeadDetailPage({
     }),
   ]);
   if (!lead) notFound();
+  // ponytail: no per-org "first view" marker without a schema column, so this
+  // fires on every view; dedupe by org in PostHog (first occurrence).
+  await trackServer({ event: "first_lead_viewed", distinctId: scope.orgId });
 
   // Conversation discovery — primary path is lead.conversations (the
   // FK relation set during chatbot capture). For historical leads from

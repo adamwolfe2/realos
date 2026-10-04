@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { trackServer } from "@/lib/analytics-server";
 import { Webhook } from "svix";
 import { prisma } from "@/lib/db";
 import { OrgType, TenantStatus, UserRole } from "@prisma/client";
@@ -349,7 +350,8 @@ export async function POST(req: NextRequest) {
 
       const slug = await pickUniqueSlug(name);
 
-      await prisma.organization.create({
+      const createdOrg = await prisma.organization.create({
+        select: { id: true },
         data: {
           name,
           slug,
@@ -382,6 +384,7 @@ export async function POST(req: NextRequest) {
       });
 
       console.info(`organization.created: provisioned org ${clerkOrgId} (${name})`);
+      await trackServer({ event: "signup", distinctId: createdOrg.id });
       break;
     }
 

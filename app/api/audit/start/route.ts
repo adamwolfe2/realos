@@ -1,3 +1,4 @@
+import { trackServer } from "@/lib/analytics-server";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
@@ -161,6 +162,12 @@ export async function POST(req: NextRequest) {
         quizAnswers: quizAnswers ?? undefined,
       },
       select: { id: true, shareToken: true, status: true },
+    });
+
+    await trackServer({
+      event: "audit_started",
+      distinctId: `audit:${audit.id}`,
+      props: { domain, emailAtStart: Boolean(parsed.data.email) },
     });
 
     // Fire-and-forget trigger to the run route. We can't use `after()` here

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { trackServer } from "@/lib/analytics-server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import {
@@ -88,5 +89,9 @@ export async function POST(
       { status: 409 },
     );
   }
+  await trackServer({
+    event: "audit_email_captured",
+    distinctId: `audit:${id}`,
+  });
   return NextResponse.json({ ok: true });
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { trackServer } from "@/lib/analytics-server";
 import { z } from "zod";
 import { auth } from "@clerk/nextjs/server";
 import {
@@ -264,6 +265,8 @@ export async function POST(req: NextRequest) {
     where: { id: orgId },
     data: { onboardingStep: "done" },
   });
+
+  await trackServer({ event: "onboarding_completed", distinctId: orgId });
 
   return NextResponse.json({
     ok: true,

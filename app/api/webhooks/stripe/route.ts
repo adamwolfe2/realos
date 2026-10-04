@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { trackServer } from "@/lib/analytics-server";
 import Stripe from "stripe";
 import { captureWithContext } from "@/lib/sentry";
 import { isStripeConfigured, parseWebhookEvent, getStripeClient } from "@/lib/stripe/config";
@@ -228,6 +229,19 @@ async function handleSubscriptionUpserted(
     where: { id: org.id },
     data: updateData,
   });
+
+  // Funnel: card added = a platform subscription created with the card
+  // collected (trialing or paid). Proposal subs returned early above.
+  if (
+    eventType === "customer.subscription.created" &&
+    (subscription.status === "trialing" || subscription.status === "active")
+  ) {
+    await trackServer({
+      event: "card_added",
+      distinctId: org.id,
+      props: { status: subscription.status },
+    });
+  }
 
   const oldStatus = org.subscriptionStatus ?? "none";
   const descParts = [
