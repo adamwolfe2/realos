@@ -74,7 +74,11 @@ function reportMissingSilentSecrets(): void {
   const message = `[env] Missing secrets, dependent webhooks/crons/decryption will silently fail: ${missing.join(", ")}`;
   if (process.env.NODE_ENV === "production") {
     console.error(message);
-    captureWithContext(new Error(message), { missingEnv: missing });
+    // Report once per Node instance only (edge cold starts are far more
+    // frequent and would just repeat the same grouped event).
+    if (process.env.NEXT_RUNTIME !== "edge") {
+      captureWithContext(new Error(message), { missingEnv: missing });
+    }
   } else {
     console.warn(message);
   }
