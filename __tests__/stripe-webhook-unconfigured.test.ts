@@ -21,36 +21,57 @@ vi.mock("@/lib/stripe/config", () => ({
 }));
 vi.mock("@/lib/proposals/provision", () => ({ runProvisioningForProposal: vi.fn() }));
 
-function req() {
-  return new NextRequest("http://localhost/api/webhooks/stripe", {
-    method: "POST",
-    body: "{}",
-  });
+async function post() {
+  const { POST } = await import("@/app/api/webhooks/stripe/route");
+  return POST(
+    new NextRequest("http://localhost/api/webhooks/stripe", {
+      method: "POST",
+      body: "{}",
+    }),
+  );
 }
 
 describe("Stripe webhook when Stripe is not configured", () => {
-  const original = process.env.VERCEL_ENV;
   beforeEach(() => {
     captureWithContext.mockClear();
     vi.spyOn(console, "error").mockImplementation(() => {});
   });
   afterEach(() => {
-    process.env.VERCEL_ENV = original;
+    vi.unstubAllEnvs();
     vi.restoreAllMocks();
   });
 
-  it("returns 503 and alerts in production so Stripe retries", async () => {
-    process.env.VERCEL_ENV = "production";
-    const { POST } = await import("@/app/api/webhooks/stripe/route");
-    const res = await POST(req());
+  it("returns 503 and alerts on Vercel production so Stripe retries", async () => {
+    vi.stubEnv("VERCEL", "1");
+    vi.stubEnv("VERCEL_ENV", "production");
+    const res = await post();
     expect(res.status).toBe(503);
     expect(captureWithContext).toHaveBeenCalledTimes(1);
   });
 
-  it("returns 200 in preview/dev without alerting", async () => {
-    process.env.VERCEL_ENV = "preview";
-    const { POST } = await import("@/app/api/webhooks/stripe/route");
-    const res = await POST(req());
+  it("returns 503 on a non-Vercel production deploy (NODE_ENV=production)", async () => {
+    vi.stubEnv("VERCEL", "");
+    vi.stubEnv("VERCEL_ENV", "");
+    vi.stubEnv("NODE_ENV", "production");
+    const res = await post();
+    expect(res.status).toBe(503);
+    expect(captureWithContext).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns 200 on a Vercel preview even though NODE_ENV=production", async () => {
+    vi.stubEnv("VERCEL", "1");
+    vi.stubEnv("VERCEL_ENV", "preview");
+    vi.stubEnv("NODE_ENV", "production");
+    const res = await post();
+    expect(res.status).toBe(200);
+    expect(captureWithContext).not.toHaveBeenCalled();
+  });
+
+  it("returns 200 in local dev without alerting", async () => {
+    vi.stubEnv("VERCEL", "");
+    vi.stubEnv("VERCEL_ENV", "");
+    vi.stubEnv("NODE_ENV", "development");
+    const res = await post();
     expect(res.status).toBe(200);
     expect(captureWithContext).not.toHaveBeenCalled();
   });

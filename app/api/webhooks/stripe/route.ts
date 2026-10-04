@@ -1932,8 +1932,14 @@ export async function POST(req: NextRequest) {
   if (!isStripeConfigured()) {
     // In production a missing secret is a deploy/rotation error: return 503
     // so Stripe retries (for up to 3 days) instead of dropping the event.
-    // Dev/preview keep the 200 so unconfigured envs stay quiet.
-    if (process.env.VERCEL_ENV === "production") {
+    // Dev/preview keep the 200 so unconfigured envs stay quiet. Not the
+    // `VERCEL_ENV || NODE_ENV` guard from lib/tenancy (that one fails closed
+    // on previews, which run with NODE_ENV=production): off Vercel, NODE_ENV
+    // decides; on Vercel, only VERCEL_ENV=production counts.
+    if (
+      process.env.VERCEL_ENV === "production" ||
+      (!process.env.VERCEL && process.env.NODE_ENV === "production")
+    ) {
       console.error("Stripe webhook received but Stripe is not configured");
       captureWithContext(new Error("Stripe webhook received but Stripe is not configured"), {
         route: "api/webhooks/stripe",
