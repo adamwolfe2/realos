@@ -35,6 +35,15 @@ export function MobileNavDrawer({
   }, [pathname]);
 
   useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden";
     } else {
@@ -68,6 +77,11 @@ export function MobileNavDrawer({
       />
 
       <div
+        inert={!open}
+        aria-hidden={!open}
+        role={open ? "dialog" : undefined}
+        aria-modal={open ? true : undefined}
+        aria-label={open ? "Navigation" : undefined}
         className={cn(
           "fixed left-0 top-0 bottom-0 z-50 w-72 bg-card border-r border-border flex flex-col shadow-xl transition-transform duration-200",
           open ? "translate-x-0" : "-translate-x-full"
