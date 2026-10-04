@@ -70,7 +70,7 @@ describe("Stripe customer creation idempotency", () => {
     prisma.organization.findUnique.mockResolvedValue(unlinkedOrg);
     const { POST } = await import("@/app/api/billing/website-build/route");
     for (const email of ["owner@x.co", "staff@leasestack.co"]) {
-      getScope.mockResolvedValue({ orgId: "org_1", email });
+      getScope.mockResolvedValue({ orgId: "org_1", email, role: "CLIENT_OWNER" });
       await expect(
         POST(
           new NextRequest("http://localhost/api/billing/website-build", {
@@ -118,5 +118,18 @@ describe("Stripe customer creation idempotency", () => {
     expect(customersCreate).toHaveBeenCalledWith(expect.any(Object), {
       idempotencyKey: "mpbuyer_cust_buyer_1",
     });
+  });
+
+  it("website-build rejects a seat that can't manage billing (403, no Stripe call)", async () => {
+    const { POST } = await import("@/app/api/billing/website-build/route");
+    getScope.mockResolvedValue({ orgId: "org_1", email: "v@x.co", role: "CLIENT_VIEWER" });
+    const res = await POST(
+      new NextRequest("http://localhost/api/billing/website-build", {
+        method: "POST",
+        body: JSON.stringify({ buildId: "standard" }),
+      }),
+    );
+    expect(res.status).toBe(403);
+    expect(customersCreate).not.toHaveBeenCalled();
   });
 });

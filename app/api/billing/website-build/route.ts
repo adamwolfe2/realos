@@ -4,6 +4,7 @@ import type Stripe from "stripe";
 import { prisma } from "@/lib/db";
 import { getStripeClient, isStripeConfigured } from "@/lib/stripe/config";
 import { getScope } from "@/lib/tenancy/scope";
+import { canManageBilling } from "@/lib/billing/checkout-policy";
 import { getSiteUrl } from "@/lib/brand";
 import {
   WEBSITE_BUILD_CAL_LINK,
@@ -63,6 +64,15 @@ export async function POST(req: NextRequest) {
           "Sign in to LeaseStack before purchasing a website build. We tie every build to your workspace so fulfillment can start immediately.",
       },
       { status: 401 },
+    );
+  }
+
+  // Same billing gate as app/api/billing/checkout (owner, or agency billing
+  // seat while impersonating). Viewers and agents can't start a Stripe charge.
+  if (!canManageBilling(scope)) {
+    return NextResponse.json(
+      { ok: false, error: "Only the workspace owner can manage billing." },
+      { status: 403 },
     );
   }
 
