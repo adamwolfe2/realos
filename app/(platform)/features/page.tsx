@@ -54,9 +54,9 @@ const AttributionBreakdown = dynamic(
 // its dedicated sub-page for the full pitch and live demo.
 // ---------------------------------------------------------------------------
 
-const INK = "#161616";
-const MUTED = "#6f6f6f";
-const BORDER = "#e0e0e0";
+const INK = "var(--color-foreground)";
+const MUTED = "var(--color-muted-foreground)";
+const BORDER = "var(--color-border)";
 
 export const metadata: Metadata = {
   title: `Features · ${BRAND_NAME}`,
@@ -211,7 +211,7 @@ export default function FeaturesIndexPage() {
       </section>
 
       {/* Spotlight 2: Ad attribution */}
-      <section style={{ backgroundColor: "#f4f4f4" }}>
+      <section style={{ backgroundColor: "var(--color-secondary)" }}>
         <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center lg:[&>*:first-child]:order-2">
             <div className="max-w-xl">
@@ -299,7 +299,7 @@ export default function FeaturesIndexPage() {
                     height: 36,
                     borderRadius: "2px",
                     backgroundColor: "rgba(15,98,254,0.10)",
-                    color: "#0f62fe",
+                    color: "var(--color-primary)",
                   }}
                 >
                   {f.icon}
@@ -330,7 +330,7 @@ export default function FeaturesIndexPage() {
                 <span
                   className="mt-4 inline-flex items-center gap-2 group-hover:gap-3 transition-all"
                   style={{
-                    color: "#0f62fe",
+                    color: "var(--color-primary)",
                     fontFamily: "var(--font-mono)",
                     fontSize: 11,
                     fontWeight: 600,
@@ -363,7 +363,7 @@ export default function FeaturesIndexPage() {
       </section>
 
       {/* Bottom CTA */}
-      <section style={{ backgroundColor: "#f4f4f4" }}>
+      <section style={{ backgroundColor: "var(--color-secondary)" }}>
         <div className="max-w-[900px] mx-auto px-4 md:px-8 py-20 md:py-24 text-center">
           <h2
             style={{
@@ -422,7 +422,7 @@ function FeatureBullets({ items }: { items: string[] }) {
             className="inline-flex items-center justify-center flex-shrink-0 mt-1 w-4 h-4 rounded-full"
             style={{
               backgroundColor: "rgba(15,98,254,0.14)",
-              color: "#0f62fe",
+              color: "var(--color-primary)",
             }}
           >
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
@@ -448,7 +448,7 @@ function FeatureLink({ href, label }: { href: string; label: string }) {
       href={href}
       className="mt-8 inline-flex items-center gap-2 group"
       style={{
-        color: "#0f62fe",
+        color: "var(--color-primary)",
         fontFamily: "var(--font-mono)",
         fontSize: 11,
         fontWeight: 700,

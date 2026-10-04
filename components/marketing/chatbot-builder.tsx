@@ -211,7 +211,7 @@ export function ChatbotBuilder() {
           <label
             htmlFor="cbb-url"
             className="mb-2 block text-[12px] font-semibold"
-            style={{ color: "#161616" }}
+            style={{ color: "var(--color-foreground)" }}
           >
             Your property&apos;s website
           </label>
@@ -233,9 +233,9 @@ export function ChatbotBuilder() {
                 placeholder="yourproperty.com"
                 className="h-12 w-full border pl-10 pr-3 text-[15px] outline-none transition focus:ring-2"
                 style={{
-                  borderColor: "#c6c6c6",
+                  borderColor: "var(--hair-strong)",
                   borderRadius: 2,
-                  color: "#161616",
+                  color: "var(--color-foreground)",
                   backgroundColor: "#ffffff",
                 }}
               />
@@ -243,17 +243,17 @@ export function ChatbotBuilder() {
             <button
               type="submit"
               className="inline-flex h-12 items-center justify-center px-6 text-[14px] font-semibold text-white"
-              style={{ backgroundColor: "#0f62fe", borderRadius: 2 }}
+              style={{ backgroundColor: "var(--color-primary)", borderRadius: 2 }}
             >
               Build my chatbot
             </button>
           </div>
           {phase === "failed" && scrapeError ? (
-            <p className="cbb-rise mt-3 text-[13px]" style={{ color: "#da1e28" }} role="alert">
+            <p className="cbb-rise mt-3 text-[13px]" style={{ color: "var(--color-destructive)" }} role="alert">
               {scrapeError}
             </p>
           ) : (
-            <p className="mt-3 text-[12.5px]" style={{ color: "#6f6f6f" }}>
+            <p className="mt-3 text-[12.5px]" style={{ color: "var(--color-muted-foreground)" }}>
               No account, no card. We read your public site and train the
               preview on what&apos;s actually there.
             </p>
@@ -265,8 +265,8 @@ export function ChatbotBuilder() {
         <div className="cbb-rise mx-auto max-w-[640px]">
           <PanelShell title={host || "your property"} subtitle="Building the assistant" live={false}>
             <div className="px-5 py-6">
-              <div className="h-[3px] w-full overflow-hidden" style={{ backgroundColor: "#f4f4f4" }} aria-hidden>
-                <div className="cbb-bar h-full" style={{ backgroundColor: "#0f62fe" }} />
+              <div className="h-[3px] w-full overflow-hidden" style={{ backgroundColor: "var(--color-secondary)" }} aria-hidden>
+                <div className="cbb-bar h-full" style={{ backgroundColor: "var(--color-primary)" }} />
               </div>
               <ol className="mt-5" aria-label="Build progress">
                 {THEATER_STEPS.map((label, i) => {
@@ -282,15 +282,15 @@ export function ChatbotBuilder() {
                       }}
                     >
                       {state === "done" ? (
-                        <Check className="h-4 w-4 shrink-0" style={{ color: "#24a148" }} aria-hidden />
+                        <Check className="h-4 w-4 shrink-0" style={{ color: "var(--color-success)" }} aria-hidden />
                       ) : state === "active" ? (
-                        <Loader2 className="h-4 w-4 shrink-0 animate-spin" style={{ color: "#0f62fe" }} aria-hidden />
+                        <Loader2 className="h-4 w-4 shrink-0 animate-spin" style={{ color: "var(--color-primary)" }} aria-hidden />
                       ) : (
                         <span aria-hidden className="inline-block h-4 w-4 shrink-0 text-center">
-                          <span className="mx-auto mt-1.5 block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: "#c6c6c6" }} />
+                          <span className="mx-auto mt-1.5 block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: "var(--hair-strong)" }} />
                         </span>
                       )}
-                      <span className="text-[13.5px] font-medium" style={{ color: "#161616" }}>
+                      <span className="text-[13.5px] font-medium" style={{ color: "var(--color-foreground)" }}>
                         {label}
                         {state === "active" ? "…" : ""}
                       </span>
@@ -325,14 +325,14 @@ export function ChatbotBuilder() {
             </div>
 
             {userTurns === 0 ? (
-              <div className="flex flex-wrap gap-1.5 border-t px-4 py-3" style={{ borderColor: "#f4f4f4" }}>
+              <div className="flex flex-wrap gap-1.5 border-t px-4 py-3" style={{ borderColor: "var(--color-secondary)" }}>
                 {SUGGESTED.map((q) => (
                   <button
                     key={q}
                     type="button"
                     onClick={() => void send(q)}
-                    className="border px-3 py-1.5 text-[12.5px] font-medium transition-colors hover:border-[#0f62fe]"
-                    style={{ borderColor: "#e0e0e0", borderRadius: 999, color: "#161616" }}
+                    className="border px-3 py-1.5 text-[12.5px] font-medium transition-colors hover:border-primary"
+                    style={{ borderColor: "var(--color-border)", borderRadius: 999, color: "var(--color-foreground)" }}
                   >
                     {q}
                   </button>
@@ -346,7 +346,7 @@ export function ChatbotBuilder() {
                 void send(draft);
               }}
               className="flex items-center gap-2 border-t px-3 py-3"
-              style={{ borderColor: "#e0e0e0" }}
+              style={{ borderColor: "var(--color-border)" }}
             >
               <input
                 value={draft}
@@ -354,14 +354,14 @@ export function ChatbotBuilder() {
                 placeholder={`Ask about ${ctx.propertyName}…`}
                 aria-label="Message the chatbot"
                 className="h-10 flex-1 border px-3 text-[14px] outline-none transition focus:ring-2"
-                style={{ borderColor: "#c6c6c6", borderRadius: 2, color: "#161616" }}
+                style={{ borderColor: "var(--hair-strong)", borderRadius: 2, color: "var(--color-foreground)" }}
               />
               <button
                 type="submit"
                 disabled={streaming || !draft.trim()}
                 aria-label="Send message"
                 className="inline-flex h-10 w-10 items-center justify-center text-white disabled:opacity-50"
-                style={{ backgroundColor: "#0f62fe", borderRadius: 2 }}
+                style={{ backgroundColor: "var(--color-primary)", borderRadius: 2 }}
               >
                 <ArrowUp className="h-4 w-4" aria-hidden />
               </button>
@@ -392,25 +392,25 @@ function PanelShell({
     <div
       className="overflow-hidden border bg-white"
       style={{
-        borderColor: "#e0e0e0",
+        borderColor: "var(--color-border)",
         borderRadius: 2,
         boxShadow: "0 1px 2px rgba(22,22,22,0.04), 0 18px 48px rgba(22,22,22,0.07)",
       }}
     >
-      <div className="flex items-center justify-between gap-3 border-b px-4 py-3" style={{ borderColor: "#e0e0e0" }}>
+      <div className="flex items-center justify-between gap-3 border-b px-4 py-3" style={{ borderColor: "var(--color-border)" }}>
         <div className="flex min-w-0 items-center gap-2.5">
           <span
             className="grid h-8 w-8 shrink-0 place-items-center text-white"
-            style={{ backgroundColor: "#0f62fe", borderRadius: 2 }}
+            style={{ backgroundColor: "var(--color-primary)", borderRadius: 2 }}
             aria-hidden
           >
             <Bot className="h-4 w-4" />
           </span>
           <div className="min-w-0">
-            <p className="truncate text-[13.5px] font-semibold" style={{ color: "#161616" }}>
+            <p className="truncate text-[13.5px] font-semibold" style={{ color: "var(--color-foreground)" }}>
               {title}
             </p>
-            <p className="truncate text-[11px]" style={{ color: "#6f6f6f" }}>
+            <p className="truncate text-[11px]" style={{ color: "var(--color-muted-foreground)" }}>
               {subtitle}
             </p>
           </div>
@@ -418,9 +418,9 @@ function PanelShell({
         {live ? (
           <span
             className="inline-flex shrink-0 items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.12em]"
-            style={{ color: "#24a148", fontFamily: "var(--font-mono)" }}
+            style={{ color: "var(--color-success)", fontFamily: "var(--font-mono)" }}
           >
-            <span className="cbb-live inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: "#24a148" }} aria-hidden />
+            <span className="cbb-live inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: "var(--color-success)" }} aria-hidden />
             Live
           </span>
         ) : null}
@@ -439,8 +439,8 @@ function Bubble({ role, text }: { role: "user" | "assistant"; text: string }) {
         className="max-w-[85%] whitespace-pre-wrap px-3.5 py-2.5 text-[13.5px] leading-relaxed"
         style={
           user
-            ? { backgroundColor: "#0f62fe", color: "#ffffff", borderRadius: 2 }
-            : { backgroundColor: "#f4f4f4", color: "#161616", borderRadius: 2 }
+            ? { backgroundColor: "var(--color-primary)", color: "#ffffff", borderRadius: 2 }
+            : { backgroundColor: "var(--color-secondary)", color: "var(--color-foreground)", borderRadius: 2 }
         }
       >
         {text}
@@ -452,12 +452,12 @@ function Bubble({ role, text }: { role: "user" | "assistant"; text: string }) {
 function Typing() {
   return (
     <div className="flex justify-start" aria-label="Assistant is typing">
-      <div className="flex items-center gap-1 px-3.5 py-3" style={{ backgroundColor: "#f4f4f4", borderRadius: 2 }}>
+      <div className="flex items-center gap-1 px-3.5 py-3" style={{ backgroundColor: "var(--color-secondary)", borderRadius: 2 }}>
         {[0, 1, 2].map((i) => (
           <span
             key={i}
             className="cbb-dot inline-block h-1.5 w-1.5 rounded-full"
-            style={{ backgroundColor: "#6f6f6f", animationDelay: `${i * 180}ms` }}
+            style={{ backgroundColor: "var(--color-muted-foreground)", animationDelay: `${i * 180}ms` }}
             aria-hidden
           />
         ))}
@@ -512,20 +512,20 @@ function KeepPanel({ ctx }: { ctx: DemoContext }) {
     return (
       <aside
         className="cbb-rise border bg-white p-5"
-        style={{ borderColor: "#e0e0e0", borderRadius: 2 }}
+        style={{ borderColor: "var(--color-border)", borderRadius: 2 }}
       >
-        <CheckCircle2 className="h-5 w-5" style={{ color: "#24a148" }} aria-hidden />
-        <h3 className="mt-2.5 text-[17px] font-semibold" style={{ color: "#161616" }}>
+        <CheckCircle2 className="h-5 w-5" style={{ color: "var(--color-success)" }} aria-hidden />
+        <h3 className="mt-2.5 text-[17px] font-semibold" style={{ color: "var(--color-foreground)" }}>
           Done. Check your inbox.
         </h3>
-        <p className="mt-1.5 text-[13.5px] leading-relaxed" style={{ color: "#525252" }}>
+        <p className="mt-1.5 text-[13.5px] leading-relaxed" style={{ color: "var(--gray-70)" }}>
           We&apos;ll follow up at {email.trim()} with next steps for putting
           this assistant on {safeHost(ctx.websiteUrl)}. Want it installed and
           tuned this week? That&apos;s a 15-minute call.
         </p>
         <BookDemoLink
           className="mt-4 inline-flex w-full items-center justify-center px-5 py-3 text-[14px] font-semibold text-white"
-          style={{ backgroundColor: "#0f62fe", borderRadius: 2 }}
+          style={{ backgroundColor: "var(--color-primary)", borderRadius: 2 }}
           ariaLabel="Book a 15-minute setup call"
         >
           Book a 15-min setup call
@@ -537,26 +537,26 @@ function KeepPanel({ ctx }: { ctx: DemoContext }) {
   return (
     <aside
       className="border p-5"
-      style={{ borderColor: "#e0e0e0", borderRadius: 2, backgroundColor: "#f7f9fe" }}
+      style={{ borderColor: "var(--color-border)", borderRadius: 2, backgroundColor: "#f7f9fe" }}
     >
       <p
         className="text-[10.5px] font-mono uppercase tracking-[0.16em]"
-        style={{ color: "#0f62fe", fontFamily: "var(--font-mono)" }}
+        style={{ color: "var(--color-primary)", fontFamily: "var(--font-mono)" }}
       >
         Keep this chatbot
       </p>
-      <h3 className="mt-2 text-[17px] font-semibold leading-snug" style={{ color: "#161616" }}>
+      <h3 className="mt-2 text-[17px] font-semibold leading-snug" style={{ color: "var(--color-foreground)" }}>
         Put it on {safeHost(ctx.websiteUrl)} for real.
       </h3>
-      <p className="mt-1.5 text-[13px] leading-relaxed" style={{ color: "#525252" }}>
+      <p className="mt-1.5 text-[13px] leading-relaxed" style={{ color: "var(--gray-70)" }}>
         We&apos;ll email you the install snippet and set it up with your
         actual availability, pricing rules, and lead routing. One line of
         code on any site.
       </p>
       <form onSubmit={submit} className="mt-4 flex flex-col gap-2.5">
         <label className="block">
-          <span className="mb-1 flex items-center gap-1.5 text-[12px] font-semibold" style={{ color: "#161616" }}>
-            <User className="h-3.5 w-3.5" style={{ color: "#6f6f6f" }} aria-hidden />
+          <span className="mb-1 flex items-center gap-1.5 text-[12px] font-semibold" style={{ color: "var(--color-foreground)" }}>
+            <User className="h-3.5 w-3.5" style={{ color: "var(--color-muted-foreground)" }} aria-hidden />
             Your name
           </span>
           <input
@@ -565,12 +565,12 @@ function KeepPanel({ ctx }: { ctx: DemoContext }) {
             autoComplete="name"
             required
             className="h-11 w-full border bg-white px-3 text-[14px] outline-none transition focus:ring-2"
-            style={{ borderColor: "#c6c6c6", borderRadius: 2, color: "#161616" }}
+            style={{ borderColor: "var(--hair-strong)", borderRadius: 2, color: "var(--color-foreground)" }}
           />
         </label>
         <label className="block">
-          <span className="mb-1 flex items-center gap-1.5 text-[12px] font-semibold" style={{ color: "#161616" }}>
-            <Mail className="h-3.5 w-3.5" style={{ color: "#6f6f6f" }} aria-hidden />
+          <span className="mb-1 flex items-center gap-1.5 text-[12px] font-semibold" style={{ color: "var(--color-foreground)" }}>
+            <Mail className="h-3.5 w-3.5" style={{ color: "var(--color-muted-foreground)" }} aria-hidden />
             Work email
           </span>
           <input
@@ -580,24 +580,24 @@ function KeepPanel({ ctx }: { ctx: DemoContext }) {
             autoComplete="email"
             required
             className="h-11 w-full border bg-white px-3 text-[14px] outline-none transition focus:ring-2"
-            style={{ borderColor: "#c6c6c6", borderRadius: 2, color: "#161616" }}
+            style={{ borderColor: "var(--hair-strong)", borderRadius: 2, color: "var(--color-foreground)" }}
           />
         </label>
         <button
           type="submit"
           disabled={busy || !valid}
           className="inline-flex h-11 items-center justify-center px-5 text-[14px] font-semibold text-white transition disabled:opacity-60"
-          style={{ backgroundColor: "#0f62fe", borderRadius: 2 }}
+          style={{ backgroundColor: "var(--color-primary)", borderRadius: 2 }}
         >
           {busy ? "Saving…" : "Email me the install snippet"}
         </button>
       </form>
       {error ? (
-        <p className="mt-2 text-[12px]" style={{ color: "#da1e28" }} role="alert">
+        <p className="mt-2 text-[12px]" style={{ color: "var(--color-destructive)" }} role="alert">
           {error}
         </p>
       ) : null}
-      <p className="mt-3 text-[11px]" style={{ color: "#6f6f6f" }}>
+      <p className="mt-3 text-[11px]" style={{ color: "var(--color-muted-foreground)" }}>
         No spam. One email with the snippet and next steps.
       </p>
     </aside>

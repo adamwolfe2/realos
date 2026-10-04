@@ -1103,7 +1103,7 @@ export default async function PortalHome({
           actions={
             <>
               <div
-                className="inline-flex items-center rounded-none border border-[#e0e0e0] bg-white p-0"
+                className="inline-flex items-center rounded-none border border-border bg-white p-0"
                 role="group"
                 aria-label="Time range"
               >
@@ -1113,8 +1113,8 @@ export default async function PortalHome({
                     href={dashboardHref(r.key, compare)}
                     className={
                       r.key === range
-                        ? "inline-flex items-center justify-center px-3 py-1 text-[12px] font-semibold rounded-none bg-[#0f62fe] text-white transition-colors"
-                        : "inline-flex items-center justify-center px-3 py-1 text-[12px] font-semibold rounded-none text-[#525252] hover:bg-[#f4f4f4] transition-colors"
+                        ? "inline-flex items-center justify-center px-3 py-1 text-[12px] font-semibold rounded-none bg-primary text-white transition-colors"
+                        : "inline-flex items-center justify-center px-3 py-1 text-[12px] font-semibold rounded-none text-[var(--gray-70)] hover:bg-secondary transition-colors"
                     }
                     prefetch={false}
                   >
@@ -1295,7 +1295,7 @@ export default async function PortalHome({
                   >
                     <span
                       aria-hidden="true"
-                      className="inline-block h-1.5 w-1.5 rounded-full bg-[#f1c21b]"
+                      className="inline-block h-1.5 w-1.5 rounded-full bg-warning"
                     />
                     {propertiesInOnboarding.toLocaleString()}{" "}
                     {propertiesInOnboarding === 1 ? "property" : "properties"}{" "}
@@ -1420,7 +1420,7 @@ export default async function PortalHome({
               one flat VerificationRow strip. The connect action is a ghost
               link, never a filled CTA — the setup line owns the single
               primary connect surface. */}
-        <section className="rounded-[2px] border border-[#e0e0e0] bg-white p-3">
+        <section className="rounded-[2px] border border-border bg-white p-3">
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
             <VerificationRow
               status={
@@ -1439,21 +1439,21 @@ export default async function PortalHome({
             {appfolioAutoSyncPaused ? (
               <Link
                 href="/portal/connect"
-                className="text-[12px] font-medium text-[#0f62fe] hover:underline"
+                className="text-[12px] font-medium text-primary hover:underline"
               >
                 Enable auto-sync
               </Link>
             ) : appfolioConnected ? (
               <Link
                 href="/portal/connect"
-                className="text-[12px] font-medium text-[#0f62fe] hover:underline"
+                className="text-[12px] font-medium text-primary hover:underline"
               >
                 Manage
               </Link>
             ) : (
               <Link
                 href="/portal/connect"
-                className="inline-flex items-center gap-1 text-[12px] font-medium text-[#0f62fe] hover:underline"
+                className="inline-flex items-center gap-1 text-[12px] font-medium text-primary hover:underline"
               >
                 Connect
                 <ArrowRight className="h-3 w-3" aria-hidden="true" />
@@ -1468,7 +1468,7 @@ export default async function PortalHome({
     return (
       <div className="space-y-4">
         <PageHeader title="Dashboard" />
-        <div className="rounded-[2px] border border-[#e0e0e0] bg-[#f4f4f4] px-4 py-3 text-sm text-foreground">
+        <div className="rounded-[2px] border border-border bg-secondary px-4 py-3 text-sm text-foreground">
           Dashboard data could not be loaded. This is usually temporary. Try
           refreshing. If the issue persists, check{" "}
           <a

@@ -202,7 +202,7 @@ export function OnboardingStepper({ progress, connectStatus }: Props) {
   return (
     <section
       aria-label="Setup progress"
-      className="rounded-[2px] border border-[#e0e0e0] bg-white px-6 py-5"
+      className="rounded-[2px] border border-border bg-white px-6 py-5"
     >
       {/* Header row: phase eyebrow left, tabular progress right. */}
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
@@ -212,7 +212,7 @@ export function OnboardingStepper({ progress, connectStatus }: Props) {
         >
           Setup · {PHASE_LABELS[activePhase]}
         </p>
-        <p className="text-[11px] tabular-nums text-[#525252]">
+        <p className="text-[11px] tabular-nums text-[var(--gray-70)]">
           {phaseProg.completed} of {phaseProg.total}
           {connectStatus
             ? ` · ${connectStatus.connected}/${connectStatus.total} sources connected`
@@ -244,12 +244,12 @@ export function OnboardingStepper({ progress, connectStatus }: Props) {
                   aria-hidden="true"
                   className={`transition-[background-color,border-color,color] duration-200 ${
                     isCompleted
-                      ? "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[2px] bg-[#0f62fe] text-white"
+                      ? "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[2px] bg-primary text-white"
                       : isSkipped
-                        ? "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[2px] bg-[#e8e8e8] text-[#6f6f6f]"
+                        ? "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[2px] bg-muted text-muted-foreground"
                         : isActive
-                          ? "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[2px] border-2 border-[#0f62fe] bg-white text-[12px] font-semibold tabular-nums text-[#0f62fe]"
-                          : "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[2px] border border-[#c6c6c6] bg-white text-[12px] tabular-nums text-muted-foreground"
+                          ? "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[2px] border-2 border-primary bg-white text-[12px] font-semibold tabular-nums text-primary"
+                          : "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[2px] border border-[var(--hair-strong)] bg-white text-[12px] tabular-nums text-muted-foreground"
                   }`}
                 >
                   {isCompleted ? (
@@ -265,9 +265,9 @@ export function OnboardingStepper({ progress, connectStatus }: Props) {
                 {!isLast ? (
                   // Track stays gray; the inner span fills brand-blue
                   // left-to-right when the step ahead of it completes.
-                  <span aria-hidden="true" className="h-px flex-1 bg-[#e0e0e0]">
+                  <span aria-hidden="true" className="h-px flex-1 bg-border">
                     <span
-                      className="block h-full origin-left bg-[#0f62fe] transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+                      className="block h-full origin-left bg-primary transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
                       style={{
                         transform:
                           i < effectiveActiveIndex ? "scaleX(1)" : "scaleX(0)",
@@ -282,7 +282,7 @@ export function OnboardingStepper({ progress, connectStatus }: Props) {
                 <Link
                   href={meta.href}
                   className={`block text-[12px] font-semibold leading-snug hover:underline ${
-                    isDone ? "text-[#525252]" : "text-[#161616]"
+                    isDone ? "text-[var(--gray-70)]" : "text-foreground"
                   }`}
                 >
                   {meta.label}
@@ -302,7 +302,7 @@ export function OnboardingStepper({ progress, connectStatus }: Props) {
                     <div className="flex items-center gap-1.5">
                       <Link
                         href={meta.href}
-                        className="inline-flex items-center gap-1 px-1 py-0.5 text-[11px] font-medium text-[#161616] hover:bg-[#f4f4f4] transition-colors"
+                        className="inline-flex items-center gap-1 px-1 py-0.5 text-[11px] font-medium text-foreground hover:bg-secondary transition-colors"
                       >
                         Go
                         <ArrowRight className="h-3 w-3" />
@@ -311,7 +311,7 @@ export function OnboardingStepper({ progress, connectStatus }: Props) {
                         type="button"
                         disabled={busy}
                         onClick={() => handleAction(stepKey, "complete")}
-                        className="inline-flex items-center rounded-none bg-[#0f62fe] px-2 py-0.5 text-[11px] font-semibold text-white hover:bg-[#0043ce] transition-colors disabled:opacity-50"
+                        className="inline-flex items-center rounded-none bg-primary px-2 py-0.5 text-[11px] font-semibold text-white hover:bg-primary-dark transition-colors disabled:opacity-50"
                       >
                         Done
                       </button>
@@ -319,7 +319,7 @@ export function OnboardingStepper({ progress, connectStatus }: Props) {
                         type="button"
                         disabled={busy}
                         onClick={() => handleAction(stepKey, "skip")}
-                        className="inline-flex items-center text-[11px] text-[#6f6f6f] hover:text-[#161616] transition-colors disabled:opacity-50"
+                        className="inline-flex items-center text-[11px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
                       >
                         Skip
                       </button>
@@ -333,11 +333,11 @@ export function OnboardingStepper({ progress, connectStatus }: Props) {
       </ol>
 
       {/* Phase context + error. */}
-      <p className="mt-3 text-[11px] text-[#6f6f6f]">
+      <p className="mt-3 text-[11px] text-muted-foreground">
         Phase {phaseNumber} of 3 · {phaseContext}
       </p>
       {error ? (
-        <p className="mt-1 text-[11px] text-[#da1e28]">{error}</p>
+        <p className="mt-1 text-[11px] text-destructive">{error}</p>
       ) : null}
     </section>
   );
@@ -403,12 +403,12 @@ export function SetupSlimBar({ progress }: { progress: ProgressSnapshot }) {
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-[2px] border border-[#e0e0e0] bg-white px-3 py-2">
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-[2px] border border-border bg-white px-3 py-2">
       <Link
         href={activeMeta?.href ?? "/portal/settings"}
-        className="inline-flex items-center gap-1.5 text-[12px] text-[#525252] hover:text-[#161616] transition-colors min-w-0"
+        className="inline-flex items-center gap-1.5 text-[12px] text-[var(--gray-70)] hover:text-foreground transition-colors min-w-0"
       >
-        <span className="font-medium text-[#161616]">
+        <span className="font-medium text-foreground">
           Setup {phaseProg.completed} of {phaseProg.total}
         </span>
         {activeMeta ? (
@@ -424,13 +424,13 @@ export function SetupSlimBar({ progress }: { progress: ProgressSnapshot }) {
           type="button"
           disabled={busy}
           onClick={skipActiveStep}
-          className="text-[11px] text-[#6f6f6f] hover:text-[#161616] transition-colors disabled:opacity-50"
+          className="text-[11px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
         >
           Skip
         </button>
       ) : null}
       {error ? (
-        <p className="w-full text-[11px] text-[#da1e28]">{error}</p>
+        <p className="w-full text-[11px] text-destructive">{error}</p>
       ) : null}
     </div>
   );

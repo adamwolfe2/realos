@@ -30,10 +30,10 @@ export const metadata: Metadata = {
 //                               tour, to signed lease
 // ---------------------------------------------------------------------------
 
-const INK = "#161616";
-const MUTED = "#6f6f6f";
-const BORDER = "#e0e0e0";
-const ACCENT = "#0f62fe";
+const INK = "var(--color-foreground)";
+const MUTED = "var(--color-muted-foreground)";
+const BORDER = "var(--color-border)";
+const ACCENT = "var(--color-primary)";
 
 const PAINS = [
   {
@@ -68,7 +68,7 @@ export default function LeadsPage() {
       />
 
       {/* Problem ---------------------------------------------------------- */}
-      <section style={{ backgroundColor: "#f4f4f4" }}>
+      <section style={{ backgroundColor: "var(--color-secondary)" }}>
         <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
           <Reveal>
             <div className="text-center mb-14">
@@ -173,7 +173,7 @@ export default function LeadsPage() {
       </section>
 
       {/* Score + rank ---------------------------------------------------- */}
-      <section id="scoring" style={{ backgroundColor: "#f4f4f4" }}>
+      <section id="scoring" style={{ backgroundColor: "var(--color-secondary)" }}>
         <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center lg:[&>*:first-child]:order-2">
             <div className="max-w-xl">
@@ -265,7 +265,7 @@ export default function LeadsPage() {
       </section>
 
       {/* Attribution -------------------------------------------------------- */}
-      <section style={{ backgroundColor: "#f4f4f4" }}>
+      <section style={{ backgroundColor: "var(--color-secondary)" }}>
         <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center lg:[&>*:first-child]:order-2">
             <div className="max-w-xl">
