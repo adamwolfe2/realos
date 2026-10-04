@@ -39,6 +39,10 @@ const schema = z.object({
   visitorHash: z.string().optional(),
 });
 
+// A repeat inquiry from a known lead only re-notifies the operator when the
+// lead has been quiet this long (suppresses double-clicks / resubmits).
+const REPEAT_NOTIFY_AFTER_MS = 10 * 60 * 1000;
+
 // POST /api/public/leads
 // Called by tenant marketing site forms (apply, contact, exit-intent).
 // Rate-limited by IP so a competitor can't flood a tenant.
@@ -203,25 +207,29 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Repeat submit from a known lead: no bell, operator email, Slack, tenant
-  // email or auto-reply. Matches the popup, tours and chatbot routes, which
-  // only notify on net-new leads; the new message is appended to notes.
-  if (existing) {
+  // Repeat submit from a known lead (popup/tours/chatbot only notify on
+  // net-new leads). Exception: a new message on a lead untouched for 10+
+  // minutes still pings the bell + operator email so it isn't lost in
+  // notes. Double-clicks and quick resubmits stay silent. Slack, tenant
+  // email and the prospect auto-reply never fire for a repeat.
+  // updatedAt is from the findFirst, i.e. read before our update.
+  const isRepeatInquiry =
+    !!existing &&
+    !!data.notes?.trim() &&
+    existing.updatedAt.getTime() < Date.now() - REPEAT_NOTIFY_AFTER_MS;
+  if (existing && !isRepeatInquiry) {
     return NextResponse.json({ ok: true, leadId: lead.id }, { status: 201 });
   }
-
-  // Fire-and-forget side effects.
-  const appUrl = getSiteUrl();
-  const moduleCount = 1;
 
   void notifyLeadCreated(lead).catch(() => {});
 
   // Instant operator email — centralized lead-notify helper. Fire-and-forget;
   // every error path inside is swallowed so the response never blocks.
+  const sourceLabel = data.sourceDetail ?? data.source;
   void notifyLeadCaptured({
     orgId: data.orgId,
     leadId: lead.id,
-    propertyId: data.propertyId ?? null,
+    propertyId: lead.propertyId,
     channel: LeadNotifyChannel.FORM,
     lead: {
       name:
@@ -230,10 +238,18 @@ export async function POST(req: NextRequest) {
         null,
       email: data.email ?? null,
       phone: data.phone ?? null,
-      sourceLabel: data.sourceDetail ?? data.source,
+      sourceLabel: isRepeatInquiry ? `Repeat inquiry (${sourceLabel})` : sourceLabel,
       intent: data.notes ?? data.preferredUnitType ?? null,
     },
   }).catch(() => {});
+
+  if (isRepeatInquiry) {
+    return NextResponse.json({ ok: true, leadId: lead.id }, { status: 201 });
+  }
+
+  // Fire-and-forget side effects.
+  const appUrl = getSiteUrl();
+  const moduleCount = 1;
 
   void Promise.allSettled([
     notifyNewLeadSlack({

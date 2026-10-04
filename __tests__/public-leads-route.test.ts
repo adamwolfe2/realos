@@ -183,6 +183,7 @@ describe("POST /api/public/leads dedupe (F-024)", () => {
     desiredMoveIn: null,
     budgetMaxCents: null,
     notes: "First message",
+    updatedAt: new Date(), // just touched: a double-submit
   };
 
   it("a resubmit with the same email (different case) merges into the existing lead without notifying", async () => {
@@ -218,6 +219,29 @@ describe("POST /api/public/leads dedupe (F-024)", () => {
 
     expect(notifyLeadCaptured).not.toHaveBeenCalled();
     expect(notifyLeadCreated).not.toHaveBeenCalled();
+    expect(sendLeadAutoReplyEmail).not.toHaveBeenCalled();
+  });
+
+  it("a repeat with a message on a lead quiet for 10+ minutes notifies the operator as a repeat inquiry, but no auto-reply", async () => {
+    h.lead.findFirst.mockResolvedValue({
+      ...EXISTING,
+      updatedAt: new Date(Date.now() - 11 * 60 * 1000),
+    });
+    h.lead.update.mockResolvedValue({ id: "lead_existing", propertyId: "prop_first" });
+
+    const res = (await POST(
+      makeRequest({ ...VALID_BODY, notes: "Is the 2BR still open?" }),
+    )) as Response;
+
+    expect(res.status).toBe(201);
+    expect(h.lead.create).not.toHaveBeenCalled();
+    expect(notifyLeadCreated).toHaveBeenCalledTimes(1);
+    expect(notifyLeadCaptured).toHaveBeenCalledTimes(1);
+    const input = vi.mocked(notifyLeadCaptured).mock.calls[0][0];
+    expect(input.leadId).toBe("lead_existing");
+    expect(input.propertyId).toBe("prop_first");
+    expect(input.lead.sourceLabel).toBe("Repeat inquiry (FORM)");
+    expect(input.lead.intent).toBe("Is the 2BR still open?");
     expect(sendLeadAutoReplyEmail).not.toHaveBeenCalled();
   });
 
