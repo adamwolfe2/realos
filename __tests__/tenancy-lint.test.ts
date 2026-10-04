@@ -10,7 +10,7 @@ import { glob } from "glob";
  *
  *   1. updateProperty property-level IDOR — lib/actions/properties.ts,
  *      fixed alongside the wave-3 review batch (see
- *      AUTONOMOUS_IMPROVEMENT_LOG.md "updateProperty IDOR").
+ *      docs/archive/AUTONOMOUS_IMPROVEMENT_LOG.md "updateProperty IDOR").
  *   2. createReport missing allowedPropertyIds check — commit 3eaffa94
  *      "fix(reports): enforce property-scope RBAC on every report surface".
  *   3. reputation routes missing allowedPropertyIds guards — commit

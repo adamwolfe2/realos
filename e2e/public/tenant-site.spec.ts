@@ -15,7 +15,7 @@ const TENANT_BASE = `http://${TEST_TENANT.hostname}:3000`;
 test.describe("Tenant marketing site @critical", () => {
   test.beforeEach(async ({ page }) => {
     // Workaround for the chatbot widget's secure-context dependency. See
-    // BUILD_LOG.md for the underlying product bug.
+    // docs/archive/BUILD_LOG.md for the underlying product bug.
     await page.addInitScript({ content: SECURE_CONTEXT_POLYFILL });
   });
 
