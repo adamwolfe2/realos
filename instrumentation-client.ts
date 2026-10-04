@@ -74,3 +74,6 @@ if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
     },
   });
 }
+
+// Instruments App Router navigations for Sentry tracing.
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
