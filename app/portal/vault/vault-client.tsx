@@ -159,7 +159,8 @@ export function VaultClient({
           </p>
         </div>
       ) : (
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[720px]">
           <thead className="ls-eyebrow border-b border-border">
             <tr>
               <th className="px-4 py-2 text-left font-medium">Name</th>
@@ -237,6 +238,7 @@ export function VaultClient({
             ))}
           </tbody>
         </table>
+        </div>
       )}
 
       {revealing ? (
