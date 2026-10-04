@@ -36,29 +36,42 @@ export async function GET(req: NextRequest) {
     });
 
     let sent = 0;
+    const errors: string[] = [];
     for (const lead of candidates) {
       if (!lead.email || !lead.property?.googleReviewUrl) continue;
       try {
-        await sendReviewRequestEmail({
+        const r = await sendReviewRequestEmail({
           to: lead.email,
           firstName: lead.firstName,
           propertyName: lead.property.name,
           googleReviewUrl: lead.property.googleReviewUrl,
           leadId: lead.id,
         });
+        if (!r.ok) {
+          errors.push(`${lead.id}: ${r.error ?? "send failed"}`);
+          continue;
+        }
         await prisma.lead.update({
           where: { id: lead.id },
           data: { reviewRequestSentAt: new Date() },
         });
         sent++;
-      } catch {
+      } catch (err) {
         // Skip individual failures; cron will retry tomorrow
+        console.warn(`[cron/review-requests] ${lead.id} failed`, err);
+        errors.push(`${lead.id}: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
 
     return {
-      result: NextResponse.json({ scanned: candidates.length, sent }),
+      result: NextResponse.json({
+        scanned: candidates.length,
+        sent,
+        failed: errors.length,
+      }),
       recordsProcessed: sent,
+      errorCount: errors.length,
+      errorSummary: errors.slice(0, 10).join("; "),
     };
   });
 }
