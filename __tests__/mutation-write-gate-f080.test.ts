@@ -87,4 +87,25 @@ describe("F-080 write gates", () => {
     expect(res).toHaveProperty("error");
     expect(mocks.insightUpdate).not.toHaveBeenCalled();
   });
+
+  it("an allowed role passes the gate and the mutation runs", async () => {
+    mocks.requireWritableWorkspace.mockResolvedValue(viewer);
+    mocks.insightUpdate.mockResolvedValue({});
+    mocks.draftDelete.mockResolvedValue({});
+    mocks.draftFindFirst.mockResolvedValue({
+      id: "d1",
+      orgId: "org-1",
+      propertyId: null,
+      status: "PENDING_REVIEW",
+    });
+    const res = await dismissInsight("i1");
+    expect(res).toEqual({ success: true });
+    expect(mocks.insightUpdate).toHaveBeenCalled();
+    const del = await route.DELETE(
+      new NextRequest("http://localhost/x", { method: "DELETE" }),
+      ctx,
+    );
+    expect(del.status).toBe(200);
+    expect(mocks.draftDelete).toHaveBeenCalled();
+  });
 });
