@@ -4,6 +4,7 @@ import { AdPlatform, IntegrationRequestStatus } from "@prisma/client";
 import { INTEGRATIONS, type IntegrationDefinition } from "./catalog";
 import { FRESHNESS_BUDGET, type IntegrationKey } from "@/lib/sync/freshness";
 import { realAdAccountWhere } from "./real-ad-account";
+import { soft } from "@/lib/soft";
 
 // ---------------------------------------------------------------------------
 // Tenant-scoped integration status.
@@ -86,7 +87,7 @@ export async function resolveIntegrationStatuses(
           moduleMetaAds: true,
         },
       })
-      .catch(() => null),
+      .catch(soft(null, "integrations.status:89")),
     // Integration-status badges are an org-level summary so they look
     // at "any pixel connected anywhere" rather than per-property
     // detail. findFirst with cursivePixelId set surfaces the most
@@ -98,7 +99,7 @@ export async function resolveIntegrationStatuses(
         select: { cursivePixelId: true, lastEventAt: true },
         orderBy: { lastEventAt: "desc" },
       })
-      .catch(() => null),
+      .catch(soft(null, "integrations.status:101")),
     prisma.appFolioIntegration
       .findUnique({
         where: { orgId },
@@ -115,7 +116,7 @@ export async function resolveIntegrationStatuses(
           lastError: true,
         },
       })
-      .catch(() => null),
+      .catch(soft(null, "integrations.status:118")),
     prisma.funnelIntegration
       .findUnique({
         where: { orgId },
@@ -128,7 +129,7 @@ export async function resolveIntegrationStatuses(
           lastError: true,
         },
       })
-      .catch(() => null),
+      .catch(soft(null, "integrations.status:131")),
     prisma.seoIntegration
       .findMany({
         // Demo-seeded SEO rows store the literal string "DEMO_SEED"
@@ -150,7 +151,7 @@ export async function resolveIntegrationStatuses(
           lastSyncError: true,
         },
       })
-      .catch(() => []),
+      .catch(soft([], "integrations.status:153")),
     realAdAccountWhere(orgId)
       .then((realFilter) =>
         prisma.adAccount.findMany({
@@ -162,7 +163,7 @@ export async function resolveIntegrationStatuses(
           },
         }),
       )
-      .catch(() => []),
+      .catch(soft([], "integrations.status:165")),
     prisma.integrationRequest
       .findMany({
         where: {
@@ -176,7 +177,7 @@ export async function resolveIntegrationStatuses(
         },
         select: { id: true, integrationSlug: true },
       })
-      .catch(() => []),
+      .catch(soft([], "integrations.status:179")),
     prisma.integrationRequest
       .findMany({
         where: {
@@ -185,7 +186,7 @@ export async function resolveIntegrationStatuses(
         },
         select: { integrationSlug: true, resolvedAt: true },
       })
-      .catch(() => []),
+      .catch(soft([], "integrations.status:188")),
   ]);
 
   const pendingBySlug = new Map<string, string>();

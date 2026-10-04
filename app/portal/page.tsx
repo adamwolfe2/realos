@@ -76,6 +76,7 @@ import { SetupSlimBar } from "@/components/portal/onboarding/onboarding-stepper"
 import { VerificationRow } from "@/components/portal/ui/status-chip";
 import { PropertyHeroBanner } from "@/components/portal/properties/property-hero-banner";
 import { getPortfolioRecommendations } from "@/lib/intelligence/property-recommendations";
+import { soft } from "@/lib/soft";
 
 export const metadata: Metadata = { title: "Dashboard" };
 export const dynamic = "force-dynamic";
@@ -154,7 +155,7 @@ export default async function PortalHome({
   // brand-new client hit the same surface because scope.orgId already
   // resolves to the impersonated org.
   if (!forceDashboard) {
-    const firstRun = await getFirstRunSignal(scope.orgId).catch(() => null);
+    const firstRun = await getFirstRunSignal(scope.orgId).catch(soft(null, "portal.page:157"));
     if (firstRun?.isFirstRun) {
       const org = await prisma.organization
         .findUnique({
@@ -166,7 +167,7 @@ export default async function PortalHome({
             trialEndsAt: true,
           },
         })
-        .catch(() => null);
+        .catch(soft(null, "portal.page:169"));
       const isTrialing =
         !org?.subscriptionStatus || org.subscriptionStatus === "TRIALING";
       const trialDaysLeft = org?.trialEndsAt
@@ -375,7 +376,7 @@ export default async function PortalHome({
         // "unrestricted → all marketable".
         propertyIds: effectiveIds ?? allPropertiesForSelector.map((p) => p.id),
         periodDays: rangeDaysCount,
-      }).catch(() => null),
+      }).catch(soft(null, "portal.page:378")),
       // Conversations mini-card — same d7/intake shape as the chatbot page
       // (app/portal/chatbot/page.tsx), scoped to the dashboard's property
       // filter. ChatbotConversation.propertyId is nullable so propertyClause
@@ -384,7 +385,7 @@ export default async function PortalHome({
         .count({
           where: { orgId: scope.orgId, ...propertyClause, lastMessageAt: { gte: since7d } },
         })
-        .catch(() => 0),
+        .catch(soft(0, "portal.page:387")),
       prisma.chatbotConversation
         .count({
           where: {
@@ -401,7 +402,7 @@ export default async function PortalHome({
             ],
           },
         })
-        .catch(() => 0),
+        .catch(soft(0, "portal.page:404")),
       prisma.tour.count({
         where: {
           status: TourStatus.SCHEDULED,
@@ -493,16 +494,16 @@ export default async function PortalHome({
       // amber "Dashboard data could not be loaded" panel — meaning one
       // broken PropertyMention or seo-snapshot query blanked the entire
       // portal home for that operator.
-      getHotVisitors(scope.orgId).catch(() => ({
+      getHotVisitors(scope.orgId).catch(soft(({
         count: 0,
         sparkline: new Array<number>(28).fill(0),
-      })),
-      getOrganicSessionsKpi(scope.orgId).catch(() => ({
+      }), "portal.page:496")),
+      getOrganicSessionsKpi(scope.orgId).catch(soft(({
         sessions: 0,
         previousSessions: 0,
         deltaPct: null as number | null,
         sparkline: new Array<number>(28).fill(0),
-      })),
+      }), "portal.page:500")),
       // Both scoped with the SAME clauses as the KPI tiles above, so the
       // pipeline strip, lead-source card, and tiles count one population.
       // Previously org-wide (full synced portfolio) — the "Pipeline 488 vs
@@ -510,27 +511,22 @@ export default async function PortalHome({
       getLeadSourceBreakdown(scope.orgId, {
         periodDays: rangeDaysCount,
         propertyClause,
-      }).catch(() => []),
+      }).catch(soft([], "portal.page:513")),
       getFunnel(scope.orgId, {
         periodDays: rangeDaysCount,
         propertyClause,
         requiredPropertyClause: requiredModelPropertyClause,
-      }).catch(
-        () =>
-          [] as Array<{
+      }).catch(soft([] as Array<{
             label: string;
             value: number;
             notApplicable?: boolean;
-          }>,
-      ),
-      getActivityFeed(scope.orgId, 10).catch(() => []),
-      getIntegrationHealth(scope.orgId).catch(() => []),
+          }>, "portal.page:518")),
+      getActivityFeed(scope.orgId, 10).catch(soft([], "portal.page:526")),
+      getIntegrationHealth(scope.orgId).catch(soft([], "portal.page:527")),
       // P1-2: scope the dashboard insight card + counts to the user's gated
       // properties so a property-restricted user never sees other buildings'
       // insights (effectiveIds is the org-wide null only for unrestricted users).
-      getOpenInsights(scope.orgId, { propertyIds: effectiveIds, limit: 3 }).catch(
-        () => [],
-      ),
+      getOpenInsights(scope.orgId, { propertyIds: effectiveIds, limit: 3 }).catch(soft([], "portal.page:531")),
       prisma.organization
         .findUnique({
           where: { id: scope.orgId },
@@ -546,7 +542,7 @@ export default async function PortalHome({
             bringYourOwnSite: true,
           },
         })
-        .catch(() => null),
+        .catch(soft(null, "portal.page:549")),
       // AppFolio mirror metrics (rent roll, residents, leases, work
       // orders) intentionally removed from the dashboard. LeaseStack is
       // positioned as a marketing intelligence platform, not a PMS
@@ -562,12 +558,10 @@ export default async function PortalHome({
           where: { id: scope.userId },
           select: { firstName: true, lastName: true, email: true },
         })
-        .catch(() => null),
+        .catch(soft(null, "portal.page:565")),
       // Lead velocity over the selected window with optional prior-period
       // overlay. Powers the headline interactive chart.
-      getPerformanceOverTime(scope.orgId, rangeDaysCount, compare).catch(
-        () => [] as PerformancePoint[],
-      ),
+      getPerformanceOverTime(scope.orgId, rangeDaysCount, compare).catch(soft([] as PerformancePoint[], "portal.page:568")),
       // Top 5 properties by lead count in the selected window. Drives the
       // URBN-style leaderboard panel.
       getTopPropertiesByLeads(
@@ -575,12 +569,12 @@ export default async function PortalHome({
         rangeDaysCount,
         5,
         isFiltered ? effectiveIds : null,
-      ).catch(() => [] as LeaderboardPropertyRow[]),
+      ).catch(soft([] as LeaderboardPropertyRow[], "portal.page:578")),
       // Conversations card trend — same clause + range as the other blocks.
       getConversationsOverTime(scope.orgId, {
         periodDays: rangeDaysCount,
         propertyClause,
-      }).catch(() => [] as ConversationTrendPoint[]),
+      }).catch(soft([] as ConversationTrendPoint[], "portal.page:583")),
     ]);
 
     // 28d leads sparkline, summed across the visible properties. Only the
@@ -609,7 +603,7 @@ export default async function PortalHome({
           ...(isFiltered ? { id: { in: effectiveIds! } } : {}),
         },
       })
-      .catch(() => 0);
+      .catch(soft(0, "portal.page:612"));
 
     // Realistic delta calc: % change vs previous 28d window. Suppress when the
     // prior window had fewer than 3 events — at n=1 the percentage is
@@ -657,7 +651,7 @@ export default async function PortalHome({
         where: { orgId: scope.orgId },
         select: { autoSyncEnabled: true, instanceSubdomain: true },
       })
-      .catch(() => null);
+      .catch(soft(null, "portal.page:660"));
     const appfolioConnected = !!appfolioRow?.instanceSubdomain;
     const appfolioAutoSyncPaused =
       appfolioConnected && appfolioRow?.autoSyncEnabled === false;
@@ -706,7 +700,7 @@ export default async function PortalHome({
         },
         take: 25,
       })
-      .catch(() => []);
+      .catch(soft([], "portal.page:709"));
 
     let featuredProperty: (typeof liveProperties)[number] | null = null;
     if (liveProperties.length === 1) {
@@ -719,13 +713,10 @@ export default async function PortalHome({
           where: { propertyId: { in: liveProperties.map((p) => p.id) } },
           _count: { _all: true },
         })
-        .catch(
-          () =>
-            [] as Array<{
+        .catch(soft([] as Array<{
               propertyId: string | null;
               _count: { _all: number };
-            }>,
-        );
+            }>, "portal.page:722"));
       const countById = new Map<string, number>(
         scoreCounts
           .filter((s) => s.propertyId != null)
@@ -749,7 +740,7 @@ export default async function PortalHome({
     // blocks the dashboard render.
     const portfolioActions = await getPortfolioRecommendations(scope.orgId, {
       limit: 5,
-    }).catch(() => []);
+    }).catch(soft([], "portal.page:752"));
 
     // Portfolio-wide SEO Agent recommendations. Sibling to portfolioActions,
     // but sourced from the SEO recommendation engine (richer per-query
@@ -784,7 +775,7 @@ export default async function PortalHome({
           property: { select: { name: true } },
         },
       })
-      .catch(() => []);
+      .catch(soft([], "portal.page:787"));
     const portfolioSeoActions = portfolioSeoActionsRaw.map((r) => ({
       id: r.id,
       title: r.title,
@@ -858,7 +849,7 @@ export default async function PortalHome({
               createdAt: { gte: featThirty, lte: featNow },
             },
           })
-          .catch(() => 0),
+          .catch(soft(0, "portal.page:861")),
         prisma.lead
           .count({
             where: {
@@ -867,7 +858,7 @@ export default async function PortalHome({
               createdAt: { gte: featSixty, lt: featThirty },
             },
           })
-          .catch(() => 0),
+          .catch(soft(0, "portal.page:870")),
         prisma.chatbotConversation
           .count({
             where: {
@@ -876,7 +867,7 @@ export default async function PortalHome({
               createdAt: { gte: featThirty, lte: featNow },
             },
           })
-          .catch(() => 0),
+          .catch(soft(0, "portal.page:879")),
         prisma.chatbotConversation
           .count({
             where: {
@@ -885,7 +876,7 @@ export default async function PortalHome({
               createdAt: { gte: featSixty, lt: featThirty },
             },
           })
-          .catch(() => 0),
+          .catch(soft(0, "portal.page:888")),
         prisma.visitor
           .count({
             where: {
@@ -895,7 +886,7 @@ export default async function PortalHome({
               firstSeenAt: { gte: featThirty, lte: featNow },
             },
           })
-          .catch(() => 0),
+          .catch(soft(0, "portal.page:898")),
         prisma.visitor
           .count({
             where: {
@@ -905,7 +896,7 @@ export default async function PortalHome({
               firstSeenAt: { gte: featSixty, lt: featThirty },
             },
           })
-          .catch(() => 0),
+          .catch(soft(0, "portal.page:908")),
         prisma.visitor
           .count({
             where: {
@@ -914,7 +905,7 @@ export default async function PortalHome({
               firstSeenAt: { gte: featThirty, lte: featNow },
             },
           })
-          .catch(() => 0),
+          .catch(soft(0, "portal.page:917")),
         prisma.visitor
           .count({
             where: {
@@ -923,7 +914,7 @@ export default async function PortalHome({
               firstSeenAt: { gte: featSixty, lt: featThirty },
             },
           })
-          .catch(() => 0),
+          .catch(soft(0, "portal.page:926")),
         prisma.tour
           .count({
             where: {
@@ -931,7 +922,7 @@ export default async function PortalHome({
               createdAt: { gte: featThirty, lte: featNow },
             },
           })
-          .catch(() => 0),
+          .catch(soft(0, "portal.page:934")),
         prisma.application
           .count({
             where: {
@@ -939,7 +930,7 @@ export default async function PortalHome({
               createdAt: { gte: featThirty, lte: featNow },
             },
           })
-          .catch(() => 0),
+          .catch(soft(0, "portal.page:942")),
         prisma.lease
           .count({
             where: {
@@ -948,7 +939,7 @@ export default async function PortalHome({
               status: "ACTIVE",
             },
           })
-          .catch(() => 0),
+          .catch(soft(0, "portal.page:951")),
       ]);
 
       // Fallback to org-wide identified visitor counts when the property-
