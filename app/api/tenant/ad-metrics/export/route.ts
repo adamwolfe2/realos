@@ -8,6 +8,7 @@ import {
 } from "@/lib/tenancy/scope";
 import { AuditAction, AdPlatform } from "@prisma/client";
 import { buildCsv, csvFileResponse } from "@/lib/csv";
+import { propertyOrOrgLevelWhereFragment } from "@/lib/tenancy/property-filter";
 
 // GET /api/tenant/ad-metrics/export
 //
@@ -31,6 +32,9 @@ export async function GET(req: Request) {
   const where: Record<string, unknown> = {
     ...tenantWhere(scope),
     date: { gte: new Date(Date.now() - days * 24 * 60 * 60 * 1000) },
+    // Restricted users: their buildings' campaigns plus org-level ones,
+    // matching the ads page. {} for unrestricted users matches every campaign.
+    campaign: propertyOrOrgLevelWhereFragment(scope, null),
   };
 
   const metrics = await prisma.adMetricDaily.findMany({
