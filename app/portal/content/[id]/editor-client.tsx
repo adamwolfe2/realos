@@ -577,7 +577,7 @@ export function EditorClient(props: Props) {
            TipTap's render path.
            ----------------------------------------------------------------- */
         .content-editor .content-editor-prose {
-          font-family: var(--font-serif, "Instrument Serif"), Georgia, serif;
+          font-family: var(--font-sans);
           color: var(--color-foreground);
           font-size: 17px;
           line-height: 1.65;

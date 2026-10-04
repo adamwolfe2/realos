@@ -17,7 +17,7 @@ export default function SignInError({
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-white text-ink px-4">
-      <h1 className="font-serif text-2xl mb-3">Sign-in unavailable</h1>
+      <h1 className="font-semibold text-2xl mb-3">Sign-in unavailable</h1>
       <p className="font-mono text-sm text-ink/60 mb-8 max-w-sm text-center leading-relaxed">
         We could not load the sign-in page. Please try again.
       </p>

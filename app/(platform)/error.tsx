@@ -31,7 +31,7 @@ export default function MarketingError({
         Something went wrong
       </p>
       <h1
-        className="font-serif text-3xl sm:text-4xl mb-3 text-center"
+        className="font-semibold text-3xl sm:text-4xl mb-3 text-center"
         style={{ color: "var(--text-headline)" }}
       >
         We hit an unexpected error.
