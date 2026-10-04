@@ -231,7 +231,7 @@ function OverviewSection(s: ReportSnapshot, p: PropertyMeta, navTo: NavTo): Reac
         <Card>
           <SectionHeading meta="AI analysis">Executive summary</SectionHeading>
           <p className="text-[13px] leading-relaxed text-muted-foreground">{s.aiAnalysis.summary}</p>
-          {s.aiAnalysis.actions.length ? (
+          {s.aiAnalysis.actions?.length ? (
             <button
               type="button"
               onClick={() => navTo("insights")}
