@@ -117,8 +117,8 @@ const PRODUCT_LINKS: ProductLink[] = [
   },
   {
     href: "/features/ads",
-    label: "Managed Ads",
-    description: "Spend tied to signed leases, not impressions",
+    label: "Ad Attribution",
+    description: "Every ad dollar traced to a signed lease",
     icon: Target,
   },
   {

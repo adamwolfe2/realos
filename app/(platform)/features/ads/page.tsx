@@ -11,9 +11,9 @@ export const metadata: Metadata = {
 export default function AdsFeaturePage() {
   return (
     <FeaturePage
-      eyebrow="Managed ads"
-      headline="Paid that pays back, audited every week."
-      subhead="Most ad spend goes to broad audiences with no retargeting. We flip that: tight audiences, pixel retargeting, defended every dollar."
+      eyebrow="Ad attribution"
+      headline="Paid that pays back, tracked to the lease."
+      subhead="Most ad spend goes to broad audiences with no retargeting. LeaseStack ties every dollar to a signed lease, so you see which campaigns pay back."
       artifact={<ConfigTabs />}
     />
   );

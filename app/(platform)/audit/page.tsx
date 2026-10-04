@@ -88,7 +88,7 @@ export default function AuditFormPage() {
             />
             <TrustItem
               title="Action items, not vibes"
-              body="Each finding is tagged 'fix yourself' or 'LeaseStack handles' so you know what to do next."
+              body="Each finding is tagged 'fix yourself' or 'LeaseStack tracks' so you know what to do next."
             />
           </ul>
 

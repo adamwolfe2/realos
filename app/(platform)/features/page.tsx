@@ -48,7 +48,7 @@ const AttributionBreakdown = dynamic(
 // ---------------------------------------------------------------------------
 // /features — index page.
 //
-// Two feature spotlights (Weekly report, Managed ads) get a full artifact
+// Two feature spotlights (Weekly report, Ad attribution) get a full artifact
 // split section each, the same rhythm they'd get on their own sub-pages.
 // The remaining six features compress into a card grid, each linking to
 // its dedicated sub-page for the full pitch and live demo.
@@ -61,7 +61,7 @@ const BORDER = "#e0e0e0";
 export const metadata: Metadata = {
   title: `Features · ${BRAND_NAME}`,
   description:
-    "Every feature in the LeaseStack platform, weekly report, managed ads, visitor identification, AI chatbot, reputation, SEO/AEO, conversion popups, and website build, with a live interactive demo of each.",
+    "Every feature in the LeaseStack platform, weekly report, ad attribution, visitor identification, AI chatbot, reputation, SEO/AEO, conversion popups, and website build, with a live interactive demo of each.",
 };
 
 type GridFeature = {
@@ -210,7 +210,7 @@ export default function FeaturesIndexPage() {
         </div>
       </section>
 
-      {/* Spotlight 2: Managed ads */}
+      {/* Spotlight 2: Ad attribution */}
       <section style={{ backgroundColor: "#f4f4f4" }}>
         <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center lg:[&>*:first-child]:order-2">
@@ -236,16 +236,15 @@ export default function FeaturesIndexPage() {
                   lineHeight: 1.6,
                 }}
               >
-                Google, Meta, LinkedIn, and TikTok campaigns optimized against
-                lease velocity, audited every week. Identity-pixel
-                retargeting warms each audience at ID rates platform
-                audiences never reach.
+                Google, Meta, LinkedIn, and TikTok spend tracked against
+                lease velocity, reviewed every week. Identity-pixel
+                data shows which audiences actually turn into leases.
               </p>
               <FeatureBullets
                 items={[
                   ADS_CREATIVE_REFRESH_CLAIM,
-                  "Cost per lease defended on a weekly review call",
-                  "Pause or kill any campaign directly from the portal",
+                  "Cost per lease tracked in a weekly review",
+                  "See which campaigns to pause or scale, right in the portal",
                 ]}
               />
               <FeatureLink href="/features/ads" label="See it live" />
