@@ -166,7 +166,7 @@ export function SplitHero({
                       </p>
                       <p
                         style={{
-                          color: "#8d8d8d",
+                          color: "var(--color-muted-foreground)",
                           fontFamily: "var(--font-mono)",
                           fontSize: "clamp(8px, 2vw, 10px)",
                           lineHeight: 1.35,
@@ -193,7 +193,7 @@ export function SplitHero({
                   // unchanged.
                   className="mt-4 mb-20 sm:mb-0"
                   style={{
-                    color: "#8d8d8d",
+                    color: "var(--color-muted-foreground)",
                     fontFamily: "var(--font-sans)",
                     fontSize: "13px",
                   }}
@@ -243,7 +243,7 @@ export function SplitSection({
                 <p
                   className="mb-4"
                   style={{
-                    color: "#8d8d8d",
+                    color: "var(--color-muted-foreground)",
                     fontFamily: "var(--font-mono)",
                     fontSize: "11px",
                     letterSpacing: "0.18em",

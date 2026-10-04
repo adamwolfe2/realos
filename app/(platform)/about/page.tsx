@@ -148,7 +148,7 @@ function StackCard() {
             fontSize: "10px",
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: "#94A3B8",
+            color: "var(--color-muted-foreground)",
             fontWeight: 600,
           }}
         >
@@ -221,7 +221,7 @@ function StackCard() {
             fontSize: "10px",
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#94A3B8",
+            color: "var(--color-muted-foreground)",
             fontWeight: 500,
           }}
         >
@@ -259,7 +259,7 @@ function VendorCollapse() {
             fontSize: "10px",
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: "#94A3B8",
+            color: "var(--color-muted-foreground)",
             fontWeight: 600,
           }}
         >
@@ -272,7 +272,7 @@ function VendorCollapse() {
               style={{
                 fontFamily: "var(--font-sans)",
                 fontSize: "12px",
-                color: "#94A3B8",
+                color: "var(--color-muted-foreground)",
                 padding: "4px 10px",
                 border: "1px dashed #94A3B8",
                 borderRadius: "999px",
@@ -360,7 +360,7 @@ function OperatorWeek() {
             fontSize: "10px",
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: "#94A3B8",
+            color: "var(--color-muted-foreground)",
             fontWeight: 600,
           }}
         >
@@ -394,7 +394,7 @@ function OperatorWeek() {
                   fontSize: "11px",
                   letterSpacing: "0.08em",
                   textTransform: "uppercase",
-                  color: "#94A3B8",
+                  color: "var(--color-muted-foreground)",
                   fontWeight: 600,
                 }}
               >

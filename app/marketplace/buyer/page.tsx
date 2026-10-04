@@ -214,7 +214,7 @@ export default async function BuyerDashboardPage() {
                   style={{
                     fontFamily: "var(--font-sans)",
                     fontSize: "12px",
-                    color: "#94A3B8",
+                    color: "var(--color-muted-foreground)",
                   }}
                 >
                   {s.totalPurchases} auto-purchased lifetime
@@ -320,7 +320,7 @@ export default async function BuyerDashboardPage() {
                       style={{
                         fontFamily: "var(--font-mono)",
                         fontSize: "10px",
-                        color: "#94A3B8",
+                        color: "var(--color-muted-foreground)",
                         letterSpacing: "0.08em",
                       }}
                     >
@@ -378,7 +378,7 @@ function Tile({
           fontSize: "10px",
           letterSpacing: "0.14em",
           textTransform: "uppercase",
-          color: "#94A3B8",
+          color: "var(--color-muted-foreground)",
           fontWeight: 600,
         }}
       >

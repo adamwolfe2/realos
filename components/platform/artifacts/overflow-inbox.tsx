@@ -99,7 +99,7 @@ const POOL: Omit<Inquiry, "id" | "ago">[] = [
       property: "Riverbend · 2BR",
       source: "Apartments.com",
       hot: false,
-      color: "#8d8d8d",
+      color: "var(--color-muted-foreground)",
       photo: "https://randomuser.me/api/portraits/women/68.jpg",
     },
   },
@@ -138,7 +138,7 @@ const POOL: Omit<Inquiry, "id" | "ago">[] = [
       property: "Parkway 220 · 2BR",
       source: "Site form",
       hot: false,
-      color: "#8d8d8d",
+      color: "var(--color-muted-foreground)",
       photo: "https://randomuser.me/api/portraits/women/22.jpg",
     },
   },
@@ -159,7 +159,7 @@ const POOL: Omit<Inquiry, "id" | "ago">[] = [
 
 const ACCENT = "#0f62fe";
 const INK = "#161616";
-const MUTED = "#8d8d8d";
+const MUTED = "var(--color-muted-foreground)";
 const SLATE = "#6f6f6f";
 const BORDER = "#e0e0e0";
 const PARCHMENT = "#f4f4f4";

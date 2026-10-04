@@ -111,7 +111,7 @@ export default function NotFound() {
       <footer
         className="py-8"
         style={{
-          color: "#94A3B8",
+          color: "var(--color-muted-foreground)",
           fontFamily: "var(--font-mono)",
           fontSize: 11,
           letterSpacing: "0.12em",

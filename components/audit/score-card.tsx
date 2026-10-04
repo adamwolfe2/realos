@@ -106,7 +106,7 @@ export function ScoreCard({
             className="text-3xl font-semibold tabular-nums leading-none"
             style={{ color: palette.text }}
           />
-          <span className="text-xs" style={{ color: "#9CA3AF" }}>
+          <span className="text-xs" style={{ color: "var(--color-muted-foreground)" }}>
             / 100
           </span>
         </div>
@@ -121,7 +121,7 @@ export function ScoreCard({
           </span>
           <span
             className="text-[11px]"
-            style={{ color: "#9CA3AF" }}
+            style={{ color: "var(--color-muted-foreground)" }}
           >
             Scan still expanding coverage
           </span>

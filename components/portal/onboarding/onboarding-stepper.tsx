@@ -249,7 +249,7 @@ export function OnboardingStepper({ progress, connectStatus }: Props) {
                         ? "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[2px] bg-[#e8e8e8] text-[#6f6f6f]"
                         : isActive
                           ? "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[2px] border-2 border-[#0f62fe] bg-white text-[12px] font-semibold tabular-nums text-[#0f62fe]"
-                          : "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[2px] border border-[#c6c6c6] bg-white text-[12px] tabular-nums text-[#8d8d8d]"
+                          : "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[2px] border border-[#c6c6c6] bg-white text-[12px] tabular-nums text-muted-foreground"
                   }`}
                 >
                   {isCompleted ? (

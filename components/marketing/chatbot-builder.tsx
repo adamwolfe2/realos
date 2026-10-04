@@ -219,7 +219,7 @@ export function ChatbotBuilder() {
             <div className="relative flex-1">
               <Globe
                 className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2"
-                style={{ color: "#8d8d8d" }}
+                style={{ color: "var(--color-muted-foreground)" }}
                 aria-hidden
               />
               <input

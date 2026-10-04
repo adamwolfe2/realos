@@ -264,7 +264,7 @@ function PaywallModal({
       <p
         className="mt-3 text-[11px]"
         style={{
-          color: "#9CA3AF",
+          color: "var(--color-muted-foreground)",
           fontFamily: "var(--font-mono)",
           letterSpacing: "0.06em",
           textAlign: "center",

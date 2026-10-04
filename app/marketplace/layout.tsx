@@ -139,19 +139,19 @@ export default function MarketplaceLayout({
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "11px",
-            color: "#94A3B8",
+            color: "var(--color-muted-foreground)",
             letterSpacing: "0.08em",
           }}
         >
           <span>© {new Date().getFullYear()} {BRAND_NAME}</span>
           <span className="flex items-center gap-4">
-            <Link href="/leads" style={{ color: "#94A3B8" }}>
+            <Link href="/leads" style={{ color: "var(--color-muted-foreground)" }}>
               Product
             </Link>
-            <Link href="/privacy" style={{ color: "#94A3B8" }}>
+            <Link href="/privacy" style={{ color: "var(--color-muted-foreground)" }}>
               Privacy
             </Link>
-            <Link href="/terms" style={{ color: "#94A3B8" }}>
+            <Link href="/terms" style={{ color: "var(--color-muted-foreground)" }}>
               Terms
             </Link>
           </span>

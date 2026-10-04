@@ -289,7 +289,7 @@ export default async function AdminCostsPage() {
                 <td
                   colSpan={5}
                   className="px-5 py-8 text-center text-sm"
-                  style={{ color: "#9CA3AF" }}
+                  style={{ color: "var(--color-muted-foreground)" }}
                 >
                   No usage logged yet. Provider wrappers start logging after
                   the next deploy carries the migration.
@@ -336,7 +336,7 @@ export default async function AdminCostsPage() {
                   <td
                     colSpan={3}
                     className="px-5 py-8 text-center text-sm"
-                    style={{ color: "#9CA3AF" }}
+                    style={{ color: "var(--color-muted-foreground)" }}
                   >
                     No tenant calls logged yet.
                   </td>
@@ -353,7 +353,7 @@ export default async function AdminCostsPage() {
                             <span
                               className="text-[11px]"
                               style={{
-                                color: "#9CA3AF",
+                                color: "var(--color-muted-foreground)",
                                 fontFamily: "var(--font-mono)",
                               }}
                             >
@@ -361,7 +361,7 @@ export default async function AdminCostsPage() {
                             </span>
                           </div>
                         ) : (
-                          <span style={{ color: "#9CA3AF" }}>(deleted)</span>
+                          <span style={{ color: "var(--color-muted-foreground)" }}>(deleted)</span>
                         )}
                       </td>
                       <td
@@ -418,7 +418,7 @@ export default async function AdminCostsPage() {
                   <td
                     colSpan={3}
                     className="px-5 py-8 text-center text-sm"
-                    style={{ color: "#9CA3AF" }}
+                    style={{ color: "var(--color-muted-foreground)" }}
                   >
                     No prospect audits logged yet.
                   </td>
@@ -442,7 +442,7 @@ export default async function AdminCostsPage() {
                             <span
                               className="text-[11px]"
                               style={{
-                                color: "#9CA3AF",
+                                color: "var(--color-muted-foreground)",
                                 fontFamily: "var(--font-mono)",
                               }}
                             >
@@ -450,7 +450,7 @@ export default async function AdminCostsPage() {
                             </span>
                           </div>
                         ) : (
-                          <span style={{ color: "#9CA3AF" }}>(deleted)</span>
+                          <span style={{ color: "var(--color-muted-foreground)" }}>(deleted)</span>
                         )}
                       </td>
                       <td
@@ -512,7 +512,7 @@ export default async function AdminCostsPage() {
                 <td
                   colSpan={6}
                   className="px-5 py-8 text-center text-sm"
-                  style={{ color: "#9CA3AF" }}
+                  style={{ color: "var(--color-muted-foreground)" }}
                 >
                   No calls yet — instrumentation lands with the next deploy.
                 </td>
@@ -637,12 +637,12 @@ function CapStatus({
         >
           Monthly cap
         </p>
-        <p className="text-base mt-1" style={{ color: "#9CA3AF" }}>
+        <p className="text-base mt-1" style={{ color: "var(--color-muted-foreground)" }}>
           Not configured
         </p>
         <p
           className="text-[11px] mt-1"
-          style={{ color: "#9CA3AF" }}
+          style={{ color: "var(--color-muted-foreground)" }}
         >
           Set COST_MONTHLY_CAP_USD env to enforce
         </p>

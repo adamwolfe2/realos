@@ -9,7 +9,7 @@ import {
 
 const ACCENT = "#0f62fe";
 const INK = "#161616";
-const MUTED = "#8d8d8d";
+const MUTED = "var(--color-muted-foreground)";
 const BORDER = "#e0e0e0";
 const PARCHMENT = "#f4f4f4";
 // Norman feedback (2026-05-21): every artifact on the marketing

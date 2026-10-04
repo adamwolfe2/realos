@@ -207,12 +207,12 @@ export default async function ProposalSharePage({ params }: PageProps) {
                   </div>
                   <div className="col-span-12 md:col-span-9">
                     {p.deliverables.length === 0 ? (
-                      <span className="text-[13px] text-[#9CA3AF]">—</span>
+                      <span className="text-[13px] text-muted-foreground">—</span>
                     ) : (
                       <ul className="space-y-1 text-[14px] text-[#374151] leading-relaxed">
                         {p.deliverables.map((d, dIdx) => (
                           <li key={dIdx} className="flex gap-2">
-                            <span className="text-[#9CA3AF] shrink-0">•</span>
+                            <span className="text-muted-foreground shrink-0">•</span>
                             <span>{d}</span>
                           </li>
                         ))}
@@ -222,7 +222,7 @@ export default async function ProposalSharePage({ params }: PageProps) {
                 </li>
               ))}
             </ol>
-            <p className="mt-2 text-[11.5px] text-[#9CA3AF]">
+            <p className="mt-2 text-[11.5px] text-muted-foreground">
               Weeks count from the day this proposal is signed and paid.
             </p>
           </section>

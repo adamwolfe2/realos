@@ -503,7 +503,7 @@ function PreviewCard() {
         <span
           style={{
             fontSize: 18,
-            color: "#8d8d8d",
+            color: "var(--color-muted-foreground)",
             fontFamily: "var(--font-display)",
           }}
         >
@@ -900,7 +900,7 @@ function AeoBoostBand() {
             <p
               style={{
                 fontSize: 12,
-                color: "#8d8d8d",
+                color: "var(--color-muted-foreground)",
                 fontFamily: "var(--font-mono)",
                 letterSpacing: "0.06em",
                 paddingTop: 14,

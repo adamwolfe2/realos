@@ -431,7 +431,7 @@ function Hero({ data }: { data: BriefJson }) {
             </div>
             <p
               className="mt-4 text-[11px]"
-              style={{ color: "#94A3B8", fontFamily: "var(--font-mono)" }}
+              style={{ color: "var(--color-muted-foreground)", fontFamily: "var(--font-mono)" }}
             >
               {data.vertical}
             </p>
@@ -661,7 +661,7 @@ function EngineSummaryCard({
             style={{ color: allMissed ? "#B91C1C" : "#1E2A3A" }}
           >
             {cited}
-            <span style={{ fontSize: 14, color: "#94A3B8", fontWeight: 400 }}>
+            <span style={{ fontSize: 14, color: "var(--color-muted-foreground)", fontWeight: 400 }}>
               /{total}
             </span>
           </p>
@@ -791,7 +791,7 @@ function VerbatimQuoteCard({
                       {c}
                       <ExternalLink
                         className="w-3 h-3"
-                        style={{ color: "#94A3B8" }}
+                        style={{ color: "var(--color-muted-foreground)" }}
                         aria-hidden
                       />
                     </a>
@@ -827,7 +827,7 @@ function VerbatimQuoteCard({
       >
         <p
           className="text-[10.5px] font-mono uppercase tracking-[0.12em]"
-          style={{ color: "#94A3B8" }}
+          style={{ color: "var(--color-muted-foreground)" }}
         >
           Live API call · {row.responseText.length.toLocaleString()} chars returned
         </p>
@@ -906,7 +906,7 @@ function CompetitorSection({ data }: { data: BriefJson }) {
               <li key={c.name} className="flex items-center gap-4">
                 <span
                   className="text-[11px] font-mono tabular-nums text-right shrink-0"
-                  style={{ color: "#94A3B8", width: 24 }}
+                  style={{ color: "var(--color-muted-foreground)", width: 24 }}
                 >
                   {String(i + 1).padStart(2, "0")}
                 </span>
@@ -915,7 +915,7 @@ function CompetitorSection({ data }: { data: BriefJson }) {
                   {href ? (
                     <ExternalLink
                       className="w-3 h-3 shrink-0"
-                      style={{ color: "#94A3B8" }}
+                      style={{ color: "var(--color-muted-foreground)" }}
                       aria-hidden
                     />
                   ) : null}
@@ -1010,7 +1010,7 @@ function PageHealthSection({ data }: { data: BriefJson }) {
               </p>
               <p
                 className="mt-1 text-[10.5px] font-mono uppercase tracking-[0.14em] flex flex-wrap items-center gap-1.5"
-                style={{ color: "#94A3B8" }}
+                style={{ color: "var(--color-muted-foreground)" }}
               >
                 Audited live · {data.firecrawl.htmlBytes.toLocaleString()} bytes of rendered HTML
                 <span aria-hidden>·</span>
@@ -1039,7 +1039,7 @@ function PageHealthSection({ data }: { data: BriefJson }) {
                   {c.pass ? (
                     <Check className="w-3.5 h-3.5" style={{ color: "#059669" }} />
                   ) : (
-                    <X className="w-3.5 h-3.5" style={{ color: "#9CA3AF" }} />
+                    <X className="w-3.5 h-3.5" style={{ color: "var(--color-muted-foreground)" }} />
                   )}
                 </span>
                 <div className="min-w-0 flex-1">
@@ -1176,7 +1176,7 @@ function ColumnCard({
                 {t}
                 <ExternalLink
                   className="w-3 h-3"
-                  style={{ color: "#94A3B8" }}
+                  style={{ color: "var(--color-muted-foreground)" }}
                   aria-hidden
                 />
               </a>

@@ -146,7 +146,7 @@ export default async function MarketplaceLeadPage({
               >
                 {owned ? lead.fullName : lead.displayName}
                 {lead.age != null && (
-                  <span style={{ color: "#94A3B8", fontWeight: 400 }}> · {lead.age}</span>
+                  <span style={{ color: "var(--color-muted-foreground)", fontWeight: 400 }}> · {lead.age}</span>
                 )}
               </h1>
               <p
@@ -155,7 +155,7 @@ export default async function MarketplaceLeadPage({
                   fontFamily: "var(--font-mono)",
                   fontSize: "11px",
                   letterSpacing: "0.08em",
-                  color: "#94A3B8",
+                  color: "var(--color-muted-foreground)",
                   fontWeight: 500,
                 }}
               >
@@ -357,7 +357,7 @@ export default async function MarketplaceLeadPage({
               fontSize: "10.5px",
               letterSpacing: "0.14em",
               textTransform: "uppercase",
-              color: "#94A3B8",
+              color: "var(--color-muted-foreground)",
               fontWeight: 700,
             }}
           >
@@ -506,7 +506,7 @@ function StatTile({
           fontSize: "9.5px",
           letterSpacing: "0.14em",
           textTransform: "uppercase",
-          color: "#94A3B8",
+          color: "var(--color-muted-foreground)",
           fontWeight: 600,
         }}
       >
@@ -562,7 +562,7 @@ function Row({
           fontSize: "10.5px",
           letterSpacing: "0.12em",
           textTransform: "uppercase",
-          color: "#94A3B8",
+          color: "var(--color-muted-foreground)",
           fontWeight: 600,
           minWidth: "120px",
         }}

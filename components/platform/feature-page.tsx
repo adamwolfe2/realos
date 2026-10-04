@@ -23,7 +23,7 @@ export function FeaturePage({
         <div className="max-w-[920px] mx-auto px-4 md:px-8 pt-24 md:pt-28 pb-16 text-center">
           <p
             style={{
-              color: "#8d8d8d",
+              color: "var(--color-muted-foreground)",
               fontFamily: "var(--font-mono)",
               fontSize: "11px",
               letterSpacing: "0.18em",

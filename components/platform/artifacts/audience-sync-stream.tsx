@@ -24,7 +24,7 @@ const POOL: Omit<SyncEvent, "id" | "ago">[] = [
 
 const ACCENT = "#0f62fe";
 const INK = "#1E2A3A";
-const MUTED = "#94A3B8";
+const MUTED = "var(--color-muted-foreground)";
 const BORDER = "#E2E8F0";
 const PARCHMENT = "#F1F5F9";
 

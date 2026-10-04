@@ -35,30 +35,30 @@ type Visitor = {
 // the visitor sees 4 reveals within ~2.5s of landing on the page.
 const POOL: Omit<Visitor, "id" | "ago">[] = [
   // Anonymous → Maya Patel  (initial-wave reveal #1)
-  { initials: "?",  name: "Anonymous visitor", org: "mobile · west coast",     page: "/floor-plans",        color: "#8d8d8d", resolved: false,
+  { initials: "?",  name: "Anonymous visitor", org: "mobile · west coast",     page: "/floor-plans",        color: "var(--color-muted-foreground)", resolved: false,
     revealsTo: { initials: "MP", name: "Maya Patel",     org: "UC Berkeley · rising junior",  color: "#0f62fe", photo: "https://randomuser.me/api/portraits/women/22.jpg" } },
   // Anonymous → Ethan Kim   (initial-wave reveal #2)
-  { initials: "?",  name: "Anonymous visitor", org: "mobile · Oakland",        page: "/gallery",            color: "#8d8d8d", resolved: false,
+  { initials: "?",  name: "Anonymous visitor", org: "mobile · Oakland",        page: "/gallery",            color: "var(--color-muted-foreground)", resolved: false,
     revealsTo: { initials: "EK", name: "Ethan Kim",      org: "Cal Poly · sophomore",         color: "#4589ff", photo: "https://randomuser.me/api/portraits/men/85.jpg" } },
   // Anonymous → Olivia Bennett (initial-wave reveal #3)
-  { initials: "?",  name: "Anonymous visitor", org: "Seattle, WA",             page: "/location",           color: "#8d8d8d", resolved: false,
+  { initials: "?",  name: "Anonymous visitor", org: "Seattle, WA",             page: "/location",           color: "var(--color-muted-foreground)", resolved: false,
     revealsTo: { initials: "OB", name: "Olivia Bennett", org: "U Washington · parent",         color: "#4589ff", photo: "https://randomuser.me/api/portraits/women/12.jpg" } },
   // Anonymous → Jordan Wu   (initial-wave reveal #4)
-  { initials: "?",  name: "Anonymous visitor", org: "Bay Area · mobile",       page: "/floor-plans/1-bed",  color: "#8d8d8d", resolved: false,
+  { initials: "?",  name: "Anonymous visitor", org: "Bay Area · mobile",       page: "/floor-plans/1-bed",  color: "var(--color-muted-foreground)", resolved: false,
     revealsTo: { initials: "JW", name: "Jordan Wu",      org: "Stanford · transfer",          color: "#4589ff", photo: "https://randomuser.me/api/portraits/men/36.jpg" } },
   // Anonymous → Aisha Lin   (initial-wave reveal #5)
-  { initials: "?",  name: "Anonymous visitor", org: "campus IP",               page: "/amenities",          color: "#8d8d8d", resolved: false,
+  { initials: "?",  name: "Anonymous visitor", org: "campus IP",               page: "/amenities",          color: "var(--color-muted-foreground)", resolved: false,
     revealsTo: { initials: "AL", name: "Aisha Lin",      org: "campus transfer",              color: "#0f62fe", photo: "https://randomuser.me/api/portraits/women/79.jpg" } },
   // Identified row mixed in (rotation cycles bring more anonymous in via the loop)
   { initials: "DJ", name: "Derek Johansson",  org: "parent · Illinois",       page: "/parents",            color: "#4589ff", resolved: true,
     photo: "https://randomuser.me/api/portraits/men/52.jpg" },
   // Anonymous → Marisol Reyes  (rotation reveal)
-  { initials: "?",  name: "Anonymous visitor", org: "mobile · Bay Area",       page: "/floor-plans/2-bed",  color: "#8d8d8d", resolved: false,
+  { initials: "?",  name: "Anonymous visitor", org: "mobile · Bay Area",       page: "/floor-plans/2-bed",  color: "var(--color-muted-foreground)", resolved: false,
     revealsTo: { initials: "MR", name: "Marisol Reyes",  org: "rising sophomore",             color: "#0f62fe", photo: "https://randomuser.me/api/portraits/women/68.jpg" } },
   { initials: "TM", name: "Tomás Mendes",     org: "NYU · rising junior",     page: "/floor-plans/3-bed",  color: "#4589ff", resolved: true,
     photo: "https://randomuser.me/api/portraits/men/41.jpg" },
   // Anonymous → Sofia Petrova  (rotation reveal)
-  { initials: "?",  name: "Anonymous visitor", org: "Sacramento, CA",          page: "/parents-faq",        color: "#8d8d8d", resolved: false,
+  { initials: "?",  name: "Anonymous visitor", org: "Sacramento, CA",          page: "/parents-faq",        color: "var(--color-muted-foreground)", resolved: false,
     revealsTo: { initials: "SP", name: "Sofia Petrova",  org: "parent · California",          color: "#0f62fe", photo: "https://randomuser.me/api/portraits/women/45.jpg" } },
   { initials: "RK", name: "Ravi Krishnan",    org: "rising junior",           page: "/tour/schedule",      color: "#0f62fe", resolved: true,
     photo: "https://randomuser.me/api/portraits/men/29.jpg" },
@@ -66,7 +66,7 @@ const POOL: Omit<Visitor, "id" | "ago">[] = [
 
 const ACCENT = "#0f62fe";
 const INK = "#161616";
-const MUTED = "#8d8d8d";
+const MUTED = "var(--color-muted-foreground)";
 const BORDER = "#e0e0e0";
 const PARCHMENT = "#f4f4f4";
 
