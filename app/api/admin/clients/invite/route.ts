@@ -205,14 +205,18 @@ export async function POST(req: NextRequest) {
   // return an early 409 without opening a write path. An invite must NEVER
   // silently reassign a real user who already belongs to another workspace,
   // nor touch an agency user — that was an account-hijack vector (set their
-  // orgId/role to the inviter's org). Only a same-org re-invite (role/name
-  // change) or an unclaimed pending seed may be updated here; anything else
-  // needs an explicit transfer.
+  // orgId/role to the inviter's org). Only an unclaimed pending seed in the
+  // SAME org may be updated here (resend); anything else needs an explicit
+  // transfer.
   if (existing) {
     const isPendingSeed = existing.clerkUserId.startsWith("seed_pending_");
     const isAgencyUser =
       existing.role.startsWith("AGENCY_") || existing.role === "AL_PARTNER";
-    if (isAgencyUser || (existing.orgId !== org.id && !isPendingSeed)) {
+    // Any row in another org, claimed or still a pending seed, is a 409 for
+    // every caller: an invite never moves a user row across tenants. (Pending
+    // seeds used to be re-homed silently, which let one tenant take over
+    // another's outstanding invite.) Remove them from the other org first.
+    if (isAgencyUser || existing.orgId !== org.id) {
       return NextResponse.json(
         {
           error:

@@ -182,4 +182,27 @@ describe("invite route client escalation guards (F-001)", () => {
     expect(res.status).toBe(400);
     expect(mockPrisma.$transaction).not.toHaveBeenCalled();
   });
+
+  it.each([
+    ["client admin", UserRole.CLIENT_ADMIN, false],
+    ["agency admin", UserRole.AGENCY_ADMIN, true],
+  ] as const)(
+    "%s can't pull a pending seed out of another org (409, no write)",
+    async (_label, role, isAgency) => {
+      seedCaller(
+        role,
+        null,
+        {
+          id: "seed-other",
+          clerkUserId: "seed_pending_new@t.test",
+          orgId: "org-2",
+          role: UserRole.CLIENT_ADMIN,
+        },
+        isAgency,
+      );
+      const res = await POST(req({ role: "CLIENT_ADMIN" }));
+      expect(res.status).toBe(409);
+      expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+    },
+  );
 });
