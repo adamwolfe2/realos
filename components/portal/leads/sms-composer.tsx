@@ -98,6 +98,7 @@ export function LeadSmsComposer({ leadId, to, smsEnabled }: Props) {
                 type="button"
                 onClick={close}
                 disabled={pending}
+                aria-label="Close"
                 className="rounded-[2px] p-1 text-muted-foreground hover:bg-muted disabled:opacity-50"
               >
                 <X className="h-4 w-4" />
