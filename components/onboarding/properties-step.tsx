@@ -163,6 +163,7 @@ export function PropertiesStep({
               className={FIELD}
               style={fieldStyle}
               aria-label="Property name"
+              autoComplete="off"
               placeholder="Property name (e.g. The Lofts at Main)"
               value={row.name}
               onChange={(e) => update(i, { name: e.target.value })}
@@ -173,6 +174,7 @@ export function PropertiesStep({
                 className={FIELD}
                 style={fieldStyle}
                 aria-label="City"
+                autoComplete="address-level2"
                 placeholder="City (optional)"
                 value={row.city}
                 onChange={(e) => update(i, { city: e.target.value })}
@@ -182,6 +184,7 @@ export function PropertiesStep({
                 className={FIELD}
                 style={fieldStyle}
                 aria-label="State"
+                autoComplete="address-level1"
                 placeholder="State (optional)"
                 value={row.state}
                 onChange={(e) => update(i, { state: e.target.value })}
