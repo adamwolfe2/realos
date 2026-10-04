@@ -44,6 +44,12 @@ export const publicSignupLimiter = createLimiter(redis, 5, '1 h')
 // abuse / multi-domain scraping attempts.
 export const auditStartLimiter = createLimiter(redis, 5, '1 h')
 
+// 1 public /audit re-run per audit per hour (keyed by audit id). The rerun
+// route is gated only by the public share token, so without this anyone
+// holding a share link could re-fire the paid fan-out as soon as each run
+// finished. Per-IP pressure on the same route reuses auditStartLimiter.
+export const auditRerunLimiter = createLimiter(redis, 1, '1 h')
+
 // 3 drop notify blasts per userId per minute
 export const notifyLimiter = createLimiter(redis, 3, '1 m')
 

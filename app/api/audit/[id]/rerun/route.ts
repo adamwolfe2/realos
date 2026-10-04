@@ -4,6 +4,13 @@ import { prisma } from "@/lib/db";
 import { ProspectAuditStatus, Prisma } from "@prisma/client";
 import { isValidShareToken } from "@/lib/audit/token";
 import { getSiteUrl } from "@/lib/brand";
+import {
+  auditRerunLimiter,
+  auditStartLimiter,
+  checkRateLimit,
+  getIp,
+  rateLimited,
+} from "@/lib/rate-limit";
 
 // POST /api/audit/[id]/rerun
 // Public — gated by shareToken match, not Clerk. The viewer's empty-state
@@ -21,10 +28,25 @@ const BodySchema = z.object({
 
 const RERUN_GRACE_MS = 60_000;
 
+function retryAfterSec(reset: number): number {
+  return Math.max(1, Math.ceil((reset - Date.now()) / 1000));
+}
+
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function POST(req: NextRequest, ctx: RouteContext) {
   const { id: tokenFromPath } = await ctx.params;
+
+  // Per-IP cap (same budget as /audit/start, separate key so re-runs never
+  // eat into a prospect's start quota). Fails closed in prod like siblings.
+  const ipLimit = await checkRateLimit(auditStartLimiter, `rerun:${getIp(req)}`);
+  if (!ipLimit.allowed) {
+    const sec = retryAfterSec(ipLimit.reset);
+    return rateLimited(
+      "Too many re-run requests. Please try again later.",
+      sec,
+    );
+  }
 
   let body: unknown;
   try {
@@ -76,6 +98,19 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     audit.status === ProspectAuditStatus.RUNNING
   ) {
     return NextResponse.json({ ok: true, status: audit.status });
+  }
+
+  // Per-audit cooldown: at most one re-run per audit per hour. Keyed in
+  // Redis rather than on updatedAt because every viewer page load bumps
+  // updatedAt (view counter), which would block the button indefinitely.
+  const auditLimit = await checkRateLimit(auditRerunLimiter, audit.id);
+  if (!auditLimit.allowed) {
+    const sec = retryAfterSec(auditLimit.reset);
+    const minutes = Math.ceil(sec / 60);
+    return rateLimited(
+      `This scan was re-run recently. You can re-run it again in about ${minutes} minute${minutes === 1 ? "" : "s"}.`,
+      sec,
+    );
   }
 
   // Reset the synthesized payload. We keep brandName + email so the viewer
