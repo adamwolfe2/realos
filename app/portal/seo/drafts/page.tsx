@@ -270,7 +270,7 @@ export default async function PortalDraftsListPage({
       <DataTable<DraftRow>
         columns={columns}
         rows={drafts}
-        getRowHref={(d) => `/portal/seo/agent/drafts/${d.id}`}
+        getRowHref={(d) => `/portal/seo/agent/drafts/${d.id}?from=drafts`}
         density="compact"
         emptyState={
           <div className="rounded-[2px] border border-dashed border-border bg-card p-8 text-center">

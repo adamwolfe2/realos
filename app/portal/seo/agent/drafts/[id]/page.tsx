@@ -29,11 +29,15 @@ const STATUS_TONE: Record<string, string> = {
 
 export default async function PortalDraftViewer({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ from?: string }>;
 }) {
   const scope = await requireScope();
   const { id } = await params;
+  const { from } = await searchParams;
+  const fromDrafts = from === "drafts";
 
   const draft = await prisma.contentDraft.findFirst({
     where: { id, ...tenantWhere(scope) },
@@ -59,10 +63,10 @@ export default async function PortalDraftViewer({
     <div className="space-y-5 max-w-3xl">
       <div>
         <Link
-          href="/portal/seo/agent"
+          href={fromDrafts ? "/portal/seo/drafts" : "/portal/seo/agent"}
           className="text-[11px] text-muted-foreground hover:text-foreground"
         >
-          &larr; Back to SEO Agent
+          &larr; {fromDrafts ? "Back to Drafts" : "Back to SEO Agent"}
         </Link>
       </div>
 
