@@ -1,5 +1,6 @@
 "use client";
 
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -358,9 +359,9 @@ function RevealModal({
   return (
     <Modal onClose={onClose} width="md">
       <div className="px-6 py-5 border-b border-border">
-        <h2 className="text-base font-semibold text-foreground">
+        <DialogTitle className="text-base font-semibold text-foreground">
           {entry.name}
-        </h2>
+        </DialogTitle>
         {entry.platform || entry.property ? (
           <p className="mt-1 text-xs text-muted-foreground">
             {entry.platform ?? ""}
@@ -515,9 +516,9 @@ function EditorModal({
     <Modal onClose={onClose} width="lg">
       <form onSubmit={onSubmit}>
         <div className="px-6 py-5 border-b border-border">
-          <h2 className="text-base font-semibold text-foreground">
+          <DialogTitle className="text-base font-semibold text-foreground">
             {mode === "create" ? "New credential" : `Edit "${entry?.name}"`}
-          </h2>
+          </DialogTitle>
         </div>
 
         <div className="px-6 py-5 space-y-3">
@@ -705,9 +706,9 @@ function ImportModal({
     <Modal onClose={onClose} width="lg">
       <form onSubmit={onSubmit}>
         <div className="px-6 py-5 border-b border-border">
-          <h2 className="text-base font-semibold text-foreground">
+          <DialogTitle className="text-base font-semibold text-foreground">
             Import credentials from CSV
-          </h2>
+          </DialogTitle>
           <p className="mt-1 text-xs text-muted-foreground">
             Required columns: <code>name, password</code>. Optional:{" "}
             <code>url, username, notes, platform, property_slug</code>. First
@@ -864,27 +865,15 @@ function Modal({
   onClose: () => void;
   width?: "md" | "lg";
 }) {
-  React.useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
   const maxWidth = width === "lg" ? "max-w-2xl" : "max-w-md";
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      onClick={onClose}
-    >
-      <div
-        className={`relative w-full ${maxWidth} rounded-[2px] border border-border bg-card shadow-xl overflow-hidden`}
-        onClick={(e) => e.stopPropagation()}
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent
+        className={`${maxWidth} rounded-[2px] border border-border bg-card shadow-xl overflow-hidden`}
       >
         {children}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

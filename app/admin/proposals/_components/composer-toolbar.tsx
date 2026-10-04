@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  Dialog as UiDialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -303,18 +308,14 @@ function Dialog({
   onClose: () => void;
 }) {
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-card rounded-lg border border-border shadow-xl max-w-md w-full p-5"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 className="text-base font-semibold text-foreground mb-3">{title}</h3>
+    <UiDialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="bg-card rounded-lg border border-border shadow-xl max-w-md p-5">
+        <DialogTitle className="text-base font-semibold text-foreground mb-3">
+          {title}
+        </DialogTitle>
         {children}
-      </div>
-    </div>
+      </DialogContent>
+    </UiDialog>
   );
 }
 

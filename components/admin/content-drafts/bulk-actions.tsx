@@ -1,5 +1,6 @@
 "use client";
 
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -245,20 +246,21 @@ export function BulkActions({ drafts }: Props) {
       </ul>
 
       {/* Notes modal for reject + request_changes */}
-      {showNotesModal !== null ? (
-        <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowNotesModal(null);
-          }}
+      <Dialog
+        open={showNotesModal !== null}
+        onOpenChange={(o) => !o && setShowNotesModal(null)}
+      >
+        <DialogContent
+          overlayClassName="z-[80]"
+          className="z-[80] max-w-md rounded-2xl border border-border bg-card shadow-xl"
         >
-          <div className="w-full max-w-md rounded-2xl border border-border bg-card shadow-xl">
+          <div>
             <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
-              <h2 className="text-base font-semibold text-foreground">
+              <DialogTitle className="text-base font-semibold text-foreground">
                 {showNotesModal === "reject"
                   ? `Reject ${selected.size} draft${selected.size === 1 ? "" : "s"}`
                   : `Request changes on ${selected.size} draft${selected.size === 1 ? "" : "s"}`}
-              </h2>
+              </DialogTitle>
               <button
                 type="button"
                 onClick={() => setShowNotesModal(null)}
@@ -292,15 +294,15 @@ export function BulkActions({ drafts }: Props) {
               <button
                 type="button"
                 disabled={pending || notes.trim().length < 4}
-                onClick={() => call(showNotesModal, notes.trim())}
+                onClick={() => showNotesModal && call(showNotesModal, notes.trim())}
                 className="rounded-lg bg-foreground px-3 py-1.5 text-[12px] font-medium text-background hover:opacity-90 disabled:opacity-50"
               >
                 {pending ? "Working…" : "Confirm"}
               </button>
             </div>
           </div>
-        </div>
-      ) : null}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

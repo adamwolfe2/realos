@@ -1,5 +1,6 @@
 "use client";
 
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -303,24 +304,17 @@ export function ApprovalDetailClient({
       ) : null}
 
       {/* Deploy confirmation modal */}
-      {deployOpen ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          role="dialog"
-          aria-modal="true"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setDeployOpen(false);
-          }}
-        >
-          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-xl">
+      <Dialog open={deployOpen} onOpenChange={setDeployOpen}>
+        <DialogContent className="max-w-md rounded-2xl border border-border bg-card p-5 shadow-xl">
+          <div>
             <div className="flex items-start gap-3">
               <div className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-primary/10">
                 <CheckCircle2 className="h-5 w-5 text-primary" />
               </div>
               <div className="min-w-0 flex-1">
-                <h2 className="text-[15px] font-semibold text-foreground">
+                <DialogTitle className="text-[15px] font-semibold text-foreground">
                   Mark as deployed?
-                </h2>
+                </DialogTitle>
                 <p className="mt-1 text-[12.5px] text-muted-foreground">
                   Have you committed this to{" "}
                   <span className="font-mono text-foreground">
@@ -372,8 +366,8 @@ export function ApprovalDetailClient({
               </button>
             </div>
           </div>
-        </div>
-      ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
