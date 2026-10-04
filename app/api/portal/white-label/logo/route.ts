@@ -12,10 +12,11 @@ export const dynamic = "force-dynamic";
 //
 // Tenant-scoped logo upload for the white-label workspace add-on.
 // Multipart upload with a single `file` field. Validates:
-//   * image MIME (png / jpeg / svg+xml only — narrower than the chatbot
+//   * image MIME (png / jpeg only — narrower than the chatbot
 //     avatar route because the logo gets dropped into the portal chrome
 //     and outbound email bodies, where animated GIFs and webp aren't
-//     reliably rendered by every mail client)
+//     reliably rendered by every mail client). SVG is rejected: it's
+//     script-capable and would be served as-is from the public blob host.
 //   * 2MB max
 //   * org has whiteLabel === true (gates the upload to paying customers)
 //   * actor is a workspace admin (CLIENT_OWNER / CLIENT_ADMIN / AGENCY_*)
@@ -31,7 +32,6 @@ export const dynamic = "force-dynamic";
 const ALLOWED_LOGO_TYPES = new Set([
   "image/png",
   "image/jpeg",
-  "image/svg+xml",
 ]);
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024; // 2MB
@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
   }
   if (!ALLOWED_LOGO_TYPES.has(file.type)) {
     return NextResponse.json(
-      { error: "Unsupported logo type. Use PNG, JPEG, or SVG." },
+      { error: "Unsupported logo type. Use PNG or JPEG." },
       { status: 415 },
     );
   }
