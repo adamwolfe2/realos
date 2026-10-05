@@ -1,5 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { trackServer } from "@/lib/analytics-server";
+import { alertFunnelStep } from "@/lib/notifications/funnel-alert";
 import { OrgType, ProductLine, UserRole, TenantStatus } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
@@ -142,6 +144,13 @@ export async function provisionUserForClerk(args: {
       org: { select: { orgType: true, slug: true } },
     },
   });
+
+  // Self-serve signups land here, not in the Clerk organization.created
+  // webhook, so the funnel event and the ops alert fire from this spot.
+  if (created.orgId) {
+    await trackServer({ event: "signup", distinctId: created.orgId });
+    await alertFunnelStep({ orgId: created.orgId, step: "signup" });
+  }
 
   return {
     id: created.id,

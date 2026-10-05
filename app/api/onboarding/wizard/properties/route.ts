@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { trackServer } from "@/lib/analytics-server";
+import { alertFunnelStep } from "@/lib/notifications/funnel-alert";
 import { z } from "zod";
 import { auth } from "@clerk/nextjs/server";
 import {
@@ -261,12 +262,19 @@ export async function POST(req: NextRequest) {
     },
   });
   // Completing onboarding is terminal + always safe, regardless of plan state.
-  await prisma.organization.update({
-    where: { id: orgId },
+  // updateMany so the alert fires once: a resumed wizard re-posts this step.
+  const firstCompletion = await prisma.organization.updateMany({
+    where: {
+      id: orgId,
+      OR: [{ onboardingStep: null }, { onboardingStep: { not: "done" } }],
+    },
     data: { onboardingStep: "done" },
   });
 
   await trackServer({ event: "onboarding_completed", distinctId: orgId });
+  if (firstCompletion.count > 0) {
+    await alertFunnelStep({ orgId, step: "onboarding_completed" });
+  }
 
   return NextResponse.json({
     ok: true,
