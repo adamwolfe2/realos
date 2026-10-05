@@ -65,19 +65,22 @@ export function Hero() {
           </p>
 
           <div className="mt-8 flex flex-col items-stretch sm:flex-row sm:items-center justify-center gap-3">
-            <BookDemoLink
+            {/* Free audit leads (2026-10-05): it shows a prospect their own
+                property in under a minute, no call or signup. The trial
+                stays in the nav and the closing CTA. */}
+            <Link
+              href="/audit"
               className="btn-primary sm:w-auto"
+              style={{ display: "flex", justifyContent: "center" }}
+            >
+              Get a free property audit
+            </Link>
+            <BookDemoLink
+              className="btn-secondary sm:w-auto"
               style={{ display: "flex", justifyContent: "center" }}
             >
               Book a demo
             </BookDemoLink>
-            <Link
-              href="/sign-up"
-              className="btn-secondary sm:w-auto"
-              style={{ display: "flex", justifyContent: "center" }}
-            >
-              Start free trial
-            </Link>
           </div>
 
           {/* Proof strip removed per Adam 2026-07-23 (screenshot: "remove
