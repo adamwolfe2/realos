@@ -7,7 +7,8 @@ import { resolveCurrentStep } from "@/lib/onboarding/steps";
 import { OnboardingWizard } from "@/components/onboarding/wizard";
 import { PublicChatbotOnboarding } from "@/components/onboarding/public-chatbot-onboarding";
 import { getEffectiveFeatureCatalog } from "@/lib/billing/feature-prices";
-import { FEATURE_CATALOG } from "@/lib/billing/features";
+import { FEATURE_CATALOG, featureKeysForTier } from "@/lib/billing/features";
+import { parsePlanParam, tierForPlan } from "@/lib/onboarding/plan-param";
 import { canRunWizard } from "@/lib/onboarding/wizard-auth";
 import { WaitingForAdmin } from "@/components/onboarding/waiting-for-admin";
 import { UserRole } from "@prisma/client";
@@ -34,7 +35,11 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function OnboardingPage() {
+export default async function OnboardingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ plan?: string }>;
+}) {
   const { userId } = await auth();
   if (!userId) {
     return <PublicChatbotOnboarding />;
@@ -134,12 +139,19 @@ export default async function OnboardingPage() {
         (f) => orgRecord[f.key] === true && activeFeatureKeys.has(f.key as string),
       ).map((f) => f.key as string)
     : undefined;
+  // First visit from /pricing: open the cart on the plan they picked.
+  const plan = parsePlanParam((await searchParams).plan);
+  const planSelection = plan
+    ? featureKeysForTier(tierForPlan(plan)).filter((k) =>
+        activeFeatureKeys.has(k as string),
+      )
+    : undefined;
 
   return (
     <OnboardingWizard
       step={step}
       featureCatalog={featureCatalog}
-      savedFeatureSelection={savedFeatureSelection}
+      savedFeatureSelection={savedFeatureSelection ?? planSelection}
       org={{
         id: user.org.id,
         name: user.org.name,
