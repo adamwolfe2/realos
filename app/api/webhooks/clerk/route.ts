@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { trackServer } from "@/lib/analytics-server";
+import { alertFunnelStep } from "@/lib/notifications/funnel-alert";
 import { Webhook } from "svix";
 import { prisma } from "@/lib/db";
 import { OrgType, TenantStatus, UserRole } from "@prisma/client";
@@ -385,6 +386,7 @@ export async function POST(req: NextRequest) {
 
       console.info(`organization.created: provisioned org ${clerkOrgId} (${name})`);
       await trackServer({ event: "signup", distinctId: createdOrg.id });
+      await alertFunnelStep({ orgId: createdOrg.id, step: "signup" });
       break;
     }
 
