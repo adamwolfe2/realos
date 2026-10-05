@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { BRAND_NAME } from "@/lib/brand";
 import { PlatformShowcase } from "@/components/auth/platform-showcase";
 import { LeaseStackLogo } from "@/components/brand/leasestack-logo";
+import { parsePlanParam } from "@/lib/onboarding/plan-param";
 
 export const metadata: Metadata = {
   title: `Create account | ${BRAND_NAME}`,
@@ -25,7 +26,7 @@ function isLikelyEmail(v: string | undefined): boolean {
 export default async function SignUpPage({
   searchParams,
 }: {
-  searchParams: Promise<{ email?: string }>;
+  searchParams: Promise<{ email?: string; plan?: string }>;
 }) {
   // Pre-fill the email when invitees arrive via /sign-up?email=… (set by the
   // invite endpoint's fallback URL). Removes the "I have an invite but no
@@ -33,6 +34,7 @@ export default async function SignUpPage({
   // just pick a password and our /api/auth/role claims the pre-created
   // User row by email on first sign-in.
   const params = await searchParams;
+  const plan = parsePlanParam(params.plan);
   const prefillEmail = isLikelyEmail(params.email)
     ? params.email!.trim()
     : undefined;
@@ -99,7 +101,7 @@ export default async function SignUpPage({
               // at the bare-apex leasestack.co, which DNS-resolves to a
               // GoDaddy parking page — forcing the redirect routes her
               // through our app code instead.
-              forceRedirectUrl="/auth/redirect"
+              forceRedirectUrl={plan ? `/auth/redirect?plan=${plan}` : "/auth/redirect"}
               signInUrl="/sign-in"
               initialValues={
                 prefillEmail ? { emailAddress: prefillEmail } : undefined

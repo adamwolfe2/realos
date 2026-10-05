@@ -14,6 +14,7 @@
  */
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
+import { parsePlanParam } from "@/lib/onboarding/plan-param";
 
 type RoleResponse = {
   role: string | null;
@@ -119,7 +120,12 @@ export default function AuthRedirectPage() {
           // wizard (the portal layout would redirect there anyway since
           // onboardingStep !== "done"; going direct saves the extra
           // full-page hop). Returning users go straight to the dashboard.
-          window.location.assign(created ? "/onboarding" : "/portal");
+          const plan = parsePlanParam(
+            new URLSearchParams(window.location.search).get("plan"),
+          );
+          window.location.assign(
+            created ? (plan ? `/onboarding?plan=${plan}` : "/onboarding") : "/portal",
+          );
         } else {
           setError("no-role");
         }
