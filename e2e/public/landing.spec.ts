@@ -33,6 +33,11 @@ test.describe("Public marketing landing @critical", () => {
     await expect(bookDemo).toBeVisible();
     await expect(bookDemo).toHaveAttribute("href", /\/book-demo/);
 
+    // Hero leads with the free property audit (2026-10-05).
+    const audit = page.getByRole("link", { name: /free property audit/i }).first();
+    await expect(audit).toBeVisible();
+    await expect(audit).toHaveAttribute("href", "/audit");
+
     // Don't be strict about every sub-error; we just want the page to not
     // throw in pageerror. Hydration warnings can appear in dev.
     expect(
