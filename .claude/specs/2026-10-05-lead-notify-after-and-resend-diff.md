@@ -7,7 +7,7 @@ Shape: safe-feature-slice (invariants, failure modes, blast radius, tests, rollb
 
 - `notifyLeadCaptured` never throws: its body is a single try/catch that logs `[lead-notify] failed` (lib/notifications/lead-notify.ts:66-277). Every `.catch(...)` at the call sites is dead code. F-062 is only about **lifetime**: nothing keeps the lambda alive after the response.
 - `runAfter` (lib/after.ts) catches and `console.error`s, never throws, and does **not** report to Sentry (unlike `soft()`). When `after()` is available it returns at once. Outside a request scope (`after()` throws) it runs the work **inline and awaits it**.
-- Next's AfterContext handles `after()` called late. If the response is already closed it schedules the callback on the next tick under `waitUntil`, so a call inside streamText `onFinish` is safe. If ALS context is missing there, `after()` throws and runAfter falls back to inline, which is still awaited by `onFinish`. Either path completes before the lambda freezes.
+- `after()` after a streamed response closes is only **partly verified**. The Next 16.3.8 source (`npm pack next@16.3.8`, `dist/server/after/after-context.js:101-133`) shows that AfterContext queues late callbacks: when `isRequestClosed` it runs them after `scheduleImmediate`, and it registers `waitUntil(runCallbacksOnClosePromise)` on the first `after()` call. **Unverified:** whether the request ALS store is still bound inside the AI SDK's `onFinish`, and whether Vercel honours a `waitUntil` registered that late. So the streaming sites (4-6) don't rely on after(); see the Slice A diff sketch.
 - Precedent: `app/api/chat/route.ts:327-350` already **awaits** `notifyLeadCaptured` inside `onFinish` ("the lambda stays alive"). The public chatbot copy at `app/api/public/chatbot/chat/route.ts:547` is the odd one out.
 - Two capture sites the triage missed: `lib/webhooks/cursive-process.ts:580` (PIXEL channel, called from both cursive webhook routes) and the inner `void pushLeadToFunnel` at `lead-notify.ts:118`. The inner push stays fire-and-forget even inside after(), because the after callback resolves before it finishes. It's out of scope here (lead-notify internals), but it's the same bug class.
 - Sites at triage lines public/leads 256 and 287 and chatbot/chat 564 and 584 are **not** `notifyLeadCaptured`. They are the bell (`notifyLeadCreated` / `notifyChatbotLeadCaptured`), the Slack/tenant/auto-reply `Promise.allSettled` batch, and the prospect-profile email. Same bug, so this plan includes them.
@@ -18,8 +18,8 @@ Shape: safe-feature-slice (invariants, failure modes, blast radius, tests, rollb
 
 ### Invariants
 1. Lead creation never blocks on, or fails because of, a notification. The response status and body are unchanged.
-2. Every capture site's notify work is registered with `after()` (via `runAfter`), so Vercel keeps the lambda alive until it settles.
-3. Notify failures are still logged (runAfter's `[after:<label>]` plus lead-notify's own log). No `catch {}` is added.
+2. Every non-streaming capture site's notify work is registered with `after()` (via `runAfter`). The streaming chat sites (4-6) await it inline in `onFinish`, following the app/api/chat/route.ts:327-350 precedent. Either way the lambda stays alive until it settles.
+3. Notify failures are logged **and reported to Sentry**: runAfter's `[after:<label>]` log plus `captureWithContext`, and lead-notify's own log. This replaces the `soft()` signal at sites 1-2. No `catch {}` is added.
 4. Dedupe and gating stay byte-identical: `!existing`, `isNew`, `lead.notify`, `isRepeatInquiry`, and the `!conversation.leadId` guards. Only the wrapper changes.
 5. lead-notify.ts, AppFolio sync and `app/api/audit/start/route.ts:182` are untouched.
 
@@ -55,9 +55,23 @@ await runAfter("tours.notify", () => notifyLeadCaptured({ ...input }));
 ```
 - Use `await runAfter`. In a request it returns immediately. In the inline fallback (tests, scripts) the work finishes deterministically. This matches lib/audit/notify.ts:26 and lib/billing/go-live-trial.ts:149.
 - Site 3: `await runAfter("public.leads.side-effects", async () => { await Promise.allSettled([...]); });`
-- Sites 1, 2, 8, 10 drop the dead or swallowing `.catch`. Sentry reporting from `soft()` at sites 1 and 2 would be lost, so see Decision 1.
-- Sites 4-6 sit inside `persistConversation`, called from `onFinish`. Changing `void` to `await runAfter` adds at most one tick to stream close. No AI SDK or response change.
-- Optional one-liner (Decision 1): in lib/after.ts `safe()` catch, add `captureWithContext(err, { after: label })` so every runAfter failure reaches Sentry.
+- Sites 1, 2, 8, 10 drop the dead or swallowing `.catch`. Sentry coverage moves into runAfter (below).
+- **lib/after.ts (part of this slice):** in the `safe()` catch, add `captureWithContext(err, { after: label })` (import from `@/lib/sentry`) after the existing `console.error`. Every runAfter caller gains Sentry reporting. This changes behaviour for the existing callers (analytics, funnel-alert, audit notify, go-live): their failures now report too, which is intended.
+- **Sites 4-6 (streaming, inside `persistConversation` ← `onFinish`): no runAfter.** Follow the app/api/chat/route.ts:327-350 precedent and await inline:
+```ts
+const results = await Promise.allSettled([
+  notifyLeadCaptured({...}),                  // site 4
+  notifyChatbotLeadCaptured({...}),           // site 5
+  sendProspectProfileForConversation({ conversationId: conversation.id, force: true, reason: "auto-capture" }), // site 6
+]);
+for (const r of results) {
+  if (r.status === "rejected") {
+    console.error("[public/chatbot/chat] post-capture side effect failed:", r.reason);
+    captureWithContext(r.reason, { route: "public.chatbot.chat", step: "post-capture" });
+  }
+}
+```
+  Keep the `lead.notify` gate on sites 4-5 only (site 6 currently fires regardless), e.g. push 4-5 into the array conditionally. onFinish already awaits `persistConversation` inside a try/catch that logs, so stream close waits for these (the visitor already has the full text). The precedent comment states this keeps the lambda alive.
 
 ### Failure modes
 | Mode | Today | After |
@@ -65,16 +79,18 @@ await runAfter("tours.notify", () => notifyLeadCaptured({ ...input }));
 | Lambda freezes after response | Email or bell silently lost | after() keeps the invocation alive up to maxDuration |
 | Resend or DB down | Logged, response OK | Same. runAfter logs `[after:label]` and the response is unaffected |
 | after() unavailable (cron/script/test) | n/a | Runs inline and awaited, so the request is slower but correct |
+| Streaming sites 4-6 slow (Resend lag) | Lost if the lambda froze | Stream close is delayed by the notify time (text already delivered). Bounded by maxDuration=30s |
 | Notify slower than maxDuration (chat=30s) | Lost | Still cut off at maxDuration. lead-notify uses Resend SDK with no explicit timeout, which is acceptable |
 | Inner `void pushLeadToFunnel` (lead-notify.ts:118) | Can drop | **Can still drop**. Follow-up slice |
 | Double-send | Guarded by existing dedupe | Unchanged. The wrapper never retries |
 
 ### Blast radius
-16 call sites in 10 files, plus the optional 1 line in lib/after.ts. No schema, no env, no API contract change. Customer-visible effect: operators receive emails and bells that were being dropped. Watch for a rise in Resend volume, which is expected and equals the leads that were lost before.
+16 call sites in 10 files, plus 2 lines (import + capture) in lib/after.ts, which affect all runAfter callers. No schema, no env, no API contract change. Customer-visible effect: operators receive emails and bells that were being dropped. Watch for a rise in Resend volume, which is expected and equals the leads that were lost before.
 
 ### Tests
-- **New `__tests__/lead-notify-after.test.ts`**, mocking next/server `after` as in __tests__/analytics.test.ts:23. Mock `after` to capture the callback without running it. Call POST on `app/api/public/tours/route.ts` and `app/api/public/popup/lead/route.ts` with mocked prisma. Assert (a) the response is 201 before the callback runs, (b) `notifyLeadCaptured` has **not** been called yet, (c) after running the captured callback it was called once with the expected channel. Add one case where the notify mock rejects: the callback resolves and console.error contains `[after:tours.notify]`.
-- **Source guard in the same file:** read the 10 files and assert none match `/void\s+notifyLeadCaptured\(/`. This pins all sites cheaply.
+- **New `__tests__/lead-notify-after.test.ts`**, mocking next/server `after` as in __tests__/analytics.test.ts:23. Mock `after` to capture the callback without running it. Call POST on `app/api/public/tours/route.ts` and `app/api/public/popup/lead/route.ts` with mocked prisma. Pin the popup fixture to the net-new lead path (the only path returning 201; the soft-deny branches near lines 146/161/176 return 200). Assert (a) the response is 201 before the callback runs, (b) `notifyLeadCaptured` has **not** been called yet, (c) after running the captured callback it was called once with the expected channel. Add one case where the notify mock rejects: the callback resolves, console.error contains `[after:tours.notify]`, and the mocked `captureWithContext` is called once with `{ after: "tours.notify" }`.
+- **Source guard in the same file:** read all 10 files and assert none match `/void\s+(notify\w+|sendProspectProfileForConversation|Promise\.allSettled)\(/`. This pins every site and its side effects cheaply.
+- **Streaming sites:** in `__tests__/chatbot-spend-cap.test.ts` style (it already drives `publicChat` with mocks), add a case where the onFinish capture path runs. Assert `notifyLeadCaptured` and `sendProspectProfileForConversation` were awaited (called) before the POST stream finished, and that a rejection logs and calls `captureWithContext`.
 - Existing, must stay green unchanged: `__tests__/lead-notify-funnel.test.ts` (lead-notify internals untouched), `__tests__/public-leads-route.test.ts` (asserts notify call counts; the real `after` throws outside scope, so the inline fallback still calls the mock), `__tests__/chatbot-lead-error-parity.test.ts`, `__tests__/chatbot-spend-cap.test.ts`. The last mocks `notifyLeadCaptured: vi.fn()` returning `undefined`. Today `.catch` on undefined would throw, but after the change `await undefined` is fine, so it gets safer.
 - `__tests__/chatbot-capture-timing.test.ts`: no change (prompt-only).
 
@@ -110,7 +126,7 @@ diff: payload as unknown as Prisma.InputJsonValue,
 ```ts
 diff: { type, email_id: payload.data?.email_id ?? null },
 ```
-The `Prisma` import may become unused, so drop it if lint flags it. Optionally build the object once above the loop.
+Change line 4 to `import { AuditAction } from "@prisma/client";`: `Prisma` is only used at line 91, so it must be removed unconditionally. Optionally build the object once above the loop.
 
 ### Failure modes
 - Resend omits `email_id` → stored as `null`. Fine.
@@ -120,7 +136,7 @@ The `Prisma` import may become unused, so drop it if lint flags it. Optionally b
 ### Tests (`__tests__/resend-webhook-engagement.test.ts`, test-pinned)
 No existing assertion breaks: the file never inspects `diff`. Change: **add** assertions, weaken none.
 - In "writes one audit row per matching tenant lead" (line 100), also assert each call's `data.diff` `toEqual({ type: "email.clicked", email_id: <id> })`.
-- New case: payload with `subject`, `from` and a multi-address `to` → serialized `diff` contains none of the subject, the from address or the other recipient.
+- New case: payload with `subject`, `from` and a multi-address `to` → `diff` has **no `to` key** (`expect(diff).not.toHaveProperty("to")`), and `JSON.stringify(diff)` contains none of the subject, the from address or the other recipient.
 - `signed(type, to)` (line 28) only sends `{ type, data: { to } }`. Extend it with an optional `extra` data arg (`signed(type, to, { email_id, subject, from })`). That's a helper addition, not a weakening.
 - `__tests__/resend-webhook-signature.test.ts` is untouched and must pass as-is.
 
@@ -143,7 +159,6 @@ WHERE "entityType" = 'EmailEvent' AND diff ? 'data';
 Check the mapped table name in prisma/schema.prisma:2634 first, then run on a Neon branch, compare counts and promote. This is irreversible without the snapshot.
 
 ## Decisions for Adam
-1. **Sentry on runAfter failures:** add `captureWithContext` in lib/after.ts (1 line, all runAfter callers report) or keep per-site `soft()` (more verbose)? Default: add to runAfter.
-2. **Include site 16 (cursive pixel) and the non-email side effects (bell, Slack, prospect-profile) in Slice A?** Default: yes, same bug and same wrapper.
-3. **Backfill-scrub historical EmailEvent diffs?** Default: no, because nothing reads them. Revisit if an audit-log export ships.
-4. **Follow-up slice for `pushLeadToFunnel` inside lead-notify** (still fire-and-forget)? Default: yes, after A lands.
+1. **Include site 16 (cursive pixel) and the non-email side effects (bell, Slack, prospect-profile) in Slice A?** Default: yes, same bug and same wrapper.
+2. **Backfill-scrub historical EmailEvent diffs?** Default: no, because nothing reads them. Revisit if an audit-log export ships.
+3. **Follow-up slice for `pushLeadToFunnel` inside lead-notify** (still fire-and-forget)? Default: yes, after A lands.
