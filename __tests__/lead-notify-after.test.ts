@@ -123,6 +123,18 @@ describe("public tours route registers notify with after()", () => {
     });
   });
 
+  it("skips the operator email for an existing lead but still rings the tour bell", async () => {
+    h.findOldestLeadByEmail.mockResolvedValue({ id: "lead_1" });
+    h.prisma.lead.update.mockResolvedValue({ id: "lead_1" });
+
+    const res = await POST(tourRequest());
+    expect(res.status).toBe(201);
+    expect(callbacks).toHaveLength(1);
+    for (const cb of callbacks) await cb();
+    expect(h.notifyTourScheduled).toHaveBeenCalledTimes(1);
+    expect(h.notifyLeadCaptured).not.toHaveBeenCalled();
+  });
+
   it("logs and reports a notify failure without throwing", async () => {
     const err = new Error("resend down");
     h.notifyLeadCaptured.mockRejectedValue(err);

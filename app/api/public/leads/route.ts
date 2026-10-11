@@ -19,6 +19,7 @@ import { LeadNotifyChannel } from "@prisma/client";
 import { requireMatchingOrigin } from "@/lib/tenancy/origin-guard";
 import { getSiteUrl } from "@/lib/brand";
 import { runAfter } from "@/lib/after";
+import { captureWithContext } from "@/lib/sentry";
 import { findOldestLeadByEmail } from "@/lib/leads/find-by-email";
 
 const schema = z.object({
@@ -314,11 +315,12 @@ export async function POST(req: NextRequest) {
           })
         : Promise.resolve({ ok: false, error: "no primary contact email" }),
     ]);
-      for (const r of results) {
-        if (r.status === "rejected") {
-          console.warn("[public/leads] notification error:", r.reason);
-        }
+    for (const r of results) {
+      if (r.status === "rejected") {
+        console.error("[public/leads] notification error:", r.reason);
+        captureWithContext(r.reason, { after: "public.leads.side-effects" });
       }
+    }
   });
 
   return NextResponse.json({ ok: true }, { status: 201 });
