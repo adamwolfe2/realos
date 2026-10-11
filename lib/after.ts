@@ -1,4 +1,5 @@
 import { after } from "next/server";
+import { captureWithContext } from "@/lib/sentry";
 
 // Run best-effort side effects (analytics, internal alerts) after the response
 // is sent so they never block it. Outside a request scope (cron, scripts,
@@ -13,6 +14,7 @@ export async function runAfter(
       await fn();
     } catch (err) {
       console.error(`[after:${label}] failed:`, err);
+      captureWithContext(err, { after: label });
     }
   };
   try {

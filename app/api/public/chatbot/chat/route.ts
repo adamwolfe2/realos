@@ -41,6 +41,7 @@ import {
   MAX_CHAT_OUTPUT_TOKENS,
 } from "@/lib/chatbot/input-budget";
 import * as Sentry from "@sentry/nextjs";
+import { captureWithContext } from "@/lib/sentry";
 
 // POST /api/public/chatbot/chat
 //
@@ -531,61 +532,72 @@ async function persistConversation(args: {
       data: { leadId: lead.id },
     });
 
-    // Fire-and-forget notifications. PRE_CHAT flow already seeds a leadId
-    // on the conversation before the first message, so the guard above
+    // Post-capture notifications. PRE_CHAT flow already seeds a leadId on
+    // the conversation before the first message, so the guard above
     // (!conversation.leadId) ensures we don't double-send.
+    //
+    // Awaited inline (not after()): this runs inside the AI SDK onFinish,
+    // after the stream has closed, where a late after() is unverified on
+    // Vercel. onFinish awaits persistConversation, so the lambda stays alive
+    // until these settle; the visitor already has the full reply. Same
+    // pattern as app/api/chat/route.ts.
     //
     // Both surfaces matter: notifyLeadCaptured is the Resend email to the
     // operator's primary contact; notifyChatbotLeadCaptured is the in-app
-    // bell badge in /portal. Pre-fix this branch only sent email — the
-    // POST_CHAT bell notification was silently dropped (PRE_CHAT path in
-    // /api/public/chatbot/lead already sends both).
-    // Pre-chat twin (form captured this email minutes ago): it was
-    // notified then. Only the prospect-profile below carries the chat.
+    // bell badge in /portal. Pre-chat twin (form captured this email
+    // minutes ago, lead.notify false): it was notified then, so only the
+    // prospect-profile carries the chat.
+    //
+    // Adam 2026-06-03: when the bot auto-detects a lead mid-conversation,
+    // ALSO fire the rich prospect-profile digest email (same payload as
+    // handoff / idle). force=true overrides the 30-min debounce so a
+    // re-capture still produces a fresh send.
+    const sideEffects: Array<{ step: string; run: Promise<unknown> }> = [];
     if (lead.notify) {
-      void notifyLeadCaptured({
-        orgId: args.orgId,
-        leadId: lead.id,
-        propertyId: args.propertyId ?? null,
-        channel: LeadNotifyChannel.CHATBOT,
-        lead: {
-          name: [extracted.firstName, extracted.lastName]
-            .filter(Boolean)
-            .join(" ") || null,
-          email: extracted.email ?? null,
-          phone: extracted.phone ?? null,
-          sourceLabel: args.pageUrl ? `Chatbot on ${args.pageUrl}` : "Chatbot",
-        },
-        conversationId: conversation.id,
-      }).catch((err) => {
-        console.warn("[public/chatbot/chat] notify email error:", err);
+      sideEffects.push({
+        step: "notify-email",
+        run: notifyLeadCaptured({
+          orgId: args.orgId,
+          leadId: lead.id,
+          propertyId: args.propertyId ?? null,
+          channel: LeadNotifyChannel.CHATBOT,
+          lead: {
+            name: [extracted.firstName, extracted.lastName]
+              .filter(Boolean)
+              .join(" ") || null,
+            email: extracted.email ?? null,
+            phone: extracted.phone ?? null,
+            sourceLabel: args.pageUrl ? `Chatbot on ${args.pageUrl}` : "Chatbot",
+          },
+          conversationId: conversation.id,
+        }),
       });
-      void notifyChatbotLeadCaptured({
-        id: conversation.id,
-        orgId: args.orgId,
-        capturedName: extracted.name ?? null,
-        capturedEmail: extracted.email,
-        leadId: lead.id,
-      }).catch((err) => {
-        console.warn("[public/chatbot/chat] notify bell error:", err);
+      sideEffects.push({
+        step: "notify-bell",
+        run: notifyChatbotLeadCaptured({
+          id: conversation.id,
+          orgId: args.orgId,
+          capturedName: extracted.name ?? null,
+          capturedEmail: extracted.email,
+          leadId: lead.id,
+        }),
       });
     }
-
-    // Adam 2026-06-03: when the bot auto-detects a lead mid-conversation
-    // (regex finds email/phone), ALSO immediately fire the rich
-    // prospect-profile digest email — same payload Jessica gets at
-    // handoff / idle. The minimal notifyLeadCaptured email above is
-    // the "they just shared contact info" ping; this is the "here's
-    // the full conversation context they shared, here's the link to
-    // engage now" ping. Both fire so the operator can act fast.
-    // force=true overrides the 30-min debounce so a re-capture (e.g.
-    // operator restarts conversation) still produces a fresh send.
-    void sendProspectProfileForConversation({
-      conversationId: conversation.id,
-      force: true,
-      reason: "auto-capture",
-    }).catch((err) => {
-      console.warn("[public/chatbot/chat] prospect-profile error:", err);
+    sideEffects.push({
+      step: "prospect-profile",
+      run: sendProspectProfileForConversation({
+        conversationId: conversation.id,
+        force: true,
+        reason: "auto-capture",
+      }),
+    });
+    const results = await Promise.allSettled(sideEffects.map((e) => e.run));
+    results.forEach((r, i) => {
+      if (r.status === "rejected") {
+        const step = sideEffects[i].step;
+        console.error(`[public/chatbot/chat] post-capture ${step} failed:`, r.reason);
+        captureWithContext(r.reason, { route: "public.chatbot.chat", step });
+      }
     });
   }
 }

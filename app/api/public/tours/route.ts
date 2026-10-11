@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { runAfter } from "@/lib/after";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { findOldestLeadByEmail } from "@/lib/leads/find-by-email";
@@ -124,32 +125,36 @@ export async function POST(req: NextRequest) {
   });
 
   const leadName = [data.firstName, data.lastName].filter(Boolean).join(" ") || data.email;
-  void notifyTourScheduled({
-    id: tour.id,
-    leadId: lead.id,
-    orgId: data.orgId,
-    scheduledAt: tour.scheduledAt,
-    tourType: tour.tourType,
-    leadName,
-  }).catch(() => {});
+  await runAfter("tours.bell", () =>
+    notifyTourScheduled({
+      id: tour.id,
+      leadId: lead.id,
+      orgId: data.orgId,
+      scheduledAt: tour.scheduledAt,
+      tourType: tour.tourType,
+      leadName,
+    }),
+  );
 
   // Instant operator email — only fire for net-new leads. Repeat tours from a
   // known lead surface in the tour notification above; double-pinging would
   // train the operator to ignore the channel.
   if (!existing) {
-    void notifyLeadCaptured({
-      orgId: data.orgId,
-      leadId: lead.id,
-      propertyId: data.propertyId,
-      channel: LeadNotifyChannel.TOUR,
-      lead: {
-        name: leadName,
-        email: data.email,
-        phone: data.phone ?? null,
-        sourceLabel: `Tour request (${tour.tourType})`,
-        intent: data.notes ?? null,
-      },
-    }).catch(() => {});
+    await runAfter("tours.notify", () =>
+      notifyLeadCaptured({
+        orgId: data.orgId,
+        leadId: lead.id,
+        propertyId: data.propertyId,
+        channel: LeadNotifyChannel.TOUR,
+        lead: {
+          name: leadName,
+          email: data.email,
+          phone: data.phone ?? null,
+          sourceLabel: `Tour request (${tour.tourType})`,
+          intent: data.notes ?? null,
+        },
+      }),
+    );
   }
 
   return NextResponse.json(

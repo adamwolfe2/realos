@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { runAfter } from "@/lib/after";
 import { liveFeaturesPaused } from "@/lib/billing/trial-status";
 import { z } from "zod";
 import crypto from "crypto";
@@ -253,29 +254,31 @@ export async function POST(req: NextRequest) {
     // sessionId — the lead-notify CTA links to
     // /portal/conversations/{id} which requires the DB id. Previously
     // this was the sessionId, producing a 404 link for the operator.
-    void notifyLeadCaptured({
-      orgId,
-      leadId,
-      propertyId,
-      channel: LeadNotifyChannel.CHATBOT,
-      lead: {
-        name: last ? `${first} ${last}` : first,
-        email,
-        phone: phone ?? null,
-        sourceLabel: pageUrl ? `Chatbot pre-chat on ${pageUrl}` : "Chatbot pre-chat",
-      },
-      conversationId: createdConversation.id,
-    }).catch((err) => {
-      console.warn("[public/chatbot/lead] notify error:", err);
-    });
+    await runAfter("chatbot.lead.notify", () =>
+      notifyLeadCaptured({
+        orgId,
+        leadId,
+        propertyId,
+        channel: LeadNotifyChannel.CHATBOT,
+        lead: {
+          name: last ? `${first} ${last}` : first,
+          email,
+          phone: phone ?? null,
+          sourceLabel: pageUrl ? `Chatbot pre-chat on ${pageUrl}` : "Chatbot pre-chat",
+        },
+        conversationId: createdConversation.id,
+      }),
+    );
 
-    void notifyChatbotLeadCaptured({
-      id: sessionId,
-      orgId,
-      capturedName: last ? `${first} ${last}` : first,
-      capturedEmail: email,
-      leadId,
-    }).catch(() => {});
+    await runAfter("chatbot.lead.bell", () =>
+      notifyChatbotLeadCaptured({
+        id: sessionId,
+        orgId,
+        capturedName: last ? `${first} ${last}` : first,
+        capturedEmail: email,
+        leadId,
+      }),
+    );
 
     return NextResponse.json(
       { sessionId, leadId },
