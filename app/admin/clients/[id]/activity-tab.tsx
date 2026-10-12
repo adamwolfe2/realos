@@ -19,7 +19,6 @@ type DedupedRow = AuditRow & { count: number };
 // → "App Folio Integration") for anything not explicitly mapped.
 const ENTITY_LABEL: Record<string, string> = {
   AppFolioIntegration: "AppFolio sync",
-  CursiveIntegration: "Cursive pixel",
   Organization: "Client profile",
   Domain: "Domain",
   User: "Team member",
@@ -66,7 +65,7 @@ function dedupeAudits(events: AuditRow[]): DedupedRow[] {
 // This turns "Changed a setting · AppFolio sync" into "AppFolio sync
 // completed" / "…completed with warnings" / "…failed" — whichever actually
 // happened. Anything that doesn't match one of these templates (a genuine
-// settings edit, or the Cursive resync line, which already reads fine) falls
+// settings edit) falls
 // through untouched.
 type SyncTone = "warning" | "danger" | null;
 

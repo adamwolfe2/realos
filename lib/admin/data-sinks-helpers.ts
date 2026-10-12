@@ -30,7 +30,6 @@ export {
   aggregateAppFolio,
   aggregateSeo,
   aggregateAds,
-  aggregateCursive,
   countDistinctOrgs,
   EMPTY_AGG,
 } from "./data-sinks-aggregators";
@@ -239,7 +238,6 @@ export function buildSummaries(input: {
   gsc: IntegrationAggregate;
   googleAds: IntegrationAggregate;
   metaAds: IntegrationAggregate;
-  cursive: IntegrationAggregate;
   reputationTenants: number | null;
   aeoTenants: number | null;
   siteIntelTenants: number | null;
@@ -255,7 +253,6 @@ export function buildSummaries(input: {
     "gsc",
     "google_ads",
     "meta_ads",
-    "cursive_pixel",
     "reputation",
     "aeo",
     "dataforseo",
@@ -268,7 +265,6 @@ export function buildSummaries(input: {
     gsc: input.gsc,
     google_ads: input.googleAds,
     meta_ads: input.metaAds,
-    cursive_pixel: input.cursive,
     reputation: null,
     aeo: null,
     dataforseo: null,
@@ -281,7 +277,6 @@ export function buildSummaries(input: {
     gsc: input.gsc.tenantsCovered,
     google_ads: input.googleAds.tenantsCovered,
     meta_ads: input.metaAds.tenantsCovered,
-    cursive_pixel: input.cursive.tenantsCovered,
     reputation: input.reputationTenants,
     aeo: input.aeoTenants,
     dataforseo: null,

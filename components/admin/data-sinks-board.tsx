@@ -7,7 +7,6 @@ import {
   Globe,
   Brain,
   Star,
-  Radio,
   Crosshair,
 } from "lucide-react";
 import type { ComponentType } from "react";
@@ -52,7 +51,6 @@ const ICON_BY_PROVIDER: Record<
   dataforseo: Globe,
   aeo: Brain,
   reputation: Star,
-  cursive_pixel: Radio,
   site_intelligence: Crosshair,
 };
 

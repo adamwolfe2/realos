@@ -110,7 +110,7 @@ export function SettingsPanels({
             onPatch({ scopeNarrative: e.target.value || null })
           }
           rows={8}
-          placeholder={`We'll build and launch a per-property marketing surface — hosted property pages, the AI Leasing Chatbot trained on your unit data, and the Cursive visitor pixel for identity resolution. Includes weekly performance reviews and a dedicated Slack channel for the first 60 days.`}
+          placeholder={`We'll build and launch a per-property marketing surface — hosted property pages, the AI Leasing Chatbot trained on your unit data, and lead capture. Includes weekly performance reviews and a dedicated Slack channel for the first 60 days.`}
           className="w-full rounded-card border border-border bg-card px-3 py-2 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary/30 font-sans"
         />
       </SectionCard>

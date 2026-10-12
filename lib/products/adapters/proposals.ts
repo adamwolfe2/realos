@@ -27,7 +27,6 @@ const LEGACY_MODULE_KEYS_BY_SLUG: Readonly<
   "addon-audience-sync": ["moduleGoogleAds", "moduleMetaAds"],
   "addon-outbound-email-engine": ["moduleOutboundEmail"],
   "addon-chatbot-pro": ["moduleChatbot", "moduleConversations"],
-  "addon-cursive-pixel-pro": ["modulePixel"],
   "addon-insights-pro": ["moduleInsights"],
   "setup-aeo-status-report": ["moduleSEO", "moduleMarketIntelligence"],
   "addon-email-overage": ["moduleEmail", "moduleOutboundEmail"],

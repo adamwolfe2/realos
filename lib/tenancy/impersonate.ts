@@ -1,7 +1,7 @@
 import "server-only";
 import { clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
-import { AuditAction, OrgType, ProductLine } from "@prisma/client";
+import { AuditAction, OrgType } from "@prisma/client";
 import {
   requireScope,
   auditPayload,
@@ -9,11 +9,10 @@ import {
   type ScopedContext,
 } from "./scope";
 
-// Agency staff impersonate any CLIENT org; AL_PARTNER (not agency) may only
-// impersonate AUDIENCE_SYNC orgs, enforced on the target in startImpersonation.
+// Only agency staff may impersonate a CLIENT org.
 async function requireImpersonator(): Promise<ScopedContext> {
   const scope = await requireScope();
-  if (!scope.isAgency && !scope.isAlPartner) {
+  if (!scope.isAgency) {
     throw new ForbiddenError("Agency access only");
   }
   return scope;
@@ -37,14 +36,11 @@ export async function startImpersonation(targetOrgId: string): Promise<{
   const scope = await requireImpersonator();
   const target = await prisma.organization.findUnique({
     where: { id: targetOrgId },
-    select: { id: true, name: true, orgType: true, slug: true, productLine: true },
+    select: { id: true, name: true, orgType: true, slug: true },
   });
   if (!target) throw new Error("Impersonation target not found");
   if (target.orgType !== OrgType.CLIENT) {
     throw new Error("Cannot impersonate a non-CLIENT organization");
-  }
-  if (!scope.isAgency && target.productLine !== ProductLine.AUDIENCE_SYNC) {
-    throw new ForbiddenError("Partners can only open Audience Sync workspaces");
   }
 
   // SECURITY: bind impersonation to the CURRENT Clerk session id. Without

@@ -23,8 +23,6 @@ const LEGACY_ROUTES = [
   "/admin/creative-requests",
   "/admin/content-drafts",
   "/admin/campaigns",
-  "/admin/pixel-requests",
-  "/admin/pixel",
   "/admin/tenants",
   "/admin/site-intelligence",
   "/admin/integrations/appfolio",
@@ -89,10 +87,9 @@ describe("admin navigation model", () => {
       activeBuilds: 3,
       openCreative: 4,
       pendingContentDrafts: 5,
-      pendingPixelRequests: 6,
     };
 
     expect(pipeline && navEntryBadgeCount(pipeline, badges)).toBe(5);
-    expect(clientWork && navEntryBadgeCount(clientWork, badges)).toBe(15);
+    expect(clientWork && navEntryBadgeCount(clientWork, badges)).toBe(9);
   });
 });

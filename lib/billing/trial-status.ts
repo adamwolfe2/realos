@@ -154,8 +154,7 @@ export function computeGoLiveTrialEnd(input: {
 }
 
 // Soft landing (plans/go-live-trial slice 4): an expired trial with no card
-// pauses only the live, outward-facing features (public chatbot + pixel
-// identity ingestion). Dashboard and lead history stay readable. A
+// pauses only the live, outward-facing features (public chatbot). Dashboard and lead history stay readable. A
 // card-on-file trial past its end is waiting on Stripe's first invoice and
 // keeps running.
 export function liveFeaturesPaused(

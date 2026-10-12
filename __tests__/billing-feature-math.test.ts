@@ -20,10 +20,10 @@ describe("billing — à-la-carte cart total", () => {
 
   it("total = base + the sum of selected feature prices", () => {
     const chatbot = FEATURE_CATALOG.find((f) => f.key === "moduleChatbot")!;
-    const pixel = FEATURE_CATALOG.find((f) => f.key === "modulePixel")!;
+    const seo = FEATURE_CATALOG.find((f) => f.key === "moduleSEO")!;
     expect(
-      cartMonthlyCentsPerProperty(["moduleChatbot", "modulePixel"]),
-    ).toBe(BASE_PLATFORM_CENTS + chatbot.monthlyCents + pixel.monthlyCents);
+      cartMonthlyCentsPerProperty(["moduleChatbot", "moduleSEO"]),
+    ).toBe(BASE_PLATFORM_CENTS + chatbot.monthlyCents + seo.monthlyCents);
   });
 
   it("ignores unknown keys (a crafted/stale key can't inflate the total)", () => {

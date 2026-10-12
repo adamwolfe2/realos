@@ -40,7 +40,6 @@ describe("product truth — current billing feature contract", () => {
   it("preserves the stable à-la-carte module keys", () => {
     expect(FEATURE_CATALOG.map(({ key }) => key)).toEqual([
       "moduleChatbot",
-      "modulePixel",
       "moduleSEO",
       "moduleReputation",
       "moduleGoogleAds",
@@ -57,7 +56,7 @@ describe("product truth — current billing feature contract", () => {
   });
 
   it("calculates the cart as base plus each recognized selection once", () => {
-    const selected = ["moduleChatbot", "modulePixel", "moduleChatbot"];
+    const selected = ["moduleChatbot", "moduleSEO", "moduleChatbot"];
     const selectedKeys = new Set(selected);
     const selectedFeatureTotal = FEATURE_CATALOG.filter(({ key }) =>
       selectedKeys.has(key),
@@ -148,11 +147,9 @@ describe("product truth — legacy tier and Stripe contract", () => {
       moduleWebsite: true,
       moduleChatbot: true,
       moduleLeadCapture: true,
-      modulePixel: false,
     });
     expect(growth).toMatchObject({
       ...starter,
-      modulePixel: true,
       moduleGoogleAds: true,
       moduleMetaAds: true,
       moduleSEO: true,

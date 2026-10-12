@@ -15,14 +15,14 @@ function renderNavigation(
 
 describe("AdminNavList", () => {
   it("renders disclosure semantics and expands the active section", () => {
-    const html = renderNavigation("/admin/pixel-requests", {
-      pendingPixelRequests: 4,
+    const html = renderNavigation("/admin/creative-requests", {
+      openCreative: 4,
       openBugReports: 77,
     });
 
     expect(html).toContain("Client work");
     expect(html).toContain('aria-expanded="true"');
-    expect(html).toContain('href="/admin/pixel-requests"');
+    expect(html).toContain('href="/admin/creative-requests"');
     expect(html).toContain('aria-current="page"');
     expect(html).not.toContain('href="/admin/bug-reports"');
   });

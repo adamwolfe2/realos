@@ -47,7 +47,7 @@ export type BillingGateResult =
 export type BillingGateOptions = {
   /**
    * Only agency staff impersonating a client bypass the gate (support can
-   * debug AI during dunning). AL_PARTNER impersonation does not. Pass the
+   * debug AI during dunning). Pass the
    * scope itself so both flags travel together.
    */
   isImpersonating?: boolean;

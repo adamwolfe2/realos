@@ -18,7 +18,6 @@ const PRODUCT_KEY_BY_SLUG: Readonly<Record<string, string>> = Object.freeze({
 const LEGACY_MODULE_KEY_BY_SLUG: Readonly<
   Partial<Record<string, LegacyModuleKey>>
 > = Object.freeze({
-  "visitor-pixel": "modulePixel",
   "lead-capture": "moduleLeadCapture",
   "ai-chatbot": "moduleChatbot",
   "embeddable-popups": "modulePopups",

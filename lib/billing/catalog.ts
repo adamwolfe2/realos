@@ -4,8 +4,7 @@
 //
 // MODEL: self-serve SaaS, per property, per month. Pay through Stripe
 // Checkout, get a LeaseStack workspace with the matching tier's features
-// gated on. Customer connects their own AppFolio, installs their own
-// pixel, builds their own site through the in-product builder. No setup
+// gated on. Customer connects their own AppFolio, builds their own site through the in-product builder. No setup
 // fees, no managed agency labor, no done-for-you services. Add-ons are
 // platform capability flips or metered usage, nothing requiring our team.
 //
@@ -32,7 +31,6 @@ import type { SubscriptionTier } from "@prisma/client";
 // `module*` columns. Webhook applies these on `customer.subscription.updated`.
 export type ModuleFlags = {
   moduleWebsite: boolean;
-  modulePixel: boolean;
   moduleChatbot: boolean;
   moduleGoogleAds: boolean;
   moduleMetaAds: boolean;
@@ -48,7 +46,6 @@ export type ModuleFlags = {
 // metered usage prices.
 export type TierLimits = {
   chatbotConversationsPerMonth: number | "unlimited";
-  pixelVisitorsPerMonth: number | "unlimited";
   outboundEmailSendsPerMonth: number;
 };
 
@@ -189,11 +186,9 @@ export function effectivePerPropertyCents(
 }
 
 // Module sets per tier. Foundation gets the baseline; Growth adds
-// pixel + paid + SEO + creative library; Scale adds outbound +
-// referrals + audience sync.
+// paid + SEO + creative library; Scale adds outbound + referrals.
 const FOUNDATION_MODULES: ModuleFlags = {
   moduleWebsite: true,
-  modulePixel: false,
   moduleChatbot: true,
   moduleGoogleAds: false,
   moduleMetaAds: false,
@@ -207,7 +202,6 @@ const FOUNDATION_MODULES: ModuleFlags = {
 
 const GROWTH_MODULES: ModuleFlags = {
   ...FOUNDATION_MODULES,
-  modulePixel: true,
   moduleGoogleAds: true,
   moduleMetaAds: true,
   moduleSEO: true,
@@ -240,7 +234,6 @@ export const TIERS: TierDefinition[] = [
     modules: FOUNDATION_MODULES,
     limits: {
       chatbotConversationsPerMonth: 1000,
-      pixelVisitorsPerMonth: 0,
       outboundEmailSendsPerMonth: 0,
     },
   },
@@ -250,7 +243,7 @@ export const TIERS: TierDefinition[] = [
     productLookupKey: "ls_growth_product",
     productName: "LeaseStack Growth",
     productDescription:
-      "Everything in Foundation, plus Cursive visitor pixel (5,000 identified visitors per month), Google and Meta ads campaign builder, SEO module with GSC and GA4 integration, multi-touch attribution, creative library and brand kit.",
+      "Everything in Foundation, plus Google and Meta ads campaign builder, SEO module with GSC and GA4 integration, multi-touch attribution, creative library and brand kit.",
     monthly: { lookupKey: "ls_growth_monthly_v1", unitAmountCents: 89900 },
     annual: { lookupKey: "ls_growth_annual_v1", unitAmountCents: 74900 },
     graduatedMonthly: { lookupKey: "ls_growth_graduated_monthly_v1" },
@@ -258,7 +251,6 @@ export const TIERS: TierDefinition[] = [
     modules: GROWTH_MODULES,
     limits: {
       chatbotConversationsPerMonth: 5000,
-      pixelVisitorsPerMonth: 5000,
       outboundEmailSendsPerMonth: 0,
     },
   },
@@ -268,7 +260,7 @@ export const TIERS: TierDefinition[] = [
     productLookupKey: "ls_scale_product",
     productName: "LeaseStack Scale",
     productDescription:
-      "Everything in Growth, plus 25,000 identified visitors per month, audience builder with sync to Meta, Google and TikTok, outbound email campaigns (3,000 sends per month), resident referral program, scheduled custom reports, unlimited chatbot conversations.",
+      "Everything in Growth, plus outbound email campaigns (3,000 sends per month), resident referral program, scheduled custom reports, unlimited chatbot conversations.",
     monthly: { lookupKey: "ls_scale_monthly_v1", unitAmountCents: 149900 },
     annual: { lookupKey: "ls_scale_annual_v1", unitAmountCents: 124900 },
     graduatedMonthly: { lookupKey: "ls_scale_graduated_monthly_v1" },
@@ -276,7 +268,6 @@ export const TIERS: TierDefinition[] = [
     modules: SCALE_MODULES,
     limits: {
       chatbotConversationsPerMonth: "unlimited",
-      pixelVisitorsPerMonth: 25000,
       outboundEmailSendsPerMonth: 3000,
     },
   },
@@ -288,7 +279,7 @@ export const TIERS: TierDefinition[] = [
 // Self-serve only. Each one is either:
 //   * A capability flip (Reputation Pro, White-label) billed monthly,
 //     activated automatically when the subscription item lands
-//   * Metered usage above the plan caps (pixel overage, email overage)
+//   * Metered usage above the plan caps (email overage)
 //     billed in arrears against actual usage reported by a Stripe
 //     Billing Meter
 //
@@ -327,7 +318,7 @@ export type AddOnDefinition = {
 //
 //   Standard build  ($2,500)
 //       Single property, ~10 pages, AppFolio listings integration,
-//       chatbot + pixel install, mobile responsive, custom domain
+//       chatbot install, mobile responsive, custom domain
 //       setup. Delivered in 2 to 3 weeks.
 //
 //   Premium build   ($4,500)
@@ -371,7 +362,7 @@ export const WEBSITE_BUILDS: WebsiteBuildDefinition[] = [
     productLookupKey: "ls_website_build_standard",
     productName: "LeaseStack Website Build — Standard",
     productDescription:
-      "Single-property custom marketing site. Up to 10 pages, AppFolio listings integration, chatbot and pixel install, custom domain setup, mobile responsive. Includes one round of revisions.",
+      "Single-property custom marketing site. Up to 10 pages, AppFolio listings integration, chatbot install, custom domain setup, mobile responsive. Includes one round of revisions.",
     priceLookupKey: "ls_website_build_standard_v1",
     unitAmountCents: 250000,
     uiLabel: "Standard build",
@@ -379,7 +370,7 @@ export const WEBSITE_BUILDS: WebsiteBuildDefinition[] = [
     bullets: [
       "One property, up to 10 pages",
       "Live AppFolio listings integration",
-      "Chatbot and visitor pixel installed",
+      "Chatbot installed",
       "Mobile responsive, accessible",
       "Custom domain and SSL setup",
       "One revision round",
@@ -448,19 +439,6 @@ export const ADDONS: AddOnDefinition[] = [
   },
 
   // Metered usage above the tier caps
-  {
-    productLookupKey: "ls_addon_pixel_overage",
-    productName: "Pixel visitor overage",
-    productDescription:
-      "Additional identified visitors above your tier cap. Charged per identified visitor in arrears at the end of each billing cycle. Capped at 100x your tier cap as a safety stop.",
-    priceLookupKey: "ls_pixel_overage_per_visitor_v1",
-    unitAmountCents: 5,
-    billingMode: "metered",
-    meteredUnit: "visitor",
-    meterEventName: "leasestack.pixel_visitor_overage",
-    meterDisplayName: "Pixel visitor overage",
-    uiLabel: "Pixel visitor overage",
-  },
   {
     productLookupKey: "ls_addon_email_overage",
     productName: "Outbound email overage",

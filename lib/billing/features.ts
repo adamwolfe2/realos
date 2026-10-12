@@ -33,7 +33,6 @@ export const BASE_PLATFORM_CENTS = 9900;
 
 export type FeatureKey =
   | "moduleChatbot"
-  | "modulePixel"
   | "moduleSEO"
   | "moduleReputation"
   | "moduleGoogleAds"
@@ -68,15 +67,6 @@ export const FEATURE_CATALOG: FeatureDef[] = [
     icon: "Bot",
     monthlyCents: 14900,
     tier: "STARTER",
-    recommended: true,
-  },
-  {
-    key: "modulePixel",
-    name: "Visitor Pixel",
-    copy: "Identify anonymous site visitors — name, email, intent. One per property.",
-    icon: "Eye",
-    monthlyCents: 19900,
-    tier: "GROWTH",
     recommended: true,
   },
   {

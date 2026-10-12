@@ -23,7 +23,6 @@ export type SinkProvider =
   | "dataforseo"
   | "aeo"
   | "reputation"
-  | "cursive_pixel"
   | "site_intelligence";
 
 export type SinkStatus = "fresh" | "stale" | "erroring" | "dead" | "missing";
@@ -57,7 +56,6 @@ export const CRON_BY_PROVIDER: Record<SinkProvider, string | null> = {
   dataforseo: "dataforseo-sync",
   aeo: "aeo-scan",
   reputation: "reputation-scan",
-  cursive_pixel: "pixel-segment-sync",
   site_intelligence: "site-intelligence-refresh",
 };
 
@@ -70,7 +68,6 @@ export const LABEL_BY_PROVIDER: Record<SinkProvider, string> = {
   dataforseo: "DataForSEO",
   aeo: "AEO brand-mention scan",
   reputation: "Reputation (Reddit/Yelp/Google)",
-  cursive_pixel: "Cursive visitor pixel",
   site_intelligence: "Site intelligence (Firecrawl)",
 };
 
@@ -83,7 +80,6 @@ const FALLBACK_INTERVAL_MS: Record<SinkProvider, number> = {
   dataforseo: DAY,
   aeo: 7 * DAY,
   reputation: DAY,
-  cursive_pixel: 2 * 60 * 1000,
   site_intelligence: DAY,
 };
 
@@ -95,7 +91,6 @@ const FRESHNESS_KEY_BY_PROVIDER: Partial<
   gsc: "gsc",
   google_ads: "google_ads",
   meta_ads: "meta_ads",
-  cursive_pixel: "cursive_pixel",
   reputation: "reputation",
 };
 

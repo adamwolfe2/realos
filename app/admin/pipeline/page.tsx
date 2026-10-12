@@ -251,7 +251,6 @@ function toItem(o: Organization): TenantPipelineItem {
 function countActiveModules(o: Organization): number {
   return [
     o.moduleWebsite,
-    o.modulePixel,
     o.moduleChatbot,
     o.moduleGoogleAds,
     o.moduleMetaAds,

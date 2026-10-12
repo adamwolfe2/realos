@@ -115,7 +115,6 @@ const REQUIRED_ENVS = [
 
 const OPTIONAL_ENVS = [
   "CURSIVE_API_KEY",
-  "CURSIVE_WEBHOOK_SECRET",
   "RESEND_API_KEY",
   "STRIPE_SECRET_KEY",
   "VERCEL_API_TOKEN",
@@ -225,17 +224,6 @@ export async function checkAnthropic(): Promise<CheckResult> {
     "https://api.anthropic.com/v1/models",
     { method: "GET", headers },
     "anthropic"
-  );
-}
-
-export async function checkCursive(): Promise<CheckResult> {
-  // Cursive does not publish a documented /health endpoint. We
-  // hit the API root which 404s with a JSON envelope when reachable. Any
-  // non-5xx is healthy here.
-  return pingUrl(
-    "https://api.audiencelab.io/",
-    { method: "GET" },
-    "cursive"
   );
 }
 
@@ -418,7 +406,6 @@ export async function getRecentCronRuns(limit = 50): Promise<CronRunSummary[]> {
 export interface PlatformPulse {
   activeTenants: number;
   leadsLast24h: number;
-  visitorsLast24h: number;
   chatbotConversationsLast24h: number;
   webhookEventsLast24h: number;
 }
@@ -428,7 +415,6 @@ export async function getPlatformPulse(): Promise<PlatformPulse> {
   const [
     activeTenants,
     leadsLast24h,
-    visitorsLast24h,
     chatbotConversationsLast24h,
     webhookEventsLast24h,
   ] = await Promise.all([
@@ -441,9 +427,6 @@ export async function getPlatformPulse(): Promise<PlatformPulse> {
       })
       .catch(() => 0),
     prisma.lead.count({ where: { createdAt: { gte: since } } }).catch(() => 0),
-    prisma.visitor
-      .count({ where: { createdAt: { gte: since } } })
-      .catch(() => 0),
     prisma.chatbotConversation
       .count({ where: { createdAt: { gte: since } } })
       .catch(() => 0),
@@ -455,7 +438,6 @@ export async function getPlatformPulse(): Promise<PlatformPulse> {
   return {
     activeTenants,
     leadsLast24h,
-    visitorsLast24h,
     chatbotConversationsLast24h,
     webhookEventsLast24h,
   };
@@ -475,7 +457,6 @@ export interface SystemHealth {
     env: CheckResult;
     clerk: CheckResult;
     anthropic: CheckResult;
-    cursive: CheckResult;
     stripe: CheckResult;
     resend: CheckResult;
     // 2026-05-30: extended check roster to cover every external API
@@ -502,12 +483,11 @@ function rollUp(checks: Record<string, CheckResult>): HealthStatus {
 
 export async function runSystemHealth(): Promise<SystemHealth> {
   const started = Date.now();
-  const [database, clerk, anthropic, cursive, stripe, resend, openai, perplexity, gemini, dataforseo, tavily] =
+  const [database, clerk, anthropic, stripe, resend, openai, perplexity, gemini, dataforseo, tavily] =
     await Promise.all([
       checkDatabase(),
       checkClerk(),
       checkAnthropic(),
-      checkCursive(),
       checkStripe(),
       checkResend(),
       checkOpenAI(),
@@ -517,7 +497,7 @@ export async function runSystemHealth(): Promise<SystemHealth> {
       checkTavily(),
     ]);
   const env = checkEnv();
-  const checks = { database, env, clerk, anthropic, cursive, stripe, resend, openai, perplexity, gemini, dataforseo, tavily };
+  const checks = { database, env, clerk, anthropic, stripe, resend, openai, perplexity, gemini, dataforseo, tavily };
   return {
     status: rollUp(checks),
     timestamp: new Date().toISOString(),
@@ -533,7 +513,6 @@ export async function runSystemHealthDeep(): Promise<SystemHealthDeep> {
     database,
     clerk,
     anthropic,
-    cursive,
     stripe,
     resend,
     openai,
@@ -547,7 +526,6 @@ export async function runSystemHealthDeep(): Promise<SystemHealthDeep> {
     checkDatabaseDeep(),
     checkClerk(),
     checkAnthropic(),
-    checkCursive(),
     checkStripe(),
     checkResend(),
     checkOpenAI(),
@@ -564,7 +542,6 @@ export async function runSystemHealthDeep(): Promise<SystemHealthDeep> {
     env,
     clerk,
     anthropic,
-    cursive,
     stripe,
     resend,
     openai,

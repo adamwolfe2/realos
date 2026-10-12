@@ -38,7 +38,6 @@ function property(id: string, overrides: Record<string, unknown> = {}) {
     notifyLeadEmailOverride: null,
     chatbotConfig: null,
     chatbotConversations: [],
-    cursiveIntegrations: [],
     seoIntegrations: [],
     seoSnapshots: [],
     leads: [],
@@ -251,7 +250,6 @@ describe("loadClientActivation", () => {
               {
                 orgId: "client-1",
                 propertyId: "property-ready",
-                visitorId: null,
                 convertedAt: null,
                 createdAt: FRESH,
               },
@@ -264,7 +262,6 @@ describe("loadClientActivation", () => {
               {
                 orgId: "client-1",
                 propertyId: "property-stale",
-                visitorId: null,
                 convertedAt: null,
                 createdAt: FRESH,
               },
@@ -320,7 +317,6 @@ describe("loadClientActivation", () => {
               {
                 orgId: "client-1",
                 propertyId: "property-1",
-                visitorId: null,
                 convertedAt: null,
                 createdAt: FRESH,
               },
