@@ -34,6 +34,7 @@ import {
   Sparkles,
   Search as SearchIcon,
   Globe,
+  Radio,
 } from "lucide-react";
 
 export const metadata: Metadata = { title: "System health" };
@@ -125,6 +126,7 @@ export default async function SystemHealthPage() {
     { key: "stripe",     label: "Stripe",          icon: CreditCard, check: health.checks.stripe },
     { key: "resend",     label: "Resend",          icon: Mail,       check: health.checks.resend },
     { key: "anthropic",  label: "Anthropic Claude", icon: Brain,     check: health.checks.anthropic },
+    { key: "cursive",    label: "Cursive (marketplace)", icon: Radio, check: health.checks.cursive },
     { key: "openai",     label: "OpenAI",          icon: Bot,        check: health.checks.openai },
     { key: "perplexity", label: "Perplexity",      icon: SearchIcon, check: health.checks.perplexity },
     { key: "gemini",     label: "Google Gemini",   icon: Sparkles,   check: health.checks.gemini },

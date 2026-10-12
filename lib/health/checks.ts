@@ -233,7 +233,7 @@ export async function checkCursive(): Promise<CheckResult> {
   // hit the API root which 404s with a JSON envelope when reachable. Any
   // non-5xx is healthy here.
   return pingUrl(
-    "https://api.audiencelab.io/",
+    `${process.env.CURSIVE_API_URL ?? "https://api.audiencelab.io"}/`,
     { method: "GET" },
     "cursive"
   );
