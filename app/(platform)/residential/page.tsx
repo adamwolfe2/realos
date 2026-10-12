@@ -35,14 +35,6 @@ const CARDS = [
     tag: "Live",
     accent: "#0f62fe",
   },
-  {
-    href: "/audiences",
-    title: "SFR and build-to-rent",
-    body:
-      "Same data engine, scaled to single-asset operators and BTR portfolios.",
-    tag: "Same engine",
-    accent: "#0f62fe",
-  },
 ];
 
 export default function ResidentialHub() {
@@ -80,7 +72,7 @@ export default function ResidentialHub() {
             </div>
           </Reveal>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {CARDS.map((c, i) => (
               <Reveal key={c.href} delay={i * 80}>
                 <Link

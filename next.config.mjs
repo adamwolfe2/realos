@@ -70,11 +70,24 @@ const nextConfig = {
       "/drops/:slug*",
       "/partner",
     ];
-    return legacyPages.map((source) => ({
-      source,
-      destination: "/",
-      permanent: false,
-    }));
+    // Retired visitor pixel + Audience Sync surfaces (2026-10-11).
+    const retiredPixelPages = [
+      { source: "/features/pixel", destination: "/features" },
+      { source: "/audiences", destination: "/" },
+      { source: "/lost-leads", destination: "/audit" },
+      { source: "/portal/visitors/:path*", destination: "/portal/leads" },
+      { source: "/portal/audiences/:path*", destination: "/portal" },
+      { source: "/admin/pixel", destination: "/admin" },
+      { source: "/admin/pixel-requests", destination: "/admin" },
+    ];
+    return [
+      ...legacyPages.map((source) => ({
+        source,
+        destination: "/",
+        permanent: false,
+      })),
+      ...retiredPixelPages.map((r) => ({ ...r, permanent: true })),
+    ];
   },
   async headers() {
     return [
