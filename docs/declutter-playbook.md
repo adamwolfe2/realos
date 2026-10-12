@@ -100,7 +100,7 @@ When a page has primary KPIs + secondary cross-product metrics, render the secon
 ### Shape
 
 ```tsx
-{(kpiVisitors28d || kpiChatbot28d || kpiPopupConv28d || kpiApplications28d) > 0 ? (
+{(kpiChatbot28d || kpiPopupConv28d || kpiApplications28d) > 0 ? (
   <p
     aria-label="Cross-product signals (28d)"
     className="flex items-center gap-x-4 gap-y-1 flex-wrap text-[12px] text-muted-foreground"
@@ -108,13 +108,13 @@ When a page has primary KPIs + secondary cross-product metrics, render the secon
     <span className="text-[10px] uppercase tracking-[0.14em] font-semibold text-foreground/60">
       Also touched · 28d
     </span>
-    {kpiVisitors28d > 0 ? (
-      <Link href="/portal/visitors" className="inline-flex items-center gap-1 hover:text-foreground">
-        <Eye className="h-3 w-3" aria-hidden="true" />
+    {kpiChatbot28d > 0 ? (
+      <Link href="/portal/conversations" className="inline-flex items-center gap-1 hover:text-foreground">
+        <MessageSquare className="h-3 w-3" aria-hidden="true" />
         <span className="font-semibold tabular-nums text-foreground">
-          {kpiVisitors28d.toLocaleString()}
+          {kpiChatbot28d.toLocaleString()}
         </span>{" "}
-        tracked visitors
+        chatbot convos
       </Link>
     ) : null}
     {/* … */}
@@ -128,7 +128,7 @@ When a page already has a 4-tile primary KPI row, and a designer is tempted to a
 
 ### Shipped on
 
-`/portal/leads` (replaced "Tracked visitors / Chatbot convos / Popup conversions / Applications" tile row with the inline link strip).
+`/portal/leads` (replaced "Chatbot convos / Popup conversions / Applications" tile row with the inline link strip).
 
 ---
 

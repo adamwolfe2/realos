@@ -9,10 +9,10 @@ cadence and cost profile.
 
 | Mechanism | When it fires | Cost | Used for |
 |---|---|---|---|
-| **Webhooks (push)** | The moment an event occurs upstream | Free (one fn invocation per event) | Cursive pixel events, Stripe, Clerk, Resend bounces |
+| **Webhooks (push)** | The moment an event occurs upstream | Free (one fn invocation per event) | Stripe, Clerk, Resend bounces |
 | **Vercel cron (pull)** | Fixed schedule | Free on Pro plan; bounded by `maxDuration` | AppFolio, Google Ads, Meta Ads, GA4, GSC, reputation scans |
 | **Stale-on-load (pull)** | When an operator opens a stale page | One fn invocation per stale page-load, deduped per tab | Same set as cron; backfills the gap between cron ticks |
-| **Client auto-refresh** | Every 15–45 s while a tab is open | DB read only (no integration API call) | Visitor feed (15s), dashboard (45s) |
+| **Client auto-refresh** | Every 15–45 s while a tab is open | DB read only (no integration API call) | Dashboard (45s) |
 
 ## Hard rules (NO MORE FAKE DATA)
 
@@ -45,7 +45,6 @@ Defined in `lib/sync/freshness.ts` → `FRESHNESS_BUDGET`.
 | Meta Ads | 30 m | 6 h | every 30 m |
 | GA4 | 6 h | 2 d | every 6 h |
 | GSC | 1 d | 3 d | every 6 h (shared with GA4 cron) |
-| Cursive pixel | 24 h *for the staleness banner only*; events themselves arrive in real time via webhook | 7 d | n/a (webhook-driven) |
 | Reputation | 24 h | 7 d | daily |
 
 If you tighten a freshness budget below the cron cadence, the page will
@@ -57,8 +56,7 @@ busy ones. Default to `cron cadence × 2` when in doubt.
 **Vercel functions on the Pro plan** (Adam's current account):
 
 - Cron jobs are free up to 100 jobs/day per project. We use 18 cron
-  paths; even the 30-min-cadence ones (ads-sync, lead-score-refresh,
-  visitor-outreach) total well under that ceiling.
+  paths; even the 30-min-cadence ones (ads-sync, lead-score-refresh) total well under that ceiling.
 - On-demand (HTTP) function invocations: 1 M / month included.
 
 **Per-tenant per-day estimate:**
@@ -71,10 +69,9 @@ busy ones. Default to `cron cadence × 2` when in doubt.
 | Cron reputation (1×/day) | 1 |
 | Stale-on-load AppFolio (1 active operator, 5 stale page-opens/day, deduped) | 5 |
 | Auto-refresh (operator with dashboard open 30 min × 45s) | 40 (DB-only, no integration call) |
-| Pixel webhook events | 100–10,000 depending on traffic |
 
 For a 10-tenant account: ~120 cron invocations/hour at peak, well under
-the Vercel limit. Pixel events dominate volume but each costs <50ms.
+the Vercel limit. Webhook events are cheap (<50ms each).
 
 ## On-demand sync — implementation
 
@@ -88,7 +85,7 @@ Components live under `components/portal/sync/`:
 
 - `<AutoRefresh intervalMs />` — invisible client component that calls
   `router.refresh()` on a fixed interval. Use 15s for high-velocity
-  pages (visitors), 30–45s for dashboards.
+  pages, 30–45s for dashboards.
 
 API endpoints:
 
@@ -111,9 +108,6 @@ To wire up a new integration:
 
 Already wired and working in production:
 
-- `POST /api/webhooks/cursive` and `/api/webhooks/cursive/[token]` —
-  pixel events stream in here from the upstream pixel provider/Cursive in real time.
-  No polling needed — the visitor feed sees them within seconds.
 - `POST /api/webhooks/stripe` — billing events.
 - `POST /api/webhooks/clerk` — user lifecycle.
 - `POST /api/webhooks/resend` — bounce / complaint tracking.

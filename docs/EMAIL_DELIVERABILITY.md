@@ -107,7 +107,7 @@ If the invite still goes to spam after the above, send Norman a Slack message:
 
 - `lib/email/shared.ts` — `sendBrandedEmail()` helper (centralized), `buildBaseHtml()` with `<title>` + preheader + sentence-case CTA support, `escapeHtml()`
 - `lib/email/onboarding-emails.ts` — invite email rewritten with subject "Your {Org} portal access is ready", preheader, sentence-case CTA "Set your password"
-- `lib/email/lead-emails.ts`, `lib/email/visitor-emails.ts`, `lib/email/pixel-emails.ts`, `lib/email/lead-sequences.ts`, `lib/email/review-request.ts`, `lib/email/send-report.ts` — all updated with deliverability headers + tags
+- `lib/email/lead-emails.ts`, `lib/email/lead-sequences.ts`, `lib/email/review-request.ts`, `lib/email/send-report.ts` — all updated with deliverability headers + tags
 
 ## Quick deliverability audit
 

@@ -1,6 +1,6 @@
 /**
  * Creates a DRAFT proposal in prod that serves as the "Hosted marketing
- * site + Pixel + Chatbot launch in 6 weeks" template — fully populated
+ * site + Chatbot launch in 6 weeks" template — fully populated
  * scope narrative + 4-phase timeline + line items. Open the resulting
  * /admin/proposals/<id> URL to clone, customize, and send.
  *
@@ -21,11 +21,11 @@ import { computeSubtotalsCents } from "../lib/proposals/totals";
 
 const TEMPLATE_PROSPECT_EMAIL = "template+onboarding@leasestack.co";
 
-const SCOPE_NARRATIVE = `We'll launch your property's full marketing surface in six weeks: a hosted, per-property landing site optimized for AI search and lead capture, the AI Leasing Chatbot trained on your unit data, and the Cursive visitor identification pixel for anonymous visitor-to-lead resolution.
+const SCOPE_NARRATIVE = `We'll launch your property's full marketing surface in six weeks: a hosted, per-property landing site optimized for AI search and lead capture, and the AI Leasing Chatbot trained on your unit data.
 
 **Week 1 — Kickoff & data plumbing.** We connect your PMS (AppFolio, Yardi, Buildium, Entrata, RealPage, MRI, ResMan, Propertyware, or Rent Manager), Google Search Console, Google Analytics 4, and your ad accounts in one onboarding call.
 
-**Weeks 2–4 — Build & content.** We design and ship the hosted marketing site under your domain (yourproperty.com), train the Leasing Chatbot on your floor plans + pricing + amenities, install the Cursive pixel for visitor identification, and seed your AEO + SEO content with the prompts your prospects actually search.
+**Weeks 2–4 — Build & content.** We design and ship the hosted marketing site under your domain (yourproperty.com), train the Leasing Chatbot on your floor plans + pricing + amenities, and seed your AEO + SEO content with the prompts your prospects actually search.
 
 **Week 5 — Launch & ad activation.** We go live on the production domain, activate Google Ads + Meta Ads with the managed setup, and configure lead routing to your team's Slack/email.
 
@@ -52,7 +52,6 @@ const TIMELINE = [
     deliverables: [
       "Hosted property site live on staging URL",
       "AI Leasing Chatbot trained on floor plans + pricing + amenities",
-      "Cursive visitor identification pixel installed",
       "Initial AEO + SEO content seeded (10+ pages of structured copy)",
       "Per-neighborhood landing pages (3 priority neighborhoods)",
     ],
@@ -91,7 +90,6 @@ const TIMELINE = [
         in: [
           "tier-growth",
           "addon-aeo-boost",
-          "addon-cursive-pixel-pro",
           "addon-chatbot-pro",
         ],
       },
@@ -112,7 +110,6 @@ const TIMELINE = [
 
   const tierGrowth = catalog.find((c) => c.slug === "tier-growth");
   const aeoBoost = catalog.find((c) => c.slug === "addon-aeo-boost");
-  const pixelPro = catalog.find((c) => c.slug === "addon-cursive-pixel-pro");
   const chatbotPro = catalog.find((c) => c.slug === "addon-chatbot-pro");
 
   // Upsert prospect: idempotent on email.
@@ -129,7 +126,6 @@ const TIMELINE = [
     await populateProposal(existing.id, {
       tierGrowth,
       aeoBoost,
-      pixelPro,
       chatbotPro,
     });
     console.log(`Open: /admin/proposals/${existing.id}`);
@@ -142,14 +138,14 @@ const TIMELINE = [
     data: {
       number,
       status: ProposalStatus.DRAFT,
-      prospectName: "[ TEMPLATE — Hosted Site + Pixel + Chatbot in 6 weeks ]",
+      prospectName: "[ TEMPLATE — Hosted Site + Chatbot in 6 weeks ]",
       prospectEmail: TEMPLATE_PROSPECT_EMAIL,
       prospectCompany: "Sample Client Co.",
       cadence: ProposalCadence.MONTHLY,
       trialDays: 14,
       currency: "usd",
       publicMessage:
-        "Tailored for properties looking to launch a complete digital marketing surface in 6 weeks. Includes hosted site, AI leasing chatbot, visitor pixel, and managed Google + Meta ads. See the scope and timeline below — every phase has concrete deliverables you can hold us to.",
+        "Tailored for properties looking to launch a complete digital marketing surface in 6 weeks. Includes hosted site, AI leasing chatbot, and managed Google + Meta ads. See the scope and timeline below — every phase has concrete deliverables you can hold us to.",
     },
     select: { id: true, number: true },
   });
@@ -157,7 +153,6 @@ const TIMELINE = [
   await populateProposal(created.id, {
     tierGrowth,
     aeoBoost,
-    pixelPro,
     chatbotPro,
   });
   console.log(`\nOpen: /admin/proposals/${created.id}`);
@@ -180,7 +175,6 @@ async function populateProposal(
   cat: {
     tierGrowth: CatalogItem | undefined;
     aeoBoost: CatalogItem | undefined;
-    pixelPro: CatalogItem | undefined;
     chatbotPro: CatalogItem | undefined;
   },
 ): Promise<void> {
@@ -213,7 +207,7 @@ async function populateProposal(
       catalogItemId: null,
       label: "Growth tier",
       description:
-        "Hosted property site + Leasing Chatbot + Cursive visitor pixel + AEO/SEO module + weekly performance reports.",
+        "Hosted property site + Leasing Chatbot + AEO/SEO module + weekly performance reports.",
       unitPriceCents: 99900,
       quantity: 1,
       recurring: true,
@@ -232,18 +226,6 @@ async function populateProposal(
       sortOrder: 1,
     });
   }
-  if (cat.pixelPro) {
-    lines.push({
-      kind: ProposalLineKind.ADDON,
-      catalogItemId: cat.pixelPro.id,
-      label: cat.pixelPro.label,
-      description: cat.pixelPro.description,
-      unitPriceCents: cat.pixelPro.defaultPriceCents,
-      quantity: 1,
-      recurring: true,
-      sortOrder: 2,
-    });
-  }
   if (cat.chatbotPro) {
     lines.push({
       kind: ProposalLineKind.ADDON,
@@ -253,7 +235,7 @@ async function populateProposal(
       unitPriceCents: cat.chatbotPro.defaultPriceCents,
       quantity: 1,
       recurring: true,
-      sortOrder: 3,
+      sortOrder: 2,
     });
   }
 

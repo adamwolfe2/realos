@@ -18,7 +18,7 @@ const INFO = (s: string) => console.log(`  · ${s}`);
   console.log(`=== DEMO READINESS: ${org.name} ===\n`);
 
   // ---- Feature #1 ----
-  console.log(`Feature #1: SEARCH RANKINGS & VISITOR SOURCES`);
+  console.log(`Feature #1: SEARCH RANKINGS`);
   const queriesTotal = await prisma.seoQuery.count({ where: { orgId: org.id } });
   const queriesRecent = await prisma.seoQuery.count({ where: { orgId: org.id, date: { gte: new Date(Date.now()-7*24*3600*1000) } } });
   const distinctQ = await prisma.seoQuery.findMany({ where: { orgId: org.id, date: { gte: new Date(Date.now()-30*24*3600*1000) } }, distinct: ['query'], select: { query: true } });
@@ -35,15 +35,6 @@ const INFO = (s: string) => console.log(`  · ${s}`);
   const bySent = await prisma.propertyMention.groupBy({ by: ['sentiment'], where: { orgId: org.id }, _count: { _all: true } });
   PASS(`${mentions} mentions across ${bySource.length} platforms (${bySource.map(s => `${s.source}=${s._count._all}`).join(', ')})`);
   PASS(`Sentiment classified: ${bySent.map(s => `${s.sentiment ?? 'NULL'}=${s._count._all}`).join(', ')}`);
-
-  // ---- Feature #3 ----
-  console.log(`\nFeature #3: VISITOR CONTACT TRACING`);
-  const visTotal = await prisma.visitor.count({ where: { orgId: org.id } });
-  const visIdent = await prisma.visitor.count({ where: { orgId: org.id, status: 'IDENTIFIED' } });
-  const visWithEmail = await prisma.visitor.count({ where: { orgId: org.id, email: { not: null } } });
-  PASS(`${visIdent} IDENTIFIED visitors out of ${visTotal} total, ${visWithEmail} with email`);
-  const cursive = await prisma.cursiveIntegration.findFirst({ where: { orgId: org.id } });
-  PASS(`Pixel ${cursive?.cursivePixelId} on ${cursive?.installedOnDomain} — last event ${cursive?.lastEventAt?.toISOString().slice(0,16)} (${cursive?.totalEventsCount} events)`);
 
   // ---- Feature #4 ----
   console.log(`\nFeature #4: AI CHATBOT`);
@@ -78,7 +69,6 @@ const INFO = (s: string) => console.log(`  · ${s}`);
   const tours = await prisma.tour.count({ where: { orgId: org.id } });
   const apps = await prisma.application.count({ where: { orgId: org.id } });
   INFO(`Leads: ${leads} (3 from chatbot, 1 from form). Tours: ${tours}. Apps: ${apps}`);
-  INFO(`KEY DEMO POINT: 146 IDENTIFIED visitors visible on /portal/visitors are essentially zero-touch leads — Norman should treat that page as his lead list`);
 
   await prisma.$disconnect();
 })();

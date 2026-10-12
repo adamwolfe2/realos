@@ -2,14 +2,13 @@
  * scripts/seed-telegraph-commons-showcase.ts
  *
  * Companion to scripts/seed-telegraph-commons.ts. The original seed lays
- * down the foundation (domain, listings, leads, visitors, chatbot,
+ * down the foundation (domain, listings, leads, chatbot,
  * tours, creative). This script extends Telegraph Commons into a fully
  * populated SHOWCASE so Norman can walk prospects through every page
  * and see polished data instead of empty states.
  *
  * Adds:
  *   - Residents + Leases + WorkOrders     (Operations pages)
- *   - VisitorSession + VisitorEvent       (Visitor detail surfaces)
  *   - AdAccount + AdCampaign + 28d AdMetricDaily (Ads + Attribution)
  *   - SeoIntegration + 28d SeoSnapshot + SeoQuery + SeoLandingPage
  *   - ReputationScan + PropertyMention    (Reputation page)
@@ -354,87 +353,6 @@ async function main() {
       },
     });
     workOrdersCreated++;
-  }
-
-  // ---------------------------------------------------------------------------
-  // 4. VisitorSessions + VisitorEvents — give the existing visitors real
-  //    pageview history so the visitor detail drawer and the dashboard
-  //    "recent identified visitors" surface have something to render.
-  // ---------------------------------------------------------------------------
-
-  const visitors = await prisma.visitor.findMany({
-    where: { orgId },
-    take: 10,
-    orderBy: { lastSeenAt: "desc" },
-  });
-
-  let sessionsCreated = 0;
-  for (let i = 0; i < visitors.length; i++) {
-    const v = visitors[i];
-    const existing = await prisma.visitorSession.findFirst({
-      where: { orgId, visitorId: v.id },
-    });
-    if (existing) continue;
-
-    const startedAt = daysAgo(i + 1, Math.floor(Math.random() * 8));
-    const session = await prisma.visitorSession.create({
-      data: {
-        orgId,
-        visitorId: v.id,
-        anonymousId: `anon-${v.id.slice(0, 12)}`,
-        sessionToken: `tok-${v.id}-${i}`,
-        deviceHash: sha256(`${v.id}-${i}-ua`),
-        firstUrl: "https://telegraphcommons.com/",
-        firstReferrer:
-          i % 3 === 0
-            ? "https://www.google.com/"
-            : i % 3 === 1
-              ? "https://www.instagram.com/"
-              : "direct",
-        utmSource: v.utmSource ?? (i % 2 === 0 ? "google" : "instagram"),
-        utmMedium: v.utmMedium ?? (i % 2 === 0 ? "cpc" : "social"),
-        utmCampaign: v.utmCampaign ?? "fall-fill",
-        userAgent:
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15",
-        country: "US",
-        language: "en-US",
-        pageviewCount: 4 + (i % 5),
-        totalTimeSeconds: 60 + i * 17,
-        maxScrollDepth: Math.min(100, 35 + i * 8),
-        startedAt,
-        lastEventAt: new Date(startedAt.getTime() + (60 + i * 17) * 1000),
-      },
-    });
-
-    // Synthesize 4-7 pageview events per session in chronological order.
-    const eventCount = 4 + (i % 4);
-    const PAGES = [
-      { url: "https://telegraphcommons.com/", title: "Telegraph Commons — Berkeley Student Housing" },
-      { url: "https://telegraphcommons.com/floor-plans/", title: "Floor Plans" },
-      { url: "https://telegraphcommons.com/amenities/", title: "Amenities" },
-      { url: "https://telegraphcommons.com/availabilities/", title: "Current Availabilities" },
-      { url: "https://telegraphcommons.com/tour/", title: "Schedule a Tour" },
-      { url: "https://telegraphcommons.com/contact/", title: "Contact" },
-    ];
-    for (let j = 0; j < eventCount; j++) {
-      const page = PAGES[j % PAGES.length];
-      await prisma.visitorEvent.create({
-        data: {
-          orgId,
-          sessionId: session.id,
-          visitorId: v.id,
-          type: "pageview",
-          url: page.url,
-          path: new URL(page.url).pathname,
-          title: page.title,
-          referrer: j === 0 ? session.firstReferrer : page.url,
-          scrollDepth: Math.min(100, 25 + j * 18),
-          timeOnPageSeconds: 22 + j * 9,
-          occurredAt: new Date(startedAt.getTime() + j * 25 * 1000),
-        },
-      });
-    }
-    sessionsCreated++;
   }
 
   // ---------------------------------------------------------------------------
@@ -962,17 +880,6 @@ async function main() {
       daysAgo: 3,
     },
     {
-      kind: "hot_visitor",
-      severity: "warning",
-      category: "leads",
-      title: "Identified visitor returned for the 4th time",
-      body: "Maya Patel (maya.p@berkeley.edu) viewed Floor Plans and Tour pages 4 times this week without booking. Currently your highest-intent unconverted visitor.",
-      suggestedAction: "Send a personalized outreach via the lead detail drawer — current intent score is 87.",
-      href: "/portal/visitors",
-      context: { sessionCount: 4, intentScore: 87 },
-      daysAgo: 0,
-    },
-    {
       kind: "pipeline_stall",
       severity: "warning",
       category: "leads",
@@ -1144,8 +1051,6 @@ async function main() {
     residentCount,
     leaseCount,
     workOrderCount,
-    sessionCount,
-    eventCount,
     adCampaignCount,
     metricCount,
     snapshotCount,
@@ -1160,8 +1065,6 @@ async function main() {
     prisma.resident.count({ where: { orgId } }),
     prisma.lease.count({ where: { orgId } }),
     prisma.workOrder.count({ where: { orgId } }),
-    prisma.visitorSession.count({ where: { orgId } }),
-    prisma.visitorEvent.count({ where: { orgId } }),
     prisma.adCampaign.count({ where: { orgId } }),
     prisma.adMetricDaily.count({ where: { orgId } }),
     prisma.seoSnapshot.count({ where: { orgId } }),
@@ -1183,7 +1086,6 @@ Property:  ${property.name} (${propertyId})
 Created in this run:
   Residents:           ${residentsCreated}
   Work orders:         ${workOrdersCreated}
-  Visitor sessions:    ${sessionsCreated}
   Ad metrics:          ${metricsCreated}
   Reputation mentions: ${mentionsCreated}
   Insights:            ${insightsCreated}
@@ -1194,8 +1096,6 @@ Totals on this tenant:
   Residents:           ${residentCount}
   Leases:              ${leaseCount}
   Work orders:         ${workOrderCount}
-  Visitor sessions:    ${sessionCount}
-  Visitor events:      ${eventCount}
   Ad campaigns:        ${adCampaignCount}
   Ad metric rows:      ${metricCount}
   SEO snapshots:       ${snapshotCount}

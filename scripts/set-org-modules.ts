@@ -51,11 +51,6 @@ export const isValue = (v: string | undefined): v is string =>
 //     moduleLeadCapture — the sellable unit, stay ON.
 const PRESETS: Record<string, ModuleFlags> = {
   "sg-focus": {
-    // Pixel is proof, not a product surface: hides the Visitors page from
-    // nav. Ingest is unaffected (the webhook routes by pixel ID, no cron
-    // gates on this flag, and integrations `onPlan` stays true via
-    // moduleChatbot), so the report keeps citing identified visitors.
-    modulePixel: false,
     // NOTE: also stops the aeo-scan cron for this org (it selects
     // `where: { moduleSEO: true }`), so SEO/AEO data stops refreshing.
     // Intended: we don't want to sell what we aren't presenting.

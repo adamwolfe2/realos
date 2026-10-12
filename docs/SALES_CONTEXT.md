@@ -8,7 +8,7 @@ Last updated: April 2026
 
 ## 1. The 30-second pitch
 
-LeaseStack is the managed marketing platform for real estate operators. We build your marketing site, ads, AI chatbot, visitor identification, lead capture, and CRM into one product, live on your domain in fourteen days. You review a weekly report. We do the rest.
+LeaseStack is the managed marketing platform for real estate operators. We build your marketing site, ads, AI chatbot, lead capture, and CRM into one product, live on your domain in fourteen days. You review a weekly report. We do the rest.
 
 One platform, one login, one weekly report that ties spend to leases. Month to month after launch. If we don't move lease velocity, you cancel.
 
@@ -52,7 +52,7 @@ This is the picture every prospect recognizes. Use it to anchor the conversation
 
 **Activity, not outcomes.** Agency decks show impressions, clicks, and reach. They do not show leases. The link between marketing dollars and signed contracts is broken, so nobody can defend or cut the spend with confidence.
 
-**The site is a brochure.** Most operator sites do not capture identity, do not surface live availability, do not have a useful chatbot, and do not retarget visitors. The traffic shows up, looks around, and disappears.
+**The site is a brochure.** Most operator sites do not surface live availability, do not have a useful chatbot, and do not retarget visitors. The traffic shows up, looks around, and disappears.
 
 **The chatbot is a glorified FAQ.** It answers one canned question, forgets the visitor, and captures zero leads after hours. Prospects asking real questions at 2am get a contact form.
 
@@ -69,8 +69,7 @@ LeaseStack is one platform with nine modules, all built and shippable today. Ope
 | Managed marketing site | Custom-built on the operator's domain. Fast, search-friendly, updated by live listing sync. |
 | PMS listing sync | Every unit on the site matches the source of truth within the hour. |
 | AI chatbot | Trained on the operator's properties. Answers in five seconds. Captures leads around the clock. Hands hot ones to the team with full conversation history. |
-| Visitor identification | Names and emails on a meaningful share of anonymous site traffic. |
-| Lead capture and CRM | Forms, exit intent, chat, and pixel-identified visitors all flow into one pipeline with automated nurture. |
+| Lead capture and CRM | Forms, exit intent, and chat all flow into one pipeline with automated nurture. |
 | Google and Meta ads | Geo-fenced campaigns, retargeting, creative refreshed weekly. |
 | Search and AI discovery | Rank in Google. Get recommended by ChatGPT and Perplexity. Per-location pages. |
 | Creative studio | On-demand ad creative. 48-hour turnaround. No retainers, no templates. |
@@ -78,7 +77,7 @@ LeaseStack is one platform with nine modules, all built and shippable today. Ope
 
 Every customer gets the operator portal: dashboards, leads, conversations, ads, campaigns, creative, SEO, properties, reports, and a weekly performance email. Role-based access for owner, asset manager, property manager, leasing agent, and viewer.
 
-Bring-your-own-site mode is supported. If the operator likes their existing site, we install the chatbot, visitor identification, and CRM into it without rebuilding.
+Bring-your-own-site mode is supported. If the operator likes their existing site, we install the chatbot and CRM into it without rebuilding.
 
 ---
 
@@ -96,15 +95,11 @@ The typical replacement: agency, chatbot vendor, ad creative shop, listing porta
 
 ### "Fourteen days from intake to live."
 
-Day 1 is a thirty-minute intake call where we audit the current marketing stack live. Day 7 is a site preview on a staging URL. Day 14 we flip DNS, the pixel starts firing, the chatbot goes live, and ads begin running. There is no phase-two surprise. This timeline is enforced by the product, not the team.
+Day 1 is a thirty-minute intake call where we audit the current marketing stack live. Day 7 is a site preview on a staging URL. Day 14 we flip DNS, the chatbot goes live, and ads begin running. There is no phase-two surprise. This timeline is enforced by the product, not the team.
 
 ### "AI on the night shift."
 
 The chatbot is trained on the operator's specific properties. It handles the long tail of prospect questions ("can my dog visit", "do you have furnished options for August") with grounded answers, not canned scripts. Hot leads get handed to the leasing team with the full thread attached.
-
-### "Identity on your traffic."
-
-Most operator sites lose the majority of their traffic to anonymity. The visitor pixel surfaces names and emails on a meaningful share of visitors who never filled out a form. Those leads flow directly into the CRM and into a nurture sequence.
 
 ### "Creative in 48 hours."
 
@@ -129,12 +124,12 @@ Every creative we ship, ads, landing copy, email, runs through a vertical-specif
 | Day 1 | Twenty to thirty minute intake call. Live audit of current marketing setup. |
 | Day 1 to 2 | Proposal with fixed scope, fixed build fee, and monthly retainer. |
 | Day 7 | Custom site preview on a staging URL. Operator comments, we iterate. |
-| Day 14 | DNS flipped. Pixel firing. Chatbot live. Ads running. |
+| Day 14 | DNS flipped. Chatbot live. Ads running. |
 
 ### Weekly cadence after launch
 
 - **Monday 7:00 AM.** Weekly performance report lands in the operator's inbox.
-- **Tuesday rolling.** Tour requests auto-create in the portal from every channel (site form, chatbot, pixel-identified visitors, inbound calls, scheduling links) with source attribution attached.
+- **Tuesday rolling.** Tour requests auto-create in the portal from every channel (site form, chatbot, inbound calls, scheduling links) with source attribution attached.
 - **Thursday EOD.** Creative refresh ships from the studio.
 - **Ongoing overnight.** AI chatbot handles after-hours conversations.
 
@@ -173,7 +168,7 @@ Tools like HubSpot, Mailchimp, and the like are horizontal. They were not design
 
 ### vs. a property management system
 
-PMS vendors (AppFolio, Yardi, RealPage) own the back office. LeaseStack owns the front. PMS does not build websites, does not run ads, does not capture site identity, and does not have a useful chatbot. LeaseStack sits on top of the PMS and consumes its listing data through the API.
+PMS vendors (AppFolio, Yardi, RealPage) own the back office. LeaseStack owns the front. PMS does not build websites, does not run ads, and does not have a useful chatbot. LeaseStack sits on top of the PMS and consumes its listing data through the API.
 
 ### vs. building it in-house
 
@@ -189,7 +184,7 @@ Most operators run us in parallel with their existing agency for the first month
 
 ### "We already have a website we like."
 
-Bring-your-own-site mode installs the chatbot and visitor identification into the existing site without rebuilding it. They keep the design, we add the intelligence layer.
+Bring-your-own-site mode installs the chatbot into the existing site without rebuilding it. They keep the design, we add the intelligence layer.
 
 ### "What if you can't connect to our PMS?"
 
@@ -209,7 +204,7 @@ Every creative ships through a vertical-specific compliance check (student housi
 
 ### "Who actually does the work? Are you just AI?"
 
-We have a real ops team that builds the site, runs the ads, designs the creative, and writes the playbook. AI does the night-shift conversations, the per-location SEO pages, the visitor scoring, and the creative ideation. Humans approve and ship. The mix is what makes the 14-day timeline possible.
+We have a real ops team that builds the site, runs the ads, designs the creative, and writes the playbook. AI does the night-shift conversations, the per-location SEO pages, the lead scoring, and the creative ideation. Humans approve and ship. The mix is what makes the 14-day timeline possible.
 
 ### "What if we need a feature that isn't built yet?"
 
@@ -217,7 +212,7 @@ Most platform requests we hear are already on the roadmap. Specific feature asks
 
 ### "How is this different from Conversion Logix / Apartments.com / RentCafe?"
 
-Those products solve one slice. Conversion Logix runs ads. Apartments.com is a listing portal. RentCafe is a PMS-attached website builder. None of them give the operator a unified dashboard that ties spend to leases, an AI chatbot trained on their properties, identity on anonymous traffic, and a 48-hour creative studio in one product. We replace the patchwork.
+Those products solve one slice. Conversion Logix runs ads. Apartments.com is a listing portal. RentCafe is a PMS-attached website builder. None of them give the operator a unified dashboard that ties spend to leases, an AI chatbot trained on their properties, and a 48-hour creative studio in one product. We replace the patchwork.
 
 ---
 
@@ -230,9 +225,9 @@ The "before" baseline is documented:
 - 1,136 monthly sessions (66% direct traffic, only 31.9% organic discovery)
 - 26 leads per month at $214 effective cost per lead
 - $3,000 per month in fragmented marketing spend across paid search, retargeting, social, and a 24/7 live chat vendor
-- Site running on Wix, no chatbot, no visitor identification, no SEO investment
+- Site running on Wix, no chatbot, no SEO investment
 
-LeaseStack is replacing the entire stack. Site, chatbot, visitor pixel, ads, SEO, CRM. The "after" numbers are what we use in every future sales conversation.
+LeaseStack is replacing the entire stack. Site, chatbot, ads, SEO, CRM. The "after" numbers are what we use in every future sales conversation.
 
 When asked about reference customers, walk the prospect to **`leasestack.co/demo`** which is a real production deployment, not a mockup.
 
@@ -262,7 +257,7 @@ Sign a one-page agreement. Build fee invoiced, kickoff scheduled. Operator gets 
 
 **Tagline:** Managed marketing for real estate operators.
 
-**Elevator pitch:** Site, ads, chatbot, pixel, CRM, and creative as one platform on the operator's domain. Live in fourteen days. Weekly report ties spend to leases. Month to month.
+**Elevator pitch:** Site, ads, chatbot, CRM, and creative as one platform on the operator's domain. Live in fourteen days. Weekly report ties spend to leases. Month to month.
 
 **Three things a prospect remembers:**
 1. Fourteen days to live, not three months.
