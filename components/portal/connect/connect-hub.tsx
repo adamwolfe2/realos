@@ -176,7 +176,9 @@ const SOURCE_META: Record<
     category: "Paid media",
     icon: BarChart3,
     brandSlug: "meta-ads",
-    connectUrl: "/api/oauth/meta-ads/start",
+    // Settings drawer: Meta sign-in when the agency app is configured,
+    // otherwise the read-only access-token form.
+    connectUrl: "/portal/settings/integrations#meta-ads",
     payoff: "Cross-channel attribution + audience-exhaustion detection",
     unlocks: [
       "CPL spike alerts",
@@ -218,14 +220,12 @@ const PREREQUISITES: Record<ConnectSourceVM["id"], string> = {
     "You'll need: your domain and access to its DNS settings · ~5 min",
 };
 
-// Honest per-card scope disclosure for the two write-capable OAuth scopes.
-// The trust footer deliberately says "Analytics sources connect read-only"
-// (GA4/GSC are readonly scopes) — Google Ads (`adwords`) and Meta
-// (`ads_read` + `ads_management`) are NOT read-only, so these two cards
-// carry their own 10px scope note instead of a false blanket claim.
+// Per-card scope disclosure. Google Ads (`adwords`) is write-capable, so it
+// carries its own note instead of a blanket "read-only" claim. Meta asks
+// for `ads_read` only.
 const SCOPE_NOTES: Partial<Record<ConnectSourceVM["id"], string>> = {
   google_ads: "Uses Google's standard Ads API scope",
-  meta_ads: "Uses Meta's ads_read + ads_management scopes",
+  meta_ads: "Read-only: Meta's ads_read permission",
 };
 
 // Per-source staleness thresholds, in hours. Render-time constants only —

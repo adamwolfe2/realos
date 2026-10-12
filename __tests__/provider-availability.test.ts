@@ -140,11 +140,13 @@ describe("getProviderAvailability", () => {
     });
   });
 
-  describe("Meta Ads (requires OAuth; Marketing API token is downstream)", () => {
-    it("is NOT available with no Meta env at all", () => {
+  describe("Meta Ads (OAuth when configured, else read-only access token)", () => {
+    // Intended change 2026-10-11: without the Meta app the settings drawer
+    // takes a pasted read-only token, so the source stays connectable.
+    it("is available via the token path with no Meta env at all", () => {
       const av = getProviderAvailability();
-      expect(av.meta_ads.available).toBe(false);
-      expect(av.meta_ads.reason).toContain("Meta Business verification");
+      expect(av.meta_ads.available).toBe(true);
+      expect(av.meta_ads.reason).toBeNull();
     });
 
     // Same pattern as google_ads — OAuth is the only gate; Marketing API

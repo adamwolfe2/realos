@@ -17,7 +17,7 @@ import "server-only";
  *   google_ga4   → Google Analytics 4 (analytics.readonly scope)
  *   google_gsc   → Google Search Console (webmasters.readonly scope)
  *   google_ads   → Google Ads API (adwords scope)
- *   meta_ads     → Meta Marketing API (ads_read + ads_management)
+ *   meta_ads     → Meta Marketing API (ads_read)
  */
 export type OAuthProvider =
   | "google_ga4"

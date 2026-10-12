@@ -21,7 +21,7 @@ import {
   SyncAppfolioButton,
 } from "./appfolio-forms";
 import { ConnectFunnelForm } from "./funnel-forms";
-import { AdPlatform, SeoProvider } from "@prisma/client";
+import { AdPlatform } from "@prisma/client";
 import {
   ConnectSeoForm,
   DisconnectSeoForm,
@@ -36,6 +36,8 @@ import {
   MetaAdsManage,
 } from "./meta-ads-forms";
 import { OAuthConnectButton } from "./oauth-button";
+import { isProviderConfigured } from "@/lib/integrations/oauth-config";
+import { PENDING_OAUTH_BIND } from "@/lib/integrations/google-properties";
 
 export const metadata: Metadata = { title: "Integrations" };
 export const dynamic = "force-dynamic";
@@ -147,6 +149,73 @@ export default async function IntegrationsPage() {
     !!appfolio.instanceSubdomain &&
     (!!appfolio.clientIdEncrypted || !!appfolio.useEmbedFallback);
 
+  // GA4 / Search Console: "Sign in with Google" first, then a property
+  // picker (/portal/connect/{ga4,gsc}/select). The service-account paste
+  // stays under Advanced for agencies that prefer it.
+  function seoSlot(provider: "GSC" | "GA4"): React.ReactNode {
+    const rows = seoIntegrations.filter((s) => s.provider === provider);
+    const row = rows.find((r) => r.propertyId === null) ?? rows[0] ?? null;
+    const label = provider === "GA4" ? "Google Analytics" : "Search Console";
+    if (row && row.propertyIdentifier === PENDING_OAUTH_BIND) {
+      return (
+        <div className="rounded-[2px] border border-border bg-muted/30 p-4 space-y-2">
+          <StatusChip status="connecting" label="Choose a property" />
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            You signed in with Google. Pick which {label} property to sync to
+            finish connecting.
+          </p>
+          <Link
+            href={`/portal/connect/${provider.toLowerCase()}/select`}
+            className="inline-block text-xs font-medium text-primary hover:underline"
+          >
+            Choose property
+          </Link>
+        </div>
+      );
+    }
+    if (row) {
+      return (
+        <SeoManage
+          provider={provider}
+          propertyIdentifier={row.propertyIdentifier}
+          serviceAccountEmail={row.serviceAccountEmail}
+          lastSyncAt={row.lastSyncAt}
+          status={row.status}
+          lastError={row.lastSyncError}
+        />
+      );
+    }
+    return (
+      <div className="space-y-3">
+        <PrerequisiteLine>
+          You&apos;ll need: a Google login with access to your {label}{" "}
+          property · ~1 min
+        </PrerequisiteLine>
+        <OAuthConnectButton
+          provider={provider === "GA4" ? "google_ga4" : "google_gsc"}
+        />
+        <details className="group ls-card">
+          <summary className="cursor-pointer text-[11px] font-medium text-muted-foreground px-3 py-2 hover:text-foreground select-none">
+            Advanced — use a service account instead
+          </summary>
+          <div className="px-3 pb-3 pt-1 border-t border-border">
+            <ConnectSeoForm
+              provider={provider}
+              properties={properties.length > 1 ? properties : []}
+            />
+          </div>
+        </details>
+        <TrustFooter
+          scopeNote={
+            provider === "GA4"
+              ? "Read-only: Google's analytics.readonly scope"
+              : "Read-only: Google's webmasters.readonly scope"
+          }
+        />
+      </div>
+    );
+  }
+
   const manageSlots: Record<string, React.ReactNode> = {
     appfolio: appfolioConnected ? (
       <AppfolioManage
@@ -171,56 +240,8 @@ export default async function IntegrationsPage() {
         lastError={funnel?.lastError ?? null}
       />
     ),
-    gsc: (() => {
-      // Manage-card displays the LEGACY org-wide GSC row. Per-property
-      // rows show up in the Per-Property panel below this section so
-      // each card stays focused on its scope. Falls back to the first
-      // GSC row of any kind so single-property orgs that happened to
-      // wire their connection to a property still see a manage card.
-      const gscRows = seoIntegrations.filter(
-        (s) => s.provider === SeoProvider.GSC,
-      );
-      const row =
-        gscRows.find((r) => r.propertyId === null) ?? gscRows[0] ?? null;
-      return row ? (
-        <SeoManage
-          provider="GSC"
-          propertyIdentifier={row.propertyIdentifier}
-          serviceAccountEmail={row.serviceAccountEmail}
-          lastSyncAt={row.lastSyncAt}
-          status={row.status}
-          lastError={row.lastSyncError}
-        />
-      ) : (
-        <ConnectSeoForm
-          provider="GSC"
-          properties={properties.length > 1 ? properties : []}
-        />
-      );
-    })(),
-    ga4: (() => {
-      // Same legacy-first selection as GSC above.
-      const ga4Rows = seoIntegrations.filter(
-        (s) => s.provider === SeoProvider.GA4,
-      );
-      const row =
-        ga4Rows.find((r) => r.propertyId === null) ?? ga4Rows[0] ?? null;
-      return row ? (
-        <SeoManage
-          provider="GA4"
-          propertyIdentifier={row.propertyIdentifier}
-          serviceAccountEmail={row.serviceAccountEmail}
-          lastSyncAt={row.lastSyncAt}
-          status={row.status}
-          lastError={row.lastSyncError}
-        />
-      ) : (
-        <ConnectSeoForm
-          provider="GA4"
-          properties={properties.length > 1 ? properties : []}
-        />
-      );
-    })(),
+    gsc: seoSlot("GSC"),
+    ga4: seoSlot("GA4"),
     "google-ads": (() => {
       const oauthBoundGoogleIds = new Set(
         oauthBoundAds
@@ -311,27 +332,32 @@ export default async function IntegrationsPage() {
               </h3>
             ) : null}
             <div className="space-y-3">
-              <PrerequisiteLine>
-                You&apos;ll need: a Facebook login with Business Manager access
-                to your ad account · ~2 min
-              </PrerequisiteLine>
-              <OAuthConnectButton provider="meta_ads" />
-              <details className="group ls-card">
-                <summary className="cursor-pointer text-[11px] font-medium text-muted-foreground px-3 py-2 hover:text-foreground select-none">
-                  Advanced — paste a system-user token manually
-                </summary>
-                <div className="px-3 pb-3 pt-1 border-t border-border">
-                  <p className="text-[11px] text-muted-foreground mb-3 leading-relaxed">
-                    For agencies that already manage a Meta Business
-                    system-user token. Most operators should use the Connect
-                    button above.
-                  </p>
+              {isProviderConfigured("meta_ads") ? (
+                <>
+                  <PrerequisiteLine>
+                    You&apos;ll need: a Facebook login with Business Manager
+                    access to your ad account · ~2 min
+                  </PrerequisiteLine>
+                  <OAuthConnectButton provider="meta_ads" />
+                  <details className="group ls-card">
+                    <summary className="cursor-pointer text-[11px] font-medium text-muted-foreground px-3 py-2 hover:text-foreground select-none">
+                      Advanced — paste an access token instead
+                    </summary>
+                    <div className="px-3 pb-3 pt-1 border-t border-border">
+                      <ConnectMetaAdsForm />
+                    </div>
+                  </details>
+                </>
+              ) : (
+                <>
+                  <PrerequisiteLine>
+                    You&apos;ll need: admin access to the Meta Business
+                    Manager that owns the ad account · ~5 min
+                  </PrerequisiteLine>
                   <ConnectMetaAdsForm />
-                </div>
-              </details>
-              {/* Honest scope note — ads_management is write-capable, so no
-                  blanket "read-only" claim here (see connect-hub spec). */}
-              <TrustFooter scopeNote="Uses Meta's ads_read + ads_management scopes" />
+                </>
+              )}
+              <TrustFooter scopeNote="Read-only: Meta's ads_read permission" />
             </div>
           </div>
         </div>

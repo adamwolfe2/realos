@@ -11,9 +11,8 @@ import type { ConnectionStatus } from "@/components/portal/ui/status-chip";
 // for every connected account under Settings → Integrations.
 //
 // The middle line is a per-surface `scopeNote` — NOT a blanket "read-only
-// scopes" claim. Google Ads (`adwords`) and Meta (`ads_read` +
-// `ads_management`) are write-capable scopes, so ads drawers must pass their
-// honest scope wording (see connect-hub.tsx SCOPE_NOTES) and write-path
+// scopes" claim. Google Ads (`adwords`) is write-capable, so ads drawers
+// must pass their honest scope wording (see connect-hub.tsx SCOPE_NOTES) and write-path
 // integrations (Funnel) pass none. Do not re-broaden this into "read-only".
 // ---------------------------------------------------------------------------
 

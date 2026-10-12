@@ -183,7 +183,7 @@ export function getProviderConfig(provider: OAuthProvider): ProviderConfig {
         "https://www.googleapis.com/auth/analytics.readonly",
       ]);
     case "meta_ads":
-      return metaConfig(["ads_read", "ads_management"]);
+      return metaConfig(["ads_read"]);
   }
 }
 
