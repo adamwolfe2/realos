@@ -211,7 +211,7 @@ export async function POST(req: NextRequest) {
   if (existing) {
     const isPendingSeed = existing.clerkUserId.startsWith("seed_pending_");
     const isAgencyUser =
-      existing.role.startsWith("AGENCY_") || existing.role === "AL_PARTNER";
+      existing.role.startsWith("AGENCY_");
     // Any row in another org, claimed or still a pending seed, is a 409 for
     // every caller: an invite never moves a user row across tenants. (Pending
     // seeds used to be re-homed silently, which let one tenant take over

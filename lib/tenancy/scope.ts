@@ -455,7 +455,6 @@ const AGENCY_ROLES: ReadonlySet<UserRole> = new Set([
   UserRole.AGENCY_OWNER,
   UserRole.AGENCY_ADMIN,
   UserRole.AGENCY_OPERATOR, // "limited agency role" — still a real agency seat
-  // AL_PARTNER is deliberately NOT here: it is not an agency role.
 ]);
 
 const AGENCY_STAFF_READ_ROLES: ReadonlySet<UserRole> = new Set([
@@ -530,7 +529,7 @@ export async function requireWorkspaceAdmin(): Promise<ScopedContext> {
 
 export async function requireWritableWorkspace(): Promise<ScopedContext> {
   const scope = await requireScope();
-  // Read-only seats (CLIENT_VIEWER, AL_PARTNER) never mutate, impersonating
+  // Read-only seats (CLIENT_VIEWER) never mutate, impersonating
   // or not. Agency impersonators keep their AGENCY_* role, which is in the set.
   if (!ALLOWED_WRITE_ROLES.has(scope.role)) {
     throw new ForbiddenError("Your role is read-only in this workspace.");

@@ -28,11 +28,9 @@ enum OrgType {
 
 // Which product surface an org uses. STUDENT_HOUSING is the original
 // LeaseStack offering (sites, chatbot, AppFolio, marketing OS).
-// AUDIENCE_SYNC is the residential/commercial product: AL segments piped
-// to ad accounts and CRMs. AGENCY_INTERNAL is reserved for our own org.
+// AGENCY_INTERNAL is reserved for our own org.
 enum ProductLine {
   STUDENT_HOUSING
-  AUDIENCE_SYNC
   AGENCY_INTERNAL
 }
 
@@ -131,7 +129,6 @@ enum UserRole {
   CLIENT_ADMIN // Client team member with full portal access
   CLIENT_VIEWER // Read-only client access
   LEASING_AGENT // Specific role on client team
-  AL_PARTNER // the upstream pixel provider partner with cross-org visibility on AUDIENCE_SYNC orgs
 }
 
 enum TenantStatus {
@@ -172,7 +169,6 @@ enum LeadStatus {
 enum LeadSource {
   CHATBOT
   FORM
-  PIXEL_OUTREACH
   REFERRAL
   GOOGLE_ADS
   META_ADS
@@ -223,13 +219,6 @@ enum LeadMatchMethod {
   NAME_ONLY
   MANUAL
   NONE
-}
-
-enum VisitorIdentificationStatus {
-  ANONYMOUS
-  IDENTIFIED
-  ENRICHED
-  MATCHED_TO_LEAD
 }
 
 enum ChatbotConversationStatus {
@@ -421,10 +410,6 @@ model Organization {
   clerkOrgId       String?     @unique
   stripeCustomerId String?     @unique
 
-  // Optional override for AL credentials when an AUDIENCE_SYNC org wants to
-  // use their own the upstream pixel provider account instead of the platform-shared key.
-  cursiveApiKeyOverride String?
-
   // Property classification
   propertyType       PropertyType        @default(RESIDENTIAL)
   residentialSubtype ResidentialSubtype?
@@ -477,7 +462,6 @@ model Organization {
 
   // Selected modules (a la carte flags)
   moduleWebsite        Boolean @default(true)
-  modulePixel          Boolean @default(false)
   moduleChatbot        Boolean @default(false)
   moduleGoogleAds      Boolean @default(false)
   moduleMetaAds        Boolean @default(false)
@@ -579,18 +563,10 @@ model Organization {
   notifyOnPopupLead      Boolean @default(true)
   notifyOnFormLead       Boolean @default(true)
   notifyOnIngestLead     Boolean @default(true)
-  // Pixel identifications are NOT inbound enquiries — nobody raised a hand,
-  // we resolved an anonymous browser to an identity. Emailing one per
-  // resolution is noise, so this defaults OFF while every genuine
-  // hand-raise channel above defaults ON. They still land in the dashboard.
-  notifyOnPixelLead      Boolean @default(false)
   notifyOnTourRequest    Boolean @default(true)
-  notifyOnVisitorConvert Boolean @default(true)
   notifyOnManualLead     Boolean @default(true)
   // Non-lead alert streams (route to the same notifyLeadEmail + CC/BCC):
-  //   - new website-pixel visitors, batched into a once-daily digest
   //   - reputation scans that surface new mentions
-  notifyOnNewVisitors    Boolean @default(true)
   notifyOnReputationScan Boolean @default(true)
 
   // Site hosting mode
@@ -632,102 +608,88 @@ model Organization {
   whiteLabelPrimaryColor String?
 
   // Relationships
-  users                   User[]
-  properties              Property[]
-  domains                 DomainBinding[]
-  tenantSiteConfig        TenantSiteConfig?
-  propertyChatbotConfigs  PropertyChatbotConfig[]
-  propertyKnowledgeBases  PropertyKnowledgeBase[]
-  leads                   Lead[]
-  leadMatchDecisions      LeadMatchDecision[]
-  visitors                Visitor[]
-  chatbotConversations    ChatbotConversation[]
-  creativeRequests        CreativeRequest[]
-  adAccounts              AdAccount[]
-  adCampaigns             AdCampaign[]
-  emailSubscribers        EmailSubscriber[]
-  intakeSubmission        IntakeSubmission?
-  projects                Project[]
-  auditEvents             AuditEvent[]
-  clientNotes             ClientNote[]
-  // Was `cursiveIntegration` (singular, one-to-one) before the
-  // multi-property migration. Now an array because tenants can have
-  // one pixel per property plus an optional legacy org-wide row
-  // (propertyId = NULL). Consumers should use the helpers in
-  // lib/integrations/per-property.ts instead of reading directly.
-  cursiveIntegrations     CursiveIntegration[]
-  pixelProvisionRequests  PixelProvisionRequest[]
-  appfolioIntegration     AppFolioIntegration?
-  funnelIntegration       FunnelIntegration?
-  seoIntegrations         SeoIntegration[]
-  seoSnapshots            SeoSnapshot[]
-  seoQueries              SeoQuery[]
-  seoLandingPages         SeoLandingPage[]
-  addresses               Address[]
-  apiKeys                 ApiKey[]
-  integrationRequests     IntegrationRequest[]
-  visitorSessions         VisitorSession[]
-  visitorEvents           VisitorEvent[]
-  chatbotEngagements      ChatbotEngagement[]
-  notifications           Notification[]
-  insights                Insight[]
-  clientReports           ClientReport[]
-  conversationFlags       ConversationFlag[]
-  reputationScans         ReputationScan[]
-  reputationMentions      PropertyMention[]
-  adLibraryAdvertisers    AdLibraryAdvertiser[]
-  audienceSegments        AudienceSegment[]
-  audienceDestinations    AudienceDestination[]
-  audienceSyncRuns        AudienceSyncRun[]
-  audienceSchedules       AudienceSyncSchedule[]
-  residents               Resident[]
-  leases                  Lease[]
-  workOrders              WorkOrder[]
-  websiteBuildRequests    WebsiteBuildRequest[]
-  siteRequests            SiteRequest[]
-  popupCampaigns          PopupCampaign[]
-  popupEvents             PopupEvent[]
-  credentialEntries       CredentialEntry[]
-  credentialAccessLogs    CredentialAccessLog[]
-  zillowReports           ZillowReport[]
-  aeoChecks               AeoCitationCheck[]
-  aeoMentionSnapshots     AeoMentionSnapshot[]
-  aeoCustomPrompts        AeoCustomPrompt[]
-  aeoOpportunityScores    AeoOpportunityScore[]
-  aeoOverviewSnapshots    AeoOverviewSnapshot[]
-  aeoOnPageAudits         AeoOnPageAudit[]
-  neighborhoodPages       NeighborhoodPage[]
-  onboardingProgress      OnboardingProgress?
-  chatbotLearningCases    ChatbotLearningCase[]
-  leadFollowUpTasks       LeadFollowUpTask[]
-  leadFollowUpDrafts      LeadFollowUpDraft[]
-  chatbotKnowledgeSuggestions ChatbotKnowledgeSuggestion[]
-  conversationInsights    ConversationInsight[]
+  users                          User[]
+  properties                     Property[]
+  domains                        DomainBinding[]
+  tenantSiteConfig               TenantSiteConfig?
+  propertyChatbotConfigs         PropertyChatbotConfig[]
+  propertyKnowledgeBases         PropertyKnowledgeBase[]
+  leads                          Lead[]
+  leadMatchDecisions             LeadMatchDecision[]
+  chatbotConversations           ChatbotConversation[]
+  creativeRequests               CreativeRequest[]
+  adAccounts                     AdAccount[]
+  adCampaigns                    AdCampaign[]
+  emailSubscribers               EmailSubscriber[]
+  intakeSubmission               IntakeSubmission?
+  projects                       Project[]
+  auditEvents                    AuditEvent[]
+  clientNotes                    ClientNote[]
+  appfolioIntegration            AppFolioIntegration?
+  funnelIntegration              FunnelIntegration?
+  seoIntegrations                SeoIntegration[]
+  seoSnapshots                   SeoSnapshot[]
+  seoQueries                     SeoQuery[]
+  seoLandingPages                SeoLandingPage[]
+  addresses                      Address[]
+  apiKeys                        ApiKey[]
+  integrationRequests            IntegrationRequest[]
+  chatbotEngagements             ChatbotEngagement[]
+  notifications                  Notification[]
+  insights                       Insight[]
+  clientReports                  ClientReport[]
+  conversationFlags              ConversationFlag[]
+  reputationScans                ReputationScan[]
+  reputationMentions             PropertyMention[]
+  adLibraryAdvertisers           AdLibraryAdvertiser[]
+  residents                      Resident[]
+  leases                         Lease[]
+  workOrders                     WorkOrder[]
+  websiteBuildRequests           WebsiteBuildRequest[]
+  siteRequests                   SiteRequest[]
+  popupCampaigns                 PopupCampaign[]
+  popupEvents                    PopupEvent[]
+  credentialEntries              CredentialEntry[]
+  credentialAccessLogs           CredentialAccessLog[]
+  zillowReports                  ZillowReport[]
+  aeoChecks                      AeoCitationCheck[]
+  aeoMentionSnapshots            AeoMentionSnapshot[]
+  aeoCustomPrompts               AeoCustomPrompt[]
+  aeoOpportunityScores           AeoOpportunityScore[]
+  aeoOverviewSnapshots           AeoOverviewSnapshot[]
+  aeoOnPageAudits                AeoOnPageAudit[]
+  neighborhoodPages              NeighborhoodPage[]
+  onboardingProgress             OnboardingProgress?
+  chatbotLearningCases           ChatbotLearningCase[]
+  leadFollowUpTasks              LeadFollowUpTask[]
+  leadFollowUpDrafts             LeadFollowUpDraft[]
+  chatbotKnowledgeSuggestions    ChatbotKnowledgeSuggestion[]
+  conversationInsights           ConversationInsight[]
   siteImprovementRecommendations SiteImprovementRecommendation[]
   // SEO/AEO Agent backrefs — Phase 1
-  seoActionRecs           SeoActionRecommendation[]
-  contentDrafts           ContentDraft[]
-  siteIntelligence        SiteIntelligence?
-  contentQuotas           MonthlyContentQuota[]
+  seoActionRecs                  SeoActionRecommendation[]
+  contentDrafts                  ContentDraft[]
+  siteIntelligence               SiteIntelligence?
+  contentQuotas                  MonthlyContentQuota[]
   /// Per-org override of plan-based content quotas. JSON of
   /// { BLOG_POST: 100, NEIGHBORHOOD_PAGE: 50, ... }. Set from
   /// /admin/clients/[id] when a client needs extra capacity outside
   /// their plan tier.
-  contentQuotaOverride    Json?
-  seoScoreHistory         SeoScoreHistory[]
-  propertyCompetitorScans PropertyCompetitorScan[]
+  contentQuotaOverride           Json?
+  seoScoreHistory                SeoScoreHistory[]
+  propertyCompetitorScans        PropertyCompetitorScan[]
   // DataforSEO ingestion (Phase 1.5)
-  seoTargetQueries        SeoTargetQuery[]
-  seoScanJobs             SeoScanJob[]
-  serpRankings            SerpRanking[]
-  onPageAudits            OnPageAudit[]
-  backlinkSummaries       BacklinkSummary[]
+  seoTargetQueries               SeoTargetQuery[]
+  seoScanJobs                    SeoScanJob[]
+  serpRankings                   SerpRanking[]
+  onPageAudits                   OnPageAudit[]
+  backlinkSummaries              BacklinkSummary[]
   // DataforSEO ingestion (Phase 2)
-  onPageInstantAudits     OnPageInstantAudit[]
-  localPackRankings       LocalPackRanking[]
-  rankedKeywords          RankedKeyword[]
-  keywordIntersections    KeywordIntersection[]
-  queryLandingDaily       QueryLandingDaily[]
+  onPageInstantAudits            OnPageInstantAudit[]
+  localPackRankings              LocalPackRanking[]
+  rankedKeywords                 RankedKeyword[]
+  keywordIntersections           KeywordIntersection[]
+  queryLandingDaily              QueryLandingDaily[]
 
   // Per-property + per-org RentCast market intelligence cache + usage
   // counter. Both are populated lazily — only orgs that actually open
@@ -946,7 +908,6 @@ model TenantSiteConfig {
   showBlog         Boolean @default(false)
   enableExitIntent Boolean @default(true)
   enableChatbot    Boolean @default(false)
-  enablePixel      Boolean @default(false)
 
   // Chatbot config
   chatbotEnabled            Boolean            @default(false)
@@ -1218,91 +1179,84 @@ model Property {
   // the org-level address (most properties).
   notifyLeadEmailOverride String?
 
-  listings               Listing[]
-  leads                  Lead[]
-  leadMatchDecisions     LeadMatchDecision[]
-  tours                  Tour[]
-  applications           Application[]
-  chatbotConversations   ChatbotConversation[]
-  chatbotLearningCases   ChatbotLearningCase[]
-  leadFollowUpTasks      LeadFollowUpTask[]
-  chatbotKnowledgeSuggestions ChatbotKnowledgeSuggestion[]
-  conversationInsights   ConversationInsight[]
+  listings                       Listing[]
+  leads                          Lead[]
+  leadMatchDecisions             LeadMatchDecision[]
+  tours                          Tour[]
+  applications                   Application[]
+  chatbotConversations           ChatbotConversation[]
+  chatbotLearningCases           ChatbotLearningCase[]
+  leadFollowUpTasks              LeadFollowUpTask[]
+  chatbotKnowledgeSuggestions    ChatbotKnowledgeSuggestion[]
+  conversationInsights           ConversationInsight[]
   siteImprovementRecommendations SiteImprovementRecommendation[]
-  visitors               Visitor[]
-  creativeRequests       CreativeRequest[]
-  adCampaigns            AdCampaign[]
-  insights               Insight[]
-  reputationScans        ReputationScan[]
-  reputationMentions     PropertyMention[]
-  adLibraryAdvertisers   AdLibraryAdvertiser[]
-  residents              Resident[]
-  leases                 Lease[]
-  workOrders             WorkOrder[]
-  clientReports          ClientReport[]
-  popupCampaigns         PopupCampaign[]
-  credentialEntries      CredentialEntry[]
-  // Wave 3 Phase 3 — pixel engagement rows attributed to this property.
-  visitorSessions        VisitorSession[]
-  visitorEvents          VisitorEvent[]
-  // Wave 3 Phase 8 — pixel provisioning requests scoped to this property.
-  pixelProvisionRequests PixelProvisionRequest[]
+  creativeRequests               CreativeRequest[]
+  adCampaigns                    AdCampaign[]
+  insights                       Insight[]
+  reputationScans                ReputationScan[]
+  reputationMentions             PropertyMention[]
+  adLibraryAdvertisers           AdLibraryAdvertiser[]
+  residents                      Resident[]
+  leases                         Lease[]
+  workOrders                     WorkOrder[]
+  clientReports                  ClientReport[]
+  popupCampaigns                 PopupCampaign[]
+  credentialEntries              CredentialEntry[]
   // Reverse relation for property-level RBAC. See UserPropertyAccess.
-  userAccess             UserPropertyAccess[]
+  userAccess                     UserPropertyAccess[]
   // Per-property integration connections. NULL on these rows means
   // "applies to the whole org" (legacy / pre-migration behavior); a
   // populated propertyId scopes the connection to this single property
-  // so multi-property tenants can wire each domain's GA4 + GSC + Pixel
+  // so multi-property tenants can wire each domain's GA4 + GSC
   // independently.
-  cursiveIntegrations    CursiveIntegration[]
-  seoIntegrations        SeoIntegration[]
+  seoIntegrations                SeoIntegration[]
   // Wave 3 Phase 5 — SEO metrics scoped to this property (NULL-propertyId
   // rows on these models are org-wide and have no Property relation).
-  seoSnapshots           SeoSnapshot[]
-  seoQueries             SeoQuery[]
-  seoLandingPages        SeoLandingPage[]
+  seoSnapshots                   SeoSnapshot[]
+  seoQueries                     SeoQuery[]
+  seoLandingPages                SeoLandingPage[]
   // Per-property chatbot override. NULL relation = this property inherits the
   // org-level TenantSiteConfig chatbot fields. A populated row lets a
   // multi-property workspace run a distinct bot (persona, knowledge base,
   // capture mode, branding) on this property's own website. Field-level
   // fallback to the org config is done in lib/chatbot/resolve-config.ts.
-  chatbotConfig          PropertyChatbotConfig?
+  chatbotConfig                  PropertyChatbotConfig?
   // Structured per-property knowledge base (slice "Property Knowledge Base"
   // S1). Captures canonical floor plans, amenities, policies, lease terms,
   // application process + neighborhood as STRUCTURED facts so the chatbot
   // answers from grounded data instead of inventing unit type -> size maps
   // (Telegraph "triple = 200 sq ft" bug). Distinct from the free-text
   // chatbotKnowledgeBase blob on the config; this is queryable + scored.
-  knowledgeBase          PropertyKnowledgeBase?
-  websiteBuildRequests   WebsiteBuildRequest[]
-  aeoChecks              AeoCitationCheck[]
-  aeoMentionSnapshots    AeoMentionSnapshot[]
-  aeoCustomPrompts       AeoCustomPrompt[]
-  aeoOpportunityScores   AeoOpportunityScore[]
-  aeoOnPageAudits        AeoOnPageAudit[]
-  neighborhoodPages      NeighborhoodPage[]
+  knowledgeBase                  PropertyKnowledgeBase?
+  websiteBuildRequests           WebsiteBuildRequest[]
+  aeoChecks                      AeoCitationCheck[]
+  aeoMentionSnapshots            AeoMentionSnapshot[]
+  aeoCustomPrompts               AeoCustomPrompt[]
+  aeoOpportunityScores           AeoOpportunityScore[]
+  aeoOnPageAudits                AeoOnPageAudit[]
+  neighborhoodPages              NeighborhoodPage[]
   // Per-property RentCast market intelligence snapshots (rent AVM,
   // market stats). Populated by the Market Intelligence section on
   // the property detail page; cached by lib/rentcast/cache.ts.
-  rentCastSnapshots      RentCastSnapshot[]
+  rentCastSnapshots              RentCastSnapshot[]
   // SEO/AEO Agent backrefs — Phase 1
-  seoActionRecs          SeoActionRecommendation[]
-  contentDrafts          ContentDraft[]
-  seoScoreHistory        SeoScoreHistory[]
-  competitorScans        PropertyCompetitorScan[]
+  seoActionRecs                  SeoActionRecommendation[]
+  contentDrafts                  ContentDraft[]
+  seoScoreHistory                SeoScoreHistory[]
+  competitorScans                PropertyCompetitorScan[]
   // DataforSEO ingestion (Phase 1.5)
-  seoTargetQueries       SeoTargetQuery[]
-  seoScanJobs            SeoScanJob[]
-  serpRankings           SerpRanking[]
-  onPageAudits           OnPageAudit[]
-  backlinkSummaries      BacklinkSummary[]
+  seoTargetQueries               SeoTargetQuery[]
+  seoScanJobs                    SeoScanJob[]
+  serpRankings                   SerpRanking[]
+  onPageAudits                   OnPageAudit[]
+  backlinkSummaries              BacklinkSummary[]
   // DataforSEO ingestion (Phase 2)
-  onPageInstantAudits    OnPageInstantAudit[]
-  localPackRankings      LocalPackRanking[]
-  rankedKeywords         RankedKeyword[]
-  keywordIntersections   KeywordIntersection[]
-  queryLandingDaily      QueryLandingDaily[]
-  dailySignalSnapshots   DailySignalSnapshot[]
+  onPageInstantAudits            OnPageInstantAudit[]
+  localPackRankings              LocalPackRanking[]
+  rankedKeywords                 RankedKeyword[]
+  keywordIntersections           KeywordIntersection[]
+  queryLandingDaily              QueryLandingDaily[]
+  dailySignalSnapshots           DailySignalSnapshot[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1410,18 +1364,14 @@ model Lead {
   externalSystem String?
   externalId     String?
 
-  // Related visitor (if came from pixel)
-  visitorId String?
-  visitor   Visitor? @relation(fields: [visitorId], references: [id])
-
   // Conversation history
-  conversations  ChatbotConversation[]
+  conversations        ChatbotConversation[]
   chatbotLearningCases ChatbotLearningCase[]
-  followUpTasks  LeadFollowUpTask[]
-  tours          Tour[]
-  applications   Application[]
-  residents      Resident[]
-  matchDecisions LeadMatchDecision[]
+  followUpTasks        LeadFollowUpTask[]
+  tours                Tour[]
+  applications         Application[]
+  residents            Resident[]
+  matchDecisions       LeadMatchDecision[]
 
   // Ownership
   assignedToUserId String?
@@ -1797,274 +1747,6 @@ model WorkOrder {
 }
 
 // ============================================================================
-// PIXEL / VISITORS
-// ============================================================================
-
-model Visitor {
-  id         String       @id @default(cuid())
-  orgId      String
-  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  propertyId String?
-  property   Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
-
-  // Cursive identifier
-  cursiveVisitorId String? @unique
-  hashedEmail      String? // SHA-256 for ad platform sync
-  visitorHash      String? // Unique ID for deduplication
-
-  // Identified data
-  status         VisitorIdentificationStatus @default(ANONYMOUS)
-  firstName      String?
-  lastName       String?
-  email          String?
-  phone          String?
-  enrichedData   Json? // Full Cursive enrichment payload
-  lastEnrichedAt DateTime? // Segment/profile refresh; never a substitute for a site visit
-
-  // Session data
-  firstSeenAt      DateTime @default(now())
-  lastSeenAt       DateTime @default(now())
-  sessionCount     Int      @default(1)
-  pagesViewed      Json? // Array of URLs + timestamps
-  totalTimeSeconds Int      @default(0)
-  referrer         String?
-  utmSource        String?
-  utmMedium        String?
-  utmCampaign      String?
-
-  // Intent score (computed)
-  intentScore Int @default(0)
-
-  // Lead conversion
-  leads          Lead[]
-  convertedAt    DateTime?
-  outreachSent   Boolean   @default(false)
-  outreachSentAt DateTime?
-
-  // First-party pixel sessions and events
-  sessions VisitorSession[]
-  events   VisitorEvent[]
-
-  // Operator-initiated chatbot engagements
-  chatbotEngagements ChatbotEngagement[]
-
-  // Ad platform sync state
-  syncedToGoogleAds Boolean @default(false)
-  syncedToMetaAds   Boolean @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([orgId, status])
-  @@index([orgId, lastSeenAt])
-  @@index([orgId, firstSeenAt])
-  @@index([orgId, email])
-  @@index([cursiveVisitorId])
-  @@index([hashedEmail])
-  // Visitors page "Hot" tab filters by intentScore; without these
-  // composite indexes the query would full-scan the org.
-  @@index([orgId, intentScore(sort: Desc)])
-  @@index([orgId, intentScore(sort: Desc), lastSeenAt(sort: Desc)])
-}
-
-model CursiveIntegration {
-  id    String       @id @default(cuid())
-  orgId String
-  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-
-  // Per-property scoping. NULL = legacy "applies to whole org" — every
-  // existing row at the time of the multi-property migration is NULL,
-  // which preserves the prior single-pixel-per-org behavior. New
-  // connections always specify a property so multi-property tenants
-  // (e.g. SG Real Estate's 71 properties) can run a distinct pixel per
-  // domain.
-  propertyId String?
-  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
-
-  cursivePixelId    String? // The Cursive pixel ID provisioned for this tenant
-  cursiveAccountId  String? // Cursive account this pixel belongs to
-  pixelScriptUrl    String? // CDN URL for the pixel script
-  installedOnDomain String? // Which hostname the pixel is installed on
-  provisionedAt     DateTime?
-  lastEventAt       DateTime?
-  totalEventsCount  Int       @default(0)
-
-  // Raw pixel-hit telemetry: ticks on EVERY webhook event we process,
-  // including anonymous page_views that bail at the resolution gate.
-  // `lastEventAt`/`totalEventsCount` above only tick when AL resolves
-  // a new identity, which made the integrations UI look dead (counter
-  // stuck at 31 for days) on tenants whose pixel was firing thousands
-  // of anonymous pageviews but rarely resolving. Split the counters so
-  // operators see real-time pulse separately from resolved-identity
-  // throughput.
-  lastPixelHitAt      DateTime?
-  totalPixelHitsCount Int       @default(0)
-
-  // Per-tenant webhook token. URL-as-secret so AL's per-pixel webhook UI
-  // works without our shared header. 32 hex chars = 128 bits of entropy.
-  webhookToken String? @unique
-
-  // the upstream pixel provider segment binding for the admin "Sync from segment" pull
-  cursiveSegmentId  String?
-  lastSegmentSyncAt DateTime?
-
-  // Weekly digest delivery preferences
-  weeklyDigestEnabled Boolean @default(true)
-  weeklyDigestEmails  Json? // Array of emails
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Composite uniqueness allows ONE row per (org, property), with the
-  // legacy "all properties" row keyed as (orgId, NULL). Postgres treats
-  // NULL as distinct in unique indexes by default, so the prior
-  // org-wide row coexists with new per-property rows without conflict.
-  @@unique([orgId, propertyId])
-  @@index([orgId])
-  @@index([propertyId])
-}
-
-// the upstream pixel provider does not expose a programmatic pixel-creation API, so when a
-// tenant asks for visitor identification we queue a request here. Ops sets
-// up the pixel + segment + workflow in the AL UI, then pastes the resulting
-// pixel_id into the admin Cursive panel — which marks the matching request
-// FULFILLED and emails the customer with their install snippet.
-enum PixelRequestStatus {
-  PENDING
-  FULFILLED
-  CANCELLED
-}
-
-model PixelProvisionRequest {
-  id    String       @id @default(cuid())
-  orgId String
-  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-
-  // Wave 3 Phase 8 — which building this request is for. Null for legacy
-  // org-wide requests (pre multi-property). scaffoldPropertyIntegrations
-  // always sets it now since it loops per-property.
-  propertyId String?
-  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
-
-  websiteName String
-  websiteUrl  String
-
-  status            PixelRequestStatus @default(PENDING)
-  requestedByUserId String?
-  requestedAt       DateTime           @default(now())
-  fulfilledAt       DateTime?
-
-  // Snapshot of the resulting pixel_id once fulfilled (for audit/debugging).
-  fulfilledPixelId String?
-  notes            String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([orgId, status])
-  @@index([status, requestedAt])
-}
-
-// ============================================================================
-// FIRST-PARTY PIXEL — sessions + events from our own JS snippet
-// ============================================================================
-// `Visitor` is the long-lived person record (potentially identified). Each
-// browser cookie maps to one or more `VisitorSession`s, and each pageview /
-// scroll / time-on-page tick is a `VisitorEvent`. Keeping this in two tables
-// stays close to the Segment / PostHog model and keeps Visitor lean.
-
-model VisitorSession {
-  id        String       @id @default(cuid())
-  orgId     String
-  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  visitorId String?
-  visitor   Visitor?     @relation(fields: [visitorId], references: [id], onDelete: SetNull)
-
-  // Building this session's pixel hit is attributed to (Wave 3 Phase 3).
-  // Set from the SAME attributedPropertyId the webhook processor already
-  // resolved for the Visitor/Lead write — never re-inferred here. Null for
-  // legacy org-wide pixels whose URL didn't resolve to a specific property.
-  propertyId String?
-  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
-
-  // Cookie / device identifiers (set by our pixel)
-  anonymousId  String // cookie value, lives in browser
-  sessionToken String  @unique // server-issued per session
-  deviceHash   String? // sha256(ua + ip) — helps cross-browser dedupe
-
-  // Acquisition
-  firstUrl      String?
-  firstReferrer String?
-  utmSource     String?
-  utmMedium     String?
-  utmCampaign   String?
-  utmTerm       String?
-  utmContent    String?
-
-  // Device
-  userAgent String?
-  ipAddress String?
-  country   String?
-  language  String?
-
-  // Engagement aggregate (denormalised so the feed page reads in one query)
-  pageviewCount    Int @default(0)
-  totalTimeSeconds Int @default(0)
-  maxScrollDepth   Int @default(0) // 0–100 percentage
-
-  startedAt   DateTime  @default(now())
-  lastEventAt DateTime  @default(now())
-  endedAt     DateTime?
-
-  events VisitorEvent[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([orgId, startedAt])
-  @@index([orgId, anonymousId])
-  @@index([orgId, propertyId, startedAt])
-  @@index([visitorId])
-}
-
-model VisitorEvent {
-  id    String       @id @default(cuid())
-  orgId String
-  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-
-  sessionId String
-  session   VisitorSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  visitorId String?
-  visitor   Visitor?       @relation(fields: [visitorId], references: [id], onDelete: SetNull)
-
-  // Same attribution as the parent VisitorSession — copied at write time
-  // (Wave 3 Phase 3), not re-inferred, so a session that later gets a
-  // property doesn't leave its earlier events orphaned from filters.
-  propertyId String?
-  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
-
-  type     String // "pageview" | "identify" | "scroll" | "timing" | "click" | "form_submit" | "unload"
-  url      String?
-  path     String?
-  title    String?
-  referrer String?
-
-  // Optional payloads (JSON to stay flexible without exploding the schema)
-  properties        Json?
-  scrollDepth       Int? // 0–100
-  timeOnPageSeconds Int?
-
-  occurredAt DateTime @default(now())
-  createdAt  DateTime @default(now())
-
-  @@index([orgId, occurredAt])
-  @@index([orgId, propertyId, occurredAt])
-  @@index([sessionId])
-  @@index([visitorId])
-  @@index([type])
-}
-
-// ============================================================================
 // CHATBOT
 // ============================================================================
 
@@ -2124,7 +1806,7 @@ model ChatbotConversation {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  flags ConversationFlag[]
+  flags         ConversationFlag[]
   learningCases ChatbotLearningCase[]
   followUpTasks LeadFollowUpTask[]
 
@@ -2154,8 +1836,6 @@ model ChatbotEngagement {
   id            String           @id @default(cuid())
   orgId         String
   org           Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  visitorId     String?
-  visitor       Visitor?         @relation(fields: [visitorId], references: [id], onDelete: SetNull)
   sessionId     String
   triggeredById String
   message       String           @db.Text
@@ -2168,30 +1848,29 @@ model ChatbotEngagement {
   @@index([sessionId])
   @@index([orgId, status])
   @@index([orgId, createdAt])
-  @@index([visitorId])
 }
 
 model ChatbotLearningCase {
-  id             String                  @id @default(cuid())
+  id             String               @id @default(cuid())
   orgId          String
-  org            Organization            @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  org            Organization         @relation(fields: [orgId], references: [id], onDelete: Cascade)
   propertyId     String?
-  property       Property?               @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  property       Property?            @relation(fields: [propertyId], references: [id], onDelete: SetNull)
   conversationId String?
-  conversation   ChatbotConversation?    @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  conversation   ChatbotConversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
   leadId         String?
-  lead           Lead?                   @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  lead           Lead?                @relation(fields: [leadId], references: [id], onDelete: SetNull)
 
   caseType            ChatbotLearningCaseType
-  status              ChatbotLearningStatus @default(OPEN)
-  confidence          Float                 @default(0.5)
-  reasonSummary       String                @db.Text
+  status              ChatbotLearningStatus   @default(OPEN)
+  confidence          Float                   @default(0.5)
+  reasonSummary       String                  @db.Text
   evidenceJson        Json?
   outcomeSnapshotJson Json?
   dedupeKey           String
   resolvedAt          DateTime?
-  createdAt           DateTime              @default(now())
-  updatedAt           DateTime              @updatedAt
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
 
   followUpTasks LeadFollowUpTask[]
 
@@ -2203,28 +1882,28 @@ model ChatbotLearningCase {
 }
 
 model LeadFollowUpTask {
-  id             String                 @id @default(cuid())
+  id             String               @id @default(cuid())
   orgId          String
-  org            Organization           @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  org            Organization         @relation(fields: [orgId], references: [id], onDelete: Cascade)
   propertyId     String?
-  property       Property?              @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  property       Property?            @relation(fields: [propertyId], references: [id], onDelete: SetNull)
   leadId         String?
-  lead           Lead?                  @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  lead           Lead?                @relation(fields: [leadId], references: [id], onDelete: SetNull)
   conversationId String?
-  conversation   ChatbotConversation?   @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  conversation   ChatbotConversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
   learningCaseId String?
-  learningCase   ChatbotLearningCase?   @relation(fields: [learningCaseId], references: [id], onDelete: SetNull)
+  learningCase   ChatbotLearningCase? @relation(fields: [learningCaseId], references: [id], onDelete: SetNull)
 
   taskType           LeadFollowUpTaskType
-  priority           Int                 @default(2)
+  priority           Int                    @default(2)
   status             LeadFollowUpTaskStatus @default(OPEN)
   recommendedChannel LeadFollowUpChannel
   dueAt              DateTime?
-  reasonSummary      String              @db.Text
+  reasonSummary      String                 @db.Text
   dedupeKey          String
   dismissedReason    String?
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
 
   drafts LeadFollowUpDraft[]
 
@@ -2237,22 +1916,22 @@ model LeadFollowUpTask {
 }
 
 model LeadFollowUpDraft {
-  id                     String                 @id @default(cuid())
+  id                     String                  @id @default(cuid())
   orgId                  String
-  org                    Organization           @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  org                    Organization            @relation(fields: [orgId], references: [id], onDelete: Cascade)
   taskId                 String
-  task                   LeadFollowUpTask       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  task                   LeadFollowUpTask        @relation(fields: [taskId], references: [id], onDelete: Cascade)
   channel                LeadFollowUpChannel
   subject                String?
-  body                   String                 @db.Text
+  body                   String                  @db.Text
   generatedFromJson      Json?
   complianceWarningsJson Json?
   status                 LeadFollowUpDraftStatus @default(DRAFT)
-  editedBody             String?                @db.Text
+  editedBody             String?                 @db.Text
   sentAt                 DateTime?
   sentAuditEventId       String?
-  createdAt              DateTime               @default(now())
-  updatedAt              DateTime               @updatedAt
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
 
   @@unique([taskId, channel])
   @@index([orgId, status, createdAt(sort: Desc)])
@@ -2308,23 +1987,23 @@ model ConversationInsight {
 }
 
 model SiteImprovementRecommendation {
-  id                 String                 @id @default(cuid())
+  id                 String                @id @default(cuid())
   orgId              String
-  org                Organization           @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  org                Organization          @relation(fields: [orgId], references: [id], onDelete: Cascade)
   propertyId         String?
-  property           Property?              @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  property           Property?             @relation(fields: [propertyId], references: [id], onDelete: SetNull)
   insightId          String?
-  insight            ConversationInsight?   @relation(fields: [insightId], references: [id], onDelete: SetNull)
+  insight            ConversationInsight?  @relation(fields: [insightId], references: [id], onDelete: SetNull)
   recommendationType SiteImprovementType
   targetSurface      SiteImprovementTarget
   suggestedTitle     String
-  suggestedBody      String                 @db.Text
-  status             RecommendationStatus   @default(OPEN)
+  suggestedBody      String                @db.Text
+  status             RecommendationStatus  @default(OPEN)
   dedupeKey          String
   appliedAt          DateTime?
   dismissedAt        DateTime?
-  createdAt          DateTime               @default(now())
-  updatedAt          DateTime               @updatedAt
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
 
   @@unique([orgId, dedupeKey])
   @@index([orgId, status, createdAt(sort: Desc)])
@@ -2405,14 +2084,12 @@ model AdAccount {
   refreshTokenEncrypted String?   @db.Text
   tokenExpiresAt        DateTime?
 
-  pixelSyncEnabled Boolean   @default(false)
-  autoSyncEnabled  Boolean   @default(true)
-  lastSyncAt       DateTime?
-  lastSyncError    String?   @db.Text
+  autoSyncEnabled Boolean   @default(true)
+  lastSyncAt      DateTime?
+  lastSyncError   String?   @db.Text
 
-  adCampaigns          AdCampaign[]
-  metricsDaily         AdMetricDaily[]
-  audienceDestinations AudienceDestination[]
+  adCampaigns  AdCampaign[]
+  metricsDaily AdMetricDaily[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2733,8 +2410,7 @@ enum SeoSyncStatus {
 }
 
 // Defense-in-depth note (applies to every `propertyId` FK added in Wave 3:
-// SeoSnapshot, SeoQuery, SeoLandingPage below, plus VisitorSession,
-// VisitorEvent, and PixelProvisionRequest): the FK references Property(id)
+// SeoSnapshot, SeoQuery, SeoLandingPage below): the FK references Property(id)
 // only, with no constraint that Property.orgId matches the row's own
 // orgId. Not currently exploitable — every writer derives propertyId from
 // already org-scoped state (an org's own SeoIntegration/session/property
@@ -3500,7 +3176,7 @@ model Insight {
   property   Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
 
   // Classification
-  kind     String // traffic_drop | traffic_spike | pipeline_stall | chatbot_pattern | cpl_spike | keyword_drop | conv_rate_drop | hot_visitor
+  kind     String // traffic_drop | traffic_spike | pipeline_stall | chatbot_pattern | cpl_spike | keyword_drop | conv_rate_drop
   severity String @default("info") // info | warning | critical
   category String // traffic | leads | ads | seo | chatbot | occupancy
 
@@ -3509,7 +3185,7 @@ model Insight {
   suggestedAction String? @db.Text
 
   // Optional link back to the source entity
-  entityType String? // lead | property | campaign | conversation | visitor
+  entityType String? // lead | property | campaign | conversation
   entityId   String?
   href       String? // /portal/... deep link
 
@@ -3715,175 +3391,6 @@ model PropertyMention {
   @@index([orgId, propertyId, publishedAt(sort: Desc)])
   @@index([orgId, propertyId, sentiment])
   @@index([firstSeenScanId])
-}
-
-// ============================================================================
-// AUDIENCE SYNC — residential/commercial product line
-// ============================================================================
-// AudienceSegment caches the upstream pixel provider segments visible to an org. Cache is
-// refreshed on dashboard load or via a manual "Refresh" action. We don't
-// persist members here; members are fetched on-demand at push time.
-
-enum AudienceDestinationType {
-  CSV_DOWNLOAD
-  WEBHOOK
-  META_CUSTOM_AUDIENCE
-  GOOGLE_CUSTOMER_MATCH
-}
-
-enum AudienceSyncStatus {
-  PENDING
-  RUNNING
-  SUCCESS
-  FAILED
-}
-
-model AudienceSegment {
-  id    String       @id @default(cuid())
-  orgId String
-  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-
-  // the upstream pixel provider segment id (their primary key, opaque string)
-  alSegmentId String
-  name        String
-  description String?
-
-  // Last known member count from AL. Refreshed on list pulls.
-  memberCount Int @default(0)
-
-  // Stash the raw AL payload for the segment so we can render attribute
-  // chips without a second round-trip. Updated on every refresh.
-  rawPayload Json?
-
-  // Whether this org chooses to surface the segment in their dashboard.
-  // Defaults to true on import; toggled off if user hides it.
-  visible Boolean @default(true)
-
-  lastFetchedAt DateTime?
-
-  destinations AudienceDestination[]
-  syncRuns     AudienceSyncRun[]
-  schedules    AudienceSyncSchedule[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([orgId, alSegmentId])
-  @@index([orgId, visible])
-}
-
-model AudienceDestination {
-  id    String       @id @default(cuid())
-  orgId String
-  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-
-  type AudienceDestinationType
-  name String // operator-friendly label
-
-  // For WEBHOOK: target URL + signing secret. Stored encrypted (AES-GCM)
-  // via the same maybeDecrypt helper used for ad creds.
-  webhookUrl       String?
-  webhookSecretEnc String?
-
-  // For META_CUSTOM_AUDIENCE / GOOGLE_CUSTOMER_MATCH: pointer to the
-  // already-connected AdAccount. Reuses existing OAuth credentials.
-  adAccountId String?
-  adAccount   AdAccount? @relation(fields: [adAccountId], references: [id], onDelete: SetNull)
-
-  // External audience id on the destination platform (Meta CA id, Google
-  // user list resource name). Created lazily on first push.
-  externalAudienceId String?
-
-  // Optional segment binding. When set, this destination is "default" for
-  // the segment and shows on its detail page. Null means "shared/global"
-  // across all segments in the org.
-  segmentId String?
-  segment   AudienceSegment? @relation(fields: [segmentId], references: [id], onDelete: SetNull)
-
-  enabled    Boolean   @default(true)
-  lastUsedAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  syncRuns  AudienceSyncRun[]
-  schedules AudienceSyncSchedule[]
-
-  @@index([orgId, type])
-  @@index([segmentId])
-  @@index([adAccountId])
-}
-
-model AudienceSyncRun {
-  id    String       @id @default(cuid())
-  orgId String
-  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-
-  segmentId     String
-  segment       AudienceSegment     @relation(fields: [segmentId], references: [id], onDelete: Cascade)
-  destinationId String
-  destination   AudienceDestination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
-
-  status      AudienceSyncStatus @default(PENDING)
-  memberCount Int                @default(0)
-
-  // Geo filter snapshot at run time (zip codes, state, radius). Null if
-  // no filter was applied.
-  filterSnapshot Json?
-
-  startedAt    DateTime  @default(now())
-  finishedAt   DateTime?
-  errorMessage String?
-
-  // Triggered by user (userId) or system cron (null).
-  triggeredByUserId String?
-
-  @@index([orgId, startedAt(sort: Desc)])
-  @@index([segmentId, startedAt(sort: Desc)])
-  @@index([destinationId, startedAt(sort: Desc)])
-  @@index([status])
-}
-
-// AudienceSyncSchedule defines a recurring push of a segment to a destination.
-// The cron at /api/cron/run-audience-syncs picks rows where enabled=true and
-// nextRunAt <= now() each tick, executes the push, then advances nextRunAt to
-// the next due time based on frequency.
-enum AudienceScheduleFrequency {
-  DAILY
-  WEEKLY
-}
-
-model AudienceSyncSchedule {
-  id    String       @id @default(cuid())
-  orgId String
-  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-
-  segmentId     String
-  segment       AudienceSegment     @relation(fields: [segmentId], references: [id], onDelete: Cascade)
-  destinationId String
-  destination   AudienceDestination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
-
-  frequency AudienceScheduleFrequency
-  // 0-6 (Sunday=0). Required when frequency = WEEKLY, ignored when DAILY.
-  dayOfWeek Int?
-  // 0-23, the hour of the day (UTC) the run kicks off.
-  hourUtc   Int
-
-  // Optional GeoFilter snapshot { zipCodes?: string[]; states?: string[]; cities?: string[] }
-  filterSnapshot Json?
-
-  enabled   Boolean   @default(true)
-  lastRunAt DateTime?
-  nextRunAt DateTime
-
-  createdByUserId String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([orgId, enabled])
-  @@index([nextRunAt, enabled])
-  @@index([segmentId])
-  @@index([destinationId])
 }
 
 // ============================================================================
@@ -4744,7 +4251,6 @@ enum OnboardingStepKey {
   CONNECT_DATA_SOURCE
   CONFIRM_CONTACT_PREFS
   APPROVE_CHATBOT_PERSONA
-  INSTALL_PIXEL
   // Growth
   VERIFY_LEAD_CAPTURE
   CONNECT_ADS
@@ -6287,11 +5793,7 @@ enum LeadNotifyChannel {
   POPUP
   FORM
   INGEST
-  // Pixel identity resolution. Split from INGEST so a genuine Zapier/webhook
-  // lead can still notify while pixel resolutions stay quiet.
-  PIXEL
   TOUR
-  VISITOR_CONVERT
   MANUAL
 }
 

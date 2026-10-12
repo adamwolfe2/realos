@@ -1,11 +1,10 @@
 import "server-only";
 
-// the upstream pixel provider segments API client. Used by the AUDIENCE_SYNC product line
-// (residential / commercial brokers) to surface segments and stream members
-// out to ad accounts, CRMs, or webhooks.
+// Cursive segments API client. Used by the lead marketplace import
+// (lib/marketplace/cursive-sync.ts) and its admin diagnose route.
 //
-// Auth: X-Api-Key header. Default key from CURSIVE_API_KEY; an org-level
-// override on Organization.cursiveApiKeyOverride takes precedence when set.
+// Auth: X-Api-Key header. A caller-supplied key (per-source override) wins,
+// else CURSIVE_API_KEY.
 //
 // Response shape (segment members): SCREAMING_SNAKE_CASE under one of
 // `data`, `results`, `items`, `result`, or `resolutions`. We tolerate all.

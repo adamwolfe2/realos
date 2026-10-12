@@ -137,7 +137,6 @@ export function deriveLeadProof(input: LeadProofInput): {
 const SOURCE_PROVENANCE: Record<LeadSource, string> = {
   CHATBOT: "Captured by LeaseStack chatbot",
   FORM: "Captured by LeaseStack form or popup",
-  PIXEL_OUTREACH: "Source not provided",
   REFERRAL: "Captured by LeaseStack referral link",
   GOOGLE_ADS: "Attributed from Google Ads",
   META_ADS: "Attributed from Meta Ads",

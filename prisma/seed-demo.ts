@@ -23,7 +23,6 @@ import {
   ApplicationStatus,
   AdPlatform,
   ChatbotConversationStatus,
-  VisitorIdentificationStatus,
   AuditAction,
 } from "@prisma/client";
 import { PrismaNeonHttp } from "@prisma/adapter-neon";
@@ -237,7 +236,6 @@ async function main() {
       mrrCents: 79900,
       // All modules on for a full demo
       moduleWebsite: true,
-      modulePixel: true,
       moduleChatbot: true,
       moduleGoogleAds: true,
       moduleMetaAds: true,
@@ -715,41 +713,6 @@ async function main() {
   console.log(`  Created ${chatConvs.length} chatbot conversations`);
 
   // ------------------------------------------------------------------
-  // 11. Visitors (40 — last 14 days)
-  // ------------------------------------------------------------------
-  const visitors = await prisma.$transaction(
-    Array.from({ length: 40 }, (_, i) => {
-      const createdAt = daysAgo(ri(0, 14));
-      const isIdentified = i < 15; // first 15 are identified
-      const lead = isIdentified ? leadRecords[i] : null;
-
-      return prisma.visitor.create({
-        data: {
-          orgId: org.id,
-          propertyId: property.id,
-          status: isIdentified
-            ? VisitorIdentificationStatus.IDENTIFIED
-            : VisitorIdentificationStatus.ANONYMOUS,
-          firstName: isIdentified && lead ? lead.firstName : null,
-          lastName: isIdentified && lead ? lead.lastName : null,
-          email: isIdentified && lead ? lead.email : null,
-          visitorHash: `demo-visitor-hash-${i}`,
-          intentScore: ri(20, 95),
-          sessionCount: ri(1, 6),
-          totalTimeSeconds: ri(45, 600),
-          firstSeenAt: createdAt,
-          lastSeenAt: daysAgo(ri(0, 3)),
-          utmSource: pick(["google", "google", "direct", "bing", null]),
-          utmMedium: pick(["cpc", "organic", null]),
-          createdAt,
-          updatedAt: createdAt,
-        },
-      });
-    }),
-  );
-  console.log(`  Created ${visitors.length} visitors`);
-
-  // ------------------------------------------------------------------
   // 12. Insights (3)
   // ------------------------------------------------------------------
   const insights = await prisma.$transaction([
@@ -915,7 +878,6 @@ Demo seed complete.
   Ad campaigns: ${campaigns.length}
   Ad metrics:   ${metricRows.length} daily rows
   Chatbot convs:${chatConvs.length}
-  Visitors:     ${visitors.length}
   Insights:     ${insights.length}
   Audit events: ${auditEvents.length}
 `);

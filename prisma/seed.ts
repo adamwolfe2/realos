@@ -88,7 +88,6 @@ async function main() {
       subscriptionTier: SubscriptionTier.SCALE,
       moduleWebsite: true,
       moduleChatbot: true,
-      modulePixel: true,
       moduleGoogleAds: true,
       moduleMetaAds: true,
       moduleSEO: true,

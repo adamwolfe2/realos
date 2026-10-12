@@ -155,7 +155,6 @@ export function getSource(id: string): CanonicalSource {
 const LEAD_SOURCE_TO_CANONICAL: Record<LeadSource, string> = {
   CHATBOT: "chatbot",
   FORM: "web_form",
-  PIXEL_OUTREACH: "other",
   REFERRAL: "referral",
   GOOGLE_ADS: "google_ads",
   META_ADS: "meta_ads",

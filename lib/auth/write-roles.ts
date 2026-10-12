@@ -4,8 +4,7 @@ import { UserRole } from "@prisma/client";
  * Roles allowed to write operational tenant data (manual entry, lead↔lease
  * links, and anything else that mints a customer-visible record).
  *
- * CLIENT_VIEWER is a read-only seat (schema.prisma) and AL_PARTNER is an
- * external partner identity — neither may mutate. Mirrors
+ * CLIENT_VIEWER is a read-only seat (schema.prisma) and may not mutate. Mirrors
  * ALLOWED_TOGGLE_ROLES in the marketplace toggle route.
  *
  * Extracted from lib/actions/manual-records.ts (2026-08-02) so the

@@ -86,11 +86,6 @@ const detectApproveChatbotPersona: Detector = async (orgId) => {
   return { done, metadata: { chatbotEnabled: cfg?.chatbotEnabled ?? false } };
 };
 
-// INSTALL_PIXEL stays in the OnboardingStepKey enum until the schema
-// migration, so the exhaustive registry needs an entry. The step is no longer
-// part of any phase (see PHASE_STEPS) and is never completed.
-const detectRetiredStep: Detector = async () => ({ done: false });
-
 // ---------------------------------------------------------------------------
 // GROWTH
 // ---------------------------------------------------------------------------
@@ -185,7 +180,6 @@ const DETECTORS: Record<OnboardingStepKey, Detector> = {
   [OnboardingStepKey.CONNECT_DATA_SOURCE]: detectConnectDataSource,
   [OnboardingStepKey.CONFIRM_CONTACT_PREFS]: detectConfirmContactPrefs,
   [OnboardingStepKey.APPROVE_CHATBOT_PERSONA]: detectApproveChatbotPersona,
-  [OnboardingStepKey.INSTALL_PIXEL]: detectRetiredStep,
   [OnboardingStepKey.VERIFY_LEAD_CAPTURE]: detectVerifyLeadCapture,
   [OnboardingStepKey.CONNECT_ADS]: detectConnectAds,
   [OnboardingStepKey.REVIEW_FIRST_REPORT]: detectReviewFirstReport,

@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { OrgType, ProductLine, UserRole } from "@prisma/client";
 
+// AL_PARTNER was dropped from the UserRole enum (pixel retirement, S4). These
+// cases keep proving that an unrecognised role fails closed.
+const RETIRED_ROLE = "AL_PARTNER" as unknown as UserRole;
+
 // F-010: requireWritableWorkspace must reject read-only seats (CLIENT_VIEWER,
 // AL_PARTNER) so every mutation path inherits the gate. Exercises the REAL
 // scope.ts against mocked Clerk + prisma.
@@ -101,7 +105,7 @@ describe("viewer write gate (F-010)", () => {
   });
 
   it("AL_PARTNER is read-only", async () => {
-    seed(UserRole.AL_PARTNER, OrgType.AGENCY);
+    seed(RETIRED_ROLE, OrgType.AGENCY);
     await expect(requireWritableWorkspace()).rejects.toMatchObject({
       status: 403,
     });

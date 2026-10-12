@@ -7,6 +7,10 @@ import {
   stripeTrialSchedule,
 } from "@/lib/billing/checkout-policy";
 
+// AL_PARTNER was dropped from the UserRole enum (pixel retirement, S4). These
+// cases keep proving that an unrecognised role fails closed.
+const RETIRED_ROLE = "AL_PARTNER" as unknown as UserRole;
+
 describe("billing checkout policy", () => {
   it("allows only the client owner on a client session", () => {
     expect(
@@ -42,7 +46,7 @@ describe("billing checkout policy", () => {
     ).toBe(false);
     expect(
       canManageBilling({
-        role: UserRole.AL_PARTNER,
+        role: RETIRED_ROLE,
         isAgency: true,
         isImpersonating: true,
       }),
