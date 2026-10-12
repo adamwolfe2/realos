@@ -17,7 +17,7 @@ export function PlatformFooter() {
     {
       heading: "Product",
       links: [
-        { label: "Product",     href: "/features/pixel" },
+        { label: "Product",     href: "/features" },
         { label: "Pricing",     href: "/pricing" },
         { label: "See it live", href: "/demo" },
       ],

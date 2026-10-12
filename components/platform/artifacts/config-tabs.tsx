@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import {
   MetaMark, GoogleMark, TikTokMark, SlackMark, CalcomMark,
   ResendMark, GA4Mark, AppFolioMark, ChatGPTMark, PerplexityMark, ClaudeMark,
-  GeminiMark, LinkedInMark, VercelMark, FigmaMark,
+  GeminiMark, VercelMark, FigmaMark,
 } from "./brand-logos";
 
 const ACCENT = "#0f62fe";
@@ -24,7 +24,7 @@ type Delta = "up" | "down-good" | "down-bad" | "neutral";
 type Row = {
   label: string;
   value: string;
-  icon: "check" | "home" | "brand" | "chat" | "ads" | "pixel" | "report" | "handshake" | "cal" | "mail" | "search" | "shield" | "phone";
+  icon: "check" | "home" | "brand" | "chat" | "ads" | "report" | "handshake" | "cal" | "mail" | "search" | "shield" | "phone";
   logos?: React.ReactNode[];
   delta?: Delta;
 };
@@ -70,7 +70,6 @@ const STEPS: Step[] = [
     rows: [
       { label: "Data analytics",                       value: "Every channel's numbers, one dashboard",     icon: "report", logos: [<GA4Mark key="ga" size={16} />, <AppFolioMark key="af" size={16} />] },
       { label: "Custom site (optional)",               value: "Your domain, capturing every visit",         icon: "home",   logos: [<VercelMark key="v" size={16} />, <FigmaMark key="fig" size={16} />] },
-      { label: "Visitor identification (optional)",    value: "Names plus emails on your traffic",          icon: "pixel",  logos: [<GA4Mark key="ga2" size={16} />, <LinkedInMark key="li" size={16} />] },
       { label: "AI chatbot (optional)",                value: "Trained on each individual property",        icon: "chat",   logos: [<ClaudeMark key="cl" size={16} />] },
       { label: "Ad campaigns (optional)",              value: "Tracked in your dashboard",                  icon: "ads",    logos: [<MetaMark key="m" size={16} />, <GoogleMark key="g" size={16} />, <TikTokMark key="t" size={16} />] },
       { label: "AI discovery (optional)",              value: "Pages written to be cited",                  icon: "search", logos: [<ChatGPTMark key="c" size={16} />, <PerplexityMark key="p" size={16} />, <ClaudeMark key="cl2" size={16} />, <GeminiMark key="gem" size={16} />] },
@@ -92,7 +91,6 @@ const STEPS: Step[] = [
       { label: "AI recommendations",      value: "Daily actions, prioritized by impact",         icon: "check",  logos: [<ClaudeMark key="cl" size={16} />] },
       { label: "Channel monitoring",      value: "Anomalies flagged across every source",        icon: "ads",    logos: [<MetaMark key="m" size={16} />, <GoogleMark key="g2" size={16} />, <TikTokMark key="t" size={16} />] },
       { label: "AI search discovery",     value: "Your pages being indexed and quoted",          icon: "search", logos: [<ChatGPTMark key="c" size={16} />, <PerplexityMark key="p" size={16} />, <ClaudeMark key="cl2" size={16} />, <GeminiMark key="gem" size={16} />, <GoogleMark key="g3" size={16} />] },
-      { label: "Visitor identification",  value: "Contact info flowing into your CRM",           icon: "pixel",  logos: [<GA4Mark key="ga2" size={16} />, <LinkedInMark key="li" size={16} />] },
       { label: "Keyword insights",        value: "Ranking opportunities surfaced weekly",        icon: "search", logos: [<GoogleMark key="g4" size={16} />] },
       { label: "Operator access",         value: "Live dashboards open to your team",            icon: "mail",   logos: [<SlackMark key="s" size={16} />, <ResendMark key="r2" size={16} />] },
     ],
@@ -112,7 +110,6 @@ const STEPS: Step[] = [
       { label: "Leases signed",      value: "4, up 1 vs last week",         icon: "home",   delta: "up",        logos: [<AppFolioMark key="af2" size={16} />] },
       { label: "Cost per lease",     value: "$948, down 11% vs last month", icon: "report", delta: "down-good" },
       { label: "AI recommendations", value: "3 new actions for this week",   icon: "check",  logos: [<ClaudeMark key="cl" size={16} />] },
-      { label: "Visitors identified", value: "312 named this week",         icon: "pixel",  logos: [<LinkedInMark key="li" size={16} />, <GA4Mark key="ga" size={16} />] },
       { label: "Delivered to",       value: "Operator and GM, Monday 7am",  icon: "mail",   logos: [<ResendMark key="r" size={16} />, <SlackMark key="s" size={16} />] },
     ],
     footer: "One weekly report. Open your live dashboards anytime to dig deeper.",
@@ -381,7 +378,7 @@ function deltaColor(d?: Delta) {
 // Norman 2026-05-21 third pass: "fix the icons and turn them into logos
 // on the 3 stages of the hero animation, it needs to be the BEST
 // looking." Lead each row with the actual brand logo of the integration
-// being described (AppFolio for property sync, Cursive for the pixel,
+// being described (AppFolio for property sync,
 // ChatGPT/Perplexity for AEO, etc.) instead of a generic glyph. Falls
 // back to the glyph only when a row has no logos at all (rare).
 //
@@ -445,7 +442,6 @@ function IconGlyph({ kind }: { kind: Row["icon"] }) {
     case "brand":     return <svg {...p}><path d="M4 3h6v3h-2v5h-2v-5H4V3Z" fill="currentColor" stroke="none"/></svg>;
     case "chat":      return <svg {...p}><path d="M2 3H12V9H5L2 11V3Z" /></svg>;
     case "ads":       return <svg {...p}><path d="M2 5H5L9 2V12L5 9H2V5Z" /></svg>;
-    case "pixel":     return <svg {...p}><circle cx="7" cy="7" r="4"/><circle cx="7" cy="7" r="1.2" fill="currentColor" stroke="none"/></svg>;
     case "report":    return <svg {...p}><path d="M3 11V3h8v8H3Zm2-4h4M5 9h4M5 5h3"/></svg>;
     case "handshake": return <svg {...p}><path d="M2 8l3-3 2 2 3-3 2 2v3l-3 3-2-2-3 3-2-2V8Z"/></svg>;
     case "cal":       return <svg {...p}><rect x="2" y="3" width="10" height="9" rx="1.5"/><path d="M2 6h10M5 2v2M9 2v2"/></svg>;

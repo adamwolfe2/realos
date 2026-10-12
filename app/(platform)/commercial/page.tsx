@@ -4,13 +4,12 @@ import { SplitHero } from "@/components/platform/split-hero";
 import { Reveal } from "@/components/platform/reveal";
 
 export const metadata: Metadata = {
-  title: "Commercial real estate leasing data and Audience Sync",
+  title: "Commercial real estate leasing",
   description:
-    "Audience Sync for commercial is live today: verified office, retail, and industrial intent segments pushed to your ad accounts and CRM. Office, retail, industrial, flex, and medical leasing modules are in a limited design-partner pilot.",
+    "Office, retail, industrial, flex, and medical leasing modules are in a limited design-partner pilot.",
 };
 
 const MODULES = [
-  { key: "audiences",  title: "Audience Sync",           status: "live today",     body: "Verified office, retail, and industrial intent segments pushed to your ad accounts and CRM today. Cross-property targeting with zip and state filters." },
   { key: "office",     title: "Office leasing",          status: "design partner, Q3", body: "Tenant-rep outreach tracked, tour requests captured from spec sheets, sublease mapping surfaced per submarket, VTS handoff in the same workflow."   },
   { key: "retail",     title: "Retail and restaurant",   status: "design partner, Q3", body: "Foot-traffic analytics tied to the trade area, co-tenant matching for the concept, pitch collateral assembled from the deal you are actually doing." },
   { key: "industrial", title: "Industrial and flex",     status: "design partner, Q4", body: "Bay specs, dock-door counts, clear height, and loading detail packaged into 3PL-ready listings the broker can forward in one click."       },
@@ -22,9 +21,9 @@ export default function CommercialPage() {
     <div style={{ backgroundColor: "#FFFFFF", color: "#161616" }}>
       <SplitHero
         eyebrow="Commercial real estate"
-        headline="Commercial leasing data."
-        headlineAccent="Audience Sync, live."
-        subhead="Verified office, retail, and industrial segments push to your ad accounts and CRM. Full leasing modules ship via design partners."
+        headline="Commercial leasing."
+        headlineAccent="Built with design partners."
+        subhead="Office, retail, industrial, and medical leasing modules ship via design partners."
         ctas={[
           { label: "Apply as a design partner", href: "/book-demo" },
           { label: "See the residential platform", href: "/residential", variant: "secondary" },
@@ -47,7 +46,7 @@ export default function CommercialPage() {
                   lineHeight: 1.15,
                 }}
               >
-                Five commercial surfaces. Built with the operators using them.
+                Four commercial surfaces. Built with the operators using them.
               </h2>
             </div>
           </Reveal>

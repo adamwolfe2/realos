@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
   "registryProductCount": 8,
-  "sourceRecordCount": 135,
+  "sourceRecordCount": 131,
   "summary": {
     "critical": 42,
-    "warning": 21,
+    "warning": 18,
     "info": 18,
-    "total": 81
+    "total": 78
   },
   "findings": [
     {
@@ -549,34 +549,12 @@
       "evidencePath": "lib/marketplace/catalog.ts"
     },
     {
-      "id": "orphan_product_source:proposal_catalog:addon-audience-sync",
-      "code": "orphan_product_source",
-      "severity": "warning",
-      "owner": "product",
-      "source": "proposal_catalog",
-      "sourceId": "addon-audience-sync",
-      "productKey": null,
-      "reason": "Customer-visible source has no approved canonical product mapping.",
-      "evidencePath": "lib/proposals/catalog.ts"
-    },
-    {
       "id": "orphan_product_source:proposal_catalog:addon-commercial-retainer",
       "code": "orphan_product_source",
       "severity": "warning",
       "owner": "product",
       "source": "proposal_catalog",
       "sourceId": "addon-commercial-retainer",
-      "productKey": null,
-      "reason": "Customer-visible source has no approved canonical product mapping.",
-      "evidencePath": "lib/proposals/catalog.ts"
-    },
-    {
-      "id": "orphan_product_source:proposal_catalog:addon-cursive-pixel-pro",
-      "code": "orphan_product_source",
-      "severity": "warning",
-      "owner": "product",
-      "source": "proposal_catalog",
-      "sourceId": "addon-cursive-pixel-pro",
       "productKey": null,
       "reason": "Customer-visible source has no approved canonical product mapping.",
       "evidencePath": "lib/proposals/catalog.ts"
@@ -610,17 +588,6 @@
       "owner": "product",
       "source": "proposal_catalog",
       "sourceId": "addon-outbound-email-engine",
-      "productKey": null,
-      "reason": "Customer-visible source has no approved canonical product mapping.",
-      "evidencePath": "lib/proposals/catalog.ts"
-    },
-    {
-      "id": "orphan_product_source:proposal_catalog:addon-pixel-overage",
-      "code": "orphan_product_source",
-      "severity": "warning",
-      "owner": "product",
-      "source": "proposal_catalog",
-      "sourceId": "addon-pixel-overage",
       "productKey": null,
       "reason": "Customer-visible source has no approved canonical product mapping.",
       "evidencePath": "lib/proposals/catalog.ts"

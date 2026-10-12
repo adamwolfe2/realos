@@ -20,7 +20,6 @@ export type CapabilitySignalKey =
   | "integration.verified_domain"
   | "integration.appfolio_availability"
   | "integration.appfolio_leases"
-  | "integration.cursive_pixel"
   | "integration.ga4"
   | "integration.gsc"
   | "integration.reputation_source"

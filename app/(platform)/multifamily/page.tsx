@@ -43,10 +43,6 @@ export default function MultifamilyPage() {
           body: "Know which channel signed which lease at which property. Roll it up to the portfolio. Drill it down to a floor plan.",
         },
         {
-          title: "Per-property retargeting pools",
-          body: "Identity pixel builds audience pools by building, not by metro. Retargeting respects the community the lead actually visited, not the city it sits in.",
-        },
-        {
           title: "Fair-housing-reviewed creative",
           body: "Every ad and every landing page gets a HUD-compliance pass before it goes live. Reviewed copy, reviewed imagery, documented for your records.",
         },

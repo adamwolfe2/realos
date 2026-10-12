@@ -5,7 +5,7 @@ import { BLOG_POSTS } from "@/lib/copy/blog";
 export const metadata: Metadata = {
   title: "Blog, real estate marketing notes from the build",
   description:
-    "Field notes from building the dashboard that runs a property's online leasing: visitor identification, the after-hours chatbot, AI search visibility, and lease-up economics.",
+    "Field notes from building the dashboard that runs a property's online leasing: the after-hours chatbot, AI search visibility, and lease-up economics.",
 };
 
 export default function BlogIndex() {

@@ -29,7 +29,6 @@ const SECTIONS = [
       "Clerk, we use Clerk for authentication and account management. Clerk may store your name, email, and session data. See clerk.com/privacy.",
       "Stripe, payment processing is handled by Stripe. Card details are never stored on our servers. See stripe.com/privacy.",
       "Resend, transactional emails are sent via Resend. Your email address is transmitted to Resend solely for delivery. See resend.com/privacy.",
-      "Cursive, if you opt into the identity graph pixel, visitor data flows through Cursive. See cursive.io.",
       "AppFolio, if you integrate your AppFolio account, we pull publicly-listed unit data through your account. We never modify AppFolio records.",
     ],
   },

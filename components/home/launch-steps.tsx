@@ -26,12 +26,12 @@ const STEPS: Step[] = [
   {
     marker: "Days 2-13",
     title: "We build",
-    body: "We build your leasing site, ad campaigns, after-hours chatbot, visitor pixel, and dashboard. You review the site preview and sign off before anything goes live.",
+    body: "We build your leasing site, ad campaigns, after-hours chatbot, and dashboard. You review the site preview and sign off before anything goes live.",
   },
   {
     marker: "Day 14",
     title: "You're live",
-    body: "Site live on your domain. Ads running, chatbot answering, pixel firing. Your dashboard starts filling with real visitors and leads.",
+    body: "Site live on your domain. Ads running, chatbot answering. Your dashboard starts filling with real traffic and leads.",
   },
   {
     marker: "Every week after",

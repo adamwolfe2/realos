@@ -610,7 +610,7 @@ export async function synthesizeAudit(
 
   // ---- 6-pillar DPS + recommendations -----------------------------------
   // The audit page renders from these. Quiz answers feed both engines so
-  // operator-stated context (no chatbot, no pixel, no review monitoring)
+  // operator-stated context (no chatbot, no review monitoring)
   // becomes both a pillar penalty and a personalized action item.
   const hasSchemaMarkup =
     (provider.pageAudit?.schema?.type ?? []).length > 0 ||
@@ -1311,13 +1311,9 @@ const STACK_DETECTORS: Array<{
     patterns: [/privy\.com\/widget/i, /privywidget/i] },
   { key: "popupsmart", label: "Popupsmart", category: "popups",
     patterns: [/popupsmart\.com/i] },
-  // Visitor / pixel
-  { key: "cursive", label: "Cursive Pixel", category: "pixel",
-    patterns: [/cursive\.js/i, /meetcursive\.com\/p/i, /cursive\.tags/i] },
+  // Ad tracking pixel
   { key: "meta-pixel", label: "Meta Pixel", category: "pixel",
     patterns: [/connect\.facebook\.net\/.*\/fbevents\.js/i, /fbq\(['"]init/i] },
-  { key: "rb2b", label: "RB2B (B2B identification)", category: "pixel",
-    patterns: [/rb2b\.com/i] },
   // Analytics
   { key: "ga4", label: "Google Analytics 4 / GTM", category: "analytics",
     patterns: [/googletagmanager\.com\/gtag\/js/i, /googletagmanager\.com\/gtm\.js/i, /gtag\(['"]config/i] },
@@ -1342,7 +1338,7 @@ const CATEGORY_TAGLINES: Record<
 > = {
   chatbot: "AI chatbot / live chat widget",
   popups: "On-site popup / lead capture",
-  pixel: "Visitor identification pixel",
+  pixel: "Ad tracking pixel",
   analytics: "Analytics / tag manager",
   crm: "CRM / marketing automation",
 };

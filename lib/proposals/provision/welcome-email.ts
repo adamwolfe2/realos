@@ -72,8 +72,8 @@ export async function sendWelcomeEmail(
     </p>
     <p style="margin:0 0 12px;font-size:14px;line-height:1.6;color:#1E2A3A;">
       Click the button below to accept your invitation and finish setting up
-      your login. Once you're in, you'll be able to connect your PMS, install
-      the visitor pixel, and start tracking lead sources end-to-end.
+      your login. Once you're in, you'll be able to connect your PMS and start
+      tracking lead sources end-to-end.
     </p>
     <p style="margin:16px 0 0;font-size:13px;line-height:1.6;color:#64748B;">
       Your portal will live at

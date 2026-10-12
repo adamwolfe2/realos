@@ -3,7 +3,6 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import {
-  Eye,
   MessageCircle,
   Star,
   Search,
@@ -50,7 +49,7 @@ const AttributionBreakdown = dynamic(
 //
 // Two feature spotlights (Weekly report, Ad attribution) get a full artifact
 // split section each, the same rhythm they'd get on their own sub-pages.
-// The remaining six features compress into a card grid, each linking to
+// The remaining five features compress into a card grid, each linking to
 // its dedicated sub-page for the full pitch and live demo.
 // ---------------------------------------------------------------------------
 
@@ -61,7 +60,7 @@ const BORDER = "var(--color-border)";
 export const metadata: Metadata = {
   title: `Features · ${BRAND_NAME}`,
   description:
-    "Every feature in the LeaseStack platform, weekly report, ad attribution, visitor identification, AI chatbot, reputation, SEO/AEO, conversion popups, and website build, with a live interactive demo of each.",
+    "Every feature in the LeaseStack platform, weekly report, ad attribution, AI chatbot, reputation, SEO/AEO, conversion popups, and website build, with a live interactive demo of each.",
 };
 
 type GridFeature = {
@@ -73,13 +72,6 @@ type GridFeature = {
 };
 
 const GRID_FEATURES: GridFeature[] = [
-  {
-    icon: <Eye className="h-5 w-5" aria-hidden="true" />,
-    title: "Visitor identification",
-    body: "Identity pixel resolves a meaningful share of anonymous traffic and routes the contact into your CRM and ad audiences.",
-    href: "/features/pixel",
-    linkLabel: "See the pixel firing",
-  },
   {
     icon: <MessageCircle className="h-5 w-5" aria-hidden="true" />,
     title: "AI chatbot",
@@ -111,7 +103,7 @@ const GRID_FEATURES: GridFeature[] = [
   {
     icon: <Globe className="h-5 w-5" aria-hidden="true" />,
     title: "Website build",
-    body: "A property site designed and shipped on your domain in 14 days, wired to the pixel, chatbot, and weekly report.",
+    body: "A property site designed and shipped on your domain in 14 days, wired to the chatbot and weekly report.",
     href: "/features/website-build",
     linkLabel: "See the build flow",
   },
@@ -194,7 +186,7 @@ export default function FeaturesIndexPage() {
               </p>
               <FeatureBullets
                 items={[
-                  "Leases mapped to source from the pixel, UTM, and PMS join",
+                  "Leases mapped to source from UTM and PMS join",
                   "Channel mix bar walks the brand blue ramp, not a rainbow",
                   "Three actions, ranked by dollar impact, ready to approve",
                 ]}
@@ -237,8 +229,7 @@ export default function FeaturesIndexPage() {
                 }}
               >
                 Google, Meta, LinkedIn, and TikTok spend tracked against
-                lease velocity, reviewed every week. Identity-pixel
-                data shows which audiences actually turn into leases.
+                lease velocity, reviewed every week.
               </p>
               <FeatureBullets
                 items={[

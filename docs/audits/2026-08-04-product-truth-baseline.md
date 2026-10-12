@@ -7,7 +7,7 @@ Status: **BLOCKED**
 
 | Products | Source records | Critical | Warning | Info | Total |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 8 | 135 | 42 | 21 | 18 | 81 |
+| 8 | 131 | 42 | 18 | 18 | 78 |
 
 ## Critical
 
@@ -405,27 +405,11 @@ Status: **BLOCKED**
 - Evidence: `lib/marketplace/catalog.ts`
 - Reason: Customer-visible source has no approved canonical product mapping.
 
-### `orphan_product_source:proposal_catalog:addon-audience-sync`
-
-- Owner: product
-- Product: unmapped
-- Source: proposal_catalog / addon-audience-sync
-- Evidence: `lib/proposals/catalog.ts`
-- Reason: Customer-visible source has no approved canonical product mapping.
-
 ### `orphan_product_source:proposal_catalog:addon-commercial-retainer`
 
 - Owner: product
 - Product: unmapped
 - Source: proposal_catalog / addon-commercial-retainer
-- Evidence: `lib/proposals/catalog.ts`
-- Reason: Customer-visible source has no approved canonical product mapping.
-
-### `orphan_product_source:proposal_catalog:addon-cursive-pixel-pro`
-
-- Owner: product
-- Product: unmapped
-- Source: proposal_catalog / addon-cursive-pixel-pro
 - Evidence: `lib/proposals/catalog.ts`
 - Reason: Customer-visible source has no approved canonical product mapping.
 
@@ -450,14 +434,6 @@ Status: **BLOCKED**
 - Owner: product
 - Product: unmapped
 - Source: proposal_catalog / addon-outbound-email-engine
-- Evidence: `lib/proposals/catalog.ts`
-- Reason: Customer-visible source has no approved canonical product mapping.
-
-### `orphan_product_source:proposal_catalog:addon-pixel-overage`
-
-- Owner: product
-- Product: unmapped
-- Source: proposal_catalog / addon-pixel-overage
 - Evidence: `lib/proposals/catalog.ts`
 - Reason: Customer-visible source has no approved canonical product mapping.
 

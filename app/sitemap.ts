@@ -55,7 +55,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/senior-living`, lastModified: now, changeFrequency: "monthly", priority: 0.95 },
     { url: `${BASE_URL}/commercial`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     // Features
-    { url: `${BASE_URL}/features/pixel`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
     { url: `${BASE_URL}/features/chatbot`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
     { url: `${BASE_URL}/features/seo-aeo`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
     { url: `${BASE_URL}/features/ads`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
@@ -66,7 +65,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/ai-visibility`, lastModified: now, changeFrequency: "monthly", priority: 0.95 },
     { url: `${BASE_URL}/build-a-chatbot`, lastModified: now, changeFrequency: "monthly", priority: 0.95 },
     { url: `${BASE_URL}/reputation-report`, lastModified: now, changeFrequency: "monthly", priority: 0.95 },
-    { url: `${BASE_URL}/lost-leads`, lastModified: now, changeFrequency: "monthly", priority: 0.95 },
     { url: `${BASE_URL}/book-demo`, lastModified: now, changeFrequency: "monthly", priority: 0.95 },
     // Legal
     { url: `${BASE_URL}/privacy`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },

@@ -51,7 +51,6 @@ describe("marketplace product-source adapter", () => {
         ]),
       ),
     ).toMatchObject({
-      "visitor-pixel": "withheld",
       "embeddable-popups": "withheld",
       "email-nurture": "coming",
       "outbound-email": "coming",
@@ -65,7 +64,7 @@ describe("marketplace product-source adapter", () => {
     });
 
     const withheld = MARKETPLACE_SOURCE_RECORDS.find(
-      ({ sourceId }) => sourceId === "visitor-pixel",
+      ({ sourceId }) => sourceId === "embeddable-popups",
     );
     expect(withheld).toMatchObject({
       customerVisible: false,
@@ -83,7 +82,6 @@ describe("marketplace product-source adapter", () => {
         ]),
       ),
     ).toEqual({
-      "visitor-pixel": null,
       "lead-capture": "connected-data-foundation",
       "ai-chatbot": "ai-leasing-chatbot",
       "embeddable-popups": "conversion-offers",
@@ -143,11 +141,11 @@ describe("proposal product-source adapter", () => {
     });
     expect(
       PROPOSAL_SOURCE_RECORDS.find(
-        ({ sourceId }) => sourceId === "addon-pixel-overage",
+        ({ sourceId }) => sourceId === "addon-email-overage",
       ),
     ).toMatchObject({
       billingCadence: "metered",
-      stripeLookupKey: "ls_pixel_overage_per_visitor_v1",
+      stripeLookupKey: "ls_email_overage_per_send_v1",
       stripePriceMapped: true,
     });
     expect(h.dbAccess).not.toHaveBeenCalled();
@@ -169,10 +167,8 @@ describe("proposal product-source adapter", () => {
       "addon-reputation-pro": "reputation-rescue",
       "addon-keyword-trends": "search-opportunity-engine",
       "addon-aeo-boost": "search-opportunity-engine",
-      "addon-audience-sync": null,
       "addon-outbound-email-engine": null,
       "addon-chatbot-pro": "ai-leasing-chatbot",
-      "addon-cursive-pixel-pro": null,
       "addon-insights-pro": "monday-action-brief",
       "addon-integrations-pro": "connected-data-foundation",
       "addon-website-build": "website-build",

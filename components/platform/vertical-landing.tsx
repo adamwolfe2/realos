@@ -221,7 +221,7 @@ export function VerticalLanding({
                 lineHeight: 1.6,
               }}
             >
-              Same site engine, same pixel, same chatbot, same ad studio.
+              Same site engine, same chatbot, same ad studio.
               Different intake playbook, different creative library, different
               compliance guardrails per vertical.
             </p>
