@@ -4,7 +4,6 @@ import * as React from "react";
 import { readPricingIntent } from "@/lib/onboarding/pricing-intent";
 import {
   Bot,
-  Eye,
   TrendingUp,
   Star,
   BarChart3,
@@ -32,7 +31,6 @@ import type { FeatureDef } from "@/lib/billing/features";
 
 const ICONS: Record<string, LucideIcon> = {
   Bot,
-  Eye,
   TrendingUp,
   Star,
   BarChart3,

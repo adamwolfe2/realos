@@ -28,7 +28,6 @@ type FormState = {
   showReviews: boolean;
   showBlog: boolean;
   enableExitIntent: boolean;
-  enablePixel: boolean;
   exitIntentHeadline: string;
   exitIntentBody: string;
   exitIntentCtaText: string;
@@ -60,7 +59,6 @@ function init(initial: Initial, orgName: string): FormState {
     showReviews: initial?.showReviews ?? false,
     showBlog: initial?.showBlog ?? false,
     enableExitIntent: initial?.enableExitIntent ?? true,
-    enablePixel: initial?.enablePixel ?? false,
     exitIntentHeadline: initial?.exitIntentHeadline ?? "",
     exitIntentBody: initial?.exitIntentBody ?? "",
     exitIntentCtaText: initial?.exitIntentCtaText ?? "",
@@ -91,13 +89,11 @@ export function SiteBuilderForm({
   orgName,
   orgSlug,
   primaryDomain,
-  modulePixel,
   initial,
 }: {
   orgName: string;
   orgSlug: string;
   primaryDomain: string | null;
-  modulePixel: boolean;
   initial: Initial;
 }) {
   const router = useRouter();
@@ -170,7 +166,6 @@ export function SiteBuilderForm({
         showReviews: state.showReviews,
         showBlog: state.showBlog,
         enableExitIntent: state.enableExitIntent,
-        enablePixel: modulePixel ? state.enablePixel : false,
         exitIntentHeadline: toNullIfEmpty(state.exitIntentHeadline),
         exitIntentBody: toNullIfEmpty(state.exitIntentBody),
         exitIntentCtaText: toNullIfEmpty(state.exitIntentCtaText),
@@ -434,15 +429,6 @@ export function SiteBuilderForm({
             />
           </div>
         </div>
-      </SectionCard>
-
-      <SectionCard label="Visitor pixel" description="First-party tracking pixel.">
-        <Toggle
-          label={`Enable pixel${modulePixel ? "" : " (module disabled)"}`}
-          checked={state.enablePixel && modulePixel}
-          onChange={(v) => update("enablePixel", v)}
-          disabled={!modulePixel}
-        />
       </SectionCard>
 
       {/* Sticky save bar */}

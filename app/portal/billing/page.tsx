@@ -76,7 +76,6 @@ export default async function BillingPage({
           // Feature flags drive per-feature conversion pricing — the operator pays
           // for exactly what's enabled, not a tier default.
           moduleChatbot: true,
-          modulePixel: true,
           moduleSEO: true,
           moduleReputation: true,
           moduleGoogleAds: true,
@@ -575,7 +574,7 @@ export default async function BillingPage({
                 ))}
               </ul>
               <p className="text-[11px] text-muted-foreground mt-2">
-                Metered items (pixel overage, email overage, ad spend
+                Metered items (email overage, ad spend
                 management) are billed in arrears against your actual usage —
                 not included in the recurring subtotal above.
               </p>

@@ -7,11 +7,7 @@ import {
   getIp,
   WIDGET_FALLBACK,
 } from "@/lib/rate-limit";
-import {
-  LeadSource,
-  VisitorIdentificationStatus,
-  Prisma,
-} from "@prisma/client";
+import { LeadSource, Prisma } from "@prisma/client";
 import {
   sendLeadAutoReplyEmail,
   notifyTenantOfLeadEmail,
@@ -38,7 +34,6 @@ const schema = z.object({
   desiredMoveIn: z.string().optional(),
   budgetMax: z.string().optional(),
   notes: z.string().max(2000).optional(),
-  visitorHash: z.string().optional(),
 });
 
 // A repeat inquiry from a known lead only re-notifies the operator when the
@@ -224,17 +219,6 @@ export async function POST(req: NextRequest) {
           notes: data.notes ?? null,
         },
       });
-
-  // Link to Visitor if we have a hash.
-  if (data.visitorHash) {
-    await prisma.visitor.updateMany({
-      where: { orgId: data.orgId, visitorHash: data.visitorHash },
-      data: {
-        status: VisitorIdentificationStatus.MATCHED_TO_LEAD,
-        convertedAt: new Date(),
-      },
-    });
-  }
 
   // Repeat submit from a known lead (popup/tours/chatbot only notify on
   // net-new leads). Exception: a new message on a lead untouched for 10+

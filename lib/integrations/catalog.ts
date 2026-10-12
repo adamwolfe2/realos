@@ -150,19 +150,7 @@ export const INTEGRATIONS: IntegrationDefinition[] = [
     comingSoon: true,
   },
 
-  // --------------------------- Analytics / pixel -------------------------
-  {
-    slug: "visitor-identification",
-    name: "Cursive pixel",
-    category: "analytics",
-    tagline: "Turn anonymous site visitors into named leads automatically.",
-    description:
-      "A lightweight script we provision per-tenant, installed on your custom domain. It matches anonymous visitors against a consented identity graph and drops named leads into your CRM — along with the pages they viewed and how they found you.",
-    landsIn: ["Visitors", "Leads", "Retargeting audiences"],
-    brandColor: "#0f62fe",
-    initials: "Vi",
-    auth: "agency_managed",
-  },
+  // ------------------------------ Analytics ------------------------------
   {
     slug: "ga4",
     name: "Google Analytics 4",
@@ -280,8 +268,8 @@ export const INTEGRATIONS: IntegrationDefinition[] = [
     category: "automation",
     tagline: "5,000+ apps via an API key.",
     description:
-      "Generate a scoped API key and use Zapier's generic Webhooks + HTTP action to push leads, visitors, tours, or chatbot sessions into the portal from anywhere Zapier connects to.",
-    landsIn: ["Leads", "Visitors", "Tours", "Chatbot sessions"],
+      "Generate a scoped API key and use Zapier's generic Webhooks + HTTP action to push leads, tours, or chatbot sessions into the portal from anywhere Zapier connects to.",
+    landsIn: ["Leads", "Tours", "Chatbot sessions"],
     brandColor: "#FF4A00",
     initials: "Za",
     auth: "api_key",
@@ -294,7 +282,7 @@ export const INTEGRATIONS: IntegrationDefinition[] = [
     tagline: "Scenario-based automations via API key.",
     description:
       "Same pattern as Zapier. Copy an API key from Settings, paste it into a Make HTTP module, and every scenario can write into the portal.",
-    landsIn: ["Leads", "Visitors", "Tours", "Chatbot sessions"],
+    landsIn: ["Leads", "Tours", "Chatbot sessions"],
     brandColor: "#6D00CC",
     initials: "Mk",
     auth: "api_key",
@@ -306,8 +294,8 @@ export const INTEGRATIONS: IntegrationDefinition[] = [
     category: "automation",
     tagline: "Any external system, via a scoped API key.",
     description:
-      "POST JSON to /api/ingest/lead, /api/ingest/visitor, /api/ingest/tour, or /api/ingest/chatbot with an Authorization: Bearer header. Rate-limited per key, tenant-scoped, idempotent.",
-    landsIn: ["Leads", "Visitors", "Tours", "Chatbot sessions"],
+      "POST JSON to /api/ingest/lead, /api/ingest/tour, or /api/ingest/chatbot with an Authorization: Bearer header. Rate-limited per key, tenant-scoped, idempotent.",
+    landsIn: ["Leads", "Tours", "Chatbot sessions"],
     brandColor: "#4B5563",
     initials: "Cw",
     auth: "api_key",

@@ -8,17 +8,11 @@ import { formatAge } from "./helpers";
 export function PropertyIntegrationsList({
   appfolio,
   chatbot,
-  pixel,
   ga4,
   gsc,
 }: {
   appfolio: { connected: boolean; lastSyncedAt: Date | null };
   chatbot: { enabled: boolean; personaName: string | null };
-  pixel: {
-    connected: boolean;
-    hasRecentEvents: boolean;
-    lastEventAt: Date | null;
-  };
   ga4: { connected: boolean; lastSyncAt: Date | null };
   gsc: { connected: boolean; lastSyncAt: Date | null };
 }) {
@@ -50,19 +44,6 @@ export function PropertyIntegrationsList({
           : "live"
         : "not enabled",
       health: chatbot.enabled ? "healthy" : "off",
-    },
-    {
-      name: "Cursive Pixel",
-      state: !pixel.connected
-        ? "not installed"
-        : pixel.hasRecentEvents
-          ? "live"
-          : "no recent events",
-      health: !pixel.connected
-        ? "off"
-        : pixel.hasRecentEvents
-          ? "healthy"
-          : "degraded",
     },
     {
       name: "GA4",

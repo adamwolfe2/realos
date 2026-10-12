@@ -77,7 +77,7 @@ const SETUP_STEPS = [
     icon: Users,
     title: "Start capturing leads",
     description:
-      "Drop in the visitor pixel, share your forms, or import historic leads via CSV.",
+      "Share your forms, turn on the chatbot, or import historic leads via CSV.",
     href: "/portal/leads",
     hrefLabel: "Open Leads",
   },
@@ -87,8 +87,6 @@ const SETUP_STEPS = [
 // Keep in sync with components/portal/marketplace/page.tsx#iconNameFor.
 function iconNameFor(key: string): string {
   switch (key) {
-    case "modulePixel":
-      return "Eye";
     case "moduleChatbot":
       return "Bot";
     case "moduleSEO":

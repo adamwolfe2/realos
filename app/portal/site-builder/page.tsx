@@ -20,7 +20,6 @@ export default async function SiteBuilderPage() {
         name: true,
         slug: true,
         moduleWebsite: true,
-        modulePixel: true,
         bringYourOwnSite: true,
       },
     }),
@@ -68,7 +67,6 @@ export default async function SiteBuilderPage() {
         orgName={org.name}
         orgSlug={org.slug}
         primaryDomain={primaryBinding?.hostname ?? null}
-        modulePixel={org.modulePixel}
         initial={existingConfig}
       />
     </div>

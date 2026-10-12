@@ -57,7 +57,7 @@ type Stat = {
   // to the page that holds the underlying data.
   href?: string;
   // Optional second-line copy under the value. Used to spell out the
-  // breakdown for aggregate metrics ("3 form + 147 identified + 23
+  // breakdown for aggregate metrics ("3 form + 23
   // chatbot") so the headline isn't an opaque sum.
   hint?: string;
 };

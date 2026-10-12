@@ -13,7 +13,7 @@ import {
 //   * not live yet: the 14-day clock starts at go-live, set up by <date>
 //   * live, no card: "$0 today, first charge of $X on <date>" + Add card
 //   * card on file: first charge amount/date + manage/cancel link
-//   * expired, no card: chatbot + pixel paused, data stays, Reactivate
+//   * expired, no card: chatbot paused, data stays, Reactivate
 // Hidden outside the trial (paid, paused, canceled have their own banners).
 
 function daysLeftBetween(now: Date, end: Date): number {
@@ -65,12 +65,12 @@ export function TrialBanner({
           ? "Scale"
           : null;
 
-  // Soft landing (slice 4): expired + no card pauses the chatbot and pixel
+  // Soft landing (slice 4): expired + no card pauses the chatbot
   // only; everything already collected stays readable.
   const message = expired ? (
     <>
       <strong>Your trial ended, nothing was charged.</strong> Your data is still
-      here (read-only); chatbot and pixel are paused.
+      here (read-only); chatbot is paused.
       {charge ? ` Reactivate for ${charge}/month, starting today.` : ""}
     </>
   ) : cardOnFile ? (

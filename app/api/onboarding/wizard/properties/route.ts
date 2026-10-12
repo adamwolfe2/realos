@@ -22,7 +22,7 @@ import { wizardRoleForbidden } from "@/lib/onboarding/wizard-auth";
 // POST /api/onboarding/wizard/properties
 //
 // Multi-property step. The operator adds one or more properties (each its own
-// website / pixel / chatbot downstream) and picks how they manage them (a PMS,
+// website / chatbot downstream) and picks how they manage them (a PMS,
 // a CRM, or nothing — manual). We create the Property rows (manual,
 // backendPlatform=NONE, lifecycle=ACTIVE), record the CRM choice as a demand
 // signal, START the 14-day trial, and finish onboarding (onboardingStep=done).
@@ -127,7 +127,6 @@ export async function POST(req: NextRequest) {
           trialEndsAt: true,
           subscriptionStatus: true,
           moduleChatbot: true,
-          modulePixel: true,
         },
       },
     },
@@ -202,15 +201,14 @@ export async function POST(req: NextRequest) {
   }
 
   // S3 — eager per-property scaffolding: give each property its own ready-to-use
-  // chatbot config + a queued pixel provision request for the features that are
+  // chatbot config for the features that are
   // actually enabled, so the workspace lands set-up-ready (no blank properties).
   // Non-blocking (a scaffold miss degrades gracefully — the chatbot inherits the
-  // org config and the user can still request the pixel from the Setup hub), but
+  // org config), but
   // NO LONGER SILENT: capture failures to Sentry so a systemic break is visible
   // and recoverable instead of swallowed. (Codex onboarding review.)
   await scaffoldPropertyIntegrations(orgId, scaffoldProps, {
     chatbot: org.moduleChatbot,
-    pixel: org.modulePixel,
   }).catch((err) => {
     Sentry.captureException(err, {
       tags: { route: "onboarding/properties", step: "scaffold" },

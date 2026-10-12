@@ -10,7 +10,7 @@ import { LaunchStatusActions } from "./launch-status-actions";
 
 // ---------------------------------------------------------------------------
 // Property onboarding tab. Renders the per-property launch checklist
-// (marketing content / pixel installed / pixel firing / GA4 / GSC /
+// (marketing content / chatbot / GA4 / GSC /
 // Google Ads / Meta Ads) plus the operator's launchStatus controls.
 //
 // This is THE page where Norman sets up Telegraph Commons end-to-end,

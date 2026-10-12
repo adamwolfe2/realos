@@ -50,16 +50,15 @@ const detectAddProperty: Detector = async (orgId) => {
 };
 
 const detectConnectDataSource: Detector = async (orgId) => {
-  const [appfolio, seo, cursive, ad] = await Promise.all([
+  const [appfolio, seo, ad] = await Promise.all([
     prisma.appFolioIntegration.count({ where: { orgId } }),
     prisma.seoIntegration.count({ where: { orgId } }),
-    prisma.cursiveIntegration.count({ where: { orgId } }),
     prisma.adAccount.count({ where: { orgId } }),
   ]);
-  const total = appfolio + seo + cursive + ad;
+  const total = appfolio + seo + ad;
   return {
     done: total > 0,
-    metadata: { appfolio, seo, cursive, ad },
+    metadata: { appfolio, seo, ad },
   };
 };
 
@@ -87,26 +86,10 @@ const detectApproveChatbotPersona: Detector = async (orgId) => {
   return { done, metadata: { chatbotEnabled: cfg?.chatbotEnabled ?? false } };
 };
 
-const detectInstallPixel: Detector = async (orgId) => {
-  // "Pixel installed" = at least one CursiveIntegration row for this org
-  // has received a real visitor event (lastEventAt populated). The schema
-  // tracks visitor pings as `lastEventAt`, not `lastWebhookAt` — same
-  // signal, different column name.
-  const row = await prisma.cursiveIntegration.findFirst({
-    where: { orgId, lastEventAt: { not: null } },
-    select: { id: true, lastEventAt: true, installedOnDomain: true },
-    orderBy: { lastEventAt: "desc" },
-  });
-  return {
-    done: !!row,
-    metadata: row
-      ? {
-          installedOnDomain: row.installedOnDomain,
-          lastEventAt: row.lastEventAt?.toISOString() ?? null,
-        }
-      : {},
-  };
-};
+// INSTALL_PIXEL stays in the OnboardingStepKey enum until the schema
+// migration, so the exhaustive registry needs an entry. The step is no longer
+// part of any phase (see PHASE_STEPS) and is never completed.
+const detectRetiredStep: Detector = async () => ({ done: false });
 
 // ---------------------------------------------------------------------------
 // GROWTH
@@ -202,7 +185,7 @@ const DETECTORS: Record<OnboardingStepKey, Detector> = {
   [OnboardingStepKey.CONNECT_DATA_SOURCE]: detectConnectDataSource,
   [OnboardingStepKey.CONFIRM_CONTACT_PREFS]: detectConfirmContactPrefs,
   [OnboardingStepKey.APPROVE_CHATBOT_PERSONA]: detectApproveChatbotPersona,
-  [OnboardingStepKey.INSTALL_PIXEL]: detectInstallPixel,
+  [OnboardingStepKey.INSTALL_PIXEL]: detectRetiredStep,
   [OnboardingStepKey.VERIFY_LEAD_CAPTURE]: detectVerifyLeadCapture,
   [OnboardingStepKey.CONNECT_ADS]: detectConnectAds,
   [OnboardingStepKey.REVIEW_FIRST_REPORT]: detectReviewFirstReport,

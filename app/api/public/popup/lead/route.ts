@@ -6,7 +6,6 @@ import {
   LeadSource,
   LeadStatus,
   PopupEventType,
-  VisitorIdentificationStatus,
 } from "@prisma/client";
 import {
   publicSignupLimiter,
@@ -41,7 +40,6 @@ import { getSiteUrl } from "@/lib/brand";
 //
 //   - no Lead row ever got created
 //   - no Slack / Resend / in-app notifications fired
-//   - no Visitor was promoted to MATCHED_TO_LEAD
 //
 // The CONVERTED PopupEvent still recorded so the campaign analytics
 // counter looked healthy, hiding the leak. This route resolves
@@ -49,7 +47,7 @@ import { getSiteUrl } from "@/lib/brand";
 // and writes through the same end-of-funnel side-effects the chatbot
 // captures use, so popup conversions show up everywhere a Lead is
 // expected (CRM, dashboard, /portal/leads, Slack, primary contact
-// email, visitor identification).
+// email).
 //
 // CORS: wide open (same as /config + /events). The popup embed runs on
 // arbitrary third-party sites.
@@ -76,7 +74,6 @@ const bodySchema = z.object({
   email: z.string().trim().toLowerCase().email().max(200).optional(),
   phone: z.string().trim().max(40).optional(),
   pageUrl: z.string().max(2000).optional(),
-  visitorHash: z.string().max(120).optional(),
 });
 
 export function OPTIONS() {
@@ -295,18 +292,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     console.warn("[public/popup/lead] recordPopupEvent failed:", err);
-  }
-
-  // Visitor → MATCHED_TO_LEAD bump so attribution analytics can
-  // close the loop from pixel session to identified lead.
-  if (data.visitorHash) {
-    await prisma.visitor.updateMany({
-      where: { orgId: org.id, visitorHash: data.visitorHash },
-      data: {
-        status: VisitorIdentificationStatus.MATCHED_TO_LEAD,
-        convertedAt: new Date(),
-      },
-    });
   }
 
   // Operator notifications — fire-and-forget so a Slack outage or

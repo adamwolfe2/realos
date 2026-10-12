@@ -46,15 +46,13 @@ const ACTIVE_STATUSES: LeadStatus[] = [
 export async function LeadsTab({
   orgId,
   propertyId,
-  propertyMeta,
 }: {
   orgId: string;
   propertyId: string;
-  propertyMeta: { slug: string; name: string };
 }) {
   const [data, activePipelineRows, pendingApps, recentActivity] =
     await Promise.all([
-      getPropertyLeads(orgId, propertyId, propertyMeta),
+      getPropertyLeads(orgId, propertyId),
       prisma.lead.groupBy({
         by: ["status"],
         where: {
@@ -225,7 +223,7 @@ export async function LeadsTab({
         <DashboardSection
           title="Conversion funnel"
           eyebrow="Last 28 days"
-          description="Visitors scoped by URL match on property slug"
+          description="Leads, tours, and applications for this property"
         >
           {data.funnel.every((s) => s.value === 0 || s.notApplicable === true) ? (
             <p className="text-xs text-muted-foreground">

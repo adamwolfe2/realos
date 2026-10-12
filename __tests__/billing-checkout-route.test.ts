@@ -56,7 +56,6 @@ const org = {
   chosenTier: "SCALE",
   subscriptionTier: "SCALE",
   moduleChatbot: true,
-  modulePixel: false,
   moduleSEO: false,
   moduleReputation: false,
   moduleGoogleAds: false,
@@ -200,7 +199,6 @@ describe("POST /api/billing/checkout", () => {
     mockPrisma.organization.findUnique.mockResolvedValue({
       ...org,
       moduleSEO: true,
-      modulePixel: true,
       moduleReferrals: true,
     });
     const response = await POST(request(activationBody()));

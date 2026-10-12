@@ -104,12 +104,6 @@ export const MODULE_CATALOG: Array<{
     priceHint: "Core",
   },
   {
-    key: "pixel",
-    label: "Identity Graph Pixel",
-    desc: "Name and route a meaningful share of your anonymous visitors.",
-    priceHint: "Add-on",
-  },
-  {
     key: "chatbot",
     label: "Proactive AI Chatbot",
     desc: "Fires within 5 seconds, captures leads 24/7, routes hot leads.",
@@ -118,7 +112,7 @@ export const MODULE_CATALOG: Array<{
   {
     key: "googleAds",
     label: "Google Ads Management",
-    desc: "Geo-fenced campaigns, pixel retargeting, creative included.",
+    desc: "Geo-fenced campaigns, retargeting, creative included.",
     priceHint: "Managed",
   },
   {
@@ -188,7 +182,6 @@ export const STEP2_DEFAULT: Step2Data = {
 export const STEP3_DEFAULT: Step3Data = {
   modules: {
     website: true,
-    pixel: false,
     chatbot: false,
     googleAds: false,
     metaAds: false,

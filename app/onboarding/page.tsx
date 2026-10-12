@@ -67,7 +67,6 @@ export default async function OnboardingPage({
           // Module flags → reconstruct the operator's saved feature selection so
           // navigating back to the features step restores it. (Codex.)
           moduleChatbot: true,
-          modulePixel: true,
           moduleSEO: true,
           moduleReputation: true,
           moduleGoogleAds: true,

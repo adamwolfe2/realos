@@ -121,7 +121,6 @@ export async function POST(req: NextRequest) {
       chosenTier: true,
       subscriptionTier: true,
       moduleChatbot: true,
-      modulePixel: true,
       moduleSEO: true,
       moduleReputation: true,
       moduleGoogleAds: true,

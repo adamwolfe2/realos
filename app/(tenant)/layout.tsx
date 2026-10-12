@@ -64,7 +64,7 @@ export default async function TenantLayout({
   const config = tenant.tenantSiteConfig;
 
   // Bring-your-own-site mode: client hosts the marketing site elsewhere and
-  // only wants our chatbot + pixel scripts. Skip the full layout.
+  // only wants our chatbot script. Skip the full layout.
   // We do NOT inject GTM/GA4 here — the tenant manages those on their own site.
   if (tenant.bringYourOwnSite) {
     return (

@@ -16,7 +16,7 @@ export const maxDuration = 60;
 
 const MAX_ATTEMPTS = 5;
 const BACKOFF_SECS = [60, 5 * 60, 30 * 60, 2 * 60 * 60, 12 * 60 * 60];
-const ALLOWED_SOURCES = new Set(["clerk", "cursive", "resend", "stripe"]);
+const ALLOWED_SOURCES = new Set(["clerk", "resend", "stripe"]);
 
 export async function GET(req: Request) {
   const authError = verifyCronAuth(req);

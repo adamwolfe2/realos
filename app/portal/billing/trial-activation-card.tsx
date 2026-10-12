@@ -105,7 +105,7 @@ export function TrialActivationCard({
             }}
           >
             {expired
-              ? `Your trial ended and nothing was charged. Your chatbot and pixel are paused; your dashboard and lead history are kept. Reactivate to switch them back on: ${totalMonthly}/month, starting today.`
+              ? `Your trial ended and nothing was charged. Your chatbot is paused; your dashboard and lead history are kept. Reactivate to switch them back on: ${totalMonthly}/month, starting today.`
               : cardOnFile
                 ? `First charge of ${totalMonthly} on ${chargeDateLabel ?? "the day your trial ends"}, then monthly. Manage or cancel any time from the Stripe portal on this page.`
                 : `$0 today. First charge of ${totalMonthly} on ${chargeDateLabel ?? "the day your trial ends"}, then monthly. Cancel in one click before then and you pay nothing.`}

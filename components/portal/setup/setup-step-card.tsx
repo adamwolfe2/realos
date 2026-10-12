@@ -10,7 +10,6 @@ import {
   LogIn,
   Mail,
   Palette,
-  Radar,
   Search,
   Users,
 } from "lucide-react";
@@ -24,7 +23,6 @@ import { BRAND_LOGOS } from "@/components/portal/integrations/brand-logos";
 // lucide icon.
 const STEP_BRAND_SLUG: Record<string, string> = {
   appfolio: "appfolio",
-  cursive: "visitor-identification",
   google_ads: "google-ads",
   meta_ads: "meta-ads",
   ga4: "ga4",
@@ -44,7 +42,6 @@ const STEP_BRAND_SLUG: Record<string, string> = {
 const ICON_MAP: Record<string, LucideIcon> = {
   LogIn,
   Database,
-  Radar,
   Bot,
   Users,
   Search,

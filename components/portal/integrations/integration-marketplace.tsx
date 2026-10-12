@@ -32,7 +32,7 @@ export function IntegrationMarketplace({
 }: {
   statuses: IntegrationStatus[];
   // Slot content for integrations that have a dedicated "Manage" UI. The page
-  // renders the existing server components (ConnectPixelForm, ConnectAppfolioForm,
+  // renders the existing server components (ConnectAppfolioForm,
   // etc.) and passes them in by slug. The drawer just embeds whatever we pass.
   manageSlots: Record<string, React.ReactNode>;
 }) {
@@ -294,7 +294,7 @@ function DrawerAction({
 
   if (state === "managed") {
     // Provisioning in progress. Always render the manage slot when
-    // available (e.g. ConnectPixelForm or PixelRequestPending) so the
+    // available (e.g. ConnectAppfolioForm) so the
     // operator gets the real status, never a generic blurb.
     if (manageSlot) return <div className="space-y-3">{manageSlot}</div>;
     return <PlanGateBlock def={def} provisioning />;
@@ -375,7 +375,7 @@ function DrawerAction({
 
 // Replaces the previous static "talk to your account manager" copy across
 // every plan-gated integration with a real, actionable two-button block.
-// Audit caught this copy on the Cursive pixel surface (BUG #4); same
+// Audit BUG #4 caught the old copy; one
 // component now serves every integration in either provisioning-pending
 // or plan-locked state.
 function PlanGateBlock({
@@ -414,7 +414,7 @@ function PlanGateBlock({
         </p>
         <p className="text-xs mt-1 leading-snug opacity-90">
           {provisioning
-            ? "We typically have new pixels live within one business day. You'll get an email with the install snippet once it's ready."
+            ? "We typically have new integrations live within one business day. You'll get an email once it's ready."
             : `Adding ${def.name} unlocks the data feed shown above. Reach your account team using one of the actions below.`}
         </p>
       </div>

@@ -8,7 +8,6 @@ import {
   TrendingUp,
   Search,
   BarChart3,
-  Eye,
   Globe,
   Check,
   ArrowRight,
@@ -67,7 +66,6 @@ export type ConnectSourceVM = {
     | "gsc"
     | "google_ads"
     | "meta_ads"
-    | "cursive_pixel"
     | "website";
   connected: boolean;
   lastSyncAt: string | null;
@@ -76,18 +74,13 @@ export type ConnectSourceVM = {
       not in a fully-green state (e.g. AppFolio with auto-sync paused). Not
       a banner, just a yellow action row beneath the verification line. */
   healthNote?: { label: string; href: string } | null;
-  /** Server-persisted "requested but not yet live" state (Cursive pixel
-      today: a provision request or in-flight self-serve setup exists but no
-      pixel is bound). Survives refresh — unlike the local `pending` click
-      state — so the requested→provisioning moment is never silently lost. */
-  provisioning?: boolean;
   /** True when the source's most recent sync errored (bad creds, quota,
       API failure). Sourced from lib/connect/status.ts, which computes this
       with the same RED-classification logic as the Integrations status
       page (lib/integrations/status.ts classifyHealth) — so this chip and
       the Integrations marketplace pill can never disagree. */
   hasError?: boolean;
-  /** Property-level scope (GA4/GSC/pixel only) — which properties have
+  /** Property-level scope (GA4/GSC only) — which properties have
       this source connected. Surfaced as a small "Connected for N
       properties" line so a multi-property connection doesn't read as
       org-wide when it isn't. */
@@ -106,10 +99,9 @@ const SOURCE_META: Record<
         back to `icon` when absent (e.g. the generic "Your Website" card). */
     brandSlug?: string;
     /** Where the user goes to start the connection. OAuth-backed sources
-        navigate; pixel/website show inline configuration. */
+        navigate; website shows inline configuration. */
     connectUrl?: string;
-    /** True when the source needs an inline modal/snippet (Cursive pixel,
-        website URL) rather than an OAuth redirect. */
+    /** True when the source needs an inline modal/snippet (website URL) rather than an OAuth redirect. */
     inline?: boolean;
     /** What the user gets once connected — the one-line value prop rendered
         above the unlocks grid. */
@@ -117,10 +109,7 @@ const SOURCE_META: Record<
     /** What insights this source unlocks. Surfaced as a tagline below
         the card so users know exactly what they get for connecting. */
     unlocks: string[];
-    /** Override for the primary CTA when "Connect" isn't accurate. The
-        Cursive pixel for instance uses "Request pixel" because the
-        actual provisioning is a 3-5 min manual task, kicked off by an
-        ops email. */
+    /** Override for the primary CTA when "Connect" isn't accurate. */
     connectLabel?: string;
   }
 > = {
@@ -195,24 +184,6 @@ const SOURCE_META: Record<
       "Lead → tour attribution",
     ],
   },
-  cursive_pixel: {
-    name: "Cursive Pixel",
-    tagline: "Visitor identification on your site",
-    category: "Site",
-    icon: Eye,
-    brandSlug: "visitor-identification",
-    // Points at the per-property pixel setup wizard (property selector + one-
-    // flow webhook mint). Previously pointed at /portal/visitors#install which
-    // had no install UI — that bounced back here, an infinite loop.
-    connectUrl: "/portal/settings/integrations",
-    payoff: "Identify anonymous prospects with name + email + intent score",
-    unlocks: [
-      "High-intent visitor alerts",
-      "Best traffic-source-by-intent",
-      "Abandoned-form recovery",
-    ],
-    connectLabel: "Request pixel",
-  },
   website: {
     name: "Your Website",
     tagline: "Per-property marketing site or your own domain",
@@ -232,9 +203,8 @@ const SOURCE_META: Record<
 // Prerequisite line per source — "what do I need, how long?" up front.
 // Copy derived from what each connect flow actually asks for (see the
 // 2026-07-09 connect-hub spec table). Rendered only while the source is
-// neither connected nor blocked. The cursive line absorbs the old
-// "provisioned within 4 business hours" setup note (the only code-backed
-// duration; the ~N min figures are conservative editorial estimates).
+// neither connected nor blocked.
+// The ~N min figures are conservative editorial estimates.
 const PREREQUISITES: Record<ConnectSourceVM["id"], string> = {
   appfolio:
     "You'll need: your AppFolio Reports API Client ID + Secret · ~2 min",
@@ -244,8 +214,6 @@ const PREREQUISITES: Record<ConnectSourceVM["id"], string> = {
     "You'll need: a Google login with access to your Google Ads account · ~2 min",
   meta_ads:
     "You'll need: a Facebook login with Business Manager access to your ad account · ~2 min",
-  cursive_pixel:
-    "You'll need: a property selected — we handle the rest · live within 4 business hours",
   website:
     "You'll need: your domain and access to its DNS settings · ~5 min",
 };
@@ -272,7 +240,6 @@ const STALE_AFTER_HOURS: Record<ConnectSourceVM["id"], number> = {
   gsc: 72,
   google_ads: 72,
   meta_ads: 72,
-  cursive_pixel: 72,
   website: Number.POSITIVE_INFINITY,
 };
 
@@ -317,13 +284,6 @@ function deriveChipState(
     }
     return { status: "live" };
   }
-  if (source.provisioning) {
-    // Server-persisted requested state (pixel provision request / in-flight
-    // setup on file) — beats the transient local click state and survives
-    // refresh. Full copy renders as the card's status line; the chip keeps
-    // the six-word vocabulary.
-    return { status: "provisioning" };
-  }
   if (isPending) {
     // Local click state, pre-redirect.
     return { status: "connecting" };
@@ -349,8 +309,6 @@ function resolveConnectUrl(
 ): string | undefined {
   if (!base || !propertyId) return base;
   switch (id) {
-    case "cursive_pixel":
-      return `/portal/settings/integrations?propertyId=${propertyId}`;
     // GA4/GSC OAuth start (lib/integrations/oauth-handler.ts, wave-3 phase 4)
     // now validates + embeds ?propertyId= in the signed state and writes the
     // resulting SeoIntegration row scoped to that property, so the "Connect"
@@ -420,7 +378,7 @@ export function ConnectHub({
       relevant in the wizard variant. */
   onAllConnected?: () => void;
   /** The property currently selected in the switcher. When set, per-property
-      sources (pixel / GA4 / GSC / site) deep-link to their setup surface with
+      sources (GA4 / GSC / site) deep-link to their setup surface with
       this property pre-selected, so each building is configured in isolation. */
   activePropertyId?: string | null;
   activePropertyName?: string | null;
@@ -519,16 +477,16 @@ export function ConnectHub({
         {activePropertyName ? (
           <span>
             Setting up <span className="font-semibold">{activePropertyName}</span>.
-            Pixel, chatbot, and popups connect just for this property. GA4,
-            GSC, your site, and AppFolio connect once for the whole
-            workspace. Switch properties in the selector above to set up
-            another building&apos;s pixel and chatbot.
+            Chatbot and popups connect just for this property. GA4, GSC,
+            your site, and AppFolio connect once for the whole workspace.
+            Switch properties in the selector above to set up another
+            building&apos;s chatbot.
           </span>
         ) : (
           <span>
             You&apos;re on <span className="font-semibold">All properties</span>.
-            Pixel, chatbot, and popups are configured per property — pick one
-            in the selector above to set up its own. GA4, GSC, your site, and
+            Chatbot and popups are configured per property — pick one in the
+            selector above to set up its own. GA4, GSC, your site, and
             AppFolio connect once for the whole workspace today (per-property
             support for these is coming).
           </span>
@@ -737,14 +695,10 @@ function SourceCard({
         ) : null}
 
         {/* Prerequisite line — what you'll need + realistic time-to-connect.
-            Hidden once connected or when the source is blocked. When a
-            request is already on file (provisioning), the line flips to the
-            persisted status copy instead of re-asking for prerequisites. */}
+            Hidden once connected or when the source is blocked. */}
         {!isConnected && !isBlocked ? (
           <p className="text-[11px] text-[var(--gray-70)] leading-snug">
-            {source.provisioning
-              ? "Requested — provisioning (≤4 business hrs). We'll email you when it's live."
-              : PREREQUISITES[source.id]}
+            {PREREQUISITES[source.id]}
           </p>
         ) : null}
 
@@ -828,11 +782,7 @@ function SourceCard({
                   ) : (
                     <ExternalLink className="w-3 h-3" />
                   )}
-                  {/* A source with a request on file routes back into its
-                      setup surface to finish/inspect, not "Request" again. */}
-                  {source.provisioning
-                    ? "Resume setup"
-                    : (meta.connectLabel ?? "Connect")}
+                  {meta.connectLabel ?? "Connect"}
                 </>
               )}
             </button>

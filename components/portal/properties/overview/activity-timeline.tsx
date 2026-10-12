@@ -27,7 +27,6 @@ function sourceWord(source: string): string {
     ORGANIC: "organic",
     CHATBOT: "the chatbot",
     FORM: "the web form",
-    PIXEL_OUTREACH: "pixel outreach",
     REFERRAL: "a referral",
     DIRECT: "direct",
     EMAIL_CAMPAIGN: "email",

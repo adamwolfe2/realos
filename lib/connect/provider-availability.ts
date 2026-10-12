@@ -14,7 +14,7 @@ import "server-only";
 //                state); null when available
 //   eta        — optional short ETA string ("Coming soon" by default)
 //
-// AppFolio + Cursive pixel + website are AGENCY-CONFIG-INDEPENDENT in this
+// AppFolio + website are AGENCY-CONFIG-INDEPENDENT in this
 // sense — the operator brings their own credentials / installs their own
 // snippet. Their availability is purely "can they take the action right now"
 // (always true). OAuth providers (GA4, GSC, Google Ads, Meta Ads) require
@@ -30,7 +30,6 @@ export type ProviderId =
   | "gsc"
   | "google_ads"
   | "meta_ads"
-  | "cursive_pixel"
   | "website";
 
 export type ProviderAvailability = {
@@ -116,14 +115,6 @@ export function getProviderAvailability(): AvailabilityMap {
           eta: null,
         }
       : metaNotReady,
-    cursive_pixel: {
-      // Pixel request becomes a 3-5 min ops task (manual the upstream pixel provider setup).
-      // Operator-side action is always available; the request itself just
-      // notifies ops to provision.
-      available: true,
-      reason: null,
-      eta: null,
-    },
     website: {
       available: true,
       reason: null,

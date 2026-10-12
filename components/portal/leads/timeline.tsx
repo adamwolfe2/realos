@@ -24,7 +24,7 @@ export function Timeline({ events }: { events: TimelineEvent[] }) {
     return (
       <div className="ls-card p-8 text-center">
         <p className="text-sm text-foreground">
-          No activity yet. Install the Cursive pixel and enable the chatbot to
+          No activity yet. Enable the chatbot and share your lead forms to
           see every touchpoint here.
         </p>
       </div>

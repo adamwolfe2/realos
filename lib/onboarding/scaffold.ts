@@ -12,18 +12,13 @@ import { prisma } from "@/lib/db";
 //                 its own bot live + editable. Also ensures the org-level
 //                 TenantSiteConfig exists + chatbotEnabled so the bot can
 //                 actually serve (the public endpoints gate on it).
-//   - Pixel    -> one PixelProvisionRequest per property, so the ops/automation
-//                 queue gets N distinct requests (the 5-properties-5-pixels
-//                 bottleneck) instead of the operator filing each by hand.
 //
 // Idempotent: safe to call again on onboarding resume. PropertyChatbotConfig is
-// keyed @unique by propertyId (upsert); pixel requests are de-duped by an
-// embedded `property:<id>` marker in notes.
+// keyed @unique by propertyId (upsert).
 // ---------------------------------------------------------------------------
 
 export type ScaffoldFeatures = {
   chatbot: boolean;
-  pixel: boolean;
 };
 
 export type ScaffoldProperty = {
@@ -31,8 +26,6 @@ export type ScaffoldProperty = {
   name: string;
   websiteUrl: string | null;
 };
-
-const PIXEL_NOTE_PREFIX = "property:";
 
 export async function scaffoldPropertyIntegrations(
   orgId: string,
@@ -81,31 +74,6 @@ export async function scaffoldPropertyIntegrations(
       } catch (err) {
         failures.push(
           `chatbot config for property ${property.id}: ${(err as Error).message}`,
-        );
-      }
-    }
-
-    if (features.pixel) {
-      const marker = `${PIXEL_NOTE_PREFIX}${property.id}`;
-      try {
-        const already = await prisma.pixelProvisionRequest.findFirst({
-          where: { orgId, notes: { contains: marker } },
-          select: { id: true },
-        });
-        if (!already) {
-          await prisma.pixelProvisionRequest.create({
-            data: {
-              orgId,
-              propertyId: property.id,
-              websiteName: property.name,
-              websiteUrl: property.websiteUrl ?? "",
-              notes: `Auto-requested at onboarding for ${property.name} (${marker})`,
-            },
-          });
-        }
-      } catch (err) {
-        failures.push(
-          `pixel request for property ${property.id}: ${(err as Error).message}`,
         );
       }
     }

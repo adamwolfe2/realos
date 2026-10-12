@@ -31,7 +31,7 @@ export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for u
 // as they progress through onboarding. Three touch points:
 //   Day 2 — no properties added yet
 //   Day 5 — no data integration connected yet
-//   Day 10 — no activity (no leads, no visitors)
+//   Day 10 — no activity (no leads)
 //
 // Dedup: AuditEvent rows (entityType='onboarding_drip', description=step) prevent
 // repeat sends. The AuditEvent FK requires orgId which all orgs have.
@@ -233,12 +233,9 @@ async function checkStepCondition(
     return seo + ads + appfolio === 0;
   }
 
-  // setup_checklist: no leads and no visitors in the org.
-  const [leads, visitors] = await Promise.all([
-    prisma.lead.count({ where: { orgId } }),
-    prisma.visitor.count({ where: { orgId } }),
-  ]);
-  return leads + visitors === 0;
+  // setup_checklist: no leads in the org.
+  const leads = await prisma.lead.count({ where: { orgId } });
+  return leads === 0;
 }
 
 type StepKey = "add_property" | "add_integration" | "setup_checklist";
@@ -259,7 +256,7 @@ function buildDripEmail(
         <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
           Your ${e(BRAND_NAME)} portal for ${e(orgName)} is ready, but we noticed you
           haven't added a property yet. Adding your first property turns on lead
-          tracking, visitor analytics, and the chatbot.
+          tracking and the chatbot.
         </p>
         <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
           It takes about two minutes. Head to your portal to get started.

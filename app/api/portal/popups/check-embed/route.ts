@@ -57,8 +57,7 @@ const MAX_HTML_BYTES = 200_000;
 // Re-validate each redirect hop's target against the SSRF allowlist before
 // following it — `redirect: "follow"` would let a tenant-controlled host
 // 302 to an internal address that the pre-flight check on the ORIGINAL url
-// never saw. Cap matches lib/property-images/scrape.ts and the sibling
-// pixel/check-install probe.
+// never saw. Cap matches lib/property-images/scrape.ts.
 const MAX_REDIRECTS = 3;
 
 async function probeUrl(url: string, expectedSlug: string): Promise<Omit<CheckResult, "checkedAt">> {

@@ -9,7 +9,6 @@ import {
   LayoutDashboard,
   Building2,
   Users,
-  Eye,
   MessageSquare,
   Bot,
   BarChart3,
@@ -23,9 +22,6 @@ import {
   Sparkles,
   FileText,
   Share2,
-  Target,
-  Send,
-  History,
   Calendar,
   Star,
   ClipboardList,
@@ -52,7 +48,6 @@ export type PortalNavOrg = {
   name: string;
   productLine?: string;
   moduleWebsite: boolean;
-  modulePixel: boolean;
   moduleChatbot: boolean;
   moduleGoogleAds: boolean;
   moduleMetaAds: boolean;
@@ -77,7 +72,6 @@ export type PortalNavOrg = {
   bringYourOwnSite: boolean;
   onboardingDismissed: boolean;
   setupComplete: boolean;
-  isAudienceSync?: boolean;
   /** True when an AppFolio integration record exists — gates Operations nav group */
   appFolioConnected?: boolean;
   /**
@@ -138,7 +132,6 @@ export type PortalNavOrg = {
    * fallbacks so a missing field / schema drift degrades gracefully.
    */
   newLeadsTodayCount?: number;
-  hotVisitors24hCount?: number;
   toursNext7dCount?: number;
   expiringLeases30dCount?: number;
   urgentWorkOrdersCount?: number;
@@ -192,38 +185,6 @@ export function visibleNavItems(
 
 const ALWAYS = () => true;
 
-// Audience Sync product line nav. Shown when org.isAudienceSync is true
-// (or AL_PARTNER user without an impersonation target). Replaces the full
-// student-housing nav with a focused four-section dashboard.
-export const AUDIENCE_NAV_GROUPS: NavGroup[] = [
-  {
-    label: "Audiences",
-    items: [
-      { href: "/portal/audiences", label: "Segments", icon: Target, show: ALWAYS },
-      { href: "/portal/audiences/destinations", label: "Destinations", icon: Send, show: ALWAYS },
-      { href: "/portal/audiences/schedules", label: "Schedules", icon: Calendar, show: ALWAYS },
-      { href: "/portal/audiences/history", label: "Sync history", icon: History, show: ALWAYS },
-      { href: "/portal/audiences/settings", label: "Settings", icon: Settings, show: ALWAYS },
-    ],
-  },
-  {
-    label: "Account",
-    items: [
-      // Norman 2026-06-04: Notifications tab also hidden from the
-      // audience-only sidebar — matches the Today-group hide above.
-      // The bell in the top header is unaffected.
-      { href: "/portal/notifications", label: "Notifications", icon: Bell, show: () => false },
-      {
-        href: "/portal/billing",
-        label: "Billing",
-        icon: CreditCard,
-        show: (o) => o.canManageBilling === true,
-      },
-      { href: "/portal/settings", label: "Settings", icon: Settings, show: ALWAYS },
-    ],
-  },
-];
-
 // ---------------------------------------------------------------------------
 // W2 nav consolidation (2026-05-28):
 //   Collapsed 7 sidebar groups → 4 (Today, Pipeline, Marketing, Account)
@@ -231,7 +192,7 @@ export const AUDIENCE_NAV_GROUPS: NavGroup[] = [
 //
 //   - Today    : dashboard, briefing, notifications
 //   - Pipeline : every surface that moves a prospect through the funnel
-//                (leads, visitors, tours, applications, residents,
+//                (leads, tours, applications, residents,
 //                 work-orders, renewals, conversations)
 //   - Marketing: every outbound + content surface (ads, campaigns,
 //                creative, chatbot, popups, content, SEO, attribution,
@@ -291,13 +252,6 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Users,
         show: ALWAYS,
         badge: (o) => o.newLeadsTodayCount ?? null,
-      },
-      {
-        href: "/portal/visitors",
-        label: "Visitors",
-        icon: Eye,
-        show: (o) => o.modulePixel,
-        badge: (o) => o.hotVisitors24hCount ?? null,
       },
       {
         href: "/portal/tours",
@@ -594,7 +548,7 @@ export function PortalNav({
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-3" aria-label="Portal navigation">
-        {(org.isAudienceSync ? AUDIENCE_NAV_GROUPS : NAV_GROUPS).map((group) => {
+        {NAV_GROUPS.map((group) => {
           const visible = visibleNavItems(group, org);
           if (!visible.length) return null;
           return (

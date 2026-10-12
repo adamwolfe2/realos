@@ -4,7 +4,7 @@
  *
  * Default operator checklist for new tenant builds.
  * Real-estate-specific steps include:
- * AppFolio OAuth, Cursive pixel install, chatbot knowledge base, tenant marketing site setup.
+ * AppFolio OAuth, chatbot knowledge base, tenant marketing site setup.
  */
 
 export type DefaultTask = {
@@ -89,19 +89,6 @@ export function getDefaultProjectTasks(): DefaultTask[] {
       automationAction: "connect_appfolio",
     },
     {
-      label: "Provision Cursive pixel",
-      description:
-        "Call Cursive API to provision a pixel for this tenant. Save cursivePixelId + pixelScriptUrl on the CursiveIntegration row.",
-      phase: 2,
-      automationAction: "provision_cursive",
-    },
-    {
-      label: "Install pixel on tenant site",
-      description:
-        "If tenant site is hosted by us, the pixel loader is auto-injected. If bring-your-own-site, send the script tag to the client with install instructions.",
-      phase: 2,
-    },
-    {
       label: "Configure ad accounts (Google, Meta)",
       description:
         "Gather OAuth tokens for each ad platform the client has selected. Store encrypted in AdAccount rows.",
@@ -144,12 +131,6 @@ export function getDefaultProjectTasks(): DefaultTask[] {
       phase: 4,
     },
     {
-      label: "Verify pixel firing",
-      description:
-        "Load the tenant site with the Cursive browser extension or dev tools. Confirm the pixel fires and events reach Cursive.",
-      phase: 4,
-    },
-    {
       label: "Exercise chatbot happy path",
       description:
         "Open the chatbot, ask 5 common questions, request a tour, and submit an application. Verify lead row is created.",
@@ -179,7 +160,7 @@ export function getDefaultProjectTasks(): DefaultTask[] {
     {
       label: "Client approval received",
       description:
-        "Client has reviewed and signed off on the site + chatbot + pixel. Document any requested changes.",
+        "Client has reviewed and signed off on the site + chatbot. Document any requested changes.",
       phase: 5,
     },
     {
@@ -205,7 +186,7 @@ export function getDefaultProjectTasks(): DefaultTask[] {
     {
       label: "Week-one performance review",
       description:
-        "Pull first week of leads, visitors, chatbot conversations, ad spend. Deliver performance summary to client.",
+        "Pull first week of leads, chatbot conversations, ad spend. Deliver performance summary to client.",
       phase: 5,
     },
     {
