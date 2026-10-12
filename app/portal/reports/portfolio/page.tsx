@@ -30,7 +30,6 @@ const PERIODS = [
 ] as const;
 
 const STAGE_ICON = {
-  traffic: <Users className="h-4 w-4" />,
   leads: <UserPlus className="h-4 w-4" />,
   tours: <CalendarCheck className="h-4 w-4" />,
   applications: <FileText className="h-4 w-4" />,
@@ -38,7 +37,7 @@ const STAGE_ICON = {
 
 // Per-property table sort — the rows are already in memory (one aggregate
 // query), so sorting is a copy + compare, no extra reads.
-const SORT_KEYS = ["name", "traffic", "leads", "tours", "apps"] as const;
+const SORT_KEYS = ["name", "leads", "tours", "apps"] as const;
 type SortKey = (typeof SORT_KEYS)[number];
 
 function statusLabel(s: string): string {
@@ -73,7 +72,7 @@ export default async function PortfolioFunnelPage({
   const filter = await parsePropertyFilter(sp, scope.orgId);
   const isFullAccess = visible.length === allProperties.length;
 
-  // Portfolio-wide (org scope, includes unattributed traffic) only when the
+  // Portfolio-wide (org scope, includes unattributed leads) only when the
   // viewer can see everything AND hasn't narrowed to a property. Otherwise
   // scope to the in-access, in-filter property set.
   const propertyIds: string[] | null =
@@ -101,13 +100,11 @@ export default async function PortfolioFunnelPage({
   const sortValue = (r: PropertyRow): string | number =>
     sortKey === "name"
       ? r.name.toLowerCase()
-      : sortKey === "traffic"
-        ? r.visitors
-        : sortKey === "leads"
-          ? r.leads
-          : sortKey === "tours"
-            ? r.tours
-            : r.applications;
+      : sortKey === "leads"
+        ? r.leads
+        : sortKey === "tours"
+          ? r.tours
+          : r.applications;
   const sortedByProperty: PropertyTableRow[] = (
     sortKey
       ? [...byProperty].sort((a, b) => {
@@ -149,16 +146,6 @@ export default async function PortfolioFunnelPage({
       ),
     },
     {
-      key: "traffic",
-      header: "Traffic",
-      sortable: true,
-      align: "right",
-      width: "90px",
-      accessor: (row) => (
-        <span className="ls-metric text-muted-foreground">{row.visitors}</span>
-      ),
-    },
-    {
       key: "leads",
       header: "Leads",
       sortable: true,
@@ -196,7 +183,7 @@ export default async function PortfolioFunnelPage({
     <div className="space-y-6">
       <PageHeader
         title="Portfolio funnel"
-        description="Traffic to applications across every property — the one-page roll-up to share with managers."
+        description="Leads to applications across every property — the one-page roll-up to share with managers."
         actions={
           <Suspense fallback={<div className="h-9 w-64 animate-pulse rounded-[2px] bg-neutral-100" />}>
             <PropertyMultiSelect properties={visible} orgId={scope.orgId} />
@@ -222,7 +209,7 @@ export default async function PortfolioFunnelPage({
       </div>
 
       {/* Funnel strip */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         {stages.map((stage, i) => (
           <div key={stage.key} className="relative">
             <KpiTile
@@ -327,7 +314,7 @@ export default async function PortfolioFunnelPage({
         <EmptyState
           icon={<Users className="h-6 w-6" />}
           title="No funnel activity in this window"
-          body="Once traffic, leads, tours, and applications come in, the portfolio roll-up shows up here."
+          body="Once leads, tours, and applications come in, the portfolio roll-up shows up here."
         />
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1.4fr]">
@@ -390,11 +377,6 @@ export default async function PortfolioFunnelPage({
                 />
               }
             />
-            <p className="text-[11px] leading-snug text-muted-foreground">
-              Traffic is counted at the portfolio level; visits the pixel hasn&apos;t
-              tied to a specific property aren&apos;t split into the rows above, so
-              per-property traffic can read lower than the headline total.
-            </p>
           </section>
         </div>
       )}

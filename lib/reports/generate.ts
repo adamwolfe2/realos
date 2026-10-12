@@ -13,7 +13,6 @@ import {
   ResidentStatus,
   Sentiment,
   TourStatus,
-  VisitorIdentificationStatus,
 } from "@prisma/client";
 import { z } from "zod";
 import { generateText } from "ai";
@@ -23,10 +22,6 @@ import { buildPropertyUrlPatterns } from "@/lib/properties/queries";
 import { realAdAccountWhere } from "@/lib/integrations/real-ad-account";
 import { reportPeriodWindow } from "@/lib/recency";
 import { previewPath } from "@/lib/security/preview-token";
-import {
-  CANONICAL_SOURCES,
-  classifySource,
-} from "@/lib/attribution/source-taxonomy";
 import { buildPopupStats, type ReportPopupStats } from "@/lib/reports/popup-stats";
 
 // ---------------------------------------------------------------------------
@@ -59,19 +54,6 @@ export type ReportKpis = {
   // Form/chatbot leads — rows in the Lead table created via opted-in
   // conversion paths (contact form, chatbot email capture, intake).
   leads: number;
-  // Visitors identified via the the upstream pixel provider pixel — real people with
-  // names + emails resolved from the third-party identity graph who
-  // visited the marketing site but did NOT submit a form. The report
-  // sums leads + identifiedVisitors as the "captured contacts" total
-  // because both represent real outreach-ready contacts; counting only
-  // Lead rows underreports the marketing surface area by 30-50x for
-  // typical pixel-active tenants.
-  //
-  // Optional in the type because legacy ClientReport.snapshot rows
-  // stored before this field was added would be undefined at runtime.
-  // Every read site defaults to 0 via `??` so the view never crashes
-  // on a pre-migration snapshot.
-  identifiedVisitors?: number;
   tours: number;
   applications: number;
   costPerLead: number | null;
@@ -81,9 +63,6 @@ export type ReportKpis = {
 
 export type ReportKpiDeltas = {
   leadsPct: number | null;
-  // Optional for the same reason as identifiedVisitors above —
-  // legacy snapshots predate this field.
-  identifiedVisitorsPct?: number | null;
   toursPct: number | null;
   applicationsPct: number | null;
   costPerLeadPct: number | null;
@@ -276,14 +255,6 @@ export type ReportAeoStats = {
     cited: number;
     competitorCited: number;
   }>;
-  // AI-referral attribution (2026-08-14, goal spec slice 11): pixel
-  // sessions arriving FROM AI assistants during the report period,
-  // chained visitor → lead → SIGNED. Absent on legacy snapshots.
-  aiReferral?: {
-    visits: number;
-    leads: number;
-    signed: number;
-  };
 };
 
 // ---------------------------------------------------------------------------
@@ -315,12 +286,11 @@ export type ReportDataSources = {
   ga4: DataSourceStatus;
   gsc: DataSourceStatus;
   appfolio: DataSourceStatus;
-  pixel: DataSourceStatus;
   chatbot: DataSourceStatus;
 };
 
 // ---------------------------------------------------------------------------
-// Reputation, occupancy, renewals, visitor stats — added in the 2026 report
+// Reputation, occupancy, renewals — added in the 2026 report
 // upgrade so the monthly client report reflects everything the operator
 // dashboard now tracks. All sections render gracefully when the underlying
 // data is empty (new tenants, no reviews yet, etc.).
@@ -387,36 +357,6 @@ export type ReportRenewalStats = {
   pastDueBalanceUsd: number;
 };
 
-export type ReportVisitorStats = {
-  identifiedVisitors: number;
-  identifiedNewInPeriod: number;
-  withEmail: number;
-  withPhone: number;
-  identifiedWithLead: number;
-  // Trend of *new* identifications per day across the period.
-  identifiedTrend: number[];
-  // Norman May 22: Operations tab was sparse. We surface every honest
-  // Visitor-table signal we have so ownership reads the full pixel
-  // intelligence picture — who, where, and how engaged.
-  /** Pixel identification funnel: ANONYMOUS → IDENTIFIED → MATCHED. */
-  byStatus?: Array<{ status: string; count: number }>;
-  /** Hot visitors (intentScore >= 70). */
-  hotCount?: number;
-  /** Visitors with operator outreach sent. */
-  outreachSentCount?: number;
-  /** Audience-sync state — how many were pushed to Google / Meta. */
-  syncedToGoogleAds?: number;
-  syncedToMetaAds?: number;
-  /** Top referrers (page URLs visitors came from). */
-  topReferrers?: Array<{ referrer: string; count: number }>;
-  /** Top cities + states pulled from Cursive enrichment payload. */
-  topCities?: Array<{ city: string; count: number }>;
-  topStates?: Array<{ state: string; count: number }>;
-  /** Gender split + age range distribution from enrichment. */
-  genderSplit?: Array<{ gender: string; count: number }>;
-  ageRanges?: Array<{ ageRange: string; count: number }>;
-};
-
 export type ReportChatbotStatsExtended = ReportChatbotStats & {
   capturedRatePct: number | null;
   // Conversations that flipped to status=LEAD_CAPTURED in this window.
@@ -478,7 +418,6 @@ export type ReportSnapshot = {
   reputationStats?: ReportReputationStats;
   occupancyStats?: ReportOccupancyStats;
   renewalStats?: ReportRenewalStats;
-  visitorStats?: ReportVisitorStats;
   // AEO (Answer Engine Optimization) — how often you got cited in AI
   // search vs how often a competitor was cited instead. Optional on
   // legacy snapshots; the view renders nothing when absent.
@@ -738,7 +677,7 @@ async function buildScope(
     // Norman bug (May 22): for orgs where every report is effectively
     // about ONE building (SG = TC after tc-isolate cleared the 126
     // EXCLUDED sub-records), the portfolio-wide report still pulled
-    // unrelated SEO landing pages (/blog/warmly-vs-cursive-comparison
+    // unrelated SEO landing pages (/blog/some-comparison-post
     // — a marketing site page) because there was no scope filter on
     // SEO queries. When the org has exactly one ACTIVE property, we
     // silently apply that property's URL patterns to the SEO clauses
@@ -883,11 +822,9 @@ async function buildScope(
 // set up) count. Property-scoped reports (explicit propertyId) already
 // resolve to exactly one property via scope.propertyClause and don't need
 // this. Same fix family as marketablePropertyWhere/buildOccupancyStats,
-// applied to every Lead/Application/Visitor-shaped org-wide query below
+// applied to every Lead/Application-shaped org-wide query below
 // instead of re-typing `property: { lifecycle: "ACTIVE" }` at each call
-// site. (Visitor rows joined 2026-08-02 once propertyId stamping at ingest
-// + the single-property backfill made the gate safe — see the visitor
-// counts below.)
+// site.
 function activePropertyClause(
   scope: Scope,
 ): { property?: { lifecycle: "ACTIVE" } } {
@@ -948,8 +885,6 @@ export async function generateReportSnapshot(
     chatbotLeadsCount,
     propertiesList,
     propertyLeadGroups,
-    identifiedVisitorsCount,
-    priorIdentifiedVisitorsCount,
     leasesSignedCount,
     priorLeasesSignedCount,
     activeLeasesCount,
@@ -1251,52 +1186,6 @@ export async function generateReportSnapshot(
       },
       _count: { _all: true },
     }),
-    // Identified-visitor counts — see ReportKpis.identifiedVisitors
-    // comment. Status filter mirrors the /portal/visitors feed: only
-    // count rows that resolved to a real person (IDENTIFIED, ENRICHED,
-    // MATCHED_TO_LEAD), never anonymous or pending-resolution rows.
-    // Period window matches the leads count so the two combine
-    // cleanly into a single "captured contacts" headline.
-    //
-    // ACTIVE-property gated since 2026-08-02: ingest paths stamp
-    // Visitor.propertyId where attribution is defensible (webhook via
-    // integration binding/URL inference, segment sync + backfill via the
-    // sole-ACTIVE-property rule), so an org-wide report only claims
-    // visitors it can file under a real, launched building — same rule as
-    // Leads/Applications above. Null-propertyId rows can still occur
-    // (multi-property org with an org-wide pixel and no URL match, or an
-    // /api/ingest/visitor caller that omits propertyId) and intentionally
-    // don't count: smaller-but-provable numbers.
-    prisma.visitor.count({
-      where: {
-        orgId,
-        ...scope.propertyClause,
-        ...activePropertyClause(scope),
-        status: {
-          in: [
-            VisitorIdentificationStatus.IDENTIFIED,
-            VisitorIdentificationStatus.ENRICHED,
-            VisitorIdentificationStatus.MATCHED_TO_LEAD,
-          ],
-        },
-        firstSeenAt: { gte: periodStart, lt: periodEnd },
-      },
-    }),
-    prisma.visitor.count({
-      where: {
-        orgId,
-        ...scope.propertyClause,
-        ...activePropertyClause(scope),
-        status: {
-          in: [
-            VisitorIdentificationStatus.IDENTIFIED,
-            VisitorIdentificationStatus.ENRICHED,
-            VisitorIdentificationStatus.MATCHED_TO_LEAD,
-          ],
-        },
-        firstSeenAt: { gte: priorStart, lt: priorEnd },
-      },
-    }),
     // ─────────────────────────────────────────────────────────────────────
     // APPFOLIO LIFECYCLE LAYER — Norman bug (May 22): SG signed 20+ leases
     // at Telegraph Commons but the report's Conversion Stages all read 0
@@ -1412,7 +1301,6 @@ export async function generateReportSnapshot(
 
   const kpis: ReportKpis = {
     leads: leadsCount,
-    identifiedVisitors: identifiedVisitorsCount,
     tours: toursCount,
     applications: applicationsCount,
     costPerLead,
@@ -1422,10 +1310,6 @@ export async function generateReportSnapshot(
 
   const kpiDeltas: ReportKpiDeltas = {
     leadsPct: pctChange(leadsCount, priorLeadsCount),
-    identifiedVisitorsPct: pctChange(
-      identifiedVisitorsCount,
-      priorIdentifiedVisitorsCount,
-    ),
     toursPct: pctChange(toursCount, priorToursCount),
     applicationsPct: pctChange(applicationsCount, priorApplicationsCount),
     costPerLeadPct:
@@ -1755,7 +1639,7 @@ export async function generateReportSnapshot(
     : null;
 
   // -------------------------------------------------------------------------
-  // 2026 sections — reputation, occupancy, renewals, visitor identification.
+  // 2026 sections — reputation, occupancy, renewals.
   // Each block is independently try/caught so an empty/missing data source
   // (new tenant, schema not migrated, integration not configured) never
   // blocks the rest of the report from generating.
@@ -1780,21 +1664,6 @@ export async function generateReportSnapshot(
     scope.propertyId,
     periodEnd,
   ).catch(sectionFailed("buildRenewalStats"));
-
-  // Visitor identification — pixel-driven, period-scoped.
-  const visitorStats = await buildVisitorStats(
-    orgId,
-    scope.propertyId,
-    periodStart,
-    periodEnd,
-    days,
-  ).catch((err) => {
-    // Optional report section — degrade to "no visitor data" rather than
-    // failing the whole snapshot, but never silently: the raw-SQL joins in
-    // buildVisitorStats can only fail at runtime.
-    console.error("buildVisitorStats failed; omitting visitor section", err);
-    return undefined;
-  });
 
   // Chatbot extended — captured-rate breakdown for the report.
   const chatbotStatsExtended = await buildChatbotExtended(
@@ -1947,7 +1816,6 @@ export async function generateReportSnapshot(
     reputationStats,
     occupancyStats,
     renewalStats,
-    visitorStats,
     aeoStats,
     contentStats,
     popupStats,
@@ -2001,14 +1869,12 @@ async function buildDataSources(
     ga4Integration,
     gscIntegration,
     appfolioIntegration,
-    cursivePixel,
     chatbotConfig,
     googleAdSpendInPeriod,
     metaAdSpendInPeriod,
     organicSessionsInPeriod,
     gscClicksInPeriod,
     chatbotConvosInPeriod,
-    pixelEventsInPeriod,
   ] = await Promise.all([
     (async () => {
       const realFilter = await realAdAccountWhere(orgId);
@@ -2050,11 +1916,6 @@ async function buildDataSources(
       where: { orgId },
       select: { lastSyncAt: true, syncStatus: true },
     }),
-    prisma.cursiveIntegration.findFirst({
-      where: { orgId, ...(propertyId ? { propertyId } : {}) },
-      select: { lastEventAt: true, cursivePixelId: true },
-      orderBy: { lastEventAt: "desc" },
-    }),
     prisma.organization.findUnique({
       where: { id: orgId },
       select: { tenantSiteConfig: { select: { chatbotEnabled: true } } },
@@ -2086,13 +1947,6 @@ async function buildDataSources(
       _sum: { totalClicks: true },
     }),
     prisma.chatbotConversation.count({
-      where: {
-        orgId,
-        ...propertyClause,
-        createdAt: { gte: periodStart, lt: periodEnd },
-      },
-    }),
-    prisma.visitorEvent.count({
       where: {
         orgId,
         ...propertyClause,
@@ -2144,11 +1998,6 @@ async function buildDataSources(
       // leases, work orders) is point-in-time, not period-bucketed.
       appfolioIntegration?.lastSyncAt != null &&
         appfolioIntegration.lastSyncAt >= freshThreshold,
-    ),
-    pixel: status(
-      cursivePixel?.lastEventAt ?? null,
-      cursivePixel?.cursivePixelId != null,
-      pixelEventsInPeriod > 0,
     ),
     // Chatbot is config-driven (no "last sync" concept since chats
     // are ingested directly), so we bypass the freshness check.
@@ -2580,76 +2429,6 @@ async function buildAeoStats(
     a.engine.localeCompare(b.engine),
   );
 
-  // AI-referral proof chain for the period (slice 11): sessions whose
-  // referrer/utm classifies to an AI assistant via the CANONICAL source
-  // taxonomy (same waterfall as /portal/attribution), chained through
-  // visitor → lead → SIGNED with causation order enforced.
-  const aiSources = CANONICAL_SOURCES.filter((s) => s.category === "ai");
-  const aiSessions = await prisma.visitorSession.findMany({
-    where: {
-      orgId,
-      ...propertyClause,
-      startedAt: { gte: periodStart, lt: periodEnd },
-      // OR nested under AND — a top-level OR beside the gate spread is
-      // banned house-wide (weekly-digest-marketable-gate.test.ts): the
-      // pattern invites a refactor that lets the OR escape the gate.
-      AND: [
-        {
-          OR: [
-            ...aiSources.flatMap((s) =>
-              s.matchHosts.map((h) => ({
-                firstReferrer: { contains: h, mode: "insensitive" as const },
-              })),
-            ),
-            ...aiSources.flatMap((s) =>
-              s.matchUtm.map((m) => ({
-                utmSource: { contains: m, mode: "insensitive" as const },
-              })),
-            ),
-          ],
-        },
-      ],
-    },
-    select: {
-      visitorId: true,
-      firstReferrer: true,
-      utmSource: true,
-      utmMedium: true,
-      startedAt: true,
-    },
-    orderBy: { startedAt: "desc" },
-    take: 2000,
-  });
-  let aiVisits = 0;
-  const aiVisitorFirstSeen = new Map<string, Date>();
-  for (const s of aiSessions) {
-    const src = classifySource(s.utmSource, s.firstReferrer, s.utmMedium);
-    if (src.category !== "ai") continue;
-    aiVisits += 1;
-    if (s.visitorId) {
-      const prev = aiVisitorFirstSeen.get(s.visitorId);
-      if (!prev || s.startedAt < prev) aiVisitorFirstSeen.set(s.visitorId, s.startedAt);
-    }
-  }
-  const aiLeadRows =
-    aiVisitorFirstSeen.size > 0
-      ? await prisma.lead.findMany({
-          where: {
-            orgId,
-            visitorId: { in: [...aiVisitorFirstSeen.keys()] },
-            // Both sides bounded — a July report regenerated in August
-            // must not count August leads (matches every other lead
-            // window in this file).
-            firstSeenAt: { gte: periodStart, lt: periodEnd },
-          },
-          select: { status: true, visitorId: true, firstSeenAt: true },
-        })
-      : [];
-  const aiLeads = aiLeadRows.filter((l) => {
-    const firstAi = l.visitorId ? aiVisitorFirstSeen.get(l.visitorId) : null;
-    return firstAi ? l.firstSeenAt >= firstAi : false;
-  });
-
   return {
     totalChecks: checks.length,
     cited,
@@ -2659,11 +2438,6 @@ async function buildAeoStats(
     topCompetitors,
     sampleCompetitorQueries: competitorSamples,
     byEngine,
-    aiReferral: {
-      visits: aiVisits,
-      leads: aiLeads.length,
-      signed: aiLeads.filter((l) => l.status === "SIGNED").length,
-    },
   };
 }
 
@@ -3068,251 +2842,6 @@ async function buildRenewalStats(
     pastDueCount: pastDue._count._all,
     pastDueBalanceUsd: Math.round((pastDue._sum.currentBalanceCents ?? 0) / 100),
   };
-}
-
-async function buildVisitorStats(
-  orgId: string,
-  propertyId: string | null,
-  periodStart: Date,
-  periodEnd: Date,
-  days: number,
-): Promise<ReportVisitorStats | undefined> {
-  // Org-wide stats claim only visitors filed under a real, launched
-  // building — same ACTIVE-lifecycle rule as the KPI queries in
-  // generateReportSnapshot (see activePropertyClause). Property-scoped
-  // stats resolve to exactly one property and need no lifecycle gate.
-  const propertyClause = propertyId
-    ? { propertyId }
-    : { property: { lifecycle: "ACTIVE" as const } };
-  const [identifiedTotal, identifiedNew, withEmail, withPhone, identifiedDaily, identifiedWithLead] =
-    await Promise.all([
-      prisma.visitor.count({
-        where: {
-          orgId,
-          ...propertyClause,
-          status: VisitorIdentificationStatus.IDENTIFIED,
-        },
-      }),
-      prisma.visitor.count({
-        where: {
-          orgId,
-          ...propertyClause,
-          status: VisitorIdentificationStatus.IDENTIFIED,
-          firstSeenAt: { gte: periodStart, lt: periodEnd },
-        },
-      }),
-      prisma.visitor.count({
-        where: {
-          orgId,
-          ...propertyClause,
-          status: VisitorIdentificationStatus.IDENTIFIED,
-          email: { not: null },
-        },
-      }),
-      prisma.visitor.count({
-        where: {
-          orgId,
-          ...propertyClause,
-          status: VisitorIdentificationStatus.IDENTIFIED,
-          phone: { not: null },
-        },
-      }),
-      prisma.visitor.findMany({
-        where: {
-          orgId,
-          ...propertyClause,
-          status: VisitorIdentificationStatus.IDENTIFIED,
-          firstSeenAt: { gte: periodStart, lt: periodEnd },
-        },
-        select: { firstSeenAt: true },
-        orderBy: { firstSeenAt: "asc" },
-      }),
-      // Visitors whose email also appears on a Lead — proxy for "pixel-
-      // identified visitor that has a real lead row now". Scoped further
-      // to the property when set so the count reflects that asset only.
-      propertyId
-        ? prisma.$queryRaw<Array<{ count: bigint }>>`
-            select count(distinct v.id) as count
-            from "Visitor" v
-            join "Lead" l on l."orgId" = v."orgId" and l.email is not null and v.email is not null and lower(l.email) = lower(v.email)
-            where v."orgId" = ${orgId} and v.status = 'IDENTIFIED' and v."propertyId" = ${propertyId} and l."propertyId" = ${propertyId}`
-        : // Org-wide: both sides of the visitor→lead claim must sit on an
-          // ACTIVE property, mirroring the Prisma queries above — otherwise
-          // a lead on an EXCLUDED junk sub-record could prove a conversion
-          // the report doesn't count anywhere else. Tagged template ($queryRaw,
-          // not Unsafe) so params stay bound by construction.
-          prisma.$queryRaw<Array<{ count: bigint }>>`
-            select count(distinct v.id) as count
-            from "Visitor" v
-            join "Property" vp on vp.id = v."propertyId" and vp.lifecycle = 'ACTIVE'
-            join "Lead" l on l."orgId" = v."orgId" and l.email is not null and v.email is not null and lower(l.email) = lower(v.email)
-            join "Property" lp on lp.id = l."propertyId" and lp.lifecycle = 'ACTIVE'
-            where v."orgId" = ${orgId} and v.status = 'IDENTIFIED'`,
-    ]);
-
-  if (identifiedTotal === 0) return undefined;
-
-  const identifiedTrend = bucketDaily(
-    identifiedDaily.map((v) => ({ date: v.firstSeenAt, value: 1 })),
-    days,
-    periodEnd,
-  );
-
-  const matched = identifiedWithLead[0]?.count
-    ? Number(identifiedWithLead[0].count)
-    : 0;
-
-  // Norman May 22: Operations tab needed real visitor intelligence
-  // beyond the 4 status tiles. Pull the rich enrichment fields we
-  // already have on the Visitor row — geography (PERSONAL_CITY +
-  // PERSONAL_STATE), demographics (AGE_RANGE + GENDER), referrer
-  // mix, hot-lead count, audience-sync state. All optional; the
-  // renderer skips any field that came back empty.
-  const [
-    byStatusGroups,
-    hotCount,
-    outreachSentCount,
-    syncedToGoogleAds,
-    syncedToMetaAds,
-    referrerGroups,
-    enrichmentRows,
-  ] = await Promise.all([
-    prisma.visitor.groupBy({
-      by: ["status"],
-      where: { orgId, ...propertyClause },
-      _count: { _all: true },
-    }),
-    prisma.visitor.count({
-      where: {
-        orgId,
-        ...propertyClause,
-        status: VisitorIdentificationStatus.IDENTIFIED,
-        intentScore: { gte: 70 },
-      },
-    }),
-    prisma.visitor.count({
-      where: { orgId, ...propertyClause, outreachSent: true },
-    }),
-    prisma.visitor.count({
-      where: { orgId, ...propertyClause, syncedToGoogleAds: true },
-    }),
-    prisma.visitor.count({
-      where: { orgId, ...propertyClause, syncedToMetaAds: true },
-    }),
-    prisma.visitor.groupBy({
-      by: ["referrer"],
-      where: {
-        orgId,
-        ...propertyClause,
-        referrer: { not: null },
-      },
-      _count: { _all: true },
-      orderBy: { _count: { referrer: "desc" } },
-      take: 5,
-    }),
-    // Enrichment fields live in JSON — we have to fetch + bucket
-    // client-side. Capped at 500 rows to keep the report build cheap
-    // for orgs with tens of thousands of identified visitors. The
-    // top-10 distribution stays representative at that sample size.
-    prisma.visitor.findMany({
-      where: {
-        orgId,
-        ...propertyClause,
-        status: {
-          in: [
-            VisitorIdentificationStatus.IDENTIFIED,
-            VisitorIdentificationStatus.ENRICHED,
-            VisitorIdentificationStatus.MATCHED_TO_LEAD,
-          ],
-        },
-        enrichedData: { not: Prisma.JsonNull },
-      },
-      select: { enrichedData: true },
-      take: 500,
-    }),
-  ]);
-
-  const byStatus = byStatusGroups
-    .map((g) => ({ status: g.status, count: g._count._all }))
-    .filter((s) => s.count > 0)
-    .sort((a, b) => b.count - a.count);
-
-  const topReferrers = referrerGroups
-    .map((r) => ({
-      referrer: shortReferrer(r.referrer ?? ""),
-      count: r._count._all,
-    }))
-    .filter((r) => r.referrer.length > 0);
-
-  const cityMap = new Map<string, number>();
-  const stateMap = new Map<string, number>();
-  const genderMap = new Map<string, number>();
-  const ageRangeMap = new Map<string, number>();
-  for (const v of enrichmentRows) {
-    if (!v.enrichedData || typeof v.enrichedData !== "object") continue;
-    const e = v.enrichedData as Record<string, unknown>;
-    const city =
-      pickString(e.PERSONAL_CITY) ?? pickString((e as { city?: unknown }).city);
-    const state =
-      pickString(e.PERSONAL_STATE) ??
-      pickString((e as { state?: unknown }).state);
-    const gender = pickString(e.GENDER);
-    const ageRange = pickString(e.AGE_RANGE);
-    if (city) cityMap.set(city, (cityMap.get(city) ?? 0) + 1);
-    if (state) stateMap.set(state, (stateMap.get(state) ?? 0) + 1);
-    if (gender) genderMap.set(gender, (genderMap.get(gender) ?? 0) + 1);
-    if (ageRange) ageRangeMap.set(ageRange, (ageRangeMap.get(ageRange) ?? 0) + 1);
-  }
-  const sortDesc = <T>(m: Map<string, number>, key: string) =>
-    [...m.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 8)
-      .map(([k, count]) => ({ [key]: k, count })) as T[];
-
-  return {
-    identifiedVisitors: identifiedTotal,
-    identifiedNewInPeriod: identifiedNew,
-    withEmail,
-    withPhone,
-    identifiedWithLead: matched,
-    identifiedTrend,
-    byStatus: byStatus.length > 0 ? byStatus : undefined,
-    hotCount,
-    outreachSentCount,
-    syncedToGoogleAds,
-    syncedToMetaAds,
-    topReferrers: topReferrers.length > 0 ? topReferrers : undefined,
-    topCities:
-      cityMap.size > 0
-        ? sortDesc<{ city: string; count: number }>(cityMap, "city")
-        : undefined,
-    topStates:
-      stateMap.size > 0
-        ? sortDesc<{ state: string; count: number }>(stateMap, "state")
-        : undefined,
-    genderSplit:
-      genderMap.size > 0
-        ? sortDesc<{ gender: string; count: number }>(genderMap, "gender")
-        : undefined,
-    ageRanges:
-      ageRangeMap.size > 0
-        ? sortDesc<{ ageRange: string; count: number }>(ageRangeMap, "ageRange")
-        : undefined,
-  };
-}
-
-function pickString(v: unknown): string | null {
-  return typeof v === "string" && v.trim().length > 0 ? v.trim() : null;
-}
-
-function shortReferrer(raw: string): string {
-  if (!raw) return "";
-  try {
-    const u = new URL(raw);
-    return u.hostname.replace(/^www\./, "");
-  } catch {
-    return raw.length > 40 ? `${raw.slice(0, 37)}…` : raw;
-  }
 }
 
 async function buildChatbotExtended(

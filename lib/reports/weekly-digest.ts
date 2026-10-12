@@ -23,7 +23,6 @@ export type WeeklyDigest = {
     applicationsThisWeek: number;
     adSpendCents: number;
     organicSessions: number;
-    hotVisitorPeak: number;
   };
   topProperties: Array<{
     name: string;
@@ -100,8 +99,6 @@ export async function buildWeeklyDigest(orgId: string): Promise<WeeklyDigest> {
     propertyLeadGroups,
     propertyTourGroups,
     propertiesList,
-    // Hot visitor peak: max pageviewCount in any single VisitorSession this week
-    visitorSessions,
   ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: orgId },
@@ -217,18 +214,6 @@ export async function buildWeeklyDigest(orgId: string): Promise<WeeklyDigest> {
       where: marketablePropertyWhere(orgId),
       select: { id: true, name: true },
     }),
-
-    // Visitor sessions this week — fetch max pageviewCount for hotVisitorPeak
-    prisma.visitorSession.findMany({
-      where: {
-        orgId,
-        ...leadClause,
-        startedAt: { gte: thisWeekStart, lt: now },
-      },
-      select: { pageviewCount: true },
-      orderBy: { pageviewCount: "desc" },
-      take: 1,
-    }),
   ]);
 
   const adSpendCents = adSpendAgg._sum.spendCents ?? 0;
@@ -298,9 +283,6 @@ export async function buildWeeklyDigest(orgId: string): Promise<WeeklyDigest> {
     propertyName: r.property?.name ?? null,
   }));
 
-  const hotVisitorPeak =
-    visitorSessions.length > 0 ? visitorSessions[0].pageviewCount : 0;
-
   // Build property name lookup
   const propNameById = new Map<string, string>(
     propertiesList.map((p) => [p.id, p.name])
@@ -348,7 +330,6 @@ export async function buildWeeklyDigest(orgId: string): Promise<WeeklyDigest> {
       applicationsThisWeek,
       adSpendCents,
       organicSessions,
-      hotVisitorPeak,
     },
     topProperties,
     openInsights: openInsightsCount,

@@ -111,7 +111,7 @@ export const wastedAdSpendDetector: Detector = {
         title: `${platformLabel} campaign spent $${dollars.toLocaleString()} with zero leads (7d)`,
         body: `"${campaign.name}" has burned $${dollars.toLocaleString()} this week and produced no attributable leads. Common causes: targeting drift, paused landing page, broken UTM tags, or audience exhaustion.`,
         suggestedAction:
-          "Pause the campaign or push a fresh creative. If your conversion tracking is broken, leads may exist but aren't credited — verify the pixel + UTM tags first.",
+          "Pause the campaign or push a fresh creative. If your conversion tracking is broken, leads may exist but aren't credited — verify conversion tracking + UTM tags first.",
         propertyId: campaign.propertyId,
         entityType: "campaign",
         entityId: campaign.id,

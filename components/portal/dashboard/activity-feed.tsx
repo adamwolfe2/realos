@@ -3,7 +3,6 @@ import Link from "next/link";
 import {
   UserPlus,
   CalendarCheck,
-  Eye,
   MessageSquare,
   Megaphone,
   FileText,
@@ -15,7 +14,6 @@ import { cn } from "@/lib/utils";
 export type ActivityKind =
   | "lead"
   | "tour"
-  | "visitor"
   | "chatbot"
   | "campaign"
   | "application"
@@ -36,7 +34,6 @@ export type ActivityItem = {
 const ICON: Record<ActivityKind, React.ComponentType<{ className?: string }>> = {
   lead: UserPlus,
   tour: CalendarCheck,
-  visitor: Eye,
   chatbot: MessageSquare,
   campaign: Megaphone,
   application: FileText,
@@ -46,7 +43,6 @@ const ICON: Record<ActivityKind, React.ComponentType<{ className?: string }>> = 
 const TONE: Record<ActivityKind, string> = {
   lead: "bg-primary/10 text-primary",
   tour: "bg-primary/10 text-primary",
-  visitor: "bg-primary/10 text-primary",
   chatbot: "bg-muted text-muted-foreground",
   campaign: "bg-muted text-muted-foreground",
   application: "bg-primary/10 text-primary",
@@ -93,7 +89,7 @@ export function ActivityFeed({ items }: { items: ActivityItem[] }) {
   if (items.length === 0) {
     return (
       <p className="text-xs text-muted-foreground">
-        Quiet so far. New leads, tours, and visitor activity will stream in here.
+        Quiet so far. New leads, tours, and chatbot activity will stream in here.
       </p>
     );
   }
@@ -191,7 +187,6 @@ function pluralizeRunTitle(title: string, count: number): string {
   const PLURALS: Record<string, string> = {
     conversation: "conversations",
     lead: "leads",
-    visitor: "visitors",
     tour: "tours",
     application: "applications",
     campaign: "campaigns",

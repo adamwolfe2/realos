@@ -20,8 +20,7 @@ import { runInsightDetectors } from "./run";
  * Kick off a non-blocking insight pass for an org. Safe to call from any
  * sync-completion handler; never throws.
  *
- * @param reason — short string for logging ("appfolio_sync", "ga4_oauth",
- *                 "cursive_first_event", etc.). Surfaces in the run summary
+ * @param reason — short string for logging ("appfolio_sync", "ga4_oauth", etc.). Surfaces in the run summary
  *                 so we can correlate insight bursts to the trigger source.
  */
 export function triggerInsightsForOrg(orgId: string, reason: string): void {

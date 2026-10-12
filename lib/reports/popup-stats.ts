@@ -39,7 +39,6 @@ export async function buildPopupStats(
   // propertyId: null is legitimately org-wide by design (fires on every
   // property), so there's no clean way to attribute its events to one
   // property's lifecycle without changing what "org-wide campaign" means.
-  // Tracked as a separate slice alongside the Visitor/pixel limitation.
   const campaigns = await prisma.popupCampaign.findMany({
     where: {
       orgId,

@@ -26,7 +26,6 @@ import {
   ApplicationStatus,
   LeadStatus,
   OnboardingPhase,
-  ProductLine,
   TourStatus,
 } from "@prisma/client";
 import { AutoRefresh } from "@/components/portal/sync/auto-refresh";
@@ -42,7 +41,6 @@ import { QuietActivityRows } from "@/components/portal/dashboard/quiet-activity-
 import {
   getActivityFeed,
   getFunnel,
-  getHotVisitors,
   getIntegrationHealth,
   getLeadSourceBreakdown,
   getConversationsOverTime,
@@ -109,12 +107,6 @@ export default async function PortalHome({
   }>;
 }) {
   const scope = await requireScope();
-  // AUDIENCE_SYNC orgs and AL partners use the dedicated audiences surface;
-  // the student-housing dashboard isn't relevant to them.
-  if (scope.productLine === ProductLine.AUDIENCE_SYNC || scope.isAlPartner) {
-    redirect("/portal/audiences");
-  }
-
   // Property-restricted users (UserPropertyAccess set, e.g. Norman →
   // Telegraph Commons only) skip the org-wide dashboard entirely:
   //   - 1 allowed → that property's detail page
@@ -284,7 +276,6 @@ export default async function PortalHome({
       applicationsActive,
       ,
       properties,
-      ,
       organic,
       leadSourceSlices,
       funnelStages,
@@ -494,10 +485,6 @@ export default async function PortalHome({
       // amber "Dashboard data could not be loaded" panel — meaning one
       // broken PropertyMention or seo-snapshot query blanked the entire
       // portal home for that operator.
-      getHotVisitors(scope.orgId).catch(soft(({
-        count: 0,
-        sparkline: new Array<number>(28).fill(0),
-      }), "portal.page:496")),
       getOrganicSessionsKpi(scope.orgId).catch(soft(({
         sessions: 0,
         previousSessions: 0,
@@ -532,7 +519,6 @@ export default async function PortalHome({
           where: { id: scope.orgId },
           select: {
             moduleChatbot: true,
-            modulePixel: true,
             moduleSEO: true,
             moduleGoogleAds: true,
             moduleMetaAds: true,
@@ -811,13 +797,6 @@ export default async function PortalHome({
       // hero reads as the actual marketing surface area:
       //
       //   Lead rows                — form / chatbot opt-ins
-      // + Identified visitors      — visitor pixel resolved to a real
-      //                              person; the visitor feed lives here.
-      //                              For single-property orgs (like TC)
-      //                              pixel visitors aren't always
-      //                              property-tagged, so fall back to
-      //                              org-wide when the property has its
-      //                              own pixel + no per-property attr.
       // + Chatbot conversations    — people who started a conversation
       //                              even if they didn't drop email
       // + Tours scheduled          — calendar bookings
@@ -833,10 +812,6 @@ export default async function PortalHome({
         fLeadsPrior,
         fConvosCur,
         fConvosPrior,
-        fIdentVisCur,
-        fIdentVisPrior,
-        fIdentVisOrgWideCur,
-        fIdentVisOrgWidePrior,
         fToursCur,
         fAppsCur,
         fActiveLeases,
@@ -877,44 +852,6 @@ export default async function PortalHome({
             },
           })
           .catch(soft(0, "portal.page:888")),
-        prisma.visitor
-          .count({
-            where: {
-              orgId: scope.orgId,
-              propertyId: featuredProperty.id,
-              status: "IDENTIFIED",
-              firstSeenAt: { gte: featThirty, lte: featNow },
-            },
-          })
-          .catch(soft(0, "portal.page:898")),
-        prisma.visitor
-          .count({
-            where: {
-              orgId: scope.orgId,
-              propertyId: featuredProperty.id,
-              status: "IDENTIFIED",
-              firstSeenAt: { gte: featSixty, lt: featThirty },
-            },
-          })
-          .catch(soft(0, "portal.page:908")),
-        prisma.visitor
-          .count({
-            where: {
-              orgId: scope.orgId,
-              status: "IDENTIFIED",
-              firstSeenAt: { gte: featThirty, lte: featNow },
-            },
-          })
-          .catch(soft(0, "portal.page:917")),
-        prisma.visitor
-          .count({
-            where: {
-              orgId: scope.orgId,
-              status: "IDENTIFIED",
-              firstSeenAt: { gte: featSixty, lt: featThirty },
-            },
-          })
-          .catch(soft(0, "portal.page:926")),
         prisma.tour
           .count({
             where: {
@@ -942,19 +879,10 @@ export default async function PortalHome({
           .catch(soft(0, "portal.page:951")),
       ]);
 
-      // Fallback to org-wide identified visitor counts when the property-
-      // scoped count is 0 — single-property orgs (TC) often have their
-      // pixel installed at the org level and visitors don't carry a
-      // propertyId. Better to attribute to the only active property than
-      // to under-report.
-      const identVisCur = fIdentVisCur > 0 ? fIdentVisCur : fIdentVisOrgWideCur;
-      const identVisPrior =
-        fIdentVisPrior > 0 ? fIdentVisPrior : fIdentVisOrgWidePrior;
-
       // Combined captured-contacts headline.
       const capturedCur =
-        fLeadsCur + identVisCur + fConvosCur + fToursCur + fAppsCur;
-      const capturedPrior = fLeadsPrior + identVisPrior + fConvosPrior;
+        fLeadsCur + fConvosCur + fToursCur + fAppsCur;
+      const capturedPrior = fLeadsPrior + fConvosPrior;
 
       const fmt = (cur: number, prior: number) => {
         if (cur === 0 && prior === 0) return {};
@@ -970,14 +898,12 @@ export default async function PortalHome({
       // and landed on /portal/leads expecting 173 rows, saw 4, got
       // confused. Two fixes baked into each tile below:
       //   1. Inline `hint` spelling out the breakdown so the headline
-      //      number isn't an opaque sum — operator reads "3 form + 147
-      //      visitors + 23 chats" right under the value.
+      //      number isn't an opaque sum — operator reads "3 form + 23 chats" right under the value.
       //   2. `href` makes each tile click-through to the surface that
-      //      actually holds that data (visitor feed, chatbot, leads
+      //      actually holds that data (chatbot, leads
       //      page, etc.) instead of dumping everyone into /portal/leads.
       const breakdownHint = [
         fLeadsCur > 0 ? `${fLeadsCur} form` : null,
-        identVisCur > 0 ? `${identVisCur} visitors` : null,
         fConvosCur > 0 ? `${fConvosCur} chats` : null,
         fToursCur > 0 ? `${fToursCur} tours` : null,
         fAppsCur > 0 ? `${fAppsCur} apps` : null,
@@ -989,20 +915,10 @@ export default async function PortalHome({
           label: "Captured · 30d",
           value: capturedCur.toLocaleString("en-US"),
           hint: breakdownHint || undefined,
-          // Captured is an aggregate — send the operator to the surface
-          // that holds the LARGEST chunk of it (identified visitors for
-          // a pixel-active tenant). The hint below the number names
-          // every source so the navigation isn't a surprise.
-          href:
-            identVisCur >= fLeadsCur + fConvosCur
-              ? "/portal/visitors"
-              : "/portal/leads",
+          // The hint below the number names every source so the
+          // navigation isn't a surprise.
+          href: "/portal/leads",
           ...fmt(capturedCur, capturedPrior),
-        },
-        {
-          label: "Identified visitors",
-          value: identVisCur.toLocaleString("en-US"),
-          href: "/portal/visitors",
         },
         {
           label: "Chatbot · 30d",
@@ -1069,11 +985,11 @@ export default async function PortalHome({
       .filter(Boolean)
       .join(" · ");
 
-    // Pipeline strip — tracked stages only. Engaged (on-site behavior) and
-    // Tours are excluded outright rather than shown as a fake zero; see
-    // PipelineStrip's own doc comment for the "untracked ≠ zero" rule.
+    // Pipeline strip — tracked stages only. Tours are excluded outright
+    // rather than shown as a fake zero; see PipelineStrip's own doc comment
+    // for the "untracked ≠ zero" rule.
     const pipelineStages = funnelStages.filter((s) =>
-      ["Visitors", "Leads", "Applications"].includes(s.label),
+      ["Leads", "Applications"].includes(s.label),
     );
 
     return (

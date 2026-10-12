@@ -4,7 +4,6 @@ import * as React from "react";
 import {
   MessageSquare,
   ClipboardList,
-  Radio,
   Mail,
   Users,
   PencilLine,
@@ -61,7 +60,6 @@ const GLYPH: Record<string, LucideIcon> = {
   chatgpt: Sparkles,
   chatbot: MessageSquare,
   web_form: ClipboardList,
-  pixel_outreach: Radio,
   email: Mail,
   referral: Users,
   manual: PencilLine,

@@ -130,11 +130,10 @@ export default async function BriefingPage({
     // "Connect data sources" step — ANY connected source counts, mirroring
     // the canonical CONNECT_DATA_SOURCE onboarding detector
     // (lib/onboarding/step-detectors.ts). Previously AppFolio-only, which
-    // left GA4/GSC/pixel/ads customers with a permanently-open step.
+    // left GA4/GSC/ads customers with a permanently-open step.
     Promise.all([
       prisma.appFolioIntegration.count({ where: { orgId: scope.orgId } }),
       prisma.seoIntegration.count({ where: { orgId: scope.orgId } }),
-      prisma.cursiveIntegration.count({ where: { orgId: scope.orgId } }),
       prisma.adAccount.count({ where: { orgId: scope.orgId } }),
     ]).then((counts) => counts.reduce((sum, n) => sum + n, 0)),
     // Chatbot step detection — same signal as the canonical

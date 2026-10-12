@@ -26,20 +26,8 @@ describe("Site traffic section never prints a zero as a result", () => {
     expect(src).not.toMatch(/\brow\.clicks\b/);
   });
 
-  it("drops cities and states with no visitors", () => {
-    expect(src).toContain("(visitorStats?.topCities ?? []).filter((c) => c.count > 0)");
-    expect(src).toContain("(visitorStats?.topStates ?? []).filter((r) => r.count > 0)");
-  });
-
   it("omits the whole section when it has nothing to show", () => {
-    expect(src).toContain("{pageRows.length > 0 || cityRows.length > 0 ? (");
-  });
-
-  it("omits each column independently rather than leaving a hole", () => {
     expect(src).toContain("{pageRows.length > 0 ? (");
-    expect(src).toContain("{cityRows.length > 0 ? (");
-    // Two-column split only when both columns actually have content.
-    expect(src).toContain("pageRows.length > 0 && cityRows.length > 0");
   });
 });
 
@@ -48,7 +36,6 @@ describe("section claims are assembled from surviving clauses", () => {
     expect(src).toContain("const trafficClauses = [");
     expect(src).toContain("].filter(Boolean)");
     expect(src).toContain("organicSessions > 0");
-    expect(src).toContain("identifiedVisitors > 0");
   });
 
   it("renders no sentence at all when no clause survives", () => {

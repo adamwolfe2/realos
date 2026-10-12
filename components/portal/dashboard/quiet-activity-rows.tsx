@@ -19,7 +19,7 @@ export function QuietActivityRows({ items }: { items: ActivityItem[] }) {
       <div className="ls-eyebrow mb-2">Recent</div>
       {visible.length === 0 ? (
         <p className="text-xs text-muted-foreground">
-          Quiet so far. New leads, tours, and visitor activity will show up
+          Quiet so far. New leads, tours, and chatbot activity will show up
           here.
         </p>
       ) : (
