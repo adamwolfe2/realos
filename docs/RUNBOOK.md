@@ -106,24 +106,17 @@ OAuth-related vars (dormant until production domain is set):
 
 ## Database migrations
 
-We don't use `prisma migrate deploy` against prod (Neon-friendly
-constraints). Instead manual SQL files live in `prisma/migrations_pending/`.
-To apply:
+Migrations live in `prisma/migrations/` and apply automatically:
+`vercel-build` runs `prisma migrate deploy` on production builds only
+(`VERCEL_ENV=production`). Preview shares the prod `DATABASE_URL`, so
+previews skip migrations and a migration lands only when its merge deploys
+to prod.
 
-```sh
-set -a; source .env.local; set +a
-psql "$DATABASE_URL" -f prisma/migrations_pending/<file>.sql
-```
+Before merging a migration: take a Neon backup branch, then test the
+migration on a Neon scratch branch. Ship it in its own PR.
 
-All shipped migrations are idempotent (`IF NOT EXISTS`). Re-running is
-safe. After applying:
-
-```sh
-pnpm prisma generate
-```
-
-Update `prisma/schema.prisma` to match what was applied so the Prisma
-client stays in sync.
+`prisma/migrations_pending/` holds the older hand-applied SQL files
+(`psql "$DATABASE_URL" -f <file>.sql`); new migrations don't go there.
 
 ## Rollback
 

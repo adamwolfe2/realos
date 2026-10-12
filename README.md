@@ -95,7 +95,7 @@ Both scripts are triple-guarded against running in production (`NODE_ENV`,
 
 - `pnpm dev`, local dev server with Turbopack
 - `pnpm build`, `prisma generate && next build`
-- `pnpm vercel-build`, adds `prisma migrate deploy` ahead of Next build
+- `pnpm vercel-build`, adds `prisma migrate deploy` ahead of Next build, only when `VERCEL_ENV=production` (preview shares the prod DB)
 - `pnpm type-check`, `tsc --noEmit`
 - `pnpm db:push`, push Prisma schema to the configured database
 - `pnpm db:seed`, run `prisma/seed.ts`
