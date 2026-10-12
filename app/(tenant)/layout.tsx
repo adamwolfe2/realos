@@ -5,7 +5,6 @@ import { TenantNav } from "@/components/tenant-site/nav";
 import { TenantFooter } from "@/components/tenant-site/footer";
 import { ExitIntentPopup } from "@/components/tenant-site/exit-intent-popup";
 import { ChatbotLoaderFor } from "@/components/chatbot/chatbot-loader";
-import { CursivePixelLoader } from "@/components/pixel/cursive-pixel-loader";
 import { getEffectiveBrand } from "@/lib/brand/effective";
 import {
   TenantAnalytics,
@@ -65,16 +64,13 @@ export default async function TenantLayout({
   const config = tenant.tenantSiteConfig;
 
   // Bring-your-own-site mode: client hosts the marketing site elsewhere and
-  // only wants our chatbot + pixel scripts. Skip the full layout.
+  // only wants our chatbot script. Skip the full layout.
   // We do NOT inject GTM/GA4 here — the tenant manages those on their own site.
   if (tenant.bringYourOwnSite) {
     return (
       <>
         {config?.chatbotEnabled ? (
           <ChatbotLoaderFor tenant={tenant} config={config} />
-        ) : null}
-        {config?.enablePixel ? (
-          <CursivePixelLoader orgId={tenant.id} />
         ) : null}
       </>
     );
@@ -102,9 +98,6 @@ export default async function TenantLayout({
       <TenantFooter tenant={tenant} />
       {config?.chatbotEnabled ? (
         <ChatbotLoaderFor tenant={tenant} config={config} />
-      ) : null}
-      {config?.enablePixel ? (
-        <CursivePixelLoader orgId={tenant.id} />
       ) : null}
       {config?.enableExitIntent ? (
         <ExitIntentPopup

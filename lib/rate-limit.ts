@@ -107,9 +107,6 @@ export const reputationScanLimiter = createLimiter(redis, 3, '1 h')
 // 30 admin read requests per userId per minute
 export const adminReadLimiter = createLimiter(redis, 30, '1 m')
 
-// 120 pixel/JS asset requests per IP per minute (high-volume CDN-cached asset)
-export const pixelAssetLimiter = createLimiter(redis, 120, '1 m')
-
 // 10 audit email-capture attempts per IP per hour. Public, unauthenticated
 // endpoint — any known audit UUID can receive an email update without a
 // capture token (migration deferred). Rate limit + idempotency (409 if

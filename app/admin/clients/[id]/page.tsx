@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { headers } from "next/headers";
 import { requireAgency } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
-import { OrgType, VisitorIdentificationStatus } from "@prisma/client";
+import { OrgType } from "@prisma/client";
 import { ImpersonateButton } from "./impersonate-button";
 import { InviteUserButton } from "./invite-user-button";
 import { getUsageSummary } from "@/lib/rentcast/budget";
@@ -70,7 +69,6 @@ export default async function ClientDetail({
         select: {
           properties: true,
           leads: true,
-          visitors: true,
           chatbotConversations: true,
           creativeRequests: true,
           users: true,
@@ -85,13 +83,6 @@ export default async function ClientDetail({
       },
       domains: true,
       tenantSiteConfig: true,
-      // Per-property migration renamed cursiveIntegration → cursiveIntegrations
-      // (1:many). Pull the legacy org-wide row (propertyId = NULL) plus
-      // every per-property row; the admin UI surfaces the legacy one as
-      // the org's primary pixel and the rest as scoped overrides.
-      cursiveIntegrations: {
-        orderBy: [{ propertyId: "asc" }, { createdAt: "asc" }],
-      },
       appfolioIntegration: {
         select: {
           instanceSubdomain: true,
@@ -113,17 +104,6 @@ export default async function ClientDetail({
   });
   if (!org || org.orgType !== OrgType.CLIENT) notFound();
 
-  // After the per-property integration migration the legacy "this is the
-  // org's pixel" row is the one with propertyId = NULL. The admin client
-  // panel shows that as the primary pixel so existing UX stays intact.
-  const cursiveLegacy =
-    org.cursiveIntegrations.find((c) => c.propertyId === null) ?? null;
-
-  // IDENTIFIED-tier Visitor count for the cursive panel's anonymous-gap
-  // surface. Matches the operator-facing /portal/visitors "identified"
-  // filter — see app/portal/visitors/page.tsx:154-176. The cursive sync
-  // result subtracts this from the segment-pulled count to show how
-  // many segment members landed without a usable name+email.
   // Scoped to the properties enabled in LeaseStack, like every operator
   // surface. The relation `_count` above CANNOT express this (a Prisma
   // relation count is a bare FK filter with no room for a lifecycle join),
@@ -134,27 +114,11 @@ export default async function ClientDetail({
     includeOrgLevel: true,
   });
   const [
-    identifiedVisitorCount,
     scopedLeadCount,
-    scopedVisitorCount,
     scopedChatCount,
     marketablePropertyCount,
   ] = await Promise.all([
-      prisma.visitor.count({
-        where: {
-          orgId: org.id,
-          ...marketableClause,
-          status: {
-            in: [
-              VisitorIdentificationStatus.IDENTIFIED,
-              VisitorIdentificationStatus.ENRICHED,
-              VisitorIdentificationStatus.MATCHED_TO_LEAD,
-            ],
-          },
-        },
-      }),
       prisma.lead.count({ where: { orgId: org.id, ...marketableClause } }),
-      prisma.visitor.count({ where: { orgId: org.id, ...marketableClause } }),
       prisma.chatbotConversation.count({
         where: { orgId: org.id, ...marketableClause },
       }),
@@ -165,7 +129,6 @@ export default async function ClientDetail({
     // Acquisition + on-site
     ["moduleWebsite", "Website", org.moduleWebsite],
     ["moduleLeadCapture", "Lead capture", org.moduleLeadCapture],
-    ["modulePixel", "Visitor pixel", org.modulePixel],
     ["moduleChatbot", "AI chatbot", org.moduleChatbot],
     ["moduleConversations", "Conversations", org.moduleConversations],
     ["modulePopups", "Popups", org.modulePopups],
@@ -287,16 +250,6 @@ export default async function ClientDetail({
     .filter(Boolean)
     .join(" · ");
 
-  // Cursive webhook URLs — computed once here (server-only headers()
-  // call) and handed down to the Integrations tab.
-  const hdrs = await headers();
-  const proto = hdrs.get("x-forwarded-proto") ?? "https";
-  const host = hdrs.get("host") ?? "leasestack.co";
-  const sharedWebhookUrl = `${proto}://${host}/api/webhooks/cursive`;
-  const tenantWebhookUrl = cursiveLegacy?.webhookToken
-    ? `${proto}://${host}/api/webhooks/cursive/${cursiveLegacy.webhookToken}`
-    : null;
-
   const readinessItems = [
     {
       label: "Clerk org linked",
@@ -345,26 +298,6 @@ export default async function ClientDetail({
         org.domains.length > 0
           ? org.domains.map((d) => d.hostname).join(", ")
           : "Fallback is {slug}.leasestack.co — configure a real hostname soon.",
-    },
-    {
-      label: "Cursive pixel provisioned",
-      status: (cursiveLegacy?.cursivePixelId ? "ok" : "missing") as
-        | "ok"
-        | "warn"
-        | "missing",
-      hint: cursiveLegacy?.cursivePixelId
-        ? `Pixel ${cursiveLegacy.cursivePixelId}`
-        : "Provision a pixel from the Integrations tab.",
-    },
-    {
-      label: "Pixel enabled on tenant site",
-      status: (org.tenantSiteConfig?.enablePixel ? "ok" : "warn") as
-        | "ok"
-        | "warn"
-        | "missing",
-      hint: org.tenantSiteConfig?.enablePixel
-        ? "Rendering on the live site."
-        : "Client toggles this in Site builder — we can pre-enable.",
     },
     {
       label: "Chatbot enabled on tenant site",
@@ -471,7 +404,6 @@ export default async function ClientDetail({
             ...org._count,
             properties: marketablePropertyCount,
             leads: scopedLeadCount,
-            visitors: scopedVisitorCount,
             chatbotConversations: scopedChatCount,
           }}
           readinessItems={readinessItems}
@@ -487,25 +419,6 @@ export default async function ClientDetail({
         <IntegrationsTab
           orgId={org.id}
           tenantDataSinks={tenantDataSinks}
-          sharedWebhookUrl={sharedWebhookUrl}
-          tenantWebhookUrl={tenantWebhookUrl}
-          cursiveInitial={{
-            cursivePixelId: cursiveLegacy?.cursivePixelId ?? null,
-            cursiveSegmentId: cursiveLegacy?.cursiveSegmentId ?? null,
-            installedOnDomain: cursiveLegacy?.installedOnDomain ?? null,
-            lastEventAt: cursiveLegacy?.lastEventAt
-              ? cursiveLegacy.lastEventAt.toISOString()
-              : null,
-            lastSegmentSyncAt: cursiveLegacy?.lastSegmentSyncAt
-              ? cursiveLegacy.lastSegmentSyncAt.toISOString()
-              : null,
-            totalEventsCount: cursiveLegacy?.totalEventsCount ?? 0,
-            lastPixelHitAt: cursiveLegacy?.lastPixelHitAt
-              ? cursiveLegacy.lastPixelHitAt.toISOString()
-              : null,
-            totalPixelHitsCount: cursiveLegacy?.totalPixelHitsCount ?? 0,
-            identifiedVisitorCount,
-          }}
         />
       ) : null}
 

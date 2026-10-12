@@ -73,14 +73,6 @@
       "schedule": "0 15 * * *"
     },
     {
-      "path": "/api/cron/run-audience-syncs",
-      "schedule": "0 * * * *"
-    },
-    {
-      "path": "/api/cron/pixel-segment-sync",
-      "schedule": "*/5 * * * *"
-    },
-    {
       "path": "/api/cron/cron-health",
       "schedule": "7 * * * *"
     },

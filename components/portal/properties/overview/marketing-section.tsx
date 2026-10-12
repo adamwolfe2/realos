@@ -22,7 +22,6 @@ export function MarketingSection({
   applications28d,
   hasAdsModule,
   chatbotEnabled,
-  pixelConnected,
   availableUnits,
   totalUnits,
 }: {
@@ -36,14 +35,12 @@ export function MarketingSection({
   applications28d: number;
   hasAdsModule: boolean;
   chatbotEnabled: boolean;
-  pixelConnected: boolean;
   /** Inventory fact surfaced in the header. Picked up from the parent
    *  so deleting the standalone KPI strip didn't lose the available-unit
    *  signal. */
   availableUnits?: number;
   totalUnits?: number | null;
 }) {
-  void pixelConnected;
   // Conversion: leads / organic sessions. We use organic sessions as
   // the denominator (the audience the operator is actually responsible
   // for marketing to) rather than total visitors — paid sessions are

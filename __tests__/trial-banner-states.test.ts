@@ -57,7 +57,7 @@ describe("TrialBanner soft landing", () => {
   it("expired: says nothing was charged, what paused, what stays, and that reactivating charges today", () => {
     const html = render({ trialEndsAt: new Date(Date.now() - DAY), live: true });
     expect(html).toContain("nothing was charged");
-    expect(html).toContain("chatbot and");
+    expect(html).toContain("chatbot is paused");
     expect(html).toContain("Your data is still");
     expect(html).toContain("read-only");
     expect(html).toContain("Reactivate for $899/month, starting today.");

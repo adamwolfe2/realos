@@ -45,7 +45,7 @@ export const PILLAR_WEIGHTS: Record<Pillar, number> = {
 // anyone a score over 75." Each pillar caps below 100 so the weighted
 // overall lands well under that ceiling regardless of raw signals.
 // Caps reflect the reality that without LeaseStack, every pillar has a
-// structural gap (no chatbot/popups, no pixel, listings not portfolio-
+// structural gap (no chatbot/popups, listings not portfolio-
 // managed, etc).
 export const PILLAR_CAPS: Record<Pillar, number> = {
   findability: 70,
@@ -171,7 +171,6 @@ export const QUIZ_QUESTIONS: Question[] = [
       { id: "ai_chatbot", label: "AI chatbot" },
       { id: "calendly_link", label: "Calendly link" },
       { id: "popups", label: "Exit / intent popups" },
-      { id: "visitor_pixel", label: "Visitor pixel" },
       { id: "floorplan_tool", label: "Interactive floor plan / unit picker" },
       { id: "online_application", label: "Online application form" },
       { id: "virtual_tour", label: "Virtual tour / 3D walkthrough" },
@@ -239,9 +238,10 @@ export const QUIZ_QUESTIONS: Question[] = [
     required: true,
     choices: [
       {
+        // Legacy id, persisted in saved audits. Do not rename.
         id: "pixel_plus_analytics",
-        label: "Visitor pixel + analytics",
-        hint: "We see who's actually browsing",
+        label: "Analytics + lead-source attribution",
+        hint: "We see which channels produce leases",
       },
       {
         id: "ga_only",

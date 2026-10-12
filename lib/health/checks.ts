@@ -115,7 +115,6 @@ const REQUIRED_ENVS = [
 
 const OPTIONAL_ENVS = [
   "CURSIVE_API_KEY",
-  "CURSIVE_WEBHOOK_SECRET",
   "RESEND_API_KEY",
   "STRIPE_SECRET_KEY",
   "VERCEL_API_TOKEN",
@@ -228,12 +227,13 @@ export async function checkAnthropic(): Promise<CheckResult> {
   );
 }
 
+// Cursive still feeds the lead marketplace import (lib/marketplace/cursive-sync.ts).
 export async function checkCursive(): Promise<CheckResult> {
   // Cursive does not publish a documented /health endpoint. We
   // hit the API root which 404s with a JSON envelope when reachable. Any
   // non-5xx is healthy here.
   return pingUrl(
-    "https://api.audiencelab.io/",
+    `${process.env.CURSIVE_API_URL ?? "https://api.audiencelab.io"}/`,
     { method: "GET" },
     "cursive"
   );
@@ -418,7 +418,6 @@ export async function getRecentCronRuns(limit = 50): Promise<CronRunSummary[]> {
 export interface PlatformPulse {
   activeTenants: number;
   leadsLast24h: number;
-  visitorsLast24h: number;
   chatbotConversationsLast24h: number;
   webhookEventsLast24h: number;
 }
@@ -428,7 +427,6 @@ export async function getPlatformPulse(): Promise<PlatformPulse> {
   const [
     activeTenants,
     leadsLast24h,
-    visitorsLast24h,
     chatbotConversationsLast24h,
     webhookEventsLast24h,
   ] = await Promise.all([
@@ -441,9 +439,6 @@ export async function getPlatformPulse(): Promise<PlatformPulse> {
       })
       .catch(() => 0),
     prisma.lead.count({ where: { createdAt: { gte: since } } }).catch(() => 0),
-    prisma.visitor
-      .count({ where: { createdAt: { gte: since } } })
-      .catch(() => 0),
     prisma.chatbotConversation
       .count({ where: { createdAt: { gte: since } } })
       .catch(() => 0),
@@ -455,7 +450,6 @@ export async function getPlatformPulse(): Promise<PlatformPulse> {
   return {
     activeTenants,
     leadsLast24h,
-    visitorsLast24h,
     chatbotConversationsLast24h,
     webhookEventsLast24h,
   };

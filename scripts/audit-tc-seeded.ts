@@ -23,22 +23,6 @@ const FLAG = (cnt: number, what: string) => cnt === 0 ? `✓ no ${what}` : `⚠ 
   if (!org) throw new Error("no TC org");
   console.log(`Org: ${org.name} (${org.id})\n`);
 
-  // VISITORS
-  const visSeeded = await prisma.visitor.count({
-    where: {
-      orgId: org.id,
-      OR: [
-        { email: { endsWith: "@example.com" } },
-        { email: { contains: "test" } },
-        { email: { contains: "demo" } },
-        { email: { startsWith: "seed" } },
-        { cursiveVisitorId: { startsWith: "seed:" } },
-        { cursiveVisitorId: { startsWith: "demo:" } },
-      ],
-    },
-  });
-  console.log("VISITORS:", FLAG(visSeeded, "seeded visitors"));
-
   // CHATBOT CONVERSATIONS
   const convSeeded = await prisma.chatbotConversation.count({
     where: {

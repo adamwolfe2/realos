@@ -11,7 +11,6 @@ import { createMockPrisma, type MockPrisma } from "./helpers/mock-prisma";
 //   PORTAL-PROPERTIES-D001  /portal/properties/compare  (?ids= + picker)
 //   PORTAL-PROPERTIES-D002  /portal/properties/curate   (queue + bulk select)
 //   PORTAL-LEADS-D001/2/3   sendLeadEmail / sendLeadSms / sendManualReviewRequest
-//   PORTAL-LEADS-D004       /portal/visitors live-chats panel
 //   PORTAL-LEADS-D005       hashed-email visitor CSV export (inverse direction —
 //                           org-level rows must stay visible)
 //
@@ -196,28 +195,6 @@ describe("PORTAL-PROPERTIES-D002 — /portal/properties/curate", () => {
     // 1 findMany + 3 counts all spread the same gate.
     const uses = src.match(/\.\.\.accessGate/g) ?? [];
     expect(uses.length).toBeGreaterThanOrEqual(4);
-  });
-});
-
-describe("PORTAL-LEADS-D004 — /portal/visitors live-chats panel", () => {
-  const src = read("app/portal/visitors/page.tsx");
-
-  it("scopes the live chatbotConversation query by the page's property clause", () => {
-    expect(src).toMatch(
-      /prisma\.chatbotConversation[\s\S]{0,120}where: \{[\s\S]{0,80}\.\.\.propertyClause,[\s\S]{0,120}lastMessageAt: \{ gte: liveSince \}/,
-    );
-  });
-});
-
-describe("PORTAL-LEADS-D005 — hashed-email visitor CSV export", () => {
-  const src = read("app/api/tenant/visitors/export/route.ts");
-
-  it("uses the org-level-inclusive fragment so pixel visitors survive the gate", () => {
-    expect(src).toContain("propertyOrOrgLevelWhereFragment(scope, propertyIds)");
-  });
-
-  it("no longer uses the bare fragment that dropped propertyId=null rows", () => {
-    expect(src).not.toMatch(/[^a-zA-Z]propertyWhereFragment\(/);
   });
 });
 

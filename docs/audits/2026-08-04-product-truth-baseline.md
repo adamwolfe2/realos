@@ -7,7 +7,7 @@ Status: **BLOCKED**
 
 | Products | Source records | Critical | Warning | Info | Total |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 8 | 135 | 42 | 21 | 18 | 81 |
+| 8 | 125 | 37 | 18 | 17 | 72 |
 
 ## Critical
 
@@ -123,14 +123,6 @@ Status: **BLOCKED**
 - Evidence: `lib/billing/catalog.ts`
 - Reason: The growth tier family grants unsupported entitlement moduleMetaAds across billing variants.
 
-### `tier_unsupported_entitlement:billing_catalog:growth.annual:modulePixel`
-
-- Owner: product
-- Product: unmapped
-- Source: billing_catalog / growth.annual
-- Evidence: `lib/billing/catalog.ts`
-- Reason: The growth tier family grants unsupported entitlement modulePixel across billing variants.
-
 ### `tier_unsupported_entitlement:billing_catalog:scale.annual:moduleCreativeStudio`
 
 - Owner: product
@@ -170,14 +162,6 @@ Status: **BLOCKED**
 - Source: billing_catalog / scale.annual
 - Evidence: `lib/billing/catalog.ts`
 - Reason: The scale tier family grants unsupported entitlement moduleOutboundEmail across billing variants.
-
-### `tier_unsupported_entitlement:billing_catalog:scale.annual:modulePixel`
-
-- Owner: product
-- Product: unmapped
-- Source: billing_catalog / scale.annual
-- Evidence: `lib/billing/catalog.ts`
-- Reason: The scale tier family grants unsupported entitlement modulePixel across billing variants.
 
 ### `tier_unsupported_entitlement:billing_catalog:scale.annual:moduleReferrals`
 
@@ -243,14 +227,6 @@ Status: **BLOCKED**
 - Evidence: `lib/billing/catalog.ts`
 - Reason: Customer-visible self-serve product has no approved canonical contract.
 
-### `unsupported_self_serve_product:billing_catalog:ls_addon_pixel_overage`
-
-- Owner: product
-- Product: unmapped
-- Source: billing_catalog / ls_addon_pixel_overage
-- Evidence: `lib/billing/catalog.ts`
-- Reason: Customer-visible self-serve product has no approved canonical contract.
-
 ### `unsupported_self_serve_product:billing_catalog:ls_addon_white_label`
 
 - Owner: product
@@ -299,14 +275,6 @@ Status: **BLOCKED**
 - Evidence: `lib/billing/features.ts`
 - Reason: Customer-visible self-serve product has no approved canonical contract.
 
-### `unsupported_self_serve_product:billing_features:modulePixel`
-
-- Owner: product
-- Product: unmapped
-- Source: billing_features / modulePixel
-- Evidence: `lib/billing/features.ts`
-- Reason: Customer-visible self-serve product has no approved canonical contract.
-
 ### `unsupported_self_serve_product:billing_features:moduleReferrals`
 
 - Owner: product
@@ -328,14 +296,6 @@ Status: **BLOCKED**
 - Owner: product
 - Product: unmapped
 - Source: stripe_static / ls_email_overage_per_send_v1
-- Evidence: `lib/billing/price-ids.generated.ts`
-- Reason: Customer-visible self-serve product has no approved canonical contract.
-
-### `unsupported_self_serve_product:stripe_static:ls_pixel_overage_per_visitor_v1`
-
-- Owner: product
-- Product: unmapped
-- Source: stripe_static / ls_pixel_overage_per_visitor_v1
 - Evidence: `lib/billing/price-ids.generated.ts`
 - Reason: Customer-visible self-serve product has no approved canonical contract.
 
@@ -405,27 +365,11 @@ Status: **BLOCKED**
 - Evidence: `lib/marketplace/catalog.ts`
 - Reason: Customer-visible source has no approved canonical product mapping.
 
-### `orphan_product_source:proposal_catalog:addon-audience-sync`
-
-- Owner: product
-- Product: unmapped
-- Source: proposal_catalog / addon-audience-sync
-- Evidence: `lib/proposals/catalog.ts`
-- Reason: Customer-visible source has no approved canonical product mapping.
-
 ### `orphan_product_source:proposal_catalog:addon-commercial-retainer`
 
 - Owner: product
 - Product: unmapped
 - Source: proposal_catalog / addon-commercial-retainer
-- Evidence: `lib/proposals/catalog.ts`
-- Reason: Customer-visible source has no approved canonical product mapping.
-
-### `orphan_product_source:proposal_catalog:addon-cursive-pixel-pro`
-
-- Owner: product
-- Product: unmapped
-- Source: proposal_catalog / addon-cursive-pixel-pro
 - Evidence: `lib/proposals/catalog.ts`
 - Reason: Customer-visible source has no approved canonical product mapping.
 
@@ -450,14 +394,6 @@ Status: **BLOCKED**
 - Owner: product
 - Product: unmapped
 - Source: proposal_catalog / addon-outbound-email-engine
-- Evidence: `lib/proposals/catalog.ts`
-- Reason: Customer-visible source has no approved canonical product mapping.
-
-### `orphan_product_source:proposal_catalog:addon-pixel-overage`
-
-- Owner: product
-- Product: unmapped
-- Source: proposal_catalog / addon-pixel-overage
 - Evidence: `lib/proposals/catalog.ts`
 - Reason: Customer-visible source has no approved canonical product mapping.
 
@@ -598,14 +534,6 @@ Status: **BLOCKED**
 - Source: billing_features / moduleOutboundEmail
 - Evidence: `lib/billing/features.ts`
 - Reason: Lookup key ls_feat_moduleOutboundEmail_monthly requires separate live Stripe reconciliation.
-
-### `stripe_live_verification_deferred:billing_features:modulePixel`
-
-- Owner: billing
-- Product: unmapped
-- Source: billing_features / modulePixel
-- Evidence: `lib/billing/features.ts`
-- Reason: Lookup key ls_feat_modulePixel_monthly requires separate live Stripe reconciliation.
 
 ### `stripe_live_verification_deferred:billing_features:modulePopups`
 

@@ -191,15 +191,7 @@ export async function getAdminActionItems(
           instanceSubdomain: true,
         },
       },
-      cursiveIntegrations: {
-        select: {
-          cursivePixelId: true,
-          lastEventAt: true,
-          totalEventsCount: true,
-          propertyId: true,
-        },
-      },
-      tenantSiteConfig: { select: { enablePixel: true, chatbotEnabled: true } },
+      tenantSiteConfig: { select: { chatbotEnabled: true } },
       _count: { select: { properties: true, users: true } },
     },
   });
@@ -318,24 +310,6 @@ export async function getAdminActionItems(
       });
     }
 
-    // ─── Pixel provisioned but never fired ────────────────────────────
-    const primaryPixel =
-      o.cursiveIntegrations.find((c) => c.propertyId === null) ?? null;
-    if (
-      o.modulePixel &&
-      primaryPixel?.cursivePixelId &&
-      (!primaryPixel.totalEventsCount || primaryPixel.totalEventsCount === 0)
-    ) {
-      items.push({
-        id: `pixel-silent-${o.id}`,
-        severity: "warning",
-        title: `${o.name}: Cursive pixel provisioned but no events`,
-        detail: "Pixel may not be installed. Verify install on the live domain.",
-        href: `/admin/clients/${o.id}`,
-        tenantName: o.name,
-      });
-    }
-
     // ─── Unverified domain / SSL pending ─────────────────────────────
     for (const d of o.domains) {
       if (!d.dnsConfigured) {
@@ -397,7 +371,7 @@ export async function getAdminActionItems(
 // launched showed up as 5 columns of zero). Split into:
 //   - active:     launched/live tenants, ranked by lead velocity + trend
 //   - onboarding: pre-launch pipeline tenants, shown by stage only — no
-//                 lead-velocity columns, because they have no live pixel
+//                 lead-velocity columns, because they have no live data
 //                 generating leads yet and a "0" column there is noise.
 // Both lists exclude internal/test workspaces (see isInternalWorkspaceOrg).
 // ---------------------------------------------------------------------------

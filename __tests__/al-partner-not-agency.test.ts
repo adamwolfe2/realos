@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { OrgType, ProductLine, UserRole } from "@prisma/client";
 
-// F-002: AL_PARTNER is an external partner scoped to AUDIENCE_SYNC orgs, not
-// an agency admin. requireAgency must reject it; requireAudienceSync and
-// AUDIENCE_SYNC-only impersonation keep working.
+// F-002: AL_PARTNER is not an agency admin. The Audience Sync product was
+// retired, so AL_PARTNER now has no cross-org access at all: requireAgency
+// and impersonation (of any org, including legacy AUDIENCE_SYNC ones) reject it.
 
 const mocks = vi.hoisted(() => ({
   auth: vi.fn(),
@@ -35,7 +35,7 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
-const { requireAgency, requireAudienceSync, ForbiddenError } = await import(
+const { requireAgency, requireScope, ForbiddenError } = await import(
   "@/lib/tenancy/scope"
 );
 const { startImpersonation } = await import("@/lib/tenancy/impersonate");
@@ -77,33 +77,25 @@ describe("AL_PARTNER is not agency (F-002)", () => {
     await expect(requireAgency()).resolves.toMatchObject({ isAgency: true });
   });
 
-  it("AL_PARTNER still passes requireAudienceSync", async () => {
+  it("AL_PARTNER has no impersonation or agency flag", async () => {
     seed(UserRole.AL_PARTNER);
-    await expect(requireAudienceSync()).resolves.toMatchObject({
+    await expect(requireScope()).resolves.toMatchObject({
       isAgency: false,
-      isAlPartner: true,
     });
   });
 
-  it("AL_PARTNER can impersonate an AUDIENCE_SYNC org only", async () => {
+  it("AL_PARTNER cannot impersonate any org, including legacy AUDIENCE_SYNC", async () => {
     seed(UserRole.AL_PARTNER);
-    mocks.orgFindUnique.mockResolvedValue({
-      id: "c1",
-      name: "C",
-      orgType: OrgType.CLIENT,
-      slug: "c",
-      productLine: ProductLine.STUDENT_HOUSING,
-    });
-    await expect(startImpersonation("c1")).rejects.toBeInstanceOf(ForbiddenError);
+    for (const productLine of [ProductLine.STUDENT_HOUSING, ProductLine.AUDIENCE_SYNC]) {
+      mocks.orgFindUnique.mockResolvedValue({
+        id: "c1",
+        name: "C",
+        orgType: OrgType.CLIENT,
+        slug: "c",
+        productLine,
+      });
+      await expect(startImpersonation("c1")).rejects.toBeInstanceOf(ForbiddenError);
+    }
     expect(mocks.updateUserMetadata).not.toHaveBeenCalled();
-
-    mocks.orgFindUnique.mockResolvedValue({
-      id: "c2",
-      name: "C2",
-      orgType: OrgType.CLIENT,
-      slug: "c2",
-      productLine: ProductLine.AUDIENCE_SYNC,
-    });
-    await expect(startImpersonation("c2")).resolves.toMatchObject({ ok: true });
   });
 });

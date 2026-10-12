@@ -23,7 +23,6 @@ import {
   Database,
   Shield,
   Brain,
-  Radio,
   CreditCard,
   Mail,
   KeyRound,
@@ -35,6 +34,7 @@ import {
   Sparkles,
   Search as SearchIcon,
   Globe,
+  Radio,
 } from "lucide-react";
 
 export const metadata: Metadata = { title: "System health" };
@@ -62,7 +62,6 @@ const CRON_DESCRIPTIONS: Record<string, string> = {
   "appfolio-sync": "AppFolio property/listing sync",
   "seo-sync": "GSC + GA4 search console snapshot",
   "ads-sync": "Google Ads + Meta ad metrics sync",
-  "pixel-segment-sync": "Pull resolved visitors from the upstream pixel segment (Cursive self-heal)",
   "reputation-scan": "Per-property reputation refresh (Reddit + Yelp + Google + Tavily)",
   "dataforseo-sync": "Search intelligence sync (ranked keywords + backlinks)",
   "aeo-scan": "AEO 4-engine brand-mention scan (Claude/ChatGPT/Gemini/Perplexity)",
@@ -126,8 +125,8 @@ export default async function SystemHealthPage() {
     { key: "clerk",      label: "Clerk",           icon: Shield,     check: health.checks.clerk },
     { key: "stripe",     label: "Stripe",          icon: CreditCard, check: health.checks.stripe },
     { key: "resend",     label: "Resend",          icon: Mail,       check: health.checks.resend },
-    { key: "cursive",    label: "Cursive pixel",   icon: Radio,      check: health.checks.cursive },
     { key: "anthropic",  label: "Anthropic Claude", icon: Brain,     check: health.checks.anthropic },
+    { key: "cursive",    label: "Cursive (marketplace)", icon: Radio, check: health.checks.cursive },
     { key: "openai",     label: "OpenAI",          icon: Bot,        check: health.checks.openai },
     { key: "perplexity", label: "Perplexity",      icon: SearchIcon, check: health.checks.perplexity },
     { key: "gemini",     label: "Google Gemini",   icon: Sparkles,   check: health.checks.gemini },
@@ -204,10 +203,9 @@ export default async function SystemHealthPage() {
       {/* Platform pulse */}
       <section>
         <h2 className="text-sm font-semibold text-foreground mb-3">Platform pulse (last 24h)</h2>
-        <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+        <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
           <PulseStat label="Active tenants" value={health.pulse.activeTenants} />
           <PulseStat label="New leads" value={health.pulse.leadsLast24h} />
-          <PulseStat label="New visitors" value={health.pulse.visitorsLast24h} />
           <PulseStat label="Chatbot conversations" value={health.pulse.chatbotConversationsLast24h} />
           <PulseStat label="Webhook events" value={health.pulse.webhookEventsLast24h} />
         </div>
@@ -215,7 +213,7 @@ export default async function SystemHealthPage() {
 
       {/* Per-tenant demo readiness — the checklist agency staff scan
           before any sales call. Catches the "open the demo and discover
-          the pixel went silent yesterday" failure mode. */}
+          an integration went silent yesterday" failure mode. */}
       <section>
         <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
           <h2 className="text-sm font-semibold text-foreground">

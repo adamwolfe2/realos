@@ -251,8 +251,7 @@ export async function POST(req: NextRequest) {
   //
   // Only self-reported data is reused — capturedEmail/Phone/Name are values
   // the visitor typed into this chatbot themselves. Nothing vendor-inferred
-  // is involved, so this cannot surface a household member's details the way
-  // a pixel identity can.
+  // is involved, so this cannot surface a household member's details.
   //
   // ALWAYS scoped by orgId: visitorHash is client-supplied, so without the
   // org filter a guessed cookie value could pull another tenant's captured
@@ -282,8 +281,8 @@ export async function POST(req: NextRequest) {
   // PERSON — shared laptops and family devices are common, and student
   // housing especially so. Email/phone are used only to suppress re-asking
   // (the bot never says them out loud), whereas the name gets spoken in a
-  // greeting, so a wrong one is immediately visible to the visitor. Same rule
-  // that governs pixel identities: an inferred link never names anyone.
+  // greeting, so a wrong one is immediately visible to the visitor. An
+  // inferred link never names anyone.
   const knownVisitor = {
     name: captured?.capturedName ?? null,
     email: captured?.capturedEmail ?? returning?.capturedEmail ?? null,

@@ -40,26 +40,6 @@ Symptom: pushing to `main` doesn't change the live deployment.
    difference is usually env vars — check `vercel env ls` and compare to
    `.env.local`.
 
-### Cursive webhook events not landing
-
-Symptom: pixel events fire but `/portal/visitors` shows nothing new for a
-tenant.
-
-1. `/admin/clients/{id}` Cursive panel: confirm the V4 pixel ID is bound to
-   this tenant. Without it the webhook handler can't route the event.
-2. Check the tenant's **Webhook URL** field in Cursive matches
-   `https://realos-nine.vercel.app/api/webhooks/cursive`.
-3. Check Cursive's webhook auth header value matches the
-   `CURSIVE_WEBHOOK_SECRET` env var. Default header is
-   `x-audiencelab-secret`.
-4. If those are right, look at the `WebhookEvent` table:
-   `SELECT * FROM "WebhookEvent" WHERE source='cursive' ORDER BY "receivedAt" DESC LIMIT 20;`
-   - `status=processed` rows mean the webhook landed and parsed cleanly.
-   - `status=failed` rows mean processing failed; `processingError` has the
-     reason; the `webhook-retry` cron will replay them.
-   - `status=abandoned` means we gave up after 5 retries — investigate
-     `processingError` and decide whether to fix forward or delete.
-
 ### Database is degraded
 
 Symptom: `/api/health` reports `database.status=degraded` or `down`.
@@ -110,8 +90,7 @@ production:
 | `CLERK_SECRET_KEY` | Clerk backend |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk frontend |
 | `ANTHROPIC_API_KEY` | Chatbot Claude calls |
-| `CURSIVE_API_KEY` | Pull from the upstream pixel provider segments |
-| `CURSIVE_WEBHOOK_SECRET` | Auth for inbound Cursive webhooks |
+| `CURSIVE_API_KEY` | Marketplace seller import (Cursive segment pulls) |
 | `ENCRYPTION_KEY` | AES-256-GCM key for encrypting tenant credentials at rest |
 | `VERCEL_API_TOKEN` | Custom-domain provisioning |
 | `VERCEL_PROJECT_ID` | The project that serves tenant sites |
@@ -193,11 +172,8 @@ All limits use Upstash Redis sliding-window via `/lib/rate-limit.ts`. When Redis
 | `GET  /api/public/chatbot/inbox` | `publicApiLimiter` | 60 | 1 m | `inbox:<IP>` |
 | `POST /api/public/chatbot/lead` | `publicApiLimiter` | 60 | 1 m | IP |
 | `GET  /api/public/chatbot/config` | `chatbotConfigLimiter` | 30 | 1 m | `cfg:<IP>` |
-| `POST /api/public/visitors/track` | `publicApiLimiter` | 60 | 1 m | `pixel:<key>:<IP>` |
-| `GET  /api/public/pixel/[key]` | `pixelAssetLimiter` | 120 | 1 m | `pixel-asset:<IP>` |
 | `POST /api/onboarding` | `publicSignupLimiter` | 5 | 1 h | IP |
 | `POST /api/subscribe` | `publicSignupLimiter` | 5 | 1 h | IP |
-| `POST /api/webhooks/cursive` | `webhookLimiter` | 1000 | 1 m | `wh-cursive:<IP>` |
 | `POST /api/webhooks/clerk` | `webhookLimiter` | 1000 | 1 m | `wh-clerk:<IP>` |
 | `POST /api/webhooks/stripe` | `webhookLimiter` | 1000 | 1 m | `wh-stripe:<IP>` |
 | `POST /api/webhooks/resend` | `webhookLimiter` | 1000 | 1 m | `wh-resend:<IP>` |

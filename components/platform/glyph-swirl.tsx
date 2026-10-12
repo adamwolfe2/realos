@@ -7,7 +7,7 @@ import { useReducedMotion } from "framer-motion";
 // GlyphSwirl — the 3×3 dot-grid glyphs from CapabilitiesRail ORBIT around
 // the hero and PULSE in brand blue. This is the deliberate "swirl" Norman
 // asked for (2026-05-21): the same glyph vocabulary users see later in the
-// page (report, attribution, pixel, chat, alert, search) animated as a
+// page (report, attribution, chat, alert, search) animated as a
 // loose constellation around the hero copy + artifact.
 //
 // Rendering model:
@@ -31,7 +31,7 @@ const GLYPHS: number[][][] = [
   // The 6 patterns from CapabilityGlyph. Each is a 3×3 binary grid.
   [[1, 1, 1], [1, 0, 1], [1, 1, 1]], // report (frame)
   [[1, 0, 0], [1, 1, 0], [1, 1, 1]], // attribution (stairs)
-  [[0, 1, 0], [1, 1, 1], [0, 1, 0]], // pixel (plus)
+  [[0, 1, 0], [1, 1, 1], [0, 1, 0]], // plus
   [[1, 1, 1], [1, 1, 0], [0, 1, 0]], // chat (corner)
   [[0, 1, 0], [0, 1, 0], [0, 1, 0]], // alert (line)
   [[1, 1, 0], [1, 0, 1], [0, 1, 0]], // search (scatter)

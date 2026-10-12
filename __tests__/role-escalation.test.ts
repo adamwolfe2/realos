@@ -64,7 +64,6 @@ function makeAgencyScope(role: keyof typeof UserRole, userId = "actor") {
     role: UserRole[role],
     email: `${userId}@agency.test`,
     isAgency: true,
-    isAlPartner: false,
     isImpersonating: false,
     allowedPropertyIds: null,
   };
@@ -81,7 +80,6 @@ function makeClientScope(role: keyof typeof UserRole, userId = "client-actor") {
     role: UserRole[role],
     email: `${userId}@client.test`,
     isAgency: false,
-    isAlPartner: false,
     isImpersonating: false,
     allowedPropertyIds: null,
   };

@@ -123,7 +123,6 @@ function StackCard() {
   const surfaces = [
     { k: "Channel read",      v: "Every dollar, every source" },
     { k: "Pacing model",      v: "Leases to lease velocity" },
-    { k: "Visitor pixel",     v: "Names on anonymous traffic" },
     { k: "AI chatbot",        v: "Trained on your listings" },
     { k: "Reputation scan",   v: "Google, Reddit, open web" },
     { k: "AI briefing",       v: "3 actions, every Monday 7am" },

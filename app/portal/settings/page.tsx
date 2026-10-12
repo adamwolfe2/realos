@@ -75,7 +75,6 @@ export default async function SettingsPage() {
   const modules: Array<[string, boolean]> = [
     ["Website", org.moduleWebsite],
     ["Lead capture", org.moduleLeadCapture],
-    ["Pixel", org.modulePixel],
     ["Chatbot", org.moduleChatbot],
     ["Google Ads", org.moduleGoogleAds],
     ["Meta Ads", org.moduleMetaAds],
@@ -124,9 +123,7 @@ export default async function SettingsPage() {
             notifyOnPopupLead: org.notifyOnPopupLead,
             notifyOnFormLead: org.notifyOnFormLead,
             notifyOnIngestLead: org.notifyOnIngestLead,
-            notifyOnPixelLead: org.notifyOnPixelLead,
             notifyOnTourRequest: org.notifyOnTourRequest,
-            notifyOnVisitorConvert: org.notifyOnVisitorConvert,
             notifyOnManualLead: org.notifyOnManualLead,
           }}
         />
@@ -137,7 +134,7 @@ export default async function SettingsPage() {
           href="/portal/connect"
           icon={<Plug className="size-4" aria-hidden="true" />}
           title="Connect data"
-          description="The unified hub for AppFolio, Google Analytics, Search Console, Google + Meta Ads, the Cursive pixel, and your website. Each connection unlocks new insight categories."
+          description="The unified hub for AppFolio, Google Analytics, Search Console, Google + Meta Ads, and your website. Each connection unlocks new insight categories."
           stat={`${integrationsActive} connected`}
         />
         <NavCard
@@ -151,7 +148,7 @@ export default async function SettingsPage() {
           href="/portal/settings/api-keys"
           icon={<KeyRound className="size-4" aria-hidden="true" />}
           title="API keys"
-          description="Generate scoped keys so Zapier, Typeform, and bespoke systems can push leads, visitors, tours, and chatbot events into your CRM."
+          description="Generate scoped keys so Zapier, Typeform, and bespoke systems can push leads, tours, and chatbot events into your CRM."
           stat={`${apiKeyCount} active`}
         />
         <NavCard

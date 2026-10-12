@@ -13,7 +13,6 @@ import { getProviderAvailability } from "@/lib/connect/provider-availability";
 //   gsc            — Google OAuth → same as ga4
 //   google_ads     — Google OAuth + dev token → gated by both
 //   meta_ads       — Meta OAuth + Marketing API approval → gated by both
-//   cursive_pixel  — ops provisions manually → always available
 //   website        — operator types URL → always available
 // ---------------------------------------------------------------------------
 
@@ -58,12 +57,6 @@ describe("getProviderAvailability", () => {
       const av = getProviderAvailability();
       expect(av.appfolio.available).toBe(true);
       expect(av.appfolio.reason).toBeNull();
-    });
-
-    it("cursive_pixel is available regardless of agency env", () => {
-      const av = getProviderAvailability();
-      expect(av.cursive_pixel.available).toBe(true);
-      expect(av.cursive_pixel.reason).toBeNull();
     });
 
     it("website is available regardless of agency env", () => {
@@ -190,7 +183,6 @@ describe("getProviderAvailability", () => {
       expect(av).toHaveProperty("gsc");
       expect(av).toHaveProperty("google_ads");
       expect(av).toHaveProperty("meta_ads");
-      expect(av).toHaveProperty("cursive_pixel");
       expect(av).toHaveProperty("website");
     });
 

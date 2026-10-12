@@ -91,14 +91,9 @@ async function main() {
   // --property — a property-scoped snapshot still reports on the full
   // history of the portfolio's tracking, same as how a "monthly" report's
   // window is calendar-derived rather than re-computed per property).
-  const [earliestLead, earliestVisitorSession, earliestChatbot, earliestPopupEvent, earliestApplication] =
+  const [earliestLead, earliestChatbot, earliestPopupEvent, earliestApplication] =
     await Promise.all([
       prisma.lead.findFirst({
-        where: { orgId: org.id },
-        orderBy: { createdAt: "asc" },
-        select: { createdAt: true },
-      }),
-      prisma.visitorSession.findFirst({
         where: { orgId: org.id },
         orderBy: { createdAt: "asc" },
         select: { createdAt: true },
@@ -122,7 +117,6 @@ async function main() {
 
   const candidates = [
     earliestLead?.createdAt,
-    earliestVisitorSession?.createdAt,
     earliestChatbot?.createdAt,
     earliestPopupEvent?.occurredAt,
     earliestApplication?.createdAt,
@@ -154,7 +148,7 @@ async function main() {
 
   console.log(
     `  KPIs: leads=${snapshot.kpis.leads} applications=${snapshot.kpis.applications} ` +
-      `tours=${snapshot.kpis.tours} identifiedVisitors=${snapshot.kpis.identifiedVisitors ?? 0}`,
+      `tours=${snapshot.kpis.tours}`,
   );
   if (snapshot.popupStats) {
     console.log(

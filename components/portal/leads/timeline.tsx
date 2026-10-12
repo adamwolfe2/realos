@@ -3,11 +3,9 @@ import {
   Calendar,
   CheckCircle2,
   FileText,
-  Globe,
   Mail,
   MessageCircle,
   MousePointerClick,
-  Radar,
   Sparkles,
   Star,
   type LucideIcon,
@@ -26,7 +24,7 @@ export function Timeline({ events }: { events: TimelineEvent[] }) {
     return (
       <div className="ls-card p-8 text-center">
         <p className="text-sm text-foreground">
-          No activity yet. Install the Cursive pixel and enable the chatbot to
+          No activity yet. Enable the chatbot and share your lead forms to
           see every touchpoint here.
         </p>
       </div>
@@ -62,11 +60,6 @@ function iconFor(event: TimelineEvent): IconConfig {
   switch (event.kind) {
     case "lead_created":
       return { icon: Sparkles, tone: "accent" };
-    case "pixel_first_seen":
-      return { icon: Radar, tone: "default" };
-    case "pixel_page_view":
-    case "pixel_page_rollup":
-      return { icon: Globe, tone: "default" };
     case "chatbot_conversation":
       return { icon: MessageCircle, tone: "accent" };
     case "tour":
@@ -136,70 +129,6 @@ function renderBody(event: TimelineEvent): React.ReactNode {
           </p>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {timeLabel(event.ts)} · {exactTime(event.ts)}
-          </p>
-        </>
-      );
-    }
-    case "pixel_first_seen": {
-      const via = event.utmSource
-        ? `UTM source ${event.utmSource}`
-        : event.referrer
-        ? `via ${event.referrer}`
-        : "direct";
-      return (
-        <>
-          <p className="text-sm text-foreground">
-            <span className="font-medium">First pixel resolution</span>{" "}
-            <span className="text-foreground">— {via}</span>
-          </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {timeLabel(event.ts)}
-          </p>
-        </>
-      );
-    }
-    case "pixel_page_view":
-      return (
-        <>
-          <p className="text-sm text-foreground">
-            Visited{" "}
-            <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded-[6px] text-foreground">
-              {event.path}
-            </span>
-          </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {timeLabel(event.ts)}
-          </p>
-        </>
-      );
-    case "pixel_page_rollup": {
-      const preview = event.pages
-        .slice(0, 3)
-        .map((p) => p.path)
-        .join(", ");
-      const rest =
-        event.pages.length > 3
-          ? ` and ${event.pages.length - 3} more`
-          : "";
-      const durationMin = Math.max(
-        1,
-        Math.round(
-          (event.ts.getTime() - event.startedAt.getTime()) / (60 * 1000)
-        )
-      );
-      return (
-        <>
-          <p className="text-sm text-foreground">
-            Browsed{" "}
-            <span className="font-medium">{event.pages.length} pages</span> in
-            one session
-          </p>
-          <p className="mt-0.5 text-xs text-muted-foreground truncate">
-            {preview}
-            {rest}
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {timeLabel(event.ts)} · {durationMin} min session
           </p>
         </>
       );
@@ -349,8 +278,7 @@ function renderBody(event: TimelineEvent): React.ReactNode {
   }
 }
 
-// Compact pathname for popup pageUrl display. Same logic the
-// pixel_page_view renderer uses elsewhere in this file.
+// Compact pathname for popup pageUrl display.
 function safePath(url: string): string {
   try {
     const u = new URL(url);

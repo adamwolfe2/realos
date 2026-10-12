@@ -13,21 +13,6 @@ import path from "path";
 const ROOT = path.resolve(__dirname, "..");
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), "utf8");
 
-describe("exported server actions that take orgId are token-gated", () => {
-  it("executeSegmentPush requires the INTERNAL_CALL capability", () => {
-    const src = read("lib/actions/audiences.ts");
-    // The function must accept and assert the internal token.
-    expect(src).toMatch(/executeSegmentPush\([\s\S]*?internal:\s*InternalCall/);
-    expect(src).toMatch(/assertInternalCall\(internal\)/);
-  });
-
-  it("runCursiveSegmentSync requires the INTERNAL_CALL capability", () => {
-    const src = read("lib/actions/admin-cursive.ts");
-    expect(src).toMatch(/runCursiveSegmentSync\([\s\S]*?internal:\s*InternalCall/);
-    expect(src).toMatch(/assertInternalCall\(internal\)/);
-  });
-});
-
 describe("start-trial cannot re-grant entitlements to churned/paused orgs", () => {
   it("excludes CANCELED and PAUSED from the re-trial eligibility clause", () => {
     const src = read("app/api/onboarding/wizard/start-trial/route.ts");

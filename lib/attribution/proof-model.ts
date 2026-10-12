@@ -27,7 +27,6 @@ export type AttributionFlowSummary = {
   captured: number;
   chatbot: number;
   forms: number;
-  visitorPixel: number;
   other: number;
   applied: number;
   signed: number;
@@ -86,14 +85,12 @@ export function summarizeAttributionFlow(
     leaseStackRows.filter((row) => row.source === source).length;
   const chatbot = sourceCount("CHATBOT");
   const forms = sourceCount("FORM");
-  const visitorPixel = sourceCount("PIXEL_OUTREACH");
 
   return {
     captured: leaseStackRows.length,
     chatbot,
     forms,
-    visitorPixel,
-    other: leaseStackRows.length - chatbot - forms - visitorPixel,
+    other: leaseStackRows.length - chatbot - forms,
     applied: leaseStackRows.filter(
       (row) => STAGE_RANK[row.stage] >= STAGE_RANK.Applied,
     ).length,
@@ -140,7 +137,7 @@ export function deriveLeadProof(input: LeadProofInput): {
 const SOURCE_PROVENANCE: Record<LeadSource, string> = {
   CHATBOT: "Captured by LeaseStack chatbot",
   FORM: "Captured by LeaseStack form or popup",
-  PIXEL_OUTREACH: "Resolved by Cursive visitor pixel",
+  PIXEL_OUTREACH: "Source not provided",
   REFERRAL: "Captured by LeaseStack referral link",
   GOOGLE_ADS: "Attributed from Google Ads",
   META_ADS: "Attributed from Meta Ads",

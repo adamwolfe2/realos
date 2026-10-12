@@ -79,7 +79,6 @@ const log = {
 
 const TARGET_MODULES = {
   moduleWebsite: true,
-  modulePixel: true,
   moduleChatbot: true,
   moduleSEO: true,
   moduleEmail: true,
@@ -453,29 +452,6 @@ async function main() {
     log.ok(`popups: ${popupCount} campaigns (${activePopups} ACTIVE)`);
   }
 
-  // Cursive pixel installs
-  const cursive = await prisma.cursiveIntegration.findMany({
-    where: { orgId: org.id },
-    select: {
-      cursivePixelId: true,
-      installedOnDomain: true,
-      provisionedAt: true,
-      lastEventAt: true,
-    },
-  });
-  if (cursive.length === 0) {
-    log.todo(
-      "Cursive pixel: NO integrations — request via /portal/settings/integrations",
-    );
-  } else {
-    log.ok(`Cursive pixel: ${cursive.length} integration row(s)`);
-    for (const c of cursive) {
-      log.info(
-        `    pixel=${c.cursivePixelId ?? "(none)"} domain=${c.installedOnDomain ?? "(none)"} lastEventAt=${c.lastEventAt?.toISOString() ?? "(never)"}`,
-      );
-    }
-  }
-
   // Admin user
   const adminUsers = await prisma.user.findMany({
     where: {
@@ -523,10 +499,6 @@ async function main() {
   if (!appfolio)
     todos.push(
       "If SG uses AppFolio, connect it (/portal/settings/integrations → AppFolio).",
-    );
-  if (cursive.length === 0)
-    todos.push(
-      "Provision the Cursive visitor pixel and install on SG's marketing site.",
     );
   if (!siteConfig || !siteConfig.chatbotEnabled)
     todos.push(

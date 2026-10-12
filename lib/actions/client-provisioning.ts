@@ -46,7 +46,6 @@ export async function pickUniqueSlug(companyName: string): Promise<string> {
 
 export type ModuleFlags = {
   moduleWebsite: boolean;
-  modulePixel: boolean;
   moduleChatbot: boolean;
   moduleGoogleAds: boolean;
   moduleMetaAds: boolean;
@@ -59,7 +58,7 @@ export type ModuleFlags = {
 };
 
 /**
- * Map a list of selected module keys (MODULE_CATALOG keys, e.g. "pixel",
+ * Map a list of selected module keys (MODULE_CATALOG keys, e.g. "chatbot",
  * "googleAds") onto the Organization.module* booleans.
  *
  * DECISION: website + leadCapture are Core features (every operator gets
@@ -75,7 +74,6 @@ export function deriveModuleFlags(selectedModules: unknown): ModuleFlags {
   return {
     moduleWebsite: true,
     moduleLeadCapture: true,
-    modulePixel: has("pixel"),
     moduleChatbot: has("chatbot"),
     moduleGoogleAds: has("google_ads") || has("googleAds"),
     moduleMetaAds: has("meta_ads") || has("metaAds"),

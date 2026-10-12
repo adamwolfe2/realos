@@ -57,7 +57,6 @@ function scope(overrides: Partial<ScopedContext> = {}): ScopedContext {
     role: "CLIENT_OWNER",
     email: "a@b.com",
     isAgency: false,
-    isAlPartner: false,
     isImpersonating: false,
     allowedPropertyIds: null,
     ...overrides,

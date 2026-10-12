@@ -30,7 +30,6 @@ const patchSchema = z.object({
   showBlog: z.boolean().optional(),
   enableExitIntent: z.boolean().optional(),
   enableChatbot: z.boolean().optional(),
-  enablePixel: z.boolean().optional(),
   chatbotAvatarUrl: z.string().url().optional().nullable(),
   chatbotPersonaName: z.string().max(100).optional().nullable(),
   chatbotGreeting: z.string().max(500).optional().nullable(),

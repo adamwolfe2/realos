@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { idpixelScriptUrl } from "@/lib/pixel/detect-install";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -16,12 +15,6 @@ import {
 import { IntegrationMarketplace } from "@/components/portal/integrations/integration-marketplace";
 import { PerPropertyIntegrationsPanel } from "@/components/portal/integrations/per-property-panel";
 import { resolveIntegrationStatuses } from "@/lib/integrations/status";
-import { CopySnippetButton } from "./copy-snippet";
-import { DisconnectPixelForm } from "./integration-forms";
-import { CursiveWebhookBadge } from "@/components/portal/integrations/cursive-webhook-badge";
-import { CursiveSetupWizard } from "@/components/portal/integrations/cursive-setup-wizard";
-import { PixelInstallCheck } from "@/components/portal/integrations/pixel-install-check";
-import { PixelRequestStatus } from "@prisma/client";
 import {
   ConnectAppfolioForm,
   DisconnectAppfolioForm,
@@ -47,20 +40,10 @@ import { OAuthConnectButton } from "./oauth-button";
 export const metadata: Metadata = { title: "Integrations" };
 export const dynamic = "force-dynamic";
 
-export default async function IntegrationsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ propertyId?: string }>;
-}) {
+export default async function IntegrationsPage() {
   const scope = await requireScope();
-  // Pre-select a property in the pixel wizard when the operator deep-links from
-  // a property-scoped surface (Visitors feed / setup checklist) so each
-  // property's pixel is requested for the right building.
-  const sp = await searchParams;
-  const defaultPixelPropertyId = sp.propertyId ?? null;
   const [
     org,
-    pixel,
     appfolio,
     funnel,
     seoIntegrations,
@@ -68,30 +51,10 @@ export default async function IntegrationsPage({
     oauthBoundAds,
     statuses,
     properties,
-    pendingPixelRequest,
-    allCursiveRows,
   ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
-      select: { name: true, modulePixel: true, moduleChatbot: true },
-    }),
-    // Per-property migration: pull the legacy org-wide row (propertyId =
-    // NULL). Settings / Integrations panel still renders this as "the
-    // pixel for this workspace" — per-property pixel overrides are
-    // managed elsewhere.
-    prisma.cursiveIntegration.findFirst({
-      where: { orgId: scope.orgId, propertyId: null },
-      select: {
-        cursivePixelId: true,
-        pixelScriptUrl: true,
-        installedOnDomain: true,
-        provisionedAt: true,
-        lastEventAt: true,
-        totalEventsCount: true,
-        lastPixelHitAt: true,
-        totalPixelHitsCount: true,
-        webhookToken: true,
-      },
+      select: { name: true },
     }),
     prisma.appFolioIntegration.findUnique({
       where: { orgId: scope.orgId },
@@ -163,11 +126,11 @@ export default async function IntegrationsPage({
     resolveIntegrationStatuses(scope.orgId),
     // Property list is threaded into the connect forms so multi-
     // property tenants can pick which LeaseStack property each new
-    // GA4 / GSC / Pixel connection scopes to. Empty list (single-
+    // GA4 / GSC connection scopes to. Empty list (single-
     // property org) means the connect forms render without a picker
     // and connections land on the legacy org-wide row. Scoped to
     // marketable properties (ACTIVE) so parking lots / storage /
-    // pending-IMPORTED sub-records never show up in the pixel picker
+    // pending-IMPORTED sub-records never show up in the property picker
     // or the per-property integrations matrix — same filter every
     // other property-selector surface uses.
     prisma.property.findMany({
@@ -175,45 +138,9 @@ export default async function IntegrationsPage({
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
-    // pendingPixelRequest remains for the legacy ops-fulfillment queue.
-    // The new one-flow setup does not enqueue an ops request — webhook
-    // URL is minted client-side and pixel_id auto-binds from the first
-    // event. We still surface a pending request here if one exists from
-    // before the one-flow rollout so customers in that state see the
-    // expected "awaiting ops" copy until they re-run the connect step.
-    prisma.pixelProvisionRequest.findFirst({
-      where: { orgId: scope.orgId, status: PixelRequestStatus.PENDING },
-      orderBy: { requestedAt: "desc" },
-      select: { id: true, websiteName: true, websiteUrl: true, requestedAt: true },
-    }),
-    // Per-property panel pulls in every cursive integration row (so it can
-    // render both the legacy NULL row and any per-property rows in its
-    // matrix). Hoisted into the main fan-out so it parallelizes with the
-    // rest instead of running serially after the page already loaded.
-    prisma.cursiveIntegration.findMany({
-      where: { orgId: scope.orgId },
-      select: { propertyId: true, cursivePixelId: true },
-    }),
   ]);
 
   if (!org) return null;
-
-  const pixelProvisioned = Boolean(pixel?.cursivePixelId);
-  const pixelInstallSnippet = pixel?.cursivePixelId
-    ? `<script src="${idpixelScriptUrl(pixel.cursivePixelId)}" defer></script>`
-    : null;
-  const pixelEligible = org.modulePixel || org.moduleChatbot;
-  // The setup wizard is mid-flow when we minted a webhook token but
-  // haven't yet captured a pixel_id from a real AL event. Pre-fill the
-  // wizard so a refresh / re-open doesn't lose state.
-  const pixelSetupInFlight =
-    !pixelProvisioned && Boolean(pixel?.webhookToken);
-  const pixelWebhookUrlInFlight = pixelSetupInFlight && pixel?.webhookToken
-    ? `${
-        process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, "") ??
-        "https://leasestack.co"
-      }/api/webhooks/cursive/${pixel.webhookToken}`
-    : null;
 
   const appfolioConnected =
     !!appfolio &&
@@ -221,48 +148,6 @@ export default async function IntegrationsPage({
     (!!appfolio.clientIdEncrypted || !!appfolio.useEmbedFallback);
 
   const manageSlots: Record<string, React.ReactNode> = {
-    "visitor-identification": pixelProvisioned ? (
-      <PixelManage
-        pixelId={pixel!.cursivePixelId!}
-        installedOnDomain={pixel!.installedOnDomain ?? null}
-        provisionedAt={pixel!.provisionedAt ?? null}
-        lastEventAt={pixel!.lastEventAt ?? null}
-        totalEventsCount={pixel!.totalEventsCount ?? 0}
-        lastPixelHitAt={pixel!.lastPixelHitAt ?? null}
-        totalPixelHitsCount={pixel!.totalPixelHitsCount ?? 0}
-        installSnippet={pixelInstallSnippet}
-      />
-    ) : pixelSetupInFlight ? (
-      <CursiveSetupWizard
-        defaultWebsiteUrl={
-          pixel?.installedOnDomain ? `https://${pixel.installedOnDomain}` : ""
-        }
-        properties={properties}
-        defaultPropertyId={defaultPixelPropertyId}
-        initialWebhookUrl={pixelWebhookUrlInFlight}
-        initialLastEventAt={pixel?.lastEventAt?.toISOString() ?? null}
-        initialPixelId={pixel?.cursivePixelId ?? null}
-      />
-    ) : pendingPixelRequest ? (
-      <PixelRequestPending
-        websiteName={pendingPixelRequest.websiteName}
-        websiteUrl={pendingPixelRequest.websiteUrl}
-        requestedAt={pendingPixelRequest.requestedAt}
-      />
-    ) : pixelEligible ? (
-      <CursiveSetupWizard
-        defaultWebsiteUrl=""
-        properties={properties}
-        defaultPropertyId={defaultPixelPropertyId}
-      />
-    ) : (
-      <div className="rounded-[2px] border border-border bg-muted/30 p-4">
-        <p className="text-xs text-muted-foreground">
-          Visitor identification isn&apos;t enabled on your current plan.
-          Talk to your account manager to turn it on.
-        </p>
-      </div>
-    ),
     appfolio: appfolioConnected ? (
       <AppfolioManage
         subdomain={appfolio!.instanceSubdomain ?? "—"}
@@ -476,7 +361,6 @@ export default async function IntegrationsPage({
           propertyId: s.propertyId,
           propertyIdentifier: s.propertyIdentifier,
         }))}
-        cursiveRows={allCursiveRows}
       />
     </div>
   );
@@ -485,176 +369,6 @@ export default async function IntegrationsPage({
 // Cal.com tour-sync panel removed 2026-07-31 (Adam): every client books
 // differently, so the per-org Cal webhook was dead weight. Tours still
 // arrive via the public booking form + API-key ingest.
-
-// ---------------------------------------------------------------------------
-// Pixel manage view — embedded inside the drawer for "visitor-identification"
-// when the integration is already provisioned.
-// ---------------------------------------------------------------------------
-
-function PixelManage({
-  pixelId,
-  installedOnDomain,
-  provisionedAt,
-  lastEventAt,
-  totalEventsCount,
-  lastPixelHitAt,
-  totalPixelHitsCount,
-  installSnippet,
-}: {
-  pixelId: string;
-  installedOnDomain: string | null;
-  provisionedAt: Date | null;
-  lastEventAt: Date | null;
-  totalEventsCount: number;
-  // Raw pixel-hit pulse — every webhook event regardless of resolution.
-  // See lib/webhooks/cursive-process.ts for the split rationale.
-  lastPixelHitAt: Date | null;
-  totalPixelHitsCount: number;
-  installSnippet: string | null;
-}) {
-  // "Verified" means we've seen ANY pixel hit — including anonymous ones.
-  // Before the pixel-hit telemetry split this used `lastEventAt`, which
-  // only ticked on resolved identities, so a freshly installed pixel
-  // firing thousands of anonymous pageviews would still read "Pending
-  // verification" until the first resolution landed (often hours later).
-  const verified = Boolean(lastPixelHitAt ?? lastEventAt);
-  return (
-    <div className="space-y-5">
-      {/* Pending → Connected transition. Operators install the snippet and
-          immediately want to know if events are flowing — the badge ticks
-          every 15s and flips from amber "Pending verification" to a green
-          "Last event Xs ago" the moment the first webhook lands. */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <CursiveWebhookBadge
-          lastEventAtIso={
-            (lastPixelHitAt ?? lastEventAt)?.toISOString() ?? null
-          }
-          totalEventsCount={totalPixelHitsCount || totalEventsCount}
-        />
-        {/* Shared status vocabulary — Live is green, waiting is blue
-            in-progress, never a hand-rolled uppercase label. */}
-        <StatusChip
-          status={verified ? "live" : "connecting"}
-          label={verified ? undefined : "Pending verification"}
-        />
-      </div>
-      <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-        <DetailRow label="Pixel ID" value={pixelId} mono />
-        <DetailRow
-          label="Installed on"
-          value={installedOnDomain ?? "—"}
-          mono
-        />
-        <DetailRow
-          label="Provisioned"
-          value={
-            provisionedAt
-              ? formatDistanceToNow(provisionedAt, { addSuffix: true })
-              : "—"
-          }
-        />
-        {/* Split telemetry: pixel hits include every webhook the pixel
-            fires (anonymous + identified); resolved identities is the
-            subset where AL had enough data to attach a name/email/HEM.
-            Operators used to see only the resolved count, which on a
-            new pixel can sit at single digits for days while the pixel
-            fires thousands of hits per hour — the panel looked dead. */}
-        <DetailRow
-          label="Pixel hits"
-          value={
-            lastPixelHitAt
-              ? formatDistanceToNow(lastPixelHitAt, { addSuffix: true })
-              : "No hits yet"
-          }
-          hint={
-            totalPixelHitsCount > 0
-              ? `${totalPixelHitsCount.toLocaleString()} total hits`
-              : undefined
-          }
-        />
-        <DetailRow
-          label="Resolved identities"
-          value={
-            lastEventAt
-              ? formatDistanceToNow(lastEventAt, { addSuffix: true })
-              : "No identities yet"
-          }
-          hint={
-            totalEventsCount > 0
-              ? `${totalEventsCount.toLocaleString()} total identified`
-              : undefined
-          }
-        />
-      </dl>
-
-      {installSnippet ? (
-        <div className="space-y-2">
-          <div className="flex items-baseline justify-between gap-3">
-            <span className="text-xs font-medium text-foreground">
-              Install snippet
-            </span>
-            <CopySnippetButton snippet={installSnippet} />
-          </div>
-          <pre
-            className="rounded-[2px] border border-border bg-muted/50 p-3 text-[11px] leading-relaxed overflow-x-auto whitespace-pre-wrap break-all text-foreground"
-          >
-            {installSnippet}
-          </pre>
-          <p className="text-[11px] text-muted-foreground">
-            Paste this tag into the {"<head>"} of every page on your site
-            where you want visitor identification to run. Named visitors
-            start showing up in your portal within a few minutes of the first
-            pageview.
-          </p>
-        </div>
-      ) : null}
-
-      <PixelInstallCheck />
-
-      <DisconnectPixelForm />
-    </div>
-  );
-}
-
-// Shown after a customer submits the connect form but before ops has
-// finished setting up the upstream pixel. Reassures them the request
-// is in flight without any of the dual-pixel UI.
-function PixelRequestPending({
-  websiteName,
-  websiteUrl,
-  requestedAt,
-}: {
-  websiteName: string;
-  websiteUrl: string;
-  requestedAt: Date;
-}) {
-  return (
-    <div className="rounded-[2px] border border-border bg-muted/30 p-5 space-y-3">
-      <div className="flex items-center gap-2 flex-wrap">
-        <h3 className="text-sm font-semibold">Setting up your pixel</h3>
-        <StatusChip
-          status="provisioning"
-          label="Requested — provisioning (≤4 business hrs)"
-        />
-      </div>
-      <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-        <DetailRow label="Website" value={websiteName} />
-        <DetailRow label="URL" value={websiteUrl} mono />
-        <DetailRow
-          label="Requested"
-          value={formatDistanceToNow(requestedAt, { addSuffix: true })}
-        />
-      </dl>
-      <p className="text-[12px] text-muted-foreground leading-relaxed">
-        Our team is provisioning your identity-resolution pixel. We&apos;ll
-        email you the install snippet within one business day — usually much
-        sooner. You&apos;ll be able to paste it into the head of your site and
-        named visitors will start showing up in your portal within a few
-        minutes of the first pageview.
-      </p>
-    </div>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // AppFolio manage view — embedded inside the drawer for "appfolio" when the

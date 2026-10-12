@@ -13,7 +13,6 @@ import {
   Bot,
   MousePointerClick,
   FileText,
-  Eye,
 } from "lucide-react";
 import { LeadStatus } from "@prisma/client";
 import { toast } from "sonner";
@@ -45,12 +44,10 @@ export type LeadKanbanItem = {
   // ---- Cross-signal flags ------------------------------------------------
   // Each is a per-lead boolean answering "did this lead show up in
   // <signal> at any point?" The leads page resolves them in batch after
-  // the main lead query (one count() / findMany per signal). visitCount
-  // is an integer instead of bool so the badge can surface intensity.
+  // the main lead query (one count() / findMany per signal).
   hasChatbot: boolean;
   hasPopup: boolean;
   hasApplication: boolean;
-  visitCount: number;
 };
 
 const STATUS_LABEL: Record<LeadStatus, string> = {
@@ -278,7 +275,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
       <div className="rounded-[2px] border border-dashed border-border bg-card p-12 text-center">
         <p className="text-sm font-medium text-foreground">No leads yet</p>
         <p className="text-xs text-muted-foreground mt-1">
-          Leads appear here when visitors submit forms, chat, or get captured by the pixel.
+          Leads appear here when visitors submit forms or chat.
         </p>
       </div>
     );
@@ -287,7 +284,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
   return (
     <div className="space-y-3">
       {/* Bulk action toolbar — uses the canonical BulkActionBar primitive so
-          this matches the visitors and renewals pages. Renders nothing when
+          this matches the renewals pages. Renders nothing when
           no leads are selected. "Tag" and "Assign to me" are disabled
           (not-yet-shipped) and render with a native tooltip explaining why. */}
       <BulkActionBar
@@ -637,7 +634,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
 
 // ---------------------------------------------------------------------------
 // CSV builder — RFC 4180-ish: comma separator, double-quote escaping,
-// CRLF line endings. Matches the visitor table's serializer so Excel +
+// CRLF line endings. Matches the other tables' serializer so Excel +
 // Google Sheets handle it correctly.
 // ---------------------------------------------------------------------------
 function buildLeadsCsv(rows: LeadKanbanItem[]): string {
@@ -801,13 +798,6 @@ function SignalBadges({ item }: { item: LeadKanbanItem }) {
     icon: React.ReactNode;
     title: string;
   }> = [];
-  if (item.visitCount > 0) {
-    badges.push({
-      key: "visitor",
-      icon: <Eye className="h-3 w-3" strokeWidth={1.75} aria-hidden="true" />,
-      title: `${item.visitCount} pixel-tracked visit${item.visitCount === 1 ? "" : "s"}`,
-    });
-  }
   if (item.hasChatbot) {
     badges.push({
       key: "chatbot",

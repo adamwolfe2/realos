@@ -14,7 +14,7 @@ import {
 // Go-live trial (plans/go-live-trial slice 1).
 //
 // A trialing workspace "goes live" the first time it gets real value: a
-// chatbot conversation, an AppFolio sync, or a pixel hit. At that moment the
+// chatbot conversation or an AppFolio sync. At that moment the
 // 14-day clock starts (capped at signup + 30d, never shorter than today's end;
 // math in computeGoLiveTrialEnd). The moment is recorded once as an
 // AuditEvent marker so the card prompt and the day-7 recap can anchor on it.
@@ -32,7 +32,7 @@ export type TrialSnapshot = {
 };
 
 async function hasGoLiveSignal(orgId: string): Promise<boolean> {
-  const [chat, appfolio, pixel] = await Promise.all([
+  const [chat, appfolio] = await Promise.all([
     prisma.chatbotConversation.findFirst({
       where: { orgId },
       select: { id: true },
@@ -41,12 +41,8 @@ async function hasGoLiveSignal(orgId: string): Promise<boolean> {
       where: { orgId, lastSyncAt: { not: null } },
       select: { id: true },
     }),
-    prisma.cursiveIntegration.findFirst({
-      where: { orgId, lastPixelHitAt: { not: null } },
-      select: { id: true },
-    }),
   ]);
-  return Boolean(chat || appfolio || pixel);
+  return Boolean(chat || appfolio);
 }
 
 // Returns null for orgs that aren't CLIENT trials. Never throws for "not

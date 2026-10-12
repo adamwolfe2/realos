@@ -4,7 +4,6 @@ import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Eye,
   Bot,
   TrendingUp,
   BarChart3,
@@ -72,7 +71,7 @@ const LOGO_MAP: Record<string, (props: { size?: number }) => React.JSX.Element> 
 // Marketplace — premium, brand-consistent, honest about what's shipped.
 //
 // Five card kinds:
-//   toggle    — true self-serve flippable Boolean (Pixel, Chatbot,
+//   toggle    — true self-serve flippable Boolean (Chatbot,
 //               Referrals). Free during trial; routes to billing post-trial.
 //   included  — always-on (Lead Capture, Reputation Monitoring). Pill +
 //               "Use it" deep-link, no toggle.
@@ -93,7 +92,6 @@ const LOGO_MAP: Record<string, (props: { size?: number }) => React.JSX.Element> 
 // ---------------------------------------------------------------------------
 
 const ICON_MAP: Record<string, LucideIcon> = {
-  Eye,
   Bot,
   TrendingUp,
   BarChart3,

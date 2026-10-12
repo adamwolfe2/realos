@@ -8,6 +8,13 @@ import { PROPOSAL_CATALOG } from "@/lib/proposals/catalog-data";
 export { PROPOSAL_CATALOG } from "@/lib/proposals/catalog-data";
 export type { ProposalCatalogSeed } from "@/lib/proposals/catalog-data";
 
+// Add-ons removed from the catalog (visitor pixel retired 2026-10-11).
+export const RETIRED_CATALOG_SLUGS = [
+  "addon-audience-sync",
+  "addon-cursive-pixel-pro",
+  "addon-pixel-overage",
+] as const;
+
 /**
  * Idempotently upsert the canonical proposal catalog rows by `slug`. Safe to
  * run on every app boot — no-ops when rows already match. Pricing edits in
@@ -57,6 +64,11 @@ export async function ensureCatalogSeeded(): Promise<{
       }),
     ),
   );
+  // Retired SKUs keep their DB rows; hide them from the proposal builder.
+  await prisma.proposalCatalogItem.updateMany({
+    where: { slug: { in: [...RETIRED_CATALOG_SLUGS] }, active: true },
+    data: { active: false },
+  });
   return { upserted: results.length, total: PROPOSAL_CATALOG.length };
 }
 

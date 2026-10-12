@@ -54,15 +54,6 @@ export type AeoClientProps = {
   lastScanAt: string | null;
   /** Weekly mention-rate trend over the 60d window (2026-08-14). */
   trendWeeks: TrendWeek[];
-  /** AI-referral attribution (2026-08-14): pixel sessions from AI
-   *  assistants chained to leads + signed leases. */
-  aiReferral: {
-    visits: number;
-    leads: number;
-    signed: number;
-    byEngine: Array<{ engine: string; visits: number }>;
-    windowDays: number;
-  };
   /** Per-engine competitor heatmap rows (2026-08-14, slice 9). */
   heatmapRows: Array<{
     name: string;
@@ -343,7 +334,6 @@ export function AeoClient({
   competitorRollup,
   lastScanAt,
   trendWeeks,
-  aiReferral,
   heatmapRows,
   kpis,
   recommendations,
@@ -508,8 +498,6 @@ export function AeoClient({
           headline KPIs). Each shows mention + citation rate per engine. */}
       <AeoEngineCards rows={engineCards} />
 
-      <AiReferralCard aiReferral={aiReferral} />
-
       <CompetitorHeatmap rows={heatmapRows} />
 
       {/* What to do next — derived recommendations. */}
@@ -638,75 +626,6 @@ function CompetitorHeatmap({
           </tbody>
         </table>
       </div>
-    </SectionCard>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// AiReferralCard (2026-08-14, slice 11) — the attribution proof chain.
-// Visits from AI assistants (pixel referrer/utm) → leads → signed
-// leases. Visibility tools stop at "you were mentioned"; this is the
-// number that closes deals.
-// ---------------------------------------------------------------------------
-
-function AiReferralCard({
-  aiReferral,
-}: {
-  aiReferral: AeoClientProps["aiReferral"];
-}) {
-  const { visits, leads, signed, byEngine, windowDays } = aiReferral;
-  return (
-    <SectionCard label="AI search → signed leases">
-      {visits === 0 ? (
-        <p className="text-[13px] text-muted-foreground py-1">
-          No AI-referred visits detected in the last {windowDays} days.
-          Renters arrive from ChatGPT, Perplexity, Gemini, and Copilot once
-          the engines recommend you — the pixel attributes every one of
-          those visits automatically.
-        </p>
-      ) : (
-        <>
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-            {[
-              { value: visits, label: `visits from AI assistants (${windowDays}d)` },
-              { value: leads, label: "became leads" },
-              { value: signed, label: "signed leases" },
-            ].map((s, i) => (
-              <React.Fragment key={s.label}>
-                {i > 0 ? (
-                  <ArrowRight
-                    className="h-4 w-4 text-muted-foreground"
-                    aria-hidden
-                  />
-                ) : null}
-                <div>
-                  <div className="text-xl ls-metric">
-                    {fmtNumber(s.value)}
-                  </div>
-                  <div className="text-[11.5px] text-muted-foreground">
-                    {s.label}
-                  </div>
-                </div>
-              </React.Fragment>
-            ))}
-          </div>
-          {byEngine.length > 0 ? (
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {byEngine.map((e) => (
-                <span
-                  key={e.engine}
-                  className="rounded-full border border-border px-2.5 py-1 text-[11.5px] text-muted-foreground"
-                >
-                  {e.engine}{" "}
-                  <span className="font-medium text-foreground tabular-nums">
-                    {fmtNumber(e.visits)}
-                  </span>
-                </span>
-              ))}
-            </div>
-          ) : null}
-        </>
-      )}
     </SectionCard>
   );
 }

@@ -8,7 +8,7 @@ import { AuditAction } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
 // Agency-only module toggles. Renders the Modules card on the client detail
-// page interactive — operator features (Website, Pixel, Chatbot, Google Ads,
+// page interactive — operator features (Website, Chatbot, Google Ads,
 // Meta Ads, SEO, Email, etc) flip on/off here.
 //
 // Audit-logged so the platform record reflects who turned what on for which
@@ -17,7 +17,6 @@ import { AuditAction } from "@prisma/client";
 
 const TOGGLEABLE_MODULES = [
   "moduleWebsite",
-  "modulePixel",
   "moduleChatbot",
   "moduleGoogleAds",
   "moduleMetaAds",

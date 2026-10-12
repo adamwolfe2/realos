@@ -43,11 +43,6 @@ describe("summarizeGroup", () => {
     expect(r.title).toBe("4 new negative reviews");
   });
 
-  it("hot_visitor → 'hot visitors flagged'", () => {
-    const r = summarizeGroup("hot_visitor", "info", 6);
-    expect(r.title).toBe("6 hot visitors flagged");
-  });
-
   it("keyword_drop → 'keywords lost ranking'", () => {
     const r = summarizeGroup("keyword_drop", "warning", 12);
     expect(r.title).toBe("12 keywords lost ranking");

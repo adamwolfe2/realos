@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------------------
 // PipelineStrip — compact conversion funnel over the stages LeaseStack
-// actually tracks end-to-end (Visitors, Leads, Applications). Tours and
+// actually tracks end-to-end (Leads, Applications). Tours and
 // on-site engagement are excluded entirely rather than rendered as a fake
 // zero — an untracked stage is not the same thing as a stage with no
 // activity, and showing "0" there reads as a broken product.
@@ -21,7 +21,7 @@ export type PipelineStage = {
 };
 
 type Props = {
-  /** Only tracked stages — Visitors, Leads, Applications. */
+  /** Only tracked stages — Leads, Applications. */
   stages: PipelineStage[];
   /** The dashboard's selected range — keeps the label honest when the
    *  operator picks 7d/90d. */

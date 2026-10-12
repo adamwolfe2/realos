@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
   "registryProductCount": 8,
-  "sourceRecordCount": 135,
+  "sourceRecordCount": 125,
   "summary": {
-    "critical": 42,
-    "warning": 21,
-    "info": 18,
-    "total": 81
+    "critical": 37,
+    "warning": 18,
+    "info": 17,
+    "total": 72
   },
   "findings": [
     {
@@ -164,17 +164,6 @@
       "evidencePath": "lib/billing/catalog.ts"
     },
     {
-      "id": "tier_unsupported_entitlement:billing_catalog:growth.annual:modulePixel",
-      "code": "tier_unsupported_entitlement",
-      "severity": "critical",
-      "owner": "product",
-      "source": "billing_catalog",
-      "sourceId": "growth.annual",
-      "productKey": null,
-      "reason": "The growth tier family grants unsupported entitlement modulePixel across billing variants.",
-      "evidencePath": "lib/billing/catalog.ts"
-    },
-    {
       "id": "tier_unsupported_entitlement:billing_catalog:scale.annual:moduleCreativeStudio",
       "code": "tier_unsupported_entitlement",
       "severity": "critical",
@@ -227,17 +216,6 @@
       "sourceId": "scale.annual",
       "productKey": null,
       "reason": "The scale tier family grants unsupported entitlement moduleOutboundEmail across billing variants.",
-      "evidencePath": "lib/billing/catalog.ts"
-    },
-    {
-      "id": "tier_unsupported_entitlement:billing_catalog:scale.annual:modulePixel",
-      "code": "tier_unsupported_entitlement",
-      "severity": "critical",
-      "owner": "product",
-      "source": "billing_catalog",
-      "sourceId": "scale.annual",
-      "productKey": null,
-      "reason": "The scale tier family grants unsupported entitlement modulePixel across billing variants.",
       "evidencePath": "lib/billing/catalog.ts"
     },
     {
@@ -329,17 +307,6 @@
       "evidencePath": "lib/billing/catalog.ts"
     },
     {
-      "id": "unsupported_self_serve_product:billing_catalog:ls_addon_pixel_overage",
-      "code": "unsupported_self_serve_product",
-      "severity": "critical",
-      "owner": "product",
-      "source": "billing_catalog",
-      "sourceId": "ls_addon_pixel_overage",
-      "productKey": null,
-      "reason": "Customer-visible self-serve product has no approved canonical contract.",
-      "evidencePath": "lib/billing/catalog.ts"
-    },
-    {
       "id": "unsupported_self_serve_product:billing_catalog:ls_addon_white_label",
       "code": "unsupported_self_serve_product",
       "severity": "critical",
@@ -406,17 +373,6 @@
       "evidencePath": "lib/billing/features.ts"
     },
     {
-      "id": "unsupported_self_serve_product:billing_features:modulePixel",
-      "code": "unsupported_self_serve_product",
-      "severity": "critical",
-      "owner": "product",
-      "source": "billing_features",
-      "sourceId": "modulePixel",
-      "productKey": null,
-      "reason": "Customer-visible self-serve product has no approved canonical contract.",
-      "evidencePath": "lib/billing/features.ts"
-    },
-    {
       "id": "unsupported_self_serve_product:billing_features:moduleReferrals",
       "code": "unsupported_self_serve_product",
       "severity": "critical",
@@ -445,17 +401,6 @@
       "owner": "product",
       "source": "stripe_static",
       "sourceId": "ls_email_overage_per_send_v1",
-      "productKey": null,
-      "reason": "Customer-visible self-serve product has no approved canonical contract.",
-      "evidencePath": "lib/billing/price-ids.generated.ts"
-    },
-    {
-      "id": "unsupported_self_serve_product:stripe_static:ls_pixel_overage_per_visitor_v1",
-      "code": "unsupported_self_serve_product",
-      "severity": "critical",
-      "owner": "product",
-      "source": "stripe_static",
-      "sourceId": "ls_pixel_overage_per_visitor_v1",
       "productKey": null,
       "reason": "Customer-visible self-serve product has no approved canonical contract.",
       "evidencePath": "lib/billing/price-ids.generated.ts"
@@ -549,34 +494,12 @@
       "evidencePath": "lib/marketplace/catalog.ts"
     },
     {
-      "id": "orphan_product_source:proposal_catalog:addon-audience-sync",
-      "code": "orphan_product_source",
-      "severity": "warning",
-      "owner": "product",
-      "source": "proposal_catalog",
-      "sourceId": "addon-audience-sync",
-      "productKey": null,
-      "reason": "Customer-visible source has no approved canonical product mapping.",
-      "evidencePath": "lib/proposals/catalog.ts"
-    },
-    {
       "id": "orphan_product_source:proposal_catalog:addon-commercial-retainer",
       "code": "orphan_product_source",
       "severity": "warning",
       "owner": "product",
       "source": "proposal_catalog",
       "sourceId": "addon-commercial-retainer",
-      "productKey": null,
-      "reason": "Customer-visible source has no approved canonical product mapping.",
-      "evidencePath": "lib/proposals/catalog.ts"
-    },
-    {
-      "id": "orphan_product_source:proposal_catalog:addon-cursive-pixel-pro",
-      "code": "orphan_product_source",
-      "severity": "warning",
-      "owner": "product",
-      "source": "proposal_catalog",
-      "sourceId": "addon-cursive-pixel-pro",
       "productKey": null,
       "reason": "Customer-visible source has no approved canonical product mapping.",
       "evidencePath": "lib/proposals/catalog.ts"
@@ -610,17 +533,6 @@
       "owner": "product",
       "source": "proposal_catalog",
       "sourceId": "addon-outbound-email-engine",
-      "productKey": null,
-      "reason": "Customer-visible source has no approved canonical product mapping.",
-      "evidencePath": "lib/proposals/catalog.ts"
-    },
-    {
-      "id": "orphan_product_source:proposal_catalog:addon-pixel-overage",
-      "code": "orphan_product_source",
-      "severity": "warning",
-      "owner": "product",
-      "source": "proposal_catalog",
-      "sourceId": "addon-pixel-overage",
       "productKey": null,
       "reason": "Customer-visible source has no approved canonical product mapping.",
       "evidencePath": "lib/proposals/catalog.ts"
@@ -810,17 +722,6 @@
       "sourceId": "moduleOutboundEmail",
       "productKey": null,
       "reason": "Lookup key ls_feat_moduleOutboundEmail_monthly requires separate live Stripe reconciliation.",
-      "evidencePath": "lib/billing/features.ts"
-    },
-    {
-      "id": "stripe_live_verification_deferred:billing_features:modulePixel",
-      "code": "stripe_live_verification_deferred",
-      "severity": "info",
-      "owner": "billing",
-      "source": "billing_features",
-      "sourceId": "modulePixel",
-      "productKey": null,
-      "reason": "Lookup key ls_feat_modulePixel_monthly requires separate live Stripe reconciliation.",
       "evidencePath": "lib/billing/features.ts"
     },
     {

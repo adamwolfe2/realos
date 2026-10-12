@@ -7,7 +7,7 @@ import { useInView, useReducedMotion } from "framer-motion";
 // PixelSeam — textured section transition (cool pass M4 + motion pass sec 6).
 // A belt of small squares in the NEXT section's background colour, scattered
 // with a deterministic density gradient (dense at the bottom edge, dissolving
-// upward). On-brand: LeaseStack's product is the Visitor Pixel. Squares
+// upward). Squares echo the brand pixel marks. Squares
 // twinkle in with a left-to-right staggered opacity cascade once in view,
 // then hold. Reduced-motion renders them static.
 //

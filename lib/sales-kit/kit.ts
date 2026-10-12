@@ -59,14 +59,6 @@ export const KIT_SECTIONS: readonly KitSection[] = [
         snippet:
           "{{first}} — drop your property URL in here and you'll have a leasing chatbot trained on your own site in under a minute. No account, no call: {{link}}",
       },
-      {
-        href: "/lost-leads",
-        label: "Lost-lead calculator",
-        whenToSend:
-          "Pixel / visitor-identification pitch. Good for anyone quoting their traffic numbers.",
-        snippet:
-          "{{first}} — you said you get real traffic but not enough tours. This does the math on how many of those visitors leave unnamed: {{link}}",
-      },
     ],
   },
   {

@@ -114,8 +114,6 @@ describe("single-record endpoints — structural property-gate guard", () => {
     "app/api/tenant/leads/[id]/route.ts",
     "app/api/tenant/leads/[id]/notes/route.ts",
     "app/api/tenant/leads/[id]/status/route.ts",
-    "app/api/tenant/visitors/[visitorId]/convert/route.ts",
-    "app/api/tenant/visitors/[visitorId]/engage/route.ts",
     "app/api/tenant/conversations/[id]/handoff/route.ts",
   ];
 

@@ -38,7 +38,6 @@ function property(id: string, overrides: Record<string, unknown> = {}) {
     notifyLeadEmailOverride: null,
     chatbotConfig: null,
     chatbotConversations: [],
-    cursiveIntegrations: [],
     seoIntegrations: [],
     seoSnapshots: [],
     leads: [],
@@ -251,7 +250,6 @@ describe("loadClientActivation", () => {
               {
                 orgId: "client-1",
                 propertyId: "property-ready",
-                visitorId: null,
                 convertedAt: null,
                 createdAt: FRESH,
               },
@@ -264,7 +262,6 @@ describe("loadClientActivation", () => {
               {
                 orgId: "client-1",
                 propertyId: "property-stale",
-                visitorId: null,
                 convertedAt: null,
                 createdAt: FRESH,
               },
@@ -320,7 +317,6 @@ describe("loadClientActivation", () => {
               {
                 orgId: "client-1",
                 propertyId: "property-1",
-                visitorId: null,
                 convertedAt: null,
                 createdAt: FRESH,
               },
@@ -393,6 +389,30 @@ describe("loadClientActivation", () => {
     expect(reputation?.status).toBe("needs_attention");
     expect(JSON.stringify(result)).not.toContain("private SEO error");
     expect(JSON.stringify(result)).not.toContain("provider-place-id");
+  });
+
+  it("accepts a converted lead with a known source as attribution proof", async () => {
+    const BLOCKER = "Produce a traceable journey or measured coverage result.";
+    const lead = (source: string) => ({
+      orgId: "client-1",
+      propertyId: "property-1",
+      source,
+      convertedAt: FRESH,
+      createdAt: FRESH,
+    });
+    const blockersFor = async (source: string) => {
+      mocks.findFirst.mockResolvedValue(
+        client({
+          moduleAttribution: true,
+          properties: [property("property-1", { leads: [lead(source)] })],
+        }),
+      );
+      const result = await loadClientActivation("client-1", NOW);
+      return result?.rows.find(({ key }) => key === "lead-to-lease-attribution")?.blockers;
+    };
+
+    expect(await blockersFor("GOOGLE_ADS")).not.toContain(BLOCKER);
+    expect(await blockersFor("OTHER")).toContain(BLOCKER);
   });
 
   it("returns exactly the eight canonical products in registry order", async () => {

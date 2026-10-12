@@ -33,7 +33,6 @@ import {
 
 const moduleKeys = [
   "website",
-  "pixel",
   "chatbot",
   "googleAds",
   "metaAds",
@@ -75,7 +74,16 @@ const schema = z.object({
     .nullable(),
   biggestPainPoint: z.string().max(500).optional(),
 
-  selectedModules: z.array(z.enum(moduleKeys)),
+  // Retired module keys (e.g. "pixel" from a tab opened before a module was
+  // removed) are dropped rather than failing the whole intake.
+  selectedModules: z
+    .array(z.string().max(40))
+    .max(moduleKeys.length * 2)
+    .transform((keys) =>
+      keys.filter((k): k is (typeof moduleKeys)[number] =>
+        (moduleKeys as readonly string[]).includes(k),
+      ),
+    ),
 
   goLiveTarget: z.enum(["asap", "one_month", "three_months", "exploring"]).optional(),
   bookedCallAt: z.string().datetime().optional(),

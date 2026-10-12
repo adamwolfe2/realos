@@ -5,7 +5,7 @@ import { Plus, Trash2, Building2 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Onboarding — multi-property step (slice S2). The operator adds one or more
-// properties (each gets its own website / pixel / chatbot downstream), then
+// properties (each gets its own website / chatbot downstream), then
 // picks how they manage them (a PMS/CRM or nothing). Submitting creates the
 // properties, records the CRM choice, and starts the 14-day trial.
 // ---------------------------------------------------------------------------
@@ -129,7 +129,7 @@ export function PropertiesStep({
           className="mt-2"
           style={{ color: MUTED, fontFamily: "var(--font-sans)", fontSize: "14px", lineHeight: 1.55 }}
         >
-          Add each property you want to market. Each one gets its own pixel and
+          Add each property you want to market. Each one gets its own
           chatbot. You&apos;ll set those up per property inside the workspace.
         </p>
       </header>

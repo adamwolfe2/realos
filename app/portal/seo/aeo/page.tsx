@@ -23,10 +23,6 @@ import {
   ADDON_AEO_BOOST,
 } from "@/lib/proposals/org-addons";
 import type { AeoEngine } from "@prisma/client";
-import {
-  CANONICAL_SOURCES,
-  classifySource,
-} from "@/lib/attribution/source-taxonomy";
 import { isBrandedPromptText, buildSuggestedPack } from "@/lib/aeo/prompts";
 
 export const metadata: Metadata = { title: "AI search visibility" };
@@ -51,17 +47,6 @@ export default async function AeoPage() {
   const ECHO_SEMANTICS_CUTOVER = new Date("2026-08-13T09:00:00Z");
   const trendFloor =
     ECHO_SEMANTICS_CUTOVER > sixtyDaysAgo ? ECHO_SEMANTICS_CUTOVER : sixtyDaysAgo;
-  const aiSources = CANONICAL_SOURCES.filter((s) => s.category === "ai");
-  const aiHostFilters = aiSources.flatMap((s) =>
-    s.matchHosts.map((h) => ({
-      firstReferrer: { contains: h, mode: "insensitive" as const },
-    })),
-  );
-  const aiUtmFilters = aiSources.flatMap((s) =>
-    s.matchUtm.map((m) => ({
-      utmSource: { contains: m, mode: "insensitive" as const },
-    })),
-  );
 
   // Independent reads run in parallel; customPromptRows depends on
   // promptProperties so that pair stays sequential inside one branch.
@@ -71,7 +56,6 @@ export default async function AeoPage() {
   const [
     checks,
     trendRows,
-    aiSessions,
     [promptProperties, customPromptRows],
     snapshots,
     opportunityRowsRaw,
@@ -109,22 +93,6 @@ export default async function AeoPage() {
           queryRunAt: { gte: trendFloor },
         },
         select: { queryRunAt: true, mentioned: true, engine: true },
-      }),
-    prisma.visitorSession.findMany({
-        where: {
-          ...where,
-          startedAt: { gte: sixtyDaysAgo },
-          OR: [...aiHostFilters, ...aiUtmFilters],
-        },
-        select: {
-          visitorId: true,
-          firstReferrer: true,
-          utmSource: true,
-          utmMedium: true,
-          startedAt: true,
-        },
-        orderBy: { startedAt: "desc" },
-        take: 2000,
       }),
     (async () => {
       const promptProperties = await prisma.property.findMany({
@@ -240,56 +208,6 @@ export default async function AeoPage() {
       byEngine,
     };
   });
-
-  // AI-referral attribution (2026-08-14, slice 11): sessions whose
-  // referrer/utm is an AI assistant, chained through visitor → lead →
-  // SIGNED. Classification routes through the canonical source taxonomy
-  // (classifySource) — the same waterfall /portal/attribution uses — so
-  // the two surfaces can never disagree on the same session (the exact
-  // dual-waterfall bug consolidated after the 2026-07-22 audit).
-  const aiByEngine = new Map<string, number>();
-  // visitorId → earliest AI-referred session start, so a lead created
-  // BEFORE the visitor ever arrived from an AI engine is never counted.
-  const aiVisitorFirstSeen = new Map<string, Date>();
-  let aiVisits = 0;
-  for (const s of aiSessions) {
-    // The SQL prefilter is a coarse superset (substring match); the
-    // canonical classifier makes the real call on the parsed hostname.
-    const src = classifySource(s.utmSource, s.firstReferrer, s.utmMedium);
-    if (src.category !== "ai") continue;
-    aiVisits += 1;
-    aiByEngine.set(src.label, (aiByEngine.get(src.label) ?? 0) + 1);
-    if (s.visitorId) {
-      const prev = aiVisitorFirstSeen.get(s.visitorId);
-      if (!prev || s.startedAt < prev) aiVisitorFirstSeen.set(s.visitorId, s.startedAt);
-    }
-  }
-  const aiLeadRows =
-    aiVisitorFirstSeen.size > 0
-      ? await prisma.lead.findMany({
-          where: {
-            ...where,
-            visitorId: { in: [...aiVisitorFirstSeen.keys()] },
-            firstSeenAt: { gte: sixtyDaysAgo },
-          },
-          select: { status: true, visitorId: true, firstSeenAt: true },
-        })
-      : [];
-  // Lead must post-date the visitor's first AI-referred session — the
-  // chain claims causation order, so enforce it.
-  const aiLeads = aiLeadRows.filter((l) => {
-    const firstAi = l.visitorId ? aiVisitorFirstSeen.get(l.visitorId) : null;
-    return firstAi ? l.firstSeenAt >= firstAi : false;
-  });
-  const aiReferral = {
-    visits: aiVisits,
-    leads: aiLeads.length,
-    signed: aiLeads.filter((l) => l.status === "SIGNED").length,
-    byEngine: [...aiByEngine.entries()]
-      .map(([engine, visits]) => ({ engine, visits }))
-      .sort((a, b) => b.visits - a.visits),
-    windowDays: 60,
-  };
 
   // Mention = brand was named anywhere in the answer (mentioned column,
   // backfilled from CITED + COMPETITOR_CITED in the migration).
@@ -812,7 +730,6 @@ export default async function AeoPage() {
       competitorRollup={competitorRollup}
       lastScanAt={lastScanAt}
       trendWeeks={trendWeeks}
-      aiReferral={aiReferral}
       heatmapRows={heatmapRows}
       kpis={{
         visibilityScore,

@@ -3,8 +3,8 @@
 import * as React from "react";
 import Link from "next/link";
 import { FlagToggle } from "@/components/portal/conversations/flag-toggle";
-import { humanLeadStatus, humanVisitorStatus } from "@/lib/format";
-import type { LeadStatus, VisitorIdentificationStatus } from "@prisma/client";
+import { humanLeadStatus } from "@/lib/format";
+import type { LeadStatus } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
 // ConversationSidebar
@@ -12,7 +12,7 @@ import type { LeadStatus, VisitorIdentificationStatus } from "@prisma/client";
 // Right-rail review panel for a single conversation. Three stacked cards:
 //   1. Flag toggles (6 buttons, optimistic API writes)
 //   2. Notes field (attached to the most recent flag row, or standalone)
-//   3. Context links (lead, visitor, tune prompt)
+//   3. Context links (lead, tune prompt)
 // Everything lives in one client component so the notes textarea can share
 // state with the flag list after mutations.
 // ---------------------------------------------------------------------------
@@ -28,16 +28,10 @@ export function ConversationSidebar({
   conversationId,
   initialFlags,
   lead,
-  visitor,
 }: {
   conversationId: string;
   initialFlags: FlagRow[];
   lead: { id: string; status: LeadStatus } | null;
-  visitor: {
-    id: string;
-    displayName: string;
-    status: VisitorIdentificationStatus;
-  } | null;
 }) {
   const [flags, setFlags] = React.useState<FlagRow[]>(initialFlags);
 
@@ -204,24 +198,6 @@ export function ConversationSidebar({
             <li className="flex items-center justify-between gap-2 rounded-[6px] px-2 py-1.5 bg-muted/50">
               <span className="text-muted-foreground">Lead</span>
               <span className="text-muted-foreground">Not captured</span>
-            </li>
-          )}
-          {visitor ? (
-            <li>
-              <Link
-                href={`/portal/visitors/${visitor.id}`}
-                className="flex items-center justify-between gap-2 rounded-[6px] px-2 py-1.5 bg-muted hover:bg-muted/60 transition-colors"
-              >
-                <span className="text-muted-foreground">Visitor</span>
-                <span className="font-semibold text-foreground truncate max-w-[160px]">
-                  {humanVisitorStatus(visitor.status)}
-                </span>
-              </Link>
-            </li>
-          ) : (
-            <li className="flex items-center justify-between gap-2 rounded-[6px] px-2 py-1.5 bg-muted/50">
-              <span className="text-muted-foreground">Visitor</span>
-              <span className="text-muted-foreground">No match</span>
             </li>
           )}
           <li>

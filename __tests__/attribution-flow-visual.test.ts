@@ -20,7 +20,6 @@ describe("attribution filtered ledger", () => {
     expect(page).toContain("sourceFilterHref");
     expect(page).toContain("Chatbot");
     expect(page).toContain("Popups and forms");
-    expect(page).toContain("Visitor pixel");
     // The active filter is a solid brand fill. Pinned as the design token
     // rather than a raw Tailwind palette step, so the active state cannot
     // drift away from --color-primary the way bg-blue-600 had.

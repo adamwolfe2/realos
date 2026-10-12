@@ -41,7 +41,6 @@ export const PRODUCT_CAPABILITY_CONTRACTS: Readonly<
         signalKeys: [
           "integration.any_source",
           "integration.appfolio_availability",
-          "integration.cursive_pixel",
           "integration.ga4",
           "integration.gsc",
         ],

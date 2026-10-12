@@ -56,7 +56,6 @@ function makeScope(role: keyof typeof UserRole, userId = "agency-actor") {
     role: UserRole[role],
     email: `${userId}@agency.test`,
     isAgency: true,
-    isAlPartner: false,
     isImpersonating: false,
     allowedPropertyIds: null,
   };

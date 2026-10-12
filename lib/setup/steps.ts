@@ -1,10 +1,10 @@
-import type { Organization, CursiveIntegration, AppFolioIntegration, TenantSiteConfig, AdAccount, SeoIntegration } from "@prisma/client";
+import type { Organization, AppFolioIntegration, TenantSiteConfig, AdAccount, SeoIntegration } from "@prisma/client";
 import { AdPlatform, SeoProvider } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
 // Setup Hub step definitions.
 //
-// The 10 onboarding steps clients work through during their first 1–2 weeks.
+// The onboarding steps clients work through during their first 1–2 weeks.
 // Each step encapsulates its title, icon, CTA, completion logic, and optional
 // module gating. Steps are intentionally hardcoded — the set is small and
 // evolves slowly, so a config file beats a DB table.
@@ -18,8 +18,7 @@ export type SetupModuleKey =
   | "moduleGoogleAds"
   | "moduleMetaAds"
   | "moduleSEO"
-  | "moduleChatbot"
-  | "modulePixel";
+  | "moduleChatbot";
 
 export type SetupCheckContext = {
   org: Pick<
@@ -31,9 +30,7 @@ export type SetupCheckContext = {
     | "moduleMetaAds"
     | "moduleSEO"
     | "moduleChatbot"
-    | "modulePixel"
   >;
-  cursive: Pick<CursiveIntegration, "cursivePixelId" | "lastEventAt"> | null;
   appfolio: Pick<AppFolioIntegration, "lastSyncAt"> | null;
   tenantSiteConfig: Pick<TenantSiteConfig, "chatbotEnabled"> | null;
   adAccounts: Array<Pick<AdAccount, "platform" | "lastSyncAt">>;
@@ -103,19 +100,6 @@ export const SETUP_STEPS: SetupStepDefinition[] = [
     actionHref: "/portal/connect",
     actionLabel: "Connect AppFolio",
     isComplete: (ctx) => ctx.appfolio?.lastSyncAt != null,
-  },
-  {
-    id: "cursive",
-    phase: "foundation",
-    icon: "Radar",
-    title: "Install the Cursive pixel",
-    description:
-      "Name every anonymous visitor. See who's on your site right now.",
-    estimateMinutes: 5,
-    actionHref: "/portal/connect",
-    actionLabel: "Install pixel",
-    isComplete: (ctx) =>
-      ctx.cursive?.cursivePixelId != null && ctx.cursive?.lastEventAt != null,
   },
   {
     id: "chatbot",

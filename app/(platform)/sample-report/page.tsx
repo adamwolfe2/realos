@@ -43,7 +43,7 @@ const ANNOTATIONS = [
   {
     eyebrow: "Leases attributed",
     title: "Every signed lease mapped to a source",
-    body: "Google Ads, Meta, organic search, referral, direct: drawn from the pixel, UTM, and PMS join. No more guessing which channel paid for the renewal. Shares are shown by lease count, not by impression or click, because that's the only number ownership cares about.",
+    body: "Google Ads, Meta, organic search, referral, direct: drawn from UTM and PMS join. No more guessing which channel paid for the renewal. Shares are shown by lease count, not by impression or click, because that's the only number ownership cares about.",
   },
   {
     eyebrow: "Three actions",
@@ -123,7 +123,7 @@ export default function SampleReportPage() {
             }}
           >
             The numbers in this sample are illustrative. Your real report
-            is built from your live pixel, ad, and PMS data.
+            is built from your live ad and PMS data.
           </p>
         </div>
       </section>

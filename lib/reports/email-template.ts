@@ -347,7 +347,7 @@ export function buildWeeklyDigestEmail(
           <!-- Portal CTA -->
           <tr>
             <td style="padding:28px 32px 32px;">
-              <p style="margin:0 0 16px;font-size:13px;color:#94A3B8;">Full lead history, visitor analytics, and campaign details are in your portal.</p>
+              <p style="margin:0 0 16px;font-size:13px;color:#94A3B8;">Full lead history, traffic analytics, and campaign details are in your portal.</p>
               <a href="${e(portalUrl)}" style="display:inline-block;background-color:#0f62fe;color:#FFFFFF;font-size:13px;font-weight:600;text-decoration:none;padding:13px 28px;letter-spacing:0.04em;">
                 Open Portal
               </a>

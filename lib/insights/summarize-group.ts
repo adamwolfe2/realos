@@ -54,11 +54,6 @@ export function summarizeGroup(
         title: `${count} new negative reviews`,
         body: "Reviews 3 stars or lower posted this period. Open each to draft a response.",
       };
-    case "hot_visitor":
-      return {
-        title: `${count} hot visitors flagged`,
-        body: "High-intent identified visitors who haven't converted to a lead yet.",
-      };
     case "keyword_drop":
       return {
         title: `${count} keywords lost ranking`,

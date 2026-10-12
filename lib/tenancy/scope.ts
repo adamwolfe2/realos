@@ -35,7 +35,6 @@ export type ScopedContext = {
   role: UserRole;
   email: string;
   isAgency: boolean;              // AGENCY-typed org AND an agency role (not org type alone)
-  isAlPartner: boolean;           // role === AL_PARTNER. Cross-org access to AUDIENCE_SYNC orgs
   isImpersonating: boolean;
   // Property-level RBAC gate.
   //   null  → unrestricted (org-wide access). Default for any user with
@@ -137,7 +136,6 @@ async function getDemoScope(): Promise<ScopedContext | null> {
     role: isAgencyScope ? UserRole.AGENCY_OWNER : UserRole.CLIENT_OWNER,
     email: "demo@leasestack.co",
     isAgency: isAgencyScope,
-    isAlPartner: false,
     isImpersonating: false,
     // Demo scope is always unrestricted. The whole point of demo mode is
     // to render the full surface for showcasing, so we never hand it a
@@ -299,7 +297,6 @@ async function getScopeUncached(): Promise<ScopedContext | null> {
   // (impersonation, properties, audiences, admin). (launch-critical-sweep P0.)
   const isAgency =
     actualOrgType === OrgType.AGENCY && AGENCY_ROLES.has(user.role);
-  const isAlPartner = user.role === UserRole.AL_PARTNER;
 
   // Impersonation is expressed as `publicMetadata.impersonateOrgId`. The
   // default Clerk JWT does NOT include publicMetadata in sessionClaims, so we
@@ -307,9 +304,7 @@ async function getScopeUncached(): Promise<ScopedContext | null> {
   // via clerkClient (one extra request, always fresh). The fallback is what
   // makes impersonation actually work without a custom JWT template.
   //
-  // AGENCY users can impersonate any org. AL_PARTNER users can impersonate
-  // any AUDIENCE_SYNC org (enforced below by re-checking productLine on the
-  // target).
+  // Only AGENCY users can impersonate.
   //
   // SECURITY: impersonation is bound to the Clerk SESSION that started it.
   // Without this binding, an agency user who forgets to end impersonation
@@ -318,7 +313,7 @@ async function getScopeUncached(): Promise<ScopedContext | null> {
   // a secondary email on the same Clerk user). That's how a brand-new
   // sign-in landed inside SG Real Estate. Now we cross-check the session
   // id; mismatched sessions ignore the impersonation entirely.
-  const canImpersonate = isAgency || isAlPartner;
+  const canImpersonate = isAgency;
   let publicMetadata =
     (sessionClaims?.publicMetadata as Record<string, unknown> | undefined) ??
     {};
@@ -395,15 +390,9 @@ async function getScopeUncached(): Promise<ScopedContext | null> {
       })
       .catch(() => null);
     if (target) {
-      // AL partners are gated to AUDIENCE_SYNC targets only. Silently fall
-      // back to their own org if they try to impersonate something else.
-      if (isAlPartner && target.productLine !== ProductLine.AUDIENCE_SYNC) {
-        // ignore
-      } else {
-        effectiveOrgId = target.id;
-        effectiveOrgType = target.orgType;
-        effectiveProductLine = target.productLine ?? actualProductLine;
-      }
+      effectiveOrgId = target.id;
+      effectiveOrgType = target.orgType;
+      effectiveProductLine = target.productLine ?? actualProductLine;
     }
   }
 
@@ -436,7 +425,6 @@ async function getScopeUncached(): Promise<ScopedContext | null> {
     role: user.role,
     email: user.email,
     isAgency,
-    isAlPartner,
     isImpersonating,
     allowedPropertyIds,
     isDemo: false,
@@ -467,8 +455,7 @@ const AGENCY_ROLES: ReadonlySet<UserRole> = new Set([
   UserRole.AGENCY_OWNER,
   UserRole.AGENCY_ADMIN,
   UserRole.AGENCY_OPERATOR, // "limited agency role" — still a real agency seat
-  // AL_PARTNER is deliberately NOT here: it's an external partner scoped to
-  // AUDIENCE_SYNC orgs via isAlPartner / requireAudienceSync, not agency admin.
+  // AL_PARTNER is deliberately NOT here: it is not an agency role.
 ]);
 
 const AGENCY_STAFF_READ_ROLES: ReadonlySet<UserRole> = new Set([
@@ -498,21 +485,6 @@ export async function requireClient(): Promise<ScopedContext> {
   // Agency users get CLIENT access whenever they're impersonating.
   if (scope.orgType !== OrgType.CLIENT) {
     throw new ForbiddenError("Client context required");
-  }
-  return scope;
-}
-
-// Used by /portal/audiences. Allows:
-//   - Members of an AUDIENCE_SYNC client org
-//   - AGENCY users impersonating an AUDIENCE_SYNC org
-//   - AL_PARTNER users (whose own org is AGENCY-typed) impersonating an
-//     AUDIENCE_SYNC org. Without an active impersonation they're allowed
-//     in for the segment list / catalog view across all AUDIENCE_SYNC orgs.
-export async function requireAudienceSync(): Promise<ScopedContext> {
-  const scope = await requireScope();
-  if (scope.isAgency || scope.isAlPartner) return scope;
-  if (scope.productLine !== ProductLine.AUDIENCE_SYNC) {
-    throw new ForbiddenError("Audience Sync access only");
   }
   return scope;
 }

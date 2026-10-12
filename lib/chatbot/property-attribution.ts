@@ -26,11 +26,10 @@ export function resolvePropertyForChatPage(
   pageUrl: string | undefined | null,
   properties: PropertyAttributionInput[],
   options: {
-    // Legacy org-wide pixel rows must NOT fall back to "only one
-    // property, so it must be that one" when there's no pageUrl at all
-    // (an unrelated site with the pixel installed would otherwise get
-    // bound to the sole property). Chatbot callers keep the fallback —
-    // there's always a page the chat widget is mounted on.
+    // Callers with no page context must NOT fall back to "only one
+    // property, so it must be that one" when there's no pageUrl at all.
+    // Chatbot callers keep the fallback — there's always a page the chat
+    // widget is mounted on.
     requireUrlMatch?: boolean;
   } = {}
 ): string | null {

@@ -48,7 +48,6 @@ const ORG = {
   notifyOnFormLead: true,
   notifyOnIngestLead: true,
   notifyOnTourRequest: true,
-  notifyOnVisitorConvert: true,
   notifyOnManualLead: true,
 };
 

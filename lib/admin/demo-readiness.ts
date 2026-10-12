@@ -6,7 +6,7 @@ import { marketablePropertyWhere } from "@/lib/properties/marketable";
 // ---------------------------------------------------------------------------
 // Per-tenant demo readiness — the checklist agency staff scan before walking
 // a prospect through the portal. Catches the embarrassing "open the demo
-// and discover the pixel went silent yesterday" failure mode before the
+// and discover an integration went silent yesterday" failure mode before the
 // call starts.
 //
 // Each check returns a state and a short hint. States map to traffic-light
@@ -62,14 +62,12 @@ export async function getReadinessForTenant(
 ): Promise<TenantReadiness> {
   const [
     appfolio,
-    cursive,
     propertiesCount,
     leadsCount,
     activeResidentsCount,
     expiringLeasesCount,
     openWorkOrdersCount,
     membersCount,
-    pixelEventsCount,
     reputationMentionsCount,
     teamUsersCount,
   ] = await Promise.all([
@@ -84,19 +82,6 @@ export async function getReadinessForTenant(
           syncStatus: true,
           lastSyncAt: true,
           lastError: true,
-        },
-      })
-      .catch(() => null),
-    // Demo readiness considers the legacy org-wide row only — admin
-    // demo flow predates per-property scoping. Multi-property orgs in
-    // demo mode would still surface their org-level pixel here.
-    prisma.cursiveIntegration
-      .findFirst({
-        where: { orgId, propertyId: null },
-        select: {
-          cursivePixelId: true,
-          installedOnDomain: true,
-          lastEventAt: true,
         },
       })
       .catch(() => null),
@@ -125,9 +110,6 @@ export async function getReadinessForTenant(
       },
     }),
     prisma.user.count({ where: { orgId } }),
-    prisma.visitor.count({
-      where: { orgId, lastSeenAt: { gte: new Date(Date.now() - DAY_MS) } },
-    }),
     prisma.propertyMention.count({ where: { orgId } }).catch(() => 0),
     prisma.user.count({
       where: { orgId },
@@ -241,53 +223,6 @@ export async function getReadinessForTenant(
               hint: `Last sync was ${Math.round(ageMs / DAY_MS)} days ago — re-run before demo`,
             }
       );
-    }
-  }
-
-  // Pixel
-  if (!cursive?.cursivePixelId) {
-    checks.push({
-      id: "pixel",
-      label: "Visitor pixel installed",
-      state: "fail",
-      hint: "No pixel id provisioned",
-    });
-    checks.push({
-      id: "pixel-events",
-      label: "Pixel firing in last 24h",
-      state: "skip",
-      hint: "Provision pixel first",
-    });
-  } else {
-    checks.push({
-      id: "pixel",
-      label: "Visitor pixel installed",
-      state: "pass",
-      hint: cursive.installedOnDomain ?? "Snippet ready",
-    });
-    if (pixelEventsCount > 0) {
-      checks.push({
-        id: "pixel-events",
-        label: "Pixel firing in last 24h",
-        state: "pass",
-        hint: `${pixelEventsCount} active visitors in last 24h`,
-      });
-    } else if (cursive.lastEventAt) {
-      const ageMs = Date.now() - cursive.lastEventAt.getTime();
-      const days = Math.round(ageMs / DAY_MS);
-      checks.push({
-        id: "pixel-events",
-        label: "Pixel firing in last 24h",
-        state: days > 7 ? "fail" : "warn",
-        hint: `Last event ${days} day${days === 1 ? "" : "s"} ago`,
-      });
-    } else {
-      checks.push({
-        id: "pixel-events",
-        label: "Pixel firing in last 24h",
-        state: "fail",
-        hint: "No events ever recorded",
-      });
     }
   }
 

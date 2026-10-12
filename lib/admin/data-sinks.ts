@@ -5,7 +5,6 @@ import "server-only";
 //
 // The audit caught a class of "lying signal" bugs across cron jobs:
 //   - GA4 reported "not connected" while a healthy SeoIntegration row existed
-//   - Visitor feed showed cached/stale data with no operator warning
 //   - Chatbot served AppFolio inventory from a 4-day-old sync
 //
 // Each was discovered by accident. This module gives the agency operator a
@@ -30,7 +29,6 @@ import {
   aggregateAppFolio,
   aggregateSeo,
   aggregateAds,
-  aggregateCursive,
   countDistinctOrgs,
   buildSummaries,
   ALL_CRON_JOBS,
@@ -58,7 +56,6 @@ export async function getPlatformDataSinks() {
     appfolioRows,
     seoRows,
     adAccountRows,
-    cursiveRows,
     reputationRows,
     aeoRows,
     siteIntelOrgs,
@@ -94,16 +91,6 @@ export async function getPlatformDataSinks() {
         },
       })
       .catch(() => []),
-    prisma.cursiveIntegration
-      .findMany({
-        select: {
-          orgId: true,
-          lastEventAt: true,
-          lastSegmentSyncAt: true,
-          cursivePixelId: true,
-        },
-      })
-      .catch(() => []),
     prisma.reputationScan
       .findMany({
         where: { createdAt: { gte: since24h } },
@@ -131,7 +118,6 @@ export async function getPlatformDataSinks() {
     gsc: aggregateSeo(seoRows, "GSC"),
     googleAds: aggregateAds(adAccountRows, "GOOGLE_ADS"),
     metaAds: aggregateAds(adAccountRows, "META"),
-    cursive: aggregateCursive(cursiveRows),
     reputationTenants: countDistinctOrgs(reputationRows),
     aeoTenants: countDistinctOrgs(aeoRows),
     siteIntelTenants: countDistinctOrgs(siteIntelOrgs),
@@ -150,7 +136,6 @@ export async function getTenantDataSinks(orgId: string) {
     appfolio,
     seoIntegrations,
     adAccounts,
-    cursive,
     siteIntel,
   ] = await Promise.all([
     loadCronRollups(ALL_CRON_JOBS),
@@ -174,16 +159,6 @@ export async function getTenantDataSinks(orgId: string) {
       .findMany({
         where: { orgId },
         select: { platform: true, lastSyncAt: true, lastSyncError: true },
-      })
-      .catch(() => []),
-    prisma.cursiveIntegration
-      .findMany({
-        where: { orgId },
-        select: {
-          lastEventAt: true,
-          lastSegmentSyncAt: true,
-          cursivePixelId: true,
-        },
       })
       .catch(() => []),
     prisma.siteIntelligence
@@ -217,12 +192,6 @@ export async function getTenantDataSinks(orgId: string) {
     lastSyncAt: a.lastSyncAt,
     lastSyncError: a.lastSyncError,
   }));
-  const cursiveForTenant = cursive.map((c) => ({
-    orgId,
-    lastEventAt: c.lastEventAt,
-    lastSegmentSyncAt: c.lastSegmentSyncAt,
-    cursivePixelId: c.cursivePixelId,
-  }));
 
   return buildSummaries({
     cronRollups,
@@ -231,7 +200,6 @@ export async function getTenantDataSinks(orgId: string) {
     gsc: aggregateSeo(seoForTenant, "GSC"),
     googleAds: aggregateAds(adForTenant, "GOOGLE_ADS"),
     metaAds: aggregateAds(adForTenant, "META"),
-    cursive: aggregateCursive(cursiveForTenant),
     reputationTenants: null,
     aeoTenants: null,
     siteIntelTenants: siteIntel?.crawledAt ? 1 : 0,

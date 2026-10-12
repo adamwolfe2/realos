@@ -245,7 +245,7 @@ export default async function InsightsPage({
                 <EmptyState
                   icon={<Sparkles className="h-5 w-5" />}
                   title="Recommendations coming soon"
-                  body="Connect AppFolio, Google Analytics, your ad accounts, and the pixel. Each unlocks a new family of detectors that run continuously in the background."
+                  body="Connect AppFolio, Google Analytics, and your ad accounts. Each unlocks a new family of detectors that run continuously in the background."
                   action={{ label: "Connect your data", href: "/portal/connect" }}
                 />
               ) : totalCounts > 0 ? (

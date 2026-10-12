@@ -73,7 +73,6 @@ export const SPARKLINE_AREA = "rgba(15, 98, 254, 0.10)";
 export const ACTIVITY_ACCENTS = {
   lead: "#0f62fe",
   tour: "#0043ce",
-  pixel: "#4589ff",
   review: "#78a9ff",
   default: "#0f62fe",
 } as const;

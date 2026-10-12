@@ -2,7 +2,14 @@
 
 import React, { useRef } from "react";
 import { motion, useInView, useReducedMotion } from "framer-motion";
-import { CalendarCheck, Fingerprint, FileSignature, Search, UserPlus, Globe } from "lucide-react";
+import {
+  CalendarCheck,
+  FileSignature,
+  Search,
+  UserPlus,
+  Globe,
+  MessageSquare,
+} from "lucide-react";
 import { Eyebrow, WCard, Delta, INK, MUTED, FAINT, BORDER, BRAND, UP } from "./shell";
 import { CountUp } from "../count-up";
 import { GoogleMark, MetaMark } from "@/components/platform/artifacts/brand-logos";
@@ -57,7 +64,7 @@ const SOURCES: Array<{
 
 const ACTIVITY = [
   { icon: CalendarCheck, color: UP, text: "Tour booked overnight · Marcus T.", meta: "2:14 AM" },
-  { icon: Fingerprint, color: BRAND, text: "Visitor identified · Taylor B.", meta: "6m ago" },
+  { icon: MessageSquare, color: BRAND, text: "New lead from chatbot · Taylor B.", meta: "6m ago" },
   { icon: FileSignature, color: INK, text: "Lease signed · Google Ads · $68 CPL", meta: "Yesterday" },
 ];
 

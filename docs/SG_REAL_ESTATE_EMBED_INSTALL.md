@@ -65,7 +65,6 @@ Scope to a single property:
   - Creates a `Lead` (source = `FORM`, sourceDetail = `popup:<popupId>`).
   - Fires Slack notification + tenant Resend email + in-app bell.
   - Records a `CONVERTED` PopupEvent atomically with the lead.
-  - Bumps a matched `Visitor` to `MATCHED_TO_LEAD` for attribution.
 
 ---
 

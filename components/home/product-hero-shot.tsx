@@ -7,7 +7,6 @@ import {
   Gauge,
   LayoutDashboard,
   Users,
-  Eye,
   MessageSquare,
   type LucideIcon,
 } from "lucide-react";
@@ -65,14 +64,6 @@ const BEATS: Beat[] = [
     body: "Source, budget, and the move that matters on every lead. The pipeline ranks who to call first, so nothing ages out and nothing slips.",
   },
   {
-    id: "visitors",
-    tab: "Visitors",
-    icon: Eye,
-    chip: "No form needed",
-    headline: "312 anonymous visitors, identified with intent.",
-    body: "The pixel resolves a meaningful share of your traffic to a name and email, with the pages they viewed, then routes them to your CRM and ad audiences automatically.",
-  },
-  {
     id: "chatbot",
     tab: "Chatbot",
     icon: MessageSquare,
@@ -109,8 +100,8 @@ function Intro() {
           maxWidth: 560,
         }}
       >
-        Five surfaces, one login. Scroll through the week: the brief, the
-        numbers, the pipeline, the named visitors, and the overnight bookings.
+        Four surfaces, one login. Scroll through the week: the brief, the
+        numbers, the pipeline, and the overnight bookings.
       </p>
     </div>
   );

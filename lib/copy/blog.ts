@@ -84,27 +84,11 @@ If you are running a student housing lease-up and looking at your numbers monthl
     readingMinutes: 6,
     body: `Most real estate operators are running their marketing across five to eight vendors: an agency for paid spend, a website they can't edit, a chatbot vendor, a listing portal, a designer for ad creative, a CRM, and a few spreadsheets stitching the whole thing together. The monthly cost is high. The visibility is low. The attribution is non-existent.
 
-We wanted to build the platform those operators should have been buying all along. One login. One dashboard. Every module owned by the same team that built the others, so the handoffs between site, pixel, chatbot, ads, and CRM all work because they were designed to work together.
+We wanted to build the platform those operators should have been buying all along. One login. One dashboard. Every module owned by the same team that built the others, so the handoffs between site, chatbot, ads, and CRM all work because they were designed to work together.
 
-The result is a single managed platform: a custom site on your domain, live listings synced from your PMS, an identity graph pixel that names a meaningful share of your anonymous visitors, an AI chatbot that captures leads around the clock, ad attribution that ties spend to signed leases, and a lead pipeline that shows lease velocity instead of vanity metrics.
+The result is a single managed platform: a custom site on your domain, live listings synced from your PMS, an AI chatbot that captures leads around the clock, ad attribution that ties spend to signed leases, and a lead pipeline that shows lease velocity instead of vanity metrics.
 
 Operators get software that pays its own invoice. We earn the retainer every month, or the contract ends. This blog is the build log.`,
-  },
-  {
-    slug: "the-hidden-cost-of-anonymous-website-traffic",
-    title: "The hidden cost of anonymous website traffic",
-    description:
-      "Most of the people looking at your property never fill out a form. Your current analytics treats that traffic as noise. We think of it as the actual pipeline.",
-    author: "LeaseStack team",
-    publishedAt: "2026-04-08",
-    readingMinutes: 4,
-    body: `The vast majority of visitors to a property marketing site never fill out a form. Standard analytics tells you how many, which pages they looked at, and where they came from, but nothing about who they are. An identity graph pixel changes the question from "how much traffic did we get" to "who visited that we can follow up with."
-
-Which is more useful, knowing that a thousand people visited, or having a shortlist of named prospects from that thousand that your leasing team can actually email? Only one of those can be worked.
-
-Even modest assumptions make the math stark. A few thousand monthly visitors, a meaningful identification rate, and a reasonable reply rate turn into dozens of qualified conversations a month with prospects who would otherwise have left without a trace. At an average rent and typical lease term, signing one of those conversations pays for the platform for a year.
-
-Most operators do not have this number because they have never had the tool that would produce it. That is the gap we built into.`,
   },
   {
     slug: "what-a-real-estate-ai-chatbot-should-actually-do",
@@ -118,7 +102,7 @@ Most operators do not have this number because they have never had the tool that
 
 The platform chatbot is different. It is grounded in your live unit inventory, rent ranges, tour calendar, and amenity list, so it answers accurately without being brittle. It captures a name and email in the first two to three exchanges, naturally, as part of a helpful conversation rather than a form wall. It hands hot leads to your leasing team in the platform's CRM, scored and routed. And it runs 24/7, which is when most prospective residents are actually browsing.
 
-Behind the chatbot is the rest of the platform. The same lead that came in through the chatbot shows up next to form fills, pixel-identified visitors, and any PMS applicants in one pipeline. Follow-up runs automatically. The chatbot is not a widget, it is one surface of the same product.`,
+Behind the chatbot is the rest of the platform. The same lead that came in through the chatbot shows up next to form fills and any PMS applicants in one pipeline. Follow-up runs automatically. The chatbot is not a widget, it is one surface of the same product.`,
   },
 ];
 

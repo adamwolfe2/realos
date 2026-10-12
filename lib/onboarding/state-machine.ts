@@ -37,7 +37,6 @@ export const PHASE_STEPS: Record<
     OnboardingStepKey.CONNECT_DATA_SOURCE,
     OnboardingStepKey.CONFIRM_CONTACT_PREFS,
     OnboardingStepKey.APPROVE_CHATBOT_PERSONA,
-    OnboardingStepKey.INSTALL_PIXEL,
   ],
   GROWTH: [
     OnboardingStepKey.VERIFY_LEAD_CAPTURE,
@@ -229,7 +228,7 @@ export function getPhaseProgress(
   if (phase === OnboardingPhase.COMPLETED) {
     return { completed: 1, total: 1, pct: 100 };
   }
-  const stepsInPhase = snapshot.steps.filter((s) => s.phase === phase);
+  const stepsInPhase = gatingSteps(snapshot, phase);
   const total = stepsInPhase.length;
   const completed = stepsInPhase.filter(
     (s) =>
@@ -308,11 +307,24 @@ async function advancePhaseIfReady(orgId: string): Promise<ProgressSnapshot> {
   return toSnapshot(updated);
 }
 
+// Saved step rows for a phase that still belong to it. Retired steps (e.g.
+// INSTALL_PIXEL, WHITE_LABEL) keep their old rows, which can never be
+// completed or skipped from the UI, so they must not gate progress.
+function gatingSteps(
+  snapshot: ProgressSnapshot,
+  phase: Exclude<OnboardingPhase, "COMPLETED">,
+): StepRecord[] {
+  const allowed = PHASE_STEPS[phase];
+  return snapshot.steps.filter(
+    (s) => s.phase === phase && allowed.includes(s.stepKey),
+  );
+}
+
 function isPhaseDone(
   snapshot: ProgressSnapshot,
   phase: Exclude<OnboardingPhase, "COMPLETED">,
 ): boolean {
-  const stepsInPhase = snapshot.steps.filter((s) => s.phase === phase);
+  const stepsInPhase = gatingSteps(snapshot, phase);
   if (stepsInPhase.length === 0) return true;
   return stepsInPhase.every(
     (s) =>

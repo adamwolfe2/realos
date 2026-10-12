@@ -94,7 +94,7 @@ export function PlatformShowcase() {
           </h2>
           <p className="mt-3 text-sm text-foreground/65 mx-auto max-w-md leading-relaxed">
             Live data from AppFolio, GA4, Google Search Console, your
-            pixel, and Google &amp; Meta Ads — in one view, per property
+            chatbot, and Google &amp; Meta Ads — in one view, per property
             or portfolio.
           </p>
         </div>
@@ -499,8 +499,8 @@ const ACTIVITY_ITEMS = [
   },
   {
     icon: Activity,
-    title: "Pixel event",
-    body: "Application started · /apply",
+    title: "Chatbot conversation",
+    body: "Pricing question · /floor-plans",
     time: "12m ago",
     accent: "text-foreground",
   },

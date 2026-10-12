@@ -91,10 +91,6 @@ const TIERS: Tier[] = [
     features: [
       { label: "Everything in Foundation, plus:" },
       {
-        label: "Visitor pixel, 5,000 identified visitors per month",
-        emphasis: true,
-      },
-      {
         label: "Spend and performance recommendations across Google and Meta",
         emphasis: true,
       },
@@ -125,9 +121,7 @@ const TIERS: Tier[] = [
         label: "Dedicated operator success contact, not a CSM",
         emphasis: true,
       },
-      { label: "Visitor pixel at 25,000 identified visitors per month" },
       { label: "Unlimited AI chatbot conversations" },
-      { label: "Audience sync to Meta, Google, and TikTok" },
       { label: "Scheduled reports formatted for asset reviews" },
     ],
   },

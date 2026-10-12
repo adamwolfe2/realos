@@ -59,7 +59,6 @@ function agencyScope() {
     role: UserRole.AGENCY_OWNER,
     email: "actor@agency.test",
     isAgency: true,
-    isAlPartner: false,
     isImpersonating: false,
     allowedPropertyIds: null,
   };

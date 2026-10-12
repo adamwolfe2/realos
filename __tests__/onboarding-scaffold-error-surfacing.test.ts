@@ -13,17 +13,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const h = vi.hoisted(() => ({
   tenantSiteConfig: { upsert: vi.fn(async () => ({})) },
   propertyChatbotConfig: { upsert: vi.fn(async () => ({})) },
-  pixelProvisionRequest: {
-    findFirst: vi.fn(async () => null),
-    create: vi.fn(async () => ({})),
-  },
 }));
 
 vi.mock("@/lib/db", () => ({
   prisma: {
     tenantSiteConfig: h.tenantSiteConfig,
     propertyChatbotConfig: h.propertyChatbotConfig,
-    pixelProvisionRequest: h.pixelProvisionRequest,
   },
 }));
 
@@ -34,8 +29,6 @@ const { scaffoldPropertyIntegrations } = await import(
 beforeEach(() => {
   h.tenantSiteConfig.upsert.mockReset().mockResolvedValue({});
   h.propertyChatbotConfig.upsert.mockReset().mockResolvedValue({});
-  h.pixelProvisionRequest.findFirst.mockReset().mockResolvedValue(null);
-  h.pixelProvisionRequest.create.mockReset().mockResolvedValue({});
 });
 
 const properties = [
@@ -51,7 +44,6 @@ describe("scaffoldPropertyIntegrations error surfacing (AUTH-ONBOARDING-D003)", 
     await expect(
       scaffoldPropertyIntegrations("org_1", properties, {
         chatbot: true,
-        pixel: false,
       }),
     ).rejects.toThrow(/db unreachable/);
   });
@@ -63,30 +55,25 @@ describe("scaffoldPropertyIntegrations error surfacing (AUTH-ONBOARDING-D003)", 
     await expect(
       scaffoldPropertyIntegrations("org_1", properties, {
         chatbot: true,
-        pixel: false,
       }),
     ).rejects.toThrow();
     // prop_2's chatbot upsert must still have been attempted.
     expect(h.propertyChatbotConfig.upsert).toHaveBeenCalledTimes(2);
   });
 
-  it("rejects when the pixel provision create fails", async () => {
-    h.pixelProvisionRequest.create.mockRejectedValueOnce(
-      new Error("pixel insert failed"),
+  it("rejects when the org tenant site config upsert fails", async () => {
+    h.tenantSiteConfig.upsert.mockRejectedValueOnce(
+      new Error("site config failed"),
     );
     await expect(
-      scaffoldPropertyIntegrations("org_1", properties, {
-        chatbot: false,
-        pixel: true,
-      }),
-    ).rejects.toThrow(/pixel insert failed/);
+      scaffoldPropertyIntegrations("org_1", properties, { chatbot: true }),
+    ).rejects.toThrow(/site config failed/);
   });
 
   it("resolves cleanly when nothing fails", async () => {
     await expect(
       scaffoldPropertyIntegrations("org_1", properties, {
         chatbot: true,
-        pixel: true,
       }),
     ).resolves.toBeUndefined();
   });

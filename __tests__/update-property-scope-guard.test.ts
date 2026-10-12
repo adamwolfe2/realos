@@ -58,7 +58,6 @@ function restrictedScope() {
     role: UserRole.LEASING_AGENT,
     email: "actor@client.test",
     isAgency: false,
-    isAlPartner: false,
     isImpersonating: false,
     allowedPropertyIds: ["prop-a"],
   };

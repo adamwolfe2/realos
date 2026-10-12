@@ -7,9 +7,9 @@ describe("featureKeysForTier", () => {
     const growth = featureKeysForTier("GROWTH");
     const scale = featureKeysForTier("SCALE");
     expect(starter).toContain("moduleChatbot");
-    expect(starter).not.toContain("modulePixel");
+    expect(starter).not.toContain("moduleSEO");
     expect(growth).toEqual(expect.arrayContaining(starter));
-    expect(growth).toContain("modulePixel");
+    expect(growth).toContain("moduleSEO");
     expect(growth).not.toContain("moduleReferrals");
     expect(scale).toEqual(expect.arrayContaining(growth));
     expect(scale).toContain("moduleReferrals");
@@ -27,12 +27,12 @@ import { packageLabelFor } from "@/lib/billing/features";
 describe("packageLabelFor", () => {
   it("says the org's plan includes a module at or below its tier", () => {
     expect(packageLabelFor("moduleChatbot", "GROWTH")).toBe("Included in Growth");
-    expect(packageLabelFor("modulePixel", "GROWTH")).toBe("Included in Growth");
+    expect(packageLabelFor("moduleSEO", "GROWTH")).toBe("Included in Growth");
   });
 
   it("names the lowest plan that unlocks a higher-tier module", () => {
     expect(packageLabelFor("moduleReferrals", "GROWTH")).toBe("Scale plan");
-    expect(packageLabelFor("modulePixel", "STARTER")).toBe("Growth plan");
+    expect(packageLabelFor("moduleSEO", "STARTER")).toBe("Growth plan");
   });
 
   it("returns null for keys outside the package catalog or with no plan", () => {

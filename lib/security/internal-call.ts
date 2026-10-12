@@ -5,8 +5,7 @@
 // exported async function as a network-reachable Server Action — including
 // helpers a file only meant to expose to its own trusted in-process callers
 // (a guarded wrapper in the same module, a cron handler, a script). Two such
-// "auth-free internal" helpers (executeSegmentPush, runCursiveSegmentSync)
-// took an `orgId` straight from their argument and did no authorization,
+// "auth-free internal" helpers took an `orgId` straight from their argument and did no authorization,
 // so any client could invoke the raw action ID and act on any tenant.
 //
 // Fix: require these internals to be handed this capability token. A Server

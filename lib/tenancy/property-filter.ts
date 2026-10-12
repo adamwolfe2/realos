@@ -211,10 +211,8 @@ export function propertyWhereFragment(
 /**
  * Like propertyWhereFragment, but ALSO matches org-level rows where the
  * field is NULL. Use for models whose rows can be org-scoped rather than
- * property-tagged — notably Visitor: the Cursive pixel is installed
- * org-wide on the resident domain, so identified visitors carry
- * propertyId = null. Without this, selecting a property in the switcher
- * would hide EVERY pixel visitor (they'd never match propertyId = <id>).
+ * property-tagged. Without this, selecting a property in the switcher
+ * would hide every org-level row (they'd never match propertyId = <id>).
  *
  * Org-level rows are already constrained to the org via the caller's
  * tenant where-clause, so widening to include them does not cross tenant
@@ -278,13 +276,13 @@ export async function marketableScopedPropertyClause(
   opts: {
     /// Explicit-selection path: when true, delegate to
     /// propertyOrOrgLevelWhereFragment (NULL-property rows stay visible
-    /// alongside the picked properties — Visitor pages). When false
+    /// alongside the picked properties). When false
     /// (default), delegate to plain propertyWhereFragment — preserves
     /// each page's existing explicit-filter behavior exactly.
     selectedIncludesOrgRows?: boolean;
     /// Default (no-selection) path: when true, org-level NULL-property
     /// rows remain visible alongside the marketable set. Use for models
-    /// with a nullable propertyId (Lead, Visitor, ChatbotConversation,
+    /// with a nullable propertyId (Lead, ChatbotConversation,
     /// AdCampaign, ClientReport) so unattributed rows don't vanish from
     /// the default view. Irrelevant for models where propertyId is
     /// required (Application, Tour, Resident, Lease, WorkOrder).
@@ -349,7 +347,7 @@ export async function marketablePropertyIds(orgId: string): Promise<string[]> {
  *
  * @param field       the FK column on the model being queried
  * @param includeOrgLevel keep rows with a NULL property (unattributed
- *   captures — Lead, Visitor, ChatbotConversation, AdCampaign,
+ *   captures — Lead, ChatbotConversation, AdCampaign,
  *   ClientReport). Never pass this for models where propertyId is
  *   required (Application, Tour, Resident, Lease, WorkOrder).
  */
@@ -397,8 +395,8 @@ function firstString(value: string | string[] | undefined): string | undefined {
  *   - row has none, we know one   → the new value (the backfill)
  *   - neither                     → undefined (Prisma omits the field)
  *
- * Why not last-touch: a person can browse two buildings' sites, and pixel
- * events arrive repeatedly for the same identity. Overwriting on each event
+ * Why not last-touch: a person can browse two buildings' sites, and events
+ * arrive repeatedly for the same identity. Overwriting on each event
  * would make the row flap between buildings, move a lead out of the operator
  * who is working it, and can silently cross a per-property access boundary
  * (UserPropertyAccess). First real attribution wins and then stays put.

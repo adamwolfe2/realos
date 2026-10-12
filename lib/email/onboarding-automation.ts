@@ -58,8 +58,8 @@ export function buildOnboardingAutomationEmail(
           <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
             Welcome to ${e(BRAND_NAME)}! The first step to lighting up your
             ${e(orgName)} workspace is adding a property. It takes about two
-            minutes and turns on lead tracking, visitor analytics, and your
-            AI chatbot.
+            minutes and turns on lead tracking and your AI chatbot. Connect GA4
+            or Search Console next to see traffic analytics.
           </p>
           <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
             Use the "Add property" button in the portal to fill in the name,
@@ -80,7 +80,7 @@ export function buildOnboardingAutomationEmail(
           <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
             Now that ${e(orgName)} is set up, the next step is connecting a
             data source so we can pull in organic traffic, ad performance,
-            and visitor analytics.
+            and traffic analytics.
           </p>
           <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
             Google Search Console takes under five minutes and immediately

@@ -283,7 +283,7 @@ export function StaggerItem({
 
 // ---------------------------------------------------------------------------
 // RevealPulse — a brief blue ring pulse around its children, used to mark a
-// row/element that just changed state (e.g. newly identified visitor).
+// row/element that just changed state (e.g. newly captured lead).
 // Fires once when `active` flips true; caller controls the trigger.
 // ---------------------------------------------------------------------------
 

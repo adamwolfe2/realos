@@ -12,7 +12,7 @@ import {
 // A workspace runs ONE org-level chatbot config (TenantSiteConfig) by default.
 // Each property MAY have a PropertyChatbotConfig override whose every field is
 // nullable — a null field inherits the org value, mirroring the per-property
-// NULL-fallback pattern already used by Cursive pixel + SEO integrations.
+// NULL-fallback pattern already used by SEO integrations.
 //
 // `resolveChatbotConfig(orgId, propertyId?)` returns a merged config whose KEYS
 // match TenantSiteConfig's chatbot fields, so it is a drop-in for any consumer

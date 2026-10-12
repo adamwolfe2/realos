@@ -4,7 +4,7 @@ import type { LeadNotifyChannel } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
 // buildLeadNotifyEmail — instant lead-capture alert template. Shared by every
-// channel (chatbot, popup, form, ingest, tour, visitor → lead, manual). The
+// channel (chatbot, popup, form, ingest, tour, manual). The
 // body is intentionally minimal: lead summary + a single CTA button to the
 // portal lead detail page. No marketing chrome; this is an operational ping.
 // ---------------------------------------------------------------------------

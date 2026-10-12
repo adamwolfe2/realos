@@ -49,7 +49,6 @@ describe("lib/env.ts — silent-failure secrets", () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("STRIPE_WEBHOOK_SECRET", "");
     vi.stubEnv("RESEND_WEBHOOK_SECRET", "");
-    vi.stubEnv("CURSIVE_WEBHOOK_SECRET", "x");
     vi.stubEnv("CRON_SECRET", "x");
     vi.stubEnv("ENCRYPTION_KEY", "x");
     const err = vi.spyOn(console, "error").mockImplementation(() => {});

@@ -16,7 +16,6 @@ import {
 import {
   Cable,
   MessageSquare,
-  Code,
   ListPlus,
 } from "lucide-react";
 import { DataPlaceholder } from "@/components/portal/ui/data-placeholder";
@@ -102,7 +101,6 @@ export async function OverviewTab({
     expiringLeases,
     ,
     ,
-    cursiveIntegration,
     seoIntegrations,
     googleAdCampaign,
     metaAdCampaign,
@@ -148,25 +146,9 @@ export async function OverviewTab({
       _sum: { monthlyRentCents: true },
       _count: { _all: true },
     }),
-    // Norman feedback (issue #74, #53): the integrations sidebar was
-    // showing Cursive + GA4 as "not connected" on Telegraph Commons even
-    // though the operator had wired them up at the org level. Root cause:
-    // we filtered strictly by { orgId, propertyId } so org-scoped
-    // integrations (propertyId=null in DB) never matched. Fixed by
-    // accepting EITHER a property-specific record OR the org-wide one
-    // — the property-specific record wins when both exist via the
-    // findFirst's natural order on (propertyId desc nulls last).
-    prisma.cursiveIntegration
-      .findFirst({
-        where: { orgId, OR: [{ propertyId }, { propertyId: null }] },
-        orderBy: { propertyId: { sort: "desc", nulls: "last" } },
-        select: {
-          cursivePixelId: true,
-          lastEventAt: true,
-          totalEventsCount: true,
-        },
-      })
-      .catch(() => null),
+    // Norman feedback (issue #74, #53): org-scoped integrations
+    // (propertyId=null in DB) never matched a strict { orgId, propertyId }
+    // filter. Accept EITHER a property-specific record OR the org-wide one.
     prisma.seoIntegration
       .findMany({
         where: { orgId, OR: [{ propertyId }, { propertyId: null }] },
@@ -333,7 +315,6 @@ export async function OverviewTab({
     property.launchStatus === "ONBOARDING" &&
     allTimeListings === 0 &&
     allTimeLeads === 0 &&
-    !cursiveIntegration?.cursivePixelId &&
     !googleAdCampaign &&
     !metaAdCampaign &&
     (seoIntegrations?.length ?? 0) === 0;
@@ -341,7 +322,6 @@ export async function OverviewTab({
     !isOnboardingShell &&
     allTimeListings === 0 &&
     allTimeLeads === 0 &&
-    !cursiveIntegration?.cursivePixelId &&
     !googleAdCampaign &&
     !metaAdCampaign &&
     (seoIntegrations?.length ?? 0) === 0;
@@ -369,10 +349,6 @@ export async function OverviewTab({
   };
   const ga4 = pickIntegration("GA4");
   const gsc = pickIntegration("GSC");
-  const pixelHasRecentEvents =
-    cursiveIntegration?.lastEventAt != null &&
-    Date.now() - cursiveIntegration.lastEventAt.getTime() <
-      30 * 24 * 60 * 60 * 1000;
 
   return (
     <div className="space-y-4 ls-page-fade">
@@ -399,7 +375,7 @@ export async function OverviewTab({
               Get this property reporting
             </p>
             <h2 className="mt-1 text-base font-semibold text-foreground">
-              Three steps to bring {propertyMeta.name} online
+              Two steps to bring {propertyMeta.name} online
             </h2>
             <p className="mt-1 text-[12px] text-muted-foreground leading-snug max-w-xl">
               Reporting, leads, and ad attribution start flowing the
@@ -407,7 +383,7 @@ export async function OverviewTab({
               the dashboard fills in automatically.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <DataPlaceholder
               intent="connect"
               icon={
@@ -442,16 +418,6 @@ export async function OverviewTab({
               title="2. Enable the chatbot"
               body="Capture renter questions 24/7 and convert them into qualified leads in your inbox."
               action={{ label: "Enable chatbot", href: "/portal/chatbot" }}
-            />
-            <DataPlaceholder
-              intent="connect"
-              icon={<Code className="h-4 w-4" />}
-              title="3. Install the visitor pixel"
-              body="Drop one snippet on the listing site to unlock attribution, audiences, and traffic insights."
-              action={{
-                label: "Install pixel",
-                href: `/portal/properties/${propertyId}?tab=onboarding`,
-              }}
             />
           </div>
         </section>
@@ -497,7 +463,6 @@ export async function OverviewTab({
               applications28d={kpis.applications28d}
               hasAdsModule={property.orgHasAdsModule}
               chatbotEnabled={tenantSiteConfig?.chatbotEnabled ?? false}
-              pixelConnected={!!cursiveIntegration?.cursivePixelId}
               availableUnits={availableUnits}
               totalUnits={totalUnits}
             />
@@ -519,11 +484,6 @@ export async function OverviewTab({
               chatbot={{
                 enabled: tenantSiteConfig?.chatbotEnabled ?? false,
                 personaName: tenantSiteConfig?.chatbotPersonaName ?? null,
-              }}
-              pixel={{
-                connected: !!cursiveIntegration?.cursivePixelId,
-                hasRecentEvents: pixelHasRecentEvents,
-                lastEventAt: cursiveIntegration?.lastEventAt ?? null,
               }}
               ga4={{
                 connected: !!ga4,

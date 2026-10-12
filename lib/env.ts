@@ -32,7 +32,6 @@ const envSchema = z.object({
   // SILENT_FAILURE_SECRETS below). Optional at the schema level so a
   // missing value never fails boot.
   RESEND_WEBHOOK_SECRET: z.string().optional(),
-  CURSIVE_WEBHOOK_SECRET: z.string().optional(),
   ENCRYPTION_KEY: z.string().optional(),
 
   // AI — required for AI-powered routes (quote generation, assistant, etc.)
@@ -63,7 +62,6 @@ export type Env = z.infer<typeof envSchema>;
 export const SILENT_FAILURE_SECRETS = [
   "STRIPE_WEBHOOK_SECRET",
   "RESEND_WEBHOOK_SECRET",
-  "CURSIVE_WEBHOOK_SECRET",
   "CRON_SECRET",
   "ENCRYPTION_KEY",
 ] as const;

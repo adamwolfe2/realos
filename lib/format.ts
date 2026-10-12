@@ -19,7 +19,6 @@ import type {
   TenantStatus,
   TourStatus,
   ApplicationStatus,
-  VisitorIdentificationStatus,
   ChatbotConversationStatus,
   CreativeRequestStatus,
 } from "@prisma/client";
@@ -81,13 +80,6 @@ const APPLICATION_STATUS: Record<ApplicationStatus, string> = {
   APPROVED: "Approved",
   DENIED: "Denied",
   WITHDRAWN: "Withdrawn",
-};
-
-const VISITOR_STATUS: Record<VisitorIdentificationStatus, string> = {
-  ANONYMOUS: "Anonymous",
-  IDENTIFIED: "Identified",
-  ENRICHED: "Enriched",
-  MATCHED_TO_LEAD: "Matched to lead",
 };
 
 const CHATBOT_STATUS: Record<ChatbotConversationStatus, string> = {
@@ -175,9 +167,6 @@ export function humanTourStatus(s: TourStatus | string): string {
 }
 export function humanApplicationStatus(s: ApplicationStatus | string): string {
   return (APPLICATION_STATUS as Record<string, string>)[s] ?? sentenceFromEnum(String(s));
-}
-export function humanVisitorStatus(s: VisitorIdentificationStatus | string): string {
-  return (VISITOR_STATUS as Record<string, string>)[s] ?? sentenceFromEnum(String(s));
 }
 export function humanChatbotStatus(s: ChatbotConversationStatus | string): string {
   return (CHATBOT_STATUS as Record<string, string>)[s] ?? sentenceFromEnum(String(s));

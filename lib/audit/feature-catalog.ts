@@ -4,14 +4,14 @@
 // Every action item on the /audit result page is tagged with a feature
 // slug. That slug routes through this catalog to:
 //   1. A dedicated `/features/<slug>` page when one exists (high-quality
-//      page authored by the team. See /features/pixel, /features/chatbot,
+//      page authored by the team. See /features/chatbot,
 //      etc).
 //   2. Otherwise, `/onboarding?feature=<slug>` so sales captures the
 //      operator's signal even on features that don't have public proof
 //      pages yet.
 //
 // Adam 2026-06-01: do NOT auto-generate stub feature pages. If a feature
-// page doesn't meet the bar of /features/pixel (interactive demo, clear
+// page doesn't meet the bar of /features/chatbot (interactive demo, clear
 // problem/how/look), it routes through onboarding instead.
 
 import type { Pillar } from "./quiz-questions";
@@ -38,13 +38,6 @@ export const FEATURE_CATALOG: Record<string, FeatureCatalogEntry> = {
     title: "AI Chatbot",
     blurb: "Books tours 24/7, hot leads by morning.",
     pillar: "conversion",
-    hasPage: true,
-  },
-  pixel: {
-    slug: "pixel",
-    title: "Visitor Identification",
-    blurb: "Names and emails on anonymous traffic, before they fill a form.",
-    pillar: "tracking",
     hasPage: true,
   },
   ads: {

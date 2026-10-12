@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     const scope = await requireWritableWorkspace();
 
     // Role gate — module toggles change billing posture and feature
-    // surface; restricted roles (CLIENT_VIEWER, LEASING_AGENT, AL_PARTNER)
+    // surface; restricted roles (CLIENT_VIEWER, LEASING_AGENT)
     // must not be able to enable paid modules behind an admin's back.
     if (!ALLOWED_TOGGLE_ROLES.has(scope.role)) {
       return NextResponse.json(

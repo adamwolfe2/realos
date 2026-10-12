@@ -1,5 +1,5 @@
 export const MANAGED_ADS_DESCRIPTION =
-  "Geo-fenced campaigns, pixel-powered retargeting, creative studio, weekly performance reviews. Google, Meta, LinkedIn, and TikTok, managed end-to-end.";
+  "Geo-fenced campaigns, creative studio, weekly performance reviews. Google, Meta, LinkedIn, and TikTok, managed end-to-end.";
 
 export const ADS_ATTRIBUTION_HEADLINE =
   "Every dollar mapped to a signed lease, not an impression.";

@@ -63,7 +63,7 @@ function pagePath(url: string): string {
 }
 
 export function PropertyOnePager({ snapshot, property, hero }: Props) {
-  const { kpis, occupancyStats, renewalStats, lifecycleStats, reputationStats, aeoStats, chatbotStatsExtended, leadSources, topPages, visitorStats } =
+  const { kpis, occupancyStats, renewalStats, lifecycleStats, reputationStats, aeoStats, chatbotStatsExtended, leadSources, topPages } =
     snapshot;
 
   // Presentation-only suppression (2026-08-13). Operator-chosen at
@@ -78,9 +78,6 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
   const addr = addressLine(property);
   const site = websiteLink(property.websiteUrl);
   const sources = leadSources ?? [];
-  // Only visitors filed under a launched building reach the snapshot, so 0
-  // means "nothing attributable", not "no traffic". See the tile below.
-  const identifiedVisitors = kpis.identifiedVisitors ?? 0;
   const monthlySigned = lifecycleStats?.monthlySignedLast12 ?? [];
   const repMaxCount = Math.max(
     1,
@@ -95,15 +92,6 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
   // sessions alone rather than a column of zeros. Pages with no sessions
   // are dropped, not listed at 0.
   const pageRows = (topPages ?? []).filter((p) => p.sessions > 0).slice(0, 6);
-  // Geography is the only visitor cut that survives scrutiny. The stored
-  // age/gender breakdowns come from third-party enrichment and are plainly
-  // wrong for this asset class (they skew 55+ for student housing next to a
-  // university) — a client who spots that stops trusting the whole document.
-  const cityRows = (visitorStats?.topCities ?? []).filter((c) => c.count > 0).slice(0, 5);
-  const stateRows = (visitorStats?.topStates ?? []).filter((r) => r.count > 0).slice(0, 3);
-  const topStateLine = stateRows.length
-    ? `Top states: ${stateRows.map((r) => `${r.state} ${r.count}`).join(" \u00b7 ")}`
-    : null;
 
   // Section claims. The report used to be a grid of labelled panels and left
   // the reader to assemble the argument; each of these states in one sentence
@@ -115,11 +103,6 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
   const trafficClauses = [
     organicSessions > 0
       ? `${num(organicSessions)} organic search sessions reached the site in this window`
-      : null,
-    identifiedVisitors > 0
-      ? organicSessions > 0
-        ? `and the visitor pixel put a name and an email to ${num(identifiedVisitors)} of the people behind them`
-        : `The visitor pixel put a name and an email to ${num(identifiedVisitors)} of the people who came through`
       : null,
   ].filter(Boolean);
   const trafficClaim = trafficClauses.length ? `${trafficClauses.join(", ")}.` : null;
@@ -342,7 +325,7 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
           arrive and go deep") without the editorial. The trend stays on the
           operator dashboard, where a decline is information rather than a
           pitch. */}
-      {pageRows.length > 0 || cityRows.length > 0 ? (
+      {pageRows.length > 0 ? (
         <div className="ls-view-rise">
           <section className="mt-5">
             <SectionHeading>Site traffic</SectionHeading>
@@ -351,55 +334,25 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
                 {trafficClaim}
               </p>
             ) : null}
-            <div
-              className={`grid grid-cols-1 gap-6 ${
-                pageRows.length > 0 && cityRows.length > 0
-                  ? "sm:grid-cols-[1.1fr_0.9fr] print:grid-cols-[1.1fr_0.9fr]"
-                  : ""
-              }`}
-            >
-              {pageRows.length > 0 ? (
-                <div>
-                  <div className="mb-2.5 text-[9.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                    Most-visited pages
+            <div>
+              <div className="mb-2.5 text-[9.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                Most-visited pages
+              </div>
+              <div className="flex flex-col gap-2 text-[11.5px]">
+                {pageRows.map((row) => (
+                  <div key={row.url} className="flex justify-between gap-3 font-medium text-muted-foreground">
+                    <span className="truncate">{pagePath(row.url)}</span>
+                    <b className="flex-none font-bold tabular-nums text-foreground">
+                      {row.sessions}
+                    </b>
                   </div>
-                  <div className="flex flex-col gap-2 text-[11.5px]">
-                    {pageRows.map((row) => (
-                      <div key={row.url} className="flex justify-between gap-3 font-medium text-muted-foreground">
-                        <span className="truncate">{pagePath(row.url)}</span>
-                        <b className="flex-none font-bold tabular-nums text-foreground">
-                          {row.sessions}
-                        </b>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-2 text-[9.5px] font-medium text-muted-foreground">
-                    Sessions in period
-                  </div>
-                </div>
-              ) : null}
-
-              {cityRows.length > 0 ? (
-                <div>
-                  <div className="mb-2.5 text-[9.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                    Where identified visitors are
-                  </div>
-                  <div className="flex flex-col gap-2 text-[11.5px]">
-                    {cityRows.map((c) => (
-                      <div key={c.city} className="flex justify-between font-medium text-muted-foreground">
-                        <span>{c.city}</span>
-                        <b className="font-bold tabular-nums text-foreground">{c.count}</b>
-                      </div>
-                    ))}
-                  </div>
-                  {topStateLine ? (
-                    <div className="mt-2.5 text-[9.5px] font-medium leading-relaxed text-muted-foreground">
-                      {topStateLine}
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
+                ))}
+              </div>
+              <div className="mt-2 text-[9.5px] font-medium text-muted-foreground">
+                Sessions in period
+              </div>
             </div>
+
           </section>
         </div>
       ) : null}
@@ -438,21 +391,9 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
                   ))
                 : null}
             </div>
-            {/* identifiedVisitors === 0 is dropped rather than rendered as "0",
-                the same rule the popup tiles below already follow. A zero here
-                almost never means "nobody visited" — it means no visitor row
-                could be filed under a launched building (Visitor.propertyId
-                unstamped, or every property inactive), so the pixel section has
-                nothing it can honestly claim. Printing "0 Identified visitors"
-                next to real chatbot numbers reads as a measured result instead
-                of absent data. Omit the claim; the coverage strip below still
-                reports the pixel's actual state. */}
-            <div className={`grid grid-cols-2 gap-2.5 ${TILE_DENSE} ${identifiedVisitors > 0 ? "sm:grid-cols-3 print:grid-cols-3" : ""}`}>
+            <div className={`grid grid-cols-2 gap-2.5 ${TILE_DENSE}`}>
               <Stat dense value={num(chatbotStatsExtended?.conversations)} label="Chatbot conversations" />
               <Stat dense value={chatbotStatsExtended?.capturedRatePct != null ? pct(chatbotStatsExtended.capturedRatePct) : "—"} label="Lead capture rate" />
-              {identifiedVisitors > 0 ? (
-                <Stat dense value={num(identifiedVisitors)} label="Identified visitors" />
-              ) : null}
             </div>
             {snapshot.popupStats ? (
               <div className={`mt-3.5 grid grid-cols-2 gap-2.5 ${TILE_DENSE} ${snapshot.popupStats.converted > 0 ? "sm:grid-cols-4 print:grid-cols-4" : "sm:grid-cols-3 print:grid-cols-3"}`}>

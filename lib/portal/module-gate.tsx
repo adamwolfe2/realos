@@ -25,7 +25,6 @@ import { EmptyState } from "@/components/portal/ui/empty-state";
 export type PortalModuleKey =
   | "moduleWebsite"
   | "moduleLeadCapture"
-  | "modulePixel"
   | "moduleChatbot"
   | "moduleGoogleAds"
   | "moduleMetaAds"
@@ -60,11 +59,6 @@ const MODULE_COPY: Record<PortalModuleKey, ModuleCopy> = {
     pageTitle: "Leads",
     title: "Lead capture module not active",
     body: "Public lead capture forms are part of the Lead Capture module. Activate it from the Marketplace, free during your trial.",
-  },
-  modulePixel: {
-    pageTitle: "Visitors",
-    title: "Visitor pixel not active",
-    body: "The site visitor identity pixel is a paid add-on. Activate it from the Marketplace, free during your trial.",
   },
   moduleChatbot: {
     pageTitle: "Chatbot",

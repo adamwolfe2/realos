@@ -505,19 +505,16 @@ export function shouldSendEmail(
   prefs:
     | {
         emailLeadAlerts?: boolean;
-        emailVisitorDigest?: boolean;
         emailWeeklyDigest?: boolean;
       }
     | null
     | undefined,
-  type: "leads" | "visitors" | "weekly",
+  type: "leads" | "weekly",
 ): boolean {
   if (!prefs) return true;
   switch (type) {
     case "leads":
       return prefs.emailLeadAlerts !== false;
-    case "visitors":
-      return prefs.emailVisitorDigest !== false;
     case "weekly":
       return prefs.emailWeeklyDigest !== false;
     default:

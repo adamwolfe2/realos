@@ -229,7 +229,7 @@ export default async function AdminHome() {
              leaderboard (which mixed pre-launch pipeline rows in and
              read as 5 columns of zeros). Active tenants get real lead
              velocity + trend; Onboarding gets a stage badge only — no
-             fake zero-velocity columns for tenants with no live pixel
+             fake zero-velocity columns for tenants with no live data
              yet. Both filter out internal/test workspaces.
           ────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">

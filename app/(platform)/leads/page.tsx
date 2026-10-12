@@ -4,7 +4,6 @@ import { SplitHero } from "@/components/platform/split-hero";
 import { Reveal } from "@/components/platform/reveal";
 import { BookDemoLink } from "@/components/marketing/book-demo-link";
 import { OverflowInbox } from "@/components/platform/artifacts/overflow-inbox";
-import { VisitorStream } from "@/components/platform/artifacts/visitor-stream";
 import { ChatDemo } from "@/components/platform/artifacts/chat-demo";
 import { AttributionBreakdown } from "@/components/platform/artifacts/attribution-breakdown";
 import { DashboardFrame } from "@/components/home/walkthrough/dashboard-frame";
@@ -12,7 +11,7 @@ import { DashboardFrame } from "@/components/home/walkthrough/dashboard-frame";
 export const metadata: Metadata = {
   title: "Every inquiry, scored, in one inbox",
   description:
-    "Every listing inquiry, DM, form fill, and voicemail lands in one inbox with property and source attached, scored so your team calls the right one first. Plus a pixel that names anonymous visitors and a chatbot that catches leads at 2am.",
+    "Every listing inquiry, DM, form fill, and voicemail lands in one inbox with property and source attached, scored so your team calls the right one first. Plus a chatbot that catches leads at 2am.",
 };
 
 // ---------------------------------------------------------------------------
@@ -23,10 +22,9 @@ export const metadata: Metadata = {
 // see .agents/product-marketing.md. This page now covers only what the
 // leads surface actually does:
 //   1. OverflowInbox        — every inquiry, every source, one inbox (hero)
-//   2. VisitorStream         — pixel names anonymous site traffic
-//   3. DashboardFrame(beat=2) — leads scored and ranked (the real /leads screen)
-//   4. ChatDemo               — after-hours chatbot captures the lead + transcript
-//   5. AttributionBreakdown   — every lead traces to the campaign, through
+//   2. DashboardFrame(beat=2) — leads scored and ranked (the real /leads screen)
+//   3. ChatDemo               — after-hours chatbot captures the lead + transcript
+//   4. AttributionBreakdown   — every lead traces to the campaign, through
 //                               tour, to signed lease
 // ---------------------------------------------------------------------------
 
@@ -127,53 +125,8 @@ export default function LeadsPage() {
         </div>
       </section>
 
-      {/* Capture: pixel / visitor identification ------------------------ */}
-      <section style={{ backgroundColor: "#FFFFFF" }}>
-        <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-            <div className="max-w-xl">
-              <h2
-                style={{
-                  color: INK,
-                  fontFamily: "var(--font-display)",
-                  fontSize: "clamp(26px, 3.2vw, 38px)",
-                  fontWeight: 500,
-                  lineHeight: 1.2,
-                }}
-              >
-                Most visitors leave without a form fill. We name them anyway.
-              </h2>
-              <p
-                className="mt-5"
-                style={{
-                  color: MUTED,
-                  fontFamily: "var(--font-sans)",
-                  fontSize: 16,
-                  lineHeight: 1.6,
-                }}
-              >
-                Drop a one-line pixel on your listings and tour-request pages.
-                Anonymous visitors resolve to a name and email, and stream
-                into the same inbox as your form fills, DMs, and calls.
-              </p>
-              <FeatureBullets
-                items={[
-                  "One pixel across every listing page and device",
-                  "On the demo property, about 41% of site traffic resolves to a name",
-                  "Resolved visitors land in the same inbox as your other inquiries",
-                  "Pushed to your CRM and ad audiences the moment they resolve",
-                ]}
-              />
-            </div>
-            <div className="min-w-0">
-              <VisitorStream />
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Score + rank ---------------------------------------------------- */}
-      <section id="scoring" style={{ backgroundColor: "var(--color-secondary)" }}>
+      <section id="scoring" style={{ backgroundColor: "#FFFFFF" }}>
         <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center lg:[&>*:first-child]:order-2">
             <div className="max-w-xl">
@@ -220,7 +173,7 @@ export default function LeadsPage() {
       </section>
 
       {/* After-hours chatbot ---------------------------------------------- */}
-      <section style={{ backgroundColor: "#FFFFFF" }}>
+      <section style={{ backgroundColor: "var(--color-secondary)" }}>
         <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
             <div className="max-w-xl">
@@ -265,7 +218,7 @@ export default function LeadsPage() {
       </section>
 
       {/* Attribution -------------------------------------------------------- */}
-      <section style={{ backgroundColor: "var(--color-secondary)" }}>
+      <section style={{ backgroundColor: "#FFFFFF" }}>
         <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center lg:[&>*:first-child]:order-2">
             <div className="max-w-xl">
@@ -295,7 +248,7 @@ export default function LeadsPage() {
               </p>
               <FeatureBullets
                 items={[
-                  "One funnel: visitors → leads → tours → applications → signed leases",
+                  "One funnel: leads → tours → applications → signed leases",
                   "Cost per lead and cost per signed lease, by channel",
                   "No more grading each vendor's own homework",
                 ]}
@@ -309,7 +262,7 @@ export default function LeadsPage() {
       </section>
 
       {/* Final CTA -------------------------------------------------------- */}
-      <section style={{ backgroundColor: "#FFFFFF" }}>
+      <section style={{ backgroundColor: "var(--color-secondary)" }}>
         <div className="max-w-[1100px] mx-auto px-4 md:px-8 py-24 md:py-28 text-center">
           <Reveal delay={60}>
             <h2

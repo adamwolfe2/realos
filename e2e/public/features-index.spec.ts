@@ -10,7 +10,6 @@ import { test, expect } from "@playwright/test";
 const FEATURE_DESTINATIONS = [
   "/sample-report",
   "/features/ads",
-  "/features/pixel",
   "/features/chatbot",
   "/audit",
   "/features/seo-aeo",
@@ -21,7 +20,6 @@ const FEATURE_DESTINATIONS = [
 const NAV_DROPDOWN_DESTINATIONS = [
   "/features",
   "/features/chatbot",
-  "/features/pixel",
   "/features/seo-aeo",
   "/audit",
   "/features/keyword-trends",
@@ -30,7 +28,7 @@ const NAV_DROPDOWN_DESTINATIONS = [
 ];
 
 test.describe("Features index @critical", () => {
-  test("/features renders the hero and eight feature rows", async ({
+  test("/features renders the hero and feature rows", async ({
     page,
   }) => {
     const resp = await page.goto("/features");

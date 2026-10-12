@@ -11,13 +11,11 @@ import {
   Globe,
   HeartPulse,
   History,
-  Inbox,
   Kanban,
   LayoutDashboard,
   Megaphone,
   MessageSquare,
   Plug,
-  Radio,
   ScanSearch,
   SatelliteDish,
   Settings,
@@ -33,7 +31,6 @@ export type AdminNavBadgeKey =
   | "unreadMessages"
   | "openCreative"
   | "atRiskTenants"
-  | "pendingPixelRequests"
   | "openBugReports"
   | "pendingContentDrafts"
   | "pendingSiteRequests";
@@ -99,8 +96,6 @@ export const adminNavSections: readonly AdminNavEntry[] = [
       "pendingContentDrafts",
     ),
     link("/admin/campaigns", "Ad campaigns", Megaphone),
-    link("/admin/pixel-requests", "Pixel requests", Inbox, "pendingPixelRequests"),
-    link("/admin/pixel", "Pixel health", Radio),
   ]),
   cluster("System", Settings, [
     link("/admin/tenants", "Tenants + domains", Building2),

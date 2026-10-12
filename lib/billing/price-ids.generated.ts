@@ -17,7 +17,6 @@ export const STRIPE_PRICE_IDS = {
   "ls_growth_graduated_annual_v1": "price_1TWLZXIDmE4BmF76zMkw7Cfq",
   "ls_growth_graduated_monthly_v1": "price_1TWLZWIDmE4BmF76bwPJeOFa",
   "ls_growth_monthly_v1": "price_1TWJybIDmE4BmF76laNl77C5",
-  "ls_pixel_overage_per_visitor_v1": "price_1TWJyjIDmE4BmF76u2TuHBGp",
   "ls_reputation_pro_monthly_v1": "price_1TWJygIDmE4BmF76hoFXOkKH",
   "ls_scale_annual_v1": "price_1TWKBpIDmE4BmF76sWgnURcx",
   "ls_scale_graduated_annual_v1": "price_1TWLZYIDmE4BmF76Hyx8m3ZN",

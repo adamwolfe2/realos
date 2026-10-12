@@ -2,7 +2,7 @@
  * purge-demo-data.ts — wipe operational demo data from a CLIENT org so the
  * portal renders empty rather than "full of fake names." Keeps the org,
  * users, domains, tenant site config, and properties; deletes leads,
- * visitors, chatbot conversations, tours, applications, creative requests,
+ * chatbot conversations, tours, applications, creative requests,
  * and any integration-request rows.
  *
  * Usage:
@@ -71,15 +71,6 @@ async function main() {
   const leads = await prisma.lead.deleteMany({
     where: scope,
   });
-  const visitorEvents = await prisma.visitorEvent.deleteMany({
-    where: scope,
-  });
-  const visitorSessions = await prisma.visitorSession.deleteMany({
-    where: scope,
-  });
-  const visitors = await prisma.visitor.deleteMany({
-    where: scope,
-  });
   const seoQueries = await prisma.seoQuery.deleteMany({ where: scope });
   const seoPages = await prisma.seoLandingPage.deleteMany({ where: scope });
   const seoSnapshots = await prisma.seoSnapshot.deleteMany({ where: scope });
@@ -102,9 +93,6 @@ async function main() {
   console.log(
     `\nPurged demo data for ${org.name} (${orgSlug}):\n` +
       `  Leads:                 ${leads.count}\n` +
-      `  Visitors:              ${visitors.count}\n` +
-      `  Visitor sessions:      ${visitorSessions.count}\n` +
-      `  Visitor events:        ${visitorEvents.count}\n` +
       `  Chatbot conversations: ${convos.count}\n` +
       `  Applications:          ${apps.count}\n` +
       `  Tours:                 ${tours.count}\n` +

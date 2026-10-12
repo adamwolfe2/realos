@@ -149,21 +149,6 @@ export function computeRecommendations(
   }
 
   // ---- Tracking & attribution -----------------------------------------
-  if (tracking !== "pixel_plus_analytics") {
-    recs.push({
-      id: "rec-pixel",
-      title: "Install a visitor identification pixel",
-      why:
-        tracking === "no_tracking"
-          ? "You said you're not really tracking marketing performance. Every dollar of ad spend right now is going into a black box."
-          : tracking === "ga_only"
-            ? "You said you're using Google Analytics only. GA tells you HOW MANY visited. Not WHO. The pixel turns anonymous traffic into named leads."
-            : "You said your CRM is the only thing tracking leads. CRM kicks in after they convert. The pixel catches the 95%+ who never fill a form.",
-      featureSlug: "pixel",
-      pillar: "tracking",
-      severity: "high",
-    });
-  }
   if (usesLeadSource("not_sure")) {
     recs.push({
       id: "rec-lead-sources",

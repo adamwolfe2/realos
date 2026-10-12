@@ -7,7 +7,7 @@ describe("attribution flow summary", () => {
       { source: "CHATBOT", stage: "New lead", verification: "leasestack_only" },
       { source: "CHATBOT", stage: "Applied", verification: "leasestack_only" },
       { source: "FORM", stage: "Applied", verification: "leasestack_only" },
-      { source: "PIXEL_OUTREACH", stage: "Signed", verification: "verified" },
+      { source: "REFERRAL", stage: "Signed", verification: "verified" },
       { source: "ORGANIC", stage: "Approved", verification: "leasestack_only" },
       { source: "OTHER", stage: "Applied", verification: "imported" },
     ]);
@@ -16,8 +16,7 @@ describe("attribution flow summary", () => {
       captured: 5,
       chatbot: 2,
       forms: 1,
-      visitorPixel: 1,
-      other: 1,
+      other: 2,
       applied: 4,
       signed: 1,
     });
@@ -28,7 +27,6 @@ describe("attribution flow summary", () => {
       captured: 0,
       chatbot: 0,
       forms: 0,
-      visitorPixel: 0,
       other: 0,
       applied: 0,
       signed: 0,

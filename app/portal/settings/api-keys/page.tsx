@@ -48,7 +48,7 @@ export default async function ApiKeysPage() {
           </Link>
         }
         title="API keys"
-        description="Push leads, visitors, tours, and chatbot events into your CRM from any external system (Zapier, Typeform, Make, custom forms). Each key is scoped and auditable."
+        description="Push leads, tours, and chatbot events into your CRM from any external system (Zapier, Typeform, Make, custom forms). Each key is scoped and auditable."
       />
 
       <section className="ls-card p-5 space-y-5">
@@ -239,10 +239,6 @@ export default async function ApiKeysPage() {
             <li>
               <code className="font-mono">POST /api/ingest/lead</code> · scope{" "}
               <code className="font-mono">ingest:lead</code>
-            </li>
-            <li>
-              <code className="font-mono">POST /api/ingest/visitor</code> · scope{" "}
-              <code className="font-mono">ingest:visitor</code>
             </li>
             <li>
               <code className="font-mono">POST /api/ingest/tour</code> · scope{" "}

@@ -9,7 +9,6 @@ import {
   BarChart3,
   Settings as SettingsIcon,
   Star,
-  Eye,
   TrendingUp,
   Search as SearchIcon,
   Plus,
@@ -107,7 +106,7 @@ export function Pill({
   );
 }
 
-// ScoreBadge — score chip rendered on lead + visitor rows. Color ramps
+// ScoreBadge — score chip rendered on lead rows. Color ramps
 // stay inside the brand-blue palette (Adam 2026-05-29, no green/amber
 // anywhere in the demo portal). High scores are full accent, mid scores
 // are a lighter accent shade, low scores are muted.
@@ -177,7 +176,6 @@ export const Icons = {
   reports:     wrap(BarChart3),
   settings:    wrap(SettingsIcon),
   briefing:    wrap(Star),
-  visitors:    wrap(Eye),
   seo:         wrap(TrendingUp),
   search:      wrap(SearchIcon),
   plus:        wrap(Plus),

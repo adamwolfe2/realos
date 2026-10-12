@@ -4,19 +4,18 @@ import { TourStatus } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
 // Portfolio funnel — a dead-simple, manager-facing roll-up across every
-// property: Traffic → Leads (by source) → Tours → Applications, with the
+// property: Leads (by source) → Tours → Applications, with the
 // step-down conversion rate between each stage. Pure aggregation over existing
-// models (Visitor / Lead / Tour / Application); no schema change.
+// models (Lead / Tour / Application); no schema change.
 //
 // Scoping: when `propertyIds` is null the report is portfolio-wide (org scope,
-// including rows the pixel hasn't attributed to a property yet — important so
-// the Traffic number isn't silently undercounted). When `propertyIds` is an
+// including rows not yet attributed to a property). When `propertyIds` is an
 // array (a property filter is active, or the viewer only has access to a
 // subset) every stage is scoped to those properties so totals == sum of rows.
 // ---------------------------------------------------------------------------
 
 export type FunnelStage = {
-  key: "traffic" | "leads" | "tours" | "applications";
+  key: "leads" | "tours" | "applications";
   label: string;
   value: number;
   /** Conversion % from the previous stage (undefined for the first stage). */
@@ -32,7 +31,6 @@ export type PortfolioFunnel = {
   byProperty: Array<{
     propertyId: string;
     name: string;
-    visitors: number;
     leads: number;
     tours: number;
     applications: number;
@@ -77,12 +75,9 @@ export async function getPortfolioFunnel(params: {
   const { orgId, propertyIds } = params;
   const scoped = propertyIds !== null;
 
-  // Per-model where clauses. Visitor/Lead carry orgId directly; Tour/Application
+  // Per-model where clauses. Lead carries orgId directly; Tour/Application
   // reach the org through their property relation.
   const orgScoped = { gte: since };
-  const visitorWhere = scoped
-    ? { orgId, propertyId: { in: propertyIds }, firstSeenAt: orgScoped }
-    : { orgId, firstSeenAt: orgScoped };
   const leadWhere = scoped
     ? { orgId, propertyId: { in: propertyIds }, createdAt: orgScoped }
     : { orgId, createdAt: orgScoped };
@@ -94,27 +89,19 @@ export async function getPortfolioFunnel(params: {
     : { property: { orgId }, createdAt: orgScoped };
 
   const [
-    visitors,
     leadsBySource,
     tours,
     toursCompleted,
     appsByStatus,
-    visitorsByProp,
     leadsByProp,
     toursByProp,
     appsByProp,
     properties,
   ] = await Promise.all([
-    prisma.visitor.count({ where: visitorWhere }),
     prisma.lead.groupBy({ by: ["source"], where: leadWhere, _count: { _all: true } }),
     prisma.tour.count({ where: { ...tourWhere, status: { not: TourStatus.CANCELLED } } }),
     prisma.tour.count({ where: { ...tourWhere, status: TourStatus.COMPLETED } }),
     prisma.application.groupBy({ by: ["status"], where: appWhere, _count: { _all: true } }),
-    prisma.visitor.groupBy({
-      by: ["propertyId"],
-      where: { ...visitorWhere, propertyId: scoped ? { in: propertyIds } : { not: null } },
-      _count: { _all: true },
-    }),
     prisma.lead.groupBy({
       by: ["propertyId"],
       where: { ...leadWhere, propertyId: scoped ? { in: propertyIds } : { not: null } },
@@ -136,8 +123,7 @@ export async function getPortfolioFunnel(params: {
   const applications = appsByStatus.reduce((s, r) => s + r._count._all, 0);
 
   const stages: FunnelStage[] = [
-    { key: "traffic", label: "Traffic", value: visitors },
-    { key: "leads", label: "Leads", value: leads, conversionFromPrev: conversionPct(leads, visitors) },
+    { key: "leads", label: "Leads", value: leads },
     { key: "tours", label: "Tours", value: tours, conversionFromPrev: conversionPct(tours, leads) },
     {
       key: "applications",
@@ -163,12 +149,10 @@ export async function getPortfolioFunnel(params: {
     for (const r of rows) if (r.propertyId) m.set(r.propertyId, r._count._all);
     return m;
   };
-  const vMap = countBy(visitorsByProp);
   const lMap = countBy(leadsByProp);
   const tMap = countBy(toursByProp);
   const aMap = countBy(appsByProp);
   const propIds = new Set<string>([
-    ...vMap.keys(),
     ...lMap.keys(),
     ...tMap.keys(),
     ...aMap.keys(),
@@ -177,7 +161,6 @@ export async function getPortfolioFunnel(params: {
     .map((id) => ({
       propertyId: id,
       name: nameById.get(id) ?? "Unknown property",
-      visitors: vMap.get(id) ?? 0,
       leads: lMap.get(id) ?? 0,
       tours: tMap.get(id) ?? 0,
       applications: aMap.get(id) ?? 0,

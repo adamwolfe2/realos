@@ -3,8 +3,8 @@ import {
   NO_MARKETABLE_PROPERTIES,
 } from "@/lib/tenancy/property-filter";
 import {
-  classifyLeadChannel,
   getSource,
+  sourceFromLeadEnum,
 } from "@/lib/attribution/source-taxonomy";
 import {
   deriveLeadProof,
@@ -145,10 +145,6 @@ export async function getAttributionProof(args: {
     args.propertyIds,
     false,
   ) as Prisma.LeadMatchDecisionWhereInput;
-  const sessionPropertyWhere = proofPropertyWhere(
-    args.propertyIds,
-    false,
-  ) as Prisma.VisitorSessionWhereInput;
   const leadWhere: Prisma.LeadWhereInput = {
     orgId: args.orgId,
     AND: [nullablePropertyWhere],
@@ -156,7 +152,7 @@ export async function getAttributionProof(args: {
     ...(args.source ? { source: args.source } : {}),
   };
 
-  const [leads, decisions, firstTouches] = await Promise.all([
+  const [leads, decisions] = await Promise.all([
     prisma.lead.findMany({
       where: leadWhere,
       orderBy: { createdAt: "desc" },
@@ -170,25 +166,9 @@ export async function getAttributionProof(args: {
         source: true,
         status: true,
         externalSystem: true,
-        enrichedData: true,
         firstSeenAt: true,
         createdAt: true,
         property: { select: { name: true } },
-        visitor: {
-          select: {
-            status: true,
-            sessions: {
-              orderBy: { startedAt: "asc" },
-              take: 1,
-              select: {
-                startedAt: true,
-                utmSource: true,
-                utmMedium: true,
-                firstReferrer: true,
-              },
-            },
-          },
-        },
         tours: { select: { status: true }, take: 20 },
         applications: {
           select: { status: true, receivedAt: true, appliedAt: true },
@@ -239,17 +219,9 @@ export async function getAttributionProof(args: {
         lead: { select: { firstName: true, lastName: true, email: true } },
       },
     }),
-    prisma.visitorSession.count({
-      where: {
-        orgId: args.orgId,
-        AND: [sessionPropertyWhere],
-        startedAt: { gte: args.fromDate, lte: args.toDate },
-      },
-    }),
   ]);
 
   const rows: AttributionProofRow[] = leads.map((lead) => {
-    const session = lead.visitor?.sessions[0] ?? null;
     const linkedResidents = lead.residents.filter((resident) => resident.id);
     const hasLeaseEvidence = linkedResidents.some(
       (resident) => resident.currentLease !== null || resident.leases.length > 0,
@@ -265,7 +237,7 @@ export async function getAttributionProof(args: {
     });
     const source = lead.externalSystem === "appfolio"
       ? getSource("appfolio")
-      : classifyLeadChannel(lead.source, session, null);
+      : sourceFromLeadEnum(lead.source);
 
     const outcomeEvidence = hasLeaseEvidence
       ? "Matched to AppFolio lease"
@@ -285,7 +257,7 @@ export async function getAttributionProof(args: {
       sourceId: source.id,
       sourceLabel: source.label,
       provenance: sourceProvenance(lead.source, lead.externalSystem),
-      firstTouchAt: session?.startedAt ?? lead.firstSeenAt,
+      firstTouchAt: lead.firstSeenAt,
       capturedAt: lead.createdAt,
       stage: proof.stage,
       verification: proof.verification,
@@ -329,11 +301,6 @@ export async function getAttributionProof(args: {
 
   const flow = summarizeAttributionFlow(rows);
   const tourEvidence = leads.some((lead) => lead.tours.length > 0);
-  const enriched = leads.filter(
-    (lead) =>
-      lead.enrichedData !== null ||
-      (lead.visitor !== null && lead.visitor.status !== "ANONYMOUS"),
-  ).length;
   const tourScheduled = leads.filter(
     (lead) =>
       hasReached(deriveLeadProof({
@@ -369,25 +336,11 @@ export async function getAttributionProof(args: {
     },
     funnel: [
       {
-        key: "first_touch",
-        label: "First touch",
-        count: firstTouches,
-        tracked: true,
-        provenance: "Visitor pixel sessions",
-      },
-      {
         key: "captured",
         label: "Lead captured",
         count: rows.length,
         tracked: true,
         provenance: "LeaseStack lead records",
-      },
-      {
-        key: "enriched",
-        label: "Enriched",
-        count: enriched,
-        tracked: true,
-        provenance: "Cursive or captured identity",
       },
       {
         key: "contacted",
