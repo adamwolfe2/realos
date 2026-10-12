@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ForbiddenError, requireWorkspaceAdmin } from "@/lib/tenancy/scope";
+import {
+  ForbiddenError,
+  requireWorkspaceAdmin,
+  TrialExpiredError,
+} from "@/lib/tenancy/scope";
 import {
   loadPendingSeoOptions,
   type GooglePropertyOption,
@@ -33,14 +37,19 @@ const COPY: Record<
 // Server shell for /portal/connect/{ga4,gsc}/select.
 export async function SeoSelectPage({
   provider,
+  propertyId,
 }: {
   provider: SeoPickerProvider;
+  /** LeaseStack property the sign-in was scoped to; null = org-wide. */
+  propertyId: string | null;
 }) {
   // Only owners/admins can connect sources, so only they see the list.
   let scope;
   try {
     scope = await requireWorkspaceAdmin();
   } catch (err) {
+    // TrialExpiredError extends ForbiddenError: billing, not back to Connect.
+    if (err instanceof TrialExpiredError) redirect("/portal/billing");
     if (err instanceof ForbiddenError) redirect("/portal/connect");
     throw err;
   }
@@ -49,7 +58,7 @@ export async function SeoSelectPage({
   let pending: Awaited<ReturnType<typeof loadPendingSeoOptions>> | null = null;
   let listError: string | null = null;
   try {
-    pending = await loadPendingSeoOptions(scope.orgId, provider);
+    pending = await loadPendingSeoOptions(scope.orgId, provider, propertyId);
   } catch (err) {
     console.error(`[connect/${provider}] listing properties failed`, err);
     listError = `Couldn't load your ${copy.noun} from Google.`;
@@ -61,12 +70,13 @@ export async function SeoSelectPage({
   }
   const options: GooglePropertyOption[] =
     pending && pending.row ? pending.options : [];
+  const forProperty = pending?.row?.propertyName ?? null;
 
   return (
     <div className="space-y-6 max-w-3xl">
       <PageHeader
         title={copy.title}
-        description={`These are the ${copy.noun} your Google login can reach. Pick the one for this workspace. You can connect more later.`}
+        description={`These are the ${copy.noun} your Google login can reach. Pick the one for ${forProperty ?? "this workspace"}. You can connect more later.`}
         actions={
           <Link
             href="/portal/connect"
@@ -97,7 +107,11 @@ export async function SeoSelectPage({
           </div>
         </>
       ) : (
-        <SeoPropertyPicker provider={provider} options={options} />
+        <SeoPropertyPicker
+          provider={provider}
+          propertyId={propertyId}
+          options={options}
+        />
       )}
     </div>
   );

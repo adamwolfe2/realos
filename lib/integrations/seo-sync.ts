@@ -14,6 +14,10 @@ import {
   type Ga4LandingPageRow,
 } from "./ga4";
 
+// Placeholder the GA4/GSC OAuth callback writes until the operator picks a
+// property. Rows still holding it have no real identifier and never sync.
+export const PENDING_OAUTH_BIND = "PENDING_OAUTH_BIND";
+
 // ---------------------------------------------------------------------------
 // SEO sync worker.
 //
@@ -59,6 +63,7 @@ import {
 // Failures from one provider don't block the other. Errors land in the
 // integration row's lastSyncError so they're visible in the portal UI.
 // ---------------------------------------------------------------------------
+
 
 export type SeoSyncStats = {
   gscDays: number;
@@ -155,6 +160,7 @@ export async function runSeoSync(
     where: {
       orgId,
       serviceAccountJsonEncrypted: { not: "DEMO_SEED" },
+      propertyIdentifier: { not: PENDING_OAUTH_BIND },
     },
   });
   if (integrations.length === 0) {

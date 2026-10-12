@@ -215,7 +215,7 @@ const PREREQUISITES: Record<ConnectSourceVM["id"], string> = {
   google_ads:
     "You'll need: a Google login with access to your Google Ads account · ~2 min",
   meta_ads:
-    "You'll need: a Facebook login with Business Manager access to your ad account · ~2 min",
+    "You'll need: Business Manager access to your ad account (Facebook login, or a System User token if sign-in isn't offered) · ~2-5 min",
   website:
     "You'll need: your domain and access to its DNS settings · ~5 min",
 };
@@ -314,11 +314,10 @@ function resolveConnectUrl(
     // resulting SeoIntegration row scoped to that property, so the "Connect"
     // click can go straight through OAuth instead of detouring to the manual
     // service-account-JSON form on /portal/seo. The callback always lands
-    // on the GA4/GSC property picker; `returnTo` is no longer used there.
+    // on the GA4/GSC property picker, carrying propertyId, so no returnTo.
     case "ga4":
-      return `${base}?propertyId=${propertyId}&returnTo=${encodeURIComponent(`/portal/seo?provider=GA4&property=${propertyId}`)}`;
     case "gsc":
-      return `${base}?propertyId=${propertyId}&returnTo=${encodeURIComponent(`/portal/seo?provider=GSC&property=${propertyId}`)}`;
+      return `${base}?propertyId=${encodeURIComponent(propertyId)}`;
     case "website":
       return `/portal/site-builder?propertyId=${propertyId}`;
     default:

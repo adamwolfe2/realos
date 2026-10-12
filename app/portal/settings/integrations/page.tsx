@@ -154,18 +154,25 @@ export default async function IntegrationsPage() {
   // stays under Advanced for agencies that prefer it.
   function seoSlot(provider: "GSC" | "GA4"): React.ReactNode {
     const rows = seoIntegrations.filter((s) => s.provider === provider);
-    const row = rows.find((r) => r.propertyId === null) ?? rows[0] ?? null;
+    // A row still waiting for its property pick wins, so the "Choose
+    // property" link always surfaces even for per-property sign-ins.
+    const row =
+      rows.find((r) => r.propertyIdentifier === PENDING_OAUTH_BIND) ??
+      rows.find((r) => r.propertyId === null) ??
+      rows[0] ??
+      null;
     const label = provider === "GA4" ? "Google Analytics" : "Search Console";
     if (row && row.propertyIdentifier === PENDING_OAUTH_BIND) {
       return (
         <div className="rounded-[2px] border border-border bg-muted/30 p-4 space-y-2">
           <StatusChip status="connecting" label="Choose a property" />
           <p className="text-xs text-muted-foreground leading-relaxed">
-            You signed in with Google. Pick which {label} property to sync to
-            finish connecting.
+            You signed in with Google. Pick which {label} property to sync
+            {row.property ? ` for ${row.property.name}` : ""} to finish
+            connecting.
           </p>
           <Link
-            href={`/portal/connect/${provider.toLowerCase()}/select`}
+            href={`/portal/connect/${provider.toLowerCase()}/select${row.propertyId ? `?propertyId=${encodeURIComponent(row.propertyId)}` : ""}`}
             className="inline-block text-xs font-medium text-primary hover:underline"
           >
             Choose property
@@ -509,10 +516,11 @@ function SeoManage({
       <StatusChip status={chip.status} label={chip.label} />
       <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
         <DetailRow label="Property" value={propertyIdentifier} mono />
+        {/* OAuth rows have no service-account email. */}
         <DetailRow
-          label="Service account"
-          value={serviceAccountEmail ?? "—"}
-          mono
+          label={serviceAccountEmail ? "Service account" : "Connected via"}
+          value={serviceAccountEmail ?? "Google sign-in"}
+          mono={!!serviceAccountEmail}
         />
         <DetailRow
           label="Last sync"

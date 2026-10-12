@@ -24,9 +24,11 @@ const INITIAL: BindSeoPropertyResult = { ok: false, error: "" };
 // Same shared list + stepper as the Google Ads and Meta pickers.
 export function SeoPropertyPicker({
   provider,
+  propertyId,
   options,
 }: {
   provider: SeoPickerProvider;
+  propertyId: string | null;
   options: GooglePropertyOption[];
 }) {
   const [selected, setSelected] = useState<string | null>(
@@ -79,6 +81,7 @@ export function SeoPropertyPicker({
     <form action={formAction} className="space-y-5">
       <ConnectStepper current={2} />
       <input type="hidden" name="provider" value={provider} />
+      <input type="hidden" name="propertyId" value={propertyId ?? ""} />
       <input type="hidden" name="propertyIdentifier" value={selected ?? ""} />
       <AccountPickerList
         items={items}

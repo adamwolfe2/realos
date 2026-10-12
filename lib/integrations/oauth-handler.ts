@@ -267,6 +267,14 @@ export async function handleOAuthCallback(
   const safePath = PICKER_PATH[provider];
   const redirect = new URL(safePath, url);
   redirect.searchParams.set("oauth", `${provider}_connected`);
+  // GA4/GSC: carry the signed property scope so the picker binds the row
+  // persistTokens just wrote, not another property's pending row.
+  if (
+    (provider === "google_ga4" || provider === "google_gsc") &&
+    payload.propertyId
+  ) {
+    redirect.searchParams.set("propertyId", payload.propertyId);
+  }
   const res = NextResponse.redirect(redirect.toString());
   res.cookies.delete(STATE_COOKIE);
   return res;
