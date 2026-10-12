@@ -57,7 +57,6 @@ const agencyScope = {
   role: UserRole.AGENCY_ADMIN,
   email: "admin@agency.test",
   isAgency: true,
-  isAlPartner: false,
   isImpersonating: false,
   allowedPropertyIds: null,
 };

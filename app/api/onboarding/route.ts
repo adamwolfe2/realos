@@ -33,7 +33,6 @@ import {
 
 const moduleKeys = [
   "website",
-  "pixel",
   "chatbot",
   "googleAds",
   "metaAds",

@@ -11,11 +11,11 @@ const run = (jobName: string, min: number, status: string): CronRunRow => ({
 
 describe("findNewlyStuckCrons", () => {
   it("alerts once a 5-min job has been partial for just over an hour", () => {
-    const runs = [run("pixel", 200, "ok")];
-    for (let m = 65; m >= 0; m -= 5) runs.push(run("pixel", m, "partial"));
+    const runs = [run("seo-sync", 200, "ok")];
+    for (let m = 65; m >= 0; m -= 5) runs.push(run("seo-sync", m, "partial"));
     const out = findNewlyStuckCrons(runs, NOW);
     expect(out).toHaveLength(1);
-    expect(out[0]).toMatchObject({ jobName: "pixel", status: "partial", badRuns: 14 });
+    expect(out[0]).toMatchObject({ jobName: "seo-sync", status: "partial", badRuns: 14 });
   });
 
   it("stays quiet before the hour is up and after the first alert window", () => {

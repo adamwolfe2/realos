@@ -81,7 +81,6 @@ describe("AL_PARTNER is not agency (F-002)", () => {
     seed(UserRole.AL_PARTNER);
     await expect(requireScope()).resolves.toMatchObject({
       isAgency: false,
-      isAlPartner: false,
     });
   });
 

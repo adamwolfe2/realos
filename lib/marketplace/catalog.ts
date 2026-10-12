@@ -44,7 +44,6 @@ import {
 } from "lucide-react";
 
 export type ModuleKey =
-  | "modulePixel"
   | "moduleChatbot"
   | "moduleSEO"
   | "moduleGoogleAds"

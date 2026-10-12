@@ -88,7 +88,6 @@ import {
   PropertyType,
   PropertyLifecycle,
   PropertyLaunchStatus,
-  UserRole,
   LeadSource,
   LeadStatus,
   TourStatus,

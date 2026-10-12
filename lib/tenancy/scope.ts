@@ -35,7 +35,6 @@ export type ScopedContext = {
   role: UserRole;
   email: string;
   isAgency: boolean;              // AGENCY-typed org AND an agency role (not org type alone)
-  isAlPartner: false;             // retired (Audience Sync removed); always false. Kept for importers.
   isImpersonating: boolean;
   // Property-level RBAC gate.
   //   null  → unrestricted (org-wide access). Default for any user with
@@ -137,7 +136,6 @@ async function getDemoScope(): Promise<ScopedContext | null> {
     role: isAgencyScope ? UserRole.AGENCY_OWNER : UserRole.CLIENT_OWNER,
     email: "demo@leasestack.co",
     isAgency: isAgencyScope,
-    isAlPartner: false,
     isImpersonating: false,
     // Demo scope is always unrestricted. The whole point of demo mode is
     // to render the full surface for showcasing, so we never hand it a
@@ -427,7 +425,6 @@ async function getScopeUncached(): Promise<ScopedContext | null> {
     role: user.role,
     email: user.email,
     isAgency,
-    isAlPartner: false,
     isImpersonating,
     allowedPropertyIds,
     isDemo: false,
