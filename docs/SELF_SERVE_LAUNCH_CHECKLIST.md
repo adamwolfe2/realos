@@ -79,21 +79,7 @@ These gate the `/portal/connect` cards. Without them, operators see
 
 ---
 
-## 3. Cursive (visitor identification) pixel
-
-| Item | Env var | Status | Notes |
-|------|---------|--------|-------|
-| the upstream pixel provider API | `CURSIVE_API_KEY` | ⬜ | TODO placeholder in `.env.example` |
-| Webhook secret | `CURSIVE_WEBHOOK_SECRET` | ⬜ | Set when provisioning the the upstream pixel provider SuperPixel. Used as `x-audiencelab-secret` (shared-secret mode) or HMAC key (signature mode) |
-| Pixel-request notify email | `PIXEL_REQUEST_NOTIFY_EMAIL` | ⬜ (defaults to `ADMIN_EMAIL`) | When an operator clicks "Request pixel" we email ops. the upstream pixel provider does not expose a programmatic provisioning API, so each request becomes a 3–5 min manual setup task. |
-
-**Operator expectation set in UI:** the Connect Hub pixel card needs to
-say "we'll set this up for you within X hours" so the manual ops step
-doesn't feel like the platform is broken. _(See task #11.)_
-
----
-
-## 4. Vercel programmatic domains (POLISH:CUSTOM_DOMAIN)
+## 3. Vercel programmatic domains (POLISH:CUSTOM_DOMAIN)
 
 | Item | Env var | Status | Notes |
 |------|---------|--------|-------|
@@ -102,7 +88,7 @@ doesn't feel like the platform is broken. _(See task #11.)_
 
 ---
 
-## 5. Data sources (insights + reports)
+## 4. Data sources (insights + reports)
 
 | Item | Env var | Status | Notes |
 |------|---------|--------|-------|
@@ -114,7 +100,7 @@ doesn't feel like the platform is broken. _(See task #11.)_
 
 ---
 
-## 6. AI engines (chatbot + AEO + content drafter)
+## 5. AI engines (chatbot + AEO + content drafter)
 
 | Item | Env var | Status | Notes |
 |------|---------|--------|-------|
@@ -126,7 +112,7 @@ doesn't feel like the platform is broken. _(See task #11.)_
 
 ---
 
-## 7. Observability + ops
+## 6. Observability + ops
 
 | Item | Env var | Status | Notes |
 |------|---------|--------|-------|
@@ -137,7 +123,7 @@ doesn't feel like the platform is broken. _(See task #11.)_
 
 ---
 
-## 8. Branding + app config
+## 7. Branding + app config
 
 | Item | Env var | Status | Notes |
 |------|---------|--------|-------|
@@ -155,8 +141,7 @@ doesn't feel like the platform is broken. _(See task #11.)_
 
 1. **Today / this week** — Set `ENCRYPTION_KEY`, `OAUTH_STATE_SECRET`,
    `BLOB_READ_WRITE_TOKEN`, `META_AD_LIBRARY_TOKEN`,
-   `GOOGLE_PLACES_API_KEY`, `TAVILY_API_KEY`, `CURSIVE_API_KEY`,
-   `CURSIVE_WEBHOOK_SECRET`. None of these require third-party approval.
+   `GOOGLE_PLACES_API_KEY`, `TAVILY_API_KEY`. None of these require third-party approval.
 2. **This week** — Create Google OAuth client, register redirect URIs.
    Set `GOOGLE_OAUTH_CLIENT_ID`/`SECRET`. Submit Google Ads developer
    token Standard Access application (long lead time — start it now).
@@ -180,7 +165,6 @@ on every load. The matrix:
 | Provider | Source unavailable when | Card state |
 |----------|------------------------|------------|
 | AppFolio | _never_ (operator brings own credentials) | Always live |
-| Cursive Pixel | _never_ (operator requests, ops provisions) | Always live |
 | Your Website | _never_ (operator types URL) | Always live |
 | GA4 | `OAUTH_ENABLED` false OR `GOOGLE_OAUTH_CLIENT_ID` missing | "Coming soon" disabled with reason |
 | GSC | same as GA4 | "Coming soon" disabled with reason |

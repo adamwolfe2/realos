@@ -29,7 +29,6 @@ import { prisma } from "../lib/db";
       slug: true,
       moduleSEO: true,
       moduleChatbot: true,
-      modulePixel: true,
       moduleLeadCapture: true,
       createdAt: true,
     },
@@ -61,8 +60,6 @@ import { prisma } from "../lib/db";
       org.moduleSEO,
       "Chatbot=",
       org.moduleChatbot,
-      "Pixel=",
-      org.modulePixel,
       "LeadCapture=",
       org.moduleLeadCapture,
     );
@@ -142,15 +139,6 @@ import { prisma } from "../lib/db";
       where: { orgId: org.id, createdAt: { gte: day28 } },
     });
     console.log(`Chatbot conversations: all-time=${convos} · 28d=${convos28}`);
-
-    // Visitors
-    const visitors = await prisma.visitor.count({
-      where: { orgId: org.id },
-    });
-    const visitors28 = await prisma.visitor.count({
-      where: { orgId: org.id, firstSeenAt: { gte: day28 } },
-    });
-    console.log(`Visitors: all-time=${visitors} · 28d=${visitors28}`);
 
     // SEO daily snapshots
     const seo = await prisma.seoSnapshot.count({

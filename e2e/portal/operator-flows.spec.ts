@@ -74,25 +74,10 @@ test.describe("Portal operator flows", () => {
       "Google Search Console",
       "Google Ads",
       "Meta Ads",
-      "Cursive pixel",
     ]) {
       await expect(
         page.getByRole("heading", { name: tile, exact: true })
       ).toBeVisible();
     }
-  });
-
-  test("Cursive pixel connect form opens from its tile", async ({ page }) => {
-    await page.goto("/portal/settings/integrations");
-    await page
-      .getByRole("heading", { name: "Cursive pixel", exact: true })
-      .click();
-    await expect(page.locator("#websiteUrl")).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Connect Cursive" })
-    ).toBeVisible();
-    // ponytail: stops before submitting — a real submit files a pixel
-    // request in the shared demo org that admins/prospects would see.
-    // Submit-path coverage belongs at the API level with cleanup.
   });
 });

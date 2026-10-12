@@ -17,7 +17,7 @@ const prisma = new PrismaClient({ adapter: new PrismaNeonHttp(process.env.DATABA
     const start = Date.now();
     const snap = await generateReportSnapshot(org.id, kind);
     console.log(`Done in ${((Date.now()-start)/1000).toFixed(1)}s`);
-    console.log(`  captured contacts: ${snap.kpis.leads + (snap.kpis.identifiedVisitors ?? 0)} (${snap.kpis.leads} leads + ${snap.kpis.identifiedVisitors ?? 0} identified)`);
+    console.log(`  leads: ${snap.kpis.leads}`);
     console.log(`  aeoStats: ${snap.aeoStats ? `${snap.aeoStats.totalChecks} checks, ${snap.aeoStats.cited} cited, ${snap.aeoStats.competitorCited} competitor-cited` : 'none'}`);
 
     // Persist as a fresh ClientReport row

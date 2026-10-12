@@ -19,7 +19,7 @@
  * chart shows a clear upward curve.
  *
  * Tables redistributed:
- *   Lead, Tour, Visitor, IdentifiedVisitor, ChatbotConversation,
+ *   Lead, Tour, ChatbotConversation,
  *   SeoSnapshot, AdMetricDaily
  *
  * Idempotent in the sense that re-running just re-randomizes; data is
@@ -119,21 +119,6 @@ async function redistributeTable(
           updatedAt: d,
           scheduledAt: d,
         },
-      }),
-  );
-
-  // 3. Visitor (identified) — drives "Visitors" funnel stage
-  await redistributeTable(
-    "Visitor",
-    () =>
-      prisma.visitor.findMany({
-        where: { orgId: SHOWCASE_ORG },
-        select: { id: true },
-      }),
-    (id, d) =>
-      prisma.visitor.update({
-        where: { id },
-        data: { createdAt: d, updatedAt: d, lastSeenAt: d },
       }),
   );
 

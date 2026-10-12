@@ -2,7 +2,7 @@
 //   - IntakeSubmission rows with companyName "Playwright Test Co" or
 //     primaryContactEmail starting with "playwright+"
 //   - Any Organization rows that got provisioned from those intakes
-//   - Stranded test artifacts (visitors / leads with @example.com / .invalid)
+//   - Stranded test artifacts (leads with @example.com / .invalid)
 //
 // Usage:
 //   node scripts/clean-playwright-data.mjs        (dry-run, just counts)
@@ -74,13 +74,6 @@ try {
     console.log(`Deleted ${deletedOrgs.count} test Organization rows (cascades to users/leads/etc).`);
   }
 
-  // Cleanup leftover test visitors from the webhook-test button (synthetic
-  // events with @leasestack-test.invalid emails).
-  const deletedTestVisitors = await prisma.visitor.deleteMany({
-    where: { email: { endsWith: "@leasestack-test.invalid" } },
-  });
-  console.log(`Deleted ${deletedTestVisitors.count} synthetic test Visitor rows.`);
-
   const deletedTestLeads = await prisma.lead.deleteMany({
     where: { email: { endsWith: "@leasestack-test.invalid" } },
   });
@@ -99,12 +92,6 @@ try {
   };
   const deletedPwLeads = await prisma.lead.deleteMany({ where: playwrightLeadWhere });
   console.log(`Deleted ${deletedPwLeads.count} Playwright Lead rows.`);
-
-  // Same for any visitors / chatbot convos those tests created.
-  const deletedPwVisitors = await prisma.visitor.deleteMany({
-    where: { email: { startsWith: "playwright+" } },
-  });
-  console.log(`Deleted ${deletedPwVisitors.count} Playwright Visitor rows.`);
 
   const deletedPwChats = await prisma.chatbotConversation.deleteMany({
     where: { capturedEmail: { startsWith: "playwright+" } },

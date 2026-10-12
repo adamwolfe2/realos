@@ -35,7 +35,7 @@
  *
  *  5. ROLLBACK: `pnpm tsx scripts/seed-neutral-demo.ts --rollback`
  *     deletes the demo org plus all rows that cascade from it (leads,
- *     tours, applications, visitors, sessions, ad accounts, ad
+ *     tours, applications, ad accounts, ad
  *     campaigns, ad metrics, chatbot conversations, insights, etc.).
  *     Org-scoped only — nothing outside the demo org is touched.
  *
@@ -95,7 +95,6 @@ import {
   ApplicationStatus,
   AdPlatform,
   ChatbotConversationStatus,
-  VisitorIdentificationStatus,
   MentionSource,
   Sentiment,
   ReputationScanStatus,
@@ -247,12 +246,11 @@ const PROPERTIES = [
 // Realistic source distribution for student housing — sums to ~100.
 const LEAD_SOURCE_MIX: Array<{ source: LeadSource; weight: number }> = [
   { source: LeadSource.GOOGLE_ADS, weight: 0.30 },
-  { source: LeadSource.DIRECT, weight: 0.22 },
+  { source: LeadSource.DIRECT, weight: 0.26 },
   { source: LeadSource.META_ADS, weight: 0.18 },
   { source: LeadSource.ORGANIC, weight: 0.12 },
   { source: LeadSource.REFERRAL, weight: 0.08 },
   { source: LeadSource.CHATBOT, weight: 0.06 },
-  { source: LeadSource.PIXEL_OUTREACH, weight: 0.04 },
 ];
 
 // Realistic name pools — chosen so no real customer name accidentally
@@ -399,7 +397,6 @@ async function seed(): Promise<void> {
       subscriptionStartedAt: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000),
       mrrCents: 249_900,
       moduleWebsite: true,
-      modulePixel: true,
       moduleChatbot: true,
       moduleGoogleAds: true,
       moduleMetaAds: true,
@@ -419,7 +416,6 @@ async function seed(): Promise<void> {
       // and the embed returned `popups: []`.
       name: DEMO_ORG_NAME,
       moduleWebsite: true,
-      modulePixel: true,
       moduleChatbot: true,
       moduleGoogleAds: true,
       moduleMetaAds: true,
@@ -438,7 +434,6 @@ async function seed(): Promise<void> {
   await prisma.popupEvent.deleteMany({ where: { orgId: org.id } });
   await prisma.popupCampaign.deleteMany({ where: { orgId: org.id } });
   await prisma.seoIntegration.deleteMany({ where: { orgId: org.id } });
-  await prisma.cursiveIntegration.deleteMany({ where: { orgId: org.id } });
   await prisma.appFolioIntegration.deleteMany({ where: { orgId: org.id } });
   await prisma.notification.deleteMany({ where: { orgId: org.id } });
   await prisma.auditEvent.deleteMany({ where: { orgId: org.id } });
@@ -455,9 +450,6 @@ async function seed(): Promise<void> {
     where: { lead: { orgId: org.id } },
   });
   await prisma.tour.deleteMany({ where: { lead: { orgId: org.id } } });
-  await prisma.visitorEvent.deleteMany({ where: { orgId: org.id } });
-  await prisma.visitorSession.deleteMany({ where: { orgId: org.id } });
-  await prisma.visitor.deleteMany({ where: { orgId: org.id } });
   await prisma.lead.deleteMany({ where: { orgId: org.id } });
   await prisma.adMetricDaily.deleteMany({ where: { orgId: org.id } });
   await prisma.adCampaign.deleteMany({ where: { orgId: org.id } });
@@ -940,69 +932,6 @@ async function seed(): Promise<void> {
   await prisma.adMetricDaily.createMany({ data: metricsToCreate });
   console.log(`[seed] inserted ${metricsToCreate.length} ad metric rows`);
 
-  // ─── Visitor sessions (1,500 over 28d, ~10% identified) ──────────────
-  const sessionsToCreate: Prisma.VisitorSessionCreateManyInput[] = [];
-  const SESSION_COUNT = 1500;
-  const utmMixes: Array<{ source: string; medium: string }> = [
-    { source: "google", medium: "cpc" },
-    { source: "google", medium: "organic" },
-    { source: "facebook", medium: "paid_social" },
-    { source: "(direct)", medium: "(none)" },
-    { source: "reddit", medium: "social" },
-    { source: "instagram", medium: "paid_social" },
-  ];
-  for (let i = 0; i < SESSION_COUNT; i += 1) {
-    // Skew sessions toward recent days (min of two uniforms biases toward 0)
-    // so the Visitors trend reads up-and-to-the-right, not flat.
-    const dayOffset = Math.min(rand(0, 28), rand(0, 28));
-    const startedAt = new Date(NOW - dayOffset * DAY_MS - rand(0, DAY_MS));
-    const utm = pick(utmMixes);
-    const property = pick(properties);
-    const pages = rand(1, 12);
-    sessionsToCreate.push({
-      orgId: org.id,
-      anonymousId: `riv-anon-${i.toString(36)}-${rand(1000, 9999)}`,
-      sessionToken: `riv-sess-${i.toString(36)}-${rand(100000, 999999)}`,
-      firstUrl: `https://${property.slug}.example/floor-plans`,
-      firstReferrer: utm.source === "(direct)" ? null : `https://${utm.source}.com/`,
-      utmSource: utm.source === "(direct)" ? null : utm.source,
-      utmMedium: utm.medium === "(none)" ? null : utm.medium,
-      utmCampaign: utm.source === "google" ? "search-lease-up" : null,
-      country: "US",
-      language: "en-US",
-      pageviewCount: pages,
-      totalTimeSeconds: pages * rand(15, 80),
-      maxScrollDepth: rand(20, 100),
-      startedAt,
-      lastEventAt: new Date(startedAt.getTime() + rand(60, 2400) * 1000),
-    });
-  }
-  await prisma.visitorSession.createMany({ data: sessionsToCreate });
-  console.log(`[seed] inserted ${sessionsToCreate.length} visitor sessions`);
-
-  // ─── A handful of identified Visitors so the pixel page lights up ────
-  // Visitor's identity key is `cursiveVisitorId` (the V4 pixel id), not
-  // an `anonymousId` — see schema.prisma. We synthesize a stable demo id
-  // so re-runs upsert the same row rather than duplicating.
-  const identifiedVisitorCount = Math.floor(SESSION_COUNT * 0.10);
-  for (let i = 0; i < identifiedVisitorCount; i += 1) {
-    const firstName = pick(FIRST_NAMES);
-    const lastName = pick(LAST_NAMES);
-    await prisma.visitor.create({
-      data: {
-        orgId: org.id,
-        cursiveVisitorId: `riv-cv-${i}-${rand(1000, 9999)}`,
-        status: VisitorIdentificationStatus.IDENTIFIED,
-        firstName,
-        lastName,
-        email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}${rand(10, 99)}@example.com`,
-        firstSeenAt: new Date(NOW - rand(0, 21) * DAY_MS),
-        lastSeenAt: new Date(NOW - rand(0, 6) * DAY_MS),
-      },
-    });
-  }
-  console.log(`[seed] inserted ${identifiedVisitorCount} identified visitors`);
-
   // ─── Chatbot conversations ───────────────────────────────────────────
   const chatbotMessages = [
     { role: "user", content: "Hey — do you have any 2-bed units available for fall?" },
@@ -1050,16 +979,6 @@ async function seed(): Promise<void> {
       suggestedAction: "Ship two new ad variants from the creative queue. Pause the lowest-CTR ad group.",
       href: "/portal/ads",
       dedupeKey: `cpl_spike:${properties[0].id}:week`,
-    },
-    {
-      kind: "hot_visitor",
-      severity: "info",
-      category: "traffic",
-      title: `4 hot visitors at ${properties[1].name} this week`,
-      body: "Each spent 8+ minutes on floor-plan pages and viewed the application path. None have a lead record yet.",
-      suggestedAction: "Send the high-intent retargeting sequence.",
-      href: "/portal/visitors",
-      dedupeKey: `hot_visitor:${properties[1].id}:week`,
     },
     {
       kind: "pipeline_stall",
@@ -1110,84 +1029,6 @@ async function seed(): Promise<void> {
     });
   }
   console.log(`[seed] inserted ${insightsSeed.length} insights`);
-
-  // ─── VisitorEvent timelines for the 200 most-recent sessions ────────
-  // The visitor page renders a per-session event timeline (pageview →
-  // scroll → timing → click → form_submit). Without these rows the
-  // session detail view is empty. We back-fill the most recent 200
-  // sessions with realistic 3–8 event timelines each.
-  const recentSessions = await prisma.visitorSession.findMany({
-    where: { orgId: org.id },
-    orderBy: { startedAt: "desc" },
-    take: 200,
-    select: { id: true, startedAt: true, firstUrl: true },
-  });
-  const visitorEventsToCreate: Prisma.VisitorEventCreateManyInput[] = [];
-  for (const sess of recentSessions) {
-    const pageCount = rand(3, 8);
-    let cursor = sess.startedAt.getTime();
-    for (let p = 0; p < pageCount; p += 1) {
-      const property = pick(properties);
-      const path = pick([
-        "/floor-plans",
-        `/floor-plans/${pick(["studio", "1-bed", "2-bed", "3-bed"])}`,
-        "/amenities",
-        "/tour",
-        "/apply",
-        "/contact",
-        "/parents",
-        "/location",
-        "/gallery",
-      ]);
-      cursor += rand(8_000, 95_000);
-      visitorEventsToCreate.push({
-        orgId: org.id,
-        sessionId: sess.id,
-        type: "pageview",
-        url: `https://${property.slug}.example${path}`,
-        path,
-        title: `${property.name} · ${path.split("/").pop() ?? "home"}`,
-        occurredAt: new Date(cursor),
-      });
-      // Add a scroll + timing event for most pages so the timeline
-      // reads as engaged, not a bot.
-      if (rng() > 0.3) {
-        cursor += rand(2_000, 8_000);
-        visitorEventsToCreate.push({
-          orgId: org.id,
-          sessionId: sess.id,
-          type: "scroll",
-          url: `https://${property.slug}.example${path}`,
-          path,
-          scrollDepth: rand(35, 100),
-          occurredAt: new Date(cursor),
-        });
-      }
-      if (rng() > 0.45) {
-        cursor += rand(4_000, 25_000);
-        visitorEventsToCreate.push({
-          orgId: org.id,
-          sessionId: sess.id,
-          type: "timing",
-          url: `https://${property.slug}.example${path}`,
-          path,
-          timeOnPageSeconds: rand(8, 180),
-          occurredAt: new Date(cursor),
-        });
-      }
-    }
-  }
-  // Chunk the insert — Prisma's createMany has a Postgres parameter cap
-  // around ~32k, and we generate ~3-4k rows here. One chunk works, but
-  // chunking by 1,000 keeps memory + log lines reasonable.
-  for (let i = 0; i < visitorEventsToCreate.length; i += 1000) {
-    await prisma.visitorEvent.createMany({
-      data: visitorEventsToCreate.slice(i, i + 1000),
-    });
-  }
-  console.log(
-    `[seed] inserted ${visitorEventsToCreate.length} visitor events across ${recentSessions.length} sessions`,
-  );
 
   // ─── Reputation scans + property mentions ───────────────────────────
   // One ReputationScan per property, completed, with a fan of mentions
@@ -1463,7 +1304,6 @@ async function seed(): Promise<void> {
         leasesPct: rand(-5, 10),
       },
       funnel: [
-        { label: "Visitors", count: days * rand(380, 540) },
         { label: "Leads", count: leadsTotal },
         { label: "Tours", count: tours },
         { label: "Applications", count: apps },
@@ -1601,7 +1441,6 @@ async function seed(): Promise<void> {
     { kind: "lead_created", title: "New hot lead — Avery Chen", body: "Score 84. Viewed 2-bed floor plan, applied via chatbot.", offset: 1 },
     { kind: "tour_scheduled", title: "Tour booked — Jordan Park", body: "Park & Pearl, Wed 3pm in-person." , offset: 6 },
     { kind: "chatbot_lead", title: "Chatbot captured a lead overnight", body: "Sage at Greenpoint — 12:42am session ended with email captured.", offset: 12 },
-    { kind: "integration_error", title: "Cursive pixel: no events in 6h", body: "Last event from Westbrook Commons was 6h ago. Pixel may be misconfigured.", offset: 18 },
     { kind: "sync_complete", title: "Weekly report generated", body: "Last week's portfolio rollup is ready to review and share.", offset: 26 },
   ];
   for (const n of notifSpecs) {
@@ -1654,28 +1493,6 @@ async function seed(): Promise<void> {
     },
   });
   console.log(`[seed] inserted AppFolio integration (status: idle, last sync 4h ago)`);
-
-  // Cursive pixel — provisioned, installed, firing. Legacy org-wide
-  // row (propertyId = NULL) so the existing helpers find it as the
-  // primary pixel.
-  await prisma.cursiveIntegration.create({
-    data: {
-      orgId: org.id,
-      propertyId: null,
-      cursivePixelId: "tc-demo-pixel-7f4e9b2c",
-      cursiveAccountId: "al-acct-leasestack-demo",
-      pixelScriptUrl: "https://cdn.cursive.example/p/tc-demo-pixel-7f4e9b2c.js",
-      installedOnDomain: "telegraphcommons.example",
-      provisionedAt: new Date(NOW - 75 * DAY_MS),
-      lastEventAt: new Date(NOW - 8 * 60 * 1000), // 8 minutes ago
-      totalEventsCount: 18_421,
-      webhookToken: randomBytes(16).toString("hex"),
-      cursiveSegmentId: "seg-tc-demo-hot",
-      lastSegmentSyncAt: new Date(NOW - 2 * 60 * 60 * 1000),
-      weeklyDigestEnabled: true,
-    },
-  });
-  console.log(`[seed] inserted Cursive pixel integration (firing, last event 8m ago)`);
 
   // SEO — GA4 + GSC, both connected and syncing. Legacy org-wide rows.
   await prisma.seoIntegration.create({

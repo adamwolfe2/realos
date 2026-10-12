@@ -14,8 +14,7 @@
  *     rate (last 30d)?
  *   - Neighborhood pages: how many PUBLISHED?
  *
- * No mutations. Pattern: scripts/diagnose-visitors.mjs +
- * scripts/provision-sg-real-estate.ts (read-only branches).
+ * No mutations. Pattern: scripts/provision-sg-real-estate.ts (read-only branches).
  *
  * Usage:
  *   set -a; source .env.local; set +a; \
@@ -95,7 +94,7 @@ async function main() {
     `org: "${org.name}" (slug=${org.slug}, id=${org.id}, status=${org.status})`,
   );
   log.info(
-    `modules: SEO=${org.moduleSEO} Pixel=${org.modulePixel} Chatbot=${org.moduleChatbot} Email=${org.moduleEmail} GoogleAds=${org.moduleGoogleAds} MetaAds=${org.moduleMetaAds}`,
+    `modules: SEO=${org.moduleSEO} Chatbot=${org.moduleChatbot} Email=${org.moduleEmail} GoogleAds=${org.moduleGoogleAds} MetaAds=${org.moduleMetaAds}`,
   );
 
   const sevenDaysAgo = new Date(Date.now() - 7 * DAY_MS);

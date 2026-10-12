@@ -25,7 +25,7 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://leasestack.co").rep
 
 const HEADLINE = "Telegraph Commons — June 2026 Marketing & Leasing Performance";
 const NOTES =
-  "Your June performance across attribution, applications, and identified visitor traffic, pulled live from AppFolio, Google, and the LeaseStack pixel. Every figure reflects real activity for the month.";
+  "Your June performance across attribution, and applications, pulled live from AppFolio and Google. Every figure reflects real activity for the month.";
 
 async function main() {
   // 1. Verify the org + property are the ones we expect before writing.
@@ -72,7 +72,7 @@ async function main() {
   });
   console.log(
     `  KPIs: leads=${snapshot.kpis.leads} applications=${snapshot.kpis.applications} ` +
-      `identifiedVisitors=${snapshot.kpis.identifiedVisitors ?? 0} tours=${snapshot.kpis.tours}`,
+      `tours=${snapshot.kpis.tours}`,
   );
 
   // 4. Persist as a shared ClientReport with a public share token.

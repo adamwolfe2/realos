@@ -29,7 +29,6 @@ import {
   LeadSource,
   LeadStatus,
   TourStatus,
-  VisitorIdentificationStatus,
 } from "@prisma/client";
 import { PrismaNeonHttp } from "@prisma/adapter-neon";
 import type { HTTPQueryOptions } from "@neondatabase/serverless";
@@ -241,7 +240,6 @@ async function main() {
     showBlog: false,
     enableExitIntent: true,
     enableChatbot: true,
-    enablePixel: true,
     chatbotEnabled: true,
     chatbotPersonaName: "Telegraph Assistant",
     chatbotGreeting:
@@ -502,140 +500,6 @@ async function main() {
       },
     });
     createdLeads[externalId] = saved.id;
-  }
-
-  // ---------------------------------------------------------------------------
-  // 5. Visitors — ~20, UTMs, spread over 14 days, mixed identification
-  // ---------------------------------------------------------------------------
-
-  const visitorSeeds = [
-    // Identified / converted (Cursive-sourced)
-    {
-      cursiveVisitorId: "tc-cv-001",
-      externalId: "cursive_tc_001",
-      status: VisitorIdentificationStatus.MATCHED_TO_LEAD,
-      firstName: "Emma",
-      lastName: "Nakamura",
-      email: "emma.nakamura@berkeley.edu",
-      utmSource: "google",
-      utmMedium: "organic",
-      firstSeenAt: daysAgo(3),
-      sessionCount: 4,
-      totalTimeSeconds: 720,
-      intentScore: 78,
-    },
-    {
-      cursiveVisitorId: "tc-cv-002",
-      externalId: "cursive_tc_002",
-      status: VisitorIdentificationStatus.IDENTIFIED,
-      firstName: "Jamal",
-      email: "jamal.whitfield@berkeley.edu",
-      utmSource: "direct",
-      utmMedium: "none",
-      firstSeenAt: daysAgo(6),
-      sessionCount: 3,
-      totalTimeSeconds: 510,
-      intentScore: 65,
-    },
-    {
-      cursiveVisitorId: "tc-cv-003",
-      externalId: "cursive_tc_003",
-      status: VisitorIdentificationStatus.ENRICHED,
-      firstName: "Priya",
-      email: "priya.sharma@berkeley.edu",
-      utmSource: "google",
-      utmMedium: "organic",
-      firstSeenAt: daysAgo(9),
-      sessionCount: 6,
-      totalTimeSeconds: 1240,
-      intentScore: 88,
-    },
-    {
-      cursiveVisitorId: "tc-cv-004",
-      externalId: "cursive_tc_004",
-      status: VisitorIdentificationStatus.IDENTIFIED,
-      firstName: "Sofia",
-      email: "sofia.chen@berkeley.edu",
-      utmSource: "meta",
-      utmMedium: "paid_social",
-      utmCampaign: "ig-story-fall-fill",
-      firstSeenAt: daysAgo(12),
-      sessionCount: 5,
-      totalTimeSeconds: 930,
-      intentScore: 82,
-    },
-    {
-      cursiveVisitorId: "tc-cv-005",
-      externalId: "cursive_tc_005",
-      status: VisitorIdentificationStatus.IDENTIFIED,
-      firstName: "Olivia",
-      email: "olivia.park@berkeley.edu",
-      utmSource: "google",
-      utmMedium: "cpc",
-      utmCampaign: "berkeley-student-housing",
-      firstSeenAt: daysAgo(1),
-      sessionCount: 2,
-      totalTimeSeconds: 340,
-      intentScore: 58,
-    },
-    // Anonymous
-    ...Array.from({ length: 15 }, (_, i) => ({
-      cursiveVisitorId: null,
-      externalId: `anon_tc_${String(i + 1).padStart(3, "0")}`,
-      status: VisitorIdentificationStatus.ANONYMOUS,
-      utmSource: ["google", "meta", "direct", "organic"][i % 4],
-      utmMedium: ["organic", "paid_social", "none", "organic"][i % 4],
-      utmCampaign: i % 4 === 1 ? "ig-story-fall-fill" : null,
-      firstSeenAt: daysAgo(Math.floor(Math.random() * 14)),
-      sessionCount: 1 + (i % 3),
-      totalTimeSeconds: 60 + i * 12,
-      intentScore: 5 + (i % 7) * 4,
-    })),
-  ];
-
-  for (const v of visitorSeeds) {
-    const { externalId, cursiveVisitorId, ...rest } = v as typeof v & {
-      email?: string;
-      firstName?: string;
-      lastName?: string;
-    };
-
-    // Upsert via cursiveVisitorId (unique) when present, else visitorHash
-    if (cursiveVisitorId) {
-      await prisma.visitor.upsert({
-        where: { cursiveVisitorId },
-        update: {
-          orgId,
-          propertyId,
-          ...rest,
-          lastSeenAt: rest.firstSeenAt,
-        },
-        create: {
-          orgId,
-          propertyId,
-          cursiveVisitorId,
-          visitorHash: externalId,
-          ...rest,
-          lastSeenAt: rest.firstSeenAt,
-        },
-      });
-    } else {
-      // Use visitorHash for idempotency by querying first
-      const existing = await prisma.visitor.findFirst({
-        where: { orgId, visitorHash: externalId },
-      });
-      if (!existing) {
-        await prisma.visitor.create({
-          data: {
-            orgId,
-            propertyId,
-            visitorHash: externalId,
-            ...rest,
-            lastSeenAt: rest.firstSeenAt,
-          },
-        });
-      }
-    }
   }
 
   // ---------------------------------------------------------------------------
@@ -958,7 +822,6 @@ async function main() {
     siteConfigCount,
     listingCount,
     leadCount,
-    visitorCount,
     conversationCount,
     tourCount,
     creativeCount,
@@ -967,7 +830,6 @@ async function main() {
     prisma.tenantSiteConfig.count({ where: { orgId } }),
     prisma.listing.count({ where: { propertyId } }),
     prisma.lead.count({ where: { orgId } }),
-    prisma.visitor.count({ where: { orgId } }),
     prisma.chatbotConversation.count({ where: { orgId } }),
     prisma.tour.count({ where: { propertyId } }),
     prisma.creativeRequest.count({ where: { orgId } }),
@@ -984,7 +846,6 @@ Counts in DB (scoped to this tenant):
   TenantSiteConfig:     ${siteConfigCount}
   Listing:              ${listingCount}
   Lead:                 ${leadCount}
-  Visitor:              ${visitorCount}
   ChatbotConversation:  ${conversationCount}
   Tour:                 ${tourCount}
   CreativeRequest:      ${creativeCount}

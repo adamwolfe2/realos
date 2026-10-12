@@ -17,9 +17,6 @@ const prisma = new PrismaClient({ adapter: new PrismaNeonHttp(process.env.DATABA
   const leads30 = await prisma.lead.count({ where: { orgId: org!.id, propertyId: tc.id, createdAt: { gte: since30 } } });
   const leadsBySrc = await prisma.lead.groupBy({ by: ['source'], where: { orgId: org!.id, propertyId: tc.id }, _count: { _all: true } });
 
-  const visitors = await prisma.visitor.count({ where: { orgId: org!.id, propertyId: tc.id, status: 'IDENTIFIED' } });
-  const visitorsOrgWide = await prisma.visitor.count({ where: { orgId: org!.id, status: 'IDENTIFIED' } });
-
   const chats = await prisma.chatbotConversation.count({ where: { orgId: org!.id, propertyId: tc.id } });
   const chatsOrg = await prisma.chatbotConversation.count({ where: { orgId: org!.id } });
 
@@ -31,7 +28,6 @@ const prisma = new PrismaClient({ adapter: new PrismaNeonHttp(process.env.DATABA
   console.log("=== TC contact funnel ===");
   console.log(`Lead rows (property-scoped):    ${leads}  (${leads30} in last 30d)`);
   leadsBySrc.forEach(s => console.log(`    ${s.source}: ${s._count._all}`));
-  console.log(`Identified Visitors (TC):       ${visitors}  (org-wide: ${visitorsOrgWide})`);
   console.log(`Chatbot conversations (TC):     ${chats}  (org-wide: ${chatsOrg})`);
   console.log(`Tours (TC):                     ${tours}`);
   console.log(`Applications (TC):              ${apps}`);
@@ -39,8 +35,8 @@ const prisma = new PrismaClient({ adapter: new PrismaNeonHttp(process.env.DATABA
   console.log(`Residents (TC):                 ${residents}`);
 
   console.log("\n=== Suggested rollup math ===");
-  console.log(`Captured contacts = Lead + Identified Visitors + Tours + Applications`);
-  console.log(`                  = ${leads} + ${visitorsOrgWide} + ${tours} + ${apps} = ${leads + visitorsOrgWide + tours + apps}`);
+  console.log(`Captured contacts = Lead + Tours + Applications`);
+  console.log(`                  = ${leads} + ${tours} + ${apps} = ${leads + tours + apps}`);
 
   await prisma.$disconnect();
 })();

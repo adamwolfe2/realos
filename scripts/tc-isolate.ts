@@ -107,7 +107,6 @@ const TC_ID = "cmo402dzi0003c93lq9i6xz6h"; // Telegraph Commons
     tcAeoCitations,
     tcContentDrafts,
     tcLeads,
-    tcVisitors,
     tcChats,
     tcOnPageAudits,
     tcBacklinks,
@@ -137,7 +136,6 @@ const TC_ID = "cmo402dzi0003c93lq9i6xz6h"; // Telegraph Commons
       _count: { _all: true },
     }),
     prisma.lead.count({ where: { orgId: ORG_ID, propertyId: TC_ID } }),
-    prisma.visitor.count({ where: { orgId: ORG_ID, propertyId: TC_ID } }).catch(() => null),
     prisma.chatbotConversation.count({ where: { propertyId: TC_ID } }).catch(() => null),
     prisma.onPageAudit.count({ where: { propertyId: TC_ID } }).catch(() => 0),
     prisma.backlinkSummary.count({ where: { propertyId: TC_ID } }).catch(() => 0),
@@ -145,7 +143,6 @@ const TC_ID = "cmo402dzi0003c93lq9i6xz6h"; // Telegraph Commons
   ]);
 
   console.log(`        Leads:                 ${tcLeads}`);
-  console.log(`        Visitors:              ${tcVisitors ?? "n/a (per-prop nullable)"}`);
   console.log(`        Chatbot conversations: ${tcChats ?? "n/a"}`);
   console.log(`        Listings:              ${tcListings}`);
   console.log(`        SEO recommendations:`);

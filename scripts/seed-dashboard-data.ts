@@ -1,12 +1,12 @@
 /**
  * scripts/seed-dashboard-data.ts
  *
- * Seeds the new dashboard tables (VisitorSession, VisitorEvent, SeoSnapshot,
+ * Seeds the new dashboard tables (SeoSnapshot,
  * SeoQuery, SeoLandingPage, AdAccount, AdCampaign, AdMetricDaily) with 30 days
  * of realistic-looking sample data for an existing tenant.
  *
  * Lets the operator dashboard at /portal show fully-populated tiles
- * immediately, without waiting for real pixel/ad/SEO data to flow in.
+ * immediately, without waiting for real ad/SEO data to flow in.
  *
  * Run:
  *   set -a; source .env.local; set +a; \
@@ -103,10 +103,6 @@ function jitter(base: number, pct = 0.25): number {
   return Math.max(0, Math.round(base + (Math.random() * 2 - 1) * span));
 }
 
-function pick<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)]!;
-}
-
 const SAMPLE_PAGES = [
   "/",
   "/floor-plans",
@@ -117,23 +113,6 @@ const SAMPLE_PAGES = [
   "/gallery",
   "/parents",
   "/contact",
-];
-
-const SAMPLE_REFERRERS = [
-  "https://www.google.com/",
-  "https://www.bing.com/",
-  "direct",
-  "https://www.instagram.com/",
-  "https://www.reddit.com/r/berkeley",
-  "https://duckduckgo.com/",
-];
-
-const SAMPLE_UTM = [
-  { source: "google", medium: "cpc", campaign: "berkeley-housing-search" },
-  { source: "meta", medium: "cpc", campaign: "spring-tour-promo" },
-  { source: "google", medium: "organic", campaign: null },
-  { source: null, medium: null, campaign: null },
-  { source: "instagram", medium: "social", campaign: "campus-tours-q2" },
 ];
 
 const SAMPLE_QUERIES = [
@@ -167,104 +146,12 @@ async function main() {
 
   // Wipe prior sample data scoped to this org (idempotent)
   console.log("Clearing prior dashboard sample data...");
-  await prisma.visitorEvent.deleteMany({ where: { orgId } });
-  await prisma.visitorSession.deleteMany({ where: { orgId } });
   await prisma.seoQuery.deleteMany({ where: { orgId } });
   await prisma.seoLandingPage.deleteMany({ where: { orgId } });
   await prisma.seoSnapshot.deleteMany({ where: { orgId } });
   await prisma.adMetricDaily.deleteMany({ where: { orgId } });
   await prisma.adCampaign.deleteMany({ where: { orgId } });
   await prisma.adAccount.deleteMany({ where: { orgId } });
-
-  // -------------------------------------------------------------------------
-  // Visitor sessions + events (30 days)
-  // -------------------------------------------------------------------------
-  console.log("Seeding visitor sessions and events...");
-  let sessionCount = 0;
-  let eventCount = 0;
-  for (let day = 30; day >= 0; day--) {
-    const dayStart = daysAgoMidnight(day);
-    const sessionsThisDay = jitter(28, 0.4);
-    for (let i = 0; i < sessionsThisDay; i++) {
-      const startedAt = new Date(
-        dayStart.getTime() + Math.floor(Math.random() * 86400_000),
-      );
-      const utm = pick(SAMPLE_UTM);
-      const pageviews = jitter(3, 0.6) || 1;
-      const totalSeconds = jitter(120, 0.8);
-      const maxScroll = Math.min(100, jitter(45, 0.6));
-      const lastEventAt = new Date(startedAt.getTime() + totalSeconds * 1000);
-
-      const session = await prisma.visitorSession.create({
-        data: {
-          orgId,
-          anonymousId: `anon_${randomUUID().slice(0, 12)}`,
-          sessionToken: `vst_${randomUUID()}`,
-          firstUrl: `https://www.telegraphcommons.com${pick(SAMPLE_PAGES)}`,
-          firstReferrer: pick(SAMPLE_REFERRERS),
-          utmSource: utm.source,
-          utmMedium: utm.medium,
-          utmCampaign: utm.campaign,
-          country: pick(["US", "US", "US", "US", "CA", "MX", "CN"]),
-          language: "en-US",
-          pageviewCount: pageviews,
-          totalTimeSeconds: totalSeconds,
-          maxScrollDepth: maxScroll,
-          startedAt,
-          lastEventAt,
-          createdAt: startedAt,
-          updatedAt: lastEventAt,
-        },
-        select: { id: true },
-      });
-      sessionCount++;
-
-      // Per-session events (pageviews) — single-create to avoid HTTP-mode transactions
-      for (let p = 0; p < pageviews; p++) {
-        const occurredAt = new Date(
-          startedAt.getTime() + (p * totalSeconds * 1000) / Math.max(pageviews, 1),
-        );
-        await prisma.visitorEvent.create({
-          data: {
-            orgId,
-            sessionId: session.id,
-            type: "pageview",
-            url: `https://www.telegraphcommons.com${pick(SAMPLE_PAGES)}`,
-            path: pick(SAMPLE_PAGES),
-            occurredAt,
-            createdAt: occurredAt,
-          },
-        });
-        eventCount++;
-      }
-    }
-  }
-  console.log(`  Seeded ${sessionCount} sessions, ${eventCount} events`);
-
-  // Inject ~5 "live now" sessions (lastEventAt within last 5 min)
-  for (let i = 0; i < 5; i++) {
-    const startedAt = new Date(Date.now() - Math.floor(Math.random() * 240_000));
-    await prisma.visitorSession.create({
-      data: {
-        orgId,
-        anonymousId: `anon_${randomUUID().slice(0, 12)}`,
-        sessionToken: `vst_${randomUUID()}`,
-        firstUrl: "https://www.telegraphcommons.com" + pick(SAMPLE_PAGES),
-        firstReferrer: pick(SAMPLE_REFERRERS),
-        utmSource: pick(SAMPLE_UTM).source,
-        country: "US",
-        language: "en-US",
-        pageviewCount: jitter(2) + 1,
-        totalTimeSeconds: Math.floor((Date.now() - startedAt.getTime()) / 1000),
-        maxScrollDepth: jitter(40),
-        startedAt,
-        lastEventAt: new Date(),
-        createdAt: startedAt,
-        updatedAt: new Date(),
-      },
-    });
-  }
-  console.log("  Injected 5 live-now sessions");
 
   // -------------------------------------------------------------------------
   // SEO snapshots + queries + landing pages (30 days)
