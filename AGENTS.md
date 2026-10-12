@@ -26,3 +26,4 @@ github.com/adamwolfe2/realos · Ship: `cap`. Review: `dual-review`.
 - Track NOT manage — copy frames everything as tracking/intel, never property management.
 - Recurring proposals and the LeaseStack platform may share a Stripe Customer. Every subscription/invoice state transition must classify the exact subscription metadata; customer ID alone is never a platform-billing boundary.
 - Prisma `{ equals, mode: "insensitive" }` compiles to an unescaped `ILIKE` on Postgres (`_`/`%` are wildcards). Look up leads by email only via `lib/leads/find-by-email.ts`.
+- Preview and Production share DATABASE_URL. `vercel-build` runs `prisma migrate deploy` (and the heal script) only when VERCEL_ENV=production, so a preview of a migration branch builds against the unmigrated prod schema and may error at runtime; the migration applies when the merge deploys to prod. Test migrations on a Neon scratch branch.
