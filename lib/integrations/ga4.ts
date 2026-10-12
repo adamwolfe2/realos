@@ -269,8 +269,8 @@ export type Ga4SourceRow = {
 const GA4_RUNREPORT_TIMEOUT_MS = 8000;
 
 // Sessions grouped by sessionSource + sessionMedium across ALL channels (no
-// organic filter). Powers attribution source fusion — fills in traffic that
-// form and chatbot capture never saw (no-JS visits, blocked trackers).
+// organic filter). Traffic that form and chatbot capture never saw (no-JS
+// visits, blocked trackers).
 export async function fetchGa4SessionsBySource(
   encryptedJson: string,
   propertyId: string,

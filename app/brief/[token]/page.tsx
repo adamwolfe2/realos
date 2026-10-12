@@ -1209,7 +1209,8 @@ function StackSection({ data }: { data: BriefJson }) {
         </p>
 
         <ul className="mt-7 space-y-2">
-          {data.detectedStack.map((r) => (
+          {/* Briefs saved before the pixel was retired still carry a "pixel" row. */}
+          {data.detectedStack.filter((r) => r.category !== "pixel").map((r) => (
             <li
               key={r.category}
               className="flex items-start gap-3 rounded-xl"
@@ -1318,7 +1319,7 @@ function buildActions(
     {
       no: 4,
       title: "Install GA4 + a chatbot",
-      body: "Today, a tenant exec who lands on the homepage leaves without a trace. GA4 tracks where they came from. An AI chatbot trained on the building's spec sheet books tours 24/7. Two integrations, one day.",
+      body: "Today, a tenant exec who lands on the homepage leaves unidentified. GA4 tracks where they came from. An AI chatbot trained on the building's spec sheet books tours 24/7. Two integrations, one day.",
       days: "Days 13–17",
     },
     {

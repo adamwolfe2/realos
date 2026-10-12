@@ -140,7 +140,7 @@ export default function FeaturesIndexPage() {
               lineHeight: 1.55,
             }}
           >
-            Eight product surfaces on your existing PMS, domain, and team.
+            Seven product surfaces on your existing PMS, domain, and team.
             Click any feature for the full pitch.
           </p>
           <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3">

@@ -153,6 +153,7 @@ export async function loadClientActivation(
             select: {
               orgId: true,
               propertyId: true,
+              source: true,
               convertedAt: true,
               createdAt: true,
             },
@@ -296,7 +297,7 @@ type ActivationSnapshot = Prisma.OrganizationGetPayload<{
           chatbotConversations: { select: { orgId: true, propertyId: true, leadId: true, lastMessageAt: true } },
           seoIntegrations: { select: { orgId: true, propertyId: true, provider: true, status: true, lastSyncAt: true, lastSyncError: true, updatedAt: true } },
           seoSnapshots: { select: { orgId: true, propertyId: true, date: true } },
-          leads: { select: { orgId: true, propertyId: true, convertedAt: true, createdAt: true } },
+          leads: { select: { orgId: true, propertyId: true, source: true, convertedAt: true, createdAt: true } },
           popupCampaigns: { select: { orgId: true, propertyId: true, shownCount: true, convertedCount: true, updatedAt: true } },
           reputationScans: { select: { orgId: true, propertyId: true, status: true, completedAt: true } },
           seoActionRecs: { select: { orgId: true, propertyId: true, generatedAt: true } },
@@ -456,6 +457,14 @@ function addAttributionSignals(
   const outcome = property.leads.find(({ convertedAt }) => convertedAt != null);
   if (outcome?.convertedAt) {
     signals.push(signal("integration.downstream_outcome", subject, "ready", "record", outcome.convertedAt));
+  }
+  // A converted lead with a known capture source is the traceable journey
+  // now that the visitor pixel (Lead.visitorId) is retired.
+  const traced = property.leads.find(
+    ({ convertedAt, source }) => convertedAt != null && source !== "OTHER",
+  );
+  if (traced?.convertedAt) {
+    signals.push(signal("outcome.attributed_journey", subject, "ready", "outcome", traced.convertedAt));
   }
 }
 

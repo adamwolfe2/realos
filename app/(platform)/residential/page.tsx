@@ -44,12 +44,12 @@ export default function ResidentialHub() {
         eyebrow="Residential real estate"
         headline="Leasing data."
         headlineAccent="Every vertical."
-        subhead="One data engine for student housing, multifamily, senior living, SFR, and BTR. Same pacing models, different playbooks."
+        subhead="One data engine for student housing, multifamily, and senior living. Same pacing models, different playbooks."
         ctas={[
           { label: "Book a demo", href: "/book-demo" },
           { label: "Start free trial", href: "/sign-up", variant: "secondary" },
         ]}
-        caption="Live today on a real lease-up. SFR and build-to-rent on the same engine."
+        caption="Live today on a real lease-up."
         artifact={<PortfolioOccupancy label="Your residential portfolio" />}
       />
 
@@ -67,7 +67,7 @@ export default function ResidentialHub() {
                   lineHeight: 1.15,
                 }}
               >
-                Four playbooks. One data engine.
+                Three playbooks. One data engine.
               </h2>
             </div>
           </Reveal>

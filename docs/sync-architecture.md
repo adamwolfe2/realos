@@ -71,7 +71,8 @@ busy ones. Default to `cron cadence × 2` when in doubt.
 | Auto-refresh (operator with dashboard open 30 min × 45s) | 40 (DB-only, no integration call) |
 
 For a 10-tenant account: ~120 cron invocations/hour at peak, well under
-the Vercel limit. Webhook events are cheap (<50ms each).
+the Vercel limit. Webhook cost varies by provider: Stripe handlers call the
+Stripe API and Resend writes one row per recipient.
 
 ## On-demand sync — implementation
 

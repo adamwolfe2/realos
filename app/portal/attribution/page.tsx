@@ -220,7 +220,7 @@ export default async function AttributionPage({
                 <tr>
                   <th className="px-4 py-2.5 font-semibold">Lead</th>
                   <th className="px-4 py-2.5 font-semibold">Source and proof</th>
-                  <th className="px-4 py-2.5 font-semibold">First touch</th>
+                  <th className="px-4 py-2.5 font-semibold">First seen</th>
                   <th className="px-4 py-2.5 font-semibold">Current stage</th>
                   <th className="px-4 py-2.5 font-semibold">PMS outcome</th>
                 </tr>

@@ -115,7 +115,7 @@ app/
   api/           route handlers
 lib/
   tenancy/       hostname -> org, RLS scope, impersonation
-  integrations/  appfolio, slack, resend, stripe
+  integrations/  appfolio, cursive (lead marketplace import), slack, resend, stripe
   build/         tenant provisioning pipeline
   chatbot/       proactive chatbot runtime
   email/         resend framework
@@ -137,6 +137,7 @@ prd/             product requirements (12 sprints)
 
 See `.env.example` for the full list. Key real-estate-specific vars:
 
+- `CURSIVE_API_KEY`, `CURSIVE_API_URL` (lead marketplace segment import)
 - `APPFOLIO_OAUTH_CLIENT_ID`, `APPFOLIO_OAUTH_CLIENT_SECRET`
 - `VERCEL_API_TOKEN`, `VERCEL_PROJECT_ID` (custom-domain attachment)
 - `ANTHROPIC_API_KEY` (chatbot)

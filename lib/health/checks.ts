@@ -227,6 +227,18 @@ export async function checkAnthropic(): Promise<CheckResult> {
   );
 }
 
+// Cursive still feeds the lead marketplace import (lib/marketplace/cursive-sync.ts).
+export async function checkCursive(): Promise<CheckResult> {
+  // Cursive does not publish a documented /health endpoint. We
+  // hit the API root which 404s with a JSON envelope when reachable. Any
+  // non-5xx is healthy here.
+  return pingUrl(
+    "https://api.audiencelab.io/",
+    { method: "GET" },
+    "cursive"
+  );
+}
+
 export async function checkStripe(): Promise<CheckResult> {
   if (!process.env.STRIPE_SECRET_KEY) {
     return {
@@ -457,6 +469,7 @@ export interface SystemHealth {
     env: CheckResult;
     clerk: CheckResult;
     anthropic: CheckResult;
+    cursive: CheckResult;
     stripe: CheckResult;
     resend: CheckResult;
     // 2026-05-30: extended check roster to cover every external API
@@ -483,11 +496,12 @@ function rollUp(checks: Record<string, CheckResult>): HealthStatus {
 
 export async function runSystemHealth(): Promise<SystemHealth> {
   const started = Date.now();
-  const [database, clerk, anthropic, stripe, resend, openai, perplexity, gemini, dataforseo, tavily] =
+  const [database, clerk, anthropic, cursive, stripe, resend, openai, perplexity, gemini, dataforseo, tavily] =
     await Promise.all([
       checkDatabase(),
       checkClerk(),
       checkAnthropic(),
+      checkCursive(),
       checkStripe(),
       checkResend(),
       checkOpenAI(),
@@ -497,7 +511,7 @@ export async function runSystemHealth(): Promise<SystemHealth> {
       checkTavily(),
     ]);
   const env = checkEnv();
-  const checks = { database, env, clerk, anthropic, stripe, resend, openai, perplexity, gemini, dataforseo, tavily };
+  const checks = { database, env, clerk, anthropic, cursive, stripe, resend, openai, perplexity, gemini, dataforseo, tavily };
   return {
     status: rollUp(checks),
     timestamp: new Date().toISOString(),
@@ -513,6 +527,7 @@ export async function runSystemHealthDeep(): Promise<SystemHealthDeep> {
     database,
     clerk,
     anthropic,
+    cursive,
     stripe,
     resend,
     openai,
@@ -526,6 +541,7 @@ export async function runSystemHealthDeep(): Promise<SystemHealthDeep> {
     checkDatabaseDeep(),
     checkClerk(),
     checkAnthropic(),
+    checkCursive(),
     checkStripe(),
     checkResend(),
     checkOpenAI(),
@@ -542,6 +558,7 @@ export async function runSystemHealthDeep(): Promise<SystemHealthDeep> {
     env,
     clerk,
     anthropic,
+    cursive,
     stripe,
     resend,
     openai,

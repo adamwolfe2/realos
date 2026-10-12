@@ -130,7 +130,8 @@ export async function notifyLeadCaptured(
     }
 
     const toggleKey = CHANNEL_TOGGLE[input.channel as ToggleChannel];
-    const channelEnabled = toggleKey ? (org[toggleKey] ?? true) : true;
+    // Retired channels (PIXEL, VISITOR_CONVERT) have no toggle: never notify.
+    const channelEnabled = toggleKey ? (org[toggleKey] ?? true) : false;
     const recipients = splitRecipients(
       property?.notifyLeadEmailOverride ?? org.notifyLeadEmail ?? null,
     );

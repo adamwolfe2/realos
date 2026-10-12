@@ -42,6 +42,7 @@ async function safeSend(opts: {
         { name: "category", value: "transactional" },
       ],
     });
+    if (r.error) return { ok: false, error: r.error.message };
     return { ok: true, id: r.data?.id };
   } catch (err) {
     return {

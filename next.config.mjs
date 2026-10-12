@@ -79,6 +79,7 @@ const nextConfig = {
       { source: "/portal/audiences/:path*", destination: "/portal" },
       { source: "/admin/pixel", destination: "/admin" },
       { source: "/admin/pixel-requests", destination: "/admin" },
+      { source: "/blog/the-hidden-cost-of-anonymous-website-traffic", destination: "/blog" },
     ];
     return [
       ...legacyPages.map((source) => ({
