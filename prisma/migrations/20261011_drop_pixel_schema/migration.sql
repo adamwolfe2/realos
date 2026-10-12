@@ -1,6 +1,6 @@
 -- S4 of plans/remove-pixel: drop the retired visitor pixel + Audience Sync
 -- schema. Code stopped reading all of this in PR #173.
--- Destructive. Backup: Neon branch backup/pre-pixel-drop-2026-10-11.
+-- Destructive. Backup: Neon branch backup/pre-pixel-drop-2026-10-12.
 -- One transaction: any unexpected row (e.g. an AL_PARTNER user) makes an enum
 -- cast fail and the whole migration rolls back.
 -- Hand-written: a raw `migrate diff` also drops the hand-made partial unique
@@ -11,7 +11,7 @@ BEGIN;
 -- 1. Data: move rows off the enum values being dropped.
 UPDATE "Organization" SET "productLine" = 'STUDENT_HOUSING' WHERE "productLine" = 'AUDIENCE_SYNC';
 UPDATE "Lead"
-  SET "source" = 'OTHER', "sourceDetail" = COALESCE("sourceDetail", 'Pixel outreach (retired)')
+  SET "source" = 'OTHER', "sourceDetail" = COALESCE(NULLIF(BTRIM("sourceDetail"), ''), 'Pixel outreach (retired)')
   WHERE "source" = 'PIXEL_OUTREACH';
 DELETE FROM "OnboardingStepProgress" WHERE "stepKey" = 'INSTALL_PIXEL';
 DELETE FROM "LeadNotificationDelivery" WHERE "channel" IN ('PIXEL', 'VISITOR_CONVERT');

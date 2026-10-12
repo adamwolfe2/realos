@@ -16,7 +16,7 @@ DB: ship the code removal first, then take a Neon backup branch and drop the tab
 | S1 Marketing, pricing, catalogs, product claims | done (PR #173) | T2 (customer-facing copy, billing catalog) |
 | S2 Portal, APIs, crons, webhooks, lib, tests | done (PR #173) | T1 (lead capture paths touch Lead.visitorId) |
 | S3 Admin surfaces, AL_PARTNER role, AUDIENCE_SYNC product line in code | done (PR #173) | T1 (roles) |
-| S4 DB: backup branch, relabel PIXEL_OUTREACH leads, drop visitorId, drop tables/columns/enums | in_progress: migration written + tested on scratch branch; NOT pushed (preview builds migrate prod); ships on Adam's go after #173 is live | T1 (destructive) |
+| S4 DB: backup branch, relabel PIXEL_OUTREACH leads, drop visitorId, drop tables/columns/enums | PR #176 on Adam's go (2026-10-12); migration runs on the production deploy of the merge | T1 (destructive) |
 
 ## Slices
 - S1: delete `app/(platform)/features/pixel`, `app/(platform)/audiences`, home/platform pixel components and artifacts; strip pixel/visitor-ID/audience copy from homepage, pricing, features, FAQ, comparison, product-claims, `lib/billing/features.ts`, `lib/marketplace/catalog.ts`, proposals, sitemap, site-engine data. Accept: grep of marketing surfaces for pixel/visitor ID/audience returns nothing; build green.
@@ -35,4 +35,4 @@ DB: ship the code removal first, then take a Neon backup branch and drop the tab
 - Neon project holy-king-68482227: backup branch backup/pre-pixel-drop-2026-10-11 (br-nameless-recipe-anmw7fje, LSN A/9A4AB4A0). Retake right before the prod run so it holds the latest data.
 - Scratch branch scratch/s4-migration-test: `prisma migrate deploy` applied it; post-diff shows only pre-existing drift (Seo partial unique indexes, updatedAt defaults, ChatbotConversation indexes), which the hand-written migration deliberately leaves alone; Prisma client read smoke over every touched model passed.
 - Also dropped (no code reads them): Organization.notifyOnVisitorConvert, notifyOnNewVisitors.
-- DEPLOY HAZARD: Preview and Production share DATABASE_URL, and vercel-build runs `prisma migrate deploy`. Pushing this branch = running it in prod. Push only on Adam's go, after #173 is live.
+- Deploy: since #175, vercel-build runs `prisma migrate deploy` only on production builds, so this migration runs when the merge deploys to prod, not on push. Backup retaken 2026-10-12: backup/pre-pixel-drop-2026-10-12 (br-gentle-grass-anxt992m, LSN A/9B80B5D8).
