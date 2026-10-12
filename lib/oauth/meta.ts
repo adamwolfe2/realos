@@ -28,7 +28,8 @@ const AUTH_URL = `https://www.facebook.com/${GRAPH_VERSION}/dialog/oauth`;
 const TOKEN_URL = `https://graph.facebook.com/${GRAPH_VERSION}/oauth/access_token`;
 const DEBUG_URL = `https://graph.facebook.com/${GRAPH_VERSION}/debug_token`;
 
-const META_SCOPES = ["ads_read", "ads_management"];
+// Read-only: LeaseStack only displays ad metrics.
+const META_SCOPES = ["ads_read"];
 
 function getClientCredentials(): { appId: string; appSecret: string } {
   const appId = process.env.META_APP_ID;

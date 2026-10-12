@@ -67,6 +67,13 @@ export function IntegrationMarketplace({
     return s === "connected" || s === "stale" || s === "error";
   }).length;
 
+  // Deep links like /portal/settings/integrations#meta-ads (Connect hub)
+  // open that integration's drawer on arrival.
+  React.useEffect(() => {
+    const slug = window.location.hash.slice(1);
+    if (slug && LIVE.some((d) => d.slug === slug)) setOpenSlug(slug);
+  }, [LIVE]);
+
   const openDef = openSlug ? LIVE.find((i) => i.slug === openSlug) : null;
   const openState = openDef ? byStatus.get(openDef.slug) ?? "available" : null;
 

@@ -77,12 +77,6 @@ export function getProviderAvailability(): AvailabilityMap {
       "Your agency is completing Google OAuth setup. This source will become connectable within a few days.",
     eta: "Coming soon",
   };
-  const metaNotReady: ProviderAvailability = {
-    available: false,
-    reason:
-      "Your agency is completing Meta Business verification. This source will become connectable once Meta approves the agency app.",
-    eta: "Coming soon",
-  };
 
   return {
     appfolio: {
@@ -106,15 +100,16 @@ export function getProviderAvailability(): AvailabilityMap {
           eta: null,
         }
       : googleNotReady,
-    meta_ads: metaReady
-      ? {
-          available: true,
-          reason: process.env.META_AD_LIBRARY_TOKEN
-            ? null
-            : "Connectable now. Meta Marketing API Standard Access is still in flight — syncs will activate automatically once approved.",
-          eta: null,
-        }
-      : metaNotReady,
+    // Always connectable: without the Meta app the drawer takes a
+    // read-only access token instead of OAuth.
+    meta_ads: {
+      available: true,
+      reason:
+        metaReady && !process.env.META_AD_LIBRARY_TOKEN
+          ? "Connectable now. Meta Marketing API Standard Access is still in flight — syncs will activate automatically once approved."
+          : null,
+      eta: null,
+    },
     website: {
       available: true,
       reason: null,

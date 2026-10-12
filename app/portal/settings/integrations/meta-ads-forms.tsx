@@ -47,10 +47,9 @@ export function ConnectMetaAdsForm() {
             access.
           </li>
           <li>
-            Click Generate New Token → select the app → scopes:{" "}
-            <code className="font-mono text-foreground">ads_read</code> and{" "}
-            <code className="font-mono text-foreground">ads_management</code>{" "}
-            → set Token Expiration to Never. Copy the token now (only shown
+            Click Generate New Token → select the app → scope:{" "}
+            <code className="font-mono text-foreground">ads_read</code>{" "}
+            (read-only is enough) → set Token Expiration to Never. Copy the token now (only shown
             once).
           </li>
           <li>

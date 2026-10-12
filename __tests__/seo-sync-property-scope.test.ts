@@ -320,3 +320,16 @@ describe("runSeoSync — double-counting write-side supersede policy", () => {
     expect(prisma.seoQuery.deleteMany).not.toHaveBeenCalled();
   });
 });
+
+describe("runSeoSync — unbound OAuth rows", () => {
+  it("never loads rows still waiting for a property pick", async () => {
+    (prisma.seoIntegration.findMany as AnyMock).mockResolvedValue([]);
+    await runSeoSync("org-1", { fullBackfill: true });
+    expect(prisma.seoIntegration.findMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        orgId: "org-1",
+        propertyIdentifier: { not: "PENDING_OAUTH_BIND" },
+      }),
+    });
+  });
+});

@@ -253,29 +253,28 @@ export async function handleOAuthCallback(
   const { triggerInsightsForOrg } = await import("@/lib/insights/triggers");
   triggerInsightsForOrg(payload.orgId, `${provider}_oauth_callback`);
 
-  // Post-callback redirect:
-  //   - google_ads / meta_ads: route to the customer-picker page. The OAuth
-  //     token alone isn't enough to start syncing — the operator still
-  //     needs to choose which ad account (Google Ads customer ID / Meta
-  //     ad account ID) to bind, because the OAuth token may have access
-  //     to several.
-  //   - gsc / ga4: legacy behavior — back to the integrations settings
-  //     page since their property selector lives elsewhere.
-  // Defense-in-depth: signed returnTo could in theory be a /portal/ path
-  // overriding the default; honor it only if it stays inside /portal/.
-  const defaultReturnTo =
-    provider === "google_ads"
-      ? "/portal/connect/google-ads/select"
-      : provider === "meta_ads"
-        ? "/portal/connect/meta-ads/select"
-        : "/portal/settings/integrations";
-  const safePath =
-    payload.returnTo.startsWith("/portal/") &&
-    !payload.returnTo.startsWith("//")
-      ? payload.returnTo
-      : defaultReturnTo;
+  // Post-callback redirect: every provider here needs a second step where
+  // the operator picks what to sync (Google Ads customer, Meta ad account,
+  // GA4 property, Search Console site), because one login can reach
+  // several. Always land on that picker; returnTo can't skip it (it always
+  // carries at least the integrations-page default from the start route).
+  const PICKER_PATH: Record<typeof provider, string> = {
+    google_ads: "/portal/connect/google-ads/select",
+    meta_ads: "/portal/connect/meta-ads/select",
+    google_ga4: "/portal/connect/ga4/select",
+    google_gsc: "/portal/connect/gsc/select",
+  };
+  const safePath = PICKER_PATH[provider];
   const redirect = new URL(safePath, url);
   redirect.searchParams.set("oauth", `${provider}_connected`);
+  // GA4/GSC: carry the signed property scope so the picker binds the row
+  // persistTokens just wrote, not another property's pending row.
+  if (
+    (provider === "google_ga4" || provider === "google_gsc") &&
+    payload.propertyId
+  ) {
+    redirect.searchParams.set("propertyId", payload.propertyId);
+  }
   const res = NextResponse.redirect(redirect.toString());
   res.cookies.delete(STATE_COOKIE);
   return res;

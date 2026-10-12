@@ -176,7 +176,9 @@ const SOURCE_META: Record<
     category: "Paid media",
     icon: BarChart3,
     brandSlug: "meta-ads",
-    connectUrl: "/api/oauth/meta-ads/start",
+    // Settings drawer: Meta sign-in when the agency app is configured,
+    // otherwise the read-only access-token form.
+    connectUrl: "/portal/settings/integrations#meta-ads",
     payoff: "Cross-channel attribution + audience-exhaustion detection",
     unlocks: [
       "CPL spike alerts",
@@ -213,19 +215,17 @@ const PREREQUISITES: Record<ConnectSourceVM["id"], string> = {
   google_ads:
     "You'll need: a Google login with access to your Google Ads account · ~2 min",
   meta_ads:
-    "You'll need: a Facebook login with Business Manager access to your ad account · ~2 min",
+    "You'll need: Business Manager access to your ad account (Facebook login, or a System User token if sign-in isn't offered) · ~2-5 min",
   website:
     "You'll need: your domain and access to its DNS settings · ~5 min",
 };
 
-// Honest per-card scope disclosure for the two write-capable OAuth scopes.
-// The trust footer deliberately says "Analytics sources connect read-only"
-// (GA4/GSC are readonly scopes) — Google Ads (`adwords`) and Meta
-// (`ads_read` + `ads_management`) are NOT read-only, so these two cards
-// carry their own 10px scope note instead of a false blanket claim.
+// Per-card scope disclosure. Google Ads (`adwords`) is write-capable, so it
+// carries its own note instead of a blanket "read-only" claim. Meta asks
+// for `ads_read` only.
 const SCOPE_NOTES: Partial<Record<ConnectSourceVM["id"], string>> = {
   google_ads: "Uses Google's standard Ads API scope",
-  meta_ads: "Uses Meta's ads_read + ads_management scopes",
+  meta_ads: "Read-only: Meta's ads_read permission",
 };
 
 // Per-source staleness thresholds, in hours. Render-time constants only —
@@ -313,15 +313,11 @@ function resolveConnectUrl(
     // now validates + embeds ?propertyId= in the signed state and writes the
     // resulting SeoIntegration row scoped to that property, so the "Connect"
     // click can go straight through OAuth instead of detouring to the manual
-    // service-account-JSON form on /portal/seo. `returnTo` keeps the
-    // post-OAuth landing on the property-scoped SEO page — same destination
-    // the manual-form path used, so the two connect paths agree on where the
-    // operator ends up too. /portal/seo scopes by `property`
-    // (parsePropertyFilter), NOT `propertyId`. (Codex.)
+    // service-account-JSON form on /portal/seo. The callback always lands
+    // on the GA4/GSC property picker, carrying propertyId, so no returnTo.
     case "ga4":
-      return `${base}?propertyId=${propertyId}&returnTo=${encodeURIComponent(`/portal/seo?provider=GA4&property=${propertyId}`)}`;
     case "gsc":
-      return `${base}?propertyId=${propertyId}&returnTo=${encodeURIComponent(`/portal/seo?provider=GSC&property=${propertyId}`)}`;
+      return `${base}?propertyId=${encodeURIComponent(propertyId)}`;
     case "website":
       return `/portal/site-builder?propertyId=${propertyId}`;
     default:
