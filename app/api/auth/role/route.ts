@@ -18,9 +18,9 @@ import { provisionUserForClerk } from "@/lib/auth/provision";
 //      wasn't configured) and the user had no pre-seeded invite row.
 //
 // Failures here are critical — every signed-in Clerk session must
-// resolve to a usable role. We log loudly on errors and still return a
-// 200-with-null so the client can show its retry / contact-support
-// affordance instead of getting a 500 from the API.
+// resolve to a usable role. Provisioning errors return 500 so
+// /auth/redirect retries with backoff; a 200 with role:null is reserved for
+// "this user has no usable account" (no email) and is treated as final.
 
 export async function GET() {
   const { userId } = await auth();
@@ -72,6 +72,6 @@ export async function GET() {
     });
   } catch (err) {
     console.error("[auth/role] provision failed:", err);
-    return NextResponse.json({ role: null });
+    return NextResponse.json({ role: null }, { status: 500 });
   }
 }

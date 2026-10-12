@@ -22,7 +22,7 @@ import { OrgType, ProductLine, UserRole, TenantStatus } from "@prisma/client";
 //     wizard. Slug is derived from email local-part with a uniqueness
 //     suffix on collision.
 //
-// Idempotent: the unique (orgId, slug) and (clerkUserId) indexes guarantee
+// Idempotent: the unique slug and clerkUserId indexes guarantee
 // that a concurrent second call collapses into a single row.
 // ---------------------------------------------------------------------------
 
@@ -106,44 +106,52 @@ export async function provisionUserForClerk(args: {
     [args.firstName, args.lastName].filter(Boolean).join(" ").trim() || email;
   const orgName = `${displayName}'s workspace`;
 
-  const created = await prisma.user.create({
-    data: {
-      clerkUserId: args.clerkUserId,
-      email,
-      firstName: args.firstName,
-      lastName: args.lastName,
-      role: UserRole.CLIENT_OWNER,
-      lastLoginAt: new Date(),
-      org: {
-        create: {
-          name: orgName,
-          slug,
-          orgType: OrgType.CLIENT,
-          productLine: ProductLine.STUDENT_HOUSING,
-          status: TenantStatus.INTAKE_RECEIVED,
-          primaryContactEmail: email,
-          primaryContactName:
-            [args.firstName, args.lastName].filter(Boolean).join(" ").trim() ||
-            null,
-          // Start the new self-serve onboarding wizard from step one.
-          // The portal layout reads this field and bounces the user to
-          // /onboarding until they hit "done". Existing orgs (created
-          // before this column existed) leave it null and skip the
-          // wizard — they already have a working workspace.
-          onboardingStep: "welcome",
-          // All product modules default to off — the operator opts in via
-          // the setup hub. moduleWebsite stays true (schema default) so
-          // the welcome flow can show the marketing-site step.
+  // Three callers race here right after sign-up (Clerk webhook,
+  // /api/auth/role, scope self-heal). The loser's create fails with P2002;
+  // the nested org create rolls back with it, so return the winner's row.
+  let created;
+  try {
+    created = await prisma.user.create({
+      data: {
+        clerkUserId: args.clerkUserId,
+        email,
+        firstName: args.firstName,
+        lastName: args.lastName,
+        role: UserRole.CLIENT_OWNER,
+        lastLoginAt: new Date(),
+        org: {
+          create: {
+            name: orgName,
+            slug,
+            orgType: OrgType.CLIENT,
+            productLine: ProductLine.STUDENT_HOUSING,
+            status: TenantStatus.INTAKE_RECEIVED,
+            primaryContactEmail: email,
+            primaryContactName:
+              [args.firstName, args.lastName].filter(Boolean).join(" ").trim() ||
+              null,
+            // Start the new self-serve onboarding wizard from step one.
+            // The portal layout reads this field and bounces the user to
+            // /onboarding until they hit "done". Existing orgs (created
+            // before this column existed) leave it null and skip the
+            // wizard — they already have a working workspace.
+            onboardingStep: "welcome",
+            // All product modules default to off — the operator opts in via
+            // the setup hub. moduleWebsite stays true (schema default) so
+            // the welcome flow can show the marketing-site step.
+          },
         },
       },
-    },
-    select: {
-      id: true,
-      role: true,
-      orgId: true,
-      org: { select: { orgType: true, slug: true } },
-    },
-  });
+      select: {
+        id: true,
+        role: true,
+        orgId: true,
+        org: { select: { orgType: true, slug: true } },
+      },
+    });
+  } catch (err) {
+    return recoverFromCreateRace(err, args.clerkUserId);
+  }
 
   // Self-serve signups land here, not in the Clerk organization.created
   // webhook, so the funnel event and the ops alert fire from this spot.
@@ -158,6 +166,39 @@ export async function provisionUserForClerk(args: {
     orgId: created.orgId,
     org: created.org!,
     created: true,
+  };
+}
+
+const USER_SELECT = {
+  id: true,
+  role: true,
+  orgId: true,
+  org: { select: { orgType: true, slug: true } },
+} as const;
+
+async function recoverFromCreateRace(
+  err: unknown,
+  clerkUserId: string,
+): Promise<ProvisionedUser> {
+  const isUnique =
+    typeof err === "object" &&
+    err !== null &&
+    (err as { code?: unknown }).code === "P2002";
+  if (!isUnique) throw err;
+  // Only the same Clerk user's row counts as the winner. Anything else
+  // (e.g. a slug clash with a different user) rethrows; the caller retries
+  // and steps 1-2 resolve it normally.
+  const winner = await prisma.user.findUnique({
+    where: { clerkUserId },
+    select: USER_SELECT,
+  });
+  if (!winner?.org) throw err;
+  return {
+    id: winner.id,
+    role: winner.role,
+    orgId: winner.orgId,
+    org: winner.org,
+    created: false,
   };
 }
 
