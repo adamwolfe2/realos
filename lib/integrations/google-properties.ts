@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { authFromStoredCredentials as ga4Auth } from "@/lib/integrations/ga4";
 import { authFromStoredCredentials as gscAuth } from "@/lib/integrations/gsc";
 import { PENDING_OAUTH_BIND } from "@/lib/integrations/seo-sync";
+import { propertyInScope, type ScopedContext } from "@/lib/tenancy/scope";
 
 // Lists what a signed-in Google user can pick after the GA4 / Search Console
 // OAuth consent: GA4 properties (Analytics Admin API) and verified Search
@@ -79,18 +80,25 @@ export type PendingSeoRow = { id: string; propertyName: string | null };
  * can reach. propertyId comes from the signed OAuth state via the callback
  * redirect, so per-property sign-ins never bind onto each other's rows.
  * Shared by the picker page and the bind action so the bound value is
- * always one Google listed.
+ * always one Google listed. propertyId arrives via URL/form, so it is
+ * re-checked against the caller's property grants here.
  */
 export async function loadPendingSeoOptions(
-  orgId: string,
+  scope: ScopedContext,
   provider: SeoPickerProvider,
   propertyId: string | null,
 ): Promise<
   | { row: null }
   | { row: PendingSeoRow; options: GooglePropertyOption[] }
 > {
+  if (!propertyInScope(scope, propertyId)) return { row: null };
   const found = await prisma.seoIntegration.findFirst({
-    where: { orgId, provider, propertyId, propertyIdentifier: PENDING_OAUTH_BIND },
+    where: {
+      orgId: scope.orgId,
+      provider,
+      propertyId,
+      propertyIdentifier: PENDING_OAUTH_BIND,
+    },
     orderBy: { updatedAt: "desc" },
     select: {
       id: true,

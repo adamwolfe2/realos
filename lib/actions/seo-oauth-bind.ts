@@ -62,7 +62,7 @@ export async function bindSeoProperty(
 
   let pending;
   try {
-    pending = await loadPendingSeoOptions(scope.orgId, provider, propertyId);
+    pending = await loadPendingSeoOptions(scope, provider, propertyId);
   } catch (err) {
     console.error("[seo-oauth-bind] listing Google properties failed", err);
     return {

@@ -66,7 +66,11 @@ describe("bindSeoProperty", () => {
   it("binds a listed property to the pending row and starts a sync", async () => {
     const r = await bindSeoProperty(form("GA4", "123"));
     expect(r).toEqual({ ok: true, label: "Main site" });
-    expect(h.load).toHaveBeenCalledWith("org1", "GA4", null);
+    expect(h.load).toHaveBeenCalledWith(
+      expect.objectContaining({ orgId: "org1" }),
+      "GA4",
+      null,
+    );
     expect(h.db.seoIntegration.updateMany).toHaveBeenCalledWith({
       where: {
         id: "row1",
@@ -97,7 +101,11 @@ describe("bindSeoProperty", () => {
 
   it("binds the pending row of the property the sign-in was scoped to", async () => {
     await bindSeoProperty(form("GSC", "123", "prop-2"));
-    expect(h.load).toHaveBeenCalledWith("org1", "GSC", "prop-2");
+    expect(h.load).toHaveBeenCalledWith(
+      expect.objectContaining({ orgId: "org1" }),
+      "GSC",
+      "prop-2",
+    );
   });
 
   it("refuses a second submission once the row is already bound", async () => {

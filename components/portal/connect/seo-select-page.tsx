@@ -58,7 +58,7 @@ export async function SeoSelectPage({
   let pending: Awaited<ReturnType<typeof loadPendingSeoOptions>> | null = null;
   let listError: string | null = null;
   try {
-    pending = await loadPendingSeoOptions(scope.orgId, provider, propertyId);
+    pending = await loadPendingSeoOptions(scope, provider, propertyId);
   } catch (err) {
     console.error(`[connect/${provider}] listing properties failed`, err);
     listError = `Couldn't load your ${copy.noun} from Google.`;
@@ -71,6 +71,10 @@ export async function SeoSelectPage({
   const options: GooglePropertyOption[] =
     pending && pending.row ? pending.options : [];
   const forProperty = pending?.row?.propertyName ?? null;
+  // Retry keeps the sign-in's property scope.
+  const retryHref = propertyId
+    ? `${copy.start}?propertyId=${encodeURIComponent(propertyId)}`
+    : copy.start;
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -99,7 +103,7 @@ export async function SeoSelectPage({
               </p>
             )}
             <Link
-              href={copy.start}
+              href={retryHref}
               className="mt-2 inline-block text-xs font-medium text-primary hover:underline"
             >
               Sign in with Google again
