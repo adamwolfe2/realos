@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { requireScope } from "@/lib/tenancy/scope";
+import { ForbiddenError, requireWorkspaceAdmin } from "@/lib/tenancy/scope";
 import {
   loadPendingSeoOptions,
   type GooglePropertyOption,
@@ -36,7 +36,14 @@ export async function SeoSelectPage({
 }: {
   provider: SeoPickerProvider;
 }) {
-  const scope = await requireScope();
+  // Only owners/admins can connect sources, so only they see the list.
+  let scope;
+  try {
+    scope = await requireWorkspaceAdmin();
+  } catch (err) {
+    if (err instanceof ForbiddenError) redirect("/portal/connect");
+    throw err;
+  }
   const copy = COPY[provider];
 
   let pending: Awaited<ReturnType<typeof loadPendingSeoOptions>> | null = null;
@@ -47,8 +54,10 @@ export async function SeoSelectPage({
     console.error(`[connect/${provider}] listing properties failed`, err);
     listError = `Couldn't load your ${copy.noun} from Google.`;
   }
+  // No pending row: this sign-in refreshed an already-connected property's
+  // token, so there's nothing to pick.
   if (pending && !pending.row) {
-    redirect(`/portal/connect?oauth=${provider.toLowerCase()}_missing`);
+    redirect("/portal/settings/integrations");
   }
   const options: GooglePropertyOption[] =
     pending && pending.row ? pending.options : [];

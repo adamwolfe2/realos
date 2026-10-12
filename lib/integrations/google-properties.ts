@@ -1,8 +1,8 @@
 import "server-only";
 import { google } from "googleapis";
 import { prisma } from "@/lib/db";
-import { resolveGa4Auth } from "@/lib/integrations/ga4";
-import { resolveGscAuth } from "@/lib/integrations/gsc";
+import { authFromStoredCredentials as ga4Auth } from "@/lib/integrations/ga4";
+import { authFromStoredCredentials as gscAuth } from "@/lib/integrations/gsc";
 
 // Lists what a signed-in Google user can pick after the GA4 / Search Console
 // OAuth consent: GA4 properties (Analytics Admin API) and verified Search
@@ -89,10 +89,12 @@ export async function loadPendingSeoOptions(
     select: { id: true, serviceAccountJsonEncrypted: true },
   });
   if (!row) return { row: null };
+  // List with the token from the sign-in that created this row, not an older
+  // org-level OAuthConnection, so the picker shows what this login can see.
   if (provider === "GA4") {
-    const auth = await resolveGa4Auth(orgId, row.serviceAccountJsonEncrypted);
+    const auth = ga4Auth(row.serviceAccountJsonEncrypted);
     return { row: { id: row.id }, options: await listGa4Properties(auth) };
   }
-  const auth = await resolveGscAuth(orgId, row.serviceAccountJsonEncrypted);
+  const auth = gscAuth(row.serviceAccountJsonEncrypted);
   return { row: { id: row.id }, options: await listGscSites(auth) };
 }

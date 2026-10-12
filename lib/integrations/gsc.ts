@@ -76,6 +76,12 @@ function authFromDecryptedJson(json: string): GoogleAuth {
   return jwtFromJson(json);
 }
 
+/** Auth from one SeoIntegration row's own stored credentials (OAuth token
+ * blob or service-account JSON), ignoring any org-level OAuthConnection. */
+export function authFromStoredCredentials(encrypted: string): GoogleAuth {
+  return jwtFromEncrypted(encrypted);
+}
+
 function jwtFromEncrypted(encrypted: string): GoogleAuth {
   const decrypted = decrypt(encrypted);
   return authFromDecryptedJson(decrypted);

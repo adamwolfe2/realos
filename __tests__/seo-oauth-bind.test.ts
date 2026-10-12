@@ -15,8 +15,16 @@ const h = vi.hoisted(() => ({
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/db", () => ({ prisma: h.db }));
+const scopeMock = vi.hoisted(() => {
+  class ForbiddenError extends Error {}
+  return {
+    ForbiddenError,
+    requireWorkspaceAdmin: vi.fn(async () => ({ orgId: "org1", userId: "u1" })),
+  };
+});
 vi.mock("@/lib/tenancy/scope", () => ({
-  requireWorkspaceAdmin: vi.fn(async () => ({ orgId: "org1", userId: "u1" })),
+  ForbiddenError: scopeMock.ForbiddenError,
+  requireWorkspaceAdmin: scopeMock.requireWorkspaceAdmin,
   auditPayload: (_s: unknown, d: unknown) => d,
 }));
 vi.mock("@/lib/integrations/google-properties", () => ({
@@ -66,6 +74,16 @@ describe("bindSeoProperty", () => {
     h.load.mockResolvedValueOnce({ row: null });
     const r = await bindSeoProperty(form("GSC", "sc-domain:x.com"));
     expect(r.ok).toBe(false);
+    expect(h.db.seoIntegration.update).not.toHaveBeenCalled();
+  });
+
+  it("refuses a non-admin seat without touching Google or the row", async () => {
+    scopeMock.requireWorkspaceAdmin.mockRejectedValueOnce(
+      new scopeMock.ForbiddenError("Workspace admins only"),
+    );
+    const r = await bindSeoProperty(form("GA4", "123"));
+    expect(r).toEqual({ ok: false, error: "Workspace admins only" });
+    expect(h.load).not.toHaveBeenCalled();
     expect(h.db.seoIntegration.update).not.toHaveBeenCalled();
   });
 });

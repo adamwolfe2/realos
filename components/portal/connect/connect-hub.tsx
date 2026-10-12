@@ -313,11 +313,8 @@ function resolveConnectUrl(
     // now validates + embeds ?propertyId= in the signed state and writes the
     // resulting SeoIntegration row scoped to that property, so the "Connect"
     // click can go straight through OAuth instead of detouring to the manual
-    // service-account-JSON form on /portal/seo. `returnTo` keeps the
-    // post-OAuth landing on the property-scoped SEO page — same destination
-    // the manual-form path used, so the two connect paths agree on where the
-    // operator ends up too. /portal/seo scopes by `property`
-    // (parsePropertyFilter), NOT `propertyId`. (Codex.)
+    // service-account-JSON form on /portal/seo. The callback always lands
+    // on the GA4/GSC property picker; `returnTo` is no longer used there.
     case "ga4":
       return `${base}?propertyId=${propertyId}&returnTo=${encodeURIComponent(`/portal/seo?provider=GA4&property=${propertyId}`)}`;
     case "gsc":

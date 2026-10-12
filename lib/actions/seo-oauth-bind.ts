@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { auditPayload, requireWorkspaceAdmin } from "@/lib/tenancy/scope";
+import {
+  auditPayload,
+  ForbiddenError,
+  requireWorkspaceAdmin,
+} from "@/lib/tenancy/scope";
 import { runSeoSync } from "@/lib/integrations/seo-sync";
 import { loadPendingSeoOptions } from "@/lib/integrations/google-properties";
 import { AuditAction, SeoSyncStatus } from "@prisma/client";
@@ -29,10 +33,8 @@ export async function bindSeoProperty(
   try {
     scope = await requireWorkspaceAdmin();
   } catch (err) {
-    return {
-      ok: false,
-      error: err instanceof Error ? err.message : "Not authorized",
-    };
+    if (err instanceof ForbiddenError) return { ok: false, error: err.message };
+    throw err;
   }
 
   const parsed = schema.safeParse({
