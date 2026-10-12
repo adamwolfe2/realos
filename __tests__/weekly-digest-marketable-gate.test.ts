@@ -43,7 +43,6 @@ import path from "path";
 const GATED_FILES = [
   "../lib/reports/weekly-digest.ts",
   "../lib/dashboard/queries.ts",
-  "../app/api/cron/pixel-weekly-digest/route.ts",
   "../app/portal/layout.tsx",
   "../app/admin/clients/[id]/page.tsx",
   // Modified in the same range and carries a `...propertyClause` spread;

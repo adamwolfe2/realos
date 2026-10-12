@@ -67,8 +67,6 @@ const ALLOWLIST: Record<string, string> = {
     "public unauthenticated marketing endpoint — org resolved from readTenantHeaders() (middleware-set x-tenant-org-id), not an authenticated ScopedContext",
   "lib/actions/admin-appfolio.ts":
     "agency admin action gated by requireAgency(); operates on an explicit target orgId param by design (cross-tenant admin surface)",
-  "lib/actions/admin-cursive.ts":
-    "agency admin action gated by requireAgency(); operates on an explicit target orgId param by design (cross-tenant admin surface)",
   "lib/actions/admin-domains.ts":
     "agency admin action gated by requireAgency(); operates on an explicit target orgId param by design (cross-tenant admin surface)",
   "lib/actions/admin-modules.ts":
@@ -79,8 +77,6 @@ const ALLOWLIST: Record<string, string> = {
     "agency admin action gated by requireAgency(); operates on an explicit target orgId param by design (cross-tenant admin surface)",
   "lib/actions/create-client.ts":
     "agency admin action gated by requireAgency(); provisions a brand-new org, so there is no existing orgId to scope against yet",
-  "lib/actions/pixel-requests.ts":
-    "agency admin action gated by requireAgency(); operates on an explicit target orgId param by design (cross-tenant admin surface)",
   "lib/seo/agent.ts":
     "internal recommendation engine — orgId/propertyId are plain params, always sourced from an already-scoped caller (portal page, refresh route's tenantWhere+allowedPropertyIds check) or a verifyCronAuth-/requireAdmin-gated job that intentionally scans every org",
   "lib/seo/agent-charts-data.ts":

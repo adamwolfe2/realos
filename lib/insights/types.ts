@@ -31,7 +31,6 @@ export type InsightKind =
   | "cpl_spike"
   | "keyword_drop"
   | "conv_rate_drop"
-  | "hot_visitor"
   | "tour_noshow_spike"
   | "chatbot_silence"
   | "leasing_velocity_drop"

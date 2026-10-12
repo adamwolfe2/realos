@@ -7,7 +7,6 @@ import { WalkthroughShell, APP_BG } from "./shell";
 import { ScreenBriefing } from "./screen-briefing";
 import { ScreenDashboard } from "./screen-dashboard";
 import { ScreenLeads } from "./screen-leads";
-import { ScreenVisitors } from "./screen-visitors";
 import { ScreenChatbot } from "./screen-chatbot";
 import { MobileScreen } from "./mobile-screens";
 
@@ -27,7 +26,6 @@ const SCREENS = [
   ScreenBriefing,
   ScreenDashboard,
   ScreenLeads,
-  ScreenVisitors,
   ScreenChatbot,
 ];
 
@@ -37,7 +35,6 @@ const URLS = [
   "app.leasestack.co/portal/briefing",
   "app.leasestack.co/portal",
   "app.leasestack.co/portal/leads",
-  "app.leasestack.co/portal/visitors",
   "app.leasestack.co/portal/conversations",
 ];
 
@@ -107,7 +104,7 @@ export function DashboardFrame({
   natural = 1040,
   className,
 }: {
-  /** 0 briefing · 1 dashboard · 2 leads · 3 visitors · 4 chatbot */
+  /** 0 briefing · 1 dashboard · 2 leads · 3 chatbot */
   beat: number;
   /** Natural design width the frame is laid out at before scaling. */
   natural?: number;

@@ -7,13 +7,11 @@ import {
   BarChart3,
   MessageSquare,
   Star,
-  Fingerprint,
   CheckCircle2,
   CalendarCheck,
   type LucideIcon,
 } from "lucide-react";
 import { AttributionBreakdown } from "@/components/platform/artifacts/attribution-breakdown";
-import { VisitorStream } from "@/components/platform/artifacts/visitor-stream";
 import { ChatDemo } from "@/components/platform/artifacts/chat-demo";
 import { ReputationFeed } from "@/components/platform/artifacts/reputation-feed";
 import { LabelChip } from "./section-shell";
@@ -53,17 +51,6 @@ const CAPS: Cap[] = [
     body: "Google and Meta spend mapped to leases, not impressions. Blended cost per lease and campaign ROI, continuously.",
     linkLabel: "See it live",
     href: "/features/ads",
-  },
-  {
-    id: "visitor-pixel",
-    icon: Fingerprint,
-    artifact: VisitorStream,
-    vignette: { icon: Fingerprint, title: "Visitor identified", meta: "Anonymous, now identified" },
-    chip: "No form needed",
-    headline: "Most visitors never fill out a form. See who they are anyway.",
-    body: "A meaningful share of your anonymous visitors, resolved to a name and email in real time, routed to your CRM and audiences.",
-    linkLabel: "See the pixel firing",
-    href: "/features/pixel",
   },
   {
     id: "ai-leasing",

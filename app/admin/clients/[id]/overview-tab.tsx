@@ -62,7 +62,6 @@ export function OverviewTab({
   counts: {
     properties: number;
     leads: number;
-    visitors: number;
     chatbotConversations: number;
     adCampaigns: number;
     domains: number;
@@ -79,10 +78,9 @@ export function OverviewTab({
 
   return (
     <div className="space-y-6">
-      <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <StatCard label="Properties" value={counts.properties} />
         <StatCard label="Leads" value={counts.leads} />
-        <StatCard label="Visitors" value={counts.visitors} />
         <StatCard label="Chats" value={counts.chatbotConversations} />
         <StatCard label="Ad campaigns" value={counts.adCampaigns} />
         <StatCard label="Domains" value={counts.domains} />

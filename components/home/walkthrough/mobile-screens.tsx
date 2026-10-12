@@ -1,5 +1,10 @@
 import React from "react";
-import { Fingerprint, MessageSquare, CalendarCheck, TrendingUp, TrendingDown } from "lucide-react";
+import {
+  MessageSquare,
+  CalendarCheck,
+  TrendingUp,
+  TrendingDown,
+} from "lucide-react";
 import { Eyebrow, WCard, Delta, ScoreChip, INK, MUTED, FAINT, BORDER, BRAND } from "./shell";
 
 // ---------------------------------------------------------------------------
@@ -147,34 +152,6 @@ function MLeads() {
   );
 }
 
-function MVisitors() {
-  const v = [
-    { name: "Taylor B.", intent: "Viewed 3-bed floor plans", meta: "4 pages · Google" },
-    { name: "Northside Realty", intent: "Pricing + amenities", meta: "7 pages · Direct" },
-    { name: "Chris D.", intent: "Application page, twice", meta: "5 pages · Meta" },
-    { name: "Beacon Partners", intent: "Compared two properties", meta: "9 pages · Referral" },
-  ];
-  return (
-    <WCard style={{ padding: 16 }}>
-      <ScreenTitle eyebrow="Visitor identification" title="Visitors" meta="312 identified" />
-      <div className="mt-2">
-        {v.map((it, i) => (
-          <Row key={it.name} first={i === 0}>
-            <span className="inline-flex items-center justify-center flex-shrink-0" style={{ width: 30, height: 30, borderRadius: 2, backgroundColor: "rgba(15,98,254,0.08)", color: BRAND }}>
-              <Fingerprint className="w-4 h-4" strokeWidth={1.7} aria-hidden />
-            </span>
-            <div className="flex-1 min-w-0">
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: 14, fontWeight: 600, color: INK }}>{it.name}</span>
-              <p style={{ fontFamily: "var(--font-sans)", fontSize: 12.5, color: MUTED }}>{it.intent}</p>
-            </div>
-            <span className="flex-shrink-0" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: FAINT }}>{it.meta}</span>
-          </Row>
-        ))}
-      </div>
-    </WCard>
-  );
-}
-
 function MChatbot() {
   const messages = [
     { from: "visitor" as const, text: "Is the 2-bed at Oak Grove still available for June?" },
@@ -216,7 +193,7 @@ function MChatbot() {
   );
 }
 
-const MOBILE = [MBriefing, MDashboard, MLeads, MVisitors, MChatbot];
+const MOBILE = [MBriefing, MDashboard, MLeads, MChatbot];
 
 export function MobileScreen({ beat }: { beat: number }) {
   const S = MOBILE[beat] ?? MBriefing;

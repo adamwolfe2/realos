@@ -1,7 +1,7 @@
 // Per-Property Integrations panel
 //
-// Renders a matrix: rows = properties in the org, columns = GA4 / GSC /
-// Pixel. Each cell shows the connection state for that property and a
+// Renders a matrix: rows = properties in the org, columns = GA4 / GSC.
+// Each cell shows the connection state for that property and a
 // link to either connect (no row) or manage (row exists).
 //
 // Design principles:
@@ -28,19 +28,12 @@ type SeoRow = {
   propertyIdentifier: string;
 };
 
-type CursiveRow = {
-  propertyId: string | null;
-  cursivePixelId: string | null;
-};
-
 export function PerPropertyIntegrationsPanel({
   properties,
   seoRows,
-  cursiveRows,
 }: {
   properties: PropertyMini[];
   seoRows: SeoRow[];
-  cursiveRows: CursiveRow[];
 }) {
   // Single-property orgs don't see this panel. They get the org-wide
   // cards above and don't need a matrix view.
@@ -63,14 +56,7 @@ export function PerPropertyIntegrationsPanel({
     }
   }
 
-  const cursiveByProperty = new Map<string, CursiveRow>();
-  let cursiveLegacy: CursiveRow | null = null;
-  for (const row of cursiveRows) {
-    if (row.propertyId === null) cursiveLegacy = row;
-    else cursiveByProperty.set(row.propertyId, row);
-  }
-
-  const hasAnyLegacy = ga4Legacy || gscLegacy || cursiveLegacy;
+  const hasAnyLegacy = ga4Legacy || gscLegacy;
 
   return (
     <section className="ls-card p-4 space-y-3">
@@ -81,7 +67,7 @@ export function PerPropertyIntegrationsPanel({
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
             Each property typically has its own marketing site at its own
-            domain — connect a distinct GA4, Search Console, and pixel
+            domain — connect a distinct GA4 and Search Console
             for each one. Multi-property tenants need this for accurate
             per-property analytics.
           </p>
@@ -94,8 +80,7 @@ export function PerPropertyIntegrationsPanel({
             <tr className="border-b border-border text-left ls-eyebrow">
               <th className="py-2 pr-3 font-medium">Property</th>
               <th className="py-2 px-3 font-medium">GA4</th>
-              <th className="py-2 px-3 font-medium">Search Console</th>
-              <th className="py-2 pl-3 font-medium">Pixel</th>
+              <th className="py-2 pl-3 font-medium">Search Console</th>
             </tr>
           </thead>
           <tbody>
@@ -115,16 +100,12 @@ export function PerPropertyIntegrationsPanel({
                 </td>
                 <Cell connected={!!ga4Legacy} />
                 <Cell connected={!!gscLegacy} />
-                <Cell
-                  connected={!!cursiveLegacy?.cursivePixelId}
-                />
               </tr>
             ) : null}
 
             {properties.map((p) => {
               const ga4 = ga4ByProperty.get(p.id);
               const gsc = gscByProperty.get(p.id);
-              const cursive = cursiveByProperty.get(p.id);
               return (
                 <tr key={p.id} className="border-b border-border/60">
                   <td className="py-2 pr-3 align-middle">
@@ -144,12 +125,6 @@ export function PerPropertyIntegrationsPanel({
                     connected={!!gsc}
                     inheritsFromLegacy={!gsc && !!gscLegacy}
                     identifier={gsc?.propertyIdentifier}
-                  />
-                  <Cell
-                    connected={!!cursive?.cursivePixelId}
-                    inheritsFromLegacy={
-                      !cursive?.cursivePixelId && !!cursiveLegacy?.cursivePixelId
-                    }
                   />
                 </tr>
               );

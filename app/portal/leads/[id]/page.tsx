@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { trackServer } from "@/lib/analytics-server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { formatDistanceToNow, format } from "date-fns";
 import {
   ArrowLeft,
@@ -17,14 +16,13 @@ import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { ALLOWED_WRITE_ROLES } from "@/lib/auth/write-roles";
 import { propertyWhereFragment } from "@/lib/tenancy/property-filter";
-import { avatarPaletteFor, extractIdentity } from "@/lib/visitors/enrichment";
 import { cn } from "@/lib/utils";
 import { AddNoteForm } from "./add-note-form";
 import { LeadStatusForm } from "./lead-status-form";
 import { LinkResidentForm } from "./link-resident-form";
 import { Timeline } from "@/components/portal/leads/timeline";
 import { buildTimeline } from "@/components/portal/leads/timeline-events";
-import { EnrichmentCard, SidebarCard } from "@/components/portal/leads/enrichment-card";
+import { SidebarCard } from "@/components/portal/leads/sidebar-card";
 import { CopyButton } from "@/components/portal/leads/copy-button";
 import { LeadEmailComposer } from "@/components/portal/leads/email-composer";
 import { ReviewRequestButton } from "@/components/portal/leads/review-request-button";
@@ -66,7 +64,7 @@ function parseConversationMessages(
 
 // ---------------------------------------------------------------------------
 // Lead detail — "the Loom money shot".
-// One page that proves consolidation: pixel → chatbot → tour → lease.
+// One page that proves consolidation: inquiry → chatbot → tour → lease.
 // ---------------------------------------------------------------------------
 
 export default async function LeadDetailPage({
@@ -110,7 +108,6 @@ export default async function LeadDetailPage({
             pageUrl: true,
           },
         },
-        visitor: true,
         // Lead→lease proof chain: residents linked to this lead (auto-match
         // or manual "Mark as signed").
         residents: {
@@ -133,7 +130,7 @@ export default async function LeadDetailPage({
       orderBy: { createdAt: "desc" },
       take: 30,
     }),
-    // Insights flagged for this specific lead (pipeline_stall, hot_visitor,
+    // Insights flagged for this specific lead (pipeline_stall,
     // etc.) Also include org-wide insights with no entity binding that are
     // still open, but only if they could be the reason we're on this page.
     prisma.insight.findMany({
@@ -281,9 +278,6 @@ export default async function LeadDetailPage({
 
   const displayName = leadDisplayName(lead);
 
-  const visitorIdentity = lead.visitor ? extractIdentity(lead.visitor) : null;
-  const logoUrl = visitorIdentity?.logoUrl ?? null;
-
   const initials = (() => {
     const a = (lead.firstName?.[0] ?? "").toUpperCase();
     const b = (lead.lastName?.[0] ?? "").toUpperCase();
@@ -292,9 +286,7 @@ export default async function LeadDetailPage({
     const emailInitial = lead.email?.[0]?.toUpperCase();
     return emailInitial ?? "?";
   })();
-  const palette = avatarPaletteFor(
-    visitorIdentity?.companyDomain ?? displayName ?? lead.id
-  );
+  const palette = avatarPaletteFor(displayName ?? lead.id);
 
   // Email events — surface a single derived event from the Lead's
   // aggregate cadence state (lastEmailSentAt + cadenceStage +
@@ -332,20 +324,10 @@ export default async function LeadDetailPage({
   });
 
   const subtitleParts: string[] = [];
-  if (visitorIdentity?.jobTitle) subtitleParts.push(visitorIdentity.jobTitle);
-  if (visitorIdentity?.companyName) {
-    subtitleParts.push(
-      visitorIdentity.jobTitle
-        ? `at ${visitorIdentity.companyName}`
-        : visitorIdentity.companyName
-    );
-  }
   if (lead.preferredUnitType) {
     subtitleParts.push(`Interested in ${lead.preferredUnitType.toLowerCase()}`);
   }
-  if (visitorIdentity?.location) {
-    subtitleParts.push(`Lives in ${visitorIdentity.location}`);
-  } else if (lead.property?.name) {
+  if (lead.property?.name) {
     subtitleParts.push(lead.property.name);
   }
   const subtitle = subtitleParts.join(" \u00b7 ");
@@ -414,28 +396,15 @@ export default async function LeadDetailPage({
       >
         {/* Identity block */}
         <div className="flex items-start gap-5 min-w-0">
-          {logoUrl ? (
-            <div className="h-14 w-14 shrink-0 rounded-[2px] bg-card ring-1 ring-border overflow-hidden flex items-center justify-center">
-              <Image
-                src={logoUrl}
-                alt={visitorIdentity?.companyName ?? displayName}
-                width={56}
-                height={56}
-                className="h-14 w-14 object-contain"
-                unoptimized
-              />
-            </div>
-          ) : (
-            <div
-              className={cn(
-                "h-14 w-14 shrink-0 rounded-[2px] flex items-center justify-center",
-                "text-lg font-semibold",
-                palette
-              )}
-            >
-              {initials}
-            </div>
-          )}
+          <div
+            className={cn(
+              "h-14 w-14 shrink-0 rounded-[2px] flex items-center justify-center",
+              "text-lg font-semibold",
+              palette
+            )}
+          >
+            {initials}
+          </div>
           <div className="min-w-0 flex-1">
             <h1 className="text-[28px] md:text-[34px] font-semibold tracking-[-0.022em] text-foreground leading-[1.08]">
               {displayName}
@@ -620,7 +589,7 @@ export default async function LeadDetailPage({
           </div>
           {timeline.length === 1 ? (
             <p className="text-xs text-muted-foreground px-2">
-              This lead is new. Future touchpoints &mdash; pixel visits, chats,
+              This lead is new. Future touchpoints &mdash; chats, emails,
               tours, signed leases &mdash; will appear here as they happen.
             </p>
           ) : null}
@@ -637,8 +606,6 @@ export default async function LeadDetailPage({
               </div>
             </SidebarCard>
           ) : null}
-
-          <EnrichmentCard visitor={lead.visitor} />
 
           <SidebarCard label="Preferences">
             <PreferenceList
@@ -874,8 +841,7 @@ function ChannelCostBlock({
     source === "REFERRAL" ||
     source === "DIRECT" ||
     source === "CHATBOT" ||
-    source === "FORM" ||
-    source === "PIXEL_OUTREACH";
+    source === "FORM";
   if (earned) {
     return (
       <>
@@ -889,11 +855,9 @@ function ChannelCostBlock({
               ? "Earned · web form"
               : source === "REFERRAL"
                 ? "Earned · referral"
-                : source === "PIXEL_OUTREACH"
-                  ? "Earned · pixel outreach"
-                  : source === "DIRECT"
-                    ? "Earned · direct"
-                    : "Earned · organic"}
+                : source === "DIRECT"
+                  ? "Earned · direct"
+                  : "Earned · organic"}
         </p>
       </>
     );
@@ -1054,4 +1018,23 @@ function ActionLink({
       {label}
     </a>
   );
+}
+
+const AVATAR_PALETTE = [
+  "bg-blue-500/15 text-blue-700",
+  "bg-emerald-500/15 text-emerald-700",
+  "bg-amber-500/15 text-amber-700",
+  "bg-rose-500/15 text-rose-700",
+  "bg-violet-500/15 text-violet-700",
+  "bg-sky-500/15 text-sky-700",
+  "bg-teal-500/15 text-teal-700",
+  "bg-fuchsia-500/15 text-fuchsia-700",
+];
+
+function avatarPaletteFor(seed: string): string {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  }
+  return AVATAR_PALETTE[hash % AVATAR_PALETTE.length];
 }

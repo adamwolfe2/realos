@@ -3,7 +3,6 @@ import { prisma } from "@/lib/db";
 import { trafficDropDetector } from "./detectors/traffic-drop";
 import { pipelineStallDetector } from "./detectors/pipeline-stall";
 import { cplSpikeDetector } from "./detectors/cpl-spike";
-import { hotVisitorDetector } from "./detectors/hot-visitor";
 import { chatbotPatternDetector } from "./detectors/chatbot-pattern";
 import { convRateDropDetector } from "./detectors/conv-rate-drop";
 import { leasingVelocityDropDetector } from "./detectors/leasing-velocity-drop";
@@ -14,7 +13,6 @@ import { wastedAdSpendDetector } from "./detectors/wasted-ad-spend";
 import { renewalCliffDetector } from "./detectors/renewal-cliff";
 import { vacancyNeedsBoostDetector } from "./detectors/vacancy-needs-boost";
 import { portfolioOutlierDetector } from "./detectors/portfolio-outlier";
-import { pixelLeadsGapDetector } from "./detectors/pixel-leads-gap";
 import { seoLeadsDisconnectDetector } from "./detectors/seo-leads-disconnect";
 import { chatbotDropoffDetector } from "./detectors/chatbot-dropoff";
 import { audienceExhaustionDetector } from "./detectors/audience-exhaustion";
@@ -28,7 +26,6 @@ const DETECTORS: Detector[] = [
   trafficDropDetector,
   pipelineStallDetector,
   cplSpikeDetector,
-  hotVisitorDetector,
   chatbotPatternDetector,
   convRateDropDetector,
   leasingVelocityDropDetector,
@@ -45,12 +42,10 @@ const DETECTORS: Detector[] = [
   vacancyNeedsBoostDetector,
   portfolioOutlierDetector,
   // Cross-source detectors (May 2026): combine 2+ data sources to
-  // surface insights no single-source detector can. The pixel↔leads
-  // gap needs visitors + leads; SEO disconnect needs SeoIntegration +
+  // surface insights no single-source detector can. SEO disconnect needs SeoIntegration +
   // leads; chatbot dropoff needs conversations + capture data;
   // audience exhaustion needs spend + impressions + clicks; rent-vs-
   // portfolio needs leases across multiple properties.
-  pixelLeadsGapDetector,
   seoLeadsDisconnectDetector,
   chatbotDropoffDetector,
   audienceExhaustionDetector,
@@ -62,7 +57,6 @@ const DETECTORS: Detector[] = [
 // spend) self-resolve when a new week's key appears.
 const AUTORESOLVE_KINDS: Record<string, string[]> = {
   "pipeline-stall": ["pipeline_stall"],
-  "hot-visitor": ["hot_visitor"],
   "leasing-velocity-drop": ["leasing_velocity_drop"],
   // Negative reviews stay open until the operator acts on them — no
   // auto-resolve. The mention id is the dedupeKey, so re-runs upsert

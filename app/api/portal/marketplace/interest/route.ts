@@ -4,7 +4,7 @@ import { requireWritableWorkspace, ForbiddenError } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { getModuleByKey } from "@/lib/marketplace/catalog";
 import { canManageBilling } from "@/lib/billing/checkout-policy";
-import { sendModuleRequestOpsEmail } from "@/lib/email/pixel-emails";
+import { sendModuleRequestOpsEmail } from "@/lib/email/module-request-emails";
 import { AuditAction, Prisma } from "@prisma/client";
 
 export const runtime = "nodejs";
