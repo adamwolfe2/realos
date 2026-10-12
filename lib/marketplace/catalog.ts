@@ -31,7 +31,6 @@
 // ---------------------------------------------------------------------------
 
 import {
-  Eye,
   Bot,
   TrendingUp,
   Send,
@@ -154,31 +153,6 @@ export type CatalogEntry = {
 
 export const MARKETPLACE_ENTRIES: CatalogEntry[] = [
   // ============== Acquisition ==============
-  {
-    key: "modulePixel",
-    kind: "toggle",
-    slug: "visitor-pixel",
-    name: "Visitor Identification Pixel",
-    tagline:
-      "Identify anonymous prospects on your site (name, email, employer) without an opt-in form.",
-    bullets: [
-      "5,000 identified visitors / month",
-      "Intent score per visitor (0 to 100)",
-      "Auto-syncs to your CRM as warm leads",
-      "Drop-in JS snippet",
-    ],
-    monthlyPriceCents: 19900,
-    stripeLookupKey: "ls_addon_pixel_v1",
-    setupHref: "/portal/visitors",
-    icon: Eye,
-    category: "Acquisition",
-    popular: true,
-    setupEffort: "Drop-in snippet · 5 min",
-    brandLogoKeys: ["appfolio"],
-    // Below the quality bar 2026-07-31 (Visitors/Engage surface): withheld
-    // from the storefront until the module passes readiness review.
-    ready: false,
-  },
   {
     key: "moduleLeadCapture",
     kind: "included",

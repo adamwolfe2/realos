@@ -62,7 +62,7 @@ const ENGINES = [
 ];
 
 const COVERAGE = [
-  { label: "Chatbot · pixel · leasing: live", color: UP },
+  { label: "Chatbot · leasing: live", color: UP },
   { label: "Reputation · AI visibility: live", color: UP },
   { label: "GA4, Search Console: indexing", color: BRAND },
   { label: "Zillow, Apartments.com: not wired", color: "#c6c6c6" },

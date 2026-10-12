@@ -25,7 +25,7 @@ const FAQS: Array<{ q: string; a: string }> = [
   },
   {
     q: "Which plan should I pick?",
-    a: "Most single-property operators start on Growth: it adds the visitor pixel, SEO and AI search visibility, and ads recommendations on top of Foundation's chatbot and weekly report. Foundation is the lighter way to prove it on one building. Scale is for five or more properties that want a portfolio rollup. Not sure? Book a demo and we will recommend one from your own numbers. You can change plans any time.",
+    a: "Most single-property operators start on Growth: it adds SEO and AI search visibility, and ads recommendations on top of Foundation's chatbot and weekly report. Foundation is the lighter way to prove it on one building. Scale is for five or more properties that want a portfolio rollup. Not sure? Book a demo and we will recommend one from your own numbers. You can change plans any time.",
   },
   {
     q: "Does LeaseStack replace my leasing staff?",

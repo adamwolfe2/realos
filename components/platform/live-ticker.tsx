@@ -23,7 +23,7 @@ type Tool =
   | "linkedin";
 
 type Event = {
-  kind: "lease" | "tour" | "lead" | "identify" | "ad" | "ai" | "report";
+  kind: "lease" | "tour" | "lead" | "ad" | "ai" | "report";
   text: string;
   where?: string;
   /** When set, the icon slot renders the brand glyph on its brand color
@@ -35,12 +35,10 @@ const EVENTS: Event[] = [
   { kind: "lease",    text: "Priya V. signed a lease",              where: "Oak Grove · 2BR" },
   { kind: "tour",     text: "Maya R. booked a tour",                where: "Westbrook Heights · Sat 10:30" },
   { kind: "lead",     text: "Daniel L. came from a Meta ad",        where: "intent score 88", tool: "meta" },
-  { kind: "identify", text: "12 new identified visitors",           where: "last hour" },
   { kind: "ai",       text: "ChatGPT cited your amenities page",    where: "student housing query", tool: "chatgpt" },
   { kind: "ad",       text: "New Meta creative 'Fall Move-in' shipped", where: "48h turnaround", tool: "meta" },
   { kind: "lease",    text: "Alejandra S. signed a lease",          where: "Park & Pearl · 1BR" },
   { kind: "tour",     text: "Jordan K. booked a virtual tour",      where: "Sage at Greenpoint" },
-  { kind: "identify", text: "Sofia P. identified from LinkedIn",    where: "viewed 3 floor plans", tool: "linkedin" },
   { kind: "ai",       text: "Perplexity quoted your amenities page", where: "furnished housing query", tool: "perplexity" },
   { kind: "ai",       text: "Claude cited your floor-plan page",     where: "two-bedroom Berkeley query", tool: "claude" },
   { kind: "ai",       text: "Gemini surfaced your tour-booking page", where: "student housing query", tool: "gemini" },
@@ -261,7 +259,6 @@ function KindIcon({ kind }: { kind: Event["kind"] }) {
     case "lease":    return <svg {...p}><path d="M2 7L7 3L12 7V12H8V9H6V12H2V7Z" /></svg>;
     case "tour":     return <svg {...p}><rect x="2" y="3" width="10" height="9" rx="1.5"/><path d="M2 6h10M5 2v2M9 2v2"/></svg>;
     case "lead":     return <svg {...p}><circle cx="7" cy="5" r="2.4"/><path d="M2.5 12c.5-2.2 2.4-3.8 4.5-3.8s4 1.6 4.5 3.8"/></svg>;
-    case "identify": return <svg {...p}><circle cx="7" cy="7" r="4"/><circle cx="7" cy="7" r="1.2" fill="currentColor" stroke="none"/></svg>;
     case "ad":       return <svg {...p}><path d="M2 5H5L9 2V12L5 9H2V5Z" /></svg>;
     case "ai":       return <svg {...p}><path d="M7 1.5L8.4 5L12 6L8.4 7L7 10.5L5.6 7L2 6L5.6 5L7 1.5Z" fill="currentColor" stroke="none"/></svg>;
     case "report":   return <svg {...p}><path d="M3 11V3h8v8H3Zm2-4h4M5 9h4M5 5h3"/></svg>;

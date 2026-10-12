@@ -24,7 +24,6 @@ const LEGACY_MODULE_KEYS_BY_SLUG: Readonly<
   "addon-reputation-pro": ["moduleReputation"],
   "addon-keyword-trends": ["moduleSEO", "moduleMarketIntelligence"],
   "addon-aeo-boost": ["moduleSEO", "moduleMarketIntelligence"],
-  "addon-audience-sync": ["moduleGoogleAds", "moduleMetaAds"],
   "addon-outbound-email-engine": ["moduleOutboundEmail"],
   "addon-chatbot-pro": ["moduleChatbot", "moduleConversations"],
   "addon-insights-pro": ["moduleInsights"],
@@ -39,7 +38,6 @@ const STRIPE_LOOKUP_KEY_BY_SLUG: Readonly<Record<string, string>> =
     "tier-scale": "ls_scale_monthly_v1",
     "addon-reputation-pro": "ls_reputation_pro_monthly_v1",
     "addon-white-label": "ls_white_label_monthly_v1",
-    "addon-pixel-overage": "ls_pixel_overage_per_visitor_v1",
     "addon-email-overage": "ls_email_overage_per_send_v1",
   });
 
@@ -54,7 +52,6 @@ const SERVICE_SLUGS = new Set([
 ]);
 
 const METERED_SLUGS = new Set([
-  "addon-pixel-overage",
   "addon-email-overage",
 ]);
 

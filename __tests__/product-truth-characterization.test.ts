@@ -205,7 +205,6 @@ describe("product truth — marketplace safety states", () => {
         category,
       })),
     ).toEqual([
-      { key: "modulePixel", slug: "visitor-pixel", kind: "toggle", category: "Acquisition" },
       { key: "moduleLeadCapture", slug: "lead-capture", kind: "included", category: "Acquisition" },
       { key: "moduleChatbot", slug: "ai-chatbot", kind: "toggle", category: "Engagement" },
       { key: "modulePopups", slug: "embeddable-popups", kind: "toggle", category: "Engagement" },
@@ -229,8 +228,7 @@ describe("product truth — marketplace safety states", () => {
       MARKETPLACE_ENTRIES.filter(({ ready }) => ready === false).map(
         ({ slug }) => slug,
       ),
-    ).toEqual(["visitor-pixel", "embeddable-popups"]);
-    expect(visibleSlugs).not.toContain("visitor-pixel");
+    ).toEqual(["embeddable-popups"]);
     expect(visibleSlugs).not.toContain("embeddable-popups");
     expect(
       MARKETPLACE_ENTRIES.filter(({ kind }) => kind === "coming").map(
@@ -256,10 +254,8 @@ describe("product truth — proposal activity", () => {
       { slug: "addon-reputation-pro", kind: "ADDON", active: true },
       { slug: "addon-keyword-trends", kind: "ADDON", active: true },
       { slug: "addon-aeo-boost", kind: "ADDON", active: true },
-      { slug: "addon-audience-sync", kind: "ADDON", active: true },
       { slug: "addon-outbound-email-engine", kind: "ADDON", active: true },
       { slug: "addon-chatbot-pro", kind: "ADDON", active: true },
-      { slug: "addon-cursive-pixel-pro", kind: "ADDON", active: true },
       { slug: "addon-insights-pro", kind: "ADDON", active: true },
       { slug: "addon-integrations-pro", kind: "ADDON", active: true },
       { slug: "addon-custom-domain", kind: "ADDON", active: true },
@@ -271,7 +267,6 @@ describe("product truth — proposal activity", () => {
       { slug: "addon-white-glove-coordination", kind: "ADDON", active: true },
       { slug: "addon-commercial-retainer", kind: "ADDON", active: true },
       { slug: "addon-portfolio-success", kind: "ADDON", active: true },
-      { slug: "addon-pixel-overage", kind: "ADDON", active: true },
       { slug: "addon-email-overage", kind: "ADDON", active: true },
     ]);
   });
@@ -286,10 +281,8 @@ describe("product truth — proposal activity", () => {
       "tier-enterprise",
       "addon-keyword-trends",
       "addon-aeo-boost",
-      "addon-audience-sync",
       "addon-outbound-email-engine",
       "addon-chatbot-pro",
-      "addon-cursive-pixel-pro",
       "addon-insights-pro",
       "addon-integrations-pro",
       "addon-custom-domain",

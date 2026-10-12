@@ -17,13 +17,13 @@ A single Next.js app that serves four surfaces from one codebase:
    every tenant: intake queue, fulfillment pipeline, creative requests,
    cross-tenant analytics, impersonation.
 3. **Client portal** (`leasestack.co/portal`), the client's dashboard: leads,
-   visitors, chatbot conversations, ad creative requests, multi-property
+   chatbot conversations, ad creative requests, multi-property
    CRM, billing, site builder, and the **SEO Agent** at `/portal/seo/agent`
    (composite score, ranked recommendations, target queries, AI content
    drafter, drafts inbox).
 4. **Tenant marketing sites** (e.g. `telegraphcommons.com`), hostname-routed,
    rendered from `app/(tenant)`: live AppFolio listings, chatbot widget,
-   pixel installed, lead capture, SEO pages.
+   lead capture, SEO pages.
 
 All four are served by the same Next.js app. Middleware resolves hostname,
 matches to an `Organization`, and routes to the correct surface.
@@ -40,7 +40,6 @@ matches to an `Organization`, and routes to the correct surface.
 | Payments | Stripe |
 | Email | Resend |
 | AI | Anthropic Claude SDK |
-| Pixel | Cursive (reseller integration) |
 | Backend systems | AppFolio (REST + embed fallback) |
 | Hosting | Vercel, single project, wildcard + custom domains |
 | Analytics | PostHog, GA4 per-tenant |
@@ -51,7 +50,7 @@ matches to an `Organization`, and routes to the correct surface.
 Infrastructure scaffolding carried over from an earlier template (auth,
 billing, email framework, admin shell, shadcn/ui, intake wizard framework).
 Domain rebuilt from scratch around the real-estate model: properties,
-listings, leads, visitors, applications, chatbot conversations, creative
+listings, leads, applications, chatbot conversations, creative
 requests, ad campaigns.
 
 Original sprint plan lives in `prd/`. Historical sprint notes are archived in
@@ -80,7 +79,6 @@ ALLOW_DEMO_SEED=true \
   pnpm exec tsx scripts/seed-telegraph-commons-showcase.ts   # residents,
                                                               # leases,
                                                               # work orders,
-                                                              # visitor sessions,
                                                               # ad campaigns
                                                               # + 28d metrics,
                                                               # SEO snapshots,
@@ -117,7 +115,7 @@ app/
   api/           route handlers
 lib/
   tenancy/       hostname -> org, RLS scope, impersonation
-  integrations/  appfolio, cursive, slack, resend, stripe
+  integrations/  appfolio, slack, resend, stripe
   build/         tenant provisioning pipeline
   chatbot/       proactive chatbot runtime
   email/         resend framework
@@ -139,7 +137,6 @@ prd/             product requirements (12 sprints)
 
 See `.env.example` for the full list. Key real-estate-specific vars:
 
-- `CURSIVE_API_KEY`, `CURSIVE_API_URL`
 - `APPFOLIO_OAUTH_CLIENT_ID`, `APPFOLIO_OAUTH_CLIENT_SECRET`
 - `VERCEL_API_TOKEN`, `VERCEL_PROJECT_ID` (custom-domain attachment)
 - `ANTHROPIC_API_KEY` (chatbot)
@@ -160,12 +157,6 @@ curl -X POST https://www.leasestack.co/api/ingest/lead \
   -H "Content-Type: application/json" \
   -d '{"email":"student@berkeley.edu","firstName":"Alex","source":"FORM"}'
 
-# Upsert a visitor by external id
-curl -X POST https://www.leasestack.co/api/ingest/visitor \
-  -H "Authorization: Bearer re_live_..." \
-  -H "Content-Type: application/json" \
-  -d '{"externalId":"abc-123","email":"a@b.com","utmSource":"google"}'
-
 # Schedule a tour for an existing lead
 curl -X POST https://www.leasestack.co/api/ingest/tour \
   -H "Authorization: Bearer re_live_..." \
@@ -179,7 +170,7 @@ curl -X POST https://www.leasestack.co/api/ingest/chatbot \
   -d '{"sessionId":"sess-1","email":"a@b.com","messages":[{"role":"user","content":"hi"}]}'
 ```
 
-Available scopes: `ingest:lead`, `ingest:visitor`, `ingest:tour`,
+Available scopes: `ingest:lead`, `ingest:tour`,
 `ingest:chatbot`, or `*` for full access.
 
 ## SEO Agent

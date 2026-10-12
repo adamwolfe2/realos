@@ -13,7 +13,6 @@ import {
   Bot,
   LayoutGrid,
   MessageSquare,
-  Fingerprint,
   Search,
   Star,
   TrendingUp,
@@ -21,7 +20,6 @@ import {
   Globe,
   Sparkles,
   Megaphone,
-  Calculator,
   Menu,
   X,
 } from "lucide-react";
@@ -64,12 +62,6 @@ const PRODUCT_LINKS: ProductLink[] = [
     icon: MessageSquare,
   },
   {
-    href: "/features/pixel",
-    label: "Visitor Identification",
-    description: "Puts a name and email on the traffic your forms miss",
-    icon: Fingerprint,
-  },
-  {
     href: "/features/seo-aeo",
     label: "SEO / AEO",
     description: "Ranks on Google, gets cited when renters ask ChatGPT",
@@ -92,12 +84,6 @@ const PRODUCT_LINKS: ProductLink[] = [
     label: "Free Reputation Report",
     description: "Every Google, Yelp, and Reddit mention, scored and ranked",
     icon: Megaphone,
-  },
-  {
-    href: "/lost-leads",
-    label: "Lost-Lead Calculator",
-    description: "See how many renters visit and leave with no name on it",
-    icon: Calculator,
   },
   {
     // Reputation has no dedicated /features sub-page and no #reputation

@@ -5,7 +5,7 @@
 // ---------------------------------------------------------------------------
 
 export type LeadStage = "new" | "contacted" | "tour" | "applied" | "signed";
-export type LeadSource = "Form" | "Chat" | "Pixel" | "Referral" | "Paid";
+export type LeadSource = "Form" | "Chat" | "Referral" | "Paid";
 export type LeadRow = {
   id: string;
   name: string;
@@ -80,12 +80,12 @@ export const LEADS: LeadRow[] = [
     phone: "(555) 442-1167",
     unit: "Studio",
     property: "Oak Grove Residences",
-    source: "Pixel",
+    source: "Form",
     score: 74,
     stage: "new",
     createdAt: "30m ago",
     timeline: [
-      { kind: "visit",  text: "Pixel resolved anonymous visitor",           at: "30m ago" },
+      { kind: "visit",  text: "Visited the floor plans page",           at: "30m ago" },
       { kind: "nurture",text: "Welcome email queued",                       at: "29m ago" },
     ],
   },
@@ -164,12 +164,12 @@ export const LEADS: LeadRow[] = [
     phone: "(555) 212-7781",
     unit: "1 Bedroom",
     property: "The Meridian",
-    source: "Pixel",
+    source: "Form",
     score: 62,
     stage: "new",
     createdAt: "1h ago",
     timeline: [
-      { kind: "visit",  text: "Pixel resolved from Oakland IP",             at: "1h ago" },
+      { kind: "visit",  text: "Visited the site from Oakland",             at: "1h ago" },
     ],
   },
   {
@@ -543,119 +543,6 @@ export const BRIEFING: {
     "Shift $600 from Meta into Google — Google CPL is $48, Meta is $112 this cycle.",
     "Refresh the 2-bed creative — CTR is down 32% over the last 10 days.",
   ],
-};
-
-// ---------------------------------------------------------------------------
-// Visitors (identity-pixel resolved anonymous traffic)
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Visitors — used to render the operator-portal "Visitors" screen as a
-// live identification stream. Mirrors the marketing-side VisitorStream
-// artifact so the demo portal feels like the same product.
-//
-// Each row has a `revealsTo` shape: row starts anonymous, flips to a
-// named visitor with a real headshot after a per-row delay. The Visitors
-// view uses INITIAL_REVEAL_DELAYS_MS to stagger the first 5 reveals into
-// a ~2.5s wave so a prospect lands on the page and immediately sees the
-// pixel resolving anonymous traffic in real time.
-// ---------------------------------------------------------------------------
-
-export type VisitorStage = "Identified" | "Nurturing" | "Converted" | "Anonymous";
-
-export type VisitorIdentity = {
-  name: string;
-  email: string;
-  company?: string;
-  photo: string;
-};
-
-export type Visitor = {
-  id: string;
-  /** Initial display state — every row starts anonymous and reveals into
-   *  its `revealsTo` identity. The portal view shows the reveal wave on
-   *  mount so the visitor sees the pixel doing work, not a static table. */
-  initial: VisitorIdentity | null;
-  revealsTo: VisitorIdentity;
-  lastPage: string;
-  sessions: number;
-  firstSeen: string;
-  lastSeen: string;
-  score: number;
-  stage: VisitorStage;
-};
-
-// Headshots via randomuser.me — free, stable CDN, demographically diverse,
-// same source the marketing-side VisitorStream uses so the demo portal +
-// the marketing artifact share a visual vocabulary.
-export const VISITORS: Visitor[] = [
-  {
-    id: "V1",
-    initial: null,
-    revealsTo: { name: "Maya Patel",     email: "maya@example.com",   company: "UC Berkeley · rising junior", photo: "https://randomuser.me/api/portraits/women/22.jpg" },
-    lastPage: "/floor-plans",   sessions: 4, firstSeen: "4 days ago",   lastSeen: "2m ago",   score: 92, stage: "Identified",
-  },
-  {
-    id: "V2",
-    initial: null,
-    revealsTo: { name: "Sophie Kim",     email: "sophie@example.com", company: "Stanford · parent",            photo: "https://randomuser.me/api/portraits/women/12.jpg" },
-    lastPage: "/contact",       sessions: 3, firstSeen: "6 days ago",   lastSeen: "12m ago",  score: 94, stage: "Converted",
-  },
-  {
-    id: "V3",
-    initial: null,
-    revealsTo: { name: "Daniel Lee",     email: "daniel@example.com", company: "Cal Poly · sophomore",          photo: "https://randomuser.me/api/portraits/men/85.jpg" },
-    lastPage: "/amenities",     sessions: 2, firstSeen: "1 day ago",    lastSeen: "1h ago",   score: 88, stage: "Nurturing",
-  },
-  {
-    id: "V4",
-    initial: null,
-    revealsTo: { name: "Jin Hwang",      email: "jin@example.com",    company: "Bay Area · mobile",              photo: "https://randomuser.me/api/portraits/men/36.jpg" },
-    lastPage: "/floor-plans",   sessions: 1, firstSeen: "Today",        lastSeen: "30m ago",  score: 74, stage: "Identified",
-  },
-  {
-    id: "V5",
-    initial: null,
-    revealsTo: { name: "Arjun Patel",    email: "arjun@example.com",  company: "Returning · 5 sessions",         photo: "https://randomuser.me/api/portraits/men/41.jpg" },
-    lastPage: "/amenities",     sessions: 5, firstSeen: "2 weeks ago",  lastSeen: "6h ago",   score: 81, stage: "Nurturing",
-  },
-  {
-    id: "V6",
-    initial: null,
-    revealsTo: { name: "Noelle Devereaux", email: "noelle@example.com", company: "Direct · /pricing",            photo: "https://randomuser.me/api/portraits/women/45.jpg" },
-    lastPage: "/pricing",       sessions: 2, firstSeen: "3 days ago",   lastSeen: "45m ago",  score: 77, stage: "Nurturing",
-  },
-  {
-    id: "V7",
-    initial: null,
-    revealsTo: { name: "Marcus Trent",   email: "marcus@example.com", company: "Google ad · studio search",      photo: "https://randomuser.me/api/portraits/men/52.jpg" },
-    lastPage: "/tour",          sessions: 2, firstSeen: "Yesterday",    lastSeen: "Yesterday", score: 68, stage: "Nurturing",
-  },
-  {
-    id: "V8",
-    initial: null,
-    revealsTo: { name: "Ella Cortez",    email: "ella@example.com",   company: "Referred by resident",            photo: "https://randomuser.me/api/portraits/women/68.jpg" },
-    lastPage: "/apply",         sessions: 1, firstSeen: "Yesterday",    lastSeen: "Yesterday", score: 89, stage: "Identified",
-  },
-  {
-    id: "V9",
-    initial: null,
-    revealsTo: { name: "Luis Romero",    email: "luis@example.com",   company: "Oakland IP",                       photo: "https://randomuser.me/api/portraits/men/29.jpg" },
-    lastPage: "/floor-plans",   sessions: 1, firstSeen: "1h ago",       lastSeen: "1h ago",   score: 62, stage: "Identified",
-  },
-];
-
-// Per-row reveal-delay schedule. First five rows stagger their anonymous →
-// identified flip so the visitor sees a 5-reveal wave inside ~2.5s of
-// landing on the page. Mirrors the marketing-side VisitorStream cadence
-// (Norman 2026-05-21 feedback) so both demos animate consistently.
-export const INITIAL_REVEAL_DELAYS_MS = [500, 950, 1400, 1850, 2300];
-
-export const VISITOR_STATS = {
-  resolveRate: "94%",
-  identifiedThisWeek: 312,
-  stillAnonymous: 18,
-  movedToLead: 47,
 };
 
 // ---------------------------------------------------------------------------

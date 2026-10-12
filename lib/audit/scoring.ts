@@ -307,7 +307,7 @@ function computeTracking(quiz: QuizAnswers | null): PillarScore {
 
   const points: string[] = [];
   if (tracking === "pixel_plus_analytics") {
-    points.push("Pixel + analytics is live. You can see who's actually browsing.");
+    points.push("Analytics and lead-source attribution are live. You can see which channels produce leases.");
   } else if (tracking === "ga_only") {
     points.push("Google Analytics only. You see counts, not names.");
   } else if (tracking === "crm_only") {
@@ -326,7 +326,7 @@ function computeTracking(quiz: QuizAnswers | null): PillarScore {
     score,
     cap: PILLAR_CAPS.tracking,
     headline: pickTrackingHeadline(score),
-    capReason: `Tracking caps at ${PILLAR_CAPS.tracking}. Until the visitor pixel + per-lease attribution layer is in place, this ceiling holds regardless of analytics depth.`,
+    capReason: `Tracking caps at ${PILLAR_CAPS.tracking}. Until a per-lease attribution layer is in place, this ceiling holds regardless of analytics depth.`,
     points: points.slice(0, 4),
   };
 }

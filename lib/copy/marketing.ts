@@ -58,10 +58,6 @@ export const MARKETING = {
           new: "Weekly insights counting leads, tours, and signed leases.",
         },
         {
-          old: "Most of your website traffic stays anonymous forever.",
-          new: "Names and emails on the visitors your forms missed.",
-        },
-        {
           old: "A chatbot that answers one question, then forgets you.",
           new: "An AI assistant trained on your property that books tours at 2am.",
         },
@@ -103,11 +99,11 @@ export const MARKETING = {
         },
         {
           q: "Do we own our data?",
-          a: "Yes. Leads, conversations, visitor records, and analytics are yours. Export to CSV from the dashboard at any time.",
+          a: "Yes. Leads, conversations, and analytics are yours. Export to CSV from the dashboard at any time.",
         },
         {
           q: "How long from intake to live?",
-          a: "Fourteen days. Day 1 intake call. Day 7 site preview. Day 14 we flip DNS, the pixel fires, the chatbot goes live, and ads start running.",
+          a: "Fourteen days. Day 1 intake call. Day 7 site preview. Day 14 we flip DNS, the chatbot goes live, and ads start running.",
         },
         {
           q: "Can you work alongside our existing vendors?",

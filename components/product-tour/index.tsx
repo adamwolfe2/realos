@@ -11,16 +11,12 @@ import {
   WEEK_BARS,
   ACTIVITY,
   BRIEFING,
-  VISITORS,
-  VISITOR_STATS,
-  INITIAL_REVEAL_DELAYS_MS,
   SEO_QUERIES,
   SEO_TREND,
   type LeadRow,
   type LeadStage,
   type LeadSource,
   type CreativeStatus,
-  type Visitor,
 } from "./data";
 import { TOKENS, Icons, Pill, ScoreBadge, Tile, SectionHeader } from "./shared";
 import { LiveTicker } from "@/components/platform/live-ticker";
@@ -44,7 +40,7 @@ import { LeaseStackLogo } from "@/components/brand/leasestack-logo";
 //   Campaigns    - per-channel ad performance with budget progress
 //   Properties   - portfolio list with occupancy + leads + revenue
 //   Reports      - stacked bar chart + weekly KPIs + download
-//   Settings     - integration status + domain + pixel + billing
+//   Settings     - integration status + domain + billing
 //
 // Design: Claude-inspired (parchment + terracotta + warm neutrals, ring
 // shadows, Fraunces for display, Inter for UI).
@@ -89,7 +85,6 @@ type ViewKey =
   | "briefing"
   | "dashboard"
   | "leads"
-  | "visitors"
   | "conversations"
   | "creative"
   | "campaigns"
@@ -107,7 +102,6 @@ const VIEWS: Array<{ key: ViewKey; label: string; short: string; icon: keyof typ
   { key: "briefing",      label: "Briefing",      short: "Brief",  icon: "briefing" },
   { key: "dashboard",     label: "Dashboard",     short: "Dash",   icon: "dashboard" },
   { key: "leads",         label: "Leads",         short: "Leads",  icon: "leads",       count: 42 },
-  { key: "visitors",      label: "Visitors",      short: "Pixel",  icon: "visitors",    count: 312 },
   { key: "conversations", label: "Chatbot",       short: "Chat",   icon: "chat",        count: 6  },
   { key: "campaigns",     label: "Campaigns",     short: "Ads",    icon: "campaigns" },
   { key: "seo",           label: "SEO",           short: "SEO",    icon: "seo" },
@@ -462,7 +456,6 @@ function Contents({ view }: { view: ViewKey }) {
       {view === "briefing" && <BriefingView />}
       {view === "dashboard" && <Dashboard />}
       {view === "leads" && <LeadsView />}
-      {view === "visitors" && <VisitorsView />}
       {view === "conversations" && <ConversationsView />}
       {view === "creative" && <CreativeView />}
       {view === "campaigns" && <CampaignsView />}
@@ -483,11 +476,10 @@ function Contents({ view }: { view: ViewKey }) {
 // the biggest slice) → palest at the bottom (Referral, the smallest).
 // Same ramp the real LeaseStack `LeadSourceDonut` palette uses.
 const LEAD_SOURCES: Array<{ label: string; pct: number; color: string }> = [
-  { label: "Chat",     pct: 32, color: "#1E40AF" }, // blue-800
-  { label: "Paid",     pct: 26, color: "#0f62fe" }, // blue-600 (brand)
-  { label: "Pixel",    pct: 18, color: "#3B82F6" }, // blue-500
-  { label: "Form",     pct: 14, color: "#60A5FA" }, // blue-400
-  { label: "Referral", pct: 10, color: "#93C5FD" }, // blue-300
+  { label: "Chat",     pct: 38, color: "#1E40AF" }, // blue-800
+  { label: "Paid",     pct: 28, color: "#0f62fe" }, // blue-600 (brand)
+  { label: "Form",     pct: 22, color: "#60A5FA" }, // blue-400
+  { label: "Referral", pct: 12, color: "#93C5FD" }, // blue-300
 ];
 
 const FUNNEL: Array<{ label: string; count: number }> = [
@@ -1162,7 +1154,6 @@ function SourceFilter({
     { k: "all", label: "All sources" },
     { k: "Form", label: "Form" },
     { k: "Chat", label: "Chat" },
-    { k: "Pixel", label: "Pixel" },
     { k: "Referral", label: "Referral" },
     { k: "Paid", label: "Paid" },
   ];
@@ -2729,11 +2720,6 @@ function SettingsView() {
           action={<Pill tone="success">Connected</Pill>}
         />
         <SettingsRow
-          title="Identity pixel"
-          hint="Firing on all tenant marketing sites. Names attached to a meaningful share of visits."
-          action={<Pill tone="success">Active</Pill>}
-        />
-        <SettingsRow
           title="AI chatbot"
           hint="Trained on live unit inventory and tour calendar."
           action={<Pill tone="success">Active</Pill>}
@@ -3019,457 +3005,6 @@ function BriefingView() {
         </div>
       </div>
     </div>
-  );
-}
-
-// ===========================================================================
-// 10. VISITORS (identity-pixel resolved traffic)
-// ===========================================================================
-
-// ---------------------------------------------------------------------------
-// VisitorsView (2026-05-29 rebuild)
-//
-// Was a static table with green/orange status chips. Adam: the demo
-// portal has to look like the real product — and the real product's
-// hero pitch on this screen is LIVE IDENTIFICATION of anonymous traffic.
-//
-// New layout mirrors the marketing-side VisitorStream artifact: the
-// 5-row visitor stream with anonymous → identified reveals (real
-// headshots, brand-blue badges, no green/orange anywhere). KPI tiles
-// keep the same four metrics from the screenshot.
-// ---------------------------------------------------------------------------
-
-function VisitorsView() {
-  const [filter, setFilter] = useState<"All" | Visitor["stage"]>("All");
-  const rows = useMemo(
-    () => VISITORS.filter((v) => filter === "All" || v.stage === filter),
-    [filter],
-  );
-  // Animated count — ticks up over time so the "Identification rate" tile
-  // reads as a live counter instead of a screenshot.
-  const [identifiedTick, setIdentifiedTick] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setIdentifiedTick((t) => t + 1), 4200);
-    return () => clearInterval(id);
-  }, []);
-
-  const liveIdentified = VISITOR_STATS.identifiedThisWeek + identifiedTick;
-
-  return (
-    <div>
-      <div className="flex items-start justify-between gap-4 mb-5 flex-wrap">
-        <div>
-          <p
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "11px",
-              color: TOKENS.stone,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              fontWeight: 500,
-            }}
-          >
-            Identity pixel
-          </p>
-          <h1
-            className="mt-1.5"
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: "28px",
-              fontWeight: 500,
-              color: TOKENS.nearBlack,
-              lineHeight: 1.1,
-            }}
-          >
-            Visitors
-          </h1>
-        </div>
-        <span
-          className="inline-flex items-center gap-2"
-          style={{
-            backgroundColor: "rgba(15, 98, 254,0.10)",
-            color: TOKENS.accent,
-            padding: "5px 10px",
-            borderRadius: "999px",
-            fontFamily: "var(--font-mono)",
-            fontSize: "10.5px",
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
-            fontWeight: 600,
-          }}
-        >
-          <span
-            aria-hidden
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              backgroundColor: TOKENS.accent,
-              animation: "tourLiveDot 1.6s ease-in-out infinite",
-            }}
-          />
-          Pixel live
-        </span>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-        {[
-          { label: "Identification rate", value: VISITOR_STATS.resolveRate },
-          { label: "Identified / week",   value: liveIdentified.toLocaleString() },
-          { label: "Moved to lead",       value: VISITOR_STATS.movedToLead.toLocaleString() },
-          { label: "Avg score",           value: "82" },
-        ].map((k) => (
-          <div
-            key={k.label}
-            style={{
-              backgroundColor: TOKENS.white,
-              borderRadius: "12px",
-              padding: "14px 16px",
-              boxShadow: `0 0 0 1px ${TOKENS.borderCream}`,
-            }}
-          >
-            <p
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: "10px",
-                color: TOKENS.stone,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                fontWeight: 500,
-              }}
-            >
-              {k.label}
-            </p>
-            <p
-              className="mt-1 tabular-nums"
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "24px",
-                fontWeight: 500,
-                color: TOKENS.nearBlack,
-                lineHeight: 1.1,
-              }}
-            >
-              {k.value}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex items-center gap-1.5 mb-4 flex-wrap">
-        {(["All", "Identified", "Nurturing", "Converted"] as const).map((s) => {
-          const active = filter === s;
-          return (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setFilter(s)}
-              style={{
-                padding: "6px 12px",
-                borderRadius: "999px",
-                fontFamily: "var(--font-sans)",
-                fontSize: "12px",
-                fontWeight: active ? 500 : 400,
-                color: active ? TOKENS.white : TOKENS.olive,
-                backgroundColor: active ? TOKENS.accent : TOKENS.white,
-                border: `1px solid ${active ? TOKENS.accent : TOKENS.borderCream}`,
-                cursor: "pointer",
-                transition: "all 0.2s",
-              }}
-            >
-              {s}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Stream — 5 reveal rows on mount, each row flips anonymous → named
-          via TourVisitorRow's internal reveal timer. The first five rows
-          use INITIAL_REVEAL_DELAYS_MS for a staggered wave; rows beyond
-          5 use the default 1500ms delay (rare, only when a filter shows
-          all rows). */}
-      <Tile>
-        <div
-          className="px-5 py-2.5 flex items-center justify-between"
-          style={{
-            backgroundColor: TOKENS.ivory,
-            borderBottom: `1px solid ${TOKENS.borderCream}`,
-            color: TOKENS.stone,
-            fontFamily: "var(--font-mono)",
-            fontSize: "10.5px",
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            fontWeight: 500,
-          }}
-        >
-          <span>Live on your site right now</span>
-          <span style={{ color: TOKENS.accent, fontWeight: 600 }}>
-            {rows.length} visible
-          </span>
-        </div>
-        <ul>
-          {rows.map((v, i) => (
-            <TourVisitorRow
-              key={`${v.id}-${filter}`}
-              v={v}
-              isLast={i === rows.length - 1}
-              revealDelayMs={
-                i < INITIAL_REVEAL_DELAYS_MS.length
-                  ? INITIAL_REVEAL_DELAYS_MS[i]
-                  : 1500
-              }
-            />
-          ))}
-        </ul>
-      </Tile>
-
-      {/* Animation keyframes — declared global because TourVisitorRow
-          (and the property card "Live" dot) reference them via inline
-          `style={{ animation: '...' }}`. styled-jsx would rewrite
-          scoped @keyframes names and break those lookups. */}
-      <style jsx global>{`
-        @keyframes tourLiveDot {
-          0%, 100% { transform: scale(1);   opacity: 1;   }
-          50%      { transform: scale(1.3); opacity: 0.55;}
-        }
-        @keyframes tourRowIn {
-          from { opacity: 0; transform: translateY(-6px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes tourRevealPulse {
-          0%   { transform: scale(0.85); opacity: 0.9; }
-          70%  { transform: scale(1.5);  opacity: 0;   }
-          100% { transform: scale(1.55); opacity: 0;   }
-        }
-      `}</style>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// TourVisitorRow — one row in the operator-portal Visitors stream.
-//
-// Lifecycle:
-//   * Mounts in the "anonymous" state — gray dashed-border avatar with a
-//     "?" inside, "Anonymous visitor" label, gray "Anonymous" pill.
-//   * After `revealDelayMs` ms, the avatar flips (3D rotateY) to the real
-//     headshot, the label swaps to the resolved name + company line, and
-//     the pill swaps to a brand-blue "Just identified" badge that pulses
-//     for 2.5s, then settles into the visitor's actual stage badge
-//     (Identified / Nurturing / Converted).
-//
-// All chrome stays on the brand-blue ramp — no green / amber chips.
-// ---------------------------------------------------------------------------
-
-function TourVisitorRow({
-  v,
-  isLast,
-  revealDelayMs,
-}: {
-  v: Visitor;
-  isLast: boolean;
-  revealDelayMs: number;
-}) {
-  const [revealed, setRevealed] = useState(false);
-  const [justRevealed, setJustRevealed] = useState(false);
-
-  useEffect(() => {
-    setRevealed(false);
-    setJustRevealed(false);
-    const t1 = setTimeout(() => {
-      setRevealed(true);
-      setJustRevealed(true);
-    }, revealDelayMs);
-    const t2 = setTimeout(() => {
-      setJustRevealed(false);
-    }, revealDelayMs + 2500);
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-    };
-  }, [v.id, revealDelayMs]);
-
-  const displayName = revealed ? v.revealsTo.name : "Anonymous visitor";
-  const displayCtx = revealed
-    ? v.revealsTo.company ?? v.revealsTo.email
-    : "Bay Area · mobile";
-
-  return (
-    <li
-      className="grid grid-cols-[40px_1fr_auto] gap-3 px-5 py-3 items-center"
-      style={{
-        borderBottom: !isLast ? `1px solid ${TOKENS.borderCream}` : "none",
-        fontFamily: "var(--font-sans)",
-        animation: "tourRowIn 420ms cubic-bezier(.2,.7,.2,1)",
-      }}
-    >
-      {/* Avatar — flips on reveal. Pure CSS rotateY backed by an inner
-          stacking context so the back face hides correctly. */}
-      <span
-        className="inline-flex items-center justify-center flex-shrink-0 relative"
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: "50%",
-          perspective: 400,
-        }}
-      >
-        <span
-          style={{
-            position: "absolute",
-            inset: 0,
-            borderRadius: "50%",
-            overflow: "hidden",
-            transformStyle: "preserve-3d",
-            transition: "transform 600ms cubic-bezier(.4,0,.2,1)",
-            transform: revealed ? "rotateY(0deg)" : "rotateY(180deg)",
-          }}
-        >
-          {/* Resolved headshot — front face when revealed. Plain <img>
-              because randomuser.me isn't in next/image's whitelist and
-              we want the demo to dodge the next/image domain config
-              entirely. The bitmap is decoded async and the parent
-              dimensions keep layout stable. */}
-          <img
-            src={v.revealsTo.photo}
-            alt=""
-            decoding="async"
-            loading="lazy"
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              borderRadius: "50%",
-              position: "absolute",
-              inset: 0,
-              backfaceVisibility: "hidden",
-            }}
-          />
-        </span>
-
-        {/* Back face — anonymous dashed circle with a "?" */}
-        <span
-          style={{
-            position: "absolute",
-            inset: 0,
-            borderRadius: "50%",
-            backgroundColor: TOKENS.ivory,
-            border: `1px dashed ${TOKENS.stone}`,
-            color: TOKENS.stone,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontFamily: "var(--font-mono)",
-            fontSize: 14,
-            fontWeight: 600,
-            opacity: revealed ? 0 : 1,
-            transition: "opacity 220ms ease",
-            pointerEvents: "none",
-          }}
-        >
-          ?
-        </span>
-
-        {/* Pulse ring on the reveal moment */}
-        {justRevealed ? (
-          <span
-            aria-hidden
-            style={{
-              position: "absolute",
-              inset: -4,
-              borderRadius: "50%",
-              border: `2px solid ${TOKENS.accent}`,
-              animation: "tourRevealPulse 1.4s ease-out",
-              pointerEvents: "none",
-            }}
-          />
-        ) : null}
-      </span>
-
-      {/* Identity column — name + context line */}
-      <div className="min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span
-            className="truncate"
-            style={{
-              color: TOKENS.nearBlack,
-              fontSize: 14,
-              fontWeight: 500,
-              transition: "color 320ms ease",
-            }}
-          >
-            {displayName}
-          </span>
-          {revealed ? (
-            <span
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 9,
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
-                color: justRevealed ? TOKENS.white : TOKENS.accent,
-                backgroundColor: justRevealed
-                  ? TOKENS.accent
-                  : "rgba(15, 98, 254,0.12)",
-                padding: "2px 6px",
-                borderRadius: 4,
-                fontWeight: 600,
-                transition: "all 320ms ease",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {justRevealed ? "Just identified" : v.stage}
-            </span>
-          ) : (
-            <span
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 9,
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
-                color: TOKENS.stone,
-                fontWeight: 500,
-              }}
-            >
-              Anonymous
-            </span>
-          )}
-        </div>
-        <p
-          className="truncate mt-0.5"
-          style={{ color: TOKENS.olive, fontSize: 12 }}
-        >
-          {displayCtx}
-          {" · viewed "}
-          <span
-            style={{
-              color: TOKENS.charcoal,
-              fontFamily: "var(--font-mono)",
-              fontSize: 11.5,
-            }}
-          >
-            {v.lastPage}
-          </span>
-        </p>
-      </div>
-
-      {/* Score column — kept compact so the row fits the operator nav. */}
-      <div className="flex items-center gap-3 flex-shrink-0">
-        <ScoreBadge score={v.score} />
-        <span
-          className="hidden sm:inline tabular-nums"
-          style={{
-            color: TOKENS.stone,
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            minWidth: 28,
-            textAlign: "right",
-          }}
-        >
-          {v.lastSeen}
-        </span>
-      </div>
-    </li>
   );
 }
 

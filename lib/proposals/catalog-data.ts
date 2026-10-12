@@ -69,7 +69,7 @@ export const PROPOSAL_CATALOG: ReadonlyArray<ProposalCatalogSeed> = [
     kind: "TIER",
     label: "Growth",
     description:
-      "Replace your retainer. Visitor pixel with 5,000 identified visitors per month, Google and Meta spend recommendations, AI chatbot at 5,000 conversations per month, source-to-lease attribution with GSC and GA4, operator-written weekly read on every channel.",
+      "Replace your retainer. Google and Meta spend recommendations, AI chatbot at 5,000 conversations per month, source-to-lease attribution with GSC and GA4, operator-written weekly read on every channel.",
     defaultPriceCents: 89900,
     cadence: "MONTHLY",
     stripePriceIdMonthly: priceId("ls_growth_monthly_v1"),
@@ -82,7 +82,7 @@ export const PROPOSAL_CATALOG: ReadonlyArray<ProposalCatalogSeed> = [
     kind: "TIER",
     label: "Scale",
     description:
-      "Per-property pricing with a portfolio rollup. Visitor pixel at 25,000 identified visitors per month, audience sync to Meta, Google, and TikTok, unlimited AI chatbot, dedicated operator success contact, scheduled reports formatted for asset reviews.",
+      "Per-property pricing with a portfolio rollup. Unlimited AI chatbot, dedicated operator success contact, scheduled reports formatted for asset reviews.",
     defaultPriceCents: 149900,
     cadence: "MONTHLY",
     stripePriceIdMonthly: priceId("ls_scale_monthly_v1"),
@@ -148,24 +148,11 @@ export const PROPOSAL_CATALOG: ReadonlyArray<ProposalCatalogSeed> = [
     sortOrder: 130,
   },
   {
-    slug: "addon-audience-sync",
-    kind: "ADDON",
-    label: "Audience Sync",
-    description:
-      "Push identified visitors to Meta, Google, and TikTok ad audiences as custom audiences or lookalike seeds. Refreshes nightly.",
-    defaultPriceCents: 12900,
-    cadence: "MONTHLY",
-    stripePriceIdMonthly: null,
-    stripePriceIdAnnual: null,
-    active: true,
-    sortOrder: 140,
-  },
-  {
     slug: "addon-outbound-email-engine",
     kind: "ADDON",
     label: "Outbound Email Engine",
     description:
-      "Trigger drip sequences off identified visitors and chatbot drop-offs. Templates, deliverability monitoring, and a 3,000-send cap included.",
+      "Trigger drip sequences off chatbot drop-offs. Templates, deliverability monitoring, and a 3,000-send cap included.",
     defaultPriceCents: 17900,
     cadence: "MONTHLY",
     stripePriceIdMonthly: null,
@@ -185,19 +172,6 @@ export const PROPOSAL_CATALOG: ReadonlyArray<ProposalCatalogSeed> = [
     stripePriceIdAnnual: null,
     active: true,
     sortOrder: 160,
-  },
-  {
-    slug: "addon-cursive-pixel-pro",
-    kind: "ADDON",
-    label: "Cursive Pixel Pro",
-    description:
-      "Higher visitor-resolution tier with enriched company + role data, longer history retention, and priority pipeline for ad-audience export.",
-    defaultPriceCents: 19900,
-    cadence: "MONTHLY",
-    stripePriceIdMonthly: null,
-    stripePriceIdAnnual: null,
-    active: true,
-    sortOrder: 170,
   },
   {
     slug: "addon-insights-pro",
@@ -258,7 +232,7 @@ export const PROPOSAL_CATALOG: ReadonlyArray<ProposalCatalogSeed> = [
     kind: "ADDON",
     label: "Website Build",
     description:
-      "Site Engine designs, builds, and ships your property marketing site in 14 days. Pre-installed pixel, chatbot, and lead capture. One-time delivery, then optional maintenance.",
+      "Site Engine designs, builds, and ships your property marketing site in 14 days. Pre-installed chatbot and lead capture. One-time delivery, then optional maintenance.",
     defaultPriceCents: 250000,
     cadence: null,
     stripePriceIdMonthly: null,
@@ -305,7 +279,7 @@ export const PROPOSAL_CATALOG: ReadonlyArray<ProposalCatalogSeed> = [
     kind: "ADDON",
     label: "30-Day Implementation Sprint",
     description:
-      "Fixed-scope, fixed-price implementation engagement. Ship Organization + LocalBusiness + Place JSON-LD, FAQPage schema for top tenant questions, homepage rewrite to 1,200+ words, install Cursive Pixel + GA4 + AI chatbot, and publish the comparison page that names your competitive set. Includes weekly progress calls and final AI-scan delta report.",
+      "Fixed-scope, fixed-price implementation engagement. Ship Organization + LocalBusiness + Place JSON-LD, FAQPage schema for top tenant questions, homepage rewrite to 1,200+ words, install GA4 + AI chatbot, and publish the comparison page that names your competitive set. Includes weekly progress calls and final AI-scan delta report.",
     defaultPriceCents: 1250000,
     cadence: null,
     stripePriceIdMonthly: null,
@@ -361,19 +335,6 @@ export const PROPOSAL_CATALOG: ReadonlyArray<ProposalCatalogSeed> = [
   // them as recurring lines at $0 with a note in the description; actual
   // billing happens through the metered Stripe prices once the org is
   // live (see `lib/billing/catalog.ts` ADDONS metered entries).
-  {
-    slug: "addon-pixel-overage",
-    kind: "ADDON",
-    label: "Pixel visitor overage",
-    description:
-      "Identified visitors beyond your plan cap. Billed monthly in arrears at $0.05 per identified visitor. Hard-capped at 100x your plan cap as a safety stop. Surfaced here for transparency — no charge until usage lands.",
-    defaultPriceCents: 0,
-    cadence: "MONTHLY",
-    stripePriceIdMonthly: priceId("ls_pixel_overage_per_visitor_v1"),
-    stripePriceIdAnnual: null,
-    active: true,
-    sortOrder: 310,
-  },
   {
     slug: "addon-email-overage",
     kind: "ADDON",

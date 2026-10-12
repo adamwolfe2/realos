@@ -23,7 +23,6 @@ const QUIZ_TOTAL_STEPS = 8;
 
 const FEATURE_PAGES_WITH_DEDICATED_ROUTES = [
   "/features/chatbot",
-  "/features/pixel",
   "/features/ads",
   "/features/seo-aeo",
   "/features/keyword-trends",
@@ -129,7 +128,7 @@ test.describe("Audit quiz @critical", () => {
       // Step 6 (lead_sources) is optional — click a choice so Next
       // enables.
       /^Not sure$/i,
-      /Visitor pixel \+ analytics/i,
+      /Analytics \+ lead-source attribution/i,
     ];
     for (const label of advances) {
       // Multi-select steps don't auto-advance; for those we still need
