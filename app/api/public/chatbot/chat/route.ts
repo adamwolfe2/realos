@@ -610,7 +610,11 @@ async function persistConversation(args: {
       if (failure) {
         reported = true;
         console.error(`[public/chatbot/chat] post-capture ${step} failed:`, failure);
-        captureWithContext(failure, { route: "public.chatbot.chat", step });
+        try {
+          captureWithContext(failure, { route: "public.chatbot.chat", step });
+        } catch (reportErr) {
+          console.error("[public/chatbot/chat] Sentry report failed:", reportErr);
+        }
       }
     });
     if (reported) await Sentry.flush(2000).catch(() => false);
