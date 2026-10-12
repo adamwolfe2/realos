@@ -5,7 +5,7 @@ import {
   OnboardingStepStatus,
 } from "@prisma/client";
 
-// Existing orgs keep a PENDING row for retired steps (INSTALL_PIXEL). Those
+// Existing orgs keep a PENDING row for retired steps (WHITE_LABEL; INSTALL_PIXEL until its enum value was dropped). Those
 // rows can't be completed or skipped from the UI anymore, so they must not
 // hold the phase at "N-1 of N".
 
@@ -41,11 +41,11 @@ const snapshot = (steps: ReturnType<typeof row>[]) => ({
 });
 
 describe("onboarding progress ignores retired steps", () => {
-  it("does not count a stale PENDING INSTALL_PIXEL row", () => {
+  it("does not count a stale PENDING retired-step row", () => {
     const done = PHASE_STEPS.FOUNDATION.map((k) =>
       row(k, OnboardingStepStatus.COMPLETED),
     );
-    const stale = row(OnboardingStepKey.INSTALL_PIXEL, OnboardingStepStatus.PENDING);
+    const stale = row(OnboardingStepKey.WHITE_LABEL, OnboardingStepStatus.PENDING);
 
     const p = getPhaseProgress(snapshot([...done, stale]), OnboardingPhase.FOUNDATION);
 

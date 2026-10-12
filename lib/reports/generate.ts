@@ -453,7 +453,6 @@ const LEAD_SOURCE_LABELS: Record<LeadSource, string> = {
   ORGANIC: "Organic search",
   CHATBOT: "Chatbot",
   FORM: "Website form",
-  PIXEL_OUTREACH: "Pixel outreach",
   REFERRAL: "Referral",
   DIRECT: "Direct",
   EMAIL_CAMPAIGN: "Email campaign",

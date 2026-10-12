@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { OrgType, ProductLine, UserRole } from "@prisma/client";
 
+// AL_PARTNER was dropped from the UserRole enum (pixel retirement, S4). These
+// cases keep proving that an unrecognised role fails closed.
+const RETIRED_ROLE = "AL_PARTNER" as unknown as UserRole;
+
 const mocks = vi.hoisted(() => ({
   auth: vi.fn(),
   clerkClient: vi.fn(),
@@ -75,7 +79,7 @@ describe("requireAgencyStaffRead", () => {
   });
 
   it("denies AL_PARTNER even though the existing scope marks it as agency", async () => {
-    seedScope(UserRole.AL_PARTNER, OrgType.AGENCY);
+    seedScope(RETIRED_ROLE, OrgType.AGENCY);
 
     await expect(requireAgencyStaffRead()).rejects.toBeInstanceOf(
       ForbiddenError,

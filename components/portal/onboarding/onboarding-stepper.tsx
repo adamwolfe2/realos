@@ -54,7 +54,6 @@ const PHASE_ORDER: Array<Exclude<OnboardingPhase, "COMPLETED">> = [
 
 // Lifted from the now-deleted onboarding-checklist-floating.tsx (the floating
 // checklist this component replaced on the dashboard).
-// INSTALL_PIXEL is a retired step kept only for enum exhaustiveness; no phase lists it.
 const STEP_META: Record<
   OnboardingStepKey,
   { label: string; description: string; href: string }
@@ -78,11 +77,6 @@ const STEP_META: Record<
     label: "Approve the chatbot persona",
     description: "Pick a greeting and tone before going live.",
     href: "/portal/chatbot",
-  },
-  INSTALL_PIXEL: {
-    label: "Install the tracking pixel",
-    description: "Drop the one-line script on your marketing site.",
-    href: "/portal/connect",
   },
   VERIFY_LEAD_CAPTURE: {
     label: "Verify lead capture works",

@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { OrgType, ProductLine, UserRole } from "@prisma/client";
 
+// AL_PARTNER was dropped from the UserRole enum (pixel retirement, S4). These
+// cases keep proving that an unrecognised role fails closed.
+const RETIRED_ROLE = "AL_PARTNER" as unknown as UserRole;
+
 // F-002: AL_PARTNER is not an agency admin. The Audience Sync product was
 // retired, so AL_PARTNER now has no cross-org access at all: requireAgency
 // and impersonation (of any org, including legacy AUDIENCE_SYNC ones) reject it.
@@ -66,7 +70,7 @@ beforeEach(() => {
 
 describe("AL_PARTNER is not agency (F-002)", () => {
   it("AL_PARTNER gets 403 from requireAgency", async () => {
-    seed(UserRole.AL_PARTNER);
+    seed(RETIRED_ROLE);
     const err = await requireAgency().catch((e: unknown) => e);
     expect(err).toBeInstanceOf(ForbiddenError);
     expect((err as InstanceType<typeof ForbiddenError>).status).toBe(403);
@@ -78,15 +82,15 @@ describe("AL_PARTNER is not agency (F-002)", () => {
   });
 
   it("AL_PARTNER has no impersonation or agency flag", async () => {
-    seed(UserRole.AL_PARTNER);
+    seed(RETIRED_ROLE);
     await expect(requireScope()).resolves.toMatchObject({
       isAgency: false,
     });
   });
 
   it("AL_PARTNER cannot impersonate any org, including legacy AUDIENCE_SYNC", async () => {
-    seed(UserRole.AL_PARTNER);
-    for (const productLine of [ProductLine.STUDENT_HOUSING, ProductLine.AUDIENCE_SYNC]) {
+    seed(RETIRED_ROLE);
+    for (const productLine of [ProductLine.STUDENT_HOUSING, "AUDIENCE_SYNC" as unknown as ProductLine]) {
       mocks.orgFindUnique.mockResolvedValue({
         id: "c1",
         name: "C",

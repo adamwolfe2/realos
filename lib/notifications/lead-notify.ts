@@ -44,11 +44,7 @@ const CHANNEL_TOGGLE = {
   INGEST: "notifyOnIngestLead",
   TOUR: "notifyOnTourRequest",
   MANUAL: "notifyOnManualLead",
-} as const;
-
-// The retired PIXEL / VISITOR_CONVERT channels stay in the enum until the
-// schema migration; they have no toggle and never fire.
-type ToggleChannel = keyof typeof CHANNEL_TOGGLE;
+} as const satisfies Record<LeadNotifyChannel, string>;
 
 function splitRecipients(raw: string | null | undefined): string[] {
   if (!raw) return [];
@@ -129,9 +125,8 @@ export async function notifyLeadCaptured(
       }).catch((err) => console.warn("[lead-notify] funnel push failed", err));
     }
 
-    const toggleKey = CHANNEL_TOGGLE[input.channel as ToggleChannel];
-    // Retired channels (PIXEL, VISITOR_CONVERT) have no toggle: never notify.
-    const channelEnabled = toggleKey ? (org[toggleKey] ?? true) : false;
+    // CHANNEL_TOGGLE is exhaustive over LeadNotifyChannel (satisfies above).
+    const channelEnabled = org[CHANNEL_TOGGLE[input.channel]] ?? true;
     const recipients = splitRecipients(
       property?.notifyLeadEmailOverride ?? org.notifyLeadEmail ?? null,
     );

@@ -53,7 +53,6 @@ const LEAD_STATUS: Record<LeadStatus, string> = {
 const LEAD_SOURCE: Record<LeadSource, string> = {
   CHATBOT: "Chatbot",
   FORM: "Website form",
-  PIXEL_OUTREACH: "Pixel outreach",
   REFERRAL: "Referral",
   GOOGLE_ADS: "Google Ads",
   META_ADS: "Meta Ads",

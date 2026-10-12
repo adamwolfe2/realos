@@ -308,7 +308,7 @@ async function advancePhaseIfReady(orgId: string): Promise<ProgressSnapshot> {
 }
 
 // Saved step rows for a phase that still belong to it. Retired steps (e.g.
-// INSTALL_PIXEL, WHITE_LABEL) keep their old rows, which can never be
+// WHITE_LABEL) keep their old rows, which can never be
 // completed or skipped from the UI, so they must not gate progress.
 function gatingSteps(
   snapshot: ProgressSnapshot,

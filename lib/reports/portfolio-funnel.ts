@@ -40,7 +40,6 @@ export type PortfolioFunnel = {
 const SOURCE_LABEL: Record<string, string> = {
   CHATBOT: "Chatbot",
   FORM: "Web form",
-  PIXEL_OUTREACH: "Pixel outreach",
   REFERRAL: "Referral",
   GOOGLE_ADS: "Google Ads",
   META_ADS: "Meta Ads",
