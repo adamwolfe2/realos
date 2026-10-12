@@ -5,7 +5,6 @@ const db = vi.hoisted(() => ({
   auditEvent: { findFirst: vi.fn(), create: vi.fn() },
   chatbotConversation: { findFirst: vi.fn() },
   appFolioIntegration: { findFirst: vi.fn() },
-  cursiveIntegration: { findFirst: vi.fn() },
   $executeRaw: vi.fn(),
   $transaction: vi.fn(),
 }));
@@ -45,7 +44,6 @@ beforeEach(() => {
   db.auditEvent.findFirst.mockResolvedValue(null);
   db.chatbotConversation.findFirst.mockResolvedValue(null);
   db.appFolioIntegration.findFirst.mockResolvedValue(null);
-  db.cursiveIntegration.findFirst.mockResolvedValue(null);
 });
 
 describe("applyGoLive", () => {
@@ -79,7 +77,7 @@ describe("applyGoLive", () => {
       ...trialOrg,
       currentPeriodEnd: at(30),
     });
-    db.cursiveIntegration.findFirst.mockResolvedValue({ id: "p1" });
+    db.chatbotConversation.findFirst.mockResolvedValue({ id: "c1" });
     const snap = await applyGoLive("org1", at(3));
     expect(snap).toEqual({ goLiveAt: at(3), trialEndsAt: at(30), cardOnFile: true });
     expect(db.organization.updateMany).not.toHaveBeenCalled();

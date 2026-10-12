@@ -131,13 +131,12 @@ export default async function SupportPage() {
           <div className="px-4 py-3 border-b border-border">
             <h2 className="text-sm font-semibold">Recent engagements</h2>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Operator-triggered nudges to live visitors
+              Operator-triggered nudges to live chats
             </p>
           </div>
           {recentEngagements.length === 0 ? (
             <div className="px-4 py-12 text-center text-sm text-muted-foreground">
-              No engagements yet. Operators can engage live chats from
-              /portal/visitors.
+              No engagements yet.
             </div>
           ) : (
             <ul className="divide-y divide-border">

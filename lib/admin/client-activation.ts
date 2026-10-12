@@ -128,14 +128,6 @@ export async function loadClientActivation(
               lastMessageAt: true,
             },
           },
-          cursiveIntegrations: {
-            where: { orgId },
-            select: {
-              orgId: true,
-              propertyId: true,
-              lastPixelHitAt: true,
-            },
-          },
           seoIntegrations: {
             where: { orgId },
             select: {
@@ -161,7 +153,6 @@ export async function loadClientActivation(
             select: {
               orgId: true,
               propertyId: true,
-              visitorId: true,
               convertedAt: true,
               createdAt: true,
             },
@@ -303,10 +294,9 @@ type ActivationSnapshot = Prisma.OrganizationGetPayload<{
           notifyLeadEmailOverride: true,
           chatbotConfig: { select: { orgId: true, propertyId: true, chatbotEnabled: true, chatbotKnowledgeBase: true, updatedAt: true } },
           chatbotConversations: { select: { orgId: true, propertyId: true, leadId: true, lastMessageAt: true } },
-          cursiveIntegrations: { select: { orgId: true, propertyId: true, lastPixelHitAt: true } },
           seoIntegrations: { select: { orgId: true, propertyId: true, provider: true, status: true, lastSyncAt: true, lastSyncError: true, updatedAt: true } },
           seoSnapshots: { select: { orgId: true, propertyId: true, date: true } },
-          leads: { select: { orgId: true, propertyId: true, visitorId: true, convertedAt: true, createdAt: true } },
+          leads: { select: { orgId: true, propertyId: true, convertedAt: true, createdAt: true } },
           popupCampaigns: { select: { orgId: true, propertyId: true, shownCount: true, convertedCount: true, updatedAt: true } },
           reputationScans: { select: { orgId: true, propertyId: true, status: true, completedAt: true } },
           seoActionRecs: { select: { orgId: true, propertyId: true, generatedAt: true } },
@@ -434,13 +424,6 @@ function addFoundationSignals(
       signal("integration.any_source", subject, "ready", "sync", property.lastSyncedAt),
     );
   }
-  for (const { lastPixelHitAt } of property.cursiveIntegrations) {
-    if (lastPixelHitAt) {
-      signals.push(
-        signal("integration.any_source", subject, "ready", "sync", lastPixelHitAt),
-      );
-    }
-  }
   for (const integration of property.seoIntegrations) {
     const observedAt = integration.lastSyncAt ?? integration.updatedAt;
     const state: CapabilitySignalState =
@@ -473,9 +456,6 @@ function addAttributionSignals(
   const outcome = property.leads.find(({ convertedAt }) => convertedAt != null);
   if (outcome?.convertedAt) {
     signals.push(signal("integration.downstream_outcome", subject, "ready", "record", outcome.convertedAt));
-    if (outcome.visitorId) {
-      signals.push(signal("outcome.attributed_journey", subject, "ready", "outcome", outcome.convertedAt));
-    }
   }
 }
 
@@ -599,7 +579,6 @@ function organizationSignals(
   const sourceAt = freshestDate(
     snapshot.properties.flatMap((property) => [
       property.lastSyncedAt,
-      ...property.cursiveIntegrations.map(({ lastPixelHitAt }) => lastPixelHitAt),
       ...property.seoIntegrations.map(({ lastSyncAt }) => lastSyncAt),
     ]),
   );
@@ -631,7 +610,6 @@ function assertSnapshotScope(snapshot: ActivationSnapshot, orgId: string): void 
     const records = [
       ...(property.chatbotConfig ? [property.chatbotConfig] : []),
       ...property.chatbotConversations,
-      ...property.cursiveIntegrations,
       ...property.seoIntegrations,
       ...property.seoSnapshots,
       ...property.leads,

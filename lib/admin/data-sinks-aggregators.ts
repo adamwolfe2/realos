@@ -99,30 +99,6 @@ export function aggregateAds(
   return { lastSyncAt, lastErrorAt, lastErrorMessage, tenantsCovered: orgs.size };
 }
 
-export function aggregateCursive(
-  rows: Array<{
-    orgId: string;
-    lastEventAt: Date | null;
-    lastSegmentSyncAt: Date | null;
-    cursivePixelId: string | null;
-  }>
-): IntegrationAggregate {
-  let lastSyncAt: Date | null = null;
-  const orgs = new Set<string>();
-  for (const r of rows) {
-    if (!r.cursivePixelId) continue;
-    const seen = maxDate(r.lastEventAt, r.lastSegmentSyncAt);
-    if (seen) orgs.add(r.orgId);
-    lastSyncAt = maxDate(lastSyncAt, seen);
-  }
-  return {
-    lastSyncAt,
-    lastErrorAt: null,
-    lastErrorMessage: null,
-    tenantsCovered: orgs.size,
-  };
-}
-
 export function countDistinctOrgs(rows: Array<{ orgId: string }>): number {
   const orgs = new Set<string>();
   for (const r of rows) orgs.add(r.orgId);

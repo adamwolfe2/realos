@@ -26,7 +26,6 @@ const PORTAL_PATH = "/portal/settings/api-keys";
 
 const SCOPE_CHOICES = [
   "ingest:lead",
-  "ingest:visitor",
   "ingest:tour",
   "ingest:chatbot",
   "*",

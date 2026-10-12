@@ -119,7 +119,7 @@ export function buildTrialReminder(input: {
     return {
       subject: `Your ${BRAND_NAME} trial ends ${date}`,
       headline: `Your trial ends ${date}.`,
-      bodyHtml: `<p>Hi ${name},</p><p>Your ${BRAND_NAME} trial for ${org} ends on ${date}. There's no card on file, so nothing will be charged. Your live features pause on ${date} (the chatbot and visitor pixel), but your data stays: your dashboard and lead history remain readable.</p><p>To keep everything running, add a card: $0 today, then ${chargeLine} starting ${date}. Cancel in one click any time before then.</p>`,
+      bodyHtml: `<p>Hi ${name},</p><p>Your ${BRAND_NAME} trial for ${org} ends on ${date}. There's no card on file, so nothing will be charged. Your live features pause on ${date} (the chatbot), but your data stays: your dashboard and lead history remain readable.</p><p>To keep everything running, add a card: $0 today, then ${chargeLine} starting ${date}. Cancel in one click any time before then.</p>`,
       ctaText: "Add a card",
       ctaUrl: billingUrl,
     };
@@ -128,7 +128,7 @@ export function buildTrialReminder(input: {
   return {
     subject: `Your ${BRAND_NAME} live features are paused`,
     headline: "Your trial has ended.",
-    bodyHtml: `<p>Hi ${name},</p><p>Your trial for ${org} ended, and nothing was charged. Your chatbot and pixel are paused. Everything else is kept: your dashboard, properties, and lead history are still there to read.</p><p>Reactivate any time to switch them back on (${chargeLine}).</p>`,
+    bodyHtml: `<p>Hi ${name},</p><p>Your trial for ${org} ended, and nothing was charged. Your chatbot is paused. Everything else is kept: your dashboard, properties, and lead history are still there to read.</p><p>Reactivate any time to switch them back on (${chargeLine}).</p>`,
     ctaText: "Reactivate",
     ctaUrl: billingUrl,
   };

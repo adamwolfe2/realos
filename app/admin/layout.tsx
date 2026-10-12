@@ -38,7 +38,6 @@ const getAdminNavBadges = unstable_cache(
       activeBuilds,
       openCreative,
       atRiskTenants,
-      pendingPixelRequests,
       openBugReports,
       pendingContentDrafts,
       pendingSiteRequests,
@@ -77,9 +76,6 @@ const getAdminNavBadges = unstable_cache(
         .count({
           where: { orgType: OrgType.CLIENT, status: TenantStatus.AT_RISK },
         })
-        .catch(() => 0),
-      prisma.pixelProvisionRequest
-        .count({ where: { status: "PENDING" } })
         .catch(() => 0),
       // Open bug reports = anything not APPROVED or REJECTED. The badge
       // surfaces in the admin sidebar so Norman / James / Adam can see
@@ -126,7 +122,6 @@ const getAdminNavBadges = unstable_cache(
       activeBuilds,
       openCreative,
       atRiskTenants,
-      pendingPixelRequests,
       openBugReports,
       pendingContentDrafts,
       pendingSiteRequests,

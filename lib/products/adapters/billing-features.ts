@@ -8,7 +8,6 @@ import { defineProductSourceRecords } from "@/lib/products/adapters/types";
 
 const PRODUCT_KEY_BY_FEATURE: Readonly<Record<FeatureKey, string | null>> = {
   moduleChatbot: "ai-leasing-chatbot",
-  modulePixel: null,
   moduleSEO: "search-opportunity-engine",
   moduleReputation: "reputation-rescue",
   moduleGoogleAds: null,

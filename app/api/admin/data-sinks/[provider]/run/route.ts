@@ -26,7 +26,6 @@ const CRON_JOB_BY_PROVIDER: Record<SinkProvider, string | null> = {
   dataforseo: "dataforseo-sync",
   aeo: "aeo-scan",
   reputation: "reputation-scan",
-  cursive_pixel: "pixel-segment-sync",
   site_intelligence: "site-intelligence-refresh",
 };
 

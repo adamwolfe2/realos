@@ -30,7 +30,7 @@ export function RunSyncButton({ provider, cronJobName, scope, orgId }: Props) {
 
   if (!cronJobName) {
     // Push-driven sinks with no scheduled cron get a disabled hint
-    // instead of a misleading button. Cursive pixel etc.
+    // instead of a misleading button.
     return (
       <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
         Push-driven · no manual run

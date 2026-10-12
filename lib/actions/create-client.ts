@@ -48,7 +48,6 @@ import {
 const MODULE_KEYS = [
   "website",
   "leadCapture",
-  "pixel",
   "chatbot",
   "googleAds",
   "metaAds",
