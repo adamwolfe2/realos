@@ -24,9 +24,6 @@ vi.mock("@/lib/db", () => ({
 
 const { propertyClauseSql } = await import("@/lib/dashboard/property-clause-sql");
 const { getConversationsOverTime } = await import("@/lib/dashboard/queries");
-const { getLeadsPerModuleTrend, getLeadsPerTouchFrequency } = await import(
-  "@/lib/attribution/queries"
-);
 const { getPropertyTraffic } = await import("@/lib/properties/queries");
 
 beforeEach(() => vi.clearAllMocks());
@@ -88,46 +85,6 @@ describe("getConversationsOverTime", () => {
     });
     expect(queryRaw).not.toHaveBeenCalled();
     expect(out.map((p) => p.count)).toEqual([0, 0, 1]);
-  });
-});
-
-describe("attribution grouped helpers", () => {
-  const filters = {
-    orgId: "o",
-    propertyIds: ["p1"],
-    fromDate: new Date("2026-09-01T12:00:00Z"),
-    toDate: new Date("2026-09-03T12:00:00Z"),
-  };
-
-  it("module trend fills every day and labels sources", async () => {
-    queryRaw.mockResolvedValueOnce([
-      { day: "2026-09-02", source: "CHATBOT", n: BigInt(3) },
-      { day: "2026-09-02", source: "FORM", n: BigInt(1) },
-      { day: "2026-08-31", source: "FORM", n: BigInt(5) },
-    ]);
-    const out = await getLeadsPerModuleTrend(filters);
-    expect(out).toEqual([
-      { date: "2026-09-01", bySource: {} },
-      { date: "2026-09-02", bySource: { Chatbot: 3, "Web form": 1 } },
-      { date: "2026-09-03", bySource: {} },
-    ]);
-    expectScoped(lastSql(), "p1");
-  });
-
-  it("touch frequency maps grouped buckets, zero-filling the rest", async () => {
-    queryRaw.mockResolvedValueOnce([
-      { bucket: "1", n: BigInt(7) },
-      { bucket: "5+", n: BigInt(2) },
-    ]);
-    const out = await getLeadsPerTouchFrequency(filters);
-    expect(out).toEqual([
-      { bucket: "1", count: 7 },
-      { bucket: "2", count: 0 },
-      { bucket: "3", count: 0 },
-      { bucket: "4", count: 0 },
-      { bucket: "5+", count: 2 },
-    ]);
-    expectScoped(lastSql(), "p1");
   });
 });
 

@@ -575,7 +575,6 @@ function renderDataSourcesEmail(s: ReportSnapshot): string {
     { label: "Meta Ads", connected: ds.metaAds.connected },
     { label: "Google Analytics 4", connected: ds.ga4.connected },
     { label: "Google Search Console", connected: ds.gsc.connected },
-    { label: "Cursive Pixel", connected: ds.pixel.connected },
     { label: "AppFolio", connected: ds.appfolio.connected },
     { label: "Chatbot", connected: ds.chatbot.connected },
   ];

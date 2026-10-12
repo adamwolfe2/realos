@@ -11,7 +11,7 @@ import {
 
 type SendResult = { ok: boolean; id?: string; error?: string };
 
-// Pixel provisioning notifications. Transactional category — sent in
+// Module-request notifications. Transactional category — sent in
 // response to a specific request lifecycle event (submit / fulfillment).
 async function safeSend(opts: {
   to: string;

@@ -14,7 +14,6 @@ import {
   SeoProvider,
   SeoSyncStatus,
   TourStatus,
-  VisitorIdentificationStatus,
 } from "@prisma/client";
 import type { LeadSourceSlice } from "@/components/portal/dashboard/lead-source-donut";
 import type {
@@ -37,44 +36,11 @@ import { realAdAccountWhere } from "@/lib/integrations/real-ad-account";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const WINDOW_DAYS = 28;
-const HOT_VISITOR_WINDOW_MS = 5 * 60 * 1000;
-const ENGAGED_TIME_SECONDS = 30;
 
 // Active campaign statuses across both ad platforms.
 //   Google Ads -> ENABLED
 //   Meta       -> ACTIVE
 const ACTIVE_CAMPAIGN_STATUSES = ["ENABLED", "ACTIVE"];
-
-// ---------------------------------------------------------------------------
-// Hot visitors right now
-// ---------------------------------------------------------------------------
-
-export async function getHotVisitors(orgId: string) {
-  const now = Date.now();
-  const since5m = new Date(now - HOT_VISITOR_WINDOW_MS);
-  const since24h = new Date(now - DAY_MS);
-
-  const [hotCount, recentSessions] = await Promise.all([
-    prisma.visitorSession.count({
-      where: { orgId, lastEventAt: { gte: since5m } },
-    }),
-    prisma.visitorSession.findMany({
-      where: { orgId, startedAt: { gte: since24h } },
-      select: { startedAt: true },
-    }),
-  ]);
-
-  // Bucket sessions per hour over the last 24h (oldest -> newest).
-  const buckets = new Array<number>(24).fill(0);
-  for (const row of recentSessions) {
-    const ageMs = now - row.startedAt.getTime();
-    if (ageMs < 0 || ageMs >= DAY_MS) continue;
-    const idx = 23 - Math.floor(ageMs / (60 * 60 * 1000));
-    if (idx >= 0 && idx < 24) buckets[idx] += 1;
-  }
-
-  return { count: hotCount, sparkline: buckets };
-}
 
 // ---------------------------------------------------------------------------
 // Ad spend (28d) + Cost per lead
@@ -234,7 +200,7 @@ const LEAD_SOURCE_LABELS: Record<LeadSource, string> = {
 export type DashboardScope = {
   /** Days back from now — the dashboard's range selector. Default 28. */
   periodDays?: number;
-  /** Clause for models with a NULLABLE propertyId (Lead, Visitor):
+  /** Clause for models with a NULLABLE propertyId (Lead):
    *  marketableScopedPropertyClause(..., { defaultIncludesOrgRows: true }). */
   propertyClause?: Record<string, unknown>;
   /** Clause for models with a REQUIRED propertyId (Application, Tour):
@@ -341,8 +307,6 @@ export async function getConversationsOverTime(
 // ---------------------------------------------------------------------------
 // Conversion funnel (28d)
 //
-// Visitors  -> distinct VisitorSession.anonymousId
-// Engaged   -> sessions with pageviewCount > 1 OR totalTimeSeconds > 30
 // Leads     -> Lead.createdAt in window
 // Tours     -> Tour where lead.orgId matches and tour status implies booked/done
 // Apps      -> Application where lead.orgId matches
@@ -356,42 +320,11 @@ export async function getFunnel(orgId: string, scope: DashboardScope = {}) {
   const requiredPropertyClause = scope.requiredPropertyClause ?? {};
 
   const [
-    visitorsCount,
-    engagedCount,
     leadsCount,
     toursCount,
     applicationsCount,
     pmsConnectedProperty,
   ] = await Promise.all([
-    // Count Visitor rows, NOT VisitorSession rows. VisitorSession rows
-    // only exist when the Cursive pixel fires a `page_view` event —
-    // the upstream pixel provider segment-sync writes Visitor rows directly without
-    // creating sessions. Tenants on segment-sync-only (e.g. Telegraph
-    // Commons: 150 visitors, 0 sessions) were reading the funnel
-    // "Visitors" stage as zero even though they had 150 real visitors
-    // in their portal. Counting Visitor.lastSeenAt in the 28d window
-    // gives the same intent (people who showed up in the last 28d) and
-    // works for both the pixel and segment-sync acquisition paths.
-    prisma.visitor.count({
-      where: {
-        orgId,
-        lastSeenAt: { gte: since28d },
-        ...propertyClause,
-      },
-    }),
-    // Engaged stays org-wide: VisitorSession has no propertyId (sessions
-    // precede property attribution) and the pipeline strip doesn't render
-    // this stage anyway.
-    prisma.visitorSession.count({
-      where: {
-        orgId,
-        startedAt: { gte: since28d },
-        OR: [
-          { pageviewCount: { gt: 1 } },
-          { totalTimeSeconds: { gt: ENGAGED_TIME_SECONDS } },
-        ],
-      },
-    }),
     prisma.lead.count({
       where: { orgId, createdAt: { gte: since28d }, ...propertyClause },
     }),
@@ -424,8 +357,6 @@ export async function getFunnel(orgId: string, scope: DashboardScope = {}) {
   const pmsConnected = pmsConnectedProperty !== null;
 
   return [
-    { label: "Visitors", value: visitorsCount },
-    { label: "Engaged", value: engagedCount },
     { label: "Leads", value: leadsCount },
     // Only flag NA when we have no PMS AND no measured value — if any
     // tour or application slipped in via manual entry, prefer the real
@@ -597,7 +528,7 @@ export async function getPortfolioLeadsSpark(
 // ---------------------------------------------------------------------------
 // Activity feed
 //
-// Union the most recent items across leads, tours, engaged visitor sessions,
+// Union the most recent items across leads, tours,
 // and chatbot conversations. Returns up to `limit` entries sorted desc.
 // ---------------------------------------------------------------------------
 
@@ -616,7 +547,7 @@ export async function getActivityFeed(
     marketableOrgClause(orgId, "propertyId", { includeOrgLevel: true }),
     marketableOrgClause(orgId, "propertyId"),
   ]);
-  const [recentLeads, recentTours, recentSessions, recentChats] =
+  const [recentLeads, recentTours, recentChats] =
     await Promise.all([
       prisma.lead.findMany({
         where: { orgId, ...orgLevelClause, createdAt: { gte: since } },
@@ -646,35 +577,6 @@ export async function getActivityFeed(
           createdAt: true,
           property: { select: { name: true } },
           lead: { select: { firstName: true, lastName: true } },
-        },
-      }),
-      prisma.visitorSession.findMany({
-        where: {
-          orgId,
-          startedAt: { gte: since },
-          // AND-wrapped, NOT spread: orgLevelClause is itself an `OR`, and
-          // this where already owns a top-level `OR` for the engagement
-          // filter. Spreading would clobber one of them — the gate would
-          // vanish silently and the suite would stay green.
-          AND: [
-            orgLevelClause,
-            {
-              OR: [
-                { pageviewCount: { gt: 1 } },
-                { totalTimeSeconds: { gt: ENGAGED_TIME_SECONDS } },
-              ],
-            },
-          ],
-        },
-        orderBy: { startedAt: "desc" },
-        take: fetchEach,
-        select: {
-          id: true,
-          startedAt: true,
-          pageviewCount: true,
-          firstUrl: true,
-          utmSource: true,
-          country: true,
         },
       }),
       prisma.chatbotConversation.findMany({
@@ -731,27 +633,6 @@ export async function getActivityFeed(
     });
   }
 
-  for (const s of recentSessions) {
-    const path = s.firstUrl ? safeShortPath(s.firstUrl) : null;
-    items.push({
-      id: `session-${s.id}`,
-      kind: "visitor",
-      title: path
-        ? `Engaged visitors on ${path}`
-        : "Engaged visitors on your site",
-      meta:
-        [
-          s.utmSource && `via ${s.utmSource}`,
-          s.country,
-          `${s.pageviewCount} pages`,
-        ]
-          .filter(Boolean)
-          .join(" \u00b7 ") || undefined,
-      href: "/portal/visitors",
-      at: s.startedAt,
-    });
-  }
-
   for (const c of recentChats) {
     const captured = c.capturedEmail
       ? "Captured email"
@@ -786,9 +667,7 @@ export async function getActivityFeed(
 export async function getIntegrationHealth(
   orgId: string,
 ): Promise<IntegrationChip[]> {
-  const recentEventCutoff = new Date(Date.now() - 7 * DAY_MS);
-
-  const [seo, ads, appfolio, cursive, recentPixelEvent] = await Promise.all([
+  const [seo, ads, appfolio] = await Promise.all([
     // Filter out demo-seeded SEO integrations and ad accounts so the
     // dashboard health row only reports on real, credentialed connections.
     prisma.seoIntegration.findMany({
@@ -816,18 +695,6 @@ export async function getIntegrationHealth(
         // honest amber state rather than a misleading green.
         autoSyncEnabled: true,
       },
-    }),
-    // Dashboard "is the pixel firing?" badge — surface ANY active
-    // pixel for the org. Multi-property tenants might have several;
-    // pick the most-recently-active so the badge reflects reality.
-    prisma.cursiveIntegration.findFirst({
-      where: { orgId, cursivePixelId: { not: null } },
-      orderBy: [{ lastEventAt: "desc" }],
-      select: { cursivePixelId: true, lastEventAt: true },
-    }),
-    prisma.visitorEvent.findFirst({
-      where: { orgId, occurredAt: { gte: recentEventCutoff } },
-      select: { id: true },
     }),
   ]);
 
@@ -887,12 +754,6 @@ export async function getIntegrationHealth(
       status: appfolioStatus(appfolio),
       href: "/portal/connect",
     },
-    {
-      key: "cursive",
-      label: "Cursive pixel",
-      status: cursiveStatus(cursive, recentPixelEvent != null),
-      href: "/portal/visitors",
-    },
   ];
 }
 
@@ -945,26 +806,12 @@ function appfolioStatus(
   return "connected";
 }
 
-function cursiveStatus(
-  c: { cursivePixelId: string | null; lastEventAt: Date | null } | null,
-  hasRecentEvent: boolean,
-): IntegrationChipStatus {
-  if (!c) return "off";
-  if (!c.cursivePixelId) return "off";
-  if (!hasRecentEvent && !c.lastEventAt) return "degraded";
-  if (c.lastEventAt && Date.now() - c.lastEventAt.getTime() > 7 * DAY_MS) {
-    return "degraded";
-  }
-  return "connected";
-}
-
 // ---------------------------------------------------------------------------
 // First-run progress
 // ---------------------------------------------------------------------------
 
 export type FirstRunProgress = {
   hasProperty: boolean;
-  pixelInstalled: boolean;
   gscConnected: boolean;
   marketingSiteCustomized: boolean;
 };
@@ -972,19 +819,11 @@ export type FirstRunProgress = {
 export async function getFirstRunProgress(
   orgId: string,
 ): Promise<FirstRunProgress> {
-  const [propertyCount, cursive, gsc, siteConfig] = await Promise.all([
+  const [propertyCount, gsc, siteConfig] = await Promise.all([
     // First-run "do you have any properties yet?" — only count marketable
     // ones. AppFolio re-syncing a parking lot shouldn't trip the
     // "has a property" milestone for the operator.
     prisma.property.count({ where: marketablePropertyWhere(orgId) }),
-    // Dashboard "is the pixel firing?" badge — surface ANY active
-    // pixel for the org. Multi-property tenants might have several;
-    // pick the most-recently-active so the badge reflects reality.
-    prisma.cursiveIntegration.findFirst({
-      where: { orgId, cursivePixelId: { not: null } },
-      orderBy: [{ lastEventAt: "desc" }],
-      select: { cursivePixelId: true, lastEventAt: true },
-    }),
     prisma.seoIntegration.findFirst({
       where: {
         orgId,
@@ -999,7 +838,6 @@ export async function getFirstRunProgress(
     }),
   ]);
 
-  const pixelInstalled = !!cursive?.lastEventAt || !!cursive?.cursivePixelId;
   const gscConnected = !!gsc;
   const marketingSiteCustomized = !!(
     siteConfig?.heroHeadline ||
@@ -1009,7 +847,6 @@ export async function getFirstRunProgress(
 
   return {
     hasProperty: propertyCount > 0,
-    pixelInstalled,
     gscConnected,
     marketingSiteCustomized,
   };
@@ -1082,16 +919,6 @@ function formatDateShort(d: Date): string {
     month: "short",
     day: "numeric",
   });
-}
-
-function safeShortPath(url: string): string | null {
-  try {
-    const u = new URL(url);
-    const path = u.pathname.replace(/\/+$/, "") || "/";
-    return path.length > 24 ? `${path.slice(0, 21)}\u2026` : path;
-  } catch {
-    return null;
-  }
 }
 
 // Used by the activity titles' string concat above to satisfy TS lint about
@@ -1179,63 +1006,6 @@ export async function getLeasingVelocityTrend(
       applications: appsPerWeek[i],
     };
   });
-}
-
-// ---------------------------------------------------------------------------
-// Recent identified visitors
-//
-// Latest few Visitors that have at least one of (firstName, lastName, email).
-// Used by the dashboard "Recent identified visitors" panel so the operator
-// always has a wall of real names to look at, not an empty card.
-// ---------------------------------------------------------------------------
-
-export type RecentIdentifiedVisitor = {
-  id: string;
-  name: string;
-  email: string | null;
-  lastSeenAt: Date;
-  utmSource: string | null;
-  referrer: string | null;
-  intentScore: number;
-};
-
-export async function getRecentIdentifiedVisitors(
-  orgId: string,
-  limit = 6,
-): Promise<RecentIdentifiedVisitor[]> {
-  const rows = await prisma.visitor.findMany({
-    where: {
-      orgId,
-      status: {
-        in: [
-          VisitorIdentificationStatus.IDENTIFIED,
-          VisitorIdentificationStatus.ENRICHED,
-          VisitorIdentificationStatus.MATCHED_TO_LEAD,
-        ],
-      },
-    },
-    orderBy: { lastSeenAt: "desc" },
-    take: limit,
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      email: true,
-      lastSeenAt: true,
-      utmSource: true,
-      referrer: true,
-      intentScore: true,
-    },
-  });
-  return rows.map((r) => ({
-    id: r.id,
-    name: displayName(r.firstName, r.lastName),
-    email: r.email,
-    lastSeenAt: r.lastSeenAt,
-    utmSource: r.utmSource,
-    referrer: r.referrer,
-    intentScore: r.intentScore,
-  }));
 }
 
 // ---------------------------------------------------------------------------

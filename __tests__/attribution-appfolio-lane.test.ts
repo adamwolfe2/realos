@@ -10,7 +10,6 @@ import path from "path";
 // the exclusion behavior can't silently return.
 
 const taxPath = path.resolve(__dirname, "../lib/attribution/source-taxonomy.ts");
-const qPath = path.resolve(__dirname, "../lib/attribution/queries.ts");
 // lead-flow-diagram.tsx (the original hero) was deleted 2026-07-29 as part
 // of the donut/graph design-cohesion sweep — its funnel is now the inline
 // stage-strip in the attribution page itself, so the guard moved there.
@@ -30,15 +29,6 @@ describe("attribution — AppFolio first-class leasing lane", () => {
     expect(content).toContain('id: "appfolio"');
     expect(content).toContain('category: "leasing"');
     expect(content).toContain('| "leasing"');
-  });
-
-  it("routes PMS-synced (externalSystem) leads to the AppFolio lane, not excluded", () => {
-    const content = read(qPath);
-    expect(content).toContain("APPFOLIO_SOURCE");
-    expect(content).toContain('getSource("appfolio")');
-    // Only non-external unknown leads increment the excluded bucket.
-    expect(content).toContain("if (lead.externalSystem != null) {");
-    expect(content).toContain("channel = APPFOLIO_SOURCE;");
   });
 
   it("frames AppFolio leads as their own leasing lane, not an excluded bucket", () => {

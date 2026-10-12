@@ -1203,7 +1203,7 @@ function StackSection({ data }: { data: BriefJson }) {
           className="mt-2 max-w-2xl"
           style={{ fontSize: 15, lineHeight: 1.6, color: "var(--gray-70)" }}
         >
-          We scanned the rendered HTML for known chatbot, popup, pixel,
+          We scanned the rendered HTML for known chatbot, popup,
           analytics, and CRM widgets. These are facts about your live
           site.
         </p>
@@ -1317,8 +1317,8 @@ function buildActions(
     },
     {
       no: 4,
-      title: "Install a visitor identification pixel + GA4 + a chatbot",
-      body: "Today, a tenant exec who lands on the homepage leaves anonymous. Cursive Pixel resolves the company. GA4 tracks where they came from. An AI chatbot trained on the building's spec sheet books tours 24/7. Three integrations, one day.",
+      title: "Install GA4 + a chatbot",
+      body: "Today, a tenant exec who lands on the homepage leaves without a trace. GA4 tracks where they came from. An AI chatbot trained on the building's spec sheet books tours 24/7. Two integrations, one day.",
       days: "Days 13–17",
     },
     {
@@ -1451,7 +1451,7 @@ function CtaSection({ prospectName }: { prospectName: string }) {
           >
             White-glove engagement. We work alongside your existing
             agency, web team, and broker — ship the structured data,
-            rewrite the homepage, install the chatbot + pixel + GA4,
+            rewrite the homepage, install the chatbot + GA4,
             build the comparison page, and run the AI scan weekly so
             the gap actually closes. Twenty-minute intro call, no
             commitment.

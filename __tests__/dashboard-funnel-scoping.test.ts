@@ -17,8 +17,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const h = vi.hoisted(() => {
   const fn = () => vi.fn(async (_args?: any): Promise<any> => 0);
   return {
-    visitor: { count: fn() },
-    visitorSession: { count: fn() },
     lead: {
       count: fn(),
       groupBy: vi.fn(async (_args?: any): Promise<any> => []),
@@ -47,7 +45,7 @@ beforeEach(() => {
 });
 
 describe("getFunnel scoping", () => {
-  it("threads the property clauses into leads, visitors, tours, applications", async () => {
+  it("threads the property clauses into leads, tours, applications", async () => {
     await getFunnel(ORG, {
       periodDays: 28,
       propertyClause: PROPERTY_CLAUSE,
@@ -57,11 +55,6 @@ describe("getFunnel scoping", () => {
     // Nullable-propertyId models get the org-rows-inclusive clause — the
     // exact clause the "Leads (28d)" tile uses, so tile === pipeline.
     expect(h.lead.count).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({ orgId: ORG, ...PROPERTY_CLAUSE }),
-      }),
-    );
-    expect(h.visitor.count).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ orgId: ORG, ...PROPERTY_CLAUSE }),
       }),

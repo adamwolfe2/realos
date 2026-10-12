@@ -36,7 +36,6 @@ export const dynamic = "force-dynamic";
 const SOURCE_OPTIONS: Array<{ value: LeadSource; label: string }> = [
   { value: LeadSource.CHATBOT, label: "Chatbot" },
   { value: LeadSource.FORM, label: "Popups and forms" },
-  { value: LeadSource.PIXEL_OUTREACH, label: "Visitor pixel" },
   { value: LeadSource.GOOGLE_ADS, label: "Google Ads" },
   { value: LeadSource.META_ADS, label: "Meta Ads" },
   { value: LeadSource.ORGANIC, label: "Organic" },
@@ -401,9 +400,7 @@ function SourceBadge({
         ? "bg-primary/15 text-primary-dark"
         : row.source === LeadSource.FORM
           ? "bg-sky-100 text-sky-800"
-          : row.source === LeadSource.PIXEL_OUTREACH
-            ? "bg-cyan-100 text-cyan-800"
-            : "bg-accent text-primary-dark";
+          : "bg-accent text-primary-dark";
 
   return (
     <span className={`inline-flex px-2 py-1 text-[11px] font-semibold ${style}`}>

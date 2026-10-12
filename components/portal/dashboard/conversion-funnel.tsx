@@ -31,7 +31,7 @@ export type FunnelStage = {
 //   ┌──────┐
 //   │      └──────┐
 //   │              └──────┐
-//   │ Visitors  Engaged  Leads  ┐
+//   │ Leads    Tours    Apps    ┐
 //   │              ┌──────┘
 //   │      ┌──────┘
 //   └──────┘
@@ -189,8 +189,8 @@ export function ConversionFunnel({ stages }: { stages: FunnelStage[] }) {
           // Computing 0% against an em-dash predecessor would be wrong.
           const naConversion =
             s.notApplicable === true || prevStage?.notApplicable === true;
-          // Stages are independent cohorts (e.g. "Visitors" counts anyone
-          // seen in 28d, "Leads" counts leads created in 28d) — they aren't
+          // Stages are independent cohorts (e.g. "Leads" counts leads created
+          // in 28d, "Tours" counts tours booked in 28d) — they aren't
           // drawn from one another, so value can exceed prev and the ratio
           // would read as a nonsensical >100% "conversion". When that
           // happens, don't clamp-and-lie with a percentage; drop the %

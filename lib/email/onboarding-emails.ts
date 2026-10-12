@@ -239,7 +239,7 @@ export async function sendClientPortalReadyEmail(input: {
       You should have received a separate invitation email to set up your login.
     </p>
     <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
-      Once you're in, you'll be able to track leads, review visitor intelligence,
+      Once you're in, you'll be able to track leads, review site traffic,
       and monitor your marketing performance all in one place.
     </p>
     <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
@@ -261,7 +261,7 @@ export async function sendClientPortalReadyEmail(input: {
     `Your ${BRAND_NAME} portal for ${input.orgName} is ready.`,
     "You should have received a separate invitation email to set up your login.",
     "",
-    "Once you're in, you'll be able to track leads, review visitor intelligence, and monitor your marketing performance all in one place.",
+    "Once you're in, you'll be able to track leads, review site traffic, and monitor your marketing performance all in one place.",
     "",
     "Reply to this email any time you have questions.",
     "",
@@ -348,7 +348,7 @@ export async function sendTeammateInviteEmail(input: {
     <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#0A0A0A;">
       ${escape(BRAND_NAME)} is the operator portal where ${escape(input.orgName)}
       tracks leads, tours, applications, residents, and renewals alongside
-      reputation and visitor activity. Use the button below to set your
+      reputation and site traffic. Use the button below to set your
       password and sign in.
     </p>
     <p style="margin:0 0 14px;font-size:13px;line-height:1.6;color:#5b5b5b;">
@@ -375,7 +375,7 @@ export async function sendTeammateInviteEmail(input: {
       ? `${inviter} added you to ${input.orgName} as ${roleLabel}.`
       : `You've been added to ${input.orgName} as ${roleLabel}.`,
     "",
-    `${BRAND_NAME} is the operator portal where ${input.orgName} tracks leads, tours, applications, residents, and renewals alongside reputation and visitor activity.`,
+    `${BRAND_NAME} is the operator portal where ${input.orgName} tracks leads, tours, applications, residents, and renewals alongside reputation and site traffic.`,
     "",
     `Set your password: ${input.acceptUrl}`,
     "",

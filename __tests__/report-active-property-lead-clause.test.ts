@@ -9,8 +9,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // Fix: every Lead/Application-shaped query in generate.ts spreads
 // activePropertyClause(scope) so org-wide reports only see
 // ACTIVE-lifecycle properties (the ones the client actually set up).
-// Visitor queries joined the gate 2026-08-02 once propertyId stamping at
-// ingest + the single-property backfill made it safe.
 //
 // This locks the gate to the REAL prisma calls generateReportSnapshot
 // makes (not just the helper in isolation), so a future edit that drops
@@ -26,9 +24,9 @@ function autoMockPrisma() {
         return vi.fn(async () => 0);
       case "$queryRaw":
       case "$queryRawUnsafe":
-        // Root-level prisma methods, not models — must be callable or the
-        // Promise.all inside buildVisitorStats throws and every query after
-        // the raw call silently never registers (the caller swallows it).
+        // Root-level prisma methods, not models — must be callable or a
+        // Promise.all throws and every query after the raw call silently
+        // never registers (the caller swallows it).
         return vi.fn(async () => [{ count: BigInt(0) }]);
       case "aggregate":
         return vi.fn(async () => ({ _sum: {}, _avg: {}, _count: { _all: 0 } }));
@@ -144,39 +142,6 @@ describe("generateReportSnapshot — org-wide report gates Lead/Application quer
     ]);
   });
 
-  it("visitor.count (KPI identified-visitor counts + visitor stats) is gated every time it's called", async () => {
-    await generateReportSnapshot("org-1", "monthly", { skipAi: true });
-
-    const calls = mockPrisma.visitor.count.mock.calls;
-    expect(calls.length).toBeGreaterThan(0);
-    for (const [args] of calls) {
-      expect(args.where).toMatchObject({ property: { lifecycle: "ACTIVE" } });
-    }
-  });
-
-  it("visitor.groupBy + visitor.findMany in the deep stats block are gated too", async () => {
-    // buildVisitorStats bails (returns undefined) when identifiedTotal is
-    // 0, which would skip the groupBy/findMany block entirely — force a
-    // non-zero count so the second Promise.all actually runs and records.
-    // (clearAllMocks does NOT drop implementations, so restore in finally.)
-    mockPrisma.visitor.count.mockImplementation(async () => 3);
-    try {
-      await generateReportSnapshot("org-1", "monthly", { skipAi: true });
-
-      for (const method of ["groupBy", "findMany"] as const) {
-        const calls = mockPrisma.visitor[method].mock.calls;
-        expect(calls.length).toBeGreaterThan(0);
-        for (const [args] of calls) {
-          expect(args.where).toMatchObject({
-            property: { lifecycle: "ACTIVE" },
-          });
-        }
-      }
-    } finally {
-      mockPrisma.visitor.count.mockImplementation(async () => 0);
-    }
-  });
-
   it("tracedSignedLeads is omitted at zero (never zero-padded) and its query requires a Resident link + ACTIVE property", async () => {
     const snap = await generateReportSnapshot("org-1", "monthly", {
       skipAi: true,
@@ -211,7 +176,7 @@ describe("generateReportSnapshot — org-wide report gates Lead/Application quer
       propertyId: "prop-a",
     });
 
-    for (const model of ["lead", "visitor"] as const) {
+    for (const model of ["lead"] as const) {
       const calls = mockPrisma[model].count.mock.calls;
       expect(calls.length).toBeGreaterThan(0);
       for (const [args] of calls) {

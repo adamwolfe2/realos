@@ -628,8 +628,6 @@ const STACK_DETECTORS: Array<{
     patterns: [/widget\.intercom\.io/i, /js\.driftt?\.com/i, /code\.tidio\.co/i, /embed\.tawk\.to/i, /static\.zdassets\.com/i, /chatbase\.co\/embed/i] },
   { category: "popups", label: "On-site popup / lead capture",
     patterns: [/static\.klaviyo\.com\/onsite\/js\/klaviyo\.js/i, /optimonk\.com/i, /privy\.com\/widget/i, /popupsmart\.com/i] },
-  { category: "pixel", label: "Visitor identification pixel",
-    patterns: [/cursive\.js/i, /meetcursive\.com\/p/i, /connect\.facebook\.net\/.*\/fbevents\.js/i, /fbq\(['"]init/i, /rb2b\.com/i] },
   { category: "analytics", label: "Analytics / tag manager",
     patterns: [/googletagmanager\.com\/gtag\/js/i, /googletagmanager\.com\/gtm\.js/i, /gtag\(['"]config/i, /cdn\.segment\.com\/analytics\.js/i, /cdn\.amplitude\.com/i, /posthog\.com\/static\/array\.js/i, /snap\.licdn\.com/i] },
   { category: "crm", label: "CRM / marketing automation",

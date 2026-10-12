@@ -50,7 +50,6 @@ export type InsightEntityType =
   | "property"
   | "campaign"
   | "conversation"
-  | "visitor"
   | null;
 
 export interface DetectedInsight {

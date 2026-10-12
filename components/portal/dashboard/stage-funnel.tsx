@@ -6,7 +6,7 @@ import { CHART_COLORS } from "@/components/portal/ui/chart-theme";
 
 // ---------------------------------------------------------------------------
 // StageFunnel — horizontal bar funnel for ordered pipeline stages. Shared by
-// the dashboard's Pipeline strip (Visitors → Leads → Applications) and Lead
+// the dashboard's Pipeline strip (Leads → Applications) and Lead
 // journey (Leads → Applied → Approved → Signed) so both read as one visual
 // language: bar length = magnitude, "→N%" = step-down conversion from the
 // previous tracked stage — the drop-off is the story, so it's rendered, not

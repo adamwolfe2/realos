@@ -137,13 +137,7 @@ function OverviewSection(s: ReportSnapshot, p: PropertyMeta, navTo: NavTo): Reac
       icon: Users,
       label: "Lead acquisition",
       value: num(kpis.leads),
-      // Drop the visitor clause at 0 rather than asserting "0 identified
-      // visitors" — zero here means nothing was attributable to a launched
-      // building, not that the pixel measured nobody.
-      context:
-        (kpis.identifiedVisitors ?? 0) > 0
-          ? `${num(kpis.identifiedVisitors)} identified visitors`
-          : "First-touch source breakdown",
+      context: "First-touch source breakdown",
     },
     {
       id: "leasing",
@@ -286,7 +280,6 @@ function AcquisitionSection(s: ReportSnapshot): React.ReactNode {
   const maxFunnel = Math.max(1, ...funnel.map((f) => f.count));
   const attribution = s.attributionBySource ?? [];
   const chat = s.chatbotStatsExtended;
-  const identifiedVisitors = s.kpis.identifiedVisitors ?? 0;
 
   return (
     <Panel>
@@ -319,21 +312,11 @@ function AcquisitionSection(s: ReportSnapshot): React.ReactNode {
       </div>
 
       <Card>
-        <SectionHeading>
-          {identifiedVisitors > 0 ? "Chatbot & visitor capture" : "Chatbot capture"}
-        </SectionHeading>
-        {/* Same rule as the one-pager: omit the visitor tile at 0 instead of
-            printing "0", and drop it from the heading too so the section
-            doesn't promise a number it isn't showing. */}
-        <div
-          className={`grid grid-cols-2 gap-2.5 ${TILE_FILL} ${identifiedVisitors > 0 ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}
-        >
+        <SectionHeading>Chatbot capture</SectionHeading>
+        <div className={`grid grid-cols-2 gap-2.5 sm:grid-cols-3 ${TILE_FILL}`}>
           <Stat value={num(chat?.conversations)} label="Conversations" />
           <Stat value={chat?.capturedRatePct != null ? pct(chat.capturedRatePct) : "—"} label="Lead capture rate" />
           <Stat value={num(chat?.capturedConversations)} label="Leads from chat" />
-          {identifiedVisitors > 0 ? (
-            <Stat value={num(identifiedVisitors)} label="Identified visitors" />
-          ) : null}
         </div>
       </Card>
 
@@ -775,8 +758,7 @@ export const SECTIONS: SectionDef[] = [
     available: (s) =>
       (s.leadSources?.length ?? 0) > 0 ||
       (s.funnel?.length ?? 0) > 0 ||
-      (s.chatbotStats?.conversations ?? 0) > 0 ||
-      (s.kpis.identifiedVisitors ?? 0) > 0,
+      (s.chatbotStats?.conversations ?? 0) > 0,
     render: (s) => AcquisitionSection(s),
   },
   {

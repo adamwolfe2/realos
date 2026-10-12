@@ -74,9 +74,6 @@ describe("sourceProvenance", () => {
     expect(sourceProvenance("CHATBOT", null)).toBe(
       "Captured by LeaseStack chatbot",
     );
-    expect(sourceProvenance("PIXEL_OUTREACH", null)).toBe(
-      "Resolved by Cursive visitor pixel",
-    );
     expect(sourceProvenance("OTHER", "appfolio")).toBe(
       "Imported from AppFolio",
     );
