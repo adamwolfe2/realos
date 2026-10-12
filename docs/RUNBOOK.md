@@ -116,7 +116,7 @@ Before merging a migration: take a Neon backup branch, then test the
 migration on a Neon scratch branch. Ship it in its own PR.
 
 `prisma/migrations_pending/` holds the older hand-applied SQL files
-(`psql "$DATABASE_URL" -f <file>.sql`); new migrations don't go there.
+(`psql "$DATABASE_URL" -f prisma/migrations_pending/<file>.sql`); new migrations don't go there.
 
 ## Rollback
 
