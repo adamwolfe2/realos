@@ -9,7 +9,7 @@ import { packageLabelFor } from "@/lib/billing/features";
 export const metadata: Metadata = {
   title: "Marketplace · LeaseStack",
   description:
-    "Activate add-on modules — visitor pixel, AI chatbot, SEO, ads, creative — all free during your trial (excluding Pro add-ons).",
+    "Activate add-on modules — AI chatbot, SEO, ads, creative — all free during your trial (excluding Pro add-ons).",
 };
 export const dynamic = "force-dynamic";
 
@@ -37,7 +37,6 @@ export default async function MarketplacePage() {
       subscriptionTier: true,
       chosenTier: true,
       trialEndsAt: true,
-      modulePixel: true,
       moduleChatbot: true,
       moduleGoogleAds: true,
       moduleMetaAds: true,
@@ -96,7 +95,6 @@ export default async function MarketplacePage() {
   // Reputation Pro still has no signal: nothing records the purchase until
   // add-on checkout + its Stripe webhook exist, so it renders "Not active".
   const initialEnabled: Record<string, boolean> = {
-    modulePixel: org.modulePixel,
     moduleChatbot: org.moduleChatbot,
     moduleGoogleAds: org.moduleGoogleAds,
     moduleMetaAds: org.moduleMetaAds,
@@ -177,8 +175,6 @@ function activeHrefFor(key: string): string | null {
 // — the client maps these names back to the actual lucide-react components.
 function iconNameFor(key: string): string {
   switch (key) {
-    case "modulePixel":
-      return "Eye";
     case "moduleChatbot":
       return "Bot";
     case "moduleSEO":

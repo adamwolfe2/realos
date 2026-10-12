@@ -12,7 +12,7 @@ export const runtime = "nodejs";
 // GET /api/tenant/search?q=...
 //
 // Cross-entity tenant search powering the Cmd+K modal. Searches leads,
-// visitors, properties, and chatbot conversations (by captured name/email).
+// properties, and chatbot conversations (by captured name/email).
 // Capped at 6 results per entity type so the modal stays scrollable.
 //
 // Tenant-scoped via tenantWhere(scope) — never returns rows from another
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
   const orgLevelScope = { AND: [propertyOrOrgLevelWhereFragment(scope, null)] };
   const propertyScope = { AND: [propertyWhereFragment(scope, null, "id")] };
 
-  const [leads, visitors, properties, conversations] = await Promise.all([
+  const [leads, properties, conversations] = await Promise.all([
     prisma.lead.findMany({
       where: {
         ...where,
@@ -59,28 +59,6 @@ export async function GET(req: NextRequest) {
         status: true,
         source: true,
         lastActivityAt: true,
-      },
-    }),
-    prisma.visitor.findMany({
-      where: {
-        ...where,
-        ...orgLevelScope,
-        OR: [
-          { firstName: { contains: q, mode: "insensitive" } },
-          { lastName: { contains: q, mode: "insensitive" } },
-          { email: { contains: q, mode: "insensitive" } },
-        ],
-      },
-      orderBy: { lastSeenAt: "desc" },
-      take: PER_ENTITY_LIMIT,
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        status: true,
-        intentScore: true,
-        lastSeenAt: true,
       },
     }),
     prisma.property.findMany({
@@ -130,6 +108,6 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     q,
-    results: { leads, visitors, properties, conversations },
+    results: { leads, properties, conversations },
   });
 }

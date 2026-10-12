@@ -13,7 +13,6 @@ import { AlertDialog } from "@/components/portal/ui/alert-dialog";
 
 const SCOPE_OPTIONS = [
   { value: "ingest:lead", label: "Leads" },
-  { value: "ingest:visitor", label: "Visitors" },
   { value: "ingest:tour", label: "Tours" },
   { value: "ingest:chatbot", label: "Chatbot" },
 ] as const;

@@ -265,12 +265,12 @@ export type Ga4SourceRow = {
 // Analytics Data API request blocks the whole attribution page (the calls run
 // inside a Promise.all on /portal/attribution). On timeout gaxios rejects, the
 // caller's try/catch resolves the source to null, and the page degrades to
-// pixel-only attribution instead of hanging. (Brief: "GA4 without timeout".)
+// the other attribution sources instead of hanging. (Brief: "GA4 without timeout".)
 const GA4_RUNREPORT_TIMEOUT_MS = 8000;
 
 // Sessions grouped by sessionSource + sessionMedium across ALL channels (no
-// organic filter). Powers attribution source fusion — fills in the traffic the
-// first-party pixel never saw (no-JS visits, blocked trackers).
+// organic filter). Powers attribution source fusion — fills in traffic that
+// form and chatbot capture never saw (no-JS visits, blocked trackers).
 export async function fetchGa4SessionsBySource(
   encryptedJson: string,
   propertyId: string,

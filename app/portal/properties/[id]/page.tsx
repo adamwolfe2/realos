@@ -403,7 +403,6 @@ export default async function PropertyDetail({
             <LeadsTab
               orgId={scope.orgId}
               propertyId={property.id}
-              propertyMeta={meta}
             />
           ),
           ads: (

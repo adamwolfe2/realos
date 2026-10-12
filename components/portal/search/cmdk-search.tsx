@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import {
   Search as SearchIcon,
   Users,
-  Eye,
   Building2,
   MessageSquare,
   Loader2,
@@ -20,7 +19,7 @@ import { leadDisplayName } from "@/lib/leads/display-name";
 
 // ---------------------------------------------------------------------------
 // Cmd+K global search modal. Lives in the portal layout so any page can
-// trigger it. Search across leads, visitors, properties, conversations.
+// trigger it. Search across leads, properties, conversations.
 //
 // Keyboard:
 //   - Cmd/Ctrl + K, /, or click the trigger button to open
@@ -39,15 +38,6 @@ type LeadResult = {
   status: string;
   source: string;
   lastActivityAt: string;
-};
-type VisitorResult = {
-  id: string;
-  firstName: string | null;
-  lastName: string | null;
-  email: string | null;
-  status: string;
-  intentScore: number;
-  lastSeenAt: string;
 };
 type PropertyResult = {
   id: string;
@@ -71,7 +61,6 @@ type SearchPayload = {
   q: string;
   results: {
     leads: LeadResult[];
-    visitors: VisitorResult[];
     properties: PropertyResult[];
     conversations: ConversationResult[];
   } | [];
@@ -83,7 +72,6 @@ type FlatItem = {
     | "modules"
     | "settings"
     | "leads"
-    | "visitors"
     | "properties"
     | "conversations";
   href: string;
@@ -136,7 +124,7 @@ export function CmdKSearch() {
     }
   }, [open]);
 
-  // Debounced fetch for tenant data (leads / visitors / properties /
+  // Debounced fetch for tenant data (leads / properties /
   // conversations). The /api/tenant/search endpoint requires ≥2 chars,
   // so we only call it then. Nav registry results are computed
   // synchronously from a static client-side list and surface from the
@@ -204,18 +192,6 @@ export function CmdKSearch() {
         href: `/portal/leads/${l.id}`,
         primary: name,
         secondary: `${humanize(l.status)} · ${humanize(l.source)}${l.email ? ` · ${l.email}` : ""}`,
-      });
-    }
-    for (const v of data.results.visitors) {
-      const name =
-        [v.firstName, v.lastName].filter(Boolean).join(" ") ||
-        v.email ||
-        "Anonymous";
-      out.push({
-        group: "visitors",
-        href: `/portal/visitors/${v.id}`,
-        primary: name,
-        secondary: `${humanize(v.status)}${v.intentScore ? ` · intent ${v.intentScore}` : ""}${v.email ? ` · ${v.email}` : ""}`,
       });
     }
     for (const p of data.results.properties) {
@@ -290,7 +266,7 @@ export function CmdKSearch() {
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 onKeyDown={onKeyDown}
-                placeholder="Search leads, visitors, properties, conversations…"
+                placeholder="Search leads, properties, conversations…"
                 className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               />
               {loading ? (
@@ -414,7 +390,6 @@ const GROUP_LABEL: Record<FlatItem["group"], string> = {
   modules: "Modules",
   settings: "Settings",
   leads: "Leads",
-  visitors: "Visitors",
   properties: "Properties",
   conversations: "Conversations",
 };
@@ -424,7 +399,6 @@ const GROUP_ICON: Record<FlatItem["group"], React.ReactNode> = {
   modules: <Sparkles className="h-3 w-3" />,
   settings: <SettingsIcon className="h-3 w-3" />,
   leads: <Users className="h-3 w-3" />,
-  visitors: <Eye className="h-3 w-3" />,
   properties: <Building2 className="h-3 w-3" />,
   conversations: <MessageSquare className="h-3 w-3" />,
 };

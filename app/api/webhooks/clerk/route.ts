@@ -362,12 +362,11 @@ export async function POST(req: NextRequest) {
           // Focus-mode defaults (2026-07-29, positioning spec): a new org
           // starts with the SPINE only — Dashboard, Leads, Applications,
           // Residents, Conversations, Reports, Reputation — so the product
-          // reads focused, not sporadic. Sellable modules (pixel, chatbot,
+          // reads focused, not sporadic. Sellable modules (chatbot,
           // SEO, popups, referrals) start OFF and light up via the
           // marketplace. Residents/Applications nav additionally waits for
           // an AppFolio connection, so nothing renders empty.
           moduleWebsite: false,
-          modulePixel: false,
           moduleChatbot: false,
           moduleGoogleAds: false,
           moduleMetaAds: false,

@@ -5,10 +5,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // exists (chatbotEnabled=true). It does NOT prove the operator pasted the
 // embed snippet (public/embed/chatbot.js) onto their live site, so the
 // checklist could show the bot "done" while it never rendered for a real
-// visitor. This mirrors the pixel_installed vs pixel_firing split: we add a
-// separate "chatbot_firing" item that requires real evidence the widget
-// executed on the live site — a ChatbotConversation for THIS property inside
-// the same 14-day freshness window used for pixel_firing.
+// visitor. We add a separate "chatbot_firing" item that requires real
+// evidence the widget executed on the live site — a ChatbotConversation for
+// THIS property inside a 14-day freshness window.
 // ---------------------------------------------------------------------------
 
 // Mock fns typed to resolve `any` so each test can hand back a bespoke row
@@ -17,7 +16,6 @@ const h = vi.hoisted(() => {
   const fn = () => vi.fn(async (): Promise<any> => null);
   return {
     property: { findFirst: fn() },
-    cursiveIntegration: { findFirst: fn() },
     seoIntegration: { findMany: fn() },
     adCampaign: { findFirst: fn() },
     propertyChatbotConfig: { findUnique: fn() },
@@ -46,7 +44,6 @@ function propertyRow(overrides: Record<string, unknown> = {}) {
     // two chatbot items under test.
     org: {
       moduleChatbot: true,
-      modulePixel: false,
       moduleSEO: false,
       moduleGoogleAds: false,
       moduleMetaAds: false,
@@ -59,7 +56,6 @@ function propertyRow(overrides: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   h.property.findFirst.mockReset().mockResolvedValue(propertyRow());
-  h.cursiveIntegration.findFirst.mockReset().mockResolvedValue(null);
   h.seoIntegration.findMany.mockReset().mockResolvedValue([]);
   h.adCampaign.findFirst.mockReset().mockResolvedValue(null);
   h.propertyChatbotConfig.findUnique.mockReset().mockResolvedValue(null);
@@ -83,7 +79,7 @@ describe("launch checklist: chatbot_firing (embed actually live)", () => {
     const items = await itemsByKey();
     expect(items.chatbot_configured).toBeDefined();
     expect(items.chatbot_firing).toBeDefined();
-    // It's a launch-blocking step, mirroring pixel_firing.
+    // It's a launch-blocking step.
     expect(items.chatbot_firing.required).toBe(true);
   });
 
@@ -142,8 +138,7 @@ describe("launch checklist: chatbot_firing (embed actually live)", () => {
       propertyRow({
         org: {
           moduleChatbot: false,
-          modulePixel: false,
-          moduleSEO: false,
+              moduleSEO: false,
           moduleGoogleAds: false,
           moduleMetaAds: false,
           modulePopups: false,

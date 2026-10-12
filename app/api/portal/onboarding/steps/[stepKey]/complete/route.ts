@@ -28,8 +28,8 @@ const bodySchema = z
 // POST /api/portal/onboarding/steps/[stepKey]/complete
 //
 // Manually flips an onboarding step to COMPLETED. Useful when the
-// detector hasn't caught up yet (operator just installed the pixel but
-// no webhook event has landed) or for steps that gate on operator
+// detector hasn't caught up yet (operator just connected a source but
+// the sync has not landed) or for steps that gate on operator
 // affirmation rather than platform state.
 // ---------------------------------------------------------------------------
 export async function POST(

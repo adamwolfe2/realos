@@ -176,7 +176,6 @@ export default async function ChatbotPage() {
     // org actually has more than one marketable property — single-property
     // orgs keep the plain org-wide snippet, matching every other
     // property-picker surface's showPicker convention
-    // (cursive-setup-wizard.tsx).
     prisma.property
       .findMany({
         where: marketablePropertyWhere(scope.orgId),

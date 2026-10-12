@@ -37,7 +37,6 @@ export const PHASE_STEPS: Record<
     OnboardingStepKey.CONNECT_DATA_SOURCE,
     OnboardingStepKey.CONFIRM_CONTACT_PREFS,
     OnboardingStepKey.APPROVE_CHATBOT_PERSONA,
-    OnboardingStepKey.INSTALL_PIXEL,
   ],
   GROWTH: [
     OnboardingStepKey.VERIFY_LEAD_CAPTURE,

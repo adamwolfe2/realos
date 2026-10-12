@@ -60,7 +60,6 @@ export async function GET(req: NextRequest) {
       // Source
       if (lead.source === LeadSource.CHATBOT) score += 30;
       else if (lead.source === LeadSource.FORM) score += 20;
-      else if (lead.source === LeadSource.PIXEL_OUTREACH) score += 15;
       else if (lead.source === LeadSource.REFERRAL) score += 25;
 
       // Completeness

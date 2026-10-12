@@ -53,8 +53,8 @@ const PHASE_ORDER: Array<Exclude<OnboardingPhase, "COMPLETED">> = [
 ];
 
 // Lifted from the now-deleted onboarding-checklist-floating.tsx (the floating
-// checklist this component replaced on the dashboard). INSTALL_PIXEL repointed
-// to /portal/connect — the canonical connect hub hosts the pixel + GA4 flows.
+// checklist this component replaced on the dashboard).
+// INSTALL_PIXEL is a retired step kept only for enum exhaustiveness; no phase lists it.
 const STEP_META: Record<
   OnboardingStepKey,
   { label: string; description: string; href: string }
@@ -66,7 +66,7 @@ const STEP_META: Record<
   },
   CONNECT_DATA_SOURCE: {
     label: "Connect a data source",
-    description: "AppFolio, GA4, GSC, the Cursive pixel, or an ad account.",
+    description: "AppFolio, GA4, GSC, or an ad account.",
     href: "/portal/connect",
   },
   CONFIRM_CONTACT_PREFS: {

@@ -90,7 +90,6 @@ export default async function IntegrationsStatusPage() {
           // Marketplace on/off state — surfaced here as part of the audit
           // view without taking over the dedicated /portal/marketplace
           // surface.
-          modulePixel: true,
           moduleChatbot: true,
           moduleSEO: true,
           moduleGoogleAds: true,
@@ -292,7 +291,6 @@ function ModuleStateGrid({
   org,
 }: {
   org: {
-    modulePixel: boolean;
     moduleChatbot: boolean;
     moduleSEO: boolean;
     moduleGoogleAds: boolean;
@@ -312,7 +310,6 @@ function ModuleStateGrid({
 }) {
   const modules: Array<{ key: keyof typeof org; label: string }> = [
     { key: "moduleWebsite", label: "Website" },
-    { key: "modulePixel", label: "Visitor pixel" },
     { key: "moduleChatbot", label: "Chatbot" },
     { key: "moduleSEO", label: "SEO" },
     { key: "moduleGoogleAds", label: "Google Ads" },
@@ -343,7 +340,7 @@ function ModuleStateGrid({
         </Link>
       </div>
       <div className="ls-card p-3">
-        <ul className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+        <ul className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
           {modules.map((m) => {
             const on = org[m.key];
             return (

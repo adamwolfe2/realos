@@ -52,7 +52,7 @@ export async function PATCH(req: NextRequest) {
   try {
     const scope = await requireWritableWorkspace();
 
-    // Role gate — CLIENT_VIEWER / LEASING_AGENT / AL_PARTNER cannot
+    // Role gate — CLIENT_VIEWER / LEASING_AGENT cannot
     // change brand or primary-contact settings. Lead notifications fan
     // out via primaryContactEmail; a low-trust user re-pointing that
     // email could exfiltrate every new lead the org receives.

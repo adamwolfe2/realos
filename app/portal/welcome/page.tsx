@@ -8,7 +8,6 @@ import {
   Clock,
   Sparkles,
   MessageSquare,
-  Radar,
   Calendar,
   Link2,
 } from "lucide-react";
@@ -119,7 +118,7 @@ export default async function PortalWelcomePage() {
         description={
           live
             ? "Your workspace is live and your free trial is running. Here\u2019s what just happened and where to go next."
-            : "Your workspace is set up. Your 14-day trial starts when your chatbot, pixel, or AppFolio produces data. Here\u2019s where to go next."
+            : "Your workspace is set up. Your 14-day trial starts when your chatbot or AppFolio produces data. Here\u2019s where to go next."
         }
       />
 
@@ -275,7 +274,7 @@ export default async function PortalWelcomePage() {
                 ? `Open your property: ${firstProperty.name}`
                 : "Add your first property"
             }
-            description="Where AppFolio sync, your chatbot and pixel, and reporting all start."
+            description="Where AppFolio sync, your chatbot, and reporting all start."
           />
           <NextStepLink
             href="/portal/connect"
@@ -291,20 +290,12 @@ export default async function PortalWelcomePage() {
               description="A per-property site goes live as soon as you pick a style and add basics."
             />
           ) : (
-            <>
-              <NextStepLink
-                href="/portal/chatbot"
-                icon={MessageSquare}
-                label="Install your chatbot"
-                description="Answers prospects around the clock and turns conversations into leads."
-              />
-              <NextStepLink
-                href="/portal/connect"
-                icon={Radar}
-                label="Install the visitor pixel"
-                description="Identifies who is visiting your site so you can follow up."
-              />
-            </>
+            <NextStepLink
+              href="/portal/chatbot"
+              icon={MessageSquare}
+              label="Install your chatbot"
+              description="Answers prospects around the clock and turns conversations into leads."
+            />
           )}
           <NextStepLink
             href={process.env.NEXT_PUBLIC_CAL_BOOK_URL || "/book-demo"}

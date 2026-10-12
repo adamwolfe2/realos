@@ -3,10 +3,10 @@
  *
  * The David/Norman scenario:
  *   - SG Real Estate (David's org) has 122 ACTIVE properties
- *   - Telegraph Commons is LIVE — site built, pixel firing, GA4/GSC
+ *   - Telegraph Commons is LIVE — site built, chatbot live, GA4/GSC
  *     connected, ads running
  *   - 5 more properties are in flight (CDO requested rebuilds with
- *     pixel + ads + GSC + GA4 hookups)
+ *     chatbot + ads + GSC + GA4 hookups)
  *   - The other 116 are in DRAFT until the operator gets to them
  *
  * This module computes:
@@ -27,14 +27,10 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import type { PropertyLaunchStatus } from "@prisma/client";
 
-// 14 days = consider a pixel "firing" if it logged an event in the
-// last 14 days. Real student-housing sites get traffic daily; 14 days
-// is generous enough to forgive weekend lulls and short outages.
-const PIXEL_FRESHNESS_DAYS = 14;
-
-// Same 14-day window as the pixel: a chatbot is "firing" (proven live on the
-// operator's real site) only if a visitor conversation landed in the last 14
-// days. Mirrors PIXEL_FRESHNESS_DAYS — generous enough for weekend lulls.
+// A chatbot is "firing" (proven live on the operator's real site) only if a
+// visitor conversation landed in the last 14 days. Real student-housing sites
+// get traffic daily; 14 days is generous enough for weekend lulls and short
+// outages.
 const CHATBOT_FRESHNESS_DAYS = 14;
 
 export type ChecklistItem = {
@@ -43,8 +39,6 @@ export type ChecklistItem = {
     | "chatbot_configured"
     | "chatbot_firing"
     | "popups_created"
-    | "pixel_installed"
-    | "pixel_firing"
     | "ga4_connected"
     | "gsc_connected"
     | "google_ads_connected"
@@ -95,7 +89,6 @@ export async function getLaunchChecklist(
       org: {
         select: {
           moduleChatbot: true,
-          modulePixel: true,
           moduleSEO: true,
           moduleGoogleAds: true,
           moduleMetaAds: true,
@@ -107,9 +100,6 @@ export async function getLaunchChecklist(
   if (!property) return null;
   const modules = property.org;
 
-  const since = new Date(
-    Date.now() - PIXEL_FRESHNESS_DAYS * 24 * 60 * 60 * 1000,
-  );
   const chatbotSince = new Date(
     Date.now() - CHATBOT_FRESHNESS_DAYS * 24 * 60 * 60 * 1000,
   );
@@ -122,7 +112,6 @@ export async function getLaunchChecklist(
   // property-specific row if present, otherwise fall back to the
   // org-wide row. Mirrors the production pickIntegration logic.
   const [
-    cursive,
     seoRows,
     googleCampaign,
     metaCampaign,
@@ -130,15 +119,6 @@ export async function getLaunchChecklist(
     popup,
     lastChatbotConversation,
   ] = await Promise.all([
-    prisma.cursiveIntegration.findFirst({
-      where: { orgId, OR: [{ propertyId }, { propertyId: null }] },
-      orderBy: { propertyId: { sort: "desc", nulls: "last" } },
-      select: {
-        cursivePixelId: true,
-        installedOnDomain: true,
-        lastEventAt: true,
-      },
-    }),
     prisma.seoIntegration.findMany({
       where: { orgId, OR: [{ propertyId }, { propertyId: null }] },
       select: {
@@ -197,12 +177,6 @@ export async function getLaunchChecklist(
   const ga4 = pickRow("GA4");
   const gsc = pickRow("GSC");
 
-  const pixelInstalled = Boolean(cursive?.cursivePixelId);
-  const pixelFiring =
-    pixelInstalled &&
-    cursive?.lastEventAt != null &&
-    cursive.lastEventAt >= since;
-
   // "Marketing content" — minimal-viable check. The property page
   // needs at least a hero image AND title to be presentable to a
   // visitor. metaDescription is nice-to-have but not blocking.
@@ -215,8 +189,8 @@ export async function getLaunchChecklist(
     chatbotConfig && chatbotConfig.chatbotEnabled !== false,
   );
 
-  // Mirror of pixelInstalled/pixelFiring: config is the "installed" half,
-  // a recent conversation is the "firing" half. Only counts as firing when
+  // Config is the "installed" half, a recent conversation is the "firing"
+  // half. Only counts as firing when
   // the bot is also configured (a stray conversation on a disabled bot
   // shouldn't mark the step done).
   const lastChatAt = lastChatbotConversation?.lastMessageAt ?? null;
@@ -225,7 +199,7 @@ export async function getLaunchChecklist(
 
   // Checklist is gated by the workspace's enabled features so each property
   // only shows the setup steps for features it actually has. Every item is
-  // scoped to THIS property (its own pixel, GA4, GSC, chatbot, popups) — full
+  // scoped to THIS property (its own GA4, GSC, chatbot, popups) — full
   // per-property isolation.
   const items: ChecklistItem[] = [];
 
@@ -274,38 +248,6 @@ export async function getLaunchChecklist(
       actionLabel: chatbotConfigured ? "Install embed snippet" : null,
       actionHref: chatbotConfigured
         ? `/portal/properties/${property.id}?tab=chatbot`
-        : null,
-      required: true,
-    });
-  }
-
-  if (modules?.modulePixel) {
-    items.push({
-      key: "pixel_installed",
-      label: "Cursive Pixel installed",
-      description:
-        "This property's pixel snippet must be deployed on its marketing site so we can identify visitors.",
-      done: pixelInstalled,
-      detail: pixelInstalled
-        ? `Pixel installed${cursive?.installedOnDomain ? ` on ${cursive.installedOnDomain}` : ""}.`
-        : null,
-      actionLabel: "Install pixel",
-      actionHref: `/portal/integrations?propertyId=${property.id}`,
-      required: true,
-    });
-    items.push({
-      key: "pixel_firing",
-      label: "Pixel firing",
-      description: `We've seen a pixel event in the last ${PIXEL_FRESHNESS_DAYS} days.`,
-      done: pixelFiring,
-      detail: pixelFiring
-        ? `Last event ${cursive?.lastEventAt?.toISOString().slice(0, 10)}.`
-        : pixelInstalled
-          ? "Pixel installed but no recent events. Verify the snippet is deployed and visitors are landing."
-          : null,
-      actionLabel: pixelInstalled ? "Re-check pixel" : null,
-      actionHref: pixelInstalled
-        ? `/portal/integrations?propertyId=${property.id}`
         : null,
       required: true,
     });

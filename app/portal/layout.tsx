@@ -59,13 +59,12 @@ export default async function PortalLayout({
   // (take: 1) instead of full counts to short-circuit at the first row.
   // Cheap badge counters — surfaced as inline pills on the sidebar
   // so operators see at-a-glance signal (new leads today, urgent
-  // work orders, hot visitors) without clicking. Each is .catch()ed
+  // work orders) without clicking. Each is .catch()ed
   // so a missing field or schema drift degrades to "no badge"
   // instead of 500ing the whole layout.
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
-  const now24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const next7d = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const next7d = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   const next30d = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
   // Marketable (enabled) property set — fetched once, reused by the scope
@@ -105,7 +104,6 @@ export default async function PortalLayout({
     pendingCurationCount,
     activePropertyIdFromCookie,
     newLeadsTodayCount,
-    hotVisitors24hCount,
     toursNext7dCount,
     expiringLeases30dCount,
     urgentWorkOrdersCount,
@@ -134,7 +132,6 @@ export default async function PortalLayout({
         subscriptionTier: true,
         trialEndsAt: true,
         moduleWebsite: true,
-        modulePixel: true,
         moduleChatbot: true,
         moduleGoogleAds: true,
         moduleMetaAds: true,
@@ -225,19 +222,6 @@ export default async function PortalLayout({
         },
       })
       .catch(() => 0),
-    // 24h hot identified visitors (intentScore >= 70). Surfaces
-    // high-intent prospects the operator should reach out to.
-    prisma.visitor
-      .count({
-        where: {
-          orgId: scope.orgId,
-          status: "IDENTIFIED",
-          intentScore: { gte: 70 },
-          firstSeenAt: { gte: now24h },
-          ...inMarketableOrOrgLevel,
-        },
-      })
-      .catch(() => 0),
     // Tours in the next 7 days — staffing + prep signal.
     prisma.tour
       .count({
@@ -295,8 +279,6 @@ export default async function PortalLayout({
   const rawScopeProperties = marketableProps;
 
   if (!org) {
-    // AL_PARTNER has no /admin access (requireAgency); /admin would bounce
-    // it back here in a loop, so it falls through to ScopeRecovery.
     if (scope.isAgency) redirect("/admin");
     // Authenticated client whose Organization row is missing/unresolved.
     // NEVER bounce to /sign-in here — middleware already verified the Clerk
@@ -304,14 +286,12 @@ export default async function PortalLayout({
     // infinite loop. Recover in place (one reload, then a manual screen).
     return <ScopeRecovery />;
   }
-  // AL_PARTNER users without an impersonation target land on the audiences
-  // catalog. Don't bounce them to /admin since they don't have agency UI.
-  if (org.orgType !== "CLIENT" && !scope.isAlPartner) {
+  if (org.orgType !== "CLIENT") {
     if (scope.isAgency) redirect("/admin");
     return <ScopeRecovery />;
   }
 
-  // Go-live trial: the first visit after the chatbot/pixel/AppFolio starts
+  // Go-live trial: the first visit after the chatbot/AppFolio starts
   // producing data starts the 14-day clock (lib/billing/go-live-trial.ts).
   // A failure here must not take the portal down; it is logged and the
   // daily trial-reminders cron retries.
@@ -354,8 +334,6 @@ export default async function PortalLayout({
     setupProgress != null &&
     setupProgress.completedCount === setupProgress.totalCount;
 
-  const isAudienceSync = org.productLine === "AUDIENCE_SYNC";
-
   // Resolve the brand surface for this org. When the white-label add-on
   // is active and the override fields are populated, every visible brand
   // surface in the portal (mobile top bar, sidebar logo, footer
@@ -367,7 +345,6 @@ export default async function PortalLayout({
     name: org.name,
     productLine: org.productLine,
     moduleWebsite: org.moduleWebsite,
-    modulePixel: org.modulePixel,
     moduleChatbot: org.moduleChatbot,
     moduleGoogleAds: org.moduleGoogleAds,
     moduleMetaAds: org.moduleMetaAds,
@@ -386,7 +363,6 @@ export default async function PortalLayout({
     bringYourOwnSite: org.bringYourOwnSite,
     onboardingDismissed: org.onboardingDismissed,
     setupComplete,
-    isAudienceSync,
     // Show Operations (residents / renewals / work orders) only when AppFolio
     // is configured — the pages show empty states otherwise and confuse users.
     appFolioConnected: Boolean(appfolioIntegration?.instanceSubdomain),
@@ -405,7 +381,7 @@ export default async function PortalLayout({
     hasReports: reportCount > 0,
     hasCreativeRequests: creativeCount > 0,
     briefingHasContent: leadCount > 0 && propertyCount > 0,
-    // Honest disclosure for Audience nav: only show Tours / Applications
+    // Honest disclosure: only show Tours / Applications
     // once a real row exists, since neither is currently AppFolio-backed.
     // Power users can still URL-navigate to the empty pages; we just
     // remove the dead-end click from the sidebar so feature surface
@@ -417,11 +393,10 @@ export default async function PortalLayout({
     // Surface AppFolio curation queue as a count badge on the Properties
     // nav item rather than a full chrome banner on every page.
     pendingCurationCount,
-    // Sidebar badges — inline counts on Leads / Visitors / Tours /
+    // Sidebar badges — inline counts on Leads / Tours /
     // Renewals / Work orders / Conversations. Surfaces "what needs
     // me?" at-a-glance without forcing a click into each surface.
     newLeadsTodayCount,
-    hotVisitors24hCount,
     toursNext7dCount,
     expiringLeases30dCount,
     urgentWorkOrdersCount,

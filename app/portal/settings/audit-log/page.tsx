@@ -262,8 +262,6 @@ function entityLink(entityType: string, entityId: string | null): string | null 
       return `/portal/conversations/${entityId}`;
     case "CreativeRequest":
       return `/portal/creative/${entityId}`;
-    case "Visitor":
-      return `/portal/visitors/${entityId}`;
     case "Report":
       return `/portal/reports/${entityId}`;
     default:

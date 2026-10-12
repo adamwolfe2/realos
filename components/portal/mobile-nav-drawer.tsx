@@ -7,7 +7,6 @@ import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   NAV_GROUPS,
-  AUDIENCE_NAV_GROUPS,
   visibleNavItems,
   type PortalNavOrg,
 } from "./portal-nav";
@@ -138,7 +137,7 @@ export function MobileNavDrawer({
         ) : null}
 
         <nav className="flex-1 overflow-y-auto py-3" aria-label="Portal navigation">
-          {(org.isAudienceSync ? AUDIENCE_NAV_GROUPS : NAV_GROUPS).map((group) => {
+          {NAV_GROUPS.map((group) => {
             const visible = visibleNavItems(group, org);
             if (!visible.length) return null;
             return (

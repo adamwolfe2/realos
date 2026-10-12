@@ -25,7 +25,7 @@ type SerializedMessage = {
 // Conversation detail
 //
 // Two-column layout: transcript on the left, review sidebar on the right.
-// The sidebar holds the flag toggles, a notes field, and visitor/lead cross
+// The sidebar holds the flag toggles, a notes field, and lead cross
 // links so the operator can jump to related records without losing place.
 // ---------------------------------------------------------------------------
 
@@ -49,21 +49,6 @@ export default async function ConversationDetail({
     },
   });
   if (!convo) notFound();
-
-  // Resolve linked visitor (by visitorHash) so the sidebar can link to the
-  // visitor profile. Scoped by org to prevent cross-tenant leakage.
-  const linkedVisitor = convo.visitorHash
-    ? await prisma.visitor.findFirst({
-        where: { orgId: scope.orgId, visitorHash: convo.visitorHash },
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          email: true,
-          status: true,
-        },
-      })
-    : null;
 
   const messages = (Array.isArray(convo.messages)
     ? (convo.messages as unknown as SerializedMessage[])
@@ -162,7 +147,6 @@ export default async function ConversationDetail({
                 userAgent={convo.userAgent}
                 ipAddress={convo.ipAddress}
                 createdAt={convo.createdAt}
-                hasVisitorLink={Boolean(convo.visitorHash)}
               />
             </SpringIn>
           ) : (
@@ -178,18 +162,6 @@ export default async function ConversationDetail({
               ? {
                   id: convo.lead.id,
                   status: convo.lead.status,
-                }
-              : null
-          }
-          visitor={
-            linkedVisitor
-              ? {
-                  id: linkedVisitor.id,
-                  displayName:
-                    [linkedVisitor.firstName, linkedVisitor.lastName]
-                      .filter(Boolean)
-                      .join(" ") || linkedVisitor.email || "View profile",
-                  status: linkedVisitor.status,
                 }
               : null
           }
@@ -254,7 +226,6 @@ function CaptureOnlyDetails({
   userAgent,
   ipAddress,
   createdAt,
-  hasVisitorLink,
 }: {
   capturedName: string | null;
   capturedEmail: string | null;
@@ -263,7 +234,6 @@ function CaptureOnlyDetails({
   userAgent: string | null;
   ipAddress: string | null;
   createdAt: Date;
-  hasVisitorLink: boolean;
 }) {
   const hasAnyContact = Boolean(capturedName || capturedEmail || capturedPhone);
   return (
@@ -341,16 +311,6 @@ function CaptureOnlyDetails({
                 <span className="text-xs text-muted-foreground">
                   {userAgent.slice(0, 80)}
                   {userAgent.length > 80 ? "…" : ""}
-                </span>
-              }
-            />
-          ) : null}
-          {hasVisitorLink ? (
-            <DetailRow
-              label="Visitor profile"
-              value={
-                <span className="text-xs text-muted-foreground">
-                  Linked — see sidebar to open the visitor record
                 </span>
               }
             />

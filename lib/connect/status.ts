@@ -24,7 +24,6 @@ export type ConnectSource =
   | "gsc"
   | "google_ads"
   | "meta_ads"
-  | "cursive_pixel"
   | "website";
 
 export type ConnectSourceStatus = {
@@ -33,8 +32,7 @@ export type ConnectSourceStatus = {
   lastSyncAt: Date | null;
   accountLabel: string | null;
   /** Property-level scope. null = org-wide (e.g. AppFolio); array = which
-      properties have this source connected (e.g. Cursive pixel installed
-      per-property). */
+      properties have this source connected (e.g. GA4 per-property). */
   scopedPropertyIds?: string[] | null;
   /** Source-specific health note (e.g. AppFolio "Auto-sync paused"). When
       present, the Connect hub card renders a subtle amber chip linking to
@@ -58,7 +56,7 @@ export async function getConnectStatusForOrg(
   // attribution) that don't have a property switcher.
   activePropertyId?: string | null,
 ): Promise<ConnectSourceStatus[]> {
-  const [appfolio, seoIntegrations, adAccounts, cursive, website] =
+  const [appfolio, seoIntegrations, adAccounts, website] =
     await Promise.all([
       prisma.appFolioIntegration
         .findFirst({
@@ -115,20 +113,6 @@ export async function getConnectStatusForOrg(
           lastSyncAt: Date | null;
           lastSyncError: string | null;
         }>),
-      prisma.cursiveIntegration
-        .findMany({
-          where: { orgId },
-          select: {
-            cursivePixelId: true,
-            lastEventAt: true,
-            propertyId: true,
-          },
-        })
-        .catch(() => [] as Array<{
-          cursivePixelId: string | null;
-          lastEventAt: Date | null;
-          propertyId: string | null;
-        }>),
       // Website connection = at least one DomainBinding row (custom
        // hostname attached via Vercel Domain API). The TenantSiteConfig
        // exists for every org by default, so its presence isn't a
@@ -165,7 +149,6 @@ export async function getConnectStatusForOrg(
       : rows.length > 0;
   const googleAds = adAccounts.find((a) => a.platform === "GOOGLE_ADS");
   const metaAds = adAccounts.find((a) => a.platform === "META_ADS");
-  const installedCursive = cursive.filter((c) => !!c.cursivePixelId);
 
   // Error aggregation — a multi-property tenant can have several GA4/GSC
   // rows (one per property) or several ad accounts per platform. ANY row
@@ -221,7 +204,7 @@ export async function getConnectStatusForOrg(
       // incapable of disagreeing on whether GA4 is erroring.
       hasError: classifyHealth("ga4", ga4?.lastSyncAt ?? null, ga4HasError) === "error",
       // Wave-3 phase 4: OAuth (and the legacy manual-JSON form) can now bind
-      // a GA4 SeoIntegration row to a specific property, same as the pixel.
+      // a GA4 SeoIntegration row to a specific property.
       // Group across every GA4 row instead of picking just the first (via
       // `.find()` above) so a multi-property org's per-property connections
       // all show up here.
@@ -258,27 +241,6 @@ export async function getConnectStatusForOrg(
         ? `Account ${metaAds.externalAccountId}`
         : null,
       hasError: metaAdsHasError,
-    },
-    {
-      id: "cursive_pixel",
-      connected: installedCursive.length > 0,
-      lastSyncAt:
-        installedCursive
-          .map((c) => c.lastEventAt?.getTime() ?? 0)
-          .reduce((max, t) => (t > max ? t : max), 0) > 0
-          ? new Date(
-              installedCursive
-                .map((c) => c.lastEventAt?.getTime() ?? 0)
-                .reduce((max, t) => (t > max ? t : max), 0),
-            )
-          : null,
-      accountLabel:
-        installedCursive.length > 0
-          ? `${installedCursive.length} pixel${installedCursive.length === 1 ? "" : "s"} installed`
-          : null,
-      scopedPropertyIds: installedCursive
-        .map((c) => c.propertyId)
-        .filter((id): id is string => !!id),
     },
     {
       id: "website",

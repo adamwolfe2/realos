@@ -13,10 +13,9 @@ import { useRouter } from "next/navigation";
 // from the DB only. The integration data itself is refreshed by:
 //   - Vercel cron (push pull every 30m–6h depending on integration)
 //   - StaleOnLoadTrigger when an operator opens a stale page
-//   - Webhooks for push-capable integrations (pixel, Stripe, Clerk)
+//   - Webhooks for push-capable integrations (Stripe, Clerk)
 //
 // Tune intervalMs to the visual half-life of the page:
-//   - Visitor feed: 15s (high-velocity pixel events)
 //   - Dashboard:    30–45s (mixed signals, heavier query)
 //   - Properties:   60s (slower-moving)
 // ---------------------------------------------------------------------------

@@ -21,7 +21,6 @@ import { realAdAccountWhere } from "@/lib/integrations/real-ad-account";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const WINDOW_DAYS = 28;
-const ENGAGED_TIME_SECONDS = 30;
 
 const LEAD_SOURCE_LABELS: Record<LeadSource, string> = {
   GOOGLE_ADS: "Google Ads",
@@ -412,50 +411,11 @@ export type PropertyLeadsData = {
 export async function getPropertyLeads(
   orgId: string,
   propertyId: string,
-  propertyMeta: { slug: string; name: string },
 ): Promise<PropertyLeadsData> {
   const since28d = new Date(Date.now() - WINDOW_DAYS * DAY_MS);
 
-  // Visitor sessions touching this property: we look for VisitorEvents whose
-  // url contains the slug (or the compact name). Sessions without any such
-  // event are treated as "not this property" to avoid inflating the funnel.
-  const slugTerm = propertyMeta.slug;
-  const nameTerm = propertyMeta.name.toLowerCase().replace(/\s+/g, "-");
-
-  const visitorSessionFilter: Prisma.VisitorSessionWhereInput = {
-    orgId,
-    startedAt: { gte: since28d },
-    events: {
-      some: {
-        orgId,
-        OR: [
-          ...(slugTerm
-            ? [{ url: { contains: slugTerm, mode: "insensitive" as const } }]
-            : []),
-          ...(nameTerm && nameTerm !== slugTerm
-            ? [{ url: { contains: nameTerm, mode: "insensitive" as const } }]
-            : []),
-        ],
-      },
-    },
-  };
-
-  const [visitorRows, engagedCount, leadsCount, toursCount, appsCount, grouped, recent, allLeads] =
+  const [leadsCount, toursCount, appsCount, grouped, recent, allLeads] =
     await Promise.all([
-      prisma.visitorSession.findMany({
-        where: visitorSessionFilter,
-        select: { anonymousId: true },
-        distinct: ["anonymousId"],
-      }),
-      prisma.visitorSession.count({
-        where: {
-          ...visitorSessionFilter,
-          OR: [
-            { pageviewCount: { gt: 1 } },
-            { totalTimeSeconds: { gt: ENGAGED_TIME_SECONDS } },
-          ],
-        },
-      }),
       prisma.lead.count({
         where: { orgId, propertyId, createdAt: { gte: since28d } },
       }),
@@ -522,8 +482,6 @@ export async function getPropertyLeads(
 
   return {
     funnel: [
-      { label: "Visitors", value: visitorRows.length },
-      { label: "Engaged", value: engagedCount },
       { label: "Leads", value: leadsCount },
       {
         label: "Tours",

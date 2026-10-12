@@ -176,19 +176,6 @@ function GscMark() {
 
 // -- Our own and niche-vendor marks ----------------------------------------
 
-function CursiveMark() {
-  return (
-    <Image
-      src="/logos/cursive-logo.png"
-      alt="Cursive"
-      width={80}
-      height={33}
-      className="w-full h-full object-contain"
-      unoptimized
-    />
-  );
-}
-
 function WebhookMark() {
   return (
     <svg
@@ -297,11 +284,6 @@ export const BRAND_LOGOS: Record<string, BrandLogoEntry> = {
   },
 
   // Our own modules.
-  "visitor-identification": {
-    render: () => <CursiveMark />,
-    brandColor: "#0f62fe",
-    filledTile: false,
-  },
   "custom-webhook": {
     render: () => <WebhookMark />,
     brandColor: "#4B5563",

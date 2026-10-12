@@ -11,7 +11,7 @@ import { soft } from "@/lib/soft";
 //
 // For a given orgId, resolve the current connection state of every
 // integration in the catalog. The portal marketplace reads from this to
-// render tile badges. Cursive + AppFolio get a real status from their own
+// render tile badges. AppFolio gets a real status from their own
 // integration tables; everything else reports "connected" only if a recent
 // IntegrationRequest has been resolved, otherwise "available" or "pending
 // request" depending on whether a request is already in flight.
@@ -67,8 +67,6 @@ export async function resolveIntegrationStatuses(
   orgId: string
 ): Promise<IntegrationStatus[]> {
   const [
-    org,
-    cursive,
     appfolio,
     funnel,
     seoIntegrations,
@@ -76,30 +74,6 @@ export async function resolveIntegrationStatuses(
     pendingRequests,
     resolvedRequests,
   ] = await Promise.all([
-    prisma.organization
-      .findUnique({
-        where: { id: orgId },
-        select: {
-          modulePixel: true,
-          moduleChatbot: true,
-          moduleSEO: true,
-          moduleGoogleAds: true,
-          moduleMetaAds: true,
-        },
-      })
-      .catch(soft(null, "integrations.status:89")),
-    // Integration-status badges are an org-level summary so they look
-    // at "any pixel connected anywhere" rather than per-property
-    // detail. findFirst with cursivePixelId set surfaces the most
-    // recent active pixel — could be the legacy org-wide row OR any
-    // per-property row.
-    prisma.cursiveIntegration
-      .findFirst({
-        where: { orgId, cursivePixelId: { not: null } },
-        select: { cursivePixelId: true, lastEventAt: true },
-        orderBy: { lastEventAt: "desc" },
-      })
-      .catch(soft(null, "integrations.status:101")),
     prisma.appFolioIntegration
       .findUnique({
         where: { orgId },
@@ -252,8 +226,6 @@ export async function resolveIntegrationStatuses(
   }
 
   return INTEGRATIONS.map((i) => resolveOne(i, {
-    org,
-    cursive,
     appfolio,
     funnel,
     seoBySlug,
@@ -266,14 +238,6 @@ export async function resolveIntegrationStatuses(
 function resolveOne(
   def: IntegrationDefinition,
   ctx: {
-    org: {
-      modulePixel: boolean;
-      moduleChatbot: boolean;
-      moduleSEO: boolean;
-      moduleGoogleAds: boolean;
-      moduleMetaAds: boolean;
-    } | null;
-    cursive: { cursivePixelId: string | null; lastEventAt: Date | null } | null;
     appfolio: {
       instanceSubdomain: string | null;
       clientIdEncrypted: string | null;
@@ -299,28 +263,6 @@ function resolveOne(
 ): IntegrationStatus {
   if (def.comingSoon) {
     return { slug: def.slug, state: "coming_soon" };
-  }
-
-  if (def.slug === "visitor-identification") {
-    // Three-way state, in priority order:
-    //   - connected: pixel ID provisioned + present
-    //   - plan_locked: org's plan doesn't include the pixel module — show
-    //     "Upgrade required" instead of the misleading "Active" badge
-    //     (audit BUG #1)
-    //   - managed: pixel module on plan, awaiting agency provisioning
-    if (ctx.cursive?.cursivePixelId) {
-      return {
-        slug: def.slug,
-        state: "connected",
-        lastEventAt: ctx.cursive.lastEventAt ?? null,
-      };
-    }
-    const onPlan = !!ctx.org?.modulePixel || !!ctx.org?.moduleChatbot;
-    return {
-      slug: def.slug,
-      state: onPlan ? "managed" : "plan_locked",
-      lastEventAt: ctx.cursive?.lastEventAt ?? null,
-    };
   }
 
   if (def.slug === "appfolio") {

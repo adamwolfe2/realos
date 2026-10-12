@@ -91,13 +91,6 @@ export const NAV_REGISTRY: NavRegistryItem[] = [
     group: "Pages",
   },
   {
-    href: "/portal/visitors",
-    label: "Visitors",
-    description: "Identified visitors from your Cursive pixel feed",
-    keywords: ["pixel", "anonymous", "cursive", "identified"],
-    group: "Pages",
-  },
-  {
     href: "/portal/applications",
     label: "Applications",
     description: "Lease applications from your tenant marketing site",
@@ -238,7 +231,7 @@ export const NAV_REGISTRY: NavRegistryItem[] = [
   {
     href: "/portal/connect",
     label: "Connect",
-    description: "AppFolio, GA4, GSC, Google Ads, Meta Ads, Cursive pixel",
+    description: "AppFolio, GA4, GSC, Google Ads, Meta Ads",
     keywords: [
       "connect",
       "integrations",
@@ -249,8 +242,6 @@ export const NAV_REGISTRY: NavRegistryItem[] = [
       "gsc",
       "google ads",
       "meta ads",
-      "cursive",
-      "pixel",
       "connect",
     ],
     group: "Settings",

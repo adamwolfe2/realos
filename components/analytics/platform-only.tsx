@@ -12,8 +12,8 @@ export function usePlatformHost(): boolean {
   return isPlatform;
 }
 
-// The root layout wraps tenant (customer) sites too. LeaseStack's own GTM,
-// pixel and support chat must never load there, or LeaseStack would collect
+// The root layout wraps tenant (customer) sites too. LeaseStack's own GTM
+// and support chat must never load there, or LeaseStack would collect
 // a customer's site visitors.
 export function PlatformOnly({ children }: { children: React.ReactNode }) {
   return usePlatformHost() ? <>{children}</> : null;

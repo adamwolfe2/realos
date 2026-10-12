@@ -268,7 +268,6 @@ export default async function AdsPage({
     [LeadSource.CHATBOT]: "Chatbot",
     [LeadSource.FORM]: "Website form",
     [LeadSource.REFERRAL]: "Referral",
-    [LeadSource.PIXEL_OUTREACH]: "Pixel outreach",
     [LeadSource.DIRECT]: "Direct",
   };
 

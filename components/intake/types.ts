@@ -30,7 +30,6 @@ export type GoLiveTarget = "asap" | "one_month" | "three_months" | "exploring";
 
 export type IntakeModules = {
   website: boolean;
-  pixel: boolean;
   chatbot: boolean;
   googleAds: boolean;
   metaAds: boolean;

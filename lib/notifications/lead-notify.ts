@@ -12,8 +12,8 @@ import { pushLeadToFunnel } from "@/lib/integrations/funnel-client";
 // ---------------------------------------------------------------------------
 // notifyLeadCaptured — single entry point every lead-capture site calls.
 //
-// Each capture path (chatbot, popup, form, ingest webhook, tour, visitor →
-// lead conversion, manual portal add) calls this fire-and-forget after the
+// Each capture path (chatbot, popup, form, ingest webhook, tour,
+// manual portal add) calls this fire-and-forget after the
 // Lead row is persisted. We look up the org's routing address + the matching
 // per-channel toggle, write an audit row, render the email, send via Resend,
 // and update the row with the outcome.
@@ -42,11 +42,13 @@ const CHANNEL_TOGGLE = {
   POPUP: "notifyOnPopupLead",
   FORM: "notifyOnFormLead",
   INGEST: "notifyOnIngestLead",
-  PIXEL: "notifyOnPixelLead",
   TOUR: "notifyOnTourRequest",
-  VISITOR_CONVERT: "notifyOnVisitorConvert",
   MANUAL: "notifyOnManualLead",
-} as const satisfies Record<LeadNotifyChannel, string>;
+} as const;
+
+// The retired PIXEL / VISITOR_CONVERT channels stay in the enum until the
+// schema migration; they have no toggle and never fire.
+type ToggleChannel = keyof typeof CHANNEL_TOGGLE;
 
 function splitRecipients(raw: string | null | undefined): string[] {
   if (!raw) return [];
@@ -78,9 +80,7 @@ export async function notifyLeadCaptured(
           notifyOnPopupLead: true,
           notifyOnFormLead: true,
           notifyOnIngestLead: true,
-          notifyOnPixelLead: true,
           notifyOnTourRequest: true,
-          notifyOnVisitorConvert: true,
           notifyOnManualLead: true,
         },
       }),
@@ -129,7 +129,8 @@ export async function notifyLeadCaptured(
       }).catch((err) => console.warn("[lead-notify] funnel push failed", err));
     }
 
-    const channelEnabled = org[CHANNEL_TOGGLE[input.channel]] ?? true;
+    const toggleKey = CHANNEL_TOGGLE[input.channel as ToggleChannel];
+    const channelEnabled = toggleKey ? (org[toggleKey] ?? true) : true;
     const recipients = splitRecipients(
       property?.notifyLeadEmailOverride ?? org.notifyLeadEmail ?? null,
     );

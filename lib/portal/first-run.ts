@@ -18,17 +18,17 @@ import { countConnectedSources } from "@/lib/connect/status";
 //        (moduleWebsite, moduleLeadCapture) — counting them would short
 //        circuit the heuristic for every new account.
 //   2. Zero Lead rows for the org.
-//        Any lead — manual entry, ingest API, pixel — means the operator
+//        Any lead — manual entry, ingest API — means the operator
 //        is past the empty-room stage and should see the dashboard.
 //   3. Zero connected data sources.
-//        AppFolio, GA4, GSC, Google Ads, Meta Ads, Cursive pixel, or a
+//        AppFolio, GA4, GSC, Google Ads, Meta Ads, or a
 //        bound custom domain. As soon as ANY one is connected the org is
 //        live enough that the dashboard has at least one populated tile.
 //
 // If any one of those signals is non-zero the org gets the normal
 // dashboard. This means the first-run experience disappears the moment
 // the operator does anything real — adds a lead, connects GA4, activates
-// the pixel — without us tracking a separate "onboarded" Boolean that
+// a module — without us tracking a separate "onboarded" Boolean that
 // can drift out of sync with reality.
 //
 // Agency impersonation: requireScope() returns the IMPERSONATED orgId in
@@ -51,7 +51,6 @@ export async function getFirstRunSignal(orgId: string): Promise<FirstRunSignal> 
       .findUnique({
         where: { id: orgId },
         select: {
-          modulePixel: true,
           moduleChatbot: true,
           moduleGoogleAds: true,
           moduleMetaAds: true,
