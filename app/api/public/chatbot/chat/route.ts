@@ -52,7 +52,9 @@ import { captureWithContext } from "@/lib/sentry";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 30;
+// 60s: the post-capture notifications run inline in onFinish after the
+// model stream, so they need headroom past generation + persistence.
+export const maxDuration = 60;
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -592,12 +594,25 @@ async function persistConversation(args: {
       }),
     });
     const results = await Promise.allSettled(sideEffects.map((e) => e.run));
+    let reported = false;
     results.forEach((r, i) => {
-      if (r.status === "rejected") {
-        const step = sideEffects[i].step;
-        console.error(`[public/chatbot/chat] post-capture ${step} failed:`, r.reason);
-        captureWithContext(r.reason, { route: "public.chatbot.chat", step });
+      const step = sideEffects[i].step;
+      // Helpers like sendProspectProfileForConversation resolve {ok:false}
+      // instead of throwing; those are failures too.
+      const failure =
+        r.status === "rejected"
+          ? r.reason
+          : r.value &&
+              typeof r.value === "object" &&
+              (r.value as { ok?: unknown }).ok === false
+            ? new Error(String((r.value as { error?: unknown }).error ?? "ok:false"))
+            : null;
+      if (failure) {
+        reported = true;
+        console.error(`[public/chatbot/chat] post-capture ${step} failed:`, failure);
+        captureWithContext(failure, { route: "public.chatbot.chat", step });
       }
     });
+    if (reported) await Sentry.flush(2000).catch(() => false);
   }
 }

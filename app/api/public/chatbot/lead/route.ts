@@ -37,7 +37,8 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 15;
+// 30s: after() work (lead-notify: DB + Resend) shares this budget.
+export const maxDuration = 30;
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",

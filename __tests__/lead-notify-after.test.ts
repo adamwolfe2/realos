@@ -23,6 +23,10 @@ describe("lead-notify source guard", () => {
     expect(src).not.toMatch(
       /void\s+(notify\w+|sendProspectProfileForConversation|Promise\.allSettled)\(/,
     );
+    // A bare statement call (no await / return / runAfter) is fire-and-forget too.
+    expect(src).not.toMatch(
+      /[;{}]\s*\n\s*(notify\w+|sendProspectProfileForConversation)\(/,
+    );
   });
 });
 
@@ -144,6 +148,19 @@ describe("public tours route registers notify with after()", () => {
 
     expect(logged).toHaveBeenCalledWith("[after:tours.notify] failed:", err);
     expect(h.sentry).toHaveBeenCalledWith(err, { after: "tours.notify" });
+    logged.mockRestore();
+  });
+
+  it("never throws when reporting the failure itself fails", async () => {
+    h.notifyLeadCaptured.mockRejectedValue(new Error("resend down"));
+    h.sentry.mockImplementationOnce(() => {
+      throw new Error("sentry down");
+    });
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const res = await POST(tourRequest());
+    expect(res.status).toBe(201);
+    for (const cb of callbacks) await expect(cb()).resolves.toBeUndefined();
     logged.mockRestore();
   });
 });
