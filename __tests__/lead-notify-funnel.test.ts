@@ -12,6 +12,7 @@ import { LeadNotifyChannel } from "@prisma/client";
 
 const h = vi.hoisted(() => ({
   push: vi.fn(),
+  sentry: vi.fn(),
   sendBrandedEmail: vi.fn(),
   db: {
     organization: { findUnique: vi.fn() },
@@ -24,6 +25,7 @@ const h = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/db", () => ({ prisma: h.db }));
+vi.mock("@/lib/sentry", () => ({ captureWithContext: h.sentry }));
 vi.mock("@/lib/integrations/funnel-client", () => ({
   pushLeadToFunnel: h.push,
 }));
@@ -153,5 +155,31 @@ describe("notifyLeadCaptured — CHATBOT leads are NOT pushed inline", () => {
     // ...and no bare email either — the prospect-profile digest is the one
     // chatbot email, so this path must stay silent to avoid a duplicate.
     expect(h.sendBrandedEmail).not.toHaveBeenCalled();
+  });
+});
+
+describe("notifyLeadCaptured — failures reach Sentry", () => {
+  it("reports a failed Resend send without throwing", async () => {
+    h.push.mockResolvedValue({ ok: true });
+    h.sendBrandedEmail.mockResolvedValue({ ok: false, error: "resend 500" });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await expect(notifyLeadCaptured(INPUT)).resolves.toBeUndefined();
+
+    expect(h.sentry).toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringContaining("resend 500") }),
+      expect.objectContaining({ leadId: "lead_1", channel: LeadNotifyChannel.POPUP }),
+    );
+  });
+
+  it("reports an unexpected error and never lets the report throw", async () => {
+    h.db.organization.findUnique.mockRejectedValue(new Error("db down"));
+    h.sentry.mockImplementation(() => {
+      throw new Error("sentry down");
+    });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await expect(notifyLeadCaptured(INPUT)).resolves.toBeUndefined();
+    expect(h.sentry).toHaveBeenCalledTimes(1);
   });
 });

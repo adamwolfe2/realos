@@ -8,6 +8,17 @@ import {
 } from "@prisma/client";
 import { buildLeadNotifyEmail } from "@/lib/email/lead-notify-email";
 import { pushLeadToFunnel } from "@/lib/integrations/funnel-client";
+import { captureWithContext } from "@/lib/sentry";
+
+// Failures stay inside this helper (lead capture must never fail), so it is
+// the one place that reports them. Reporting itself must never throw.
+function reportNotifyFailure(err: unknown, ctx: Record<string, unknown>) {
+  try {
+    captureWithContext(err, { scope: "lead-notify", ...ctx });
+  } catch (reportErr) {
+    console.error("[lead-notify] Sentry report failed", reportErr);
+  }
+}
 
 // ---------------------------------------------------------------------------
 // notifyLeadCaptured — single entry point every lead-capture site calls.
@@ -266,10 +277,20 @@ export async function notifyLeadCaptured(
         input.channel,
         input.leadId,
       );
+      reportNotifyFailure(new Error(`lead-notify send failed: ${result.error ?? "unknown"}`), {
+        orgId: input.orgId,
+        leadId: input.leadId,
+        channel: input.channel,
+      });
     }
   } catch (err) {
     // Final catch — NEVER let an error escape this helper. Lead capture must
     // never fail because notifications failed.
     console.error("[lead-notify] failed", err);
+    reportNotifyFailure(err, {
+      orgId: input.orgId,
+      leadId: input.leadId,
+      channel: input.channel,
+    });
   }
 }

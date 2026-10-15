@@ -18,7 +18,8 @@ import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
 import { LeadNotifyChannel } from "@prisma/client";
 import { requireMatchingOrigin } from "@/lib/tenancy/origin-guard";
 import { getSiteUrl } from "@/lib/brand";
-import { soft } from "@/lib/soft";
+import { runAfter } from "@/lib/after";
+import { captureWithContext } from "@/lib/sentry";
 import { findOldestLeadByEmail } from "@/lib/leads/find-by-email";
 
 const schema = z.object({
@@ -237,81 +238,87 @@ export async function POST(req: NextRequest) {
   // The bell is kind `lead_created` ("New lead: X"), so only net-new leads
   // get it; a repeat inquiry surfaces via the labelled operator email only.
   if (!existing) {
-    void notifyLeadCreated(lead).catch(soft(undefined, "public.leads.notifyLeadCreated"));
+    await runAfter("public.leads.bell", () => notifyLeadCreated(lead));
   }
 
-  // Instant operator email — centralized lead-notify helper. Fire-and-forget;
-  // failures are logged and reported so the response never blocks.
+  // Instant operator email — centralized lead-notify helper. Registered with
+  // after() so the lambda stays alive until it settles; failures are logged
+  // and reported by runAfter so the response never blocks.
   const sourceLabel = data.sourceDetail ?? data.source;
-  void notifyLeadCaptured({
-    orgId: data.orgId,
-    leadId: lead.id,
-    propertyId: lead.propertyId,
-    channel: LeadNotifyChannel.FORM,
-    lead: {
-      name:
-        [data.firstName, data.lastName].filter(Boolean).join(" ") ||
-        data.email ||
-        null,
-      email: data.email ?? null,
-      phone: data.phone ?? null,
-      sourceLabel: isRepeatInquiry ? `Repeat inquiry (${sourceLabel})` : sourceLabel,
-      intent: data.notes ?? data.preferredUnitType ?? null,
-    },
-  }).catch(soft(undefined, "public.leads.notifyLeadCaptured"));
+  await runAfter("public.leads.notify", () =>
+    notifyLeadCaptured({
+      orgId: data.orgId,
+      leadId: lead.id,
+      propertyId: lead.propertyId,
+      channel: LeadNotifyChannel.FORM,
+      lead: {
+        name:
+          [data.firstName, data.lastName].filter(Boolean).join(" ") ||
+          data.email ||
+          null,
+        email: data.email ?? null,
+        phone: data.phone ?? null,
+        sourceLabel: isRepeatInquiry ? `Repeat inquiry (${sourceLabel})` : sourceLabel,
+        intent: data.notes ?? data.preferredUnitType ?? null,
+      },
+    }),
+  );
 
   if (isRepeatInquiry) {
     return NextResponse.json({ ok: true }, { status: 201 });
   }
 
-  // Fire-and-forget side effects.
+  // Side effects run after the response via after(), so they never block it
+  // and the lambda is not frozen before they finish.
   const appUrl = getSiteUrl();
   const moduleCount = 1;
 
-  void Promise.allSettled([
-    notifyNewLeadSlack({
-      companyName: org.name,
-      contactName:
-        [data.firstName, data.lastName].filter(Boolean).join(" ") ||
-        data.email ||
-        "Anonymous",
-      contactEmail: data.email ?? "unknown@unknown.local",
-      propertyType: data.source,
-      moduleCount,
-      intakeId: lead.id,
-      appUrl,
-    }),
-    data.email
-      ? sendLeadAutoReplyEmail({
-          to: data.email,
-          firstName: data.firstName,
-          orgName: org.name,
-          phone: org.tenantSiteConfig?.phoneNumber ?? null,
-        })
-      : Promise.resolve({
-          ok: false,
-          error: "no lead email to auto-reply",
-        } as Prisma.JsonObject),
-    org.primaryContactEmail
-      ? notifyTenantOfLeadEmail({
-          to: org.primaryContactEmail,
-          orgName: org.name,
-          leadId: lead.id,
-          firstName: data.firstName,
-          lastName: data.lastName,
-          email: data.email,
-          phone: data.phone,
-          source: data.source,
-          sourceDetail: data.sourceDetail,
-          preferredUnitType: data.preferredUnitType,
-          notes: data.notes,
-          appUrl,
-        })
-      : Promise.resolve({ ok: false, error: "no primary contact email" }),
-  ]).then((results) => {
+  await runAfter("public.leads.side-effects", async () => {
+    const results = await Promise.allSettled([
+      notifyNewLeadSlack({
+        companyName: org.name,
+        contactName:
+          [data.firstName, data.lastName].filter(Boolean).join(" ") ||
+          data.email ||
+          "Anonymous",
+        contactEmail: data.email ?? "unknown@unknown.local",
+        propertyType: data.source,
+        moduleCount,
+        intakeId: lead.id,
+        appUrl,
+      }),
+      data.email
+        ? sendLeadAutoReplyEmail({
+            to: data.email,
+            firstName: data.firstName,
+            orgName: org.name,
+            phone: org.tenantSiteConfig?.phoneNumber ?? null,
+          })
+        : Promise.resolve({
+            ok: false,
+            error: "no lead email to auto-reply",
+          } as Prisma.JsonObject),
+      org.primaryContactEmail
+        ? notifyTenantOfLeadEmail({
+            to: org.primaryContactEmail,
+            orgName: org.name,
+            leadId: lead.id,
+            firstName: data.firstName,
+            lastName: data.lastName,
+            email: data.email,
+            phone: data.phone,
+            source: data.source,
+            sourceDetail: data.sourceDetail,
+            preferredUnitType: data.preferredUnitType,
+            notes: data.notes,
+            appUrl,
+          })
+        : Promise.resolve({ ok: false, error: "no primary contact email" }),
+    ]);
     for (const r of results) {
       if (r.status === "rejected") {
-        console.warn("[public/leads] notification error:", r.reason);
+        console.error("[public/leads] notification error:", r.reason);
+        captureWithContext(r.reason, { after: "public.leads.side-effects" });
       }
     }
   });

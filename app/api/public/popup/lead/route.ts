@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { runAfter } from "@/lib/after";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { findOldestLeadByEmail } from "@/lib/leads/find-by-email";
@@ -58,7 +59,8 @@ import { getSiteUrl } from "@/lib/brand";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 15;
+// 30s: after() work (lead-notify: DB + Resend) shares this budget.
+export const maxDuration = 30;
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -261,18 +263,20 @@ export async function POST(req: NextRequest) {
 
     // Instant operator email — only for net-new leads. Existing leads
     // already lit up the operator's inbox when they first came in.
-    void notifyLeadCaptured({
-      orgId: org.id,
-      leadId,
-      propertyId,
-      channel: LeadNotifyChannel.POPUP,
-      lead: {
-        name: created.firstName ?? created.lastName ?? null,
-        email: data.email ?? null,
-        phone: data.phone ?? null,
-        sourceLabel: sourceDetail,
-      },
-    }).catch(() => {});
+    await runAfter("popup.notify", () =>
+      notifyLeadCaptured({
+        orgId: org.id,
+        leadId,
+        propertyId,
+        channel: LeadNotifyChannel.POPUP,
+        lead: {
+          name: created.firstName ?? created.lastName ?? null,
+          email: data.email ?? null,
+          phone: data.phone ?? null,
+          sourceLabel: sourceDetail,
+        },
+      }),
+    );
   }
 
   // Record the CONVERTED event server-side here, atomically with the

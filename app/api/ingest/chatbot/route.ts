@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { runAfter } from "@/lib/after";
 import { z } from "zod";
 import crypto from "node:crypto";
 import { prisma } from "@/lib/db";
@@ -226,23 +227,23 @@ export async function POST(req: NextRequest) {
     });
 
     if (!existingLead) {
-      void notifyLeadCaptured({
-        orgId,
-        leadId,
-        propertyId: resolvedPropertyId,
-        channel: LeadNotifyChannel.CHATBOT,
-        lead: {
-          name: data.firstName ?? null,
-          email,
-          phone: data.phone ?? null,
-          sourceLabel: data.pageUrl
-            ? `Chatbot ingest on ${data.pageUrl}`
-            : "Chatbot ingest",
-        },
-        conversationId: conversation.id,
-      }).catch((err) => {
-        console.warn("[ingest/chatbot] notify error", err);
-      });
+      await runAfter("ingest.chatbot.notify", () =>
+        notifyLeadCaptured({
+          orgId,
+          leadId,
+          propertyId: resolvedPropertyId,
+          channel: LeadNotifyChannel.CHATBOT,
+          lead: {
+            name: data.firstName ?? null,
+            email,
+            phone: data.phone ?? null,
+            sourceLabel: data.pageUrl
+              ? `Chatbot ingest on ${data.pageUrl}`
+              : "Chatbot ingest",
+          },
+          conversationId: conversation.id,
+        }),
+      );
     }
   }
 

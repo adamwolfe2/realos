@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { runAfter } from "@/lib/after";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import {
@@ -161,22 +162,24 @@ export async function POST(req: NextRequest) {
     // Instant operator email — manual portal-added leads. Useful when an
     // admin enters a referral or walk-in so the building's leasing agent
     // sees it in their inbox without polling /portal/leads.
-    void notifyLeadCaptured({
-      orgId: scope.orgId,
-      leadId: created.id,
-      propertyId: created.propertyId,
-      channel: LeadNotifyChannel.MANUAL,
-      lead: {
-        name:
-          [data.firstName, data.lastName].filter(Boolean).join(" ") ||
-          data.email ||
-          null,
-        email: data.email ?? null,
-        phone: data.phone ?? null,
-        sourceLabel: data.sourceDetail ?? data.source,
-        intent: data.notes ?? data.preferredUnitType ?? null,
-      },
-    }).catch(() => {});
+    await runAfter("tenant.leads.notify", () =>
+      notifyLeadCaptured({
+        orgId: scope.orgId,
+        leadId: created.id,
+        propertyId: created.propertyId,
+        channel: LeadNotifyChannel.MANUAL,
+        lead: {
+          name:
+            [data.firstName, data.lastName].filter(Boolean).join(" ") ||
+            data.email ||
+            null,
+          email: data.email ?? null,
+          phone: data.phone ?? null,
+          sourceLabel: data.sourceDetail ?? data.source,
+          intent: data.notes ?? data.preferredUnitType ?? null,
+        },
+      }),
+    );
 
     return NextResponse.json({ lead: created }, { status: 201 });
   } catch (err) {
