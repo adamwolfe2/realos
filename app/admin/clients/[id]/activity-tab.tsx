@@ -67,9 +67,9 @@ function dedupeAudits(events: AuditRow[]): DedupedRow[] {
 // happened. Anything that doesn't match one of these templates (a genuine
 // settings edit) falls
 // through untouched.
-type SyncTone = "warning" | "danger" | null;
+export type SyncTone = "warning" | "danger" | null;
 
-function syncRunLabel(
+export function syncRunLabel(
   description: string | null,
 ): { label: string; tone: SyncTone } | null {
   if (!description) return null;

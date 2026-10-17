@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { appfolioSyncAuditDescription } from "@/lib/integrations/appfolio-sync";
+import { syncRunLabel } from "@/app/admin/clients/[id]/activity-tab";
 
 /**
  * Regression: the AuditEvent written at the end of runAppfolioSync said
@@ -28,8 +29,8 @@ describe("appfolioSyncAuditDescription", () => {
     expect(appfolioSyncAuditDescription(true, null)).toBe("AppFolio sync completed");
   });
 
-  it("matches the activity-tab failure template", () => {
+  it("is shown as a danger-tone failure by the activity tab when no phase completed", () => {
     const d = appfolioSyncAuditDescription(false, "x");
-    expect(d).toMatch(/^(.+?) sync (?:triggered by agency staff )?\(?failed/i);
+    expect(syncRunLabel(d)).toEqual({ label: "AppFolio sync failed", tone: "danger" });
   });
 });
