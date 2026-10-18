@@ -65,15 +65,11 @@ export async function runAdsSyncForAccount(
     return { ok: false, stats, error: "AdAccount not found" };
   }
 
-  // Window resolution. "Yesterday" by default keeps the cron cheap and
-  // matches what most ops dashboards report on.
-  const now = new Date();
-  const endDate = options.endDate ?? endOfYesterdayUTC(now);
-  const startDate =
-    options.startDate ??
-    (options.fullBackfill
-      ? new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000)
-      : startOfYesterdayUTC(now));
+  const { startDate, endDate } = resolveSyncWindow(
+    new Date(),
+    account.lastSyncAt,
+    options,
+  );
 
   try {
     if (account.platform === AdPlatform.GOOGLE_ADS) {
@@ -346,6 +342,32 @@ async function refreshCampaignTotals(adAccountId: string): Promise<void> {
 // ---------------------------------------------------------------------------
 // Date helpers
 // ---------------------------------------------------------------------------
+
+const BACKFILL_MS = 30 * 24 * 60 * 60 * 1000;
+
+/**
+ * Default window starts at the day of the last successful sync (or
+ * yesterday, whichever is earlier), so days lost to an outage, expired
+ * token, or a backfill cut off by the serverless freeze are re-pulled on
+ * the next run. Never-synced accounts get the full 30 days. Capped at 30
+ * days; metric rows are upserts, so overlap is harmless.
+ */
+export function resolveSyncWindow(
+  now: Date,
+  lastSyncAt: Date | null,
+  options: AdsSyncOptions = {},
+): { startDate: Date; endDate: Date } {
+  const endDate = options.endDate ?? endOfYesterdayUTC(now);
+  if (options.startDate) return { startDate: options.startDate, endDate };
+  const earliest = new Date(endDate.getTime() - BACKFILL_MS);
+  if (options.fullBackfill || !lastSyncAt) return { startDate: earliest, endDate };
+  const lastDay = new Date(
+    Date.UTC(lastSyncAt.getUTCFullYear(), lastSyncAt.getUTCMonth(), lastSyncAt.getUTCDate()),
+  );
+  const yesterday = startOfYesterdayUTC(now);
+  const start = lastDay < yesterday ? lastDay : yesterday;
+  return { startDate: start < earliest ? earliest : start, endDate };
+}
 
 function startOfYesterdayUTC(now: Date): Date {
   const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));

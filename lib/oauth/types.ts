@@ -110,6 +110,25 @@ export type OAuthStatePayload = {
  * this and respond with a 503/500 carrying the message verbatim — operators
  * should see exactly which env var to add.
  */
+/**
+ * Thrown by provider refreshAccessToken. `permanent` = the provider rejected
+ * the grant (400/401: revoked, invalid_grant, expired Meta token) and the
+ * operator must reconnect. Anything else (5xx, 429) is transient.
+ */
+export class OAuthRefreshError extends Error {
+  constructor(
+    message: string,
+    readonly permanent: boolean,
+  ) {
+    super(message);
+    this.name = "OAuthRefreshError";
+  }
+}
+
+export function isPermanentRefreshStatus(status: number): boolean {
+  return status === 400 || status === 401;
+}
+
 export class OAuthConfigError extends Error {
   constructor(message: string) {
     super(message);

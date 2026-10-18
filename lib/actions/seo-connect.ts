@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
@@ -198,9 +199,13 @@ export async function connectSeo(formData: FormData): Promise<ConnectSeoResult> 
   });
 
   // Fire-and-forget initial backfill.
-  void runSeoSync(scope.orgId, { fullBackfill: true }).catch((err) => {
-    console.warn("[seo-connect] initial sync error", err);
-  });
+  // after() keeps the function alive until the backfill settles; a bare
+  // void promise is frozen once the action responds on Vercel.
+  after(() =>
+    runSeoSync(scope.orgId, { fullBackfill: true }).catch((err) => {
+      console.warn("[seo-connect] initial sync error", err);
+    }),
+  );
 
   revalidatePath(PORTAL_PATH);
   revalidatePath(PORTAL_HOME);

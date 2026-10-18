@@ -4,6 +4,8 @@ import {
   type OAuthConnectionRecord,
   type OAuthProvider,
   type OAuthTokens,
+  OAuthRefreshError,
+  isPermanentRefreshStatus,
 } from "./types";
 import { signState, verifyState } from "./state";
 import { decrypt } from "@/lib/crypto";
@@ -188,11 +190,13 @@ export async function refreshAccessToken(
   const resp = await fetch(url.toString(), {
     method: "GET",
     cache: "no-store",
+    signal: AbortSignal.timeout(10_000),
   });
   if (!resp.ok) {
     const errText = await resp.text().catch(() => "");
-    throw new Error(
+    throw new OAuthRefreshError(
       `Meta token re-extension failed (${resp.status}): ${errText.slice(0, 300)}`,
+      isPermanentRefreshStatus(resp.status),
     );
   }
   const json = (await resp.json()) as {

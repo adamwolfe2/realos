@@ -7,7 +7,12 @@ import {
 import {
   refreshAccessToken as refreshMetaAccessToken,
 } from "@/lib/oauth/meta";
-import type { OAuthProvider, OAuthTokens } from "@/lib/oauth/types";
+import {
+  OAuthConfigError,
+  OAuthRefreshError,
+  type OAuthProvider,
+  type OAuthTokens,
+} from "@/lib/oauth/types";
 
 // ---------------------------------------------------------------------------
 // OAuth credential resolver consumed by the integration libs (ga4.ts,
@@ -22,7 +27,12 @@ import type { OAuthProvider, OAuthTokens } from "@/lib/oauth/types";
 // this helper, which also handles refresh-on-expiry transparently.
 // ---------------------------------------------------------------------------
 
-const REFRESH_BUFFER_MS = 60 * 1000; // refresh 60s before expiry
+// Google issues 1h tokens with a refresh token, so refresh just before
+// expiry. Meta has no refresh token: a long-lived (~60d) token can only be
+// re-extended while still valid, so start well before it lapses (syncs run
+// every 30 min; 7 days survives a week of outages).
+const REFRESH_BUFFER_MS = 60 * 1000;
+const META_REFRESH_BUFFER_MS = 7 * 24 * 60 * 60 * 1000;
 
 export type ResolvedOAuthCredentials = {
   type: "oauth";
@@ -65,23 +75,22 @@ export async function getOAuthCredentials(
 
   const needsRefresh =
     row.expiresAt !== null &&
-    row.expiresAt.getTime() - Date.now() < REFRESH_BUFFER_MS;
+    row.expiresAt.getTime() - Date.now() <
+      (provider === "meta_ads" ? META_REFRESH_BUFFER_MS : REFRESH_BUFFER_MS);
 
-  if (!needsRefresh) {
-    return {
-      type: "oauth",
-      connectionId: row.id,
-      accessToken: decrypt(row.accessToken),
-      refreshToken: row.refreshToken ? decrypt(row.refreshToken) : null,
-      expiresAt: row.expiresAt,
-      scope: row.scope,
-      externalAccountId: row.externalAccountId,
-      metadata: row.metadata,
-    };
-  }
+  const current = (): ResolvedOAuthCredentials => ({
+    type: "oauth",
+    connectionId: row.id,
+    accessToken: decrypt(row.accessToken),
+    refreshToken: row.refreshToken ? decrypt(row.refreshToken) : null,
+    expiresAt: row.expiresAt,
+    scope: row.scope,
+    externalAccountId: row.externalAccountId,
+    metadata: row.metadata,
+  });
 
-  // Refresh path. We swallow the original error and surface a clearer one
-  // upstream after marking the row as needing reauth so the UI can prompt.
+  if (!needsRefresh) return current();
+
   let fresh: OAuthTokens;
   try {
     if (provider === "meta_ads") {
@@ -108,12 +117,27 @@ export async function getOAuthCredentials(
       });
     }
   } catch (err) {
-    // Mark the connection so the UI can show a "reconnect" prompt instead of
-    // silently failing every sync going forward.
-    await prisma.oAuthConnection.update({
-      where: { id: row.id },
-      data: { status: "needs_reauth" },
+    const permanent =
+      err instanceof OAuthConfigError ||
+      (err instanceof OAuthRefreshError && err.permanent);
+    const stillValid = !!row.expiresAt && row.expiresAt.getTime() > Date.now();
+    console.warn("[oauth] token refresh failed", {
+      connectionId: row.id,
+      provider,
+      permanent,
+      stillValid,
+      err,
     });
+    // Only a provider rejection means the operator must reconnect. A
+    // timeout or 5xx must not permanently disconnect the integration.
+    if (permanent) {
+      await prisma.oAuthConnection.update({
+        where: { id: row.id },
+        data: { status: "needs_reauth" },
+      });
+      throw err;
+    }
+    if (stillValid) return current();
     throw err;
   }
 
