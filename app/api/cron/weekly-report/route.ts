@@ -84,7 +84,15 @@ export async function GET(req: NextRequest) {
         : [];
     const alreadyDrafted = new Set(existingReports.map((r) => r.orgId));
 
+    // Stop starting new orgs with headroom before maxDuration (300s). Orgs
+    // left over are recorded as errors (run shows partial) and picked up by
+    // the second scheduled run, which skips orgs already reported.
+    const deadline = Date.now() + 240_000;
     for (const org of orgs) {
+      if (Date.now() > deadline) {
+        errors.push({ orgId: org.id, error: "deferred: time budget reached" });
+        continue;
+      }
       try {
         if (alreadyDrafted.has(org.id)) {
           skipped += 1;

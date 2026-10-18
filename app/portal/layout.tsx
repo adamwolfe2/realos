@@ -108,6 +108,7 @@ export default async function PortalLayout({
     expiringLeases30dCount,
     urgentWorkOrdersCount,
     flaggedConversationsCount,
+    setupProgress,
   ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
@@ -272,6 +273,8 @@ export default async function PortalLayout({
         },
       })
       .catch(() => 0),
+    // Only needs orgId; was a separate round-trip after the batch.
+    deriveSetupProgress(scope.orgId),
   ]);
 
   // Derived from the single marketable-properties fetch above.
@@ -329,7 +332,6 @@ export default async function PortalLayout({
     redirect("/onboarding");
   }
 
-  const setupProgress = await deriveSetupProgress(scope.orgId);
   const setupComplete =
     setupProgress != null &&
     setupProgress.completedCount === setupProgress.totalCount;
