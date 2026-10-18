@@ -621,20 +621,27 @@ async function computePortfolioRecommendations(
 
   // Bounded worker pool: all 50 at once (~500 queries) exhausted the DB
   // connection pool for every other request.
-  const perProperty: Array<Array<ProactiveAction & { propertyName: string; propertyId: string }>> = [];
+  // Written by index so ties sort deterministically (the result is cached).
+  const perProperty: Array<Array<ProactiveAction & { propertyName: string; propertyId: string }>> =
+    properties.map(() => []);
   let next = 0;
   await Promise.all(
     Array.from({ length: Math.min(PROPERTY_CONCURRENCY, properties.length) }, async () => {
       while (next < properties.length) {
-        const p = properties[next++];
-        const recs = await getPropertyRecommendations(orgId, p.id);
-        perProperty.push(recs.map((r) => ({ ...r, propertyName: p.name, propertyId: p.id })));
+        const i = next++;
+        const p = properties[i];
+        // One bad property must not blank the whole strip.
+        const recs = await getPropertyRecommendations(orgId, p.id).catch((err: unknown) => {
+          console.error("[recs] property recommendations failed", { orgId, propertyId: p.id, err });
+          return [] as ProactiveAction[];
+        });
+        perProperty[i] = recs.map((r) => ({ ...r, propertyName: p.name, propertyId: p.id }));
       }
     }),
   );
 
   return perProperty
     .flat()
-    .sort((a, b) => b.score - a.score)
+    .sort((a, b) => b.score - a.score || a.propertyName.localeCompare(b.propertyName))
     .slice(0, limit);
 }

@@ -580,7 +580,7 @@ export default async function PortalHome({
       getPortfolioLeadsSpark(
         scope.orgId,
         properties.map((p) => p.id),
-      ),
+      ).catch(soft([] as number[], "portal.page:spark")),
       prisma.property
         .count({
           where: {

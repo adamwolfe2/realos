@@ -7,6 +7,8 @@ import { notifyReportDraftReady } from "@/lib/notifications/create";
 import { verifyCronAuth } from "@/lib/cron/auth";
 import { sendReportEmail } from "@/lib/email/send-report";
 
+const DEDUP_WINDOW_MS = 12 * 60 * 60 * 1000;
+
 export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for unbounded loops
 
 // GET /api/cron/weekly-report
@@ -77,20 +79,29 @@ export async function GET(req: NextRequest) {
             where: {
               orgId: { in: orgIds },
               kind: "weekly",
-              periodStart: sharedPeriodStart,
+              // Window, not exact match: periodStart = runNow - period to
+              // the millisecond, so the catch-up run 2h later (vercel.json)
+              // or a manual re-run would otherwise miss the first run's
+              // rows and re-send every report.
+              periodStart: {
+                gte: new Date(sharedPeriodStart.getTime() - DEDUP_WINDOW_MS),
+                lte: sharedPeriodStart,
+              },
             },
             select: { orgId: true },
           })
         : [];
     const alreadyDrafted = new Set(existingReports.map((r) => r.orgId));
 
-    // Stop starting new orgs with headroom before maxDuration (300s). Orgs
-    // left over are recorded as errors (run shows partial) and picked up by
-    // the second scheduled run, which skips orgs already reported.
-    const deadline = Date.now() + 240_000;
+    // Stop starting new orgs with headroom before maxDuration (300s); one
+    // in-flight org (sections + 30s AI + send) still has to finish. Orgs
+    // left over are picked up by the second scheduled run, which skips
+    // orgs already reported (see DEDUP_WINDOW_MS).
+    const deadline = Date.now() + 200_000;
+    const deferred: string[] = [];
     for (const org of orgs) {
       if (Date.now() > deadline) {
-        errors.push({ orgId: org.id, error: "deferred: time budget reached" });
+        deferred.push(org.id);
         continue;
       }
       try {
@@ -193,6 +204,7 @@ export async function GET(req: NextRequest) {
         skipped,
         autoSent,
         autoSendSkipped,
+        deferred,
         errors,
       }),
       recordsProcessed: drafted,

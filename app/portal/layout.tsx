@@ -274,7 +274,12 @@ export default async function PortalLayout({
       })
       .catch(() => 0),
     // Only needs orgId; was a separate round-trip after the batch.
-    deriveSetupProgress(scope.orgId),
+    // Caught: it now runs before the onboarding redirect, and a failure
+    // must not turn that redirect into an error page. Null hides the card.
+    deriveSetupProgress(scope.orgId).catch((err: unknown) => {
+      console.error("[portal/layout] deriveSetupProgress failed:", err);
+      return null;
+    }),
   ]);
 
   // Derived from the single marketable-properties fetch above.
