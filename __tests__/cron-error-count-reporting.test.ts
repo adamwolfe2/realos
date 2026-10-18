@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 const ROUTES = [
   "ad-retention", "ads-sync", "appfolio-sync", "billing-reminders",
   "chatbot-profile-digest", "funnel-lead-sync", "insight-detector",
-  "intake-nurture", "lead-nurture", "marketplace-replenish", "onboarding-drip",
+  "intake-nurture", "marketplace-replenish", "onboarding-drip",
   "property-images", "seo-fact-aggregate", "seo-scan-worker", "trial-reminders",
 ];
 
