@@ -190,11 +190,12 @@ export async function POST(req: NextRequest) {
             role,
             org: { connect: { id: metaOrgId } },
           },
+          // No role on update: a retried user.created carries the
+          // invite-time role and would undo a demotion made since.
           update: {
             email,
             firstName: first_name ?? null,
             lastName: last_name ?? null,
-            role,
           },
         });
       } else {
@@ -206,7 +207,7 @@ export async function POST(req: NextRequest) {
           where: { clerkUserId: id },
           select: { id: true, orgId: true },
         });
-        if (event.type === "user.updated" && existing && existing.orgId) {
+        if (event.type === "user.updated" && existing) {
           await prisma.user.update({
             where: { clerkUserId: id },
             data: {
@@ -218,9 +219,11 @@ export async function POST(req: NextRequest) {
           });
           console.info(`User ${id} already linked to org ${existing.orgId}`);
         } else if (event.type === "user.updated" && !existing) {
-          // No row means the user was removed from their org (or
-          // user.created hasn't landed yet; Clerk retries it). Never
-          // provision from a profile update.
+          // No row means the user was removed from their org, or
+          // provisioning on user.created failed. Never provision from a
+          // profile update; failed provisioning self-heals on the user's
+          // next authenticated request (provisionUserForClerk in scope.ts
+          // and /api/auth/role).
           console.warn(`Clerk user ${id} updated with no DB row; skipping`);
         } else {
           // Try the legacy email-domain auto-link first: if an existing
@@ -246,8 +249,6 @@ export async function POST(req: NextRequest) {
                 email,
                 firstName: first_name ?? null,
                 lastName: last_name ?? null,
-                lastLoginAt:
-                  event.type === "user.updated" ? new Date() : undefined,
               },
             });
             console.info(

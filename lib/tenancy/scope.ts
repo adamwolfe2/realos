@@ -324,9 +324,10 @@ async function getScopeUncached(): Promise<ScopedContext | null> {
       const client = await clerkClient();
       const fresh = await client.users.getUser(clerkUserId);
       publicMetadata = fresh.publicMetadata ?? {};
-    } catch {
+    } catch (err) {
       // Network failure shouldn't block scope resolution; fall through with
       // whatever we had from sessionClaims.
+      console.warn("[scope] Clerk getUser fallback failed", { clerkUserId, err });
     }
   }
   const storedSessionId =
@@ -366,9 +367,11 @@ async function getScopeUncached(): Promise<ScopedContext | null> {
       delete cleaned.impersonateStartedAt;
       void client.users
         .updateUserMetadata(clerkUserId, { publicMetadata: cleaned })
-        .catch(() => undefined);
-    } catch {
-      // ignore
+        .catch((err: unknown) =>
+          console.warn("[scope] stale impersonation cleanup failed", { clerkUserId, err }),
+        );
+    } catch (err) {
+      console.warn("[scope] stale impersonation cleanup failed", { clerkUserId, err });
     }
   }
 
@@ -401,7 +404,9 @@ async function getScopeUncached(): Promise<ScopedContext | null> {
   // BYPASSES this gate so an agency user supporting a client sees the
   // full portfolio regardless of any restrictions on their own org.
   let allowedPropertyIds: string[] | null = null;
-  const isImpersonating = !!impersonateOrgId && impersonateOrgId !== user.orgId;
+  // Derived from the resolved org, not the raw metadata: if the target
+  // lookup failed we are back on the user's own org and grants must apply.
+  const isImpersonating = effectiveOrgId !== user.orgId;
   if (!isImpersonating) {
     const grants = await prisma.userPropertyAccess
       .findMany({

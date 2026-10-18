@@ -8,7 +8,9 @@ const m = vi.hoisted(() => ({
   updateMany: vi.fn(),
   sellerUpdate: vi.fn(),
   auditCreate: vi.fn(),
+  auditFindFirst: vi.fn(),
 }));
+vi.mock("@/lib/sentry", () => ({ captureWithContext: vi.fn() }));
 
 vi.mock("@/lib/db", () => {
   const tx = {
@@ -19,7 +21,7 @@ vi.mock("@/lib/db", () => {
   return {
     prisma: {
       marketplacePurchase: { findUnique: m.findUnique },
-      marketplaceAuditEvent: { create: m.auditCreate },
+      marketplaceAuditEvent: { create: m.auditCreate, findFirst: m.auditFindFirst },
       $transaction: (fn: (t: typeof tx) => unknown) => fn(tx),
     },
   };
@@ -53,6 +55,14 @@ describe("marketplace charge.refunded", () => {
     vi.clearAllMocks();
     m.findUnique.mockResolvedValue(purchase);
     m.updateMany.mockResolvedValue({ count: 1 });
+    m.auditFindFirst.mockResolvedValue(null);
+  });
+
+  it("a redelivered partial refund is logged once", async () => {
+    m.auditFindFirst.mockResolvedValue({ id: "a1" });
+    await handleMarketplaceChargeRefunded(charge(500));
+    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.updateMany).not.toHaveBeenCalled();
   });
 
   it("full refund flips status and reverses seller share", async () => {

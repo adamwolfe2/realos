@@ -2,6 +2,7 @@ import "server-only";
 
 import type Stripe from "stripe";
 import { prisma } from "@/lib/db";
+import { captureWithContext } from "@/lib/sentry";
 import {
   MarketplaceLeadStatus,
   MarketplacePurchaseStatus,
@@ -370,6 +371,24 @@ export async function handleMarketplaceChargeRefunded(
   // is when the reversal below runs.
   // ponytail: no proportional seller clawback; needs a reversedCents column if partials become common.
   if (!charge.refunded) {
+    // Idempotent per cumulative amount: Stripe retries and two routes
+    // (stripe + stripe/marketplace) both deliver charge.refunded. A second
+    // partial refund carries a new amount_refunded and is logged.
+    const already = await prisma.marketplaceAuditEvent.findFirst({
+      where: {
+        action: "LEAD_PARTIALLY_REFUNDED",
+        purchaseId: purchase.id,
+        amountCents: charge.amount_refunded,
+      },
+      select: { id: true },
+    });
+    if (already) return true;
+    captureWithContext(new Error("Marketplace partial refund needs review"), {
+      route: "marketplace/charge.refunded",
+      purchaseId: purchase.id,
+      stripeChargeId: charge.id,
+      amountRefunded: charge.amount_refunded,
+    });
     await prisma.marketplaceAuditEvent.create({
       data: {
         action: "LEAD_PARTIALLY_REFUNDED",

@@ -69,6 +69,11 @@ describe("clerk user.updated with stale invite metadata", () => {
     expect(arg.create.org).toEqual({ connect: { id: "org-1" } });
   });
 
+  it("a retried user.created does not overwrite a role changed since invite", async () => {
+    await send("user.created");
+    expect(mocks.upsert.mock.calls[0][0].update.role).toBeUndefined();
+  });
+
   it("does not restore a demoted user's old role", async () => {
     mocks.findUnique.mockResolvedValue({ id: "u1", orgId: "org-1" });
     await send("user.updated");

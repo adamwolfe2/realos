@@ -92,9 +92,9 @@ export async function POST(req: NextRequest) {
           // tenants, so the payload's subject/from must not land in their logs.
           diff: {
             type,
-            emailId: payload.data?.email_id ?? null,
-            createdAt: payload.created_at ?? null,
-          } as Prisma.InputJsonValue,
+            emailId: typeof payload.data?.email_id === "string" ? payload.data.email_id : null,
+            createdAt: typeof payload.created_at === "string" ? payload.created_at : null,
+          },
         },
       });
     }
