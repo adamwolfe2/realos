@@ -106,14 +106,10 @@ export type OAuthStatePayload = {
 };
 
 /**
- * Thrown when an env var the connect flow requires is missing. Routes catch
- * this and respond with a 503/500 carrying the message verbatim — operators
- * should see exactly which env var to add.
- */
-/**
  * Thrown by provider refreshAccessToken. `permanent` = the provider rejected
- * the grant (400/401: revoked, invalid_grant, expired Meta token) and the
- * operator must reconnect. Anything else (5xx, 429) is transient.
+ * this tenant's grant (Google invalid_grant, Meta OAuthException 190, or no
+ * refresh token) and the operator must reconnect. Everything else (rate
+ * limits, 5xx, timeouts, server config) is not the tenant's fault.
  */
 export class OAuthRefreshError extends Error {
   constructor(
@@ -125,10 +121,11 @@ export class OAuthRefreshError extends Error {
   }
 }
 
-export function isPermanentRefreshStatus(status: number): boolean {
-  return status === 400 || status === 401;
-}
-
+/**
+ * Thrown when an env var the connect flow requires is missing. Routes catch
+ * this and respond with a 503/500 carrying the message verbatim — operators
+ * should see exactly which env var to add.
+ */
 export class OAuthConfigError extends Error {
   constructor(message: string) {
     super(message);

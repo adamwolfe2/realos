@@ -5,7 +5,6 @@ import {
   type OAuthProvider,
   type OAuthTokens,
   OAuthRefreshError,
-  isPermanentRefreshStatus,
 } from "./types";
 import { signState, verifyState } from "./state";
 import { decrypt } from "@/lib/crypto";
@@ -196,7 +195,7 @@ export async function refreshAccessToken(
     const errText = await resp.text().catch(() => "");
     throw new OAuthRefreshError(
       `Meta token re-extension failed (${resp.status}): ${errText.slice(0, 300)}`,
-      isPermanentRefreshStatus(resp.status),
+      isMetaTokenRejected(errText),
     );
   }
   const json = (await resp.json()) as {
@@ -274,4 +273,17 @@ export async function revoke(
     status: revokeResp.status,
     warning: text.slice(0, 200),
   };
+}
+
+/** Meta returns HTTP 400 for nearly everything, including rate limits
+ *  (codes 4/17/32/613). Only OAuthException 190 (expired/revoked token),
+ *  not flagged transient, needs a reconnect. */
+function isMetaTokenRejected(body: string): boolean {
+  try {
+    const e = (JSON.parse(body) as { error?: { code?: number; is_transient?: boolean } }).error;
+    return e?.code === 190 && e.is_transient !== true;
+  } catch {
+    // Non-JSON body (HTML error page, proxy): not a token rejection.
+    return false;
+  }
 }

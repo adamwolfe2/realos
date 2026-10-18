@@ -8,7 +8,6 @@ import {
   refreshAccessToken as refreshMetaAccessToken,
 } from "@/lib/oauth/meta";
 import {
-  OAuthConfigError,
   OAuthRefreshError,
   type OAuthProvider,
   type OAuthTokens,
@@ -91,6 +90,18 @@ export async function getOAuthCredentials(
 
   if (!needsRefresh) return current();
 
+  // Meta re-extends at most once a day; skip repeat calls while the token is
+  // still valid so the 7-day window costs ~7 calls, not one per sync.
+  const META_RETRY_MS = 24 * 60 * 60 * 1000;
+  if (
+    provider === "meta_ads" &&
+    row.expiresAt !== null &&
+    row.expiresAt.getTime() > Date.now() &&
+    Date.now() - row.updatedAt.getTime() < META_RETRY_MS
+  ) {
+    return current();
+  }
+
   let fresh: OAuthTokens;
   try {
     if (provider === "meta_ads") {
@@ -117,9 +128,8 @@ export async function getOAuthCredentials(
       });
     }
   } catch (err) {
-    const permanent =
-      err instanceof OAuthConfigError ||
-      (err instanceof OAuthRefreshError && err.permanent);
+    // Config errors (missing env) are ours: never disconnect tenants for them.
+    const permanent = err instanceof OAuthRefreshError && err.permanent;
     const stillValid = !!row.expiresAt && row.expiresAt.getTime() > Date.now();
     console.warn("[oauth] token refresh failed", {
       connectionId: row.id,
@@ -150,7 +160,8 @@ export async function getOAuthCredentials(
       refreshToken: fresh.refreshToken
         ? encrypt(fresh.refreshToken)
         : row.refreshToken,
-      expiresAt: fresh.expiresAt,
+      // Meta may omit expires_in; a null would stop all future re-extension.
+      expiresAt: fresh.expiresAt ?? row.expiresAt,
       scope: fresh.scope ?? row.scope,
       metadata: (fresh.metadata ?? row.metadata ?? undefined) as object | undefined,
       status: "active",
