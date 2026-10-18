@@ -47,6 +47,7 @@ export async function GET(req: NextRequest) {
 
     const summaries: unknown[] = [];
     let totalUpserted = 0;
+    const failures: string[] = [];
 
     for (const source of sources) {
       try {
@@ -59,6 +60,7 @@ export async function GET(req: NextRequest) {
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
+        failures.push(`${source.name}: ${message}`);
         console.error(
           "marketplace replenish — source failed",
           source.id,
@@ -80,6 +82,8 @@ export async function GET(req: NextRequest) {
         summaries,
       }),
       recordsProcessed: totalUpserted,
+      errorCount: failures.length,
+      errorSummary: failures.slice(0, 5).join("; "),
     };
   });
 }

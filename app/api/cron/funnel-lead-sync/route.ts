@@ -156,6 +156,8 @@ export async function GET(req: NextRequest) {
         summary,
       }),
       recordsProcessed: pushed,
+      errorCount: failed,
+      errorSummary: failed > 0 ? `${failed} pushes failed` : undefined,
     };
   });
 }

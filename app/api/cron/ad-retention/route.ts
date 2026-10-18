@@ -81,6 +81,8 @@ export async function GET(req: NextRequest) {
         results,
       }),
       recordsProcessed: totalDropped,
+      errorCount: results.filter((r) => r.errors.length > 0).length,
+      errorSummary: results.flatMap((r) => r.errors).slice(0, 5).join("; "),
     };
   });
 }

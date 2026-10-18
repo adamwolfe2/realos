@@ -137,6 +137,8 @@ export async function GET(req: NextRequest) {
         expiredEngagements: expiredCount,
       }),
       recordsProcessed: sent,
+      errorCount: failed,
+      errorSummary: failed > 0 ? `${failed} digest sends failed` : undefined,
     };
   });
 }

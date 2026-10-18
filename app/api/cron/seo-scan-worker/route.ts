@@ -231,6 +231,8 @@ export async function GET(req: NextRequest) {
           durationMs: Date.now() - startedAt,
         }),
         recordsProcessed: 0,
+        errorCount: 1,
+        errorSummary: `${candidate.id}: ${message}`,
       };
     }
   });

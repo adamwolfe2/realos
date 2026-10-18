@@ -58,6 +58,8 @@ export async function GET(req: NextRequest) {
         errors: stats.errors.slice(0, 20),
       }),
       recordsProcessed: stats.rowsWritten + snapshotsWritten,
+      errorCount: stats.errors.length,
+      errorSummary: stats.errors.slice(0, 5).map(String).join("; "),
     };
   });
 }

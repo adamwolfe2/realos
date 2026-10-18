@@ -163,6 +163,8 @@ export async function GET(req: NextRequest) {
     return {
       result: NextResponse.json({ platform: appBase, results }),
       recordsProcessed: totalFired,
+      errorCount: results.reduce((sum, r) => sum + r.errors, 0),
+      errorSummary: results.filter((r) => r.errors > 0).map((r) => `${r.stage}: ${r.errors}`).join("; "),
     };
   });
 }
