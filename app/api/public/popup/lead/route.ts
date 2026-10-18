@@ -14,10 +14,7 @@ import {
   getIp,
   WIDGET_FALLBACK,
 } from "@/lib/rate-limit";
-import {
-  sendLeadAutoReplyEmail,
-  notifyTenantOfLeadEmail,
-} from "@/lib/email/lead-emails";
+import { notifyTenantOfLeadEmail } from "@/lib/email/lead-emails";
 import { notifyNewIntake as notifyNewLeadSlack } from "@/lib/integrations/slack";
 import { notifyLeadCreated } from "@/lib/notifications/create";
 import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
@@ -320,14 +317,6 @@ export async function POST(req: NextRequest) {
       intakeId: leadId,
       appUrl,
     }),
-    data.email
-      ? sendLeadAutoReplyEmail({
-          to: data.email,
-          firstName: null,
-          orgName: org.name,
-          phone: org.tenantSiteConfig?.phoneNumber ?? null,
-        })
-      : Promise.resolve(null),
     org.primaryContactEmail
       ? notifyTenantOfLeadEmail({
           to: org.primaryContactEmail,

@@ -7,11 +7,8 @@ import {
   getIp,
   WIDGET_FALLBACK,
 } from "@/lib/rate-limit";
-import { LeadSource, Prisma } from "@prisma/client";
-import {
-  sendLeadAutoReplyEmail,
-  notifyTenantOfLeadEmail,
-} from "@/lib/email/lead-emails";
+import { LeadSource } from "@prisma/client";
+import { notifyTenantOfLeadEmail } from "@/lib/email/lead-emails";
 import { notifyNewIntake as notifyNewLeadSlack } from "@/lib/integrations/slack";
 import { notifyLeadCreated } from "@/lib/notifications/create";
 import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
@@ -287,17 +284,6 @@ export async function POST(req: NextRequest) {
         intakeId: lead.id,
         appUrl,
       }),
-      data.email
-        ? sendLeadAutoReplyEmail({
-            to: data.email,
-            firstName: data.firstName,
-            orgName: org.name,
-            phone: org.tenantSiteConfig?.phoneNumber ?? null,
-          })
-        : Promise.resolve({
-            ok: false,
-            error: "no lead email to auto-reply",
-          } as Prisma.JsonObject),
       org.primaryContactEmail
         ? notifyTenantOfLeadEmail({
             to: org.primaryContactEmail,
