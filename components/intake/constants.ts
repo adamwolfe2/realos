@@ -1,30 +1,8 @@
-import type {
-  IntakeFormState,
-  IntakeModules,
-  Step1Data,
-  Step2Data,
-  Step3Data,
-  Step4Data,
-  IntakeSubmitPayload,
-} from "./types";
+import type { IntakeModules, Step1Data, Step2Data, Step3Data, Step4Data } from "./types";
 
 export const DRAFT_KEY = "leasestack.intake.v1";
 
 export const STEPS = ["Company", "Portfolio", "Services", "Consultation"];
-
-export const STEP_HEADINGS = [
-  "Tell us about your company",
-  "About your portfolio",
-  "Which services do you want managed?",
-  "Book your consultation",
-];
-
-export const STEP_SUBTITLES = [
-  "We'll use this to brand your marketing stack and route your account.",
-  "Helps us scope the build and connect your backend platform.",
-  "Pick what you need. Pricing is finalized on the call.",
-  "15 minutes with our team. We'll come prepared.",
-];
 
 export const PROPERTY_TYPES = [
   { key: "RESIDENTIAL", label: "Residential" },
@@ -50,21 +28,6 @@ export const COMMERCIAL_SUBTYPES = [
   { key: "MEDICAL_OFFICE", label: "Medical Office" },
 ] as const;
 
-export const BACKEND_PLATFORMS = [
-  { key: "APPFOLIO", label: "AppFolio" },
-  { key: "YARDI_BREEZE", label: "Yardi Breeze" },
-  { key: "YARDI_VOYAGER", label: "Yardi Voyager" },
-  { key: "BUILDIUM", label: "Buildium" },
-  { key: "RENTMANAGER", label: "Rent Manager" },
-  { key: "ENTRATA", label: "Entrata" },
-  { key: "REALPAGE", label: "RealPage" },
-  { key: "PROPERTYWARE", label: "Propertyware" },
-  { key: "MRI", label: "MRI" },
-  { key: "VTS", label: "VTS" },
-  { key: "OTHER", label: "Other" },
-  { key: "NONE", label: "None" },
-] as const;
-
 export const PAIN_POINTS = [
   "Current agency underperforms",
   "Site doesn't rank on Google",
@@ -75,13 +38,6 @@ export const PAIN_POINTS = [
   "Too much manual follow-up",
   "No unified dashboard",
   "Other",
-] as const;
-
-export const GO_LIVE_TARGETS = [
-  { key: "asap", label: "ASAP" },
-  { key: "one_month", label: "1 month" },
-  { key: "three_months", label: "3 months" },
-  { key: "exploring", label: "Still exploring" },
 ] as const;
 
 export const MODULE_CATALOG: Array<{
@@ -199,13 +155,6 @@ export const STEP4_DEFAULT: Step4Data = {
   tosAccepted: false,
 };
 
-export const INTAKE_DEFAULT: IntakeFormState = {
-  ...STEP1_DEFAULT,
-  ...STEP2_DEFAULT,
-  ...STEP3_DEFAULT,
-  ...STEP4_DEFAULT,
-};
-
 // ---------------------------------------------------------------------------
 // Draft persistence helpers (localStorage).
 // ---------------------------------------------------------------------------
@@ -239,61 +188,4 @@ export function saveDraft(draft: IntakeDraft) {
   } catch {
     // quota or ssr, ignore
   }
-}
-
-export function clearDraft() {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.removeItem(DRAFT_KEY);
-  } catch {
-    // ignore
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Build API payload from wizard state.
-// ---------------------------------------------------------------------------
-
-export function buildIntakePayload(
-  step1: Step1Data,
-  step2: Step2Data,
-  step3: Step3Data,
-  step4: Step4Data
-): IntakeSubmitPayload {
-  const selectedModules = (Object.keys(step3.modules) as Array<
-    keyof IntakeModules
-  >).filter((k) => step3.modules[k]);
-
-  const payload: IntakeSubmitPayload = {
-    companyName: step1.companyName.trim(),
-    shortName: step1.shortName.trim() || undefined,
-    websiteUrl: step1.websiteUrl.trim() || undefined,
-    propertyType: (step1.propertyType || "RESIDENTIAL") as "RESIDENTIAL",
-    residentialSubtype: step1.residentialSubtype,
-    commercialSubtype: step1.commercialSubtype,
-    primaryContactName: step1.primaryContactName.trim(),
-    primaryContactEmail: step1.primaryContactEmail.trim(),
-    primaryContactPhone: step1.primaryContactPhone.trim() || undefined,
-    primaryContactRole: step1.primaryContactRole.trim() || undefined,
-    hqCity: step1.hqCity.trim() || undefined,
-    hqState: step1.hqState.trim() || undefined,
-
-    numberOfProperties: step2.numberOfProperties,
-    currentBackendPlatform: step2.currentBackendPlatform || undefined,
-    backendPlanTier: step2.backendPlanTier.trim() || undefined,
-    currentVendor: step2.currentVendor.trim() || undefined,
-    currentMonthlySpendCents:
-      step2.currentMonthlySpend != null
-        ? Math.round(step2.currentMonthlySpend * 100)
-        : null,
-    biggestPainPoint: step2.biggestPainPoint || undefined,
-
-    selectedModules,
-
-    goLiveTarget: step4.goLiveTarget || undefined,
-    bookedCallAt: step4.bookedCallAt,
-    calBookingId: step4.calBookingId,
-  };
-
-  return payload;
 }

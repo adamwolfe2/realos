@@ -303,12 +303,6 @@ export function isQuizComplete(answers: QuizAnswers): boolean {
   return true;
 }
 
-/** Locate the URL answer (always present on a complete quiz). */
-export function getDomainAnswer(answers: QuizAnswers): string | null {
-  const v = answers["domain"];
-  return typeof v === "string" && v.trim() !== "" ? v.trim() : null;
-}
-
 /** Typed answer readers. Keep callers from sprinkling string-key
  *  lookups across the codebase. Returns `null` when the answer isn't
  *  present (e.g. Anonymous URL-only submit). */

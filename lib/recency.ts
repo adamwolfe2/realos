@@ -61,55 +61,12 @@ export function timeWindowGte(window: TimeWindow): Date | null {
   return new Date(Date.now() - TIME_WINDOW_MS[window]);
 }
 
-/** Predicate: is `date` within the last `windowMs` ms from now? */
-export function withinWindow(
-  date: Date | null | undefined,
-  windowMs: number,
-): boolean {
-  if (!date) return false;
-  return Date.now() - date.getTime() <= windowMs;
-}
-
 export type SuppressedDelta = {
   display: string;
   lowSample: boolean;
   pct: number | null;
   direction: "up" | "down" | "flat" | null;
 };
-
-/**
- * Suppress low-sample percentage deltas. Stops "-100%" rendering when the
- * prior or current value is too small to be meaningful (e.g. previous=1,
- * current=0 → -100%). Returns `{ display: '—', lowSample: true }` below
- * threshold. Otherwise returns a formatted percentage string with direction
- * metadata so the caller can tint accordingly.
- *
- * Used by report KPI tiles (fixes Bug #112).
- */
-export function suppressLowSampleDelta(
-  current: number,
-  previous: number,
-  threshold = 5,
-): SuppressedDelta {
-  if (
-    Math.abs(current) < threshold ||
-    Math.abs(previous) < threshold ||
-    previous === 0
-  ) {
-    return { display: "—", lowSample: true, pct: null, direction: null };
-  }
-  const pct = ((current - previous) / previous) * 100;
-  const rounded = Math.round(pct);
-  const sign = rounded > 0 ? "+" : rounded < 0 ? "−" : "";
-  const direction: SuppressedDelta["direction"] =
-    rounded > 0 ? "up" : rounded < 0 ? "down" : "flat";
-  return {
-    display: `${sign}${Math.abs(rounded)}%`,
-    lowSample: false,
-    pct: rounded,
-    direction,
-  };
-}
 
 /**
  * Period-aware window for monthly/weekly reports. Returns the `gte` date that

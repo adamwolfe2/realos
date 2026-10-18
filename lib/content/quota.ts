@@ -66,8 +66,6 @@ const PLAN_DEFAULTS: Record<PlanTier, QuotaLimits> = {
   },
 };
 
-export const QUOTA_UNLIMITED = UNLIMITED;
-
 // ---------------------------------------------------------------------------
 // Format → MonthlyContentQuota column map
 //

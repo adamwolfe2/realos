@@ -815,42 +815,6 @@ export type FirstRunProgress = {
   marketingSiteCustomized: boolean;
 };
 
-export async function getFirstRunProgress(
-  orgId: string,
-): Promise<FirstRunProgress> {
-  const [propertyCount, gsc, siteConfig] = await Promise.all([
-    // First-run "do you have any properties yet?" — only count marketable
-    // ones. AppFolio re-syncing a parking lot shouldn't trip the
-    // "has a property" milestone for the operator.
-    prisma.property.count({ where: marketablePropertyWhere(orgId) }),
-    prisma.seoIntegration.findFirst({
-      where: {
-        orgId,
-        provider: SeoProvider.GSC,
-        serviceAccountJsonEncrypted: { not: "DEMO_SEED" },
-      },
-      select: { id: true, status: true },
-    }),
-    prisma.tenantSiteConfig.findUnique({
-      where: { orgId },
-      select: { heroHeadline: true, heroImageUrl: true, primaryCtaUrl: true },
-    }),
-  ]);
-
-  const gscConnected = !!gsc;
-  const marketingSiteCustomized = !!(
-    siteConfig?.heroHeadline ||
-    siteConfig?.heroImageUrl ||
-    siteConfig?.primaryCtaUrl
-  );
-
-  return {
-    hasProperty: propertyCount > 0,
-    gscConnected,
-    marketingSiteCustomized,
-  };
-}
-
 // ---------------------------------------------------------------------------
 // Lead status pipeline counts (for the small status strip below the dashboard).
 // Same shape as before — kept here so /portal/page.tsx isn't doing its own
@@ -939,74 +903,6 @@ export type WeeklyVelocityPoint = {
   applications: number;
 };
 
-export async function getLeasingVelocityTrend(
-  orgId: string,
-  weeks = 12,
-): Promise<WeeklyVelocityPoint[]> {
-  const now = Date.now();
-  const WEEK_MS = 7 * DAY_MS;
-  const since = new Date(now - weeks * WEEK_MS);
-
-  const [leads, tours, applications] = await Promise.all([
-    prisma.lead.findMany({
-      where: { orgId, createdAt: { gte: since } },
-      select: { createdAt: true },
-    }),
-    prisma.tour.findMany({
-      where: {
-        lead: { orgId },
-        createdAt: { gte: since },
-        status: { in: [TourStatus.SCHEDULED, TourStatus.COMPLETED] },
-      },
-      select: { createdAt: true },
-    }),
-    prisma.application.findMany({
-      where: {
-        lead: { orgId },
-        createdAt: { gte: since },
-      },
-      select: { createdAt: true },
-    }),
-  ]);
-
-  const leadsPerWeek = new Array<number>(weeks).fill(0);
-  const toursPerWeek = new Array<number>(weeks).fill(0);
-  const appsPerWeek = new Array<number>(weeks).fill(0);
-
-  function weekIdx(date: Date): number {
-    const ageMs = now - date.getTime();
-    if (ageMs < 0) return weeks - 1;
-    const weeksAgo = Math.floor(ageMs / WEEK_MS);
-    return weeks - 1 - weeksAgo;
-  }
-
-  for (const r of leads) {
-    const i = weekIdx(r.createdAt);
-    if (i >= 0 && i < weeks) leadsPerWeek[i] += 1;
-  }
-  for (const r of tours) {
-    const i = weekIdx(r.createdAt);
-    if (i >= 0 && i < weeks) toursPerWeek[i] += 1;
-  }
-  for (const r of applications) {
-    const i = weekIdx(r.createdAt);
-    if (i >= 0 && i < weeks) appsPerWeek[i] += 1;
-  }
-
-  return leadsPerWeek.map((leadCount, i) => {
-    const weeksAgo = weeks - 1 - i;
-    const weekStart = new Date(now - (weeksAgo + 1) * WEEK_MS);
-    const label = weeksAgo === 0 ? "This wk" : `${weeksAgo}w ago`;
-    return {
-      weekLabel: label,
-      weekStart,
-      leads: leadCount,
-      tours: toursPerWeek[i],
-      applications: appsPerWeek[i],
-    };
-  });
-}
-
 // ---------------------------------------------------------------------------
 // Reputation pulse
 //
@@ -1028,43 +924,6 @@ export type ReputationPulseItem = {
   sourceUrl: string;
 };
 
-export async function getReputationPulse(
-  orgId: string,
-  limit = 5,
-): Promise<ReputationPulseItem[]> {
-  const rows = await prisma.propertyMention.findMany({
-    where: { orgId },
-    orderBy: [{ publishedAt: "desc" }, { lastSeenAt: "desc" }],
-    take: limit,
-    select: {
-      id: true,
-      propertyId: true,
-      source: true,
-      title: true,
-      excerpt: true,
-      authorName: true,
-      publishedAt: true,
-      sentiment: true,
-      rating: true,
-      sourceUrl: true,
-      property: { select: { name: true } },
-    },
-  });
-  return rows.map((r) => ({
-    id: r.id,
-    propertyId: r.propertyId,
-    propertyName: r.property?.name ?? "Property",
-    source: r.source,
-    title: r.title,
-    excerpt: r.excerpt,
-    authorName: r.authorName,
-    publishedAt: r.publishedAt,
-    sentiment: r.sentiment,
-    rating: r.rating,
-    sourceUrl: r.sourceUrl,
-  }));
-}
-
 // ---------------------------------------------------------------------------
 // Reputation summary tile — portfolio-wide aggregate for the dashboard KPI.
 // Cheap to compute and gives operators a one-glance answer to "how is my
@@ -1080,61 +939,6 @@ export type ReputationSummary = {
   negativeCount: number;
   unreviewedCount: number;
 };
-
-export async function getReputationSummary(
-  orgId: string,
-): Promise<ReputationSummary> {
-  const last30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-
-  const [properties, mentionsTotal, mentionsNew30d, negativeCount, unreviewed] =
-    await Promise.all([
-      // 2026-06-04 N+1 audit: was `where: { orgId }` which scanned
-      // EXCLUDED parking lots / storage / IMPORTED-pending rows that
-      // can never carry Google data. Tightened to marketable lifecycle
-      // so the weighted-rating average is computed off the same set
-      // every other rating-aware surface uses.
-      prisma.property.findMany({
-        where: marketablePropertyWhere(orgId),
-        select: { googleAggRating: true, googleAggReviewCount: true },
-      }),
-      prisma.propertyMention.count({ where: { orgId } }),
-      prisma.propertyMention.count({
-        where: { orgId, createdAt: { gte: last30d } },
-      }),
-      prisma.propertyMention.count({
-        where: { orgId, sentiment: "NEGATIVE" },
-      }),
-      prisma.propertyMention.count({
-        where: { orgId, reviewedByUserId: null },
-      }),
-    ]);
-
-  let weightedSum = 0;
-  let weightedCount = 0;
-  for (const p of properties) {
-    if (
-      typeof p.googleAggRating === "number" &&
-      typeof p.googleAggReviewCount === "number" &&
-      p.googleAggReviewCount > 0
-    ) {
-      weightedSum += p.googleAggRating * p.googleAggReviewCount;
-      weightedCount += p.googleAggReviewCount;
-    }
-  }
-  const avgGoogleRating =
-    weightedCount > 0
-      ? Math.round((weightedSum / weightedCount) * 10) / 10
-      : null;
-
-  return {
-    avgGoogleRating,
-    googleReviewCount: weightedCount,
-    totalMentions: mentionsTotal,
-    newLast30d: mentionsNew30d,
-    negativeCount,
-    unreviewedCount: unreviewed,
-  };
-}
 
 // ---------------------------------------------------------------------------
 // Chatbot KPI — captures and capture rate over the last 28 days. Surfaces the
@@ -1457,82 +1261,4 @@ export async function sumAdMonthlyOverlap(
     }
   }
   return total;
-}
-
-/**
- * Unified daily + monthly history for an org, sorted by anchor date asc.
- * Daily rows pass through unchanged. Monthly rows are emitted as one
- * point per (adAccount, year-month) anchored at the first of the month.
- *
- * `daysOrMonths` selects either the day count (when small enough to live
- * inside the daily window) or the equivalent in months. Callers like the
- * CSV export pass the full requested range and let the stitching decide
- * what's daily vs monthly.
- */
-export async function getAdHistoryUnion(
-  orgId: string,
-  from: Date,
-  to: Date = new Date(),
-): Promise<AdHistoryPoint[]> {
-  const realAccount = await realAdAccountWhere(orgId);
-  const [daily, monthly] = await Promise.all([
-    prisma.adMetricDaily.findMany({
-      where: {
-        orgId,
-        date: { gte: from, lt: to },
-        adAccount: realAccount,
-      },
-      select: {
-        date: true,
-        spendCents: true,
-        clicks: true,
-        impressions: true,
-        conversions: true,
-      },
-    }),
-    prisma.adMetricMonthly.findMany({
-      where: { orgId },
-      select: {
-        year: true,
-        month: true,
-        spendCents: true,
-        clicks: true,
-        impressions: true,
-        conversions: true,
-      },
-    }),
-  ]);
-
-  const fromIdx = from.getUTCFullYear() * 12 + from.getUTCMonth();
-  const toIdx = to.getUTCFullYear() * 12 + to.getUTCMonth();
-
-  const points: AdHistoryPoint[] = [];
-
-  for (const r of daily) {
-    points.push({
-      date: r.date.toISOString().slice(0, 10),
-      granularity: "daily",
-      spendCents: r.spendCents,
-      clicks: r.clicks,
-      impressions: r.impressions,
-      conversions: r.conversions,
-    });
-  }
-
-  for (const r of monthly) {
-    const anchorIdx = r.year * 12 + (r.month - 1);
-    if (anchorIdx < fromIdx || anchorIdx >= toIdx) continue;
-    const anchor = new Date(Date.UTC(r.year, r.month - 1, 1));
-    points.push({
-      date: anchor.toISOString().slice(0, 10),
-      granularity: "monthly",
-      spendCents: r.spendCents,
-      clicks: r.clicks,
-      impressions: r.impressions,
-      conversions: r.conversions,
-    });
-  }
-
-  points.sort((a, b) => a.date.localeCompare(b.date));
-  return points;
 }

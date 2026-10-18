@@ -31,9 +31,6 @@ function createLimiter(
 
 const redis = createRedis()
 
-// 10 checkout attempts per IP per 10 minutes
-export const checkoutLimiter = createLimiter(redis, 10, '10 m')
-
 // 5 public signups per IP per hour
 export const publicSignupLimiter = createLimiter(redis, 5, '1 h')
 
@@ -62,9 +59,6 @@ export const notifyLimiter = createLimiter(redis, 3, '1 m')
 // 10 AI calls per userId per hour
 export const aiCallLimiter = createLimiter(redis, 10, '1 h')
 
-// 3 CSV imports per userId per minute
-export const csvImportLimiter = createLimiter(redis, 3, '1 m')
-
 // 60 public API read requests per IP per minute (generous, read-only endpoints)
 export const publicApiLimiter = createLimiter(redis, 60, '1 m')
 
@@ -73,12 +67,6 @@ export const publicApiLimiter = createLimiter(redis, 60, '1 m')
 // clicking rapidly or two tabs racing don't fan out into N concurrent
 // GA4/GSC report runs. The cron still runs every 30 min regardless.
 export const seoSyncLimiter = createLimiter(redis, 1, '1 m')
-
-// 10 public alert/notification signups per IP per hour
-export const publicAlertLimiter = createLimiter(redis, 10, '1 h')
-
-// 20 public search requests per IP per minute
-export const publicSearchLimiter = createLimiter(redis, 20, '1 m')
 
 // 60 client read requests per userId per minute
 export const clientReadLimiter = createLimiter(redis, 60, '1 m')
@@ -89,23 +77,11 @@ export const clientWriteLimiter = createLimiter(redis, 20, '1 m')
 // 5 enrich/scrape requests per userId per minute
 export const enrichLimiter = createLimiter(redis, 5, '1 m')
 
-// 30 Zillow report generations per org per minute. Bumped from 10/min
-// after operators on real demos hit the cap clicking through multiple
-// comps in a row. Still tight enough that Zillow's bot wall stays away
-// (a single org can't push more than 30 outbound fetches/min) but lets
-// a power user evaluate 10+ listings during a deal review. The route
-// passes a softFallback so a misconfigured Vercel deploy missing Upstash
-// env vars degrades to in-memory limiting instead of 100% blocking.
-export const zillowReportLimiter = createLimiter(redis, 30, '1 m')
-
 // 3 reputation scans per userId per hour. On-demand and relatively expensive
 // (external API fan-out + Claude classification) so we cap per-user pressure.
 // Org-level daily cap (20/day) is enforced in the route handler via a
 // Prisma count, not here.
 export const reputationScanLimiter = createLimiter(redis, 3, '1 h')
-
-// 30 admin read requests per userId per minute
-export const adminReadLimiter = createLimiter(redis, 30, '1 m')
 
 // 10 audit email-capture attempts per IP per hour. Public, unauthenticated
 // endpoint — any known audit UUID can receive an email update without a
