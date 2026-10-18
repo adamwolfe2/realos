@@ -408,7 +408,12 @@ async function getScopeUncached(): Promise<ScopedContext | null> {
         where: { userId: user.id },
         select: { propertyId: true },
       })
-      .catch(() => [] as Array<{ propertyId: string }>);
+      .catch((err: unknown) => {
+        // Fail closed: an empty result means "unrestricted", so a DB error
+        // here must never fall through as [].
+        console.error("[scope] property grant lookup failed", { userId: user.id, err });
+        throw new Error("Could not verify property access. Please retry.");
+      });
     if (grants.length > 0) {
       allowedPropertyIds = grants.map((g) => g.propertyId);
     }

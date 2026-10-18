@@ -364,6 +364,32 @@ export async function handleMarketplaceChargeRefunded(
 
   const refundReason = charge.refunds?.data?.[0]?.reason ?? null;
 
+  // Partial refund (e.g. goodwill credit): keep the purchase PAID and the
+  // seller credit intact, record it for manual review. Stripe sets
+  // charge.refunded = true only once the full amount is refunded, which
+  // is when the reversal below runs.
+  // ponytail: no proportional seller clawback; needs a reversedCents column if partials become common.
+  if (!charge.refunded) {
+    await prisma.marketplaceAuditEvent.create({
+      data: {
+        action: "LEAD_PARTIALLY_REFUNDED",
+        leadId: purchase.leadId,
+        purchaseId: purchase.id,
+        buyerId: purchase.buyerId,
+        sellerId: purchase.sellerIdAtSale,
+        amountCents: charge.amount_refunded,
+        sellerShareCents: purchase.sellerShareCents,
+        description: `Partial refund of ${charge.amount_refunded} cents; seller credit unchanged, review manually`,
+        metadata: {
+          stripeChargeId: charge.id,
+          stripePaymentIntentId: paymentIntentId,
+          refundReason,
+        },
+      },
+    });
+    return true;
+  }
+
   // Atomic: only ONE concurrent charge.refunded webhook flips the purchase to
   // REFUNDED (count === 1); a duplicate delivery gets 0 and skips — so the
   // seller credit is reversed EXACTLY once. The flip, the seller-credit

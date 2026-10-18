@@ -174,7 +174,10 @@ export async function POST(req: NextRequest) {
         ? !!(await prisma.organization.findUnique({ where: { id: metaOrgId } }))
         : false;
 
-      if (orgExists && metaOrgId) {
+      // Invite metadata is stamped once and never updated by team role
+      // changes or removals, so it is only trusted on user.created. On
+      // user.updated it would undo demotions and re-create removed users.
+      if (event.type === "user.created" && orgExists && metaOrgId) {
         // Pre-bound invite path: link directly to the invitee's org with
         // the metadata-provided role.
         await prisma.user.upsert({
@@ -192,8 +195,6 @@ export async function POST(req: NextRequest) {
             firstName: first_name ?? null,
             lastName: last_name ?? null,
             role,
-            lastLoginAt:
-              event.type === "user.updated" ? new Date() : undefined,
           },
         });
       } else {
@@ -216,6 +217,11 @@ export async function POST(req: NextRequest) {
             },
           });
           console.info(`User ${id} already linked to org ${existing.orgId}`);
+        } else if (event.type === "user.updated" && !existing) {
+          // No row means the user was removed from their org (or
+          // user.created hasn't landed yet; Clerk retries it). Never
+          // provision from a profile update.
+          console.warn(`Clerk user ${id} updated with no DB row; skipping`);
         } else {
           // Try the legacy email-domain auto-link first: if an existing
           // organization was seeded with this user's email as its primary
