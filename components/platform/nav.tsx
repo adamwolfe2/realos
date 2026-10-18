@@ -91,8 +91,8 @@ const PRODUCT_LINKS: ProductLink[] = [
     // card links to /audit (the live reputation audit), so match that here
     // instead of a dead #reputation fragment.
     href: "/audit",
-    label: "Reputation Management",
-    description: "Every review and mention, one inbox, one-click reply",
+    label: "Free Property Audit",
+    description: "See how your property scores online, in minutes",
     icon: Star,
   },
   {
@@ -247,6 +247,9 @@ export function PlatformNav() {
               className={navBtnClass}
             >
               Sign in
+            </Link>
+            <Link href="/sign-up" className={navBtnClass}>
+              Start free trial
             </Link>
             <BookDemoLink
               className="inline-flex items-center justify-center"
@@ -532,6 +535,7 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
       ? [{ href: CASE_STUDY_PATH, label: "Case study" }]
       : []),
     { href: "/about", label: "About" },
+    { href: "/sign-up", label: "Start free trial" },
     { href: "/sign-in", label: "Sign in" },
   ];
 
