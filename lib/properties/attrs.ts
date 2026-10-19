@@ -1,13 +1,12 @@
 /**
- * Property attribute helpers — derived asset class + size band, plus
- * canonical labels for the filter UI on /portal/properties.
+ * Property attribute helpers: canonical labels and profile tags for the
+ * filter UI on /portal/properties.
  *
  * Norman feedback (issues #68 + #54): operators want to slice the
  * portfolio by Asset Class, Size, Category, and Profile. The first two
  * come "for free" from existing columns; the latter two are explicit
  * fields on Property (assetCategory, profileTags). This file is the
- * single source of truth for how those four dimensions are computed
- * and labelled, so the list filter, the property meta card, and any
+ * single source of truth for how those dimensions are labelled, so the list filter, the property meta card, and any
  * future export / report all agree.
  */
 import type {

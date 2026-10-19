@@ -892,7 +892,7 @@ export type { ActivityItem, ActivityKind };
 // Leasing velocity trend (12-week rolling)
 //
 // Returns week-by-week counts of leads, tours, and applications for the last
-// 12 weeks (oldest -> newest). Used by the LeasingVelocityChart on /portal.
+// 12 weeks (oldest -> newest). No current UI consumer.
 // ---------------------------------------------------------------------------
 
 export type WeeklyVelocityPoint = {
@@ -927,8 +927,7 @@ export type ReputationPulseItem = {
 // ---------------------------------------------------------------------------
 // Reputation summary tile — portfolio-wide aggregate for the dashboard KPI.
 // Cheap to compute and gives operators a one-glance answer to "how is my
-// brand looking right now?". Used on /portal as a KPI tile that links to the
-// new /portal/reputation portfolio page.
+// brand looking right now?". The /portal KPI tile that used it is gone.
 // ---------------------------------------------------------------------------
 
 export type ReputationSummary = {
@@ -1203,7 +1202,7 @@ export async function getTopPropertiesByLeads(
 }
 
 // ---------------------------------------------------------------------------
-// Historical ad-metrics stitching (daily + monthly union)
+// Historical ad metrics: monthly buckets
 //
 // The retention cron rolls AdMetricDaily rows older than the org's tier
 // window into AdMetricMonthly buckets, then deletes the dailies. Anything
@@ -1233,8 +1232,8 @@ export type AdHistoryPoint = {
 
 /**
  * Sum of monthly bucket spendCents that anchor inside [from, to).
- * Used by KPI tiles where only spend matters; the full-row union below
- * powers the CSV export.
+ * Used by KPI tiles where only spend matters. The CSV export builds its
+ * own daily and monthly rows.
  */
 export async function sumAdMonthlyOverlap(
   orgId: string,

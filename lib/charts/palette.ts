@@ -12,7 +12,7 @@
  */
 
 // Primary brand
-export const BRAND_BLUE = "#0f62fe"; // accent / second-tier slice
+export const BRAND_BLUE = "#0f62fe"; // primary — buttons, links, top-of-funnel
 
 // IBM Carbon blue scale (see app/globals.css), dark to light.
 // Sorted dark → light so a `.slice(0, n)` for a small dataset still

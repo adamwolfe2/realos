@@ -31,6 +31,11 @@ function createLimiter(
 
 const redis = createRedis()
 
+// 10 checkout attempts per IP per 10 minutes.
+// Not yet called: app/api/billing/checkout/route.ts should checkRateLimit
+// with this. Kept (not dead code): it is the intended checkout policy.
+export const checkoutLimiter = createLimiter(redis, 10, '10 m')
+
 // 5 public signups per IP per hour
 export const publicSignupLimiter = createLimiter(redis, 5, '1 h')
 
