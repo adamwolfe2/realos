@@ -578,7 +578,7 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
             </button>
           </div>
 
-          <nav className="flex-1 flex flex-col justify-center gap-1">
+          <nav className="flex-1 min-h-0 overflow-y-auto flex flex-col justify-center-safe gap-1">
             {allLinks.map((item, i) => (
               <Link
                 key={item.href}
