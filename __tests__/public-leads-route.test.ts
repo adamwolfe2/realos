@@ -173,7 +173,7 @@ describe("POST /api/public/leads", () => {
 
 // F-024: the contact form created a new Lead on every submit. It now dedupes
 // by (orgId, email), case-insensitive, like the chatbot/popup/tours routes,
-// and only net-new leads fire notifications.
+// and only net-new leads fire the new-lead notification; quiet repeats notify separately.
 describe("POST /api/public/leads dedupe (F-024)", () => {
   const EXISTING = {
     id: "lead_existing",
@@ -265,6 +265,7 @@ describe("POST /api/public/leads dedupe (F-024)", () => {
 
   it("a different email creates a new lead and notifies", async () => {
     h.lead.findFirst.mockResolvedValue(null);
+    h.org = { ...h.org, primaryContactEmail: "ops@operator.test" };
 
     const res = (await POST(
       makeRequest({ ...VALID_BODY, email: "other@example.com" }),
@@ -277,9 +278,8 @@ describe("POST /api/public/leads dedupe (F-024)", () => {
     expect(notifyLeadCreated).toHaveBeenCalledTimes(1);
     // The renter is never emailed (auto-reply removed 2026-10-18); only the
     // operator hears about the lead (notifyLeadCaptured above).
-    for (const [arg] of vi.mocked(notifyTenantOfLeadEmail).mock.calls) {
-      expect(arg.to).not.toBe("other@example.com");
-    }
+    const sends = vi.mocked(notifyTenantOfLeadEmail).mock.calls;
+    expect(sends.map(([arg]) => arg.to)).toEqual(["ops@operator.test"]);
   });
 
   it("does not look up a match when no email is given", async () => {

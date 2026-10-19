@@ -131,7 +131,6 @@ export async function POST(req: NextRequest) {
       name: true,
       modulePopups: true,
       primaryContactEmail: true,
-      tenantSiteConfig: { select: { phoneNumber: true } },
     },
   });
   if (!org || org.orgType !== "CLIENT" || !org.modulePopups) {

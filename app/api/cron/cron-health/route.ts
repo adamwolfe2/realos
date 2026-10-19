@@ -68,9 +68,10 @@ export async function GET(req: NextRequest) {
               `<li><strong>${escapeHtml(s.jobName)}</strong>: ${escapeHtml(s.status)} on the last ${s.badRuns} run(s), since ${escapeHtml(s.badSince.toISOString())}</li>`,
           )
           .join("");
-        const subject = `Daily cron digest: ${stuck.length} job${stuck.length === 1 ? "" : "s"} failing`;
+        const totalFailing = stuck.length + chronic.length;
+        const subject = `Daily cron digest: ${totalFailing} job${totalFailing === 1 ? "" : "s"} failing`;
         const chronicNote = chronic.length
-          ? `<p>Also failing all week (not repeated here daily): ${chronic.map((s) => escapeHtml(s.jobName)).join(", ")}.</p>`
+          ? `<p>Also no clean run in the last 7 days (not repeated here daily): ${chronic.map((s) => escapeHtml(s.jobName)).join(", ")}.</p>`
           : "";
         const sent = await sendBrandedEmail({
           to: AGENCY_ADMIN_EMAIL,
