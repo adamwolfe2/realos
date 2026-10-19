@@ -31,6 +31,7 @@
 // ---------------------------------------------------------------------------
 
 import { unstable_cache } from "next/cache";
+import { captureWithContext } from "@/lib/sentry";
 import { prisma } from "@/lib/db";
 import { isBrandedPromptText } from "@/lib/aeo/prompts";
 import type { Property } from "@prisma/client";
@@ -589,12 +590,29 @@ export async function getPortfolioRecommendations(
   // Each property fans out to ~10 queries; caching per (org, grants) for 5
   // minutes keeps the dashboard from re-running ~500 queries on every load.
   // ponytail: action items can lag a just-finished fix by up to 5 min; add
-  // revalidateTag(portfolioRecsTag(orgId)) in the fixing actions if that bites.
+  // revalidateTag(portfolioRecsTag(orgId), "max") in the fixing actions if that bites.
+  // A result with failed properties is thrown out of the cached fn (errors are
+  // never cached) and served once uncached, so a blip isn't pinned for 5 min.
   return unstable_cache(
-    () => computePortfolioRecommendations(orgId, limit, ids),
+    async () => {
+      const { items, failed } = await computePortfolioRecommendations(orgId, limit, ids);
+      if (failed > 0) throw new PartialRecommendations(items);
+      return items;
+    },
     ["portfolio-recs", orgId, String(limit), ids ? ids.join(",") : "all"],
     { revalidate: 300, tags: [portfolioRecsTag(orgId)] },
-  )();
+  )().catch((err: unknown) => {
+    if (err instanceof PartialRecommendations) return err.items;
+    throw err;
+  });
+}
+
+type PortfolioRec = ProactiveAction & { propertyName: string; propertyId: string };
+
+class PartialRecommendations extends Error {
+  constructor(readonly items: PortfolioRec[]) {
+    super("partial portfolio recommendations");
+  }
 }
 
 export function portfolioRecsTag(orgId: string): string {
@@ -607,7 +625,7 @@ async function computePortfolioRecommendations(
   orgId: string,
   limit: number,
   ids: string[] | null,
-): Promise<Array<ProactiveAction & { propertyName: string; propertyId: string }>> {
+): Promise<{ items: PortfolioRec[]; failed: number }> {
   const properties = await prisma.property.findMany({
     where: {
       orgId,
@@ -625,6 +643,7 @@ async function computePortfolioRecommendations(
   const perProperty: Array<Array<ProactiveAction & { propertyName: string; propertyId: string }>> =
     properties.map(() => []);
   let next = 0;
+  let failed = 0;
   await Promise.all(
     Array.from({ length: Math.min(PROPERTY_CONCURRENCY, properties.length) }, async () => {
       while (next < properties.length) {
@@ -632,7 +651,9 @@ async function computePortfolioRecommendations(
         const p = properties[i];
         // One bad property must not blank the whole strip.
         const recs = await getPropertyRecommendations(orgId, p.id).catch((err: unknown) => {
+          failed += 1;
           console.error("[recs] property recommendations failed", { orgId, propertyId: p.id, err });
+          captureWithContext(err, { route: "recs/portfolio", orgId, propertyId: p.id });
           return [] as ProactiveAction[];
         });
         perProperty[i] = recs.map((r) => ({ ...r, propertyName: p.name, propertyId: p.id }));
@@ -640,8 +661,9 @@ async function computePortfolioRecommendations(
     }),
   );
 
-  return perProperty
+  const items = perProperty
     .flat()
     .sort((a, b) => b.score - a.score || a.propertyName.localeCompare(b.propertyName))
     .slice(0, limit);
+  return { items, failed };
 }

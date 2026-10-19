@@ -244,6 +244,17 @@ export default async function PortalHome({
     "propertyId",
   );
   const isFiltered = effectiveIds !== null && effectiveIds.length > 0;
+  // Same contract as scopedPropertyClause: a restricted user whose selection
+  // was fully denied (effectiveIds = []) sees nothing; an unrestricted user
+  // with no selection sees everything. isFiltered alone is false for [].
+  const visiblePropertyIds = scope.allowedPropertyIds
+    ? effectiveIds
+    : isFiltered
+      ? effectiveIds
+      : null;
+  const propertyIdFilter = visiblePropertyIds
+    ? { id: { in: visiblePropertyIds } }
+    : {};
 
   try {
     const since28d = new Date(Date.now() - 28 * DAY);
@@ -305,7 +316,7 @@ export default async function PortalHome({
       prisma.property.count({
         where: {
           ...marketablePropertyWhere(scope.orgId),
-          ...(isFiltered ? { id: { in: effectiveIds! } } : {}),
+          ...propertyIdFilter,
         },
       }),
       prisma.lead.count({ where: { ...where, ...propertyClause } }),
@@ -445,7 +456,7 @@ export default async function PortalHome({
         // Properties page + the leaderboard helper.
         where: {
           ...withMarketableLifecycle(where),
-          ...(isFiltered ? { id: { in: effectiveIds! } } : {}),
+          ...propertyIdFilter,
         },
         orderBy: { updatedAt: "desc" },
         take: 8,
@@ -554,7 +565,7 @@ export default async function PortalHome({
         scope.orgId,
         rangeDaysCount,
         5,
-        isFiltered ? effectiveIds : null,
+        visiblePropertyIds,
       ).catch(soft([] as LeaderboardPropertyRow[], "portal.page:578")),
       // Conversations card trend — same clause + range as the other blocks.
       getConversationsOverTime(scope.orgId, {
@@ -590,7 +601,7 @@ export default async function PortalHome({
             // AppFolio sync imports as EXCLUDED. Counting them made SG show
             // "133 in onboarding" when only the real marketable buildings matter.
             lifecycle: { not: "EXCLUDED" },
-            ...(isFiltered ? { id: { in: effectiveIds! } } : {}),
+            ...propertyIdFilter,
           },
         })
         .catch(soft(0, "portal.page:612")),
@@ -606,7 +617,7 @@ export default async function PortalHome({
             orgId: scope.orgId,
             launchStatus: "LIVE",
             lifecycle: "ACTIVE",
-            ...(isFiltered ? { id: { in: effectiveIds! } } : {}),
+            ...propertyIdFilter,
           },
           select: {
             id: true,

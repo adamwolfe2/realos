@@ -30,6 +30,8 @@ export async function GET(req: NextRequest) {
   if (authError) return authError;
 
   return recordCronRun("weekly-report", async () => {
+    // Budget counts from handler start so slow setup queries eat into it.
+    const startedAt = Date.now();
     const orgs = await prisma.organization.findMany({
       where: {
         orgType: "CLIENT",
@@ -83,6 +85,10 @@ export async function GET(req: NextRequest) {
               // the millisecond, so the catch-up run 2h later (vercel.json)
               // or a manual re-run would otherwise miss the first run's
               // rows and re-send every report.
+              // Only rows this cron creates: a manual or property-scoped
+              // report in the window must not suppress the org-wide one.
+              propertyId: null,
+              generatedBy: null,
               periodStart: {
                 gte: new Date(sharedPeriodStart.getTime() - DEDUP_WINDOW_MS),
                 lte: sharedPeriodStart,
@@ -97,18 +103,18 @@ export async function GET(req: NextRequest) {
     // in-flight org (sections + 30s AI + send) still has to finish. Orgs
     // left over are picked up by the second scheduled run, which skips
     // orgs already reported (see DEDUP_WINDOW_MS).
-    const deadline = Date.now() + 200_000;
+    const deadline = startedAt + 200_000;
     const deferred: string[] = [];
     for (const org of orgs) {
+      if (alreadyDrafted.has(org.id)) {
+        skipped += 1;
+        continue;
+      }
       if (Date.now() > deadline) {
         deferred.push(org.id);
         continue;
       }
       try {
-        if (alreadyDrafted.has(org.id)) {
-          skipped += 1;
-          continue;
-        }
 
         const snapshot = await generateReportSnapshot(org.id, "weekly", {
           now: runNow,
@@ -208,7 +214,12 @@ export async function GET(req: NextRequest) {
         errors,
       }),
       recordsProcessed: drafted,
-      errorCount: errors.length,
+      // Deferred orgs count so a run that never reaches them shows partial.
+      errorCount: errors.length + deferred.length,
+      errorSummary: [
+        ...errors.map((e) => `${e.orgId}: ${e.error}`),
+        ...(deferred.length ? [`deferred (time budget): ${deferred.join(", ")}`] : []),
+      ].join("; "),
     };
   });
 }
