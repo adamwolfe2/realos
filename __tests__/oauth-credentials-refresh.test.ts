@@ -2,14 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
   findFirst: vi.fn(),
-  update: vi.fn(),
+  update: vi.fn(), // stands in for updateMany
   refreshGoogle: vi.fn(),
   refreshMeta: vi.fn(),
 }));
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/db", () => ({
-  prisma: { oAuthConnection: { findFirst: m.findFirst, update: m.update } },
+  prisma: { oAuthConnection: { findFirst: m.findFirst, updateMany: m.update } },
 }));
 vi.mock("@/lib/crypto", () => ({
   encrypt: (s: string) => `enc:${s}`,
@@ -41,7 +41,7 @@ const fresh = { accessToken: "new", refreshToken: null, expiresAt: new Date(Date
 describe("getOAuthCredentials refresh", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    m.update.mockImplementation(async ({ data }) => ({ ...row("x", 0), ...data }));
+    m.update.mockResolvedValue({ count: 1 });
   });
 
   it("re-extends a Meta token days before it expires", async () => {
@@ -78,7 +78,7 @@ describe("getOAuthCredentials refresh", () => {
     m.findFirst.mockResolvedValue(row("google_ga4", -1000));
     m.refreshGoogle.mockRejectedValue(new OAuthRefreshError("invalid_grant", true));
     await expect(getOAuthCredentials("o1", "google_ga4")).rejects.toThrow();
-    expect(m.update).toHaveBeenCalledWith({ where: { id: "c1" }, data: { status: "needs_reauth" } });
+    expect(m.update).toHaveBeenCalledWith({ where: { id: "c1", accessToken: "enc:old" }, data: { status: "needs_reauth" } });
   });
 
   it("never disconnects tenants for our own missing config", async () => {
@@ -101,5 +101,16 @@ describe("getOAuthCredentials refresh", () => {
     m.refreshMeta.mockResolvedValue({ ...fresh, expiresAt: null });
     await getOAuthCredentials("o1", "meta_ads");
     expect(m.update.mock.calls[0][0].data.expiresAt).toEqual(r.expiresAt);
+  });
+
+  it("keeps a reconnect that landed during the refresh call", async () => {
+    m.findFirst
+      .mockResolvedValueOnce(row("meta_ads", 3 * DAY))
+      .mockResolvedValueOnce({ ...row("meta_ads", 60 * DAY), accessToken: "enc:reconnected" });
+    m.refreshMeta.mockResolvedValue(fresh);
+    m.update.mockResolvedValue({ count: 0 });
+    const c = await getOAuthCredentials("o1", "meta_ads");
+    expect(m.update.mock.calls[0][0].where).toEqual({ id: "c1", accessToken: "enc:old" });
+    expect(c?.accessToken).toBe("reconnected");
   });
 });

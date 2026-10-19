@@ -34,6 +34,8 @@ export type AdsSyncStats = {
   campaignsUpserted: number;
   metricRowsUpserted: number;
   warnings: string[];
+  /** Campaign/metric writes that threw; any > 0 holds the watermark. */
+  failedWrites: number;
 };
 
 export type AdsSyncResult = {
@@ -56,6 +58,7 @@ export async function runAdsSyncForAccount(
     campaignsUpserted: 0,
     metricRowsUpserted: 0,
     warnings: [],
+    failedWrites: 0,
   };
 
   const account = await prisma.adAccount.findUnique({
@@ -82,10 +85,14 @@ export async function runAdsSyncForAccount(
 
     await refreshCampaignTotals(account.id);
 
-    await prisma.adAccount.update({
-      where: { id: account.id },
+    // Guarded: a disconnect during this run set "revoked"; a late sync must
+    // not flip it back to active.
+    await prisma.adAccount.updateMany({
+      where: { id: account.id, accessStatus: { not: "revoked" } },
       data: {
-        lastSyncAt: new Date(),
+        // Hold the watermark when rows failed to write, so the next run's
+        // window re-pulls those days (resolveSyncWindow starts at lastSyncAt).
+        ...(stats.failedWrites === 0 ? { lastSyncAt: new Date() } : {}),
         lastSyncError: null,
         accessStatus: "active",
       },
@@ -111,8 +118,8 @@ export async function runAdsSyncForAccount(
     return { ok: true, stats };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    await prisma.adAccount.update({
-      where: { id: account.id },
+    await prisma.adAccount.updateMany({
+      where: { id: account.id, accessStatus: { not: "revoked" } },
       data: {
         lastSyncError: message,
         accessStatus: "error",
@@ -225,6 +232,7 @@ async function upsertCampaigns(
       stats.campaignsUpserted += 1;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
+      stats.failedWrites += 1;
       stats.warnings.push(`campaign ${c.externalCampaignId}: ${message}`);
     }
   }
@@ -300,6 +308,7 @@ async function upsertMetrics(
       });
       stats.metricRowsUpserted += 1;
     } catch (err) {
+      stats.failedWrites += 1;
       const message = err instanceof Error ? err.message : "Unknown error";
       stats.warnings.push(
         `metrics campaign=${m.externalCampaignId} date=${m.date}: ${message}`
@@ -343,7 +352,8 @@ async function refreshCampaignTotals(adAccountId: string): Promise<void> {
 // Date helpers
 // ---------------------------------------------------------------------------
 
-const BACKFILL_MS = 30 * 24 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const BACKFILL_MS = 30 * DAY_MS;
 
 /**
  * Default window starts at the day of the last successful sync (or
@@ -359,7 +369,8 @@ export function resolveSyncWindow(
 ): { startDate: Date; endDate: Date } {
   const endDate = options.endDate ?? endOfYesterdayUTC(now);
   if (options.startDate) return { startDate: options.startDate, endDate };
-  const earliest = new Date(endDate.getTime() - BACKFILL_MS);
+  // endDate is inclusive, so 29 days back gives a 30-day window.
+  const earliest = new Date(endDate.getTime() - BACKFILL_MS + DAY_MS);
   if (options.fullBackfill || !lastSyncAt) return { startDate: earliest, endDate };
   const lastDay = new Date(
     Date.UTC(lastSyncAt.getUTCFullYear(), lastSyncAt.getUTCMonth(), lastSyncAt.getUTCDate()),
