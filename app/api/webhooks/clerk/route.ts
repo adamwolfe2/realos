@@ -170,9 +170,11 @@ export async function POST(req: NextRequest) {
           : typeof public_metadata?.organizationId === "string"
             ? (public_metadata.organizationId as string)
             : undefined;
-      const orgExists = metaOrgId
-        ? !!(await prisma.organization.findUnique({ where: { id: metaOrgId } }))
-        : false;
+      // Only user.created trusts invite metadata, so only it needs the lookup.
+      const orgExists =
+        event.type === "user.created" && metaOrgId
+          ? !!(await prisma.organization.findUnique({ where: { id: metaOrgId } }))
+          : false;
 
       // Invite metadata is stamped once and never updated by team role
       // changes or removals, so it is only trusted on user.created. On
@@ -219,8 +221,9 @@ export async function POST(req: NextRequest) {
           });
           console.info(`User ${id} already linked to org ${existing.orgId}`);
         } else if (event.type === "user.updated" && !existing) {
-          // No row means the user was removed from their org, or
-          // provisioning on user.created failed. Never provision from a
+          // No row means the user was removed in-app (manage-team deletes
+          // the row; a Clerk-side membership removal re-homes it instead),
+          // or provisioning on user.created failed. Never provision from a
           // profile update; failed provisioning self-heals on the user's
           // next authenticated request (provisionUserForClerk in scope.ts
           // and /api/auth/role).

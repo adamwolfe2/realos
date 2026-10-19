@@ -6,6 +6,7 @@ import { captureWithContext } from "@/lib/sentry";
 import {
   MarketplaceLeadStatus,
   MarketplacePurchaseStatus,
+  Prisma,
 } from "@prisma/client";
 import { getStripeClient } from "@/lib/stripe/config";
 import { sendLeadDeliveryEmail } from "@/lib/marketplace/emails";
@@ -372,39 +373,40 @@ export async function handleMarketplaceChargeRefunded(
   // ponytail: no proportional seller clawback; needs a reversedCents column if partials become common.
   if (!charge.refunded) {
     // Idempotent per cumulative amount: Stripe retries and two routes
-    // (stripe + stripe/marketplace) both deliver charge.refunded. A second
-    // partial refund carries a new amount_refunded and is logged.
-    const already = await prisma.marketplaceAuditEvent.findFirst({
-      where: {
-        action: "LEAD_PARTIALLY_REFUNDED",
-        purchaseId: purchase.id,
-        amountCents: charge.amount_refunded,
-      },
-      select: { id: true },
-    });
-    if (already) return true;
+    // (stripe + stripe/marketplace) both deliver charge.refunded, possibly
+    // concurrently. The deterministic id makes the insert the dedupe: the
+    // loser gets a unique violation (P2002). A second partial refund carries
+    // a new amount_refunded, so a new id, and is logged.
+    try {
+      await prisma.marketplaceAuditEvent.create({
+        data: {
+          id: `partial-refund:${purchase.id}:${charge.amount_refunded}`,
+          action: "LEAD_PARTIALLY_REFUNDED",
+          leadId: purchase.leadId,
+          purchaseId: purchase.id,
+          buyerId: purchase.buyerId,
+          sellerId: purchase.sellerIdAtSale,
+          amountCents: charge.amount_refunded,
+          sellerShareCents: purchase.sellerShareCents,
+          description: `Partial refund of ${charge.amount_refunded} cents; seller credit unchanged, review manually`,
+          metadata: {
+            stripeChargeId: charge.id,
+            stripePaymentIntentId: paymentIntentId,
+            refundReason,
+          },
+        },
+      });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+        return true; // duplicate delivery, already logged and alerted
+      }
+      throw err;
+    }
     captureWithContext(new Error("Marketplace partial refund needs review"), {
       route: "marketplace/charge.refunded",
       purchaseId: purchase.id,
       stripeChargeId: charge.id,
       amountRefunded: charge.amount_refunded,
-    });
-    await prisma.marketplaceAuditEvent.create({
-      data: {
-        action: "LEAD_PARTIALLY_REFUNDED",
-        leadId: purchase.leadId,
-        purchaseId: purchase.id,
-        buyerId: purchase.buyerId,
-        sellerId: purchase.sellerIdAtSale,
-        amountCents: charge.amount_refunded,
-        sellerShareCents: purchase.sellerShareCents,
-        description: `Partial refund of ${charge.amount_refunded} cents; seller credit unchanged, review manually`,
-        metadata: {
-          stripeChargeId: charge.id,
-          stripePaymentIntentId: paymentIntentId,
-          refundReason,
-        },
-      },
     });
     return true;
   }

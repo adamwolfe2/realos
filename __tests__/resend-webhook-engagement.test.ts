@@ -119,6 +119,7 @@ describe("POST /api/webhooks/resend: engagement mapping", () => {
         email_id: "em_1",
       }),
     );
+    expect(h.db.auditEvent.create).toHaveBeenCalledTimes(2);
     for (const [arg] of h.db.auditEvent.create.mock.calls) {
       const diff = JSON.stringify(arg.data.diff);
       expect(diff).not.toContain("Org A");

@@ -78,9 +78,9 @@ describe("clerk user.updated with stale invite metadata", () => {
     mocks.findUnique.mockResolvedValue({ id: "u1", orgId: "org-1" });
     await send("user.updated");
     expect(mocks.upsert).not.toHaveBeenCalled();
-    for (const [arg] of mocks.update.mock.calls) {
-      expect(arg.data.role).toBeUndefined();
-    }
+    // Profile still syncs, just without the role.
+    expect(mocks.update).toHaveBeenCalledTimes(1);
+    expect(mocks.update.mock.calls[0][0].data.role).toBeUndefined();
   });
 
   it("does not re-create a removed teammate", async () => {

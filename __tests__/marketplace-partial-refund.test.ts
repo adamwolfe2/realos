@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type Stripe from "stripe";
+import { Prisma } from "@prisma/client";
 
 // A partial refund must not flip the purchase to REFUNDED or claw back the
 // seller's whole share; only a full refund does.
@@ -8,7 +9,7 @@ const m = vi.hoisted(() => ({
   updateMany: vi.fn(),
   sellerUpdate: vi.fn(),
   auditCreate: vi.fn(),
-  auditFindFirst: vi.fn(),
+  ids: new Set<string>(),
 }));
 vi.mock("@/lib/sentry", () => ({ captureWithContext: vi.fn() }));
 
@@ -21,13 +22,14 @@ vi.mock("@/lib/db", () => {
   return {
     prisma: {
       marketplacePurchase: { findUnique: m.findUnique },
-      marketplaceAuditEvent: { create: m.auditCreate, findFirst: m.auditFindFirst },
+      marketplaceAuditEvent: { create: m.auditCreate },
       $transaction: (fn: (t: typeof tx) => unknown) => fn(tx),
     },
   };
 });
 
 const { handleMarketplaceChargeRefunded } = await import("@/lib/marketplace/webhook-handlers");
+const { captureWithContext } = await import("@/lib/sentry");
 
 const purchase = {
   id: "p1",
@@ -55,13 +57,26 @@ describe("marketplace charge.refunded", () => {
     vi.clearAllMocks();
     m.findUnique.mockResolvedValue(purchase);
     m.updateMany.mockResolvedValue({ count: 1 });
-    m.auditFindFirst.mockResolvedValue(null);
+    m.ids.clear();
+    // Behaves like the unique id column: a repeated id is a P2002.
+    m.auditCreate.mockImplementation(async ({ data }: { data: { id?: string } }) => {
+      if (data.id && m.ids.has(data.id)) {
+        throw new Prisma.PrismaClientKnownRequestError("dup", { code: "P2002", clientVersion: "test" });
+      }
+      if (data.id) m.ids.add(data.id);
+      return data;
+    });
   });
 
-  it("a redelivered partial refund is logged once", async () => {
-    m.auditFindFirst.mockResolvedValue({ id: "a1" });
+  it("a redelivered partial refund is logged and alerted once; a new amount logs again", async () => {
     await handleMarketplaceChargeRefunded(charge(500));
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    await handleMarketplaceChargeRefunded(charge(500));
+    expect(m.ids.size).toBe(1);
+    expect(captureWithContext).toHaveBeenCalledTimes(1);
+
+    await handleMarketplaceChargeRefunded(charge(800));
+    expect(m.ids.size).toBe(2);
+    expect(captureWithContext).toHaveBeenCalledTimes(2);
     expect(m.updateMany).not.toHaveBeenCalled();
   });
 
