@@ -61,6 +61,18 @@ export async function GET(req: NextRequest) {
     });
     let recycled = 0;
     let abandoned = 0;
+    const reaperErrors: string[] = [];
+    const reaperFailed = (id: string) => (err: unknown) => {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("[seo-scan-worker] reaper update failed", id, message);
+      reaperErrors.push(`reap ${id}: ${message}`);
+      return null;
+    };
+    // Spread into every return so a failed reap marks the run partial.
+    const reaperResult = () =>
+      reaperErrors.length
+        ? { errorCount: reaperErrors.length, errorSummary: reaperErrors.slice(0, 5).join("; ") }
+        : {};
     for (const j of stuck) {
       if (j.attempts + 1 >= MAX_ATTEMPTS) {
         await prisma.seoScanJob
@@ -73,7 +85,7 @@ export async function GET(req: NextRequest) {
               attempts: { increment: 1 },
             },
           })
-          .catch(() => null);
+          .catch(reaperFailed(j.id));
         abandoned += 1;
       } else {
         await prisma.seoScanJob
@@ -87,7 +99,7 @@ export async function GET(req: NextRequest) {
               progressPct: 0,
             },
           })
-          .catch(() => null);
+          .catch(reaperFailed(j.id));
         recycled += 1;
       }
     }
@@ -111,6 +123,7 @@ export async function GET(req: NextRequest) {
           durationMs: Date.now() - startedAt,
         }),
         recordsProcessed: recycled + abandoned,
+        ...reaperResult(),
       };
     }
 
@@ -135,6 +148,7 @@ export async function GET(req: NextRequest) {
           durationMs: Date.now() - startedAt,
         }),
         recordsProcessed: recycled + abandoned,
+        ...reaperResult(),
       };
     }
 
@@ -187,6 +201,7 @@ export async function GET(req: NextRequest) {
           stats.lighthouseAudits +
           stats.backlinkSummaries +
           stats.competitorRows,
+        ...reaperResult(),
       };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -231,8 +246,8 @@ export async function GET(req: NextRequest) {
           durationMs: Date.now() - startedAt,
         }),
         recordsProcessed: 0,
-        errorCount: 1,
-        errorSummary: `${candidate.id}: ${message}`,
+        errorCount: 1 + reaperErrors.length,
+        errorSummary: [`${candidate.id}: ${message}`, ...reaperErrors].slice(0, 5).join("; "),
       };
     }
   });

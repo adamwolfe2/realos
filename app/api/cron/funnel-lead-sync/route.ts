@@ -157,7 +157,14 @@ export async function GET(req: NextRequest) {
       }),
       recordsProcessed: pushed,
       errorCount: failed,
-      errorSummary: failed > 0 ? `${failed} pushes failed` : undefined,
+      errorSummary:
+        failed > 0
+          ? summary
+              .filter((s) => /^(failed|error):/.test(s.outcome))
+              .slice(0, 5)
+              .map((s) => `${s.conversationId}: ${s.outcome}`)
+              .join("; ")
+          : undefined,
     };
   });
 }

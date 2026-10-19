@@ -123,7 +123,11 @@ export async function GET(req: NextRequest) {
       }),
       recordsProcessed: results.filter((r) => r.ok).length,
       errorCount: results.filter((r) => !r.ok).length,
-      errorSummary: results.filter((r) => !r.ok).slice(0, 5).map((r) => r.error).join("; "),
+      errorSummary: results
+        .filter((r) => !r.ok)
+        .slice(0, 5)
+        .map((r) => `${r.platform} ${r.adAccountId} (org ${r.orgId}): ${r.error ?? "failed"}`)
+        .join("; "),
     };
   });
 }

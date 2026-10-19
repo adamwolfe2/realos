@@ -53,6 +53,13 @@ export async function GET(req: NextRequest) {
       try {
         const summary = await runSourceReplenish(source);
         totalUpserted += summary.upsertedCount;
+        // runSourceReplenish catches its own failures and reports them in
+        // the summary, so count those too or the run records "ok".
+        if (summary.status === "FAILED") {
+          failures.push(`${source.name}: ${summary.errorMessage ?? "failed"}`);
+        } else if (summary.failedCount > 0) {
+          failures.push(`${source.name}: ${summary.failedCount} member(s) failed`);
+        }
         summaries.push({
           sourceId: source.id,
           sourceName: source.name,

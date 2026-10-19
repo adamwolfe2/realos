@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
     // The upsert key (orgId, propertyId, weekOf=Mon00:00UTC) guards
     // against re-running on the same day.
     let snapshotsWritten = 0;
+    const snapshotErrors: string[] = [];
     const properties = await prisma.property.findMany({
       where: { launchStatus: { in: ["LIVE", "ONBOARDING"] } },
       select: { id: true, orgId: true },
@@ -47,7 +48,10 @@ export async function GET(req: NextRequest) {
           writeScoreSnapshot({ orgId: p.orgId, propertyId: p.id }),
         ),
       );
-      snapshotsWritten += results.filter((r) => r.status === "fulfilled").length;
+      results.forEach((r, j) => {
+        if (r.status === "fulfilled") snapshotsWritten += 1;
+        else snapshotErrors.push(`snapshot ${batch[j].id}: ${r.reason instanceof Error ? r.reason.message : String(r.reason)}`);
+      });
     }
 
     return {
@@ -58,8 +62,13 @@ export async function GET(req: NextRequest) {
         errors: stats.errors.slice(0, 20),
       }),
       recordsProcessed: stats.rowsWritten + snapshotsWritten,
-      errorCount: stats.errors.length,
-      errorSummary: stats.errors.slice(0, 5).map(String).join("; "),
+      errorCount: stats.errors.length + snapshotErrors.length,
+      errorSummary: [
+        ...stats.errors.map((e) => `${e.propertyId}: ${e.error}`),
+        ...snapshotErrors,
+      ]
+        .slice(0, 5)
+        .join("; "),
     };
   });
 }
