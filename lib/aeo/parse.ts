@@ -226,9 +226,30 @@ const NON_BUILDING_NAMES = new Set([
   "reddit",
 ]);
 
-function isPlausibleBuildingName(s: string): boolean {
+// Section labels AI answers bold or list ("**Budget**", "Price range:",
+// "Walkability") — headings, never buildings. Observed in SG Real Estate's
+// 2026-10 report, where "Budget" ranked as a top-10 competitor.
+const GENERIC_LABELS = new Set([
+  "budget", "resources", "timing", "roommates", "price range", "amenities",
+  "walkability", "noise", "noise level", "must-haves", "transit", "commute",
+  "lease terms", "room type", "location", "safety", "parking", "pricing",
+  "pros", "cons", "tips", "overview", "summary", "facebook groups",
+  "popular apartment", "best apartments", "find apartments", "downtown",
+  "south side", "north side", "northside", "southside", "rockridge",
+  "lease timing", "pest history", "management responsiveness",
+  "residence halls", "university apartments",
+]);
+
+// Areas, streets and campus landmarks: "Telegraph Avenue area", "Solano Ave",
+// "Sproul Plaza", "UC Berkeley Off-Campus Housing portal".
+const PLACE_PATTERN =
+  /\b(area|corridor|district|neighborhood|neighbourhood|portal|campus)$|\b(ave|avenue|street|st|blvd|road|rd)$|^uc [a-z]+$|^sproul plaza$|^[a-z]+\/[a-z]+$|^best\b/i;
+
+export function isPlausibleBuildingName(s: string): boolean {
   const trimmed = s.trim();
   if (trimmed.length < 3 || trimmed.length > 80) return false;
+  if (GENERIC_LABELS.has(trimmed.toLowerCase())) return false;
+  if (PLACE_PATTERN.test(trimmed)) return false;
   // Must start with a capital letter or "The".
   if (!/^[A-Z]/.test(trimmed)) return false;
   // A trailing colon is a list-item LABEL ("Best overall for campus

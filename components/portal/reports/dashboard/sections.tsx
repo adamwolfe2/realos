@@ -144,7 +144,7 @@ function OverviewSection(s: ReportSnapshot, p: PropertyMeta, navTo: NavTo): Reac
       icon: KeyRound,
       label: "Leasing & occupancy",
       value: occupancyStats?.occupancyPct != null ? pct(occupancyStats.occupancyPct) : num(lifecycleStats?.activeLeases),
-      context: `${num(lifecycleStats?.leasesSignedInPeriod ?? 0)} signed this period`,
+      context: `${num(lifecycleStats?.leasesSignedInPeriod ?? 0)} started this period`,
     },
     {
       id: "renewals",
@@ -182,7 +182,7 @@ function OverviewSection(s: ReportSnapshot, p: PropertyMeta, navTo: NavTo): Reac
       {/* Headline KPIs */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <HeroStat value={num(kpis.leads)} label="New leads" delta={s.kpiDeltas?.leadsPct} />
-        <HeroStat value={num(lifecycleStats?.leasesSignedInPeriod ?? 0)} label="Leases signed" />
+        <HeroStat value={num(lifecycleStats?.leasesSignedInPeriod ?? 0)} label="Leases started" />
         <HeroStat
           value={occupancyStats?.occupancyPct != null ? pct(occupancyStats.occupancyPct) : "—"}
           label={`Occupancy · ${occupancyStats?.totalUnits ?? 0} units`}
@@ -481,7 +481,7 @@ function LeasingSection(s: ReportSnapshot): React.ReactNode {
       <Card>
         <SectionHeading>Leasing momentum</SectionHeading>
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-          <Stat value={num(life?.leasesSignedInPeriod)} label="Signed this period" />
+          <Stat value={num(life?.leasesSignedInPeriod)} label="Started this period" />
           <Stat value={num(life?.leasesSignedLast180d)} label="Signed, last 180 days" />
           <Stat value={num(life?.activeLeases)} label="Active leases" />
           <Stat value={num(life?.applicationsInPeriod)} label="Applications" />
@@ -489,7 +489,7 @@ function LeasingSection(s: ReportSnapshot): React.ReactNode {
         {monthly.length ? (
           <>
             <div className="mb-1.5 mt-4 text-2xs font-medium text-muted-foreground">
-              Leases signed, last 12 months
+              Leases started, last 12 months
             </div>
             <Sparkline values={monthly.map((m) => m.count)} />
             <div className="mt-1.5 flex justify-between text-[9px] font-medium text-muted-foreground">
