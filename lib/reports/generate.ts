@@ -1,4 +1,5 @@
 import "server-only";
+import { buildProspectQuestions, type ReportProspectQuestions } from "@/lib/reports/prospect-questions";
 import { prisma } from "@/lib/db";
 import {
   AdPlatform,
@@ -409,6 +410,9 @@ export type ReportSnapshot = {
   // Optional extended chatbot block. Old snapshots stored before the upgrade
   // won't have this; the view falls back to chatbotStats in that case.
   chatbotStatsExtended?: ReportChatbotStatsExtended;
+  // Topic counts + recent visitor questions from chatbot transcripts.
+  // Absent on snapshots created before 2026-10-20.
+  prospectQuestions?: ReportProspectQuestions;
   properties: ReportPropertyRow[];
   trafficTrend: number[];
   attributionBySource: ReportAttributionRow[];
@@ -1682,6 +1686,13 @@ export async function generateReportSnapshot(
     chatbotStats,
   ).catch(sectionFailed("buildChatbotExtended"));
 
+  const prospectQuestions = await buildProspectQuestions(
+    orgId,
+    scope.propertyId,
+    periodStart,
+    periodEnd,
+  ).catch(sectionFailed("buildProspectQuestions"));
+
   // AEO stats — how often we got cited vs how often a competitor was
   // cited instead, across all AI engines in the period. Headline insight
   // for the Insights tab.
@@ -1817,6 +1828,7 @@ export async function generateReportSnapshot(
     insights,
     chatbotStats,
     chatbotStatsExtended,
+    prospectQuestions,
     properties,
     trafficTrend: trafficFallback,
     attributionBySource,
