@@ -94,7 +94,9 @@ describe("PropertyOnePager visual refresh stays honest", () => {
   const src = read("../components/portal/reports/property-one-pager.tsx");
 
   it("only draws the chevron funnel when each step narrows", () => {
-    expect(src).toMatch(/chatConversations >= captured &&\s*captured >= chatLeads/);
+    expect(src).toMatch(
+      /const funnelOk =\s*chatConversations > 0 &&\s*chatConversations >= captured &&\s*captured >= chatLeads &&\s*chatLeads > 0;/,
+    );
     expect(src).toMatch(/\{funnelOk \? \(\s*<ChevronFunnel/);
   });
 

@@ -197,7 +197,7 @@ export function ChevronFunnel({
             className={`min-w-0 flex-1 py-3 ${first ? "pl-3.5 pr-4" : "-ml-1 px-5"} ${shade(i)} print:[print-color-adjust:exact]`}
             style={{ clipPath: clip }}
           >
-            <div className="ls-metric text-[20px] leading-none text-inherit">
+            <div className="ls-metric text-[20px] leading-none text-inherit!">
               {s.value}
             </div>
             <div className="mt-1 text-[10.5px] font-medium leading-tight opacity-80">
