@@ -54,12 +54,26 @@ type Props = {
 // times, and the full URL wraps at this column width. Falls back to the
 // raw string if the value was never a parseable URL.
 function pagePath(url: string): string {
+  let path = url;
   try {
-    const path = new URL(url).pathname.replace(/\/$/, "");
-    return path === "" ? "Home page" : path;
+    path = new URL(url).pathname;
   } catch {
-    return url;
+    // GA4 landing pages are already site-relative paths ("/availability").
   }
+  path = path.replace(/\/$/, "");
+  return path === "" ? "Home page" : path;
+}
+
+// Client-facing label for a page path: "/" -> "Home page",
+// "/availability/655d…" -> "Unit listings", "/floor-plans" -> "Floor plans".
+// Per-unit pages are grouped because a column of UUIDs reads as noise.
+export function pageLabel(url: string): string {
+  const path = pagePath(url);
+  if (path === "Home page" || path === "(not set)") return path === "(not set)" ? "" : path;
+  const segs = path.split("/").filter(Boolean);
+  if (segs.length > 1 && /^[0-9a-f-]{16,}$/i.test(segs[segs.length - 1])) return "Unit listings";
+  const last = decodeURIComponent(segs[segs.length - 1] ?? "").replace(/[-_]+/g, " ");
+  return last.charAt(0).toUpperCase() + last.slice(1);
 }
 
 export function PropertyOnePager({ snapshot, property, hero }: Props) {
@@ -91,7 +105,27 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
   // GA4-only orgs (it needs GSC page-level data), so the list reports
   // sessions alone rather than a column of zeros. Pages with no sessions
   // are dropped, not listed at 0.
-  const pageRows = (topPages ?? []).filter((p) => p.sessions > 0).slice(0, 6);
+  const pageRows = [
+    ...(topPages ?? []).filter((p) => p.sessions > 0)
+      .reduce((acc, p) => {
+        const label = pageLabel(p.url);
+        if (label) acc.set(label, (acc.get(label) ?? 0) + p.sessions);
+        return acc;
+      }, new Map<string, number>()),
+  ]
+    .map(([label, sessions]) => ({ label, sessions }))
+    .sort((a, b) => b.sessions - a.sessions)
+    .slice(0, 6);
+  // Google searches that showed the site, most-seen first. Impressions is
+  // the honest headline number for a small site: clicks on unbranded
+  // queries are often single digits while the appearance itself is the win.
+  const queryRows = [...(snapshot.topQueries ?? [])]
+    .filter((q) => q.impressions > 0)
+    .sort((a, b) => b.impressions - a.impressions)
+    .slice(0, 6);
+  const prospect = snapshot.prospectQuestions;
+  const themeRows = (prospect?.themes ?? []).slice(0, 6);
+  const themeMax = Math.max(1, ...themeRows.map((t) => t.count));
 
   // Section claims. The report used to be a grid of labelled panels and left
   // the reader to assemble the argument; each of these states in one sentence
@@ -334,23 +368,40 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
                 {trafficClaim}
               </p>
             ) : null}
-            <div>
-              <div className="mb-2.5 text-[9.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                Most-visited pages
+            <div className={`grid grid-cols-1 gap-6 ${queryRows.length ? "sm:grid-cols-2 print:grid-cols-2" : ""}`}>
+              <div>
+                <div className="mb-2.5 text-[9.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                  Most-visited pages
+                </div>
+                <div className="flex flex-col gap-2 text-[11.5px]">
+                  {pageRows.map((row) => (
+                    <div key={row.label} className="flex justify-between gap-3 font-medium text-muted-foreground">
+                      <span className="truncate">{row.label}</span>
+                      <b className="flex-none font-bold tabular-nums text-foreground">{num(row.sessions)}</b>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-2 text-[9.5px] font-medium text-muted-foreground">Sessions in period</div>
               </div>
-              <div className="flex flex-col gap-2 text-[11.5px]">
-                {pageRows.map((row) => (
-                  <div key={row.url} className="flex justify-between gap-3 font-medium text-muted-foreground">
-                    <span className="truncate">{pagePath(row.url)}</span>
-                    <b className="flex-none font-bold tabular-nums text-foreground">
-                      {row.sessions}
-                    </b>
+              {queryRows.length ? (
+                <div>
+                  <div className="mb-2.5 flex justify-between text-[9.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                    <span>Top Google searches</span>
+                    <span>Shown · Clicks</span>
                   </div>
-                ))}
-              </div>
-              <div className="mt-2 text-[9.5px] font-medium text-muted-foreground">
-                Sessions in period
-              </div>
+                  <div className="flex flex-col gap-2 text-[11.5px]">
+                    {queryRows.map((q) => (
+                      <div key={q.query} className="flex justify-between gap-3 font-medium text-muted-foreground">
+                        <span className="truncate">{q.query}</span>
+                        <span className="flex-none tabular-nums">
+                          <b className="font-bold text-foreground">{num(q.impressions)}</b> · {num(q.clicks)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-2 text-[9.5px] font-medium text-muted-foreground">Google Search Console, this period</div>
+                </div>
+              ) : null}
             </div>
 
           </section>
@@ -448,6 +499,54 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
           </section>
         </div>
       </div>
+
+      {/* What prospects are asking — straight from chatbot transcripts. The
+          most useful marketing input on the page: it is the demand, in the
+          prospects' own words. */}
+      {prospect && themeRows.length > 0 ? (
+        <div className="ls-view-rise">
+          <section className="mt-5">
+            <SectionHeading meta={`${num(prospect.conversations)} chatbot conversations`}>
+              What prospects are asking
+            </SectionHeading>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-[1.1fr_0.9fr] print:grid-cols-[1.1fr_0.9fr]">
+              <div className="flex flex-col gap-2">
+                {themeRows.map((t, i) => (
+                  <div key={t.label} className="flex items-center gap-2.5 text-[12px]">
+                    <span className="w-[150px] flex-none truncate font-medium text-muted-foreground">{t.label}</span>
+                    <span className="h-3.5 flex-1 overflow-hidden rounded-[2px] bg-muted">
+                      <span
+                        className="ls-view-grow-x block h-full rounded-[2px] bg-primary"
+                        style={
+                          {
+                            width: `${Math.round((t.count / themeMax) * 100)}%`,
+                            "--reveal-step": i,
+                          } as React.CSSProperties
+                        }
+                      />
+                    </span>
+                    <span className="w-7 text-right font-bold tabular-nums">{t.count}</span>
+                  </div>
+                ))}
+              </div>
+              {prospect.examples.length > 0 ? (
+                <div>
+                  <div className="mb-2.5 text-[9.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                    Recent questions
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {prospect.examples.slice(0, 3).map((q) => (
+                      <p key={q} className="border-l-2 border-primary/40 pl-2.5 text-[11px] leading-snug text-foreground">
+                        &ldquo;{q}&rdquo;
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       {/* Renewals + Reputation — same column split as the Acquisition +
           Leasing zone above so the two left/right boundaries line up as
