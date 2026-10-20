@@ -33,28 +33,28 @@ describe("PropertyOnePager honors snapshot.hiddenSections", () => {
   });
 
   it("gates the occupancy entry behind !hideTurnover", () => {
-    expect(src).toMatch(/\.\.\.\(hideTurnover[\s\S]{0,400}label: `Occupancy, /);
+    expect(src).toMatch(/\.\.\.\(hideTurnover[\s\S]{0,400}label: `Occupancy across/);
   });
 
   it("builds the band from the surviving entries instead of leaving holes", () => {
     // No fixed column count: the band is a list, so a suppressed entry is
     // absent rather than an empty cell.
-    expect(src).toContain("const kpiTiles:");
-    expect(src).toContain("kpiTiles.map((t)");
+    expect(src).toContain("const figures: Figure[] = [");
+    expect(src).toContain("<FigureBand figures={figures} />");
     expect(src).not.toContain("kpiColCount");
   });
 
   it("gates past-due balance and revenue-at-risk behind !hideMoney", () => {
-    expect(src).toMatch(/\{!hideMoney \? \(\s*<IconStat[\s\S]{0,160}label="Past-due balance"/);
-    expect(src).toMatch(/\{!hideMoney \? \(\s*<IconStat[\s\S]{0,220}Monthly revenue at risk/);
+    expect(src).toMatch(/\.\.\.\(!hideMoney[\s\S]{0,200}label: "Past-due balance"/);
+    expect(src).toMatch(/\.\.\.\(!hideMoney[\s\S]{0,260}Monthly revenue at risk/);
   });
 
   it("gates the whole Renewals-at-risk section behind !hideTurnover", () => {
-    expect(src).toMatch(/\{!hideTurnover \? \(\s*<Panel title="Renewals at risk"/);
+    expect(src).toMatch(/\{!hideTurnover && renewalStats \? \(\s*<Panel\s+title="Renewals at risk"/);
   });
 
   it("gates the Zillow / Apartments.com 'not tracked' rows behind !hideUntracked", () => {
-    expect(src).toMatch(/\.\.\.\(!hideUntracked\s*\?\s*\["Zillow", "Apartments\.com"\]/);
+    expect(src).toMatch(/\.\.\.\(!hideUntracked && sources\.length > 0\s*\?\s*\["Zillow", "Apartments\.com"\]/);
   });
 
   it("coverage strip's 'Zillow, Apartments.com: not wired' row is gated too", () => {
@@ -94,12 +94,14 @@ describe("PropertyOnePager visual refresh stays honest", () => {
   const src = read("../components/portal/reports/property-one-pager.tsx");
 
   it("only draws the chevron funnel when each step narrows", () => {
-    expect(src).toContain("chatConversations >= captured && captured >= chatLeads");
+    expect(src).toMatch(/chatConversations >= captured &&\s*captured >= chatLeads/);
     expect(src).toMatch(/\{funnelOk \? \(\s*<ChevronFunnel/);
   });
 
-  it("charts only the real 12-month signing series on a KPI tile", () => {
-    expect(src.match(/series:/g)?.length).toBe(1);
+  it("puts no decorative chart or icon chip on the headline figures", () => {
+    const blocks = read("../components/portal/reports/one-pager-blocks.tsx");
+    expect(src).not.toMatch(/series:/);
+    expect(blocks).not.toMatch(/IconChip/);
   });
 
   it("carries no sales CTA on the client document", () => {
