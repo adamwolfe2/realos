@@ -700,28 +700,26 @@ async function buildScope(
         sole.name,
         domains.map((d) => d.hostname),
       );
+      // GA4 reports landing pages as site-relative paths ("/availability"),
+      // which never contain the slug or hostname — so path rows are the
+      // sole property's own site and must be kept. Search queries come
+      // from the org's GSC property (the sole site), so unbranded queries
+      // ("student housing berkeley") belong to it too: no query filter.
       const seoLandingClause: Prisma.SeoLandingPageWhereInput =
         patterns.length > 0
           ? {
-              OR: patterns.map((p) => ({
-                url: {
-                  contains: p.replace(/%/g, ""),
-                  mode: "insensitive" as const,
-                },
-              })),
+              OR: [
+                { url: { startsWith: "/" } },
+                ...patterns.map((p) => ({
+                  url: {
+                    contains: p.replace(/%/g, ""),
+                    mode: "insensitive" as const,
+                  },
+                })),
+              ],
             }
           : {};
-      const seoQueryClause: Prisma.SeoQueryWhereInput =
-        patterns.length > 0
-          ? {
-              OR: patterns.map((p) => ({
-                query: {
-                  contains: p.replace(/%/g, ""),
-                  mode: "insensitive" as const,
-                },
-              })),
-            }
-          : {};
+      const seoQueryClause: Prisma.SeoQueryWhereInput = {};
       return {
         // Keep propertyId null so the rest of the snapshot still reads
         // as "portfolio" (header copy, kpi labels, etc.) — only the SEO
@@ -776,20 +774,31 @@ async function buildScope(
     property.name,
     domains.map((d) => d.hostname),
   );
+  // When this is the org's only live property, the org's GA4/GSC
+  // integrations ARE this property's site: keep relative-path landing
+  // pages and unbranded queries (see the portfolio branch above).
+  const liveCount = await prisma.property
+    .count({ where: { orgId, lifecycle: "ACTIVE" } })
+    .catch(() => 0);
+  const soleSite = liveCount === 1;
 
   const seoLandingClause: Prisma.SeoLandingPageWhereInput =
     patterns.length > 0
       ? {
-          OR: patterns.map((p) => ({
-            url: {
-              contains: p.replace(/%/g, ""),
-              mode: "insensitive" as const,
-            },
-          })),
+          OR: [
+            ...(soleSite ? [{ url: { startsWith: "/" } }] : []),
+            ...patterns.map((p) => ({
+              url: {
+                contains: p.replace(/%/g, ""),
+                mode: "insensitive" as const,
+              },
+            })),
+          ],
         }
       : { url: { contains: "__no_match__" } };
-  const seoQueryClause: Prisma.SeoQueryWhereInput =
-    patterns.length > 0
+  const seoQueryClause: Prisma.SeoQueryWhereInput = soleSite
+    ? {}
+    : patterns.length > 0
       ? {
           OR: patterns.map((p) => ({
             query: {
