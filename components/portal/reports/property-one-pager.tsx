@@ -13,13 +13,28 @@ import {
   engineLabel,
   toMentionSource,
   SourceGlyph,
-  SectionHeading,
-  Stat,
-  Sparkline,
   Stars,
-  TILE_DENSE,
 } from "./snapshot-shared";
 import { LeaseStackMark } from "@/components/brand/leasestack-logo";
+import {
+  BadgeCheck,
+  Bot,
+  Building2,
+  DollarSign,
+  FileSignature,
+  FileText,
+  Link2,
+  MessageSquare,
+  MousePointerClick,
+  PanelTop,
+  Percent,
+  Search,
+  Sparkles,
+  Trophy,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
+import { BarList, ChevronFunnel, IconStat, KpiTile, MonthBars, Panel, TakeawayCard } from "./one-pager-blocks";
 
 // ---------------------------------------------------------------------------
 // PropertyOnePager — a single-page "Marketing & Performance Snapshot" for one
@@ -125,7 +140,6 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
     .slice(0, 6);
   const prospect = snapshot.prospectQuestions;
   const themeRows = (prospect?.themes ?? []).slice(0, 6);
-  const themeMax = Math.max(1, ...themeRows.map((t) => t.count));
 
   // Section claims. The report used to be a grid of labelled panels and left
   // the reader to assemble the argument; each of these states in one sentence
@@ -150,23 +164,23 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
         ? `The chatbot answered ${num(chatConversations)} conversations in this window.`
         : null;
 
-  // Responsive note: every multi-column zone stacks (or drops to 2-up) below
-  // `sm`, restores at `sm:`, and is pinned again with a `print:` variant.
-  // The print viewport is US Letter minus 0.5in margins ≈ 720px — wider than
-  // `sm` (640) but narrower than `md` (768) — so sm: alone would keep print
-  // intact today, and the print: pin keeps it intact if margins ever grow.
-  // Headline band. Order is the story the report tells: leads came in,
-  // leases got signed, and N of those trace back to a lead we captured.
-  // Occupancy + rent roll join the row when they aren't suppressed.
+  // Layout (2026-10-20 refresh, modelled on Adam's infographic one-pager):
+  // cover -> KPI tiles -> takeaways -> paired panels -> AI visibility.
+  // Every multi-column zone stacks below `sm` and is pinned with `print:`
+  // (print viewport ~720px, between sm and md).
   const leasesSigned = lifecycleStats?.leasesSignedInPeriod ?? 0;
   const priorLeases = lifecycleStats?.priorLeasesSignedInPeriod ?? 0;
-  const headlineResults: Array<{
+  const traced = snapshot.tracedSignedLeads ?? 0;
+  const kpiTiles: Array<{
+    icon: LucideIcon;
     value: string;
     label: string;
-    delta?: { up: boolean; text: string };
+    series?: number[];
     note?: string;
+    delta?: { up: boolean; text: string };
   }> = [
     {
+      icon: Users,
       value: num(kpis.leads),
       label: "New leads",
       delta:
@@ -177,50 +191,109 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
             }
           : undefined,
     },
+    ...(lifecycleStats?.applicationsInPeriod
+      ? [{ icon: FileText, value: num(lifecycleStats.applicationsInPeriod), label: "Applications" }]
+      : []),
     {
+      icon: FileSignature,
       value: num(leasesSigned),
       label: "Leases signed",
+      // The bars are the 12-month signing history, the one real series
+      // behind a headline tile. Other tiles carry no chart rather than a
+      // decorative one.
+      series: monthlySigned.length > 1 ? monthlySigned.map((m) => m.count) : undefined,
       delta:
         showDeltas && !(leasesSigned === 0 && priorLeases === 0)
           ? { up: leasesSigned >= priorLeases, text: `From ${priorLeases} prior` }
           : undefined,
+      note: monthlySigned.length > 1 ? "Bars: last 12 months" : undefined,
     },
-    ...(snapshot.tracedSignedLeads
-      ? [
-          {
-            value: num(snapshot.tracedSignedLeads),
-            label: "Traced to a captured lead",
-            note: "Lead \u2192 lease, same resident",
-          },
-        ]
+    ...(traced
+      ? [{ icon: Link2, value: num(traced), label: "Traced to a captured lead", note: "Lead \u2192 lease, same resident" }]
       : []),
-    ...(hideTurnover
+    ...(chatConversations > 0
+      ? [{ icon: MessageSquare, value: num(chatConversations), label: "Chatbot conversations" }]
+      : []),
+    ...(organicSessions > 0 ? [{ icon: Search, value: num(organicSessions), label: "Organic search sessions" }] : []),
+    ...(hideTurnover || occupancyStats?.occupancyPct == null
       ? []
       : [
           {
-            value:
-              occupancyStats?.occupancyPct != null
-                ? pct(occupancyStats.occupancyPct)
-                : "\u2014",
-            label: `Occupancy across ${occupancyStats?.totalUnits ?? 0} units`,
-            note:
-              (occupancyStats?.onNotice ?? 0) > 0
-                ? `${occupancyStats?.onNotice} residents on notice`
-                : undefined,
+            icon: Building2,
+            value: pct(occupancyStats.occupancyPct),
+            label: `Occupancy, ${occupancyStats.totalUnits ?? 0} units`,
+            note: (occupancyStats.onNotice ?? 0) > 0 ? `${occupancyStats.onNotice} residents on notice` : undefined,
           },
         ]),
-    ...(hideMoney
+    ...(hideMoney || occupancyStats?.monthlyRentRollUsd == null
       ? []
       : [
           {
-            value: compactUsd(occupancyStats?.monthlyRentRollUsd),
+            icon: DollarSign,
+            value: compactUsd(occupancyStats.monthlyRentRollUsd),
             label: "Monthly rent roll",
             note:
-              occupancyStats?.avgRentPerUnitUsd != null
+              occupancyStats.avgRentPerUnitUsd != null
                 ? `${compactUsd(occupancyStats.avgRentPerUnitUsd)} avg per unit`
                 : undefined,
           },
         ]),
+  ];
+  // Literal class strings so Tailwind can see them.
+  const kpiCols =
+    kpiTiles.length <= 3
+      ? "sm:grid-cols-3 print:grid-cols-3"
+      : kpiTiles.length === 4 || kpiTiles.length >= 7
+        ? "sm:grid-cols-4 print:grid-cols-4"
+        : kpiTiles.length === 5
+          ? "sm:grid-cols-5 print:grid-cols-5"
+          : "sm:grid-cols-3 lg:grid-cols-6 print:grid-cols-6";
+
+  // Takeaways: one sentence each, built only from numbers already on the
+  // page. A missing input drops its card; zero cards drops the band.
+  const capturedRate = chatbotStatsExtended?.capturedRatePct;
+  const topTheme = themeRows[0];
+  const takeaways = [
+    traced && leasesSigned
+      ? {
+          lead: "Signed leases that trace back to a lead LeaseStack captured:",
+          figure: `${num(traced)} of ${num(leasesSigned)}`,
+          tail: "Same resident, from first contact to signed lease.",
+        }
+      : null,
+    capturedRate != null && chatConversations > 0
+      ? {
+          lead: "Chatbot conversations that turned into a lead:",
+          figure: pct(capturedRate),
+          tail: `${num(chatbotStatsExtended?.capturedConversations)} of ${num(chatConversations)} conversations, answered 24/7.`,
+        }
+      : null,
+    aeoStats && aeoStats.totalChecks > 0 && aeoStats.cited > 0
+      ? {
+          lead: `AI answers that cite ${property.name}:`,
+          figure: `${num(aeoStats.cited)} of ${num(aeoStats.totalChecks)}`,
+          tail: `Across ${(aeoStats.enginesUsed ?? []).map(engineLabel).join(", ")}.`,
+        }
+      : topTheme
+        ? {
+            lead: "The question prospects ask most:",
+            figure: topTheme.label,
+            tail: `Raised in ${num(topTheme.count)} chatbot conversations.`,
+          }
+        : null,
+  ].filter((t): t is { lead: string; figure: string; tail: string } => t !== null);
+
+  // Chatbot funnel. Chevrons imply each step is a subset of the last, so
+  // they only render when the three counts actually narrow.
+  const captured = chatbotStatsExtended?.capturedConversations ?? 0;
+  const funnelOk = chatConversations > 0 && chatConversations >= captured && captured >= chatLeads && chatLeads > 0;
+  const popup = snapshot.popupStats;
+
+  const sourceRows = [
+    ...sources.map((s) => ({ label: s.source, value: s.count, display: `${s.count} \u00b7 ${Math.round(s.pct)}%` })),
+    ...(!hideUntracked
+      ? ["Zillow", "Apartments.com"].map((s) => ({ label: s, value: 0, display: "not tracked", muted: true }))
+      : []),
   ];
 
   return (
@@ -302,311 +375,197 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
         </header>
       </div>
 
-      {/* Headline results. One band, not a row of half-empty cards: with
-          money + turnover suppressed only two KPIs survive, and two cards
-          stretched across 880px is mostly padding. The band is built from
-          whatever survives, so a full-data report still reads as one row.
-          `traced` sits here rather than beside the leases chart — it is the
-          proof the marketing caused the leases, which is the whole point of
-          the document. */}
+      {/* Headline numbers: icon tiles, one row on desktop and print. */}
       <div className="ls-view-rise">
-        {/* Phone: one full-width row per result, big number left and its
-            label beside it. The 2-up grid stranded an odd last entry across
-            the full width with nothing next to it -- and with money and
-            turnover suppressed that entry is "46 traced to a captured lead",
-            a 26px number alone in an empty band. Stacking keeps the numbers
-            at headline size instead of shrinking them to fit three columns. */}
-        <div className="grid grid-cols-2 divide-x divide-y divide-border overflow-hidden rounded-[2px] border border-border bg-card max-sm:flex max-sm:flex-col max-sm:divide-x-0 sm:flex sm:divide-y-0 print:flex print:divide-y-0">
-          {headlineResults.map((r) => (
-            <div
-              key={r.label}
-              className="min-w-0 flex-1 px-4 py-3.5 max-sm:flex max-sm:items-baseline max-sm:gap-3.5 max-sm:py-2.5"
-            >
-              <div className="ls-metric text-[26px] leading-none max-sm:w-[68px] max-sm:flex-none sm:text-[30px]">
-                {r.value}
-              </div>
-              <div className="min-w-0 max-sm:flex-1">
-                <div className="mt-1.5 truncate text-[11px] font-medium text-muted-foreground max-sm:mt-0 max-sm:whitespace-normal">
-                  {r.label}
-                </div>
-                {r.delta ? (
-                  <div
-                    className={`mt-1 truncate text-[10px] font-semibold max-sm:whitespace-normal ${
-                      r.delta.up ? "text-success" : "text-destructive"
-                    }`}
-                  >
-                    {r.delta.up ? "\u25b2" : "\u25bc"} {r.delta.text}
-                  </div>
-                ) : r.note ? (
-                  <div className="mt-1 truncate text-[10px] font-medium text-muted-foreground max-sm:whitespace-normal">
-                    {r.note}
-                  </div>
-                ) : null}
-              </div>
-            </div>
+        <div className={`grid grid-cols-2 gap-2.5 ${kpiCols}`}>
+          {kpiTiles.map((t) => (
+            <KpiTile key={t.label} {...t} />
           ))}
         </div>
       </div>
 
-      {/* Reach. The document argues a chain — we drove traffic, we captured
-          leads from it, they became leases — so the traffic evidence has to
-          come BEFORE the capture section that spends it.
-
-          There is no trend line here on purpose. The weekly series is real
-          but falls across a long window, and a descending chart set full
-          width is the loudest thing on a page whose job is to prove the
-          work landed. Which pages carry the site is the same claim ("people
-          arrive and go deep") without the editorial. The trend stays on the
-          operator dashboard, where a decline is information rather than a
-          pitch. */}
-      {pageRows.length > 0 ? (
+      {takeaways.length > 0 ? (
         <div className="ls-view-rise">
-          <section className="mt-5">
-            <SectionHeading>Site traffic</SectionHeading>
-            {trafficClaim ? (
-              <p className="-mt-1 mb-3.5 text-[11.5px] leading-relaxed text-muted-foreground">
-                {trafficClaim}
+          <section className="mt-6">
+            <h2 className="mb-3 text-[17px] font-semibold tracking-[-0.01em]">
+              {takeaways.length === 1 ? "Key takeaway" : `${takeaways.length} key takeaways`}
+            </h2>
+            <div
+              className={`grid grid-cols-1 gap-2.5 ${takeaways.length === 3 ? "sm:grid-cols-3 print:grid-cols-3" : takeaways.length === 2 ? "sm:grid-cols-2 print:grid-cols-2" : ""}`}
+            >
+              {takeaways.map((t, i) => (
+                <TakeawayCard key={t.lead} index={i + 1} {...t} />
+              ))}
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {/* Where leads came from | what prospects ask. */}
+      <div className="ls-view-rise">
+        <div
+          className={`mt-6 grid grid-cols-1 gap-4 ${prospect && themeRows.length ? "sm:grid-cols-2 print:grid-cols-2" : ""}`}
+        >
+          <Panel title="Where leads came from" subtitle="New leads by first touch, this period">
+            {sourceRows.length === 0 ? (
+              <div className="text-[12px] text-muted-foreground">No leads in period.</div>
+            ) : (
+              <BarList rows={sourceRows} labelWidth="w-[130px]" />
+            )}
+            {acquisitionClaim ? (
+              <p className="mt-4 rounded-[2px] bg-primary/[0.05] px-3 py-2.5 text-[11.5px] leading-relaxed text-foreground">
+                {acquisitionClaim}
               </p>
             ) : null}
-            <div className={`grid grid-cols-1 gap-6 ${queryRows.length ? "sm:grid-cols-2 print:grid-cols-2" : ""}`}>
-              <div>
-                <div className="mb-2.5 text-[9.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                  Most-visited pages
-                </div>
-                <div className="flex flex-col gap-2 text-[11.5px]">
-                  {pageRows.map((row) => (
-                    <div key={row.label} className="flex justify-between gap-3 font-medium text-muted-foreground">
-                      <span className="truncate">{row.label}</span>
-                      <b className="flex-none font-bold tabular-nums text-foreground">{num(row.sessions)}</b>
-                    </div>
+          </Panel>
+
+          {prospect && themeRows.length > 0 ? (
+            <Panel title="What prospects are asking" subtitle={`Top topics in ${num(prospect.conversations)} chatbot conversations`}>
+              <BarList rows={themeRows.map((t) => ({ label: t.label, value: t.count }))} labelWidth="w-[165px]" />
+              {prospect.examples.length > 0 ? (
+                <div className="mt-4 flex flex-col gap-2 rounded-[2px] bg-primary/[0.05] px-3 py-2.5">
+                  <div className="ls-eyebrow">In their words</div>
+                  {prospect.examples.slice(0, 2).map((q) => (
+                    <p key={q} className="text-[11.5px] leading-snug text-foreground">
+                      &ldquo;{q}&rdquo;
+                    </p>
                   ))}
                 </div>
-                <div className="mt-2 text-[9.5px] font-medium text-muted-foreground">Sessions in period</div>
+              ) : null}
+            </Panel>
+          ) : null}
+        </div>
+      </div>
+
+      {/* Conversation -> lead | leasing momentum. */}
+      <div className="ls-view-rise">
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 print:grid-cols-2">
+          <Panel title="From conversation to lead" subtitle="Website chatbot and popups, this period">
+            {funnelOk ? (
+              <ChevronFunnel
+                stages={[
+                  { value: num(chatConversations), label: "Conversations" },
+                  { value: num(captured), label: "Shared details" },
+                  { value: num(chatLeads), label: "New leads" },
+                ]}
+              />
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <IconStat icon={MessageSquare} value={num(chatConversations)} label="Chatbot conversations" />
+                <IconStat
+                  icon={Percent}
+                  value={capturedRate != null ? pct(capturedRate) : "\u2014"}
+                  label="Lead capture rate"
+                />
+              </div>
+            )}
+            {popup ? (
+              <div className="mt-4 grid grid-cols-3 gap-3 border-t border-border pt-4">
+                <IconStat icon={PanelTop} value={num(popup.shown)} label="Popups shown" />
+                <IconStat icon={MousePointerClick} value={num(popup.ctaClicks)} label="Button clicks" />
+                {popup.converted > 0 ? (
+                  <IconStat icon={BadgeCheck} value={num(popup.converted)} label="Converted" />
+                ) : (
+                  <IconStat
+                    icon={Percent}
+                    value={popup.shown > 0 ? pct((popup.ctaClicks / popup.shown) * 100) : "\u2014"}
+                    label="Click rate"
+                  />
+                )}
+              </div>
+            ) : null}
+          </Panel>
+
+          <Panel title="Leasing momentum" subtitle="Leases signed by month, last 12 months">
+            {monthlySigned.length ? <MonthBars months={monthlySigned} /> : null}
+            <div className={`mt-4 grid gap-3 border-t border-border pt-4 ${hideMoney ? "grid-cols-2" : "grid-cols-3"}`}>
+              <IconStat icon={FileSignature} value={num(lifecycleStats?.leasesSignedLast180d)} label="Signed, last 180 days" />
+              <IconStat icon={Users} value={num(lifecycleStats?.activeLeases)} label="Active leases" />
+              {!hideMoney ? (
+                <IconStat icon={DollarSign} value={compactUsd(renewalStats?.pastDueBalanceUsd)} label="Past-due balance" />
+              ) : null}
+            </div>
+          </Panel>
+        </div>
+      </div>
+
+      {/* Site traffic: pages | Google searches. */}
+      {pageRows.length > 0 ? (
+        <div className="ls-view-rise">
+          <Panel className="mt-4" title="Site traffic" subtitle={trafficClaim ?? "Sessions in period"}>
+            <div className={`grid grid-cols-1 gap-6 ${queryRows.length ? "sm:grid-cols-2 print:grid-cols-2" : ""}`}>
+              <div>
+                <div className="ls-eyebrow mb-2.5">Most-visited pages</div>
+                <BarList rows={pageRows.map((p) => ({ label: p.label, value: p.sessions }))} labelWidth="w-[120px]" />
               </div>
               {queryRows.length ? (
                 <div>
-                  <div className="mb-2.5 flex justify-between text-[9.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                  <div className="ls-eyebrow mb-2.5 flex justify-between">
                     <span>Top Google searches</span>
                     <span>Shown · Clicks</span>
                   </div>
                   <div className="flex flex-col gap-2 text-[11.5px]">
                     {queryRows.map((q) => (
                       <div key={q.query} className="flex justify-between gap-3 font-medium text-muted-foreground">
-                        <span className="truncate">{q.query}</span>
+                        <span className="flex min-w-0 items-center gap-2">
+                          <Search className="h-3 w-3 flex-none" aria-hidden="true" />
+                          <span className="truncate">{q.query}</span>
+                        </span>
                         <span className="flex-none tabular-nums">
                           <b className="font-bold text-foreground">{num(q.impressions)}</b> · {num(q.clicks)}
                         </span>
                       </div>
                     ))}
                   </div>
-                  <div className="mt-2 text-[9.5px] font-medium text-muted-foreground">Google Search Console, this period</div>
                 </div>
               ) : null}
             </div>
-
-          </section>
+          </Panel>
         </div>
       ) : null}
 
-      {/* Acquisition + Leasing momentum */}
+      {/* Renewals | reputation. Reputation takes the row when turnover is hidden. */}
       <div className="ls-view-rise">
-        <div className="mt-5 grid grid-cols-1 gap-6 sm:grid-cols-[1.1fr_0.9fr] print:grid-cols-[1.1fr_0.9fr]">
-          <section>
-            <SectionHeading meta="first-touch">Lead acquisition</SectionHeading>
-            {acquisitionClaim ? (
-              <p className="-mt-1 mb-3.5 text-[11.5px] leading-relaxed text-muted-foreground">
-                {acquisitionClaim}
-              </p>
-            ) : null}
-            <div className="mb-4 flex flex-col gap-2.5 text-[12.5px]">
-              {sources.length === 0 ? (
-                <div className="text-muted-foreground">No leads in period.</div>
-              ) : (
-                sources.map((src) => (
-                  <div key={src.source} className="flex items-center gap-2.5 font-medium">
-                    <span className="h-2 w-2 flex-none rounded-sm bg-primary" />
-                    <span>{src.source}</span>
-                    <span className="ml-auto font-semibold text-muted-foreground">
-                      {src.count} · {Math.round(src.pct)}%
-                    </span>
-                  </div>
-                ))
-              )}
-              {!hideUntracked
-                ? ["Zillow", "Apartments.com"].map((s) => (
-                    <div key={s} className="flex items-center gap-2.5 font-medium text-muted-foreground">
-                      <span className="h-2 w-2 flex-none rounded-sm bg-muted-foreground/30" />
-                      <span>{s}</span>
-                      <span className="ml-auto">not tracked</span>
-                    </div>
-                  ))
-                : null}
-            </div>
-            <div className={`grid grid-cols-2 gap-2.5 ${TILE_DENSE}`}>
-              <Stat dense value={num(chatbotStatsExtended?.conversations)} label="Chatbot conversations" />
-              <Stat dense value={chatbotStatsExtended?.capturedRatePct != null ? pct(chatbotStatsExtended.capturedRatePct) : "—"} label="Lead capture rate" />
-            </div>
-            {snapshot.popupStats ? (
-              <div className={`mt-3.5 grid grid-cols-2 gap-2.5 ${TILE_DENSE} ${snapshot.popupStats.converted > 0 ? "sm:grid-cols-4 print:grid-cols-4" : "sm:grid-cols-3 print:grid-cols-3"}`}>
-                {snapshot.popupStats.converted > 0 ? (
-                  <>
-                    <Stat dense value={num(snapshot.popupStats.shown)} label="Popups shown" />
-                    <Stat dense value={num(snapshot.popupStats.ctaClicks)} label="CTA clicks" />
-                    <Stat dense value={num(snapshot.popupStats.converted)} label="Converted" />
-                    <Stat dense
-                      value={snapshot.popupStats.conversionRate != null ? pct(snapshot.popupStats.conversionRate) : "—"}
-                      label="Conversion rate"
-                    />
-                  </>
-                ) : (
-                  // converted=0 means the feature is unused/unwired this period —
-                  // don't give "0 Converted" / "0% Conversion rate" equal billing
-                  // next to real numbers. Show what actually happened instead.
-                  <>
-                    <Stat dense value={num(snapshot.popupStats.shown)} label="Popups shown" />
-                    <Stat dense value={num(snapshot.popupStats.ctaClicks)} label="CTA clicks" />
-                    <Stat dense
-                      value={snapshot.popupStats.shown > 0 ? pct((snapshot.popupStats.ctaClicks / snapshot.popupStats.shown) * 100) : "—"}
-                      label="CTA rate"
-                    />
-                  </>
-                )}
-              </div>
-            ) : null}
-          </section>
-
-          <section>
-            <SectionHeading>Leasing momentum</SectionHeading>
-            <div className={`grid grid-cols-2 gap-2.5 ${TILE_DENSE} ${hideMoney ? "" : "sm:grid-cols-3 print:grid-cols-3"}`}>
-              <Stat dense value={num(lifecycleStats?.leasesSignedLast180d)} label="Signed, last 180 days" />
-              <Stat dense value={num(lifecycleStats?.activeLeases)} label="Active leases" />
-              {!hideMoney ? (
-                <Stat dense value={compactUsd(renewalStats?.pastDueBalanceUsd)} label="Past-due balance" />
-              ) : null}
-            </div>
-            {monthlySigned.length ? (
-              <>
-                <div className="mb-1.5 mt-3.5 text-[10px] font-medium text-muted-foreground">
-                  Leases signed, last 12 months
-                </div>
-                <Sparkline values={monthlySigned.map((m) => m.count)} reveal heightClass="h-28" />
-                <div className="mt-1.5 flex justify-between text-[9px] font-medium text-muted-foreground">
-                  <span>{monthlySigned[0]?.month}</span>
-                  <span>{monthlySigned[monthlySigned.length - 1]?.month}</span>
-                </div>
-              </>
-            ) : null}
-          </section>
-        </div>
-      </div>
-
-      {/* What prospects are asking — straight from chatbot transcripts. The
-          most useful marketing input on the page: it is the demand, in the
-          prospects' own words. */}
-      {prospect && themeRows.length > 0 ? (
-        <div className="ls-view-rise">
-          <section className="mt-5">
-            <SectionHeading meta={`${num(prospect.conversations)} chatbot conversations`}>
-              What prospects are asking
-            </SectionHeading>
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-[1.1fr_0.9fr] print:grid-cols-[1.1fr_0.9fr]">
-              <div className="flex flex-col gap-2">
-                {themeRows.map((t, i) => (
-                  <div key={t.label} className="flex items-center gap-2.5 text-[12px]">
-                    <span className="w-[150px] flex-none truncate font-medium text-muted-foreground">{t.label}</span>
-                    <span className="h-3.5 flex-1 overflow-hidden rounded-[2px] bg-muted">
-                      <span
-                        className="ls-view-grow-x block h-full rounded-[2px] bg-primary"
-                        style={
-                          {
-                            width: `${Math.round((t.count / themeMax) * 100)}%`,
-                            "--reveal-step": i,
-                          } as React.CSSProperties
-                        }
-                      />
-                    </span>
-                    <span className="w-7 text-right font-bold tabular-nums">{t.count}</span>
-                  </div>
-                ))}
-              </div>
-              {prospect.examples.length > 0 ? (
-                <div>
-                  <div className="mb-2.5 text-[9.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                    Recent questions
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    {prospect.examples.slice(0, 3).map((q) => (
-                      <p key={q} className="border-l-2 border-primary/40 pl-2.5 text-[11px] leading-snug text-foreground">
-                        &ldquo;{q}&rdquo;
-                      </p>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          </section>
-        </div>
-      ) : null}
-
-      {/* Renewals + Reputation — same column split as the Acquisition +
-          Leasing zone above so the two left/right boundaries line up as
-          the page scans down. When turnover is suppressed, reputation
-          takes the full width. */}
-      <div className="ls-view-rise">
-        <div className={`mt-5 grid grid-cols-1 gap-6 ${hideTurnover ? "" : "sm:grid-cols-[1.1fr_0.9fr] print:grid-cols-[1.1fr_0.9fr]"}`}>
+        <div className={`mt-4 grid grid-cols-1 gap-4 ${hideTurnover ? "" : "sm:grid-cols-2 print:grid-cols-2"}`}>
           {!hideTurnover ? (
-            <section>
-              <SectionHeading>Renewals at risk</SectionHeading>
-              <div className={`grid grid-cols-2 gap-2.5 sm:grid-cols-3 print:grid-cols-3 ${TILE_DENSE}`}>
-                <Stat dense value={num(renewalStats?.expiringNext30)} label="Expiring within 30 days" />
-                <Stat dense value={num(renewalStats?.expiringNext60)} label="Expiring within 60 days" />
-                <Stat dense value={num(renewalStats?.expiringNext120)} label="Expiring within 120 days" />
+            <Panel title="Renewals at risk" subtitle="Leases ending soon">
+              <div className="grid grid-cols-3 gap-3">
+                <IconStat icon={FileText} value={num(renewalStats?.expiringNext30)} label="Within 30 days" />
+                <IconStat icon={FileText} value={num(renewalStats?.expiringNext60)} label="Within 60 days" />
+                <IconStat icon={FileText} value={num(renewalStats?.expiringNext120)} label="Within 120 days" />
               </div>
-              <div className={`mt-2.5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 print:grid-cols-3 ${TILE_DENSE}`}>
+              <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-4">
                 {!hideMoney ? (
-                  <div className="col-span-2">
-                    <Stat dense value={compactUsd(renewalStats?.monthlyAtRiskUsd)} label="Monthly revenue at risk, next 120 days" flag />
-                  </div>
+                  <IconStat icon={DollarSign} value={compactUsd(renewalStats?.monthlyAtRiskUsd)} label="Monthly revenue at risk, 120 days" />
                 ) : null}
-                {/* Money tile above spans both mobile columns, which would
-                    strand this one half-width next to a hole — give it the
-                    full row on mobile too. */}
-                <div className="max-sm:col-span-2">
-                  <Stat dense value={num(occupancyStats?.onNotice)} label="Residents on notice" />
-                </div>
+                <IconStat icon={Users} value={num(occupancyStats?.onNotice)} label="Residents on notice" />
               </div>
-            </section>
+            </Panel>
           ) : null}
 
-          <section>
-            <SectionHeading>Online reputation</SectionHeading>
+          <Panel title="Online reputation" subtitle="Reviews across the web">
             {reputationStats ? (
               <>
-                <div className="mb-3 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-                  <span className="ls-metric text-[22px] leading-none">
-                    {reputationStats.overallRating != null ? reputationStats.overallRating.toFixed(1) : "—"}
+                <div className="mb-3.5 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+                  <span className="ls-metric text-[26px] leading-none">
+                    {reputationStats.overallRating != null ? reputationStats.overallRating.toFixed(1) : "\u2014"}
                   </span>
-                  <Stars rating={reputationStats.overallRating} className="text-[13px]" />
+                  <Stars rating={reputationStats.overallRating} className="text-[14px]" />
                   <span className="text-[11px] font-medium text-muted-foreground">
                     {reputationStats.totalReviews} reviews · {reputationStats.positiveCount} positive, {reputationStats.negativeCount} negative
                   </span>
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2.5">
                   {reputationStats.sourceBreakdown.slice(0, 4).map((row, i) => (
                     <div key={row.source} className="flex items-center gap-2.5 text-[12px]">
                       <span className="flex h-4 w-4 flex-none items-center justify-center">
                         <SourceGlyph source={toMentionSource(row.source)} className="h-4 w-4" />
                       </span>
                       <span className="w-[74px] font-medium text-muted-foreground">{row.source}</span>
-                      <span className="h-4 flex-1 overflow-hidden rounded-[2px] bg-muted">
+                      <span className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
                         <span
-                          className="ls-view-grow-x block h-full rounded-[2px] bg-primary"
-                          style={
-                            {
-                              width: `${Math.round((row.count / repMaxCount) * 100)}%`,
-                              "--reveal-step": i,
-                            } as React.CSSProperties
-                          }
+                          className="ls-view-grow-x block h-full rounded-full bg-primary"
+                          style={{ width: `${Math.round((row.count / repMaxCount) * 100)}%`, "--reveal-step": i } as React.CSSProperties}
                         />
                       </span>
                       <span className="w-6 text-right font-bold">{row.count}</span>
@@ -617,32 +576,36 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
             ) : (
               <div className="text-[12px] text-muted-foreground">No reputation data yet.</div>
             )}
-          </section>
+          </Panel>
         </div>
       </div>
 
-      {/* AI search visibility — the differentiator. Same 2px card language
-          as every other section, just a touch more presence via a faint
-          brand tint (no gradient, no side-stripe). */}
+      {/* AI search visibility: the differentiator, on a faint brand tint. */}
       {aeoStats && aeoStats.totalChecks > 0 ? (
         <div className="ls-view-rise">
-          <section className="mt-5 rounded-[2px] border border-primary/20 bg-primary/[0.03] p-5">
-            <h2 className="flex items-center gap-2 text-[12.5px] font-bold text-foreground">
-              <span className="inline-block h-3.5 w-1 rounded-sm bg-primary" />
+          <section className="mt-4 break-inside-avoid rounded-[2px] border border-primary/20 bg-primary/[0.03] p-4 sm:p-5">
+            <h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-[-0.01em] text-foreground">
               AI search visibility
               <span className="ml-auto rounded-full bg-primary px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.1em] text-primary-foreground">
                 LeaseStack exclusive
               </span>
             </h2>
-            <p className="my-3.5 text-[11.5px] leading-relaxed text-muted-foreground">
-              {property.name} was cited in{" "}
-              <b className="text-foreground">
-                {aeoStats.cited} of {aeoStats.totalChecks}
-              </b>{" "}
-              AI answers ({pct((aeoStats.cited / aeoStats.totalChecks) * 100)}) across the major engines. Competitor properties appeared in {aeoStats.competitorCited}.
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
+              What ChatGPT, Claude, Gemini and Perplexity tell prospects
             </p>
-            <div className="grid grid-cols-1 gap-7 sm:grid-cols-[1.25fr_1fr] print:grid-cols-[1.25fr_1fr]">
+            <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4 print:grid-cols-4">
+              <IconStat icon={Sparkles} value={num(aeoStats.totalChecks)} label="AI answers checked" />
+              <IconStat
+                icon={BadgeCheck}
+                value={`${num(aeoStats.cited)} (${pct((aeoStats.cited / aeoStats.totalChecks) * 100)})`}
+                label={`Answers citing ${property.name}`}
+              />
+              <IconStat icon={Bot} value={num(aeoStats.enginesUsed?.length ?? 0)} label="AI engines monitored" />
+              <IconStat icon={Trophy} value={num(aeoStats.competitorCited)} label="Answers naming a competitor" />
+            </div>
+            <div className="mt-5 grid grid-cols-1 gap-7 border-t border-primary/15 pt-4 sm:grid-cols-[1.25fr_1fr] print:grid-cols-[1.25fr_1fr]">
               <div>
+                <div className="ls-eyebrow mb-2.5">Citations by engine</div>
                 <div className="flex flex-col gap-2.5">
                   {(aeoStats.byEngine ?? []).map((row, i) => (
                     <div key={row.engine} className="flex items-center gap-2.5 text-[11.5px]">
@@ -650,9 +613,9 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
                         <EngineMark engine={row.engine} />
                       </span>
                       <span className="w-[74px] font-semibold text-foreground">{engineLabel(row.engine)}</span>
-                      <span className="flex h-3 flex-1 overflow-hidden rounded-[2px] bg-[#c6c6c6]">
+                      <span className="flex h-2.5 flex-1 overflow-hidden rounded-full bg-[#c6c6c6]">
                         <span
-                          className="ls-view-grow-x h-full bg-primary"
+                          className="ls-view-grow-x h-full rounded-full bg-primary"
                           style={
                             {
                               width: `${row.total ? Math.round((row.cited / row.total) * 100) : 0}%`,
@@ -667,19 +630,9 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
                     </div>
                   ))}
                 </div>
-                <div className="mt-2.5 flex gap-3.5 text-[9.5px] font-medium text-muted-foreground">
-                  <span className="flex items-center gap-1.5">
-                    <i className="inline-block h-2 w-2 rounded-sm bg-primary" /> Times cited
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <i className="inline-block h-2 w-2 rounded-sm bg-[#c6c6c6]" /> Total answers checked
-                  </span>
-                </div>
               </div>
               <div>
-                <div className="mb-2.5 text-[9.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                  Who AI recommends instead
-                </div>
+                <div className="ls-eyebrow mb-2.5">Who AI recommends instead</div>
                 <div className="flex flex-col gap-2 text-[11.5px]">
                   {aeoStats.topCompetitors.slice(0, 5).map((c) => (
                     <div key={c.name} className="flex justify-between font-medium text-muted-foreground">
@@ -694,6 +647,12 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
         </div>
       ) : null}
 
+      <footer className="mt-6 flex break-inside-avoid print:mt-3 print:pt-2 items-center gap-2.5 border-t border-border pt-4 text-[11px] text-muted-foreground">
+        <LeaseStackMark className="block h-5 w-auto" />
+        <span>
+          Prepared by <b className="font-semibold text-foreground">LeaseStack</b> · leasestack.co · {periodLabel(snapshot)}
+        </span>
+      </footer>
     </div>
   );
 }

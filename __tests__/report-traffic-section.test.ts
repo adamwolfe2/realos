@@ -42,7 +42,8 @@ describe("section claims are assembled from surviving clauses", () => {
     expect(src).toContain(
       "const trafficClaim = trafficClauses.length ? `${trafficClauses.join(\", \")}.` : null;",
     );
-    expect(src).toContain("{trafficClaim ? (");
+    // No claim -> the panel subtitle falls back to a plain label, never a sentence.
+    expect(src).toContain('trafficClaim ?? "Sessions in period"');
     expect(src).toContain("{acquisitionClaim ? (");
   });
 
