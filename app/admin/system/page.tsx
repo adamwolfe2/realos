@@ -51,8 +51,6 @@ const CRON_DESCRIPTIONS: Record<string, string> = {
   "lapsed-leads": "Close leads inactive for 14 days",
   "intake-nurture": "Intake follow-up email sequence",
   "onboarding-drip": "New-tenant onboarding nudges",
-  "lead-nurture": "Lead lifecycle email cadence",
-  "review-requests": "Google review requests to signed residents",
   "lead-score-refresh": "Recompute lead intent scores",
   "insight-detector": "Anomaly detection across all orgs",
   "weekly-report": "Client weekly performance report",

@@ -25,10 +25,6 @@
       "schedule": "0 13 * * *"
     },
     {
-      "path": "/api/cron/lead-nurture",
-      "schedule": "0 14 * * *"
-    },
-    {
       "path": "/api/cron/lead-score-refresh",
       "schedule": "*/30 * * * *"
     },
@@ -69,12 +65,8 @@
       "schedule": "*/30 * * * *"
     },
     {
-      "path": "/api/cron/review-requests",
-      "schedule": "0 15 * * *"
-    },
-    {
       "path": "/api/cron/cron-health",
-      "schedule": "7 * * * *"
+      "schedule": "7 14 * * *"
     },
     {
       "path": "/api/cron/property-images",

@@ -15,9 +15,8 @@ import { sendReviewRequestEmail } from "@/lib/email/review-request";
 
 // ---------------------------------------------------------------------------
 // Manual "send Google review request" trigger for /portal/leads/[id].
-// The cron at /api/cron/review-requests handles bulk sends 7-60 days
-// post-signing; this endpoint lets the operator nudge a single resident
-// (or re-send if the first one didn't land).
+// Operator-initiated only: the automated review-request cron was removed
+// (2026-10-18) so LeaseStack never emails residents on its own.
 //
 // Returns { ok: false, error } when:
 //   - no email on file
