@@ -482,7 +482,7 @@ function LeasingSection(s: ReportSnapshot): React.ReactNode {
         <SectionHeading>Leasing momentum</SectionHeading>
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
           <Stat value={num(life?.leasesSignedInPeriod)} label="Started this period" />
-          <Stat value={num(life?.leasesSignedLast180d)} label="Signed, last 180 days" />
+          <Stat value={num(life?.leasesSignedLast180d)} label="Started, last 180 days" />
           <Stat value={num(life?.activeLeases)} label="Active leases" />
           <Stat value={num(life?.applicationsInPeriod)} label="Applications" />
         </div>

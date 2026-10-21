@@ -578,6 +578,24 @@ export function isBrandedQuery(query: string, brandTerms: string[] = []): boolea
   return genericCount < words.length / 2 && words.length <= 4;
 }
 
+// Branded share over EVERY query row in the window. Top-10 only inflated it
+// (SG showed 97% vs ~91% real).
+export function brandedShareFromRows(
+  rows: Array<{ query: string; clicks: number; impressions: number }>,
+  brandTerms: string[],
+): ReportAiVisibility | null {
+  const totalClicks = rows.reduce((s, q) => s + q.clicks, 0);
+  if (totalClicks <= 0) return null;
+  const branded = rows.filter(q => isBrandedQuery(q.query, brandTerms));
+  const brandedClicks = branded.reduce((s, q) => s + q.clicks, 0);
+  return {
+    brandedClicks,
+    brandedImpressions: branded.reduce((s, q) => s + q.impressions, 0),
+    brandedShare: Math.round((brandedClicks / totalClicks) * 100),
+    topBrandedTerms: [...branded].sort((a, b) => b.clicks - a.clicks).slice(0, 5).map(q => q.query),
+  };
+}
+
 // ---------------------------------------------------------------------------
 // AI analysis
 // ---------------------------------------------------------------------------
@@ -634,7 +652,7 @@ ${snapshot.topQueries.slice(0, 5).map((q) => `- "${q.query}": ${q.clicks} clicks
 
 LEASING (AppFolio):
 - Leases started (move-ins) this period: ${snapshot.lifecycleStats?.leasesSignedInPeriod ?? "n/a"} (prior period: ${snapshot.lifecycleStats?.priorLeasesSignedInPeriod ?? "n/a"})
-- Leases traced to a lead LeaseStack captured (website/chatbot), started this period: ${snapshot.tracedSignedLeads ?? 0}
+- Leads LeaseStack captured that became residents this period: ${snapshot.tracedSignedLeads ?? "n/a"}
 - Occupancy: ${snapshot.occupancyStats?.occupancyPct != null ? snapshot.occupancyStats.occupancyPct + "%" : "n/a"}
 
 CHATBOT:
@@ -702,6 +720,9 @@ type Scope = {
   propertyId: string | null;
   propertyName: string | null;
   propertySlug: string | null;
+  // Brand term for branded-search share: the property name when the report
+  // is about one building (scoped, or org-wide with a sole ACTIVE property).
+  brandName: string | null;
   // For Lead, Resident, Lease, Listing, etc. — direct column.
   propertyClause: { propertyId?: string };
   // For Tour, Application — they have no direct propertyId; we filter via
@@ -773,6 +794,7 @@ async function buildScope(
         propertyId: null,
         propertyName: null,
         propertySlug: null,
+        brandName: sole.name,
         propertyClause: {},
         leadRelClause: {},
         seoLandingClause,
@@ -784,6 +806,7 @@ async function buildScope(
       propertyId: null,
       propertyName: null,
       propertySlug: null,
+      brandName: null,
       propertyClause: {},
       leadRelClause: {},
       seoLandingClause: {},
@@ -804,6 +827,7 @@ async function buildScope(
       propertyId,
       propertyName: null,
       propertySlug: null,
+      brandName: null,
       propertyClause: { propertyId },
       leadRelClause: { lead: { propertyId } },
       seoLandingClause: { url: { contains: "__no_match__" } },
@@ -859,6 +883,7 @@ async function buildScope(
     propertyId,
     propertyName: property.name,
     propertySlug: property.slug,
+    brandName: property.name,
     propertyClause: { propertyId },
     leadRelClause: { lead: { propertyId } },
     seoLandingClause,
@@ -1176,14 +1201,17 @@ export async function generateReportSnapshot(
         ...scope.propertyClause,
         createdAt: { gte: periodStart, lt: periodEnd },
       },
-      orderBy: { createdAt: "desc" },
-      take: 200,
+      // Latest row per kind, in the DB: detectors re-fire weekly, so a
+      // multi-month window stacked 19 rewordings of one alert (SG, 2026-10).
+      distinct: ["kind"],
+      orderBy: [{ kind: "asc" }, { createdAt: "desc" }],
       select: {
         id: true,
         kind: true,
         severity: true,
         title: true,
         body: true,
+        createdAt: true,
       },
     }),
     // Chatbot stats — the chatbot widget predates property stamping, so a
@@ -1497,16 +1525,10 @@ export async function generateReportSnapshot(
     position: row._avg.position ? Math.round(row._avg.position * 10) / 10 : 0,
   }));
 
-  // Insights
-  // Detectors re-fire weekly, so a multi-month window stacked 19 rewordings
-  // of "losing to X on Gemini" (SG, 2026-10). Rows are newest-first: keep
-  // the latest alert of each kind.
-  const seenInsightKinds = new Set<string>();
-  const latestInsightRows = insightsRows.filter((row) => {
-    if (seenInsightKinds.has(row.kind)) return false;
-    seenInsightKinds.add(row.kind);
-    return true;
-  });
+  // Insights: one per kind (distinct in the query), newest first, max 20.
+  const latestInsightRows = [...insightsRows]
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .slice(0, 20);
   const insights: ReportInsight[] = latestInsightRows.map((row) => ({
     id: row.id,
     kind: row.kind,
@@ -1699,23 +1721,10 @@ export async function generateReportSnapshot(
     where: { orgId, date: { gte: periodStart, lt: periodEnd }, ...scope.seoQueryClause },
     _sum: { clicks: true, impressions: true },
   });
-  const brandTerms = scope.propertyName ? [scope.propertyName.toLowerCase()] : [];
-  const totalClicks = allQueryRows.reduce((s, q) => s + (q._sum.clicks ?? 0), 0);
-  const brandedQueryRows = allQueryRows.filter(q => isBrandedQuery(q.query, brandTerms));
-  const brandedClicks = brandedQueryRows.reduce((s, q) => s + (q._sum.clicks ?? 0), 0);
-  const brandedImpressions = brandedQueryRows.reduce((s, q) => s + (q._sum.impressions ?? 0), 0);
-
-  const aiVisibility: ReportAiVisibility | null = totalClicks > 0
-    ? {
-        brandedClicks,
-        brandedImpressions,
-        brandedShare: Math.round((brandedClicks / totalClicks) * 100),
-        topBrandedTerms: brandedQueryRows
-          .sort((a, b) => (b._sum.clicks ?? 0) - (a._sum.clicks ?? 0))
-          .slice(0, 5)
-          .map(q => q.query),
-      }
-    : null;
+  const aiVisibility = brandedShareFromRows(
+    allQueryRows.map(q => ({ query: q.query, clicks: q._sum.clicks ?? 0, impressions: q._sum.impressions ?? 0 })),
+    scope.brandName ? [scope.brandName.toLowerCase()] : [],
+  );
 
   // -------------------------------------------------------------------------
   // 2026 sections — reputation, occupancy, renewals.

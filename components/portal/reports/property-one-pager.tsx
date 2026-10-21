@@ -529,7 +529,7 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
                 figures={[
                   {
                     value: num(lifecycleStats.leasesSignedLast180d),
-                    label: "Signed, last 180 days",
+                    label: "Started, last 180 days",
                   },
                   {
                     value: num(lifecycleStats.activeLeases),

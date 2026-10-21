@@ -5,8 +5,8 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/db", () => ({ prisma: {} }));
 
-import { currentLeaseWhere, isBrandedQuery } from "@/lib/reports/generate";
-import { cleanCompetitorName, rankCompetitors } from "@/lib/reports/competitors";
+import { brandedShareFromRows, currentLeaseWhere, isBrandedQuery } from "@/lib/reports/generate";
+import { cleanCompetitorName, competitorKey, rankCompetitors } from "@/lib/reports/competitors";
 
 describe("currentLeaseWhere", () => {
   it("requires ACTIVE and an in-term date range at asOf", () => {
@@ -58,5 +58,32 @@ describe("competitor cleaning", () => {
       { name: "The Standard at Berkeley", mentions: 3 },
       { name: "The Durant", mentions: 1 },
     ]);
+  });
+});
+
+describe("review fixes (#191)", () => {
+  it("keys every spelling of The Standard the same", () => {
+    const keys = ["The Standard Berkeley Apartments", "The Standard", "The Standard at Berkeley", "The Standard Berkeley"].map(competitorKey);
+    expect(new Set(keys)).toEqual(new Set(["standard"]));
+  });
+
+  it("keeps UC Village, drops UC Berkeley and the plural Popular Apartments heading", () => {
+    expect(cleanCompetitorName("UC Village")).toBe("UC Village");
+    expect(cleanCompetitorName("UC Berkeley")).toBeNull();
+    expect(cleanCompetitorName("Popular Apartments")).toBeNull();
+  });
+
+  it("computes branded share over all rows, not the top 10", () => {
+    // 10 generic rows with the most clicks, then 5 branded rows below them.
+    const rows = [
+      ...Array.from({ length: 10 }, (_, i) => ({ query: `berkeley housing ${i}`, clicks: 100, impressions: 1000 })),
+      ...Array.from({ length: 5 }, (_, i) => ({ query: `telegraph commons ${i}`, clicks: 20, impressions: 50 })),
+    ];
+    const v = brandedShareFromRows(rows, ["telegraph commons"]);
+    expect(v?.brandedClicks).toBe(100);
+    expect(v?.brandedImpressions).toBe(250);
+    expect(v?.brandedShare).toBe(Math.round((100 / 1100) * 100));
+    expect(v?.topBrandedTerms).toHaveLength(5);
+    expect(brandedShareFromRows([{ query: "x", clicks: 0, impressions: 3 }], [])).toBeNull();
   });
 });

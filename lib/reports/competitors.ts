@@ -23,8 +23,8 @@ export function competitorKey(name: string): string {
   return name
     .toLowerCase()
     .replace(/^the\s+/, "")
-    .replace(/\s+(at\s+)?berkeley$/, "")
     .replace(/\s+apartments?$/, "")
+    .replace(/\s+(at\s+)?berkeley$/, "")
     .trim();
 }
 

@@ -234,7 +234,7 @@ const GENERIC_LABELS = new Set([
   "walkability", "noise", "noise level", "must-haves", "transit", "commute",
   "lease terms", "room type", "location", "safety", "parking", "pricing",
   "pros", "cons", "tips", "overview", "summary", "facebook groups",
-  "popular apartment", "best apartments", "find apartments", "downtown",
+  "popular apartment", "popular apartments", "best apartments", "find apartments", "downtown",
   "south side", "north side", "northside", "southside", "rockridge",
   "lease timing", "pest history", "management responsiveness",
   "residence halls", "university apartments",
@@ -243,7 +243,7 @@ const GENERIC_LABELS = new Set([
 // Areas, streets and campus landmarks: "Telegraph Avenue area", "Solano Ave",
 // "Sproul Plaza", "UC Berkeley Off-Campus Housing portal".
 const PLACE_PATTERN =
-  /\b(area|corridor|district|neighborhood|neighbourhood|portal|campus)$|\b(ave|avenue|street|st|blvd|road|rd)$|^uc [a-z]+$|^sproul plaza$|^[a-z]+\/[a-z]+$|^best\b/i;
+  /\b(area|corridor|district|neighborhood|neighbourhood|portal|campus)$|\b(ave|avenue|street|st|blvd|road|rd)$|^uc berkeley$|^sproul plaza$|^[a-z]+\/[a-z]+$|^best\b/i;
 
 export function isPlausibleBuildingName(s: string): boolean {
   const trimmed = s.trim();
