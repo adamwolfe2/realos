@@ -676,7 +676,13 @@ const FETCH_ALL_PAGES_BUDGET_MS = 185_000;
 export async function fetchAllPages(
   client: AppFolioRestClient,
   reportName: string,
-  options: { fromDate?: Date; toDate?: Date; extraFilters?: Record<string, unknown> } = {}
+  options: {
+    fromDate?: Date;
+    toDate?: Date;
+    extraFilters?: Record<string, unknown>;
+    // Called when the walk stops at MAX_PAGES: the rows are a partial report.
+    onTruncated?: () => void;
+  } = {}
 ): Promise<RawRow[]> {
   let attempt = 0;
   let lastErr: unknown = null;
@@ -708,6 +714,7 @@ export async function fetchAllPages(
           console.warn(
             `[appfolio] fetchAllPages(${reportName}) hit MAX_PAGES=${MAX_PAGES}, stopping`
           );
+          options.onTruncated?.();
           break;
         }
       } while (nextPageUrl);
@@ -1537,21 +1544,27 @@ export type MappedLease = {
   raw: RawRow;
 };
 
-function leaseStatusFromRaw(raw: RawRow): MappedLease["status"] {
-  const s = (asString(raw.status) ?? asString(raw.lease_status) ?? "")
-    .toLowerCase();
+// Lease status from AppFolio's status string plus the MAPPED dates.
+// rent_roll sends status "Current" / "Notice-Rented" / "Notice-Unrented" /
+// "Evict" and dates under lease_from / lease_to. The old heuristic read
+// raw.end_date, which rent_roll never sends, so every lease stayed ACTIVE.
+// A row on the rent roll is occupied: past its end date it is a
+// month-to-month holdover (ACTIVE), never ENDED. Leases that drop off the
+// roll are ended by endLeasesAbsentFromRentRoll, not here.
+export function leaseStatusFor(
+  input: { rawStatus: string | null; startDate: Date | null; endDate: Date | null },
+  now: Date = new Date(),
+): MappedLease["status"] {
+  const s = (input.rawStatus ?? "").toLowerCase();
   if (s.includes("evict")) return "EVICTED";
   if (s === "expired" || s === "ended" || s === "moved out") return "ENDED";
   if (s === "renewed") return "RENEWED";
-  if (s === "expiring") return "EXPIRING";
   if (s === "pending" || s === "future") return "PENDING";
-  // Heuristic on dates if status is missing
-  const end = asDate(raw.end_date ?? raw.lease_end_date);
-  if (end) {
-    const now = Date.now();
-    const days = (end.getTime() - now) / (24 * 60 * 60 * 1000);
-    if (days < 0) return "ENDED";
-    if (days <= 60) return "EXPIRING";
+  if (input.startDate && input.startDate.getTime() > now.getTime()) return "PENDING";
+  if (s === "expiring" || s.includes("notice")) return "EXPIRING";
+  if (input.endDate) {
+    const days = (input.endDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000);
+    if (days >= 0 && days <= 60) return "EXPIRING";
   }
   return "ACTIVE";
 }
@@ -1573,24 +1586,30 @@ export function mapLeasePayload(raw: RawRow): MappedLease | null {
   // move_in / move_out as the actual physical dates a tenant lives in the
   // unit. Fall through every variant so the mapper handles AppFolio's
   // schema drift across plan tiers without losing the renewal pipeline.
+  const startDate =
+    asDate(raw.lease_from) ??
+    asDate(raw.move_in) ??
+    asDate(raw.start_date) ??
+    asDate(raw.lease_start_date) ??
+    null;
+  const endDate =
+    asDate(raw.lease_to) ??
+    asDate(raw.move_out) ??
+    asDate(raw.end_date) ??
+    asDate(raw.lease_end_date) ??
+    null;
   return {
     externalId,
     residentExternalId: asString(raw.tenant_id ?? raw.occupant_id) ?? null,
     unitExternalId: asString(raw.unit_id) ?? null,
     propertyExternalId: asString(raw.property_id) ?? null,
-    status: leaseStatusFromRaw(raw),
-    startDate:
-      asDate(raw.lease_from) ??
-      asDate(raw.move_in) ??
-      asDate(raw.start_date) ??
-      asDate(raw.lease_start_date) ??
-      null,
-    endDate:
-      asDate(raw.lease_to) ??
-      asDate(raw.move_out) ??
-      asDate(raw.end_date) ??
-      asDate(raw.lease_end_date) ??
-      null,
+    status: leaseStatusFor({
+      rawStatus: asString(raw.status) ?? asString(raw.lease_status) ?? null,
+      startDate,
+      endDate,
+    }),
+    startDate,
+    endDate,
     monthlyRentCents: monthlyRent != null ? Math.round(monthlyRent * 100) : null,
     securityDepositCents: security != null ? Math.round(security * 100) : null,
     termMonths: term != null ? Math.round(term) : null,
