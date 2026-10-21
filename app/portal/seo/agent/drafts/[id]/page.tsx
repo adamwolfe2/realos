@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { ResubmitWithChangesButton } from "@/components/portal/seo/resubmit-with-changes-button";
+import { isStalledDraft } from "@/lib/seo/draft-stalled";
 
 export const metadata: Metadata = { title: "Draft preview" };
 export const dynamic = "force-dynamic";
@@ -57,7 +58,8 @@ export default async function PortalDraftViewer({
 
   const statusTone = STATUS_TONE[draft.status] ?? STATUS_TONE.GENERATING;
   const fmt = draft.format.replace(/_/g, " ").toLowerCase();
-  const statusLabel = draft.status.toLowerCase().replace(/_/g, " ");
+  const stalled = isStalledDraft(draft);
+  const statusLabel = stalled ? "stalled" : draft.status.toLowerCase().replace(/_/g, " ");
 
   return (
     <div className="space-y-5 max-w-3xl">
@@ -126,7 +128,14 @@ export default async function PortalDraftViewer({
       ) : null}
 
       {/* Status-specific call to action */}
-      {draft.status === "GENERATING" ? (
+      {stalled ? (
+        <div className="rounded-[2px] border border-dashed border-border bg-card p-6 text-center">
+          <p className="text-[13px] font-medium text-foreground">Generation stalled</p>
+          <p className="text-[12px] text-muted-foreground mt-1">
+            This draft stopped before it finished. Delete it and request it again.
+          </p>
+        </div>
+      ) : draft.status === "GENERATING" ? (
         <div className="rounded-[2px] border border-dashed border-border bg-card p-6 text-center">
           <p className="text-[13px] font-medium text-foreground">
             Drafting…

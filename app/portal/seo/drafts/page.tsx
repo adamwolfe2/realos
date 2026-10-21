@@ -11,6 +11,7 @@ import {
   DataTable,
   type DataTableColumn,
 } from "@/components/portal/ui/data-table";
+import { isStalledDraft } from "@/lib/seo/draft-stalled";
 
 export const metadata: Metadata = { title: "Content drafts" };
 export const dynamic = "force-dynamic";
@@ -105,6 +106,7 @@ export default async function PortalDraftsListPage({
         reviewedAt: true,
         reviewNotes: true,
         createdAt: true,
+        updatedAt: true,
         propertyId: true,
         property: { select: { name: true } },
       },
@@ -188,7 +190,7 @@ export default async function PortalDraftsListPage({
           <span
             className={`rounded-[2px] px-1.5 py-0.5 text-[10px] font-mono uppercase ${tone}`}
           >
-            {d.status.replace(/_/g, " ").toLowerCase()}
+            {isStalledDraft(d) ? "stalled" : d.status.replace(/_/g, " ").toLowerCase()}
           </span>
         );
       },

@@ -1,4 +1,5 @@
 import "server-only";
+import { DRAFT_STALL_MS } from "@/lib/seo/draft-stalled";
 import { APPFOLIO_APPLICATION_SOURCE } from "@/lib/integrations/appfolio-sync";
 import { cleanCompetitorName, rankCompetitors } from "@/lib/reports/competitors";
 import { buildProspectQuestions, type ReportProspectQuestions } from "@/lib/reports/prospect-questions";
@@ -1956,6 +1957,22 @@ const MENTION_SOURCE_LABELS: Record<MentionSource, string> = {
 // dead integration.
 const SOURCE_FRESHNESS_DAYS = 30;
 
+export function dataSourceStatus(
+  lastAt: Date | null | undefined,
+  hasCredentials: boolean,
+  hasDataInPeriod: boolean,
+  freshThreshold: Date,
+): DataSourceStatus {
+  const fresh = hasCredentials && lastAt != null && lastAt >= freshThreshold;
+  return {
+    // Data in the window proves the source was connected for it; a stale
+    // or errored last sync must not turn that into "not connected".
+    connected: fresh || hasDataInPeriod,
+    lastSyncAt: lastAt ? lastAt.toISOString() : null,
+    hasDataInPeriod,
+  };
+}
+
 async function buildDataSources(
   orgId: string,
   propertyId: string | null,
@@ -2001,7 +2018,9 @@ async function buildDataSources(
         orgId,
         provider: "GA4",
         serviceAccountJsonEncrypted: { not: "DEMO_SEED" },
-        ...(propertyId ? { propertyId } : {}),
+        // GA4/GSC are usually connected org-wide (propertyId null): a
+        // property-scoped report must still find them (SG, 2026-10).
+        ...(propertyId ? { OR: [{ propertyId }, { propertyId: null }] } : {}),
       },
       select: { lastSyncAt: true },
       orderBy: { lastSyncAt: "desc" },
@@ -2011,7 +2030,9 @@ async function buildDataSources(
         orgId,
         provider: "GSC",
         serviceAccountJsonEncrypted: { not: "DEMO_SEED" },
-        ...(propertyId ? { propertyId } : {}),
+        // GA4/GSC are usually connected org-wide (propertyId null): a
+        // property-scoped report must still find them (SG, 2026-10).
+        ...(propertyId ? { OR: [{ propertyId }, { propertyId: null }] } : {}),
       },
       select: { lastSyncAt: true },
       orderBy: { lastSyncAt: "desc" },
@@ -2059,19 +2080,8 @@ async function buildDataSources(
     }),
   ]);
 
-  function status(
-    lastAt: Date | null | undefined,
-    hasCredentials: boolean,
-    hasDataInPeriod: boolean,
-  ): DataSourceStatus {
-    const fresh =
-      hasCredentials && lastAt != null && lastAt >= freshThreshold;
-    return {
-      connected: fresh,
-      lastSyncAt: lastAt ? lastAt.toISOString() : null,
-      hasDataInPeriod,
-    };
-  }
+  const status = (lastAt: Date | null | undefined, hasCredentials: boolean, hasDataInPeriod: boolean) =>
+    dataSourceStatus(lastAt, hasCredentials, hasDataInPeriod, freshThreshold);
 
   return {
     googleAds: status(
@@ -2224,6 +2234,8 @@ async function buildContentStats(
           orgId,
           ...propertyClause,
           status: { in: IN_PROGRESS_DRAFT_STATUSES },
+          // A GENERATING row untouched for 24h is stalled, not in progress.
+          NOT: { status: DraftStatus.GENERATING, updatedAt: { lt: new Date(Date.now() - DRAFT_STALL_MS) } },
         },
         select: {
           id: true,
