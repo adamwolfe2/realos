@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
       const message = err instanceof Error ? err.message : String(err);
       console.error("[seo-scan-worker] reaper update failed", id, message);
       reaperErrors.push(`reap ${id}: ${message}`);
-      return null;
+      return false;
     };
     // Spread into every return so a failed reap marks the run partial.
     const reaperResult = () =>
@@ -75,7 +75,7 @@ export async function GET(req: NextRequest) {
         : {};
     for (const j of stuck) {
       if (j.attempts + 1 >= MAX_ATTEMPTS) {
-        await prisma.seoScanJob
+        const ok = await prisma.seoScanJob
           .update({
             where: { id: j.id },
             data: {
@@ -85,10 +85,12 @@ export async function GET(req: NextRequest) {
               attempts: { increment: 1 },
             },
           })
+          .then(() => true)
           .catch(reaperFailed(j.id));
-        abandoned += 1;
+        // Count only reaps that actually landed.
+        if (ok) abandoned += 1;
       } else {
-        await prisma.seoScanJob
+        const ok = await prisma.seoScanJob
           .update({
             where: { id: j.id },
             data: {
@@ -99,8 +101,9 @@ export async function GET(req: NextRequest) {
               progressPct: 0,
             },
           })
+          .then(() => true)
           .catch(reaperFailed(j.id));
-        recycled += 1;
+        if (ok) recycled += 1;
       }
     }
 
