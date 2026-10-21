@@ -108,7 +108,6 @@ export default async function PortalLayout({
     expiringLeases30dCount,
     urgentWorkOrdersCount,
     flaggedConversationsCount,
-    setupProgress,
   ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
@@ -273,17 +272,6 @@ export default async function PortalLayout({
         },
       })
       .catch(() => 0),
-    // Only needs orgId; was a separate round-trip after the batch.
-    // Caught: it now runs before the onboarding redirect, and a failure
-    // must not turn that redirect into an error page. Null reads as "setup
-    // not complete", so the sidebar shows the Setup link.
-    // ponytail: these reads also run on mid-wizard/invalid-org requests that
-    // redirect; split the batch if those paths get hot.
-    deriveSetupProgress(scope.orgId).catch((err: unknown) => {
-      console.error("[portal/layout] deriveSetupProgress failed:", err);
-      captureWithContext(err, { route: "portal/layout/setup-progress", orgId: scope.orgId });
-      return null;
-    }),
   ]);
 
   // Derived from the single marketable-properties fetch above.
@@ -340,6 +328,15 @@ export default async function PortalLayout({
   ) {
     redirect("/onboarding");
   }
+
+  // After the org/onboarding early exits so mid-wizard and invalid-org
+  // requests skip its five reads. Caught: null reads as "setup not
+  // complete", so the sidebar shows the Setup link instead of erroring.
+  const setupProgress = await deriveSetupProgress(scope.orgId).catch((err: unknown) => {
+    console.error("[portal/layout] deriveSetupProgress failed:", err);
+    captureWithContext(err, { route: "portal/layout/setup-progress", orgId: scope.orgId });
+    return null;
+  });
 
   const setupComplete =
     setupProgress != null &&

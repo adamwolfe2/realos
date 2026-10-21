@@ -244,7 +244,7 @@ export default async function PortalHome({
     "propertyId",
   );
   const isFiltered = effectiveIds !== null && effectiveIds.length > 0;
-  // Same contract as scopedPropertyClause: a restricted user whose selection
+  // Same contract as propertyWhereFragment (lib/tenancy/property-filter.ts): a restricted user whose selection
   // was fully denied (effectiveIds = []) sees nothing; an unrestricted user
   // with no selection sees everything. isFiltered alone is false for [].
   const visiblePropertyIds = scope.allowedPropertyIds
