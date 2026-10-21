@@ -160,3 +160,15 @@ describe("buildSystemPrompt PROPERTY FACTS knowledge-base block", () => {
     expect(prompt).not.toContain("999 sq ft");
   });
 });
+
+// California B&P 17941: the bot must never claim to be human. The TC bot
+// said "Nope, I'm Jessica from the leasing team" when asked "are u ai".
+describe("buildSystemPrompt — AI disclosure", () => {
+  it("frames a named persona as a virtual assistant and requires honesty when asked", () => {
+    const prompt = buildSystemPrompt(makeOrg([]));
+    expect(prompt).toContain("Riley, the virtual leasing assistant");
+    expect(prompt).toContain("Never claim or imply to be");
+    expect(prompt).not.toContain("a member of the Test Realty leasing team");
+    expect(prompt).not.toMatch(/Do NOT say "I'm an AI"/);
+  });
+});

@@ -1,4 +1,5 @@
 import "server-only";
+import { buildProspectQuestions, type ReportProspectQuestions } from "@/lib/reports/prospect-questions";
 import { prisma } from "@/lib/db";
 import {
   AdPlatform,
@@ -409,6 +410,9 @@ export type ReportSnapshot = {
   // Optional extended chatbot block. Old snapshots stored before the upgrade
   // won't have this; the view falls back to chatbotStats in that case.
   chatbotStatsExtended?: ReportChatbotStatsExtended;
+  // Topic counts + recent visitor questions from chatbot transcripts.
+  // Absent on snapshots created before 2026-10-20.
+  prospectQuestions?: ReportProspectQuestions;
   properties: ReportPropertyRow[];
   trafficTrend: number[];
   attributionBySource: ReportAttributionRow[];
@@ -700,28 +704,26 @@ async function buildScope(
         sole.name,
         domains.map((d) => d.hostname),
       );
+      // GA4 reports landing pages as site-relative paths ("/availability"),
+      // which never contain the slug or hostname — so path rows are the
+      // sole property's own site and must be kept. Search queries come
+      // from the org's GSC property (the sole site), so unbranded queries
+      // ("student housing berkeley") belong to it too: no query filter.
       const seoLandingClause: Prisma.SeoLandingPageWhereInput =
         patterns.length > 0
           ? {
-              OR: patterns.map((p) => ({
-                url: {
-                  contains: p.replace(/%/g, ""),
-                  mode: "insensitive" as const,
-                },
-              })),
+              OR: [
+                { url: { startsWith: "/" } },
+                ...patterns.map((p) => ({
+                  url: {
+                    contains: p.replace(/%/g, ""),
+                    mode: "insensitive" as const,
+                  },
+                })),
+              ],
             }
           : {};
-      const seoQueryClause: Prisma.SeoQueryWhereInput =
-        patterns.length > 0
-          ? {
-              OR: patterns.map((p) => ({
-                query: {
-                  contains: p.replace(/%/g, ""),
-                  mode: "insensitive" as const,
-                },
-              })),
-            }
-          : {};
+      const seoQueryClause: Prisma.SeoQueryWhereInput = {};
       return {
         // Keep propertyId null so the rest of the snapshot still reads
         // as "portfolio" (header copy, kpi labels, etc.) — only the SEO
@@ -776,20 +778,31 @@ async function buildScope(
     property.name,
     domains.map((d) => d.hostname),
   );
+  // When this is the org's only live property, the org's GA4/GSC
+  // integrations ARE this property's site: keep relative-path landing
+  // pages and unbranded queries (see the portfolio branch above).
+  const liveCount = await prisma.property
+    .count({ where: { orgId, lifecycle: "ACTIVE" } })
+    .catch(() => 0);
+  const soleSite = liveCount === 1;
 
   const seoLandingClause: Prisma.SeoLandingPageWhereInput =
     patterns.length > 0
       ? {
-          OR: patterns.map((p) => ({
-            url: {
-              contains: p.replace(/%/g, ""),
-              mode: "insensitive" as const,
-            },
-          })),
+          OR: [
+            ...(soleSite ? [{ url: { startsWith: "/" } }] : []),
+            ...patterns.map((p) => ({
+              url: {
+                contains: p.replace(/%/g, ""),
+                mode: "insensitive" as const,
+              },
+            })),
+          ],
         }
       : { url: { contains: "__no_match__" } };
-  const seoQueryClause: Prisma.SeoQueryWhereInput =
-    patterns.length > 0
+  const seoQueryClause: Prisma.SeoQueryWhereInput = soleSite
+    ? {}
+    : patterns.length > 0
       ? {
           OR: patterns.map((p) => ({
             query: {
@@ -1673,6 +1686,13 @@ export async function generateReportSnapshot(
     chatbotStats,
   ).catch(sectionFailed("buildChatbotExtended"));
 
+  const prospectQuestions = await buildProspectQuestions(
+    orgId,
+    scope.propertyId,
+    periodStart,
+    periodEnd,
+  ).catch(sectionFailed("buildProspectQuestions"));
+
   // AEO stats — how often we got cited vs how often a competitor was
   // cited instead, across all AI engines in the period. Headline insight
   // for the Insights tab.
@@ -1808,6 +1828,7 @@ export async function generateReportSnapshot(
     insights,
     chatbotStats,
     chatbotStatsExtended,
+    prospectQuestions,
     properties,
     trafficTrend: trafficFallback,
     attributionBySource,
