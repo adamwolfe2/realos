@@ -9,10 +9,10 @@ import { brandedShareFromRows, currentLeaseWhere, isBrandedQuery } from "@/lib/r
 import { cleanCompetitorName, competitorKey, rankCompetitors } from "@/lib/reports/competitors";
 
 describe("currentLeaseWhere", () => {
-  it("requires ACTIVE and an in-term date range at asOf", () => {
+  it("requires an open status (ACTIVE or EXPIRING) and an in-term date range at asOf", () => {
     const asOf = new Date("2026-10-20T00:00:00Z");
     expect(currentLeaseWhere(asOf)).toEqual({
-      status: "ACTIVE",
+      status: { in: ["ACTIVE", "EXPIRING"] },
       AND: [
         { OR: [{ startDate: null }, { startDate: { lte: asOf } }] },
         { OR: [{ endDate: null }, { endDate: { gte: asOf } }] },

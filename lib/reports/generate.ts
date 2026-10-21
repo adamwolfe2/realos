@@ -1,4 +1,5 @@
 import "server-only";
+import { currentLeaseWhere } from "@/lib/leases/current";
 import { APPFOLIO_APPLICATION_SOURCE } from "@/lib/integrations/appfolio-sync";
 import { cleanCompetitorName, rankCompetitors } from "@/lib/reports/competitors";
 import { buildProspectQuestions, type ReportProspectQuestions } from "@/lib/reports/prospect-questions";
@@ -556,15 +557,7 @@ const LIVE_APPLICATION_STATUSES: ApplicationStatus[] = [
 // whose term ended is a past tenancy, not an occupied unit (SG Real Estate:
 // 177 ACTIVE rows on a 100-unit building, 80 already ended). "Current" means
 // ACTIVE and in-term at asOf. Null dates are treated as open-ended.
-export function currentLeaseWhere(asOf: Date) {
-  return {
-    status: LeaseStatus.ACTIVE,
-    AND: [
-      { OR: [{ startDate: null }, { startDate: { lte: asOf } }] },
-      { OR: [{ endDate: null }, { endDate: { gte: asOf } }] },
-    ],
-  };
-}
+export { currentLeaseWhere } from "@/lib/leases/current";
 
 
 // Branded = the searcher typed our name. With a known brand term that is the

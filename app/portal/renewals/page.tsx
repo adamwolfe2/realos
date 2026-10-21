@@ -33,6 +33,7 @@ import {
   type RenewalLease,
   type RenewalBucket,
 } from "./renewals-client";
+import { currentLeaseWhere } from "@/lib/leases/current";
 
 export const metadata: Metadata = { title: "Renewals" };
 export const dynamic = "force-dynamic";
@@ -105,7 +106,7 @@ export default async function RenewalsPage({
     rentRollTotal,
     appfolioStatus,
   ] = await Promise.all([
-    prisma.lease.count({ where: { ...where, status: LeaseStatus.ACTIVE } }),
+    prisma.lease.count({ where: { AND: [where, currentLeaseWhere(now)] } }),
     prisma.lease.count({
       where: {
         ...where,
@@ -148,7 +149,7 @@ export default async function RenewalsPage({
       },
     }),
     prisma.lease.aggregate({
-      where: { ...where, status: LeaseStatus.ACTIVE },
+      where: { AND: [where, currentLeaseWhere(now)] },
       _sum: { monthlyRentCents: true },
     }),
     getAppFolioStatus(scope.orgId).catch(() => null),
