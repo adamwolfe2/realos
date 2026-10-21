@@ -244,6 +244,17 @@ export default async function PortalHome({
     "propertyId",
   );
   const isFiltered = effectiveIds !== null && effectiveIds.length > 0;
+  // Same contract as propertyWhereFragment (lib/tenancy/property-filter.ts): a restricted user whose selection
+  // was fully denied (effectiveIds = []) sees nothing; an unrestricted user
+  // with no selection sees everything. isFiltered alone is false for [].
+  const visiblePropertyIds = scope.allowedPropertyIds
+    ? effectiveIds
+    : isFiltered
+      ? effectiveIds
+      : null;
+  const propertyIdFilter = visiblePropertyIds
+    ? { id: { in: visiblePropertyIds } }
+    : {};
 
   try {
     const since28d = new Date(Date.now() - 28 * DAY);
@@ -305,7 +316,7 @@ export default async function PortalHome({
       prisma.property.count({
         where: {
           ...marketablePropertyWhere(scope.orgId),
-          ...(isFiltered ? { id: { in: effectiveIds! } } : {}),
+          ...propertyIdFilter,
         },
       }),
       prisma.lead.count({ where: { ...where, ...propertyClause } }),
@@ -445,7 +456,7 @@ export default async function PortalHome({
         // Properties page + the leaderboard helper.
         where: {
           ...withMarketableLifecycle(where),
-          ...(isFiltered ? { id: { in: effectiveIds! } } : {}),
+          ...propertyIdFilter,
         },
         orderBy: { updatedAt: "desc" },
         take: 8,
@@ -554,7 +565,7 @@ export default async function PortalHome({
         scope.orgId,
         rangeDaysCount,
         5,
-        isFiltered ? effectiveIds : null,
+        visiblePropertyIds,
       ).catch(soft([] as LeaderboardPropertyRow[], "portal.page:578")),
       // Conversations card trend — same clause + range as the other blocks.
       getConversationsOverTime(scope.orgId, {
@@ -567,29 +578,100 @@ export default async function PortalHome({
     // spark shape is consumed on this page (see getPortfolioLeadsSpark) —
     // the full per-property leads/campaigns/reputation rollup from
     // getPropertyMetrics isn't rendered here.
-    const totalLeadsSpark = await getPortfolioLeadsSpark(
-      scope.orgId,
-      properties.map((p) => p.id),
-    );
-
-    // Onboarding rollup — surfaces total properties still in ONBOARDING
-    // beneath the leaderboard so an operator with a long tail (e.g. SG
-    // launching with 120+ IMPORTED rows, 2 ACTIVE) sees one honest number
-    // instead of staring at a top-5 list that doesn't represent the
-    // portfolio yet. Cheap count, no per-row data.
-    const propertiesInOnboarding = await prisma.property
-      .count({
-        where: {
-          orgId: scope.orgId,
-          launchStatus: "ONBOARDING",
-          // Exclude auto-classified sub-records (parking, storage, etc.) that
-          // AppFolio sync imports as EXCLUDED. Counting them made SG show
-          // "133 in onboarding" when only the real marketable buildings matter.
-          lifecycle: { not: "EXCLUDED" },
-          ...(isFiltered ? { id: { in: effectiveIds! } } : {}),
-        },
-      })
-      .catch(soft(0, "portal.page:612"));
+    // Independent reads, run together (was 6 sequential round-trips). Each
+    // keeps its own soft() fallback so one failure never blanks the page.
+    const [
+      totalLeadsSpark,
+      propertiesInOnboarding,
+      appfolioRow,
+      liveProperties,
+      portfolioActions,
+      portfolioSeoActionsRaw,
+    ] = await Promise.all([
+      getPortfolioLeadsSpark(
+        scope.orgId,
+        properties.map((p) => p.id),
+      ).catch(soft([] as number[], "portal.page:spark")),
+      prisma.property
+        .count({
+          where: {
+            orgId: scope.orgId,
+            launchStatus: "ONBOARDING",
+            // Exclude auto-classified sub-records (parking, storage, etc.) that
+            // AppFolio sync imports as EXCLUDED. Counting them made SG show
+            // "133 in onboarding" when only the real marketable buildings matter.
+            lifecycle: { not: "EXCLUDED" },
+            ...propertyIdFilter,
+          },
+        })
+        .catch(soft(0, "portal.page:612")),
+      prisma.appFolioIntegration
+        .findUnique({
+          where: { orgId: scope.orgId },
+          select: { autoSyncEnabled: true, instanceSubdomain: true },
+        })
+        .catch(soft(null, "portal.page:660")),
+      prisma.property
+        .findMany({
+          where: {
+            orgId: scope.orgId,
+            launchStatus: "LIVE",
+            lifecycle: "ACTIVE",
+            ...propertyIdFilter,
+          },
+          select: {
+            id: true,
+            name: true,
+            city: true,
+            state: true,
+            heroImageUrl: true,
+            heroImageOffsetX: true,
+            heroImageOffsetY: true,
+            heroImageScale: true,
+            residentialSubtype: true,
+            commercialSubtype: true,
+            propertyType: true,
+            totalUnits: true,
+            googleAggRating: true,
+            googleAggReviewCount: true,
+          },
+          take: 25,
+        })
+        .catch(soft([], "portal.page:709")),
+      getPortfolioRecommendations(scope.orgId, {
+        limit: 5,
+        propertyIds: scope.allowedPropertyIds,
+      }).catch(soft([], "portal.page:752")),
+      prisma.seoActionRecommendation
+        .findMany({
+          where: {
+            orgId: scope.orgId,
+            status: "OPEN",
+            property: {
+              launchStatus: "LIVE",
+              lifecycle: "ACTIVE",
+            },
+            ...(scope.allowedPropertyIds
+              ? { propertyId: { in: scope.allowedPropertyIds } }
+              : {}),
+          },
+          orderBy: [{ severity: "asc" }, { score: "desc" }],
+          take: 5,
+          select: {
+            id: true,
+            title: true,
+            detail: true,
+            severity: true,
+            estimateMinutes: true,
+            actionHref: true,
+            actionLabel: true,
+            category: true,
+            propertyId: true,
+            property: { select: { name: true } },
+          },
+        })
+        .catch(soft([], "portal.page:787")),
+    ]);
 
     // Realistic delta calc: % change vs previous 28d window. Suppress when the
     // prior window had fewer than 3 events — at n=1 the percentage is
@@ -632,12 +714,6 @@ export default async function PortalHome({
     // subtle chip on the dashboard Operations teaser. Cheap probe (a few
     // boolean fields) and only renders when the operator has connected
     // AppFolio but disabled the hourly cron.
-    const appfolioRow = await prisma.appFolioIntegration
-      .findUnique({
-        where: { orgId: scope.orgId },
-        select: { autoSyncEnabled: true, instanceSubdomain: true },
-      })
-      .catch(soft(null, "portal.page:660"));
     const appfolioConnected = !!appfolioRow?.instanceSubdomain;
     const appfolioAutoSyncPaused =
       appfolioConnected && appfolioRow?.autoSyncEnabled === false;
@@ -660,33 +736,6 @@ export default async function PortalHome({
     //     name asc. This puts an operator's best-tracked / highest-rated
     //     building front and centre on the demo without hard-coding any
     //     specific tenant.
-    const liveProperties = await prisma.property
-      .findMany({
-        where: {
-          orgId: scope.orgId,
-          launchStatus: "LIVE",
-          lifecycle: "ACTIVE",
-          ...(isFiltered ? { id: { in: effectiveIds! } } : {}),
-        },
-        select: {
-          id: true,
-          name: true,
-          city: true,
-          state: true,
-          heroImageUrl: true,
-          heroImageOffsetX: true,
-          heroImageOffsetY: true,
-          heroImageScale: true,
-          residentialSubtype: true,
-          commercialSubtype: true,
-          propertyType: true,
-          totalUnits: true,
-          googleAggRating: true,
-          googleAggReviewCount: true,
-        },
-        take: 25,
-      })
-      .catch(soft([], "portal.page:709"));
 
     let featuredProperty: (typeof liveProperties)[number] | null = null;
     if (liveProperties.length === 1) {
@@ -696,7 +745,10 @@ export default async function PortalHome({
       const scoreCounts = await prisma.seoScoreHistory
         .groupBy({
           by: ["propertyId"],
-          where: { propertyId: { in: liveProperties.map((p) => p.id) } },
+          where: {
+            orgId: scope.orgId,
+            propertyId: { in: liveProperties.map((p) => p.id) },
+          },
           _count: { _all: true },
         })
         .catch(soft([] as Array<{
@@ -720,48 +772,11 @@ export default async function PortalHome({
       featuredProperty = ranked[0] ?? null;
     }
 
-    // Portfolio-wide intelligence — top 5 actionable recommendations
-    // across every LIVE property. Surfaces as a "Action items" strip
-    // below the greeting. Wrapped in catch so a slow rec query never
-    // blocks the dashboard render.
-    const portfolioActions = await getPortfolioRecommendations(scope.orgId, {
-      limit: 5,
-    }).catch(soft([], "portal.page:752"));
-
     // Portfolio-wide SEO Agent recommendations. Sibling to portfolioActions,
     // but sourced from the SEO recommendation engine (richer per-query
     // signal). Reads from the SeoActionRecommendation table directly —
     // these rows are kept fresh by the manual refresh button + nightly
     // crons + the 1h Redis cache on the cached generator.
-    const portfolioSeoActionsRaw = await prisma.seoActionRecommendation
-      .findMany({
-        where: {
-          orgId: scope.orgId,
-          status: "OPEN",
-          property: {
-            launchStatus: "LIVE",
-            lifecycle: "ACTIVE",
-          },
-          ...(scope.allowedPropertyIds
-            ? { propertyId: { in: scope.allowedPropertyIds } }
-            : {}),
-        },
-        orderBy: [{ severity: "asc" }, { score: "desc" }],
-        take: 5,
-        select: {
-          id: true,
-          title: true,
-          detail: true,
-          severity: true,
-          estimateMinutes: true,
-          actionHref: true,
-          actionLabel: true,
-          category: true,
-          propertyId: true,
-          property: { select: { name: true } },
-        },
-      })
-      .catch(soft([], "portal.page:787"));
     const portfolioSeoActions = portfolioSeoActionsRaw.map((r) => ({
       id: r.id,
       title: r.title,

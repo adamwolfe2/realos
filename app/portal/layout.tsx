@@ -329,7 +329,15 @@ export default async function PortalLayout({
     redirect("/onboarding");
   }
 
-  const setupProgress = await deriveSetupProgress(scope.orgId);
+  // After the org/onboarding early exits so mid-wizard and invalid-org
+  // requests skip its five reads. Caught: null reads as "setup not
+  // complete", so the sidebar shows the Setup link instead of erroring.
+  const setupProgress = await deriveSetupProgress(scope.orgId).catch((err: unknown) => {
+    console.error("[portal/layout] deriveSetupProgress failed:", err);
+    captureWithContext(err, { route: "portal/layout/setup-progress", orgId: scope.orgId });
+    return null;
+  });
+
   const setupComplete =
     setupProgress != null &&
     setupProgress.completedCount === setupProgress.totalCount;

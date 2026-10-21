@@ -7,6 +7,8 @@ import { notifyReportDraftReady } from "@/lib/notifications/create";
 import { verifyCronAuth } from "@/lib/cron/auth";
 import { sendReportEmail } from "@/lib/email/send-report";
 
+const DEDUP_WINDOW_MS = 12 * 60 * 60 * 1000;
+
 export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for unbounded loops
 
 // GET /api/cron/weekly-report
@@ -28,6 +30,8 @@ export async function GET(req: NextRequest) {
   if (authError) return authError;
 
   return recordCronRun("weekly-report", async () => {
+    // Budget counts from handler start so slow setup queries eat into it.
+    const startedAt = Date.now();
     const orgs = await prisma.organization.findMany({
       where: {
         orgType: "CLIENT",
@@ -77,19 +81,40 @@ export async function GET(req: NextRequest) {
             where: {
               orgId: { in: orgIds },
               kind: "weekly",
-              periodStart: sharedPeriodStart,
+              // Window, not exact match: periodStart = runNow - period to
+              // the millisecond, so the catch-up run 2h later (vercel.json)
+              // or a manual re-run would otherwise miss the first run's
+              // rows and re-send every report.
+              // Only rows this cron creates: a manual or property-scoped
+              // report in the window must not suppress the org-wide one.
+              propertyId: null,
+              generatedBy: null,
+              periodStart: {
+                gte: new Date(sharedPeriodStart.getTime() - DEDUP_WINDOW_MS),
+                lte: sharedPeriodStart,
+              },
             },
             select: { orgId: true },
           })
         : [];
     const alreadyDrafted = new Set(existingReports.map((r) => r.orgId));
 
+    // Stop starting new orgs with headroom before maxDuration (300s); one
+    // in-flight org (sections + 30s AI + send) still has to finish. Orgs
+    // left over are picked up by the second scheduled run, which skips
+    // orgs already reported (see DEDUP_WINDOW_MS).
+    const deadline = startedAt + 200_000;
+    const deferred: string[] = [];
     for (const org of orgs) {
+      if (alreadyDrafted.has(org.id)) {
+        skipped += 1;
+        continue;
+      }
+      if (Date.now() > deadline) {
+        deferred.push(org.id);
+        continue;
+      }
       try {
-        if (alreadyDrafted.has(org.id)) {
-          skipped += 1;
-          continue;
-        }
 
         const snapshot = await generateReportSnapshot(org.id, "weekly", {
           now: runNow,
@@ -185,10 +210,16 @@ export async function GET(req: NextRequest) {
         skipped,
         autoSent,
         autoSendSkipped,
+        deferred,
         errors,
       }),
       recordsProcessed: drafted,
-      errorCount: errors.length,
+      // Deferred orgs count so a run that never reaches them shows partial.
+      errorCount: errors.length + deferred.length,
+      errorSummary: [
+        ...errors.map((e) => `${e.orgId}: ${e.error}`),
+        ...(deferred.length ? [`deferred (time budget): ${deferred.join(", ")}`] : []),
+      ].join("; "),
     };
   });
 }
