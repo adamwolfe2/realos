@@ -23,6 +23,7 @@ import {
   bulkUpdateLeadStatus,
   bulkUnsubscribeLeads,
   bulkDeleteLeads,
+  bulkAssignLeads,
 } from "@/lib/actions/lead-bulk";
 import { SideDrawer } from "@/components/portal/ui/side-drawer";
 import { BulkActionBar } from "@/components/portal/ui/bulk-action-bar";
@@ -201,8 +202,6 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
   // Bulk actions. "Mark contacted" is wired to the real
   // bulkUpdateLeadStatus action (CONTACTED is the only status the button
   // sets — picking other statuses uses the "Set status… / Apply" pair).
-  // The remaining stubs (Tag / Export CSV / Assign to me) toast success
-  // and clear selection until their server actions ship.
   // ---------------------------------------------------------------------
   function markContacted() {
     if (selected.size === 0) return;
@@ -223,6 +222,24 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
       } else {
         setError(r.error);
         toast.error(`Couldn't mark ${n} ${n === 1 ? "lead" : "leads"}: ${r.error}`);
+      }
+    });
+  }
+  function assignToMe() {
+    if (selected.size === 0) return;
+    setError(null);
+    const ids = Array.from(selected);
+    startTransition(async () => {
+      const r = await bulkAssignLeads({ leadIds: ids });
+      if (r.ok) {
+        toast.success(
+          `Assigned ${r.count} ${r.count === 1 ? "lead" : "leads"} to you`,
+        );
+        clearSelection();
+        router.refresh();
+      } else {
+        setError(r.error);
+        toast.error(`Couldn't assign leads: ${r.error}`);
       }
     });
   }
@@ -303,24 +320,14 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
           ) : null}
           Mark contacted
         </button>
-        <span title="Coming soon — requires a Lead.tags column that is not yet migrated">
-          <button
-            type="button"
-            disabled
-            className="inline-flex items-center rounded-[2px] border border-border bg-background px-2.5 py-1 text-xs font-medium opacity-50 cursor-not-allowed"
-          >
-            Tag
-          </button>
-        </span>
-        <span title="Coming soon — requires the assignment workflow to be wired to the UI">
-          <button
-            type="button"
-            disabled
-            className="inline-flex items-center rounded-[2px] border border-border bg-background px-2.5 py-1 text-xs font-medium opacity-50 cursor-not-allowed"
-          >
-            Assign to me
-          </button>
-        </span>
+        <button
+          type="button"
+          onClick={assignToMe}
+          disabled={pending}
+          className="inline-flex items-center rounded-[2px] border border-border bg-background hover:bg-muted px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50"
+        >
+          Assign to me
+        </button>
         <button
           type="button"
           onClick={exportCsv}
