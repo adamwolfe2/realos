@@ -1,4 +1,6 @@
 import "server-only";
+import { APPFOLIO_APPLICATION_SOURCE } from "@/lib/integrations/appfolio-sync";
+import { cleanCompetitorName, rankCompetitors } from "@/lib/reports/competitors";
 import { buildProspectQuestions, type ReportProspectQuestions } from "@/lib/reports/prospect-questions";
 import { prisma } from "@/lib/db";
 import {
@@ -542,10 +544,56 @@ const GENERIC_HOUSING_TERMS = new Set([
   'available', 'near', 'affordable', 'student', 'dorms', 'university', 'college',
 ]);
 
-function isBrandedQuery(query: string): boolean {
-  const words = query.toLowerCase().split(/\s+/);
+// Applications that are still in play or won: what the client means by
+// "applications". Excludes STARTED drafts, DENIED and WITHDRAWN.
+const LIVE_APPLICATION_STATUSES: ApplicationStatus[] = [
+  ApplicationStatus.SUBMITTED,
+  ApplicationStatus.UNDER_REVIEW,
+  ApplicationStatus.APPROVED,
+];
+
+// The AppFolio sync never moves Lease.status off ACTIVE, so an ACTIVE row
+// whose term ended is a past tenancy, not an occupied unit (SG Real Estate:
+// 177 ACTIVE rows on a 100-unit building, 80 already ended). "Current" means
+// ACTIVE and in-term at asOf. Null dates are treated as open-ended.
+export function currentLeaseWhere(asOf: Date) {
+  return {
+    status: LeaseStatus.ACTIVE,
+    AND: [
+      { OR: [{ startDate: null }, { startDate: { lte: asOf } }] },
+      { OR: [{ endDate: null }, { endDate: { gte: asOf } }] },
+    ],
+  };
+}
+
+
+// Branded = the searcher typed our name. With a known brand term that is the
+// only test; the word-count heuristic is a fallback for org-wide scope where
+// no single name applies (it alone called "berkeley housing" branded).
+export function isBrandedQuery(query: string, brandTerms: string[] = []): boolean {
+  const q = query.toLowerCase();
+  if (brandTerms.length > 0) return brandTerms.some((t) => q.includes(t));
+  const words = q.split(/\s+/);
   const genericCount = words.filter(w => GENERIC_HOUSING_TERMS.has(w)).length;
   return genericCount < words.length / 2 && words.length <= 4;
+}
+
+// Branded share over EVERY query row in the window. Top-10 only inflated it
+// (SG showed 97% vs ~91% real).
+export function brandedShareFromRows(
+  rows: Array<{ query: string; clicks: number; impressions: number }>,
+  brandTerms: string[],
+): ReportAiVisibility | null {
+  const totalClicks = rows.reduce((s, q) => s + q.clicks, 0);
+  if (totalClicks <= 0) return null;
+  const branded = rows.filter(q => isBrandedQuery(q.query, brandTerms));
+  const brandedClicks = branded.reduce((s, q) => s + q.clicks, 0);
+  return {
+    brandedClicks,
+    brandedImpressions: branded.reduce((s, q) => s + q.impressions, 0),
+    brandedShare: Math.round((brandedClicks / totalClicks) * 100),
+    topBrandedTerms: [...branded].sort((a, b) => b.clicks - a.clicks).slice(0, 5).map(q => q.query),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -601,6 +649,18 @@ ${snapshot.adPerformance.map((r) => `- ${r.platform}: $${r.spendUsd} spend, ${r.
 
 TOP SEARCH QUERIES:
 ${snapshot.topQueries.slice(0, 5).map((q) => `- "${q.query}": ${q.clicks} clicks, pos ${q.position}`).join("\n") || "- No query data"}
+
+LEASING (AppFolio):
+- Leases started (move-ins) this period: ${snapshot.lifecycleStats?.leasesSignedInPeriod ?? "n/a"} (prior period: ${snapshot.lifecycleStats?.priorLeasesSignedInPeriod ?? "n/a"})
+- Leads LeaseStack captured that became residents this period: ${snapshot.tracedSignedLeads ?? "n/a"}
+- Occupancy: ${snapshot.occupancyStats?.occupancyPct != null ? snapshot.occupancyStats.occupancyPct + "%" : "n/a"}
+
+CHATBOT:
+- Conversations: ${snapshot.chatbotStats.conversations}, leads captured: ${snapshot.chatbotStats.leadsFromChat}
+
+RULES: Use only the numbers listed above, exactly as given. Never add,
+combine, or infer a number that is not listed. Never describe leases as
+"signed"; they are leases started or move-ins.
 
 Respond with ONLY valid JSON (no markdown, no explanation):
 {
@@ -660,6 +720,9 @@ type Scope = {
   propertyId: string | null;
   propertyName: string | null;
   propertySlug: string | null;
+  // Brand term for branded-search share: the property name when the report
+  // is about one building (scoped, or org-wide with a sole ACTIVE property).
+  brandName: string | null;
   // For Lead, Resident, Lease, Listing, etc. — direct column.
   propertyClause: { propertyId?: string };
   // For Tour, Application — they have no direct propertyId; we filter via
@@ -731,6 +794,7 @@ async function buildScope(
         propertyId: null,
         propertyName: null,
         propertySlug: null,
+        brandName: sole.name,
         propertyClause: {},
         leadRelClause: {},
         seoLandingClause,
@@ -742,6 +806,7 @@ async function buildScope(
       propertyId: null,
       propertyName: null,
       propertySlug: null,
+      brandName: null,
       propertyClause: {},
       leadRelClause: {},
       seoLandingClause: {},
@@ -762,6 +827,7 @@ async function buildScope(
       propertyId,
       propertyName: null,
       propertySlug: null,
+      brandName: null,
       propertyClause: { propertyId },
       leadRelClause: { lead: { propertyId } },
       seoLandingClause: { url: { contains: "__no_match__" } },
@@ -817,6 +883,7 @@ async function buildScope(
     propertyId,
     propertyName: property.name,
     propertySlug: property.slug,
+    brandName: property.name,
     propertyClause: { propertyId },
     leadRelClause: { lead: { propertyId } },
     seoLandingClause,
@@ -941,7 +1008,7 @@ export async function generateReportSnapshot(
     prisma.application.count({
       where: {
         createdAt: { gte: periodStart, lt: periodEnd },
-        status: { in: [ApplicationStatus.SUBMITTED, ApplicationStatus.APPROVED] },
+        status: { in: LIVE_APPLICATION_STATUSES },
         lead: { orgId, ...(scope.leadRelClause.lead ?? {}) },
         ...activePropertyClause(scope),
       },
@@ -949,7 +1016,7 @@ export async function generateReportSnapshot(
     prisma.application.count({
       where: {
         createdAt: { gte: priorStart, lt: priorEnd },
-        status: { in: [ApplicationStatus.SUBMITTED, ApplicationStatus.APPROVED] },
+        status: { in: LIVE_APPLICATION_STATUSES },
         lead: { orgId, ...(scope.leadRelClause.lead ?? {}) },
         ...activePropertyClause(scope),
       },
@@ -1134,14 +1201,17 @@ export async function generateReportSnapshot(
         ...scope.propertyClause,
         createdAt: { gte: periodStart, lt: periodEnd },
       },
-      orderBy: { createdAt: "desc" },
-      take: 20,
+      // Latest row per kind, in the DB: detectors re-fire weekly, so a
+      // multi-month window stacked 19 rewordings of one alert (SG, 2026-10).
+      distinct: ["kind"],
+      orderBy: [{ kind: "asc" }, { createdAt: "desc" }],
       select: {
         id: true,
         kind: true,
         severity: true,
         title: true,
         body: true,
+        createdAt: true,
       },
     }),
     // Chatbot stats — the chatbot widget predates property stamping, so a
@@ -1238,7 +1308,7 @@ export async function generateReportSnapshot(
         orgId,
         ...scope.propertyClause,
         property: { lifecycle: "ACTIVE" },
-        status: LeaseStatus.ACTIVE,
+        ...currentLeaseWhere(periodEnd),
       },
     }),
     prisma.application.groupBy({
@@ -1352,9 +1422,9 @@ export async function generateReportSnapshot(
   for (const row of leadStatusGroups) {
     statusByKey.set(row.status, row._count._all);
   }
-  const appliedFromAppFolio =
-    applicationStatusGroups.find((g) => g.status === ApplicationStatus.SUBMITTED)
-      ?._count._all ?? 0;
+  const appliedFromAppFolio = applicationStatusGroups
+    .filter((g) => g.status === ApplicationStatus.SUBMITTED || g.status === ApplicationStatus.UNDER_REVIEW)
+    .reduce((sum, g) => sum + g._count._all, 0);
   const approvedFromAppFolio =
     applicationStatusGroups.find((g) => g.status === ApplicationStatus.APPROVED)
       ?._count._all ?? 0;
@@ -1368,10 +1438,18 @@ export async function generateReportSnapshot(
     LeadStatus.SIGNED,
   ];
   const funnel: ReportFunnelStage[] = funnelOrder.map((s) => {
-    let count = statusByKey.get(s) ?? 0;
-    if (s === LeadStatus.APPLIED) count += appliedFromAppFolio;
-    if (s === LeadStatus.APPROVED) count += approvedFromAppFolio;
-    if (s === LeadStatus.SIGNED) count += leasesSignedCount;
+    // Lead statuses and AppFolio records describe the same people (an
+    // AppFolio application or lease creates/advances a Lead), so adding them
+    // double-counted (SG: 23 signed leads + 61 leases = 84 "signed" from 80
+    // leads). Take the larger of the two per stage.
+    // ponytail: max() undercounts if the two sets are mostly disjoint; join on leadId if that ever happens.
+    const count = Math.max(
+      statusByKey.get(s) ?? 0,
+      s === LeadStatus.APPLIED ? appliedFromAppFolio
+        : s === LeadStatus.APPROVED ? approvedFromAppFolio
+        : s === LeadStatus.SIGNED ? leasesSignedCount
+        : 0,
+    );
     return { stage: LEAD_STATUS_LABELS[s], count };
   });
 
@@ -1447,8 +1525,11 @@ export async function generateReportSnapshot(
     position: row._avg.position ? Math.round(row._avg.position * 10) / 10 : 0,
   }));
 
-  // Insights
-  const insights: ReportInsight[] = insightsRows.map((row) => ({
+  // Insights: one per kind (distinct in the query), newest first, max 20.
+  const latestInsightRows = [...insightsRows]
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .slice(0, 20);
+  const insights: ReportInsight[] = latestInsightRows.map((row) => ({
     id: row.id,
     kind: row.kind,
     severity: row.severity,
@@ -1484,7 +1565,7 @@ export async function generateReportSnapshot(
           where: {
             orgId,
             propertyId: { in: propertyIds },
-            status: LeaseStatus.ACTIVE,
+            ...currentLeaseWhere(periodEnd),
           },
           _count: { _all: true },
         }),
@@ -1632,23 +1713,18 @@ export async function generateReportSnapshot(
     .filter(r => r.leads > 0)
     .sort((a, b) => b.signed - a.signed || b.leads - a.leads);
 
-  // AI visibility — classify branded vs. generic search queries
-  const totalClicks = topQueriesRows.reduce((s, q) => s + (q._sum.clicks ?? 0), 0);
-  const brandedQueryRows = topQueriesRows.filter(q => isBrandedQuery(q.query));
-  const brandedClicks = brandedQueryRows.reduce((s, q) => s + (q._sum.clicks ?? 0), 0);
-  const brandedImpressions = brandedQueryRows.reduce((s, q) => s + (q._sum.impressions ?? 0), 0);
-
-  const aiVisibility: ReportAiVisibility | null = totalClicks > 0
-    ? {
-        brandedClicks,
-        brandedImpressions,
-        brandedShare: Math.round((brandedClicks / totalClicks) * 100),
-        topBrandedTerms: brandedQueryRows
-          .sort((a, b) => (b._sum.clicks ?? 0) - (a._sum.clicks ?? 0))
-          .slice(0, 5)
-          .map(q => q.query),
-      }
-    : null;
+  // AI visibility — classify branded vs. generic search queries over EVERY
+  // query in the window, not just the top 10 (top-10 only inflated the share:
+  // SG showed 97% vs ~91% real).
+  const allQueryRows = await prisma.seoQuery.groupBy({
+    by: ["query"],
+    where: { orgId, date: { gte: periodStart, lt: periodEnd }, ...scope.seoQueryClause },
+    _sum: { clicks: true, impressions: true },
+  });
+  const aiVisibility = brandedShareFromRows(
+    allQueryRows.map(q => ({ query: q.query, clicks: q._sum.clicks ?? 0, impressions: q._sum.impressions ?? 0 })),
+    scope.brandName ? [scope.brandName.toLowerCase()] : [],
+  );
 
   // -------------------------------------------------------------------------
   // 2026 sections — reputation, occupancy, renewals.
@@ -1668,7 +1744,7 @@ export async function generateReportSnapshot(
   ).catch(sectionFailed("buildReputationStats"));
 
   // Occupancy — point-in-time snapshot. Scoped to the property when set.
-  const occupancyStats = await buildOccupancyStats(orgId, scope.propertyId).catch(sectionFailed("buildOccupancyStats"));
+  const occupancyStats = await buildOccupancyStats(orgId, scope.propertyId, periodEnd).catch(sectionFailed("buildOccupancyStats"));
 
   // Renewals — forward-looking 120-day window from periodEnd.
   const renewalStats = await buildRenewalStats(
@@ -1737,18 +1813,18 @@ export async function generateReportSnapshot(
   // ship an empty block (renderer collapses gracefully when undefined)
   // so marketing-only tenants without AppFolio sync don't see a strip
   // full of zeros.
-  const applicationsSubmittedInPeriod =
-    applicationStatusGroups.find(
-      (g) => g.status === ApplicationStatus.SUBMITTED,
-    )?._count._all ?? 0;
+  const applicationsSubmittedInPeriod = applicationStatusGroups
+    .filter((g) => g.status === ApplicationStatus.SUBMITTED || g.status === ApplicationStatus.UNDER_REVIEW)
+    .reduce((sum, g) => sum + g._count._all, 0);
   const applicationsApprovedInPeriod =
     applicationStatusGroups.find(
       (g) => g.status === ApplicationStatus.APPROVED,
     )?._count._all ?? 0;
-  const applicationsInPeriod = applicationStatusGroups.reduce(
-    (sum, row) => sum + row._count._all,
-    0,
-  );
+  // Live applications only — withdrawn, denied and never-submitted drafts
+  // are not "applications" to the client, and the KPI tile uses the same set.
+  const applicationsInPeriod = applicationStatusGroups
+    .filter((row) => LIVE_APPLICATION_STATUSES.includes(row.status))
+    .reduce((sum, row) => sum + row._count._all, 0);
   // 12-month lease velocity — pull all in-window lease startDates, then
   // bucket into calendar months client-side. Avoids a per-month DB
   // round trip while keeping the count cheap for any sane portfolio.
@@ -1791,6 +1867,14 @@ export async function generateReportSnapshot(
       // counting as proof of a signing the client no longer claims.
       status: LeadStatus.SIGNED,
       convertedAt: { gte: periodStart, lt: periodEnd },
+      // A lead the AppFolio sync created FROM the application is the
+      // applicant, not someone LeaseStack captured — counting it made the
+      // proof circular (SG, 2026-10: 31 of 42 "traced"). Explicit null arm:
+      // Prisma's `not` alone drops NULL sourceDetail rows.
+      OR: [
+        { sourceDetail: null },
+        { sourceDetail: { not: APPFOLIO_APPLICATION_SOURCE } },
+      ],
     },
   });
 
@@ -2360,53 +2444,24 @@ async function buildAeoStats(
   let competitorCited = 0;
   let notMentioned = 0;
   const enginesSeen = new Set<string>();
-  const competitorCounts = new Map<string, number>();
   const competitorSamples: ReportAeoStats["sampleCompetitorQueries"] = [];
 
-  // Norman feedback (May 22): "Downtown Berkeley" was showing up as
-  // a top competitor — it's a NEIGHBORHOOD, not a competing property.
-  // AI engines casually mention neighborhood names when answering
-  // location queries; treating them as competitors is misleading.
-  // Filter common Bay-area neighborhood/region strings so only real
-  // property/brand names rank as competitors. Easy to extend per-
-  // market when we expand outside the Bay.
-  const NEIGHBORHOOD_NOISE = new Set(
-    [
-      "downtown berkeley",
-      "north berkeley",
-      "south berkeley",
-      "west berkeley",
-      "east berkeley",
-      "southside",
-      "elmwood",
-      "telegraph",
-      "berkeley",
-      "oakland",
-      "albany",
-      "el cerrito",
-      "emeryville",
-      "richmond",
-      "bay area",
-      "east bay",
-      "san francisco",
-      "north oakland",
-      "downtown oakland",
-    ].map((s) => s.toLowerCase()),
-  );
+  const competitorNamesPerCheck: string[][] = [];
 
   for (const c of checks) {
     enginesSeen.add(c.engine);
     if (c.status === "CITED") cited += 1;
     else if (c.status === "COMPETITOR_CITED") {
       competitorCited += 1;
-      const names = Array.isArray(c.competitorsCited)
+      const rawNames = Array.isArray(c.competitorsCited)
         ? (c.competitorsCited as string[]).filter((n) => typeof n === "string")
         : [];
-      for (const name of names) {
-        // Skip neighborhood / region strings — they're not competitors.
-        if (NEIGHBORHOOD_NOISE.has(name.trim().toLowerCase())) continue;
-        competitorCounts.set(name, (competitorCounts.get(name) ?? 0) + 1);
-      }
+      competitorNamesPerCheck.push(rawNames);
+      // Neighborhoods, section labels ("Budget") and streets are not
+      // competitors — same filter as the ranking below.
+      const names = rawNames
+        .map(cleanCompetitorName)
+        .filter((n): n is string => n !== null);
       // Keep up to 3 sample queries — favor variety across engines so
       // ownership doesn't see "ChatGPT, ChatGPT, ChatGPT" but a real
       // spread.
@@ -2423,10 +2478,7 @@ async function buildAeoStats(
     } else if (c.status === "NOT_CITED") notMentioned += 1;
   }
 
-  const topCompetitors = [...competitorCounts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([name, mentions]) => ({ name, mentions }));
+  const topCompetitors = rankCompetitors(competitorNamesPerCheck, 5);
 
   // Per-engine breakdown for the bar chart in the report.
   const byEngineMap = new Map<
@@ -2683,6 +2735,7 @@ async function buildReputationStats(
 async function buildOccupancyStats(
   orgId: string,
   propertyId: string | null,
+  asOf: Date,
 ): Promise<ReportOccupancyStats | undefined> {
   // Every aggregate below is scoped to ACTIVE (marketable) properties —
   // see lib/properties/marketable.ts. Without this, org-wide reports
@@ -2706,13 +2759,13 @@ async function buildOccupancyStats(
       }),
       prisma.application.count({
         where: {
-          status: ApplicationStatus.SUBMITTED,
+          status: { in: [ApplicationStatus.SUBMITTED, ApplicationStatus.UNDER_REVIEW] },
           lead: { orgId, ...(propertyId ? { propertyId } : {}) },
           property: { lifecycle: "ACTIVE" },
         },
       }),
       prisma.lease.aggregate({
-        where: { orgId, ...propertyClause, property: { lifecycle: "ACTIVE" }, status: LeaseStatus.ACTIVE },
+        where: { orgId, ...propertyClause, property: { lifecycle: "ACTIVE" }, ...currentLeaseWhere(asOf) },
         _sum: { monthlyRentCents: true },
         _count: { _all: true },
       }),
@@ -2812,7 +2865,7 @@ async function buildRenewalStats(
     pastDue,
   ] = await Promise.all([
     prisma.lease.count({
-      where: { orgId, ...propertyClause, status: LeaseStatus.ACTIVE },
+      where: { orgId, ...propertyClause, ...currentLeaseWhere(periodEnd) },
     }),
     prisma.lease.count({
       where: {
