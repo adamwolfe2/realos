@@ -14,6 +14,7 @@ import {
 import { isPlatformSubscriptionForOrg } from "@/lib/billing/stripe-state";
 import { ensureOrgStripeCustomer } from "@/lib/billing/org-stripe-customer";
 import { getTierById, resolveLineItems } from "@/lib/billing/plans";
+import { checkRateLimit, checkoutLimiter, rateLimited } from "@/lib/rate-limit";
 
 // ---------------------------------------------------------------------------
 // POST /api/billing/checkout
@@ -94,6 +95,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { ok: false, error: "Only the workspace owner can manage billing." },
       { status: 403 },
+    );
+  }
+
+  // 10 checkout sessions per org per 10 minutes. Fails closed in production
+  // when Redis is unset (checkout is security-critical; see lib/rate-limit.ts).
+  const limit = await checkRateLimit(checkoutLimiter, `checkout:${scope.orgId}`);
+  if (!limit.allowed) {
+    return rateLimited(
+      "Too many checkout attempts. Try again in a few minutes.",
+      Math.max(1, Math.ceil((limit.reset - Date.now()) / 1000)),
     );
   }
 

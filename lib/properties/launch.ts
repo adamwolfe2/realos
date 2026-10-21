@@ -343,25 +343,3 @@ export async function getLaunchChecklist(
     totalOptionalCount: optionalItems.length,
   };
 }
-
-/**
- * Compute what the auto-recompute thinks the launchStatus should be,
- * based on checklist state. Pure function over the checklist — does
- * not write to the DB.
- *
- * Rules:
- *   - All required items done                → LIVE
- *   - At least one required item done        → ONBOARDING
- *   - Zero required items done               → DRAFT
- *
- * PAUSED is never set by auto — only by an operator override.
- */
-export function deriveStatusFromChecklist(
-  checklist: Pick<LaunchChecklist, "completedRequiredCount" | "totalRequiredCount">,
-): PropertyLaunchStatus {
-  if (checklist.totalRequiredCount === 0) return "DRAFT";
-  if (checklist.completedRequiredCount === checklist.totalRequiredCount)
-    return "LIVE";
-  if (checklist.completedRequiredCount > 0) return "ONBOARDING";
-  return "DRAFT";
-}
