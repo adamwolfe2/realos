@@ -88,7 +88,8 @@ export async function runAdsSyncForAccount(
     // Guarded: a disconnect during this run set "revoked"; a late sync must
     // not flip it back to active.
     await prisma.adAccount.updateMany({
-      where: { id: account.id, accessStatus: { not: "revoked" } },
+      // NULL accessStatus (pre-column rows) must still advance; `not` alone skips NULL in SQL.
+      where: { id: account.id, OR: [{ accessStatus: null }, { accessStatus: { not: "revoked" } }] },
       data: {
         // Hold the watermark when rows failed to write, so the next run's
         // window re-pulls those days (resolveSyncWindow starts at lastSyncAt).
@@ -119,7 +120,8 @@ export async function runAdsSyncForAccount(
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     await prisma.adAccount.updateMany({
-      where: { id: account.id, accessStatus: { not: "revoked" } },
+      // NULL accessStatus (pre-column rows) must still advance; `not` alone skips NULL in SQL.
+      where: { id: account.id, OR: [{ accessStatus: null }, { accessStatus: { not: "revoked" } }] },
       data: {
         lastSyncError: message,
         accessStatus: "error",

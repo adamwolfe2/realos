@@ -201,6 +201,10 @@ export async function connectSeo(formData: FormData): Promise<ConnectSeoResult> 
   // Fire-and-forget initial backfill.
   // after() keeps the function alive until the backfill settles; a bare
   // void promise is frozen once the action responds on Vercel.
+  // ponytail: after() shares the caller's maxDuration (300s on the connect
+  // pages). The backfill is capped at 30 days, and a run killed mid-way never
+  // sets lastSyncAt, so the daily cron redoes the full 30-day window. Move to
+  // a queued job if one account's 30-day pull ever exceeds ~300s.
   after(() =>
     runSeoSync(scope.orgId, { fullBackfill: true }).catch((err) => {
       console.warn("[seo-connect] initial sync error", err);
