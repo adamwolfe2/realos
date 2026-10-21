@@ -221,9 +221,11 @@ export async function POST(req: NextRequest) {
           });
           console.info(`User ${id} already linked to org ${existing.orgId}`);
         } else if (event.type === "user.updated" && !existing) {
-          // No row means the user was removed in-app (manage-team deletes
-          // the row; a Clerk-side membership removal re-homes it instead),
-          // or provisioning on user.created failed. Never provision from a
+          // No row means provisioning on user.created never ran or failed,
+          // or an operator removed the user in-app (manage-team deletes the
+          // row). A Clerk-side membership removal does NOT delete it:
+          // organizationMembership.deleted re-homes the row to the agency
+          // org, so removed members still have a row. Never provision from a
           // profile update; failed provisioning self-heals on the user's
           // next authenticated request (provisionUserForClerk in scope.ts
           // and /api/auth/role).
