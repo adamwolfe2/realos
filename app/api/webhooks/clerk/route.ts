@@ -163,8 +163,9 @@ export async function POST(req: NextRequest) {
       // re-create a removed teammate. Invitees bind through durable DB state
       // instead: team invites through their `seed_pending_<email>` User row
       // (claimed by provisionUserForClerk; removal deletes it), owner invites
-      // through the new org's primaryContactEmail match below. Only the role
-      // is read, for that primary-contact create.
+      // through the new org's primaryContactEmail match below. The role is
+      // read for that primary-contact create, and the invite org id may only
+      // choose among orgs that list this email as primary contact.
       const metaOrgId =
         typeof public_metadata?.orgId === "string"
           ? public_metadata.orgId
