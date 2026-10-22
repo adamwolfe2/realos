@@ -2086,12 +2086,16 @@ export async function buildDataSources(
       ? prisma.seoQuery
           .aggregate({
             where: { orgId, ...scope.seoQueryClause, date: period },
-            _sum: { clicks: true },
+            _sum: { clicks: true, impressions: true },
           })
-          .then((r) => r._sum.clicks ?? 0)
+          // Impressions with zero clicks is still real Search Console data.
+          .then((r) => (r._sum.clicks ?? 0) + (r._sum.impressions ?? 0))
       : prisma.seoSnapshot
-          .aggregate({ where: { orgId, date: period }, _sum: { totalClicks: true } })
-          .then((r) => r._sum.totalClicks ?? 0),
+          .aggregate({
+            where: { orgId, date: period },
+            _sum: { totalClicks: true, totalImpressions: true },
+          })
+          .then((r) => (r._sum.totalClicks ?? 0) + (r._sum.totalImpressions ?? 0)),
     prisma.chatbotConversation.count({
       where: {
         orgId,

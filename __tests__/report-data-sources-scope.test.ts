@@ -65,6 +65,17 @@ describe("buildDataSources property scoping", () => {
     expect(m.snapAgg).not.toHaveBeenCalled();
   });
 
+  it("GSC with impressions but zero clicks in the window is connected", async () => {
+    m.queryAgg.mockResolvedValue({ _sum: { clicks: 0, impressions: 40 } });
+    const ds = await buildDataSources(
+      "org1",
+      { propertyId: "p1", seoLandingClause: {}, seoQueryClause: {} },
+      start,
+      end,
+    );
+    expect(ds.gsc.connected).toBe(true);
+  });
+
   it("org-wide: org snapshot and ad data still count", async () => {
     const ds = await buildDataSources(
       "org1",
