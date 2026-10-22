@@ -710,7 +710,9 @@ export async function fetchAllPages(
         out.push(...page.results);
         nextPageUrl = page.nextPageUrl;
         pages += 1;
-        if (pages >= MAX_PAGES) {
+        // Truncated only when another page exists: a report exactly
+        // MAX_PAGES long is complete.
+        if (pages >= MAX_PAGES && nextPageUrl) {
           console.warn(
             `[appfolio] fetchAllPages(${reportName}) hit MAX_PAGES=${MAX_PAGES}, stopping`
           );
@@ -1549,8 +1551,9 @@ export type MappedLease = {
 // "Evict" and dates under lease_from / lease_to. The old heuristic read
 // raw.end_date, which rent_roll never sends, so every lease stayed ACTIVE.
 // A row on the rent roll is occupied: past its end date it is a
-// month-to-month holdover (ACTIVE), never ENDED. Leases that drop off the
-// roll are ended by endLeasesAbsentFromRentRoll, not here.
+// month-to-month holdover (ACTIVE), not ENDED by date alone (an explicit
+// ended/moved-out status string still maps to ENDED). Leases that drop off
+// the roll after their end date are ended by endLeasesAbsentFromRentRoll.
 export function leaseStatusFor(
   input: { rawStatus: string | null; startDate: Date | null; endDate: Date | null },
   now: Date = new Date(),

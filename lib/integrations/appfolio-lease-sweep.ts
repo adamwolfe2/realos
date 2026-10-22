@@ -24,6 +24,12 @@ export function rentRollIsComplete(pull: {
 }
 
 type LeaseSweepDb = {
+  resident: {
+    updateMany(args: {
+      where: Record<string, unknown>;
+      data: { currentLeaseId: null };
+    }): Promise<{ count: number }>;
+  };
   lease: {
     findMany(args: {
       where: Record<string, unknown>;
@@ -62,11 +68,24 @@ export async function endLeasesAbsentFromRentRoll(
   let ended = 0;
   for (let i = 0; i < ids.length; i += CHUNK) {
     const res = await db.lease.updateMany({
-      // Re-check status so a concurrent writer's newer state isn't clobbered.
-      where: { id: { in: ids.slice(i, i + CHUNK) }, status: { in: OPEN_STATUSES } },
+      // Re-check status and endDate so a concurrent writer's newer state
+      // (a renewal) isn't clobbered.
+      where: {
+        id: { in: ids.slice(i, i + CHUNK) },
+        status: { in: OPEN_STATUSES },
+        endDate: { lt: args.now },
+      },
       data: { status: LeaseStatus.ENDED },
     });
     ended += res.count;
+    // An ended lease is no longer anyone's current lease.
+    await db.resident.updateMany({
+      where: {
+        currentLeaseId: { in: ids.slice(i, i + CHUNK) },
+        currentLease: { status: LeaseStatus.ENDED },
+      },
+      data: { currentLeaseId: null },
+    });
   }
   return ended;
 }
