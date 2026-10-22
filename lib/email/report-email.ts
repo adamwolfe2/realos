@@ -3,6 +3,7 @@ import { buildBaseHtml, BRAND_NAME } from "./shared";
 import { getSiteUrl } from "@/lib/brand";
 import type { ReportSnapshot } from "@/lib/reports/generate";
 import { escapeHtml } from "@/lib/escape-html";
+import { leadsSplitNote } from "@/lib/reports/leads-split";
 
 // ---------------------------------------------------------------------------
 // Weekly / Monthly client report email.
@@ -166,6 +167,7 @@ function renderKpiRow(s: ReportSnapshot): string {
       deltaPct: s.kpiDeltas.leadsPct,
       good: "up" as const,
       show: true,
+      note: leadsSplitNote(s.kpis),
     },
     {
       label: "Tours",
@@ -217,6 +219,7 @@ function renderKpiRow(s: ReportSnapshot): string {
         <div style="color:${STONE};font-size:9px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;">${c.label}</div>
         <div style="margin-top:4px;color:${NEAR_BLACK};font-size:22px;font-weight:700;font-feature-settings:'tnum';">${c.value}</div>
         ${deltaHtml ? `<div style="margin-top:2px;">${deltaHtml}</div>` : ""}
+        ${"note" in c && c.note ? `<div style="margin-top:4px;color:${STONE};font-size:10px;line-height:1.4;">${c.note}</div>` : ""}
       </td>
     `;
   };
@@ -635,6 +638,8 @@ function buildPlainText(input: ReportEmailInput, period: string, kindLabel: stri
   }
   lines.push("Key numbers");
   lines.push(`  Leads: ${snapshot.kpis.leads}`);
+  const leadsNote = leadsSplitNote(snapshot.kpis);
+  if (leadsNote) lines.push(`    (${leadsNote})`);
   lines.push(`  Tours: ${snapshot.kpis.tours}`);
   lines.push(`  Applications: ${snapshot.kpis.applications}`);
   lines.push(`  Ad spend: $${snapshot.kpis.adSpendUsd.toLocaleString()}`);

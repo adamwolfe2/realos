@@ -1,3 +1,4 @@
+import { leadsSplitNote } from "@/lib/reports/leads-split";
 import type { ReportSnapshot } from "@/lib/reports/generate";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -181,7 +182,7 @@ function OverviewSection(s: ReportSnapshot, p: PropertyMeta, navTo: NavTo): Reac
     <Panel>
       {/* Headline KPIs */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <HeroStat value={num(kpis.leads)} label="New leads" delta={s.kpiDeltas?.leadsPct} />
+        <HeroStat value={num(kpis.leads)} label="New leads" note={leadsSplitNote(kpis)} delta={s.kpiDeltas?.leadsPct} />
         <HeroStat value={num(lifecycleStats?.leasesSignedInPeriod ?? 0)} label="Leases started" />
         <HeroStat
           value={occupancyStats?.occupancyPct != null ? pct(occupancyStats.occupancyPct) : "—"}
@@ -254,16 +255,19 @@ function OverviewSection(s: ReportSnapshot, p: PropertyMeta, navTo: NavTo): Reac
 function HeroStat({
   value,
   label,
+  note,
   delta,
 }: {
   value: string;
   label: string;
+  note?: string | null;
   delta?: number | null;
 }) {
   return (
     <div className="ls-card px-3 py-2.5">
       <div className="ls-metric text-[20px] leading-none">{value}</div>
       <div className="mt-1 text-[10.5px] font-medium text-muted-foreground">{label}</div>
+      {note ? <div className="mt-0.5 text-2xs text-muted-foreground">{note}</div> : null}
       {delta != null ? (
         <div className={`mt-1 text-2xs font-semibold ${delta >= 0 ? "text-success" : "text-destructive"}`}>
           {delta >= 0 ? "▲" : "▼"} {Math.abs(delta)}% vs prior
