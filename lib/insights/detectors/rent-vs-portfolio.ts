@@ -1,9 +1,9 @@
 import "server-only";
 import { prisma } from "@/lib/db";
-import { LeaseStatus } from "@prisma/client";
 import { isoWeekKey } from "../iso-week";
 import type { Detector, DetectedInsight } from "../types";
 import { propertyIdsToWhere } from "@/lib/tenancy/property-filter";
+import { currentLeaseWhere } from "@/lib/leases/current";
 
 const MIN_PROPERTIES = 3;
 const MIN_LEASES_PER_PROPERTY = 5;
@@ -36,7 +36,7 @@ export const rentVsPortfolioDetector: Detector = {
       where: {
         orgId,
         ...propertyIdsToWhere(propertyIds),
-        status: { in: [LeaseStatus.ACTIVE, LeaseStatus.EXPIRING] },
+        ...currentLeaseWhere(new Date()),
         monthlyRentCents: { gt: 0 },
       },
       select: {

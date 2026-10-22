@@ -75,6 +75,7 @@ import { VerificationRow } from "@/components/portal/ui/status-chip";
 import { PropertyHeroBanner } from "@/components/portal/properties/property-hero-banner";
 import { getPortfolioRecommendations } from "@/lib/intelligence/property-recommendations";
 import { soft } from "@/lib/soft";
+import { currentLeaseWhere } from "@/lib/leases/current";
 
 export const metadata: Metadata = { title: "Dashboard" };
 export const dynamic = "force-dynamic";
@@ -873,7 +874,7 @@ export default async function PortalHome({
             where: {
               orgId: scope.orgId,
               propertyId: featuredProperty.id,
-              status: "ACTIVE",
+              ...currentLeaseWhere(new Date()),
             },
           })
           .catch(soft(0, "portal.page:951")),

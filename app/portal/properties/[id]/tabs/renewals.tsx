@@ -6,6 +6,7 @@ import { LeaseStatus } from "@prisma/client";
 import { Calendar, AlertTriangle, CheckCircle2, DollarSign } from "lucide-react";
 import { EmptyState } from "@/components/portal/ui/empty-state";
 import { tenantNameFromRaw } from "@/lib/integrations/appfolio-display";
+import { currentLeaseWhere } from "@/lib/leases/current";
 
 // ---------------------------------------------------------------------------
 // Renewals tab — per-property lease renewal pipeline from AppFolio.
@@ -36,7 +37,7 @@ export async function RenewalsTab({
 
   const [activeCount, , pastDueCount, pastDueBalance, rentRoll, upcoming] =
     await Promise.all([
-      prisma.lease.count({ where: { orgId, propertyId, status: LeaseStatus.ACTIVE } }),
+      prisma.lease.count({ where: { orgId, propertyId, ...currentLeaseWhere(now) } }),
       prisma.lease.count({
         where: {
           orgId,
@@ -50,7 +51,7 @@ export async function RenewalsTab({
         _sum: { currentBalanceCents: true },
       }),
       prisma.lease.aggregate({
-        where: { orgId, propertyId, status: LeaseStatus.ACTIVE },
+        where: { orgId, propertyId, ...currentLeaseWhere(now) },
         _sum: { monthlyRentCents: true },
       }),
       prisma.lease.findMany({
