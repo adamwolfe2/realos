@@ -16,6 +16,7 @@ import {
   checkAiBillingGate,
   aiBillingDeniedResponseBody,
 } from "@/lib/billing/gate";
+import { stalledDraftWhere } from "@/lib/seo/draft-stalled";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -240,6 +241,8 @@ export async function POST(req: NextRequest) {
     where: {
       orgId: property.orgId,
       status: { in: [DraftStatus.GENERATING, DraftStatus.PENDING_REVIEW] },
+      // A stalled GENERATING row is dead, not in flight.
+      NOT: stalledDraftWhere(),
     },
   });
   if (inFlight >= 10) {
