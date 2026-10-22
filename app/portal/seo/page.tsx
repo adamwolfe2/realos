@@ -39,6 +39,11 @@ import type { TimeseriesPoint } from "./seo-timeseries-chart";
 
 export const metadata: Metadata = { title: "SEO" };
 export const dynamic = "force-dynamic";
+// Server actions here run the connect-time backfill inside after(), which
+// shares this route's time budget.
+// ponytail: a big Meta account can still outrun 300s; move the backfill to a
+// queued job if that happens (the ads-sync cron gap-fills the rest meanwhile).
+export const maxDuration = 300;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

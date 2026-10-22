@@ -190,14 +190,23 @@ export async function runSeoSync(
   const today = startOfUtcDay(now);
   const yesterday = startOfUtcDay(new Date(now.getTime() - DAY_MS));
   const toDate = options.toDate ? startOfUtcDay(options.toDate) : today;
-  const fullBackfill =
-    options.fullBackfill ||
-    integrations.every((i) => i.lastSyncAt == null);
-  const fromDate = options.fromDate
-    ? startOfUtcDay(options.fromDate)
-    : fullBackfill
-      ? startOfUtcDay(new Date(now.getTime() - 30 * DAY_MS))
-      : yesterday;
+  // Per integration: one that has never completed a run (no lastSyncAt)
+  // gets the 30-day backfill even when a sibling integration in the org is
+  // already synced, so a newly connected provider never loses its history.
+  const backfillFrom = startOfUtcDay(new Date(now.getTime() - 30 * DAY_MS));
+  const fromDateFor = (i: { lastSyncAt: Date | null }) =>
+    options.fromDate
+      ? startOfUtcDay(options.fromDate)
+      : options.fullBackfill || i.lastSyncAt == null
+        ? backfillFrom
+        : yesterday;
+
+  // Integrations whose provider pull succeeded this run. Their lastSyncAt is
+  // stamped only after the merged snapshot writes below, so a run killed
+  // mid-way (e.g. the connect page's after() backfill hitting maxDuration)
+  // leaves lastSyncAt unchanged and that integration's next run redoes its
+  // 30-day backfill.
+  const syncedIntegrationIds: string[] = [];
 
   // GSC and GA4 each contribute partial fields to the daily SeoSnapshot row;
   // we collect both, then write per (propertyId, date) with a merged
@@ -232,6 +241,7 @@ export async function runSeoSync(
   const landingPageDates = makeDateTracker();
 
   for (const integration of integrations) {
+    const fromDate = fromDateFor(integration);
     if (integration.provider === SeoProvider.GSC) {
       try {
         await prisma.seoIntegration.update({
@@ -326,12 +336,10 @@ export async function runSeoSync(
 
         await prisma.seoIntegration.update({
           where: { id: integration.id },
-          data: {
-            status: SeoSyncStatus.IDLE,
-            lastSyncAt: new Date(),
-            lastSyncError: null,
-          },
+          // lastSyncAt is stamped at the end of the run (see below).
+          data: { status: SeoSyncStatus.IDLE, lastSyncError: null },
         });
+        syncedIntegrationIds.push(integration.id);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown GSC error";
         stats.warnings.push(`GSC: ${message}`);
@@ -432,12 +440,10 @@ export async function runSeoSync(
 
         await prisma.seoIntegration.update({
           where: { id: integration.id },
-          data: {
-            status: SeoSyncStatus.IDLE,
-            lastSyncAt: new Date(),
-            lastSyncError: null,
-          },
+          // lastSyncAt is stamped at the end of the run (see below).
+          data: { status: SeoSyncStatus.IDLE, lastSyncError: null },
         });
+        syncedIntegrationIds.push(integration.id);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown GA4 error";
         stats.warnings.push(`GA4: ${message}`);
@@ -464,13 +470,27 @@ export async function runSeoSync(
     try {
       // Find-then-write (not upsert) — see seoQuery above for why.
       const findWhere = { orgId, propertyId: payload.propertyId ?? null, date };
-      const data = {
-        organicSessions: payload.organicSessions ?? 0,
-        organicUsers: payload.organicUsers ?? 0,
-        totalImpressions: payload.totalImpressions ?? 0,
-        totalClicks: payload.totalClicks ?? 0,
-        avgCtr: payload.avgCtr ?? 0,
-        avgPosition: payload.avgPosition ?? 0,
+      const fields = {
+        organicSessions: payload.organicSessions,
+        organicUsers: payload.organicUsers,
+        totalImpressions: payload.totalImpressions,
+        totalClicks: payload.totalClicks,
+        avgCtr: payload.avgCtr,
+        avgPosition: payload.avgPosition,
+      };
+      // Update only the fields this run produced: a provider that did not
+      // cover this date (failed, or a narrower window) keeps its stored
+      // values instead of being zeroed. A new row defaults absent fields to 0.
+      const data = Object.fromEntries(
+        Object.entries(fields).filter(([, v]) => v !== undefined),
+      ) as Partial<Record<keyof typeof fields, number>>;
+      const createData = {
+        organicSessions: fields.organicSessions ?? 0,
+        organicUsers: fields.organicUsers ?? 0,
+        totalImpressions: fields.totalImpressions ?? 0,
+        totalClicks: fields.totalClicks ?? 0,
+        avgCtr: fields.avgCtr ?? 0,
+        avgPosition: fields.avgPosition ?? 0,
       };
       const existing = await prisma.seoSnapshot.findFirst({
         where: findWhere,
@@ -480,7 +500,7 @@ export async function runSeoSync(
         await prisma.seoSnapshot.update({ where: { id: existing.id }, data });
       } else {
         try {
-          await prisma.seoSnapshot.create({ data: { ...findWhere, ...data } });
+          await prisma.seoSnapshot.create({ data: { ...findWhere, ...createData } });
         } catch (err) {
           if (!isP2002(err)) throw err;
           const winner = await prisma.seoSnapshot.findFirst({
@@ -530,6 +550,11 @@ export async function runSeoSync(
     landingPageDates.superseded(),
     stats,
   );
+
+  const syncedAt = new Date();
+  for (const id of syncedIntegrationIds) {
+    await prisma.seoIntegration.update({ where: { id }, data: { lastSyncAt: syncedAt } });
+  }
 
   return {
     ok: stats.warnings.length === 0,

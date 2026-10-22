@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
@@ -198,9 +199,20 @@ export async function connectSeo(formData: FormData): Promise<ConnectSeoResult> 
   });
 
   // Fire-and-forget initial backfill.
-  void runSeoSync(scope.orgId, { fullBackfill: true }).catch((err) => {
-    console.warn("[seo-connect] initial sync error", err);
-  });
+  // after() keeps the function alive until the backfill settles; a bare
+  // void promise is frozen once the action responds on Vercel.
+  // ponytail: after() shares the caller's maxDuration (300s on the connect
+  // pages). The backfill is capped at 30 days. runSeoSync stamps lastSyncAt
+  // only after all writes finish, so a run killed mid-way leaves it unchanged:
+  // on a first connect (no lastSyncAt) the next cron redoes the full 30 days;
+  // on a reconnect the cron resumes its 2-day window and older gaps wait for
+  // a manual full resync. Move to a queued job if one account's 30-day pull
+  // ever exceeds ~300s.
+  after(() =>
+    runSeoSync(scope.orgId, { fullBackfill: true }).catch((err) => {
+      console.warn("[seo-connect] initial sync error", err);
+    }),
+  );
 
   revalidatePath(PORTAL_PATH);
   revalidatePath(PORTAL_HOME);
