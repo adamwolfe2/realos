@@ -22,7 +22,9 @@ describe.each(ZONES)("periodLabel in $tz", ({ tz, offsetMin }) => {
     process.env.TZ = tz;
   });
   afterAll(() => {
-    process.env.TZ = original;
+    // Assigning undefined would store the string "undefined".
+    if (original === undefined) delete process.env.TZ;
+    else process.env.TZ = original;
   });
 
   it("the runtime timezone actually switched", () => {
