@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db";
 import { OrgType, TenantStatus, UserRole } from "@prisma/client";
 import { webhookLimiter, checkRateLimit, getIp, rateLimited } from "@/lib/rate-limit";
 import { captureWithContext } from "@/lib/sentry";
-import { escapeLikePattern } from "@/lib/leads/find-by-email";
+import { findOrgByPrimaryContact } from "@/lib/auth/provision";
 
 const VALID_ROLES = [
   UserRole.AGENCY_OWNER,
@@ -219,25 +219,12 @@ export async function POST(req: NextRequest) {
         });
         const domainMatch = emailRow
           ? null
-          : await prisma.organization.findFirst({
-              // Case-insensitive: intake conversion can store the contact
-              // email as typed. Escaped because Prisma's insensitive equals
-              // is an ILIKE (see lib/leads/find-by-email.ts).
-              // CLIENT only (never bind into the agency org this way). When
-              // invite metadata names an org it may only pick among orgs
-              // that list this email as primary contact; it never binds on
-              // its own. Oldest first so the choice is deterministic.
-              where: {
-                primaryContactEmail: {
-                  equals: escapeLikePattern(email.toLowerCase()),
-                  mode: "insensitive",
-                },
-                orgType: OrgType.CLIENT,
-                ...(event.type === "user.created" && metaOrgId ? { id: metaOrgId } : {}),
-              },
-              orderBy: { createdAt: "asc" },
-              select: { id: true },
-            });
+          : // Shared with the provisioner's self-heal (lib/auth/provision.ts).
+            // Invite metadata may only pick among matches, never bind alone.
+            await findOrgByPrimaryContact(
+              email,
+              event.type === "user.created" ? metaOrgId : undefined,
+            );
         if (domainMatch) {
           await prisma.user.upsert({
             where: { clerkUserId: id },
