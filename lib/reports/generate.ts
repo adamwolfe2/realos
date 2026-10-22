@@ -57,6 +57,9 @@ export type ReportKpis = {
   // Form/chatbot leads — rows in the Lead table created via opted-in
   // conversion paths (contact form, chatbot email capture, intake).
   leads: number;
+  // Of `leads`, those the AppFolio sync created from rental applications.
+  // Optional: snapshots stored before 2026-10-22 lack it.
+  leadsFromAppfolio?: number;
   tours: number;
   applications: number;
   costPerLead: number | null;
@@ -1381,8 +1384,20 @@ export async function generateReportSnapshot(
       ? priorAdSpendUsd / priorLeadsCount
       : null;
 
+  // Same scope as leadsCount; feeds the "captured vs AppFolio" sub-label.
+  const leadsFromAppfolio = await prisma.lead.count({
+    where: {
+      orgId,
+      ...scope.propertyClause,
+      ...activePropertyClause(scope),
+      createdAt: { gte: periodStart, lt: periodEnd },
+      sourceDetail: APPFOLIO_APPLICATION_SOURCE,
+    },
+  });
+
   const kpis: ReportKpis = {
     leads: leadsCount,
+    leadsFromAppfolio,
     tours: toursCount,
     applications: applicationsCount,
     costPerLead,
