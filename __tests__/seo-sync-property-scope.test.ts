@@ -394,3 +394,20 @@ describe("runSeoSync — backfill window is per integration", () => {
     }
   });
 });
+
+describe("runSeoSync — merged snapshot writes never zero the other provider", () => {
+  it("a GA4-only date updates GA4 fields and leaves stored GSC fields alone", async () => {
+    (prisma.seoIntegration.findMany as AnyMock).mockResolvedValue([
+      baseIntegration({ id: "ga4", provider: SeoProvider.GA4, propertyIdentifier: "123" }),
+    ]);
+    (fetchGa4OrganicDaily as AnyMock).mockResolvedValue([
+      { date: "2026-07-15", sessions: 40, users: 30 },
+    ]);
+    (prisma.seoSnapshot.findFirst as AnyMock).mockResolvedValue({ id: "snap-1" });
+    await runSeoSync("org-1", { fromDate: new Date("2026-07-15"), toDate: new Date("2026-07-15") });
+    const data = (prisma.seoSnapshot.update as AnyMock).mock.calls[0][0].data;
+    expect(data).not.toHaveProperty("totalClicks");
+    expect(data).not.toHaveProperty("totalImpressions");
+    expect(data).not.toHaveProperty("avgPosition");
+  });
+});

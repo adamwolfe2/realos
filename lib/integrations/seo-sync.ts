@@ -470,13 +470,27 @@ export async function runSeoSync(
     try {
       // Find-then-write (not upsert) — see seoQuery above for why.
       const findWhere = { orgId, propertyId: payload.propertyId ?? null, date };
-      const data = {
-        organicSessions: payload.organicSessions ?? 0,
-        organicUsers: payload.organicUsers ?? 0,
-        totalImpressions: payload.totalImpressions ?? 0,
-        totalClicks: payload.totalClicks ?? 0,
-        avgCtr: payload.avgCtr ?? 0,
-        avgPosition: payload.avgPosition ?? 0,
+      const fields = {
+        organicSessions: payload.organicSessions,
+        organicUsers: payload.organicUsers,
+        totalImpressions: payload.totalImpressions,
+        totalClicks: payload.totalClicks,
+        avgCtr: payload.avgCtr,
+        avgPosition: payload.avgPosition,
+      };
+      // Update only the fields this run produced: a provider that did not
+      // cover this date (failed, or a narrower window) keeps its stored
+      // values instead of being zeroed. A new row defaults absent fields to 0.
+      const data = Object.fromEntries(
+        Object.entries(fields).filter(([, v]) => v !== undefined),
+      ) as Partial<Record<keyof typeof fields, number>>;
+      const createData = {
+        organicSessions: fields.organicSessions ?? 0,
+        organicUsers: fields.organicUsers ?? 0,
+        totalImpressions: fields.totalImpressions ?? 0,
+        totalClicks: fields.totalClicks ?? 0,
+        avgCtr: fields.avgCtr ?? 0,
+        avgPosition: fields.avgPosition ?? 0,
       };
       const existing = await prisma.seoSnapshot.findFirst({
         where: findWhere,
@@ -486,7 +500,7 @@ export async function runSeoSync(
         await prisma.seoSnapshot.update({ where: { id: existing.id }, data });
       } else {
         try {
-          await prisma.seoSnapshot.create({ data: { ...findWhere, ...data } });
+          await prisma.seoSnapshot.create({ data: { ...findWhere, ...createData } });
         } catch (err) {
           if (!isP2002(err)) throw err;
           const winner = await prisma.seoSnapshot.findFirst({
