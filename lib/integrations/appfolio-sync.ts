@@ -1126,12 +1126,17 @@ export async function runAppfolioSync(
       })
     ) {
       try {
-        stats.residentsMovedOut = await markResidentsAbsentFromDirectoryPast(prisma, {
-          orgId,
-          propertyIds: [...residentSweepPropertyIds],
-          seenExternalIds: seenResidentExternalIds,
-          now,
-        });
+        // One transaction, same reason as the lease end-sweep below.
+        stats.residentsMovedOut = await prisma.$transaction(
+          (tx) =>
+            markResidentsAbsentFromDirectoryPast(tx, {
+              orgId,
+              propertyIds: [...residentSweepPropertyIds],
+              seenExternalIds: seenResidentExternalIds,
+              now,
+            }),
+          { timeout: 30_000 },
+        );
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";
         console.error(`[appfolio] resident move-out sweep failed for org ${orgId}:`, err);
@@ -1210,12 +1215,18 @@ export async function runAppfolioSync(
       })
     ) {
       try {
-        stats.leasesEnded = await endLeasesAbsentFromRentRoll(prisma, {
-          orgId,
-          propertyIds: [...sweepPropertyIds],
-          seenExternalIds: seenLeaseExternalIds,
-          now,
-        });
+        // One transaction: a failed chunk rolls back the whole sweep, so
+        // leasesEnded is never under-reported after a partial write.
+        stats.leasesEnded = await prisma.$transaction(
+          (tx) =>
+            endLeasesAbsentFromRentRoll(tx, {
+              orgId,
+              propertyIds: [...sweepPropertyIds],
+              seenExternalIds: seenLeaseExternalIds,
+              now,
+            }),
+          { timeout: 30_000 },
+        );
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";
         console.error(`[appfolio] lease end-sweep failed for org ${orgId}:`, err);
@@ -1413,6 +1424,8 @@ export async function runAppfolioSync(
     propertiesUpserted: stats.propertiesUpserted,
     residentsUpserted: stats.residentsUpserted,
     leasesUpserted: stats.leasesUpserted,
+    leasesEnded: stats.leasesEnded,
+    residentsMovedOut: stats.residentsMovedOut,
     workOrdersUpserted: stats.workOrdersUpserted,
     delinquenciesUpdated: stats.delinquenciesUpdated,
     warnings: stats.warnings.slice(0, 50), // cap to avoid runaway JSON

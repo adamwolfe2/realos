@@ -8,7 +8,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { leaseStatusFor, mapLeasePayload } from "@/lib/integrations/appfolio";
+import { fetchAllPages, leaseStatusFor, mapLeasePayload } from "@/lib/integrations/appfolio";
 import {
   endLeasesAbsentFromRentRoll,
   markResidentsAbsentFromDirectoryPast,
@@ -56,14 +56,20 @@ describe("pullIsComplete", () => {
 function fakeDb(candidates: Array<{ id: string; externalId: string | null }>) {
   const findMany = vi.fn().mockResolvedValue(candidates);
   const updateMany = vi.fn().mockImplementation(({ where }) => Promise.resolve({ count: where.id.in.length }));
-  return { db: { lease: { findMany, updateMany } }, findMany, updateMany };
+  const residentUpdateMany = vi.fn().mockResolvedValue({ count: 0 });
+  return {
+    db: { lease: { findMany, updateMany }, resident: { updateMany: residentUpdateMany } },
+    findMany,
+    updateMany,
+    residentUpdateMany,
+  };
 }
 
 describe("endLeasesAbsentFromRentRoll", () => {
   const base = { orgId: "org1", propertyIds: ["p1"], now: NOW };
 
   it("ends past-term ACTIVE/EXPIRING leases missing from a complete pull", async () => {
-    const { db, findMany, updateMany } = fakeDb([
+    const { db, findMany, updateMany, residentUpdateMany } = fakeDb([
       { id: "a", externalId: "on-roll" },
       { id: "b", externalId: "moved-out" },
       { id: "c", externalId: null },
@@ -78,9 +84,15 @@ describe("endLeasesAbsentFromRentRoll", () => {
       status: { in: ["ACTIVE", "EXPIRING"] },
       endDate: { lt: NOW },
     });
+    // endDate re-checked so a concurrent renewal is not ended.
     expect(updateMany).toHaveBeenCalledWith({
-      where: { id: { in: ["b"] }, status: { in: ["ACTIVE", "EXPIRING"] } },
+      where: { id: { in: ["b"] }, status: { in: ["ACTIVE", "EXPIRING"] }, endDate: { lt: NOW } },
       data: { status: "ENDED" },
+    });
+    // The ended lease stops being the resident's current lease.
+    expect(residentUpdateMany).toHaveBeenCalledWith({
+      where: { currentLeaseId: { in: ["b"] }, currentLease: { status: "ENDED" } },
+      data: { currentLeaseId: null },
     });
   });
 
@@ -124,7 +136,7 @@ describe("markResidentsAbsentFromDirectoryPast", () => {
       moveOutDate: { lt: NOW },
     });
     expect(updateMany).toHaveBeenCalledWith({
-      where: { id: { in: ["b"] }, status: { in: ["ACTIVE", "NOTICE_GIVEN"] } },
+      where: { id: { in: ["b"] }, status: { in: ["ACTIVE", "NOTICE_GIVEN"] }, moveOutDate: { lt: NOW } },
       data: { status: "PAST" },
     });
   });
@@ -152,13 +164,56 @@ describe("residents phase runs the move-out sweep only after a complete pull", (
     expect(residentsPhase).toContain("onTruncated");
     expect(residentsPhase).toContain("unmappedResidentRows += 1");
     const gate = residentsPhase.indexOf("pullIsComplete(");
-    const sweep = residentsPhase.indexOf("markResidentsAbsentFromDirectoryPast(prisma");
+    const sweep = residentsPhase.indexOf("markResidentsAbsentFromDirectoryPast(tx");
     expect(gate).toBeGreaterThan(-1);
     expect(sweep).toBeGreaterThan(gate);
+  });
+
+  it("runs in one transaction and persists residentsMovedOut", () => {
+    expect(residentsPhase).toMatch(/prisma\.\$transaction\(\s*\(tx\) =>\s*markResidentsAbsentFromDirectoryPast\(tx,/);
+    expect(content).toContain("residentsMovedOut: stats.residentsMovedOut");
   });
 
   it("scopes the sweep to properties upserted in this pull", () => {
     expect(residentsPhase).toContain("residentSweepPropertyIds.add(propertyId)");
     expect(residentsPhase).toContain("propertyIds: [...residentSweepPropertyIds]");
+  });
+});
+
+describe("fetchAllPages truncation signal", () => {
+  function client(totalPages: number) {
+    let served = 0;
+    return {
+      fetchReport: vi.fn(async () => {
+        served += 1;
+        return { results: [{ n: served }], nextPageUrl: served < totalPages ? `p${served + 1}` : null };
+      }),
+    };
+  }
+
+  it("a report exactly MAX_PAGES (50) long is complete, not truncated", async () => {
+    const onTruncated = vi.fn();
+    const rows = await fetchAllPages(client(50) as never, "rent_roll", { onTruncated });
+    expect(rows).toHaveLength(50);
+    expect(onTruncated).not.toHaveBeenCalled();
+  });
+
+  it("flags truncation when another page exists past MAX_PAGES", async () => {
+    const onTruncated = vi.fn();
+    await fetchAllPages(client(51) as never, "rent_roll", { onTruncated });
+    expect(onTruncated).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("lease end-sweep wiring", () => {
+  const content = fs.readFileSync(path.resolve(__dirname, "../lib/integrations/appfolio-sync.ts"), "utf-8");
+
+  it("runs the sweep in one transaction so a failed chunk rolls back", () => {
+    expect(content).toMatch(/prisma\.\$transaction\(\s*\(tx\) =>\s*endLeasesAbsentFromRentRoll\(tx,/);
+  });
+
+  it("persists leasesEnded in lastSyncStats", () => {
+    const persisted = content.slice(content.indexOf("const persistedStats"), content.indexOf("phaseFailures,\n  };"));
+    expect(persisted).toContain("leasesEnded: stats.leasesEnded");
   });
 });
