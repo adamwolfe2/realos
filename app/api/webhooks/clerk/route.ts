@@ -165,6 +165,12 @@ export async function POST(req: NextRequest) {
       // (claimed by provisionUserForClerk; removal deletes it), owner invites
       // through the new org's primaryContactEmail match below. Only the role
       // is read, for that primary-contact create.
+      const metaOrgId =
+        typeof public_metadata?.orgId === "string"
+          ? public_metadata.orgId
+          : typeof public_metadata?.organizationId === "string"
+            ? public_metadata.organizationId
+            : undefined;
       const rawRole = public_metadata?.role;
       const role: UserRole = isValidRole(rawRole)
         ? rawRole
@@ -216,12 +222,19 @@ export async function POST(req: NextRequest) {
               // Case-insensitive: intake conversion can store the contact
               // email as typed. Escaped because Prisma's insensitive equals
               // is an ILIKE (see lib/leads/find-by-email.ts).
+              // CLIENT only (never bind into the agency org this way). When
+              // invite metadata names an org it may only pick among orgs
+              // that list this email as primary contact; it never binds on
+              // its own. Oldest first so the choice is deterministic.
               where: {
                 primaryContactEmail: {
                   equals: escapeLikePattern(email.toLowerCase()),
                   mode: "insensitive",
                 },
+                orgType: OrgType.CLIENT,
+                ...(event.type === "user.created" && metaOrgId ? { id: metaOrgId } : {}),
               },
+              orderBy: { createdAt: "asc" },
               select: { id: true },
             });
         if (domainMatch) {

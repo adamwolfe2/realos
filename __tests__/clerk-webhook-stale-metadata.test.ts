@@ -80,15 +80,18 @@ vi.mock("@/lib/db", () => ({
 process.env.CLERK_WEBHOOK_SECRET = "whsec_test";
 const { POST } = await import("@/app/api/webhooks/clerk/route");
 
-function send(type: "user.created" | "user.updated") {
+function send(
+  type: "user.created" | "user.updated",
+  opts: { email?: string; role?: UserRole } = {},
+) {
   mocks.event = {
     type,
     data: {
       id: "user_1",
-      email_addresses: [{ email_address: "a@example.com" }],
+      email_addresses: [{ email_address: opts.email ?? "a@example.com" }],
       first_name: "A",
       last_name: "B",
-      public_metadata: { orgId: "org-1", role: UserRole.CLIENT_ADMIN },
+      public_metadata: { orgId: "org-1", role: opts.role ?? UserRole.CLIENT_ADMIN },
     },
   };
   const req = new Request("https://x/api/webhooks/clerk", {
@@ -166,17 +169,25 @@ describe("clerk webhook never trusts stale invite metadata", () => {
     // createClientDirect / convertIntakeToClient / inviteOwnerForProvisionedOrg
     // set org.primaryContactEmail to the invitee and create no seed row.
     mocks.orgFindFirst.mockResolvedValue({ id: "org-1" });
-    await send("user.created");
+    // Every owner-invite producer stamps CLIENT_OWNER.
+    await send("user.created", { role: UserRole.CLIENT_OWNER });
     expect(mocks.upsert).toHaveBeenCalledTimes(1);
-    expect(mocks.upsert.mock.calls[0][0].create.org).toEqual({ connect: { id: "org-1" } });
+    const create = mocks.upsert.mock.calls[0][0].create;
+    expect(create.org).toEqual({ connect: { id: "org-1" } });
+    expect(create.role).toBe(UserRole.CLIENT_OWNER);
+    // Metadata only narrows the primary-contact match; CLIENT orgs only.
+    expect(mocks.orgFindFirst.mock.calls[0][0].where).toMatchObject({ id: "org-1", orgType: "CLIENT" });
   });
 
   it("owner primary-contact match is an escaped case-insensitive equals", async () => {
     mocks.orgFindFirst.mockResolvedValue({ id: "org-1" });
-    await send("user.created");
-    expect(mocks.orgFindFirst.mock.calls[0][0].where).toEqual({
-      primaryContactEmail: { equals: "a@example.com", mode: "insensitive" },
+    await send("user.created", { email: "Owner_100%@Example.com" });
+    const args = mocks.orgFindFirst.mock.calls[0][0];
+    expect(args.where.primaryContactEmail).toEqual({
+      equals: "owner\\_100\\%@example.com",
+      mode: "insensitive",
     });
+    expect(args.orderBy).toEqual({ createdAt: "asc" });
   });
 
   it("does not restore a demoted user's old role on user.updated", async () => {
