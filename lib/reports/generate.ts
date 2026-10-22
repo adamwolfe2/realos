@@ -60,6 +60,8 @@ export type ReportKpis = {
   // Of `leads`, those the AppFolio sync created from rental applications.
   // Optional: snapshots stored before 2026-10-22 lack it.
   leadsFromAppfolio?: number;
+  // Of `leads`, those LeaseStack captured itself (no external system).
+  leadsCaptured?: number;
   tours: number;
   applications: number;
   costPerLead: number | null;
@@ -973,6 +975,8 @@ export async function generateReportSnapshot(
     applicationStatusGroups,
     leasesByPropertyGroups,
     leasesSignedLast180dCount,
+    leadsFromAppfolio,
+    leadsCaptured,
   ] = await Promise.all([
     // KPI counts — scope.propertyClause is `{}` for org-wide (legacy
     // behavior) or `{ propertyId }` for per-property reports.
@@ -1353,6 +1357,26 @@ export async function generateReportSnapshot(
         },
       },
     }),
+    // Leads KPI sub-label (same scope as leadsCount): AppFolio-application
+    // imports, and leads LeaseStack captured itself (no external system).
+    prisma.lead.count({
+      where: {
+        orgId,
+        ...scope.propertyClause,
+        ...activePropertyClause(scope),
+        createdAt: { gte: periodStart, lt: periodEnd },
+        sourceDetail: APPFOLIO_APPLICATION_SOURCE,
+      },
+    }),
+    prisma.lead.count({
+      where: {
+        orgId,
+        ...scope.propertyClause,
+        ...activePropertyClause(scope),
+        createdAt: { gte: periodStart, lt: periodEnd },
+        externalSystem: null,
+      },
+    }),
   ]);
 
   // KPIs
@@ -1384,20 +1408,10 @@ export async function generateReportSnapshot(
       ? priorAdSpendUsd / priorLeadsCount
       : null;
 
-  // Same scope as leadsCount; feeds the "captured vs AppFolio" sub-label.
-  const leadsFromAppfolio = await prisma.lead.count({
-    where: {
-      orgId,
-      ...scope.propertyClause,
-      ...activePropertyClause(scope),
-      createdAt: { gte: periodStart, lt: periodEnd },
-      sourceDetail: APPFOLIO_APPLICATION_SOURCE,
-    },
-  });
-
   const kpis: ReportKpis = {
     leads: leadsCount,
     leadsFromAppfolio,
+    leadsCaptured,
     tours: toursCount,
     applications: applicationsCount,
     costPerLead,

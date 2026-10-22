@@ -638,6 +638,8 @@ function buildPlainText(input: ReportEmailInput, period: string, kindLabel: stri
   }
   lines.push("Key numbers");
   lines.push(`  Leads: ${snapshot.kpis.leads}`);
+  const leadsNote = leadsSplitNote(snapshot.kpis);
+  if (leadsNote) lines.push(`    (${leadsNote})`);
   lines.push(`  Tours: ${snapshot.kpis.tours}`);
   lines.push(`  Applications: ${snapshot.kpis.applications}`);
   lines.push(`  Ad spend: $${snapshot.kpis.adSpendUsd.toLocaleString()}`);
