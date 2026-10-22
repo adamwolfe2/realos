@@ -1365,6 +1365,8 @@ export async function generateReportSnapshot(
         ...scope.propertyClause,
         ...activePropertyClause(scope),
         createdAt: { gte: periodStart, lt: periodEnd },
+        // Both: sourceDetail alone is caller-settable on captured leads.
+        externalSystem: "appfolio",
         sourceDetail: APPFOLIO_APPLICATION_SOURCE,
       },
     }),
