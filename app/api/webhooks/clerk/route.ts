@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { OrgType, TenantStatus, UserRole } from "@prisma/client";
 import { webhookLimiter, checkRateLimit, getIp, rateLimited } from "@/lib/rate-limit";
 import { captureWithContext } from "@/lib/sentry";
+import { escapeLikePattern } from "@/lib/leads/find-by-email";
 
 const VALID_ROLES = [
   UserRole.AGENCY_OWNER,
@@ -156,137 +157,120 @@ export async function POST(req: NextRequest) {
         break;
       }
 
-      // Invite flow: an explicit orgId / organizationId on public_metadata
-      // pre-binds the user to that org with the supplied role. Used by the
-      // agency "Invite client" flow which sets metadata before the user
-      // signs up. Falls through to the eager-provision path when missing.
+      // public_metadata.orgId / role are stamped once at invite time and
+      // never updated by team role changes or removals, so they never bind a
+      // user to an org here: a delayed or replayed user.created would
+      // re-create a removed teammate. Invitees bind through durable DB state
+      // instead: team invites through their `seed_pending_<email>` User row
+      // (claimed by provisionUserForClerk; removal deletes it), owner invites
+      // through the new org's primaryContactEmail match below. Only the role
+      // is read, for that primary-contact create.
       const rawRole = public_metadata?.role;
       const role: UserRole = isValidRole(rawRole)
         ? rawRole
         : UserRole.CLIENT_OWNER;
-      const metaOrgId =
-        typeof public_metadata?.orgId === "string"
-          ? public_metadata.orgId
-          : typeof public_metadata?.organizationId === "string"
-            ? (public_metadata.organizationId as string)
-            : undefined;
-      // Only user.created trusts invite metadata, so only it needs the lookup.
-      const orgExists =
-        event.type === "user.created" && metaOrgId
-          ? !!(await prisma.organization.findUnique({ where: { id: metaOrgId } }))
-          : false;
-
-      // Invite metadata is stamped once and never updated by team role
-      // changes or removals, so it is only trusted on user.created. On
-      // user.updated it would undo demotions and re-create removed users.
-      if (event.type === "user.created" && orgExists && metaOrgId) {
-        // Pre-bound invite path: link directly to the invitee's org with
-        // the metadata-provided role.
-        await prisma.user.upsert({
+      // On user.updated, if the user already has
+      // an org assignment, do NOT overwrite it — the membership lives in
+      // its own row and email-domain matching could re-home them
+      // incorrectly.
+      const existing = await prisma.user.findUnique({
+        where: { clerkUserId: id },
+        select: { id: true, orgId: true },
+      });
+      if (event.type === "user.updated" && existing) {
+        await prisma.user.update({
           where: { clerkUserId: id },
-          create: {
-            clerkUserId: id,
+          data: {
             email,
             firstName: first_name ?? null,
             lastName: last_name ?? null,
-            role,
-            org: { connect: { id: metaOrgId } },
-          },
-          // No role on update: a retried user.created carries the
-          // invite-time role and would undo a demotion made since.
-          update: {
-            email,
-            firstName: first_name ?? null,
-            lastName: last_name ?? null,
+            lastLoginAt: new Date(),
           },
         });
+        console.info(`User ${id} already linked to org ${existing.orgId}`);
+      } else if (event.type === "user.updated" && !existing) {
+        // No row means provisioning on user.created never ran or failed,
+        // or an operator removed the user in-app (manage-team deletes the
+        // row). A Clerk-side membership removal does NOT delete it:
+        // organizationMembership.deleted re-homes the row to the agency
+        // org, so removed members still have a row. Never provision from a
+        // profile update; failed provisioning self-heals on the user's
+        // next authenticated request (provisionUserForClerk in scope.ts
+        // and /api/auth/role).
+        console.warn(`Clerk user ${id} updated with no DB row; skipping`);
       } else {
-        // No metadata override. On user.updated, if the user already has
-        // an org assignment, do NOT overwrite it — the membership lives in
-        // its own row and email-domain matching could re-home them
-        // incorrectly.
-        const existing = await prisma.user.findUnique({
-          where: { clerkUserId: id },
-          select: { id: true, orgId: true },
+        // Try the legacy email-domain auto-link first: if an existing
+        // organization was seeded with this user's email as its primary
+        // contact (intake flow), claim that org so they don't end up
+        // with a duplicate workspace.
+        // A row already holding this email (an invite seed, or a retry
+        // after the claim) is resolved by the provisioner, never re-created
+        // here (User.email is unique, so a create would fail).
+        const emailRow = await prisma.user.findUnique({
+          where: { email: email.toLowerCase() },
+          select: { id: true },
         });
-        if (event.type === "user.updated" && existing) {
-          await prisma.user.update({
+        const domainMatch = emailRow
+          ? null
+          : await prisma.organization.findFirst({
+              // Case-insensitive: intake conversion can store the contact
+              // email as typed. Escaped because Prisma's insensitive equals
+              // is an ILIKE (see lib/leads/find-by-email.ts).
+              where: {
+                primaryContactEmail: {
+                  equals: escapeLikePattern(email.toLowerCase()),
+                  mode: "insensitive",
+                },
+              },
+              select: { id: true },
+            });
+        if (domainMatch) {
+          await prisma.user.upsert({
             where: { clerkUserId: id },
-            data: {
+            create: {
+              clerkUserId: id,
               email,
               firstName: first_name ?? null,
               lastName: last_name ?? null,
-              lastLoginAt: new Date(),
+              role,
+              org: { connect: { id: domainMatch.id } },
+            },
+            update: {
+              email,
+              firstName: first_name ?? null,
+              lastName: last_name ?? null,
             },
           });
-          console.info(`User ${id} already linked to org ${existing.orgId}`);
-        } else if (event.type === "user.updated" && !existing) {
-          // No row means provisioning on user.created never ran or failed,
-          // or an operator removed the user in-app (manage-team deletes the
-          // row). A Clerk-side membership removal does NOT delete it:
-          // organizationMembership.deleted re-homes the row to the agency
-          // org, so removed members still have a row. Never provision from a
-          // profile update; failed provisioning self-heals on the user's
-          // next authenticated request (provisionUserForClerk in scope.ts
-          // and /api/auth/role).
-          console.warn(`Clerk user ${id} updated with no DB row; skipping`);
+          console.info(
+            `User ${id} auto-linked to org ${domainMatch.id} via email match`
+          );
         } else {
-          // Try the legacy email-domain auto-link first: if an existing
-          // organization was seeded with this user's email as its primary
-          // contact (intake flow), claim that org so they don't end up
-          // with a duplicate workspace.
-          const domainMatch = await prisma.organization.findFirst({
-            where: { primaryContactEmail: email.toLowerCase() },
-            select: { id: true },
-          });
-          if (domainMatch) {
-            await prisma.user.upsert({
-              where: { clerkUserId: id },
-              create: {
-                clerkUserId: id,
-                email,
-                firstName: first_name ?? null,
-                lastName: last_name ?? null,
-                role,
-                org: { connect: { id: domainMatch.id } },
-              },
-              update: {
-                email,
-                firstName: first_name ?? null,
-                lastName: last_name ?? null,
-              },
-            });
-            console.info(
-              `User ${id} auto-linked to org ${domainMatch.id} via email match`
+          // Greenfield self-signup: delegate to the shared provisioner
+          // so the webhook stays in sync with /api/auth/role and the
+          // portal layout's self-heal. Brand-new users get a CLIENT org
+          // of their own.
+          try {
+            const { provisionUserForClerk } = await import(
+              "@/lib/auth/provision"
             );
-          } else {
-            // Greenfield self-signup: delegate to the shared provisioner
-            // so the webhook stays in sync with /api/auth/role and the
-            // portal layout's self-heal. Brand-new users get a CLIENT org
-            // of their own.
-            try {
-              const { provisionUserForClerk } = await import(
-                "@/lib/auth/provision"
-              );
-              await provisionUserForClerk({
-                clerkUserId: id,
-                email,
-                firstName: first_name ?? null,
-                lastName: last_name ?? null,
-              });
-            } catch (err) {
-              console.error(
-                `[clerk webhook] provision failed for ${id}/${email}:`,
-                err,
-              );
-              captureWithContext(err, {
-                route: "api/webhooks/clerk",
-                webhook: "clerk",
-                eventType: event.type,
-                clerkUserId: id,
-                stage: "provision",
-              });
-            }
+            await provisionUserForClerk({
+              clerkUserId: id,
+              email,
+              firstName: first_name ?? null,
+              lastName: last_name ?? null,
+            });
+          } catch (err) {
+            console.error(
+              `[clerk webhook] provision failed for ${id}/${email}:`,
+              err,
+            );
+            captureWithContext(err, {
+              route: "api/webhooks/clerk",
+              webhook: "clerk",
+              eventType: event.type,
+              clerkUserId: id,
+              stage: "provision",
+            });
           }
         }
       }
