@@ -114,7 +114,7 @@ describe("Clerk webhook — app/api/webhooks/clerk/route.ts", () => {
 
   it("auto-links user to org by email on first sign-up", () => {
     const content = readRoute();
-    expect(content).toContain("prisma.organization.findFirst");
+    expect(content).toContain("findOrgByPrimaryContact(");
     expect(content).toContain("auto-linked to org");
   });
 
