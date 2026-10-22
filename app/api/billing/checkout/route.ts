@@ -102,6 +102,13 @@ export async function POST(req: NextRequest) {
   // when Redis is unset (checkout is security-critical; see lib/rate-limit.ts).
   const limit = await checkRateLimit(checkoutLimiter, `checkout:${scope.orgId}`);
   if (!limit.allowed) {
+    // Limiter down/unset is a server problem, not the customer's fault.
+    if (limit.unavailable) {
+      return NextResponse.json(
+        { ok: false, error: "Checkout is temporarily unavailable. Please try again shortly." },
+        { status: 503, headers: { "Retry-After": "60" } },
+      );
+    }
     return rateLimited(
       "Too many checkout attempts. Try again in a few minutes.",
       Math.max(1, Math.ceil((limit.reset - Date.now()) / 1000)),
