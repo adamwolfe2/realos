@@ -19,6 +19,14 @@ describe("currentLeaseWhere", () => {
       ],
     });
   });
+
+  it("keeps a lease counted through its inclusive end date (midnight-UTC bound)", () => {
+    const afternoon = new Date("2026-10-20T15:30:00Z");
+    const where = currentLeaseWhere(afternoon);
+    expect(where.AND[1]).toEqual({
+      OR: [{ endDate: null }, { endDate: { gte: new Date("2026-10-20T00:00:00Z") } }],
+    });
+  });
 });
 
 describe("isBrandedQuery", () => {

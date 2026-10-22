@@ -553,10 +553,10 @@ const LIVE_APPLICATION_STATUSES: ApplicationStatus[] = [
   ApplicationStatus.APPROVED,
 ];
 
-// The AppFolio sync never moves Lease.status off ACTIVE, so an ACTIVE row
-// whose term ended is a past tenancy, not an occupied unit (SG Real Estate:
-// 177 ACTIVE rows on a 100-unit building, 80 already ended). "Current" means
-// ACTIVE and in-term at asOf. Null dates are treated as open-ended.
+// "Current" = ACTIVE or EXPIRING (notice given / ending soon) and in-term at
+// asOf; null dates are open-ended. Until #192 the AppFolio sync never ended a
+// lease (SG Real Estate: 177 ACTIVE rows on a 100-unit building). See
+// lib/leases/current.ts.
 export { currentLeaseWhere } from "@/lib/leases/current";
 
 
