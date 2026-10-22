@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { verifyCronAuth } from "@/lib/cron/auth";
 import { recordCronRun } from "@/lib/health/cron-run";
 import { syncPropertyFromDataforSeo } from "@/lib/seo/sync-orchestrator";
+import { reapStuckScanJobs } from "@/lib/seo/scan-reaper";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -59,53 +60,16 @@ export async function GET(req: NextRequest) {
       },
       select: { id: true, attempts: true },
     });
-    let recycled = 0;
-    let abandoned = 0;
-    const reaperErrors: string[] = [];
-    const reaperFailed = (id: string) => (err: unknown) => {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error("[seo-scan-worker] reaper update failed", id, message);
-      reaperErrors.push(`reap ${id}: ${message}`);
-      return false;
-    };
+    const { recycled, abandoned, errors: reaperErrors } = await reapStuckScanJobs(
+      prisma,
+      stuck,
+      MAX_ATTEMPTS,
+    );
     // Spread into every return so a failed reap marks the run partial.
     const reaperResult = () =>
       reaperErrors.length
         ? { errorCount: reaperErrors.length, errorSummary: reaperErrors.slice(0, 5).join("; ") }
         : {};
-    for (const j of stuck) {
-      if (j.attempts + 1 >= MAX_ATTEMPTS) {
-        const ok = await prisma.seoScanJob
-          .update({
-            where: { id: j.id },
-            data: {
-              status: "FAILED",
-              error: "Exceeded max attempts after stuck-RUNNING reaping",
-              finishedAt: new Date(),
-              attempts: { increment: 1 },
-            },
-          })
-          .then(() => true)
-          .catch(reaperFailed(j.id));
-        // Count only reaps that actually landed.
-        if (ok) abandoned += 1;
-      } else {
-        const ok = await prisma.seoScanJob
-          .update({
-            where: { id: j.id },
-            data: {
-              status: "QUEUED",
-              attempts: { increment: 1 },
-              startedAt: null,
-              progressStage: "Re-queued after timeout",
-              progressPct: 0,
-            },
-          })
-          .then(() => true)
-          .catch(reaperFailed(j.id));
-        if (ok) recycled += 1;
-      }
-    }
 
     // -----------------------------------------------------------------------
     // 2. CLAIM the oldest QUEUED row atomically.
