@@ -31,6 +31,10 @@ import {
   type MappedApplication,
   type MappedShowing,
 } from "./appfolio";
+import {
+  endLeasesAbsentFromRentRoll,
+  rentRollIsComplete,
+} from "./appfolio-lease-sweep";
 import { classifyProperty } from "@/lib/properties/marketable";
 import {
   buildLeadMatchIndex,
@@ -97,6 +101,8 @@ export type AppfolioSyncStats = {
   propertiesUpserted: number;
   residentsUpserted: number;
   leasesUpserted: number;
+  // Leases set ENDED because they left a complete rent_roll pull.
+  leasesEnded: number;
   workOrdersUpserted: number;
   delinquenciesUpdated: number;
   applicationsUpserted: number;
@@ -231,6 +237,7 @@ export async function runAppfolioSync(
     propertiesUpserted: 0,
     residentsUpserted: 0,
     leasesUpserted: 0,
+    leasesEnded: 0,
     workOrdersUpserted: 0,
     delinquenciesUpdated: 0,
     applicationsUpserted: 0,
@@ -1108,11 +1115,25 @@ export async function runAppfolioSync(
   // when we can match the resident.
   const leaseByExternalId = new Map<string, string>();
   try {
-    const rows = await fetchAllPages(client, "rent_roll");
+    let rentRollTruncated = false;
+    const rows = await fetchAllPages(client, "rent_roll", {
+      onTruncated: () => {
+        rentRollTruncated = true;
+      },
+    });
     let leasesNoProperty = 0;
+    let unmappedLeaseRows = 0;
+    // Every lease on the roll, whatever its property resolution: absence
+    // from this set is what marks a move-out below.
+    const seenLeaseExternalIds = new Set<string>();
+    const sweepPropertyIds = new Set<string>();
     for (const row of rows) {
       const mapped = mapLeasePayload(row);
-      if (!mapped) continue;
+      if (!mapped) {
+        unmappedLeaseRows += 1;
+        continue;
+      }
+      seenLeaseExternalIds.add(mapped.externalId);
       const propertyId = resolvePropertyId(
         mapped.propertyExternalId ? [mapped.propertyExternalId] : [],
       );
@@ -1133,7 +1154,40 @@ export async function runAppfolioSync(
         null;
       const leaseId = await upsertLease(orgId, propertyId, listingId, residentId, mapped);
       leaseByExternalId.set(mapped.externalId, leaseId);
+      sweepPropertyIds.add(propertyId);
       stats.leasesUpserted += 1;
+    }
+    // Move-outs: leases that left the roll. Guarded — see
+    // lib/integrations/appfolio-lease-sweep.ts for the invariant.
+    if (
+      rentRollIsComplete({
+        rowCount: rows.length,
+        unmappedRows: unmappedLeaseRows,
+        truncated: rentRollTruncated,
+      })
+    ) {
+      try {
+        // One transaction: a failed chunk rolls back the whole sweep, so
+        // leasesEnded is never under-reported after a partial write.
+        stats.leasesEnded = await prisma.$transaction(
+          (tx) =>
+            endLeasesAbsentFromRentRoll(tx, {
+              orgId,
+              propertyIds: [...sweepPropertyIds],
+              seenExternalIds: seenLeaseExternalIds,
+              now,
+            }),
+          { timeout: 30_000 },
+        );
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Unknown error";
+        console.error(`[appfolio] lease end-sweep failed for org ${orgId}:`, err);
+        stats.warnings.push(`leases: end-sweep skipped (${message})`);
+      }
+    } else {
+      stats.warnings.push(
+        `leases: rent roll incomplete (${rows.length} rows, ${unmappedLeaseRows} unmapped${rentRollTruncated ? ", truncated" : ""}) — moved-out leases not ended this run.`,
+      );
     }
     if (leasesNoProperty > 0) {
       stats.warnings.push(
@@ -1322,6 +1376,7 @@ export async function runAppfolioSync(
     propertiesUpserted: stats.propertiesUpserted,
     residentsUpserted: stats.residentsUpserted,
     leasesUpserted: stats.leasesUpserted,
+    leasesEnded: stats.leasesEnded,
     workOrdersUpserted: stats.workOrdersUpserted,
     delinquenciesUpdated: stats.delinquenciesUpdated,
     warnings: stats.warnings.slice(0, 50), // cap to avoid runaway JSON
