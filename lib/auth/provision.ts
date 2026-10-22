@@ -2,7 +2,52 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { trackServer } from "@/lib/analytics-server";
 import { alertFunnelStep } from "@/lib/notifications/funnel-alert";
-import { OrgType, ProductLine, UserRole, TenantStatus } from "@prisma/client";
+import { AuditAction, OrgType, ProductLine, UserRole, TenantStatus } from "@prisma/client";
+import { escapeLikePattern } from "@/lib/leads/find-by-email";
+
+// The CLIENT org that names this email as its primary contact: the durable
+// record of an owner invite (create-client, convert-intake, proposal
+// provisioning set primaryContactEmail and create no User). Callers only get
+// here when no User row holds this email. Excluded when THIS email was ever
+// removed from the org (manage-team writes the DELETE/User audit with
+// diff.removedEmail in the same transaction as the delete; older rows are
+// matched by their "Removed <email> (" description), so a removed owner
+// never re-binds while other teammates' joins/removals don't matter.
+// Escaped case-insensitive equals (Prisma compiles it to ILIKE), oldest
+// first. `onlyOrgId` lets invite metadata pick among matches, never bind
+// alone.
+export function findOrgByPrimaryContact(email: string, onlyOrgId?: string) {
+  const normalized = email.toLowerCase().trim();
+  return prisma.organization.findFirst({
+    where: {
+      primaryContactEmail: {
+        equals: escapeLikePattern(normalized),
+        mode: "insensitive",
+      },
+      orgType: OrgType.CLIENT,
+      auditEvents: {
+        none: {
+          action: AuditAction.DELETE,
+          entityType: "User",
+          OR: [
+            { diff: { path: ["removedEmail"], equals: normalized } },
+            // Old rows keep the email's original casing; startsWith is a
+            // LIKE, so escape it too.
+            {
+              description: {
+                startsWith: escapeLikePattern(`Removed ${normalized} (`),
+                mode: "insensitive",
+              },
+            },
+          ],
+        },
+      },
+      ...(onlyOrgId ? { id: onlyOrgId } : {}),
+    },
+    orderBy: { createdAt: "asc" },
+    select: { id: true },
+  });
+}
 
 // ---------------------------------------------------------------------------
 // First-sign-in provisioning.
@@ -96,6 +141,29 @@ export async function provisionUserForClerk(args: {
       org: byEmail.org,
       created: false,
     };
+  }
+
+  // 2b. Owner invite whose user.created webhook failed: claim the org that
+  // names this email as primary contact instead of a new workspace.
+  const ownerOrg = await findOrgByPrimaryContact(email);
+  if (ownerOrg) {
+    try {
+      const bound = await prisma.user.create({
+        data: {
+          clerkUserId: args.clerkUserId,
+          email,
+          firstName: args.firstName,
+          lastName: args.lastName,
+          role: UserRole.CLIENT_OWNER,
+          lastLoginAt: new Date(),
+          orgId: ownerOrg.id,
+        },
+        select: USER_SELECT,
+      });
+      return { ...bound, org: bound.org!, created: false };
+    } catch (err) {
+      return recoverFromCreateRace(err, args.clerkUserId);
+    }
   }
 
   // 3. Greenfield self-signup — provision a fresh CLIENT Organization +
