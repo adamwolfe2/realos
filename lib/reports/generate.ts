@@ -1804,7 +1804,7 @@ export async function generateReportSnapshot(
   // numbers for sources the operator hasn't actually connected.
   const dataSources = await buildDataSources(
     orgId,
-    scope.propertyId,
+    scope,
     periodStart,
     periodEnd,
   ).catch(sectionFailed("buildDataSources"));
@@ -1973,16 +1973,23 @@ export function dataSourceStatus(
   };
 }
 
-async function buildDataSources(
+// Exported for __tests__/report-accuracy-sg-2026-10.test.ts.
+export async function buildDataSources(
   orgId: string,
-  propertyId: string | null,
+  scope: Pick<Scope, "propertyId" | "seoLandingClause" | "seoQueryClause">,
   periodStart: Date,
   periodEnd: Date,
 ): Promise<ReportDataSources> {
+  const propertyId = scope.propertyId;
   const freshThreshold = new Date(
     Date.now() - SOURCE_FRESHNESS_DAYS * DAY_MS,
   );
   const propertyClause = propertyId ? { propertyId } : {};
+  const period = { gte: periodStart, lt: periodEnd };
+  // Window-data presence uses the SAME property scoping as the report
+  // sections, so another property's activity can never mark a source
+  // "connected" on a property-scoped report.
+  const adCampaignClause = propertyId ? { campaign: { propertyId } } : {};
 
   const [
     googleAdAccount,
@@ -2050,27 +2057,41 @@ async function buildDataSources(
     prisma.adMetricDaily.aggregate({
       where: {
         orgId,
-        date: { gte: periodStart, lt: periodEnd },
+        date: period,
         adAccount: { platform: "GOOGLE_ADS" },
+        ...adCampaignClause,
       },
       _sum: { spendCents: true },
     }),
     prisma.adMetricDaily.aggregate({
       where: {
         orgId,
-        date: { gte: periodStart, lt: periodEnd },
+        date: period,
         adAccount: { platform: "META" },
+        ...adCampaignClause,
       },
       _sum: { spendCents: true },
     }),
-    prisma.seoSnapshot.aggregate({
-      where: { orgId, date: { gte: periodStart, lt: periodEnd } },
-      _sum: { organicSessions: true },
-    }),
-    prisma.seoSnapshot.aggregate({
-      where: { orgId, date: { gte: periodStart, lt: periodEnd } },
-      _sum: { totalClicks: true },
-    }),
+    propertyId
+      ? prisma.seoLandingPage
+          .aggregate({
+            where: { orgId, ...scope.seoLandingClause, date: period },
+            _sum: { sessions: true },
+          })
+          .then((r) => r._sum.sessions ?? 0)
+      : prisma.seoSnapshot
+          .aggregate({ where: { orgId, date: period }, _sum: { organicSessions: true } })
+          .then((r) => r._sum.organicSessions ?? 0),
+    propertyId
+      ? prisma.seoQuery
+          .aggregate({
+            where: { orgId, ...scope.seoQueryClause, date: period },
+            _sum: { clicks: true },
+          })
+          .then((r) => r._sum.clicks ?? 0)
+      : prisma.seoSnapshot
+          .aggregate({ where: { orgId, date: period }, _sum: { totalClicks: true } })
+          .then((r) => r._sum.totalClicks ?? 0),
     prisma.chatbotConversation.count({
       where: {
         orgId,
@@ -2097,12 +2118,12 @@ async function buildDataSources(
     ga4: status(
       ga4Integration?.lastSyncAt ?? null,
       ga4Integration != null,
-      (organicSessionsInPeriod._sum.organicSessions ?? 0) > 0,
+      organicSessionsInPeriod > 0,
     ),
     gsc: status(
       gscIntegration?.lastSyncAt ?? null,
       gscIntegration != null,
-      (gscClicksInPeriod._sum.totalClicks ?? 0) > 0,
+      gscClicksInPeriod > 0,
     ),
     appfolio: status(
       appfolioIntegration?.lastSyncAt ?? null,

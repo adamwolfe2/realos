@@ -346,17 +346,15 @@ function AcquisitionSection(s: ReportSnapshot): React.ReactNode {
                 popupTrackingPartial(s.popupStats, s)
                   ? s.popupStats.conversionTrackedSince
                     ? `Converted: tracking since ${shortDate(s.popupStats.conversionTrackedSince)}`
-                    : "Converted: not tracked yet"
+                    : "Converted: none recorded yet"
                   : "Converted"
               }
             />
             <Stat value={num(s.popupStats.dismissed)} label="Dismissed" />
           </div>
-          {s.popupStats.conversionRate != null ? (
-            <p className="mt-3 text-label text-muted-foreground">
-              {pct(s.popupStats.conversionRate)} conversion rate
-            </p>
-          ) : null}
+          <p className="mt-3 text-label text-muted-foreground">
+            {s.popupStats.conversionRate != null ? pct(s.popupStats.conversionRate) : "—"} conversion rate
+          </p>
         </Card>
       ) : null}
 

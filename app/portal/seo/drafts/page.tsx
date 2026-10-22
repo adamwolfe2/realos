@@ -11,7 +11,7 @@ import {
   DataTable,
   type DataTableColumn,
 } from "@/components/portal/ui/data-table";
-import { isStalledDraft } from "@/lib/seo/draft-stalled";
+import { isStalledDraft, stalledDraftWhere } from "@/lib/seo/draft-stalled";
 
 export const metadata: Metadata = { title: "Content drafts" };
 export const dynamic = "force-dynamic";
@@ -90,7 +90,7 @@ export default async function PortalDraftsListPage({
     where.status = filter as DraftStatus;
   }
 
-  const [drafts, statusCounts] = await Promise.all([
+  const [drafts, statusCounts, stalledCount] = await Promise.all([
     prisma.contentDraft.findMany({
       where: where as never,
       orderBy: [{ createdAt: "desc" }],
@@ -121,13 +121,23 @@ export default async function PortalDraftsListPage({
       },
       _count: { _all: true },
     }),
+    prisma.contentDraft.count({
+      where: {
+        ...tenantWhere(scope),
+        ...(scope.allowedPropertyIds
+          ? { propertyId: { in: scope.allowedPropertyIds } }
+          : {}),
+        ...stalledDraftWhere(),
+      },
+    }),
   ]);
 
   const countMap = new Map(statusCounts.map((s) => [s.status, s._count._all]));
   const activeCount =
     (countMap.get("GENERATING") ?? 0) +
     (countMap.get("PENDING_REVIEW") ?? 0) +
-    (countMap.get("CHANGES_REQUESTED") ?? 0);
+    (countMap.get("CHANGES_REQUESTED") ?? 0) -
+    stalledCount;
 
   type DraftRow = (typeof drafts)[number];
   const columns: DataTableColumn<DraftRow>[] = [

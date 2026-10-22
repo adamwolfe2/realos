@@ -93,6 +93,8 @@ describe("data sources and popup tracking (portal signals)", () => {
     const { dataSourceStatus } = await import("@/lib/reports/generate");
     const threshold = new Date("2026-09-21T00:00:00Z");
     expect(dataSourceStatus(null, false, true, threshold).connected).toBe(true);
+    // Stale sync WITH window data: still connected.
+    expect(dataSourceStatus(new Date("2026-01-01"), true, true, threshold).connected).toBe(true);
     expect(dataSourceStatus(new Date("2026-01-01"), true, false, threshold).connected).toBe(false);
     expect(dataSourceStatus(new Date("2026-10-20"), true, false, threshold).connected).toBe(true);
   });
@@ -114,5 +116,20 @@ describe("stalled content drafts", () => {
     expect(isStalledDraft({ status: "GENERATING", updatedAt: new Date("2026-05-22") }, now)).toBe(true);
     expect(isStalledDraft({ status: "GENERATING", updatedAt: new Date("2026-10-20T12:00:00Z") }, now)).toBe(false);
     expect(isStalledDraft({ status: "PENDING_REVIEW", updatedAt: new Date("2026-05-22") }, now)).toBe(false);
+  });
+
+  it("stalledDraftWhere uses the same 24h cutoff, and stalled rows do not count as in flight", async () => {
+    const { stalledDraftWhere } = await import("@/lib/seo/draft-stalled");
+    const now = new Date("2026-10-21T00:00:00Z");
+    expect(stalledDraftWhere(now)).toEqual({
+      status: "GENERATING",
+      updatedAt: { lt: new Date("2026-10-20T00:00:00Z") },
+    });
+    const fs = await import("fs");
+    const route = fs.readFileSync("app/api/portal/seo/drafts/route.ts", "utf8");
+    const cap = route.slice(route.indexOf("const inFlight"), route.indexOf("if (inFlight >= 10)"));
+    expect(cap).toContain("NOT: stalledDraftWhere()");
+    const page = fs.readFileSync("app/portal/seo/drafts/page.tsx", "utf8");
+    expect(page).toMatch(/CHANGES_REQUESTED"\) \?\? 0\) -\s*stalledCount/);
   });
 });

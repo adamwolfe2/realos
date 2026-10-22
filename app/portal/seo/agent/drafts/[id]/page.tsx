@@ -132,7 +132,7 @@ export default async function PortalDraftViewer({
         <div className="rounded-[2px] border border-dashed border-border bg-card p-6 text-center">
           <p className="text-[13px] font-medium text-foreground">Generation stalled</p>
           <p className="text-[12px] text-muted-foreground mt-1">
-            This draft stopped before it finished. Delete it and request it again.
+            This draft stopped before it finished. Request a new draft from the SEO agent.
           </p>
         </div>
       ) : draft.status === "GENERATING" ? (
