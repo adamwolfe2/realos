@@ -372,3 +372,25 @@ describe("runSeoSync — lastSyncAt is stamped only after all writes", () => {
     expect(idle?.[0].data).not.toHaveProperty("lastSyncAt");
   });
 });
+
+describe("runSeoSync — backfill window is per integration", () => {
+  it("a never-synced integration gets 30 days even when a sibling is already synced", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-21T12:00:00Z"));
+    try {
+      (prisma.seoIntegration.findMany as AnyMock).mockResolvedValue([
+        baseIntegration({ id: "gsc-synced", provider: SeoProvider.GSC, lastSyncAt: new Date("2026-10-21T11:30:00Z") }),
+        baseIntegration({ id: "ga4-new", provider: SeoProvider.GA4, propertyIdentifier: "123", lastSyncAt: null }),
+      ]);
+      (fetchGscDaily as AnyMock).mockResolvedValue([]);
+      (fetchGa4OrganicDaily as AnyMock).mockResolvedValue([]);
+      await runSeoSync("org-1");
+      const gscFrom = (fetchGscDaily as AnyMock).mock.calls[0][2] as Date;
+      const ga4From = (fetchGa4OrganicDaily as AnyMock).mock.calls[0][2] as Date;
+      expect(gscFrom.toISOString()).toBe("2026-10-20T00:00:00.000Z"); // yesterday
+      expect(ga4From.toISOString()).toBe("2026-09-21T00:00:00.000Z"); // 30 days
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

@@ -156,12 +156,6 @@ export async function runSeoSync(
   // setting status=ERROR on the integration row. That cascaded into
   // the marketplace pill flipping to rose "Sync error" and the
   // StaleOnLoadTrigger firing pointlessly.
-  // Integrations whose provider pull succeeded this run. Their lastSyncAt is
-  // stamped only after the merged snapshot writes below, so a run killed
-  // mid-way (e.g. the connect page's after() backfill hitting maxDuration)
-  // leaves lastSyncAt unchanged and a first backfill is redone in full by
-  // the next cron (fullBackfill = every lastSyncAt null).
-  const syncedIntegrationIds: string[] = [];
   const integrations = await prisma.seoIntegration.findMany({
     where: {
       orgId,
@@ -196,14 +190,23 @@ export async function runSeoSync(
   const today = startOfUtcDay(now);
   const yesterday = startOfUtcDay(new Date(now.getTime() - DAY_MS));
   const toDate = options.toDate ? startOfUtcDay(options.toDate) : today;
-  const fullBackfill =
-    options.fullBackfill ||
-    integrations.every((i) => i.lastSyncAt == null);
-  const fromDate = options.fromDate
-    ? startOfUtcDay(options.fromDate)
-    : fullBackfill
-      ? startOfUtcDay(new Date(now.getTime() - 30 * DAY_MS))
-      : yesterday;
+  // Per integration: one that has never completed a run (no lastSyncAt)
+  // gets the 30-day backfill even when a sibling integration in the org is
+  // already synced, so a newly connected provider never loses its history.
+  const backfillFrom = startOfUtcDay(new Date(now.getTime() - 30 * DAY_MS));
+  const fromDateFor = (i: { lastSyncAt: Date | null }) =>
+    options.fromDate
+      ? startOfUtcDay(options.fromDate)
+      : options.fullBackfill || i.lastSyncAt == null
+        ? backfillFrom
+        : yesterday;
+
+  // Integrations whose provider pull succeeded this run. Their lastSyncAt is
+  // stamped only after the merged snapshot writes below, so a run killed
+  // mid-way (e.g. the connect page's after() backfill hitting maxDuration)
+  // leaves lastSyncAt unchanged and that integration's next run redoes its
+  // 30-day backfill.
+  const syncedIntegrationIds: string[] = [];
 
   // GSC and GA4 each contribute partial fields to the daily SeoSnapshot row;
   // we collect both, then write per (propertyId, date) with a merged
@@ -238,6 +241,7 @@ export async function runSeoSync(
   const landingPageDates = makeDateTracker();
 
   for (const integration of integrations) {
+    const fromDate = fromDateFor(integration);
     if (integration.provider === SeoProvider.GSC) {
       try {
         await prisma.seoIntegration.update({
