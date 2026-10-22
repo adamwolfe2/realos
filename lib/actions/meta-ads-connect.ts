@@ -145,9 +145,12 @@ export async function connectMetaAds(
   // after() keeps the function alive until the backfill settles; a bare
   // void promise is frozen once the action responds on Vercel.
   // ponytail: after() shares the caller's maxDuration (300s on the connect
-  // pages). The backfill is capped at 30 days, and a run killed mid-way never
-  // sets lastSyncAt, so the daily cron redoes the full 30-day window. Move to
-  // a queued job if one account's 30-day pull ever exceeds ~300s.
+  // pages). The backfill is capped at 30 days. lastSyncAt is the watermark
+  // and is only advanced at the end of a clean run, so a run killed mid-way
+  // leaves it unchanged and the daily cron re-pulls from it: the full 30 days
+  // for a first connect (no watermark), from the prior watermark (capped at
+  // 30 days) for a reconnect. Move to a queued job if one account's 30-day
+  // pull ever exceeds ~300s.
   after(() =>
     runAdsSyncForAccount(account.id, { fullBackfill: true }).catch((err) => {
       console.warn("[meta-ads-connect] initial sync error", err);

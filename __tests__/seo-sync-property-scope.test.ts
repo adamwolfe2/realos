@@ -333,3 +333,42 @@ describe("runSeoSync — unbound OAuth rows", () => {
     });
   });
 });
+
+describe("runSeoSync — lastSyncAt is stamped only after all writes", () => {
+  const lastSyncAtWrites = () =>
+    (prisma.seoIntegration.update as AnyMock).mock.calls.filter(([a]) => "lastSyncAt" in a.data);
+
+  it("stamps lastSyncAt once the run completes", async () => {
+    (prisma.seoIntegration.findMany as AnyMock).mockResolvedValue([baseIntegration({ lastSyncAt: null })]);
+    (fetchGscDaily as AnyMock).mockResolvedValue([
+      { date: "2026-07-15", impressions: 10, clicks: 1, ctr: 0.1, position: 3 },
+    ]);
+    await runSeoSync("org-1", { fromDate: new Date("2026-07-15"), toDate: new Date("2026-07-15") });
+    expect(lastSyncAtWrites()).toHaveLength(1);
+    expect(lastSyncAtWrites()[0][0].where).toEqual({ id: "int-1" });
+  });
+
+  it("stamps lastSyncAt only after the merged snapshot writes (a mid-run kill leaves it unset)", async () => {
+    (prisma.seoIntegration.findMany as AnyMock).mockResolvedValue([baseIntegration({ lastSyncAt: null })]);
+    (fetchGscDaily as AnyMock).mockResolvedValue([
+      { date: "2026-07-15", impressions: 10, clicks: 1, ctr: 0.1, position: 3 },
+    ]);
+    // Stand-in for the function being killed mid-run (maxDuration).
+    (prisma.seoSnapshot.findFirst as AnyMock).mockImplementation(() => {
+      throw new Error("killed");
+    });
+    (prisma.seoSnapshot.create as AnyMock).mockImplementation(() => {
+      throw new Error("killed");
+    });
+    await runSeoSync("org-1", { fromDate: new Date("2026-07-15"), toDate: new Date("2026-07-15") }).catch(() => null);
+    // Snapshot errors are caught per date, so assert ordering instead: any
+    // lastSyncAt write must come after every snapshot attempt.
+    const updOrder = (prisma.seoIntegration.update as AnyMock).mock.invocationCallOrder;
+    const stampIdx = (prisma.seoIntegration.update as AnyMock).mock.calls.findIndex(([a]) => "lastSyncAt" in a.data);
+    const lastSnapshotCall = Math.max(...(prisma.seoSnapshot.findFirst as AnyMock).mock.invocationCallOrder);
+    if (stampIdx >= 0) expect(updOrder[stampIdx]).toBeGreaterThan(lastSnapshotCall);
+    // And the provider-success update itself carries no lastSyncAt.
+    const idle = (prisma.seoIntegration.update as AnyMock).mock.calls.find(([a]) => a.data.status === "IDLE");
+    expect(idle?.[0].data).not.toHaveProperty("lastSyncAt");
+  });
+});

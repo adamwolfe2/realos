@@ -156,6 +156,12 @@ export async function runSeoSync(
   // setting status=ERROR on the integration row. That cascaded into
   // the marketplace pill flipping to rose "Sync error" and the
   // StaleOnLoadTrigger firing pointlessly.
+  // Integrations whose provider pull succeeded this run. Their lastSyncAt is
+  // stamped only after the merged snapshot writes below, so a run killed
+  // mid-way (e.g. the connect page's after() backfill hitting maxDuration)
+  // leaves lastSyncAt unchanged and a first backfill is redone in full by
+  // the next cron (fullBackfill = every lastSyncAt null).
+  const syncedIntegrationIds: string[] = [];
   const integrations = await prisma.seoIntegration.findMany({
     where: {
       orgId,
@@ -326,12 +332,10 @@ export async function runSeoSync(
 
         await prisma.seoIntegration.update({
           where: { id: integration.id },
-          data: {
-            status: SeoSyncStatus.IDLE,
-            lastSyncAt: new Date(),
-            lastSyncError: null,
-          },
+          // lastSyncAt is stamped at the end of the run (see below).
+          data: { status: SeoSyncStatus.IDLE, lastSyncError: null },
         });
+        syncedIntegrationIds.push(integration.id);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown GSC error";
         stats.warnings.push(`GSC: ${message}`);
@@ -432,12 +436,10 @@ export async function runSeoSync(
 
         await prisma.seoIntegration.update({
           where: { id: integration.id },
-          data: {
-            status: SeoSyncStatus.IDLE,
-            lastSyncAt: new Date(),
-            lastSyncError: null,
-          },
+          // lastSyncAt is stamped at the end of the run (see below).
+          data: { status: SeoSyncStatus.IDLE, lastSyncError: null },
         });
+        syncedIntegrationIds.push(integration.id);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown GA4 error";
         stats.warnings.push(`GA4: ${message}`);
@@ -530,6 +532,11 @@ export async function runSeoSync(
     landingPageDates.superseded(),
     stats,
   );
+
+  const syncedAt = new Date();
+  for (const id of syncedIntegrationIds) {
+    await prisma.seoIntegration.update({ where: { id }, data: { lastSyncAt: syncedAt } });
+  }
 
   return {
     ok: stats.warnings.length === 0,
