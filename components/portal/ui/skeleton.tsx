@@ -46,18 +46,6 @@ export function SkeletonText({
   );
 }
 
-// KPI tile skeleton with the same dimensions as a real KpiTile so the grid
-// doesn't jump when data lands.
-export function SkeletonKpi() {
-  return (
-    <div className="ls-card p-3 space-y-2">
-      <Skeleton className="h-2.5 w-20" />
-      <Skeleton className="h-6 w-16" />
-      <Skeleton className="h-2 w-24" />
-    </div>
-  );
-}
-
 // Table-row skeleton matched to the DataTable density.
 export function SkeletonRow({ cols = 5 }: { cols?: number }) {
   return (

@@ -587,11 +587,6 @@ export function propertyInScope(
   );
 }
 
-// Helper for admin cross-tenant queries. Must be called inside requireAgency().
-export function agencyWhereAll(): Record<string, never> {
-  return {};
-}
-
 // Audit-ready: builds the common AuditEvent create payload from a scope.
 // DECISION: orgId on the audit row is the *effective* org (who the action
 // affected). userId ties back to the agency actor even during impersonation,

@@ -144,19 +144,3 @@ export async function getOAuthCredentials(
     metadata: updated.metadata,
   };
 }
-
-/**
- * Convenience: returns true iff there's an active OAuth connection for
- * (orgId, provider). Used by the integration libs to short-circuit fallback
- * lookups when callers want to know "are we on OAuth or legacy?" without
- * actually decrypting the token.
- */
-export async function hasActiveOAuthConnection(
-  orgId: string,
-  provider: OAuthProvider,
-): Promise<boolean> {
-  const count = await prisma.oAuthConnection.count({
-    where: { orgId, provider, status: "active" },
-  });
-  return count > 0;
-}

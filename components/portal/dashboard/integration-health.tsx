@@ -1,6 +1,5 @@
 import * as React from "react";
 import Link from "next/link";
-import { Plug } from "lucide-react";
 import { StatusChip, type ConnectionStatus } from "@/components/portal/ui/status-chip";
 
 export type IntegrationStatus = "connected" | "degraded" | "error" | "off";
@@ -51,15 +50,6 @@ export function IntegrationHealth({ chips }: { chips: IntegrationChip[] }) {
           </span>
         );
       })}
-    </div>
-  );
-}
-
-export function IntegrationHealthEmpty() {
-  return (
-    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-      <Plug className="h-3.5 w-3.5" aria-hidden="true" />
-      No integrations configured yet.
     </div>
   );
 }
