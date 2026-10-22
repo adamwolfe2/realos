@@ -2,6 +2,8 @@
 // 177 ACTIVE rows, 89 not on the rent roll, 80 past their end date).
 // Root causes: (1) the status heuristic read `end_date`, but rent_roll sends
 // `lease_to`; (2) leases that drop off the rent roll were never revisited.
+import fs from "fs";
+import path from "path";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
@@ -9,7 +11,8 @@ vi.mock("server-only", () => ({}));
 import { leaseStatusFor, mapLeasePayload } from "@/lib/integrations/appfolio";
 import {
   endLeasesAbsentFromRentRoll,
-  rentRollIsComplete,
+  markResidentsAbsentFromDirectoryPast,
+  pullIsComplete,
 } from "@/lib/integrations/appfolio-lease-sweep";
 
 const NOW = new Date("2026-10-21T12:00:00Z");
@@ -41,12 +44,12 @@ describe("leaseStatusFor", () => {
   });
 });
 
-describe("rentRollIsComplete", () => {
+describe("pullIsComplete", () => {
   it("requires rows, every row mapped, and no truncation", () => {
-    expect(rentRollIsComplete({ rowCount: 88, unmappedRows: 0, truncated: false })).toBe(true);
-    expect(rentRollIsComplete({ rowCount: 0, unmappedRows: 0, truncated: false })).toBe(false);
-    expect(rentRollIsComplete({ rowCount: 88, unmappedRows: 1, truncated: false })).toBe(false);
-    expect(rentRollIsComplete({ rowCount: 88, unmappedRows: 0, truncated: true })).toBe(false);
+    expect(pullIsComplete({ rowCount: 88, unmappedRows: 0, truncated: false })).toBe(true);
+    expect(pullIsComplete({ rowCount: 0, unmappedRows: 0, truncated: false })).toBe(false);
+    expect(pullIsComplete({ rowCount: 88, unmappedRows: 1, truncated: false })).toBe(false);
+    expect(pullIsComplete({ rowCount: 88, unmappedRows: 0, truncated: true })).toBe(false);
   });
 });
 
@@ -86,5 +89,76 @@ describe("endLeasesAbsentFromRentRoll", () => {
     expect(await endLeasesAbsentFromRentRoll(db, { ...base, propertyIds: [], seenExternalIds: new Set() })).toBe(0);
     expect(findMany).not.toHaveBeenCalled();
     expect(updateMany).not.toHaveBeenCalled();
+  });
+});
+
+// Same root cause for residents (Telegraph Commons, 2026-10: 76 NOTICE_GIVEN
+// residents with a past move-out date, absent from tenant_directory and
+// never revisited). The directory returns only Current/Notice tenants.
+function fakeResidentDb(candidates: Array<{ id: string; externalId: string | null }>) {
+  const findMany = vi.fn().mockResolvedValue(candidates);
+  const updateMany = vi.fn().mockImplementation(({ where }) => Promise.resolve({ count: where.id.in.length }));
+  return { db: { resident: { findMany, updateMany } }, findMany, updateMany };
+}
+
+describe("markResidentsAbsentFromDirectoryPast", () => {
+  const base = { orgId: "org1", propertyIds: ["p1"], now: NOW };
+
+  it("marks moved-out ACTIVE/NOTICE_GIVEN residents missing from a complete pull PAST", async () => {
+    const { db, findMany, updateMany } = fakeResidentDb([
+      { id: "a", externalId: "in-directory" },
+      { id: "b", externalId: "moved-out" },
+      { id: "c", externalId: null },
+    ]);
+    const moved = await markResidentsAbsentFromDirectoryPast(db, {
+      ...base,
+      seenExternalIds: new Set(["in-directory"]),
+    });
+    expect(moved).toBe(1);
+    expect(findMany.mock.calls[0][0].where).toMatchObject({
+      orgId: "org1",
+      externalSystem: "appfolio",
+      propertyId: { in: ["p1"] },
+      status: { in: ["ACTIVE", "NOTICE_GIVEN"] },
+      // Absence alone is not evidence: only past move-out dates qualify.
+      moveOutDate: { lt: NOW },
+    });
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["b"] }, status: { in: ["ACTIVE", "NOTICE_GIVEN"] } },
+      data: { status: "PAST" },
+    });
+  });
+
+  it("does nothing when no property was seen in the pull", async () => {
+    const { db, findMany, updateMany } = fakeResidentDb([{ id: "b", externalId: "x" }]);
+    expect(
+      await markResidentsAbsentFromDirectoryPast(db, { ...base, propertyIds: [], seenExternalIds: new Set() }),
+    ).toBe(0);
+    expect(findMany).not.toHaveBeenCalled();
+    expect(updateMany).not.toHaveBeenCalled();
+  });
+});
+
+// runAppfolioSync is a closure-scoped monolith (see
+// appfolio-inactive-property-gate.test.ts), so lock the wiring structurally.
+describe("residents phase runs the move-out sweep only after a complete pull", () => {
+  const content = fs.readFileSync(
+    path.resolve(__dirname, "../lib/integrations/appfolio-sync.ts"),
+    "utf-8",
+  );
+  const residentsPhase = content.slice(content.indexOf("5. RESIDENTS"), content.indexOf("6. LEASES"));
+
+  it("tracks truncation and unmapped rows, and gates the sweep on pullIsComplete", () => {
+    expect(residentsPhase).toContain("onTruncated");
+    expect(residentsPhase).toContain("unmappedResidentRows += 1");
+    const gate = residentsPhase.indexOf("pullIsComplete(");
+    const sweep = residentsPhase.indexOf("markResidentsAbsentFromDirectoryPast(prisma");
+    expect(gate).toBeGreaterThan(-1);
+    expect(sweep).toBeGreaterThan(gate);
+  });
+
+  it("scopes the sweep to properties upserted in this pull", () => {
+    expect(residentsPhase).toContain("residentSweepPropertyIds.add(propertyId)");
+    expect(residentsPhase).toContain("propertyIds: [...residentSweepPropertyIds]");
   });
 });

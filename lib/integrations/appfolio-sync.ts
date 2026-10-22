@@ -33,7 +33,8 @@ import {
 } from "./appfolio";
 import {
   endLeasesAbsentFromRentRoll,
-  rentRollIsComplete,
+  markResidentsAbsentFromDirectoryPast,
+  pullIsComplete,
 } from "./appfolio-lease-sweep";
 import { classifyProperty } from "@/lib/properties/marketable";
 import {
@@ -103,6 +104,7 @@ export type AppfolioSyncStats = {
   leasesUpserted: number;
   // Leases set ENDED because they left a complete rent_roll pull.
   leasesEnded: number;
+  residentsMovedOut: number;
   workOrdersUpserted: number;
   delinquenciesUpdated: number;
   applicationsUpserted: number;
@@ -238,6 +240,7 @@ export async function runAppfolioSync(
     residentsUpserted: 0,
     leasesUpserted: 0,
     leasesEnded: 0,
+    residentsMovedOut: 0,
     workOrdersUpserted: 0,
     delinquenciesUpdated: 0,
     applicationsUpserted: 0,
@@ -1045,8 +1048,12 @@ export async function runAppfolioSync(
   // orders) can resolve tenant_id → local Resident.id.
   const residentByExternalId = new Map<string, string>();
   try {
+    let directoryTruncated = false;
     const rows = await fetchAllPages(client, "tenant_directory", {
       extraFilters: { status: "all" },
+      onTruncated: () => {
+        directoryTruncated = true;
+      },
     });
     // Lead-match index, built ONCE per sync run (replaces the old
     // per-resident email findFirst — same email tier plus normalized
@@ -1072,9 +1079,18 @@ export async function runAppfolioSync(
       }),
     );
     let residentsNoProperty = 0;
+    let unmappedResidentRows = 0;
+    // Every resident in the directory, whatever its property resolution:
+    // absence from this set is what marks a move-out below.
+    const seenResidentExternalIds = new Set<string>();
+    const residentSweepPropertyIds = new Set<string>();
     for (const row of rows) {
       const mapped = mapResidentPayload(row);
-      if (!mapped) continue;
+      if (!mapped) {
+        unmappedResidentRows += 1;
+        continue;
+      }
+      seenResidentExternalIds.add(mapped.externalId);
       const propertyId = resolvePropertyId(
         mapped.propertyExternalId ? [mapped.propertyExternalId] : [],
       );
@@ -1097,7 +1113,34 @@ export async function runAppfolioSync(
         leadMatchIndex,
       );
       residentByExternalId.set(mapped.externalId, id);
+      residentSweepPropertyIds.add(propertyId);
       stats.residentsUpserted += 1;
+    }
+    // Move-outs: residents who left the directory. Guarded, see
+    // lib/integrations/appfolio-lease-sweep.ts for the invariant.
+    if (
+      pullIsComplete({
+        rowCount: rows.length,
+        unmappedRows: unmappedResidentRows,
+        truncated: directoryTruncated,
+      })
+    ) {
+      try {
+        stats.residentsMovedOut = await markResidentsAbsentFromDirectoryPast(prisma, {
+          orgId,
+          propertyIds: [...residentSweepPropertyIds],
+          seenExternalIds: seenResidentExternalIds,
+          now,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Unknown error";
+        console.error(`[appfolio] resident move-out sweep failed for org ${orgId}:`, err);
+        stats.warnings.push(`residents: move-out sweep skipped (${message})`);
+      }
+    } else {
+      stats.warnings.push(
+        `residents: tenant directory incomplete (${rows.length} rows, ${unmappedResidentRows} unmapped${directoryTruncated ? ", truncated" : ""}) — moved-out residents not updated this run.`,
+      );
     }
     if (residentsNoProperty > 0) {
       stats.warnings.push(
@@ -1160,7 +1203,7 @@ export async function runAppfolioSync(
     // Move-outs: leases that left the roll. Guarded — see
     // lib/integrations/appfolio-lease-sweep.ts for the invariant.
     if (
-      rentRollIsComplete({
+      pullIsComplete({
         rowCount: rows.length,
         unmappedRows: unmappedLeaseRows,
         truncated: rentRollTruncated,

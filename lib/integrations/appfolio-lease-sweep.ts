@@ -10,12 +10,12 @@
 // A partial, failed or empty pull must never end a lease. Leases absent
 // from the roll with a FUTURE endDate (early move-outs, transfers) are left
 // alone: no evidence beyond absence, so they wait for their end date.
-import { LeaseStatus } from "@prisma/client";
+import { LeaseStatus, ResidentStatus } from "@prisma/client";
 
 const OPEN_STATUSES: LeaseStatus[] = [LeaseStatus.ACTIVE, LeaseStatus.EXPIRING];
 const CHUNK = 1000;
 
-export function rentRollIsComplete(pull: {
+export function pullIsComplete(pull: {
   rowCount: number;
   unmappedRows: number;
   truncated: boolean;
@@ -69,4 +69,70 @@ export async function endLeasesAbsentFromRentRoll(
     ended += res.count;
   }
   return ended;
+}
+
+// Marks residents who dropped out of AppFolio's tenant_directory as PAST.
+//
+// INVARIANT (same shape as the lease sweep above): a resident is set PAST
+// here only when ALL of these hold:
+//   1. the tenant_directory pull completed (pullIsComplete) and threw no error;
+//   2. the resident's property appeared in that pull;
+//   3. the resident is ACTIVE or NOTICE_GIVEN, moveOutDate is set and past;
+//   4. its externalId is absent from the pull.
+// The directory returns only Current/Notice tenants, so a moved-out tenant
+// simply disappears. Absent residents with no or a future move-out date are
+// left alone: absence alone is not evidence. EVICTED / APPLICANT untouched.
+const OPEN_RESIDENT_STATUSES: ResidentStatus[] = [
+  ResidentStatus.ACTIVE,
+  ResidentStatus.NOTICE_GIVEN,
+];
+
+type ResidentSweepDb = {
+  resident: {
+    findMany(args: {
+      where: Record<string, unknown>;
+      select: { id: true; externalId: true };
+    }): Promise<Array<{ id: string; externalId: string | null }>>;
+    updateMany(args: {
+      where: Record<string, unknown>;
+      data: { status: ResidentStatus };
+    }): Promise<{ count: number }>;
+  };
+};
+
+export async function markResidentsAbsentFromDirectoryPast(
+  db: ResidentSweepDb,
+  args: {
+    orgId: string;
+    propertyIds: string[];
+    seenExternalIds: ReadonlySet<string>;
+    now: Date;
+  },
+): Promise<number> {
+  if (args.propertyIds.length === 0) return 0;
+  const candidates = await db.resident.findMany({
+    where: {
+      orgId: args.orgId,
+      externalSystem: "appfolio",
+      propertyId: { in: args.propertyIds },
+      status: { in: OPEN_RESIDENT_STATUSES },
+      moveOutDate: { lt: args.now },
+    },
+    select: { id: true, externalId: true },
+  });
+  const ids = candidates
+    .filter((r) => r.externalId && !args.seenExternalIds.has(r.externalId))
+    .map((r) => r.id);
+  let moved = 0;
+  for (let i = 0; i < ids.length; i += CHUNK) {
+    const res = await db.resident.updateMany({
+      where: {
+        id: { in: ids.slice(i, i + CHUNK) },
+        status: { in: OPEN_RESIDENT_STATUSES },
+      },
+      data: { status: ResidentStatus.PAST },
+    });
+    moved += res.count;
+  }
+  return moved;
 }
