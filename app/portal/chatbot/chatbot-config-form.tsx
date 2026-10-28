@@ -98,7 +98,9 @@ export function ChatbotConfigForm({
     <form onSubmit={submit}>
       <div className="flex gap-6 items-start">
         {/* Left column — all config sections */}
-        <div className="flex-1 min-w-0 space-y-4">
+        {/* One settings surface, sections divided by hairlines (no card per
+            section). */}
+        <div className="flex-1 min-w-0 ls-card divide-y divide-border">
       <input
         type="hidden"
         name="chatbotEnabled"
@@ -106,7 +108,7 @@ export function ChatbotConfigForm({
       />
 
       {/* Persona */}
-      <section className="ls-card p-5 space-y-4">
+      <section className="p-6 space-y-4">
         <h2 className="text-sm font-semibold text-foreground">Persona</h2>
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-5 items-start">
           <Field
@@ -214,7 +216,7 @@ export function ChatbotConfigForm({
 
       {/* Lead capture — segmented control: three options on one row, the
           active option's explanation below (was three stacked radio cards). */}
-      <section className="ls-card p-5 space-y-3">
+      <section className="p-6 space-y-3">
         <div className="flex flex-wrap items-baseline gap-x-2">
           <h2 className="text-sm font-semibold text-foreground">Lead capture</h2>
           <p className="text-xs text-muted-foreground">
@@ -224,17 +226,17 @@ export function ChatbotConfigForm({
         <div
           role="radiogroup"
           aria-label="Lead capture mode"
-          className="inline-flex rounded-[2px] border border-border overflow-hidden"
+          className="inline-flex items-center rounded-full bg-secondary p-0.5"
         >
           {CAPTURE_OPTIONS.map((opt) => {
             const active = state.chatbotCaptureMode === opt.value;
             return (
               <label
                 key={opt.value}
-                className={`px-4 py-2 text-[13px] font-medium cursor-pointer transition-colors border-r border-border last:border-r-0 ${
+                className={`rounded-full px-3.5 py-1 text-[13px] font-medium cursor-pointer transition-colors ${
                   active
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-background text-foreground hover:bg-secondary"
+                    ? "bg-card text-foreground shadow-[0_1px_2px_rgba(11,21,48,0.08)]"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <input
@@ -259,8 +261,8 @@ export function ChatbotConfigForm({
       </section>
 
       {/* Site analytics — set-once IDs, collapsed by default (Advanced). */}
-      <details className="ls-card group">
-        <summary className="cursor-pointer list-none p-5 flex items-center justify-between">
+      <details className="group">
+        <summary className="cursor-pointer list-none px-6 py-5 flex items-center justify-between">
           <span className="flex flex-wrap items-baseline gap-x-2">
             <h2 className="text-sm font-semibold text-foreground inline">
               Advanced · Site analytics
@@ -276,7 +278,7 @@ export function ChatbotConfigForm({
             Hide
           </span>
         </summary>
-        <div className="px-5 pb-5 space-y-4">
+        <div className="px-6 pb-6 space-y-4">
           <p className="text-xs text-muted-foreground">
             We inject GTM and GA4 on your tenant site so pageviews and chatbot
             events land in your real Google accounts. If GTM is set, GA4
@@ -304,7 +306,7 @@ export function ChatbotConfigForm({
       </details>
 
       {/* Knowledge base */}
-      <section className="ls-card p-5 space-y-3">
+      <section className="p-6 space-y-3">
         <h2 className="text-sm font-semibold text-foreground">Knowledge base</h2>
         <p className="text-xs text-muted-foreground">
           Plain-text facts, amenities, and policies injected into the system prompt. Write like
@@ -315,7 +317,7 @@ export function ChatbotConfigForm({
           rows={12}
           value={state.chatbotKnowledgeBase}
           onChange={(e) => update("chatbotKnowledgeBase", e.target.value)}
-          className="w-full rounded-[2px] border border-border bg-background px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-primary/30"
+          className="w-full rounded-[2px] border border-border bg-card px-3 py-2.5 text-[13px] leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary/25"
           placeholder={
             "Rent includes utilities and WiFi.\nPet policy: cats OK, dogs under 40 lbs with $500 deposit.\nTours: Monday-Saturday 10am-6pm."
           }
@@ -336,11 +338,11 @@ export function ChatbotConfigForm({
         </div>
       </section>
 
-        <div className="flex items-center gap-3 sticky bottom-0 bg-background py-3 border-t border-border">
+        <div className="flex items-center gap-3 sticky bottom-0 z-10 bg-[rgba(255,255,255,0.97)] backdrop-blur border-t border-border px-6 py-3 rounded-b-[var(--t-radius)]">
           <button
             type="submit"
             disabled={pending || kbOver}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors px-4 py-2 text-sm font-medium rounded-[2px] disabled:opacity-40"
+            className="bg-primary text-primary-foreground hover:brightness-110 transition px-4 py-2 text-sm font-medium rounded-[8px] shadow-[0_1px_2px_rgba(11,21,48,0.12)] disabled:opacity-40"
           >
             {pending ? "Saving…" : "Save chatbot config"}
           </button>
@@ -359,7 +361,7 @@ export function ChatbotConfigForm({
         </div>{/* end left column */}
 
         {/* Right column — sticky preview */}
-        <div className="w-96 shrink-0 hidden lg:block">
+        <div className="w-96 shrink-0 hidden lg:block self-stretch">
           <div className="sticky top-6 ls-card p-5 space-y-4">
             <div>
               <h2 className="text-sm font-semibold text-foreground">Preview</h2>

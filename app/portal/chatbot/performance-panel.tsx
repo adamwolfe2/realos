@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { barPct } from "@/lib/charts/bar-width";
 import {
   PerformanceOverTime,
@@ -66,7 +65,7 @@ export function ChatbotPerformancePanel({
         <div
           role="tablist"
           aria-label="Performance view"
-          className="inline-flex rounded-[2px] border border-border overflow-hidden"
+          className="inline-flex items-center rounded-full bg-secondary p-0.5"
         >
           {TABS.map((t) => (
             <button
@@ -74,10 +73,10 @@ export function ChatbotPerformancePanel({
               role="tab"
               aria-selected={tab === t}
               onClick={() => setTab(t)}
-              className={`px-3.5 py-1.5 text-[12px] font-semibold transition-colors border-r border-border last:border-r-0 ${
+              className={`rounded-full px-3 py-1 text-[12px] font-medium transition-colors ${
                 tab === t
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-background text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  ? "bg-card text-foreground shadow-[0_1px_2px_rgba(11,21,48,0.08)]"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {t}
@@ -90,9 +89,8 @@ export function ChatbotPerformancePanel({
       <div className="min-h-[360px]">
         {tab === "Volume" ? (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <KpiTile
-                density="dense"
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4">
+              <Stat
                 label="Conversations · 30d"
                 value={d30.toLocaleString()}
                 delta={
@@ -106,18 +104,15 @@ export function ChatbotPerformancePanel({
                 }
                 hint="vs prior 30 days"
               />
-              <KpiTile
-                density="dense"
+              <Stat
                 label="Conversations · 7d"
                 value={d7.toLocaleString()}
               />
-              <KpiTile
-                density="dense"
+              <Stat
                 label="Leads captured · 30d"
                 value={intakes30d.toLocaleString()}
               />
-              <KpiTile
-                density="dense"
+              <Stat
                 label="Capture rate · 30d"
                 value={d30 > 0 ? `${Math.round((intakes30d / d30) * 100)}%` : "—"}
                 hint="conversations that left contact info"
@@ -188,14 +183,12 @@ export function ChatbotPerformancePanel({
             <EmptyNote text="Prospect intel appears once conversations produce extracted profiles." />
           ) : (
             <div className="space-y-5">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <KpiTile
-                  density="dense"
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4">
+                <Stat
                   label="Profiles extracted · 30d"
                   value={prospects.profiles.toLocaleString()}
                 />
-                <KpiTile
-                  density="dense"
+                <Stat
                   label="Median budget"
                   value={
                     prospects.medianBudget != null
@@ -203,14 +196,12 @@ export function ChatbotPerformancePanel({
                       : "—"
                   }
                 />
-                <KpiTile
-                  density="dense"
+                <Stat
                   label="Follow-ups flagged"
                   value={prospects.followUpsNeeded.toLocaleString()}
                   hint="prospects the bot marked worth a human reply"
                 />
-                <KpiTile
-                  density="dense"
+                <Stat
                   label="Prospect temperature"
                   value={`${prospects.sentiment.positive}↑ ${prospects.sentiment.neutral}· ${prospects.sentiment.negative}↓`}
                   hint="hot+warm / lukewarm / cold"
@@ -226,6 +217,39 @@ export function ChatbotPerformancePanel({
         ) : null}
       </div>
     </section>
+  );
+}
+
+// Flat stat: label, number, optional delta and hint. Sits directly in the
+// panel so there is never a card inside a card.
+function Stat({
+  label,
+  value,
+  hint,
+  delta,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  delta?: { value: string; trend: "up" | "down" | "flat" };
+}) {
+  return (
+    <div>
+      <p className="text-[12px] text-muted-foreground">{label}</p>
+      <p className="mt-0.5 text-[22px] font-semibold tracking-[-0.02em] text-foreground tabular-nums">
+        {value}
+        {delta ? (
+          <span
+            className={`ml-2 text-[12px] font-medium ${
+              delta.trend === "up" ? "text-emerald-600" : delta.trend === "down" ? "text-red-600" : "text-muted-foreground"
+            }`}
+          >
+            {delta.value}
+          </span>
+        ) : null}
+      </p>
+      {hint ? <p className="text-[12px] text-muted-foreground">{hint}</p> : null}
+    </div>
   );
 }
 

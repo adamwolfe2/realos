@@ -147,8 +147,8 @@ function ActionButton({
       disabled={disabled}
       className={
         quiet
-          ? "inline-flex items-center gap-1.5 rounded-[2px] border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground disabled:opacity-50"
-          : "inline-flex items-center gap-1.5 rounded-[2px] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+          ? "inline-flex items-center gap-1.5 px-2 py-1.5 text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+          : "inline-flex items-center gap-1.5 rounded-[8px] bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground shadow-[0_1px_2px_rgba(11,21,48,0.12)] hover:brightness-110 transition disabled:opacity-50"
       }
     >
       {pending === action ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : icon}

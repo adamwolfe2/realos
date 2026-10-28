@@ -314,4 +314,5 @@ function buildKnowledgeBlock(suggestion: {
 function revalidateInsights() {
   revalidatePath("/portal/conversations/insights");
   revalidatePath("/portal/chatbot");
+  revalidatePath("/portal");
 }

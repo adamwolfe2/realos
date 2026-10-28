@@ -12,7 +12,6 @@ import { ChatbotInstallSnippetPicker } from "./chatbot-install-snippet-picker";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { visibleProperties, propertyOrOrgLevelWhereFragment } from "@/lib/tenancy/property-filter";
 import { chatbotSnippet } from "@/lib/chatbot/snippet";
-import { PageHeader } from "@/components/admin/page-header";
 import {
   StatusChip,
   type ConnectionStatus,
@@ -277,27 +276,24 @@ export default async function ChatbotPage() {
       {/* Redesign 2026-07-29 (Adam): analytics lead, configuration follows,
           install verification collapsed at the bottom once the widget is
           live. Status + master switch live in the header, not in cards. */}
-      <PageHeader
-        title="Chatbot"
-        description="How your AI leasing assistant is performing, and how it behaves."
-        actions={
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-2">
-              <StatusChip status={installStatus} />
-              {lastActivityLabel ? (
-                <span className="hidden md:inline text-[11px] text-muted-foreground tabular-nums">
-                  {lastActivityLabel}
-                </span>
-              ) : null}
-            </span>
-            <MasterToggle
-              enabled={initial.chatbotEnabled}
-              moduleActive={org.moduleChatbot}
-              variant="inline"
-            />
-          </div>
-        }
-      />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1>Chatbot</h1>
+        <div className="flex items-center gap-3">
+          <span className="flex items-center gap-2">
+            <StatusChip status={installStatus} />
+            {lastActivityLabel ? (
+              <span className="hidden md:inline text-[12px] text-muted-foreground tabular-nums">
+                {lastActivityLabel}
+              </span>
+            ) : null}
+          </span>
+          <MasterToggle
+            enabled={initial.chatbotEnabled}
+            moduleActive={org.moduleChatbot}
+            variant="inline"
+          />
+        </div>
+      </div>
 
       {!org.moduleChatbot ? (
         <div
