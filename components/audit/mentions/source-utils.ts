@@ -4,26 +4,6 @@
 
 import type { AuditMention, AuditMentionSource } from "./types";
 
-export function sourceInitial(s: AuditMentionSource): string {
-  switch (s) {
-    case "REDDIT":
-      return "R";
-    case "YELP":
-      return "Y";
-    case "BBB":
-      return "B";
-    case "APARTMENT_RATINGS":
-      return "AR";
-    case "FACEBOOK":
-      return "F";
-    case "GOOGLE_REVIEW":
-      return "G";
-    case "TAVILY_WEB":
-    default:
-      return "W";
-  }
-}
-
 export function sourceColor(s: AuditMentionSource): string {
   switch (s) {
     case "REDDIT":

@@ -32,10 +32,6 @@ export const OAUTH_PROVIDERS: readonly OAuthProvider[] = [
   "meta_ads",
 ] as const;
 
-export function isOAuthProvider(value: string): value is OAuthProvider {
-  return (OAUTH_PROVIDERS as readonly string[]).includes(value);
-}
-
 /**
  * Surface identifier for the unified Google connect endpoint. The Google
  * connect route accepts ?surface=ga4|gsc|google_ads and resolves it to the

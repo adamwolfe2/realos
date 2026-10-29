@@ -325,23 +325,3 @@ export async function previewDedup(
     results,
   };
 }
-
-// Same as previewDedup but takes a pre-fetched existing-leads array. Used by
-// tests + the import endpoint when it already has the seller's leads loaded.
-export function classifyRows(
-  rows: CsvRow[],
-  existing: ExistingLeadRef[],
-): DedupPreviewSummary {
-  const index = buildIndex(existing);
-  const results: DedupRowResult[] = rows.map((row, rowIndex) => {
-    const { bucket, reason, matches } = classifyRow(row, index);
-    return { rowIndex, bucket, reason, matches, row };
-  });
-  return {
-    total: results.length,
-    newCount: results.filter((r) => r.bucket === "new").length,
-    exactMatchCount: results.filter((r) => r.bucket === "exact-match").length,
-    possibleDupCount: results.filter((r) => r.bucket === "possible-dup").length,
-    results,
-  };
-}

@@ -77,19 +77,3 @@ export async function processStripeEventOnce(
     throw err;
   }
 }
-
-/**
- * Check whether an event id has been processed already, WITHOUT mutating
- * state. Useful for diagnostics + the admin "replay event" UI. Production
- * paths should call `processStripeEventOnce` instead so the check and the
- * insert happen atomically.
- */
-export async function isStripeEventProcessed(
-  eventId: string,
-): Promise<boolean> {
-  const row = await prisma.processedStripeEvent.findUnique({
-    where: { eventId },
-    select: { eventId: true },
-  });
-  return row != null;
-}

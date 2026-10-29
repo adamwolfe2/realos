@@ -163,14 +163,6 @@ export async function requireModule(
   return <ModuleInactiveSurface module={module} />;
 }
 
-/** Bare check (no rendering). Used by callers that already loaded the org. */
-export function isModuleEnabled(
-  org: Record<string, unknown> | null,
-  module: PortalModuleKey,
-): boolean {
-  return !!org?.[module];
-}
-
 function ModuleInactiveSurface({ module }: { module: PortalModuleKey }) {
   const copy = MODULE_COPY[module];
   return (

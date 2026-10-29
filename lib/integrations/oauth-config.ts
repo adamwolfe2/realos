@@ -45,24 +45,6 @@ export function providerToRouteSlug(provider: OAuthProvider): string {
   return ROUTE_SLUG[provider];
 }
 
-// Inverse mapping for the four route files that pass a literal URL slug to
-// the handler. Kept small + explicit instead of a regex parse so a future
-// route addition fails the type checker rather than silently slugging wrong.
-const FROM_ROUTE_SLUG: Record<string, OAuthProvider> = {
-  "google-ads": "google_ads",
-  "meta-ads": "meta_ads",
-  gsc: "google_gsc",
-  ga4: "google_ga4",
-};
-
-export function routeSlugToProvider(slug: string): OAuthProvider {
-  const provider = FROM_ROUTE_SLUG[slug];
-  if (!provider) {
-    throw new Error(`Unknown OAuth route slug: ${slug}`);
-  }
-  return provider;
-}
-
 export type ProviderConfig = {
   authorizationUrl: string;
   tokenUrl: string;

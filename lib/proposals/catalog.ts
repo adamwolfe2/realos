@@ -83,14 +83,3 @@ export async function getCatalog(): Promise<ProposalCatalogItem[]> {
     orderBy: [{ kind: "asc" }, { sortOrder: "asc" }],
   });
 }
-
-/**
- * Fetch a single catalog row by slug. Returns null on miss so callers can
- * decide how to handle a stale reference (e.g. a saved line item that
- * pointed at a now-deleted SKU).
- */
-export async function getCatalogItemBySlug(
-  slug: string,
-): Promise<ProposalCatalogItem | null> {
-  return prisma.proposalCatalogItem.findUnique({ where: { slug } });
-}

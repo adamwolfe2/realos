@@ -182,7 +182,3 @@ function stringField(value: unknown): string {
   if (value && typeof value === "object") return JSON.stringify(value);
   return "";
 }
-
-export function isPerplexityResearchConfigured(): boolean {
-  return !!process.env.PERPLEXITY_API_KEY;
-}
