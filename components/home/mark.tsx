@@ -26,6 +26,33 @@ export function Mark({
   const reduce = useReducedMotion();
   const on = reduce ? true : inView;
 
+  // Plain highlight: an inline background cloned per line fragment, so a
+  // phrase that wraps gets one tight strip per line instead of a single
+  // ragged block spanning both. The sweep animates background-size.
+  if (!ruler) {
+    return (
+      <span
+        ref={ref}
+        className={className}
+        style={{
+          backgroundImage: "linear-gradient(#d6e4ff, #d6e4ff)",
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "0 55%",
+          backgroundSize: `${on ? 100 : 0}% 78%`,
+          transition: reduce
+            ? "none"
+            : "background-size 0.5s cubic-bezier(0.2, 0.7, 0.2, 1)",
+          padding: "0 0.05em",
+          margin: "0 -0.05em",
+          WebkitBoxDecorationBreak: "clone",
+          boxDecorationBreak: "clone",
+        }}
+      >
+        {children}
+      </span>
+    );
+  }
+
   return (
     <span
       ref={ref}
