@@ -1,4 +1,5 @@
 import "server-only";
+import { currentLeaseWhere } from "@/lib/leases/current";
 import { DRAFT_STALL_MS } from "@/lib/seo/draft-stalled";
 import { APPFOLIO_APPLICATION_SOURCE } from "@/lib/integrations/appfolio-sync";
 import { cleanCompetitorName, rankCompetitors } from "@/lib/reports/competitors";
@@ -553,19 +554,11 @@ const LIVE_APPLICATION_STATUSES: ApplicationStatus[] = [
   ApplicationStatus.APPROVED,
 ];
 
-// The AppFolio sync never moves Lease.status off ACTIVE, so an ACTIVE row
-// whose term ended is a past tenancy, not an occupied unit (SG Real Estate:
-// 177 ACTIVE rows on a 100-unit building, 80 already ended). "Current" means
-// ACTIVE and in-term at asOf. Null dates are treated as open-ended.
-export function currentLeaseWhere(asOf: Date) {
-  return {
-    status: LeaseStatus.ACTIVE,
-    AND: [
-      { OR: [{ startDate: null }, { startDate: { lte: asOf } }] },
-      { OR: [{ endDate: null }, { endDate: { gte: asOf } }] },
-    ],
-  };
-}
+// "Current" = ACTIVE or EXPIRING (notice given / ending soon) and in-term at
+// asOf; null dates are open-ended. Until #192 the AppFolio sync never ended a
+// lease (SG Real Estate: 177 ACTIVE rows on a 100-unit building). See
+// lib/leases/current.ts.
+export { currentLeaseWhere } from "@/lib/leases/current";
 
 
 // Branded = the searcher typed our name. With a known brand term that is the

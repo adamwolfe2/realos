@@ -69,6 +69,7 @@ import { getLeadJourney } from "@/lib/reports/lead-journey";
 import Link from "next/link";
 import { PageHeader } from "@/components/admin/page-header";
 import { getFirstRunSignal } from "@/lib/portal/first-run";
+import { currentLeaseWhere } from "@/lib/leases/current";
 import { WelcomeLanding } from "@/components/portal/welcome-landing";
 import { syncOnboardingProgress } from "@/lib/onboarding/step-detectors";
 import { SetupSlimBar } from "@/components/portal/onboarding/onboarding-stepper";
@@ -874,7 +875,7 @@ export default async function PortalHome({
             where: {
               orgId: scope.orgId,
               propertyId: featuredProperty.id,
-              status: "ACTIVE",
+              ...currentLeaseWhere(new Date()),
             },
           })
           .catch(soft(0, "portal.page:951")),

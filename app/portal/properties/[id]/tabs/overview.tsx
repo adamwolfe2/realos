@@ -39,6 +39,7 @@ import { PropertyMetaCard } from "@/components/portal/properties/overview/proper
 import { MarketingSection } from "@/components/portal/properties/overview/marketing-section";
 import { PropertyDescriptionCard } from "@/components/portal/properties/overview/property-description-card";
 import { OnboardingShellCard } from "@/components/portal/properties/overview/onboarding-shell-card";
+import { currentLeaseWhere } from "@/lib/leases/current";
 
 type OverviewProperty = {
   propertyType: PropertyType;
@@ -142,7 +143,7 @@ export async function OverviewTab({
       },
     }),
     prisma.lease.aggregate({
-      where: { orgId, propertyId, status: LeaseStatus.ACTIVE },
+      where: { orgId, propertyId, ...currentLeaseWhere(new Date()) },
       _sum: { monthlyRentCents: true },
       _count: { _all: true },
     }),

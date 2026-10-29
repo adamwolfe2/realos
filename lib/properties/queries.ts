@@ -4,11 +4,11 @@ import { leadDayBucketsByProperty } from "@/lib/dashboard/lead-day-buckets";
 import {
   ApplicationStatus,
   LeadSource,
-  LeaseStatus,
   TourStatus,
   type Prisma,
 } from "@prisma/client";
 import { realAdAccountWhere } from "@/lib/integrations/real-ad-account";
+import { currentLeaseWhere } from "@/lib/leases/current";
 import { applicationEventWhere, leadEventWhere, tourEventWhere } from "@/lib/dashboard/event-window";
 
 // ---------------------------------------------------------------------------
@@ -832,7 +832,7 @@ export async function getPropertyOccupancy(
       },
     }),
     prisma.lease.count({
-      where: { propertyId, orgId, status: LeaseStatus.ACTIVE },
+      where: { propertyId, orgId, ...currentLeaseWhere(new Date()) },
     }),
   ]);
 
