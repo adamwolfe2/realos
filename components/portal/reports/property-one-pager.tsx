@@ -26,6 +26,7 @@ import {
   Panel,
   type Figure,
 } from "./one-pager-blocks";
+import { leadsSplitNote } from "@/lib/reports/leads-split";
 
 // ---------------------------------------------------------------------------
 // PropertyOnePager — a single-page "Marketing & Performance Snapshot" for one
@@ -199,6 +200,7 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
     {
       value: num(kpis.leads),
       label: "New leads",
+      note: leadsSplitNote(kpis) ?? undefined,
       delta:
         showDeltas && snapshot.kpiDeltas?.leadsPct != null
           ? {

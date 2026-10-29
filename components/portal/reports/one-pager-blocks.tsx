@@ -41,7 +41,8 @@ export function FigureBand({ figures }: { figures: Figure[] }) {
               >
                 {f.delta.up ? "▲" : "▼"} {f.delta.text}
               </div>
-            ) : f.note ? (
+            ) : null}
+            {f.note ? (
               <div className="mt-1 text-[10px] font-medium leading-tight text-muted-foreground">
                 {f.note}
               </div>

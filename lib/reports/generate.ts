@@ -59,6 +59,11 @@ export type ReportKpis = {
   // Form/chatbot leads — rows in the Lead table created via opted-in
   // conversion paths (contact form, chatbot email capture, intake).
   leads: number;
+  // Of `leads`, those the AppFolio sync created from rental applications.
+  // Optional: snapshots stored before 2026-10-22 lack it.
+  leadsFromAppfolio?: number;
+  // Of `leads`, those LeaseStack captured itself (no external system).
+  leadsCaptured?: number;
   tours: number;
   applications: number;
   costPerLead: number | null;
@@ -967,6 +972,8 @@ export async function generateReportSnapshot(
     applicationStatusGroups,
     leasesByPropertyGroups,
     leasesSignedLast180dCount,
+    leadsFromAppfolio,
+    leadsCaptured,
   ] = await Promise.all([
     // KPI counts — scope.propertyClause is `{}` for org-wide (legacy
     // behavior) or `{ propertyId }` for per-property reports.
@@ -1347,6 +1354,28 @@ export async function generateReportSnapshot(
         },
       },
     }),
+    // Leads KPI sub-label (same scope as leadsCount): AppFolio-application
+    // imports, and leads LeaseStack captured itself (no external system).
+    prisma.lead.count({
+      where: {
+        orgId,
+        ...scope.propertyClause,
+        ...activePropertyClause(scope),
+        createdAt: { gte: periodStart, lt: periodEnd },
+        // Both: sourceDetail alone is caller-settable on captured leads.
+        externalSystem: "appfolio",
+        sourceDetail: APPFOLIO_APPLICATION_SOURCE,
+      },
+    }),
+    prisma.lead.count({
+      where: {
+        orgId,
+        ...scope.propertyClause,
+        ...activePropertyClause(scope),
+        createdAt: { gte: periodStart, lt: periodEnd },
+        externalSystem: null,
+      },
+    }),
   ]);
 
   // KPIs
@@ -1380,6 +1409,8 @@ export async function generateReportSnapshot(
 
   const kpis: ReportKpis = {
     leads: leadsCount,
+    leadsFromAppfolio,
+    leadsCaptured,
     tours: toursCount,
     applications: applicationsCount,
     costPerLead,
