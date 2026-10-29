@@ -2088,8 +2088,10 @@ model AdAccount {
   lastSyncAt      DateTime?
   lastSyncError   String?   @db.Text
 
-  adCampaigns  AdCampaign[]
-  metricsDaily AdMetricDaily[]
+  adCampaigns          AdCampaign[]
+  metricsDaily         AdMetricDaily[]
+  adCreatives          AdCreative[]
+  creativeMetricsDaily AdCreativeMetricDaily[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2130,6 +2132,7 @@ model AdCampaign {
   endedAt   DateTime?
 
   metricsDaily AdMetricDaily[]
+  adCreatives  AdCreative[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2137,6 +2140,67 @@ model AdCampaign {
   @@unique([adAccountId, externalCampaignId])
   @@index([orgId, status])
   @@index([adAccountId])
+}
+
+// One row per ad in the customer's account (read-only mirror; LeaseStack
+// never creates, edits or pauses ads). Meta thumbnail/image URLs are signed
+// CDN links that expire, so every sync refreshes them.
+model AdCreative {
+  id          String      @id @default(cuid())
+  orgId       String
+  adAccountId String
+  adAccount   AdAccount   @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
+  campaignId  String?
+  campaign    AdCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  platform     AdPlatform
+  externalAdId String
+  name         String
+  status       String? // ACTIVE/PAUSED (Meta), ENABLED/PAUSED (Google)
+  format       String? // image, video, carousel, text
+  thumbnailUrl String?    @db.Text
+  imageUrl     String?    @db.Text
+  videoId      String?
+  headline     String?    @db.Text
+  body         String?    @db.Text
+  ctaType      String?
+  landingUrl   String?    @db.Text
+  lastSeenAt   DateTime   @default(now())
+
+  metricsDaily AdCreativeMetricDaily[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([adAccountId, externalAdId])
+  @@index([orgId, platform])
+  @@index([campaignId])
+}
+
+// Per-ad per-day metrics, same shape and upsert key pattern as AdMetricDaily.
+model AdCreativeMetricDaily {
+  id           String     @id @default(cuid())
+  orgId        String
+  adAccountId  String
+  adAccount    AdAccount  @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
+  adCreativeId String
+  adCreative   AdCreative @relation(fields: [adCreativeId], references: [id], onDelete: Cascade)
+
+  date                   DateTime @db.Date
+  impressions            Int      @default(0)
+  clicks                 Int      @default(0)
+  spendCents             Int      @default(0)
+  conversions            Float    @default(0)
+  ctr                    Float    @default(0)
+  cpcCents               Int      @default(0)
+  costPerConversionCents Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([adCreativeId, date])
+  @@index([orgId, date])
+  @@index([adAccountId, date])
 }
 
 // Per-campaign per-day metrics. One row per (campaignId, date) so the cron

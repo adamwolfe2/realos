@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Check } from "lucide-react";
-import { IntegrationRequestStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
 import { getConnectStatusForOrg, type ConnectSource } from "@/lib/connect/status";
+import { getProviderAvailability } from "@/lib/connect/provider-availability";
 import { getActivePropertyId } from "@/lib/portal/active-property";
 import { Initial, Panel, Pill, Step } from "@/components/portal/overview/kit";
 import { ConnectSteps, type ManagedIds, type SourceId, type SourceTile } from "./connect-steps";
@@ -22,8 +22,8 @@ const SOURCES: Array<{ id: SourceId; status: ConnectSource; name: string; line: 
   { id: "appfolio", status: "appfolio", name: "AppFolio", line: "Listings, leases and residents" },
   { id: "ga4", status: "ga4", name: "Google Analytics", line: "Website traffic and where it comes from" },
   { id: "gsc", status: "gsc", name: "Search Console", line: "How you rank on Google" },
-  { id: "google-ads", status: "google_ads", name: "Google Ads", line: "We run your Google campaigns" },
-  { id: "meta-ads", status: "meta_ads", name: "Meta Ads", line: "We run your Facebook and Instagram ads" },
+  { id: "google-ads", status: "google_ads", name: "Google Ads", line: "Spend, results and your ads" },
+  { id: "meta-ads", status: "meta_ads", name: "Meta Ads", line: "Facebook and Instagram results and ads" },
 ];
 const KB_THIN = 300;
 const fmtDate = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
@@ -36,11 +36,11 @@ function managedIds(): ManagedIds {
   } catch (err) {
     console.error("[setup] GOOGLE_SERVICE_ACCOUNT_JSON is not valid JSON", err);
   }
-  const mcc = (process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID ?? "").replace(/\D/g, "");
+  const availability = getProviderAvailability();
   return {
     googleEmail,
-    googleAdsManagerId: mcc.length === 10 ? `${mcc.slice(0, 3)}-${mcc.slice(3, 6)}-${mcc.slice(6)}` : null,
-    metaBusinessId: process.env.META_AGENCY_BUSINESS_ID?.trim() || null,
+    googleAdsOAuth: availability.google_ads.available,
+    metaAdsOAuth: availability.meta_ads.available,
   };
 }
 
@@ -62,24 +62,18 @@ export default async function SetupPage({ searchParams }: { searchParams: Promis
   ]);
   const property = properties.find((p) => p.id === sp.property) ?? properties.find((p) => p.id === activeId) ?? properties[0] ?? null;
 
-  const [org, site, statuses, requests, lastChat] = await Promise.all([
+  const [org, site, statuses, lastChat] = await Promise.all([
     prisma.organization.findUnique({ where: { id: scope.orgId }, select: { name: true, notifyLeadEmail: true, notifyOnChatbotLead: true, moduleChatbot: true } }),
     prisma.tenantSiteConfig.findUnique({ where: { orgId: scope.orgId }, select: { chatbotEnabled: true, chatbotPersonaName: true, chatbotGreeting: true, chatbotKnowledgeBase: true } }),
     getConnectStatusForOrg(scope.orgId, property?.id ?? null),
-    prisma.integrationRequest.findMany({
-      where: { orgId: scope.orgId, status: { in: [IntegrationRequestStatus.PENDING, IntegrationRequestStatus.IN_PROGRESS] } },
-      select: { integrationSlug: true },
-    }),
     prisma.chatbotConversation.findFirst({ where: { orgId: scope.orgId }, orderBy: { lastMessageAt: "desc" }, select: { lastMessageAt: true } }),
   ]);
 
-  const waiting = new Set(requests.map((r) => r.integrationSlug));
   const tiles: SourceTile[] = SOURCES.map((s) => {
     const st = statuses.find((x) => x.id === s.status);
     const connected = Boolean(st?.connected);
     if (connected && st?.hasError) return { id: s.id, name: s.name, line: "Last sync failed. Reconnect to fix.", state: "error", stateText: "Needs attention" };
     if (connected) return { id: s.id, name: s.name, line: st?.lastSyncAt ? `Synced ${fmtDate.format(st.lastSyncAt)}${st.accountLabel ? ` · ${st.accountLabel}` : ""}` : st?.accountLabel ?? s.line, state: "connected", stateText: "Connected" };
-    if (waiting.has(s.id)) return { id: s.id, name: s.name, line: "Access sent. We're accepting it.", state: "waiting", stateText: "Waiting on us" };
     return { id: s.id, name: s.name, line: s.line, state: "off", stateText: "Not connected" };
   });
 

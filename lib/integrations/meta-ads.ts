@@ -346,6 +346,142 @@ export async function fetchMetaAdsDailyMetrics(
     });
 }
 
+// ---------------------------------------------------------------------------
+// Per-ad creatives + per-ad daily insights (read-only mirror for the gallery)
+// ---------------------------------------------------------------------------
+
+export type MetaAdCreative = {
+  externalAdId: string;
+  externalCampaignId: string | null;
+  name: string;
+  status: string;
+  format: "image" | "video" | "carousel" | "text";
+  thumbnailUrl: string | null;
+  imageUrl: string | null;
+  videoId: string | null;
+  headline: string | null;
+  body: string | null;
+  ctaType: string | null;
+  landingUrl: string | null;
+};
+
+export type MetaAdDailyMetric = {
+  externalAdId: string;
+  date: string;               // YYYY-MM-DD
+  impressions: number;
+  clicks: number;
+  spendCents: number;
+  conversions: number;
+};
+
+const META_LEAD_ACTIONS = ["lead", "onsite_conversion.lead_grouped", "complete_registration", "purchase"];
+
+type MetaCreativeNode = {
+  thumbnail_url?: string;
+  image_url?: string;
+  title?: string;
+  body?: string;
+  call_to_action_type?: string;
+  video_id?: string;
+  object_story_spec?: {
+    link_data?: {
+      link?: string;
+      name?: string;
+      message?: string;
+      picture?: string;
+      call_to_action?: { type?: string; value?: { link?: string } };
+      child_attachments?: unknown[];
+    };
+    video_data?: {
+      title?: string;
+      message?: string;
+      video_id?: string;
+      image_url?: string;
+      call_to_action?: { type?: string; value?: { link?: string } };
+    };
+  };
+};
+
+export async function fetchMetaAds(
+  creds: MetaAdsCredentials,
+  adAccountId: string
+): Promise<MetaAdCreative[]> {
+  const accountPath = `${withActPrefix(normalizeMetaAdAccountId(adAccountId))}/ads`;
+  const rows = await graphGet<{
+    id: string;
+    name?: string;
+    status?: string;
+    campaign_id?: string;
+    creative?: MetaCreativeNode;
+  }>(accountPath, {
+    // Default thumbnail_url is 64px; ask for a gallery-sized render.
+    fields:
+      "id,name,status,campaign_id,creative.thumbnail_width(600).thumbnail_height(600){thumbnail_url,image_url,title,body,call_to_action_type,video_id,object_story_spec}",
+  }, creds.systemUserAccessToken);
+
+  return rows.map((r) => {
+    const c = r.creative ?? {};
+    const link = c.object_story_spec?.link_data;
+    const video = c.object_story_spec?.video_data;
+    const videoId = c.video_id ?? video?.video_id ?? null;
+    const imageUrl = c.image_url ?? link?.picture ?? video?.image_url ?? null;
+    const format: MetaAdCreative["format"] = Array.isArray(link?.child_attachments) && link.child_attachments.length > 0
+      ? "carousel"
+      : videoId
+        ? "video"
+        : imageUrl || c.thumbnail_url
+          ? "image"
+          : "text";
+    return {
+      externalAdId: r.id,
+      externalCampaignId: r.campaign_id ?? null,
+      name: r.name ?? "(unnamed ad)",
+      status: r.status ?? "UNKNOWN",
+      format,
+      thumbnailUrl: c.thumbnail_url ?? imageUrl,
+      imageUrl,
+      videoId,
+      headline: c.title ?? link?.name ?? video?.title ?? null,
+      body: c.body ?? link?.message ?? video?.message ?? null,
+      ctaType: c.call_to_action_type ?? link?.call_to_action?.type ?? video?.call_to_action?.type ?? null,
+      landingUrl: link?.link ?? link?.call_to_action?.value?.link ?? video?.call_to_action?.value?.link ?? null,
+    };
+  });
+}
+
+export async function fetchMetaAdDailyMetrics(
+  creds: MetaAdsCredentials,
+  adAccountId: string,
+  startDate: Date,
+  endDate: Date
+): Promise<MetaAdDailyMetric[]> {
+  const accountPath = `${withActPrefix(normalizeMetaAdAccountId(adAccountId))}/insights`;
+  const rows = await graphGet<{
+    ad_id?: string;
+    date_start?: string;
+    impressions?: string;
+    clicks?: string;
+    spend?: string;
+    actions?: { action_type: string; value: string }[];
+  }>(accountPath, {
+    level: "ad",
+    fields: "ad_id,date_start,impressions,clicks,spend,actions",
+    time_increment: "1",
+    time_range: JSON.stringify({ since: formatDate(startDate), until: formatDate(endDate) }),
+  }, creds.systemUserAccessToken);
+
+  return rows
+    .filter((r) => r.ad_id && r.date_start)
+    .map((r) => ({
+      externalAdId: r.ad_id!,
+      date: r.date_start!,
+      impressions: Number(r.impressions ?? 0),
+      clicks: Number(r.clicks ?? 0),
+      spendCents: Math.round(Number(r.spend ?? 0) * 100),
+      conversions: sumActions(r.actions, META_LEAD_ACTIONS),
+    }));
+}
+
 function sumActions(
   actions: { action_type: string; value: string }[] | undefined,
   types: string[]

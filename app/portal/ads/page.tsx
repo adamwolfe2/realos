@@ -17,6 +17,7 @@ import { Megaphone } from "lucide-react";
 import { ExportButton } from "@/components/ui/export-button";
 import { AdPlatform, LeadSource, LeadStatus, UserRole } from "@prisma/client";
 import { AdsDashboard } from "./ads-dashboard";
+import { AdCreativeGallery, type CreativeItem } from "./ad-creative-gallery";
 import { MarketingRoiTable, type RoiRow } from "./marketing-roi-table";
 import {
   describeAdRetentionPolicy,
@@ -227,6 +228,60 @@ export default async function AdsPage({
     orgRetentionPromise,
   ]);
 
+  // Creative gallery: every synced ad for a real account, with 28-day
+  // per-ad totals. Property scope goes through the campaign relation, the
+  // same way the daily metrics queries above do; org-level ads (no
+  // campaign link yet) stay visible like org-level campaigns.
+  const creativeScope = {
+    ...tenantWhere(scope),
+    adAccount: realAccountFilter,
+    ...(Object.keys(propertyFilter).length > 0
+      ? { OR: [{ campaignId: null }, { campaign: propertyFilter }] }
+      : {}),
+  };
+  const [creativeRows, creativeTotals] = await Promise.all([
+    prisma.adCreative.findMany({
+      where: creativeScope,
+      select: {
+        id: true,
+        platform: true,
+        name: true,
+        status: true,
+        format: true,
+        thumbnailUrl: true,
+        headline: true,
+        body: true,
+        landingUrl: true,
+        campaign: { select: { name: true } },
+      },
+    }),
+    prisma.adCreativeMetricDaily.groupBy({
+      by: ["adCreativeId"],
+      where: { ...tenantWhere(scope), date: { gte: currentStart }, adCreative: creativeScope },
+      _sum: { impressions: true, clicks: true, spendCents: true, conversions: true },
+    }),
+  ]);
+  const totalsByCreative = new Map(creativeTotals.map((t) => [t.adCreativeId, t._sum]));
+  const creativeItems: CreativeItem[] = creativeRows.map((c) => {
+    const t = totalsByCreative.get(c.id);
+    return {
+      id: c.id,
+      platform: c.platform,
+      name: c.name,
+      status: c.status,
+      format: c.format,
+      thumbnailUrl: c.thumbnailUrl,
+      headline: c.headline,
+      body: c.body,
+      landingUrl: c.landingUrl,
+      campaignName: c.campaign?.name ?? null,
+      impressions: t?.impressions ?? 0,
+      clicks: t?.clicks ?? 0,
+      spendCents: t?.spendCents ?? 0,
+      leads: Math.round(t?.conversions ?? 0),
+    };
+  });
+
   const retentionPolicy = getAdRetentionPolicy({
     tier: orgRetention?.subscriptionTier ?? null,
     adDataRetentionMonths: orgRetention?.adDataRetentionMonths ?? null,
@@ -378,6 +433,12 @@ export default async function AdsPage({
         />
         </>
       )}
+
+      {accounts.length > 0 ? (
+        <Panel title="Your ads" aside="Each ad you run, ranked by results · 28 days · we only read, never edit">
+          <AdCreativeGallery items={creativeItems} />
+        </Panel>
+      ) : null}
 
       <Panel title="Marketing ROI by channel" aside="Spend, leads, applications and signed leases per source · 28 days">
         <MarketingRoiTable rows={roiRows} />
