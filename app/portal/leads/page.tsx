@@ -1,17 +1,10 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
-import {
-  Search,
-  SlidersHorizontal,
-  Users,
-  Flame,
-  CalendarCheck,
-  CheckCircle2,
-  Bot,
-  MousePointerClick,
-  FileText,
-} from "lucide-react";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { resolveWindow, pctChange } from "@/lib/dashboard/window";
+import { DateRangePicker } from "@/components/portal/date-range-picker";
+import { SourceMark } from "@/components/portal/source-mark";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
@@ -28,16 +21,12 @@ import {
   LeadKanban,
   type LeadKanbanItem,
 } from "@/components/portal/lead-kanban";
-import { PageHeader } from "@/components/admin/page-header";
-import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { EmptyState } from "@/components/portal/ui/empty-state";
 import { ExportButton } from "@/components/ui/export-button";
 import { humanLeadSource } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { CHART_COLORS } from "@/components/portal/ui/chart-theme";
 import { soft } from "@/lib/soft";
 
-const DAY = 24 * 60 * 60 * 1000;
 
 export const metadata: Metadata = { title: "Leads" };
 export const dynamic = "force-dynamic";
@@ -72,6 +61,9 @@ export default async function LeadsKanbanPage({
     properties?: string;
     q?: string;
     page?: string;
+    range?: string;
+    from?: string;
+    to?: string;
   }>;
 }) {
   const scope = await requireScope();
@@ -136,7 +128,7 @@ export default async function LeadsKanbanPage({
   // numbers above the kanban move in lockstep with what the operator sees
   // below. Each runs in parallel with the main page query; failures fall
   // through to 0 so a single bad lookup never blanks the page.
-  const since28d = new Date(Date.now() - 28 * DAY);
+  const win = resolveWindow(sp);
   const kpiWhere: Prisma.LeadWhereInput = {
     ...tenantWhere(scope),
     AND: [leadPropertyClause],
@@ -158,13 +150,12 @@ export default async function LeadsKanbanPage({
     totalCount,
     properties,
     kpiLeads28d,
+    kpiLeadsPrior,
     kpiHotLeads,
     kpiToursScheduled,
     kpiSigned28d,
     sourceCounts,
     kpiChatbot28d,
-    kpiPopupConv28d,
-    kpiApplications28d,
   ] = await Promise.all([
     prisma.lead.findMany({
       where,
@@ -193,8 +184,12 @@ export default async function LeadsKanbanPage({
       orderBy: { name: "asc" },
     }),
     prisma.lead
-      .count({ where: { ...kpiWhere, createdAt: { gte: since28d } } })
+      // firstSeenAt, not createdAt: imports insert history "now".
+      .count({ where: { ...kpiWhere, firstSeenAt: { gte: win.start, lte: win.end } } })
       .catch(soft(0, "portal.leads:206")),
+    prisma.lead
+      .count({ where: { ...kpiWhere, firstSeenAt: { gte: win.priorStart, lt: win.start } } })
+      .catch(soft(0, "portal.leads:prior")),
     prisma.lead
       .count({
         where: {
@@ -224,7 +219,8 @@ export default async function LeadsKanbanPage({
         where: {
           ...kpiWhere,
           status: LeadStatus.SIGNED,
-          createdAt: { gte: since28d },
+          // Same cohort as the "new" count, so conversion compares like with like.
+          firstSeenAt: { gte: win.start, lte: win.end },
         },
       })
       .catch(soft(0, "portal.leads:239")),
@@ -239,35 +235,17 @@ export default async function LeadsKanbanPage({
         _count: { _all: true },
       })
       .catch(soft([] as Array<{ source: LeadSource; _count: { _all: number } }>, "portal.leads:250")),
-    // --- Cross-product signal KPIs (28d) ----------------------------------
-    // Each is org + property scoped. .catch fall-back so a single bad
-    // query never blanks the strip.
+    // Chats in the last 28d, linked from the header so chatbot threads
+    // (not Lead rows) are easy to find.
     prisma.chatbotConversation
       .count({
         where: {
           orgId: scope.orgId,
           ...nonLeadPropertyFragment,
-          createdAt: { gte: since28d },
+          createdAt: { gte: win.start, lte: win.end },
         },
       })
       .catch(soft(0, "portal.leads:264")),
-    prisma.popupEvent
-      .count({
-        where: {
-          orgId: scope.orgId,
-          type: "CONVERTED",
-          occurredAt: { gte: since28d },
-        },
-      })
-      .catch(soft(0, "portal.leads:273")),
-    prisma.application
-      .count({
-        where: {
-          lead: { ...kpiWhere },
-          createdAt: { gte: since28d },
-        },
-      })
-      .catch(soft(0, "portal.leads:281")),
   ]);
 
   // ---------------------------------------------------------------------
@@ -372,337 +350,145 @@ export default async function LeadsKanbanPage({
     return `/portal/leads${qs ? `?${qs}` : ""}`;
   }
 
+  const headlineStats: Array<{ value: string; label: string; href?: string; delta?: number | null }> = [
+    { value: kpiLeads28d.toLocaleString(), label: "new", delta: pctChange(kpiLeads28d, kpiLeadsPrior) },
+    { value: kpiHotLeads.toLocaleString(), label: "hot" },
+    { value: kpiToursScheduled.toLocaleString(), label: "touring or applying" },
+    { value: conversionPct != null ? `${conversionPct}%` : "—", label: "converted" },
+  ];
+  // Norman (May 22): chatbot threads are not Lead rows; point at them so
+  // the count here never looks like it is missing contacts.
+  if (kpiChatbot28d > 0) {
+    headlineStats.push({
+      value: kpiChatbot28d.toLocaleString(),
+      label: "chats in Inbox",
+      href: "/portal/conversations",
+    });
+  }
+
   return (
-    <div className="space-y-3 ls-page-fade">
-      <PageHeader
-        title="Leads"
-        description={
-          <>
-            Form + chatbot opt-ins captured on your site. Click any lead to see
-            full detail, conversation history, tours, and applications.
-            {/* Norman feedback (May 22): when a user clicks the
-                dashboard's "Captured · 30d" hero and lands here, they
-                expect to see ALL captured contacts — but this page
-                only holds Lead-table rows (form + chatbot). Spell out
-                where the rest live so they don't think the platform
-                is lying. */}
-            <span className="block mt-1 text-[12px] text-muted-foreground">
-              Chatbot threads live in{" "}
-              <Link
-                href="/portal/conversations"
-                className="font-medium text-primary hover:underline"
-              >
-                Conversations
-              </Link>
-              .
-            </span>
-          </>
-        }
-        actions={
-          <div className="flex items-center gap-3 flex-wrap">
-            <Suspense
-              fallback={
-                <div className="h-9 w-48 rounded-[2px] border border-border bg-secondary" />
-              }
-            >
-              <PropertyMultiSelect
-                properties={visibleProperties(scope, properties)}
-                orgId={scope.orgId}
-              />
-            </Suspense>
-            <span className="text-xs text-muted-foreground">
-              {totalCount === 0
-                ? "No leads yet"
-                : `Showing ${rangeStart}–${rangeEnd} of ${totalCount} ${totalCount === 1 ? "lead" : "leads"}`}
-            </span>
-            <ExportButton href="/api/tenant/leads/export" />
-          </div>
-        }
-      />
+    <div className="space-y-5 ls-page-fade">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1>Leads</h1>
+          <p className="mt-1 text-[13px] text-muted-foreground tabular-nums">
+            {headlineStats.map((st, i) => {
+              const body = (
+                <>
+                  <span className="font-medium text-foreground">{st.value}</span>
+                  {st.delta != null && st.delta !== 0 ? (
+                    <span className={`ml-1 font-semibold ${st.delta > 0 ? "text-[#15803d]" : "text-[#b91c1c]"}`}>
+                      {st.delta > 0 ? "+" : ""}
+                      {st.delta}%
+                    </span>
+                  ) : null}{" "}
+                  {st.label}
+                </>
+              );
+              return (
+                <span key={st.label}>
+                  {i > 0 ? " · " : null}
+                  {st.href ? (
+                    <Link href={st.href} className="hover:text-primary">
+                      {body}
+                    </Link>
+                  ) : (
+                    body
+                  )}
+                </span>
+              );
+            })}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <DateRangePicker label={win.label} />
+          <Suspense
+            fallback={<div className="h-9 w-48 rounded-[2px] border border-border bg-secondary" />}
+          >
+            <PropertyMultiSelect properties={visibleProperties(scope, properties)} orgId={scope.orgId} />
+          </Suspense>
+          <ExportButton href="/api/tenant/leads/export" />
+        </div>
+      </div>
 
       {isAccessDenied(scope, propertyIds) ? (
         <PropertyAccessDeniedBanner pathname="/portal/leads" />
       ) : null}
 
-      {/* KPI strip — anchors the page in the same vocabulary as /portal
-          home. Numbers move with the property + source filter set the
-          operator picks below so the strip is a real summary of the
-          visible board, not a static org-wide widget. */}
-      <section
-        aria-label="Lead pipeline at a glance"
-        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 ls-stagger"
-      >
-        <KpiTile
-          label="New leads (28d)"
-          value={kpiLeads28d.toLocaleString()}
-          hint={`${totalCount.toLocaleString()} all-time`}
-          icon={<Users className="h-3.5 w-3.5" />}
-        />
-        <KpiTile
-          label="Hot leads"
-          value={kpiHotLeads.toLocaleString()}
-          hint="Score 70+, not yet contacted"
-          icon={<Flame className="h-3.5 w-3.5" />}
-        />
-        <KpiTile
-          label="In tour / app stage"
-          value={kpiToursScheduled.toLocaleString()}
-          hint="Active pipeline mid-funnel"
-          icon={<CalendarCheck className="h-3.5 w-3.5" />}
-        />
-        <KpiTile
-          label="Conversion (28d)"
-          value={conversionPct != null ? `${conversionPct}%` : "—"}
-          hint={`${kpiSigned28d} signed`}
-          icon={<CheckCircle2 className="h-3.5 w-3.5" />}
-        />
-      </section>
 
-      {/* Cross-product signal strip — collapsed from 4 KPI tiles to a
-          single-line link row. Operator feedback (2026-06-04): two rows
-          of 4 tiles = 8 competing numbers above the actual lead list.
-          Same data, denser surface, each number is a Link into its own
-          page. Hides entirely when every signal is zero. */}
-      {(kpiChatbot28d ||
-        kpiPopupConv28d ||
-        kpiApplications28d) > 0 ? (
-        <p
-          aria-label="Cross-product signals (28d)"
-          className="flex items-center gap-x-4 gap-y-1.5 flex-wrap text-[11px] sm:text-[12px] text-muted-foreground"
-        >
-          <span className="ls-eyebrow">
-            Also touched · 28d
-          </span>
-          {kpiChatbot28d > 0 ? (
-            <Link
-              href="/portal/chatbot"
-              className="inline-flex items-center gap-1 hover:text-foreground"
-            >
-              <Bot className="h-3 w-3" aria-hidden="true" />
-              <span className="font-semibold tabular-nums text-foreground">
-                {kpiChatbot28d.toLocaleString()}
-              </span>{" "}
-              chatbot convos
-            </Link>
-          ) : null}
-          {kpiPopupConv28d > 0 ? (
-            <Link
-              href="/portal/popups"
-              className="inline-flex items-center gap-1 hover:text-foreground"
-            >
-              <MousePointerClick className="h-3 w-3" aria-hidden="true" />
-              <span className="font-semibold tabular-nums text-foreground">
-                {kpiPopupConv28d.toLocaleString()}
-              </span>{" "}
-              popup conversions
-            </Link>
-          ) : null}
-          {kpiApplications28d > 0 ? (
-            <Link
-              href="/portal/applications"
-              className="inline-flex items-center gap-1 hover:text-foreground"
-            >
-              <FileText className="h-3 w-3" aria-hidden="true" />
-              <span className="font-semibold tabular-nums text-foreground">
-                {kpiApplications28d.toLocaleString()}
-              </span>{" "}
-              applications
-            </Link>
-          ) : null}
-        </p>
-      ) : null}
-
-      {/* Source-mix segmented bar. Renders only when at least one lead
-          exists and at least one source has data so it doesn't echo
-          an empty bar on day-one tenants. Same sourceCounts data the
-          old text one-liner used — no new queries.
-
-          Defensive dedupe (2026-06-04): two LeadSource enum values
-          can render to the same human label ("Chatbot" appeared twice
-          on Telegraph Commons because legacy CHATBOT rows coexist with
-          newer CHATBOT-tagged opt-ins from the V2 widget). Bucket by
-          label and sum counts before formatting so the operator sees
-          one entry per source name. */}
-      {totalCount > 0 && sourceCounts.length > 0 ? (
-        <SourceMixBar
-          totalCount={totalCount}
-          sourceCounts={sourceCounts}
-          signalFilter={signalFilter}
-          q={sp.q}
-          properties={sp.properties}
-        />
-      ) : null}
-
-      {/* Premium filter bar — search + pill-based source tabs */}
-      <div className="ls-card p-3 space-y-2.5">
-        {/* Search row */}
-        <form action="/portal/leads" className="flex items-center gap-2">
-          {/* Preserve active source + signal + property scope through search submit */}
-          {sp.source ? (
-            <input type="hidden" name="source" value={sp.source} />
-          ) : null}
-          {signalFilter ? (
-            <input type="hidden" name="signal" value={signalFilter} />
-          ) : null}
-          {sp.properties ? (
-            <input type="hidden" name="properties" value={sp.properties} />
-          ) : null}
-          <div className="relative flex-1">
-            <Search
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none"
-              aria-hidden="true"
-            />
-            <input
-              name="q"
-              defaultValue={sp.q ?? ""}
-              aria-label="Search leads"
-              placeholder="Search name, email, phone…"
-              className="w-full rounded-none border border-border bg-background pl-8 pr-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
-            />
-          </div>
-          <button
-            type="submit"
-            className="shrink-0 inline-flex items-center justify-center rounded-none bg-primary text-primary-foreground hover:bg-primary/90 transition-colors px-3.5 py-1.5 text-xs font-semibold"
-          >
-            Search
-          </button>
-          {sp.source || sp.property || sp.properties || sp.q ? (
-            <Link
-              href="/portal/leads"
-              className="shrink-0 inline-flex items-center gap-1 rounded-none border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-            >
-              Clear
-            </Link>
-          ) : null}
+      {/* One toolbar row: search, source, signal, paging. */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <form action="/portal/leads" className="relative w-full sm:w-72">
+          {sp.source ? <input type="hidden" name="source" value={sp.source} /> : null}
+          {signalFilter ? <input type="hidden" name="signal" value={signalFilter} /> : null}
+          {sp.properties ? <input type="hidden" name="properties" value={sp.properties} /> : null}
+          <Search
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none"
+            aria-hidden="true"
+          />
+          <input
+            name="q"
+            defaultValue={sp.q ?? ""}
+            aria-label="Search leads"
+            placeholder="Search name, email, phone"
+            className="w-full border border-border bg-card pl-8 pr-3 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary/50"
+          />
         </form>
 
-        {/* Source filter pills — each is a link so no JS required */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="ls-eyebrow shrink-0 mr-0.5 flex items-center gap-1">
-            <SlidersHorizontal className="h-2.5 w-2.5" />
-            Source
-          </span>
+        <div className="flex items-center gap-1 flex-wrap">
           <SourcePill
-            label="All"
+            label="All sources"
             active={!sp.source}
-            href={buildHref({
-              source: undefined,
-              signal: signalFilter,
-              q: sp.q,
-              properties: sp.properties,
-            })}
+            href={buildHref({ source: undefined, signal: signalFilter, q: sp.q, properties: sp.properties })}
           />
           {SOURCES.filter((s) => sourcesWithData.has(s)).map((s) => (
             <SourcePill
               key={s}
+              source={s}
+              count={sourceCounts.filter((r) => r.source === s).reduce((n, r) => n + r._count._all, 0)}
               label={humanLeadSource(s)}
               active={sp.source === s}
-              href={buildHref({
-                source: s,
-                signal: signalFilter,
-                q: sp.q,
-                properties: sp.properties,
-              })}
+              href={buildHref({ source: s, signal: signalFilter, q: sp.q, properties: sp.properties })}
             />
           ))}
-          {sourcesWithData.size === 0 ? (
-            <span className="text-[11px] text-muted-foreground italic">
-              No sources yet.
-            </span>
+        </div>
+
+        <span className="hidden sm:block h-4 w-px bg-border" aria-hidden />
+
+        <div className="flex items-center gap-1 flex-wrap">
+          {([
+            [undefined, "Any signal"],
+            ["chatbot", "Chatted"],
+            ["popup", "Popup"],
+            ["application", "Applied"],
+          ] as const).map(([key, label]) => (
+            <SourcePill
+              key={label}
+              label={label}
+              active={(signalFilter ?? undefined) === key}
+              href={buildHref({ source: sp.source, signal: key, q: sp.q, properties: sp.properties })}
+            />
+          ))}
+        </div>
+
+        {sp.source || sp.property || sp.properties || sp.q ? (
+          <Link href="/portal/leads" className="text-[12px] text-muted-foreground hover:text-foreground">
+            Clear
+          </Link>
+        ) : null}
+
+        <div className="ml-auto flex items-center gap-1 text-[12px] text-muted-foreground tabular-nums">
+          <span className="mr-1">
+            {totalCount === 0 ? "No leads" : `${rangeStart}–${rangeEnd} of ${totalCount}`}
+          </span>
+          {totalPages > 1 ? (
+            <>
+              <PageArrow href={page > 1 ? pageHref(page - 1) : null} label="Previous page" dir="prev" />
+              <PageArrow href={page < totalPages ? pageHref(page + 1) : null} label="Next page" dir="next" />
+            </>
           ) : null}
         </div>
-
-        {/* Cross-signal filter row — orthogonal to source. Lets the
-            operator slice the board by which products this lead has
-            touched (chatbot transcript, popup conversion,
-            application). Layered on top of source + property filters. */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="ls-eyebrow shrink-0 mr-0.5 flex items-center gap-1">
-            <SlidersHorizontal className="h-2.5 w-2.5" />
-            Signal
-          </span>
-          <SourcePill
-            label="All"
-            active={!signalFilter}
-            href={buildHref({
-              source: sp.source,
-              signal: undefined,
-              q: sp.q,
-              properties: sp.properties,
-            })}
-          />
-          <SourcePill
-            label="Chatbot"
-            active={signalFilter === "chatbot"}
-            href={buildHref({
-              source: sp.source,
-              signal: "chatbot",
-              q: sp.q,
-              properties: sp.properties,
-            })}
-          />
-          <SourcePill
-            label="Popup"
-            active={signalFilter === "popup"}
-            href={buildHref({
-              source: sp.source,
-              signal: "popup",
-              q: sp.q,
-              properties: sp.properties,
-            })}
-          />
-          <SourcePill
-            label="Applied"
-            active={signalFilter === "application"}
-            href={buildHref({
-              source: sp.source,
-              signal: "application",
-              q: sp.q,
-              properties: sp.properties,
-            })}
-          />
-        </div>
       </div>
-
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>
-            Page {page} of {totalPages}
-          </span>
-          <div className="flex items-center gap-2">
-            {page > 1 ? (
-              <Link
-                href={pageHref(page - 1)}
-                className="px-3 py-2 border border-border rounded-[2px] hover:bg-muted transition-colors"
-              >
-                Previous
-              </Link>
-            ) : (
-              <span
-                className="px-3 py-2 border border-border rounded-[2px] opacity-40 cursor-not-allowed select-none"
-                aria-disabled="true"
-              >
-                Previous
-              </span>
-            )}
-            {page < totalPages ? (
-              <Link
-                href={pageHref(page + 1)}
-                className="px-3 py-2 border border-border rounded-[2px] hover:bg-muted transition-colors"
-              >
-                Next
-              </Link>
-            ) : (
-              <span
-                className="px-3 py-2 border border-border rounded-[2px] opacity-40 cursor-not-allowed select-none"
-                aria-disabled="true"
-              >
-                Next
-              </span>
-            )}
-          </div>
-        </div>
-      )}
 
       {totalCount === 0 ? (
         <EmptyLeadsState orgId={scope.orgId} />
@@ -738,136 +524,51 @@ function buildHref({
   return `/portal/leads${qs ? `?${qs}` : ""}`;
 }
 
+/** Compact prev/next control for the toolbar. Disabled when href is null. */
+function PageArrow({ href, label, dir }: { href: string | null; label: string; dir: "prev" | "next" }) {
+  const Icon = dir === "prev" ? ChevronLeft : ChevronRight;
+  const cls = "grid h-7 w-7 place-items-center rounded-full border border-border";
+  return href ? (
+    <Link href={href} aria-label={label} className={cn(cls, "hover:bg-secondary hover:text-foreground")}>
+      <Icon className="h-3.5 w-3.5" />
+    </Link>
+  ) : (
+    <span aria-disabled="true" className={cn(cls, "opacity-40")}>
+      <Icon className="h-3.5 w-3.5" />
+    </span>
+  );
+}
+
 /** Pill-style source filter chip. Renders as a plain <Link> — no JS. */
 function SourcePill({
   label,
   active,
   href,
+  source,
+  count,
 }: {
   label: string;
   active: boolean;
   href: string;
+  /** When set, the pill leads with that tool's logo and a lead count. */
+  source?: LeadSource;
+  count?: number;
 }) {
   return (
     <Link
       href={href}
       className={cn(
-        "inline-flex items-center rounded-[2px] px-2.5 py-0.5 text-[11px] font-medium transition-colors",
+        "inline-flex items-center gap-1.5 rounded-full py-1 text-[12px] font-medium transition-colors",
+        source ? "pl-1 pr-2.5" : "px-2.5",
         active
-          ? "bg-primary text-primary-foreground"
-          : "bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-secondary",
+          ? "bg-[var(--t-accent-soft)] text-primary"
+          : "text-muted-foreground hover:text-foreground hover:bg-secondary",
       )}
     >
+      {source ? <SourceMark source={source} size={20} /> : null}
       {label}
+      {count != null ? <span className="tabular-nums text-muted-foreground">{count}</span> : null}
     </Link>
-  );
-}
-
-// Segment colors, brand-first then muted greys for the tail. Cycles the
-// grey pair if there are ever more than 6 distinct source labels.
-const MIX_BAR_PALETTE = [
-  CHART_COLORS.brand,
-  CHART_COLORS.brandDeep,
-  CHART_COLORS.brandSoft,
-  CHART_COLORS.brandFog,
-  CHART_COLORS.muted,
-  CHART_COLORS.silver,
-];
-
-/** Segmented source-mix bar + legend, replacing the old text one-liner.
- * Buckets sourceCounts by human label (same dedupe as the old line),
- * then renders one proportional-width segment per label. Legend items
- * link through buildHref — the same href mechanism the source filter
- * pills above use — so clicking a legend entry applies that source
- * filter.
- * ponytail: when 2+ enum values share a label, the legend link picks
- * the first enum value seen for that label; the `source` query param
- * only supports one value at a time so a true multi-value filter isn't
- * possible here. Upgrade if that collision starts mattering in practice. */
-function SourceMixBar({
-  totalCount,
-  sourceCounts,
-  signalFilter,
-  q,
-  properties,
-}: {
-  totalCount: number;
-  sourceCounts: Array<{ source: LeadSource; _count: { _all: number } }>;
-  signalFilter: SignalKey | null;
-  q: string | undefined;
-  properties: string | undefined;
-}) {
-  const byLabel = new Map<string, { source: LeadSource; count: number }>();
-  for (const r of sourceCounts) {
-    const label = humanLeadSource(r.source);
-    const existing = byLabel.get(label);
-    byLabel.set(label, {
-      source: existing?.source ?? r.source,
-      count: (existing?.count ?? 0) + r._count._all,
-    });
-  }
-  const entries = Array.from(byLabel.entries())
-    .map(([label, v]) => ({ label, ...v }))
-    .sort((a, b) => b.count - a.count);
-  const sumEntries = entries.reduce((sum, e) => sum + e.count, 0);
-  if (sumEntries === 0) return null;
-
-  return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
-        <span className="ls-eyebrow">
-          Source mix
-        </span>
-        <span className="text-[11px] font-mono tabular-nums text-muted-foreground">
-          {totalCount.toLocaleString()} {totalCount === 1 ? "lead" : "leads"}
-        </span>
-      </div>
-      <div className="flex h-4 w-full overflow-hidden rounded-[2px]">
-        {entries.map((e, i) => (
-          <Link
-            key={e.label}
-            href={buildHref({
-              source: e.source,
-              signal: signalFilter,
-              q,
-              properties,
-            })}
-            title={`${e.label}: ${e.count.toLocaleString()}`}
-            style={{
-              width: `${(e.count / sumEntries) * 100}%`,
-              backgroundColor: MIX_BAR_PALETTE[i % MIX_BAR_PALETTE.length],
-            }}
-            className="h-full transition-opacity hover:opacity-80"
-          />
-        ))}
-      </div>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        {entries.map((e, i) => (
-          <Link
-            key={e.label}
-            href={buildHref({
-              source: e.source,
-              signal: signalFilter,
-              q,
-              properties,
-            })}
-            className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <span
-              className="h-2 w-2 shrink-0 rounded-[1px]"
-              style={{
-                backgroundColor: MIX_BAR_PALETTE[i % MIX_BAR_PALETTE.length],
-              }}
-              aria-hidden="true"
-            />
-            {e.label}{" "}
-            <span className="font-mono tabular-nums text-foreground">
-              {e.count.toLocaleString()}
-            </span>
-          </Link>
-        ))}
-      </div>
-    </div>
   );
 }
 

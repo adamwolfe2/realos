@@ -161,9 +161,3 @@ export async function getBuyerSession(): Promise<MarketplaceBuyer | null> {
     where: { id: parsed.buyerId },
   });
 }
-
-// Strict variant — throws (or returns null) for use in pages that must
-// have a logged-in buyer. Caller redirects to sign-in on null.
-export async function requireBuyer(): Promise<MarketplaceBuyer | null> {
-  return getBuyerSession();
-}

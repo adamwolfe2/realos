@@ -4,10 +4,8 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Check, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  StatusChip,
-  type ConnectionStatus,
-} from "@/components/portal/ui/status-chip";
+import type { ConnectionStatus } from "@/components/portal/ui/status-chip";
+import { Panel, Pill, Step } from "@/components/portal/overview/kit";
 
 // ---------------------------------------------------------------------------
 // InstallSnippet — the chatbot's install prerequisite, now the FIRST module
@@ -80,8 +78,17 @@ export function InstallSnippet({
   status,
   lastActivityLabel,
   defaultCollapsed = false,
+  step,
+  picker,
+  bare = false,
 }: {
   snippet: string;
+  /** Numbered setup step on /portal/chatbot. */
+  step?: number;
+  /** Property picker rendered above the code (multi-property orgs). */
+  picker?: React.ReactNode;
+  /** Render without the card (inside the chatbot studio slide-over). */
+  bare?: boolean;
   /**
    * Heartbeat state, derived server-side from chatbot conversation activity.
    * Optional because the popups page reuses this component for its embed
@@ -131,62 +138,38 @@ export function InstallSnippet({
     });
   }
 
-  if (collapsed) {
+  const title = step ? <Step n={step}>Install on your site</Step> : "Install snippet";
+  const statusPill = !hasHeartbeat ? null : isLive ? <Pill tone="good">Installed{lastActivityLabel ? ` · ${lastActivityLabel}` : ""}</Pill> : status === "stale" ? <Pill tone="warn">Quiet for 7+ days</Pill> : <Pill tone="warn">Not installed yet</Pill>;
+
+  if (collapsed && !bare) {
     return (
-      <section className="ls-card px-5 py-3 flex flex-wrap items-center gap-3">
-        <h2 className="text-sm font-semibold text-foreground">Installation</h2>
-        {hasHeartbeat ? <StatusChip status={status ?? "not_connected"} /> : null}
-        {lastActivityLabel ? (
-          <span className="text-[11px] text-muted-foreground tabular-nums">
-            {lastActivityLabel}
-          </span>
-        ) : null}
-        <button
-          type="button"
-          onClick={() => setCollapsed(false)}
-          className="ml-auto text-[11px] font-semibold text-primary hover:underline"
-        >
-          Show install instructions
-        </button>
-      </section>
+      <Panel
+        title={title}
+        aside={<>{statusPill}<button type="button" onClick={() => setCollapsed(false)} className="text-[var(--t-accent)] hover:underline">Show code</button></>}
+      >
+        <p className="text-[13px] text-[var(--t-muted)]">Changes above go live without re-installing.</p>
+      </Panel>
     );
   }
 
   return (
-    <section className="ls-card p-5 space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-foreground">
-            {hasHeartbeat ? "Install the chatbot on your site" : "Install snippet"}
-          </h2>
-          <p className="text-xs text-muted-foreground mt-1">
-            Paste this before the closing <code>&lt;/head&gt;</code> tag. Works
-            on Wix, WordPress, Webflow, custom sites — anywhere you can add a
-            script.
-          </p>
-        </div>
-        {hasHeartbeat ? (
-          <div className="flex items-center gap-2 shrink-0">
-            <StatusChip status={status ?? "not_connected"} />
-            {lastActivityLabel ? (
-              <span className="text-[11px] text-muted-foreground tabular-nums">
-                {lastActivityLabel}
-              </span>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
+    <Wrap bare={bare} title={title} aside={statusPill}>
+      <div className="space-y-4">
+      <p className="text-[13px] text-[var(--t-muted)]">
+        Paste this before <code>&lt;/head&gt;</code> on every page. Works on WordPress, Wix, Webflow or any site that takes a script. Changes above go live without re-installing.
+      </p>
+      {picker}
 
       {hasHeartbeat ? <InstallStepper current={current} live={isLive} /> : null}
 
       <div className="relative">
-        <pre className="border border-border rounded-[2px] bg-secondary px-3 py-3 pr-24 text-xs font-mono overflow-x-auto">
+        <pre className="overflow-x-auto rounded-[10px] border border-[var(--t-border)] bg-[#f7f9fd] px-3 py-3 pr-24 font-mono text-[12px] text-[var(--t-ink)]">
           <code>{snippet}</code>
         </pre>
         <button
           type="button"
           onClick={copy}
-          className="absolute top-2 right-2 bg-primary text-primary-foreground hover:bg-primary-dark transition-colors text-[11px] font-semibold px-2.5 py-1 rounded-[2px]"
+          className="absolute right-2 top-2 rounded-full bg-[var(--t-primary-bg)] px-3 py-1 text-[12px] font-medium text-white hover:opacity-90"
         >
           {copied ? "Copied" : "Copy"}
         </button>
@@ -203,13 +186,13 @@ export function InstallSnippet({
           type="button"
           onClick={verify}
           disabled={verifying}
-          className="inline-flex items-center gap-1.5 rounded-[2px] border border-border bg-background px-3 py-1.5 text-[11px] font-semibold text-foreground hover:bg-secondary transition-colors disabled:opacity-50"
+          className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[var(--t-border)] bg-white px-3.5 text-[12.5px] font-medium text-[var(--t-ink)] hover:bg-[var(--t-wash)] disabled:opacity-50"
         >
           <RefreshCw
             className={cn("h-3 w-3", verifying && "animate-spin")}
             strokeWidth={2}
           />
-          {verifying ? "Checking…" : "Verify installation"}
+          {verifying ? "Checking..." : "Check install"}
         </button>
         <p className="text-[11px] text-muted-foreground leading-snug flex-1 min-w-[200px]">
           {isLive
@@ -221,10 +204,11 @@ export function InstallSnippet({
       </div>
       ) : null}
 
-      <p className="text-[11px] text-muted-foreground">
-        The widget reads live config from the server, so changes below
-        propagate without re-installing.
-      </p>
-    </section>
+      </div>
+    </Wrap>
   );
+}
+
+function Wrap({ bare, children, ...panel }: { bare: boolean; title: React.ReactNode; aside: React.ReactNode; children: React.ReactNode }) {
+  return bare ? <div>{children}</div> : <Panel {...panel}>{children}</Panel>;
 }

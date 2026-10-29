@@ -33,19 +33,25 @@ import {
   Plug,
   KeyRound,
   Globe,
+  Lightbulb,
+  Activity,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/portal/notification-bell";
+import { CmdKSearch } from "@/components/portal/search/cmdk-search";
+import { UserButton } from "@clerk/nextjs";
 import { BRAND_NAME } from "@/lib/brand";
 import {
   ActivePropertySwitcher,
   type ActivePropertyOption,
 } from "@/components/portal/active-property-switcher";
-import { LeaseStackLogo } from "@/components/brand/leasestack-logo";
+import { BRAND_LOGOS } from "@/components/portal/integrations/brand-logos";
 
 export type PortalNavOrg = {
   name: string;
+  /** Integration slugs that are live or stale, shown as logos in the footer. */
+  connectedSources?: string[];
   productLine?: string;
   moduleWebsite: boolean;
   moduleChatbot: boolean;
@@ -206,9 +212,28 @@ const ALWAYS = () => true;
 // ---------------------------------------------------------------------------
 export const NAV_GROUPS: NavGroup[] = [
   {
-    label: "Today",
+    label: "Agent",
     items: [
-      { href: "/portal", label: "Dashboard", icon: LayoutDashboard, show: ALWAYS },
+      { href: "/portal", label: "Overview", icon: LayoutDashboard, show: ALWAYS },
+      {
+        href: "/portal/chatbot",
+        label: "Chatbot",
+        icon: Bot,
+        show: (o) => o.moduleChatbot,
+      },
+      {
+        href: "/portal/conversations",
+        label: "Conversations",
+        icon: MessageSquare,
+        show: (o) => o.moduleConversations,
+        badge: (o) => o.flaggedConversationsCount ?? null,
+      },
+      {
+        href: "/portal/conversations/insights",
+        label: "Suggested fixes",
+        icon: Lightbulb,
+        show: (o) => o.moduleConversations,
+      },
       // Norman 2026-06-04: Briefing tab hidden from sidebar until lead
       // inbox routing is configured. The page still exists at
       // /portal/briefing for deep links + when an operator wires up the
@@ -235,7 +260,7 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: "Pipeline",
+    label: "Portfolio",
     items: [
       // Properties surfaces above the lead pipeline because operators
       // think building-first: portfolio status drives which leads matter.
@@ -292,18 +317,12 @@ export const NAV_GROUPS: NavGroup[] = [
           (Boolean(o.appFolioConnected) || Boolean(o.hasWorkOrders)),
         badge: (o) => o.urgentWorkOrdersCount ?? null,
       },
-      {
-        href: "/portal/conversations",
-        label: "Conversations",
-        icon: MessageSquare,
-        show: (o) => o.moduleConversations,
-        badge: (o) => o.flaggedConversationsCount ?? null,
-      },
     ],
   },
   {
-    label: "Marketing",
+    label: "Learns from",
     items: [
+      { href: "/portal/connect", label: "Data sources", icon: Plug, show: ALWAYS },
       {
         href: "/portal/ads",
         label: "Ads",
@@ -311,34 +330,36 @@ export const NAV_GROUPS: NavGroup[] = [
         show: (o) => o.moduleGoogleAds || o.moduleMetaAds,
       },
       {
-        href: "/portal/creative",
-        label: "Creative",
-        icon: Brush,
-        show: (o) =>
-          o.moduleCreativeStudio && Boolean(o.hasCreativeRequests),
-      },
-      {
-        href: "/portal/chatbot",
-        label: "Chatbot",
-        icon: Bot,
-        show: (o) => o.moduleChatbot,
-      },
-      {
-        href: "/portal/popups",
-        label: "Popups",
-        icon: Sparkles,
-        show: (o) => o.modulePopups,
+        href: "/portal/seo",
+        label: "SEO",
+        icon: TrendingUp,
+        show: (o) => o.moduleSEO,
       },
       // Content drafter — every plan can open it; the quota meter on the
       // page (and the API enforcement) decides whether they can actually
       // generate.
       { href: "/portal/content", label: "Content", icon: FileText, show: ALWAYS },
       {
-        href: "/portal/seo",
-        label: "SEO",
-        icon: TrendingUp,
-        show: (o) => o.moduleSEO,
+        href: "/portal/reputation",
+        label: "Reputation",
+        icon: Star,
+        show: (o) => o.moduleReputation,
       },
+      // Site Engine — only when the org's site is OURS to manage. An org
+      // that brought its own site has no use for this surface (Adam,
+      // 2026-07-29: nav shows only what the org actually uses).
+      {
+        href: "/portal/sites/request",
+        label: "Site Engine",
+        icon: Globe,
+        show: (o) => o.moduleWebsite && !o.bringYourOwnSite,
+      },
+    ],
+  },
+  {
+    label: "Reports",
+    items: [
+      { href: "/portal/performance", label: "Performance", icon: Activity, show: ALWAYS },
       {
         href: "/portal/attribution",
         label: "Attribution",
@@ -358,25 +379,23 @@ export const NAV_GROUPS: NavGroup[] = [
         show: (o) => o.moduleInsights && Boolean(o.hasReports),
       },
       {
-        href: "/portal/reputation",
-        label: "Reputation",
-        icon: Star,
-        show: (o) => o.moduleReputation,
+        href: "/portal/creative",
+        label: "Creative",
+        icon: Brush,
+        show: (o) =>
+          o.moduleCreativeStudio && Boolean(o.hasCreativeRequests),
+      },
+      {
+        href: "/portal/popups",
+        label: "Popups",
+        icon: Sparkles,
+        show: (o) => o.modulePopups,
       },
       {
         href: "/portal/referrals",
         label: "Referrals",
         icon: Share2,
         show: (o) => o.moduleReferrals,
-      },
-      // Site Engine — only when the org's site is OURS to manage. An org
-      // that brought its own site has no use for this surface (Adam,
-      // 2026-07-29: nav shows only what the org actually uses).
-      {
-        href: "/portal/sites/request",
-        label: "Site Engine",
-        icon: Globe,
-        show: (o) => o.moduleWebsite && !o.bringYourOwnSite,
       },
     ],
   },
@@ -424,6 +443,20 @@ export const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
+// Rail icon per group. Keyed by label so NavGroup stays a plain data shape
+// shared with the mobile drawer and tests.
+const GROUP_ICONS: Record<string, LucideIcon> = {
+  Agent: Bot,
+  Portfolio: Building2,
+  "Learns from": Plug,
+  Reports: Activity,
+  Account: Settings,
+};
+
+function isActiveHref(pathname: string | null, href: string): boolean {
+  return pathname === href || (href !== "/portal" && Boolean(pathname?.startsWith(href)));
+}
+
 export function PortalNav({
   org,
   scopeProperties = [],
@@ -439,7 +472,6 @@ export function PortalNav({
 }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const [, setMounted] = useState(false);
 
   useEffect(() => {
     try {
@@ -448,7 +480,6 @@ export function PortalNav({
     } catch {
       // ignore
     }
-    setMounted(true);
   }, []);
 
   function toggleCollapsed() {
@@ -461,171 +492,137 @@ export function PortalNav({
     }
   }
 
+  // Intercom-style shell: a slim icon rail picks the section, a sub-nav
+  // lists that section's pages. The active section is whichever group owns
+  // the longest href matching the current path.
+  const groups = NAV_GROUPS.map((group) => ({ ...group, visible: visibleNavItems(group, org) })).filter(
+    (g) => g.visible.length > 0,
+  );
+  let activeGroup = groups[0];
+  let bestLen = -1;
+  for (const g of groups) {
+    for (const item of g.visible) {
+      if (isActiveHref(pathname, item.href) && item.href.length > bestLen) {
+        activeGroup = g;
+        bestLen = item.href.length;
+      }
+    }
+  }
+  const activeItemHref = activeGroup?.visible
+    .filter((i) => isActiveHref(pathname, i.href))
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
+
   return (
-    <aside
-      className={cn(
-        "ls-sidebar relative hidden lg:flex flex-col transition-all duration-200 shrink-0",
-        collapsed ? "w-14" : "w-60"
-      )}
-    >
-      {/* Brand. White-label-aware: when the operator has the add-on active
-          and uploaded a logo, the sidebar wordmark renders THEIR brand.
-          Collapsed mode falls back to the brand initial (or LeaseStack
-          icon) because we don't have a square favicon for every tenant. */}
-      <div className="flex h-14 items-center px-4 border-b border-border">
+    <div className="hidden lg:flex shrink-0">
+      {/* Rail */}
+      <aside className="ls-rail flex w-[60px] flex-col items-center py-3 gap-1" aria-label="Sections">
         <Link
           href="/portal"
-          className="flex items-center min-w-0"
+          className="mb-3 grid h-9 w-9 place-items-center"
           aria-label={`${org.brand?.name ?? BRAND_NAME} portal home`}
         >
-          {collapsed ? (
-            org.brand?.isWhiteLabeled ? (
-              // No square favicon for white-labeled tenants yet — render
-              // the brand initial in a chip. Custom favicon support is a
-              // follow-up product call (see report-back notes).
-              <span
-                className="w-7 h-7 shrink-0 flex items-center justify-center rounded-[2px] text-[12px] font-semibold bg-foreground text-background"
-                aria-hidden
-              >
-                {(org.brand.name[0] ?? "?").toUpperCase()}
-              </span>
-            ) : (
-              // Norman 2026-05-21: was /icon-32x32.png — an older raster
-              // mark that doesn't match the current wordmark. Swapped to
-              // the canonical /favicon.svg so the collapsed mark and the
-              // expanded wordmark read as the same brand identity.
-              <Image
-                src="/favicon.svg"
-                alt={BRAND_NAME}
-                width={28}
-                height={28}
-                className="w-7 h-7 shrink-0"
-                unoptimized
-                priority
-              />
-            )
-          ) : org.brand?.isWhiteLabeled && org.brand.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={org.brand.logoUrl}
-              alt={org.brand.name}
-              className="h-8 w-auto max-w-[140px] object-contain shrink-0"
-            />
-          ) : org.brand?.isWhiteLabeled ? (
-            // White-label on but logo missing — render text wordmark so
-            // the chrome reads as a real product instead of empty space.
-            <span className="text-[15px] font-semibold tracking-tight truncate max-w-[160px]">
-              {org.brand.name}
+          {org.brand?.isWhiteLabeled ? (
+            <span className="grid h-8 w-8 place-items-center rounded-[10px] text-[13px] font-semibold bg-foreground text-background" aria-hidden>
+              {(org.brand.name[0] ?? "?").toUpperCase()}
             </span>
           ) : (
-            <LeaseStackLogo size={26} />
+            <Image src="/favicon.svg" alt={BRAND_NAME} width={28} height={28} className="h-7 w-7" unoptimized priority />
           )}
         </Link>
-      </div>
-
-      {/* Org name */}
-      {!collapsed && (
-        <div className="px-4 py-2.5 border-b border-border">
-          <p className="text-xs font-medium text-foreground truncate">{org.name}</p>
-          <p className="ls-eyebrow mt-0.5">
-            Portal
-          </p>
-        </div>
-      )}
-
-      {/* Per-property scope switcher. Renders nothing for single-property
-          operators; for multi-property accounts it lets the user scope
-          every property-aware page to one building via a cookie. */}
-      {scopeProperties.length > 1 ? (
-        <div className={cn("border-b border-border", collapsed ? "px-1.5 py-2" : "px-3 py-2.5") }>
-          <ActivePropertySwitcher
-            properties={scopeProperties}
-            activePropertyId={activePropertyId}
-            collapsed={collapsed}
-          />
-        </div>
-      ) : null}
-
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-3" aria-label="Portal navigation">
-        {NAV_GROUPS.map((group) => {
-          const visible = visibleNavItems(group, org);
-          if (!visible.length) return null;
+        {groups.map((g) => {
+          const Icon = GROUP_ICONS[g.label] ?? LayoutDashboard;
+          const active = g === activeGroup;
           return (
-            <div key={group.label} className="mb-3">
-              {!collapsed && (
-                <div className="ls-sidebar-section-label">{group.label}</div>
-              )}
-              <div className="px-2 space-y-[2px]">
-                {visible.map((item) => {
-                  const active =
-                    pathname === item.href ||
-                    (item.href !== "/portal" && pathname?.startsWith(item.href));
+            <Link
+              key={g.label}
+              href={g.visible[0].href}
+              title={g.label}
+              aria-current={active ? "true" : undefined}
+              className={cn("ls-rail-item", active && "is-active")}
+            >
+              <Icon className="h-[18px] w-[18px]" />
+              <span className="sr-only">{g.label}</span>
+            </Link>
+          );
+        })}
+        <div className="mt-auto flex flex-col items-center gap-1">
+          <NotificationBell />
+          <div className="my-1 grid h-9 w-9 place-items-center">
+            <UserButton />
+          </div>
+          {/* Keeps the Cmd+K listener mounted when the sub-nav is hidden;
+              the trigger is clipped, the fixed-position palette is not. */}
+          {collapsed ? (
+            <div className="h-0 w-0 overflow-hidden">
+              <CmdKSearch />
+            </div>
+          ) : null}
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            className="ls-rail-item"
+            aria-label={collapsed ? "Show section menu" : "Hide section menu"}
+          >
+            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </button>
+        </div>
+      </aside>
+
+      {/* Sub-nav */}
+      {!collapsed && activeGroup ? (
+        <aside className="ls-subnav flex w-[232px] flex-col" aria-label="Portal navigation">
+          <div className="px-4 pt-4 pb-2">
+            <p className="text-[12px] text-[var(--t-muted)] truncate">{org.name}</p>
+            <h2 className="mt-0.5 text-[17px] font-semibold tracking-[-0.01em] text-[var(--t-ink)]">
+              {activeGroup.label}
+            </h2>
+          </div>
+          <div className="px-3 pb-2 [&>button]:!flex [&>button]:w-full [&>button]:rounded-[8px] [&>button]:py-2 [&_kbd]:ml-auto">
+            <CmdKSearch />
+          </div>
+          {scopeProperties.length > 1 ? (
+            <div className="px-3 pb-2">
+              <ActivePropertySwitcher properties={scopeProperties} activePropertyId={activePropertyId} collapsed={false} />
+            </div>
+          ) : null}
+          <nav className="flex-1 overflow-y-auto px-2 py-1 space-y-[1px]">
+            {activeGroup.visible.map((item) => {
+              const count = item.badge?.(org);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn("ls-sidebar-item", item.href === activeItemHref && "is-active")}
+                >
+                  <item.icon className="h-[15px] w-[15px] shrink-0" />
+                  <span className="flex-1 truncate">{item.label}</span>
+                  {count ? (
+                    <span className="ls-count" aria-label={`${count} pending`}>
+                      {count > 99 ? "99+" : count}
+                    </span>
+                  ) : null}
+                </Link>
+              );
+            })}
+          </nav>
+          {org.connectedSources?.length ? (
+            <div className="px-4 py-3">
+              <p className="text-[12px] text-[var(--t-muted)]">Learning from</p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {org.connectedSources.map((slug) => {
+                  const logo = BRAND_LOGOS[slug];
+                  if (!logo) return null;
                   return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      title={collapsed ? item.label : undefined}
-                      className={cn(
-                        "ls-sidebar-item",
-                        active && "is-active",
-                        collapsed && "justify-center"
-                      )}
-                    >
-                      <item.icon className="h-[15px] w-[15px] shrink-0" />
-                      {!collapsed && (
-                        <>
-                          <span className="flex-1 truncate">{item.label}</span>
-                          {(() => {
-                            const count = item.badge?.(org);
-                            if (!count) return null;
-                            return (
-                              <span
-                                className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full text-[10px] font-semibold tabular-nums"
-                                style={{
-                                  background: "var(--brand-soft)",
-                                  color: "var(--color-primary)",
-                                }}
-                                aria-label={`${count} pending`}
-                              >
-                                {count > 99 ? "99+" : count}
-                              </span>
-                            );
-                          })()}
-                        </>
-                      )}
+                    <Link key={slug} href="/portal/connect" title={slug} className="grid h-7 w-7 place-items-center rounded-[8px] bg-white ring-1 ring-[var(--t-border)]">
+                      <span className="h-3.5 w-3.5 [&_svg]:h-full [&_svg]:w-full [&_img]:h-full [&_img]:w-full [&_img]:object-contain" style={{ color: logo.brandColor, fill: logo.brandColor }}>{logo.render()}</span>
                     </Link>
                   );
                 })}
               </div>
             </div>
-          );
-        })}
-      </nav>
-
-      {/* Collapse toggle */}
-      <button
-        type="button"
-        onClick={toggleCollapsed}
-        className="absolute -right-3 top-[72px] flex h-6 w-6 items-center justify-center rounded-full border border-border bg-card shadow-sm hover:bg-muted transition-colors z-10"
-        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-      >
-        {collapsed ? (
-          <ChevronRight className="h-3 w-3" />
-        ) : (
-          <ChevronLeft className="h-3 w-3" />
-        )}
-      </button>
-
-      {/* Footer — Norman 2026-05-21: UserButton moved out to the
-          top-right topbar next to the notification bell so the entire
-          account control surface sits in one cluster. Bell stays here
-          on collapsed-state mobile/narrow viewports as a safety net. */}
-      <div className="border-t border-border p-3">
-        <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
-          <NotificationBell />
-        </div>
-      </div>
-    </aside>
+          ) : null}
+        </aside>
+      ) : null}
+    </div>
   );
 }

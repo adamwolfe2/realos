@@ -49,9 +49,9 @@ describe("property KPI tours window (P1-8)", () => {
 
     // Fallback OR chain, in priority order.
     expect(where.OR).toEqual([
-      { completedAt: { gte: expect.any(Date) } },
-      { completedAt: null, scheduledAt: { gte: expect.any(Date) } },
-      { completedAt: null, scheduledAt: null, createdAt: { gte: expect.any(Date) } },
+      { completedAt: { gte: expect.any(Date), lt: expect.any(Date) } },
+      { completedAt: null, scheduledAt: { gte: expect.any(Date), lt: expect.any(Date) } },
+      { completedAt: null, scheduledAt: null, createdAt: { gte: expect.any(Date), lt: expect.any(Date) } },
     ]);
 
     // Still scoped to the property + tenant + counted statuses.

@@ -1,7 +1,6 @@
 import "server-only";
 import { google } from "googleapis";
 import { decrypt } from "@/lib/crypto";
-import { getOAuthCredentials } from "@/lib/integrations/oauth-credentials";
 
 type JWT = InstanceType<typeof google.auth.JWT>;
 type OAuth2Client = InstanceType<typeof google.auth.OAuth2>;
@@ -80,51 +79,6 @@ export function authFromStoredCredentials(encrypted: string): GoogleAuth {
 function jwtFromEncrypted(encrypted: string): GoogleAuth {
   const decrypted = decrypt(encrypted);
   return authFromDecryptedJson(decrypted);
-}
-
-/**
- * Build an OAuth2 client pre-loaded with credentials from the resolved
- * OAuthConnection row. Used when the operator connected via the
- * /api/oauth/google/connect?surface=ga4 self-serve flow instead of pasting
- * a service-account JSON.
- */
-function oauth2ClientFromTokens(args: {
-  accessToken: string;
-  refreshToken: string | null;
-  expiresAt: Date | null;
-}): OAuth2Client {
-  const client = new google.auth.OAuth2();
-  client.setCredentials({
-    access_token: args.accessToken,
-    refresh_token: args.refreshToken ?? undefined,
-    expiry_date: args.expiresAt ? args.expiresAt.getTime() : undefined,
-  });
-  return client;
-}
-
-/**
- * Resolve a Google auth client for GA4 calls. Prefers an OAuthConnection row
- * (self-serve OAuth path), falls back to a service-account JWT built from the
- * encrypted JSON blob (legacy paste path).
- */
-export async function resolveGa4Auth(
-  orgId: string,
-  legacyEncryptedJson: string | null,
-): Promise<GoogleAuth> {
-  const oauth = await getOAuthCredentials(orgId, "google_ga4");
-  if (oauth) {
-    return oauth2ClientFromTokens({
-      accessToken: oauth.accessToken,
-      refreshToken: oauth.refreshToken,
-      expiresAt: oauth.expiresAt,
-    });
-  }
-  if (!legacyEncryptedJson) {
-    throw new Error(
-      "GA4: no OAuth connection and no legacy service-account JSON configured for this org.",
-    );
-  }
-  return jwtFromEncrypted(legacyEncryptedJson);
 }
 
 function normalizePropertyId(raw: string): string {
@@ -274,74 +228,12 @@ export type Ga4SourceRow = {
 // the other attribution sources instead of hanging. (Brief: "GA4 without timeout".)
 const GA4_RUNREPORT_TIMEOUT_MS = 8000;
 
-// Sessions grouped by sessionSource + sessionMedium across ALL channels (no
-// organic filter). Traffic that form and chatbot capture never saw (no-JS
-// visits, blocked trackers).
-export async function fetchGa4SessionsBySource(
-  encryptedJson: string,
-  propertyId: string,
-  fromDate: Date,
-  toDate: Date,
-): Promise<Ga4SourceRow[]> {
-  const auth = jwtFromEncrypted(encryptedJson);
-  const data = google.analyticsdata({ version: "v1beta", auth });
-  const resp = await data.properties.runReport({
-    property: normalizePropertyId(propertyId),
-    requestBody: {
-      dateRanges: [{ startDate: ymd(fromDate), endDate: ymd(toDate) }],
-      dimensions: [{ name: "sessionSource" }, { name: "sessionMedium" }],
-      metrics: [{ name: "sessions" }],
-      orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
-      limit: "250",
-    },
-  }, { timeout: GA4_RUNREPORT_TIMEOUT_MS });
-  const rows = resp.data.rows ?? [];
-  return rows.map((r) => ({
-    source: (r.dimensionValues?.[0]?.value ?? "") as string,
-    medium: (r.dimensionValues?.[1]?.value ?? "") as string,
-    sessions: Number(r.metricValues?.[0]?.value ?? 0),
-  }));
-}
-
 export type Ga4SourceLandingRow = {
   source: string; // GA4 sessionSource
   medium: string; // GA4 sessionMedium
   landingPath: string; // GA4 landingPage (path), e.g. "/floorplans"
   sessions: number;
 };
-
-// Sessions grouped by source × medium × landing page across ALL channels.
-// Powers reverse attribution: which referring site sent traffic to which page.
-export async function fetchGa4SourceLandingPages(
-  encryptedJson: string,
-  propertyId: string,
-  fromDate: Date,
-  toDate: Date,
-): Promise<Ga4SourceLandingRow[]> {
-  const auth = jwtFromEncrypted(encryptedJson);
-  const data = google.analyticsdata({ version: "v1beta", auth });
-  const resp = await data.properties.runReport({
-    property: normalizePropertyId(propertyId),
-    requestBody: {
-      dateRanges: [{ startDate: ymd(fromDate), endDate: ymd(toDate) }],
-      dimensions: [
-        { name: "sessionSource" },
-        { name: "sessionMedium" },
-        { name: "landingPage" },
-      ],
-      metrics: [{ name: "sessions" }],
-      orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
-      limit: "500",
-    },
-  }, { timeout: GA4_RUNREPORT_TIMEOUT_MS });
-  const rows = resp.data.rows ?? [];
-  return rows.map((r) => ({
-    source: (r.dimensionValues?.[0]?.value ?? "") as string,
-    medium: (r.dimensionValues?.[1]?.value ?? "") as string,
-    landingPath: (r.dimensionValues?.[2]?.value ?? "/") as string,
-    sessions: Number(r.metricValues?.[0]?.value ?? 0),
-  }));
-}
 
 // Landing page performance for organic traffic, broken down by date so the
 // "top pages" table can show trends. landingPagePlusQueryString preserves the

@@ -18,7 +18,3 @@ export const MAX_PRICE_CENTS = 9_999_999;
 /// count (seats, properties, integration hours). Higher counts indicate
 /// a data-entry error, not a real deal.
 export const MAX_QUANTITY = 999;
-
-/// Maximum cents on a single proposal's line-item total (unit × qty).
-/// Equal to MAX_PRICE_CENTS × MAX_QUANTITY ceil'd to the Stripe cap.
-export const MAX_LINE_TOTAL_CENTS = MAX_PRICE_CENTS * MAX_QUANTITY;

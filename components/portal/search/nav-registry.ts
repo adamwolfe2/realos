@@ -43,9 +43,16 @@ export const NAV_REGISTRY: NavRegistryItem[] = [
   // Top-level pages
   {
     href: "/portal",
-    label: "Dashboard",
-    description: "Cross-property home — leads, occupancy, ads, reputation",
-    keywords: ["home", "overview", "kpis"],
+    label: "Overview",
+    description: "The chatbot's learning loop, suggested fixes and every property's chatbot",
+    keywords: ["home", "overview", "dashboard", "agent", "fixes"],
+    group: "Pages",
+  },
+  {
+    href: "/portal/performance",
+    label: "Performance",
+    description: "Cross-property funnel — leads, occupancy, ads, reputation",
+    keywords: ["dashboard", "kpis", "funnel"],
     group: "Pages",
   },
   {

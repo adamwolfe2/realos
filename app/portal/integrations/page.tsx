@@ -3,366 +3,86 @@ import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { ArrowRight } from "lucide-react";
 import { requireScope } from "@/lib/tenancy/scope";
-import { prisma } from "@/lib/db";
-import { PageHeader } from "@/components/admin/page-header";
-import { resolveIntegrationStatuses } from "@/lib/integrations/status";
-import {
-  CATEGORY_LABEL,
-  INTEGRATIONS,
-  type IntegrationDefinition,
-  type IntegrationCategory,
-} from "@/lib/integrations/catalog";
-import type { IntegrationState } from "@/lib/integrations/status";
-import { IntegrationIcon } from "@/components/portal/integrations/integration-icon";
-import {
-  StatusChip,
-  VerificationRow,
-  type ConnectionStatus,
-} from "@/components/portal/ui/status-chip";
+import { resolveIntegrationStatuses, type IntegrationState } from "@/lib/integrations/status";
+import { INTEGRATIONS } from "@/lib/integrations/catalog";
+import { Logo, Panel, Pill, type Tone } from "@/components/portal/overview/kit";
 
-export const metadata: Metadata = {
-  title: "Connection status",
-  description:
-    "Read-only connection status and sync history for every data source. Connecting and managing sources happens in Data sources.",
-};
+export const metadata: Metadata = { title: "Integrations" };
 export const dynamic = "force-dynamic";
 
 // ---------------------------------------------------------------------------
-// /portal/integrations — read-only connection status + sync history.
-//
-// This page used to be a second connect hub, rivaling /portal/connect with
-// its own cards, status vocabulary, and setup routes (the audit's "two rival
-// hubs" finding). It is now demoted to an audit view: it answers "what is
-// connected and how fresh is the data?" and nothing else. All connect /
-// manage actions live on the ONE spine at /portal/connect (which links out
-// to the per-provider credential forms itself).
-//
-// Status renders in the shared StatusChip vocabulary (green Live, never
-// blue-as-success) with a VerificationRow proof line on active sources.
+// /portal/integrations: status of every source we really support, as compact
+// tiles. Connecting happens in /portal/setup (one place, per property).
+// Unbuilt integrations collapse to one "Coming soon" line, and the module
+// on/off grid is gone (Adam, 2026-10-28: "confusing and extra").
 // ---------------------------------------------------------------------------
 
-// IntegrationState → shared StatusChip vocabulary. States the chip does not
-// model (plan gate, roadmap) render as Not connected plus a plain-text note
-// beside the chip — same pattern the Connect hub uses for blocked sources.
-function chipFor(state: IntegrationState): {
-  status: ConnectionStatus;
-  label?: string;
-  note?: string;
-} {
-  switch (state) {
-    case "connected":
-      return { status: "live" };
-    case "stale":
-      return { status: "stale" };
-    case "error":
-      return { status: "error" };
-    case "requested":
-      return { status: "provisioning", label: "Requested — provisioning" };
-    case "managed":
-      return { status: "provisioning" };
-    case "plan_locked":
-      return { status: "not_connected", note: "Upgrade required" };
-    case "coming_soon":
-      return { status: "not_connected", note: "Coming soon" };
-    case "available":
-    default:
-      return { status: "not_connected" };
-  }
-}
+const STATE: Record<IntegrationState, { tone: Tone; text: string }> = {
+  connected: { tone: "good", text: "Connected" },
+  stale: { tone: "warn", text: "Not syncing" },
+  error: { tone: "bad", text: "Needs attention" },
+  requested: { tone: "warn", text: "Waiting on us" },
+  managed: { tone: "brand", text: "Managed by us" },
+  available: { tone: "neutral", text: "Not connected" },
+  plan_locked: { tone: "neutral", text: "Upgrade to use" },
+  coming_soon: { tone: "neutral", text: "Coming soon" },
+};
 
-const ORDERED_CATEGORIES: IntegrationCategory[] = [
-  "property_platform",
-  "analytics",
-  "ads",
-  "communication",
-  "scheduling",
-  "automation",
-];
+// Sources the setup walkthrough connects; the rest connect in settings.
+const IN_SETUP = new Set(["appfolio", "ga4", "gsc", "google-ads", "meta-ads"]);
 
-export default async function IntegrationsStatusPage() {
+export default async function IntegrationsPage() {
   const scope = await requireScope();
-  const [statuses, org] = await Promise.all([
-    resolveIntegrationStatuses(scope.orgId),
-    prisma.organization
-      .findUnique({
-        where: { id: scope.orgId },
-        select: {
-          // Marketplace on/off state — surfaced here as part of the audit
-          // view without taking over the dedicated /portal/marketplace
-          // surface.
-          moduleChatbot: true,
-          moduleSEO: true,
-          moduleGoogleAds: true,
-          moduleMetaAds: true,
-          moduleCreativeStudio: true,
-          moduleReferrals: true,
-          modulePopups: true,
-          moduleVault: true,
-          moduleReputation: true,
-          moduleInsights: true,
-          moduleAttribution: true,
-          moduleResidents: true,
-          moduleTours: true,
-          moduleConversations: true,
-          moduleWebsite: true,
-        },
-      })
-      .catch(() => null),
-  ]);
+  const statuses = await resolveIntegrationStatuses(scope.orgId);
+  const bySlug = new Map(statuses.map((s) => [s.slug, s]));
 
-  const statusBySlug = new Map(statuses.map((s) => [s.slug, s.state]));
-  const lastSyncBySlug = new Map(
-    statuses
-      .filter((s) => s.lastEventAt != null)
-      .map((s) => [s.slug, s.lastEventAt as Date]),
-  );
-  const connectedCount = statuses.filter(
-    (s) => s.state === "connected" || s.state === "stale" || s.state === "error",
-  ).length;
-  const totalLive = INTEGRATIONS.filter((i) => !i.comingSoon).length;
-
-  // Group integrations by category. Coming-soon items still render so
-  // operators can see the roadmap.
-  const grouped = ORDERED_CATEGORIES.map((cat) => ({
-    category: cat,
-    items: INTEGRATIONS.filter((i) => i.category === cat),
-  })).filter((g) => g.items.length > 0);
+  const rows = INTEGRATIONS.map((def) => ({ def, status: bySlug.get(def.slug) ?? { slug: def.slug, state: "available" as const } }));
+  const live = rows.filter((r) => r.status.state !== "coming_soon");
+  const soon = rows.filter((r) => r.status.state === "coming_soon");
+  const connected = live.filter((r) => ["connected", "stale", "error"].includes(r.status.state)).length;
 
   return (
-    <div className="space-y-8">
-      <PageHeader
-        title="Connection status"
-        description="Read-only status and sync history for every data source. To connect a new source or manage an existing one, head to Data sources."
-      />
-
-      {/* Summary strip — connected count + the single CTA off this page. */}
-      <section
-        className="ls-card p-4 flex flex-wrap items-center justify-between gap-3"
-        aria-label="Connection summary"
-      >
-        <div className="flex items-baseline gap-3 min-w-0">
-          <span className="text-2xl ls-metric">
-            {connectedCount}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            of {totalLive} sources connected
-          </span>
+    <div className="w-full space-y-5">
+      <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-[var(--t-ink)]">Integrations</h1>
+          <p className="mt-0.5 text-[13.5px] text-[var(--t-muted)]">{connected} of {live.length} connected · each one feeds your agent more to learn from</p>
         </div>
-        <div className="flex items-center gap-4 flex-wrap">
-          <Link
-            href="/portal/marketplace"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
-          >
-            Manage modules in Marketplace
-            <ArrowRight className="w-3 h-3" />
-          </Link>
-          <Link
-            href="/portal/connect"
-            className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-none bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary-dark transition-colors"
-          >
-            Manage connections
-            <ArrowRight className="w-3 h-3" />
-          </Link>
-        </div>
-      </section>
-
-      {grouped.map((g) => (
-        <section key={g.category} className="space-y-3">
-          <h2 className="text-[13px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            {CATEGORY_LABEL[g.category]}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
-            {g.items.map((def) => (
-              <IntegrationStatusCard
-                key={def.slug}
-                def={def}
-                state={statusBySlug.get(def.slug) ?? "available"}
-                lastSyncAt={lastSyncBySlug.get(def.slug) ?? null}
-              />
-            ))}
-          </div>
-        </section>
-      ))}
-
-      {/* Module on/off state — read-only audit of marketplace module state.
-          The dedicated marketplace page is still the place to flip them. */}
-      {org ? <ModuleStateGrid org={org} /> : null}
-    </div>
-  );
-}
-
-function IntegrationStatusCard({
-  def,
-  state,
-  lastSyncAt,
-}: {
-  def: IntegrationDefinition;
-  state: IntegrationState;
-  lastSyncAt: Date | null;
-}) {
-  const chip = chipFor(state);
-  const isComingSoon = state === "coming_soon";
-  const isActive =
-    state === "connected" || state === "stale" || state === "error";
-
-  // Relative timestamp — only shown when the integration is active and we
-  // have a recorded sync time. Formatted upstream so VerificationRow stays
-  // presentation-only.
-  const lastSyncLabel =
-    isActive && lastSyncAt
-      ? formatDistanceToNow(lastSyncAt, { addSuffix: true })
-      : undefined;
-
-  return (
-    <article
-      className={`rounded-[2px] border p-4 ${
-        isActive
-          ? "border-[#c6c6c6] bg-card"
-          : isComingSoon
-            ? "border-dashed border-border bg-muted/30"
-            : "border-border bg-card"
-      }`}
-    >
-      <div className="flex items-start gap-3">
-        <IntegrationIcon def={def} size="md" />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="text-[13px] font-semibold text-foreground tracking-tight truncate">
-              {def.name}
-            </h3>
-            <span className="flex items-center gap-1.5 shrink-0">
-              {/* Active sources carry their state in the VerificationRow
-                  below — a header chip too would read as two disagreeing
-                  chips (same rule as the Connect hub cards). */}
-              {!isActive ? (
-                <StatusChip status={chip.status} label={chip.label} />
-              ) : null}
-              {chip.note ? (
-                <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                  {chip.note}
-                </span>
-              ) : null}
-            </span>
-          </div>
-          <p className="text-[11.5px] text-muted-foreground leading-snug mt-0.5">
-            {def.tagline}
-          </p>
-        </div>
-      </div>
-
-      {/* What it lands in — so operators know which surfaces a source feeds
-          when auditing data freshness. */}
-      {def.landsIn.length > 0 ? (
-        <div className="mt-3 pt-3 border-t border-[#e0e0e0]">
-          <div className="flex flex-wrap gap-1.5">
-            {def.landsIn.slice(0, 4).map((target) => (
-              <span
-                key={target}
-                className="inline-flex items-center text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground bg-secondary rounded-[2px] px-1.5 py-0.5"
-              >
-                {target}
-              </span>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      {/* Sync history line — the proof row for active sources. Read-only:
-          no Set up / Manage links here; the one spine is /portal/connect. */}
-      {isActive ? (
-        <div className="mt-3 pt-2 border-t border-[#e0e0e0]">
-          <VerificationRow
-            status={chip.status}
-            accountLabel={def.name}
-            lastSyncAt={lastSyncLabel}
-          />
-        </div>
-      ) : null}
-    </article>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Module on/off audit — read-only view of which marketplace modules are
-// active for this org. The dedicated marketplace page (/portal/marketplace)
-// is still the place to flip them on/off.
-// ---------------------------------------------------------------------------
-function ModuleStateGrid({
-  org,
-}: {
-  org: {
-    moduleChatbot: boolean;
-    moduleSEO: boolean;
-    moduleGoogleAds: boolean;
-    moduleMetaAds: boolean;
-    moduleCreativeStudio: boolean;
-    moduleReferrals: boolean;
-    modulePopups: boolean;
-    moduleVault: boolean;
-    moduleReputation: boolean;
-    moduleInsights: boolean;
-    moduleAttribution: boolean;
-    moduleResidents: boolean;
-    moduleTours: boolean;
-    moduleConversations: boolean;
-    moduleWebsite: boolean;
-  };
-}) {
-  const modules: Array<{ key: keyof typeof org; label: string }> = [
-    { key: "moduleWebsite", label: "Website" },
-    { key: "moduleChatbot", label: "Chatbot" },
-    { key: "moduleSEO", label: "SEO" },
-    { key: "moduleGoogleAds", label: "Google Ads" },
-    { key: "moduleMetaAds", label: "Meta Ads" },
-    { key: "moduleCreativeStudio", label: "Creative studio" },
-    { key: "moduleReferrals", label: "Referrals" },
-    { key: "modulePopups", label: "Popups" },
-    { key: "moduleReputation", label: "Reputation" },
-    { key: "moduleInsights", label: "Insights" },
-    { key: "moduleAttribution", label: "Attribution" },
-    { key: "moduleResidents", label: "Residents" },
-    { key: "moduleTours", label: "Tours" },
-    { key: "moduleConversations", label: "Conversations" },
-    { key: "moduleVault", label: "Vault" },
-  ];
-
-  return (
-    <section className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-[13px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-          Modules
-        </h2>
-        <Link
-          href="/portal/marketplace"
-          className="text-[11px] font-semibold text-primary hover:underline"
-        >
-          Manage in Marketplace
+        <Link href="/portal/setup" className="inline-flex h-8 items-center gap-1.5 self-start rounded-full bg-[var(--t-primary-bg)] px-3.5 text-[13px] font-medium text-white hover:opacity-90 md:self-auto">
+          Connect data <ArrowRight className="h-3.5 w-3.5" aria-hidden />
         </Link>
-      </div>
-      <div className="ls-card p-3">
-        <ul className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
-          {modules.map((m) => {
-            const on = org[m.key];
+      </header>
+
+      <Panel title="Your sources" flush>
+        <ul className="grid divide-y divide-[var(--t-divider)] md:grid-cols-2 md:divide-y-0 xl:grid-cols-3 [&>li]:border-[var(--t-divider)] md:[&>li]:border-b">
+          {live.map(({ def, status }) => {
+            const st = STATE[status.state];
+            const isConnected = ["connected", "stale", "error"].includes(status.state);
             return (
-              <li
-                key={m.key}
-                className="flex items-center justify-between gap-2 rounded-[2px] border border-border/60 px-3 py-2 text-[12px]"
-              >
-                <span className="truncate text-foreground">{m.label}</span>
-                <span
-                  className={`shrink-0 text-[10px] font-semibold uppercase tracking-[0.1em] rounded-[2px] px-2 py-0.5 ${
-                    on
-                      ? "text-[#24a148] bg-[rgba(36,161,72,0.10)]"
-                      : "text-muted-foreground bg-muted"
-                  }`}
-                >
-                  {on ? "On" : "Off"}
-                </span>
+              <li key={def.slug}>
+                <Link href={isConnected || !IN_SETUP.has(def.slug) ? "/portal/settings/integrations" : "/portal/setup"} className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--t-wash)]">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[9px] border border-[var(--t-border)] bg-white"><Logo slug={def.slug} size={18} /></span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center justify-between gap-2">
+                      <span className="truncate text-[13.5px] font-medium text-[var(--t-ink)]">{def.name}</span>
+                      <Pill tone={st.tone}>{st.text}</Pill>
+                    </span>
+                    <span className="block truncate text-[12.5px] text-[var(--t-muted)]">
+                      {isConnected && status.lastEventAt ? `Synced ${formatDistanceToNow(status.lastEventAt, { addSuffix: true })}` : def.tagline}
+                    </span>
+                  </span>
+                </Link>
               </li>
             );
           })}
         </ul>
-      </div>
-    </section>
+      </Panel>
+
+      {soon.length ? (
+        <p className="text-[12.5px] text-[var(--t-muted)]">
+          Coming soon: {soon.map((r) => r.def.name).join(", ")}.
+        </p>
+      ) : null}
+    </div>
   );
 }

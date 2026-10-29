@@ -104,8 +104,8 @@ body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-ins
   /* Carbon shape tokens (DESIGN.md §4): cards/panels 2px, app controls 2px.
      Use rounded-card / rounded-control instead of rounded-[2px] or the
      Tailwind rounded-md/lg/xl defaults (6/8/12px), which are off-spec. */
-  --radius-card: 2px;
-  --radius-control: 2px;
+  --radius-card: 12px;
+  --radius-control: 8px;
 
   /* Micro type scale: names for the most-used arbitrary sizes so nothing
      shifts. No line-height is set (matches text-[Npx], which only sets size).
@@ -623,8 +623,9 @@ body {
    ───────────────────────────────────────────────────────────────────────── */
 .ls-card {
   background: var(--white);
-  border: 1px solid var(--hair);
-  border-radius: 2px;
+  border: 1px solid var(--sheet-edge);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   /* Flat. Marketing cards are a 1px #e0e0e0 hairline on white with no shadow;
      the portal shadow stacked on every nested panel and muddied the grid. */
   transition: border-color var(--dur-ui) ease;
@@ -721,17 +722,18 @@ body {
 .ls-delta-flat { color: var(--gray-70); }
 
 /* ── Sidebar premium polish ────────────────────────────────────────────── */
+/* Framed shell (2026-10-28): sidebar + top bar share one cool-gray frame
+   with no rule between them; the page sits on a white sheet inset from the
+   window's right and bottom edges. Colour stays on data, not chrome. */
+:root { --frame: #f4f4f2; --frame-active: #eaeae7; --sheet-edge: #e6e6e2; }
 .ls-sidebar {
-  background: var(--white);
-  border-right: 1px solid var(--hair);
+  background: var(--frame);
 }
 .ls-sidebar-section-label {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--silver-fog);
-  padding: 14px 14px 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gray-70);
+  padding: 14px 18px 4px;
 }
 .ls-sidebar-item {
   position: relative;
@@ -739,23 +741,27 @@ body {
   align-items: center;
   gap: 10px;
   padding: 7px 10px;
-  border-radius: 2px;
-  font-size: 13px;
+  border-radius: 8px;
+  font-size: 13.5px;
   font-weight: 500;
   color: var(--gray-70);
   transition: background 120ms ease, color 120ms ease;
 }
 .ls-sidebar-item:hover {
-  background: var(--color-elevated);
+  background: var(--frame-active);
   color: var(--gray-100);
 }
 @keyframes ls-nav-bar-in {
   from { transform: translateY(-50%) scaleY(0); }
 }
 .ls-sidebar-item.is-active {
-  background: var(--brand-soft);
-  color: var(--blue-60);
+  background: var(--white);
+  color: #1a1a19;
+  outline: 1px solid var(--sheet-edge);
+  outline-offset: -1px;
 }
+.ls-sidebar-item.is-active svg { color: var(--blue-60); }
+.ls-sidebar-item.is-active:hover { background: var(--white); color: #1a1a19; }
 .ls-sidebar-item.is-active::before {
   content: "";
   position: absolute;
@@ -768,7 +774,7 @@ body {
      popping — pairs with the ls-fade-in the pill background gets from
      .ls-sidebar-item's transition. */
   animation: ls-nav-bar-in 200ms var(--ease-out) backwards;
-  background: var(--blue-60);
+  background: transparent;
   border-radius: 0 2px 2px 0;
 }
 
@@ -973,10 +979,28 @@ body {
 
 /* ── Top utility bar refinement (search + notifications) ──────────────── */
 .ls-topbar {
-  background: rgba(255, 255, 255, 0.70);
-  backdrop-filter: saturate(180%) blur(8px);
-  -webkit-backdrop-filter: saturate(180%) blur(8px);
-  border-bottom: 1px solid var(--hair);
+  background: var(--frame);
+}
+@media (min-width: 1024px) {
+  .portal-main { background: var(--frame); }
+  .portal-sheet {
+    background: var(--white);
+    border: 1px solid var(--sheet-edge);
+    border-radius: 14px;
+    margin: 0 8px 8px 0;
+    min-height: calc(100% - 8px);
+  }
+}
+
+/* Overview motion: steps rise in, bars grow, the live dot breathes. */
+@keyframes ls-step-in { from { opacity: 0; transform: translateY(6px); } }
+@keyframes ls-bar-grow { from { transform: scaleY(0); } }
+@keyframes ls-live { 0% { box-shadow: 0 0 0 0 rgba(36, 161, 72, 0.45); } 70%, 100% { box-shadow: 0 0 0 6px rgba(36, 161, 72, 0); } }
+.ls-step { animation: ls-step-in 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.ls-bar { transform-origin: bottom; animation: ls-bar-grow 560ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.ls-live-dot { width: 7px; height: 7px; border-radius: 999px; background: #24a148; animation: ls-live 2s ease-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .ls-step, .ls-bar, .ls-live-dot { animation: none; }
 }
 
 /* Respect reduced-motion across everything we just added */

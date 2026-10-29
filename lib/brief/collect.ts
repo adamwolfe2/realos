@@ -1,6 +1,5 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
-import QRCode from "qrcode";
 import { runOnPageAuditChecks } from "@/lib/aeo/onpage-audit";
 import {
   assertPublicHttpUrl,
@@ -782,20 +781,4 @@ export async function collectBriefData(
 export function generateBriefToken(): string {
   const bytes = randomBytes(20).toString("hex");
   return bytes.slice(0, 24);
-}
-
-/** Generate a QR code PNG data URL for a share link. Kept here so any
- *  surface that wants to embed the brief link (proposal PDFs, emails)
- *  can use the same helper. */
-export async function buildBriefQrDataUrl(url: string): Promise<string | null> {
-  try {
-    return await QRCode.toDataURL(url, {
-      margin: 1,
-      width: 240,
-      color: { dark: "#0F172A", light: "#FFFFFF" },
-      errorCorrectionLevel: "M",
-    });
-  } catch {
-    return null;
-  }
 }

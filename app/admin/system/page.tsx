@@ -56,7 +56,6 @@ const CRON_DESCRIPTIONS: Record<string, string> = {
   "weekly-report": "Client weekly performance report",
   "weekly-digest": "Tenant weekly digest email",
   "monthly-report": "Client monthly report",
-  "webhook-retry": "Retry failed webhook deliveries",
   "appfolio-sync": "AppFolio property/listing sync",
   "seo-sync": "GSC + GA4 search console snapshot",
   "ads-sync": "Google Ads + Meta ad metrics sync",

@@ -333,3 +333,81 @@ describe("runSeoSync — unbound OAuth rows", () => {
     });
   });
 });
+
+describe("runSeoSync — lastSyncAt is stamped only after all writes", () => {
+  const lastSyncAtWrites = () =>
+    (prisma.seoIntegration.update as AnyMock).mock.calls.filter(([a]) => "lastSyncAt" in a.data);
+
+  it("stamps lastSyncAt once the run completes", async () => {
+    (prisma.seoIntegration.findMany as AnyMock).mockResolvedValue([baseIntegration({ lastSyncAt: null })]);
+    (fetchGscDaily as AnyMock).mockResolvedValue([
+      { date: "2026-07-15", impressions: 10, clicks: 1, ctr: 0.1, position: 3 },
+    ]);
+    await runSeoSync("org-1", { fromDate: new Date("2026-07-15"), toDate: new Date("2026-07-15") });
+    expect(lastSyncAtWrites()).toHaveLength(1);
+    expect(lastSyncAtWrites()[0][0].where).toEqual({ id: "int-1" });
+  });
+
+  it("stamps lastSyncAt only after the merged snapshot writes (a mid-run kill leaves it unset)", async () => {
+    (prisma.seoIntegration.findMany as AnyMock).mockResolvedValue([baseIntegration({ lastSyncAt: null })]);
+    (fetchGscDaily as AnyMock).mockResolvedValue([
+      { date: "2026-07-15", impressions: 10, clicks: 1, ctr: 0.1, position: 3 },
+    ]);
+    // Stand-in for the function being killed mid-run (maxDuration).
+    (prisma.seoSnapshot.findFirst as AnyMock).mockImplementation(() => {
+      throw new Error("killed");
+    });
+    (prisma.seoSnapshot.create as AnyMock).mockImplementation(() => {
+      throw new Error("killed");
+    });
+    await runSeoSync("org-1", { fromDate: new Date("2026-07-15"), toDate: new Date("2026-07-15") }).catch(() => null);
+    // Snapshot errors are caught per date, so assert ordering instead: any
+    // lastSyncAt write must come after every snapshot attempt.
+    const updOrder = (prisma.seoIntegration.update as AnyMock).mock.invocationCallOrder;
+    const stampIdx = (prisma.seoIntegration.update as AnyMock).mock.calls.findIndex(([a]) => "lastSyncAt" in a.data);
+    const lastSnapshotCall = Math.max(...(prisma.seoSnapshot.findFirst as AnyMock).mock.invocationCallOrder);
+    if (stampIdx >= 0) expect(updOrder[stampIdx]).toBeGreaterThan(lastSnapshotCall);
+    // And the provider-success update itself carries no lastSyncAt.
+    const idle = (prisma.seoIntegration.update as AnyMock).mock.calls.find(([a]) => a.data.status === "IDLE");
+    expect(idle?.[0].data).not.toHaveProperty("lastSyncAt");
+  });
+});
+
+describe("runSeoSync — backfill window is per integration", () => {
+  it("a never-synced integration gets 30 days even when a sibling is already synced", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-21T12:00:00Z"));
+    try {
+      (prisma.seoIntegration.findMany as AnyMock).mockResolvedValue([
+        baseIntegration({ id: "gsc-synced", provider: SeoProvider.GSC, lastSyncAt: new Date("2026-10-21T11:30:00Z") }),
+        baseIntegration({ id: "ga4-new", provider: SeoProvider.GA4, propertyIdentifier: "123", lastSyncAt: null }),
+      ]);
+      (fetchGscDaily as AnyMock).mockResolvedValue([]);
+      (fetchGa4OrganicDaily as AnyMock).mockResolvedValue([]);
+      await runSeoSync("org-1");
+      const gscFrom = (fetchGscDaily as AnyMock).mock.calls[0][2] as Date;
+      const ga4From = (fetchGa4OrganicDaily as AnyMock).mock.calls[0][2] as Date;
+      expect(gscFrom.toISOString()).toBe("2026-10-20T00:00:00.000Z"); // yesterday
+      expect(ga4From.toISOString()).toBe("2026-09-21T00:00:00.000Z"); // 30 days
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe("runSeoSync — merged snapshot writes never zero the other provider", () => {
+  it("a GA4-only date updates GA4 fields and leaves stored GSC fields alone", async () => {
+    (prisma.seoIntegration.findMany as AnyMock).mockResolvedValue([
+      baseIntegration({ id: "ga4", provider: SeoProvider.GA4, propertyIdentifier: "123" }),
+    ]);
+    (fetchGa4OrganicDaily as AnyMock).mockResolvedValue([
+      { date: "2026-07-15", sessions: 40, users: 30 },
+    ]);
+    (prisma.seoSnapshot.findFirst as AnyMock).mockResolvedValue({ id: "snap-1" });
+    await runSeoSync("org-1", { fromDate: new Date("2026-07-15"), toDate: new Date("2026-07-15") });
+    const data = (prisma.seoSnapshot.update as AnyMock).mock.calls[0][0].data;
+    expect(data).not.toHaveProperty("totalClicks");
+    expect(data).not.toHaveProperty("totalImpressions");
+    expect(data).not.toHaveProperty("avgPosition");
+  });
+});

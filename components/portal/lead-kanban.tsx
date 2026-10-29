@@ -23,11 +23,13 @@ import {
   bulkUpdateLeadStatus,
   bulkUnsubscribeLeads,
   bulkDeleteLeads,
+  bulkAssignLeads,
 } from "@/lib/actions/lead-bulk";
 import { SideDrawer } from "@/components/portal/ui/side-drawer";
 import { BulkActionBar } from "@/components/portal/ui/bulk-action-bar";
 import { AlertDialog } from "@/components/portal/ui/alert-dialog";
 import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
+import { SourceMark } from "@/components/portal/source-mark";
 import { leadDisplayName } from "@/lib/leads/display-name";
 
 export type LeadKanbanItem = {
@@ -74,25 +76,6 @@ const STATUS_TONE: Record<LeadStatus, StatusTone> = {
   SIGNED: "success",
   LOST: "danger",
   UNQUALIFIED: "neutral",
-};
-
-const TERMINAL_STATUSES = new Set<LeadStatus>([
-  LeadStatus.SIGNED,
-  LeadStatus.LOST,
-  LeadStatus.UNQUALIFIED,
-]);
-
-function ageTier(iso: string): "fresh" | "aging" | "stale" {
-  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
-  if (days < 7) return "fresh";
-  if (days < 15) return "aging";
-  return "stale";
-}
-
-const AGE_DOT_CLASS: Record<ReturnType<typeof ageTier>, string> = {
-  fresh: "bg-primary",
-  aging: "bg-primary/40",
-  stale: "bg-muted-foreground/50",
 };
 
 function relativeTime(iso: string): string {
@@ -201,8 +184,6 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
   // Bulk actions. "Mark contacted" is wired to the real
   // bulkUpdateLeadStatus action (CONTACTED is the only status the button
   // sets — picking other statuses uses the "Set status… / Apply" pair).
-  // The remaining stubs (Tag / Export CSV / Assign to me) toast success
-  // and clear selection until their server actions ship.
   // ---------------------------------------------------------------------
   function markContacted() {
     if (selected.size === 0) return;
@@ -223,6 +204,24 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
       } else {
         setError(r.error);
         toast.error(`Couldn't mark ${n} ${n === 1 ? "lead" : "leads"}: ${r.error}`);
+      }
+    });
+  }
+  function assignToMe() {
+    if (selected.size === 0) return;
+    setError(null);
+    const ids = Array.from(selected);
+    startTransition(async () => {
+      const r = await bulkAssignLeads({ leadIds: ids });
+      if (r.ok) {
+        toast.success(
+          `Assigned ${r.count} ${r.count === 1 ? "lead" : "leads"} to you`,
+        );
+        clearSelection();
+        router.refresh();
+      } else {
+        setError(r.error);
+        toast.error(`Couldn't assign leads: ${r.error}`);
       }
     });
   }
@@ -303,24 +302,14 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
           ) : null}
           Mark contacted
         </button>
-        <span title="Coming soon — requires a Lead.tags column that is not yet migrated">
-          <button
-            type="button"
-            disabled
-            className="inline-flex items-center rounded-[2px] border border-border bg-background px-2.5 py-1 text-xs font-medium opacity-50 cursor-not-allowed"
-          >
-            Tag
-          </button>
-        </span>
-        <span title="Coming soon — requires the assignment workflow to be wired to the UI">
-          <button
-            type="button"
-            disabled
-            className="inline-flex items-center rounded-[2px] border border-border bg-background px-2.5 py-1 text-xs font-medium opacity-50 cursor-not-allowed"
-          >
-            Assign to me
-          </button>
-        </span>
+        <button
+          type="button"
+          onClick={assignToMe}
+          disabled={pending}
+          className="inline-flex items-center rounded-[2px] border border-border bg-background hover:bg-muted px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50"
+        >
+          Assign to me
+        </button>
         <button
           type="button"
           onClick={exportCsv}
@@ -430,14 +419,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
                 Score
               </th>
               <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden sm:table-cell">
-                <span className="inline-flex items-center justify-end gap-2">
-                  Added
-                  <span className="inline-flex items-center gap-1 font-normal normal-case tracking-normal text-[10px] text-muted-foreground">
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" title="0-6 days" />
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary/40" title="7-14 days" />
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" title="15+ days" />
-                  </span>
-                </span>
+                Added
               </th>
             </tr>
           </thead>
@@ -511,8 +493,9 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
                     </span>
                   </td>
                   <td className="px-4 py-3 hidden md:table-cell">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <SourceMark source={item.source} size={24} />
+                      <span className="text-sm text-foreground">
                         {humanLeadSource(item.source)}
                       </span>
                       <SignalBadges item={item} />
@@ -530,9 +513,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
                         className={cn(
                           "text-xs font-medium tabular-nums",
                           item.score >= 70
-                            ? "text-primary"
-                            : item.score >= 40
-                            ? "text-primary/70"
+                            ? "text-foreground font-semibold"
                             : "text-muted-foreground"
                         )}
                       >
@@ -543,18 +524,8 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
                     )}
                   </td>
                   <td className="px-4 py-3 text-right hidden sm:table-cell">
-                    <span className="inline-flex items-center justify-end gap-1.5">
-                      {!TERMINAL_STATUSES.has(item.status) && (
-                        <span
-                          className={cn(
-                            "inline-block h-1.5 w-1.5 shrink-0 rounded-full",
-                            AGE_DOT_CLASS[ageTier(item.createdAt)],
-                          )}
-                        />
-                      )}
-                      <span className="text-xs text-muted-foreground tabular-nums">
-                        {relativeTime(item.createdAt)}
-                      </span>
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {relativeTime(item.createdAt)}
                     </span>
                   </td>
                 </motion.tr>

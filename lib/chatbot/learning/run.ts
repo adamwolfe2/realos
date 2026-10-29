@@ -104,6 +104,8 @@ export async function loadChatbotLearningSummary(params: {
     knowledgeSuggestions,
     siteRecommendations,
     latestRun,
+    appliedKnowledge,
+    appliedLast30d,
   ] = await Promise.all([
     prisma.leadFollowUpTask.count({
       where: { orgId: params.orgId, status: LeadFollowUpTaskStatus.OPEN, ...propertyWhere },
@@ -164,6 +166,7 @@ export async function loadChatbotLearningSummary(params: {
       where: { orgId: params.orgId, status: RecommendationStatus.OPEN, ...propertyWhere },
       orderBy: { createdAt: "desc" },
       take: 5,
+      include: { insight: { select: { sourceCaseIds: true } } },
     }),
     prisma.cronRun.findFirst({
       where: { jobName: "chatbot-learning-loop" },
@@ -177,6 +180,20 @@ export async function loadChatbotLearningSummary(params: {
         durationMs: true,
       },
     }),
+    // Fixes already live in the chatbot: the "it healed itself" record.
+    prisma.chatbotKnowledgeSuggestion.findMany({
+      where: { orgId: params.orgId, status: RecommendationStatus.APPLIED, ...propertyWhere },
+      orderBy: { appliedAt: "desc" },
+      take: 6,
+    }),
+    prisma.chatbotKnowledgeSuggestion.count({
+      where: {
+        orgId: params.orgId,
+        status: RecommendationStatus.APPLIED,
+        appliedAt: { gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) },
+        ...propertyWhere,
+      },
+    }),
   ]);
 
   return {
@@ -188,8 +205,10 @@ export async function loadChatbotLearningSummary(params: {
       openInsights,
       openKnowledgeSuggestions,
       openSiteRecommendations,
+      appliedLast30d,
     },
     latestRun,
+    appliedKnowledge,
     recentTasks,
     topInsights,
     knowledgeSuggestions,

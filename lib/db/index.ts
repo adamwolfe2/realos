@@ -9,6 +9,16 @@ if (typeof WebSocket === "undefined") {
   neonConfig.webSocketConstructor = ws;
 }
 
+// Local design QA against a plain Postgres: tunnel through a ws->tcp proxy.
+// Never set in Vercel envs.
+const localProxy = process.env.LOCAL_PG_WSPROXY;
+if (localProxy && process.env.NODE_ENV !== "production") {
+  neonConfig.wsProxy = () => localProxy;
+  neonConfig.useSecureWebSocket = false;
+  neonConfig.pipelineTLS = false;
+  neonConfig.pipelineConnect = false;
+}
+
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
