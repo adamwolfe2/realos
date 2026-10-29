@@ -288,8 +288,9 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
       </div>
 
       <div className="grid gap-5 lg:grid-cols-12">
-        <Panel title="Conversations by week" aside={<span className="flex items-center gap-3"><Legend color="var(--t-accent)">Left contact info</Legend><Legend color="#dfe9ff">Browsed only</Legend></span>} className="lg:col-span-8">
+        <Panel title="Conversations by week" aside={<span className="hidden items-center gap-3 sm:flex"><Legend color="var(--t-accent)">Left contact info</Legend><Legend color="#dfe9ff">Browsed only</Legend></span>} className="lg:col-span-8">
           <WeekBars weeks={weeks} />
+          <span className="mt-3 flex items-center gap-3 text-[12.5px] text-[var(--t-muted)] sm:hidden"><Legend color="var(--t-accent)">Left contact info</Legend><Legend color="#dfe9ff">Browsed only</Legend></span>
         </Panel>
         <Panel title="Where leads came from" aside="30 days" className="lg:col-span-4">
           {leadTotal ? (
@@ -371,7 +372,7 @@ function WeekBars({ weeks }: { weeks: { label: string; total: number; captured: 
               <span style={{ flex: w.total - w.captured, background: last ? "#c9dbff" : "#e8effe" }} />
               <span style={{ flex: w.captured, background: last ? "var(--t-accent)" : "#8db2ff" }} />
             </div>
-            <span className={`whitespace-nowrap text-[11.5px] ${last ? "font-medium text-[var(--t-ink)]" : "text-[var(--t-muted)]"}`}>{w.label}</span>
+            <span className={`whitespace-nowrap text-[11.5px] ${last ? "font-medium text-[var(--t-ink)]" : "text-[var(--t-muted)]"}`}><span className="sm:hidden">{last ? "Now" : w.label.replace(" ago", "")}</span><span className="hidden sm:inline">{w.label}</span></span>
           </div>
         );
       })}

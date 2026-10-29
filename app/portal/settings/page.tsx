@@ -1,15 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  ArrowRight,
-  Boxes,
-  KeyRound,
-  Plug,
-  Users,
-  Check,
-  Palette,
-  ScrollText,
-} from "lucide-react";
+import { ChevronRight, KeyRound, Palette, Plug, ScrollText, Boxes } from "lucide-react";
 import { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
@@ -17,7 +8,7 @@ import { getConnectStatusForOrg } from "@/lib/connect/status";
 import { SettingsForm } from "./settings-form";
 import { ClientTeamPanel } from "./team-panel";
 import { LeadNotifySettings } from "@/components/portal/settings/lead-notify-settings";
-import { PageHeader } from "@/components/admin/page-header";
+import { PageTitle, Panel, Pill } from "@/components/portal/overview/kit";
 
 export const metadata: Metadata = { title: "Settings" };
 export const dynamic = "force-dynamic";
@@ -88,10 +79,10 @@ export default async function SettingsPage() {
   const onCount = modules.filter(([, v]) => v).length;
 
   return (
-    <div className="space-y-6">
-      <PageHeader
+    <div className="w-full space-y-5">
+      <PageTitle
         title="Settings"
-        description="Update company info and brand tokens. Manage modules in the Marketplace and your plan in Billing."
+        subtitle={`${org.name} · ${onCount} of ${modules.length} modules on`}
       />
 
       <SettingsForm
@@ -111,6 +102,17 @@ export default async function SettingsPage() {
           secondaryColor: org.secondaryColor,
           brandFont: org.brandFont,
         }}
+        below={
+        <Panel title="Workspace" flush>
+          <ul className="divide-y divide-[var(--t-divider)]">
+            <NavRow href="/portal/connect" icon={<Plug className="size-4" aria-hidden="true" />} title="Connect data" description="AppFolio, Google, Meta and your website" stat={`${integrationsActive} connected`} />
+            <NavRow href="/portal/marketplace" icon={<Boxes className="size-4" aria-hidden="true" />} title="Marketplace" description="Add-on modules" stat={`${onCount} of ${modules.length} active`} />
+            <NavRow href="/portal/settings/api-keys" icon={<KeyRound className="size-4" aria-hidden="true" />} title="API keys" description="Push leads and tours from Zapier or your own systems" stat={`${apiKeyCount} active`} />
+            <NavRow href="/portal/settings/white-label" icon={<Palette className="size-4" aria-hidden="true" />} title="White-label" description="Your branding on the portal, site and emails" stat={org.whiteLabel ? "Active" : "Off"} />
+            <NavRow href="/portal/settings/audit-log" icon={<ScrollText className="size-4" aria-hidden="true" />} title="Audit log" description="Who changed what in this workspace" />
+          </ul>
+        </Panel>
+        }
       />
 
       {canManage ? (
@@ -129,109 +131,23 @@ export default async function SettingsPage() {
         />
       ) : null}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <NavCard
-          href="/portal/connect"
-          icon={<Plug className="size-4" aria-hidden="true" />}
-          title="Connect data"
-          description="The unified hub for AppFolio, Google Analytics, Search Console, Google + Meta Ads, and your website. Each connection unlocks new insight categories."
-          stat={`${integrationsActive} connected`}
-        />
-        <NavCard
-          href="/portal/marketplace"
-          icon={<Boxes className="size-4" aria-hidden="true" />}
-          title="Marketplace"
-          description="Activate add-on modules — every module is free to try during your trial (excluding Pro add-ons)."
-          stat={`${onCount} of ${modules.length} active`}
-        />
-        <NavCard
-          href="/portal/settings/api-keys"
-          icon={<KeyRound className="size-4" aria-hidden="true" />}
-          title="API keys"
-          description="Generate scoped keys so Zapier, Typeform, and bespoke systems can push leads, tours, and chatbot events into your CRM."
-          stat={`${apiKeyCount} active`}
-        />
-        <NavCard
-          href="/portal/settings/white-label"
-          icon={<Palette className="size-4" aria-hidden="true" />}
-          title="White-label"
-          description="Swap LeaseStack branding for your own across the portal, public tenant site, and outbound emails. Requires the $499/mo add-on."
-          stat={org.whiteLabel ? "Active" : "Off"}
-        />
-        <NavCard
-          href="/portal/settings/audit-log"
-          icon={<ScrollText className="size-4" aria-hidden="true" />}
-          title="Audit log"
-          description="See who changed what across your workspace, including property, integration, and role changes."
-        />
-      </div>
+        <Panel title="Modules" aside={`${onCount} of ${modules.length} on · ask your account manager to change`}>
+          <ul className="grid grid-cols-2 gap-x-4 gap-y-2.5 sm:grid-cols-3 lg:grid-cols-5">
+            {modules.map(([k, v]) => (
+              <li key={k} className={v ? "" : "opacity-60"}>
+                <Pill tone={v ? "good" : "neutral"}>
+                  {k}
+                  {v ? null : " · off"}
+                </Pill>
+              </li>
+            ))}
+          </ul>
+        </Panel>
 
-      <section className="ls-card p-5">
-        <header className="flex items-start justify-between gap-3 mb-3">
-          <div className="flex items-start gap-2.5">
-            <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-[2px] bg-muted text-muted-foreground">
-              <Boxes className="size-4" aria-hidden="true" />
-            </span>
-            <div>
-              <h2 className="text-sm font-semibold text-foreground">
-                Active modules
-              </h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {onCount} of {modules.length} enabled. Contact your account
-                manager to add or remove modules.
-              </p>
-            </div>
-          </div>
-        </header>
-        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-          {modules.map(([k, v]) => (
-            <li
-              key={k}
-              className={`flex items-center gap-2.5 rounded-[2px] border px-3 py-2 text-xs ${
-                v
-                  ? "border-primary/30 bg-[#edf5ff] text-foreground"
-                  : "border-border bg-background text-muted-foreground"
-              }`}
-            >
-              <span
-                className={`inline-flex size-4 shrink-0 items-center justify-center rounded-full ${
-                  v ? "bg-primary text-primary-foreground" : "bg-muted"
-                }`}
-                aria-hidden="true"
-              >
-                {v ? <Check className="size-3" /> : null}
-              </span>
-              <span className="truncate font-medium">{k}</span>
-              <span
-                className={`ml-auto text-[10px] uppercase tracking-widest ${
-                  v ? "text-primary" : "text-muted-foreground"
-                }`}
-              >
-                {v ? "On" : "Off"}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section
-        id="team"
-        className="ls-card p-5 scroll-mt-24"
+      <Panel
+        title={<span id="team" className="scroll-mt-24">Team</span>}
+        aside="Owners and admins manage billing and settings"
       >
-        <header className="flex items-start justify-between gap-3 mb-3">
-          <div className="flex items-start gap-2.5">
-            <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-[2px] bg-muted text-muted-foreground">
-              <Users className="size-4" aria-hidden="true" />
-            </span>
-            <div>
-              <h2 className="text-sm font-semibold text-foreground">Team</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Invite teammates and assign roles. Owners + Admins can manage
-                billing and settings.
-              </p>
-            </div>
-          </div>
-        </header>
         <ClientTeamPanel
           members={users.map((u) => ({
             ...u,
@@ -242,12 +158,12 @@ export default async function SettingsPage() {
           canManage={canManage}
           viewerUserId={viewer?.id ?? ""}
         />
-      </section>
+      </Panel>
     </div>
   );
 }
 
-function NavCard({
+function NavRow({
   href,
   icon,
   title,
@@ -261,33 +177,17 @@ function NavCard({
   stat?: string;
 }) {
   return (
-    <Link
-      href={href}
-      className="group ls-card p-5 transition-colors hover:border-primary/30 hover:bg-primary/[0.02]"
-    >
-      <div className="flex items-start gap-3">
-        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[2px] bg-[#edf5ff] text-[#0f62fe] transition-colors">
-          {icon}
+    <li>
+      <Link href={href} className="group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-[var(--t-wash)]">
+        <span className="text-[var(--t-muted)]">{icon}</span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[13px] font-medium text-[var(--t-ink)]">{title}</span>
+          <span className="block truncate text-[12px] text-[var(--t-muted)]">{description}</span>
         </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-baseline justify-between gap-2 flex-wrap">
-            <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-            {stat ? (
-              <span className="ls-eyebrow">
-                {stat}
-              </span>
-            ) : null}
-          </div>
-          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-            {description}
-          </p>
-          <span className="inline-flex items-center gap-1 mt-3 text-xs font-medium text-foreground group-hover:text-primary">
-            Manage
-            <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
-          </span>
-        </div>
-      </div>
-    </Link>
+        {stat ? <span className="shrink-0 text-[12px] tabular-nums text-[var(--t-muted)]">{stat}</span> : null}
+        <ChevronRight className="size-3.5 shrink-0 text-[var(--t-muted)] transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+      </Link>
+    </li>
   );
 }
 

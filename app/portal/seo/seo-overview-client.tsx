@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import dynamic from "next/dynamic";
-import { KpiTile, type Trend } from "@/components/portal/dashboard/kpi-tile";
+import { Metric, MetricStrip, Panel, type Tone } from "@/components/portal/overview/kit";
 import type { TimeseriesPoint } from "./seo-timeseries-chart";
 import { SeoAnnotationsPanel, type SeoAnnotation } from "./seo-annotations-panel";
 import {
@@ -38,11 +38,9 @@ export type KpiDelta = {
 // `null` means there is no prior period to compare against. It is not a flat
 // trend, and it must not render a pill: an em-dash in the delta slot claims a
 // comparison that was never made.
-function toDelta(
-  delta: KpiDelta | null,
-): { value: string; trend: Trend } | undefined {
-  if (!delta) return undefined;
-  return { value: delta.label, trend: delta.positive ? "up" : "down" };
+function toDelta(delta: KpiDelta | null): { text: string; tone: Tone } | null {
+  if (!delta) return null;
+  return { text: delta.label, tone: delta.positive ? "good" : "bad" };
 }
 
 // ---------------------------------------------------------------------------
@@ -80,88 +78,21 @@ export type SeoOverviewClientProps = {
 
 export function SeoOverviewClient(props: SeoOverviewClientProps) {
   return (
-    <div className="space-y-4">
-      {/* Source chip row. Mirrors the inspiration: data origin on the left,
-          range descriptor on the right. The range selector itself is not
-          interactive yet — we currently fix the window to 30d-vs-prior-30d
-          so the eyebrow text reflects that honestly. */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-[11px] font-medium text-foreground">
-          <span
-            aria-hidden="true"
-            className="h-1.5 w-1.5 rounded-full bg-primary"
-          />
-          <span>{props.source}</span>
-          {props.propertyLabel ? (
-            <>
-              <span className="text-muted-foreground">·</span>
-              <span className="font-mono text-[11px] text-muted-foreground truncate max-w-[200px]">
-                {props.propertyLabel}
-              </span>
-            </>
-          ) : null}
-        </div>
-        <div className="ls-eyebrow">
-          {props.rangeLabel}
-        </div>
-      </div>
-
-      {/* KPI strip — 2 cols on mobile, 4 on md+ */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-        <KpiTile
-          label="Clicks"
-          value={fmtNumber(props.kpis.clicks.value)}
-          delta={toDelta(props.kpis.clicks.delta)}
-          spark={props.kpis.clicks.spark}
-          chart="sparkline"
-        />
-        <KpiTile
-          label="Impressions"
-          value={fmtNumber(props.kpis.impressions.value)}
-          delta={toDelta(props.kpis.impressions.delta)}
-          spark={props.kpis.impressions.spark}
-          chart="sparkline"
-        />
-        <KpiTile
-          label="Avg CTR"
-          value={fmtPercent(props.kpis.ctr.value)}
-          delta={toDelta(props.kpis.ctr.delta)}
-          spark={props.kpis.ctr.spark}
-          chart="sparkline"
-        />
-        <KpiTile
-          label="Avg Position"
-          value={fmtPosition(props.kpis.position.value)}
-          delta={toDelta(props.kpis.position.delta)}
-          // Position is lower-is-better. KpiTile's sparkline has no invert
-          // option, so flip the sign here (data transform only) to keep the
-          // "line climbs = improving" convention from the old hand-rolled
-          // sparkline. Only the line shape is affected — no axis/labels are
-          // rendered, so negating doesn't change anything visible.
-          spark={props.kpis.position.spark.map((v) => -v)}
-          chart="sparkline"
-        />
-      </section>
+    <div className="space-y-5">
+      <MetricStrip cols={4}>
+        <Metric label="Clicks" value={fmtNumber(props.kpis.clicks.value)} delta={toDelta(props.kpis.clicks.delta)} note="From Google search" />
+        <Metric label="Impressions" value={fmtNumber(props.kpis.impressions.value)} delta={toDelta(props.kpis.impressions.delta)} note="Times your pages showed" />
+        <Metric label="Click-through rate" value={fmtPercent(props.kpis.ctr.value)} delta={toDelta(props.kpis.ctr.delta)} note="Clicks over impressions" />
+        <Metric label="Average position" value={fmtPosition(props.kpis.position.value)} delta={toDelta(props.kpis.position.delta)} note="Lower is better" />
+      </MetricStrip>
 
       {/* Chart + annotations rail. On lg+ we run a 3-col grid so the chart
           gets 2/3 and the annotations rail gets 1/3 — exactly the
           Searchable proportion. Stacks on smaller breakpoints. */}
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 ls-card p-4">
-          <div className="mb-3">
-            <h2
-              className="text-[14px] font-semibold tracking-tight text-foreground leading-tight"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              Clicks & Impressions
-            </h2>
-            <p className="text-[11.5px] text-muted-foreground mt-0.5 leading-snug">
-              Daily totals over the selected window. Toggle a series above to
-              focus on just one line.
-            </p>
-          </div>
+      <section className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <Panel title="Clicks and impressions" aside="Daily, last 12 months" className="lg:col-span-2">
           <SeoTimeseriesChart data={props.timeseries} />
-        </div>
+        </Panel>
         <SeoAnnotationsPanel annotations={props.annotations} />
       </section>
 

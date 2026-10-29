@@ -111,3 +111,49 @@ export function ago(d: Date, now: number): string {
   if (h < 24) return `${h}h`;
   return `${Math.round(h / 24)}d`;
 }
+
+/** Page header shared by portal pages: 22px title, muted one-line subtitle. */
+export function PageTitle({ title, subtitle, actions }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode }) {
+  return (
+    <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div className="min-w-0">
+        <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-[var(--t-ink)]">{title}</h1>
+        {subtitle ? <p className="mt-0.5 text-[13.5px] text-[var(--t-muted)]">{subtitle}</p> : null}
+      </div>
+      {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+    </header>
+  );
+}
+
+const STRIP_COLS: Record<number, string> = {
+  3: "sm:grid-cols-3",
+  4: "lg:grid-cols-4",
+  5: "lg:grid-cols-5",
+  6: "lg:grid-cols-6",
+};
+
+/** One bordered row of Metric cells with hairline dividers. */
+export function MetricStrip({ cols, children }: { cols: 3 | 4 | 5 | 6; children: ReactNode }) {
+  return (
+    <dl className={cn("grid grid-cols-2 overflow-hidden rounded-[var(--t-radius)] border border-[var(--t-border)] bg-[var(--t-card)] shadow-[var(--t-shadow)] [&>*]:-ml-px [&>*]:-mt-px [&>*]:border-l [&>*]:border-t [&>*]:border-[var(--t-divider)]", STRIP_COLS[cols])}>
+      {children}
+    </dl>
+  );
+}
+
+/** Label / value row inside a Panel. */
+export function Row({ label, children }: { label: ReactNode; children: ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-4 py-2.5">
+      <span className="text-[12.5px] text-[var(--t-muted)]">{label}</span>
+      <span className="min-w-0 text-right text-[13px] font-medium text-[var(--t-ink)]">{children}</span>
+    </div>
+  );
+}
+
+/** Primary pill button style used in page headers. */
+export const primaryButton =
+  "inline-flex h-8 items-center gap-1.5 rounded-full bg-[var(--t-primary-bg)] px-3.5 text-[13px] font-medium text-[var(--t-primary-fg)] transition-colors hover:opacity-90 disabled:opacity-50";
+/** Secondary outline pill button. */
+export const secondaryButton =
+  "inline-flex h-8 items-center gap-1.5 rounded-full border border-[var(--t-border)] bg-white px-3.5 text-[13px] font-medium text-[var(--t-text)] transition-colors hover:bg-[var(--t-wash)]";

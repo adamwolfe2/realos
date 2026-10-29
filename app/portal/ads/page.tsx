@@ -11,14 +11,12 @@ import {
   visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
-import { PageHeader } from "@/components/admin/page-header";
+import { PageTitle, Panel, secondaryButton } from "@/components/portal/overview/kit";
 import { EmptyState } from "@/components/portal/ui/empty-state";
-import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
-import { Megaphone, Link2, DollarSign, Users, CheckCircle2 } from "lucide-react";
+import { Megaphone } from "lucide-react";
 import { ExportButton } from "@/components/ui/export-button";
 import { AdPlatform, LeadSource, LeadStatus, UserRole } from "@prisma/client";
 import { AdsDashboard } from "./ads-dashboard";
-import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { MarketingRoiTable, type RoiRow } from "./marketing-roi-table";
 import {
   describeAdRetentionPolicy,
@@ -292,10 +290,14 @@ export default async function AdsPage({
   const totalSignedAttributed = roiRows.reduce((sum, r) => sum + r.signed, 0);
 
   return (
-    <div className="space-y-6">
-      <PageHeader
+    <div className="w-full space-y-5">
+      <PageTitle
         title="Paid ads"
-        description="Spend, clicks, and conversions from every connected ad platform. Refreshes daily."
+        subtitle={
+          accounts.length
+            ? `${accounts.length} ${accounts.length === 1 ? "account" : "accounts"} connected · ${totalSpendCents ? `$${Math.round(totalSpendCents / 100).toLocaleString()}` : "$0"} spent in 28 days · refreshes daily`
+            : "Connect Google Ads or Meta to see spend and results"
+        }
         actions={
           <div className="flex items-center gap-2 flex-wrap">
             <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded-[2px]" />}>
@@ -307,13 +309,13 @@ export default async function AdsPage({
             <ExportButton href="/api/tenant/ad-metrics/export?days=90" />
             <Link
               href="/portal/creative"
-              className="inline-flex items-center rounded-[2px] border border-border bg-card px-3 py-2 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
+              className={secondaryButton}
             >
               Request creative
             </Link>
             <Link
               href="/portal/connect"
-              className="inline-flex items-center rounded-[2px] border border-border bg-card px-3 py-2 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
+              className={secondaryButton}
             >
               Connect an ad account
             </Link>
@@ -330,35 +332,6 @@ export default async function AdsPage({
         />
       ) : (
         <>
-        <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-          <KpiTile
-            label="Connected accounts"
-            value={accounts.length.toLocaleString()}
-            icon={<Link2 className="h-3.5 w-3.5" />}
-          />
-          <KpiTile
-            label="Spend"
-            value={
-              totalSpendCents
-                ? `$${Math.round(totalSpendCents / 100).toLocaleString()}`
-                : "—"
-            }
-            hint="Last 28 days"
-            icon={<DollarSign className="h-3.5 w-3.5" />}
-          />
-          <KpiTile
-            label="Leads attributed"
-            value={totalLeadsAttributed.toLocaleString()}
-            hint="Last 28 days"
-            icon={<Users className="h-3.5 w-3.5" />}
-          />
-          <KpiTile
-            label="Signed leases"
-            value={totalSignedAttributed.toLocaleString()}
-            hint="Last 28 days"
-            icon={<CheckCircle2 className="h-3.5 w-3.5" />}
-          />
-        </section>
         <AdsDashboard
           accounts={accounts.map((a) => ({
             id: a.id,
@@ -400,17 +373,15 @@ export default async function AdsPage({
             clicks: m._sum.clicks ?? 0,
             conversions: m._sum.conversions ?? 0,
           }))}
+          leadsAttributed={totalLeadsAttributed}
+          signedLeases={totalSignedAttributed}
         />
         </>
       )}
 
-      <DashboardSection
-        eyebrow="28-day attribution"
-        title="Marketing ROI by channel"
-        description="Spend, leads, applications, and signed leases per source."
-      >
+      <Panel title="Marketing ROI by channel" aside="Spend, leads, applications and signed leases per source · 28 days">
         <MarketingRoiTable rows={roiRows} />
-        <div className="mt-4 pt-3 border-t border-[var(--hair)]">
+        <div className="mt-4 border-t border-[var(--t-divider)] pt-3">
           <AdRetentionPanel
             tier={retentionPolicy.tier}
             dailyWindowMonths={retentionPolicy.dailyWindowMonths}
@@ -421,7 +392,7 @@ export default async function AdsPage({
             variant="inline"
           />
         </div>
-      </DashboardSection>
+      </Panel>
     </div>
   );
 }
