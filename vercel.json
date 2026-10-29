@@ -82,7 +82,7 @@
     },
     {
       "path": "/api/cron/chatbot-profile-digest",
-      "schedule": "*/5 * * * *"
+      "schedule": "*/15 * * * *"
     },
     {
       "path": "/api/cron/chatbot-learning-loop",
@@ -90,11 +90,11 @@
     },
     {
       "path": "/api/cron/funnel-lead-sync",
-      "schedule": "*/5 * * * *"
+      "schedule": "*/15 * * * *"
     },
     {
       "path": "/api/cron/seo-scan-worker",
-      "schedule": "* * * * *"
+      "schedule": "*/15 * * * *"
     },
     {
       "path": "/api/cron/seo-fact-aggregate",
