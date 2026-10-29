@@ -147,13 +147,19 @@ export function buildReportEmail(input: ReportEmailInput): {
   return { subject, html, text };
 }
 
+// Snapshots stored before 2026-10-21 could say "not connected" for a source
+// that has data in the window (org-level GA4/GSC on a property report).
+function live(src: { connected: boolean; hasDataInPeriod: boolean }): boolean {
+  return src.connected || src.hasDataInPeriod;
+}
+
 function renderKpiRow(s: ReportSnapshot): string {
   const ds = s.dataSources;
   const adsConnected = ds
-    ? ds.googleAds.connected || ds.metaAds.connected
+    ? live(ds.googleAds) || live(ds.metaAds)
     : true;
-  const ga4Connected = ds ? ds.ga4.connected : true;
-  const appfolioConnected = ds ? ds.appfolio.connected : true;
+  const ga4Connected = ds ? live(ds.ga4) : true;
+  const appfolioConnected = ds ? live(ds.appfolio) : true;
   // Match the report-view gating exactly so the email and the share-link
   // page show the same KPI tiles for any given snapshot.
   const toursTracked = appfolioConnected || s.kpis.tours > 0;
@@ -319,7 +325,7 @@ function renderAds(s: ReportSnapshot): string {
   // connected. Stale AdMetricDaily rows from a disconnected
   // integration would otherwise leak into the email.
   const ds = s.dataSources;
-  if (ds && !(ds.googleAds.connected || ds.metaAds.connected)) return "";
+  if (ds && !(live(ds.googleAds) || live(ds.metaAds))) return "";
   const rows = s.adPerformance
     .map(
       (a) => `
@@ -382,7 +388,7 @@ function renderSeo(s: ReportSnapshot): string {
   if (!s.topQueries || s.topQueries.length === 0) return "";
   // GSC drives top queries; skip the section if it isn't connected.
   const ds = s.dataSources;
-  if (ds && !ds.gsc.connected) return "";
+  if (ds && !live(ds.gsc)) return "";
   const rows = s.topQueries
     .slice(0, 5)
     .map(
@@ -574,12 +580,12 @@ function renderDataSourcesEmail(s: ReportSnapshot): string {
   if (!ds) return "";
 
   const rows: Array<{ label: string; connected: boolean }> = [
-    { label: "Google Ads", connected: ds.googleAds.connected },
-    { label: "Meta Ads", connected: ds.metaAds.connected },
-    { label: "Google Analytics 4", connected: ds.ga4.connected },
-    { label: "Google Search Console", connected: ds.gsc.connected },
-    { label: "AppFolio", connected: ds.appfolio.connected },
-    { label: "Chatbot", connected: ds.chatbot.connected },
+    { label: "Google Ads", connected: live(ds.googleAds) },
+    { label: "Meta Ads", connected: live(ds.metaAds) },
+    { label: "Google Analytics 4", connected: live(ds.ga4) },
+    { label: "Google Search Console", connected: live(ds.gsc) },
+    { label: "AppFolio", connected: live(ds.appfolio) },
+    { label: "Chatbot", connected: live(ds.chatbot) },
   ];
 
   const cellHtml = (r: (typeof rows)[number]) => `

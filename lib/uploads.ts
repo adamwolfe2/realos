@@ -1,4 +1,4 @@
-import { put, del, list } from "@vercel/blob";
+import { put } from "@vercel/blob";
 import path from "node:path";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -63,24 +63,4 @@ export async function uploadFile(
   });
 
   return { url: blob.url, pathname: blob.pathname };
-}
-
-/**
- * Delete a file from Vercel Blob by URL.
- */
-export async function deleteFile(url: string): Promise<void> {
-  await del(url);
-}
-
-/**
- * List files in Vercel Blob under a given prefix.
- */
-export async function listFiles(prefix: string) {
-  const result = await list({ prefix });
-  return result.blobs.map((b) => ({
-    url: b.url,
-    pathname: b.pathname,
-    size: b.size,
-    uploadedAt: b.uploadedAt,
-  }));
 }

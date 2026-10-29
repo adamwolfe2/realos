@@ -144,7 +144,3 @@ ${pageBlock || "(no page copy available)"}
 
 Write the 6-8 sentence brand voice note now.`;
 }
-
-export function isVoiceExtractConfigured(): boolean {
-  return !!process.env.ANTHROPIC_API_KEY;
-}

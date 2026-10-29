@@ -12,6 +12,10 @@ import { PageHeader } from "@/components/admin/page-header";
 import { ConnectStepper } from "@/components/portal/connect/account-picker-list";
 import { CustomerPicker } from "./customer-picker";
 
+// The account-picker server action runs the connect-time backfill in
+// after(), which shares this function's duration budget.
+export const maxDuration = 300;
+
 export const metadata: Metadata = { title: "Choose a Google Ads account" };
 export const dynamic = "force-dynamic";
 

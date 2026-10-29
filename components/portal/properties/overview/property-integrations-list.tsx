@@ -1,5 +1,7 @@
 import type { IntegrationHealth } from "./types";
 import { formatAge } from "./helpers";
+import { Logo } from "@/components/portal/overview/kit";
+import { SourceMark } from "@/components/portal/source-mark";
 
 // ---------------------------------------------------------------------------
 // Sidebar — integrations list.
@@ -18,11 +20,13 @@ export function PropertyIntegrationsList({
 }) {
   const rows: Array<{
     name: string;
+    mark: string;
     state: string;
     health: IntegrationHealth;
   }> = [
     {
       name: "AppFolio",
+      mark: "appfolio",
       state: appfolio.connected
         ? appfolio.lastSyncedAt
           ? `synced ${formatAge(appfolio.lastSyncedAt)}`
@@ -38,6 +42,7 @@ export function PropertyIntegrationsList({
     },
     {
       name: "Chatbot",
+      mark: "CHATBOT",
       state: chatbot.enabled
         ? chatbot.personaName
           ? `"${chatbot.personaName}" live`
@@ -47,6 +52,7 @@ export function PropertyIntegrationsList({
     },
     {
       name: "GA4",
+      mark: "ga4",
       state: ga4.connected
         ? ga4.lastSyncAt
           ? `synced ${formatAge(ga4.lastSyncAt)}`
@@ -56,6 +62,7 @@ export function PropertyIntegrationsList({
     },
     {
       name: "Search Console",
+      mark: "gsc",
       state: gsc.connected
         ? gsc.lastSyncAt
           ? `synced ${formatAge(gsc.lastSyncAt)}`
@@ -67,42 +74,42 @@ export function PropertyIntegrationsList({
 
   return (
     <section className="rounded-[2px] border border-border bg-card p-4 md:p-5">
-      <p className="ls-eyebrow">
-        Integrations
-      </p>
-      <ul className="mt-2 space-y-2.5">
+      <p className="text-[13px] font-semibold text-foreground">Integrations</p>
+      <ul className="mt-3 space-y-3">
         {rows.map((row) => (
           <li
             key={row.name}
             className="flex items-center justify-between gap-3 min-w-0"
           >
-            <span className="flex items-center gap-2 min-w-0">
-              <StatusDot health={row.health} />
-              <span className="text-[12px] font-medium text-foreground truncate">
+            <span className="flex items-center gap-2.5 min-w-0">
+              {/* The tool's own logo, faded when it is not connected. */}
+              <span className={row.health === "off" ? "opacity-40 grayscale" : undefined}>
+                {row.mark === "CHATBOT" ? (
+                  <SourceMark source="CHATBOT" size={24} />
+                ) : (
+                  <span className="grid h-6 w-6 place-items-center rounded-[6px] border border-border bg-white">
+                    <Logo slug={row.mark} size={14} />
+                  </span>
+                )}
+              </span>
+              <span className="text-[13px] font-medium text-foreground truncate">
                 {row.name}
               </span>
             </span>
-            <span className="text-[11px] text-muted-foreground shrink-0 truncate max-w-[55%] text-right">
+            <span
+              className={`text-[12px] shrink-0 truncate max-w-[55%] text-right ${
+                row.health === "healthy"
+                  ? "text-[#15803d]"
+                  : row.health === "degraded"
+                    ? "text-[#b45309]"
+                    : "text-muted-foreground"
+              }`}
+            >
               {row.state}
             </span>
           </li>
         ))}
       </ul>
     </section>
-  );
-}
-
-function StatusDot({ health }: { health: IntegrationHealth }) {
-  const cls =
-    health === "healthy"
-      ? "bg-success"
-      : health === "degraded"
-        ? "bg-amber-500"
-        : "bg-muted-foreground/30";
-  return (
-    <span
-      className={`h-2 w-2 rounded-full shrink-0 ${cls}`}
-      aria-hidden="true"
-    />
   );
 }

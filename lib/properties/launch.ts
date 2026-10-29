@@ -13,14 +13,9 @@
  *   1. The detailed checklist for a single property — what's done,
  *      what's pending. Powers the /portal/properties/[id]/onboarding
  *      tab.
- *   2. The derived launchStatus from that checklist. Used by the
- *      auto-recompute (background job or property edit hook) to
- *      promote DRAFT → ONBOARDING → LIVE without operator involvement.
  *
- * Source-of-truth note: launchStatus is stored on Property so reads
- * stay cheap. This module only writes when the auto-recompute decides
- * a transition. Operator overrides flip launchStatusSetBy=OPERATOR
- * which makes the row sticky against future auto-recomputes.
+ * It does not write launchStatus; that is stored on Property and set
+ * elsewhere (operator overrides flip launchStatusSetBy=OPERATOR).
  */
 
 import "server-only";
@@ -347,68 +342,4 @@ export async function getLaunchChecklist(
     completedOptionalCount: completedOptional,
     totalOptionalCount: optionalItems.length,
   };
-}
-
-/**
- * Compute what the auto-recompute thinks the launchStatus should be,
- * based on checklist state. Pure function over the checklist — does
- * not write to the DB.
- *
- * Rules:
- *   - All required items done                → LIVE
- *   - At least one required item done        → ONBOARDING
- *   - Zero required items done               → DRAFT
- *
- * PAUSED is never set by auto — only by an operator override.
- */
-export function deriveStatusFromChecklist(
-  checklist: Pick<LaunchChecklist, "completedRequiredCount" | "totalRequiredCount">,
-): PropertyLaunchStatus {
-  if (checklist.totalRequiredCount === 0) return "DRAFT";
-  if (checklist.completedRequiredCount === checklist.totalRequiredCount)
-    return "LIVE";
-  if (checklist.completedRequiredCount > 0) return "ONBOARDING";
-  return "DRAFT";
-}
-
-/**
- * Run the auto-recompute for one property. Skips OPERATOR-set rows so
- * a deliberate "PAUSED" or manual promotion isn't silently reverted.
- *
- * Returns { changed, from, to } so callers can log transitions.
- */
-export async function recomputeLaunchStatus(
-  orgId: string,
-  propertyId: string,
-): Promise<{
-  changed: boolean;
-  from: PropertyLaunchStatus | null;
-  to: PropertyLaunchStatus | null;
-}> {
-  const checklist = await getLaunchChecklist(orgId, propertyId);
-  if (!checklist) return { changed: false, from: null, to: null };
-
-  // Operator decisions are sticky.
-  if (checklist.setBy === "OPERATOR") {
-    return { changed: false, from: checklist.status, to: checklist.status };
-  }
-
-  const next = deriveStatusFromChecklist(checklist);
-  if (next === checklist.status) {
-    return { changed: false, from: checklist.status, to: checklist.status };
-  }
-
-  await prisma.property.update({
-    where: { id: propertyId },
-    data: {
-      launchStatus: next,
-      launchStatusSetBy: "AUTO",
-      launchStatusSetAt: new Date(),
-      // Stamp launchedAt only on first promotion to LIVE so we can
-      // tell when the property went live for SLA / reporting.
-      ...(next === "LIVE" ? { launchedAt: new Date() } : {}),
-    },
-  });
-
-  return { changed: true, from: checklist.status, to: next };
 }

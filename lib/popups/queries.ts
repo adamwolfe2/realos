@@ -155,53 +155,6 @@ export async function getPopupSummary(orgId: string) {
 }
 
 /**
- * Per-day event series for the campaign detail chart. Returns a
- * day-by-day rollup of SHOWN / CTA_CLICKED / CONVERTED for the
- * requested window.
- */
-export async function getCampaignDailySeries(
-  orgId: string,
-  campaignId: string,
-  rangeDays: number,
-): Promise<
-  Array<{
-    date: string;
-    shown: number;
-    clicked: number;
-    converted: number;
-  }>
-> {
-  const start = new Date(Date.now() - rangeDays * DAY_MS);
-  const events = await prisma.popupEvent.findMany({
-    where: { orgId, campaignId, occurredAt: { gte: start } },
-    select: { type: true, occurredAt: true },
-  });
-  const buckets = new Map<
-    string,
-    { shown: number; clicked: number; converted: number }
-  >();
-  for (let i = 0; i < rangeDays; i += 1) {
-    const d = new Date(Date.now() - (rangeDays - 1 - i) * DAY_MS);
-    d.setUTCHours(0, 0, 0, 0);
-    buckets.set(d.toISOString(), { shown: 0, clicked: 0, converted: 0 });
-  }
-  for (const e of events) {
-    const day = new Date(e.occurredAt);
-    day.setUTCHours(0, 0, 0, 0);
-    const key = day.toISOString();
-    const b = buckets.get(key);
-    if (!b) continue;
-    if (e.type === PopupEventType.SHOWN) b.shown += 1;
-    if (e.type === PopupEventType.CTA_CLICKED) b.clicked += 1;
-    if (e.type === PopupEventType.CONVERTED) b.converted += 1;
-  }
-  return Array.from(buckets.entries()).map(([date, v]) => ({
-    date,
-    ...v,
-  }));
-}
-
-/**
  * Internal counter helpers for the public events endpoint. Keep the
  * denormalized counters on PopupCampaign in sync with PopupEvent
  * inserts so the list view doesn't need a groupBy on every render.

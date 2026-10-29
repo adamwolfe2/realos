@@ -294,7 +294,10 @@ export function PropertyHeroBanner({
     setDraftScale((s) => Math.max(0.5, Math.min(3, s * factor)));
   }
 
-  const padding = compact ? "p-4 sm:p-5" : "p-4";
+  const padding = compact ? "p-4 sm:p-5" : "";
+  // Detail view with no photo yet: a small upload tile beside the title
+  // instead of a 160px dashed drop zone.
+  const slimEmpty = !compact && !currentImage;
   // Norman bug (May 22): on mobile (~390px viewport) compact mode was
   // locked to "180px image + remainder" which left only ~150px for
   // the 3-stat column — the stats overlapped each other ("15042/4104"
@@ -303,7 +306,9 @@ export function PropertyHeroBanner({
   // Multi-column kicks in at sm: (640px) where there's enough room.
   const gridCols = compact
     ? "grid-cols-1 sm:grid-cols-[180px_minmax(0,1fr)]"
-    : "grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)]";
+    : slimEmpty
+      ? "grid-cols-[64px_minmax(0,1fr)]"
+      : "grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)]";
   // Norman 2026-05-21 fifth pass: the rounded-xl + perspective tilt
   // were treating the BG-removed PNG as if it were a card. Dropped
   // both. The building silhouette IS the shape now. Bigger size +
@@ -311,7 +316,7 @@ export function PropertyHeroBanner({
   // sides of its column.
   // Compact (dashboard) variant: contained image block — no negative-margin
   // spill, no float-out. Detail view keeps the larger silhouette treatment.
-  const imageSize = compact ? "h-[140px]" : "h-[150px]";
+  const imageSize = compact ? "h-[140px]" : slimEmpty ? "h-16" : "h-[150px]";
   const imageLift = "";
 
   return (
@@ -319,9 +324,9 @@ export function PropertyHeroBanner({
       aria-label={`${propertyName} hero`}
       onDragOver={editable ? (e) => e.preventDefault() : undefined}
       onDrop={editable ? onDrop : undefined}
-      className={`relative rounded-[2px] border border-border bg-card ${padding}`}
+      className={compact ? `relative rounded-[2px] border border-border bg-card ${padding}` : "relative"}
     >
-      <div className={`relative grid items-center gap-4 ${gridCols}`}>
+      <div className={`relative grid gap-4 ${slimEmpty ? "items-start" : "items-center"} ${gridCols}`}>
         <div className="relative group" style={{ overflow: "visible" }}>
           {currentImage ? (
             <div
@@ -469,7 +474,9 @@ export function PropertyHeroBanner({
               type="button"
               onClick={editable ? () => fileRef.current?.click() : undefined}
               disabled={!editable || uploading}
-              className={`group relative w-full ${imageSize} rounded-[2px] border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-colors ${
+              title={slimEmpty && editable ? "Upload building photo" : undefined}
+              aria-label={slimEmpty && editable ? "Upload building photo" : undefined}
+              className={`group relative w-full ${imageSize} rounded-[2px] ${slimEmpty ? "border" : "border-2"} border-dashed flex flex-col items-center justify-center gap-2 transition-colors ${
                 editable
                   ? "border-border bg-white/60 hover:border-primary/50 hover:bg-white/90 cursor-pointer"
                   : "border-border bg-white/60 cursor-default"
@@ -485,7 +492,7 @@ export function PropertyHeroBanner({
                   >
                     <Building2 className="h-5 w-5" />
                   </span>
-                  {editable ? (
+                  {slimEmpty ? null : editable ? (
                     <>
                       <span className="text-[11px] font-semibold text-foreground">
                         Upload building photo
@@ -524,9 +531,11 @@ export function PropertyHeroBanner({
         <div className="min-w-0">
           {/* Same eyebrow primitive the dashboard PageHeader uses, so the
               two pages open with identical type. */}
-          <p className="ls-eyebrow mb-1.5" style={{ color: accent ?? "#0f62fe" }}>
-            Property overview
-          </p>
+          {compact ? (
+            <p className="ls-eyebrow mb-1.5" style={{ color: accent ?? "#0f62fe" }}>
+              Property overview
+            </p>
+          ) : null}
           <h1
             className={`font-display tracking-tight text-foreground leading-tight ${
               compact ? "text-xl" : "text-xl sm:text-2xl"
@@ -539,7 +548,25 @@ export function PropertyHeroBanner({
             <p className="text-[12px] text-muted-foreground mt-1">{subtitle}</p>
           ) : null}
 
-          {stats.length > 0 ? (
+          {/* Detail view: one summary line, same grammar as every other
+              portal page header. Dashboard (compact) keeps the tiles. */}
+          {!compact && stats.length > 0 ? (
+            <p className="mt-2 text-[13px] text-muted-foreground tabular-nums">
+              {stats.slice(0, 4).map((s, i) => (
+                <span key={s.label}>
+                  {i > 0 ? " · " : null}
+                  <span className="font-medium text-foreground">{s.value}</span>{" "}
+                  {s.label.toLowerCase()}
+                  {s.delta && (s.tone === "positive" || s.tone === "negative") ? (
+                    <span className={s.tone === "positive" ? "ml-1 text-emerald-600" : "ml-1 text-red-600"}>
+                      {s.delta.replace(" vs prior", "")}
+                    </span>
+                  ) : null}
+                </span>
+              ))}
+            </p>
+          ) : null}
+          {compact && stats.length > 0 ? (
             <div
               className={`mt-3 pt-3 grid gap-2 sm:gap-3 border-t border-border ${
                 compact ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 sm:grid-cols-2 md:grid-cols-4"

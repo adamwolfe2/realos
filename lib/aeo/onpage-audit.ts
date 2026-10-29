@@ -341,4 +341,3 @@ export function runOnPageAuditChecks(html: string): OnPageAuditResult {
 }
 
 export const ONPAGE_AUDIT_POINTS_PER_CHECK = POINTS_PER_CHECK;
-export const ONPAGE_AUDIT_CHECK_LABELS = CHECK_LABELS;

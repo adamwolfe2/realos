@@ -32,10 +32,6 @@ export const OAUTH_PROVIDERS: readonly OAuthProvider[] = [
   "meta_ads",
 ] as const;
 
-export function isOAuthProvider(value: string): value is OAuthProvider {
-  return (OAUTH_PROVIDERS as readonly string[]).includes(value);
-}
-
 /**
  * Surface identifier for the unified Google connect endpoint. The Google
  * connect route accepts ?surface=ga4|gsc|google_ads and resolves it to the
@@ -104,6 +100,22 @@ export type OAuthStatePayload = {
   nonce: string;
   exp: number; // unix seconds
 };
+
+/**
+ * Thrown by provider refreshAccessToken. `permanent` = the provider rejected
+ * this tenant's grant (Google invalid_grant, Meta OAuthException 190, or no
+ * refresh token) and the operator must reconnect. Everything else (rate
+ * limits, 5xx, timeouts, server config) is not the tenant's fault.
+ */
+export class OAuthRefreshError extends Error {
+  constructor(
+    message: string,
+    readonly permanent: boolean,
+  ) {
+    super(message);
+    this.name = "OAuthRefreshError";
+  }
+}
 
 /**
  * Thrown when an env var the connect flow requires is missing. Routes catch

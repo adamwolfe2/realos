@@ -115,6 +115,20 @@ function BarRow({
   );
 }
 
+// Conversion tracking began after the window opened (or never): "0
+// converted" would be false. Older snapshots lack the field and render as before.
+function popupTrackingPartial(
+  p: NonNullable<ReportSnapshot["popupStats"]>,
+  s: ReportSnapshot,
+): boolean {
+  if (p.conversionTrackedSince === undefined) return false;
+  return p.conversionTrackedSince === null || p.conversionTrackedSince > s.periodStart;
+}
+
+function shortDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+}
+
 function Empty({ children }: { children: React.ReactNode }) {
   return <div className="text-caption text-muted-foreground">{children}</div>;
 }
@@ -330,14 +344,21 @@ function AcquisitionSection(s: ReportSnapshot): React.ReactNode {
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
             <Stat value={num(s.popupStats.shown)} label="Shown" />
             <Stat value={num(s.popupStats.ctaClicks)} label="CTA clicks" />
-            <Stat value={num(s.popupStats.converted)} label="Converted" />
+            <Stat
+              value={popupTrackingPartial(s.popupStats, s) ? "—" : num(s.popupStats.converted)}
+              label={
+                popupTrackingPartial(s.popupStats, s)
+                  ? s.popupStats.conversionTrackedSince
+                    ? `Converted: tracking since ${shortDate(s.popupStats.conversionTrackedSince)}`
+                    : "Converted: none recorded yet"
+                  : "Converted"
+              }
+            />
             <Stat value={num(s.popupStats.dismissed)} label="Dismissed" />
           </div>
-          {s.popupStats.conversionRate != null ? (
-            <p className="mt-3 text-label text-muted-foreground">
-              {pct(s.popupStats.conversionRate)} conversion rate
-            </p>
-          ) : null}
+          <p className="mt-3 text-label text-muted-foreground">
+            {s.popupStats.conversionRate != null ? pct(s.popupStats.conversionRate) : "—"} conversion rate
+          </p>
         </Card>
       ) : null}
 

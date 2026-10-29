@@ -51,7 +51,7 @@ const GATED_FILES = [
   // Holds the sharpest latent instance: a literal top-level
   // `OR: [SUBMITTED, UNDER_REVIEW]` sitting beside a gate spread that is
   // safe today only because it happens to be built without opts.
-  "../app/portal/page.tsx",
+  "../app/portal/performance/page.tsx",
 ];
 
 /**

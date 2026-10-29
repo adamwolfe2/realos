@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
@@ -174,9 +175,13 @@ export async function bindGoogleAdsCustomer(
   //    /portal/ads moments later — if the backfill returns quickly, real
   //    metrics are already on screen; if not, they appear at the next
   //    cron tick. Either way the user sees the new account in the list.
-  void runAdsSyncForAccount(adAccount.id, { fullBackfill: true }).catch((err) => {
-    console.warn("[bindGoogleAdsCustomer] initial sync error", err);
-  });
+  // after() keeps the function alive until the backfill settles; a bare
+  // void promise is frozen once the action responds on Vercel.
+  after(() =>
+    runAdsSyncForAccount(adAccount.id, { fullBackfill: true }).catch((err) => {
+      console.warn("[bindGoogleAdsCustomer] initial sync error", err);
+    }),
+  );
 
   revalidatePath(PORTAL_INTEGRATIONS);
   revalidatePath(PORTAL_ADS);

@@ -188,32 +188,3 @@ export function HealthBadge({
     </span>
   );
 }
-
-// For module/feature on-off lines: consistent dot + label.
-// Brand-blue when enabled, muted when disabled — no green leak.
-export function ToggleIndicator({
-  on,
-  className,
-}: {
-  on: boolean;
-  className?: string;
-}) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 text-[11px] font-medium whitespace-nowrap",
-        on ? "text-primary" : "text-muted-foreground",
-        className,
-      )}
-    >
-      <span
-        aria-hidden="true"
-        className={cn(
-          "inline-block h-1.5 w-1.5 rounded-full",
-          on ? "bg-primary" : "bg-muted-foreground/40",
-        )}
-      />
-      {on ? "Enabled" : "Disabled"}
-    </span>
-  );
-}

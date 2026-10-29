@@ -1,4 +1,5 @@
 import "server-only";
+import { DRAFT_STALL_MS } from "@/lib/seo/draft-stalled";
 import { APPFOLIO_APPLICATION_SOURCE } from "@/lib/integrations/appfolio-sync";
 import { cleanCompetitorName, rankCompetitors } from "@/lib/reports/competitors";
 import { buildProspectQuestions, type ReportProspectQuestions } from "@/lib/reports/prospect-questions";
@@ -1834,7 +1835,7 @@ export async function generateReportSnapshot(
   // numbers for sources the operator hasn't actually connected.
   const dataSources = await buildDataSources(
     orgId,
-    scope.propertyId,
+    scope,
     periodStart,
     periodEnd,
   ).catch(sectionFailed("buildDataSources"));
@@ -1987,16 +1988,39 @@ const MENTION_SOURCE_LABELS: Record<MentionSource, string> = {
 // dead integration.
 const SOURCE_FRESHNESS_DAYS = 30;
 
-async function buildDataSources(
+export function dataSourceStatus(
+  lastAt: Date | null | undefined,
+  hasCredentials: boolean,
+  hasDataInPeriod: boolean,
+  freshThreshold: Date,
+): DataSourceStatus {
+  const fresh = hasCredentials && lastAt != null && lastAt >= freshThreshold;
+  return {
+    // Data in the window proves the source was connected for it; a stale
+    // or errored last sync must not turn that into "not connected".
+    connected: fresh || hasDataInPeriod,
+    lastSyncAt: lastAt ? lastAt.toISOString() : null,
+    hasDataInPeriod,
+  };
+}
+
+// Exported for __tests__/report-accuracy-sg-2026-10.test.ts.
+export async function buildDataSources(
   orgId: string,
-  propertyId: string | null,
+  scope: Pick<Scope, "propertyId" | "seoLandingClause" | "seoQueryClause">,
   periodStart: Date,
   periodEnd: Date,
 ): Promise<ReportDataSources> {
+  const propertyId = scope.propertyId;
   const freshThreshold = new Date(
     Date.now() - SOURCE_FRESHNESS_DAYS * DAY_MS,
   );
   const propertyClause = propertyId ? { propertyId } : {};
+  const period = { gte: periodStart, lt: periodEnd };
+  // Window-data presence uses the SAME property scoping as the report
+  // sections, so another property's activity can never mark a source
+  // "connected" on a property-scoped report.
+  const adCampaignClause = propertyId ? { campaign: { propertyId } } : {};
 
   const [
     googleAdAccount,
@@ -2032,7 +2056,9 @@ async function buildDataSources(
         orgId,
         provider: "GA4",
         serviceAccountJsonEncrypted: { not: "DEMO_SEED" },
-        ...(propertyId ? { propertyId } : {}),
+        // GA4/GSC are usually connected org-wide (propertyId null): a
+        // property-scoped report must still find them (SG, 2026-10).
+        ...(propertyId ? { OR: [{ propertyId }, { propertyId: null }] } : {}),
       },
       select: { lastSyncAt: true },
       orderBy: { lastSyncAt: "desc" },
@@ -2042,7 +2068,9 @@ async function buildDataSources(
         orgId,
         provider: "GSC",
         serviceAccountJsonEncrypted: { not: "DEMO_SEED" },
-        ...(propertyId ? { propertyId } : {}),
+        // GA4/GSC are usually connected org-wide (propertyId null): a
+        // property-scoped report must still find them (SG, 2026-10).
+        ...(propertyId ? { OR: [{ propertyId }, { propertyId: null }] } : {}),
       },
       select: { lastSyncAt: true },
       orderBy: { lastSyncAt: "desc" },
@@ -2060,27 +2088,45 @@ async function buildDataSources(
     prisma.adMetricDaily.aggregate({
       where: {
         orgId,
-        date: { gte: periodStart, lt: periodEnd },
+        date: period,
         adAccount: { platform: "GOOGLE_ADS" },
+        ...adCampaignClause,
       },
       _sum: { spendCents: true },
     }),
     prisma.adMetricDaily.aggregate({
       where: {
         orgId,
-        date: { gte: periodStart, lt: periodEnd },
+        date: period,
         adAccount: { platform: "META" },
+        ...adCampaignClause,
       },
       _sum: { spendCents: true },
     }),
-    prisma.seoSnapshot.aggregate({
-      where: { orgId, date: { gte: periodStart, lt: periodEnd } },
-      _sum: { organicSessions: true },
-    }),
-    prisma.seoSnapshot.aggregate({
-      where: { orgId, date: { gte: periodStart, lt: periodEnd } },
-      _sum: { totalClicks: true },
-    }),
+    propertyId
+      ? prisma.seoLandingPage
+          .aggregate({
+            where: { orgId, ...scope.seoLandingClause, date: period },
+            _sum: { sessions: true },
+          })
+          .then((r) => r._sum.sessions ?? 0)
+      : prisma.seoSnapshot
+          .aggregate({ where: { orgId, date: period }, _sum: { organicSessions: true } })
+          .then((r) => r._sum.organicSessions ?? 0),
+    propertyId
+      ? prisma.seoQuery
+          .aggregate({
+            where: { orgId, ...scope.seoQueryClause, date: period },
+            _sum: { clicks: true, impressions: true },
+          })
+          // Impressions with zero clicks is still real Search Console data.
+          .then((r) => (r._sum.clicks ?? 0) + (r._sum.impressions ?? 0))
+      : prisma.seoSnapshot
+          .aggregate({
+            where: { orgId, date: period },
+            _sum: { totalClicks: true, totalImpressions: true },
+          })
+          .then((r) => (r._sum.totalClicks ?? 0) + (r._sum.totalImpressions ?? 0)),
     prisma.chatbotConversation.count({
       where: {
         orgId,
@@ -2090,19 +2136,8 @@ async function buildDataSources(
     }),
   ]);
 
-  function status(
-    lastAt: Date | null | undefined,
-    hasCredentials: boolean,
-    hasDataInPeriod: boolean,
-  ): DataSourceStatus {
-    const fresh =
-      hasCredentials && lastAt != null && lastAt >= freshThreshold;
-    return {
-      connected: fresh,
-      lastSyncAt: lastAt ? lastAt.toISOString() : null,
-      hasDataInPeriod,
-    };
-  }
+  const status = (lastAt: Date | null | undefined, hasCredentials: boolean, hasDataInPeriod: boolean) =>
+    dataSourceStatus(lastAt, hasCredentials, hasDataInPeriod, freshThreshold);
 
   return {
     googleAds: status(
@@ -2118,12 +2153,12 @@ async function buildDataSources(
     ga4: status(
       ga4Integration?.lastSyncAt ?? null,
       ga4Integration != null,
-      (organicSessionsInPeriod._sum.organicSessions ?? 0) > 0,
+      organicSessionsInPeriod > 0,
     ),
     gsc: status(
       gscIntegration?.lastSyncAt ?? null,
       gscIntegration != null,
-      (gscClicksInPeriod._sum.totalClicks ?? 0) > 0,
+      gscClicksInPeriod > 0,
     ),
     appfolio: status(
       appfolioIntegration?.lastSyncAt ?? null,
@@ -2255,6 +2290,8 @@ async function buildContentStats(
           orgId,
           ...propertyClause,
           status: { in: IN_PROGRESS_DRAFT_STATUSES },
+          // A GENERATING row untouched for 24h is stalled, not in progress.
+          NOT: { status: DraftStatus.GENERATING, updatedAt: { lt: new Date(Date.now() - DRAFT_STALL_MS) } },
         },
         select: {
           id: true,

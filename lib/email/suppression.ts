@@ -75,16 +75,6 @@ export function buildEmailUnsubUrl(email: string): string {
   return `${base}/api/unsub/one-click?e=${e}&t=${t}`;
 }
 
-export function buildEmailUnsubBrowserUrl(email: string): string {
-  // Browser-friendly URL with a confirmation page rather than the
-  // raw POST endpoint. Kept separate so we can change the page UX
-  // without breaking the one-click flow.
-  const base = getSiteUrl();
-  const e = encodeURIComponent(email.toLowerCase());
-  const t = emailUnsubToken(email);
-  return `${base}/unsub/email?e=${e}&t=${t}`;
-}
-
 export async function isEmailSuppressed(
   email: string | string[],
 ): Promise<boolean> {

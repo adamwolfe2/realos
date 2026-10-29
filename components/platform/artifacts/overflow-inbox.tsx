@@ -152,7 +152,9 @@ export function OverflowInbox() {
   const [rows, setRows] = useState<Inquiry[]>(() =>
     POOL.slice(0, VISIBLE_ROWS).map((p, i) => ({
       ...p,
-      id: i,
+      // Newest on top: ids descend so the next fresh row (top id + 1)
+      // never collides with a row still on screen.
+      id: VISIBLE_ROWS - 1 - i,
       ago: i === 0 ? "just now" : `${i}m`,
     })),
   );

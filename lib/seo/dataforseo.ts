@@ -290,49 +290,6 @@ export type KeywordSearchVolume = {
   cpc: number | null;
 };
 
-async function fetchKeywordVolumeUncached(input: {
-  keywords: string[];
-  locationCode?: number;
-}): Promise<CallResult<KeywordSearchVolume[]>> {
-  if (input.keywords.length === 0) {
-    return { ok: true, data: [], costUsd: 0 };
-  }
-  const result = await call<KeywordSearchVolume[]>(
-    "/keywords_data/google_ads/search_volume/live",
-    [
-      {
-        keywords: input.keywords.slice(0, 1000),
-        location_code: input.locationCode ?? 2840,
-      },
-    ],
-    `keywords.volume[${input.keywords.length}]`,
-  );
-  return result;
-}
-
-export async function fetchKeywordVolume(input: {
-  keywords: string[];
-  locationCode?: number;
-}): Promise<CallResult<KeywordSearchVolume[]>> {
-  if (input.keywords.length === 0) {
-    return { ok: true, data: [], costUsd: 0 };
-  }
-  const sortedKeywords = [...input.keywords].sort();
-  const cached = unstable_cache(
-    async () => fetchKeywordVolumeUncached(input),
-    [
-      "dataforseo-keyword-volume",
-      sortedKeywords.join(","),
-      String(input.locationCode ?? 2840),
-    ],
-    {
-      revalidate: DATAFORSEO_LONG_TTL_SECONDS,
-      tags: [dataforseoCacheTag("keyword-volume")],
-    },
-  );
-  return cached();
-}
-
 // ---------------------------------------------------------------------------
 // Keyword suggestions — related keywords for a seed
 // ---------------------------------------------------------------------------
@@ -344,56 +301,6 @@ export type KeywordSuggestion = {
   competition: number | null;
   cpc: number | null;
 };
-
-async function fetchKeywordSuggestionsUncached(input: {
-  seed: string;
-  limit?: number;
-  locationCode?: number;
-}): Promise<CallResult<KeywordSuggestion[]>> {
-  const result = await call<
-    Array<{ items: Array<{ keyword_data: KeywordSuggestion }> }>
-  >(
-    "/dataforseo_labs/google/keyword_suggestions/live",
-    [
-      {
-        keyword: input.seed,
-        location_code: input.locationCode ?? 2840,
-        language_code: "en",
-        limit: Math.min(input.limit ?? 100, 1000),
-      },
-    ],
-    `keywords.suggest[${input.seed.slice(0, 32)}]`,
-  );
-  if (!("ok" in result) || !result.ok) {
-    return result as CallResult<KeywordSuggestion[]>;
-  }
-  return {
-    ok: true,
-    data: (result.data?.[0]?.items ?? []).map((i) => i.keyword_data),
-    costUsd: result.costUsd,
-  };
-}
-
-export async function fetchKeywordSuggestions(input: {
-  seed: string;
-  limit?: number;
-  locationCode?: number;
-}): Promise<CallResult<KeywordSuggestion[]>> {
-  const cached = unstable_cache(
-    async () => fetchKeywordSuggestionsUncached(input),
-    [
-      "dataforseo-keyword-suggestions",
-      input.seed,
-      String(input.limit ?? 100),
-      String(input.locationCode ?? 2840),
-    ],
-    {
-      revalidate: DATAFORSEO_LONG_TTL_SECONDS,
-      tags: [dataforseoCacheTag("keyword-suggestions")],
-    },
-  );
-  return cached();
-}
 
 // ---------------------------------------------------------------------------
 // Competitor domains — closest organic competitors for a target domain
@@ -762,34 +669,6 @@ export type HistoricalVolume = {
   history: Array<{ year: number; month: number; search_volume: number }>;
 };
 
-export async function fetchHistoricalSearchVolume(input: {
-  keywords: string[];
-  locationCode?: number;
-}): Promise<CallResult<HistoricalVolume[]>> {
-  if (input.keywords.length === 0) return { ok: true, data: [], costUsd: 0 };
-  const result = await call<
-    Array<{ items: Array<{ keyword: string; keyword_info: { history: HistoricalVolume["history"] } | null }> }>
-  >(
-    "/dataforseo_labs/google/historical_search_volume/live",
-    [
-      {
-        keywords: input.keywords.slice(0, 1000),
-        location_code: input.locationCode ?? 2840,
-        language_code: "en",
-      },
-    ],
-    `historical[${input.keywords.length}]`,
-  );
-  if (!("ok" in result) || !result.ok) {
-    return result as CallResult<HistoricalVolume[]>;
-  }
-  const items = (result.data?.[0]?.items ?? []).map((i) => ({
-    keyword: i.keyword,
-    history: i.keyword_info?.history ?? [],
-  }));
-  return { ok: true, data: items, costUsd: result.costUsd };
-}
-
 // ---------------------------------------------------------------------------
 // Business Data — Google My Business info. Local pack data, GBP rating +
 // review count + categories. ~$0.005/call.
@@ -807,31 +686,6 @@ export type GoogleBusinessInfo = {
   address: string | null;
   rank_absolute: number | null;
 };
-
-export async function fetchGoogleBusinessInfo(input: {
-  keyword: string;
-  locationCode?: number;
-}): Promise<CallResult<GoogleBusinessInfo[]>> {
-  const result = await call<Array<{ items: GoogleBusinessInfo[] }>>(
-    "/business_data/google/my_business_info/live",
-    [
-      {
-        keyword: input.keyword,
-        location_code: input.locationCode ?? 2840,
-        language_code: "en",
-      },
-    ],
-    `gbp[${input.keyword.slice(0, 32)}]`,
-  );
-  if (!("ok" in result) || !result.ok) {
-    return result as CallResult<GoogleBusinessInfo[]>;
-  }
-  return {
-    ok: true,
-    data: result.data?.[0]?.items ?? [],
-    costUsd: result.costUsd,
-  };
-}
 
 // ---------------------------------------------------------------------------
 // SERP API — local pack rankings. Returns the 3-result local pack for a
