@@ -7,6 +7,7 @@ import {
   BarChart3,
   MousePointerClick,
   Target,
+  ArrowRight,
 } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
@@ -20,6 +21,7 @@ import {
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-banner";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
+import { Logo, PageTitle, Panel, Pill, primaryButton } from "@/components/portal/overview/kit";
 import {
   fetchSeoActionRecommendations,
   fetchSeoSnapshots,
@@ -343,7 +345,7 @@ export default async function SeoPage({
   const rangeLabel = "Last 30 days vs prior 30 days";
 
   return (
-    <div className="space-y-3">
+    <div className="w-full space-y-5">
       {accessDenied ? <PropertyAccessDeniedBanner /> : null}
       {shouldAutoRefresh ? (
         <StaleOnLoadTrigger
@@ -354,40 +356,20 @@ export default async function SeoPage({
         />
       ) : null}
 
-      <PageHeader
+      <PageTitle
         title="SEO"
-        description="Organic search performance from Google Search Console. Hero metrics compare the last 30 days against the prior 30. The chart shows the full year so seasonality reads at a glance."
+        subtitle={`${propertyLabel ? `${propertyLabel.replace(/^sc-domain:/, "")} · ` : ""}Google Search Console · last 30 days vs the 30 before`}
         actions={
-          properties.length > 1 ? (
-            <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
-          ) : null
+          <>
+            {properties.length > 1 ? (
+              <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+            ) : null}
+            <a href="/portal/seo/agent" className={primaryButton}>
+              Open SEO agent <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            </a>
+          </>
         }
       />
-
-      {/* Agent discoverability banner — keep the affordance to jump into
-          the recommendations / live SERP / Lighthouse workspace where the
-          actionable work happens. */}
-      <a
-        href="/portal/seo/agent"
-        className="block rounded-[2px] border border-primary/30 bg-primary/[0.04] px-4 py-3 hover:border-primary/50 transition-colors group"
-      >
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="ls-eyebrow ls-eyebrow-accent mb-0.5">
-              SEO Agent
-            </p>
-            <p className="text-[13px] font-medium text-foreground">
-              Open the recommendations workspace
-            </p>
-            <p className="text-[12px] text-muted-foreground mt-0.5">
-              Live SERP rankings, Lighthouse audits, AI recommendations, and the content drafter all in one screen.
-            </p>
-          </div>
-          <span className="shrink-0 text-[11px] font-mono text-primary group-hover:translate-x-0.5 transition-transform">
-            Open →
-          </span>
-        </div>
-      </a>
 
       <SeoOverviewClient
         source={sourceLabel}
@@ -421,8 +403,8 @@ export default async function SeoPage({
         topPages={topPages}
       />
 
-      <SectionCard label="Connected sources">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <Panel title="Sources" flush>
+        <div className="divide-y divide-[var(--t-divider)]">
           <ProviderManageCard
             title="Google Search Console"
             provider="GSC"
@@ -444,8 +426,13 @@ export default async function SeoPage({
             status={ga4Integration?.status ?? null}
           />
         </div>
-        <SetupHelp />
-      </SectionCard>
+        <details className="border-t border-[var(--t-divider)] px-4 py-3">
+          <summary className="cursor-pointer text-[12.5px] font-medium text-[var(--t-muted)] hover:text-[var(--t-ink)]">
+            How to create a Google service account
+          </summary>
+          <SetupHelp />
+        </details>
+      </Panel>
     </div>
   );
 }
@@ -583,76 +570,35 @@ function ProviderManageCard({
   lastSyncError: string | null;
   status: string | null;
 }) {
-  return (
-    <div className="rounded-[2px] border border-border bg-muted/20 p-4 space-y-3">
-      <div className="flex items-baseline justify-between gap-3">
-        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-        <span
-          className={
-            connected
-              ? "ls-eyebrow ls-eyebrow-accent"
-              : "ls-eyebrow"
-          }
-        >
-          {connected ? "Connected" : "Not connected"}
-        </span>
-      </div>
-      {connected ? (
-        <>
-          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-            <Detail label="Property" value={propertyIdentifier ?? "—"} mono />
-            <Detail
-              label="Service account"
-              value={serviceAccountEmail ?? "—"}
-              mono
-            />
-            <Detail
-              label="Last sync"
-              value={
-                lastSyncAt
-                  ? formatDistanceToNow(lastSyncAt, { addSuffix: true })
-                  : "Never"
-              }
-            />
-            <Detail label="Status" value={status ?? "Idle"} />
-          </dl>
-          {lastSyncError ? (
-            <p className="text-[11px] text-destructive rounded-[2px] border border-destructive/30 bg-destructive/10 p-3">
-              {lastSyncError}
-            </p>
-          ) : null}
-          <div className="pt-1">
-            <DisconnectSeoForm provider={provider} />
-          </div>
-        </>
-      ) : (
+  if (!connected) {
+    return (
+      <div className="space-y-3 px-4 py-3">
+        <div className="flex items-center gap-2.5">
+          <Logo slug={provider === "GSC" ? "gsc" : "ga4"} size={16} />
+          <span className="flex-1 text-[13px] font-medium text-[var(--t-ink)]">{title}</span>
+          <Pill tone="neutral">Not connected</Pill>
+        </div>
         <ConnectSeoForm provider={provider} />
-      )}
-    </div>
-  );
-}
-
-function Detail({
-  label,
-  value,
-  mono,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-}) {
+      </div>
+    );
+  }
+  const healthy = !lastSyncError && status !== "ERROR";
   return (
-    <div>
-      <dt className="ls-eyebrow">
-        {label}
-      </dt>
-      <dd
-        className={`mt-0.5 text-foreground break-all ${
-          mono ? "font-mono text-[11px]" : "text-xs"
-        }`}
-      >
-        {value}
-      </dd>
+    <div className="px-4 py-3">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <Logo slug={provider === "GSC" ? "gsc" : "ga4"} size={16} />
+        <span className="text-[13px] font-medium text-[var(--t-ink)]">{title}</span>
+        <span className="min-w-0 flex-1 truncate font-mono text-[12px] text-[var(--t-muted)]">
+          {propertyIdentifier ?? "—"}
+          {serviceAccountEmail ? ` · ${serviceAccountEmail}` : ""}
+        </span>
+        <span className="text-[12px] text-[var(--t-muted)]">
+          {lastSyncAt ? `Synced ${formatDistanceToNow(lastSyncAt, { addSuffix: true })}` : "Never synced"}
+        </span>
+        <Pill tone={healthy ? "good" : "bad"}>{healthy ? "Connected" : "Sync error"}</Pill>
+        <DisconnectSeoForm provider={provider} />
+      </div>
+      {lastSyncError ? <p className="mt-1.5 pl-[26px] text-[12px] text-[#b91c1c]">{lastSyncError}</p> : null}
     </div>
   );
 }
@@ -685,10 +631,7 @@ function SeoValueProp({
 
 function SetupHelp() {
   return (
-    <div className="mt-5 rounded-[2px] border border-border bg-muted/20 p-4 text-xs leading-relaxed text-muted-foreground space-y-2">
-      <p className="font-semibold text-foreground">
-        How to create a Google service account
-      </p>
+    <div className="mt-2 text-xs leading-relaxed text-muted-foreground">
       <ol className="list-decimal list-inside space-y-1.5">
         <li>Open the Google Cloud Console and create or select a project.</li>
         <li>

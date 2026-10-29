@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
-import { PageHeader, SectionCard } from "@/components/admin/page-header";
-import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
+import { MetricStrip, Metric, PageTitle, Panel, Pill, Row } from "@/components/portal/overview/kit";
 import { AlertBanner } from "@/components/portal/ui/alert-banner";
-import { Building2, DollarSign, Layers } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { packageName } from "@/lib/billing/features";
 import { BillingPortalButton } from "./billing-portal-button";
 import { getStripeClient, isStripeConfigured } from "@/lib/stripe/config";
@@ -320,18 +319,22 @@ export default async function BillingPage({
           ? "scale"
           : null;
 
+  const planLabel = org.subscriptionTier
+    ? (packageName(org.subscriptionTier) ?? humanizeEnum(org.subscriptionTier))
+    : "—";
+  const statusTone =
+    org.subscriptionStatus === "ACTIVE"
+      ? "good"
+      : org.subscriptionStatus === "PAST_DUE"
+        ? "bad"
+        : "warn";
+
   return (
-    // max-w-5xl, not 3xl: at 3xl the four KPI tiles were ~170px wide and
-    // every label truncated ("MONTHLY RETA…", "AD SPEND MAR…").
-    <div className="space-y-8 max-w-5xl">
-      <PageHeader
+    <div className="w-full space-y-5">
+      <PageTitle
         title="Billing"
-        // Norman bug #106: the previous description read like a SaaS
-        // feature checklist ("Subscription tier, monthly recurring
-        // modules, ad spend, and Stripe portal access"). Reworded to
-        // be calmer and more institutional — the page is for review,
-        // not selling.
-        description="Review your current plan, line items, and Stripe portal access."
+        subtitle={`${planLabel} plan · ${marketablePropertyCount.toLocaleString()} ${marketablePropertyCount === 1 ? "property" : "properties"}`}
+        actions={<BillingPortalButton />}
       />
 
       {canceled ? (
@@ -446,38 +449,28 @@ export default async function BillingPage({
         </section>
       ) : (
         <>
-        <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <KpiTile
-            label="Plan"
-            value={
-              org.subscriptionTier
-                ? (packageName(org.subscriptionTier) ?? "Custom")
-                : "—"
-            }
-            icon={<Layers className="h-3.5 w-3.5" />}
-          />
-          <KpiTile
+        <MetricStrip cols={4}>
+          <Metric label="Plan" value={planLabel} />
+          <Metric
             label="Monthly total"
             value={
               org.mrrCents != null && org.mrrCents > 0
                 ? `$${Math.round(org.mrrCents / 100).toLocaleString()}`
                 : "—"
             }
-            icon={<DollarSign className="h-3.5 w-3.5" />}
           />
-          <KpiTile
-            label="Properties"
-            value={marketablePropertyCount.toLocaleString()}
-            hint="Billed per property"
-            icon={<Building2 className="h-3.5 w-3.5" />}
+          <Metric label="Properties" value={marketablePropertyCount.toLocaleString()} note="Billed per property" />
+          <Metric
+            label="Next invoice"
+            value={currentPeriodEnd && !cancelAtPeriodEnd ? new Date(currentPeriodEnd).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
           />
-        </section>
+        </MetricStrip>
 
         {/* Single plan/invoice surface — subscription meta as
             hairline-divided rows, with the Stripe line items folded in
             below rather than stacked as a second card. */}
-        <SectionCard label="Plan & invoice">
-          <div className="divide-y divide-[var(--hair)]">
+        <Panel title="Plan & invoice" flush>
+          <div className="divide-y divide-[var(--t-divider)]">
             <PlanRow
               label="Plan"
               value={
@@ -498,21 +491,11 @@ export default async function BillingPage({
                 value={`$${Math.round(monthlySpendCents / 100).toLocaleString()}/mo · ${Math.round((org.adSpendMarkupPct ?? 0) * 100)}% management`}
               />
             ) : null}
-            <PlanRow
-              label="Subscription status"
-              value={
-                org.subscriptionStatus
-                  ? humanizeEnum(org.subscriptionStatus)
-                  : "Pending"
-              }
-              tone={
-                org.subscriptionStatus === "ACTIVE"
-                  ? "success"
-                  : org.subscriptionStatus === "PAST_DUE"
-                    ? "warn"
-                    : undefined
-              }
-            />
+            <Row label="Subscription status">
+              <Pill tone={statusTone}>
+                {org.subscriptionStatus ? humanizeEnum(org.subscriptionStatus) : "Pending"}
+              </Pill>
+            </Row>
             <PlanRow
               label="Subscription started"
               value={
@@ -527,11 +510,11 @@ export default async function BillingPage({
                 value={new Date(currentPeriodEnd).toLocaleDateString()}
               />
             ) : null}
-            <PlanRow
-              label="Stripe customer"
-              value={org.stripeCustomerId ? "Connected" : "Not connected"}
-              tone={org.stripeCustomerId ? "success" : undefined}
-            />
+            <Row label="Stripe customer">
+              <Pill tone={org.stripeCustomerId ? "good" : "neutral"}>
+                {org.stripeCustomerId ? "Connected" : "Not connected"}
+              </Pill>
+            </Row>
           </div>
 
           {/* Line items — shows exactly what's on the subscription
@@ -539,7 +522,7 @@ export default async function BillingPage({
               never has to dig into Stripe to see what they're paying
               for. */}
           {lineItems.length > 0 ? (
-            <div className="mt-4 pt-4 border-t border-[var(--hair)]">
+            <div className="border-t border-[var(--t-divider)] px-4 py-3">
               <div className="flex items-baseline justify-between mb-1">
                 <h3 className="text-[12px] font-semibold text-foreground">
                   Subscription line items
@@ -580,7 +563,7 @@ export default async function BillingPage({
               </p>
             </div>
           ) : null}
-        </SectionCard>
+        </Panel>
         </>
       )}
 
@@ -608,15 +591,12 @@ export default async function BillingPage({
           live with us since April and this page mentioned it nowhere,
           while pitching them a website build directly underneath. */}
       {domains.length > 0 ? (
-        <SectionCard
-          label="Your website"
-          description="Domains we host and maintain for you under your plan."
-        >
-          <ul className="divide-y divide-[var(--hair)]">
+        <Panel title="Your website" aside="Hosted and maintained under your plan">
+          <ul className="divide-y divide-[var(--t-divider)]">
             {domains.map((d) => (
               <li
                 key={d.hostname}
-                className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0"
+                className="flex items-center justify-between gap-3 px-4 py-2.5"
               >
                 <div className="min-w-0">
                   <a
@@ -645,7 +625,7 @@ export default async function BillingPage({
               </li>
             ))}
           </ul>
-        </SectionCard>
+        </Panel>
       ) : null}
 
       {/* Website-build offer — Norman bug #106: the previous dual-card
@@ -662,59 +642,23 @@ export default async function BillingPage({
           customer whose site we built and maintain reads as software
           that doesn't know its own customer. */}
       {!hasLiveSite ? (
-        <section className="ls-card p-4 flex flex-wrap items-center justify-between gap-3">
+        <section className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--t-radius)] border border-[var(--t-border)] bg-[var(--t-card)] px-4 py-3 shadow-[var(--t-shadow)]">
           <div>
-            <p className="text-sm font-semibold text-foreground">
-              Want a custom marketing site built for you?
-            </p>
-            <p className="text-[12.5px] text-muted-foreground mt-0.5">
-              One-time engagement covering design, build, and launch on
-              your domain. Detailed scope + pricing on the marketplace.
-            </p>
+            <p className="text-[13.5px] font-semibold text-[var(--t-ink)]">Want a marketing site built for you?</p>
+            <p className="mt-0.5 text-[12.5px] text-[var(--t-muted)]">Design, build and launch on your domain. One-time.</p>
           </div>
-          <a
-            href="/portal/marketplace"
-            className="inline-flex items-center gap-1.5 rounded-none border border-border bg-background px-3 py-1.5 text-[12.5px] font-medium text-foreground hover:bg-muted/50 transition-colors"
-          >
-            View options
-            <span aria-hidden="true">→</span>
+          <a href="/portal/marketplace" className="inline-flex items-center gap-1 text-[13px] font-medium text-[var(--t-accent)] hover:underline">
+            View options <ArrowRight className="h-3.5 w-3.5" aria-hidden />
           </a>
         </section>
       ) : null}
 
-      <section className="ls-card ls-card-pad space-y-3">
-        <h2 className="text-sm font-semibold">Stripe Customer Portal</h2>
-        <p className="text-sm text-muted-foreground">
-          Update payment method, download invoices, and view upcoming charges.
-          Opens a Stripe-hosted session and returns to this page when you're done.
-        </p>
-        <BillingPortalButton />
-      </section>
     </div>
   );
 }
 
-function PlanRow({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone?: "success" | "warn";
-}) {
-  const valueClass =
-    tone === "success"
-      ? "text-primary"
-      : tone === "warn"
-        ? "text-[#8a6d00]"
-        : "text-foreground";
-  return (
-    <div className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
-      <span className="text-[12px] text-muted-foreground">{label}</span>
-      <span className={`text-[13px] font-medium ${valueClass}`}>{value}</span>
-    </div>
-  );
+function PlanRow({ label, value }: { label: string; value: string }) {
+  return <Row label={label}>{value}</Row>;
 }
 
 // Pretty-print a Prisma enum value (ACTIVE → Active, PAST_DUE → Past due).

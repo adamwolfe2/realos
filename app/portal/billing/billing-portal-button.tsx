@@ -27,7 +27,7 @@ export function BillingPortalButton() {
         type="button"
         onClick={onClick}
         disabled={pending}
-        className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-4 py-2 text-xs font-semibold rounded-[2px] disabled:opacity-40"
+        className="inline-flex h-8 items-center gap-1.5 rounded-full bg-[var(--t-primary-bg)] px-3.5 text-[13px] font-medium text-[var(--t-primary-fg)] transition-colors hover:opacity-90 disabled:opacity-50"
       >
         {pending ? "Opening…" : "Open Stripe portal"}
       </button>

@@ -37,7 +37,7 @@ export function MarketingRoiTable({ rows }: { rows: RoiRow[] }) {
   }
 
   return (
-    <div className="overflow-x-auto -mx-5 px-5">
+    <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead className="ls-eyebrow">
           <tr>
