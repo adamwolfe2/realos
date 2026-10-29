@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { findNewlyStuckCrons, type CronRunRow } from "../lib/health/cron-streaks";
+import { findFailingCrons, splitChronic, type CronRunRow } from "../lib/health/cron-streaks";
 
-const NOW = new Date("2026-09-26T12:00:00Z");
+const NOW = new Date("2026-09-26T14:07:00Z");
 const ago = (min: number) => new Date(NOW.getTime() - min * 60_000);
 const run = (jobName: string, min: number, status: string): CronRunRow => ({
   jobName,
@@ -9,44 +9,35 @@ const run = (jobName: string, min: number, status: string): CronRunRow => ({
   status,
 });
 
-describe("findNewlyStuckCrons", () => {
-  it("alerts once a 5-min job has been partial for just over an hour", () => {
+describe("findFailingCrons", () => {
+  it("reports a job whose failing streak is over an hour old", () => {
     const runs = [run("seo-sync", 200, "ok")];
     for (let m = 65; m >= 0; m -= 5) runs.push(run("seo-sync", m, "partial"));
-    const out = findNewlyStuckCrons(runs, NOW);
-    expect(out).toHaveLength(1);
-    expect(out[0]).toMatchObject({ jobName: "seo-sync", status: "partial", badRuns: 14 });
+    expect(findFailingCrons(runs, NOW)).toMatchObject([{ jobName: "seo-sync", status: "partial", badRuns: 14 }]);
   });
 
-  it("stays quiet before the hour is up and after the first alert window", () => {
-    const young = [run("a", 120, "ok"), run("a", 30, "partial"), run("a", 0, "partial")];
-    const old = [run("b", 300, "ok"), run("b", 150, "partial"), run("b", 0, "partial")];
-    expect(findNewlyStuckCrons([...young, ...old], NOW)).toEqual([]);
+  it("ignores a streak younger than an hour", () => {
+    expect(findFailingCrons([run("a", 120, "ok"), run("a", 30, "partial")], NOW)).toEqual([]);
   });
 
-  it("stays quiet when the latest run recovered", () => {
-    const runs = [run("a", 200, "ok"), run("a", 90, "partial"), run("a", 5, "ok")];
-    expect(findNewlyStuckCrons(runs, NOW)).toEqual([]);
+  it("ignores a job whose latest run recovered", () => {
+    expect(findFailingCrons([run("a", 200, "ok"), run("a", 90, "partial"), run("a", 5, "ok")], NOW)).toEqual([]);
   });
 
-  it("ignores running rows and treats error/timeout as failing", () => {
-    const runs = [run("a", 200, "ok"), run("a", 70, "error"), run("a", 10, "timeout"), run("a", 0, "running")];
-    expect(findNewlyStuckCrons(runs, NOW)).toMatchObject([{ jobName: "a", status: "timeout", badRuns: 2 }]);
+  it("ignores in-flight running rows and treats stale running as timeout", () => {
+    const runs = [run("a", 200, "ok"), run("a", 70, "error"), run("a", 30, "running"), run("a", 0, "running")];
+    expect(findFailingCrons(runs, NOW)).toMatchObject([{ jobName: "a", status: "timeout", badRuns: 2 }]);
   });
+});
 
-  it("does not re-alert a streak that reaches the lookback edge, except the daily reminder", () => {
-    const runs = [run("daily", 1440, "partial"), run("daily", 90, "partial")];
-    expect(findNewlyStuckCrons(runs, NOW)).toEqual([]);
-    const reminderAt = new Date("2026-09-26T14:07:00Z");
-    const atReminder = [
-      { jobName: "daily", startedAt: new Date(reminderAt.getTime() - 1440 * 60_000), status: "partial" },
-      { jobName: "daily", startedAt: new Date(reminderAt.getTime() - 90 * 60_000), status: "partial" },
-    ];
-    expect(findNewlyStuckCrons(atReminder, reminderAt)).toMatchObject([{ jobName: "daily", badRuns: 2 }]);
-  });
-
-  it("treats a run stuck in 'running' past 20 min as a timeout (killed at maxDuration)", () => {
-    const runs = [run("appfolio", 200, "ok"), run("appfolio", 65, "running"), run("appfolio", 5, "running")];
-    expect(findNewlyStuckCrons(runs, NOW)).toMatchObject([{ jobName: "appfolio", status: "timeout", badRuns: 1 }]);
+describe("splitChronic", () => {
+  it("keeps jobs with a clean run this week, drops ones broken all week", () => {
+    const failing = findFailingCrons(
+      [run("flaky", 120, "error"), run("broken", 120, "error")],
+      NOW,
+    );
+    const { fresh, chronic } = splitChronic(failing, new Set(["flaky"]));
+    expect(fresh.map((s) => s.jobName)).toEqual(["flaky"]);
+    expect(chronic.map((s) => s.jobName)).toEqual(["broken"]);
   });
 });

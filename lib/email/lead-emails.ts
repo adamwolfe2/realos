@@ -54,64 +54,6 @@ async function safeSend(opts: {
   }
 }
 
-export async function sendLeadAutoReplyEmail(input: {
-  to: string;
-  firstName?: string | null;
-  orgName: string;
-  fromEmail?: string | null;
-  phone?: string | null;
-}): Promise<SendResult> {
-  if (!isValidEmail(input.to)) return { ok: false, error: "Invalid recipient" };
-
-  const greeting = input.firstName?.trim()
-    ? `Hi ${escape(input.firstName.trim())},`
-    : "Hi,";
-  const greetingText = input.firstName?.trim()
-    ? `Hi ${input.firstName.trim()},`
-    : "Hi,";
-  const bodyHtml = `
-    <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">${greeting}</p>
-    <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
-      Thanks for reaching out to ${escape(input.orgName)}. Our leasing team will follow up
-      within one business day with next steps, a list of available units, and tour times.
-    </p>
-    ${
-      input.phone
-        ? `<p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
-      Can't wait? Call us at <strong>${escape(input.phone)}</strong>.
-    </p>`
-        : ""
-    }
-    <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
-      In the meantime, feel free to keep browsing floor plans and amenities on our site.
-    </p>
-  `;
-  const html = buildBaseHtml({
-    headline: `Thanks for applying to ${input.orgName}`,
-    bodyHtml,
-  });
-
-  const text = [
-    greetingText,
-    "",
-    `Thanks for reaching out to ${input.orgName}. Our leasing team will follow up within one business day with next steps, a list of available units, and tour times.`,
-    ...(input.phone ? ["", `Can't wait? Call us at ${input.phone}.`] : []),
-    "",
-    "In the meantime, feel free to keep browsing floor plans and amenities on our site.",
-    "",
-    input.orgName,
-  ].join("\n");
-
-  return safeSend({
-    to: input.to,
-    from: input.fromEmail ?? FROM_EMAIL,
-    subject: `${input.orgName}, we got your application`,
-    html,
-    text,
-    replyTo: input.fromEmail ?? FROM_EMAIL,
-  });
-}
-
 export async function notifyTenantOfLeadEmail(input: {
   to: string;
   orgName: string;
