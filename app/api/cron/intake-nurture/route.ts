@@ -184,6 +184,8 @@ export async function GET(req: NextRequest) {
         results,
       }),
       recordsProcessed: sent + archived,
+      errorCount: results.filter((r) => r.error).length,
+      errorSummary: results.filter((r) => r.error).slice(0, 5).map((r) => `${r.id}: ${r.error}`).join("; "),
     };
   });
 }

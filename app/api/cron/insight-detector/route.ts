@@ -48,6 +48,14 @@ export async function GET(req: NextRequest) {
         })),
       }),
       recordsProcessed,
+      errorCount: summaries.reduce(
+        (n, s) => n + s.detectorResults.filter((r) => r.error).length,
+        0,
+      ),
+      errorSummary: summaries
+        .flatMap((s) => s.detectorResults.filter((r) => r.error).map((r) => `${s.orgId}/${r.detector}: ${r.error}`))
+        .slice(0, 5)
+        .join("; "),
     };
   });
 }
