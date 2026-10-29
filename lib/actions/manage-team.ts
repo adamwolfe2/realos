@@ -372,19 +372,23 @@ export async function removeUserFromOrgAsAgency(
   }
   await revokePendingInvitations(user.email);
 
-  await prisma.user.delete({ where: { id: user.id } });
-
-  await prisma.auditEvent.create({
-    data: auditPayload(
-      { ...scope, orgId: user.orgId } as ScopedContext,
-      {
-        action: AuditAction.DELETE,
-        entityType: "User",
-        entityId: user.id,
-        description: `Removed ${user.email} (${user.role}) from tenant`,
-      }
-    ),
-  });
+  // One transaction: the DELETE/User audit row is the durable "removed"
+  // record that stops a removed owner re-binding (lib/auth/provision.ts).
+  await prisma.$transaction([
+    prisma.user.delete({ where: { id: user.id } }),
+    prisma.auditEvent.create({
+      data: auditPayload(
+        { ...scope, orgId: user.orgId } as ScopedContext,
+        {
+          action: AuditAction.DELETE,
+          entityType: "User",
+          entityId: user.id,
+          description: `Removed ${user.email} (${user.role}) from tenant`,
+          diff: { removedEmail: user.email.toLowerCase() },
+        }
+      ),
+    }),
+  ]);
 
   revalidatePath(`/admin/clients/${user.orgId}`);
   return { ok: true };
@@ -482,16 +486,19 @@ export async function removeUserFromOrgAsClient(
   }
   await revokePendingInvitations(target.email);
 
-  await prisma.user.delete({ where: { id: target.id } });
-
-  await prisma.auditEvent.create({
-    data: auditPayload(scope, {
-      action: AuditAction.DELETE,
-      entityType: "User",
-      entityId: target.id,
-      description: `Removed ${target.email} (${target.role}) from team`,
+  // One transaction, same reason as removeUserFromOrgAsAgency above.
+  await prisma.$transaction([
+    prisma.user.delete({ where: { id: target.id } }),
+    prisma.auditEvent.create({
+      data: auditPayload(scope, {
+        action: AuditAction.DELETE,
+        entityType: "User",
+        entityId: target.id,
+        description: `Removed ${target.email} (${target.role}) from team`,
+        diff: { removedEmail: target.email.toLowerCase() },
+      }),
     }),
-  });
+  ]);
 
   revalidatePath("/portal/settings");
   return { ok: true };

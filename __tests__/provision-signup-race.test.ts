@@ -8,7 +8,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const h = vi.hoisted(() => ({
   db: {
     user: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
-    organization: { findUnique: vi.fn() },
+    organization: { findUnique: vi.fn(), findFirst: vi.fn() },
   },
   provision: vi.fn(),
 }));
@@ -40,6 +40,7 @@ describe("provisionUserForClerk create race", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     h.db.organization.findUnique.mockResolvedValue(null);
+    h.db.organization.findFirst.mockResolvedValue(null); // no owner-invite org
   });
 
   it("returns the winner's row when create loses a P2002 race", async () => {
