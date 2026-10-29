@@ -73,8 +73,8 @@ export function VerticalLanding({
 
           <ul className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {pains.map((p, i) => (
-              <Reveal key={p.title} delay={i * 80}>
-                <li
+              <Reveal as="li" key={p.title} delay={i * 80}>
+                <div
                   className="p-7 h-full"
                   style={{
                     backgroundColor: "#ffffff",
@@ -105,7 +105,7 @@ export function VerticalLanding({
                   >
                     {p.body}
                   </p>
-                </li>
+                </div>
               </Reveal>
             ))}
           </ul>
