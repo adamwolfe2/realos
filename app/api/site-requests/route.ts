@@ -55,8 +55,19 @@ export async function POST(req: Request) {
   }
   const data = parsed.data;
 
-  // Optional session — public form doesn't require one.
-  const scope = await getScope().catch(() => null);
+  // Optional session — public form doesn't require one. getScope() returns
+  // null when signed out and throws only on a real lookup failure; saving
+  // then would drop a signed-in client's org link, so fail and let them retry.
+  let scope: Awaited<ReturnType<typeof getScope>>;
+  try {
+    scope = await getScope();
+  } catch (err) {
+    console.error("[site-requests] scope lookup failed", err);
+    return NextResponse.json(
+      { ok: false, error: "Could not verify your account. Please try again." },
+      { status: 503 },
+    );
+  }
   const linkedOrgId = scope && !scope.isAgency ? scope.orgId : null;
 
   // Capture request metadata for attribution / forensics.

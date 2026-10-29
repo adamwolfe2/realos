@@ -25,8 +25,8 @@ vi.mock("@/lib/rate-limit", () => ({
 
 import { POST } from "@/app/api/webhooks/resend/route";
 
-function signed(type: string, to: string) {
-  const body = JSON.stringify({ type, data: { to } });
+function signed(type: string, to: string, extra: Record<string, unknown> = {}) {
+  const body = JSON.stringify({ type, data: { to, ...extra } });
   const id = "msg_eng1";
   const ts = Math.floor(Date.now() / 1000);
   const key = Buffer.from(WEBHOOK_SECRET.replace(/^whsec_/, ""), "base64");
@@ -105,5 +105,25 @@ describe("POST /api/webhooks/resend: engagement mapping", () => {
     await POST(signed("email.clicked", "a@example.com"));
     const orgs = h.db.auditEvent.create.mock.calls.map((c) => c[0].data.orgId);
     expect(orgs).toEqual(["o1", "o2"]);
+  });
+
+  it("keeps one tenant's email content out of other tenants' audit rows", async () => {
+    h.db.lead.findMany.mockResolvedValue([
+      { id: "l1", orgId: "o1" },
+      { id: "l2", orgId: "o2" },
+    ]);
+    await POST(
+      signed("email.opened", "a@example.com", {
+        subject: "Org A private offer",
+        from: "Org A <a@leasestack.co>",
+        email_id: "em_1",
+      }),
+    );
+    expect(h.db.auditEvent.create).toHaveBeenCalledTimes(2);
+    for (const [arg] of h.db.auditEvent.create.mock.calls) {
+      const diff = JSON.stringify(arg.data.diff);
+      expect(diff).not.toContain("Org A");
+      expect(diff).toContain("em_1");
+    }
   });
 });
