@@ -14,21 +14,20 @@ export type SourceTile = {
   id: SourceId;
   name: string;
   line: string;
-  state: "connected" | "waiting" | "error" | "off";
+  state: "connected" | "error" | "off";
   stateText: string;
 };
 
 export type ManagedIds = {
   /** Our GA4/GSC service account, from GOOGLE_SERVICE_ACCOUNT_JSON. */
   googleEmail: string | null;
-  /** Our Google Ads manager (MCC) ID, formatted 123-456-7890. */
-  googleAdsManagerId: string | null;
-  /** Our Meta Business Manager ID. */
-  metaBusinessId: string | null;
+  /** Read-only OAuth sign-in is configured on this deploy. */
+  googleAdsOAuth: boolean;
+  metaAdsOAuth: boolean;
 };
 
 const LOGO: Record<SourceId, string> = { appfolio: "appfolio", ga4: "ga4", gsc: "gsc", "google-ads": "google-ads", "meta-ads": "meta-ads" };
-const TONE: Record<SourceTile["state"], Tone> = { connected: "good", waiting: "warn", error: "bad", off: "neutral" };
+const TONE: Record<SourceTile["state"], Tone> = { connected: "good", error: "bad", off: "neutral" };
 
 const INPUT =
   "h-9 w-full rounded-[8px] border border-[var(--t-border)] bg-white px-3 text-[13.5px] text-[var(--t-ink)] placeholder:text-[var(--t-muted)] focus:border-[var(--t-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--t-accent)]/15";
@@ -78,8 +77,8 @@ export function ConnectSteps({ tiles, ids, propertyId, propertyName }: { tiles: 
             {tile.id === "appfolio" ? <AppfolioPath /> : null}
             {tile.id === "ga4" ? <GooglePath kind="GA4" email={ids.googleEmail} propertyId={propertyId} /> : null}
             {tile.id === "gsc" ? <GooglePath kind="GSC" email={ids.googleEmail} propertyId={propertyId} /> : null}
-            {tile.id === "google-ads" ? <GoogleAdsPath managerId={ids.googleAdsManagerId} propertyName={propertyName} waiting={tile.state === "waiting"} /> : null}
-            {tile.id === "meta-ads" ? <MetaPath businessId={ids.metaBusinessId} propertyName={propertyName} waiting={tile.state === "waiting"} /> : null}
+            {tile.id === "google-ads" ? <AdsPath platform="google" available={ids.googleAdsOAuth} propertyId={propertyId} connected={tile.state === "connected"} /> : null}
+            {tile.id === "meta-ads" ? <AdsPath platform="meta" available={ids.metaAdsOAuth} propertyId={propertyId} connected={tile.state === "connected"} /> : null}
           </div>
         </div>
       ) : null}
@@ -224,66 +223,36 @@ function GooglePath({ kind, email, propertyId }: { kind: "GA4" | "GSC"; email: s
   );
 }
 
-function useRequest(slug: string, message: string) {
-  const router = useRouter();
-  const [pending, start] = useTransition();
-  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
-  function send() {
-    start(async () => {
-      try {
-        const res = await fetch("/api/tenant/integration-requests", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ integrationSlug: slug, message }),
-        });
-        const json = (await res.json().catch(() => ({}))) as { error?: string };
-        if (!res.ok) throw new Error(json.error ?? `Request failed (${res.status})`);
-        setResult({ ok: true, text: "Got it. We'll accept the request and confirm here, usually within one business day." });
-        router.refresh();
-      } catch (err) {
-        console.error("[setup] access request failed", err);
-        setResult({ ok: false, text: err instanceof Error ? err.message : "Request failed" });
-      }
-    });
-  }
-  return { pending, result, send };
-}
+// Read-only by design: the customer signs in with their own Google or Meta
+// login and picks an ad account. We only read campaigns, spend, results and
+// ads; we never create, change or pause anything (Adam, 2026-10-29). Meta
+// asks for ads_read only. Spec: plans/ads-read-only/slice-plan.md.
+const ADS = {
+  google: {
+    name: "Google",
+    start: "/api/oauth/google-ads/start",
+    access: "Use the Google login that can see your Google Ads account. Google's screen lists its standard Ads permission because Google has no read-only option; we still only read.",
+  },
+  meta: {
+    name: "Facebook",
+    start: "/api/oauth/meta-ads/start",
+    access: "Use the Facebook login that has access to your ad account in Business settings.",
+  },
+} as const;
 
-function GoogleAdsPath({ managerId, propertyName, waiting }: { managerId: string | null; propertyName: string; waiting: boolean }) {
-  const req = useRequest("google-ads", `Partner access sent for ${propertyName}. Please accept the manager link and confirm.`);
+function AdsPath({ platform, available, propertyId, connected }: { platform: keyof typeof ADS; available: boolean; propertyId: string | null; connected: boolean }) {
+  const p = ADS[platform];
+  if (!available) return <Muted>Ad account sign-in is being set up on our side. Your LeaseStack contact will let you know when this opens.</Muted>;
+  const qs = new URLSearchParams({ returnTo: "/portal/setup", ...(propertyId ? { propertyId } : {}) });
   return (
     <Steps>
-      <Step n={1} title="Copy our manager account ID">
-        {managerId ? <CopyValue value={managerId} /> : <Muted>Your LeaseStack contact will send our manager ID.</Muted>}
-        <Muted>We run your campaigns from our Google Ads manager account. You keep ownership and billing.</Muted>
+      <Step n={1} title={`Sign in with ${p.name}`}>
+        <Muted>We only read. We pull your campaigns, spend, results and ad creatives so you can see what's working. We never create, change or pause your ads, and you can disconnect any time.</Muted>
+        <Muted>{p.access} An account owner or admin in LeaseStack needs to do this.</Muted>
+        <a href={`${p.start}?${qs.toString()}`} className={PRIMARY}>{connected ? "Reconnect" : `Sign in with ${p.name}`}</a>
       </Step>
-      <Step n={2} title="Link it in Google Ads">
-        <Muted>Admin, then Access and security, then Managers, then the + button. Paste the ID and send the request.</Muted>
-        <a href="https://ads.google.com/aw/accountaccess/managers" target="_blank" rel="noreferrer" className="inline-block text-[12.5px] font-medium text-[var(--t-accent)] hover:underline">Open Google Ads</a>
-      </Step>
-      <Step n={3} title="Tell us it's sent">
-        <button type="button" onClick={req.send} disabled={req.pending || waiting} className={PRIMARY}>{waiting ? "Waiting for us to accept" : req.pending ? "Sending..." : "Done, check access"}</button>
-        {req.result ? <Result {...req.result} /> : null}
-      </Step>
-    </Steps>
-  );
-}
-
-function MetaPath({ businessId, propertyName, waiting }: { businessId: string | null; propertyName: string; waiting: boolean }) {
-  const req = useRequest("meta-ads", `Partner access granted for ${propertyName}. Please confirm the ad account, Page and pixel are shared.`);
-  return (
-    <Steps>
-      <Step n={1} title="Copy our Business ID">
-        {businessId ? <CopyValue value={businessId} /> : <Muted>Your LeaseStack contact will send our Business ID.</Muted>}
-        <Muted>We run your ads as a partner. You keep ownership of the ad account, Page and pixel.</Muted>
-      </Step>
-      <Step n={2} title="Add us as a partner">
-        <Muted>Business settings, then Partners, then Add, then Give a partner access to your assets. Paste the ID, then share your ad account (manage campaigns), Facebook Page and pixel.</Muted>
-        <a href="https://business.facebook.com/settings/partners" target="_blank" rel="noreferrer" className="inline-block text-[12.5px] font-medium text-[var(--t-accent)] hover:underline">Open Business settings</a>
-      </Step>
-      <Step n={3} title="Tell us it's shared">
-        <button type="button" onClick={req.send} disabled={req.pending || waiting} className={PRIMARY}>{waiting ? "Waiting for us to accept" : req.pending ? "Sending..." : "Done, check access"}</button>
-        {req.result ? <Result {...req.result} /> : null}
+      <Step n={2} title="Pick your ad account">
+        <Muted>After you sign in, choose the ad account for this property. Your results show up on the Ads page within a few minutes, with the last 30 days filled in.</Muted>
       </Step>
     </Steps>
   );

@@ -116,6 +116,23 @@ export function normalizeCustomerId(input: string): string {
 // OAuth connect button starts working as soon as W2's UI flips it on.
 // ---------------------------------------------------------------------------
 
+// login-customer-id for an OAuth connection. The picker always writes the
+// loginCustomerId key when it binds an account: the parent manager's ID, or
+// null for an account the customer owns directly. That null is a decision,
+// not a gap: falling back to our agency MCC there sends a header Google
+// rejects with USER_PERMISSION_DENIED for every customer who connected their
+// own account. The env fallback only covers rows bound before the key existed.
+export function oauthLoginCustomerId(
+  metadata: unknown,
+  envFallback: string | null,
+): string | null {
+  const m = metadata && typeof metadata === "object" ? (metadata as Record<string, unknown>) : null;
+  if (m && "loginCustomerId" in m) {
+    return typeof m.loginCustomerId === "string" && m.loginCustomerId ? m.loginCustomerId : null;
+  }
+  return envFallback;
+}
+
 export async function resolveGoogleAdsCredentials(
   orgId: string,
   account: Pick<AdAccount, "credentialsEncrypted">,
@@ -147,17 +164,12 @@ export async function resolveGoogleAdsCredentials(
     //   2. GOOGLE_ADS_LOGIN_CUSTOMER_ID env — legacy global agency MCC.
     //      Stays as a fallback for the BYO-credentials path.
     //   3. null — leaf customers without an MCC need no header.
-    const metadata = (oauth.metadata as Record<string, unknown> | null) ?? null;
-    const metadataLoginCustomerId =
-      metadata && typeof metadata.loginCustomerId === "string"
-        ? metadata.loginCustomerId
-        : null;
     return {
       developerToken,
-      loginCustomerId:
-        metadataLoginCustomerId ??
-        process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID ??
-        null,
+      loginCustomerId: oauthLoginCustomerId(
+        oauth.metadata,
+        process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID ?? null,
+      ),
       refreshToken: oauth.refreshToken,
       oauthClientId,
       oauthClientSecret,

@@ -89,7 +89,7 @@ export const FEATURE_CATALOG: FeatureDef[] = [
   {
     key: "moduleGoogleAds",
     name: "Google Ads",
-    copy: "Search + Performance Max campaigns with ROAS reporting.",
+    copy: "Your Google Ads results in one view: spend, leads, cost per lead and top ads.",
     icon: "BarChart3",
     monthlyCents: 9900,
     tier: "GROWTH",
@@ -97,7 +97,7 @@ export const FEATURE_CATALOG: FeatureDef[] = [
   {
     key: "moduleMetaAds",
     name: "Meta Ads",
-    copy: "Facebook + Instagram campaigns with pixel retargeting.",
+    copy: "Your Facebook and Instagram ad results: spend, leads and top creatives.",
     icon: "BarChart3",
     monthlyCents: 9900,
     tier: "GROWTH",
