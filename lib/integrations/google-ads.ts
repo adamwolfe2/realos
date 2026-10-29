@@ -576,6 +576,149 @@ export async function fetchGoogleAdsDailyMetrics(
   }).filter((m) => m.externalCampaignId && m.date);
 }
 
+// ---------------------------------------------------------------------------
+// Per-ad creatives + per-ad daily metrics (ad_group_ad). Read-only.
+// Image assets for display/PMax are asset resource names, not URLs; the
+// gallery shows Google ads as text cards for now.
+// ---------------------------------------------------------------------------
+
+export type GoogleAdCreative = {
+  externalAdId: string;
+  externalCampaignId: string | null;
+  name: string;
+  status: string;
+  format: "image" | "video" | "carousel" | "text";
+  thumbnailUrl: string | null;
+  imageUrl: string | null;
+  videoId: string | null;
+  headline: string | null;
+  body: string | null;
+  ctaType: string | null;
+  landingUrl: string | null;
+};
+
+export type GoogleAdDailyMetric = {
+  externalAdId: string;
+  date: string;                          // YYYY-MM-DD
+  impressions: number;
+  clicks: number;
+  spendCents: number;
+  conversions: number;
+};
+
+type GoogleAdText = { text?: string };
+
+export async function fetchGoogleAdsAds(
+  creds: GoogleAdsCredentials,
+  customerId: string
+): Promise<GoogleAdCreative[]> {
+  const rows = await searchStream(creds, {
+    customerId,
+    query: `
+      SELECT
+        ad_group_ad.ad.id,
+        ad_group_ad.ad.name,
+        ad_group_ad.ad.type,
+        ad_group_ad.status,
+        ad_group_ad.ad.final_urls,
+        ad_group_ad.ad.responsive_search_ad.headlines,
+        ad_group_ad.ad.responsive_search_ad.descriptions,
+        ad_group_ad.ad.responsive_display_ad.headlines,
+        ad_group_ad.ad.responsive_display_ad.descriptions,
+        ad_group_ad.ad.responsive_display_ad.call_to_action_text,
+        ad_group_ad.ad.video_responsive_ad.headlines,
+        ad_group_ad.ad.video_responsive_ad.descriptions,
+        campaign.id
+      FROM ad_group_ad
+      WHERE ad_group_ad.status != 'REMOVED'
+    `,
+  });
+
+  return rows.map((raw) => {
+    const r = raw as {
+      adGroupAd?: {
+        status?: string;
+        ad?: {
+          id?: string;
+          name?: string;
+          type?: string;
+          finalUrls?: string[];
+          responsiveSearchAd?: { headlines?: GoogleAdText[]; descriptions?: GoogleAdText[] };
+          responsiveDisplayAd?: { headlines?: GoogleAdText[]; descriptions?: GoogleAdText[]; callToActionText?: string };
+          videoResponsiveAd?: { headlines?: GoogleAdText[]; descriptions?: GoogleAdText[] };
+        };
+      };
+      campaign?: { id?: string };
+    };
+    const ad = r.adGroupAd?.ad ?? {};
+    const type = ad.type ?? "";
+    const copy = ad.responsiveSearchAd ?? ad.responsiveDisplayAd ?? ad.videoResponsiveAd;
+    const headline = copy?.headlines?.[0]?.text ?? null;
+    const format: GoogleAdCreative["format"] = type.includes("VIDEO")
+      ? "video"
+      : type.includes("DISPLAY") || type.includes("IMAGE")
+        ? "image"
+        : "text";
+    return {
+      externalAdId: ad.id ?? "",
+      externalCampaignId: r.campaign?.id ?? null,
+      name: ad.name || headline || `${type || "Ad"} ${ad.id ?? ""}`.trim(),
+      status: r.adGroupAd?.status ?? "UNKNOWN",
+      format,
+      thumbnailUrl: null,
+      imageUrl: null,
+      videoId: null,
+      headline,
+      body: copy?.descriptions?.[0]?.text ?? null,
+      ctaType: ad.responsiveDisplayAd?.callToActionText ?? null,
+      landingUrl: ad.finalUrls?.[0] ?? null,
+    };
+  }).filter((a) => a.externalAdId);
+}
+
+export async function fetchGoogleAdsAdDailyMetrics(
+  creds: GoogleAdsCredentials,
+  customerId: string,
+  startDate: Date,
+  endDate: Date
+): Promise<GoogleAdDailyMetric[]> {
+  const rows = await searchStream(creds, {
+    customerId,
+    query: `
+      SELECT
+        ad_group_ad.ad.id,
+        segments.date,
+        metrics.impressions,
+        metrics.clicks,
+        metrics.cost_micros,
+        metrics.conversions
+      FROM ad_group_ad
+      WHERE segments.date BETWEEN '${formatDate(startDate)}' AND '${formatDate(endDate)}'
+    `,
+  });
+
+  return rows.map((raw) => {
+    const r = raw as {
+      adGroupAd?: { ad?: { id?: string } };
+      segments?: { date?: string };
+      metrics?: {
+        impressions?: string | number;
+        clicks?: string | number;
+        costMicros?: string | number;
+        conversions?: string | number;
+      };
+    };
+    return {
+      externalAdId: r.adGroupAd?.ad?.id ?? "",
+      date: r.segments?.date ?? "",
+      impressions: Math.round(asNumber(r.metrics?.impressions)),
+      clicks: Math.round(asNumber(r.metrics?.clicks)),
+      spendCents: microsToCents(r.metrics?.costMicros ?? 0),
+      conversions: asNumber(r.metrics?.conversions),
+    };
+  }).filter((m) => m.externalAdId && m.date);
+}
+
 function formatDate(d: Date): string {
   const y = d.getUTCFullYear();
   const m = String(d.getUTCMonth() + 1).padStart(2, "0");

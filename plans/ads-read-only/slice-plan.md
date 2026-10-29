@@ -10,10 +10,12 @@ Adam: "We're not running their Google Ads or Meta Ads. We're simply connecting t
 ## Slices
 | # | Slice | Migration | Status |
 |---|-------|-----------|--------|
-| S1 | Setup panels use read-only OAuth; copy fixed (setup tiles, catalog); Google leaf accounts no longer get our MCC as login-customer-id | no | in_progress |
-| S2 | Per-ad sync: AdCreative (ad + creative: thumbnail, image, headline, body, CTA, URL, status) + AdCreativeMetricDaily; Meta /ads + insights level=ad, Google ad_group_ad | YES (additive) | pending, push needs Adam OK (preview build runs migrate deploy on prod DB) |
+| S1 | Setup panels use read-only OAuth; copy fixed (setup tiles, catalog); Google leaf accounts no longer get our MCC as login-customer-id | no | done (PR #212, awaiting merge) |
+| S2 | Per-ad sync: AdCreative (ad + creative: thumbnail, image, headline, body, CTA, URL, status) + AdCreativeMetricDaily; Meta /ads + insights level=ad, Google ad_group_ad | YES (additive, `20261029_add_ad_creatives`) | done 2026-10-29 (stacked on S1 branch); migration applies on merge to main only: vercel-build skips `migrate deploy` on preview |
 | S3 | /portal/ads creative gallery: thumbnails ranked by results (spend, CTR, CPC, leads, cost per lead), per platform | no | pending (after S2) |
 
 ## Notes
 - Meta creative image URLs are signed CDN links that expire; S2 refreshes them each sync and S3 falls back to a placeholder on load error.
 - Google: login-customer-id comes from the picker metadata. A bound leaf account stores `loginCustomerId: null`; that null must NOT fall back to GOOGLE_ADS_LOGIN_CUSTOMER_ID (our MCC 912-000-4237) or every direct customer's sync fails with permission denied.
+- S2: creative phase runs after the campaign phase inside `syncCreatives`; a creative-side API failure is a warning + failedWrites (watermark held), campaign data is kept and the run still reports ok. Google ads have no image URLs yet (display/PMax images are asset resource names); gallery shows them as text cards.
+- S2 known gap: `lib/billing/ad-retention-job.ts` does not roll up AdCreativeMetricDaily. Add when per-ad rows matter for storage (30-day window re-pulls, so growth is ads x days).

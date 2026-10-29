@@ -2,16 +2,24 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { AdPlatform, AuditAction, Prisma, type AdAccount } from "@prisma/client";
 import {
+  fetchGoogleAdsAdDailyMetrics,
+  fetchGoogleAdsAds,
   fetchGoogleAdsCampaigns,
   fetchGoogleAdsDailyMetrics,
   resolveGoogleAdsCredentials,
+  type GoogleAdCreative,
+  type GoogleAdDailyMetric,
   type GoogleAdsCampaign,
   type GoogleAdsDailyMetric,
 } from "./google-ads";
 import {
+  fetchMetaAdDailyMetrics,
+  fetchMetaAds,
   fetchMetaAdsCampaigns,
   fetchMetaAdsDailyMetrics,
   resolveMetaAdsCredentials,
+  type MetaAdCreative,
+  type MetaAdDailyMetric,
   type MetaAdsCampaign,
   type MetaAdsDailyMetric,
 } from "./meta-ads";
@@ -33,6 +41,8 @@ import {
 export type AdsSyncStats = {
   campaignsUpserted: number;
   metricRowsUpserted: number;
+  creativesUpserted: number;
+  creativeMetricRowsUpserted: number;
   warnings: string[];
   /** Campaign/metric writes that threw; any > 0 holds the watermark. */
   failedWrites: number;
@@ -57,6 +67,8 @@ export async function runAdsSyncForAccount(
   const stats: AdsSyncStats = {
     campaignsUpserted: 0,
     metricRowsUpserted: 0,
+    creativesUpserted: 0,
+    creativeMetricRowsUpserted: 0,
     warnings: [],
     failedWrites: 0,
   };
@@ -109,6 +121,8 @@ export async function runAdsSyncForAccount(
         diff: {
           campaignsUpserted: stats.campaignsUpserted,
           metricRowsUpserted: stats.metricRowsUpserted,
+          creativesUpserted: stats.creativesUpserted,
+          creativeMetricRowsUpserted: stats.creativeMetricRowsUpserted,
           warnings: stats.warnings,
           startDate: startDate.toISOString(),
           endDate: endDate.toISOString(),
@@ -160,6 +174,13 @@ async function syncGoogleAds(
     endDate
   );
   await upsertMetrics(account, metrics, stats);
+
+  await syncCreatives(
+    account,
+    () => fetchGoogleAdsAds(creds, customerId),
+    () => fetchGoogleAdsAdDailyMetrics(creds, customerId, startDate, endDate),
+    stats,
+  );
 }
 
 async function syncMetaAds(
@@ -185,6 +206,140 @@ async function syncMetaAds(
     endDate
   );
   await upsertMetrics(account, metrics, stats);
+
+  await syncCreatives(
+    account,
+    () => fetchMetaAds(creds, adAccountId),
+    () => fetchMetaAdDailyMetrics(creds, adAccountId, startDate, endDate),
+    stats,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Per-ad creatives. Runs after the campaign phase so a creative-side API
+// failure (new endpoint, missing permission on an old token) never costs
+// the campaign data: it is recorded as a warning + failed write, which
+// holds the watermark so the window is re-pulled next run.
+// ---------------------------------------------------------------------------
+
+type CreativeRecord = GoogleAdCreative | MetaAdCreative;
+type CreativeDailyMetric = GoogleAdDailyMetric | MetaAdDailyMetric;
+
+async function syncCreatives(
+  account: AdAccount,
+  fetchAds: () => Promise<CreativeRecord[]>,
+  fetchAdMetrics: () => Promise<CreativeDailyMetric[]>,
+  stats: AdsSyncStats,
+): Promise<void> {
+  try {
+    const ads = await fetchAds();
+    await upsertCreatives(account, ads, stats);
+    const metrics = await fetchAdMetrics();
+    await upsertCreativeMetrics(account, metrics, stats);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    stats.failedWrites += 1;
+    stats.warnings.push(`creatives: ${message}`);
+  }
+}
+
+async function upsertCreatives(
+  account: AdAccount,
+  ads: CreativeRecord[],
+  stats: AdsSyncStats,
+): Promise<void> {
+  const campaignRows = await prisma.adCampaign.findMany({
+    where: { adAccountId: account.id },
+    select: { id: true, externalCampaignId: true },
+  });
+  const campaignIdByExternal = new Map<string, string>();
+  for (const c of campaignRows) {
+    if (c.externalCampaignId) campaignIdByExternal.set(c.externalCampaignId, c.id);
+  }
+
+  const seenAt = new Date();
+  for (const ad of ads) {
+    const fields = {
+      campaignId: ad.externalCampaignId ? campaignIdByExternal.get(ad.externalCampaignId) ?? null : null,
+      name: ad.name,
+      status: ad.status,
+      format: ad.format,
+      thumbnailUrl: ad.thumbnailUrl,
+      imageUrl: ad.imageUrl,
+      videoId: ad.videoId,
+      headline: ad.headline,
+      body: ad.body,
+      ctaType: ad.ctaType,
+      landingUrl: ad.landingUrl,
+      lastSeenAt: seenAt,
+    };
+    try {
+      await prisma.adCreative.upsert({
+        where: {
+          adAccountId_externalAdId: { adAccountId: account.id, externalAdId: ad.externalAdId },
+        },
+        create: {
+          orgId: account.orgId,
+          adAccountId: account.id,
+          platform: account.platform,
+          externalAdId: ad.externalAdId,
+          ...fields,
+        },
+        update: fields,
+      });
+      stats.creativesUpserted += 1;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      stats.failedWrites += 1;
+      stats.warnings.push(`creative ${ad.externalAdId}: ${message}`);
+    }
+  }
+}
+
+async function upsertCreativeMetrics(
+  account: AdAccount,
+  metrics: CreativeDailyMetric[],
+  stats: AdsSyncStats,
+): Promise<void> {
+  const creativeRows = await prisma.adCreative.findMany({
+    where: { adAccountId: account.id },
+    select: { id: true, externalAdId: true },
+  });
+  const idByExternal = new Map(creativeRows.map((c) => [c.externalAdId, c.id]));
+
+  for (const m of metrics) {
+    const adCreativeId = idByExternal.get(m.externalAdId);
+    if (!adCreativeId) {
+      stats.warnings.push(`metrics for ad ${m.externalAdId}: no matching AdCreative row`);
+      continue;
+    }
+    const date = parseISODate(m.date);
+    if (!date) {
+      stats.warnings.push(`ad metrics row has invalid date: ${m.date}`);
+      continue;
+    }
+    const values = {
+      impressions: m.impressions,
+      clicks: m.clicks,
+      spendCents: m.spendCents,
+      conversions: m.conversions,
+      ctr: m.impressions > 0 ? m.clicks / m.impressions : 0,
+      cpcCents: m.clicks > 0 ? Math.round(m.spendCents / m.clicks) : 0,
+      costPerConversionCents: m.conversions > 0 ? Math.round(m.spendCents / m.conversions) : 0,
+    };
+    try {
+      await prisma.adCreativeMetricDaily.upsert({
+        where: { adCreativeId_date: { adCreativeId, date } },
+        create: { orgId: account.orgId, adAccountId: account.id, adCreativeId, date, ...values },
+        update: values,
+      });
+      stats.creativeMetricRowsUpserted += 1;
+    } catch (err) {
+      stats.failedWrites += 1;
+      const message = err instanceof Error ? err.message : "Unknown error";
+      stats.warnings.push(`ad metrics ad=${m.externalAdId} date=${m.date}: ${message}`);
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
