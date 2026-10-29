@@ -11,6 +11,7 @@ import { ProspectProfileSchema } from "@/lib/chatbot/extract-prospect-profile";
 import { Initial, Logo, Metric, Panel, Pill, change, type Tone } from "@/components/portal/overview/kit";
 import { AgentTrace, type Step } from "@/components/portal/overview/agent-trace";
 import { ConversationPreview } from "@/components/portal/overview/conversation-preview";
+import { patternReason } from "@/lib/chatbot/learning/pattern-labels";
 
 export const metadata: Metadata = { title: "Overview" };
 export const dynamic = "force-dynamic";
@@ -24,14 +25,6 @@ export const dynamic = "force-dynamic";
 const DAY = 86_400_000;
 const fmt = new Intl.NumberFormat("en-US");
 const pct = (n: number, d: number) => (d ? Math.round((n / d) * 100) : 0);
-
-const PATTERN: Record<string, string> = {
-  PRICING_QUESTION_NO_CAPTURE: "renters asked about price and left",
-  AVAILABILITY_QUESTION_NO_CAPTURE: "availability questions went unanswered",
-  TOUR_INTENT_NO_TOUR: "tour requests never booked",
-  APPLICATION_HELP_NEEDED: "prospects got stuck on the application",
-  BOT_FALLBACK_PATTERN: "the chatbot could not answer",
-};
 
 const SOURCES = [
   { slug: "google-ads", label: "Google Ads" },
@@ -166,7 +159,7 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
       }];
     })(),
     ...knowledge.map((k): Step => ({
-      key: `k-${k.id}`, at: k.createdAt, kind: "drafted", title: `after ${k.affectedCount} chats where ${PATTERN[k.patternType] ?? "the answer was missing"}`,
+      key: `k-${k.id}`, at: k.createdAt, kind: "drafted", title: `after ${k.affectedCount} chats where ${patternReason(k.patternType)}`,
       property: k.property?.name, thought: k.suggestedText, tag: { text: "Needs approval", tone: "ai" }, action: { id: k.id, kind: "knowledge" },
     })),
     ...site.map((s): Step => ({

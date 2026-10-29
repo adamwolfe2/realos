@@ -22,6 +22,7 @@ import { SourceMark } from "@/components/portal/source-mark";
 import { Logo } from "@/components/portal/overview/kit";
 import { loadFixEvidence, type FixEvidence } from "@/lib/chatbot/learning/evidence";
 import { cn } from "@/lib/utils";
+import { patternTitle } from "@/lib/chatbot/learning/pattern-labels";
 import { RunLearningButton } from "./run-learning-button";
 import { RecommendationActions } from "./recommendation-actions";
 import { barPct } from "@/lib/charts/bar-width";
@@ -190,7 +191,7 @@ export default async function ChatbotInsightsPage({
                   <QueueRow
                     key={sg.id}
                     marks={<SourceMark source="CHATBOT" size={22} />}
-                    meta={`${sentenceCase(sg.patternType)} · learned from ${sg.affectedCount} chats`}
+                    meta={`${patternTitle(sg.patternType)} · learned from ${sg.affectedCount} chats`}
                     body={sg.suggestedText}
                     evidence={evidenceFor(sg.sourceCaseIds)}
                     actions={<RecommendationActions id={sg.id} kind="knowledge" />}
@@ -320,11 +321,6 @@ export default async function ChatbotInsightsPage({
       </div>
     </div>
   );
-}
-
-function sentenceCase(raw: string): string {
-  const t = raw.replaceAll("_", " ").toLowerCase();
-  return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
 function QueueGroup({
