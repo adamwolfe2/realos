@@ -12,7 +12,7 @@ Adam: "We're not running their Google Ads or Meta Ads. We're simply connecting t
 |---|-------|-----------|--------|
 | S1 | Setup panels use read-only OAuth; copy fixed (setup tiles, catalog); Google leaf accounts no longer get our MCC as login-customer-id | no | done (PR #212, awaiting merge) |
 | S2 | Per-ad sync: AdCreative (ad + creative: thumbnail, image, headline, body, CTA, URL, status) + AdCreativeMetricDaily; Meta /ads + insights level=ad, Google ad_group_ad | YES (additive, `20261029_add_ad_creatives`) | done 2026-10-29 (stacked on S1 branch); migration applies on merge to main only: vercel-build skips `migrate deploy` on preview |
-| S3 | /portal/ads creative gallery: thumbnails ranked by results (spend, CTR, CPC, leads, cost per lead), per platform | no | pending (after S2) |
+| S3 | /portal/ads creative gallery: thumbnails ranked by results (spend, CTR, CPC, leads, cost per lead), per platform | no | done 2026-10-29 (app/portal/ads/ad-creative-gallery.tsx, "Your ads" panel); runtime check needs Adam on the Vercel preview (no local sign-in) |
 
 ## Notes
 - Meta creative image URLs are signed CDN links that expire; S2 refreshes them each sync and S3 falls back to a placeholder on load error.
