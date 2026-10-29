@@ -291,8 +291,8 @@ export function SplitSection({
             {bullets && bullets.length > 0 ? (
               <ul className="mt-6 space-y-3">
                 {bullets.map((b, i) => (
-                  <Reveal key={b} delay={200 + i * 60}>
-                    <li
+                  <Reveal as="li" key={b} delay={200 + i * 60}>
+                    <div
                       className="flex items-start gap-3"
                       style={{
                         fontFamily: "var(--font-sans)",
@@ -317,7 +317,7 @@ export function SplitSection({
                         </svg>
                       </span>
                       <span>{b}</span>
-                    </li>
+                    </div>
                   </Reveal>
                 ))}
               </ul>

@@ -17,7 +17,6 @@ const DEFAULT_PAGE_SIZE = 100;
 //   - /segments/{id}   — Studio product. No list-all (404 on /segments).
 // We probe both at validation time and remember the surface that worked.
 export type AlSurface = "audiences" | "segments";
-const AL_SURFACES_TO_PROBE: AlSurface[] = ["segments", "audiences"];
 
 export type AlMember = {
   // Stable identity, when present
@@ -112,83 +111,9 @@ function pickString(
   return undefined;
 }
 
-function pickNumber(
-  item: Record<string, unknown>,
-  ...keys: string[]
-): number | undefined {
-  for (const k of keys) {
-    const v = item[k];
-    if (typeof v === "number" && Number.isFinite(v)) return v;
-    if (typeof v === "string" && v.trim() !== "") {
-      const n = Number(v);
-      if (Number.isFinite(n)) return n;
-    }
-  }
-  return undefined;
-}
-
 export type AlError = { ok: false; status: number; message: string };
 
 export type AlResult<T> = { ok: true; data: T } | AlError;
-
-export async function listAlSegments(
-  options: AlListSegmentsOptions = {},
-): Promise<AlResult<AlSegmentSummary[]>> {
-  const apiKey = resolveApiKey(options.apiKey);
-  if (!apiKey) {
-    return {
-      ok: false,
-      status: 500,
-      message: "Cursive API key not configured.",
-    };
-  }
-  const page = options.page ?? 1;
-  const pageSize = options.pageSize ?? DEFAULT_PAGE_SIZE;
-  // List endpoint only exists on /audiences. /segments has no list-all.
-  const res = await alFetch(
-    `/audiences?page=${page}&page_size=${pageSize}`,
-    apiKey,
-  );
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    return {
-      ok: false,
-      status: res.status,
-      message: `Segment list failed (${res.status}): ${body.slice(0, 200)}`,
-    };
-  }
-  const json = (await res.json().catch(() => ({}))) as unknown;
-  const items = extractItems(json);
-  const segments: AlSegmentSummary[] = items.map((item) => ({
-    id:
-      pickString(item, "id", "segment_id", "SEGMENT_ID", "ID") ??
-      pickString(item, "_id") ??
-      "",
-    name:
-      pickString(item, "name", "segment_name", "SEGMENT_NAME", "NAME") ??
-      "Untitled segment",
-    description:
-      pickString(
-        item,
-        "description",
-        "segment_description",
-        "DESCRIPTION",
-      ) ?? undefined,
-    memberCount: pickNumber(
-      item,
-      "member_count",
-      "memberCount",
-      "MEMBER_COUNT",
-      "size",
-      "count",
-      "total",
-    ),
-    createdAt: pickString(item, "created_at", "createdAt", "CREATED_AT"),
-    updatedAt: pickString(item, "updated_at", "updatedAt", "UPDATED_AT"),
-    raw: item,
-  }));
-  return { ok: true, data: segments.filter((s) => s.id) };
-}
 
 // Validate that a segment ID exists and is reachable with the current key.
 // AL doesn't expose a "GET /segments/{id}/metadata" endpoint, so we hit the
@@ -206,106 +131,6 @@ export type AlSegmentValidation = {
   // useful and store as the cached rawPayload.
   meta: Record<string, unknown>;
 };
-
-async function probeAlSurface(
-  surface: AlSurface,
-  segmentId: string,
-  apiKey: string,
-): Promise<
-  | { ok: true; data: AlSegmentValidation }
-  | { ok: false; status: number; message: string; notFound: boolean }
-> {
-  const res = await alFetch(
-    `/${surface}/${encodeURIComponent(segmentId)}?page=1&page_size=1`,
-    apiKey,
-  );
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    return {
-      ok: false,
-      status: res.status,
-      notFound: res.status === 404,
-      message:
-        res.status === 404
-          ? `Not found on /${surface}.`
-          : res.status === 401 || res.status === 403
-            ? `Auth rejected on /${surface} (${res.status}).`
-            : `Probe failed on /${surface} (${res.status}): ${body.slice(0, 120)}`,
-    };
-  }
-  const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-  // AL's /audiences/{id} returns HTTP 200 with body { status: "NOT_FOUND" }
-  // for unknown IDs. Treat that as a soft 404 so we keep probing the next
-  // surface.
-  if (json.status === "NOT_FOUND") {
-    return {
-      ok: false,
-      status: 404,
-      notFound: true,
-      message: `Not found on /${surface}.`,
-    };
-  }
-  const items = extractItems(json);
-  const meta: Record<string, unknown> = { _alSurface: surface };
-  for (const [k, v] of Object.entries(json)) {
-    if (Array.isArray(v)) continue;
-    meta[k] = v;
-  }
-  return {
-    ok: true,
-    data: {
-      segmentId,
-      reachable: true,
-      hasMembers: items.length > 0,
-      surface,
-      meta,
-    },
-  };
-}
-
-export async function validateAlSegmentId(
-  segmentId: string,
-  options: { apiKey?: string } = {},
-): Promise<AlResult<AlSegmentValidation>> {
-  const apiKey = resolveApiKey(options.apiKey);
-  if (!apiKey) {
-    return {
-      ok: false,
-      status: 500,
-      message: "Cursive API key not configured.",
-    };
-  }
-
-  let lastNonNotFound: { status: number; message: string } | null = null;
-  for (const surface of AL_SURFACES_TO_PROBE) {
-    const result = await probeAlSurface(surface, segmentId, apiKey);
-    if (result.ok) return { ok: true, data: result.data };
-    // Remember any non-404 outcome so we can surface a useful auth error
-    // even if neither surface knows the ID.
-    if (!result.notFound) {
-      lastNonNotFound = { status: result.status, message: result.message };
-    }
-  }
-  if (lastNonNotFound && lastNonNotFound.status !== 404) {
-    return {
-      ok: false,
-      status: lastNonNotFound.status,
-      message: lastNonNotFound.message,
-    };
-  }
-  return {
-    ok: false,
-    status: 404,
-    message: `Segment "${segmentId}" not found in Cursive on either /audiences or /segments. Double-check the ID and that your API key owns it.`,
-  };
-}
-
-export function alSurfaceFromMeta(
-  meta: Record<string, unknown> | null | undefined,
-): AlSurface {
-  const candidate = meta?._alSurface;
-  return candidate === "audiences" ? "audiences" : "segments";
-}
 
 export type AlSegmentMembersOptions = {
   apiKey?: string;
@@ -479,32 +304,3 @@ export type GeoFilter = {
   states?: string[];
   cities?: string[];
 };
-
-export function geoFilterFn(filter: GeoFilter): (m: AlMember) => boolean {
-  const zips = new Set(
-    (filter.zipCodes ?? []).map((z) => z.trim()).filter(Boolean),
-  );
-  const states = new Set(
-    (filter.states ?? []).map((s) => s.trim().toUpperCase()).filter(Boolean),
-  );
-  const cities = new Set(
-    (filter.cities ?? []).map((c) => c.trim().toLowerCase()).filter(Boolean),
-  );
-  const empty = !zips.size && !states.size && !cities.size;
-  if (empty) return () => true;
-  return (m) => {
-    if (zips.size) {
-      const zip = m.postalCode?.split("-")[0]?.trim();
-      if (!zip || !zips.has(zip)) return false;
-    }
-    if (states.size) {
-      const st = m.state?.trim().toUpperCase();
-      if (!st || !states.has(st)) return false;
-    }
-    if (cities.size) {
-      const ct = m.city?.trim().toLowerCase();
-      if (!ct || !cities.has(ct)) return false;
-    }
-    return true;
-  };
-}

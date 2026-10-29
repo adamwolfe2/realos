@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { verifyCronAuth } from "@/lib/cron/auth";
 import { recordCronRun } from "@/lib/health/cron-run";
 import { syncPropertyFromDataforSeo } from "@/lib/seo/sync-orchestrator";
+import { reapStuckScanJobs } from "@/lib/seo/scan-reaper";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -59,38 +60,16 @@ export async function GET(req: NextRequest) {
       },
       select: { id: true, attempts: true },
     });
-    let recycled = 0;
-    let abandoned = 0;
-    for (const j of stuck) {
-      if (j.attempts + 1 >= MAX_ATTEMPTS) {
-        await prisma.seoScanJob
-          .update({
-            where: { id: j.id },
-            data: {
-              status: "FAILED",
-              error: "Exceeded max attempts after stuck-RUNNING reaping",
-              finishedAt: new Date(),
-              attempts: { increment: 1 },
-            },
-          })
-          .catch(() => null);
-        abandoned += 1;
-      } else {
-        await prisma.seoScanJob
-          .update({
-            where: { id: j.id },
-            data: {
-              status: "QUEUED",
-              attempts: { increment: 1 },
-              startedAt: null,
-              progressStage: "Re-queued after timeout",
-              progressPct: 0,
-            },
-          })
-          .catch(() => null);
-        recycled += 1;
-      }
-    }
+    const { recycled, abandoned, errors: reaperErrors } = await reapStuckScanJobs(
+      prisma,
+      stuck,
+      MAX_ATTEMPTS,
+    );
+    // Spread into every return so a failed reap marks the run partial.
+    const reaperResult = () =>
+      reaperErrors.length
+        ? { errorCount: reaperErrors.length, errorSummary: reaperErrors.slice(0, 5).join("; ") }
+        : {};
 
     // -----------------------------------------------------------------------
     // 2. CLAIM the oldest QUEUED row atomically.
@@ -111,6 +90,7 @@ export async function GET(req: NextRequest) {
           durationMs: Date.now() - startedAt,
         }),
         recordsProcessed: recycled + abandoned,
+        ...reaperResult(),
       };
     }
 
@@ -135,6 +115,7 @@ export async function GET(req: NextRequest) {
           durationMs: Date.now() - startedAt,
         }),
         recordsProcessed: recycled + abandoned,
+        ...reaperResult(),
       };
     }
 
@@ -187,6 +168,7 @@ export async function GET(req: NextRequest) {
           stats.lighthouseAudits +
           stats.backlinkSummaries +
           stats.competitorRows,
+        ...reaperResult(),
       };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -231,6 +213,8 @@ export async function GET(req: NextRequest) {
           durationMs: Date.now() - startedAt,
         }),
         recordsProcessed: 0,
+        errorCount: 1 + reaperErrors.length,
+        errorSummary: [`${candidate.id}: ${message}`, ...reaperErrors].slice(0, 5).join("; "),
       };
     }
   });

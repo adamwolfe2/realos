@@ -88,7 +88,13 @@ export async function POST(req: NextRequest) {
           entityType: "EmailEvent",
           entityId: lead.id,
           description: `${type}, ${to}`,
-          diff: payload as unknown as Prisma.InputJsonValue,
+          // Only non-content fields: the matched leads can belong to other
+          // tenants, so the payload's subject/from must not land in their logs.
+          diff: {
+            type,
+            emailId: typeof payload.data?.email_id === "string" ? payload.data.email_id : null,
+            createdAt: typeof payload.created_at === "string" ? payload.created_at : null,
+          },
         },
       });
     }
@@ -99,6 +105,7 @@ export async function POST(req: NextRequest) {
 
 type ResendEvent = {
   type?: string;
+  created_at?: string;
   data?: {
     to?: string | string[];
     to_email?: string;

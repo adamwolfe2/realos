@@ -659,20 +659,20 @@ export default async function AuditViewerPage({
                 className="mt-1 max-w-xl text-lg font-semibold sm:text-xl"
                 style={{ color: "var(--color-foreground)" }}
               >
-                Want this monitored daily for your whole portfolio?
+                Want this tracked weekly for your whole portfolio?
               </h3>
               <p
                 className="mt-1.5 max-w-xl text-[13px] sm:text-sm"
                 style={{ color: "var(--gray-70)" }}
               >
-                {BRAND_NAME} runs this report every day for every property,
+                {BRAND_NAME} runs this report every week for every property,
                 watches the deltas, and tells your team what to do about it.
               </p>
-              <div className="mt-3">
-                <Link
-                  href="/book-demo"
-                  className="btn-primary"
-                >
+              <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+                <Link href="/sign-up" className="btn-primary">
+                  Start free trial
+                </Link>
+                <Link href="/book-demo" className="btn-secondary">
                   Talk to us
                 </Link>
               </div>

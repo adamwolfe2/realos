@@ -33,6 +33,8 @@ export function PlatformFooter() {
     {
       heading: "Get started",
       links: [
+        { label: "Free audit",       href: "/audit" },
+        { label: "Start free trial", href: "/sign-up" },
         { label: "Book a demo", href: getBookDemoHref(), external: isExternalBookDemoHref() },
         { label: "Sign in",     href: "/sign-in" },
       ],

@@ -49,10 +49,6 @@
       "schedule": "0 9 * * 1"
     },
     {
-      "path": "/api/cron/webhook-retry",
-      "schedule": "*/15 * * * *"
-    },
-    {
       "path": "/api/cron/appfolio-sync",
       "schedule": "*/30 * * * *"
     },

@@ -43,6 +43,9 @@ import {
   type OutcomeMatchMethod,
 } from "@/lib/leads/outcome-match-policy";
 
+// Lead.sourceDetail for leads this sync creates from an AppFolio application.
+export const APPFOLIO_APPLICATION_SOURCE = "AppFolio application";
+
 // ---------------------------------------------------------------------------
 // AppFolio REST sync worker.
 //
@@ -1766,7 +1769,7 @@ async function upsertAppfolioApplication(
         email: mapped.email,
         phone: mapped.phone,
         source: LeadSource.OTHER,
-        sourceDetail: "AppFolio application",
+        sourceDetail: APPFOLIO_APPLICATION_SOURCE,
         status: initialLeadStatusForApplication(mapped.status),
         desiredMoveIn: mapped.desiredMoveIn,
         propertyId,

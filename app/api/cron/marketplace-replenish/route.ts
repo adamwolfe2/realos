@@ -47,11 +47,19 @@ export async function GET(req: NextRequest) {
 
     const summaries: unknown[] = [];
     let totalUpserted = 0;
+    const failures: string[] = [];
 
     for (const source of sources) {
       try {
         const summary = await runSourceReplenish(source);
         totalUpserted += summary.upsertedCount;
+        // runSourceReplenish catches its own failures and reports them in
+        // the summary, so count those too or the run records "ok".
+        if (summary.status === "FAILED") {
+          failures.push(`${source.name}: ${summary.errorMessage ?? "failed"}`);
+        } else if (summary.failedCount > 0) {
+          failures.push(`${source.name}: ${summary.failedCount} member(s) failed`);
+        }
         summaries.push({
           sourceId: source.id,
           sourceName: source.name,
@@ -59,6 +67,7 @@ export async function GET(req: NextRequest) {
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
+        failures.push(`${source.name}: ${message}`);
         console.error(
           "marketplace replenish — source failed",
           source.id,
@@ -80,6 +89,8 @@ export async function GET(req: NextRequest) {
         summaries,
       }),
       recordsProcessed: totalUpserted,
+      errorCount: failures.length,
+      errorSummary: failures.slice(0, 5).join("; "),
     };
   });
 }

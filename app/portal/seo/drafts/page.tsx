@@ -11,6 +11,7 @@ import {
   DataTable,
   type DataTableColumn,
 } from "@/components/portal/ui/data-table";
+import { isStalledDraft, stalledDraftWhere } from "@/lib/seo/draft-stalled";
 
 export const metadata: Metadata = { title: "Content drafts" };
 export const dynamic = "force-dynamic";
@@ -89,7 +90,7 @@ export default async function PortalDraftsListPage({
     where.status = filter as DraftStatus;
   }
 
-  const [drafts, statusCounts] = await Promise.all([
+  const [drafts, statusCounts, stalledCount] = await Promise.all([
     prisma.contentDraft.findMany({
       where: where as never,
       orderBy: [{ createdAt: "desc" }],
@@ -105,6 +106,7 @@ export default async function PortalDraftsListPage({
         reviewedAt: true,
         reviewNotes: true,
         createdAt: true,
+        updatedAt: true,
         propertyId: true,
         property: { select: { name: true } },
       },
@@ -119,13 +121,23 @@ export default async function PortalDraftsListPage({
       },
       _count: { _all: true },
     }),
+    prisma.contentDraft.count({
+      where: {
+        ...tenantWhere(scope),
+        ...(scope.allowedPropertyIds
+          ? { propertyId: { in: scope.allowedPropertyIds } }
+          : {}),
+        ...stalledDraftWhere(),
+      },
+    }),
   ]);
 
   const countMap = new Map(statusCounts.map((s) => [s.status, s._count._all]));
   const activeCount =
     (countMap.get("GENERATING") ?? 0) +
     (countMap.get("PENDING_REVIEW") ?? 0) +
-    (countMap.get("CHANGES_REQUESTED") ?? 0);
+    (countMap.get("CHANGES_REQUESTED") ?? 0) -
+    stalledCount;
 
   type DraftRow = (typeof drafts)[number];
   const columns: DataTableColumn<DraftRow>[] = [
@@ -188,7 +200,7 @@ export default async function PortalDraftsListPage({
           <span
             className={`rounded-[2px] px-1.5 py-0.5 text-[10px] font-mono uppercase ${tone}`}
           >
-            {d.status.replace(/_/g, " ").toLowerCase()}
+            {isStalledDraft(d) ? "stalled" : d.status.replace(/_/g, " ").toLowerCase()}
           </span>
         );
       },

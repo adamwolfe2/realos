@@ -1,3 +1,10 @@
+import type { LeadSource } from "@prisma/client";
+import { PropertyGlance, type GlanceCard } from "@/components/portal/properties/property-glance";
+import { resolveWindow, pctChange } from "@/lib/dashboard/window";
+import { realAdAccountWhere } from "@/lib/integrations/real-ad-account";
+import { centsToUsdShort } from "@/lib/properties/queries";
+import { SourceMark } from "@/components/portal/source-mark";
+import { Logo } from "@/components/portal/overview/kit";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
@@ -28,11 +35,13 @@ export default async function PropertyDetail({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; view?: string }>;
+  searchParams: Promise<{ tab?: string; view?: string; range?: string; from?: string; to?: string }>;
 }) {
   const scope = await requireScope();
   const { id } = await params;
-  const { tab, view } = await searchParams;
+  const sp = await searchParams;
+  const { tab, view } = sp;
+  const win = resolveWindow(sp);
 
   // Market Intelligence section is gated behind moduleInsights. For
   // student-housing tenants like Telegraph Commons (renting per-bed)
@@ -159,9 +168,10 @@ export default async function PropertyDetail({
   // delta context — empty windows render as "—" so the operator never
   // sees "0% / 0%" noise. Wrapped in catch so a Prisma hiccup never
   // blocks the page render.
-  const now = new Date();
-  const thirty = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const sixty = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+  // The picker's window (default last 28 days) and the equal window before
+  // it, for growth deltas.
+  const windowStart = win.start;
+  const priorStart = win.priorStart;
 
   const [
     leadsCurrent,
@@ -169,13 +179,19 @@ export default async function PropertyDetail({
     convosCurrent,
     convosPrior,
     rating,
+    leadSources,
+    adSpendNow,
+    adSpendPrior,
   ] = await Promise.all([
     prisma.lead
       .count({
         where: {
           orgId: scope.orgId,
           propertyId: property.id,
-          createdAt: { gte: thirty, lte: now },
+          // firstSeenAt, not createdAt: an AppFolio backfill inserts months
+          // of history "now" and would inflate this (header said 20 while
+          // the funnel said 6). Same rule as getPropertyOverviewKpis.
+          firstSeenAt: { gte: windowStart, lte: win.end },
         },
       })
       .catch(() => 0),
@@ -184,7 +200,7 @@ export default async function PropertyDetail({
         where: {
           orgId: scope.orgId,
           propertyId: property.id,
-          createdAt: { gte: sixty, lt: thirty },
+          firstSeenAt: { gte: priorStart, lt: windowStart },
         },
       })
       .catch(() => 0),
@@ -193,7 +209,7 @@ export default async function PropertyDetail({
         where: {
           orgId: scope.orgId,
           propertyId: property.id,
-          createdAt: { gte: thirty, lte: now },
+          createdAt: { gte: windowStart, lte: win.end },
         },
       })
       .catch(() => 0),
@@ -202,7 +218,7 @@ export default async function PropertyDetail({
         where: {
           orgId: scope.orgId,
           propertyId: property.id,
-          createdAt: { gte: sixty, lt: thirty },
+          createdAt: { gte: priorStart, lt: windowStart },
         },
       })
       .catch(() => 0),
@@ -212,7 +228,89 @@ export default async function PropertyDetail({
         select: { googleAggRating: true, googleAggReviewCount: true },
       })
       .catch(() => null),
+    // Which tools sent leads lately: drives the logos on the Leads card.
+    prisma.lead
+      .groupBy({
+        by: ["source"],
+        where: { orgId: scope.orgId, propertyId: property.id, firstSeenAt: { gte: windowStart, lte: win.end } },
+        _count: { _all: true },
+        orderBy: { _count: { source: "desc" } },
+      })
+      .catch((err: unknown) => {
+        console.error("[portal/properties/[id]] lead source groupBy failed:", err);
+        return [] as Array<{ source: LeadSource; _count: { _all: number } }>;
+      }),
+    ...[windowStart, priorStart].map(async (from, i) => {
+      const agg = await prisma.adMetricDaily.aggregate({
+        where: {
+          orgId: scope.orgId,
+          date: i === 0 ? { gte: from, lte: win.end } : { gte: from, lt: windowStart },
+          campaign: { orgId: scope.orgId, propertyId: property.id },
+          adAccount: await realAdAccountWhere(scope.orgId),
+        },
+        _sum: { spendCents: true },
+      });
+      return agg._sum.spendCents ?? 0;
+    }),
   ]);
+
+  const PMS_LOGO: Partial<Record<string, string>> = {
+    APPFOLIO: "appfolio",
+    YARDI_BREEZE: "yardi-breeze",
+    YARDI_VOYAGER: "yardi-voyager",
+    BUILDIUM: "buildium",
+    ENTRATA: "entrata",
+    REALPAGE: "realpage",
+  };
+  const pmsLogo = PMS_LOGO[property.backendPlatform ?? ""];
+  const glanceCards: GlanceCard[] = [
+    {
+      tab: "leads",
+      title: "Leads",
+      value: leadsCurrent.toLocaleString("en-US"),
+      label: "new leads",
+      delta: pctChange(leadsCurrent, leadsPrior),
+      marks: leadSources.slice(0, 5).map((g) => <SourceMark key={g.source} source={g.source} size={24} />),
+    },
+    {
+      tab: "chatbot",
+      title: "Chatbot",
+      value: convosCurrent.toLocaleString("en-US"),
+      label: "conversations",
+      delta: pctChange(convosCurrent, convosPrior),
+      marks: <SourceMark source="CHATBOT" size={24} />,
+    },
+    {
+      tab: "marketing",
+      title: "Marketing",
+      value: adSpendNow > 0 ? centsToUsdShort(adSpendNow) : rating?.googleAggRating != null ? rating.googleAggRating.toFixed(1) : "$0",
+      label:
+        adSpendNow > 0
+          ? `ad spend${leadsCurrent > 0 ? ` · ${centsToUsdShort(Math.round(adSpendNow / leadsCurrent))} per lead` : ""}`
+          : rating?.googleAggRating != null
+            ? `Google rating${rating.googleAggReviewCount ? ` · ${rating.googleAggReviewCount} reviews` : ""}`
+            : "ad spend",
+      delta: adSpendNow > 0 ? pctChange(adSpendNow, adSpendPrior) : null,
+      // Spend going up is not good news on its own.
+      deltaNeutral: true,
+      marks: (
+        <>
+          <SourceMark source="ORGANIC" size={24} />
+          {showAdsTab ? <SourceMark source="GOOGLE_ADS" size={24} /> : null}
+          {showAdsTab ? <SourceMark source="META_ADS" size={24} /> : null}
+        </>
+      ),
+    },
+  ];
+  if (showOccupancyTab) {
+    glanceCards.push({
+      tab: "residents",
+      title: "Residents",
+      value: (property.totalUnits ?? 0).toLocaleString("en-US"),
+      label: "units · occupancy, renewals, work orders",
+      marks: pmsLogo ? <Logo slug={pmsLogo} size={18} /> : undefined,
+    });
+  }
 
   const fmtDelta = (cur: number, prior: number): {
     delta?: string;
@@ -265,13 +363,13 @@ export default async function PropertyDetail({
     hasData: boolean;
   }> = [
     {
-      label: "Leads · 30d",
+      label: "leads",
       value: leadsCurrent > 0 ? leadsCurrent.toLocaleString("en-US") : "—",
       ...fmtDelta(leadsCurrent, leadsPrior),
       hasData: leadsCurrent > 0,
     },
     {
-      label: "Conversations · 30d",
+      label: "conversations",
       value:
         convosCurrent > 0 ? convosCurrent.toLocaleString("en-US") : "—",
       ...fmtDelta(convosCurrent, convosPrior),
@@ -289,7 +387,7 @@ export default async function PropertyDetail({
       label: "Reputation",
       value:
         rating?.googleAggRating != null
-          ? `${rating.googleAggRating.toFixed(1)}★`
+          ? `${rating.googleAggRating.toFixed(1)} / 5`
           : "—",
       delta:
         rating?.googleAggReviewCount != null && rating.googleAggReviewCount > 0
@@ -357,6 +455,8 @@ export default async function PropertyDetail({
       <Suspense fallback={<PropertyTabsSkeleton />}>
       <PropertyTabs
         initialTab={tab ?? "overview"}
+        propertyName={property.name}
+        glance={<PropertyGlance cards={glanceCards} propertyPath={`/portal/properties/${property.id}`} windowLabel={win.label} windowQuery={win.query} />}
         showOccupancy={showOccupancyTab}
         showAds={showAdsTab}
         panels={{

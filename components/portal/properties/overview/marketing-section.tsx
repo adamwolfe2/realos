@@ -1,6 +1,5 @@
 import * as React from "react";
 import { centsToUsdShort } from "@/lib/properties/queries";
-import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { barPct } from "@/lib/charts/bar-width";
 
 // ---------------------------------------------------------------------------
@@ -193,17 +192,26 @@ export function MarketingSection({
           // (sidebar takes the rest), so it must size off its own
           // container, not the viewport — no lg: breakpoint here, or
           // 4-wide tiles cramp into ~165px and truncate their labels.
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {liveMetrics.map((m) => (
-              <KpiTile
-                key={m.label}
-                density="dense"
-                label={m.label}
-                value={m.value}
-                hint={m.hint}
-                href={m.cta?.href}
-              />
-            ))}
+          // Flat stat row inside the section: no card nested in a card.
+          <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-[repeat(auto-fit,minmax(140px,1fr))]">
+            {liveMetrics.map((m) => {
+              const body = (
+                <>
+                  <p className="text-[12px] text-muted-foreground">{m.label}</p>
+                  <p className="mt-0.5 text-[22px] font-semibold tracking-[-0.02em] text-foreground tabular-nums">
+                    {m.value}
+                  </p>
+                  <p className="text-[12px] text-muted-foreground">{m.hint}</p>
+                </>
+              );
+              return m.cta ? (
+                <a key={m.label} href={m.cta.href} className="block hover:opacity-80">
+                  {body}
+                </a>
+              ) : (
+                <div key={m.label}>{body}</div>
+              );
+            })}
           </div>
         );
       })()}

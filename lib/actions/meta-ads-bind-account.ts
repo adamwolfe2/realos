@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
@@ -133,10 +134,12 @@ export async function bindMetaAdsAccount(
     }),
   });
 
-  void runAdsSyncForAccount(adAccount.id, { fullBackfill: true }).catch(
-    (err) => {
+  // after() keeps the function alive until the backfill settles; a bare
+  // void promise is frozen once the action responds on Vercel.
+  after(() =>
+    runAdsSyncForAccount(adAccount.id, { fullBackfill: true }).catch((err) => {
       console.warn("[bindMetaAdsAccount] initial sync error", err);
-    },
+    }),
   );
 
   revalidatePath(PORTAL_INTEGRATIONS);

@@ -97,19 +97,6 @@ export function isWorkspaceReadOnly(
   );
 }
 
-// Soft-deadline gating: "we're going to lock this down in N days".
-// Useful for banners that read "your trial ends in 3 days, activate
-// now to keep these features" with a slightly stronger tone than
-// the standard countdown.
-export function trialEndsWithinDays(
-  org: TrialStatusInput,
-  days: number,
-): boolean {
-  const left = daysLeftInTrial(org);
-  if (left === null) return false;
-  return left > 0 && left <= days;
-}
-
 // Card on file: the trialing org has a live Stripe platform subscription that
 // will bill at trial end. The Stripe webhook writes currentPeriodEnd only when
 // a platform subscription exists, and cancelAtPeriodEnd means it won't bill.

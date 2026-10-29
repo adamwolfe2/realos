@@ -160,9 +160,15 @@ export async function GET(req: NextRequest) {
 
     // appBase kept to make it obvious in logs the cron wired the platform URL.
     const totalFired = results.reduce((sum, r) => sum + r.fired, 0);
+    const totalErrors = results.reduce((sum, r) => sum + r.errors, 0);
     return {
       result: NextResponse.json({ platform: appBase, results }),
       recordsProcessed: totalFired,
+      // Caught per-lead failures mark the run partial so alerting fires.
+      errorCount: totalErrors,
+      ...(totalErrors > 0
+        ? { errorSummary: results.filter((r) => r.errors > 0).map((r) => `${r.stage}: ${r.errors} failed`).join("; ") }
+        : {}),
     };
   });
 }

@@ -24,11 +24,16 @@ import { motion, useInView, useReducedMotion } from "framer-motion";
 // SSR ships just the static outline, so there is no hydration mismatch and
 // reduced-motion users (checked post-mount, where it's accurate) simply
 // never get the moving layer.
+//
+// 2026-10-28: Adam wanted it to visibly GLOW, PULSE and SCALE, not whisper.
+// The glint is now brand blue with a blur glow filter, and the whole word
+// breathes (scale + opacity, ~4s) while in view. Same in-view/reduced-motion
+// gating as the glint.
 // ---------------------------------------------------------------------------
 
 const VW = 1000;
 const VH = 165;
-const BAND_W = 280;
+const BAND_W = 320;
 
 const TEXT_PROPS = {
   x: VW / 2,
@@ -95,14 +100,35 @@ export function PixelWordmark() {
                 }
               />
             </mask>
+            <filter id="ls-glint-glow" x="-10%" y="-30%" width="120%" height="160%">
+              <feGaussianBlur stdDeviation="4" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
           </defs>
         ) : null}
 
-        {/* Base whisper outline — always rendered, including on the server. */}
+        <motion.g
+          style={{ transformBox: "fill-box", transformOrigin: "center" }}
+          animate={
+            shimmer && inView
+              ? { scale: [1, 1.025, 1], opacity: [0.8, 1, 0.8] }
+              : { scale: 1, opacity: 1 }
+          }
+          transition={
+            shimmer && inView
+              ? { duration: 4, repeat: Infinity, ease: "easeInOut" }
+              : { duration: 0 }
+          }
+        >
+        {/* Base outline — always rendered, including on the server. */}
         <text
           {...TEXT_PROPS}
-          stroke="#c9d4ea"
-          strokeWidth={1.25}
+          stroke="#aebfe6"
+          strokeWidth={1.4}
           vectorEffect="non-scaling-stroke"
         >
           LeaseStack
@@ -112,15 +138,17 @@ export function PixelWordmark() {
         {shimmer ? (
           <text
             {...TEXT_PROPS}
-            stroke="rgba(120, 150, 205, 0.85)"
-            strokeWidth={1.5}
+            stroke="#0f62fe"
+            strokeWidth={2}
             vectorEffect="non-scaling-stroke"
+            filter="url(#ls-glint-glow)"
             mask="url(#ls-glint-mask)"
             aria-hidden="true"
           >
             LeaseStack
           </text>
         ) : null}
+        </motion.g>
       </svg>
     </div>
   );

@@ -67,15 +67,6 @@ export async function getSnapshotSeries(
     .reverse(); // oldest → newest for charting
 }
 
-export async function getBenchmarkSnapshot(
-  _kind: "multifamily" | "commercial",
-): Promise<SignalSnapshot | null> {
-  // TODO(phase 2): seed a synthetic "average multifamily" / "average
-  // commercial" snapshot and return it here. Until then the UI falls back to
-  // its neutral state when this resolves to null.
-  return null;
-}
-
 // ── helpers ─────────────────────────────────────────────────────────────────
 
 type DailySignalRow = Awaited<

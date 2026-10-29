@@ -9,22 +9,18 @@ import {
 } from "@/lib/tenancy/property-filter";
 import { getChatbotAnalytics } from "@/lib/chatbot/conversation-analytics";
 import { loadChatbotLearningSummary } from "@/lib/chatbot/learning/run";
-import { PageHeader } from "@/components/admin/page-header";
-import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
-import { EmptyState } from "@/components/portal/ui/empty-state";
 import {
   AlertTriangle,
   CheckCircle2,
   Clock3,
   Lightbulb,
   ListChecks,
-  ListFilter,
-  MessageSquare,
-  TrendingUp,
-  UserCheck,
   Wrench,
 } from "lucide-react";
-import { formatDistanceToNowStrict } from "date-fns";
+import { format, formatDistanceToNowStrict } from "date-fns";
+import { SourceMark } from "@/components/portal/source-mark";
+import { Logo } from "@/components/portal/overview/kit";
+import { loadFixEvidence, type FixEvidence } from "@/lib/chatbot/learning/evidence";
 import { cn } from "@/lib/utils";
 import { RunLearningButton } from "./run-learning-button";
 import { RecommendationActions } from "./recommendation-actions";
@@ -72,8 +68,7 @@ export default async function ChatbotInsightsPage({
     }),
   ]);
 
-  const { totals, trend, topKeywords, topQuestions } = analytics;
-  const dailyConversations = trend.map((t) => t.conversations);
+  const { totals, topKeywords, topQuestions } = analytics;
   const maxKeyword = topKeywords[0]?.count ?? 1;
   const maxQuestion = topQuestions[0]?.count ?? 1;
   const hasData = totals.conversations > 0;
@@ -93,361 +88,345 @@ export default async function ChatbotInsightsPage({
     return `?${params.toString()}`;
   };
 
+  // The real conversations behind each fix (first two source chats each).
+  const evidenceIds = [
+    ...learning.knowledgeSuggestions.flatMap((k) => k.sourceCaseIds.slice(0, 2)),
+    ...learning.siteRecommendations.flatMap((r) => r.insight?.sourceCaseIds.slice(0, 2) ?? []),
+  ];
+  const evidence = await loadFixEvidence(scope.orgId, evidenceIds).catch((err: unknown) => {
+    console.error("[portal/conversations/insights] evidence load failed:", err);
+    return new Map<string, FixEvidence>();
+  });
+  const evidenceFor = (ids: string[] | undefined) =>
+    (ids ?? []).slice(0, 2).map((id) => evidence.get(id)).filter((e): e is FixEvidence => Boolean(e));
+
+  const c = learning.counts;
+  const queueCount =
+    c.openKnowledgeSuggestions + c.openSiteRecommendations + c.openTasks + c.openInsights;
+  const headline: Array<{ value: string; label: string; href?: string }> = [
+    { value: queueCount.toLocaleString(), label: queueCount === 1 ? "fix waiting" : "fixes waiting" },
+    { value: c.appliedLast30d.toLocaleString(), label: "applied this month" },
+    { value: totals.conversations.toLocaleString(), label: `chats in ${periodDays}d` },
+    { value: `${totals.captureRatePct}%`, label: "capture rate" },
+    { value: totals.avgMessages.toString(), label: "msgs per chat" },
+  ];
+  if (totals.needsTuning > 0) {
+    headline.push({
+      value: totals.needsTuning.toLocaleString(),
+      label: "need prompt tuning",
+      href: "/portal/conversations?flag=needs_prompt_tuning",
+    });
+  }
+
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Chatbot insights"
-        description="What prospects are asking, capture-rate trends, and the topics that come up most — the signal behind the transcripts."
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <RunLearningButton />
-            <Link
-              href="/portal/conversations"
-              className="text-[13px] font-semibold text-primary hover:underline"
-            >
-              ← All conversations
-            </Link>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1>Suggested fixes</h1>
+          <p className="mt-1 text-[13px] text-muted-foreground tabular-nums">
+            {headline.map((st, i) => {
+              const body = (
+                <>
+                  <span className="font-medium text-foreground">{st.value}</span> {st.label}
+                </>
+              );
+              return (
+                <span key={st.label}>
+                  {i > 0 ? " · " : null}
+                  {st.href ? (
+                    <Link href={st.href} className="hover:text-primary">
+                      {body}
+                    </Link>
+                  ) : (
+                    body
+                  )}
+                </span>
+              );
+            })}
+          </p>
+          <p className="mt-1 flex items-center gap-1.5 text-[12px] text-muted-foreground">
+            <RefreshStatusIcon status={latestRun?.status ?? null} />
+            {latestRun ? `Learned ${latestRunLabel} ${latestRunHint}` : "No learning pass yet · runs daily"}
+            {" · "}Approval on, nothing sends on its own
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center rounded-full bg-secondary p-0.5">
+            {PERIODS.map((p) => (
+              <Link
+                key={p.days}
+                href={periodQS(p.days)}
+                className={cn(
+                  "rounded-full px-3 py-1 text-[12px] font-medium transition-colors",
+                  p.days === periodDays
+                    ? "bg-card text-foreground shadow-[0_1px_2px_rgba(11,21,48,0.08)]"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {p.label}
+              </Link>
+            ))}
           </div>
-        }
-      />
-
-      {/* Period selector */}
-      <div className="flex items-center gap-1.5">
-        {PERIODS.map((p) => (
-          <Link
-            key={p.days}
-            href={periodQS(p.days)}
-            className={cn(
-              "rounded-[2px] px-3 py-1 text-[12px] font-semibold ring-1 ring-inset transition",
-              p.days === periodDays
-                ? "bg-primary text-primary-foreground ring-primary"
-                : "bg-card text-muted-foreground ring-border hover:ring-primary/40",
-            )}
-          >
-            {p.label}
-          </Link>
-        ))}
+          <RunLearningButton />
+        </div>
       </div>
 
-      {/* Top-line metrics */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiTile
-          label="Conversations"
-          value={totals.conversations.toLocaleString()}
-          hint={`${totals.lifetimeConversations.toLocaleString()} all-time`}
-          spark={dailyConversations}
-          chart="bars"
-          icon={<MessageSquare className="h-4 w-4" />}
-          variant="accent"
-        />
-        <KpiTile
-          label="Capture rate"
-          value={`${totals.captureRatePct}%`}
-          hint={`${totals.leadsCaptured.toLocaleString()} leads captured`}
-          gaugeValue={totals.captureRatePct / 100}
-          icon={<UserCheck className="h-4 w-4" />}
-        />
-        <KpiTile
-          label="Avg. messages"
-          value={totals.avgMessages.toString()}
-          hint="per conversation"
-          icon={<TrendingUp className="h-4 w-4" />}
-        />
-        <KpiTile
-          label="Needs prompt tuning"
-          value={totals.needsTuning.toLocaleString()}
-          hint="flagged conversations"
-          href="/portal/conversations?flag=needs_prompt_tuning"
-          icon={<Wrench className="h-4 w-4" />}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiTile
-          label="Follow-up tasks"
-          value={learning.counts.openTasks.toLocaleString()}
-          hint={`${learning.counts.highPriorityTasks.toLocaleString()} high priority · ${learning.counts.overdueTasks.toLocaleString()} overdue`}
-          icon={<ListChecks className="h-4 w-4" />}
-          variant="accent"
-        />
-        <KpiTile
-          label="Due today"
-          value={learning.counts.dueTodayTasks.toLocaleString()}
-          hint="AI follow-ups ready now"
-          icon={<Clock3 className="h-4 w-4" />}
-        />
-        <KpiTile
-          label="Conversation insights"
-          value={learning.counts.openInsights.toLocaleString()}
-          hint="objections and blockers"
-          icon={<Lightbulb className="h-4 w-4" />}
-        />
-        <KpiTile
-          label="Knowledge fixes"
-          value={learning.counts.openKnowledgeSuggestions.toLocaleString()}
-          hint="chatbot answers to improve"
-          icon={<Wrench className="h-4 w-4" />}
-        />
-        <KpiTile
-          label="Site recommendations"
-          value={learning.counts.openSiteRecommendations.toLocaleString()}
-          hint="copy and CTA gaps"
-          icon={<AlertTriangle className="h-4 w-4" />}
-        />
-        <KpiTile
-          label="Last learning run"
-          value={latestRunLabel}
-          hint={latestRunHint}
-          icon={<RefreshStatusIcon status={latestRun?.status ?? null} />}
-        />
-        <KpiTile
-          label="Approval mode"
-          value="On"
-          hint="no auto-send"
-          icon={<CheckCircle2 className="h-4 w-4" />}
-        />
-      </div>
-
-      {learning.counts.openTasks > 0 ||
-      learning.counts.openInsights > 0 ||
-      learning.counts.openKnowledgeSuggestions > 0 ||
-      learning.counts.openSiteRecommendations > 0 ? (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <section className="ls-card p-5">
-            <div className="mb-4 flex items-center gap-2">
-              <ListChecks className="h-4 w-4 text-muted-foreground" />
-              <h2 className="text-[13px] font-semibold text-foreground">
-                Drafted follow-up tasks
-              </h2>
-            </div>
-            {learning.recentTasks.length === 0 ? (
-              <p className="text-[12px] text-muted-foreground">
-                No open chatbot follow-ups yet.
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="space-y-6">
+        {/* The queue: every drafted fix in one list, grouped by kind. */}
+        <section className="ls-card overflow-hidden">
+          {queueCount === 0 ? (
+            <div className="p-10 text-center">
+              <Lightbulb className="mx-auto h-5 w-5 text-primary" />
+              <p className="mt-2 text-[14px] font-medium text-foreground">Nothing waiting</p>
+              <p className="mt-1 text-[13px] text-muted-foreground">
+                The agent drafts fixes from new conversations after each learning pass.
               </p>
-            ) : (
-              <ul className="space-y-3">
-                {learning.recentTasks.map((task) => {
-                  const leadName =
-                    [task.lead?.firstName, task.lead?.lastName]
-                      .filter(Boolean)
-                      .join(" ") || "Lead";
-                  return (
-                    <li key={task.id} className="rounded-[2px] border border-border p-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-[13px] font-semibold text-foreground">
-                            {leadName}
-                          </p>
-                          <p className="mt-1 line-clamp-2 text-[12px] leading-5 text-muted-foreground">
-                            {task.reasonSummary}
-                          </p>
-                        </div>
-                        <span className="ls-metric shrink-0 text-[11px] text-muted-foreground">
-                          P{task.priority}
-                        </span>
-                      </div>
-                      {task.drafts[0] ? (
-                        <p className="mt-2 line-clamp-2 rounded-[2px] bg-muted px-2 py-1.5 text-[12px] text-muted-foreground">
-                          {task.drafts[0].subject ? `${task.drafts[0].subject}: ` : ""}
-                          {task.drafts[0].body}
-                        </p>
-                      ) : null}
-                      {task.leadId ? (
+            </div>
+          ) : (
+            <>
+              <QueueGroup title="Chatbot answers" icon={<Wrench className="h-3.5 w-3.5" />} count={c.openKnowledgeSuggestions}>
+                {learning.knowledgeSuggestions.map((sg) => (
+                  <QueueRow
+                    key={sg.id}
+                    marks={<SourceMark source="CHATBOT" size={22} />}
+                    meta={`${sentenceCase(sg.patternType)} · learned from ${sg.affectedCount} chats`}
+                    body={sg.suggestedText}
+                    evidence={evidenceFor(sg.sourceCaseIds)}
+                    actions={<RecommendationActions id={sg.id} kind="knowledge" />}
+                  />
+                ))}
+              </QueueGroup>
+              <QueueGroup title="Website" icon={<AlertTriangle className="h-3.5 w-3.5" />} count={c.openSiteRecommendations}>
+                {learning.siteRecommendations.map((rec) => (
+                  <QueueRow
+                    key={rec.id}
+                    marks={<SiteRecMarks fromChats={Boolean(rec.insightId)} body={rec.suggestedBody} />}
+                    title={rec.suggestedTitle}
+                    body={rec.suggestedBody}
+                    evidence={evidenceFor(rec.insight?.sourceCaseIds)}
+                    actions={<RecommendationActions id={rec.id} kind="site" />}
+                  />
+                ))}
+              </QueueGroup>
+              <QueueGroup title="Objections" icon={<Lightbulb className="h-3.5 w-3.5" />} count={c.openInsights}>
+                {learning.topInsights.map((insight) => (
+                  <QueueRow
+                    key={insight.id}
+                    title={insight.title}
+                    meta={`${insight.affectedCount} chats`}
+                    body={insight.summary}
+                    actions={<RecommendationActions id={insight.id} kind="insight" />}
+                  />
+                ))}
+              </QueueGroup>
+              <QueueGroup title="Follow-ups" icon={<ListChecks className="h-3.5 w-3.5" />} count={c.openTasks}>
+                {learning.recentTasks.map((task) => (
+                  <QueueRow
+                    key={task.id}
+                    title={[task.lead?.firstName, task.lead?.lastName].filter(Boolean).join(" ") || "Lead"}
+                    meta={`P${task.priority}`}
+                    body={task.reasonSummary}
+                    actions={
+                      task.leadId ? (
                         <Link
                           href={`/portal/leads/${task.leadId}`}
-                          className="mt-2 inline-block text-[12px] font-semibold text-primary hover:underline"
+                          className="text-[12px] font-medium text-primary hover:underline"
                         >
-                          Review lead draft
+                          Review draft
                         </Link>
-                      ) : null}
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
-
-          <section className="ls-card p-5">
-            <div className="mb-4 flex items-center gap-2">
-              <Lightbulb className="h-4 w-4 text-muted-foreground" />
-              <h2 className="text-[13px] font-semibold text-foreground">
-                Objections and site gaps
-              </h2>
-            </div>
-            {learning.topInsights.length === 0 ? (
-              <p className="text-[12px] text-muted-foreground">
-                Run a learning pass to surface objections and site gaps.
-              </p>
-            ) : (
-              <ul className="space-y-3">
-                {learning.topInsights.map((insight) => (
-                  <li key={insight.id} className="rounded-[2px] border border-border p-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="text-[13px] font-semibold text-foreground">
-                        {insight.title}
-                      </p>
-                      <span className="ls-metric shrink-0 text-[11px] text-muted-foreground">
-                        {insight.affectedCount}×
-                      </span>
-                    </div>
-                    <p className="mt-1 line-clamp-3 text-[12px] leading-5 text-muted-foreground">
-                      {insight.summary}
-                    </p>
-                    <RecommendationActions id={insight.id} kind="insight" />
-                  </li>
+                      ) : null
+                    }
+                  />
                 ))}
-              </ul>
-            )}
-          </section>
+              </QueueGroup>
+            </>
+          )}
+        </section>
 
-          <section className="ls-card p-5">
-            <div className="mb-4 flex items-center gap-2">
-              <Wrench className="h-4 w-4 text-muted-foreground" />
-              <h2 className="text-[13px] font-semibold text-foreground">
-                Chatbot knowledge fixes
-              </h2>
+        {/* Self-healing record: fixes already live in the chatbot. */}
+        {learning.appliedKnowledge.length > 0 ? (
+          <section className="ls-card overflow-hidden">
+            <div className="flex items-center gap-2 bg-[var(--t-wash)] px-5 py-2.5 text-[12px] font-medium text-muted-foreground">
+              <CheckCircle2 className="h-3.5 w-3.5 text-[#16a34a]" />
+              Fixed and live in the chatbot
+              <span className="tabular-nums">{c.appliedLast30d} this month</span>
             </div>
-            {learning.knowledgeSuggestions.length === 0 ? (
-              <p className="text-[12px] text-muted-foreground">
-                No knowledge fixes waiting.
-              </p>
-            ) : (
-              <ul className="space-y-3">
-                {learning.knowledgeSuggestions.map((suggestion) => (
-                  <li key={suggestion.id} className="rounded-[2px] border border-border p-3">
-                    <p className="ls-eyebrow">
-                      {suggestion.patternType.replaceAll("_", " ")} · {suggestion.affectedCount} affected
+            <ul className="divide-y divide-border">
+              {learning.appliedKnowledge.map((k) => (
+                <li key={k.id} className="flex items-start gap-3 px-5 py-3">
+                  <SourceMark source="CHATBOT" size={22} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] text-foreground">{k.suggestedText}</p>
+                    <p className="mt-0.5 text-[12px] text-muted-foreground">
+                      {k.appliedAt ? `Applied ${format(k.appliedAt, "MMM d")} · ` : ""}learned from {k.affectedCount} chats
                     </p>
-                    <p className="mt-1 line-clamp-3 text-[12px] leading-5 text-foreground">
-                      {suggestion.suggestedText}
-                    </p>
-                    <RecommendationActions id={suggestion.id} kind="knowledge" />
-                  </li>
-                ))}
-              </ul>
-            )}
+                  </div>
+                  <span className="shrink-0 text-[12px] font-medium text-[#15803d]">Live</span>
+                </li>
+              ))}
+            </ul>
           </section>
-
-          <section className="ls-card p-5">
-            <div className="mb-4 flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-              <h2 className="text-[13px] font-semibold text-foreground">
-                Site improvement recommendations
-              </h2>
-            </div>
-            {learning.siteRecommendations.length === 0 ? (
-              <p className="text-[12px] text-muted-foreground">
-                No site recommendations waiting.
-              </p>
-            ) : (
-              <ul className="space-y-3">
-                {learning.siteRecommendations.map((rec) => (
-                  <li key={rec.id} className="rounded-[2px] border border-border p-3">
-                    <p className="text-[13px] font-semibold text-foreground">
-                      {rec.suggestedTitle}
-                    </p>
-                    <p className="mt-1 line-clamp-3 text-[12px] leading-5 text-muted-foreground">
-                      {rec.suggestedBody}
-                    </p>
-                    <RecommendationActions id={rec.id} kind="site" />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+        ) : null}
         </div>
-      ) : null}
 
-      {!hasData ? (
-        <EmptyState
-          icon={<MessageSquare className="h-6 w-6" />}
-          title="No conversations in this window"
-          body="Once prospects start chatting with your bot, their questions and trends show up here."
-        />
-      ) : (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {/* Top questions */}
-          <section className="ls-card p-5">
-            <div className="mb-4 flex items-center gap-2">
-              <ListFilter className="h-4 w-4 text-muted-foreground" />
-              <h2 className="text-[13px] font-semibold text-foreground">
-                Most-asked questions
-              </h2>
-            </div>
-            {topQuestions.length === 0 ? (
-              <p className="text-[12px] text-muted-foreground">
-                Not enough opening questions yet.
+        {/* What renters ask: the raw signal the fixes are drafted from. */}
+        <aside className="space-y-6">
+          <section>
+            <h2 className="text-[13px] font-semibold text-foreground">What renters ask</h2>
+            {!hasData || topQuestions.length === 0 ? (
+              <p className="mt-2 text-[12px] text-muted-foreground">
+                Not enough conversations in this window yet.
               </p>
             ) : (
-              <ol className="space-y-3">
+              <ol className="mt-3 space-y-3">
                 {topQuestions.map((q, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <span className="ls-metric mt-0.5 w-5 shrink-0 text-[12px] text-muted-foreground">
-                      {i + 1}
-                    </span>
-                    <div className="min-w-0 flex-1">
+                  <li key={i}>
+                    <div className="flex items-baseline justify-between gap-3">
                       <p className="truncate text-[13px] text-foreground" title={q.question}>
                         {q.question}
                       </p>
-                      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                        <div
-                          className="h-full rounded-full bg-primary"
-                          style={{ width: `${barPct(q.count, maxQuestion, 6)}%` }}
-                        />
-                      </div>
+                      <span className="shrink-0 text-[12px] text-muted-foreground tabular-nums">{q.count}×</span>
                     </div>
-                    <span className="ls-metric shrink-0 text-[12px] text-muted-foreground">
-                      {q.count}×
-                    </span>
+                    <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-secondary">
+                      <div
+                        className="h-full rounded-full bg-primary"
+                        style={{ width: `${barPct(q.count, maxQuestion, 6)}%` }}
+                      />
+                    </div>
                   </li>
                 ))}
               </ol>
             )}
           </section>
-
-          {/* Top keywords */}
-          <section className="ls-card p-5">
-            <div className="mb-4 flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              <h2 className="text-[13px] font-semibold text-foreground">
-                Common keywords
-              </h2>
-            </div>
-            {topKeywords.length === 0 ? (
-              <p className="text-[12px] text-muted-foreground">
-                Not enough message text yet.
-              </p>
-            ) : (
-              <ul className="space-y-2.5">
+          {hasData && topKeywords.length > 0 ? (
+            <section>
+              <h2 className="text-[13px] font-semibold text-foreground">Common words</h2>
+              <div className="mt-3 flex flex-wrap gap-1.5">
                 {topKeywords.map((k) => (
-                  <li key={k.term} className="flex items-center gap-3">
-                    <span className="w-28 shrink-0 truncate text-[13px] text-foreground" title={k.term}>
-                      {k.term}
-                    </span>
-                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-                      <div
-                        className="h-full rounded-full bg-primary/80"
-                        style={{ width: `${barPct(k.count, maxKeyword, 4)}%` }}
-                      />
-                    </div>
-                    <span className="ls-metric w-8 shrink-0 text-right text-[12px] text-muted-foreground">
-                      {k.count}
-                    </span>
-                  </li>
+                  <span
+                    key={k.term}
+                    className="inline-flex items-center gap-1 rounded-full bg-[var(--t-accent-soft)] px-2.5 py-1 text-[12px] text-foreground"
+                    style={{ opacity: 0.55 + 0.45 * (k.count / maxKeyword) }}
+                  >
+                    {k.term}
+                    <span className="text-muted-foreground tabular-nums">{k.count}</span>
+                  </span>
                 ))}
-              </ul>
-            )}
-          </section>
-        </div>
-      )}
+              </div>
+            </section>
+          ) : null}
+        </aside>
+      </div>
     </div>
   );
 }
 
+function sentenceCase(raw: string): string {
+  const t = raw.replaceAll("_", " ").toLowerCase();
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+function QueueGroup({
+  title,
+  icon,
+  count,
+  children,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  count: number;
+  children: React.ReactNode;
+}) {
+  if (count === 0) return null;
+  return (
+    <div className="border-b border-border last:border-b-0">
+      <div className="flex items-center gap-2 bg-[var(--t-wash)] px-5 py-2.5 text-[12px] font-medium text-muted-foreground">
+        <span className="text-primary">{icon}</span>
+        {title}
+        <span className="tabular-nums">{count}</span>
+      </div>
+      <ul className="divide-y divide-border">{children}</ul>
+    </div>
+  );
+}
+
+function QueueRow({
+  title,
+  meta,
+  body,
+  actions,
+  marks,
+  evidence = [],
+}: {
+  title?: string;
+  meta?: string;
+  body: string;
+  actions?: React.ReactNode;
+  marks?: React.ReactNode;
+  evidence?: FixEvidence[];
+}) {
+  return (
+    <li className="flex gap-3 px-5 py-4">
+      <div className="flex shrink-0 flex-col gap-1 pt-0.5">{marks}</div>
+      <div className="min-w-0 flex-1">
+        {meta ? <p className="text-[12px] text-muted-foreground">{meta}</p> : null}
+        {title ? <p className="text-[13px] font-semibold text-foreground">{title}</p> : null}
+        <p className="mt-0.5 text-[13px] leading-5 text-foreground">{body}</p>
+        {evidence.length > 0 ? (
+          <div className="mt-3 grid gap-2 lg:grid-cols-2">
+            {evidence.map((e) => (
+              <Link
+                key={e.conversationId}
+                href={`/portal/conversations?c=${e.conversationId}`}
+                className="block rounded-[10px] border border-border bg-[var(--t-wash)] p-3 hover:border-[var(--t-accent)]"
+              >
+                <p className="text-[11.5px] text-muted-foreground">
+                  {e.visitorName ?? "Visitor"}
+                  {e.propertyName ? ` · ${e.propertyName}` : ""}
+                </p>
+                <p className="mt-1.5 text-[12.5px] leading-snug text-foreground line-clamp-2">
+                  &ldquo;{e.question}&rdquo;
+                </p>
+                {e.reply ? (
+                  <p className="mt-1 text-[12px] leading-snug text-muted-foreground line-clamp-2">
+                    Bot: {e.reply}
+                  </p>
+                ) : null}
+                <p className="mt-1.5 text-[11.5px] font-medium text-primary">Open chat →</p>
+              </Link>
+            ))}
+          </div>
+        ) : null}
+        {actions ? <div className="mt-3">{actions}</div> : null}
+      </div>
+    </li>
+  );
+}
+
+// Where a website recommendation's signal came from. Recommendations have
+// no source column, so analytics sources are read from the evidence text.
+// ponytail: text match on "GA4"/"Search Console"; add a source field to
+// SiteImprovementRecommendation if this ever mislabels.
+function SiteRecMarks({ fromChats, body }: { fromChats: boolean; body: string }) {
+  const tile = "grid h-[22px] w-[22px] place-items-center rounded-[6px] border border-border bg-white";
+  return (
+    <>
+      {fromChats ? <SourceMark source="CHATBOT" size={22} /> : null}
+      {/\bGA4\b|Google Analytics/i.test(body) ? (
+        <span className={tile}><Logo slug="ga4" size={13} /></span>
+      ) : null}
+      {/Search Console|\bGSC\b/i.test(body) ? (
+        <span className={tile}><Logo slug="gsc" size={13} /></span>
+      ) : null}
+    </>
+  );
+}
+
 function RefreshStatusIcon({ status }: { status: string | null }) {
-  if (status === "ok") return <CheckCircle2 className="h-4 w-4" />;
+  if (status === "ok") return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />;
   if (status === "partial" || status === "error") {
-    return <AlertTriangle className="h-4 w-4" />;
+    return <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />;
   }
-  return <Clock3 className="h-4 w-4" />;
+  return <Clock3 className="h-3.5 w-3.5" />;
 }

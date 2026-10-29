@@ -206,6 +206,8 @@ export async function GET(req: NextRequest) {
     return {
       result: NextResponse.json({ processed: orgs.length, sent, results }),
       recordsProcessed: sent,
+      errorCount: results.filter((r) => r.error).length,
+      errorSummary: results.filter((r) => r.error).slice(0, 5).map((r) => `${r.orgId}: ${r.error}`).join("; "),
     };
   });
 }
@@ -374,7 +376,15 @@ async function sendPhaseAwareDrip(opts: {
 
   // Sync the onboarding progress so the gate checks the freshest state.
   // Cheap — short-circuits if the org has cleared POLISH.
-  const progress = await syncOnboardingProgress(org.id).catch(() => null);
+  let progress: Awaited<ReturnType<typeof syncOnboardingProgress>>;
+  try {
+    progress = await syncOnboardingProgress(org.id);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.warn(`[cron/onboarding-drip] progress sync failed for org ${org.id}: ${message}`);
+    results.push({ orgId: org.id, action: "error", error: `progress sync: ${message}` });
+    return;
+  }
   if (!progress) return;
 
   // Phase gate — only send a nudge whose target phase matches where the
