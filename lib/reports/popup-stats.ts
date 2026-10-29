@@ -16,8 +16,24 @@ export type ReportPopupStats = {
   ctaClicks: number;
   converted: number;
   dismissed: number;
-  conversionRate: number | null; // converted / shown, rounded to a whole number — the only renderer (pct() in snapshot-shared.tsx) rounds again, so a stored decimal is noise; null when shown=0
+  conversionRate: number | null; // converted / shown, rounded to a whole number — the only renderer (pct() in snapshot-shared.tsx) rounds again, so a stored decimal is noise; null when shown=0 or conversions weren't tracked for the whole window
+  // ISO date of the first CONVERTED event for these campaigns (any time), or
+  // null if none ever. When after periodStart, conversion tracking only began
+  // mid-window, so "0 converted" would be false: renderers say "tracking since".
+  conversionTrackedSince?: string | null;
 };
+
+// Conversion rate is only honest when CONVERTED events were being recorded
+// for the whole window.
+export function popupConversionRate(
+  shown: number,
+  converted: number,
+  trackedSince: Date | null,
+  periodStart: Date,
+): number | null {
+  if (shown <= 0 || !trackedSince || trackedSince > periodStart) return null;
+  return Math.round((converted / shown) * 100);
+}
 
 /**
  * Returns undefined when the org has no popup campaigns at all, so existing
@@ -64,6 +80,13 @@ export async function buildPopupStats(
     _count: { _all: true },
   });
 
+  const firstConversion = await prisma.popupEvent.findFirst({
+    where: { orgId, campaignId: { in: campaignIds }, type: PopupEventType.CONVERTED },
+    orderBy: { occurredAt: "asc" },
+    select: { occurredAt: true },
+  });
+  const trackedSince = firstConversion?.occurredAt ?? null;
+
   const byType = new Map(counts.map((c) => [c.type, c._count._all]));
   const shown = byType.get(PopupEventType.SHOWN) ?? 0;
   const ctaClicks = byType.get(PopupEventType.CTA_CLICKED) ?? 0;
@@ -75,6 +98,7 @@ export async function buildPopupStats(
     ctaClicks,
     converted,
     dismissed,
-    conversionRate: shown > 0 ? Math.round((converted / shown) * 100) : null,
+    conversionRate: popupConversionRate(shown, converted, trackedSince, periodStart),
+    conversionTrackedSince: trackedSince ? trackedSince.toISOString() : null,
   };
 }
