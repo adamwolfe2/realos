@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
-import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { resolveWindow, pctChange } from "@/lib/dashboard/window";
 import { DateRangePicker } from "@/components/portal/date-range-picker";
 import { SourceMark } from "@/components/portal/source-mark";
@@ -23,6 +23,7 @@ import {
 } from "@/components/portal/lead-kanban";
 import { EmptyState } from "@/components/portal/ui/empty-state";
 import { ExportButton } from "@/components/ui/export-button";
+import { ALLOWED_WRITE_ROLES } from "@/lib/auth/write-roles";
 import { humanLeadSource } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { soft } from "@/lib/soft";
@@ -408,6 +409,15 @@ export default async function LeadsKanbanPage({
             <PropertyMultiSelect properties={visibleProperties(scope, properties)} orgId={scope.orgId} />
           </Suspense>
           <ExportButton href="/api/tenant/leads/export" />
+          {ALLOWED_WRITE_ROLES.has(scope.role) ? (
+            <Link
+              href="/portal/leads/new"
+              className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 rounded-[2px] bg-primary text-primary-foreground hover:bg-primary/90 h-[34px] whitespace-nowrap"
+            >
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+              Add lead
+            </Link>
+          ) : null}
         </div>
       </div>
 
