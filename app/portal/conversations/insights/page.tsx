@@ -21,6 +21,7 @@ import { format, formatDistanceToNowStrict } from "date-fns";
 import { SourceMark } from "@/components/portal/source-mark";
 import { Logo } from "@/components/portal/overview/kit";
 import { loadFixEvidence, type FixEvidence } from "@/lib/chatbot/learning/evidence";
+import { loadFixImpact, type FixImpact } from "@/lib/chatbot/learning/impact";
 import { cn } from "@/lib/utils";
 import { RunLearningButton } from "./run-learning-button";
 import { RecommendationActions } from "./recommendation-actions";
@@ -99,6 +100,17 @@ export default async function ChatbotInsightsPage({
   });
   const evidenceFor = (ids: string[] | undefined) =>
     (ids ?? []).slice(0, 2).map((id) => evidence.get(id)).filter((e): e is FixEvidence => Boolean(e));
+
+  // Before/after for live fixes, measured only up to the last learning run
+  // (newer chats are not classified yet).
+  const impact = await loadFixImpact(
+    scope.orgId,
+    learning.appliedKnowledge,
+    latestRun?.finishedAt ?? latestRun?.startedAt ?? new Date(),
+  ).catch((err: unknown) => {
+    console.error("[portal/conversations/insights] impact load failed:", err);
+    return new Map<string, FixImpact>();
+  });
 
   const c = learning.counts;
   const queueCount =
@@ -261,6 +273,7 @@ export default async function ChatbotInsightsPage({
                     <p className="mt-0.5 text-[12px] text-muted-foreground">
                       {k.appliedAt ? `Applied ${format(k.appliedAt, "MMM d")} · ` : ""}learned from {k.affectedCount} chats
                     </p>
+                    <ImpactLine impact={impact.get(k.id)} appliedAt={k.appliedAt} />
                   </div>
                   <span className="shrink-0 text-[12px] font-medium text-[#15803d]">Live</span>
                 </li>
@@ -429,4 +442,37 @@ function RefreshStatusIcon({ status }: { status: string | null }) {
     return <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />;
   }
   return <Clock3 className="h-3.5 w-3.5" />;
+}
+
+function ImpactLine({ impact, appliedAt }: { impact: FixImpact | undefined; appliedAt: Date | null }) {
+  if (!impact) return null;
+  if (impact.kind === "too_early") {
+    return (
+      <p className="mt-1.5 text-[12px] text-muted-foreground">
+        Too early to tell · live {impact.daysLive} {impact.daysLive === 1 ? "day" : "days"}, measuring after 7
+      </p>
+    );
+  }
+  const { before, after, days, chatsBefore, chatsAfter, label } = impact;
+  const better = after < before;
+  const worse = after > before;
+  const changePct = before > 0 ? Math.round(((after - before) / before) * 100) : null;
+  return (
+    <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[12px]">
+      <span className="text-muted-foreground">{label}:</span>
+      <span className="font-semibold tabular-nums text-foreground">
+        {before} → {after}
+      </span>
+      {changePct != null && changePct !== 0 ? (
+        <span className={cn("font-medium tabular-nums", better ? "text-[#15803d]" : "text-[#b45309]")}>
+          {changePct > 0 ? "+" : ""}
+          {changePct}%
+        </span>
+      ) : null}
+      <span className="text-muted-foreground tabular-nums">
+        {days}d before vs {days}d since{appliedAt ? ` ${format(appliedAt, "MMM d")}` : ""} · {chatsBefore} → {chatsAfter} chats
+        {!better && !worse ? " · no change yet" : ""}
+      </span>
+    </div>
+  );
 }
