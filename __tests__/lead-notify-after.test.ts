@@ -15,6 +15,7 @@ const LEAD_NOTIFY_FILES = [
   "app/api/ingest/lead/route.ts",
   "app/api/ingest/chatbot/route.ts",
   "app/api/tenant/leads/route.ts",
+  "lib/actions/manual-leads.ts",
 ];
 
 describe("lead-notify source guard", () => {

@@ -15,13 +15,13 @@ import {
 // posting to a server action. Property select is required everywhere.
 // ---------------------------------------------------------------------------
 
-type PropertyOption = { id: string; name: string };
+export type PropertyOption = { id: string; name: string };
 
-const inputCls =
+export const inputCls =
   "w-full rounded-[2px] border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30";
 const labelCls = "block text-[12px] font-medium text-foreground mb-1";
 
-function Field({
+export function Field({
   label,
   children,
   optional,
@@ -70,7 +70,7 @@ function useManualSubmit(redirectTo: string) {
   return { pending, error, submit };
 }
 
-function FormShell({
+export function FormShell({
   onSubmit,
   pending,
   error,
@@ -106,7 +106,7 @@ function FormShell({
   );
 }
 
-function PropertySelect({ properties }: { properties: PropertyOption[] }) {
+export function PropertySelect({ properties }: { properties: PropertyOption[] }) {
   return (
     <Field label="Property">
       <select name="propertyId" required className={inputCls} defaultValue="">
