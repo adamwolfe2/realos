@@ -137,7 +137,60 @@
   // only an obscure console.warn. Now we surface the HTTP status, retry
   // with exponential backoff (1s → 2s → 4s, capped at 3 attempts), and
   // emit a final clear error if the embed remains unable to load.
-  loadConfig(0);
+  //
+  // data-preview="1": the portal's live preview (iframe on /portal/chatbot).
+  // Config arrives by postMessage from the parent instead of the network,
+  // the panel renders open and fills the frame, and nothing is sent, so
+  // operators see the real widget without creating conversations.
+  var PREVIEW = script.getAttribute("data-preview") === "1";
+  if (PREVIEW) {
+    window.addEventListener("message", function (e) {
+      if (e.source !== window.parent || !e.data) return;
+      if (e.data.type === "leasestack:preview") remountPreview(e.data.config);
+      if (e.data.type === "leasestack:preview-reply") previewReply(String(e.data.text || ""), !!e.data.error);
+    });
+    window.parent.postMessage({ type: "leasestack:preview-ready" }, "*");
+  } else {
+    loadConfig(0);
+  }
+
+  var previewPending = null;
+  function previewReply(text, isError) {
+    var el = previewPending;
+    previewPending = null;
+    state.sending = false;
+    if (elements.send) elements.send.disabled = false;
+    if (!el) return;
+    el.classList.remove("rec-streaming");
+    el.innerHTML = renderMarkdown(text);
+    if (isError) el.style.opacity = "0.7";
+    else state.history.push({ role: "assistant", content: text });
+    elements.messages.scrollTop = elements.messages.scrollHeight;
+    renderChips();
+  }
+
+  function remountPreview(cfg) {
+    previewPending = null;
+    state.sending = false;
+    var old = document.getElementById("leasestack-chatbot-host");
+    if (old) old.remove();
+    state.config = cfg;
+    state.history = [];
+    state.open = false;
+    state.teaserDismissed = false;
+    state.inlineLeadShown = false;
+    state.leadCaptured = false;
+    state.assistantReplies = 0;
+    elements = {};
+    mount();
+    var fill = document.createElement("style");
+    fill.textContent =
+      ".rec-panel { width: min(400px, calc(100vw - 32px)) !important; height: min(640px, calc(100vh - 104px)) !important; max-height: none !important; right: 0 !important; bottom: 72px !important; border-radius: 16px !important; }";
+    shadow.appendChild(fill);
+    state.open = true;
+    root.classList.add("rec-open");
+    fetchListingsSummary();
+  }
 
   function loadConfig(attempt) {
     fetch(CONFIG_URL, { method: "GET", credentials: "omit" })
@@ -401,6 +454,10 @@
   }
 
   function submitIntro(formEl, errEl) {
+    if (PREVIEW) {
+      if (errEl) errEl.textContent = "Preview only. Visitors see this form before chatting.";
+      return;
+    }
     if (state.introSubmitting) return;
     var firstName = (formEl.querySelector('[name="firstName"]').value || "").trim();
     var email = (formEl.querySelector('[name="email"]').value || "").trim();
@@ -452,6 +509,7 @@
   }
 
   function submitLead(payload) {
+    if (PREVIEW) return Promise.reject(new Error("Preview only"));
     return fetch(LEAD_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -744,6 +802,7 @@
     state.open = true;
     dismissTeaser();
     root.classList.add("rec-open");
+    if (PREVIEW) return;
     fireAnalytics("chatbot_opened", { source: source || "button" });
     setTimeout(function () {
       if (elements.input) elements.input.focus();
@@ -776,6 +835,18 @@
   }
 
   function send(text) {
+    if (PREVIEW) {
+      // The portal parent answers (signed in, nothing persisted) and posts
+      // the reply back; see previewReply.
+      state.sending = true;
+      elements.send.disabled = true;
+      appendMessage("user", text);
+      state.history.push({ role: "user", content: text });
+      if (elements.chips) elements.chips.innerHTML = "";
+      previewPending = appendMessage("assistant", "", { streaming: true });
+      window.parent.postMessage({ type: "leasestack:preview-send", history: state.history }, "*");
+      return;
+    }
     state.sending = true;
     elements.send.disabled = true;
     appendMessage("user", text);

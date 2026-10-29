@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { ChatbotCaptureMode, type Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
-import { ChatbotConfigForm } from "./chatbot-config-form";
+import { ChatbotStudio } from "./chatbot-studio";
 import { readGtmContainerId } from "@/components/tenant-site/tenant-analytics";
 import { MasterToggle } from "./master-toggle";
 import { LeadRoutingPanel } from "./lead-routing-panel";
@@ -12,12 +12,10 @@ import { ChatbotInstallSnippetPicker } from "./chatbot-install-snippet-picker";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { visibleProperties, propertyOrOrgLevelWhereFragment } from "@/lib/tenancy/property-filter";
 import { chatbotSnippet } from "@/lib/chatbot/snippet";
-import {
-  StatusChip,
-  type ConnectionStatus,
-} from "@/components/portal/ui/status-chip";
-import type { PerformancePoint } from "@/components/portal/dashboard/performance-over-time";
-import { ChatbotPerformancePanel } from "./performance-panel";
+import Link from "next/link";
+import type { ConnectionStatus } from "@/components/portal/ui/status-chip";
+import { PerformanceOverTime, type PerformancePoint } from "@/components/portal/dashboard/performance-over-time";
+import { Metric, Panel, Pill, ago, change } from "@/components/portal/overview/kit";
 import {
   getChatbotAnalytics,
   getProspectIntel,
@@ -83,12 +81,15 @@ export default async function ChatbotPage() {
     analytics,
     prospects,
     rawChatbotProperties,
+    applied,
+    openFixes,
   ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
       select: {
         id: true,
         name: true,
+        shortName: true,
         slug: true,
         moduleChatbot: true,
         primaryColor: true,
@@ -111,6 +112,10 @@ export default async function ChatbotPage() {
         chatbotIdleTriggerSeconds: true,
         ga4MeasurementId: true,
         customJson: true,
+        primaryCtaText: true,
+        primaryCtaUrl: true,
+        phoneNumber: true,
+        contactEmail: true,
       },
     }),
     resolveAppUrl(),
@@ -178,12 +183,29 @@ export default async function ChatbotPage() {
     prisma.property
       .findMany({
         where: marketablePropertyWhere(scope.orgId),
-        select: { id: true, name: true, slug: true },
+        select: { id: true, name: true, slug: true, websiteUrl: true },
         orderBy: { name: "asc" },
       })
       .catch((e) => {
         console.error("[chatbot] property list failed", e);
-        return [] as Array<{ id: string; name: string; slug: string }>;
+        return [] as Array<{ id: string; name: string; slug: string; websiteUrl: string | null }>;
+      }),
+    prisma.chatbotKnowledgeSuggestion
+      .findMany({
+        where: { orgId: scope.orgId, ...fixScope(scope.allowedPropertyIds), status: "APPLIED", appliedAt: { gte: since30d } },
+        orderBy: { appliedAt: "desc" },
+        take: 4,
+        select: { id: true, suggestedText: true, appliedAt: true, affectedCount: true, property: { select: { name: true } } },
+      })
+      .catch((e) => {
+        console.error("[chatbot] applied fixes failed", e);
+        return [];
+      }),
+    prisma.chatbotKnowledgeSuggestion
+      .count({ where: { orgId: scope.orgId, ...fixScope(scope.allowedPropertyIds), status: "OPEN" } })
+      .catch((e) => {
+        console.error("[chatbot] open fixes count failed", e);
+        return 0;
       }),
   ]);
 
@@ -247,14 +269,10 @@ export default async function ChatbotPage() {
     };
   });
   const prior30Total = chartPoints.reduce((s, p) => s + (p.comparison ?? 0), 0);
-  const d30DeltaPct =
-    prior30Total > 0
-      ? Math.round(((stats.d30 - prior30Total) / prior30Total) * 100)
-      : null;
 
-  // Heartbeat chip state: Live if the widget reported activity in the last
-  // 7 days, Stale if it has ever reported but has gone quiet, otherwise
-  // Not connected. Rendered from last-known server state — no live probe.
+  // Heartbeat: Live if the widget reported activity in the last 7 days,
+  // Stale if it has reported before, otherwise Not connected. Last-known
+  // server state, no live probe.
   const HEARTBEAT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
   const lastActivityAt = latestConversation?.lastMessageAt ?? null;
   const installStatus: ConnectionStatus = lastActivityAt
@@ -262,107 +280,170 @@ export default async function ChatbotPage() {
       ? "live"
       : "stale"
     : "not_connected";
-  const lastActivityLabel = lastActivityAt
-    ? `last activity ${lastActivityAt.toLocaleString("en-US", {
-        month: "short",
-        day: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-      })}`
-    : null;
+  const lastActivityLabel = lastActivityAt ? `last chat ${ago(lastActivityAt, now)} ago` : null;
+
+  // The master switch wins: a widget with recent chats is still hidden
+  // when the toggle is off.
+  const on = initial.chatbotEnabled && org.moduleChatbot;
+  const persona = initial.chatbotPersonaName || "Your chatbot";
+  const recipients = (org.notifyLeadEmail ?? "").split(",").map((e) => e.trim()).filter(Boolean).length;
+  const routingOn = recipients > 0 && org.notifyOnChatbotLead;
+  const captureRate = stats.d30 ? Math.round((stats.intakes30d / stats.d30) * 100) : 0;
+  const questions = analytics?.topQuestions.slice(0, 5) ?? [];
+  const maxQ = questions[0]?.count ?? 1;
+  const site = chatbotProperties.find((p) => p.websiteUrl)?.websiteUrl ?? null;
 
   return (
-    <div className="space-y-6">
-      {/* Redesign 2026-07-29 (Adam): analytics lead, configuration follows,
-          install verification collapsed at the bottom once the widget is
-          live. Status + master switch live in the header, not in cards. */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1>Chatbot</h1>
-        <div className="flex items-center gap-3">
-          <span className="flex items-center gap-2">
-            <StatusChip status={installStatus} />
-            {lastActivityLabel ? (
-              <span className="hidden md:inline text-[12px] text-muted-foreground tabular-nums">
-                {lastActivityLabel}
-              </span>
-            ) : null}
-          </span>
-          <MasterToggle
-            enabled={initial.chatbotEnabled}
-            moduleActive={org.moduleChatbot}
-            variant="inline"
-          />
+    <div className="w-full space-y-5">
+      <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-[var(--t-ink)]">Chatbot</h1>
+          <p className="mt-0.5 text-[13.5px] text-[var(--t-muted)]">
+            {persona} answers renters on your site{chatbotProperties.length > 1 ? ` across ${chatbotProperties.length} properties` : ""}
+            {lastActivityLabel ? ` · ${lastActivityLabel}` : ""}
+          </p>
         </div>
-      </div>
+        <span className="inline-flex h-8 items-center gap-3 self-start rounded-full border border-[var(--t-border)] bg-white pl-3 pr-2 text-[12.5px] text-[var(--t-text)] md:self-auto">
+          {on ? (installStatus === "live" ? <Pill tone="good">Live on your site</Pill> : <Pill tone="warn">On, not installed yet</Pill>) : <Pill>Hidden from visitors</Pill>}
+          <MasterToggle enabled={initial.chatbotEnabled} moduleActive={org.moduleChatbot} variant="inline" />
+        </span>
+      </header>
 
       {!org.moduleChatbot ? (
-        <div
-          role="status"
-          className="rounded-[2px] border border-primary/20 bg-primary/[0.03] p-4 text-sm text-foreground flex items-start gap-3"
-        >
-          <div className="flex-1">
-            <p className="font-semibold">Chatbot module isn&apos;t active yet.</p>
-            <p className="text-muted-foreground text-[13px] mt-0.5 leading-relaxed">
-              You can still stage your persona, greeting, and knowledge
-              base below. The chatbot goes live the moment you activate
-              the module from the marketplace (free during trial).
-            </p>
-          </div>
-          <a
-            href="/portal/marketplace"
-            className="shrink-0 inline-flex items-center rounded-[2px] bg-primary text-primary-foreground px-3 h-8 text-xs font-semibold hover:bg-primary-dark transition-colors"
-          >
-            Activate
-          </a>
+        <div role="status" className="flex items-center gap-3 rounded-[var(--t-radius)] border border-[var(--t-border)] bg-white px-4 py-3 shadow-[var(--t-shadow)]">
+          <Pill tone="warn">Module not active</Pill>
+          <p className="flex-1 text-[13px] text-[var(--t-muted)]">Set everything up below. It goes live the moment you activate it (free during trial).</p>
+          <a href="/portal/marketplace" className="inline-flex h-8 items-center rounded-full bg-[var(--t-primary-bg)] px-3.5 text-[13px] font-medium text-white hover:opacity-90">Activate</a>
         </div>
       ) : null}
 
-      {/* ── PERFORMANCE (leads the page) — one card, three tabbed views:
-          Volume / Questions / Prospects. Same footprint, more data. */}
-      {hasAnyConversations ? (
-        <ChatbotPerformancePanel
-          points={chartPoints}
-          d30={stats.d30}
-          d7={stats.d7}
-          intakes30d={stats.intakes30d}
-          d30DeltaPct={d30DeltaPct}
-          analytics={analytics}
-          prospects={prospects}
-        />
-      ) : null}
-
-      {/* ── BEHAVIOR ─────────────────────────────────────────────────── */}
-      <LeadRoutingPanel
-        notifyLeadEmail={org.notifyLeadEmail}
-        notifyOnChatbotLead={org.notifyOnChatbotLead}
-      />
-
-      <ChatbotConfigForm
+      <ChatbotStudio
         initial={initial}
         orgPrimaryColor={org.primaryColor}
         moduleActive={org.moduleChatbot}
+        siteLabel={site ?? `${org.slug}.com`}
+        previewBase={{
+          slug: org.slug,
+          brandName: chatbotProperties.length === 1 ? chatbotProperties[0].name : org.shortName ?? org.name,
+          orgName: org.shortName ?? org.name,
+          primaryCtaText: existingConfig?.primaryCtaText ?? null,
+          primaryCtaUrl: existingConfig?.primaryCtaUrl ?? null,
+          phoneNumber: existingConfig?.phoneNumber ?? null,
+          contactEmail: existingConfig?.contactEmail ?? null,
+        }}
+        routing={<LeadRoutingPanel notifyLeadEmail={org.notifyLeadEmail} notifyOnChatbotLead={org.notifyOnChatbotLead} bare />}
+        routingStatus={{ ok: routingOn, summary: routingOn ? `Emailing ${recipients} ${recipients === 1 ? "person" : "people"}` : "No one gets lead emails yet" }}
+        install={
+          chatbotProperties.length > 1 ? (
+            <ChatbotInstallSnippetPicker properties={chatbotProperties} snippetHost={snippetHost} orgSlug={org.slug} status={installStatus} lastActivityLabel={lastActivityLabel} defaultCollapsed={false} bare />
+          ) : (
+            <InstallSnippet snippet={snippet} status={installStatus} lastActivityLabel={lastActivityLabel} bare />
+          )
+        }
+        installStatus={{
+          ok: installStatus === "live",
+          summary: installStatus === "live" ? `On your site · ${lastActivityLabel}` : installStatus === "stale" ? "Quiet for 7+ days" : "Not on your site yet",
+        }}
+        insights={
+          <>
+            <Panel title="Last 30 days" flush>
+              <dl className="grid grid-cols-2 [&>*]:border-[var(--t-divider)] [&>*:nth-child(odd)]:border-r [&>*:nth-child(-n+2)]:border-b">
+                <Metric label="Conversations" value={stats.d30.toLocaleString()} delta={change(stats.d30, prior30Total)} />
+                <Metric label="Leads" value={stats.intakes30d.toLocaleString()} />
+                <Metric label="Capture rate" value={`${captureRate}%`} />
+                <Metric label="This week" value={stats.d7.toLocaleString()} />
+              </dl>
+            </Panel>
+            <Panel
+              title="Learned recently"
+              aside={openFixes ? <Link href="/portal/conversations/insights" className="text-[var(--t-accent)] hover:underline">Review {openFixes}</Link> : null}
+              flush
+            >
+              {applied.length ? (
+                <ul className="divide-y divide-[var(--t-divider)]">
+                  {applied.map((a) => (
+                    <li key={a.id} className="px-4 py-3">
+                      <p className="line-clamp-2 text-[13px] leading-snug text-[var(--t-ink)]">{a.suggestedText}</p>
+                      <p className="mt-1 flex items-center gap-2 text-[12px] text-[var(--t-muted)]">
+                        <Pill tone="good">Live</Pill>
+                        {a.appliedAt ? `${ago(a.appliedAt, now)} ago` : ""}
+                        {a.affectedCount ? ` · from ${a.affectedCount} chats` : ""}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="px-4 py-4 text-[13px] text-[var(--t-muted)]">
+                  {openFixes ? `${openFixes} fixes drafted from real chats are waiting for you.` : "When a chat goes unanswered, a fix is drafted here for you to approve."}
+                </p>
+              )}
+            </Panel>
+            <Panel title="What renters ask first" flush>
+              {questions.length ? (
+                <ul className="divide-y divide-[var(--t-divider)]">
+                  {questions.map((q) => (
+                    <li key={q.question} className="px-4 py-2.5">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span className="min-w-0 truncate text-[13px] text-[var(--t-ink)]">{q.question}</span>
+                        <span className="shrink-0 text-[12px] tabular-nums text-[var(--t-muted)]">{q.count}</span>
+                      </div>
+                      <span className="mt-1.5 block h-1 overflow-hidden rounded-full bg-[var(--t-wash)]">
+                        <span className="block h-full rounded-full bg-[var(--t-accent)]" style={{ width: `${Math.max(6, (q.count / maxQ) * 100)}%` }} />
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="px-4 py-4 text-[13px] text-[var(--t-muted)]">Top questions show up as conversations come in.</p>
+              )}
+            </Panel>
+          </>
+        }
       />
 
-      {/* ── INSTALLATION (bottom; collapsed once the widget is live) ──
-          Multi-property orgs get a picker that regenerates the snippet
-          with data-property="<slug>"; single-property orgs keep the
-          plain org-wide snippet unchanged. */}
-      {chatbotProperties.length > 1 ? (
-        <ChatbotInstallSnippetPicker
-          properties={chatbotProperties}
-          snippetHost={snippetHost}
-          orgSlug={org.slug}
-          status={installStatus}
-          lastActivityLabel={lastActivityLabel}
-          defaultCollapsed={installStatus === "live"}
-        />
+      {hasAnyConversations ? (
+        <Panel title="Conversations per day" aside="Last 30 days vs the 30 before">
+          <PerformanceOverTime points={chartPoints} compare />
+        </Panel>
+      ) : null}
+
+      {/* Hidden until there is enough to read a pattern from. */}
+      {prospects && prospects.profiles >= 5 ? (
+        <Panel title="What prospects want" aside={`${prospects.profiles} profiles${prospects.medianBudget != null ? ` · median budget $${prospects.medianBudget.toLocaleString()}/mo` : ""}`}>
+          <div className="grid gap-6 md:grid-cols-3">
+            <Dist title="Room type" rows={prospects.roomTypes} />
+            <Dist title="Move-in" rows={prospects.moveIn} />
+            <Dist title="Also touring" rows={prospects.competitors} />
+          </div>
+        </Panel>
+      ) : null}
+    </div>
+  );
+}
+
+function fixScope(allowed: string[] | null | undefined) {
+  return allowed ? { propertyId: { in: allowed } } : {};
+}
+
+function Dist({ title, rows }: { title: string; rows: Array<{ label: string; count: number }> }) {
+  const max = rows[0]?.count ?? 1;
+  return (
+    <div>
+      <h3 className="text-[12.5px] font-medium text-[var(--t-text)]">{title}</h3>
+      {rows.length ? (
+        <ul className="mt-2.5 space-y-2">
+          {rows.slice(0, 5).map((r) => (
+            <li key={r.label} className="grid grid-cols-[96px_1fr_28px] items-center gap-3 text-[13px]">
+              <span className="truncate capitalize text-[var(--t-ink)]">{r.label}</span>
+              <span className="h-1.5 overflow-hidden rounded-full bg-[var(--t-wash)]">
+                <span className="block h-full rounded-full bg-[var(--t-accent)]" style={{ width: `${Math.max(6, (r.count / max) * 100)}%` }} />
+              </span>
+              <span className="text-right tabular-nums text-[var(--t-muted)]">{r.count}</span>
+            </li>
+          ))}
+        </ul>
       ) : (
-        <InstallSnippet
-          snippet={snippet}
-          status={installStatus}
-          lastActivityLabel={lastActivityLabel}
-          defaultCollapsed={installStatus === "live"}
-        />
+        <p className="mt-2.5 text-[13px] text-[var(--t-muted)]">Nothing mentioned yet.</p>
       )}
     </div>
   );

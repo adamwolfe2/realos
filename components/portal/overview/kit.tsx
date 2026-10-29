@@ -86,6 +86,16 @@ export function Initial({ name, size = 28 }: { name: string; size?: number }) {
   );
 }
 
+/** Numbered step title for setup panels. */
+export function Step({ n, children }: { n: number; children: ReactNode }) {
+  return (
+    <span className="flex items-center gap-2.5">
+      <span className="grid h-5 w-5 place-items-center rounded-full bg-[var(--t-wash)] text-[11px] font-semibold tabular-nums text-[var(--t-text)]">{n}</span>
+      {children}
+    </span>
+  );
+}
+
 /** Signed % change with a tone; null when there is no baseline. */
 export function change(now: number, prior: number, upIsGood = true): { text: string; tone: Tone } | null {
   if (!prior) return null;
