@@ -1,12 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
 import dynamic from "next/dynamic";
 import { formatDistanceToNow } from "date-fns";
 import { AdPlatform } from "@prisma/client";
-import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
-import { StatusChip } from "@/components/portal/ui/status-chip";
+import { Logo, Metric as Stat, MetricStrip, Panel, Pill, change } from "@/components/portal/overview/kit";
 import { cn } from "@/lib/utils";
 import { DataPlaceholder } from "@/components/portal/ui/data-placeholder";
 import { Clock } from "lucide-react";
@@ -107,7 +105,6 @@ type PriorMetric = {
   conversions: number;
 };
 
-type Filter = "all" | "GOOGLE_ADS" | "META";
 
 type SortKey = "name" | "platform" | "status" | "spend" | "clicks" | "conversions" | "cpl" | "ctr";
 
@@ -116,56 +113,39 @@ export function AdsDashboard({
   campaigns,
   currentMetrics,
   priorMetrics,
+  leadsAttributed,
+  signedLeases,
 }: {
   accounts: Account[];
   campaigns: Campaign[];
   currentMetrics: Metric[];
   priorMetrics: PriorMetric[];
+  leadsAttributed: number;
+  signedLeases: number;
 }) {
-  const [filter, setFilter] = React.useState<Filter>("all");
   const [sortKey, setSortKey] = React.useState<SortKey>("spend");
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("desc");
-
-  const accountIdsByPlatform = React.useMemo(() => {
-    const m = new Map<AdPlatform, Set<string>>();
-    for (const a of accounts) {
-      if (!m.has(a.platform)) m.set(a.platform, new Set());
-      m.get(a.platform)!.add(a.id);
-    }
-    return m;
-  }, [accounts]);
 
   const accountById = React.useMemo(
     () => new Map(accounts.map((a) => [a.id, a])),
     [accounts],
   );
 
-  const filteredAccountIds = React.useMemo<Set<string> | null>(() => {
-    if (filter === "all") return null;
-    return accountIdsByPlatform.get(filter) ?? new Set();
-  }, [filter, accountIdsByPlatform]);
-
-  const filterMatch = (adAccountId: string) =>
-    filteredAccountIds == null || filteredAccountIds.has(adAccountId);
-
-  const filteredCurrent = React.useMemo(
-    () => currentMetrics.filter((m) => filterMatch(m.adAccountId)),
-    [currentMetrics, filteredAccountIds]
-  );
-  const filteredPrior = React.useMemo(
-    () => priorMetrics.filter((m) => filterMatch(m.adAccountId)),
-    [priorMetrics, filteredAccountIds]
-  );
-  const filteredCampaigns = React.useMemo(
-    () => campaigns.filter((c) => filterMatch(c.adAccountId)),
-    [campaigns, filteredAccountIds]
-  );
+  const filteredCurrent = currentMetrics;
+  const filteredCampaigns = campaigns;
 
   const totals = React.useMemo(() => aggregate(filteredCurrent), [filteredCurrent]);
-  const priorTotals = React.useMemo(
-    () => aggregatePrior(filteredPrior),
-    [filteredPrior]
-  );
+  const priorTotals = React.useMemo(() => aggregatePrior(priorMetrics), [priorMetrics]);
+
+  // 28-day spend and conversions per connected account, for the breakdown.
+  const byAccount = React.useMemo(() => {
+    const m = new Map<string, { spendCents: number; conversions: number }>();
+    for (const r of currentMetrics) {
+      const cur = m.get(r.adAccountId) ?? { spendCents: 0, conversions: 0 };
+      m.set(r.adAccountId, { spendCents: cur.spendCents + r.spendCents, conversions: cur.conversions + r.conversions });
+    }
+    return m;
+  }, [currentMetrics]);
 
   const cpcCents = totals.clicks > 0 ? Math.round(totals.spendCents / totals.clicks) : 0;
   const costPerConversionCents =
@@ -184,88 +164,67 @@ export function AdsDashboard({
     return arr;
   }, [filteredCampaigns, sortKey, sortDir]);
 
-  const platformsAvailable = React.useMemo(() => {
-    const s = new Set<AdPlatform>();
-    for (const a of accounts) s.add(a.platform);
-    return s;
-  }, [accounts]);
+  const maxAccountSpend = Math.max(1, ...accounts.map((a) => byAccount.get(a.id)?.spendCents ?? 0));
 
   return (
-    <div className="space-y-6">
-      <Segment
-        filter={filter}
-        onChange={setFilter}
-        platformsAvailable={platformsAvailable}
-        accounts={accounts}
-      />
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-        <KpiTile
-          label="Spend (28d)"
-          value={formatCents(totals.spendCents)}
-          hint={
-            priorTotals.spendCents > 0
-              ? deltaHint(totals.spendCents, priorTotals.spendCents, "spend")
-              : undefined
-          }
-        />
-        <KpiTile
-          label="Clicks"
-          value={totals.clicks.toLocaleString()}
-          hint={
-            priorTotals.clicks > 0
-              ? deltaHint(totals.clicks, priorTotals.clicks, "vs prior 28d")
-              : undefined
-          }
-        />
-        <KpiTile
+    <div className="space-y-5">
+      <MetricStrip cols={6}>
+        <Stat label="Spend" value={formatCents(totals.spendCents)} delta={change(totals.spendCents, priorTotals.spendCents)} note="Last 28 days vs the 28 before" />
+        <Stat label="Clicks" value={totals.clicks.toLocaleString()} delta={change(totals.clicks, priorTotals.clicks)} note={`${formatCents(cpcCents)} per click`} />
+        <Stat
           label="Conversions"
-          value={totals.conversions.toLocaleString(undefined, {
-            maximumFractionDigits: 1,
-          })}
-          hint={
-            priorTotals.conversions > 0
-              ? deltaHint(totals.conversions, priorTotals.conversions, "vs prior 28d")
-              : undefined
-          }
+          value={totals.conversions.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+          delta={change(totals.conversions, priorTotals.conversions)}
+          note="Reported by the platforms"
         />
-        <KpiTile
-          label="CPC"
-          value={formatCents(cpcCents)}
-          hint="Avg cost per click"
-        />
-        <KpiTile
-          label="Cost / conv."
-          value={formatCents(costPerConversionCents)}
-          hint="Avg cost per conversion"
-        />
+        <Stat label="Cost per conversion" value={costPerConversionCents ? formatCents(costPerConversionCents) : "—"} note="Spend over conversions" />
+        <Stat label="Leads attributed" value={leadsAttributed.toLocaleString()} note="Matched to a lead in LeaseStack" />
+        <Stat label="Signed leases" value={signedLeases.toLocaleString()} note="From ad-sourced leads" />
+      </MetricStrip>
+
+      <div className="grid gap-5 xl:grid-cols-3">
+        <Panel title="Daily spend vs conversions" aside="Last 28 days" className="xl:col-span-2">
+          {series.length === 0 ? (
+            <p className="text-[13px] text-[var(--t-muted)]">
+              No metrics in the window yet. The next nightly sync will fill this in.
+            </p>
+          ) : (
+            <AdsTrendChart series={series} formatCents={formatCents} />
+          )}
+        </Panel>
+
+        <Panel title="Accounts" aside={`${accounts.length} connected`} flush>
+          <ul className="divide-y divide-[var(--t-divider)]">
+            {accounts.map((a) => {
+              const row = byAccount.get(a.id) ?? { spendCents: 0, conversions: 0 };
+              return (
+                <li key={a.id} className="px-4 py-3">
+                  <div className="flex items-center gap-2.5">
+                    <Logo slug={platformSlug(a.platform)} size={16} />
+                    <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-[var(--t-ink)]">{a.displayName}</span>
+                    <span className="text-[13px] font-semibold tabular-nums text-[var(--t-ink)]">{formatCents(row.spendCents)}</span>
+                  </div>
+                  <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-[var(--t-wash)]">
+                    <div className="h-full rounded-full bg-[var(--t-accent)]" style={{ width: `${Math.round((row.spendCents / maxAccountSpend) * 100)}%` }} />
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-[12px] text-[var(--t-muted)]">
+                    <span className="tabular-nums">
+                      {row.conversions.toLocaleString(undefined, { maximumFractionDigits: 1 })} conversions ·{" "}
+                      {a.lastSyncAt ? `synced ${formatDistanceToNow(new Date(a.lastSyncAt), { addSuffix: true })}` : "awaiting first sync"}
+                    </span>
+                    <Pill tone={a.accessStatus === "active" ? "good" : a.accessStatus === "error" ? "bad" : "warn"}>
+                      {a.accessStatus === "active" ? "Live" : a.accessStatus === "error" ? "Error" : "Pending"}
+                    </Pill>
+                  </div>
+                  {a.lastSyncError ? <p className="mt-1 text-[12px] text-[#b91c1c]">{a.lastSyncError}</p> : null}
+                </li>
+              );
+            })}
+          </ul>
+        </Panel>
       </div>
 
-      <section className="ls-card p-5">
-        <div className="flex items-baseline justify-between mb-4">
-          <h2 className="text-sm font-semibold text-foreground">
-            Daily spend vs conversions
-          </h2>
-          <span className="text-[11px] text-muted-foreground tabular-nums">
-            Last 28 days
-          </span>
-        </div>
-        {series.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No metrics in the window yet. The next nightly sync will fill this in.
-          </p>
-        ) : (
-          <AdsTrendChart series={series} formatCents={formatCents} />
-        )}
-      </section>
-
-      <section className="ls-card overflow-x-auto">
-        <div className="px-5 py-4 border-b border-border flex items-baseline justify-between">
-          <h2 className="text-sm font-semibold text-foreground">Campaigns</h2>
-          <span className="text-[11px] text-muted-foreground">
-            Lifetime totals as of last sync
-          </span>
-        </div>
+      <Panel title="Campaigns" aside="Lifetime totals as of last sync" flush className="overflow-x-auto">
         {sortedCampaigns.length === 0 ? (
           <div className="p-5">
             <DataPlaceholder
@@ -396,13 +355,16 @@ export function AdsDashboard({
                       ) : null}
                     </td>
                     <td className="px-4 py-2 text-xs text-muted-foreground">
-                      {platformLabel(c.platform)}
+                      <span className="inline-flex items-center gap-1.5">
+                        <Logo slug={platformSlug(c.platform)} size={13} />
+                        {platformLabel(c.platform)}
+                      </span>
                     </td>
                     <td className="px-4 py-2 text-xs text-muted-foreground">
                       {c.propertyName ?? "Org-wide"}
                     </td>
                     <td className="px-4 py-2 text-center">
-                      <StatusPill label={c.status.toUpperCase()} tone={campaignTone(c.status)} />
+                      <Pill tone={campaignTone(c.status)}>{c.status.charAt(0) + c.status.slice(1).toLowerCase()}</Pill>
                     </td>
                     <td className="px-4 py-2 text-right tabular-nums">
                       {c.budgetCents ? `${formatCents(c.budgetCents)}/mo` : "—"}
@@ -428,53 +390,7 @@ export function AdsDashboard({
             </tbody>
           </table>
         )}
-      </section>
-
-      <section className="ls-card p-5">
-        <h2 className="text-sm font-semibold text-foreground mb-3">
-          Connected accounts
-        </h2>
-        <ul className="divide-y divide-border">
-          {accounts.map((a) => (
-            <li
-              key={a.id}
-              className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
-            >
-              <div>
-                <div className="text-sm font-medium text-foreground">
-                  {a.displayName}{" "}
-                  <span className="text-xs text-muted-foreground font-normal">
-                    {platformLabel(a.platform)} · {a.externalAccountId} ·{" "}
-                    {a.currency}
-                  </span>
-                </div>
-                <div className="text-[11px] text-muted-foreground mt-0.5">
-                  {a.lastSyncAt
-                    ? `Last sync ${formatDistanceToNow(new Date(a.lastSyncAt), {
-                        addSuffix: true,
-                      })}`
-                    : "Awaiting first sync"}
-                  {a.lastSyncError ? (
-                    <span className="text-destructive ml-2">
-                      · {a.lastSyncError}
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-              <StatusChip
-                status={
-                  a.accessStatus === "active"
-                    ? "live"
-                    : a.accessStatus === "error"
-                      ? "error"
-                      : "not_connected"
-                }
-                label={a.accessStatus}
-              />
-            </li>
-          ))}
-        </ul>
-      </section>
+      </Panel>
     </div>
   );
 }
@@ -482,63 +398,6 @@ export function AdsDashboard({
 // ---------------------------------------------------------------------------
 // Subcomponents
 // ---------------------------------------------------------------------------
-
-function Segment({
-  filter,
-  onChange,
-  platformsAvailable,
-  accounts,
-}: {
-  filter: Filter;
-  onChange: (f: Filter) => void;
-  platformsAvailable: Set<AdPlatform>;
-  accounts: Account[];
-}) {
-  const options: { key: Filter; label: string; count: number }[] = [
-    { key: "all", label: "All platforms", count: accounts.length },
-  ];
-  if (platformsAvailable.has(AdPlatform.GOOGLE_ADS)) {
-    options.push({
-      key: AdPlatform.GOOGLE_ADS,
-      label: "Google Ads",
-      count: accounts.filter((a) => a.platform === AdPlatform.GOOGLE_ADS).length,
-    });
-  }
-  if (platformsAvailable.has(AdPlatform.META)) {
-    options.push({
-      key: AdPlatform.META,
-      label: "Meta Ads",
-      count: accounts.filter((a) => a.platform === AdPlatform.META).length,
-    });
-  }
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {options.map((o) => (
-        <button
-          key={o.key}
-          type="button"
-          onClick={() => onChange(o.key)}
-          className={cn(
-            "rounded-[2px] px-2.5 py-1 text-xs font-medium border transition-colors",
-            filter === o.key
-              ? "bg-primary text-primary-foreground border-primary"
-              : "bg-card text-foreground border-border hover:bg-muted/50"
-          )}
-        >
-          {o.label}
-          <span
-            className={cn(
-              "ml-1.5 tabular-nums text-[11px]",
-              filter === o.key ? "opacity-80" : "text-muted-foreground"
-            )}
-          >
-            {o.count}
-          </span>
-        </button>
-      ))}
-    </div>
-  );
-}
 
 function SortHeader({
   label,
@@ -580,10 +439,9 @@ function SortHeader({
   );
 }
 
-function campaignTone(status: string): StatusTone {
-  // ENABLED/ACTIVE is live -> success green (matches StatusChip semantics).
+function campaignTone(status: string): "good" | "neutral" {
   const norm = status.toUpperCase();
-  return norm === "ENABLED" || norm === "ACTIVE" ? "success" : "neutral";
+  return norm === "ENABLED" || norm === "ACTIVE" ? "good" : "neutral";
 }
 
 // ---------------------------------------------------------------------------
@@ -682,6 +540,10 @@ function setSort(
   };
 }
 
+function platformSlug(p: AdPlatform): string {
+  return p === AdPlatform.META ? "meta-ads" : p === AdPlatform.GOOGLE_ADS ? "google-ads" : p === AdPlatform.TIKTOK ? "tiktok-ads" : p === AdPlatform.LINKEDIN ? "linkedin-ads" : "";
+}
+
 function platformLabel(p: AdPlatform): string {
   switch (p) {
     case AdPlatform.GOOGLE_ADS:
@@ -706,9 +568,3 @@ function formatCents(cents: number): string {
   });
 }
 
-function deltaHint(current: number, prior: number, label: string): string {
-  if (prior === 0) return label;
-  const delta = ((current - prior) / prior) * 100;
-  const arrow = delta >= 0 ? "↑" : "↓";
-  return `${arrow} ${Math.abs(delta).toFixed(1)}% ${label}`;
-}
