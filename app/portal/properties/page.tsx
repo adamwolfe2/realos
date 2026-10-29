@@ -12,9 +12,7 @@ import {
 } from "@/lib/tenancy/property-filter";
 import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-banner";
 import { formatDistanceToNow } from "date-fns";
-import { Building2, MapPin, Users } from "lucide-react";
-import { PageHeader } from "@/components/admin/page-header";
-import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
+import { Building2, MapPin } from "lucide-react";
 import { PropertyFormDialog } from "@/components/properties/property-form-dialog";
 import { EmptyState } from "@/components/portal/ui/empty-state";
 import { DataTable, EntityCell } from "@/components/portal/ui/data-table";
@@ -22,10 +20,9 @@ import {
   EntityToolbar,
   type ToolbarView,
 } from "@/components/portal/ui/entity-toolbar";
-import { PillCell, NumberCell, EmptyCell } from "@/components/portal/ui/cells";
+import { NumberCell, EmptyCell } from "@/components/portal/ui/cells";
 import { PropertiesSearch } from "@/components/portal/properties/properties-search";
 import { PropertyAvatar } from "@/components/portal/properties/property-avatar";
-import { PortfolioStrip } from "@/components/portal/properties/portfolio-strip";
 import {
   ASSET_CLASS_LABEL,
   SIZE_BAND_LABEL,
@@ -367,19 +364,25 @@ export default async function PropertiesList({
   return (
     <div className="space-y-3 ls-page-fade">
       {accessDenied ? <PropertyAccessDeniedBanner /> : null}
-      <PageHeader
-        title="Properties"
-        description={
-          // Norman feedback (issue #67): the listings + available counts
-          // weren't matching what operators expected (141 listings vs the
-          // 5-7 they actually have live), so we lead with the property
-          // count and a single trustworthy roll-up (leads) instead.
-          countAll === 0
-            ? "Listings, leads, and tours for every property in your portfolio."
-            : `${countAll.toLocaleString()} ${countAll === 1 ? "property" : "properties"} · ${totalLeads.toLocaleString()} ${totalLeads === 1 ? "lead" : "leads"}`
-        }
-        actions={
-          <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1>Properties</h1>
+          {/* Norman (issue #67): lead with the property count and one
+              trustworthy roll-up (leads), not listing counts. */}
+          <p className="mt-1 text-[13px] text-muted-foreground tabular-nums">
+            {countAll === 0 ? (
+              "Listings, leads, and tours for every property in your portfolio."
+            ) : (
+              <>
+                <span className="font-medium text-foreground">{countAll.toLocaleString()}</span>{" "}
+                {countAll === 1 ? "property" : "properties"} ·{" "}
+                <span className="font-medium text-foreground">{totalLeads.toLocaleString()}</span>{" "}
+                {totalLeads === 1 ? "lead" : "leads"}
+              </>
+            )}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
             {importedCount > 0 ? (
               <Link
                 href="/portal/properties/curate"
@@ -413,29 +416,7 @@ export default async function PropertiesList({
               }
             />
           </div>
-        }
-      />
-
-      {countAll > 0 ? (
-        // Trimmed from 4 tiles to 2 (2026-07-29): "Recently synced" and
-        // "Pending review" read as dead zeros for most orgs and gave the
-        // page no visual anchor. Replaced with the PortfolioStrip (real
-        // building photos) above the table — see below. Both dropped
-        // counts (countSynced, importedCount) are still surfaced via the
-        // "Recently synced" view tab and the "+N more in AppFolio" link.
-        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <KpiTile
-            label="Properties"
-            value={countAll.toLocaleString()}
-            icon={<Building2 className="h-3.5 w-3.5" />}
-          />
-          <KpiTile
-            label="Total leads"
-            value={totalLeads.toLocaleString()}
-            icon={<Users className="h-3.5 w-3.5" />}
-          />
-        </section>
-      ) : null}
+      </div>
 
       {countAll === 0 ? (
         // Distinguish three empty-state shapes so the operator never
@@ -522,7 +503,6 @@ export default async function PropertiesList({
                   properties (up to 8, "+N more" tail beyond that). Reuses
                   the same heroImageUrl/photoUrls cascade as the table's
                   avatar and the dashboard's Featured Property card. */}
-              <PortfolioStrip properties={properties} total={filteredTotal} />
               <DataTable<PropertyRow>
               rows={properties as PropertyRow[]}
               getRowHref={(p) => `/portal/properties/${p.id}`}
@@ -580,7 +560,7 @@ export default async function PropertiesList({
                   accessor: (p) => {
                     const loc = [p.city, p.state].filter(Boolean).join(", ");
                     return loc ? (
-                      <PillCell tone="muted">{loc}</PillCell>
+                      <span className="text-[13px] text-muted-foreground">{loc}</span>
                     ) : (
                       <EmptyCell />
                     );
@@ -593,7 +573,7 @@ export default async function PropertiesList({
                   accessor: (p) => {
                     const avail = p.availableCount ?? 0;
                     return avail > 0 ? (
-                      <PillCell tone="warning">{avail} open</PillCell>
+                      <span className="text-[13px] font-medium text-foreground tabular-nums">{avail} open</span>
                     ) : (
                       <EmptyCell />
                     );

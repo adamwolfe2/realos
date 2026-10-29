@@ -3,7 +3,8 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CheckCircle2, Mail, RefreshCw, XCircle } from "lucide-react";
+import { CheckCircle2, RefreshCw, XCircle } from "lucide-react";
+import { Panel, Pill, Step } from "@/components/portal/overview/kit";
 import {
   backfillChatbotLeadEmails,
   sendTestLeadEmail,
@@ -25,9 +26,12 @@ import { AlertDialog } from "@/components/portal/ui/alert-dialog";
 export function LeadRoutingPanel({
   notifyLeadEmail,
   notifyOnChatbotLead,
+  bare = false,
 }: {
   notifyLeadEmail: string | null;
   notifyOnChatbotLead: boolean;
+  /** Render without the card (inside the chatbot studio slide-over). */
+  bare?: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -159,20 +163,12 @@ export function LeadRoutingPanel({
   const recipientCount = recipients.length;
 
   return (
-    <section className="ls-card p-5">
-      {/* Condensed 2026-07-29 (Adam): one decision — who gets told — on one
-          row. Explanatory paragraphs cut; catch-up backfill demoted to a
-          single utility line. All actions/logic unchanged. */}
-      <div className="mb-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-        <h2 className="text-sm font-semibold flex items-center gap-1.5">
-          <Mail className="w-3.5 h-3.5 text-primary" aria-hidden />
-          Lead routing
-        </h2>
-        <p className="text-xs text-muted-foreground">
-          Chatbot, popup, form, and tour leads are emailed here.
-        </p>
-      </div>
-
+    <Wrap
+      bare={bare}
+      title={<Step n={4}>Where leads go</Step>}
+      aside={recipientCount > 0 && enabled ? <Pill tone="good">Emailing {recipientCount}</Pill> : <Pill tone="warn">Add an email</Pill>}
+    >
+      <p className="mb-3 text-[13px] text-[var(--t-muted)]">Every chatbot, form and tour lead is emailed here the moment it comes in.</p>
       <form onSubmit={onSubmit} className="space-y-2">
         <div className="flex flex-wrap items-center gap-3">
           <input
@@ -181,7 +177,7 @@ export function LeadRoutingPanel({
             onChange={(e) => setEmail(e.target.value)}
             placeholder="leasing@yourcompany.com, manager@…"
             aria-label="Send leads to"
-            className="h-9 flex-1 min-w-[260px] px-3 rounded-[2px] border border-border bg-background text-[13px] focus:outline-none focus:ring-1 focus:ring-foreground/30"
+            className="h-9 flex-1 min-w-[260px] rounded-[8px] border border-[var(--t-border)] bg-white px-3 text-[13.5px] focus:border-[var(--t-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--t-accent)]/15"
           />
           <label className="flex items-center gap-2 cursor-pointer select-none">
             <button
@@ -199,12 +195,12 @@ export function LeadRoutingPanel({
                 }`}
               />
             </button>
-            <span className="text-[12.5px] text-foreground">Notify</span>
+            <span className="text-[12.5px] text-foreground">Email me</span>
           </label>
           <button
             type="submit"
             disabled={pending}
-            className="inline-flex items-center justify-center h-9 px-4 rounded-[2px] text-[13px] font-semibold text-white bg-primary hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex h-8 items-center justify-center rounded-full bg-[var(--t-primary-bg)] px-4 text-[13px] font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {pending ? "Saving…" : "Save"}
           </button>
@@ -344,6 +340,10 @@ export function LeadRoutingPanel({
           runBackfill();
         }}
       />
-    </section>
+    </Wrap>
   );
+}
+
+function Wrap({ bare, children, ...panel }: { bare: boolean; title: React.ReactNode; aside: React.ReactNode; children: React.ReactNode }) {
+  return bare ? <div>{children}</div> : <Panel {...panel}>{children}</Panel>;
 }

@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
-import { ConversionFunnel } from "@/components/portal/dashboard/conversion-funnel";
-import { SourceBars } from "@/components/portal/dashboard/source-bars";
 import { getPropertyLeads } from "@/lib/properties/queries";
 import { prisma } from "@/lib/db";
-import { LeadStatus, ApplicationStatus, type Lead } from "@prisma/client";
+import { LeadStatus, type Lead } from "@prisma/client";
 import { leadDisplayName } from "@/lib/leads/display-name";
-import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
+import { SourceList, SourceMark } from "@/components/portal/source-mark";
+import { buildSourceFlow } from "@/lib/leads/source-flow";
+import { humanLeadSource } from "@/lib/format";
 import { SectionCard } from "@/components/admin/page-header";
 
 // Bug #30 — Operators reported the leads tab "doesn't show most of the
@@ -50,7 +50,8 @@ export async function LeadsTab({
   orgId: string;
   propertyId: string;
 }) {
-  const [data, activePipelineRows, pendingApps, recentActivity] =
+  const since28d = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000);
+  const [data, activePipelineRows, recentActivity, flowGroups] =
     await Promise.all([
       getPropertyLeads(orgId, propertyId),
       prisma.lead.groupBy({
@@ -61,14 +62,6 @@ export async function LeadsTab({
           status: { in: ACTIVE_STATUSES },
         },
         _count: { _all: true },
-      }),
-      prisma.application.count({
-        where: {
-          lead: { orgId, propertyId },
-          status: {
-            in: [ApplicationStatus.SUBMITTED, ApplicationStatus.UNDER_REVIEW],
-          },
-        },
       }),
       // Pull the 8 most-recently-updated active leads — anchors the
       // "what's live right now" panel below the funnel.
@@ -92,11 +85,16 @@ export async function LeadsTab({
           createdAt: true,
         },
       }),
+      prisma.lead.groupBy({
+        by: ["source", "status"],
+        where: { orgId, propertyId, firstSeenAt: { gte: since28d } },
+        _count: { _all: true },
+      }),
     ]);
+  const flow = buildSourceFlow(
+    flowGroups.map((g) => ({ source: g.source, status: g.status, count: g._count._all })),
+  );
 
-  const leadsCount = data.funnel.find((s) => s.label === "Leads")?.value ?? 0;
-  const toursCount = data.funnel.find((s) => s.label === "Tours")?.value ?? 0;
-  const appsCount = data.funnel.find((s) => s.label === "Applications")?.value ?? 0;
 
   // Active pipeline counts in display order. Includes statuses with
   // 0 so the operator sees the full shape even when a stage is empty.
@@ -109,29 +107,12 @@ export async function LeadsTab({
 
   return (
     <div className="space-y-6">
-      {/* Acquisition snapshot. Was a bespoke 5-across strip in a rounded-xl
-          card with a mono blue header band; now the same KpiTile the Leasing
-          tab and the dashboard use, so a row of stats reads the same way
-          everywhere on this page. */}
-      <section>
-        <p className="ls-eyebrow mb-2">Acquisition · last 28 days</p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          <KpiTile density="dense" label="Leads" value={leadsCount.toLocaleString()} />
-          <KpiTile density="dense" label="Tours" value={toursCount.toLocaleString()} />
-          <KpiTile density="dense" label="Applications" value={appsCount.toLocaleString()} />
-          <KpiTile
-            density="dense"
-            label="In flight"
-            value={totalActive.toLocaleString()}
-            hint="Not signed / lost"
-          />
-          <KpiTile
-            density="dense"
-            label="Pending apps"
-            value={pendingApps.toLocaleString()}
-            hint="Submitted"
-          />
+      <section className="ls-card px-5 py-4">
+        <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-[14px] font-semibold text-foreground">Lead sources</h2>
+          <p className="text-[12px] text-muted-foreground">Last 28 days</p>
         </div>
+        <SourceList rows={flow.rows} />
       </section>
 
       {/* Pipeline funnel. Stays a left-to-right sequence (a funnel is not a
@@ -193,17 +174,18 @@ export async function LeadsTab({
                     href={`/portal/leads/${lead.id}`}
                     className="flex items-center justify-between gap-3 group"
                   >
+                    <SourceMark source={lead.source} size={28} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-medium text-foreground truncate group-hover:underline">
                           {name}
                         </span>
-                        <span className="text-[10px] uppercase tracking-widest text-muted-foreground px-1.5 py-0.5 bg-secondary rounded-[2px]">
+                        <span className="text-[12px] text-muted-foreground">
                           {STATUS_LABEL[lead.status]}
                         </span>
                       </div>
                       <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                        {[lead.source, lead.email, lead.phone]
+                        {[humanLeadSource(lead.source), lead.email, lead.phone]
                           .filter(Boolean)
                           .join(" · ")}
                       </div>
@@ -218,35 +200,6 @@ export async function LeadsTab({
           </ul>
         </DashboardSection>
       ) : null}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <DashboardSection
-          title="Conversion funnel"
-          eyebrow="Last 28 days"
-          description="Leads, tours, and applications for this property"
-        >
-          {data.funnel.every((s) => s.value === 0 || s.notApplicable === true) ? (
-            <p className="text-xs text-muted-foreground">
-              No activity in the last 28 days yet.
-            </p>
-          ) : (
-            <ConversionFunnel stages={data.funnel} />
-          )}
-        </DashboardSection>
-
-        <DashboardSection
-          title="Lead sources"
-          eyebrow="Last 28 days"
-          description="Where this property's leads originate"
-        >
-          <SourceBars
-            rows={data.sourceBreakdown.map((s) => ({
-              label: s.source,
-              value: s.count,
-            }))}
-          />
-        </DashboardSection>
-      </div>
 
       <DashboardSection
         title="Recent leads"
@@ -266,14 +219,15 @@ export async function LeadsTab({
                 <li key={lead.id} className="py-2.5 first:pt-0 last:pb-0">
                   <Link
                     href={`/portal/leads/${lead.id}`}
-                    className="flex items-baseline justify-between gap-3"
+                    className="flex items-center justify-between gap-3"
                   >
-                    <div className="min-w-0">
+                    <SourceMark source={lead.source} size={28} />
+                    <div className="min-w-0 flex-1">
                       <div className="text-sm font-medium text-foreground truncate">
                         {name}
                       </div>
                       <div className="text-[11px] text-muted-foreground mt-0.5">
-                        {lead.source}
+                        {humanLeadSource(lead.source)}
                         {lead.email ? ` \u00b7 ${lead.email}` : ""}
                       </div>
                     </div>

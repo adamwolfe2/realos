@@ -91,17 +91,22 @@ describe("SG focus nav", () => {
   it("documents the exact nav SG's team sees", () => {
     // Anything beyond the four-item sellable unit here is either
     // ALWAYS-gated (no flag exists) or entitlement-coupled:
-    //   - Dashboard/Properties/Content/Integrations/Marketplace/Billing/
-    //     Settings have no module flag at all.
+    //   - Overview/Properties/Data sources/Content/Performance/Integrations/
+    //     Marketplace/Billing/Settings have no module flag at all.
     // Insights is gone via navHiddenItems, NOT via its module flag — see
     // the entitlement-decoupling tests below.
+    // 2026-10-28 agent regroup: Agent / Portfolio / Learns from / Reports /
+    // Account. Overview is the agent home; the old dashboard is Performance.
     expect(labels).toEqual([
-      "Dashboard",
+      "Overview",
+      "Chatbot",
+      "Conversations",
+      "Suggested fixes",
       "Properties",
       "Leads",
-      "Conversations",
-      "Chatbot",
+      "Data sources",
       "Content",
+      "Performance",
       "Attribution",
       "Reports",
       "Integrations",

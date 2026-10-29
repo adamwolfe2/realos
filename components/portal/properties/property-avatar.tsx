@@ -59,10 +59,10 @@ export function PropertyAvatar({
 }: Props) {
   const sizeClass = SIZE_CLASSES[size];
   const iconClass = ICON_SIZE_CLASSES[size];
-  const tintBg = accent
-    ? `${accent}14`
-    : "color-mix(in oklab, var(--color-primary) 8%, transparent)";
-  const iconColor = accent ?? "var(--color-primary)";
+  // Neutral white tile with a muted icon unless the property has its own
+  // brand accent; a blue wash on every row read as pastel, not premium.
+  const tintBg = accent ? `${accent}14` : "#ffffff";
+  const iconColor = accent ?? "var(--t-muted, #64708b)";
 
   // Path A: full hero photo + (optional) logo badge.
   if (src) {

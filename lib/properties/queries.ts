@@ -415,8 +415,10 @@ export async function getPropertyLeads(
 
   const [leadsCount, toursCount, appsCount, grouped, recent, allLeads] =
     await Promise.all([
+      // firstSeenAt (real event date), not createdAt: an AppFolio backfill
+      // inserts history "now". Same rule as getPropertyOverviewKpis.
       prisma.lead.count({
-        where: { orgId, propertyId, createdAt: { gte: since28d } },
+        where: { orgId, propertyId, firstSeenAt: { gte: since28d } },
       }),
       prisma.tour.count({
         where: {
@@ -435,7 +437,7 @@ export async function getPropertyLeads(
       }),
       prisma.lead.groupBy({
         by: ["source"],
-        where: { orgId, propertyId, createdAt: { gte: since28d } },
+        where: { orgId, propertyId, firstSeenAt: { gte: since28d } },
         _count: { _all: true },
       }),
       prisma.lead.findMany({

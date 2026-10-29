@@ -43,7 +43,7 @@ export default async function ConnectPage() {
   ]);
 
   return (
-    <div className="max-w-[1100px] mx-auto px-4 lg:px-6 py-8 lg:py-12">
+    <div>
       <ConnectHub
         variant="page"
         availability={availability}
