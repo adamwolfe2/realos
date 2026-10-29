@@ -133,7 +133,16 @@ export function VerticalLanding({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {modules.map((m, i) => (
-              <Reveal key={m.title} delay={i * 60}>
+              <Reveal
+                key={m.title}
+                delay={i * 60}
+                // Odd count: last card spans both columns, no orphan gap.
+                className={
+                  modules.length % 2 === 1 && i === modules.length - 1
+                    ? "md:col-span-2"
+                    : undefined
+                }
+              >
                 <div
                   className="p-7 h-full flex gap-4"
                   style={{
