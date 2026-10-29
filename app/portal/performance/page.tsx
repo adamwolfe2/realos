@@ -728,6 +728,7 @@ export default async function PortalHome({
     // blocks the dashboard render.
     const portfolioActions = await getPortfolioRecommendations(scope.orgId, {
       limit: 5,
+      propertyIds: scope.allowedPropertyIds,
     }).catch(soft([], "portal.page:752"));
 
     // Portfolio-wide SEO Agent recommendations. Sibling to portfolioActions,

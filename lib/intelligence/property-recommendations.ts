@@ -30,6 +30,8 @@
 //     query against tables we already keep fresh via cron / webhook.
 // ---------------------------------------------------------------------------
 
+import { unstable_cache } from "next/cache";
+import { captureWithContext } from "@/lib/sentry";
 import { prisma } from "@/lib/db";
 import { isBrandedPromptText } from "@/lib/aeo/prompts";
 import type { Property } from "@prisma/client";
@@ -579,31 +581,89 @@ export async function getPropertyRecommendations(
 // ---------------------------------------------------------------------------
 export async function getPortfolioRecommendations(
   orgId: string,
-  options: { limit?: number } = {},
+  options: { limit?: number; propertyIds?: string[] | null } = {},
 ): Promise<Array<ProactiveAction & { propertyName: string; propertyId: string }>> {
   const { limit = 5 } = options;
+  // Restricted users (property grants) only see their properties. Sorted so
+  // the cache key is stable regardless of grant order.
+  const ids = options.propertyIds ? [...options.propertyIds].sort() : null;
+  // Each property fans out to ~10 queries; caching per (org, grants) for 5
+  // minutes keeps the dashboard from re-running ~500 queries on every load.
+  // ponytail: action items can lag a just-finished fix by up to 5 min; add
+  // revalidateTag(portfolioRecsTag(orgId), "max") in the fixing actions if that bites.
+  // A result with failed properties is thrown out of the cached fn (errors are
+  // never cached) and served once uncached, so a blip isn't pinned for 5 min.
+  return unstable_cache(
+    async () => {
+      const { items, failed } = await computePortfolioRecommendations(orgId, limit, ids);
+      if (failed > 0) throw new PartialRecommendations(items);
+      return items;
+    },
+    ["portfolio-recs", orgId, String(limit), ids ? ids.join(",") : "all"],
+    { revalidate: 300, tags: [portfolioRecsTag(orgId)] },
+  )().catch((err: unknown) => {
+    if (err instanceof PartialRecommendations) return err.items;
+    throw err;
+  });
+}
+
+type PortfolioRec = ProactiveAction & { propertyName: string; propertyId: string };
+
+class PartialRecommendations extends Error {
+  constructor(readonly items: PortfolioRec[]) {
+    super("partial portfolio recommendations");
+  }
+}
+
+export function portfolioRecsTag(orgId: string): string {
+  return `portfolio-recs:${orgId}`;
+}
+
+const PROPERTY_CONCURRENCY = 8;
+
+async function computePortfolioRecommendations(
+  orgId: string,
+  limit: number,
+  ids: string[] | null,
+): Promise<{ items: PortfolioRec[]; failed: number }> {
   const properties = await prisma.property.findMany({
-    where: { orgId, lifecycle: "ACTIVE", launchStatus: "LIVE" },
+    where: {
+      orgId,
+      lifecycle: "ACTIVE",
+      launchStatus: "LIVE",
+      ...(ids ? { id: { in: ids } } : {}),
+    },
     select: { id: true, name: true },
     take: 50,
   });
 
-  // Resolve each property's recommendations CONCURRENTLY instead of awaiting
-  // them one-by-one — for a multi-property portfolio this was the dominant
-  // latency (N sequential round-trips). (Codex perf.)
-  const perProperty = await Promise.all(
-    properties.map(async (p) => {
-      const recs = await getPropertyRecommendations(orgId, p.id);
-      return recs.map((r) => ({
-        ...r,
-        propertyName: p.name,
-        propertyId: p.id,
-      }));
+  // Bounded worker pool: all 50 at once (~500 queries) exhausted the DB
+  // connection pool for every other request.
+  // Written by index so ties sort deterministically (the result is cached).
+  const perProperty: Array<Array<ProactiveAction & { propertyName: string; propertyId: string }>> =
+    properties.map(() => []);
+  let next = 0;
+  let failed = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(PROPERTY_CONCURRENCY, properties.length) }, async () => {
+      while (next < properties.length) {
+        const i = next++;
+        const p = properties[i];
+        // One bad property must not blank the whole strip.
+        const recs = await getPropertyRecommendations(orgId, p.id).catch((err: unknown) => {
+          failed += 1;
+          console.error("[recs] property recommendations failed", { orgId, propertyId: p.id, err });
+          captureWithContext(err, { route: "recs/portfolio", orgId, propertyId: p.id });
+          return [] as ProactiveAction[];
+        });
+        perProperty[i] = recs.map((r) => ({ ...r, propertyName: p.name, propertyId: p.id }));
+      }
     }),
   );
 
-  return perProperty
+  const items = perProperty
     .flat()
-    .sort((a, b) => b.score - a.score)
+    .sort((a, b) => b.score - a.score || a.propertyName.localeCompare(b.propertyName))
     .slice(0, limit);
+  return { items, failed };
 }

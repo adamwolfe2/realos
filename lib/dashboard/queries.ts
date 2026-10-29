@@ -1125,7 +1125,7 @@ export async function getTopPropertiesByLeads(
   const properties = await prisma.property.findMany({
     where: {
       ...marketablePropertyWhere(orgId),
-      ...(propertyIds && propertyIds.length > 0
+      ...(propertyIds
         ? { id: { in: propertyIds } }
         : {}),
     },

@@ -673,6 +673,9 @@ Respond with ONLY valid JSON (no markdown, no explanation):
       model: anthropic("claude-haiku-4-5-20251001"),
       messages: [{ role: "user", content: prompt }],
       maxOutputTokens: 800,
+      // A hung call would stall the whole weekly cron; the report ships
+      // without AI analysis instead.
+      abortSignal: AbortSignal.timeout(30_000),
     });
     return parseAiAnalysis(text);
   } catch (err) {
@@ -1727,80 +1730,81 @@ export async function generateReportSnapshot(
   // blocks the rest of the report from generating.
   // -------------------------------------------------------------------------
 
-  // Reputation — always lifetime + delta vs prior period.
-  const reputationStats = await buildReputationStats(
-    orgId,
-    scope.propertyId,
-    periodStart,
-    periodEnd,
-    priorStart,
-    priorEnd,
-  ).catch(sectionFailed("buildReputationStats"));
-
-  // Occupancy — point-in-time snapshot. Scoped to the property when set.
-  const occupancyStats = await buildOccupancyStats(orgId, scope.propertyId, periodEnd).catch(sectionFailed("buildOccupancyStats"));
-
-  // Renewals — forward-looking 120-day window from periodEnd.
-  const renewalStats = await buildRenewalStats(
-    orgId,
-    scope.propertyId,
-    periodEnd,
-  ).catch(sectionFailed("buildRenewalStats"));
-
-  // Chatbot extended — captured-rate breakdown for the report.
-  const chatbotStatsExtended = await buildChatbotExtended(
-    orgId,
-    scope.propertyId,
-    periodStart,
-    periodEnd,
-    chatbotStats,
-  ).catch(sectionFailed("buildChatbotExtended"));
-
-  const prospectQuestions = await buildProspectQuestions(
-    orgId,
-    scope.propertyId,
-    periodStart,
-    periodEnd,
-  ).catch(sectionFailed("buildProspectQuestions"));
-
-  // AEO stats — how often we got cited vs how often a competitor was
-  // cited instead, across all AI engines in the period. Headline insight
-  // for the Insights tab.
-  const aeoStats = await buildAeoStats(
-    orgId,
-    scope.propertyId,
-    periodStart,
-    periodEnd,
-  ).catch(sectionFailed("buildAeoStats"));
-
-  // Content stats — blog posts + neighborhood pages published.
-  const contentStats = await buildContentStats(
-    orgId,
-    scope.propertyId,
-    periodStart,
-    periodEnd,
-  ).catch(sectionFailed("buildContentStats"));
-
-  // Popup performance — Shown/CTA clicks/Converted/Dismissed for the period.
-  const popupStats = await buildPopupStats(
-    orgId,
-    scope.propertyId,
-    periodStart,
-    periodEnd,
-  ).catch((err) => {
-    console.error("[report] popupStats failed:", orgId, err);
-    return undefined;
-  });
-
-  // Connection status for every integration — drives section gating in
-  // the renderer + email so we never show fake $X ad spend / 0 tours
-  // numbers for sources the operator hasn't actually connected.
-  const dataSources = await buildDataSources(
-    orgId,
-    scope,
-    periodStart,
-    periodEnd,
-  ).catch(sectionFailed("buildDataSources"));
+  // Sections are independent; build them together (was 9 sequential
+  // round-trips). Each keeps its own catch so one failure never blocks
+  // the rest of the report.
+  const [
+    reputationStats,
+    occupancyStats,
+    renewalStats,
+    chatbotStatsExtended,
+    aeoStats,
+    contentStats,
+    prospectQuestions,
+    popupStats,
+    dataSources,
+    monthlySignedLast12,
+  ] = await Promise.all([
+    buildReputationStats(
+      orgId,
+      scope.propertyId,
+      periodStart,
+      periodEnd,
+      priorStart,
+      priorEnd,
+    ).catch(sectionFailed("buildReputationStats")),
+    buildOccupancyStats(orgId, scope.propertyId, periodEnd).catch(sectionFailed("buildOccupancyStats")),
+    buildRenewalStats(
+      orgId,
+      scope.propertyId,
+      periodEnd,
+    ).catch(sectionFailed("buildRenewalStats")),
+    buildChatbotExtended(
+      orgId,
+      scope.propertyId,
+      periodStart,
+      periodEnd,
+      chatbotStats,
+    ).catch(sectionFailed("buildChatbotExtended")),
+    buildAeoStats(
+      orgId,
+      scope.propertyId,
+      periodStart,
+      periodEnd,
+    ).catch(sectionFailed("buildAeoStats")),
+    buildContentStats(
+      orgId,
+      scope.propertyId,
+      periodStart,
+      periodEnd,
+    ).catch(sectionFailed("buildContentStats")),
+    buildProspectQuestions(
+      orgId,
+      scope.propertyId,
+      periodStart,
+      periodEnd,
+    ).catch(sectionFailed("buildProspectQuestions")),
+    buildPopupStats(
+      orgId,
+      scope.propertyId,
+      periodStart,
+      periodEnd,
+    ).catch((err) => {
+      console.error("[report] popupStats failed:", orgId, err);
+      return undefined;
+    }),
+    buildDataSources(
+      orgId,
+      scope,
+      periodStart,
+      periodEnd,
+    ).catch(sectionFailed("buildDataSources")),
+    buildMonthlyLeaseVelocity(
+      orgId,
+      scope.propertyId,
+      now,
+    ),
+  ]);
 
   // AppFolio lifecycle layer — populated whenever there's at least one
   // active lease OR any in-period lease/application activity. We never
@@ -1819,14 +1823,7 @@ export async function generateReportSnapshot(
   const applicationsInPeriod = applicationStatusGroups
     .filter((row) => LIVE_APPLICATION_STATUSES.includes(row.status))
     .reduce((sum, row) => sum + row._count._all, 0);
-  // 12-month lease velocity — pull all in-window lease startDates, then
-  // bucket into calendar months client-side. Avoids a per-month DB
-  // round trip while keeping the count cheap for any sane portfolio.
-  const monthlySignedLast12 = await buildMonthlyLeaseVelocity(
-    orgId,
-    scope.propertyId,
-    now,
-  );
+
 
   const lifecycleStats: ReportLifecycleStats | undefined =
     activeLeasesCount > 0 ||
