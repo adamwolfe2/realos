@@ -82,7 +82,7 @@ export function LaunchSteps() {
         <div ref={ref} className="relative mt-16">
           {/* Drawing connector line (desktop). */}
           <div
-            className="hidden md:block absolute"
+            className="hidden lg:block absolute"
             style={{ top: 5, left: 0, right: 0, height: 2 }}
             aria-hidden
           >
@@ -101,7 +101,7 @@ export function LaunchSteps() {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4">
+          <div className="grid grid-cols-1 lg:grid-cols-4">
             {STEPS.map((step, i) => (
               <motion.div
                 key={step.title}
@@ -114,13 +114,13 @@ export function LaunchSteps() {
                 }
                 className={
                   i === 0
-                    ? "md:pr-10"
-                    : "mt-10 pt-10 md:mt-0 md:pt-0 md:pl-10 border-t md:border-t-0 md:border-l border-[#e0e0e0]"
+                    ? "lg:pr-10"
+                    : "mt-10 pt-10 lg:mt-0 lg:pt-0 lg:pl-10 border-t lg:border-t-0 lg:border-l border-[#e0e0e0]"
                 }
               >
                 <span
                   aria-hidden
-                  className="hidden md:block"
+                  className="hidden lg:block"
                   // The connector line sits at top:5 height:2 (center y=6). A
                   // 12px dot at marginTop:0 has center y=6 too, so it lands
                   // exactly ON the line (punch-list item 4).
