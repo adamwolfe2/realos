@@ -120,7 +120,7 @@ export default async function SetupPage({ searchParams }: { searchParams: Promis
         {property ? (
           <div className="flex flex-wrap items-center gap-3 px-4 py-3.5">
             <Initial name={property.name} size={34} />
-            <span className="min-w-0 flex-1">
+            <span className="min-w-[220px] flex-1">
               <span className="block text-[13.5px] font-medium text-[var(--t-ink)]">{property.name}</span>
               <span className="block truncate text-[12.5px] text-[var(--t-muted)]">
                 {[property.city, property.state].filter(Boolean).join(", ") || "No address yet"}
