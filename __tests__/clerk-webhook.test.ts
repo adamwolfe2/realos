@@ -104,13 +104,12 @@ describe("Clerk webhook — app/api/webhooks/clerk/route.ts", () => {
   // calls for non-existent models would break `tsc`. Real cascade is
   // covered by `cleans up clientNote records on user deletion`.
 
-  it("handles organization linking from public_metadata.organizationId", () => {
+  it("never binds an org straight from public_metadata", () => {
     const content = readRoute();
-    expect(content).toContain("organizationId");
     expect(content).toContain("public_metadata");
-    // Verify it checks org exists before linking (prevent dangling FK)
-    expect(content).toContain("prisma.organization.findUnique");
-    expect(content).toContain("orgExists");
+    // Metadata never binds directly (stale after removals); invitees resolve
+    // through the seed row. Behaviour: clerk-webhook-stale-metadata.test.ts.
+    expect(content).not.toContain("connect: { id: metaOrgId }");
   });
 
   it("auto-links user to org by email on first sign-up", () => {

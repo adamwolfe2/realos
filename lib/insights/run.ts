@@ -221,6 +221,18 @@ export async function runInsightDetectorsForAll(): Promise<InsightsRunSummary[]>
         results.push(await runInsightDetectors(org.id));
       } catch (err) {
         console.error(`[insights] run failed for org ${org.id}:`, err);
+        // Keep the failure in the results so the cron counts it (errorCount).
+        results.push({
+          orgId: org.id,
+          totalDetected: 0,
+          totalInserted: 0,
+          totalUpdated: 0,
+          totalResolved: 0,
+          totalOutOfScope: 0,
+          detectorResults: [
+            { detector: "org-run", insights: [], error: err instanceof Error ? err.message : String(err) },
+          ],
+        });
       }
     }
   }

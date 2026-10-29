@@ -180,12 +180,12 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
   const answer =
     traced && leasesSigned
       ? {
-          lead: `${plural(leasesSigned, "lease", "leases")} signed this period.`,
+          lead: `${plural(leasesSigned, "lease", "leases")} started this period.`,
           proof: `${num(traced)} ${traced === 1 ? "traces" : "trace"} back to a lead LeaseStack captured.`,
         }
       : leasesSigned
         ? {
-            lead: `${plural(leasesSigned, "lease", "leases")} signed this period.`,
+            lead: `${plural(leasesSigned, "lease", "leases")} started this period.`,
             proof: null,
           }
         : kpis.leads > 0
@@ -217,7 +217,7 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
       : []),
     {
       value: num(leasesSigned),
-      label: "Leases signed",
+      label: "Leases started",
       delta:
         showDeltas && !(leasesSigned === 0 && priorLeases === 0)
           ? {
@@ -516,7 +516,7 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
           <Panel
             className="mt-4"
             title="Leasing momentum"
-            subtitle="Leases signed by month, last 12 months."
+            subtitle="Leases started by month, last 12 months."
           >
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-[1fr_190px] sm:items-end print:grid-cols-[1fr_190px] print:items-end">
               {monthlySigned.length ? (
@@ -529,7 +529,7 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
                 figures={[
                   {
                     value: num(lifecycleStats.leasesSignedLast180d),
-                    label: "Signed, last 180 days",
+                    label: "Started, last 180 days",
                   },
                   {
                     value: num(lifecycleStats.activeLeases),

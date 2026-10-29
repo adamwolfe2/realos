@@ -4,6 +4,7 @@ import {
   type OAuthConnectionRecord,
   type OAuthProvider,
   type OAuthTokens,
+  OAuthRefreshError,
 } from "./types";
 import { signState, verifyState } from "./state";
 import { decrypt } from "@/lib/crypto";
@@ -181,8 +182,9 @@ export async function refreshAccessToken(
   connection: OAuthConnectionRecord,
 ): Promise<OAuthTokens> {
   if (!connection.refreshToken) {
-    throw new OAuthConfigError(
+    throw new OAuthRefreshError(
       "OAuth connection has no refresh token — re-run the connect flow.",
+      true,
     );
   }
   const refreshToken = decrypt(connection.refreshToken);
@@ -199,11 +201,13 @@ export async function refreshAccessToken(
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body,
     cache: "no-store",
+    signal: AbortSignal.timeout(10_000),
   });
   if (!resp.ok) {
     const errText = await resp.text().catch(() => "");
-    throw new Error(
+    throw new OAuthRefreshError(
       `Google refresh failed (${resp.status}): ${errText.slice(0, 300)}`,
+      isGoogleGrantRejected(errText),
     );
   }
   const json = (await resp.json()) as {
@@ -265,4 +269,15 @@ export async function revoke(
     status: resp.status,
     warning: text.slice(0, 200),
   };
+}
+
+/** Only invalid_grant (revoked/expired refresh token) needs a reconnect.
+ *  invalid_client/unauthorized_client are our config, not the tenant's. */
+function isGoogleGrantRejected(body: string): boolean {
+  try {
+    return (JSON.parse(body) as { error?: string }).error === "invalid_grant";
+  } catch {
+    // Non-JSON body (HTML error page, proxy): not a grant rejection.
+    return false;
+  }
 }

@@ -44,7 +44,6 @@ vi.mock("@/lib/tenancy/origin-guard", () => ({
 }));
 
 vi.mock("@/lib/email/lead-emails", () => ({
-  sendLeadAutoReplyEmail: vi.fn(async () => ({ ok: true })),
   notifyTenantOfLeadEmail: vi.fn(async () => ({ ok: true })),
 }));
 
@@ -64,7 +63,7 @@ const { POST } = await import("@/app/api/public/leads/route");
 const { requireMatchingOrigin } = await import("@/lib/tenancy/origin-guard");
 const { notifyLeadCaptured } = await import("@/lib/notifications/lead-notify");
 const { notifyLeadCreated } = await import("@/lib/notifications/create");
-const { sendLeadAutoReplyEmail, notifyTenantOfLeadEmail } = await import(
+const { notifyTenantOfLeadEmail } = await import(
   "@/lib/email/lead-emails"
 );
 const { notifyNewIntake } = await import("@/lib/integrations/slack");
@@ -174,7 +173,7 @@ describe("POST /api/public/leads", () => {
 
 // F-024: the contact form created a new Lead on every submit. It now dedupes
 // by (orgId, email), case-insensitive, like the chatbot/popup/tours routes,
-// and only net-new leads fire notifications + the auto-reply.
+// and only net-new leads fire the new-lead notification; quiet repeats notify separately.
 describe("POST /api/public/leads dedupe (F-024)", () => {
   const EXISTING = {
     id: "lead_existing",
@@ -225,7 +224,6 @@ describe("POST /api/public/leads dedupe (F-024)", () => {
 
     expect(notifyLeadCaptured).not.toHaveBeenCalled();
     expect(notifyLeadCreated).not.toHaveBeenCalled();
-    expect(sendLeadAutoReplyEmail).not.toHaveBeenCalled();
   });
 
   it("a repeat with a message on a lead quiet for 10+ minutes notifies the operator as a repeat inquiry, but no auto-reply", async () => {
@@ -248,7 +246,6 @@ describe("POST /api/public/leads dedupe (F-024)", () => {
     expect(input.propertyId).toBe("prop_first");
     expect(input.lead.sourceLabel).toBe("Repeat inquiry (FORM)");
     expect(input.lead.intent).toBe("Is the 2BR still open?");
-    expect(sendLeadAutoReplyEmail).not.toHaveBeenCalled();
     expect(notifyTenantOfLeadEmail).not.toHaveBeenCalled();
     expect(notifyNewIntake).not.toHaveBeenCalled();
   });
@@ -268,6 +265,7 @@ describe("POST /api/public/leads dedupe (F-024)", () => {
 
   it("a different email creates a new lead and notifies", async () => {
     h.lead.findFirst.mockResolvedValue(null);
+    h.org = { ...h.org, primaryContactEmail: "ops@operator.test" };
 
     const res = (await POST(
       makeRequest({ ...VALID_BODY, email: "other@example.com" }),
@@ -278,7 +276,10 @@ describe("POST /api/public/leads dedupe (F-024)", () => {
     expect(h.lead.create).toHaveBeenCalledTimes(1);
     expect(notifyLeadCaptured).toHaveBeenCalledTimes(1);
     expect(notifyLeadCreated).toHaveBeenCalledTimes(1);
-    expect(sendLeadAutoReplyEmail).toHaveBeenCalledTimes(1);
+    // The renter is never emailed (auto-reply removed 2026-10-18); only the
+    // operator hears about the lead (notifyLeadCaptured above).
+    const sends = vi.mocked(notifyTenantOfLeadEmail).mock.calls;
+    expect(sends.map(([arg]) => arg.to)).toEqual(["ops@operator.test"]);
   });
 
   it("does not look up a match when no email is given", async () => {

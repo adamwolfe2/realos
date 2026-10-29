@@ -7,7 +7,11 @@ import {
 import {
   refreshAccessToken as refreshMetaAccessToken,
 } from "@/lib/oauth/meta";
-import type { OAuthProvider, OAuthTokens } from "@/lib/oauth/types";
+import {
+  OAuthRefreshError,
+  type OAuthProvider,
+  type OAuthTokens,
+} from "@/lib/oauth/types";
 
 // ---------------------------------------------------------------------------
 // OAuth credential resolver consumed by the integration libs (ga4.ts,
@@ -22,7 +26,12 @@ import type { OAuthProvider, OAuthTokens } from "@/lib/oauth/types";
 // this helper, which also handles refresh-on-expiry transparently.
 // ---------------------------------------------------------------------------
 
-const REFRESH_BUFFER_MS = 60 * 1000; // refresh 60s before expiry
+// Google issues 1h tokens with a refresh token, so refresh just before
+// expiry. Meta has no refresh token: a long-lived (~60d) token can only be
+// re-extended while still valid, so start well before it lapses (syncs run
+// every 30 min; 7 days survives a week of outages).
+const REFRESH_BUFFER_MS = 60 * 1000;
+const META_REFRESH_BUFFER_MS = 7 * 24 * 60 * 60 * 1000;
 
 export type ResolvedOAuthCredentials = {
   type: "oauth";
@@ -37,7 +46,8 @@ export type ResolvedOAuthCredentials = {
 
 /**
  * Look up the active OAuthConnection for (orgId, provider). Refreshes the
- * access token if it's expired (or within REFRESH_BUFFER_MS of expiring) and
+ * access token when it's within the provider's buffer of expiring
+ * (REFRESH_BUFFER_MS for Google, META_REFRESH_BUFFER_MS for Meta) and
  * persists the new token back to the row. Returns null if no active row
  * exists — caller falls through to the legacy paste-credential path.
  *
@@ -65,23 +75,34 @@ export async function getOAuthCredentials(
 
   const needsRefresh =
     row.expiresAt !== null &&
-    row.expiresAt.getTime() - Date.now() < REFRESH_BUFFER_MS;
+    row.expiresAt.getTime() - Date.now() <
+      (provider === "meta_ads" ? META_REFRESH_BUFFER_MS : REFRESH_BUFFER_MS);
 
-  if (!needsRefresh) {
-    return {
-      type: "oauth",
-      connectionId: row.id,
-      accessToken: decrypt(row.accessToken),
-      refreshToken: row.refreshToken ? decrypt(row.refreshToken) : null,
-      expiresAt: row.expiresAt,
-      scope: row.scope,
-      externalAccountId: row.externalAccountId,
-      metadata: row.metadata,
-    };
+  const current = (): ResolvedOAuthCredentials => ({
+    type: "oauth",
+    connectionId: row.id,
+    accessToken: decrypt(row.accessToken),
+    refreshToken: row.refreshToken ? decrypt(row.refreshToken) : null,
+    expiresAt: row.expiresAt,
+    scope: row.scope,
+    externalAccountId: row.externalAccountId,
+    metadata: row.metadata,
+  });
+
+  if (!needsRefresh) return current();
+
+  // Meta re-extends at most once a day; skip repeat calls while the token is
+  // still valid so the 7-day window costs ~7 calls, not one per sync.
+  const META_RETRY_MS = 24 * 60 * 60 * 1000;
+  if (
+    provider === "meta_ads" &&
+    row.expiresAt !== null &&
+    row.expiresAt.getTime() > Date.now() &&
+    Date.now() - row.updatedAt.getTime() < META_RETRY_MS
+  ) {
+    return current();
   }
 
-  // Refresh path. We swallow the original error and surface a clearer one
-  // upstream after marking the row as needing reauth so the UI can prompt.
   let fresh: OAuthTokens;
   try {
     if (provider === "meta_ads") {
@@ -108,55 +129,90 @@ export async function getOAuthCredentials(
       });
     }
   } catch (err) {
-    // Mark the connection so the UI can show a "reconnect" prompt instead of
-    // silently failing every sync going forward.
-    await prisma.oAuthConnection.update({
-      where: { id: row.id },
-      data: { status: "needs_reauth" },
+    // Config errors (missing env) are ours: never disconnect tenants for them.
+    const permanent = err instanceof OAuthRefreshError && err.permanent;
+    const stillValid = !!row.expiresAt && row.expiresAt.getTime() > Date.now();
+    console.warn("[oauth] token refresh failed", {
+      connectionId: row.id,
+      provider,
+      permanent,
+      stillValid,
+      err,
     });
+    // Only a provider rejection means the operator must reconnect. A
+    // timeout or 5xx must not permanently disconnect the integration.
+    if (permanent) {
+      // Guarded on the token we tried: a reconnect during the call wrote a
+      // new token, and that connection must not be marked needs_reauth.
+      const { count } = await prisma.oAuthConnection.updateMany({
+        where: { id: row.id, accessToken: row.accessToken },
+        data: { status: "needs_reauth" },
+      });
+      if (count === 0) return reread(orgId, provider, externalAccountId);
+      throw err;
+    }
+    if (stillValid) return current();
     throw err;
   }
 
-  const updated = await prisma.oAuthConnection.update({
-    where: { id: row.id },
-    data: {
-      accessToken: encrypt(fresh.accessToken),
-      // Google refresh never returns a new refresh_token — keep the existing
-      // one. Meta has no refresh_token in either path.
-      refreshToken: fresh.refreshToken
-        ? encrypt(fresh.refreshToken)
-        : row.refreshToken,
-      expiresAt: fresh.expiresAt,
-      scope: fresh.scope ?? row.scope,
-      metadata: (fresh.metadata ?? row.metadata ?? undefined) as object | undefined,
-      status: "active",
-    },
+  const data = {
+    accessToken: encrypt(fresh.accessToken),
+    // Google refresh never returns a new refresh_token — keep the existing
+    // one. Meta has no refresh_token in either path.
+    refreshToken: fresh.refreshToken
+      ? encrypt(fresh.refreshToken)
+      : row.refreshToken,
+    // Meta may omit expires_in; a null would stop all future re-extension.
+    expiresAt: fresh.expiresAt ?? row.expiresAt,
+    scope: fresh.scope ?? row.scope,
+    metadata: (fresh.metadata ?? row.metadata ?? undefined) as object | undefined,
+    status: "active",
+  };
+  // Compare-and-set on the token we refreshed from. A reconnect during the
+  // provider call already wrote a newer token; keep it, don't revert it.
+  const { count } = await prisma.oAuthConnection.updateMany({
+    where: { id: row.id, accessToken: row.accessToken },
+    data,
   });
+  if (count === 0) return reread(orgId, provider, externalAccountId);
 
   return {
     type: "oauth",
-    connectionId: updated.id,
+    connectionId: row.id,
     accessToken: fresh.accessToken,
-    refreshToken: updated.refreshToken ? decrypt(updated.refreshToken) : null,
-    expiresAt: updated.expiresAt,
-    scope: updated.scope,
-    externalAccountId: updated.externalAccountId,
-    metadata: updated.metadata,
+    refreshToken: data.refreshToken ? decrypt(data.refreshToken) : null,
+    expiresAt: data.expiresAt,
+    scope: data.scope,
+    externalAccountId: row.externalAccountId,
+    metadata: data.metadata ?? null,
   };
 }
 
-/**
- * Convenience: returns true iff there's an active OAuth connection for
- * (orgId, provider). Used by the integration libs to short-circuit fallback
- * lookups when callers want to know "are we on OAuth or legacy?" without
- * actually decrypting the token.
- */
-export async function hasActiveOAuthConnection(
+// The row changed under us (reconnect). Return whatever is there now without
+// another refresh attempt, so this can never loop.
+async function reread(
   orgId: string,
   provider: OAuthProvider,
-): Promise<boolean> {
-  const count = await prisma.oAuthConnection.count({
-    where: { orgId, provider, status: "active" },
+  externalAccountId?: string | null,
+): Promise<ResolvedOAuthCredentials | null> {
+  const row = await prisma.oAuthConnection.findFirst({
+    where: {
+      orgId,
+      provider,
+      status: "active",
+      ...(externalAccountId !== undefined ? { externalAccountId } : {}),
+    },
+    orderBy: { updatedAt: "desc" },
   });
-  return count > 0;
+  if (!row) return null;
+  return {
+    type: "oauth",
+    connectionId: row.id,
+    accessToken: decrypt(row.accessToken),
+    refreshToken: row.refreshToken ? decrypt(row.refreshToken) : null,
+    expiresAt: row.expiresAt,
+    scope: row.scope,
+    externalAccountId: row.externalAccountId,
+    metadata: row.metadata,
+  };
 }

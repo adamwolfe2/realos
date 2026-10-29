@@ -46,6 +46,7 @@ describe("buildPopupStats", () => {
       converted: 0,
       dismissed: 0,
       conversionRate: null,
+      conversionTrackedSince: null,
     });
   });
 
@@ -60,6 +61,8 @@ describe("buildPopupStats", () => {
       { type: "CONVERTED", _count: { _all: 100 } },
       { type: "DISMISSED", _count: { _all: 30 } },
     ]);
+    // Conversions were tracked before the window opened, so the rate is real.
+    mockPrisma.popupEvent.findFirst.mockResolvedValue({ occurredAt: new Date("2026-06-01T00:00:00.000Z") });
 
     const result = await buildPopupStats("org-1", null, PERIOD_START, PERIOD_END);
 
@@ -69,6 +72,7 @@ describe("buildPopupStats", () => {
       converted: 100,
       dismissed: 30,
       conversionRate: 33, // 100/300 = 33.33...% -> rounds to whole number, matching pct()
+      conversionTrackedSince: "2026-06-01T00:00:00.000Z",
     });
     // Scoped to this org's campaign ids + the report window.
     expect(mockPrisma.popupEvent.groupBy).toHaveBeenCalledWith(
@@ -80,6 +84,20 @@ describe("buildPopupStats", () => {
         }),
       }),
     );
+  });
+
+  it("conversion rate is null when CONVERTED tracking began mid-window", async () => {
+    mockPrisma.popupCampaign.findMany.mockResolvedValue([{ id: "camp-1" }]);
+    mockPrisma.popupEvent.groupBy.mockResolvedValue([
+      { type: "SHOWN", _count: { _all: 500 } },
+      { type: "CONVERTED", _count: { _all: 1 } },
+    ]);
+    mockPrisma.popupEvent.findFirst.mockResolvedValue({ occurredAt: new Date("2026-07-20T00:00:00.000Z") });
+
+    const result = await buildPopupStats("org-1", null, PERIOD_START, PERIOD_END);
+
+    expect(result?.conversionRate).toBeNull();
+    expect(result?.conversionTrackedSince).toBe("2026-07-20T00:00:00.000Z");
   });
 
   it("property-scoped report includes org-wide campaigns plus that property's own", async () => {

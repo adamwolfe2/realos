@@ -1,3 +1,7 @@
+import "./themes.css";
+import { Inter } from "next/font/google";
+import { soft } from "@/lib/soft";
+import { resolveIntegrationStatuses } from "@/lib/integrations/status";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
@@ -11,7 +15,6 @@ import { MobileNavDrawer } from "@/components/portal/mobile-nav-drawer";
 import { deriveSetupProgress } from "@/lib/setup/derive-progress";
 import Link from "next/link";
 import { NotificationBell } from "@/components/portal/notification-bell";
-import { CmdKSearch } from "@/components/portal/search/cmdk-search";
 import { BugReportButton } from "@/components/feedback/bug-report-button";
 import { TrialBanner } from "@/components/portal/trial-banner";
 import { resolveTrialState } from "@/lib/billing/trial-status";
@@ -38,6 +41,8 @@ export const metadata: Metadata = {
 };
 
 export const dynamic = "force-dynamic";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 
 export default async function PortalLayout({
   children,
@@ -108,6 +113,7 @@ export default async function PortalLayout({
     expiringLeases30dCount,
     urgentWorkOrdersCount,
     flaggedConversationsCount,
+    integrationStatuses,
   ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
@@ -272,6 +278,7 @@ export default async function PortalLayout({
         },
       })
       .catch(() => 0),
+    resolveIntegrationStatuses(scope.orgId).catch(soft([], "portal.layout:integrations")),
   ]);
 
   // Derived from the single marketable-properties fetch above.
@@ -350,6 +357,9 @@ export default async function PortalLayout({
   const brand = getEffectiveBrand(org);
 
   const navOrg = {
+    connectedSources: integrationStatuses
+      .filter((s) => s.state === "connected" || s.state === "stale")
+      .map((s) => s.slug),
     name: org.name,
     productLine: org.productLine,
     moduleWebsite: org.moduleWebsite,
@@ -449,7 +459,7 @@ export default async function PortalLayout({
       : null;
 
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground">
+    <div data-theme="inbox" className={`${inter.variable} flex flex-col h-screen bg-background text-foreground`}>
       {/* Mobile top bar */}
       <div
         data-no-print
@@ -648,24 +658,8 @@ export default async function PortalLayout({
         </div>
         <main
           id="main-content"
-          className="flex-1 overflow-y-auto bg-background flex flex-col portal-main"
+          className="flex-1 overflow-y-auto flex flex-col portal-main lg:my-2 lg:mr-2 lg:rounded-[14px]"
         >
-          {/* Desktop top utility bar — search + notifications. Search button
-              hidden on mobile (Cmd+K still works); mobile already has its
-              own top bar above. */}
-          <div
-            data-no-print
-            className="ls-topbar hidden lg:flex shrink-0 h-12 items-center justify-end gap-2 px-6 sticky top-0 z-30"
-          >
-            <CmdKSearch />
-            <NotificationBell />
-            {/* Norman 2026-05-21: user icon promoted from the sidebar
-                footer to the topbar — sits next to the notification
-                bell so the entire account control surface is in one
-                top-right cluster, freeing the sidebar footer for the
-                bell + bug button. */}
-            <UserButton />
-          </div>
           {/* Body region: framer-motion AnimatePresence fade on route
               changes (W3 task D). The CSS `ls-page-enter` class is dropped
               here because PageTransition keys on pathname and runs its own
@@ -678,8 +672,10 @@ export default async function PortalLayout({
               ("settings looks like a phone, dashboard looks like a tv").
               Cap chosen so a 1920px viewport fills ~94%; a 4K monitor
               still has comfortable side margins. */}
-          <div className="flex-1 w-full max-w-[1800px] mx-auto p-4 pb-20 md:p-6 md:pb-10">
-            <PageTransition>{children}</PageTransition>
+          <div className="portal-sheet flex-1 flex flex-col">
+            <div className="portal-page flex-1 w-full max-w-[1800px] p-4 pb-20 md:px-8 md:pt-7 md:pb-10">
+              <PageTransition>{children}</PageTransition>
+            </div>
           </div>
         </main>
       </div>

@@ -41,6 +41,11 @@ import { PENDING_OAUTH_BIND } from "@/lib/integrations/google-properties";
 
 export const metadata: Metadata = { title: "Integrations" };
 export const dynamic = "force-dynamic";
+// Server actions here run the connect-time backfill inside after(), which
+// shares this route's time budget.
+// ponytail: a big Meta account can still outrun 300s; move the backfill to a
+// queued job if that happens (the ads-sync cron gap-fills the rest meanwhile).
+export const maxDuration = 300;
 
 export default async function IntegrationsPage() {
   const scope = await requireScope();

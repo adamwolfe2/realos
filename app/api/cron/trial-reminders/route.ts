@@ -244,6 +244,8 @@ export async function GET(req: NextRequest) {
         errors_preview: errorMessages.slice(0, 5),
       },
       recordsProcessed: sent,
+      errorCount: errors,
+      errorSummary: errorMessages.slice(0, 5).join("; "),
     };
   }).then(
     (result) => NextResponse.json(result),

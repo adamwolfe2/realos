@@ -214,7 +214,7 @@ export function PopupsDemoSection() {
         </div>
 
         {/* RIGHT, preview */}
-        <div className="relative h-[600px] rounded-[2px] border border-dashed border-border bg-gradient-to-br from-[#f4f4f4] to-[#edf5ff] overflow-hidden">
+        <div className="relative isolate h-[600px] rounded-[2px] border border-dashed border-border bg-gradient-to-br from-[#f4f4f4] to-[#edf5ff] overflow-hidden">
           <div className="absolute top-0 inset-x-0 h-9 bg-white/70 border-b border-border flex items-center gap-1.5 px-3">
             <span className="h-2.5 w-2.5 rounded-full bg-[#da1e28]/70" />
             <span className="h-2.5 w-2.5 rounded-full bg-[#f1c21b]/70" />

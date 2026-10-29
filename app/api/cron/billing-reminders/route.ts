@@ -206,6 +206,8 @@ export async function GET(req: NextRequest) {
     return {
       result: NextResponse.json({ processed: orgs.length, sent, results }),
       recordsProcessed: sent,
+      errorCount: results.filter((r) => r.error).length,
+      errorSummary: results.filter((r) => r.error).slice(0, 5).map((r) => `${r.orgId}: ${r.error}`).join("; "),
     };
   });
 }

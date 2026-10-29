@@ -69,10 +69,6 @@ export function microCentsToUsd(microCents: number): number {
   return microCents / MICRO_CENTS_PER_USD;
 }
 
-export function microCentsToCents(microCents: number): number {
-  return microCents / 1000;
-}
-
 /**
  * Fire-and-forget cost logger. Awaiting it is fine — the write is fast
  * — but never throws, so callers can swap `.catch()` patterns out.

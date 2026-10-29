@@ -1,14 +1,11 @@
 /**
- * Pure streak logic for the cron-health alert. Kept free of prisma/email so
+ * Pure logic for the daily cron-health digest. Kept free of prisma/email so
  * it can be unit-tested.
  *
- * A job is "stuck" when its most recent finished runs are all non-ok
- * (partial / error / timeout). The streak starts at the oldest run in that
- * trailing non-ok run. We alert exactly once per streak: when the streak
- * start falls in (now - 2h, now - 1h], which an hourly checker hits once.
- * A streak that reaches the edge of the fetched window started earlier; it
- * is re-reported once a day (the check at DAILY_REMINDER_UTC_HOUR) so a
- * chronic failure never goes quiet for good.
+ * A job is "failing" when its most recent finished run is partial / error /
+ * timeout and that streak is over an hour old. Jobs with no clean run in the
+ * last CHRONIC_AFTER_MS are "chronic": they stay on /admin/system but are
+ * left out of the email so a known-broken job doesn't mail ops every day.
  */
 export type CronRunRow = { jobName: string; startedAt: Date; status: string };
 
@@ -20,17 +17,13 @@ export type StuckCron = {
 };
 
 export const STUCK_AFTER_MS = 60 * 60 * 1000;
-export const CHECK_INTERVAL_MS = 60 * 60 * 1000;
-export const DAILY_REMINDER_UTC_HOUR = 14;
+export const CHRONIC_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
 /** Longest cron maxDuration is 300s; a run still "running" after this was killed. */
 export const STALE_RUNNING_MS = 20 * 60 * 1000;
 
 const BAD = new Set(["partial", "error", "timeout"]);
 
-export function findNewlyStuckCrons(
-  runs: CronRunRow[],
-  now: Date,
-): StuckCron[] {
+export function findFailingCrons(runs: CronRunRow[], now: Date): StuckCron[] {
   const byJob = new Map<string, CronRunRow[]>();
   for (const r of runs) {
     // recordCronRun can't update a run the platform killed at maxDuration, so
@@ -43,13 +36,10 @@ export function findNewlyStuckCrons(
     }
     const list = byJob.get(row.jobName) ?? [];
     list.push(row);
-    byJob.set(r.jobName, list);
+    byJob.set(row.jobName, list);
   }
 
-  const upper = now.getTime() - STUCK_AFTER_MS;
-  const lower = upper - CHECK_INTERVAL_MS;
-  const stuck: StuckCron[] = [];
-
+  const failing: StuckCron[] = [];
   for (const [jobName, list] of byJob) {
     const newestFirst = [...list].sort(
       (a, b) => b.startedAt.getTime() - a.startedAt.getTime(),
@@ -58,22 +48,19 @@ export function findNewlyStuckCrons(
     while (i < newestFirst.length && BAD.has(newestFirst[i].status)) i += 1;
     if (i === 0) continue; // latest run is ok
     const badSince = newestFirst[i - 1].startedAt;
-    if (i === newestFirst.length) {
-      // Streak reaches the window edge: failing since before the lookback.
-      if (now.getUTCHours() === DAILY_REMINDER_UTC_HOUR) {
-        stuck.push({ jobName, status: newestFirst[0].status, badSince, badRuns: i });
-      }
-      continue;
-    }
-    const t = badSince.getTime();
-    if (t > lower && t <= upper) {
-      stuck.push({
-        jobName,
-        status: newestFirst[0].status,
-        badSince,
-        badRuns: i,
-      });
-    }
+    if (now.getTime() - badSince.getTime() < STUCK_AFTER_MS) continue;
+    failing.push({ jobName, status: newestFirst[0].status, badSince, badRuns: i });
   }
-  return stuck.sort((a, b) => a.jobName.localeCompare(b.jobName));
+  return failing.sort((a, b) => a.jobName.localeCompare(b.jobName));
+}
+
+/** Split failing jobs into ones worth emailing and chronic ones (no clean run in 7 days). */
+export function splitChronic(
+  failing: StuckCron[],
+  jobsWithRecentOk: Set<string>,
+): { fresh: StuckCron[]; chronic: StuckCron[] } {
+  return {
+    fresh: failing.filter((s) => jobsWithRecentOk.has(s.jobName)),
+    chronic: failing.filter((s) => !jobsWithRecentOk.has(s.jobName)),
+  };
 }

@@ -306,19 +306,3 @@ export const INTEGRATIONS: IntegrationDefinition[] = [
 export function findIntegration(slug: string): IntegrationDefinition | null {
   return INTEGRATIONS.find((i) => i.slug === slug) ?? null;
 }
-
-export function integrationsByCategory(): Record<
-  IntegrationCategory,
-  IntegrationDefinition[]
-> {
-  const out: Record<IntegrationCategory, IntegrationDefinition[]> = {
-    property_platform: [],
-    analytics: [],
-    ads: [],
-    communication: [],
-    scheduling: [],
-    automation: [],
-  };
-  for (const i of INTEGRATIONS) out[i.category].push(i);
-  return out;
-}

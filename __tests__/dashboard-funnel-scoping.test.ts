@@ -77,7 +77,7 @@ describe("getFunnel scoping", () => {
     const before = Date.now();
     await getFunnel(ORG, { periodDays: 7 });
     const leadWhere = firstArg(h.lead.count).where;
-    const gte: Date = leadWhere.createdAt.gte;
+    const gte: Date = leadWhere.firstSeenAt.gte;
     const daysBack = (before - gte.getTime()) / (24 * 60 * 60 * 1000);
     expect(daysBack).toBeGreaterThan(6.9);
     expect(daysBack).toBeLessThan(7.1);
@@ -88,7 +88,7 @@ describe("getFunnel scoping", () => {
     const leadWhere = firstArg(h.lead.count).where;
     expect(leadWhere).toEqual({
       orgId: ORG,
-      createdAt: { gte: expect.any(Date) },
+      firstSeenAt: { gte: expect.any(Date), lt: expect.any(Date) },
     });
   });
 });

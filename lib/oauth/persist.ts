@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
-import { encrypt, decrypt } from "@/lib/crypto";
+import { encrypt } from "@/lib/crypto";
 import type { OAuthProvider, OAuthTokens } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -75,56 +75,4 @@ export async function persistConnection(args: PersistArgs): Promise<{
     select: { id: true },
   });
   return created;
-}
-
-/**
- * Mark a connection as soft-deleted. Caller is responsible for invoking the
- * provider's revoke endpoint via lib/oauth/{google,meta}.ts#revoke first.
- */
-export async function markRevoked(id: string): Promise<void> {
-  await prisma.oAuthConnection.update({
-    where: { id },
-    data: { status: "revoked" },
-  });
-}
-
-/**
- * Find the active connection for (orgId, provider). When multiple accounts
- * exist, callers can narrow by externalAccountId. Returns null if no row is
- * active — caller falls back to the legacy paste-credential path.
- */
-export async function findActiveConnection(
-  orgId: string,
-  provider: OAuthProvider,
-  externalAccountId?: string | null,
-): Promise<{
-  id: string;
-  accessTokenPlain: string;
-  refreshTokenPlain: string | null;
-  expiresAt: Date | null;
-  scope: string | null;
-  externalAccountId: string | null;
-  metadata: unknown;
-} | null> {
-  const row = await prisma.oAuthConnection.findFirst({
-    where: {
-      orgId,
-      provider,
-      status: "active",
-      ...(externalAccountId !== undefined
-        ? { externalAccountId }
-        : {}),
-    },
-    orderBy: { updatedAt: "desc" },
-  });
-  if (!row) return null;
-  return {
-    id: row.id,
-    accessTokenPlain: decrypt(row.accessToken),
-    refreshTokenPlain: row.refreshToken ? decrypt(row.refreshToken) : null,
-    expiresAt: row.expiresAt,
-    scope: row.scope,
-    externalAccountId: row.externalAccountId,
-    metadata: row.metadata,
-  };
 }
