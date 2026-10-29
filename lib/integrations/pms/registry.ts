@@ -352,11 +352,3 @@ export const PMS_REGISTRY: PmsDefinition[] = [
 export function getPmsById(id: string): PmsDefinition | null {
   return PMS_REGISTRY.find((p) => p.id === id) ?? null;
 }
-
-export function livePmsList(): PmsDefinition[] {
-  return PMS_REGISTRY.filter((p) => p.status === "live");
-}
-
-export function comingSoonPmsList(): PmsDefinition[] {
-  return PMS_REGISTRY.filter((p) => p.status === "coming_soon");
-}

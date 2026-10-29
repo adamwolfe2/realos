@@ -34,50 +34,6 @@ export type ExpireOptions = {
 };
 
 /**
- * Soft-delete a single MarketplaceLead by flipping status to EXPIRED and
- * writing a MarketplaceAuditEvent. Idempotent — re-running on an already
- * EXPIRED lead is a no-op (returns false).
- *
- * Won't expire a SOLD or RESERVED lead — those need an explicit refund /
- * release flow first.
- */
-export async function expireLead(
-  leadId: string,
-  opts: ExpireOptions,
-): Promise<boolean> {
-  const lead = await prisma.marketplaceLead.findUnique({
-    where: { id: leadId },
-    select: { id: true, status: true, sellerId: true },
-  });
-  if (!lead) return false;
-  if (lead.status === MarketplaceLeadStatus.EXPIRED) return false;
-  // Don't expire active sales — refund flow should handle those.
-  if (
-    lead.status === MarketplaceLeadStatus.SOLD ||
-    lead.status === MarketplaceLeadStatus.RESERVED
-  ) {
-    return false;
-  }
-
-  await prisma.$transaction([
-    prisma.marketplaceLead.update({
-      where: { id: lead.id },
-      data: { status: MarketplaceLeadStatus.EXPIRED },
-    }),
-    prisma.marketplaceAuditEvent.create({
-      data: {
-        action: "LEAD_EXPIRED",
-        leadId: lead.id,
-        sellerId: lead.sellerId,
-        description: opts.description ?? `Expired (${opts.reason})`,
-        metadata: { reason: opts.reason },
-      },
-    }),
-  ]);
-  return true;
-}
-
-/**
  * Bulk soft-delete by id list. Skips already-EXPIRED rows and active sales.
  * Writes one MarketplaceAuditEvent per actually-expired row.
  *

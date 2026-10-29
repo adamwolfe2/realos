@@ -129,6 +129,7 @@ function ScatterCards({ on }: { on: boolean }) {
           transition={{ duration: 0.5, ease: EASE, delay: reduce ? 0 : i * 0.045 }}
           className="flex items-center justify-center"
           title={v.name}
+          role="img"
           aria-label={v.name}
           style={{
             aspectRatio: "1 / 1",

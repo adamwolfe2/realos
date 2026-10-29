@@ -430,14 +430,4 @@ export function groupModulesByCategory(): Array<{
     ),
   }));
 }
-
-export function formatPriceUsd(cents: number): string {
-  if (cents === 0) return "Free";
-  if (cents % 100 === 0) return `$${cents / 100}`;
-  return `$${(cents / 100).toFixed(2)}`;
-}
-
-// Backwards compat — older imports referenced these names. Keep aliases so
-// the page server component + tests don't need to be touched.
-export const MARKETPLACE_MODULES = MARKETPLACE_ENTRIES;
 export type CatalogModule = CatalogEntry;

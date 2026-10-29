@@ -72,6 +72,8 @@ export async function GET(req: NextRequest) {
             : undefined,
       }),
       recordsProcessed: heroSet + logoSet,
+      errorCount: errored,
+      errorSummary: results.filter((r) => r.error).slice(0, 5).map((r) => `${r.propertyId}: ${r.error}`).join("; "),
     };
   });
 }

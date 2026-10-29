@@ -1,5 +1,7 @@
 # LeaseStack Design System
 
+> **⚑ Brand skin (2026-10-28, supersedes the Carbon notes below for the portal):** the portal root carries `data-theme="brand"` and `app/portal/themes.css` defines it. One surface `#f4f7fc` for sidebar, top bar and page; white cards (`14px` radius, 1px `#e3e9f3`, soft shadow) are the only raised surface; controls `8px`; Plus Jakarta Sans everywhere, no mono, no tracked uppercase labels; blue `#1f5eff` for actions, the active nav item and data. The layer also overrides hard-coded `rounded-[2px]`, `.ls-eyebrow` and `font-mono` classes, so new code should use the `--t-*` variables directly instead of those classes. The Overview (`app/portal/page.tsx`, `components/portal/overview/*`) is the reference screen.
+
 > Single source of truth for the LeaseStack portal + marketing surfaces. Tokens live in `app/globals.css` (`@theme` + `:root`), fonts in `app/layout.tsx`, charts in `components/portal/ui/chart-theme.ts`. **Reuse the tokens and components below — never reinvent them inline.**
 
 > **Heritage note:** This system began as a warm-parchment "inspired by Claude" theme (terracotta + Fraunces serif). That era is **gone**. The portal now reads as a clean white/blue software product. Several variables keep their old names for back-compat (`--blue-60`, `--blue-50`, `--gray-10-hover`, `--canvas`) but are **retargeted to blue/cool-gray values** — trust the value, not the name.

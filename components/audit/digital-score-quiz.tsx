@@ -113,6 +113,20 @@ export function DigitalScoreQuiz() {
     [],
   );
 
+  // On a step change, bring the progress header back into view when the
+  // visitor has scrolled past it (mobile: the next question would otherwise
+  // start above the fold, under the sticky nav).
+  const rootRef = useRef<HTMLDivElement>(null);
+  const prevStepRef = useRef(stepIndex);
+  useEffect(() => {
+    if (prevStepRef.current === stepIndex) return;
+    prevStepRef.current = stepIndex;
+    const el = rootRef.current;
+    if (!el || el.getBoundingClientRect().top >= 80) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
+  }, [stepIndex]);
+
   const goBack = useCallback(() => {
     setStepIndex((i) => Math.max(0, i - 1));
   }, []);
@@ -213,7 +227,7 @@ export function DigitalScoreQuiz() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div ref={rootRef} className="flex flex-col gap-4" style={{ scrollMarginTop: 96 }}>
       <ProgressHeader
         current={stepIndex + 1}
         total={totalSteps}

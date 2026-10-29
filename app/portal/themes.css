@@ -1,0 +1,244 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Portal skin: "Inbox" (Adam 2026-10-28: look drastically different, in the
+   spirit of Intercom / Pylon). Grey canvas holds an icon rail and a section
+   sub-nav; the page is a white panel floating on it. Blue-tinted canvas, LeaseStack
+   blue for actions and data, navy ink, Inter throughout. No grey, no black.
+   The portal root carries data-theme="inbox"; the remap below makes every
+   legacy-token page follow.
+   ───────────────────────────────────────────────────────────────────────── */
+
+[data-theme="inbox"] {
+  --t-font: var(--font-inter), system-ui, sans-serif;
+  --t-bg: #f4f7ff;
+  --t-panel: #ffffff;
+  --t-card: #ffffff;
+  --t-border: #e2e8f4;
+  --t-divider: #edf1f8;
+  --t-wash: #f5f8ff;
+  --t-ink: #0b1530;
+  --t-text: #36415c;
+  --t-muted: #64708b;
+  --t-radius: 12px;
+  --t-radius-sm: 8px;
+  --t-shadow: 0 1px 2px rgba(11, 21, 48, 0.04);
+  --t-accent: #1f5eff;
+  --t-accent-soft: #e8efff;
+  --t-nav-active-bg: #ffffff;
+  --t-nav-active-fg: #1f5eff;
+  --t-primary-bg: #1f5eff;
+  --t-primary-fg: #ffffff;
+  --t-sidebar-edge: transparent;
+}
+
+/* ── Remap the legacy tokens so every existing page follows ─────────────── */
+[data-theme] {
+  --font-sans: var(--t-font);
+  --font-mono: var(--t-font);
+  --hair: var(--t-border);
+  --hair-strong: var(--t-border);
+  --border-light: var(--t-border);
+  --border-mid: var(--t-border);
+  --color-border: var(--t-border);
+  --color-input: var(--t-border);
+  --sheet-edge: var(--t-border);
+  --color-foreground: var(--t-ink);
+  --gray-100: var(--t-ink);
+  --gray-80: var(--t-text);
+  --gray-70: var(--t-muted);
+  --gray-60: var(--t-muted);
+  --silver-fog: var(--t-muted);
+  --color-muted-foreground: var(--t-muted);
+  --color-card: var(--t-card);
+  --color-background: var(--t-bg);
+  --color-secondary: var(--t-wash);
+  --color-muted: var(--t-wash);
+  --color-primary-foreground: var(--t-primary-fg);
+  --gray-10: var(--t-wash);
+  --color-elevated: var(--t-wash);
+  --color-primary: var(--t-accent);
+  --blue-60: var(--t-accent);
+  --color-accent: var(--t-accent-soft);
+  --brand-soft: var(--t-accent-soft);
+  --frame: var(--t-bg);
+  --frame-active: var(--t-nav-active-bg);
+  --radius-card: var(--t-radius);
+  --radius-control: var(--t-radius-sm);
+  font-family: var(--t-font);
+  color: var(--t-text);
+  background: var(--t-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Shell: grey canvas, white floating panel ───────────────────────────── */
+[data-theme] .ls-rail,
+[data-theme] .ls-subnav,
+[data-theme] .bg-background { background: var(--t-bg) !important; }
+[data-theme] .portal-main,
+[data-theme] .ls-topbar,
+[data-theme] .portal-sheet { background: var(--t-panel) !important; }
+[data-theme] .portal-main { box-shadow: 0 0 0 1px var(--t-border), 0 1px 3px rgba(11, 21, 48, 0.04); }
+[data-theme] .ls-topbar { border: 0; backdrop-filter: none; }
+[data-theme] .portal-sheet { border: 0 !important; border-radius: 0 !important; margin: 0 !important; }
+
+[data-theme] .ls-rail-item {
+  display: grid; place-items: center; width: 38px; height: 38px;
+  border-radius: 10px; color: var(--t-muted);
+  transition: background-color 120ms, color 120ms;
+}
+[data-theme] .ls-rail-item:hover { background: var(--t-accent-soft); color: var(--t-accent); }
+[data-theme] .ls-rail-item.is-active { background: var(--t-accent-soft); color: var(--t-accent); }
+[data-theme] .ls-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px; padding: 0 6px; border-radius: 999px;
+  font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums;
+  background: var(--t-accent); color: #fff;
+}
+
+/* ── Pages hug the left edge of the panel. Some page roots still carry a
+   legacy max-w-* mx-auto, which centred them and left a dead gutter on
+   wide screens. Root = portal-page > PageTransition div > first child. */
+[data-theme] .portal-page > div > [class*="mx-auto"] {
+  margin-left: 0;
+  margin-right: 0;
+  max-width: none;
+}
+
+/* ── Cards are the only raised surface ──────────────────────────────────── */
+[data-theme] .ls-card,
+[data-theme] [data-slot="card"],
+[data-theme] .portal-main section.rounded-\[12px\] {
+  background: var(--t-card);
+  border: 1px solid var(--t-border);
+  border-radius: var(--t-radius);
+  box-shadow: var(--t-shadow);
+}
+[data-theme] .ls-card:hover { border-color: var(--t-border); }
+[data-theme] .portal-main .bg-card,
+[data-theme] .portal-main .bg-white { background-color: var(--t-card); }
+
+/* ── One radius scale: the 1,300 hard-coded 2px corners ─────────────────── */
+[data-theme] [class*="rounded-[2px]"],
+[data-theme] [class*="rounded-sm"],
+[data-theme] .portal-main input,
+[data-theme] .portal-main select,
+[data-theme] .portal-main textarea,
+[data-theme] .portal-main button:not([class*="rounded-full"]) {
+  border-radius: var(--t-radius-sm);
+}
+[data-theme] .portal-main [class*="rounded-[2px]"].border,
+[data-theme] .portal-main [class*="rounded-[2px]"][class*="border-"] {
+  border-color: var(--t-border);
+}
+
+/* ── Type: no mono, no tracked uppercase, calm headings ─────────────────── */
+[data-theme] .ls-eyebrow,
+[data-theme] .ls-sidebar-section-label {
+  font-family: var(--t-font) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  color: var(--t-muted) !important;
+}
+[data-theme] .portal-main .uppercase { text-transform: none; }
+[data-theme] .portal-main [class*="tracking-[0.1"],
+[data-theme] .portal-main [class*="tracking-[.1"],
+[data-theme] .portal-main [class*="tracking-[0.2"],
+[data-theme] .portal-main .tracking-wide,
+[data-theme] .portal-main .tracking-wider,
+[data-theme] .portal-main .tracking-widest { letter-spacing: 0; }
+[data-theme] .portal-main h1 {
+  font-size: 22px !important;
+  line-height: 1.2 !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.02em !important;
+  color: var(--t-ink);
+}
+[data-theme] .portal-main h2 { color: var(--t-ink); letter-spacing: -0.01em; }
+[data-theme] .portal-main .font-mono,
+[data-theme] .portal-main .tabular-nums { font-variant-numeric: tabular-nums; }
+
+/* ── Tables: sentence-case headers, rules only ──────────────────────────── */
+[data-theme] .portal-main thead,
+[data-theme] .portal-main thead tr,
+[data-theme] .portal-main th { background: transparent !important; }
+[data-theme] .portal-main th {
+  font-family: var(--t-font) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  color: var(--t-muted) !important;
+}
+[data-theme] .portal-main td,
+[data-theme] .portal-main tr { border-color: var(--t-divider) !important; }
+
+/* ── Navigation ─────────────────────────────────────────────────────────── */
+[data-theme] .ls-sidebar-item { border-radius: var(--t-radius-sm); color: var(--t-text); font-size: 13.5px; }
+[data-theme] .ls-sidebar-item:hover { background: var(--t-accent-soft); color: var(--t-ink); }
+[data-theme] .ls-sidebar-item.is-active {
+  background: var(--t-nav-active-bg);
+  color: var(--t-nav-active-fg);
+  box-shadow: 0 0 0 1px var(--t-border), 0 1px 2px rgba(11, 21, 48, 0.05);
+  outline: 0;
+  font-weight: 500;
+}
+[data-theme] .ls-sidebar-item.is-active svg { color: currentColor; }
+[data-theme] .ls-sidebar-item.is-active::before { display: none; }
+
+/* ── Primary actions ────────────────────────────────────────────────────── */
+[data-theme] .portal-main .bg-primary { background-color: var(--t-primary-bg) !important; color: var(--t-primary-fg) !important; }
+
+/* Borders with no explicit colour fall back to currentColor (black). */
+[data-theme] .portal-main .border,
+[data-theme] .portal-main .border-b,
+[data-theme] .portal-main .border-t { border-color: var(--t-border); }
+
+/* ── Premium restraint (Adam 2026-10-28: "too many pastels") ─────────────
+   Status is a coloured dot beside navy text, never a tinted pill. Inputs
+   are white; the blue tint lives only on the outer canvas. */
+[data-theme] .ls-pill {
+  background: transparent !important;
+  color: var(--t-text) !important;
+  padding: 0 !important;
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: none !important;
+}
+[data-theme] .ls-pill-neutral::before { background: #94a0b8; }
+[data-theme] .ls-pill-info::before,
+[data-theme] .ls-pill-active::before { background: var(--t-accent); }
+[data-theme] .ls-pill-success::before { background: #16a34a; }
+[data-theme] .ls-pill-warning::before { background: #d97706; }
+[data-theme] .ls-pill-danger::before { background: #dc2626; }
+
+[data-theme] .portal-main input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+[data-theme] .portal-main select,
+[data-theme] .portal-main textarea {
+  background-color: #ffffff !important;
+}
+
+/* ── Motion: one timing everywhere ───────────────────────────────────────
+   Every hover/press shares a 160ms ease-out on colour properties only, so
+   transforms owned by framer-motion are untouched. Rows warm on hover,
+   buttons settle on press, focus rings follow the accent. */
+[data-theme] :is(a, button, [role="tab"], [role="button"], summary, label, input, select, textarea) {
+  transition-property: color, background-color, border-color, box-shadow, opacity;
+  transition-duration: 160ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+[data-theme] .portal-main button:not(:disabled):active { filter: brightness(0.96); }
+[data-theme] .portal-main tbody tr { transition: background-color 160ms cubic-bezier(0.2, 0, 0, 1); }
+[data-theme] .portal-main tbody tr:hover { background-color: var(--t-wash); }
+[data-theme] :is(input, textarea, select):focus {
+  border-color: var(--t-accent) !important;
+  box-shadow: 0 0 0 3px rgba(31, 94, 255, 0.12);
+  outline: none;
+}
+[data-theme] :is(button, a, [role="button"], [role="tab"], summary):focus-visible {
+  outline: 2px solid var(--t-accent);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-theme] * { transition-duration: 0ms !important; }
+}

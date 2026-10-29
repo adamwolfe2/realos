@@ -16,7 +16,6 @@ import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-ba
 import { ChatbotConversationStatus, Prisma } from "@prisma/client";
 import { formatDistanceToNow } from "date-fns";
 import { EmptyState } from "@/components/portal/ui/empty-state";
-import { PageHeader } from "@/components/admin/page-header";
 import { humanChatbotStatus } from "@/lib/format";
 import {
   FlagPill,
@@ -24,14 +23,13 @@ import {
   isFlagType,
   type FlagType,
 } from "@/components/portal/conversations/flag-pill";
-import { MessageSquare, BarChart3, Flame, PhoneMissed, Flag } from "lucide-react";
+import { MessageSquare, BarChart3 } from "lucide-react";
 import {
   TranscriptSearch,
   type SortOption,
 } from "./transcript-search";
 import { InlineTranscript } from "./inline-transcript";
 import { cn } from "@/lib/utils";
-import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 
 export const metadata: Metadata = { title: "Chatbot conversations" };
 export const dynamic = "force-dynamic";
@@ -232,76 +230,57 @@ export default async function ConversationsList({
   // — it gives them a way to act on the conversation they intentionally
   // bookmarked. The InlineTranscript component does its own auth+tenant
   // check before returning data.
+  // Inbox behaviour: with no row picked, open the newest conversation with messages so
+  // the reading pane is never an empty prompt.
   const validSelectedId =
-    selectedId && /^[a-zA-Z0-9_-]+$/.test(selectedId) ? selectedId : null;
+    selectedId && /^[a-zA-Z0-9_-]+$/.test(selectedId)
+      ? selectedId
+      : ((conversations.find((c) => firstUserMessage(c.messages)) ?? conversations[0])?.id ?? null);
+
+  const inboxStats = [
+    { label: "total", value: totalConversations },
+    { label: "high intent", value: flagCountMap.get("lead_high_intent") ?? 0 },
+    { label: "missed handoffs", value: flagCountMap.get("handoff_missed") ?? 0 },
+    { label: "flagged", value: qualityBadCount },
+  ];
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-8rem)] lg:h-[calc(100vh-8rem)]">
-      <PageHeader
-        title="Chatbot conversations"
-        description="Read transcripts inline, flag patterns to tune the system prompt, and find leads worth chasing. Filters are URL-driven."
-        actions={
-          <div className="flex items-center gap-2">
-            <Link
-              href="/portal/conversations/insights"
-              className="inline-flex items-center gap-1.5 rounded-[2px] px-3 py-2 text-[13px] font-semibold text-primary ring-1 ring-inset ring-primary/30 hover:bg-primary/5"
-            >
-              <BarChart3 className="h-4 w-4" />
-              Insights
-            </Link>
-            <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded-[2px]" />}>
-              <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
-            </Suspense>
-          </div>
-        }
-      />
-
-      {/* KPI strip — derived from the same counts already fetched above
-          (totalConversations, flagCountMap, qualityBadCount). No extra
-          queries. */}
-      <section
-        aria-label="Conversation volume at a glance"
-        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 ls-stagger mt-3"
-      >
-        <KpiTile
-          label="Total conversations"
-          value={totalConversations.toLocaleString()}
-          hint={totalConversations === 0 ? "None yet" : "All-time"}
-          icon={<MessageSquare className="h-4 w-4" />}
-        />
-        <KpiTile
-          label="High intent leads"
-          value={(flagCountMap.get("lead_high_intent") ?? 0).toLocaleString()}
-          hint="Flagged by the assistant"
-          icon={<Flame className="h-4 w-4" />}
-        />
-        <KpiTile
-          label="Missed handoffs"
-          value={(flagCountMap.get("handoff_missed") ?? 0).toLocaleString()}
-          hint={
-            (flagCountMap.get("handoff_missed") ?? 0) === 0
-              ? "None flagged"
-              : "Needs review"
-          }
-          icon={<PhoneMissed className="h-4 w-4" />}
-        />
-        <KpiTile
-          label="Flagged bad quality"
-          value={qualityBadCount.toLocaleString()}
-          hint={qualityBadCount === 0 ? "None flagged" : "Needs prompt tuning"}
-          icon={<Flag className="h-4 w-4" />}
-        />
-      </section>
+    <div className="flex flex-col min-h-[calc(100vh-6rem)] lg:h-[calc(100vh-6rem)]">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1>Inbox</h1>
+          <p className="mt-1 text-[13px] text-muted-foreground tabular-nums">
+            {inboxStats.map((st, i) => (
+              <span key={st.label}>
+                {i > 0 ? " · " : null}
+                <span className="font-medium text-foreground">{st.value.toLocaleString()}</span> {st.label}
+              </span>
+            ))}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/portal/conversations/insights"
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-foreground ring-1 ring-inset ring-border hover:bg-muted/60"
+          >
+            <BarChart3 className="h-4 w-4" />
+            Suggested fixes
+          </Link>
+          <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded-[2px]" />}>
+            <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+          </Suspense>
+        </div>
+      </div>
 
       {isAccessDenied(scope, propertyIds) ? (
         <PropertyAccessDeniedBanner pathname="/portal/conversations" />
       ) : null}
 
       {/* 2-pane container */}
-      <div className="flex-1 min-h-0 mt-3 grid grid-cols-1 lg:grid-cols-[minmax(340px,400px)_minmax(0,1fr)] gap-3 lg:gap-0">
+      <div className="flex-1 min-h-0 mt-4 grid grid-cols-1 lg:grid-cols-[minmax(320px,380px)_minmax(0,1fr)] gap-3 lg:gap-0 lg:rounded-[12px] lg:ring-1 lg:ring-border lg:overflow-hidden">
         {/* LEFT: list pane */}
-        <div className="flex flex-col min-h-0 lg:border lg:border-border lg:border-r-0 lg:rounded-l-[2px] overflow-hidden bg-card">
-          <div className="px-3 py-3 border-b border-border bg-card shrink-0">
+        <div className="flex flex-col min-h-0 lg:border-r lg:border-border overflow-hidden bg-[var(--t-wash)]">
+          <div className="px-3 py-3 border-b border-border shrink-0">
             <Suspense>
               <TranscriptSearch
                 filters={filterChips}
@@ -349,7 +328,7 @@ export default async function ConversationsList({
                 />
               </div>
             ) : (
-              <ul className="divide-y divide-border">
+              <ul className="p-1.5 space-y-0.5">
                 {conversations.map((c) => {
                   const firstMessage = firstUserMessage(c.messages);
                   const uniqueFlags = dedupeFlags(c.flags.map((f) => f.flag));
@@ -362,13 +341,20 @@ export default async function ConversationsList({
                       <Link
                         href={href}
                         className={cn(
-                          "block px-3.5 py-3 transition-colors border-l-2",
+                          "flex gap-3 rounded-[10px] px-3 py-2.5 transition-colors",
                           isSelected
-                            ? "bg-primary/5 border-primary"
-                            : "border-transparent hover:bg-muted/50",
+                            ? "bg-card ring-1 ring-border shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
+                            : "hover:bg-[var(--t-accent-soft)]",
                         )}
                         aria-current={isSelected ? "true" : undefined}
                       >
+                        <span
+                          aria-hidden
+                          className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full border border-border bg-card text-[12px] font-semibold text-foreground/70"
+                        >
+                          {(c.capturedName ?? "?").trim().charAt(0).toUpperCase() || "?"}
+                        </span>
+                        <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-2">
                           <span className="text-[13px] font-semibold text-foreground truncate min-w-0 flex-1">
                             {c.capturedName ?? "Anonymous visitor"}
@@ -419,6 +405,7 @@ export default async function ConversationsList({
                             </div>
                           ) : null}
                         </div>
+                        </div>
                       </Link>
                     </li>
                   );
@@ -433,9 +420,9 @@ export default async function ConversationsList({
             below the list — the operator's intent is the list itself).
             On desktop, always visible so empty state can prompt action. */}
         <div className={cn(
-          "flex-col min-h-0 border border-border lg:rounded-r-[2px] overflow-hidden bg-card",
+          "flex-col min-h-0 border border-border lg:border-0 overflow-hidden bg-card",
           validSelectedId
-            ? "flex rounded-[2px] mt-3 lg:mt-0"
+            ? "flex rounded-[12px] lg:rounded-none mt-3 lg:mt-0"
             : "hidden lg:flex",
         )}>
           {validSelectedId ? (

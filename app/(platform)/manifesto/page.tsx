@@ -323,13 +323,13 @@ function Body() {
             by dollar impact, in plain operator language.
           </p>
           <p>
-            <strong>Four: AI made digestible, never intimidating.</strong>
+            <strong>Four: AI made digestible, never intimidating.</strong>{" "}
             The models do the heavy reading. The interface stays plain. Nobody
             on the asset side should need a data scientist to understand the
             output.
           </p>
           <p>
-            <strong>Five: replace the manual work, not the people.</strong>
+            <strong>Five: replace the manual work, not the people.</strong>{" "}
             Your property manager still runs the asset. Your leasing agents
             still tour. Your in-house marketer still owns the calendar. We
             stop the meeting where nobody can answer how many leases the

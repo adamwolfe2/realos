@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyCronAuth } from "@/lib/cron/auth";
 import { recordCronRun } from "@/lib/health/cron-run";
-import { findNewlyStuckCrons } from "@/lib/health/cron-streaks";
+import { CHRONIC_AFTER_MS, findFailingCrons, splitChronic } from "@/lib/health/cron-streaks";
 import {
   AGENCY_ADMIN_EMAIL,
   APP_URL,
@@ -19,9 +19,11 @@ export const maxDuration = 60;
 const LOOKBACK_MS = 26 * 60 * 60 * 1000;
 
 // GET /api/cron/cron-health
-// Hourly. Emails ops once when any cron has been partial/error/timeout on
-// every run for over an hour (CronRun rows written by recordCronRun). The
-// /admin/system page shows the same data; this makes it push, not pull.
+// Daily (vercel.json). One digest email listing crons whose latest runs have
+// been partial/error/timeout for over an hour. Jobs with no clean run in 7
+// days are left out (they stay on /admin/system) so a known-broken job does
+// not mail ops every day. Was hourly per-streak alerts: ~1 email a day of
+// the same failures.
 export async function GET(req: NextRequest) {
   const authError = verifyCronAuth(req);
   if (authError) return authError;
@@ -35,12 +37,28 @@ export async function GET(req: NextRequest) {
       },
       select: { jobName: true, startedAt: true, status: true },
     });
-    const stuck = findNewlyStuckCrons(runs, now);
+    const failing = findFailingCrons(runs, now);
+    const recentOk =
+      failing.length > 0
+        ? await prisma.cronRun.findMany({
+            where: {
+              jobName: { in: failing.map((s) => s.jobName) },
+              status: "ok",
+              startedAt: { gte: new Date(now.getTime() - CHRONIC_AFTER_MS) },
+            },
+            distinct: ["jobName"],
+            select: { jobName: true },
+          })
+        : [];
+    const { fresh: stuck, chronic } = splitChronic(
+      failing,
+      new Set(recentOk.map((r) => r.jobName)),
+    );
 
     let alerted = false;
     let alertError: string | null = null;
     if (stuck.length > 0) {
-      console.error("[cron-health] crons failing for over an hour", stuck);
+      console.error("[cron-health] crons failing", { stuck, chronic });
       if (!isValidEmail(AGENCY_ADMIN_EMAIL)) {
         alertError = "AGENCY_ADMIN_EMAIL invalid";
       } else {
@@ -50,13 +68,17 @@ export async function GET(req: NextRequest) {
               `<li><strong>${escapeHtml(s.jobName)}</strong>: ${escapeHtml(s.status)} on the last ${s.badRuns} run(s), since ${escapeHtml(s.badSince.toISOString())}</li>`,
           )
           .join("");
-        const subject = `Cron alert: ${stuck.map((s) => s.jobName).join(", ")} failing for over an hour`;
+        const totalFailing = stuck.length + chronic.length;
+        const subject = `Daily cron digest: ${totalFailing} job${totalFailing === 1 ? "" : "s"} failing`;
+        const chronicNote = chronic.length
+          ? `<p>Also no clean run in the last 7 days (not repeated here daily): ${chronic.map((s) => escapeHtml(s.jobName)).join(", ")}.</p>`
+          : "";
         const sent = await sendBrandedEmail({
           to: AGENCY_ADMIN_EMAIL,
           subject,
           html: buildBaseHtml({
-            headline: "Crons failing for over an hour",
-            bodyHtml: `<p>These jobs have not had a clean run in over an hour:</p><ul>${rows}</ul>`,
+            headline: "Crons failing",
+            bodyHtml: `<p>These jobs have not had a clean run in over an hour:</p><ul>${rows}</ul>${chronicNote}`,
             ctaText: "Open system health",
             ctaUrl: `${APP_URL}/admin/system`,
             preheader: subject,
@@ -75,6 +97,7 @@ export async function GET(req: NextRequest) {
         ok: true,
         checkedRuns: runs.length,
         stuck,
+        chronic,
         alerted,
         alertError,
       }),

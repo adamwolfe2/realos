@@ -7,21 +7,7 @@
 // Keep this boring. No React, no Tailwind, no I/O.
 // ---------------------------------------------------------------------------
 
-import type {
-  AuditAction,
-  LeadSource,
-  LeadStatus,
-  OrgType,
-  PropertyType,
-  ResidentialSubtype,
-  CommercialSubtype,
-  SubscriptionTier,
-  TenantStatus,
-  TourStatus,
-  ApplicationStatus,
-  ChatbotConversationStatus,
-  CreativeRequestStatus,
-} from "@prisma/client";
+import type { AuditAction, LeadSource, LeadStatus, PropertyType, ResidentialSubtype, CommercialSubtype, SubscriptionTier, TenantStatus, ChatbotConversationStatus, CreativeRequestStatus } from "@prisma/client";
 
 const TENANT_STATUS: Record<TenantStatus, string> = {
   INTAKE_RECEIVED: "Intake received",
@@ -62,23 +48,6 @@ const LEAD_SOURCE: Record<LeadSource, string> = {
   COLD_EMAIL: "Cold email",
   MANUAL: "Manual entry",
   OTHER: "Other",
-};
-
-const TOUR_STATUS: Record<TourStatus, string> = {
-  REQUESTED: "Requested",
-  SCHEDULED: "Scheduled",
-  COMPLETED: "Completed",
-  NO_SHOW: "No-show",
-  CANCELLED: "Cancelled",
-};
-
-const APPLICATION_STATUS: Record<ApplicationStatus, string> = {
-  STARTED: "Started",
-  SUBMITTED: "Submitted",
-  UNDER_REVIEW: "Under review",
-  APPROVED: "Approved",
-  DENIED: "Denied",
-  WITHDRAWN: "Withdrawn",
 };
 
 const CHATBOT_STATUS: Record<ChatbotConversationStatus, string> = {
@@ -130,11 +99,6 @@ const SUBSCRIPTION_TIER: Record<SubscriptionTier, string> = {
   CUSTOM: "Custom",
 };
 
-const ORG_TYPE: Record<OrgType, string> = {
-  AGENCY: "Agency",
-  CLIENT: "Client",
-};
-
 const AUDIT_ACTION: Record<AuditAction, string> = {
   CREATE: "Created",
   UPDATE: "Updated",
@@ -161,12 +125,6 @@ export function humanLeadStatus(s: LeadStatus | string): string {
 export function humanLeadSource(s: LeadSource | string): string {
   return (LEAD_SOURCE as Record<string, string>)[s] ?? sentenceFromEnum(String(s));
 }
-export function humanTourStatus(s: TourStatus | string): string {
-  return (TOUR_STATUS as Record<string, string>)[s] ?? sentenceFromEnum(String(s));
-}
-export function humanApplicationStatus(s: ApplicationStatus | string): string {
-  return (APPLICATION_STATUS as Record<string, string>)[s] ?? sentenceFromEnum(String(s));
-}
 export function humanChatbotStatus(s: ChatbotConversationStatus | string): string {
   return (CHATBOT_STATUS as Record<string, string>)[s] ?? sentenceFromEnum(String(s));
 }
@@ -184,9 +142,6 @@ export function humanCommercialSubtype(s: CommercialSubtype | string): string {
 }
 export function humanSubscriptionTier(s: SubscriptionTier | string): string {
   return (SUBSCRIPTION_TIER as Record<string, string>)[s] ?? sentenceFromEnum(String(s));
-}
-export function humanOrgType(s: OrgType | string): string {
-  return (ORG_TYPE as Record<string, string>)[s] ?? sentenceFromEnum(String(s));
 }
 export function humanAuditAction(s: AuditAction | string): string {
   return (AUDIT_ACTION as Record<string, string>)[s] ?? sentenceFromEnum(String(s));

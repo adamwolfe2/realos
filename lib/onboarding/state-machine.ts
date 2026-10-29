@@ -60,17 +60,6 @@ export const PHASE_STEPS: Record<
   ],
 } as const;
 
-// Reverse map for "given a step, which phase does it live in?" lookups.
-export const STEP_PHASE: Record<OnboardingStepKey, OnboardingPhase> = (() => {
-  const out = {} as Record<OnboardingStepKey, OnboardingPhase>;
-  for (const [phase, steps] of Object.entries(PHASE_STEPS) as Array<
-    [Exclude<OnboardingPhase, "COMPLETED">, ReadonlyArray<OnboardingStepKey>]
-  >) {
-    for (const s of steps) out[s] = phase;
-  }
-  return out;
-})();
-
 export const PHASE_ORDER: ReadonlyArray<OnboardingPhase> = [
   OnboardingPhase.FOUNDATION,
   OnboardingPhase.GROWTH,

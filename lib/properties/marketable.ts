@@ -43,12 +43,6 @@ import type { Prisma, PropertyLifecycle } from "@prisma/client";
 export const MARKETABLE_LIFECYCLES: PropertyLifecycle[] = ["ACTIVE"];
 
 /**
- * Lifecycles visible in the curation queue at /portal/properties/curate.
- * IMPORTED = "AppFolio dumped these, operator review needed."
- */
-export const CURATION_QUEUE_LIFECYCLES: PropertyLifecycle[] = ["IMPORTED"];
-
-/**
  * Returns a Prisma WhereInput fragment that scopes a query to the given
  * org AND restricts to marketable properties. Use everywhere a count or
  * "real properties" list is needed.

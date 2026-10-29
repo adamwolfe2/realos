@@ -43,15 +43,16 @@ describe("property detail UI refresh", () => {
     expect(page).not.toContain("<IntelligenceSection");
   });
 
-  it("groups every property section under four stable navigation groups", () => {
+  it("replaces tab groups with at-a-glance cards that open one area", () => {
     const tabs = read("app/portal/properties/[id]/property-tabs.tsx");
 
-    expect(tabs).toContain("const GROUPS");
-    expect(tabs).toContain('label: "Marketing"');
-    expect(tabs).toContain('label: "Leasing"');
-    expect(tabs).toContain('label: "Operations"');
-    expect(tabs).toContain("TAB_TO_GROUP");
-    expect(tabs).toContain('"work-orders"');
+    // Adam 2026-10-28: no tab groups or sub-tabs; glance cards open areas.
+    expect(tabs).toContain("const AREAS");
+    expect(tabs).not.toContain("const GROUPS");
+    expect(tabs).not.toContain('role="tablist"');
+    for (const panel of ['"leads"', '"chatbot"', '"knowledge-base"', '"traffic"', '"reputation"', '"work-orders"']) {
+      expect(tabs).toContain(panel);
+    }
   });
 
   it("tightens the overview into a balanced work-and-context layout", () => {

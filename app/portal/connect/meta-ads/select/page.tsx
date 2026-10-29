@@ -11,6 +11,10 @@ import { PageHeader } from "@/components/admin/page-header";
 import { ConnectStepper } from "@/components/portal/connect/account-picker-list";
 import { AdAccountPicker } from "./account-picker";
 
+// The account-picker server action runs the connect-time backfill in
+// after(), which shares this function's duration budget.
+export const maxDuration = 300;
+
 export const metadata: Metadata = { title: "Choose a Meta ad account" };
 export const dynamic = "force-dynamic";
 

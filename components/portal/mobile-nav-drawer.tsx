@@ -82,8 +82,8 @@ export function MobileNavDrawer({
         aria-modal={open ? true : undefined}
         aria-label={open ? "Navigation" : undefined}
         className={cn(
-          "fixed left-0 top-0 bottom-0 z-50 w-72 bg-card border-r border-border flex flex-col shadow-xl transition-transform duration-200",
-          open ? "translate-x-0" : "-translate-x-full"
+          "fixed left-0 top-0 bottom-0 z-50 w-72 bg-card border-r border-border flex flex-col transition-transform duration-200",
+          open ? "translate-x-0 shadow-xl" : "-translate-x-full"
         )}
       >
         <div className="flex h-14 items-center justify-between px-4 border-b border-border shrink-0">
@@ -122,9 +122,7 @@ export function MobileNavDrawer({
 
         <div className="px-4 py-2.5 border-b border-border shrink-0">
           <p className="text-xs font-medium text-foreground truncate">{org.name}</p>
-          <p className="ls-eyebrow mt-0.5">
-            Portal
-          </p>
+          <p className="text-[12px] text-[var(--gray-60)] mt-0.5">Workspace</p>
         </div>
 
         {scopeProperties.length > 1 ? (
@@ -142,11 +140,8 @@ export function MobileNavDrawer({
             if (!visible.length) return null;
             return (
               <div key={group.label} className="mb-3">
-                <div className="flex items-center gap-2 px-4 mb-1">
-                  <span className="ls-eyebrow">
-                    {group.label}
-                  </span>
-                  <div className="flex-1 h-px bg-border" />
+                <div className="px-4 mb-1 text-[12px] font-medium text-[var(--gray-70)]">
+                  {group.label}
                 </div>
                 <div className="px-2 space-y-0.5">
                   {visible.map((item) => {

@@ -162,7 +162,7 @@ export function PricingTiers() {
 
   return (
     <section id="plans" style={{ backgroundColor: "#FFFFFF", scrollMarginTop: 80 }}>
-      <div className="max-w-[1200px] mx-auto px-4 md:px-8 pt-16 md:pt-24 pb-16 md:pb-24">
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 pt-0 md:pt-4 pb-16 md:pb-24">
         {/* CEO brief (2026-05-28): the hero already owns the "start free
             trial / book a demo" conversion moment, so the previous
             standalone "Start with the pilot" centered block + the

@@ -81,6 +81,12 @@ export async function GET(req: NextRequest) {
         results,
       }),
       recordsProcessed: totalDropped,
+      // One entry per failed ad account, not per org.
+      errorCount: results.reduce((n, r) => n + r.errors.length, 0),
+      errorSummary: results
+        .flatMap((r) => r.errors.map((e) => `${r.orgId}: ${e}`))
+        .slice(0, 5)
+        .join("; "),
     };
   });
 }

@@ -9,6 +9,7 @@ import {
 } from "@prisma/client";
 import { realAdAccountWhere } from "@/lib/integrations/real-ad-account";
 import { currentLeaseWhere } from "@/lib/leases/current";
+import { applicationEventWhere, leadEventWhere, tourEventWhere } from "@/lib/dashboard/event-window";
 
 // ---------------------------------------------------------------------------
 // Per-property query helpers. EVERY function accepts both `orgId` AND
@@ -139,13 +140,13 @@ export async function getPropertyOverviewKpis(
     // customer's first-sync KPIs. firstSeenAt is always populated (defaults to
     // now() for native leads, set to the source event date for imports).
     prisma.lead.count({
-      where: { orgId, propertyId, firstSeenAt: { gte: since28d } },
+      where: { orgId, propertyId, ...leadEventWhere(since28d) },
     }),
     prisma.lead.count({
       where: {
         orgId,
         propertyId,
-        firstSeenAt: { gte: since56d, lt: since28d },
+        ...leadEventWhere(since56d, since28d),
       },
     }),
     // Count tours by their REAL event date, not DB insert time. Prefer
@@ -157,15 +158,7 @@ export async function getPropertyOverviewKpis(
         propertyId,
         lead: { orgId },
         status: { in: [TourStatus.SCHEDULED, TourStatus.COMPLETED] },
-        OR: [
-          { completedAt: { gte: since28d } },
-          { completedAt: null, scheduledAt: { gte: since28d } },
-          {
-            completedAt: null,
-            scheduledAt: null,
-            createdAt: { gte: since28d },
-          },
-        ],
+        ...tourEventWhere(since28d),
       },
     }),
     // Count applications by their REAL applied date, not DB insert time.
@@ -176,11 +169,7 @@ export async function getPropertyOverviewKpis(
       where: {
         propertyId,
         lead: { orgId },
-        OR: [
-          { appliedAt: { gte: since28d } },
-          { appliedAt: null, receivedAt: { gte: since28d } },
-          { appliedAt: null, receivedAt: null, createdAt: { gte: since28d } },
-        ],
+        ...applicationEventWhere(since28d),
       },
     }),
     // Match the dashboard-level filter: only count spend from ad accounts
@@ -415,8 +404,10 @@ export async function getPropertyLeads(
 
   const [leadsCount, toursCount, appsCount, grouped, recent, allLeads] =
     await Promise.all([
+      // firstSeenAt (real event date), not createdAt: an AppFolio backfill
+      // inserts history "now". Same rule as getPropertyOverviewKpis.
       prisma.lead.count({
-        where: { orgId, propertyId, createdAt: { gte: since28d } },
+        where: { orgId, propertyId, firstSeenAt: { gte: since28d } },
       }),
       prisma.tour.count({
         where: {
@@ -435,7 +426,7 @@ export async function getPropertyLeads(
       }),
       prisma.lead.groupBy({
         by: ["source"],
-        where: { orgId, propertyId, createdAt: { gte: since28d } },
+        where: { orgId, propertyId, firstSeenAt: { gte: since28d } },
         _count: { _all: true },
       }),
       prisma.lead.findMany({

@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { TourStatus } from "@prisma/client";
+import { applicationEventWhere, leadEventWhere, tourEventWhere } from "@/lib/dashboard/event-window";
 
 // ---------------------------------------------------------------------------
 // Portfolio funnel — a dead-simple, manager-facing roll-up across every
@@ -76,16 +77,15 @@ export async function getPortfolioFunnel(params: {
 
   // Per-model where clauses. Lead carries orgId directly; Tour/Application
   // reach the org through their property relation.
-  const orgScoped = { gte: since };
   const leadWhere = scoped
-    ? { orgId, propertyId: { in: propertyIds }, createdAt: orgScoped }
-    : { orgId, createdAt: orgScoped };
+    ? { orgId, propertyId: { in: propertyIds }, ...leadEventWhere(since) }
+    : { orgId, ...leadEventWhere(since) };
   const tourWhere = scoped
-    ? { propertyId: { in: propertyIds }, createdAt: orgScoped }
-    : { property: { orgId }, createdAt: orgScoped };
+    ? { propertyId: { in: propertyIds }, ...tourEventWhere(since) }
+    : { property: { orgId }, ...tourEventWhere(since) };
   const appWhere = scoped
-    ? { propertyId: { in: propertyIds }, createdAt: orgScoped }
-    : { property: { orgId }, createdAt: orgScoped };
+    ? { propertyId: { in: propertyIds }, ...applicationEventWhere(since) }
+    : { property: { orgId }, ...applicationEventWhere(since) };
 
   const [
     leadsBySource,

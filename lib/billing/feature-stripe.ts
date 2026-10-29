@@ -147,17 +147,6 @@ export async function getFeatureStripePriceId(key: string): Promise<string | nul
   return row?.stripePriceId ?? null;
 }
 
-// Webhook helper: given a Stripe price ID, find which feature key it belongs to
-// (so we can flip exactly that module). Null if the price isn't a feature price.
-export async function featureKeyFromStripePriceId(
-  priceId: string,
-): Promise<string | null> {
-  const row = await prisma.featurePrice
-    .findFirst({ where: { stripePriceId: priceId }, select: { key: true } })
-    .catch(() => null);
-  return row?.key ?? null;
-}
-
 // Webhook resolver: given the prices/products on a subscription, if any are
 // per-feature products, return the EXACT module state — always-on base modules
 // true, each catalog feature true iff its price is on the subscription, all
@@ -214,19 +203,4 @@ export async function modulesFromFeaturePriceIds(
   for (const k of ALWAYS_ON_MODULE_KEYS) state[k] = true;
   for (const f of FEATURE_CATALOG) state[f.key] = matched.has(f.key);
   return state;
-}
-
-// Whether every feature + base has been synced to Stripe (drives the admin
-// "needs sync" banner + guards checkout).
-export async function getFeatureSyncStatus(): Promise<{
-  total: number;
-  synced: number;
-  pendingKeys: string[];
-}> {
-  const rows = await prisma.featurePrice.findMany({
-    select: { key: true, stripePriceId: true },
-  });
-  const synced = rows.filter((r) => r.stripePriceId).length;
-  const pendingKeys = rows.filter((r) => !r.stripePriceId).map((r) => r.key);
-  return { total: rows.length, synced, pendingKeys };
 }

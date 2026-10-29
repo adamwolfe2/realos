@@ -331,6 +331,8 @@ export async function GET(req: NextRequest) {
         results,
       }),
       recordsProcessed: results.filter((r) => r.ok && !r.skipped).length,
+      errorCount: results.filter((r) => !r.ok).length,
+      errorSummary: results.filter((r) => !r.ok).slice(0, 5).map((r) => `${r.orgId}: ${r.error}`).join("; "),
     };
   }));
 }

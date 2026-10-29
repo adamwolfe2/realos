@@ -298,7 +298,6 @@ function VendorCollapse() {
             fontSize: "10px",
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            opacity: 0.8,
             fontWeight: 600,
           }}
         >
@@ -320,7 +319,6 @@ function VendorCollapse() {
           style={{
             fontFamily: "var(--font-sans)",
             fontSize: "13.5px",
-            opacity: 0.85,
           }}
         >
           Visible, analyzed, acted on
