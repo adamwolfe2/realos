@@ -47,11 +47,15 @@ export function pct(n: number | null | undefined): string {
 export function periodLabel(snapshot: ReportSnapshot): string {
   // Defensive: some legacy/stub snapshots predate periodEnd entirely. Don't
   // let a missing or unparseable date surface as "Invalid Date" in the UI.
-  const end = snapshot.periodEnd ? new Date(snapshot.periodEnd) : null;
-  const endLabel =
-    end && !Number.isNaN(end.getTime())
-      ? end.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-      : null;
+  // periodEnd is EXCLUSIVE (queries use lt) and stored as UTC midnight, so
+  // label the last included day and format in UTC: local-time formatting
+  // printed "Jul 18 – Oct 19" in PT and "Jul 19 – Oct 20" on Vercel for a
+  // Jul 19 – Oct 19 window.
+  const rawEnd = snapshot.periodEnd ? new Date(snapshot.periodEnd) : null;
+  const end = rawEnd && !Number.isNaN(rawEnd.getTime()) ? new Date(rawEnd.getTime() - 1) : null;
+  const endLabel = end
+    ? end.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })
+    : null;
 
   // weekly/monthly reports always run the fixed rolling window
   // resolvePeriod() produces (7d / 28d) — safe to name the length outright.
@@ -74,7 +78,8 @@ export function periodLabel(snapshot: ReportSnapshot): string {
   const startLabel = start.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
-    ...(start.getFullYear() !== end.getFullYear() ? { year: "numeric" as const } : {}),
+    timeZone: "UTC",
+    ...(start.getUTCFullYear() !== end.getUTCFullYear() ? { year: "numeric" as const } : {}),
   });
   return `${startLabel} – ${endLabel}`;
 }
