@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { applicationEventWhere, leadEventWhere, tourEventWhere } from "@/lib/dashboard/event-window";
 import { leadDayBucketsByProperty } from "@/lib/dashboard/lead-day-buckets";
 import { propertyClauseSql } from "@/lib/dashboard/property-clause-sql";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
@@ -306,9 +307,8 @@ export async function getConversationsOverTime(
 // ---------------------------------------------------------------------------
 // Conversion funnel (28d)
 //
-// Leads     -> Lead.createdAt in window
-// Tours     -> Tour where lead.orgId matches and tour status implies booked/done
-// Apps      -> Application where lead.orgId matches
+// Every stage is dated by its real event (lib/dashboard/event-window.ts) so
+// the three counts cover the same days.
 // ---------------------------------------------------------------------------
 
 export async function getFunnel(orgId: string, scope: DashboardScope = {}) {
@@ -325,11 +325,11 @@ export async function getFunnel(orgId: string, scope: DashboardScope = {}) {
     pmsConnectedProperty,
   ] = await Promise.all([
     prisma.lead.count({
-      where: { orgId, createdAt: { gte: since28d }, ...propertyClause },
+      where: { orgId, ...leadEventWhere(since28d), ...propertyClause },
     }),
     prisma.tour.count({
       where: {
-        createdAt: { gte: since28d },
+        ...tourEventWhere(since28d),
         status: {
           in: [TourStatus.SCHEDULED, TourStatus.COMPLETED],
         },
@@ -339,7 +339,7 @@ export async function getFunnel(orgId: string, scope: DashboardScope = {}) {
     }),
     prisma.application.count({
       where: {
-        createdAt: { gte: since28d },
+        ...applicationEventWhere(since28d),
         lead: { orgId },
         ...requiredPropertyClause,
       },

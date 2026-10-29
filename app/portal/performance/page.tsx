@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { applicationEventWhere, leadEventWhere, tourEventWhere } from "@/lib/dashboard/event-window";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import {
   marketablePropertyWhere,
@@ -821,7 +822,7 @@ export default async function PortalHome({
             where: {
               orgId: scope.orgId,
               propertyId: featuredProperty.id,
-              createdAt: { gte: featThirty, lte: featNow },
+              ...leadEventWhere(featThirty, featNow),
             },
           })
           .catch(soft(0, "portal.page:861")),
@@ -830,7 +831,7 @@ export default async function PortalHome({
             where: {
               orgId: scope.orgId,
               propertyId: featuredProperty.id,
-              createdAt: { gte: featSixty, lt: featThirty },
+              ...leadEventWhere(featSixty, featThirty),
             },
           })
           .catch(soft(0, "portal.page:870")),
@@ -856,7 +857,7 @@ export default async function PortalHome({
           .count({
             where: {
               propertyId: featuredProperty.id,
-              createdAt: { gte: featThirty, lte: featNow },
+              ...tourEventWhere(featThirty, featNow),
             },
           })
           .catch(soft(0, "portal.page:934")),
@@ -864,7 +865,7 @@ export default async function PortalHome({
           .count({
             where: {
               propertyId: featuredProperty.id,
-              createdAt: { gte: featThirty, lte: featNow },
+              ...applicationEventWhere(featThirty, featNow),
             },
           })
           .catch(soft(0, "portal.page:942")),
