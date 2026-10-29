@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SourceMark } from "@/components/portal/source-mark";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
 import { soft } from "@/lib/soft";
@@ -56,7 +56,7 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
     const firstRun = await getFirstRunSignal(scope.orgId).catch(soft(null, "portal.overview:first-run"));
     if (firstRun?.isFirstRun) {
       const { redirect } = await import("next/navigation");
-      redirect("/portal/performance");
+      redirect("/portal/setup");
     }
   }
 
@@ -202,6 +202,41 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
 
   const metricTone = (d: number): Tone => (d > 0 ? "good" : d < 0 ? "bad" : "neutral");
 
+  // Brand-new workspace: no chats, no leads, nothing connected. A wall of
+  // zeros reads as "is this working?", so point at the three setup steps.
+  if (!convs.length && !leadTotal && !liveSources.length) {
+    const first = props[0];
+    const next = [
+      { title: "Your property", note: first ? `${first.name} is added` : "Add the building you want leads for", done: Boolean(first), href: "/portal/setup" },
+      { title: "Connect your data", note: "AppFolio, Google Analytics, Search Console or your ads", done: false, href: "/portal/setup" },
+      { title: "Turn on your chatbot", note: "Name it, teach it your policies, try it, install it", done: liveBots > 0, href: "/portal/chatbot" },
+    ];
+    return (
+      <div className="w-full space-y-5">
+        <header>
+          <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-[var(--t-ink)]">Welcome to LeaseStack</h1>
+          <p className="mt-0.5 text-[13.5px] text-[var(--t-muted)]">Three steps and your agent starts answering renters and learning from every chat.</p>
+        </header>
+        <Panel title={`Get ${first?.name ?? org?.name ?? "your property"} live`} aside={`${next.filter((n) => n.done).length} of 3 done`} flush>
+          <ol className="divide-y divide-[var(--t-divider)]">
+            {next.map((n, i) => (
+              <li key={n.title}>
+                <Link href={n.href} className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--t-wash)]">
+                  <span className={n.done ? "grid h-6 w-6 place-items-center rounded-full bg-[#16a34a] text-[12px] font-semibold text-white" : "grid h-6 w-6 place-items-center rounded-full bg-[var(--t-wash)] text-[12px] font-semibold text-[var(--t-text)]"}>{n.done ? <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden /> : i + 1}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[13.5px] font-medium text-[var(--t-ink)]">{n.title}</span>
+                    <span className="block truncate text-[12.5px] text-[var(--t-muted)]">{n.note}</span>
+                  </span>
+                  <ArrowRight className="h-4 w-4 text-[var(--t-muted)]" aria-hidden />
+                </Link>
+              </li>
+            ))}
+          </ol>
+        </Panel>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full space-y-5">
       <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -217,9 +252,11 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
             Agent active
             {liveSources.length ? <span className="ml-1 flex items-center gap-1 border-l border-[var(--t-border)] pl-2">{liveSources.map((s) => <Logo key={s.slug} slug={s.slug} size={12} />)}</span> : null}
           </span>
-          <Link href="/portal/conversations/insights" className="inline-flex h-8 items-center gap-1.5 rounded-full bg-[var(--t-primary-bg)] text-[var(--t-primary-fg)] px-3.5 text-[13px] font-medium text-white transition-colors hover:opacity-90">
-            Review {waiting} {waiting === 1 ? "fix" : "fixes"} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-          </Link>
+          {waiting ? (
+            <Link href="/portal/conversations/insights" className="inline-flex h-8 items-center gap-1.5 rounded-full bg-[var(--t-primary-bg)] text-[var(--t-primary-fg)] px-3.5 text-[13px] font-medium text-white transition-colors hover:opacity-90">
+              Review {waiting} {waiting === 1 ? "fix" : "fixes"} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            </Link>
+          ) : null}
         </div>
       </header>
 
