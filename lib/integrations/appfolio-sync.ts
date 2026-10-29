@@ -1388,9 +1388,10 @@ export async function runAppfolioSync(
         action: AuditAction.SETTING_CHANGE,
         entityType: "AppFolioIntegration",
         entityId: integration.id,
-        description: topLevelError
-          ? `AppFolio sync completed with warnings: ${topLevelError}`
-          : "AppFolio sync completed",
+        description: appfolioSyncAuditDescription(
+          anyPhaseCompleted,
+          topLevelError,
+        ),
         diff: {
           leadsUpserted: stats.leadsUpserted,
           toursUpserted: stats.toursUpserted,
@@ -1430,6 +1431,25 @@ export async function runAppfolioSync(
     stats,
     error: !anyPhaseCompleted ? topLevelError ?? undefined : undefined,
   };
+}
+
+/**
+ * AuditEvent description for a finished sync. Zero completed phases is a hard
+ * failure (matches the integration row's syncStatus "error"), not "completed
+ * with warnings". The admin activity tab keys off these prefixes. Action stays
+ * SETTING_CHANGE: AuditAction has no failure value and adding one needs a
+ * migration.
+ */
+export function appfolioSyncAuditDescription(
+  anyPhaseCompleted: boolean,
+  topLevelError: string | null,
+): string {
+  if (!anyPhaseCompleted) {
+    return `AppFolio sync failed: ${topLevelError ?? "no phases completed"}`;
+  }
+  return topLevelError
+    ? `AppFolio sync completed with warnings: ${topLevelError}`
+    : "AppFolio sync completed";
 }
 
 // Exported for the dedup regression test (__tests__/appfolio-lead-dedup.test.ts).
