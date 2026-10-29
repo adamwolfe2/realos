@@ -1,7 +1,8 @@
 "use client";
 
+import { Panel } from "@/components/portal/overview/kit";
 import { useState, useTransition } from "react";
-import { Bell, Check, Send } from "lucide-react";
+import { Check, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -176,22 +177,7 @@ export function LeadNotifySettings({
   }
 
   return (
-    <section className="ls-card p-6">
-      <header className="flex items-start gap-2.5 mb-5">
-        <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-[2px] bg-muted text-muted-foreground">
-          <Bell className="size-4" aria-hidden="true" />
-        </span>
-        <div>
-          <h2 className="text-sm font-semibold text-foreground">
-            Lead notifications
-          </h2>
-          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-            Get an email the moment a lead is captured — chatbot, form, popup,
-            tour, integration webhook, manual add. The first 5 minutes are the
-            difference between a tour and a ghost.
-          </p>
-        </div>
-      </header>
+    <Panel title="Lead notifications" aside={<span className="hidden md:inline">An email the moment a lead comes in</span>}>
 
       <form onSubmit={submit} className="space-y-5">
         <div className="space-y-1.5">
@@ -303,6 +289,6 @@ export function LeadNotifySettings({
           ) : null}
         </div>
       </form>
-    </section>
+    </Panel>
   );
 }

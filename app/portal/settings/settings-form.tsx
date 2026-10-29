@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, MapPin, Palette, Check } from "lucide-react";
+import { Check } from "lucide-react";
+import { Panel } from "@/components/portal/overview/kit";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -51,7 +52,7 @@ function monogramFor(input: string | null | undefined): string {
   return (first + second).toUpperCase().slice(0, 2);
 }
 
-export function SettingsForm({ initial }: { initial: SettingsInitial }) {
+export function SettingsForm({ initial, below }: { initial: SettingsInitial; below?: React.ReactNode }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [state, setState] = useState<Editable>(() => seed(initial));
@@ -92,9 +93,9 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
   const logoOk = /^https?:\/\//i.test(state.logoUrl);
 
   return (
-    <form onSubmit={submit} className="space-y-6">
+    <form onSubmit={submit} className="grid items-start gap-5 xl:grid-cols-2">
+      <div className="space-y-5">
       <Section
-        icon={<Building2 className="size-4" aria-hidden="true" />}
         title="Company info"
         description="How leasing teams, agency operators, and account managers identify your portfolio."
       >
@@ -140,9 +141,26 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
           />
         </div>
       </Section>
+      <div className="flex items-center gap-3 flex-wrap">
+        <Button type="submit" disabled={pending}>
+          {pending ? "Saving…" : "Save settings"}
+        </Button>
+        {saved ? (
+          <span className="inline-flex items-center gap-1 text-xs text-primary">
+            <Check className="size-3.5" aria-hidden="true" />
+            Saved
+          </span>
+        ) : null}
+        {error ? (
+          <span className="text-xs text-destructive">{error}</span>
+        ) : null}
+      </div>
+        {below}
+      </div>
+
+      <div className="space-y-5">
 
       <Section
-        icon={<MapPin className="size-4" aria-hidden="true" />}
         title="HQ address"
         description="Used on owner reports, invoices, and any operator-facing documents."
       >
@@ -176,7 +194,6 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
       </Section>
 
       <Section
-        icon={<Palette className="size-4" aria-hidden="true" />}
         title="Brand"
         description="Drives logo, colors, and typography on your tenant site, emails, and reports."
       >
@@ -244,56 +261,26 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
         </div>
       </Section>
 
-      <div className="flex items-center gap-3 flex-wrap">
-        <Button type="submit" disabled={pending}>
-          {pending ? "Saving…" : "Save settings"}
-        </Button>
-        {saved ? (
-          <span className="inline-flex items-center gap-1 text-xs text-primary">
-            <Check className="size-3.5" aria-hidden="true" />
-            Saved
-          </span>
-        ) : null}
-        {error ? (
-          <span className="text-xs text-destructive">{error}</span>
-        ) : null}
       </div>
     </form>
   );
 }
 
 function Section({
-  icon,
   title,
   description,
   children,
+  className,
 }: {
-  icon?: React.ReactNode;
+  className?: string;
   title: string;
   description?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="ls-card p-6">
-      <header className="flex items-start justify-between gap-3 mb-5">
-        <div className="flex items-start gap-2.5">
-          {icon ? (
-            <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-[2px] bg-muted text-muted-foreground">
-              {icon}
-            </span>
-          ) : null}
-          <div>
-            <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-            {description ? (
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {description}
-              </p>
-            ) : null}
-          </div>
-        </div>
-      </header>
+    <Panel className={className} title={title} aside={description ? <span className="hidden truncate md:inline">{description}</span> : null}>
       {children}
-    </section>
+    </Panel>
   );
 }
 
