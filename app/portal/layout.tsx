@@ -1,5 +1,4 @@
 import "./themes.css";
-import { Inter } from "next/font/google";
 import { soft } from "@/lib/soft";
 import { resolveIntegrationStatuses } from "@/lib/integrations/status";
 import type { Metadata } from "next";
@@ -41,8 +40,6 @@ export const metadata: Metadata = {
 };
 
 export const dynamic = "force-dynamic";
-
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 
 export default async function PortalLayout({
   children,
@@ -459,7 +456,7 @@ export default async function PortalLayout({
       : null;
 
   return (
-    <div data-theme="inbox" className={`${inter.variable} flex flex-col h-screen bg-background text-foreground`}>
+    <div data-theme="inbox" className="flex flex-col h-screen bg-background text-foreground">
       {/* Mobile top bar */}
       <div
         data-no-print

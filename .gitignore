@@ -28,3 +28,7 @@ e2e/.cache/
 # One-off local design tooling that isn't part of the production build.
 scripts/_design-screenshot.mjs
 .env*
+
+# scripts/fonts/subset-fonts.py download cache
+scripts/fonts/.cache/
+.venv-fonts/
