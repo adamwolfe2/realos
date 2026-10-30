@@ -218,9 +218,11 @@ export default async function ClientDetail({
     propertyIds: u.propertyAccess.map((p) => p.propertyId),
   }));
 
-  const lastLoginUser = teamMembersRaw
-    .filter((u) => u.lastLoginAt)
-    .sort((a, b) => b.lastLoginAt!.getTime() - a.lastLoginAt!.getTime())[0];
+  const lastLoginUser = await prisma.user.findFirst({
+    where: { orgId: org.id, lastLoginAt: { not: null } },
+    orderBy: { lastLoginAt: "desc" },
+    select: { firstName: true, lastName: true, email: true, lastLoginAt: true },
+  });
   const lastLogin = lastLoginUser
     ? {
         at: lastLoginUser.lastLoginAt!,
@@ -261,9 +263,9 @@ export default async function ClientDetail({
   // fine" failure mode the audit flagged.
   const tenantDataSinks = await getTenantDataSinks(org.id).catch((err) => {
     console.error("[admin/clients] tenant data sinks failed", org.id, err);
-    return [];
+    return null;
   });
-  const failingSinks = tenantDataSinks.filter(
+  const failingSinks = (tenantDataSinks ?? []).filter(
     (s) => s.status === "erroring" || s.status === "dead",
   );
 
@@ -309,14 +311,14 @@ export default async function ClientDetail({
     },
     {
       label: "Primary property added",
-      status: (org._count.properties > 0 ? "ok" : "missing") as
+      status: (marketablePropertyCount > 0 ? "ok" : "missing") as
         | "ok"
         | "warn"
         | "missing",
       href: "/admin/clients/" + org.id,
       hint:
         org._count.properties > 0
-          ? `${marketablePropertyCount} live of ${org._count.properties} synced`
+          ? `${marketablePropertyCount} live of ${org._count.properties} in account`
           : "At least one Property is required for listings.",
     },
     {
@@ -388,7 +390,7 @@ export default async function ClientDetail({
                 <span>{humanSubscriptionTier(org.subscriptionTier)} tier</span>
               </>
             ) : null}
-            {org.primaryContactName || org.primaryContactEmail ? (
+            {org.primaryContactName || org.primaryContactEmail || org.primaryContactPhone ? (
               <>
                 <span className="text-muted-foreground">·</span>
                 <span>
@@ -445,7 +447,7 @@ export default async function ClientDetail({
       {tab === "integrations" ? (
         <IntegrationsTab
           orgId={org.id}
-          tenantDataSinks={tenantDataSinks}
+          tenantDataSinks={tenantDataSinks ?? []}
         />
       ) : null}
 

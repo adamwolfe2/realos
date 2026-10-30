@@ -68,12 +68,13 @@ export function OverviewTab({
   stats: OverviewStats;
   readinessItems: ReadinessItem[];
   actionItems: AdminActionItem[];
-  dataSinks: DataSinkSummary[];
+  /** null when pipe health failed to load. */
+  dataSinks: DataSinkSummary[] | null;
   recentLeads: RecentLead[];
   activeProjects: ActiveProject[];
 }) {
   const criticalItems = actionItems.filter((i) => i.severity === "critical");
-  const failingSinks = dataSinks.filter(
+  const failingSinks = (dataSinks ?? []).filter(
     (s) => s.status === "erroring" || s.status === "dead",
   );
   const missingSetup = readinessItems.filter((i) => i.status === "missing");
@@ -96,7 +97,7 @@ export function OverviewTab({
         <StatCard
           label="Live properties"
           value={stats.liveProperties.toLocaleString()}
-          hint={`of ${stats.syncedProperties.toLocaleString()} synced from AppFolio`}
+          hint={`of ${stats.syncedProperties.toLocaleString()} in the account`}
         />
         <StatCard
           label="Last client login"
@@ -167,7 +168,13 @@ export function OverviewTab({
               </Link>
             }
           >
-            <DataPipes sinks={dataSinks} />
+            {dataSinks ? (
+              <DataPipes sinks={dataSinks} />
+            ) : (
+              <p className="text-sm text-destructive">
+                Could not load sync health. Reload, or open Details.
+              </p>
+            )}
             <SetupLine items={readinessItems} orgId={orgId} />
           </SectionCard>
 
@@ -318,8 +325,13 @@ const PIPE_ORDER: Record<SinkStatus, number> = {
   missing: 4,
 };
 
+// Reputation, AEO and DataForSEO only have platform-wide run history, so
+// they can't say whether THIS client's data is flowing. Left to the
+// Integrations tab rather than shown as a per-client "Live".
+const PLATFORM_ONLY = new Set(["reputation", "aeo", "dataforseo"]);
+
 function DataPipes({ sinks }: { sinks: DataSinkSummary[] }) {
-  const sorted = [...sinks].sort(
+  const sorted = sinks.filter((s) => !PLATFORM_ONLY.has(s.provider)).sort(
     (a, b) => PIPE_ORDER[a.status] - PIPE_ORDER[b.status],
   );
   return (
