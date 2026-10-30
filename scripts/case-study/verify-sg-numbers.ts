@@ -138,7 +138,7 @@ async function main(): Promise<void> {
     chatbotLeadRows.flatMap((r) => (r.email ? [r.email.toLowerCase()] : [])),
   ).size;
 
-  const checks: Array<[string, number | string, number | string | undefined]> = [
+  const checks: Array<[string, unknown, unknown]> = [
     ["firstRecords.conversation", CS.firstRecords.conversation, day(firstConv?.createdAt)],
     ["firstRecords.lead", CS.firstRecords.lead, day(firstLead?.createdAt)],
     [
@@ -183,12 +183,23 @@ async function main(): Promise<void> {
     ],
   ];
 
+  // The page renders only sinceLaunch, so only those gate the exit code.
+  // The report-window checks above describe the September client report
+  // and drift as leads are de-duplicated; they print as context.
+  const gating = await sinceLaunchChecks();
+
   console.log(
     `SG case study verify @ ${new Date().toISOString()} ` +
       `(constants as of ${CS.asOf}, window ${CS.period.start} to ${CS.period.end})`,
   );
-  let failed = 0;
   for (const [name, expected, actual] of checks) {
+    console.log(
+      `${actual === expected ? "pass" : "drift"}  ${name.padEnd(38)} constant=${expected} db=${actual ?? "missing"} (report window, not gating)`,
+    );
+  }
+  console.log(`since-launch numbers as of ${CS.sinceLaunch.asOf}:`);
+  let failed = 0;
+  for (const [name, expected, actual] of gating) {
     const ok = actual === expected;
     if (!ok) failed += 1;
     console.log(
@@ -197,6 +208,119 @@ async function main(): Promise<void> {
   }
   console.log(failed === 0 ? "ALL PASS" : `${failed} FAIL`);
   process.exitCode = failed === 0 ? 0 : 1;
+}
+
+// Since-launch numbers (2026-10-30 page rewrite). Raw read-only SQL; the
+// definitions are documented on SG_CASE_STUDY.sinceLaunch.
+async function sinceLaunchChecks(): Promise<Array<[string, unknown, unknown]>> {
+  const SL = CS.sinceLaunch;
+  const db = getPrisma();
+  const start = new Date(SL.start);
+  const end = new Date(SL.end);
+  const org = CS.orgId;
+  const prop = CS.propertyId;
+  const n = (v: unknown) => (v == null ? null : Number(v));
+
+  const [leads] = await db.$queryRaw<Array<Record<string, bigint>>>`
+    SELECT count(*) AS total,
+      count(*) FILTER (WHERE source = 'CHATBOT') AS chatbot,
+      count(*) FILTER (WHERE source = 'OTHER' AND "sourceDetail" = 'AppFolio application' AND "externalSystem" = 'appfolio') AS appfolio,
+      count(*) FILTER (WHERE source = 'FORM') AS form
+    FROM "Lead" WHERE "orgId" = ${org}
+      AND ("propertyId" = ${prop} OR "propertyId" IS NULL)
+      AND "createdAt" >= ${start} AND "createdAt" < ${end}`;
+  const [chats] = await db.$queryRaw<Array<Record<string, bigint>>>`
+    SELECT count(*) AS total, count(*) FILTER (WHERE status = 'LEAD_CAPTURED') AS captured
+    FROM "ChatbotConversation" WHERE "orgId" = ${org}
+      AND ("propertyId" = ${prop} OR "propertyId" IS NULL)
+      AND "createdAt" >= ${start} AND "createdAt" < ${end}`;
+  const [traced] = await db.$queryRaw<Array<Record<string, unknown>>>`
+    WITH x AS (
+      SELECT DISTINCT ON (l.id) l.id, l.source, l."createdAt" AS lead_at,
+        ls."startDate"
+      FROM "Lead" l
+      JOIN "Resident" r ON r."leadId" = l.id AND r."propertyId" = ${prop}
+        AND r."leadLinkManual" = false
+      JOIN "Lease" ls ON ls."residentId" = r.id
+      WHERE l."orgId" = ${org} AND l.status = 'SIGNED'
+        AND ls."startDate" >= ${start} AND ls."startDate" < ${end}
+        AND l."createdAt" <= ls."startDate"
+      ORDER BY l.id, ls."startDate" DESC)
+    SELECT count(*) AS leases,
+      count(*) FILTER (WHERE source = 'CHATBOT') AS chat_leases,
+      round(avg(extract(epoch FROM ("startDate" - lead_at)) / 86400)
+        FILTER (WHERE source = 'CHATBOT')) AS chat_days
+    FROM x`;
+  const [synced] = await db.$queryRaw<Array<Record<string, bigint>>>`
+    SELECT (SELECT count(*) FROM "Resident" WHERE "orgId" = ${org} AND "propertyId" = ${prop}) AS residents,
+      (SELECT count(*) FROM "Lease" WHERE "orgId" = ${org} AND "propertyId" = ${prop}) AS leases`;
+  const search = await db.$queryRaw<Array<Record<string, unknown>>>`
+    SELECT to_char(date, 'YYYY-MM') AS m, sum("totalClicks") AS clicks,
+      sum("totalImpressions") AS impr, round(avg("avgPosition")::numeric, 1) AS pos
+    FROM "SeoSnapshot" WHERE "orgId" = ${org} AND date >= ${start}
+      AND date < ${new Date(SL.searchEndDate)}
+    GROUP BY 1 ORDER BY 1`;
+  const tracedMonthly = await db.$queryRaw<Array<Record<string, unknown>>>`
+    WITH x AS (
+      SELECT DISTINCT ON (l.id) l.id, ls."startDate"
+      FROM "Lead" l
+      JOIN "Resident" r ON r."leadId" = l.id AND r."propertyId" = ${prop}
+        AND r."leadLinkManual" = false
+      JOIN "Lease" ls ON ls."residentId" = r.id
+      WHERE l."orgId" = ${org} AND l.status = 'SIGNED'
+        AND ls."startDate" >= ${start} AND ls."startDate" < ${end}
+        AND l."createdAt" <= ls."startDate"
+      ORDER BY l.id, ls."startDate" DESC)
+    SELECT to_char("startDate", 'YYYY-MM') AS m, count(*) AS n FROM x GROUP BY 1`;
+  const monthly = await db.$queryRaw<Array<Record<string, unknown>>>`
+    WITH l AS (
+      SELECT to_char("createdAt", 'YYYY-MM') AS m,
+        count(*) FILTER (WHERE source = 'CHATBOT') AS chatbot,
+        count(*) FILTER (WHERE source = 'OTHER' AND "sourceDetail" = 'AppFolio application' AND "externalSystem" = 'appfolio') AS appfolio,
+        count(*) FILTER (WHERE source = 'FORM') AS form
+      FROM "Lead" WHERE "orgId" = ${org}
+        AND ("propertyId" = ${prop} OR "propertyId" IS NULL)
+        AND "createdAt" >= ${start} AND "createdAt" < ${end} GROUP BY 1),
+    c AS (
+      SELECT to_char("createdAt", 'YYYY-MM') AS m, count(*) AS chats
+      FROM "ChatbotConversation" WHERE "orgId" = ${org}
+        AND ("propertyId" = ${prop} OR "propertyId" IS NULL)
+        AND "createdAt" >= ${start} AND "createdAt" < ${end} GROUP BY 1)
+    SELECT coalesce(l.m, c.m) AS m, coalesce(chatbot, 0) AS chatbot,
+      coalesce(appfolio, 0) AS appfolio, coalesce(form, 0) AS form,
+      coalesce(chats, 0) AS chats
+    FROM l FULL JOIN c ON c.m = l.m ORDER BY 1`;
+
+  const monthlyDb = JSON.stringify(
+    monthly.map((r) => ({
+      month: r.m,
+      chatbot: n(r.chatbot),
+      appfolio: n(r.appfolio),
+      webForm: n(r.form),
+      chats: n(r.chats),
+      leasesTraced: n(tracedMonthly.find((t) => t.m === r.m)?.n) ?? 0,
+      searchClicks: n(search.find((t) => t.m === r.m)?.clicks) ?? 0,
+      searchPosition: n(search.find((t) => t.m === r.m)?.pos) ?? 0,
+    })),
+  );
+  return [
+    ["sinceLaunch.leads", SL.leads, n(leads?.total)],
+    ["sinceLaunch.leadsFromChatbot", SL.leadsFromChatbot, n(leads?.chatbot)],
+    ["sinceLaunch.leadsFromAppfolioApplications", SL.leadsFromAppfolioApplications, n(leads?.appfolio)],
+    ["sinceLaunch.leadsFromWebForm", SL.leadsFromWebForm, n(leads?.form)],
+    ["sinceLaunch.chatSessions", SL.chatSessions, n(chats?.total)],
+    ["sinceLaunch.chatSessionsCaptured", SL.chatSessionsCaptured, n(chats?.captured)],
+    ["sinceLaunch.tracedLeases", SL.tracedLeases, n(traced?.leases)],
+    ["sinceLaunch.tracedLeasesFromChat", SL.tracedLeasesFromChat, n(traced?.chat_leases)],
+    ["sinceLaunch.avgDaysChatToLeaseStart", SL.avgDaysChatToLeaseStart, n(traced?.chat_days)],
+    ["sinceLaunch.residentsSynced", SL.residentsSynced, n(synced?.residents)],
+    ["sinceLaunch.leasesSynced", SL.leasesSynced, n(synced?.leases)],
+    ["sinceLaunch.searchClicks", SL.searchClicks, search.reduce((a, r) => a + Number(r.clicks), 0)],
+    ["sinceLaunch.searchImpressions", SL.searchImpressions, search.reduce((a, r) => a + Number(r.impr), 0)],
+    ["sinceLaunch.searchPositionFirstMonth", SL.searchPositionFirstMonth, n(search[0]?.pos)],
+    ["sinceLaunch.searchPositionLatestMonth", SL.searchPositionLatestMonth, n(search.at(-1)?.pos)],
+    ["sinceLaunch.monthly", JSON.stringify(SL.monthly), monthlyDb],
+  ];
 }
 
 main()
