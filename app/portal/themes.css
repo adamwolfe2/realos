@@ -7,6 +7,12 @@
    legacy-token page follow.
    ───────────────────────────────────────────────────────────────────────── */
 
+/* The portal used to load its own Inter without the optical-size axis, which
+   Google instanced at opsz 14 and which overrode the root Inter while this
+   stylesheet was loaded. The shared subset keeps the opsz axis; pinning it to
+   its default (14) keeps portal text rendering exactly as before. */
+:root { font-optical-sizing: none; }
+
 [data-theme="inbox"] {
   --t-font: var(--font-inter), system-ui, sans-serif;
   --t-bg: #f4f7ff;

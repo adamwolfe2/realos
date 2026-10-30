@@ -6,7 +6,9 @@ import { CalDemoProvider } from "@/components/marketing/cal-demo-modal";
 import { GoogleTags, GoogleTagManagerNoScript } from "@/components/analytics/google-tags";
 import { PlatformOnly } from "@/components/analytics/platform-only";
 import { Toaster } from "@/components/ui/sonner";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { preload } from "react-dom";
+import "./fonts.generated.css";
+import { FONT_PRELOADS } from "./fonts.generated";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -16,18 +18,9 @@ import { serializeJsonLd } from "@/lib/seo/serialize-json-ld";
 
 // Inter covers UI + body + headings (single geometric sans, per design system).
 // JetBrains Mono handles code, small labels, and tabular data figures.
-const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-inter",
-  axes: ["opsz"],
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-jetbrains",
-});
+// Self-hosted subsets from scripts/fonts/subset-fonts.py (see scripts/fonts/README.md):
+// the core files are preloaded; extended files load via unicode-range only
+// when a page uses one of their characters.
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -112,6 +105,9 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  for (const href of FONT_PRELOADS) {
+    preload(href, { as: "font", type: "font/woff2", crossOrigin: "anonymous" });
+  }
   // DECISION: Always wrap with ClerkProvider so components deeper in the tree
   // that use Clerk hooks (e.g., PostHogUserIdentifier, auth-aware navigation)
   // can prerender safely. Clerk handles missing env keys with a warning rather
@@ -121,7 +117,7 @@ export default function RootLayout({
     <ClerkProvider>
       <html
         lang="en"
-        className={`scroll-smooth ${inter.variable} ${jetbrainsMono.variable}`}
+        className="scroll-smooth"
       >
         <body
           className="antialiased bg-background text-foreground"
