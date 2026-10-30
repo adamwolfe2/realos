@@ -1180,9 +1180,12 @@ export async function runAppfolioSync(
     const seenLeaseExternalIds = new Set<string>();
     const sweepPropertyIds = new Set<string>();
     for (const row of rows) {
+      // Vacant units first: the mapper would accept a generic row `id` and
+      // file the empty unit as a lease.
+      if (isVacantUnitRow(row)) continue;
       const mapped = mapLeasePayload(row);
       if (!mapped) {
-        if (!isVacantUnitRow(row)) unmappedLeaseRows += 1;
+        unmappedLeaseRows += 1;
         continue;
       }
       seenLeaseExternalIds.add(mapped.externalId);

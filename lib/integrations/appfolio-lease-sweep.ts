@@ -28,6 +28,8 @@ export function pullIsComplete(pull: {
 // Those are not failed mappings and must not block the sweep. Strict: a
 // "Vacant" status AND no lease, occupancy or person id, so a malformed row
 // that does carry a lease still counts as unmapped.
+// Checked BEFORE mapping: a vacant row with only a generic `id` would
+// otherwise map as a lease.
 export function isVacantUnitRow(row: Record<string, unknown>): boolean {
   const status = typeof row.status === "string" ? row.status.trim().toLowerCase() : "";
   if (!status.startsWith("vacant")) return false;

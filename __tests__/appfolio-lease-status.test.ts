@@ -48,9 +48,13 @@ describe("leaseStatusFor", () => {
   // occupancy_id; rent_roll's tenant_id never matched them (Telegraph
   // Commons 2026-10: 0 of 177 leases linked to a resident).
   it("exposes occupancy_id so a lease can find its resident", () => {
+    // Real rent_roll shape: tenant_id present but never a resident key.
     const m = mapLeasePayload({ occupancy_id: "o1", tenant_id: "t9", status: "Current" });
     expect(m?.residentExternalId).toBe("t9");
     expect(m?.occupancyExternalId).toBe("o1");
+    const bare = mapLeasePayload({ occupancy_id: "o2", status: "Current" });
+    expect(bare?.residentExternalId).toBeNull();
+    expect(bare?.occupancyExternalId).toBe("o2");
   });
 });
 
@@ -248,5 +252,22 @@ describe("lease end-sweep wiring", () => {
   it("persists leasesEnded in lastSyncStats", () => {
     const persisted = content.slice(content.indexOf("const persistedStats"), content.indexOf("phaseFailures,\n  };"));
     expect(persisted).toContain("leasesEnded: stats.leasesEnded");
+  });
+});
+
+// runAppfolioSync is a closure-scoped monolith, so lock the leases-phase
+// wiring structurally (same approach as the residents-phase block above).
+describe("leases phase wiring", () => {
+  const content = fs.readFileSync(path.resolve(__dirname, "../lib/integrations/appfolio-sync.ts"), "utf-8");
+  const leasesPhase = content.slice(content.indexOf("6. LEASES"), content.indexOf("7. "));
+
+  it("falls back to occupancy_id when looking up the lease's resident", () => {
+    expect(leasesPhase).toMatch(/residentByExternalId\.get\(mapped\.residentExternalId\)\)\s*\|\|\s*\(mapped\.occupancyExternalId &&\s*residentByExternalId\.get\(mapped\.occupancyExternalId\)\)/);
+  });
+
+  it("skips vacant unit rows before mapping them", () => {
+    const vacant = leasesPhase.indexOf("if (isVacantUnitRow(row)) continue;");
+    expect(vacant).toBeGreaterThan(-1);
+    expect(vacant).toBeLessThan(leasesPhase.indexOf("mapLeasePayload(row)"));
   });
 });
