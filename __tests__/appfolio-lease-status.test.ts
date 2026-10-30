@@ -43,6 +43,15 @@ describe("leaseStatusFor", () => {
     expect(m?.endDate?.toISOString().slice(0, 10)).toBe(soon);
     expect(m?.status).toBe("EXPIRING");
   });
+
+  // tenant_directory has no tenant_id, so residents are keyed by
+  // occupancy_id; rent_roll's tenant_id never matched them (Telegraph
+  // Commons 2026-10: 0 of 177 leases linked to a resident).
+  it("exposes occupancy_id so a lease can find its resident", () => {
+    const m = mapLeasePayload({ occupancy_id: "o1", tenant_id: "t9", status: "Current" });
+    expect(m?.residentExternalId).toBe("t9");
+    expect(m?.occupancyExternalId).toBe("o1");
+  });
 });
 
 describe("pullIsComplete", () => {

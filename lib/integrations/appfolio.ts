@@ -1535,6 +1535,9 @@ export function mapResidentPayload(raw: RawRow): MappedResident | null {
 export type MappedLease = {
   externalId: string;
   residentExternalId: string | null;
+  // Residents from tenant_directory are keyed by occupancy_id when the
+  // report omits tenant_id, so the lease falls back to it to find them.
+  occupancyExternalId: string | null;
   unitExternalId: string | null;
   propertyExternalId: string | null;
   status: "PENDING" | "ACTIVE" | "EXPIRING" | "RENEWED" | "ENDED" | "EVICTED";
@@ -1604,6 +1607,7 @@ export function mapLeasePayload(raw: RawRow): MappedLease | null {
   return {
     externalId,
     residentExternalId: asString(raw.tenant_id ?? raw.occupant_id) ?? null,
+    occupancyExternalId: asString(raw.occupancy_id) ?? null,
     unitExternalId: asString(raw.unit_id) ?? null,
     propertyExternalId: asString(raw.property_id) ?? null,
     status: leaseStatusFor({

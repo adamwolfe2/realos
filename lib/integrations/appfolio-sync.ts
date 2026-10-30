@@ -1203,6 +1203,8 @@ export async function runAppfolioSync(
       const residentId =
         (mapped.residentExternalId &&
           residentByExternalId.get(mapped.residentExternalId)) ||
+        (mapped.occupancyExternalId &&
+          residentByExternalId.get(mapped.occupancyExternalId)) ||
         null;
       const leaseId = await upsertLease(orgId, propertyId, listingId, residentId, mapped);
       leaseByExternalId.set(mapped.externalId, leaseId);
