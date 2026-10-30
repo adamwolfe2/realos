@@ -160,7 +160,7 @@ export async function GET(req: NextRequest) {
           result: NextResponse.json(
             {
               ok: false,
-              error: `No AppFolio integration for org ${orgIdParam}`,
+              error: `No syncable AppFolio integration for org ${orgIdParam} (none connected, or a demo org)`,
               processed: 0,
               integrations: 0,
               integrationsEligible: 0,
