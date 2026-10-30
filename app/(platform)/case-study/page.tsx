@@ -89,7 +89,7 @@ const RUNNING = [
   },
   {
     name: "AppFolio sync",
-    what: "Applications, residents and leases pulled in every hour. AppFolio stays the record.",
+    what: "Applications, residents and leases synced throughout the day. AppFolio stays the record.",
     proof: `${SL.residentsSynced} residents and ${SL.leasesSynced} leases at ${CS.property}`,
   },
   {
@@ -99,7 +99,7 @@ const RUNNING = [
   },
   {
     name: "Lease matching",
-    what: "Residents are matched to lead records by email, phone and name, so each lease shows its source.",
+    what: "Residents are matched to lead records automatically by email, phone and name, so a matched lease shows its source.",
     proof: `${SL.tracedLeases} new leases traced, ${SL.tracedLeasesFromChat} from the chatbot`,
   },
 ];
@@ -293,8 +293,7 @@ function LeadsChart() {
       <div
         className="grid items-end gap-3 md:gap-6"
         style={{ gridTemplateColumns: `repeat(${SL.monthly.length}, minmax(0, 1fr))`, height: 260 }}
-        role="img"
-        aria-label={`Lead records by month and source, ${SL.label}`}
+        aria-hidden="true"
       >
         {SL.monthly.map((m) => {
           const total = m.chatbot + m.appfolio + m.webForm;
@@ -334,6 +333,31 @@ function LeadsChart() {
             </span>
           </div>
         ))}
+      </div>
+      <div className="sr-only">
+      <table>
+        <caption>Lead records by month and source, {SL.label}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Month</th>
+            <th scope="col">Website chatbot</th>
+            <th scope="col">AppFolio application</th>
+            <th scope="col">Website form</th>
+            <th scope="col">Chat sessions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {SL.monthly.map((m) => (
+            <tr key={m.month}>
+              <th scope="row">{MONTH_LABEL[m.month] ?? m.month}</th>
+              <td>{m.chatbot}</td>
+              <td>{m.appfolio}</td>
+              <td>{m.webForm}</td>
+              <td>{m.chats}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
       </div>
       <figcaption
         className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-2 text-center"
@@ -376,8 +400,9 @@ export default function CaseStudyPage() {
           <p className="mt-6 mx-auto" style={{ ...BODY_STYLE, fontSize: 18, maxWidth: 660 }}>
             {CS.property} is student housing a three-minute walk from UC Berkeley, with{" "}
             {SL.residentsSynced} residents. Since April, {BRAND_NAME} has run its website and chatbot,
-            synced AppFolio every hour, and matched each new lease to the chat, form or application it
-            started from. {CS.customer} can now see which channel brought in each signed lease.
+            kept AppFolio synced throughout the day, and automatically matched new leases to the chat,
+            form or application they started from. {CS.customer} can now see which channel brought in
+            those signed leases.
           </p>
           <div className="mt-8 flex flex-col items-stretch sm:flex-row sm:items-center sm:justify-center gap-3">
             <BookDemoLink className="btn-primary sm:w-auto">Book a demo</BookDemoLink>

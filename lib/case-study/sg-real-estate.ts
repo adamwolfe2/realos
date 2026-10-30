@@ -134,6 +134,8 @@ export const SG_CASE_STUDY = {
    * Re-checked by scripts/case-study/verify-sg-numbers.ts.
    */
   sinceLaunch: {
+    /** Date these since-launch numbers were last re-verified. */
+    asOf: "2026-10-30",
     start: "2026-04-18T00:00:00Z",
     end: "2026-10-30T17:00:00Z",
     /** Search Console rows are daily; today's row is partial, so stop here. */

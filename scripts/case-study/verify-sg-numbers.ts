@@ -183,14 +183,23 @@ async function main(): Promise<void> {
     ],
   ];
 
-  checks.push(...(await sinceLaunchChecks()));
+  // The page renders only sinceLaunch, so only those gate the exit code.
+  // The report-window checks above describe the September client report
+  // and drift as leads are de-duplicated; they print as context.
+  const gating = await sinceLaunchChecks();
 
   console.log(
     `SG case study verify @ ${new Date().toISOString()} ` +
       `(constants as of ${CS.asOf}, window ${CS.period.start} to ${CS.period.end})`,
   );
-  let failed = 0;
   for (const [name, expected, actual] of checks) {
+    console.log(
+      `${actual === expected ? "pass" : "drift"}  ${name.padEnd(38)} constant=${expected} db=${actual ?? "missing"} (report window, not gating)`,
+    );
+  }
+  console.log(`since-launch numbers as of ${CS.sinceLaunch.asOf}:`);
+  let failed = 0;
+  for (const [name, expected, actual] of gating) {
     const ok = actual === expected;
     if (!ok) failed += 1;
     console.log(
@@ -215,7 +224,7 @@ async function sinceLaunchChecks(): Promise<Array<[string, unknown, unknown]>> {
   const [leads] = await db.$queryRaw<Array<Record<string, bigint>>>`
     SELECT count(*) AS total,
       count(*) FILTER (WHERE source = 'CHATBOT') AS chatbot,
-      count(*) FILTER (WHERE source = 'OTHER' AND "sourceDetail" = 'AppFolio application') AS appfolio,
+      count(*) FILTER (WHERE source = 'OTHER' AND "sourceDetail" = 'AppFolio application' AND "externalSystem" = 'appfolio') AS appfolio,
       count(*) FILTER (WHERE source = 'FORM') AS form
     FROM "Lead" WHERE "orgId" = ${org}
       AND ("propertyId" = ${prop} OR "propertyId" IS NULL)
@@ -231,6 +240,7 @@ async function sinceLaunchChecks(): Promise<Array<[string, unknown, unknown]>> {
         ls."startDate"
       FROM "Lead" l
       JOIN "Resident" r ON r."leadId" = l.id AND r."propertyId" = ${prop}
+        AND r."leadLinkManual" = false
       JOIN "Lease" ls ON ls."residentId" = r.id
       WHERE l."orgId" = ${org} AND l.status = 'SIGNED'
         AND ls."startDate" >= ${start} AND ls."startDate" < ${end}
@@ -255,6 +265,7 @@ async function sinceLaunchChecks(): Promise<Array<[string, unknown, unknown]>> {
       SELECT DISTINCT ON (l.id) l.id, ls."startDate"
       FROM "Lead" l
       JOIN "Resident" r ON r."leadId" = l.id AND r."propertyId" = ${prop}
+        AND r."leadLinkManual" = false
       JOIN "Lease" ls ON ls."residentId" = r.id
       WHERE l."orgId" = ${org} AND l.status = 'SIGNED'
         AND ls."startDate" >= ${start} AND ls."startDate" < ${end}
@@ -265,7 +276,7 @@ async function sinceLaunchChecks(): Promise<Array<[string, unknown, unknown]>> {
     WITH l AS (
       SELECT to_char("createdAt", 'YYYY-MM') AS m,
         count(*) FILTER (WHERE source = 'CHATBOT') AS chatbot,
-        count(*) FILTER (WHERE source = 'OTHER' AND "sourceDetail" = 'AppFolio application') AS appfolio,
+        count(*) FILTER (WHERE source = 'OTHER' AND "sourceDetail" = 'AppFolio application' AND "externalSystem" = 'appfolio') AS appfolio,
         count(*) FILTER (WHERE source = 'FORM') AS form
       FROM "Lead" WHERE "orgId" = ${org}
         AND ("propertyId" = ${prop} OR "propertyId" IS NULL)
