@@ -70,6 +70,37 @@ describe("tenant-scoped data sinks", () => {
     expect(s.appfolio.lastErrorMessage).toBe("bad creds");
   });
 
+  it("a sync failing for days after a recent success is still failing", () => {
+    const threeDays = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    const s = build(true, {
+      lastSyncAt: threeDays,
+      lastErrorAt: threeDays,
+      lastErrorMessage: "token expired",
+      tenantsCovered: 1,
+    });
+    expect(s.appfolio.status).toBe("erroring");
+    expect(s.appfolio.lastSuccessAt).toEqual(threeDays);
+  });
+
+  it("an error with no sync ever is failing, not missing", () => {
+    const s = build(true, { ...EMPTY_AGG, lastErrorMessage: "bad creds" });
+    expect(s.appfolio.status).toBe("erroring");
+  });
+
+  it("a failure whose last success is a month old is dead", () => {
+    const s = build(true, {
+      lastSyncAt: old,
+      lastErrorAt: old,
+      lastErrorMessage: "bad creds",
+      tenantsCovered: 1,
+    });
+    expect(s.appfolio.status).toBe("dead");
+  });
+
+  it("tenant view reports no platform run counts", () => {
+    expect(build(true).appfolio.runsLast24h).toBe(0);
+  });
+
   it("a stale site crawl is flagged on its own crawl date", () => {
     expect(build(true, EMPTY_AGG, old).site_intelligence.status).toBe("dead");
     expect(build(true, EMPTY_AGG, now).site_intelligence.status).toBe("fresh");

@@ -300,11 +300,7 @@ export function buildSummaries(input: {
 
     // Per-integration lastSyncAt is often fresher than CronRun rollup
     // (manual button click writes lastSyncAt without a CronRun row).
-    // Tenant rows stamp lastSyncAt on failed syncs too, so an org whose
-    // row carries an error has no success to count.
-    const aggSuccessAt =
-      input.tenantScoped && agg?.lastErrorAt ? null : agg?.lastSyncAt ?? null;
-    const lastSuccessAt = maxDate(cron.lastSuccessAt, aggSuccessAt);
+    const lastSuccessAt = maxDate(cron.lastSuccessAt, agg?.lastSyncAt ?? null);
     let lastRunAt = maxDate(cron.lastRunAt, agg?.lastSyncAt ?? null);
 
     const overrides = input.perTenantOverrides;
@@ -361,8 +357,12 @@ function tenantView(
   agg: IntegrationAggregate | null,
   overrides: { siteIntelLastRunAt: Date | null } | undefined,
 ): CronRollup {
+  // Platform run/row counts are not this org's throughput.
   const noErrors = {
     ...cron,
+    runsLast24h: 0,
+    successesLast24h: 0,
+    rowsLast24h: 0,
     lastErrorAt: null,
     lastErrorMessage: null,
     errorsLast24h: 0,
@@ -373,12 +373,16 @@ function tenantView(
     return { ...noErrors, lastRunAt: crawledAt, lastSuccessAt: crawledAt };
   }
   if (!agg) return noErrors;
-  const recentError =
-    agg.lastErrorAt != null && Date.now() - agg.lastErrorAt.getTime() < DAY;
+  // An error on the org's row means its latest sync failed: failing NOW,
+  // however long ago the last success (lastSyncAt) was. Failed syncs don't
+  // advance lastSyncAt, so the aggregators' lastErrorAt can't date it.
+  const failing = agg.lastErrorMessage != null || agg.lastErrorAt != null;
+  const failedAt = failing ? new Date() : null;
   return {
     ...noErrors,
-    lastRunAt: null,
+    lastRunAt: failedAt,
     lastSuccessAt: null,
-    errorsLast24h: recentError ? 1 : 0,
+    lastErrorAt: failedAt,
+    errorsLast24h: failing ? 1 : 0,
   };
 }

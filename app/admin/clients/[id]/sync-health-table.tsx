@@ -1,5 +1,4 @@
 import { formatDistanceToNow } from "date-fns";
-import { cn } from "@/lib/utils";
 import {
   StatusChip,
   type ConnectionStatus,
@@ -73,10 +72,7 @@ export function SyncHealthTable({
           <tr>
             <th>Source</th>
             <th>Status</th>
-            <th>Last run</th>
-            <th>Runs 24h</th>
-            <th>Errors 24h</th>
-            <th>Rows</th>
+            <th>Last good sync</th>
             <th className="text-right">Action</th>
           </tr>
         </thead>
@@ -99,23 +95,9 @@ export function SyncHealthTable({
                   <StatusChip status={chip.status} label={chip.label} />
                 </td>
                 <td className="tabular-nums text-muted-foreground whitespace-nowrap">
-                  {sink.lastRunAt
-                    ? formatDistanceToNow(sink.lastRunAt, { addSuffix: true })
+                  {sink.lastSuccessAt
+                    ? formatDistanceToNow(sink.lastSuccessAt, { addSuffix: true })
                     : "Never"}
-                </td>
-                <td className="tabular-nums">{sink.runsLast24h}</td>
-                <td
-                  className={cn(
-                    "tabular-nums",
-                    sink.errorsLast24h > 0
-                      ? "text-destructive font-medium"
-                      : "text-muted-foreground",
-                  )}
-                >
-                  {sink.errorsLast24h}
-                </td>
-                <td className="tabular-nums text-muted-foreground">
-                  {sink.rowsLast24h ?? "—"}
                 </td>
                 <td className="text-right">
                   <div className="inline-flex">

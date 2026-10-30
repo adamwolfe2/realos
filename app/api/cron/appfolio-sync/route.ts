@@ -149,8 +149,8 @@ export async function GET(req: NextRequest) {
     }>;
 
     if (orgIdParam) {
-      const targeted = await prisma.appFolioIntegration.findUnique({
-        where: { orgId: orgIdParam },
+      const targeted = await prisma.appFolioIntegration.findFirst({
+        where: { orgId: orgIdParam, org: notDemoOrg },
         select: INTEGRATION_SELECT,
       });
       if (!targeted) {
