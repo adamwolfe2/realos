@@ -578,8 +578,9 @@ export async function fetchGoogleAdsDailyMetrics(
 
 // ---------------------------------------------------------------------------
 // Per-ad creatives + per-ad daily metrics (ad_group_ad). Read-only.
-// Image assets for display/PMax are asset resource names, not URLs; the
-// gallery shows Google ads as text cards for now.
+// Display/video ads reference image + YouTube assets by resource name, not
+// URL; `resolveAssetUrls` does one follow-up `asset` query to turn those into
+// thumbnails. Legacy image ads carry their URL inline. Search ads stay text.
 // ---------------------------------------------------------------------------
 
 export type GoogleAdCreative = {
@@ -626,30 +627,21 @@ export async function fetchGoogleAdsAds(
         ad_group_ad.ad.responsive_display_ad.headlines,
         ad_group_ad.ad.responsive_display_ad.descriptions,
         ad_group_ad.ad.responsive_display_ad.call_to_action_text,
+        ad_group_ad.ad.responsive_display_ad.marketing_images,
+        ad_group_ad.ad.responsive_display_ad.square_marketing_images,
         ad_group_ad.ad.video_responsive_ad.headlines,
         ad_group_ad.ad.video_responsive_ad.descriptions,
+        ad_group_ad.ad.video_responsive_ad.videos,
+        ad_group_ad.ad.image_ad.image_url,
+        ad_group_ad.ad.image_ad.preview_image_url,
         campaign.id
       FROM ad_group_ad
       WHERE ad_group_ad.status != 'REMOVED'
     `,
   });
 
-  return rows.map((raw) => {
-    const r = raw as {
-      adGroupAd?: {
-        status?: string;
-        ad?: {
-          id?: string;
-          name?: string;
-          type?: string;
-          finalUrls?: string[];
-          responsiveSearchAd?: { headlines?: GoogleAdText[]; descriptions?: GoogleAdText[] };
-          responsiveDisplayAd?: { headlines?: GoogleAdText[]; descriptions?: GoogleAdText[]; callToActionText?: string };
-          videoResponsiveAd?: { headlines?: GoogleAdText[]; descriptions?: GoogleAdText[] };
-        };
-      };
-      campaign?: { id?: string };
-    };
+  const parsed = rows.map((raw) => {
+    const r = raw as GoogleAdGroupAdRow;
     const ad = r.adGroupAd?.ad ?? {};
     const type = ad.type ?? "";
     const copy = ad.responsiveSearchAd ?? ad.responsiveDisplayAd ?? ad.videoResponsiveAd;
@@ -659,21 +651,136 @@ export async function fetchGoogleAdsAds(
       : type.includes("DISPLAY") || type.includes("IMAGE")
         ? "image"
         : "text";
-    return {
+    const rda = ad.responsiveDisplayAd;
+    const imageAsset =
+      rda?.marketingImages?.[0]?.asset ?? rda?.squareMarketingImages?.[0]?.asset ?? null;
+    const videoAsset = ad.videoResponsiveAd?.videos?.[0]?.asset ?? null;
+    const inlineImage = ad.imageAd?.imageUrl ?? ad.imageAd?.previewImageUrl ?? null;
+    const creative: GoogleAdCreative = {
       externalAdId: ad.id ?? "",
       externalCampaignId: r.campaign?.id ?? null,
       name: ad.name || headline || `${type || "Ad"} ${ad.id ?? ""}`.trim(),
       status: r.adGroupAd?.status ?? "UNKNOWN",
       format,
-      thumbnailUrl: null,
-      imageUrl: null,
+      thumbnailUrl: inlineImage,
+      imageUrl: ad.imageAd?.imageUrl ?? inlineImage,
       videoId: null,
       headline,
       body: copy?.descriptions?.[0]?.text ?? null,
-      ctaType: ad.responsiveDisplayAd?.callToActionText ?? null,
+      ctaType: rda?.callToActionText ?? null,
       landingUrl: ad.finalUrls?.[0] ?? null,
     };
-  }).filter((a) => a.externalAdId);
+    return { creative, imageAsset, videoAsset };
+  }).filter((a) => a.creative.externalAdId);
+
+  const assetNames = parsed
+    .flatMap((p) => [p.imageAsset, p.videoAsset])
+    .filter((n): n is string => Boolean(n));
+  // Thumbnails are best-effort: a failed asset lookup still returns the ads
+  // as text cards rather than failing the whole creative sync.
+  let assets = new Map<string, ResolvedAsset>();
+  try {
+    assets = await resolveAssetUrls(creds, customerId, assetNames);
+  } catch (err) {
+    console.warn("[google-ads] asset lookup failed; thumbnails skipped", err);
+  }
+
+  return parsed.map(({ creative, imageAsset, videoAsset }) =>
+    applyAssets(creative, imageAsset, videoAsset, assets),
+  );
+}
+
+type GoogleAssetRef = { asset?: string };
+type GoogleAdGroupAdRow = {
+  adGroupAd?: {
+    status?: string;
+    ad?: {
+      id?: string;
+      name?: string;
+      type?: string;
+      finalUrls?: string[];
+      responsiveSearchAd?: { headlines?: GoogleAdText[]; descriptions?: GoogleAdText[] };
+      responsiveDisplayAd?: {
+        headlines?: GoogleAdText[];
+        descriptions?: GoogleAdText[];
+        callToActionText?: string;
+        marketingImages?: GoogleAssetRef[];
+        squareMarketingImages?: GoogleAssetRef[];
+      };
+      videoResponsiveAd?: {
+        headlines?: GoogleAdText[];
+        descriptions?: GoogleAdText[];
+        videos?: GoogleAssetRef[];
+      };
+      imageAd?: { imageUrl?: string; previewImageUrl?: string };
+    };
+  };
+  campaign?: { id?: string };
+};
+
+export type ResolvedAsset = { imageUrl: string | null; youtubeVideoId: string | null };
+
+/** Pure: fill thumbnail/image/videoId from resolved assets. Exported for tests. */
+export function applyAssets(
+  creative: GoogleAdCreative,
+  imageAsset: string | null,
+  videoAsset: string | null,
+  assets: Map<string, ResolvedAsset>,
+): GoogleAdCreative {
+  const img = imageAsset ? assets.get(imageAsset)?.imageUrl ?? null : null;
+  const ytId = videoAsset ? assets.get(videoAsset)?.youtubeVideoId ?? null : null;
+  return {
+    ...creative,
+    thumbnailUrl:
+      creative.thumbnailUrl ??
+      img ??
+      (ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : null),
+    imageUrl: creative.imageUrl ?? img,
+    videoId: creative.videoId ?? ytId,
+  };
+}
+
+/**
+ * Resolve asset resource names → image URL / YouTube id. One GAQL query per
+ * 500 names (GAQL IN-list cap is generous but keep requests small).
+ */
+async function resolveAssetUrls(
+  creds: GoogleAdsCredentials,
+  customerId: string,
+  names: string[],
+): Promise<Map<string, ResolvedAsset>> {
+  const out = new Map<string, ResolvedAsset>();
+  const unique = [...new Set(names)];
+  for (let i = 0; i < unique.length; i += 500) {
+    const chunk = unique.slice(i, i + 500);
+    const list = chunk.map((n) => `'${n.replace(/'/g, "")}'`).join(", ");
+    const rows = await searchStream(creds, {
+      customerId,
+      query: `
+        SELECT
+          asset.resource_name,
+          asset.image_asset.full_size.url,
+          asset.youtube_video_asset.youtube_video_id
+        FROM asset
+        WHERE asset.resource_name IN (${list})
+      `,
+    });
+    for (const raw of rows) {
+      const r = raw as {
+        asset?: {
+          resourceName?: string;
+          imageAsset?: { fullSize?: { url?: string } };
+          youtubeVideoAsset?: { youtubeVideoId?: string };
+        };
+      };
+      if (!r.asset?.resourceName) continue;
+      out.set(r.asset.resourceName, {
+        imageUrl: r.asset.imageAsset?.fullSize?.url ?? null,
+        youtubeVideoId: r.asset.youtubeVideoAsset?.youtubeVideoId ?? null,
+      });
+    }
+  }
+  return out;
 }
 
 export async function fetchGoogleAdsAdDailyMetrics(

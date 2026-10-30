@@ -39,6 +39,7 @@ export async function GET(req: NextRequest) {
       dailyWindowMonths: number;
       aggregated: number;
       dropped: number;
+      creativeDropped: number;
       errors: string[];
     }> = [];
 
@@ -51,6 +52,7 @@ export async function GET(req: NextRequest) {
           dailyWindowMonths: r.policy.dailyWindowMonths,
           aggregated: r.aggregated,
           dropped: r.dropped,
+          creativeDropped: r.creativeDropped,
           errors: r.errors,
         });
       } catch (err) {
@@ -64,6 +66,7 @@ export async function GET(req: NextRequest) {
           dailyWindowMonths: 0,
           aggregated: 0,
           dropped: 0,
+          creativeDropped: 0,
           errors: [message],
         });
       }
@@ -71,6 +74,7 @@ export async function GET(req: NextRequest) {
 
     const totalAggregated = results.reduce((a, r) => a + r.aggregated, 0);
     const totalDropped = results.reduce((a, r) => a + r.dropped, 0);
+    const totalCreativeDropped = results.reduce((a, r) => a + r.creativeDropped, 0);
 
     return {
       result: NextResponse.json({
@@ -78,9 +82,10 @@ export async function GET(req: NextRequest) {
         orgsProcessed: results.length,
         aggregated: totalAggregated,
         dropped: totalDropped,
+        creativeDropped: totalCreativeDropped,
         results,
       }),
-      recordsProcessed: totalDropped,
+      recordsProcessed: totalDropped + totalCreativeDropped,
       // One entry per failed ad account, not per org.
       errorCount: results.reduce((n, r) => n + r.errors.length, 0),
       errorSummary: results
