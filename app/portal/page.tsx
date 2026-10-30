@@ -10,6 +10,7 @@ import { resolveIntegrationStatuses } from "@/lib/integrations/status";
 import { ProspectProfileSchema } from "@/lib/chatbot/extract-prospect-profile";
 import { Initial, Logo, Metric, MetricStrip, Panel, Pill, change, type Tone } from "@/components/portal/overview/kit";
 import { getLeasingSummary } from "@/lib/leasing/summary";
+import { displayLeadSource } from "@/lib/format";
 import { AgentTrace, type Step } from "@/components/portal/overview/agent-trace";
 import { ConversationPreview } from "@/components/portal/overview/conversation-preview";
 import { patternReason } from "@/lib/chatbot/learning/pattern-labels";
@@ -127,7 +128,8 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
   const leadTotal = leadRows.reduce((s, r) => s + r._count._all, 0);
   const bySource = new Map<string, number>();
   for (const r of leadRows) {
-    const k = r.source === "OTHER" && r.externalSystem === "appfolio" ? "APPFOLIO" : LEAD_SOURCE[r.source] ? r.source : "OTHER";
+    const shown = displayLeadSource(r.source, r.externalSystem);
+    const k = LEAD_SOURCE[shown] ? shown : "OTHER";
     bySource.set(k, (bySource.get(k) ?? 0) + r._count._all);
   }
   const leadShare = [...bySource.entries()]
