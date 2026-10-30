@@ -136,6 +136,8 @@ export const SG_CASE_STUDY = {
   sinceLaunch: {
     start: "2026-04-18T00:00:00Z",
     end: "2026-10-30T17:00:00Z",
+    /** Search Console rows are daily; today's row is partial, so stop here. */
+    searchEndDate: "2026-10-30",
     label: "April 18 to October 30, 2026",
     leads: 204,
     leadsFromChatbot: 87,
@@ -158,25 +160,33 @@ export const SG_CASE_STUDY = {
     residentsSynced: 180,
     leasesSynced: 177,
     searchClicks: 1514,
-    searchImpressions: 44786,
+    searchImpressions: 44776,
     /** Mean of daily Search Console average position, by calendar month. */
     searchPositionFirstMonth: 15.4,
-    searchPositionLatestMonth: 9.5,
+    searchPositionLatestMonth: 9.2,
     /** Lead records by month and source, plus chat sessions. */
+    /**
+     * Per calendar month: lead records by source, chat sessions, traced
+     * leases by lease start month, and Search Console clicks + mean daily
+     * average position. Search uses whole days before searchEndDate.
+     */
     monthly: [
-      { month: "2026-04", chatbot: 0, appfolio: 0, webForm: 0, chats: 6 },
-      { month: "2026-05", chatbot: 10, appfolio: 0, webForm: 0, chats: 33 },
-      { month: "2026-06", chatbot: 17, appfolio: 34, webForm: 0, chats: 46 },
-      { month: "2026-07", chatbot: 38, appfolio: 31, webForm: 0, chats: 91 },
-      { month: "2026-08", chatbot: 12, appfolio: 24, webForm: 0, chats: 53 },
-      { month: "2026-09", chatbot: 4, appfolio: 8, webForm: 0, chats: 16 },
-      { month: "2026-10", chatbot: 6, appfolio: 11, webForm: 9, chats: 23 },
+      { month: "2026-04", chatbot: 0, appfolio: 0, webForm: 0, chats: 6, leasesTraced: 0, searchClicks: 93, searchPosition: 15.4 },
+      { month: "2026-05", chatbot: 10, appfolio: 0, webForm: 0, chats: 33, leasesTraced: 0, searchClicks: 280, searchPosition: 14.9 },
+      { month: "2026-06", chatbot: 17, appfolio: 34, webForm: 0, chats: 46, leasesTraced: 1, searchClicks: 278, searchPosition: 12.7 },
+      { month: "2026-07", chatbot: 38, appfolio: 31, webForm: 0, chats: 91, leasesTraced: 0, searchClicks: 321, searchPosition: 15 },
+      { month: "2026-08", chatbot: 12, appfolio: 24, webForm: 0, chats: 53, leasesTraced: 34, searchClicks: 256, searchPosition: 16.9 },
+      { month: "2026-09", chatbot: 4, appfolio: 8, webForm: 0, chats: 16, leasesTraced: 2, searchClicks: 135, searchPosition: 10.2 },
+      { month: "2026-10", chatbot: 6, appfolio: 11, webForm: 9, chats: 23, leasesTraced: 1, searchClicks: 151, searchPosition: 9.2 },
     ] as ReadonlyArray<{
       month: string;
       chatbot: number;
       appfolio: number;
       webForm: number;
       chats: number;
+      leasesTraced: number;
+      searchClicks: number;
+      searchPosition: number;
     }>,
   },
 } as const;

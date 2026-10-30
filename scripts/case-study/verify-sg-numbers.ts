@@ -249,8 +249,20 @@ async function sinceLaunchChecks(): Promise<Array<[string, unknown, unknown]>> {
   const search = await db.$queryRaw<Array<Record<string, unknown>>>`
     SELECT to_char(date, 'YYYY-MM') AS m, sum("totalClicks") AS clicks,
       sum("totalImpressions") AS impr, round(avg("avgPosition")::numeric, 1) AS pos
-    FROM "SeoSnapshot" WHERE "orgId" = ${org} AND date >= ${start} AND date < ${end}
+    FROM "SeoSnapshot" WHERE "orgId" = ${org} AND date >= ${start}
+      AND date < ${new Date(SL.searchEndDate)}
     GROUP BY 1 ORDER BY 1`;
+  const tracedMonthly = await db.$queryRaw<Array<Record<string, unknown>>>`
+    WITH x AS (
+      SELECT DISTINCT ON (l.id) l.id, ls."startDate"
+      FROM "Lead" l
+      JOIN "Resident" r ON r."leadId" = l.id AND r."propertyId" = ${prop}
+      JOIN "Lease" ls ON ls."residentId" = r.id
+      WHERE l."orgId" = ${org} AND l.status = 'SIGNED'
+        AND ls."startDate" >= ${start} AND ls."startDate" < ${end}
+        AND l."createdAt" <= ls."startDate"
+      ORDER BY l.id, ls."startDate" DESC)
+    SELECT to_char("startDate", 'YYYY-MM') AS m, count(*) AS n FROM x GROUP BY 1`;
   const monthly = await db.$queryRaw<Array<Record<string, unknown>>>`
     WITH l AS (
       SELECT to_char("createdAt", 'YYYY-MM') AS m,
@@ -277,6 +289,9 @@ async function sinceLaunchChecks(): Promise<Array<[string, unknown, unknown]>> {
       appfolio: n(r.appfolio),
       webForm: n(r.form),
       chats: n(r.chats),
+      leasesTraced: n(tracedMonthly.find((t) => t.m === r.m)?.n) ?? 0,
+      searchClicks: n(search.find((t) => t.m === r.m)?.clicks) ?? 0,
+      searchPosition: n(search.find((t) => t.m === r.m)?.pos) ?? 0,
     })),
   );
   return [

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { BRAND_NAME, getSiteUrl } from "@/lib/brand";
@@ -71,9 +72,9 @@ const STATS = [
     sub: `${usd(SL.tracedAnnualRentFromChatUsd)} a year in rent`,
   },
   {
-    value: `${SL.searchPositionFirstMonth} → ${SL.searchPositionLatestMonth}`,
+    value: String(SL.searchPositionLatestMonth),
     label: "Average Google search position",
-    sub: "April to October. Lower is closer to the top",
+    sub: `Up from ${SL.searchPositionFirstMonth} in April. Lower is better`,
   },
 ];
 
@@ -142,7 +143,7 @@ const BODY_STYLE = {
 function StatTile({ value, label, sub }: { value: string; label: string; sub: string }) {
   return (
     <div
-      className="min-w-0 flex flex-col gap-2 p-4 md:p-6"
+      className="min-w-0 flex flex-col items-center gap-2 px-3 py-6 sm:px-5 md:py-8 text-center"
       style={{ backgroundColor: "#FFFFFF", border: `1px solid ${HAIRLINE}`, borderRadius: 2 }}
     >
       <p
@@ -150,7 +151,7 @@ function StatTile({ value, label, sub }: { value: string; label: string; sub: st
         style={{
           color: INK,
           fontFamily: "var(--font-sans)",
-          fontSize: "clamp(32px, 4.2vw, 52px)",
+          fontSize: "clamp(30px, 3.4vw, 48px)",
           fontWeight: 600,
           lineHeight: 1,
           letterSpacing: "-0.03em",
@@ -162,8 +163,124 @@ function StatTile({ value, label, sub }: { value: string; label: string; sub: st
       <p style={{ color: INK, fontFamily: "var(--font-sans)", fontSize: 15, fontWeight: 500 }}>
         {label}
       </p>
-      <p style={{ color: MUTED, fontFamily: "var(--font-sans)", fontSize: 13 }}>{sub}</p>
+      <p style={{ color: MUTED, fontFamily: "var(--font-sans)", fontSize: 13, lineHeight: 1.45, maxWidth: 220 }}>
+        {sub}
+      </p>
     </div>
+  );
+}
+
+function SectionIntro({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="mx-auto max-w-[720px] text-center">
+      <h2 style={{ ...H2_STYLE, textWrap: "balance" }}>{title}</h2>
+      <p className="mt-5" style={BODY_STYLE}>
+        {children}
+      </p>
+    </div>
+  );
+}
+
+function runningTotal(values: ReadonlyArray<number>): number[] {
+  return values.reduce<number[]>((acc, v) => [...acc, (acc.at(-1) ?? 0) + v], []);
+}
+
+// Line chart drawn in a 0-100 SVG box stretched to the card, so the line
+// stays crisp at any width while labels stay real HTML text.
+function TrendCard({
+  title,
+  note,
+  points,
+  invert = false,
+  decimals = 0,
+}: {
+  title: string;
+  note: string;
+  points: number[];
+  /** Lower is better (search position): draw improvement as going up. */
+  invert?: boolean;
+  decimals?: number;
+}) {
+  const months = SL.monthly.map((m) => MONTH_LABEL[m.month] ?? m.month);
+  const min = invert ? Math.min(...points) - 1 : 0;
+  const max = Math.max(...points) + (invert ? 1 : 0);
+  const span = max - min || 1;
+  const xy = points.map((v, i) => {
+    const x = (i / (points.length - 1)) * 100;
+    const t = (v - min) / span;
+    return [x, invert ? t * 100 : 100 - t * 100] as const;
+  });
+  const line = xy.map(([x, y]) => `${x},${y}`).join(" ");
+  const fmt = (v: number) => v.toLocaleString(undefined, { maximumFractionDigits: decimals, minimumFractionDigits: decimals });
+  const first = points[0] ?? 0;
+  const last = points.at(-1) ?? 0;
+  return (
+    <figure
+      className="min-w-0 flex flex-col p-6 md:p-7"
+      style={{ backgroundColor: "#FFFFFF", border: `1px solid ${HAIRLINE}`, borderRadius: 2 }}
+    >
+      <figcaption>
+        <span className="block" style={{ color: INK, fontFamily: "var(--font-sans)", fontSize: 16, fontWeight: 600 }}>
+          {title}
+        </span>
+        <span className="block mt-1" style={{ color: MUTED, fontFamily: "var(--font-sans)", fontSize: 13 }}>
+          {note}
+        </span>
+      </figcaption>
+      <p className="mt-5 flex items-baseline gap-2 tabular-nums" style={{ fontFamily: "var(--font-sans)" }}>
+        <span style={{ color: INK, fontSize: 40, fontWeight: 600, lineHeight: 1, letterSpacing: "-0.03em" }}>
+          {fmt(last)}
+        </span>
+        <span style={{ color: MUTED, fontSize: 14 }}>
+          from {fmt(first)} in {months[0]}
+        </span>
+      </p>
+      <div className="relative mt-6" style={{ height: 140 }}>
+        <svg
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          className="absolute inset-0 h-full w-full overflow-visible"
+          aria-hidden="true"
+        >
+          <polygon points={`0,100 ${line} 100,100`} fill={BLUE} fillOpacity={0.08} />
+          <polyline
+            points={line}
+            fill="none"
+            stroke={BLUE}
+            strokeWidth={2.5}
+            strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
+        {xy.map(([x, y], i) => (
+          <span
+            key={months[i]}
+            aria-hidden="true"
+            className="absolute rounded-full"
+            style={{
+              left: `${x}%`,
+              top: `${y}%`,
+              width: 7,
+              height: 7,
+              transform: "translate(-50%, -50%)",
+              backgroundColor: i === xy.length - 1 ? BLUE : "#FFFFFF",
+              border: `2px solid ${BLUE}`,
+            }}
+          />
+        ))}
+      </div>
+      <div
+        className="mt-3 flex justify-between"
+        style={{ color: MUTED, fontFamily: "var(--font-sans)", fontSize: 12 }}
+      >
+        {months.map((m) => (
+          <span key={m}>{m}</span>
+        ))}
+      </div>
+      <p className="sr-only">
+        {title}: {points.map((v, i) => `${months[i]} ${fmt(v)}`).join(", ")}.
+      </p>
+    </figure>
   );
 }
 
@@ -175,7 +292,7 @@ function LeadsChart() {
     { key: "webForm", label: "Website form", color: GRAY },
   ] as const;
   return (
-    <figure className="mt-10">
+    <figure className="mt-12">
       <div
         className="grid items-end gap-3 md:gap-6"
         style={{ gridTemplateColumns: `repeat(${SL.monthly.length}, minmax(0, 1fr))`, height: 260 }}
@@ -222,7 +339,7 @@ function LeadsChart() {
         ))}
       </div>
       <figcaption
-        className="mt-6 flex flex-wrap gap-x-6 gap-y-2"
+        className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-2 text-center"
         style={{ color: MUTED, fontFamily: "var(--font-sans)", fontSize: 13 }}
       >
         {series.map((s) => (
@@ -241,7 +358,7 @@ export default function CaseStudyPage() {
   return (
     <div style={{ backgroundColor: "#FFFFFF", color: INK }}>
       <SectionShell bg="#FFFFFF">
-        <div className="pt-16 md:pt-20 pb-12 md:pb-14 max-w-[900px]">
+        <div className="pt-16 md:pt-24 pb-12 md:pb-16 mx-auto max-w-[920px] text-center">
           <p style={{ color: MUTED, fontFamily: "var(--font-sans)", fontSize: 15 }}>
             {CS.customer} · {CS.property}, Berkeley
           </p>
@@ -259,13 +376,13 @@ export default function CaseStudyPage() {
           >
             {SL.tracedLeases} new leases, <Mark>each traced back to the lead.</Mark>
           </h1>
-          <p className="mt-6" style={{ ...BODY_STYLE, fontSize: 18, maxWidth: 660 }}>
+          <p className="mt-6 mx-auto" style={{ ...BODY_STYLE, fontSize: 18, maxWidth: 660 }}>
             {CS.property} is student housing a three-minute walk from UC Berkeley, with{" "}
             {SL.residentsSynced} residents. Since April, {BRAND_NAME} has run its website and chatbot,
             synced AppFolio every hour, and matched each new lease to the chat, form or application it
             started from. {CS.customer} can now see which channel brought in each signed lease.
           </p>
-          <div className="mt-8 flex flex-col items-stretch sm:flex-row sm:items-center gap-3">
+          <div className="mt-8 flex flex-col items-stretch sm:flex-row sm:items-center sm:justify-center gap-3">
             <BookDemoLink className="btn-primary sm:w-auto">Book a demo</BookDemoLink>
             <Link href="/audit" className="btn-secondary sm:w-auto">
               Run a free property audit
@@ -274,121 +391,132 @@ export default function CaseStudyPage() {
         </div>
 
         <div className="pb-16 md:pb-20">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
             {STATS.map((s) => (
               <StatTile key={s.label} {...s} />
             ))}
           </div>
-          <p className="mt-4" style={{ color: MUTED, fontFamily: "var(--font-sans)", fontSize: 13 }}>
+          <p className="mt-5 text-center" style={{ color: MUTED, fontFamily: "var(--font-sans)", fontSize: 13 }}>
             {CS.property}, {SL.label}. How we count is at the bottom of the page.
           </p>
         </div>
       </SectionShell>
 
       <SectionShell bg="#f4f4f4">
-        <div className="py-16 md:py-20">
-          <div className="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-center">
-            <div>
-              <h2 style={H2_STYLE}>The website renters actually use.</h2>
-              <p className="mt-5" style={BODY_STYLE}>
-                telegraphcommons.com runs on {BRAND_NAME}: availability, pricing, tours and
-                applications, with a chatbot that greets every visitor. Its average position in Google
-                search went from {SL.searchPositionFirstMonth} in April to {SL.searchPositionLatestMonth}{" "}
-                in October, and it has earned {SL.searchClicks.toLocaleString()} clicks from search since
-                launch.
-              </p>
-              <p className="mt-4" style={BODY_STYLE}>
-                {SL.chatSessions} renters opened the chat and {SL.chatSessionsCaptured} of them (
-                {pct(SL.chatSessionsCaptured, SL.chatSessions)}%) left a name and contact details. Those
-                records go straight into the same lead list as AppFolio applications.
-              </p>
-            </div>
-            <a
-              href="https://www.telegraphcommons.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block overflow-hidden"
-              style={{ border: `1px solid ${HAIRLINE}`, borderRadius: 2, boxShadow: "0 12px 32px rgba(22,22,22,0.10)" }}
-            >
-              <Image
-                src="/case-study/telegraph-commons-site.jpg"
-                alt="The Telegraph Commons website home page, with the chatbot open in the corner"
-                width={2880}
-                height={1800}
-                sizes="(min-width: 1024px) 60vw, 100vw"
-                className="block h-auto w-full"
-              />
-            </a>
+        <div className="py-16 md:py-24">
+          <SectionIntro title="Six months of growth since launch.">
+            Running totals from the day {BRAND_NAME} went live. Leads build through the leasing season,
+            leases follow them, and the site now ranks higher in Google than it did in April.
+          </SectionIntro>
+          <div className="mt-12 grid gap-4 md:gap-5 lg:grid-cols-3">
+            <TrendCard
+              title="Lead records"
+              note="Running total, all channels"
+              points={runningTotal(SL.monthly.map((m) => m.chatbot + m.appfolio + m.webForm))}
+            />
+            <TrendCard
+              title="Leases traced to a lead"
+              note="Running total. Most student leases start in August"
+              points={runningTotal(SL.monthly.map((m) => m.leasesTraced))}
+            />
+            <TrendCard
+              title="Google search position"
+              note="Monthly average. Lower is better"
+              points={SL.monthly.map((m) => m.searchPosition)}
+              invert
+              decimals={1}
+            />
           </div>
         </div>
       </SectionShell>
 
       <SectionShell bg="#FFFFFF">
-        <div className="py-16 md:py-20">
-          <h2 className="max-w-[760px]" style={H2_STYLE}>
-            {SL.leads} lead records, from every channel, in one list.
-          </h2>
-          <p className="mt-5 max-w-[680px]" style={BODY_STYLE}>
+        <div className="py-16 md:py-24">
+          <SectionIntro title="The website renters actually use.">
+            telegraphcommons.com runs on {BRAND_NAME}: availability, pricing, tours and applications,
+            with a chatbot that greets every visitor. {SL.chatSessions} renters opened the chat and{" "}
+            {SL.chatSessionsCaptured} of them ({pct(SL.chatSessionsCaptured, SL.chatSessions)}%) left a
+            name and contact details. The site has earned {SL.searchClicks.toLocaleString()} clicks
+            from Google search since launch.
+          </SectionIntro>
+          <a
+            href="https://www.telegraphcommons.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-12 mx-auto block max-w-[1080px] overflow-hidden"
+            style={{ border: `1px solid ${HAIRLINE}`, borderRadius: 2, boxShadow: "0 16px 40px rgba(22,22,22,0.10)" }}
+          >
+            <Image
+              src="/case-study/telegraph-commons-site.jpg"
+              alt="The Telegraph Commons website home page, with the chatbot open in the corner"
+              width={2880}
+              height={1800}
+              sizes="(min-width: 1120px) 1080px, 100vw"
+              className="block h-auto w-full"
+            />
+          </a>
+        </div>
+      </SectionShell>
+
+      <SectionShell bg="#f4f4f4">
+        <div className="py-16 md:py-24">
+          <SectionIntro title={`${SL.leads} lead records, every channel, one list.`}>
             {SL.leadsFromChatbot} came from the website chatbot, {SL.leadsFromAppfolioApplications} from
-            AppFolio applications and {SL.leadsFromWebForm} from the website form, added in October. Each
-            one is a record {BRAND_NAME} can match to a lease when the renter signs.
-          </p>
-          <LeadsChart />
-        </div>
-      </SectionShell>
-
-      <SectionShell bg="#FFFFFF">
-        <div className="pb-16 md:pb-20" style={{ borderTop: `1px solid ${HAIRLINE}` }}>
-          <div className="pt-16 md:pt-20 grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-            <div>
-              <h2 style={H2_STYLE}>From first chat to a signed lease.</h2>
-              <p className="mt-5" style={BODY_STYLE}>
-                When AppFolio syncs a new resident, {BRAND_NAME} matches them to the lead record they
-                started as. {SL.tracedLeases} new leases at {CS.property} now show where the renter came
-                from, worth {usd(SL.tracedAnnualRentUsd)} a year in rent.
-              </p>
-              <p className="mt-4" style={BODY_STYLE}>
-                {SL.tracedLeasesFromChat} of them began as a conversation with the website chatbot,{" "}
-                {usd(SL.tracedAnnualRentFromChatUsd)} a year in rent, about {SL.avgDaysChatToLeaseStart}{" "}
-                days from first chat to lease start on average. That is rent the website produced,
-                reported next to every other channel.
-              </p>
-            </div>
-            <dl style={{ borderTop: `1px solid ${INK}` }}>
-              {RUNNING.map((r) => (
-                <div
-                  key={r.name}
-                  className="grid gap-1 py-5 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-6"
-                  style={{ borderBottom: `1px solid ${HAIRLINE}` }}
-                >
-                  <dt style={{ color: INK, fontFamily: "var(--font-sans)", fontSize: 16, fontWeight: 600 }}>
-                    {r.name}
-                  </dt>
-                  <dd style={{ fontFamily: "var(--font-sans)" }}>
-                    <span className="block" style={{ color: MUTED, fontSize: 15, lineHeight: 1.5 }}>
-                      {r.what}
-                    </span>
-                    <span className="mt-1 block tabular-nums" style={{ color: BLUE, fontSize: 14, fontWeight: 500 }}>
-                      {r.proof}
-                    </span>
-                  </dd>
-                </div>
-              ))}
-            </dl>
+            AppFolio applications and {SL.leadsFromWebForm} from the website form, added in October.
+            Each one is a record {BRAND_NAME} can match to a lease when the renter signs.
+          </SectionIntro>
+          <div className="mx-auto max-w-[920px]">
+            <LeadsChart />
           </div>
         </div>
       </SectionShell>
 
       <SectionShell bg="#FFFFFF">
-        <div className="pb-16 md:pb-20 max-w-[760px]">
-          <h2 style={{ ...H2_STYLE, fontSize: "clamp(22px, 2.4vw, 28px)" }}>How we count</h2>
-          <ul className="mt-6 flex flex-col gap-4">
-            {METHOD.map((m) => (
-              <li key={m.slice(0, 40)} style={{ ...BODY_STYLE, fontSize: 15 }}>
-                {m}
-              </li>
+        <div className="py-16 md:py-24">
+          <SectionIntro title="From first chat to a signed lease.">
+            When AppFolio syncs a new resident, {BRAND_NAME} matches them to the lead record they started
+            as. {SL.tracedLeasesFromChat} of the {SL.tracedLeases} traced leases began as a conversation
+            with the website chatbot, {usd(SL.tracedAnnualRentFromChatUsd)} a year in rent, about{" "}
+            {SL.avgDaysChatToLeaseStart} days from first chat to lease start on average.
+          </SectionIntro>
+          <dl className="mt-12 mx-auto max-w-[880px]" style={{ borderTop: `1px solid ${INK}` }}>
+            {RUNNING.map((r) => (
+              <div
+                key={r.name}
+                className="grid gap-1 py-6 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-8"
+                style={{ borderBottom: `1px solid ${HAIRLINE}` }}
+              >
+                <dt style={{ color: INK, fontFamily: "var(--font-sans)", fontSize: 17, fontWeight: 600 }}>
+                  {r.name}
+                </dt>
+                <dd style={{ fontFamily: "var(--font-sans)" }}>
+                  <span className="block" style={{ color: MUTED, fontSize: 15, lineHeight: 1.55 }}>
+                    {r.what}
+                  </span>
+                  <span className="mt-1.5 block tabular-nums" style={{ color: BLUE, fontSize: 14, fontWeight: 500 }}>
+                    {r.proof}
+                  </span>
+                </dd>
+              </div>
             ))}
-          </ul>
+          </dl>
+        </div>
+      </SectionShell>
+
+      <SectionShell bg="#FFFFFF">
+        <div className="pt-4 pb-16 md:pb-24">
+          <div className="mx-auto max-w-[720px] pt-12 md:pt-16">
+            <h2 className="text-center" style={{ ...H2_STYLE, fontSize: "clamp(24px, 2.4vw, 30px)" }}>
+              How we count
+            </h2>
+            <ul className="mt-8 flex flex-col gap-5">
+              {METHOD.map((m) => (
+                <li key={m.slice(0, 40)} style={{ ...BODY_STYLE, fontSize: 15 }}>
+                  {m}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </SectionShell>
 
