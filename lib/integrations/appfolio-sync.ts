@@ -33,6 +33,7 @@ import {
 } from "./appfolio";
 import {
   endLeasesAbsentFromRentRoll,
+  isVacantUnitRow,
   markResidentsAbsentFromDirectoryPast,
   pullIsComplete,
 } from "./appfolio-lease-sweep";
@@ -1181,7 +1182,7 @@ export async function runAppfolioSync(
     for (const row of rows) {
       const mapped = mapLeasePayload(row);
       if (!mapped) {
-        unmappedLeaseRows += 1;
+        if (!isVacantUnitRow(row)) unmappedLeaseRows += 1;
         continue;
       }
       seenLeaseExternalIds.add(mapped.externalId);

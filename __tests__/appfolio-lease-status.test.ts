@@ -12,6 +12,7 @@ import { fetchAllPages, leaseStatusFor, mapLeasePayload } from "@/lib/integratio
 import {
   endLeasesAbsentFromRentRoll,
   markResidentsAbsentFromDirectoryPast,
+  isVacantUnitRow,
   pullIsComplete,
 } from "@/lib/integrations/appfolio-lease-sweep";
 
@@ -64,6 +65,29 @@ function fakeDb(candidates: Array<{ id: string; externalId: string | null }>) {
     residentUpdateMany,
   };
 }
+
+// rent_roll lists every unit; vacant ones carry no lease. Telegraph
+// Commons 2026-10: 367 of 2819 rows were Vacant-Unrented/Vacant-Rented and
+// counted as "unmapped", so the move-out sweep never ran.
+describe("isVacantUnitRow", () => {
+  it("recognises vacant unit rows with no lease or tenant", () => {
+    expect(isVacantUnitRow({ status: "Vacant-Unrented", unit_id: "u1", market_rent: 1200 })).toBe(true);
+    expect(isVacantUnitRow({ status: "Vacant-Rented", unit_id: "u1" })).toBe(true);
+  });
+
+  it("never treats a row carrying a lease or person as vacant", () => {
+    expect(isVacantUnitRow({ status: "Vacant-Unrented", occupancy_id: "o1" })).toBe(false);
+    expect(isVacantUnitRow({ status: "Vacant-Unrented", lease_id: "l1" })).toBe(false);
+    expect(isVacantUnitRow({ status: "Vacant-Unrented", tenant_id: "t1" })).toBe(false);
+    expect(isVacantUnitRow({ status: "Vacant-Unrented", occupant_id: "t1" })).toBe(false);
+  });
+
+  it("only matches a Vacant status", () => {
+    expect(isVacantUnitRow({ status: "Current" })).toBe(false);
+    expect(isVacantUnitRow({ status: null })).toBe(false);
+    expect(isVacantUnitRow({})).toBe(false);
+  });
+});
 
 describe("endLeasesAbsentFromRentRoll", () => {
   const base = { orgId: "org1", propertyIds: ["p1"], now: NOW };
