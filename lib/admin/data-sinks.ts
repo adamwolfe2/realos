@@ -208,5 +208,6 @@ export async function getTenantDataSinks(orgId: string) {
       aeoLastRunAt: null,
       siteIntelLastRunAt: siteIntel?.crawledAt ?? null,
     },
+    tenantScoped: true,
   });
 }

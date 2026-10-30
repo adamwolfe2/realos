@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { notDemoOrg } from "@/lib/tenancy/demo-org";
 import { prisma } from "@/lib/db";
 import { runAppfolioSync } from "@/lib/integrations/appfolio-sync";
 import { syncListingsForOrg } from "@/lib/integrations/appfolio";
@@ -97,6 +98,7 @@ export async function GET(req: NextRequest) {
     } as const;
     const eligibleWhere = {
       autoSyncEnabled: true,
+      org: notDemoOrg,
       OR: [
         { clientIdEncrypted: { not: null } },
         { apiKeyEncrypted: { not: null } },
@@ -147,8 +149,8 @@ export async function GET(req: NextRequest) {
     }>;
 
     if (orgIdParam) {
-      const targeted = await prisma.appFolioIntegration.findUnique({
-        where: { orgId: orgIdParam },
+      const targeted = await prisma.appFolioIntegration.findFirst({
+        where: { orgId: orgIdParam, org: notDemoOrg },
         select: INTEGRATION_SELECT,
       });
       if (!targeted) {
@@ -158,7 +160,7 @@ export async function GET(req: NextRequest) {
           result: NextResponse.json(
             {
               ok: false,
-              error: `No AppFolio integration for org ${orgIdParam}`,
+              error: `No syncable AppFolio integration for org ${orgIdParam} (none connected, or a demo org)`,
               processed: 0,
               integrations: 0,
               integrationsEligible: 0,

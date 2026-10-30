@@ -246,6 +246,11 @@ export function buildSummaries(input: {
     aeoLastRunAt: Date | null;
     siteIntelLastRunAt: Date | null;
   };
+  // Client page: judge each provider on THIS org's own sync rows only.
+  // CronRun rows are platform-wide, so letting their errors through made
+  // every client page show other orgs' failures (a demo org's missing ad
+  // credentials surfaced as "Google Ads sync is failing" on SG Real Estate).
+  tenantScoped?: boolean;
 }): DataSinkSummary[] {
   const providers: SinkProvider[] = [
     "appfolio",
@@ -285,10 +290,13 @@ export function buildSummaries(input: {
 
   return providers.map((provider) => {
     const cronJobName = CRON_BY_PROVIDER[provider];
-    const cron = cronJobName
+    const platformCron = cronJobName
       ? input.cronRollups.get(cronJobName) ?? EMPTY_ROLLUP
       : EMPTY_ROLLUP;
     const agg = aggByProvider[provider];
+    const cron = input.tenantScoped
+      ? tenantView(provider, platformCron, agg, input.perTenantOverrides)
+      : platformCron;
 
     // Per-integration lastSyncAt is often fresher than CronRun rollup
     // (manual button click writes lastSyncAt without a CronRun row).
@@ -336,4 +344,45 @@ export function buildSummaries(input: {
       tenantsCovered: tenantsByProvider[provider],
     };
   });
+}
+
+// Per-tenant rollup. Providers with a per-org row (AppFolio, GA4, GSC, ads,
+// site intelligence) are judged on that row alone: no row means "missing"
+// (not connected), never "failing". Platform-only providers (reputation,
+// AEO, DataForSEO) keep the cron's success time but drop its errors, since
+// a platform failure can't be attributed to this org.
+function tenantView(
+  provider: SinkProvider,
+  cron: CronRollup,
+  agg: IntegrationAggregate | null,
+  overrides: { siteIntelLastRunAt: Date | null } | undefined,
+): CronRollup {
+  // Platform run/row counts are not this org's throughput.
+  const noErrors = {
+    ...cron,
+    runsLast24h: 0,
+    successesLast24h: 0,
+    rowsLast24h: 0,
+    lastErrorAt: null,
+    lastErrorMessage: null,
+    errorsLast24h: 0,
+    consecutiveRecentErrors: 0,
+  };
+  if (provider === "site_intelligence") {
+    const crawledAt = overrides?.siteIntelLastRunAt ?? null;
+    return { ...noErrors, lastRunAt: crawledAt, lastSuccessAt: crawledAt };
+  }
+  if (!agg) return noErrors;
+  // An error on the org's row means its latest sync failed: failing NOW,
+  // however long ago the last success (lastSyncAt) was. Failed syncs don't
+  // advance lastSyncAt, so the aggregators' lastErrorAt can't date it.
+  const failing = agg.lastErrorMessage != null || agg.lastErrorAt != null;
+  const failedAt = failing ? new Date() : null;
+  return {
+    ...noErrors,
+    lastRunAt: failedAt,
+    lastSuccessAt: null,
+    lastErrorAt: failedAt,
+    errorsLast24h: failing ? 1 : 0,
+  };
 }
