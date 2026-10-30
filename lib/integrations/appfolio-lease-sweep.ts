@@ -1,8 +1,9 @@
 // Ends leases that dropped off AppFolio's rent roll (move-outs).
 //
 // INVARIANT: a lease is set ENDED here only when ALL of these hold:
-//   1. the rent_roll pull completed: rows > 0, every row mapped, not
-//      truncated at MAX_PAGES, and the phase threw no error;
+//   1. the rent_roll pull completed: rows > 0, every row mapped (vacant
+//      unit rows aside, see isVacantUnitRow), not truncated at MAX_PAGES,
+//      and the phase threw no error;
 //   2. the lease's property appeared in that pull (a property missing from
 //      the report entirely is never swept);
 //   3. the lease is ACTIVE or EXPIRING, its endDate is set and in the past;
@@ -21,6 +22,18 @@ export function pullIsComplete(pull: {
   truncated: boolean;
 }): boolean {
   return pull.rowCount > 0 && pull.unmappedRows === 0 && !pull.truncated;
+}
+
+// rent_roll lists every unit, so vacant units arrive as rows with no lease.
+// Those are not failed mappings and must not block the sweep. Strict: a
+// "Vacant" status AND no lease, occupancy or person id, so a malformed row
+// that does carry a lease still counts as unmapped.
+// Checked BEFORE mapping: a vacant row with only a generic `id` would
+// otherwise map as a lease.
+export function isVacantUnitRow(row: Record<string, unknown>): boolean {
+  const status = typeof row.status === "string" ? row.status.trim().toLowerCase() : "";
+  if (!status.startsWith("vacant")) return false;
+  return !row.lease_id && !row.occupancy_id && !row.tenant_id && !row.occupant_id;
 }
 
 type LeaseSweepDb = {

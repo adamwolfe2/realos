@@ -33,6 +33,7 @@ import {
 } from "./appfolio";
 import {
   endLeasesAbsentFromRentRoll,
+  isVacantUnitRow,
   markResidentsAbsentFromDirectoryPast,
   pullIsComplete,
 } from "./appfolio-lease-sweep";
@@ -1179,6 +1180,9 @@ export async function runAppfolioSync(
     const seenLeaseExternalIds = new Set<string>();
     const sweepPropertyIds = new Set<string>();
     for (const row of rows) {
+      // Vacant units first: the mapper would accept a generic row `id` and
+      // file the empty unit as a lease.
+      if (isVacantUnitRow(row)) continue;
       const mapped = mapLeasePayload(row);
       if (!mapped) {
         unmappedLeaseRows += 1;
@@ -1202,6 +1206,8 @@ export async function runAppfolioSync(
       const residentId =
         (mapped.residentExternalId &&
           residentByExternalId.get(mapped.residentExternalId)) ||
+        (mapped.occupancyExternalId &&
+          residentByExternalId.get(mapped.occupancyExternalId)) ||
         null;
       const leaseId = await upsertLease(orgId, propertyId, listingId, residentId, mapped);
       leaseByExternalId.set(mapped.externalId, leaseId);
