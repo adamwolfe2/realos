@@ -70,20 +70,28 @@ function collect() {
 
 const browser = await chromium.launch();
 const result = {};
+let failed = 0;
 for (const route of routes) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-  const page = await ctx.newPage();
   try {
+    const page = await ctx.newPage();
     const res = await page.goto(baseUrl + route, { waitUntil: "networkidle", timeout: 60_000 });
+    if (!res?.ok()) throw new Error(`HTTP ${res?.status()}`);
     await page.evaluate(() => document.fonts.ready);
     await page.waitForTimeout(300);
-    result[route] = { status: res?.status(), finalUrl: page.url().replace(baseUrl, ""), ...(await page.evaluate(collect)) };
+    result[route] = { status: res.status(), finalUrl: page.url().replace(baseUrl, ""), ...(await page.evaluate(collect)) };
     console.log(route, result[route].status, result[route].fonts.length, "font files");
   } catch (err) {
+    failed++;
     console.error(route, "FAILED", err.message);
-    result[route] = { error: err.message };
+  } finally {
+    await ctx.close();
   }
-  await ctx.close();
 }
 await browser.close();
+// A partial crawl could hide a weight or feature, so it writes nothing.
+if (failed) {
+  console.error(`${failed} route(s) failed; ${out} not written`);
+  process.exit(1);
+}
 writeFileSync(out, JSON.stringify(result, null, 1));

@@ -263,17 +263,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/about": {
@@ -473,17 +473,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/ai-visibility": {
@@ -648,12 +648,12 @@
      46,
      111,
      109,
-     49,
      51,
      52,
      37,
      50,
      55,
+     49,
      48,
      43,
      110,
@@ -685,8 +685,8 @@
     ],
     "weights": [
      "400",
-     "600",
      "500",
+     "600",
      "700"
     ],
     "styles": [
@@ -723,17 +723,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/audit": {
@@ -961,17 +961,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/blog": {
@@ -1084,7 +1084,7 @@
      105,
      32,
      49,
-     52,
+     53,
      44,
      50,
      48,
@@ -1093,6 +1093,7 @@
      82,
      73,
      183,
+     52,
      109,
      110,
      101,
@@ -1106,11 +1107,9 @@
      104,
      99,
      8594,
-     55,
-     51,
+     56,
      67,
      72,
-     53,
      117,
      85,
      84,
@@ -1151,17 +1150,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/blog/real-estate-marketing-attribution": {
@@ -1288,7 +1287,7 @@
      114,
      105,
      49,
-     52,
+     53,
      44,
      50,
      48,
@@ -1297,6 +1296,7 @@
      82,
      73,
      183,
+     52,
      109,
      110,
      101,
@@ -1349,17 +1349,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/blog/apartment-leasing-velocity": {
@@ -1482,7 +1482,7 @@
      112,
      114,
      105,
-     55,
+     56,
      44,
      50,
      48,
@@ -1544,17 +1544,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/blog/building-a-managed-marketing-platform": {
@@ -1668,7 +1668,7 @@
      114,
      105,
      49,
-     51,
+     52,
      44,
      50,
      48,
@@ -1729,17 +1729,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/blog/what-a-real-estate-ai-chatbot-should-actually-do": {
@@ -1855,7 +1855,7 @@
      99,
      104,
      50,
-     55,
+     56,
      44,
      48,
      54,
@@ -1917,17 +1917,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/book-demo": {
@@ -2096,17 +2096,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/build-a-chatbot": {
@@ -2287,17 +2287,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/case-study": {
@@ -2498,17 +2498,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/commercial": {
@@ -2695,17 +2695,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/demo": {
@@ -2924,17 +2924,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/demo/aeo": {
@@ -3190,17 +3190,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/features": {
@@ -3428,17 +3428,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/features/ads": {
@@ -3627,17 +3627,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/features/chatbot": {
@@ -3804,17 +3804,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/features/keyword-trends": {
@@ -4008,17 +4008,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/features/popups": {
@@ -4206,17 +4206,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/features/seo-aeo": {
@@ -4411,17 +4411,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/features/website-build": {
@@ -4613,17 +4613,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/leads": {
@@ -4856,17 +4856,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/manifesto": {
@@ -5050,17 +5050,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/multifamily": {
@@ -5266,17 +5266,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/pricing": {
@@ -5487,17 +5487,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/privacy": {
@@ -5668,17 +5668,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/proposal/expired": {
@@ -5762,17 +5762,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/reputation-report": {
@@ -5830,17 +5830,10 @@
      78,
      74,
      71,
-     47,
-     50,
-     52,
-     91,
-     93,
-     63,
      89,
-     68,
-     51,
      75,
      183,
+     50,
      122,
      53,
      45,
@@ -5973,17 +5966,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/residential": {
@@ -6186,17 +6179,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/sample-report": {
@@ -6416,17 +6409,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/senior-living": {
@@ -6616,17 +6609,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/student-housing": {
@@ -6798,17 +6791,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/terms": {
@@ -6982,17 +6975,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/sites/request": {
@@ -7102,17 +7095,209 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
+  ]
+ },
+ "/marketplace": {
+  "status": 200,
+  "finalUrl": "/marketplace",
+  "usage": {
+   "Inter": {
+    "chars": [
+     83,
+     107,
+     105,
+     112,
+     32,
+     116,
+     111,
+     109,
+     97,
+     110,
+     99,
+     101,
+     76,
+     115,
+     72,
+     119,
+     114,
+     108,
+     100,
+     66,
+     117,
+     121,
+     103,
+     45,
+     82,
+     44,
+     102,
+     104,
+     46,
+     69,
+     118,
+     70,
+     98,
+     67,
+     77,
+     8594,
+     65,
+     73,
+     85,
+     36,
+     53,
+     48,
+     8211,
+     49,
+     43,
+     68,
+     78,
+     8212,
+     55
+    ],
+    "weights": [
+     "400",
+     "500",
+     "600"
+    ],
+    "styles": [
+     "normal"
+    ],
+    "sizes": [
+     16,
+     17,
+     13.5,
+     48,
+     16.5,
+     14,
+     13,
+     12,
+     12.5
+    ],
+    "features": [
+     "normal"
+    ],
+    "variants": [
+     "normal|normal|normal|normal|auto"
+    ],
+    "variations": [
+     "normal"
+    ],
+    "opsz": [
+     "auto"
+    ],
+    "hyphens": [
+     "manual"
+    ]
+   },
+   "JetBrains Mono": {
+    "chars": [
+     183,
+     32,
+     77,
+     97,
+     114,
+     107,
+     101,
+     116,
+     112,
+     108,
+     99,
+     65,
+     82,
+     75,
+     69,
+     84,
+     80,
+     76,
+     67,
+     105,
+     118,
+     109,
+     73,
+     86,
+     102,
+     115,
+     104,
+     100,
+     119,
+     121,
+     70,
+     83,
+     72,
+     68,
+     87,
+     89,
+     48,
+     98,
+     66,
+     111,
+     79,
+     110,
+     8805,
+     55,
+     78,
+     53,
+     57,
+     117,
+     85,
+     169,
+     50,
+     54
+    ],
+    "weights": [
+     "700",
+     "600",
+     "400"
+    ],
+    "styles": [
+     "normal"
+    ],
+    "sizes": [
+     11,
+     10.5,
+     10,
+     9.5
+    ],
+    "features": [
+     "normal"
+    ],
+    "variants": [
+     "normal|normal|normal|normal|auto"
+    ],
+    "variations": [
+     "normal"
+    ],
+    "opsz": [
+     "auto"
+    ],
+    "hyphens": [
+     "manual"
+    ]
+   }
+  },
+  "fonts": [
+   {
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
+   },
+   {
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
+   }
+  ],
+  "preloads": [
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/marketplace/buyer/sign-in": {
@@ -7261,17 +7446,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/marketplace/seller/sign-in": {
@@ -7426,17 +7611,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  },
  "/sign-in": {
@@ -7506,11 +7691,11 @@
      49,
      37,
      72,
-     57,
      86,
      36,
      8722,
      51,
+     57,
      89,
      45,
      183,
@@ -7601,17 +7786,17 @@
   },
   "fonts": [
    {
-    "url": "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-    "bytes": 73016
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+    "bytes": 51860
    },
    {
-    "url": "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2",
-    "bytes": 40480
+    "url": "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2",
+    "bytes": 31048
    }
   ],
   "preloads": [
-   "http://localhost:3100/_next/static/media/234d9015b631dab9-s.p.33gca1im1ku45.woff2",
-   "http://localhost:3100/_next/static/media/70bc3e132a0a741e-s.p.3t6q91iet4nsy.woff2"
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/inter-core.3514afaf5d.woff2",
+   "https://realestaite-git-perf-font-subset-am-collective.vercel.app/fonts/jetbrains-mono-core.0bc45d9489.woff2"
   ]
  }
 }

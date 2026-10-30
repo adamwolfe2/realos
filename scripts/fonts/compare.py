@@ -12,11 +12,14 @@ from PIL import Image, ImageChops
 
 out = sys.argv[1]
 changed = 0
+for stale in glob.glob(os.path.join(out, "*.diff.png")):
+    os.remove(stale)
 for b in sorted(glob.glob(os.path.join(out, "*.before.png"))):
     name = os.path.basename(b)[: -len(".before.png")]
     a = b.replace(".before.png", ".after.png")
     if not os.path.exists(a):
-        print(f"{name}: missing after")
+        changed += 1
+        print(f"{name}: MISSING after screenshot")
         continue
     ib, ia = Image.open(b).convert("RGB"), Image.open(a).convert("RGB")
     if ib.size != ia.size:
@@ -34,4 +37,4 @@ for b in sorted(glob.glob(os.path.join(out, "*.before.png"))):
         print(f"{name}: {n} px, max delta {max(i for i, v in enumerate(hist) if v)}, {sum(hist[16:])} px > 15")
     else:
         print(f"{name}: identical")
-print(f"{changed} of {len(glob.glob(os.path.join(out, '*.before.png')))} pairs differ")
+print(f"{changed} of {len(glob.glob(os.path.join(out, '*.before.png')))} pairs differ or are missing")

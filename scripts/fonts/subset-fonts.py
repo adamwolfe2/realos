@@ -58,9 +58,18 @@ FONTS = [
 # saves about 22 KB per page but changes how accented Latin text kerns.
 PART = {"latin": "core", "latin-ext": "ext"}
 
-FEATURE_MAP = {"tabular-nums": "tnum", "lining-nums": "lnum", "oldstyle-nums": "onum", "slashed-zero": "zero",
-               "ordinal": "ordn", "diagonal-fractions": "frac", "stacked-fractions": "afrc",
-               "proportional-nums": "pnum", "small-caps": "smcp", "all-small-caps": "c2sc"}
+# font-variant-* values (as collect-usage.mjs records them) -> features they turn on.
+FEATURE_MAP = {
+    "tabular-nums": ["tnum"], "lining-nums": ["lnum"], "oldstyle-nums": ["onum"],
+    "proportional-nums": ["pnum"], "slashed-zero": ["zero"], "ordinal": ["ordn"],
+    "diagonal-fractions": ["frac"], "stacked-fractions": ["afrc"],
+    "discretionary-ligatures": ["dlig"], "historical-ligatures": ["hlig"],
+    "small-caps": ["smcp"], "all-small-caps": ["smcp", "c2sc"], "petite-caps": ["pcap"],
+    "all-petite-caps": ["pcap", "c2pc"], "unicase": ["unic"], "titling-caps": ["titl"],
+}
+# Values that keep defaults or only switch features off.
+VARIANT_NOOPS = {"normal", "auto", "none", "common-ligatures", "contextual", "no-common-ligatures",
+                 "no-discretionary-ligatures", "no-historical-ligatures", "no-contextual"}
 
 
 def parse_ranges(s):
@@ -103,7 +112,11 @@ def check_usage(font, u, native_max):
     for f in u.get("features", []):
         wanted.update(re.findall(r'"(\w{4})"(?!\s*(?:0|off))', f))
     for v in u.get("variants", []):
-        wanted.update(FEATURE_MAP[t] for t in re.split(r"[|\s]+", v) if t in FEATURE_MAP)
+        for t in filter(None, re.split(r"[|\s]+", v)):
+            if t in FEATURE_MAP:
+                wanted.update(FEATURE_MAP[t])
+            elif t not in VARIANT_NOOPS:
+                sys.exit(f"{font['family']}: unknown font-variant value {t!r}; map it in FEATURE_MAP")
     missing = wanted - set(font["features"]) - set(font["absent"])
     if missing:
         sys.exit(f"{font['family']}: features {missing} in use but not kept")
@@ -125,7 +138,7 @@ def partition(faces, cmap):
     return contents, claims, owner
 
 
-def subset(src, unicodes, features, path):
+def subset(src, unicodes, features, path, stamp):
     opts = Options()
     opts.flavor = "woff2"
     opts.layout_features = features
@@ -138,7 +151,10 @@ def subset(src, unicodes, features, path):
     opts.glyph_names = True
     s = Subsetter(opts)
     s.populate(unicodes=unicodes)
-    f = TTFont(src)
+    # Pin the timestamp to the upstream file's, so reruns give byte-identical
+    # files and unchanged names (fontTools would stamp the current time).
+    f = TTFont(src, recalcTimestamp=False)
+    f["head"].modified = stamp
     s.subset(f)
     f.flavor = "woff2"
     f.save(path)
@@ -175,7 +191,7 @@ def main():
             if not claims.get(part):
                 continue  # every character is drawn by a later-declared subset
             tmp = os.path.join(OUT_DIR, f"{font['slug']}-{part}.woff2")
-            got = subset(lim_path, contents[part], font["features"], tmp)
+            got = subset(lim_path, contents[part], font["features"], tmp, full["head"].modified)
             if got != contents[part] or not claims[part] <= got:
                 sys.exit(f"{tmp}: cmap does not match the expected code points")
             name = f"{font['slug']}-{part}.{hashlib.sha256(open(tmp, 'rb').read()).hexdigest()[:10]}.woff2"

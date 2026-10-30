@@ -1,6 +1,7 @@
-# Public pages crawled for font usage. Token/DB pages (audit/[token], proposal,
-# brief, r/) and the authed portal/admin are covered by the Latin-1 +
-# Latin Extended-A floor plus the source-string scan in subset-fonts.py.
+# Public pages crawled for font usage (weights, OpenType features, characters).
+# Not crawled: token pages (audit/[token], proposal, brief, r/) and the authed
+# portal/admin. They share the same stylesheets, and the subsets keep every
+# character Google served, so their text renders exactly as before.
 /
 /about
 /ai-visibility
@@ -36,6 +37,7 @@
 /student-housing
 /terms
 /sites/request
+/marketplace
 /marketplace/buyer/sign-in
 /marketplace/seller/sign-in
 /sign-in

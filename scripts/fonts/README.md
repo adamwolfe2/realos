@@ -40,6 +40,9 @@ Gotchas found while building this (each verified with pixel diffs):
   rasterizes differently. That is also why the other scripts are not merged.
 - fontTools 4.68 cannot subset the raw upstream variable TTFs (gvar KeyError);
   saving once through the instancer first avoids it.
+- fontTools stamps the current time into `head.modified` on save, which would
+  rename every file on each rerun and drop visitors' caches. The script pins it
+  to the upstream timestamp, so reruns are byte-identical.
 
 ## Rerun when
 
