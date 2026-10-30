@@ -122,7 +122,12 @@ export function humanTenantStatus(s: TenantStatus | string): string {
 export function humanLeadStatus(s: LeadStatus | string): string {
   return (LEAD_STATUS as Record<string, string>)[s] ?? sentenceFromEnum(String(s));
 }
+// OTHER-source leads the AppFolio sync imported read as "AppFolio", not "Other".
+export function displayLeadSource(source: LeadSource | string, externalSystem: string | null | undefined): string {
+  return source === "OTHER" && externalSystem === "appfolio" ? "APPFOLIO" : source;
+}
 export function humanLeadSource(s: LeadSource | string): string {
+  if (s === "APPFOLIO") return "AppFolio";
   return (LEAD_SOURCE as Record<string, string>)[s] ?? sentenceFromEnum(String(s));
 }
 export function humanChatbotStatus(s: ChatbotConversationStatus | string): string {

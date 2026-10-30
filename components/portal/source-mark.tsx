@@ -34,7 +34,7 @@ export function SourceMark({ source, size = 22 }: { source: LeadSource | string;
       </span>
     );
   }
-  const slug = SOURCE_LOGO[source as LeadSource];
+  const slug = source === "APPFOLIO" ? "appfolio" : SOURCE_LOGO[source as LeadSource];
   const logo = slug ? BRAND_LOGOS[slug] : undefined;
   if (logo) {
     return (

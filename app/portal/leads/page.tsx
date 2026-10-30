@@ -23,7 +23,7 @@ import {
 } from "@/components/portal/lead-kanban";
 import { EmptyState } from "@/components/portal/ui/empty-state";
 import { ExportButton } from "@/components/ui/export-button";
-import { humanLeadSource } from "@/lib/format";
+import { displayLeadSource, humanLeadSource } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { soft } from "@/lib/soft";
 
@@ -171,6 +171,7 @@ export default async function LeadsKanbanPage({
         email: true,
         phone: true,
         source: true,
+        externalSystem: true,
         status: true,
         score: true,
         createdAt: true,
@@ -230,11 +231,11 @@ export default async function LeadsKanbanPage({
     // reads as a UI shell — half the chips lead to empty boards.
     prisma.lead
       .groupBy({
-        by: ["source"],
+        by: ["source", "externalSystem"],
         where: kpiWhere,
         _count: { _all: true },
       })
-      .catch(soft([] as Array<{ source: LeadSource; _count: { _all: number } }>, "portal.leads:250")),
+      .catch(soft([] as Array<{ source: LeadSource; externalSystem: string | null; _count: { _all: number } }>, "portal.leads:250")),
     // Chats in the last 28d, linked from the header so chatbot threads
     // (not Lead rows) are easy to find.
     prisma.chatbotConversation
@@ -303,6 +304,9 @@ export default async function LeadsKanbanPage({
   // Build a Set of sources that have at least one lead. Includes the
   // currently-active source filter even if its count is zero so the
   // operator can always see/clear their own filter.
+  // The "Other" chip is all AppFolio imports for PMS-synced tenants: label it.
+  const otherRows = sourceCounts.filter((r) => r.source === "OTHER");
+  const otherIsAppfolio = otherRows.length > 0 && otherRows.every((r) => r.externalSystem === "appfolio");
   const sourcesWithData = new Set<string>(
     sourceCounts.map((r) => r.source as string),
   );
@@ -323,7 +327,7 @@ export default async function LeadsKanbanPage({
     lastName: l.lastName,
     email: l.email,
     phone: l.phone,
-    source: l.source,
+    source: displayLeadSource(l.source, l.externalSystem),
     status: l.status,
     score: l.score,
     propertyName: l.property?.name ?? null,
@@ -444,9 +448,9 @@ export default async function LeadsKanbanPage({
           {SOURCES.filter((s) => sourcesWithData.has(s)).map((s) => (
             <SourcePill
               key={s}
-              source={s}
+              source={otherIsAppfolio && s === "OTHER" ? "APPFOLIO" : s}
               count={sourceCounts.filter((r) => r.source === s).reduce((n, r) => n + r._count._all, 0)}
-              label={humanLeadSource(s)}
+              label={humanLeadSource(otherIsAppfolio && s === "OTHER" ? "APPFOLIO" : s)}
               active={sp.source === s}
               href={buildHref({ source: s, signal: signalFilter, q: sp.q, properties: sp.properties })}
             />
@@ -551,7 +555,7 @@ function SourcePill({
   active: boolean;
   href: string;
   /** When set, the pill leads with that tool's logo and a lead count. */
-  source?: LeadSource;
+  source?: LeadSource | "APPFOLIO";
   count?: number;
 }) {
   return (
