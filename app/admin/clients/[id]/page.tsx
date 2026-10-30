@@ -113,17 +113,29 @@ export default async function ClientDetail({
   const marketableClause = await marketableOrgClause(org.id, "propertyId", {
     includeOrgLevel: true,
   });
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const since30 = new Date(Date.now() - 30 * DAY_MS);
+  const since60 = new Date(Date.now() - 60 * DAY_MS);
+  const leadWhere = { orgId: org.id, ...marketableClause };
   const [
-    scopedLeadCount,
-    scopedChatCount,
+    leads30d,
+    leadsPrev30d,
+    chats30d,
+    chatsPrev30d,
     marketablePropertyCount,
   ] = await Promise.all([
-      prisma.lead.count({ where: { orgId: org.id, ...marketableClause } }),
-      prisma.chatbotConversation.count({
-        where: { orgId: org.id, ...marketableClause },
-      }),
-      prisma.property.count({ where: marketablePropertyWhere(org.id) }),
-    ]);
+    prisma.lead.count({ where: { ...leadWhere, createdAt: { gte: since30 } } }),
+    prisma.lead.count({
+      where: { ...leadWhere, createdAt: { gte: since60, lt: since30 } },
+    }),
+    prisma.chatbotConversation.count({
+      where: { ...leadWhere, createdAt: { gte: since30 } },
+    }),
+    prisma.chatbotConversation.count({
+      where: { ...leadWhere, createdAt: { gte: since60, lt: since30 } },
+    }),
+    prisma.property.count({ where: marketablePropertyWhere(org.id) }),
+  ]);
 
   const moduleRows: Array<[ToggleableModule, string, boolean]> = [
     // Acquisition + on-site
@@ -206,6 +218,19 @@ export default async function ClientDetail({
     propertyIds: u.propertyAccess.map((p) => p.propertyId),
   }));
 
+  const lastLoginUser = teamMembersRaw
+    .filter((u) => u.lastLoginAt)
+    .sort((a, b) => b.lastLoginAt!.getTime() - a.lastLoginAt!.getTime())[0];
+  const lastLogin = lastLoginUser
+    ? {
+        at: lastLoginUser.lastLoginAt!,
+        who:
+          [lastLoginUser.firstName, lastLoginUser.lastName]
+            .filter(Boolean)
+            .join(" ") || lastLoginUser.email,
+      }
+    : null;
+
   // Property list for the access editor. Only marketable + visible
   // properties so the agency panel matches what operators see.
   const teamProperties = await prisma.property.findMany({
@@ -234,7 +259,10 @@ export default async function ClientDetail({
   // /admin/system, but scoped to this client. Catches the "this one
   // tenant's GA4 hasn't run in 4 days while the platform-wide cron looks
   // fine" failure mode the audit flagged.
-  const tenantDataSinks = await getTenantDataSinks(org.id).catch(() => []);
+  const tenantDataSinks = await getTenantDataSinks(org.id).catch((err) => {
+    console.error("[admin/clients] tenant data sinks failed", org.id, err);
+    return [];
+  });
   const failingSinks = tenantDataSinks.filter(
     (s) => s.status === "erroring" || s.status === "dead",
   );
@@ -288,7 +316,7 @@ export default async function ClientDetail({
       href: "/admin/clients/" + org.id,
       hint:
         org._count.properties > 0
-          ? `${org._count.properties} propert${org._count.properties === 1 ? "y" : "ies"}`
+          ? `${marketablePropertyCount} live of ${org._count.properties} synced`
           : "At least one Property is required for listings.",
     },
     {
@@ -357,8 +385,16 @@ export default async function ClientDetail({
             {org.subscriptionTier ? (
               <>
                 <span className="text-muted-foreground">·</span>
-                <span className="text-xs">
-                  {humanSubscriptionTier(org.subscriptionTier)} tier
+                <span>{humanSubscriptionTier(org.subscriptionTier)} tier</span>
+              </>
+            ) : null}
+            {org.primaryContactName || org.primaryContactEmail ? (
+              <>
+                <span className="text-muted-foreground">·</span>
+                <span>
+                  {[org.primaryContactName, org.primaryContactEmail, org.primaryContactPhone]
+                    .filter(Boolean)
+                    .join(" · ")}
                 </span>
               </>
             ) : null}
@@ -377,14 +413,6 @@ export default async function ClientDetail({
         }
       />
 
-      {org.primaryContactName ? (
-        <p className="text-xs text-muted-foreground -mt-2">
-          {org.primaryContactName}
-          {org.primaryContactEmail ? ` · ${org.primaryContactEmail}` : ""}
-          {org.primaryContactPhone ? ` · ${org.primaryContactPhone}` : ""}
-        </p>
-      ) : null}
-
       <ClientDetailTabs
         orgId={org.id}
         active={tab}
@@ -395,22 +423,21 @@ export default async function ClientDetail({
       {tab === "overview" ? (
         <OverviewTab
           orgId={org.id}
-          // org._count is a bare FK count and cannot be lifecycle-gated —
-          // override the four that would otherwise report the operator's
-          // entire synced AppFolio account instead of what they run in
-          // LeaseStack. The rest (users, campaigns, domains) have no
-          // property dimension and are already right.
-          counts={{
-            ...org._count,
-            properties: marketablePropertyCount,
-            leads: scopedLeadCount,
-            chatbotConversations: scopedChatCount,
+          stats={{
+            leads30d,
+            leadsPrev30d,
+            chats30d,
+            chatsPrev30d,
+            liveProperties: marketablePropertyCount,
+            // org._count is a bare FK count: every property synced from
+            // the operator's AppFolio account, live in LeaseStack or not.
+            syncedProperties: org._count.properties,
+            lastLogin,
           }}
           readinessItems={readinessItems}
           actionItems={actionItems}
-          failingSinks={failingSinks}
+          dataSinks={tenantDataSinks}
           recentLeads={recentLeads}
-          appfolio={org.appfolioIntegration}
           activeProjects={org.projects}
         />
       ) : null}
