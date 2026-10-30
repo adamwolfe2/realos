@@ -33,6 +33,9 @@ export type AdRetentionResult = {
   aggregated: number;
   /** AdMetricDaily rows deleted across all rolled-off months. */
   dropped: number;
+  /** AdCreativeMetricDaily rows deleted past the same cutoff (no monthly
+   *  rollup for per-ad rows; the gallery only reads the daily window). */
+  creativeDropped: number;
   errors: string[];
 };
 
@@ -75,8 +78,20 @@ export async function runAdRetentionForOrg(
   const errors: string[] = [];
   let aggregated = 0;
   let dropped = 0;
+  let creativeDropped = 0;
 
   const cutoff = cutoffDateForMonths(now, policy.dailyWindowMonths);
+
+  // Per-ad daily rows roll off on the same window for every tier. They
+  // feed the creative gallery only, so there's nothing to aggregate.
+  try {
+    const r = await prisma.adCreativeMetricDaily.deleteMany({
+      where: { orgId, date: { lt: cutoff } },
+    });
+    creativeDropped = r.count;
+  } catch (err) {
+    errors.push(`creatives: ${err instanceof Error ? err.message : String(err)}`);
+  }
 
   // Foundation: no monthly aggregates, just delete anything older than
   // the cutoff. `deleteMany` returns the count directly.
@@ -89,7 +104,7 @@ export async function runAdRetentionForOrg(
     } catch (err) {
       errors.push(err instanceof Error ? err.message : String(err));
     }
-    return { orgId, policy, aggregated, dropped, errors };
+    return { orgId, policy, aggregated, dropped, creativeDropped, errors };
   }
 
   // Growth / Scale / Enterprise: roll up first, then delete.
@@ -109,7 +124,7 @@ export async function runAdRetentionForOrg(
     accountIds = accounts.map((a) => a.id);
   } catch (err) {
     errors.push(err instanceof Error ? err.message : String(err));
-    return { orgId, policy, aggregated, dropped, errors };
+    return { orgId, policy, aggregated, dropped, creativeDropped, errors };
   }
 
   for (const adAccountId of accountIds) {
@@ -224,5 +239,5 @@ export async function runAdRetentionForOrg(
     }
   }
 
-  return { orgId, policy, aggregated, dropped, errors };
+  return { orgId, policy, aggregated, dropped, creativeDropped, errors };
 }
