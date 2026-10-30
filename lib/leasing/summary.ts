@@ -37,9 +37,11 @@ export type LeasingSummary = {
   recent: SignedLease[];
 };
 
-const unitOf = (raw: Prisma.JsonValue): string | null => {
-  const u = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>).unit : null;
-  return typeof u === "string" && u.trim() ? u.trim() : null;
+// rent_roll fields kept on Lease.raw: `unit`, and `tenant` (the name) as a
+// fallback when the lease isn't linked to a Resident row.
+const rawText = (raw: Prisma.JsonValue, key: string): string | null => {
+  const v = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>)[key] : null;
+  return typeof v === "string" && v.trim() ? v.trim() : null;
 };
 
 // Leasing outcomes for the overview: occupancy, rent under lease, total
@@ -83,8 +85,8 @@ export async function getLeasingSummary(orgId: string, allowedPropertyIds: strin
     chatbotLeaseValueCents: chatbot.reduce((n, l) => n + value(l), 0),
     recent: leases.slice(0, 8).map((l) => ({
       id: l.id,
-      name: [l.resident?.firstName, l.resident?.lastName].filter(Boolean).join(" ") || "Resident",
-      unit: l.listing?.unitNumber ?? unitOf(l.raw),
+      name: [l.resident?.firstName, l.resident?.lastName].filter(Boolean).join(" ") || rawText(l.raw, "tenant") || "Resident",
+      unit: l.listing?.unitNumber ?? rawText(l.raw, "unit"),
       property: l.property.name,
       monthlyRentCents: l.monthlyRentCents,
       startDate: l.startDate,

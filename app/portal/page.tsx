@@ -26,6 +26,7 @@ export const dynamic = "force-dynamic";
 const DAY = 86_400_000;
 const fmt = new Intl.NumberFormat("en-US");
 const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", notation: "compact", maximumFractionDigits: 1 });
+const usdExact = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 const dateFmt = new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
 const pct = (n: number, d: number) => (d ? Math.round((n / d) * 100) : 0);
 
@@ -381,7 +382,7 @@ function SignedPanel({ leasing: l }: { leasing: Leasing }) {
               <span className="flex items-center gap-2 truncate text-[13.5px] font-medium text-[var(--t-ink)]">{s.name}{s.fromChatbot ? <Pill tone="good">Chatted first</Pill> : null}</span>
               <span className="block truncate text-[12px] text-[var(--t-muted)]">{[s.property, s.unit && `Unit ${s.unit}`].filter(Boolean).join(" · ")}</span>
             </span>
-            <span className="text-right text-[13px] tabular-nums text-[var(--t-ink)]">{s.monthlyRentCents != null ? `${usd.format(s.monthlyRentCents / 100)}/mo` : "—"}</span>
+            <span className="text-right text-[13px] tabular-nums text-[var(--t-ink)]">{s.monthlyRentCents != null ? `${usdExact.format(s.monthlyRentCents / 100)}/mo` : "—"}</span>
             <span className="hidden text-right text-[12.5px] tabular-nums text-[var(--t-muted)] sm:block">{s.startDate ? `From ${dateFmt.format(s.startDate)}` : ""}</span>
           </li>
         ))}
