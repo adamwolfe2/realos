@@ -228,7 +228,7 @@ async function sinceLaunchChecks(): Promise<Array<[string, unknown, unknown]>> {
   const [traced] = await db.$queryRaw<Array<Record<string, unknown>>>`
     WITH x AS (
       SELECT DISTINCT ON (l.id) l.id, l.source, l."createdAt" AS lead_at,
-        ls."startDate", ls."monthlyRentCents" AS rent
+        ls."startDate"
       FROM "Lead" l
       JOIN "Resident" r ON r."leadId" = l.id AND r."propertyId" = ${prop}
       JOIN "Lease" ls ON ls."residentId" = r.id
@@ -238,8 +238,6 @@ async function sinceLaunchChecks(): Promise<Array<[string, unknown, unknown]>> {
       ORDER BY l.id, ls."startDate" DESC)
     SELECT count(*) AS leases,
       count(*) FILTER (WHERE source = 'CHATBOT') AS chat_leases,
-      round(sum(rent) * 12 / 100.0) AS annual,
-      round(sum(rent) FILTER (WHERE source = 'CHATBOT') * 12 / 100.0) AS chat_annual,
       round(avg(extract(epoch FROM ("startDate" - lead_at)) / 86400)
         FILTER (WHERE source = 'CHATBOT')) AS chat_days
     FROM x`;
@@ -303,8 +301,6 @@ async function sinceLaunchChecks(): Promise<Array<[string, unknown, unknown]>> {
     ["sinceLaunch.chatSessionsCaptured", SL.chatSessionsCaptured, n(chats?.captured)],
     ["sinceLaunch.tracedLeases", SL.tracedLeases, n(traced?.leases)],
     ["sinceLaunch.tracedLeasesFromChat", SL.tracedLeasesFromChat, n(traced?.chat_leases)],
-    ["sinceLaunch.tracedAnnualRentUsd", SL.tracedAnnualRentUsd, n(traced?.annual)],
-    ["sinceLaunch.tracedAnnualRentFromChatUsd", SL.tracedAnnualRentFromChatUsd, n(traced?.chat_annual)],
     ["sinceLaunch.avgDaysChatToLeaseStart", SL.avgDaysChatToLeaseStart, n(traced?.chat_days)],
     ["sinceLaunch.residentsSynced", SL.residentsSynced, n(synced?.residents)],
     ["sinceLaunch.leasesSynced", SL.leasesSynced, n(synced?.leases)],

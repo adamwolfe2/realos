@@ -152,9 +152,6 @@ export const SG_CASE_STUDY = {
      */
     tracedLeases: 38,
     tracedLeasesFromChat: 11,
-    /** Sum of monthlyRent x 12 on those leases (termMonths is not synced). */
-    tracedAnnualRentUsd: 583080,
-    tracedAnnualRentFromChatUsd: 161580,
     /** Mean days from the chat lead record to lease start, chat leases only. */
     avgDaysChatToLeaseStart: 29,
     residentsSynced: 180,

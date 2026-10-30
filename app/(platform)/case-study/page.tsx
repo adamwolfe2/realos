@@ -29,8 +29,6 @@ const GRAY = "#8d8d8d";
 
 const SL = CS.sinceLaunch;
 
-const usd = (n: number) => `$${Math.round(n / 1000).toLocaleString()}K`;
-
 const TITLE = `${CS.property}: ${SL.tracedLeases} signed leases traced back to the lead`;
 const DESCRIPTION = `How ${CS.customer} runs ${CS.property}'s website, chatbot and AppFolio data on ${BRAND_NAME}, and traces every new lease back to where the renter came from.`;
 
@@ -62,14 +60,14 @@ const STATS = [
     sub: "Each matched to the lead it started from",
   },
   {
-    value: usd(SL.tracedAnnualRentUsd),
-    label: "Annual rent on those leases",
-    sub: "Monthly rent from AppFolio, times 12",
+    value: `${pct(SL.chatSessionsCaptured, SL.chatSessions)}%`,
+    label: "Of website chats left contact details",
+    sub: `${SL.chatSessionsCaptured} of ${SL.chatSessions} chat sessions`,
   },
   {
     value: String(SL.tracedLeasesFromChat),
     label: "Leases that began as a website chat",
-    sub: `${usd(SL.tracedAnnualRentFromChatUsd)} a year in rent`,
+    sub: `About ${SL.avgDaysChatToLeaseStart} days from first chat to lease start`,
   },
   {
     value: String(SL.searchPositionLatestMonth),
@@ -109,7 +107,6 @@ const RUNNING = [
 const METHOD = [
   `Window: ${SL.label}. ${BRAND_NAME} went live at ${CS.property} on April 18; the first chat is dated April 20. Numbers checked against production on October 30, 2026.`,
   `A traced lease is a lead marked signed and matched to a ${CS.property} resident whose lease starts in the window, where the lead record existed before the lease began. Matching is automatic, by email, phone and name.`,
-  `Annual rent is the lease's monthly rent in AppFolio times 12. AppFolio does not send the lease term, so this is not total contract value.`,
   `"Began as a website chat" means the lead record was created by the chatbot. It says where the renter first reached the property, not everything that led to the lease.`,
   `Lead records are rows, not people: a renter who chats and then applies can appear twice. Leases are counted once per lead.`,
 ];
@@ -476,8 +473,8 @@ export default function CaseStudyPage() {
           <SectionIntro title="From first chat to a signed lease.">
             When AppFolio syncs a new resident, {BRAND_NAME} matches them to the lead record they started
             as. {SL.tracedLeasesFromChat} of the {SL.tracedLeases} traced leases began as a conversation
-            with the website chatbot, {usd(SL.tracedAnnualRentFromChatUsd)} a year in rent, about{" "}
-            {SL.avgDaysChatToLeaseStart} days from first chat to lease start on average.
+            with the website chatbot, about {SL.avgDaysChatToLeaseStart} days from first chat to lease
+            start on average.
           </SectionIntro>
           <dl className="mt-12 mx-auto max-w-[880px]" style={{ borderTop: `1px solid ${INK}` }}>
             {RUNNING.map((r) => (
