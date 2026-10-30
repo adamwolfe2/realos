@@ -8,7 +8,9 @@ import { soft } from "@/lib/soft";
 import { getFirstRunSignal } from "@/lib/portal/first-run";
 import { resolveIntegrationStatuses } from "@/lib/integrations/status";
 import { ProspectProfileSchema } from "@/lib/chatbot/extract-prospect-profile";
-import { Initial, Logo, Metric, Panel, Pill, change, type Tone } from "@/components/portal/overview/kit";
+import { Initial, Logo, Metric, MetricStrip, Panel, Pill, change, type Tone } from "@/components/portal/overview/kit";
+import { getLeasingSummary } from "@/lib/leasing/summary";
+import { displayLeadSource } from "@/lib/format";
 import { AgentTrace, type Step } from "@/components/portal/overview/agent-trace";
 import { ConversationPreview } from "@/components/portal/overview/conversation-preview";
 import { patternReason } from "@/lib/chatbot/learning/pattern-labels";
@@ -24,6 +26,9 @@ export const dynamic = "force-dynamic";
 
 const DAY = 86_400_000;
 const fmt = new Intl.NumberFormat("en-US");
+const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", notation: "compact", maximumFractionDigits: 1 });
+const usdExact = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+const dateFmt = new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
 const pct = (n: number, d: number) => (d ? Math.round((n / d) * 100) : 0);
 
 const SOURCES = [
@@ -39,6 +44,8 @@ const LEAD_SOURCE: Record<string, { label: string; color: string }> = {
   ORGANIC: { label: "Organic search", color: "#6d9bff" },
   GOOGLE_ADS: { label: "Google Ads", color: "#a9c4ff" },
   META_ADS: { label: "Meta Ads", color: "#d4e1ff" },
+  // Not a LeadSource: OTHER-source leads the AppFolio sync imported.
+  APPFOLIO: { label: "AppFolio", color: "#c7d2fe" },
 };
 const OTHER_SOURCE = { label: "Other", color: "#dcdcd8" };
 
@@ -65,7 +72,7 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
   const since30 = new Date(now - 30 * DAY);
   const since60 = new Date(now - 60 * DAY);
 
-  const [org, properties, convs, recentCaptured, leadRows, knowledge, site, insights, appliedRows, statuses, lastRun] = await Promise.all([
+  const [org, properties, convs, recentCaptured, leadRows, knowledge, site, insights, appliedRows, statuses, lastRun, leasing] = await Promise.all([
     prisma.organization.findUnique({ where: { id: orgId }, select: { name: true } }),
     prisma.property.findMany({
       where: { orgId, lifecycle: "ACTIVE", ...(allowed ? { id: { in: allowed } } : {}) },
@@ -83,13 +90,14 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
       take: 10,
       select: { id: true, capturedName: true, capturedEmail: true, messages: true, prospectProfile: true, property: { select: { name: true, chatbotConfig: { select: { chatbotPersonaName: true } } } } },
     }),
-    prisma.lead.groupBy({ by: ["propertyId", "source"], where: { orgId, createdAt: { gte: since30 }, AND: [gate] }, _count: { _all: true } }),
+    prisma.lead.groupBy({ by: ["propertyId", "source", "externalSystem"], where: { orgId, createdAt: { gte: since30 }, AND: [gate] }, _count: { _all: true } }),
     prisma.chatbotKnowledgeSuggestion.findMany({ where: { orgId, ...propScope, status: "OPEN" }, orderBy: { createdAt: "desc" }, take: 20, select: { id: true, patternType: true, affectedCount: true, suggestedText: true, createdAt: true, propertyId: true, property: { select: { name: true } } } }),
     prisma.siteImprovementRecommendation.findMany({ where: { orgId, ...propScope, status: "OPEN" }, orderBy: { createdAt: "desc" }, take: 20, select: { id: true, suggestedTitle: true, suggestedBody: true, targetSurface: true, createdAt: true, propertyId: true, property: { select: { name: true } } } }),
     prisma.insight.findMany({ where: { orgId, ...propScope, status: "open", category: { in: ["ads", "seo", "traffic"] } }, orderBy: { createdAt: "desc" }, take: 10, select: { id: true, title: true, suggestedAction: true, body: true, category: true, href: true, createdAt: true, propertyId: true, property: { select: { name: true } } } }),
     prisma.chatbotKnowledgeSuggestion.findMany({ where: { orgId, ...propScope, status: "APPLIED", appliedAt: { gte: since30 } }, orderBy: { appliedAt: "desc" }, take: 10, select: { id: true, suggestedText: true, appliedAt: true, property: { select: { name: true } } } }),
     resolveIntegrationStatuses(orgId).catch(soft([], "portal.overview:statuses")),
     prisma.chatbotLearningCase.findFirst({ where: { orgId }, orderBy: { createdAt: "desc" }, select: { createdAt: true } }),
+    getLeasingSummary(orgId, allowed ?? null).catch(soft(null, "portal.overview:leasing")),
   ]);
 
   // ---- Conversations.
@@ -120,7 +128,8 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
   const leadTotal = leadRows.reduce((s, r) => s + r._count._all, 0);
   const bySource = new Map<string, number>();
   for (const r of leadRows) {
-    const k = LEAD_SOURCE[r.source] ? r.source : "OTHER";
+    const shown = displayLeadSource(r.source, r.externalSystem);
+    const k = LEAD_SOURCE[shown] ? shown : "OTHER";
     bySource.set(k, (bySource.get(k) ?? 0) + r._count._all);
   }
   const leadShare = [...bySource.entries()]
@@ -197,7 +206,7 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
 
   // Brand-new workspace: no chats, no leads, nothing connected. A wall of
   // zeros reads as "is this working?", so point at the three setup steps.
-  if (!convs.length && !leadTotal && !liveSources.length) {
+  if (!convs.length && !leadTotal && !liveSources.length && !leasing) {
     const first = props[0];
     const next = [
       { title: "Your property", note: first ? `${first.name} is added` : "Add the building you want leads for", done: Boolean(first), href: "/portal/setup" },
@@ -253,6 +262,8 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
         </div>
       </header>
 
+      {leasing ? <LeasingStrip leasing={leasing} /> : null}
+
       <dl className="grid grid-cols-2 rounded-[var(--t-radius)] border border-[var(--t-border)] bg-[var(--t-card)] shadow-[var(--t-shadow)] lg:grid-cols-4 [&>*]:border-[var(--t-divider)] lg:[&>*:not(:last-child)]:border-r max-lg:[&>*:nth-child(odd)]:border-r max-lg:[&>*:nth-child(-n+2)]:border-b">
         <Metric label="Conversations" value={fmt.format(cur.length)} delta={change(cur.length, prev.length)} note="Last 30 days vs the 30 before" />
         <Metric label="Leads captured" value={fmt.format(curCap)} delta={change(curCap, prevCap)} note={leadTotal ? `${chatShare}% of all new leads` : "By the chatbot"} />
@@ -307,6 +318,8 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
         </Panel>
       </div>
 
+      {leasing?.recent.length ? <SignedPanel leasing={leasing} /> : null}
+
       <Panel title="Chatbots by property" aside={<Link href="/portal/properties" className="hover:text-[var(--t-ink)]">All {props.length}</Link>} flush>
         <ul className="divide-y divide-[var(--t-divider)]">
           {props.slice(0, 8).map((p) => {
@@ -340,6 +353,43 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
         <Link href="/portal/performance" className="text-[var(--t-text)] underline underline-offset-2">Performance</Link>.
       </p>
     </div>
+  );
+}
+
+type Leasing = NonNullable<Awaited<ReturnType<typeof getLeasingSummary>>>;
+
+function LeasingStrip({ leasing: l }: { leasing: Leasing }) {
+  return (
+    <MetricStrip cols={4}>
+      <Metric label="Occupancy" value={l.units ? `${l.occupancyPct}%` : fmt.format(l.currentLeases)} note={l.units ? `${fmt.format(l.currentLeases)} leases on ${fmt.format(l.units)} units` : "Current leases"} />
+      <Metric label="Rent under lease" value={usd.format(l.monthlyRentCents / 100)} note="Per month, current leases" />
+      <Metric label="Lease value" value={usd.format(l.leaseValueCents / 100)} note="Rent over each lease's full term" />
+      {l.chatbotSigned ? (
+        <Metric label="Signed via your chatbot" value={fmt.format(l.chatbotSigned)} delta={{ text: usd.format(l.chatbotLeaseValueCents / 100), tone: "good" }} note="Residents who chatted first, and their lease value" />
+      ) : (
+        <Metric label="Renewals coming up" value={fmt.format(l.endingSoon)} note="Leases ending in the next 60 days" />
+      )}
+    </MetricStrip>
+  );
+}
+
+function SignedPanel({ leasing: l }: { leasing: Leasing }) {
+  return (
+    <Panel title="Who signed" aside={<Link href="/portal/residents" className="hover:text-[var(--t-ink)]">All residents</Link>} flush>
+      <ul className="divide-y divide-[var(--t-divider)]">
+        {l.recent.map((s) => (
+          <li key={s.id} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-3 sm:grid-cols-[auto_1fr_140px_120px]">
+            <Initial name={s.name} size={30} />
+            <span className="min-w-0">
+              <span className="flex items-center gap-2 truncate text-[13.5px] font-medium text-[var(--t-ink)]">{s.name}{s.fromChatbot ? <Pill tone="good">Chatted first</Pill> : null}</span>
+              <span className="block truncate text-[12px] text-[var(--t-muted)]">{[s.property, s.unit && `Unit ${s.unit}`].filter(Boolean).join(" · ")}</span>
+            </span>
+            <span className="text-right text-[13px] tabular-nums text-[var(--t-ink)]">{s.monthlyRentCents != null ? `${usdExact.format(s.monthlyRentCents / 100)}/mo` : "—"}</span>
+            <span className="hidden text-right text-[12.5px] tabular-nums text-[var(--t-muted)] sm:block">{s.startDate ? `From ${dateFmt.format(s.startDate)}` : ""}</span>
+          </li>
+        ))}
+      </ul>
+    </Panel>
   );
 }
 
