@@ -151,7 +151,6 @@ export function OverviewTab({
         <SectionCard
           label="Recent leads"
           className="lg:col-span-2"
-          padded={false}
         >
           <RecentLeadsTable leads={recentLeads} />
         </SectionCard>
@@ -258,13 +257,13 @@ function AttentionRow({
 function RecentLeadsTable({ leads }: { leads: RecentLead[] }) {
   if (leads.length === 0) {
     return (
-      <p className="px-5 pb-5 text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground">
         No leads captured yet.
       </p>
     );
   }
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto -mx-5 -mb-5">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-y border-border text-left text-xs text-muted-foreground">
