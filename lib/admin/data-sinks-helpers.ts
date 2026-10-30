@@ -246,6 +246,11 @@ export function buildSummaries(input: {
     aeoLastRunAt: Date | null;
     siteIntelLastRunAt: Date | null;
   };
+  // Client page: judge each provider on THIS org's own sync rows only.
+  // CronRun rows are platform-wide, so letting their errors through made
+  // every client page show other orgs' failures (a demo org's missing ad
+  // credentials surfaced as "Google Ads sync is failing" on SG Real Estate).
+  tenantScoped?: boolean;
 }): DataSinkSummary[] {
   const providers: SinkProvider[] = [
     "appfolio",
@@ -285,14 +290,21 @@ export function buildSummaries(input: {
 
   return providers.map((provider) => {
     const cronJobName = CRON_BY_PROVIDER[provider];
-    const cron = cronJobName
+    const platformCron = cronJobName
       ? input.cronRollups.get(cronJobName) ?? EMPTY_ROLLUP
       : EMPTY_ROLLUP;
     const agg = aggByProvider[provider];
+    const cron = input.tenantScoped
+      ? tenantView(provider, platformCron, agg, input.perTenantOverrides)
+      : platformCron;
 
     // Per-integration lastSyncAt is often fresher than CronRun rollup
     // (manual button click writes lastSyncAt without a CronRun row).
-    const lastSuccessAt = maxDate(cron.lastSuccessAt, agg?.lastSyncAt ?? null);
+    // Tenant rows stamp lastSyncAt on failed syncs too, so an org whose
+    // row carries an error has no success to count.
+    const aggSuccessAt =
+      input.tenantScoped && agg?.lastErrorAt ? null : agg?.lastSyncAt ?? null;
+    const lastSuccessAt = maxDate(cron.lastSuccessAt, aggSuccessAt);
     let lastRunAt = maxDate(cron.lastRunAt, agg?.lastSyncAt ?? null);
 
     const overrides = input.perTenantOverrides;
@@ -336,4 +348,37 @@ export function buildSummaries(input: {
       tenantsCovered: tenantsByProvider[provider],
     };
   });
+}
+
+// Per-tenant rollup. Providers with a per-org row (AppFolio, GA4, GSC, ads,
+// site intelligence) are judged on that row alone: no row means "missing"
+// (not connected), never "failing". Platform-only providers (reputation,
+// AEO, DataForSEO) keep the cron's success time but drop its errors, since
+// a platform failure can't be attributed to this org.
+function tenantView(
+  provider: SinkProvider,
+  cron: CronRollup,
+  agg: IntegrationAggregate | null,
+  overrides: { siteIntelLastRunAt: Date | null } | undefined,
+): CronRollup {
+  const noErrors = {
+    ...cron,
+    lastErrorAt: null,
+    lastErrorMessage: null,
+    errorsLast24h: 0,
+    consecutiveRecentErrors: 0,
+  };
+  if (provider === "site_intelligence") {
+    const crawledAt = overrides?.siteIntelLastRunAt ?? null;
+    return { ...noErrors, lastRunAt: crawledAt, lastSuccessAt: crawledAt };
+  }
+  if (!agg) return noErrors;
+  const recentError =
+    agg.lastErrorAt != null && Date.now() - agg.lastErrorAt.getTime() < DAY;
+  return {
+    ...noErrors,
+    lastRunAt: null,
+    lastSuccessAt: null,
+    errorsLast24h: recentError ? 1 : 0,
+  };
 }

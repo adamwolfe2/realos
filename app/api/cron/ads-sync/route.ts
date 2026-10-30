@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { notDemoOrg } from "@/lib/tenancy/demo-org";
 import { prisma } from "@/lib/db";
 import { runAdsSyncForAccount } from "@/lib/integrations/ads-sync";
 import { recordCronRun } from "@/lib/health/cron-run";
@@ -45,6 +46,7 @@ export async function GET(req: NextRequest) {
     const accounts = await prisma.adAccount.findMany({
       where: {
         autoSyncEnabled: true,
+        org: notDemoOrg,
         OR: [
           { credentialsEncrypted: { not: null } },
           ...(googleIds.length > 0

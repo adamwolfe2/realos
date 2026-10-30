@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { notDemoOrg } from "@/lib/tenancy/demo-org";
 import { prisma } from "@/lib/db";
 import { runAppfolioSync } from "@/lib/integrations/appfolio-sync";
 import { syncListingsForOrg } from "@/lib/integrations/appfolio";
@@ -97,6 +98,7 @@ export async function GET(req: NextRequest) {
     } as const;
     const eligibleWhere = {
       autoSyncEnabled: true,
+      org: notDemoOrg,
       OR: [
         { clientIdEncrypted: { not: null } },
         { apiKeyEncrypted: { not: null } },

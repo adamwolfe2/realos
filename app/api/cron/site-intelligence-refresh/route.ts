@@ -14,6 +14,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { notDemoOrg } from "@/lib/tenancy/demo-org";
 import { prisma } from "@/lib/db";
 import { verifyCronAuth } from "@/lib/cron/auth";
 import { recordCronRun } from "@/lib/health/cron-run";
@@ -38,6 +39,7 @@ export async function GET(req: NextRequest) {
     // then sort by their existing intelligence crawledAt.
     const candidates = await prisma.organization.findMany({
       where: {
+        ...notDemoOrg,
         OR: [
           { domains: { some: {} } },
           { properties: { some: { websiteUrl: { not: null } } } },
@@ -108,6 +110,10 @@ export async function GET(req: NextRequest) {
       }),
       recordsProcessed: aggregate.orgsScanned,
       errorCount: aggregate.errors.length,
+      errorSummary: aggregate.errors
+        .slice(0, 5)
+        .map((e) => `${e.orgId}: ${e.error}`)
+        .join("; "),
     };
   });
 }
