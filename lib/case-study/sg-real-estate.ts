@@ -126,6 +126,59 @@ export const SG_CASE_STUDY = {
    * what caused the lease. As of 2026-09-25.
    */
   chatbotTracedSignedLeases: 8,
+
+  /**
+   * Since-launch view used by the /case-study page (2026-10-30 rewrite).
+   * Window: org created 2026-04-18 to `end`. Telegraph Commons only (lead /
+   * conversation propertyId = propertyId, or org-level with no property).
+   * Re-checked by scripts/case-study/verify-sg-numbers.ts.
+   */
+  sinceLaunch: {
+    start: "2026-04-18T00:00:00Z",
+    end: "2026-10-30T17:00:00Z",
+    label: "April 18 to October 30, 2026",
+    leads: 204,
+    leadsFromChatbot: 87,
+    leadsFromAppfolioApplications: 108,
+    leadsFromWebForm: 9,
+    chatSessions: 268,
+    chatSessionsCaptured: 123,
+    /**
+     * SIGNED leads linked (automatic AppFolio sync match) to a Telegraph
+     * Commons resident whose Lease starts in the window, with the lead
+     * record created on or before the lease start date.
+     */
+    tracedLeases: 38,
+    tracedLeasesFromChat: 11,
+    /** Sum of monthlyRent x 12 on those leases (termMonths is not synced). */
+    tracedAnnualRentUsd: 583080,
+    tracedAnnualRentFromChatUsd: 161580,
+    /** Mean days from the chat lead record to lease start, chat leases only. */
+    avgDaysChatToLeaseStart: 29,
+    residentsSynced: 180,
+    leasesSynced: 177,
+    searchClicks: 1514,
+    searchImpressions: 44786,
+    /** Mean of daily Search Console average position, by calendar month. */
+    searchPositionFirstMonth: 15.4,
+    searchPositionLatestMonth: 9.5,
+    /** Lead records by month and source, plus chat sessions. */
+    monthly: [
+      { month: "2026-04", chatbot: 0, appfolio: 0, webForm: 0, chats: 6 },
+      { month: "2026-05", chatbot: 10, appfolio: 0, webForm: 0, chats: 33 },
+      { month: "2026-06", chatbot: 17, appfolio: 34, webForm: 0, chats: 46 },
+      { month: "2026-07", chatbot: 38, appfolio: 31, webForm: 0, chats: 91 },
+      { month: "2026-08", chatbot: 12, appfolio: 24, webForm: 0, chats: 53 },
+      { month: "2026-09", chatbot: 4, appfolio: 8, webForm: 0, chats: 16 },
+      { month: "2026-10", chatbot: 6, appfolio: 11, webForm: 9, chats: 23 },
+    ] as ReadonlyArray<{
+      month: string;
+      chatbot: number;
+      appfolio: number;
+      webForm: number;
+      chats: number;
+    }>,
+  },
 } as const;
 
 export type SgCaseStudy = typeof SG_CASE_STUDY;
