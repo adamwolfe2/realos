@@ -646,7 +646,7 @@ async function generateAiAnalysis(
     // same reason ("surged 5440%" is a tracking start, not a result).
     const vsPrior = (pctChange: number | null | undefined) =>
       snapshot.kind !== "custom" && pctChange != null ? ` (${pctChange}% vs prior)` : "";
-    const prompt = `You are writing the narrative for a property's marketing & performance report. The reader is the owner or leasing director of ${snapshot.scope?.propertyName ?? "the property"}; they are not a marketer. Write plainly, name specific numbers, and say what they mean for leasing. If a number is 0 or missing, leave it out.
+    const prompt = `You are writing the narrative for a property's marketing & performance report, as the team that ran the marketing reporting results to the owner of ${snapshot.scope?.propertyName ?? "the property"}. The reader is not a marketer. Write plainly, name specific numbers, and say what they mean for leasing. Lead with what was delivered (leads captured, conversations answered, move-ins, search and AI presence). Where a number shows room to grow, state the number without adjectives ("named in 3 of 112 answers", never "ranks poorly" or "only 13") and put the improvement in the next steps. Short sentences. No em dashes. If a number is 0 or missing, leave it out.
 
 PERIOD: ${snapshot.kind} (${snapshot.periodStart} to ${snapshot.periodEnd})
 
@@ -654,8 +654,8 @@ KEY FIGURES:
 - New leads: ${snapshot.kpis.leads}${vsPrior(snapshot.kpiDeltas.leadsPct)}
 - Applications: ${snapshot.kpis.applications}
 - Organic search sessions: ${snapshot.kpis.organicSessions}${vsPrior(snapshot.kpiDeltas.organicSessionsPct)}
-- Leases started (move-ins) this period: ${life?.leasesSignedInPeriod ?? "n/a"}${snapshot.kind !== "custom" && life ? ` (prior period: ${life.priorLeasesSignedInPeriod})` : ""}
-- Leases started that trace back to a lead LeaseStack captured: ${snapshot.tracedSignedLeads ?? "n/a"}
+- Leases started (move-ins) this period, whole property, from AppFolio: ${life?.leasesSignedInPeriod ?? "n/a"}${snapshot.kind !== "custom" && life ? ` (prior period: ${life.priorLeasesSignedInPeriod})` : ""}
+- Of those move-ins, the number that trace back to a lead LeaseStack captured: ${snapshot.tracedSignedLeads ?? "n/a"} (move-ins are NOT a subset of the leads; never say leads "converted to" or "became" move-ins beyond this traced number)
 ${reputation && reputation.totalReviews > 0 ? `- Reputation: ${reputation.overallRating ?? "n/a"} stars across ${reputation.totalReviews} reviews and mentions (${reputation.positiveCount} positive, ${reputation.negativeCount} negative)` : ""}
 
 LEAD SOURCES:
@@ -679,7 +679,8 @@ combine, or infer a number that is not listed. Never describe leases as
 cost per lead, occupancy or rent. State what the numbers show; do not
 speculate about what they do not show, do not guess at causes or at
 sources that were not measured, and do not compare against a prior
-period unless one is listed above.
+period unless one is listed above. Never use the words "only", "poor",
+"lost" or "but"; give the number and the next step.
 
 Respond with ONLY valid JSON (no markdown, no explanation):
 {
@@ -695,12 +696,16 @@ Respond with ONLY valid JSON (no markdown, no explanation):
 }`;
 
     const { text } = await generateText({
-      model: anthropic("claude-haiku-4-5-20251001"),
+      // Opus: Haiku kept editorialising ("only", "ranks poorly", "losing
+      // visibility") and inventing lead-to-lease causation on a prospect-
+      // facing page, whatever the rules said. One call per report; the
+      // ceiling covers Opus's always-on thinking plus the JSON.
+      model: anthropic("claude-opus-5-5"),
       messages: [{ role: "user", content: prompt }],
-      maxOutputTokens: 1200,
+      maxOutputTokens: 4000,
       // A hung call would stall the whole weekly cron; the report ships
       // without AI analysis instead.
-      abortSignal: AbortSignal.timeout(30_000),
+      abortSignal: AbortSignal.timeout(60_000),
     });
     return parseAiAnalysis(text);
   } catch (err) {
