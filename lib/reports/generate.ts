@@ -265,6 +265,11 @@ export type ReportAeoStats = {
     cited: number;
     competitorCited: number;
   }>;
+  // Per-question breakdown — the exact prompts we ask every engine, with
+  // how often the answer named us. Ownership reads "asked by name: 100%,
+  // 'best student apartments in Berkeley': 3 of 112" and sees where the
+  // AEO work has to go. Most-asked first; capped at 8.
+  byQuestion?: Array<{ prompt: string; total: number; cited: number }>;
 };
 
 // ---------------------------------------------------------------------------
@@ -625,45 +630,52 @@ async function generateAiAnalysis(
 ): Promise<AiAnalysis | null> {
   if (!process.env.ANTHROPIC_API_KEY) return null;
   try {
-    const prompt = `You are analyzing property leasing marketing performance data. Provide 4-5 specific, actionable insights.
+    // The narrative is printed on the CLIENT one-pager, which never shows
+    // ad spend, cost per lead, tours, the funnel rungs, occupancy or
+    // rent-roll money (operators can also suppress money/turnover via
+    // hiddenSections AFTER generation, so the generator cannot know).
+    // Feed the model only figures that page renders, so the prose can
+    // never reintroduce a suppressed number.
+    const aeo = snapshot.aeoStats;
+    const chat = snapshot.chatbotStatsExtended ?? snapshot.chatbotStats;
+    const life = snapshot.lifecycleStats;
+    const reputation = snapshot.reputationStats;
+    const asking = snapshot.prospectQuestions;
+    const prompt = `You are writing the narrative for a property's marketing & performance report. The reader is the owner or leasing director of ${snapshot.scope?.propertyName ?? "the property"}; they are not a marketer. Write plainly, name specific numbers, and say what they mean for leasing. If a number is 0 or missing, leave it out.
 
 PERIOD: ${snapshot.kind} (${snapshot.periodStart} to ${snapshot.periodEnd})
 
-KEY METRICS:
-- Leads: ${snapshot.kpis.leads} (${snapshot.kpiDeltas.leadsPct != null ? snapshot.kpiDeltas.leadsPct + "% vs prior" : "no prior data"})
-- Tours: ${snapshot.kpis.tours} (${snapshot.kpiDeltas.toursPct != null ? snapshot.kpiDeltas.toursPct + "% vs prior" : "no prior data"})
+KEY FIGURES:
+- New leads: ${snapshot.kpis.leads} (${snapshot.kpiDeltas.leadsPct != null ? snapshot.kpiDeltas.leadsPct + "% vs prior" : "no prior data"})
 - Applications: ${snapshot.kpis.applications}
-- Ad spend: $${snapshot.kpis.adSpendUsd} (${snapshot.kpiDeltas.adSpendUsdPct != null ? snapshot.kpiDeltas.adSpendUsdPct + "% vs prior" : "no prior data"})
-- Cost per lead: ${snapshot.kpis.costPerLead != null ? "$" + snapshot.kpis.costPerLead : "n/a"}
-- Organic sessions: ${snapshot.kpis.organicSessions} (${snapshot.kpiDeltas.organicSessionsPct != null ? snapshot.kpiDeltas.organicSessionsPct + "% vs prior" : "no prior data"})
-
-FUNNEL:
-${snapshot.funnel.map((s) => `- ${s.stage}: ${s.count}`).join("\n")}
+- Organic search sessions: ${snapshot.kpis.organicSessions} (${snapshot.kpiDeltas.organicSessionsPct != null ? snapshot.kpiDeltas.organicSessionsPct + "% vs prior" : "no prior data"})
+- Leases started (move-ins) this period: ${life?.leasesSignedInPeriod ?? "n/a"} (prior period: ${life?.priorLeasesSignedInPeriod ?? "n/a"})
+- Leases started that trace back to a lead LeaseStack captured: ${snapshot.tracedSignedLeads ?? "n/a"}
+${reputation && reputation.totalReviews > 0 ? `- Reputation: ${reputation.overallRating ?? "n/a"} stars across ${reputation.totalReviews} reviews and mentions (${reputation.positiveCount} positive, ${reputation.negativeCount} negative)` : ""}
 
 LEAD SOURCES:
 ${snapshot.leadSources.map((s) => `- ${s.source}: ${s.count} (${s.pct}%)`).join("\n") || "- No leads this period"}
 
-AD PERFORMANCE:
-${snapshot.adPerformance.map((r) => `- ${r.platform}: $${r.spendUsd} spend, ${r.leads} leads, CPL ${r.cpl != null ? "$" + r.cpl : "n/a"}, conv rate ${r.conversionRate != null ? r.conversionRate + "%" : "n/a"}`).join("\n") || "- No ad data"}
-
-TOP SEARCH QUERIES:
-${snapshot.topQueries.slice(0, 5).map((q) => `- "${q.query}": ${q.clicks} clicks, pos ${q.position}`).join("\n") || "- No query data"}
-
-LEASING (AppFolio):
-- Leases started (move-ins) this period: ${snapshot.lifecycleStats?.leasesSignedInPeriod ?? "n/a"} (prior period: ${snapshot.lifecycleStats?.priorLeasesSignedInPeriod ?? "n/a"})
-- Leads LeaseStack captured that became residents this period: ${snapshot.tracedSignedLeads ?? "n/a"}
-- Occupancy: ${snapshot.occupancyStats?.occupancyPct != null ? snapshot.occupancyStats.occupancyPct + "%" : "n/a"}
+TOP GOOGLE SEARCH TERMS (times shown / clicks / avg position):
+${snapshot.topQueries.slice(0, 10).map((q) => `- "${q.query}": ${q.impressions} shown, ${q.clicks} clicks, pos ${q.position}`).join("\n") || "- No query data"}
 
 CHATBOT:
-- Conversations: ${snapshot.chatbotStats.conversations}, leads captured: ${snapshot.chatbotStats.leadsFromChat}
+- Conversations: ${chat.conversations}, leads captured: ${chat.leadsFromChat}
+${asking?.themes?.length ? asking.themes.slice(0, 8).map((t) => `- topic asked about in ${t.count} conversations: ${t.label}`).join("\n") : ""}
+
+AI SEARCH (ChatGPT/Claude/Gemini/Perplexity), how often answers named this property:
+${aeo ? `- ${aeo.cited} of ${aeo.totalChecks} answers named it; a competitor was named instead in ${aeo.competitorCited}` : "- No AI search checks"}
+${(aeo?.byQuestion ?? []).map((q) => `- "${q.prompt}": named in ${q.cited} of ${q.total}`).join("\n")}
+${(aeo?.topCompetitors ?? []).slice(0, 5).map((c) => `- competitor named: ${c.name} (${c.mentions})`).join("\n")}
 
 RULES: Use only the numbers listed above, exactly as given. Never add,
 combine, or infer a number that is not listed. Never describe leases as
-"signed"; they are leases started or move-ins.
+"signed"; they are leases started or move-ins. Never mention ad spend,
+cost per lead, occupancy or rent.
 
 Respond with ONLY valid JSON (no markdown, no explanation):
 {
-  "summary": "One sentence: what matters most this ${snapshot.kind}.",
+  "summary": "Two or three sentences: what happened this ${snapshot.kind} and what it means for leasing, with the numbers that prove it.",
   "actions": [
     {
       "priority": "high",
@@ -677,7 +689,7 @@ Respond with ONLY valid JSON (no markdown, no explanation):
     const { text } = await generateText({
       model: anthropic("claude-haiku-4-5-20251001"),
       messages: [{ role: "user", content: prompt }],
-      maxOutputTokens: 800,
+      maxOutputTokens: 1200,
       // A hung call would stall the whole weekly cron; the report ships
       // without AI analysis instead.
       abortSignal: AbortSignal.timeout(30_000),
@@ -1195,8 +1207,12 @@ export async function generateReportSnapshot(
       },
       _sum: { clicks: true, impressions: true },
       _avg: { position: true },
-      orderBy: { _sum: { clicks: "desc" } },
-      take: 10,
+      // Impressions, not clicks: the terms a property is SHOWN for but not
+      // clicked ("cheap apartments in berkeley", 1,369 impressions, 0
+      // clicks, position 3.5) are the SEO opportunity the report exists to
+      // surface. Clicks-first filled the pool with the brand name.
+      orderBy: { _sum: { impressions: "desc" } },
+      take: 15,
     }),
     // Insights opened within window
     prisma.insight.findMany({
@@ -2558,6 +2574,7 @@ async function buildAeoStats(
   const byEngine = [...byEngineMap.values()].sort((a, b) =>
     a.engine.localeCompare(b.engine),
   );
+  const byQuestion = aggregateAeoByQuestion(checks);
 
   return {
     totalChecks: checks.length,
@@ -2568,7 +2585,29 @@ async function buildAeoStats(
     topCompetitors,
     sampleCompetitorQueries: competitorSamples,
     byEngine,
+    byQuestion,
   };
+}
+
+// Pure + exported for tests. One row per distinct prompt: how many times
+// it ran and how many answers named the property. Most-asked first so a
+// prompt added mid-period (few runs) sits below the season-long ones.
+export function aggregateAeoByQuestion(
+  checks: Array<{ prompt: string; status: string }>,
+  limit = 8,
+): NonNullable<ReportAeoStats["byQuestion"]> {
+  const map = new Map<string, { prompt: string; total: number; cited: number }>();
+  for (const c of checks) {
+    const prompt = c.prompt.trim();
+    if (!prompt) continue;
+    const row = map.get(prompt) ?? { prompt, total: 0, cited: 0 };
+    row.total += 1;
+    if (c.status === "CITED") row.cited += 1;
+    map.set(prompt, row);
+  }
+  return [...map.values()]
+    .sort((a, b) => b.total - a.total || a.prompt.localeCompare(b.prompt))
+    .slice(0, limit);
 }
 
 async function buildReputationStats(

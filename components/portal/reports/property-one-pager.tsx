@@ -84,7 +84,7 @@ export function pageLabel(url: string): string {
 }
 
 export function PropertyOnePager({ snapshot, property, hero }: Props) {
-  const { kpis, occupancyStats, renewalStats, lifecycleStats, reputationStats, aeoStats, chatbotStatsExtended, leadSources, topPages } =
+  const { kpis, occupancyStats, renewalStats, lifecycleStats, reputationStats, aeoStats, chatbotStatsExtended, leadSources, topPages, aiAnalysis } =
     snapshot;
 
   // Presentation-only suppression (2026-08-13). Operator-chosen at
@@ -297,6 +297,13 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
   const hasProspect = Boolean(prospect && themeRows.length > 0);
   const showRenewals = !hideTurnover && Boolean(renewalStats);
   const engines = (aeoStats?.enginesUsed ?? []).map(engineLabel);
+  // AI results by question — only prompts that actually ran.
+  const aeoQuestionRows = (aeoStats?.byQuestion ?? []).filter((q) => q.total > 0).slice(0, 6);
+  // The narrative, written at generation time from this frozen snapshot
+  // (so it never drifts from the figures) and omitted when generation had
+  // no model. Three actions at most: one print row.
+  const aiSummary = aiAnalysis?.summary?.trim() || null;
+  const aiActions = (aiAnalysis?.actions ?? []).filter((a) => a.title && a.action).slice(0, 3);
   const pair = (both: boolean) =>
     `grid grid-cols-1 gap-4 ${both ? "sm:grid-cols-2 print:grid-cols-2" : ""}`;
 
@@ -401,6 +408,12 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
           </p>
         ) : null}
         <FigureBand figures={figures} />
+        {aiSummary ? (
+          <section className="mt-4 break-inside-avoid border-l-2 border-primary pl-4">
+            <div className="ls-eyebrow mb-1.5">In short</div>
+            <p className="text-[13px] leading-relaxed text-foreground">{aiSummary}</p>
+          </section>
+        ) : null}
       </div>
 
       {/* Lead sources and conversion, stacked, beside what prospects ask. */}
@@ -812,7 +825,69 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
                 </div>
               ) : null}
             </div>
+            {aeoQuestionRows.length > 0 ? (
+              <div className="mt-5 border-t border-primary/15 pt-4">
+                <div className="ls-eyebrow mb-2.5">
+                  What we ask the engines, and how often the answer named {property.name}
+                </div>
+                <div className="flex flex-col gap-2">
+                  {aeoQuestionRows.map((q, i) => (
+                    <div key={q.prompt} className="flex items-center gap-3 text-[12px]">
+                      <span className="min-w-0 flex-1 truncate font-medium text-muted-foreground" title={q.prompt}>
+                        &ldquo;{q.prompt}&rdquo;
+                      </span>
+                      <span className="flex h-2 w-[90px] flex-none overflow-hidden rounded-[1px] bg-muted">
+                        <span
+                          className="ls-view-grow-x block h-full rounded-[1px] bg-primary"
+                          style={
+                            {
+                              width: `${Math.round((q.cited / q.total) * 100)}%`,
+                              "--reveal-step": i,
+                            } as React.CSSProperties
+                          }
+                        />
+                      </span>
+                      <span className="w-14 flex-none text-right tabular-nums text-muted-foreground">
+                        {q.cited} / {q.total}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </section>
+        </div>
+      ) : null}
+
+      {/* Next steps: what the numbers above say to do. Same generation-time
+          narrative as "In short"; omitted together with it. */}
+      {aiActions.length > 0 ? (
+        <div className="ls-view-rise">
+          <Panel
+            className="mt-4"
+            title="Recommended next steps"
+            subtitle="Where the next leases come from, based on this period."
+          >
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 print:grid-cols-3">
+              {aiActions.map((a) => (
+                <div key={a.title} className="min-w-0 rounded-[2px] border border-border p-3.5">
+                  <div className="mb-1.5 flex items-start gap-2">
+                    <span
+                      className={`flex-none rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide ${
+                        a.priority === "high"
+                          ? "border-primary/40 bg-primary/5 text-primary"
+                          : "border-border text-muted-foreground"
+                      }`}
+                    >
+                      {a.priority}
+                    </span>
+                    <span className="text-[12px] font-semibold leading-snug text-foreground">{a.title}</span>
+                  </div>
+                  <p className="text-[11.5px] leading-relaxed text-muted-foreground">{a.action}</p>
+                </div>
+              ))}
+            </div>
+          </Panel>
         </div>
       ) : null}
 
