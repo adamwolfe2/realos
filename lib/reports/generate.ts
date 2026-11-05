@@ -641,15 +641,20 @@ async function generateAiAnalysis(
     const life = snapshot.lifecycleStats;
     const reputation = snapshot.reputationStats;
     const asking = snapshot.prospectQuestions;
+    // "custom" (all-time) reports compare against a prior window that
+    // predates tracking entirely; the one-pager hides those deltas for the
+    // same reason ("surged 5440%" is a tracking start, not a result).
+    const vsPrior = (pctChange: number | null | undefined) =>
+      snapshot.kind !== "custom" && pctChange != null ? ` (${pctChange}% vs prior)` : "";
     const prompt = `You are writing the narrative for a property's marketing & performance report. The reader is the owner or leasing director of ${snapshot.scope?.propertyName ?? "the property"}; they are not a marketer. Write plainly, name specific numbers, and say what they mean for leasing. If a number is 0 or missing, leave it out.
 
 PERIOD: ${snapshot.kind} (${snapshot.periodStart} to ${snapshot.periodEnd})
 
 KEY FIGURES:
-- New leads: ${snapshot.kpis.leads} (${snapshot.kpiDeltas.leadsPct != null ? snapshot.kpiDeltas.leadsPct + "% vs prior" : "no prior data"})
+- New leads: ${snapshot.kpis.leads}${vsPrior(snapshot.kpiDeltas.leadsPct)}
 - Applications: ${snapshot.kpis.applications}
-- Organic search sessions: ${snapshot.kpis.organicSessions} (${snapshot.kpiDeltas.organicSessionsPct != null ? snapshot.kpiDeltas.organicSessionsPct + "% vs prior" : "no prior data"})
-- Leases started (move-ins) this period: ${life?.leasesSignedInPeriod ?? "n/a"} (prior period: ${life?.priorLeasesSignedInPeriod ?? "n/a"})
+- Organic search sessions: ${snapshot.kpis.organicSessions}${vsPrior(snapshot.kpiDeltas.organicSessionsPct)}
+- Leases started (move-ins) this period: ${life?.leasesSignedInPeriod ?? "n/a"}${snapshot.kind !== "custom" && life ? ` (prior period: ${life.priorLeasesSignedInPeriod})` : ""}
 - Leases started that trace back to a lead LeaseStack captured: ${snapshot.tracedSignedLeads ?? "n/a"}
 ${reputation && reputation.totalReviews > 0 ? `- Reputation: ${reputation.overallRating ?? "n/a"} stars across ${reputation.totalReviews} reviews and mentions (${reputation.positiveCount} positive, ${reputation.negativeCount} negative)` : ""}
 
@@ -671,7 +676,10 @@ ${(aeo?.topCompetitors ?? []).slice(0, 5).map((c) => `- competitor named: ${c.na
 RULES: Use only the numbers listed above, exactly as given. Never add,
 combine, or infer a number that is not listed. Never describe leases as
 "signed"; they are leases started or move-ins. Never mention ad spend,
-cost per lead, occupancy or rent.
+cost per lead, occupancy or rent. State what the numbers show; do not
+speculate about what they do not show, do not guess at causes or at
+sources that were not measured, and do not compare against a prior
+period unless one is listed above.
 
 Respond with ONLY valid JSON (no markdown, no explanation):
 {
