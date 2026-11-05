@@ -297,8 +297,28 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
   const hasProspect = Boolean(prospect && themeRows.length > 0);
   const showRenewals = !hideTurnover && Boolean(renewalStats);
   const engines = (aeoStats?.enginesUsed ?? []).map(engineLabel);
-  // AI results by question — only prompts that actually ran.
-  const aeoQuestionRows = (aeoStats?.byQuestion ?? []).filter((q) => q.total > 0).slice(0, 6);
+  // AI results by question — only prompts that actually ran. Prompts that
+  // name the property ("Tell me about X") all land near 100% and say the
+  // same thing, so they collapse into one summary row; the general
+  // questions ("best student apartments in Berkeley") are the ones that
+  // show where the AEO work has to go, so they stay individual.
+  const ranQuestions = (aeoStats?.byQuestion ?? []).filter((q) => q.total > 0);
+  const nameRe = new RegExp(property.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+  const byNameQuestions = ranQuestions.filter((q) => nameRe.test(q.prompt));
+  const generalQuestions = ranQuestions.filter((q) => !nameRe.test(q.prompt)).slice(0, 4);
+  const aeoQuestionRows = [
+    ...generalQuestions.map((q) => ({ key: q.prompt, label: `\u201c${q.prompt}\u201d`, total: q.total, cited: q.cited })),
+    ...(byNameQuestions.length > 0
+      ? [
+          {
+            key: "by-name",
+            label: `Asked about ${property.name} by name (${byNameQuestions.length} ${byNameQuestions.length === 1 ? "question" : "questions"})`,
+            total: byNameQuestions.reduce((n, q) => n + q.total, 0),
+            cited: byNameQuestions.reduce((n, q) => n + q.cited, 0),
+          },
+        ]
+      : []),
+  ];
   // The narrative, written at generation time from this frozen snapshot
   // (so it never drifts from the figures) and omitted when generation had
   // no model. Three actions at most: one print row.
@@ -307,8 +327,12 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
   const pair = (both: boolean) =>
     `grid grid-cols-1 gap-4 ${both ? "sm:grid-cols-2 print:grid-cols-2" : ""}`;
 
+  // print:[zoom:…] — the client PDF is two US Letter pages by contract (the
+  // link is also the printout). The narrative, the AI-by-question rows and
+  // the next steps pushed it to three; a print-only scale brings it back
+  // without hiding anything. Screen is untouched.
   return (
-    <div className="mx-auto w-full max-w-[880px] rounded-[2px] border border-border bg-card p-4 text-foreground shadow-sm sm:p-6 print:border-0 print:p-6 print:shadow-none">
+    <div className="mx-auto w-full max-w-[880px] rounded-[2px] border border-border bg-card p-4 text-foreground shadow-sm sm:p-6 print:border-0 print:p-5 print:shadow-none print:[zoom:0.8]">
       {/* Cover. Bleeds to the card edges (negative margins cancel the card
           padding) so it reads as the report's title page, not a dashboard
           strip. Property name is the headline; the document type is a label.
@@ -408,10 +432,32 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
           </p>
         ) : null}
         <FigureBand figures={figures} />
-        {aiSummary ? (
+        {aiSummary || aiActions.length > 0 ? (
           <section className="mt-4 break-inside-avoid border-l-2 border-primary pl-4">
-            <div className="ls-eyebrow mb-1.5">In short</div>
-            <p className="text-[13px] leading-relaxed text-foreground">{aiSummary}</p>
+            {aiSummary ? (
+              <>
+                <div className="ls-eyebrow mb-1.5">In short</div>
+                <p className="text-[13px] leading-relaxed text-foreground">{aiSummary}</p>
+              </>
+            ) : null}
+            {aiActions.length > 0 ? (
+              <div className={aiSummary ? "mt-3" : ""}>
+                <div className="ls-eyebrow mb-1.5">Next steps</div>
+                <ol className="flex flex-col gap-1 text-[12px] leading-snug text-muted-foreground">
+                  {aiActions.map((a) => (
+                    <li key={a.title} className="flex gap-2">
+                      <span
+                        className={`mt-[3px] h-1.5 w-1.5 flex-none rounded-full ${a.priority === "high" ? "bg-primary" : "bg-muted-foreground/40"}`}
+                        aria-hidden="true"
+                      />
+                      <span>
+                        <b className="font-semibold text-foreground">{a.title}.</b> {a.action}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ) : null}
           </section>
         ) : null}
       </div>
@@ -832,9 +878,9 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
                 </div>
                 <div className="flex flex-col gap-2">
                   {aeoQuestionRows.map((q, i) => (
-                    <div key={q.prompt} className="flex items-center gap-3 text-[12px]">
-                      <span className="min-w-0 flex-1 truncate font-medium text-muted-foreground" title={q.prompt}>
-                        &ldquo;{q.prompt}&rdquo;
+                    <div key={q.key} className="flex items-center gap-3 text-[12px]">
+                      <span className="min-w-0 flex-1 truncate font-medium text-muted-foreground" title={q.label}>
+                        {q.label}
                       </span>
                       <span className="flex h-2 w-[90px] flex-none overflow-hidden rounded-[1px] bg-muted">
                         <span
@@ -847,7 +893,7 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
                           }
                         />
                       </span>
-                      <span className="w-14 flex-none text-right tabular-nums text-muted-foreground">
+                      <span className="w-16 flex-none whitespace-nowrap text-right tabular-nums text-muted-foreground">
                         {q.cited} / {q.total}
                       </span>
                     </div>
@@ -856,38 +902,6 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
               </div>
             ) : null}
           </section>
-        </div>
-      ) : null}
-
-      {/* Next steps: what the numbers above say to do. Same generation-time
-          narrative as "In short"; omitted together with it. */}
-      {aiActions.length > 0 ? (
-        <div className="ls-view-rise">
-          <Panel
-            className="mt-4"
-            title="Recommended next steps"
-            subtitle="Where the next leases come from, based on this period."
-          >
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 print:grid-cols-3">
-              {aiActions.map((a) => (
-                <div key={a.title} className="min-w-0 rounded-[2px] border border-border p-3.5">
-                  <div className="mb-1.5 flex items-start gap-2">
-                    <span
-                      className={`flex-none rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide ${
-                        a.priority === "high"
-                          ? "border-primary/40 bg-primary/5 text-primary"
-                          : "border-border text-muted-foreground"
-                      }`}
-                    >
-                      {a.priority}
-                    </span>
-                    <span className="text-[12px] font-semibold leading-snug text-foreground">{a.title}</span>
-                  </div>
-                  <p className="text-[11.5px] leading-relaxed text-muted-foreground">{a.action}</p>
-                </div>
-              ))}
-            </div>
-          </Panel>
         </div>
       ) : null}
 

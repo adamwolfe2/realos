@@ -33,8 +33,9 @@ describe("aggregateAeoByQuestion", () => {
 describe("one-pager narrative + AI-by-question", () => {
   it("drops zero rows and gates every new block on data being present", () => {
     expect(onePager).toContain("(aeoStats?.byQuestion ?? []).filter((q) => q.total > 0)");
+    expect(onePager).toContain("(aeoStats?.byQuestion ?? []).filter((q) => q.total > 0)");
     expect(onePager).toContain("{aeoQuestionRows.length > 0 ? (");
-    expect(onePager).toContain("{aiSummary ? (");
+    expect(onePager).toContain("{aiSummary || aiActions.length > 0 ? (");
     expect(onePager).toContain("{aiActions.length > 0 ? (");
   });
 });
