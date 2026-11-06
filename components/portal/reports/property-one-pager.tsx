@@ -195,7 +195,8 @@ export function PropertyOnePager({ snapshot, property, hero: heroProp }: Props) 
     chatConversations > 0 && lsLeads > 0
       ? {
           lead: `${plural(chatConversations, "conversation", "conversations")} answered. ${plural(lsLeads, "lead", "leads")} captured.`,
-          proof: traced ? `${num(traced)} became ${traced === 1 ? "a resident" : "residents"}.` : null,
+          // No resident count in the headline (Adam 11-06: 13 reads weak).
+          proof: null,
         }
       : traced && leasesSigned
       ? {
@@ -294,7 +295,6 @@ export function PropertyOnePager({ snapshot, property, hero: heroProp }: Props) 
               ? `plus ${num(kpis.leadsFromAppfolio)} applicants synced from AppFolio`
               : undefined,
           },
-          ...(traced ? [{ value: num(traced), label: "Became residents" }] : []),
           ...propertyFigures.filter(
             (f) => f.label.startsWith("Occupancy") || f.label === "Monthly rent roll",
           ),
