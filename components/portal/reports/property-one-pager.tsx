@@ -354,7 +354,7 @@ export function PropertyOnePager({ snapshot, property, hero: heroProp }: Props) 
   // the next steps pushed it to three; a print-only scale brings it back
   // without hiding anything. Screen is untouched.
   return (
-    <div className="mx-auto w-full max-w-[880px] rounded-[2px] border border-border bg-card p-4 text-foreground shadow-sm sm:p-6 print:border-0 print:p-5 print:shadow-none print:[zoom:0.8]">
+    <div className="mx-auto w-full max-w-[880px] rounded-[2px] border border-border bg-card p-4 text-foreground shadow-sm sm:p-6 print:border-0 print:p-5 print:shadow-none print:[zoom:0.76]">
       {/* Cover. Bleeds to the card edges (negative margins cancel the card
           padding) so it reads as the report's title page, not a dashboard
           strip. Property name is the headline; the document type is a label.

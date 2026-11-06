@@ -90,7 +90,12 @@ export async function generateMetadata({
     return { title: "Performance report", robots: { index: false, follow: false } };
   }
 
-  const title = `${data.property.name} | Marketing & Performance Report`;
+  // Neutral variant (hiddenSections "identity"): the tab title must not
+  // name the property either.
+  const displayName = data.snapshot.hiddenSections?.includes("identity")
+    ? (data.snapshot.scope?.propertyName ?? "Property")
+    : data.property.name;
+  const title = `${displayName} | Marketing & Performance Report`;
   const description = `${periodLabel(data.snapshot)}. Leasing, traffic, and reputation performance, prepared by LeaseStack.`;
 
   return {
