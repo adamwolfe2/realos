@@ -3264,7 +3264,11 @@ async function computeSpeedToApply(
   periodStart: Date,
   periodEnd: Date,
 ): Promise<{ medianDays: number; applicants: number } | undefined> {
-  if (!scope.propertyId) return undefined;
+  // Org-wide reports (the all-time script) scope to ACTIVE properties, like
+  // the other lifecycle queries.
+  const where = scope.propertyId
+    ? { propertyId: scope.propertyId }
+    : { property: { lifecycle: "ACTIVE" as const } };
   const phone = (s?: string | null) => {
     const d = (s ?? "").replace(/\D/g, "");
     return d.length >= 10 ? d.slice(-10) : null;
@@ -3272,12 +3276,12 @@ async function computeSpeedToApply(
   const [captured, apps] = await Promise.all([
     prisma.lead.findMany({
       // Chatbot leads only: the tile is labelled "From chat to application".
-      where: { orgId, propertyId: scope.propertyId, externalSystem: null, source: LeadSource.CHATBOT, createdAt: { gte: periodStart, lt: periodEnd } },
+      where: { orgId, ...where, externalSystem: null, source: LeadSource.CHATBOT, createdAt: { gte: periodStart, lt: periodEnd } },
       select: { email: true, phone: true, createdAt: true },
     }),
     prisma.application.findMany({
       // No periodEnd cap: a lead captured in the window may apply after it.
-      where: { propertyId: scope.propertyId, lead: { orgId }, appliedAt: { gte: periodStart } },
+      where: { ...where, lead: { orgId }, appliedAt: { gte: periodStart } },
       select: { appliedAt: true, lead: { select: { email: true, phone: true } } },
     }),
   ]);
