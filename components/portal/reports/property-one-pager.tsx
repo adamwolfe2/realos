@@ -358,9 +358,10 @@ export function PropertyOnePager({ snapshot, property, hero: heroProp }: Props) 
   // print:[zoom:…] — the client PDF is two US Letter pages by contract (the
   // link is also the printout). The narrative, the AI-by-question rows and
   // the next steps pushed it to three; a print-only scale brings it back
-  // without hiding anything. Screen is untouched.
+  // without hiding anything (0.7 since the taller momentum chart and search
+  // totals, verified 2 pages on TC 11-06). Screen is untouched.
   return (
-    <div className="mx-auto w-full max-w-[880px] rounded-[2px] border border-border bg-card p-4 text-foreground shadow-sm sm:p-6 print:border-0 print:p-5 print:shadow-none print:[zoom:0.76]">
+    <div className="mx-auto w-full max-w-[880px] rounded-[2px] border border-border bg-card p-4 text-foreground shadow-sm sm:p-6 print:border-0 print:p-5 print:shadow-none print:[zoom:0.7]">
       {/* Cover. Bleeds to the card edges (negative margins cancel the card
           padding) so it reads as the report's title page, not a dashboard
           strip. Property name is the headline; the document type is a label.
