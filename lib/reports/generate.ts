@@ -955,10 +955,16 @@ export async function generateReportSnapshot(
   const now = options.now ?? new Date();
   const propertyId = options.propertyId ?? null;
   const scope = await buildScope(orgId, propertyId);
+  // Whole names plus every word of five letters or more ("commons"), so
+  // a misspelt quote ("Telegrsph Commons") or a street that shares the
+  // name ("telegraph ave") does not leak the identity.
   const brandTokens = options.anonymizeAs
     ? [scope.propertyName, scope.propertySlug, scope.brandName]
         .filter((s): s is string => !!s)
-        .flatMap((s) => [s.toLowerCase(), s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()])
+        .flatMap((s) => {
+          const flat = s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+          return [s.toLowerCase(), flat, ...flat.split(" ").filter((w) => w.length >= 5)];
+        })
         .filter((s) => s.length > 3)
     : [];
   const namesBrand = (text: string) => {

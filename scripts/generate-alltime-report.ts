@@ -10,7 +10,9 @@
 // so a wrong .env.local (staging vs prod DATABASE_URL) is visible before
 // anything is touched.
 //
-//   pnpm exec tsx --env-file=.env.local scripts/generate-alltime-report.ts --org <slug>                 (dry run)
+// Run with TZ=UTC like production: lease start dates are calendar dates at
+// midnight UTC and the month buckets use local time.
+//   TZ=UTC pnpm exec tsx --env-file=.env.local scripts/generate-alltime-report.ts --org <slug>                 (dry run)
 //   pnpm exec tsx --env-file=.env.local scripts/generate-alltime-report.ts --org <slug> --property <slug>
 //   pnpm exec tsx --env-file=.env.local scripts/generate-alltime-report.ts --org <slug> --write          (persists)
 
