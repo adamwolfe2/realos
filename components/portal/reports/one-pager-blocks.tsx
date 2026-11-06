@@ -230,33 +230,60 @@ const MONTHS = [
 // every non-zero bar so the chart reads in print without a y-axis.
 export function MonthBars({
   months,
+  overlay,
+  overlayLabel,
 }: {
   months: Array<{ month: string; count: number }>;
+  // Optional stacked segment per month (same keys), drawn solid at the
+  // base of the bar, e.g. residents who started as a chatbot conversation.
+  overlay?: Array<{ month: string; count: number }>;
+  overlayLabel?: string;
 }) {
   const max = Math.max(1, ...months.map((m) => m.count));
+  const over = new Map((overlay ?? []).map((o) => [o.month, o.count]));
+  const hasOverlay = [...over.values()].some((n) => n > 0);
   return (
     <div>
-      <div className="flex h-28 items-end gap-1.5">
-        {months.map((m, i) => (
-          <div
-            key={m.month}
-            className="flex h-full flex-1 flex-col justify-end"
-          >
-            <span className="mb-0.5 text-center text-[10px] font-semibold tabular-nums text-muted-foreground">
-              {m.count > 0 ? m.count : ""}
-            </span>
-            <span
-              className={`ls-view-grow-y block min-h-[2px] rounded-t-[1px] ${m.count === max ? "bg-primary" : "bg-primary/30"}`}
-              style={
-                {
-                  height: `${Math.round((m.count / max) * 80)}%`,
-                  "--reveal-step": i * 0.4,
-                } as React.CSSProperties
-              }
-            />
-          </div>
-        ))}
+      <div className="flex h-40 items-end gap-1.5 print:h-36">
+        {months.map((m, i) => {
+          const o = Math.min(over.get(m.month) ?? 0, m.count);
+          return (
+            <div
+              key={m.month}
+              className="flex h-full flex-1 flex-col justify-end"
+            >
+              <span className="mb-0.5 text-center text-[10px] font-semibold tabular-nums text-muted-foreground">
+                {m.count > 0 ? m.count : ""}
+              </span>
+              <span
+                className="ls-view-grow-y flex min-h-[2px] flex-col justify-end overflow-hidden rounded-t-[1px] bg-primary/30"
+                style={
+                  {
+                    height: `${Math.round((m.count / max) * 84)}%`,
+                    "--reveal-step": i * 0.4,
+                  } as React.CSSProperties
+                }
+              >
+                {o > 0 ? (
+                  <span
+                    className="block w-full bg-primary"
+                    style={{ height: `${Math.round((o / m.count) * 100)}%` }}
+                    title={`${o} ${overlayLabel ?? ""}`.trim()}
+                  />
+                ) : null}
+              </span>
+            </div>
+          );
+        })}
       </div>
+      {hasOverlay && overlayLabel ? (
+        <div className="mt-2 flex items-center gap-1.5 text-[10.5px] font-medium text-muted-foreground">
+          <span aria-hidden className="inline-block h-2 w-2 rounded-[1px] bg-primary" />
+          {overlayLabel}
+          <span aria-hidden className="ml-2 inline-block h-2 w-2 rounded-[1px] bg-primary/30" />
+          All leases started
+        </div>
+      ) : null}
       <div className="mt-1.5 flex gap-1.5 border-t border-border pt-1.5">
         {months.map((m) => (
           <span

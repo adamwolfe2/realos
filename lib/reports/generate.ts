@@ -266,6 +266,18 @@ export type ReportAeoStats = {
     cited: number;
     competitorCited: number;
   }>;
+  // One consistent measure across the season: did the answer text name the
+  // property. Split by whether the prompt itself named it (where being
+  // named is table stakes) or asked a general housing question (where it
+  // is the win). `status` mixes two eras (name match until Aug 14, site
+  // link after), so the client page uses these instead.
+  byName?: { checks: number; named: number };
+  general?: {
+    checks: number;
+    named: number;
+    first?: { label: string; checks: number; named: number };
+    last?: { label: string; checks: number; named: number };
+  };
   // Per-question breakdown — the exact prompts we ask every engine, with
   // how often the answer named us. Ownership reads "asked by name: 100%,
   // 'best student apartments in Berkeley': 3 of 112" and sees where the
@@ -424,6 +436,18 @@ export type ReportSnapshot = {
   // 11 of 53 new residents started as a chatbot conversation". Absent
   // when no month has at least two. Snapshots before 2026-11-06 lack it.
   chatbotFirstPeak?: { month: string; label: string; movedIn: number; chatbotFirst: number };
+  // Traced residents per month, aligned to lifecycleStats.monthlySignedLast12,
+  // so the momentum chart can stack "started as a chatbot conversation".
+  chatbotFirstByMonth?: Array<{ month: string; count: number }>;
+  // Google Search Console totals for the window (every query, not the top
+  // rows): what the report leads with in Site traffic.
+  searchStats?: {
+    impressions: number;
+    clicks: number;
+    brandedImpressions: number;
+    brandedClicks: number;
+    brandedPosition: number | null;
+  };
   leadSources: ReportLeadSource[];
   adPerformance: ReportAdRow[];
   topPages: ReportTopPage[];
@@ -655,7 +679,7 @@ async function generateAiAnalysis(
     // same reason ("surged 5440%" is a tracking start, not a result).
     const vsPrior = (pctChange: number | null | undefined) =>
       snapshot.kind !== "custom" && pctChange != null ? ` (${pctChange}% vs prior)` : "";
-    const prompt = `You are writing the narrative for a property's marketing & performance report, as the team that ran the marketing reporting results to the owner of ${snapshot.scope?.propertyName ?? "the property"}. The reader is not a marketer. Write plainly, name specific numbers, and say what they mean for leasing. Lead with what was delivered (leads captured, conversations answered, move-ins, search presence). The AI search section of the report speaks for itself; do not mention AI answers. Where a number shows room to grow, state the number without adjectives ("named in 3 of 112 answers", never "ranks poorly" or "only 13") and put the improvement in the next steps. Short sentences. No em dashes. If a number is 0 or missing, leave it out.
+    const prompt = `You are writing the narrative for a property's marketing & performance report, as the team that ran the marketing reporting results to the owner of ${snapshot.scope?.propertyName ?? "the property"}. The reader is not a marketer. Write plainly, name specific numbers, and say what they mean for leasing. Lead with what was delivered (leads captured, conversations answered, move-ins, search presence). Mention AI search only with the two AI figures given below, if any. Where a number shows room to grow, state the number without adjectives ("named in 3 of 112 answers", never "ranks poorly" or "only 13") and put the improvement in the next steps. Short sentences. No em dashes. If a number is 0 or missing, leave it out.
 
 PERIOD: ${snapshot.kind} (${snapshot.periodStart} to ${snapshot.periodEnd})
 
@@ -670,6 +694,8 @@ ${reputation && reputation.totalReviews > 0 ? `- Reputation: ${reputation.overal
 LEAD SOURCES:
 ${snapshot.leadSources.map((s) => `- ${s.source}: ${s.count} (${s.pct}%)`).join("\n") || "- No leads this period"}
 
+${snapshot.searchStats ? `GOOGLE SEARCH TOTALS: shown ${snapshot.searchStats.impressions} times, ${snapshot.searchStats.clicks} clicks; searches for the property by name: ${snapshot.searchStats.brandedImpressions} shown, ${snapshot.searchStats.brandedClicks} clicks${snapshot.searchStats.brandedPosition != null ? `, average position ${snapshot.searchStats.brandedPosition}` : ""}` : ""}
+${snapshot.aeoStats?.byName && snapshot.aeoStats.general ? `AI SEARCH (ChatGPT, Claude, Gemini, Perplexity): asked about the property by name, the answer named it in ${snapshot.aeoStats.byName.named} of ${snapshot.aeoStats.byName.checks} answers; general housing questions named it in ${snapshot.aeoStats.general.named} of ${snapshot.aeoStats.general.checks}${snapshot.aeoStats.general.first && snapshot.aeoStats.general.last ? ` (${snapshot.aeoStats.general.first.named} of ${snapshot.aeoStats.general.first.checks} in ${snapshot.aeoStats.general.first.label}, ${snapshot.aeoStats.general.last.named} of ${snapshot.aeoStats.general.last.checks} in ${snapshot.aeoStats.general.last.label})` : ""}` : ""}
 TOP GOOGLE SEARCH TERMS (times shown / clicks / avg position):
 ${snapshot.topQueries.slice(0, 10).map((q) => `- "${q.query}": ${q.impressions} shown, ${q.clicks} clicks, pos ${q.position}`).join("\n") || "- No query data"}
 
@@ -1811,6 +1837,24 @@ export async function generateReportSnapshot(
     allQueryRows.map(q => ({ query: q.query, clicks: q._sum.clicks ?? 0, impressions: q._sum.impressions ?? 0 })),
     scope.brandName ? [scope.brandName.toLowerCase()] : [],
   );
+  const brandLower = (scope.brandName ?? scope.propertyName ?? "").toLowerCase();
+  const isBrandedQuery = (q: string) => brandLower.length > 3 && q.toLowerCase().includes(brandLower);
+  const searchStats: ReportSnapshot["searchStats"] = (() => {
+    if (allQueryRows.length === 0) return undefined;
+    let impressions = 0, clicks = 0, bImp = 0, bClk = 0;
+    for (const q of allQueryRows) {
+      const imp = q._sum.impressions ?? 0, clk = q._sum.clicks ?? 0;
+      impressions += imp; clicks += clk;
+      if (isBrandedQuery(q.query)) { bImp += imp; bClk += clk; }
+    }
+    // Impression-weighted position over the branded rows we have positions for.
+    const brandedRows = topQueriesRows.filter((r) => isBrandedQuery(r.query) && r._avg.position);
+    const w = brandedRows.reduce((s, r) => s + (r._sum.impressions ?? 0), 0);
+    const brandedPosition = w > 0
+      ? Math.round((brandedRows.reduce((s, r) => s + (r._avg.position ?? 0) * (r._sum.impressions ?? 0), 0) / w) * 10) / 10
+      : null;
+    return { impressions, clicks, brandedImpressions: bImp, brandedClicks: bClk, brandedPosition };
+  })();
 
   // -------------------------------------------------------------------------
   // 2026 sections — reputation, occupancy, renewals.
@@ -1860,6 +1904,7 @@ export async function generateReportSnapshot(
       scope.propertyId,
       periodStart,
       periodEnd,
+      scope.brandName ?? scope.propertyName,
     ).catch(sectionFailed("buildAeoStats")),
     buildContentStats(
       orgId,
@@ -2021,6 +2066,8 @@ export async function generateReportSnapshot(
     kpiDeltas,
     funnel,
     chatbotFirstPeak,
+    chatbotFirstByMonth: (monthlySignedLast12 ?? []).map(({ month }) => ({ month, count: tracedByMonth.get(month) ?? 0 })),
+    searchStats,
     tracedSignedLeads:
       tracedSignedLeadsCount > 0 ? tracedSignedLeadsCount : undefined,
     leadSources,
@@ -2580,6 +2627,7 @@ async function buildAeoStats(
   propertyId: string | null,
   periodStart: Date,
   periodEnd: Date,
+  brandName: string | null = null,
 ): Promise<ReportAeoStats | undefined> {
   const propertyClause = propertyId ? { propertyId } : {};
   const checks = await prisma.aeoCitationCheck.findMany({
@@ -2593,9 +2641,48 @@ async function buildAeoStats(
       status: true,
       prompt: true,
       competitorsCited: true,
+      responseText: true,
+      queryRunAt: true,
     },
   });
   if (checks.length === 0) return undefined;
+
+  // Named-in-answer, split by prompt kind (see ReportAeoStats.byName).
+  let byName: ReportAeoStats["byName"];
+  let general: ReportAeoStats["general"];
+  if (brandName) {
+    const brandRe = new RegExp(
+      brandName.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s*"),
+      "i",
+    );
+    const names = (t: string | null) => brandRe.test(t ?? "");
+    const branded = checks.filter((c) => brandRe.test(c.prompt));
+    const gen = checks.filter((c) => !brandRe.test(c.prompt));
+    byName = { checks: branded.length, named: branded.filter((c) => names(c.responseText)).length };
+    const byMonth = new Map<string, { checks: number; named: number }>();
+    for (const c of gen) {
+      const key = c.queryRunAt.toISOString().slice(0, 7);
+      const row = byMonth.get(key) ?? { checks: 0, named: 0 };
+      row.checks += 1;
+      if (names(c.responseText)) row.named += 1;
+      byMonth.set(key, row);
+    }
+    const months = [...byMonth.entries()].filter(([, v]) => v.checks >= 5).sort(([a], [b]) => a.localeCompare(b));
+    const label = (key: string) => {
+      const [y, m] = key.split("-").map(Number);
+      return new Date(Date.UTC(y, m - 1, 1)).toLocaleString("en-US", { month: "long", timeZone: "UTC" });
+    };
+    general = {
+      checks: gen.length,
+      named: gen.filter((c) => names(c.responseText)).length,
+      ...(months.length >= 2
+        ? {
+            first: { label: label(months[0][0]), ...months[0][1] },
+            last: { label: label(months[months.length - 1][0]), ...months[months.length - 1][1] },
+          }
+        : {}),
+    };
+  }
 
   let cited = 0;
   let competitorCited = 0;
@@ -2669,6 +2756,8 @@ async function buildAeoStats(
     sampleCompetitorQueries: competitorSamples,
     byEngine,
     byQuestion,
+    byName,
+    general,
   };
 }
 
