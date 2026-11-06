@@ -161,6 +161,7 @@ export function PropertyOnePager({ snapshot, property, hero: heroProp }: Props) 
       : null,
   ].filter(Boolean);
   const trafficClaim = trafficClauses.length ? `${trafficClauses.join(", ")}.` : null;
+  const search = snapshot.searchStats;
 
   const chatConversations = chatbotStatsExtended?.conversations ?? 0;
   const chatLeads = chatbotStatsExtended?.leadsFromChat ?? 0;
@@ -341,6 +342,11 @@ export function PropertyOnePager({ snapshot, property, hero: heroProp }: Props) 
   const hasProspect = Boolean(prospect && themeRows.length > 0);
   const showRenewals = !hideTurnover && Boolean(renewalStats);
   const engines = (aeoStats?.enginesUsed ?? []).map(engineLabel);
+  // Consistent named-in-answer split (snapshots from 2026-11-06 on).
+  const aeoNamed =
+    aeoStats?.byName && aeoStats.general && aeoStats.byName.checks + aeoStats.general.checks > 0
+      ? { byName: aeoStats.byName, general: aeoStats.general }
+      : null;
   // The narrative, written at generation time from this frozen snapshot
   // (so it never drifts from the figures) and omitted when generation had
   // no model. Three actions at most: one print row.
@@ -618,7 +624,11 @@ export function PropertyOnePager({ snapshot, property, hero: heroProp }: Props) 
           >
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-[1fr_190px] sm:items-end print:grid-cols-[1fr_190px] print:items-end">
               {monthlySigned.length ? (
-                <MonthBars months={monthlySigned} />
+                <MonthBars
+                  months={monthlySigned}
+                  overlay={snapshot.chatbotFirstByMonth}
+                  overlayLabel="Started as a chatbot conversation"
+                />
               ) : (
                 <div />
               )}
@@ -664,6 +674,30 @@ export function PropertyOnePager({ snapshot, property, hero: heroProp }: Props) 
             title="Site traffic"
             subtitle={trafficClaim ?? "Sessions in period."}
           >
+            {search ? (
+              <div className="mb-4">
+                <FigureRow
+                  figures={[
+                    { value: num(search.impressions), label: "Times shown in Google" },
+                    { value: num(search.clicks), label: "Clicks from Google" },
+                    ...(organicSessions > 0
+                      ? [{ value: num(organicSessions), label: "Organic sessions" }]
+                      : []),
+                  ]}
+                />
+                {search.brandedImpressions > 0 ? (
+                  <p className="mt-2.5 text-[12px] leading-snug text-muted-foreground">
+                    Searches for the property by name:{" "}
+                    <b className="font-semibold text-foreground">{num(search.brandedImpressions)} shown</b>,{" "}
+                    <b className="font-semibold text-foreground">{num(search.brandedClicks)} clicks</b>
+                    {search.brandedClicks > 0
+                      ? ` (${pct((search.brandedClicks / search.brandedImpressions) * 100)} click-through)`
+                      : ""}
+                    {search.brandedPosition != null ? `, average position ${search.brandedPosition}` : ""}.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
             <div
               className={`grid grid-cols-1 gap-6 ${queryRows.length ? "sm:grid-cols-2 print:grid-cols-2" : ""}`}
             >
@@ -844,54 +878,108 @@ export function PropertyOnePager({ snapshot, property, hero: heroProp }: Props) 
             </p>
             <div className="mt-4">
               <FigureRow
-                figures={[
-                  {
-                    value: num(aeoStats.totalChecks),
-                    label: "AI answers checked",
-                  },
-                  {
-                    value: num(aeoStats.cited),
-                    label: "Answers citing this property",
-                  },
-                  {
-                    value: num(aeoStats.competitorCited),
-                    label: "Answers naming a competitor",
-                  },
-                ]}
+                figures={
+                  aeoNamed
+                    ? [
+                        { value: num(aeoStats.totalChecks), label: "AI answers checked" },
+                        {
+                          value: pct((aeoNamed.byName.named / Math.max(1, aeoNamed.byName.checks)) * 100),
+                          label: "Named it when asked about the property",
+                        },
+                        {
+                          value: num(aeoNamed.general.named),
+                          label: "General housing answers that named it",
+                        },
+                      ]
+                    : [
+                        { value: num(aeoStats.totalChecks), label: "AI answers checked" },
+                        { value: num(aeoStats.cited), label: "Answers citing this property" },
+                        { value: num(aeoStats.competitorCited), label: "Answers naming a competitor" },
+                      ]
+                }
               />
             </div>
             <div className="mt-5 grid grid-cols-1 gap-7 border-t border-primary/15 pt-4 sm:grid-cols-[1.25fr_1fr] print:grid-cols-[1.25fr_1fr]">
               <div>
-                <div className="ls-eyebrow mb-2.5">Citations by engine</div>
-                <div className="flex flex-col gap-2.5">
-                  {(aeoStats.byEngine ?? []).map((row, i) => (
-                    <div
-                      key={row.engine}
-                      className="flex items-center gap-3 text-[12px]"
-                    >
-                      <span className="flex h-[17px] w-[17px] flex-none items-center justify-center">
-                        <EngineMark engine={row.engine} />
-                      </span>
-                      <span className="w-[74px] font-medium text-foreground">
-                        {engineLabel(row.engine)}
-                      </span>
-                      <span className="h-2 flex-1 overflow-hidden rounded-[1px] bg-muted">
-                        <span
-                          className="ls-view-grow-x block h-full rounded-[1px] bg-primary"
-                          style={
-                            {
-                              width: `${row.total ? Math.round((row.cited / row.total) * 100) : 0}%`,
-                              "--reveal-step": i,
-                            } as React.CSSProperties
-                          }
-                        />
-                      </span>
-                      <span className="w-14 text-right tabular-nums text-muted-foreground">
-                        {row.cited} / {row.total}
-                      </span>
+                {aeoNamed ? (
+                  <>
+                    <div className="ls-eyebrow mb-2.5">How often the answer named the property</div>
+                    <div className="flex flex-col gap-3">
+                      {[
+                        {
+                          key: "by-name",
+                          label: "Asked about the property by name",
+                          named: aeoNamed.byName.named,
+                          checks: aeoNamed.byName.checks,
+                          note: null as string | null,
+                        },
+                        {
+                          key: "general",
+                          label: "General questions about housing here",
+                          named: aeoNamed.general.named,
+                          checks: aeoNamed.general.checks,
+                          note:
+                            aeoNamed.general.first && aeoNamed.general.last
+                              ? `${aeoNamed.general.first.named} of ${aeoNamed.general.first.checks} in ${aeoNamed.general.first.label}, ${aeoNamed.general.last.named} of ${aeoNamed.general.last.checks} in ${aeoNamed.general.last.label}`
+                              : null,
+                        },
+                      ]
+                        .filter((r) => r.checks > 0)
+                        .map((r, i) => (
+                          <div key={r.key} className="text-[12px]">
+                            <div className="flex items-center gap-3">
+                              <span className="min-w-0 flex-1 truncate font-medium text-foreground">{r.label}</span>
+                              <span className="h-2 w-[120px] flex-none overflow-hidden rounded-[1px] bg-muted">
+                                <span
+                                  className="ls-view-grow-x block h-full rounded-[1px] bg-primary"
+                                  style={
+                                    {
+                                      width: `${Math.round((r.named / r.checks) * 100)}%`,
+                                      "--reveal-step": i,
+                                    } as React.CSSProperties
+                                  }
+                                />
+                              </span>
+                              <span className="w-[72px] flex-none text-right tabular-nums text-muted-foreground">
+                                {num(r.named)} / {num(r.checks)}
+                              </span>
+                            </div>
+                            {r.note ? (
+                              <p className="mt-0.5 text-[11px] text-muted-foreground">{r.note}</p>
+                            ) : null}
+                          </div>
+                        ))}
                     </div>
-                  ))}
-                </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="ls-eyebrow mb-2.5">Citations by engine</div>
+                    <div className="flex flex-col gap-2.5">
+                      {(aeoStats.byEngine ?? []).map((row, i) => (
+                        <div key={row.engine} className="flex items-center gap-3 text-[12px]">
+                          <span className="flex h-[17px] w-[17px] flex-none items-center justify-center">
+                            <EngineMark engine={row.engine} />
+                          </span>
+                          <span className="w-[74px] font-medium text-foreground">{engineLabel(row.engine)}</span>
+                          <span className="h-2 flex-1 overflow-hidden rounded-[1px] bg-muted">
+                            <span
+                              className="ls-view-grow-x block h-full rounded-[1px] bg-primary"
+                              style={
+                                {
+                                  width: `${row.total ? Math.round((row.cited / row.total) * 100) : 0}%`,
+                                  "--reveal-step": i,
+                                } as React.CSSProperties
+                              }
+                            />
+                          </span>
+                          <span className="w-14 text-right tabular-nums text-muted-foreground">
+                            {row.cited} / {row.total}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
               {aeoStats.topCompetitors.length > 0 ? (
                 <div>
