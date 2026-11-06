@@ -60,6 +60,13 @@ type Props = {
 // A client reading their own report does not need the host repeated six
 // times, and the full URL wraps at this column width. Falls back to the
 // raw string if the value was never a parseable URL.
+// After-hours share as words when it reads strong ("2 in 3"), else omitted.
+function afterHoursShare(pct: number | null): string {
+  if (pct == null || pct <= 50) return "";
+  const words = pct >= 75 ? "3 in 4" : pct >= 64 ? "2 in 3" : "over half";
+  return `, ${words} after hours`;
+}
+
 function pagePath(url: string): string {
   let path = url;
   try {
@@ -190,11 +197,11 @@ export function PropertyOnePager({ snapshot, property, hero: heroProp }: Props) 
   const lsLeads = kpis.leadsCaptured ?? chatLeads;
   const afterHoursPct = chatbotStatsExtended?.afterHoursPct ?? null;
   const contactsShared = chatbotStatsExtended?.capturedConversations ?? 0;
-  const peak = snapshot.chatbotFirstPeak;
+  const speed = snapshot.speedToApply;
   const answer =
     chatConversations > 0 && lsLeads > 0
       ? {
-          lead: `${plural(chatConversations, "conversation", "conversations")} answered. ${plural(lsLeads, "lead", "leads")} captured.`,
+          lead: `${plural(chatConversations, "conversation", "conversations")} answered${afterHoursShare(afterHoursPct)}. ${plural(lsLeads, "lead", "leads")} captured.`,
           // No resident count in the headline (Adam 11-06: 13 reads weak).
           proof: null,
         }
@@ -295,6 +302,9 @@ export function PropertyOnePager({ snapshot, property, hero: heroProp }: Props) 
               ? `plus ${num(kpis.leadsFromAppfolio)} applicants synced from AppFolio`
               : undefined,
           },
+          ...(speed
+            ? [{ value: `${speed.medianDays} ${speed.medianDays === 1 ? "day" : "days"}`, label: "From chat to application", note: "Median, for leads who applied" }]
+            : []),
           ...propertyFigures.filter(
             (f) => f.label.startsWith("Occupancy") || f.label === "Monthly rent roll",
           ),
@@ -460,16 +470,6 @@ export function PropertyOnePager({ snapshot, property, hero: heroProp }: Props) 
             ) : null}
           </p>
         ) : null}
-        {peak ? (
-          <p className="-mt-2 mb-4 text-[13px] text-muted-foreground">
-            In {peak.label},{" "}
-            <b className="font-semibold text-foreground">
-              {num(peak.chatbotFirst)} of {num(peak.movedIn)}
-            </b>{" "}
-            new residents started as a chatbot conversation (
-            {pct((peak.chatbotFirst / peak.movedIn) * 100)}).
-          </p>
-        ) : null}
         <FigureBand figures={figures} />
         {aiSummary || aiActions.length > 0 ? (
           <section className="mt-4 break-inside-avoid border-l-2 border-primary pl-4">
@@ -627,8 +627,6 @@ export function PropertyOnePager({ snapshot, property, hero: heroProp }: Props) 
               {monthlySigned.length ? (
                 <MonthBars
                   months={monthlySigned}
-                  overlay={snapshot.chatbotFirstByMonth}
-                  overlayLabel="Started as a chatbot conversation"
                 />
               ) : (
                 <div />

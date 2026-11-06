@@ -436,6 +436,10 @@ export type ReportSnapshot = {
   // 11 of 53 new residents started as a chatbot conversation". Absent
   // when no month has at least two. Snapshots before 2026-11-06 lack it.
   chatbotFirstPeak?: { month: string; label: string; movedIn: number; chatbotFirst: number };
+  // Median days from a LeaseStack-captured lead to that person's AppFolio
+  // application at the property (matched by email or phone), for leads that
+  // applied afterwards. Rendered only when it reads as speed (<= 7 days).
+  speedToApply?: { medianDays: number; applicants: number };
   // Traced residents per month, aligned to lifecycleStats.monthlySignedLast12,
   // so the momentum chart can stack "started as a chatbot conversation".
   chatbotFirstByMonth?: Array<{ month: string; count: number }>;
@@ -701,10 +705,14 @@ ${snapshot.topQueries.slice(0, 10).map((q) => `- "${q.query}": ${q.impressions} 
 
 CHATBOT:
 - Conversations: ${chat.conversations}, leads captured: ${chat.leadsFromChat}${snapshot.chatbotStatsExtended?.afterHoursConversations != null ? `, after hours (evenings and weekends): ${snapshot.chatbotStatsExtended.afterHoursConversations} (${snapshot.chatbotStatsExtended.afterHoursPct}%)` : ""}
-${snapshot.chatbotFirstPeak ? `- Peak month: in ${snapshot.chatbotFirstPeak.label}, ${snapshot.chatbotFirstPeak.chatbotFirst} of ${snapshot.chatbotFirstPeak.movedIn} new residents started as a chatbot conversation (lead with this)` : ""}
+${snapshot.chatbotStatsExtended?.capturedConversations ? `- Conversations where the visitor shared contact details: ${snapshot.chatbotStatsExtended.capturedConversations}` : ""}
+${snapshot.speedToApply ? `- Leads who applied did so a median of ${snapshot.speedToApply.medianDays} days after LeaseStack captured them` : ""}
 ${asking?.themes?.length ? asking.themes.slice(0, 8).map((t) => `- topic asked about in ${t.count} conversations: ${t.label}`).join("\n") : ""}
 
-RULES: Use only the numbers listed above, exactly as given. Never add,
+RULES: Lead with what LeaseStack did: conversations answered, the share
+after hours, contact details shared, leads captured and how fast leads
+applied. Never state how many move-ins or residents came from LeaseStack,
+and never give LeaseStack's share of move-ins or leases. Use only the numbers listed above, exactly as given. Never add,
 combine, or infer a number that is not listed. Never describe leases as
 "signed"; they are leases started or move-ins. Never mention ad spend,
 cost per lead, occupancy or rent. State what the numbers show; do not
@@ -2052,6 +2060,11 @@ export async function generateReportSnapshot(
   // code paths — referenced via baseSnapshot below.
   void leasesByPropertyId;
 
+  const speedToApply = await computeSpeedToApply(orgId, scope, periodStart, periodEnd).catch((err) => {
+    console.error("[reports] speedToApply failed", { orgId, err });
+    return undefined;
+  });
+
   const baseSnapshot: Omit<ReportSnapshot, "aiAnalysis"> = {
     ...(options.anonymizeAs ? { hiddenSections: ["identity"] } : {}),
     kind,
@@ -2066,6 +2079,7 @@ export async function generateReportSnapshot(
     kpiDeltas,
     funnel,
     chatbotFirstPeak,
+    speedToApply,
     chatbotFirstByMonth: (monthlySignedLast12 ?? []).map(({ month }) => ({ month, count: tracedByMonth.get(month) ?? 0 })),
     searchStats,
     tracedSignedLeads:
@@ -3238,4 +3252,56 @@ async function buildChatbotExtended(
         ? Math.round((captured / baseStats.conversations) * 100)
         : null,
   };
+}
+
+// Median days from a LeaseStack-captured lead (externalSystem null) to the
+// same person's application at the property, matched by email or 10-digit
+// phone. Only applications made at or after capture count. Undefined below
+// five applicants or above a week: the report shows it only as speed.
+async function computeSpeedToApply(
+  orgId: string,
+  scope: { propertyId?: string | null },
+  periodStart: Date,
+  periodEnd: Date,
+): Promise<{ medianDays: number; applicants: number } | undefined> {
+  if (!scope.propertyId) return undefined;
+  const phone = (s?: string | null) => {
+    const d = (s ?? "").replace(/\D/g, "");
+    return d.length >= 10 ? d.slice(-10) : null;
+  };
+  const [captured, apps] = await Promise.all([
+    prisma.lead.findMany({
+      // Chatbot leads only: the tile is labelled "From chat to application".
+      where: { orgId, propertyId: scope.propertyId, externalSystem: null, source: LeadSource.CHATBOT, createdAt: { gte: periodStart, lt: periodEnd } },
+      select: { email: true, phone: true, createdAt: true },
+    }),
+    prisma.application.findMany({
+      // No periodEnd cap: a lead captured in the window may apply after it.
+      where: { propertyId: scope.propertyId, lead: { orgId }, appliedAt: { gte: periodStart } },
+      select: { appliedAt: true, lead: { select: { email: true, phone: true } } },
+    }),
+  ]);
+  const first = new Map<string, Date>();
+  for (const l of captured) {
+    for (const k of [l.email?.trim().toLowerCase(), phone(l.phone)]) {
+      if (k && (!first.has(k) || first.get(k)! > l.createdAt)) first.set(k, l.createdAt);
+    }
+  }
+  const byPerson = new Map<string, number>();
+  for (const a of apps) {
+    if (!a.appliedAt) continue;
+    const email = a.lead.email?.trim().toLowerCase();
+    const key = email && first.has(email) ? email : phone(a.lead.phone);
+    const at = key ? first.get(key) : undefined;
+    if (!key || !at || a.appliedAt < at) continue;
+    const days = (a.appliedAt.getTime() - at.getTime()) / 86_400_000;
+    // one entry per captured person: their earliest application
+    if (!byPerson.has(key) || byPerson.get(key)! > days) byPerson.set(key, days);
+  }
+  const gaps = [...byPerson.values()].sort((x, y) => x - y);
+  if (gaps.length < 5) return undefined;
+  const mid = gaps.length / 2;
+  const median = gaps.length % 2 ? gaps[Math.floor(mid)] : (gaps[mid - 1] + gaps[mid]) / 2;
+  if (median > 7) return undefined;
+  return { medianDays: Math.max(1, Math.round(median)), applicants: gaps.length };
 }
