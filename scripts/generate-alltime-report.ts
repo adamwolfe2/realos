@@ -33,6 +33,10 @@ const PROPERTY_SLUG = propertyFlag > -1 ? process.argv[propertyFlag + 1] : null;
 // ReportSnapshot.hiddenSections). Unknown keys are rejected up front so a
 // typo doesn't silently ship a section the operator meant to hide.
 const KNOWN_HIDE_KEYS = ["money", "turnover", "untracked-sources"];
+// --anonymize "A student residence near UC Berkeley" → neutral variant
+// (see GenerateReportOptions.anonymizeAs).
+const anonFlag = process.argv.indexOf("--anonymize");
+const ANONYMIZE_AS = anonFlag > -1 ? process.argv[anonFlag + 1] : undefined;
 const hideFlag = process.argv.indexOf("--hide");
 const HIDE =
   hideFlag > -1
@@ -141,9 +145,12 @@ async function main() {
   const generated = await generateReportSnapshot(org.id, "custom", {
     propertyId,
     period: { periodStart, periodEnd },
+    anonymizeAs: ANONYMIZE_AS,
   });
   const snapshot =
-    HIDE.length > 0 ? { ...generated, hiddenSections: HIDE } : generated;
+    HIDE.length > 0
+      ? { ...generated, hiddenSections: [...(generated.hiddenSections ?? []), ...HIDE] }
+      : generated;
   if (HIDE.length > 0) console.log(`  Hidden sections: ${HIDE.join(", ")}`);
 
   console.log(
