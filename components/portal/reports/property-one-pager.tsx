@@ -297,28 +297,6 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
   const hasProspect = Boolean(prospect && themeRows.length > 0);
   const showRenewals = !hideTurnover && Boolean(renewalStats);
   const engines = (aeoStats?.enginesUsed ?? []).map(engineLabel);
-  // AI results by question — only prompts that actually ran. Prompts that
-  // name the property ("Tell me about X") all land near 100% and say the
-  // same thing, so they collapse into one summary row; the general
-  // questions ("best student apartments in Berkeley") are the ones that
-  // show where the AEO work has to go, so they stay individual.
-  const ranQuestions = (aeoStats?.byQuestion ?? []).filter((q) => q.total > 0);
-  const nameRe = new RegExp(property.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
-  const byNameQuestions = ranQuestions.filter((q) => nameRe.test(q.prompt));
-  const generalQuestions = ranQuestions.filter((q) => !nameRe.test(q.prompt)).slice(0, 4);
-  const aeoQuestionRows = [
-    ...generalQuestions.map((q) => ({ key: q.prompt, label: `\u201c${q.prompt}\u201d`, total: q.total, cited: q.cited })),
-    ...(byNameQuestions.length > 0
-      ? [
-          {
-            key: "by-name",
-            label: `Asked about ${property.name} by name (${byNameQuestions.length} ${byNameQuestions.length === 1 ? "question" : "questions"})`,
-            total: byNameQuestions.reduce((n, q) => n + q.total, 0),
-            cited: byNameQuestions.reduce((n, q) => n + q.cited, 0),
-          },
-        ]
-      : []),
-  ];
   // The narrative, written at generation time from this frozen snapshot
   // (so it never drifts from the figures) and omitted when generation had
   // no model. Three actions at most: one print row.
@@ -871,36 +849,6 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
                 </div>
               ) : null}
             </div>
-            {aeoQuestionRows.length > 0 ? (
-              <div className="mt-5 border-t border-primary/15 pt-4">
-                <div className="ls-eyebrow mb-2.5">
-                  What we ask the engines, and how often the answer named {property.name}
-                </div>
-                <div className="flex flex-col gap-2">
-                  {aeoQuestionRows.map((q, i) => (
-                    <div key={q.key} className="flex items-center gap-3 text-[12px]">
-                      <span className="min-w-0 flex-1 truncate font-medium text-muted-foreground" title={q.label}>
-                        {q.label}
-                      </span>
-                      <span className="flex h-2 w-[90px] flex-none overflow-hidden rounded-[1px] bg-muted">
-                        <span
-                          className="ls-view-grow-x block h-full rounded-[1px] bg-primary"
-                          style={
-                            {
-                              width: `${Math.round((q.cited / q.total) * 100)}%`,
-                              "--reveal-step": i,
-                            } as React.CSSProperties
-                          }
-                        />
-                      </span>
-                      <span className="w-16 flex-none whitespace-nowrap text-right tabular-nums text-muted-foreground">
-                        {q.cited} / {q.total}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
           </section>
         </div>
       ) : null}

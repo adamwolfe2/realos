@@ -636,7 +636,6 @@ async function generateAiAnalysis(
     // hiddenSections AFTER generation, so the generator cannot know).
     // Feed the model only figures that page renders, so the prose can
     // never reintroduce a suppressed number.
-    const aeo = snapshot.aeoStats;
     const chat = snapshot.chatbotStatsExtended ?? snapshot.chatbotStats;
     const life = snapshot.lifecycleStats;
     const reputation = snapshot.reputationStats;
@@ -646,7 +645,7 @@ async function generateAiAnalysis(
     // same reason ("surged 5440%" is a tracking start, not a result).
     const vsPrior = (pctChange: number | null | undefined) =>
       snapshot.kind !== "custom" && pctChange != null ? ` (${pctChange}% vs prior)` : "";
-    const prompt = `You are writing the narrative for a property's marketing & performance report, as the team that ran the marketing reporting results to the owner of ${snapshot.scope?.propertyName ?? "the property"}. The reader is not a marketer. Write plainly, name specific numbers, and say what they mean for leasing. Lead with what was delivered (leads captured, conversations answered, move-ins, search and AI presence). Where a number shows room to grow, state the number without adjectives ("named in 3 of 112 answers", never "ranks poorly" or "only 13") and put the improvement in the next steps. Short sentences. No em dashes. If a number is 0 or missing, leave it out.
+    const prompt = `You are writing the narrative for a property's marketing & performance report, as the team that ran the marketing reporting results to the owner of ${snapshot.scope?.propertyName ?? "the property"}. The reader is not a marketer. Write plainly, name specific numbers, and say what they mean for leasing. Lead with what was delivered (leads captured, conversations answered, move-ins, search presence). The AI search section of the report speaks for itself; do not mention AI answers. Where a number shows room to grow, state the number without adjectives ("named in 3 of 112 answers", never "ranks poorly" or "only 13") and put the improvement in the next steps. Short sentences. No em dashes. If a number is 0 or missing, leave it out.
 
 PERIOD: ${snapshot.kind} (${snapshot.periodStart} to ${snapshot.periodEnd})
 
@@ -667,11 +666,6 @@ ${snapshot.topQueries.slice(0, 10).map((q) => `- "${q.query}": ${q.impressions} 
 CHATBOT:
 - Conversations: ${chat.conversations}, leads captured: ${chat.leadsFromChat}
 ${asking?.themes?.length ? asking.themes.slice(0, 8).map((t) => `- topic asked about in ${t.count} conversations: ${t.label}`).join("\n") : ""}
-
-AI SEARCH (ChatGPT/Claude/Gemini/Perplexity), how often answers named this property:
-${aeo ? `- ${aeo.cited} of ${aeo.totalChecks} answers named it; a competitor was named instead in ${aeo.competitorCited}` : "- No AI search checks"}
-${(aeo?.byQuestion ?? []).map((q) => `- "${q.prompt}": named in ${q.cited} of ${q.total}`).join("\n")}
-${(aeo?.topCompetitors ?? []).slice(0, 5).map((c) => `- competitor named: ${c.name} (${c.mentions})`).join("\n")}
 
 RULES: Use only the numbers listed above, exactly as given. Never add,
 combine, or infer a number that is not listed. Never describe leases as
