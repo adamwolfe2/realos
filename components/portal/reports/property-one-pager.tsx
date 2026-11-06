@@ -83,7 +83,7 @@ export function pageLabel(url: string): string {
   return last.charAt(0).toUpperCase() + last.slice(1);
 }
 
-export function PropertyOnePager({ snapshot, property, hero }: Props) {
+export function PropertyOnePager({ snapshot, property, hero: heroProp }: Props) {
   const { kpis, occupancyStats, renewalStats, lifecycleStats, reputationStats, aeoStats, chatbotStatsExtended, leadSources, topPages, aiAnalysis } =
     snapshot;
 
@@ -96,8 +96,14 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
   const hideTurnover = hidden.has("turnover");
   const hideUntracked = hidden.has("untracked-sources");
 
-  const addr = addressLine(property);
-  const site = websiteLink(property.websiteUrl);
+  let hero = heroProp;
+  const hideIdentity = (snapshot.hiddenSections ?? []).includes("identity");
+  const displayName = hideIdentity
+    ? (snapshot.scope?.propertyName ?? "A residential property")
+    : property.name;
+  const addr = hideIdentity ? null : addressLine(property);
+  const site = hideIdentity ? null : websiteLink(property.websiteUrl);
+  if (hideIdentity) hero = null;
   const sources = leadSources ?? [];
   const monthlySigned = lifecycleStats?.monthlySignedLast12 ?? [];
   const repMaxCount = Math.max(
@@ -178,8 +184,19 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
 
   // The one sentence the report exists to say. Proof first (leases traced to
   // captured leads), falling back to whatever outcome the period has.
+  // LeaseStack's own output first (Adam, 2026-11-06): the property's
+  // lease total belongs in Leasing momentum, not as the frame for ours.
+  const lsLeads = kpis.leadsCaptured ?? chatLeads;
+  const afterHoursPct = chatbotStatsExtended?.afterHoursPct ?? null;
+  const contactsShared = chatbotStatsExtended?.capturedConversations ?? 0;
+  const peak = snapshot.chatbotFirstPeak;
   const answer =
-    traced && leasesSigned
+    chatConversations > 0 && lsLeads > 0
+      ? {
+          lead: `${plural(chatConversations, "conversation", "conversations")} answered. ${plural(lsLeads, "lead", "leads")} captured.`,
+          proof: traced ? `${num(traced)} became ${traced === 1 ? "a resident" : "residents"}.` : null,
+        }
+      : traced && leasesSigned
       ? {
           lead: `${plural(leasesSigned, "lease", "leases")} started this period.`,
           proof: `${num(traced)} ${traced === 1 ? "traces" : "trace"} back to a lead LeaseStack captured.`,
@@ -196,7 +213,7 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
             }
           : null;
 
-  const figures: Figure[] = [
+  const propertyFigures: Figure[] = [
     {
       value: num(kpis.leads),
       label: "New leads",
@@ -259,6 +276,29 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
           },
         ]),
   ];
+  const figures: Figure[] =
+    chatConversations > 0 && lsLeads > 0
+      ? [
+          { value: num(chatConversations), label: "Chatbot conversations" },
+          ...(afterHoursPct != null
+            ? [{ value: pct(afterHoursPct), label: "After hours", note: "Evenings and weekends" }]
+            : []),
+          ...(contactsShared > 0
+            ? [{ value: num(contactsShared), label: "Shared contact details" }]
+            : []),
+          {
+            value: num(lsLeads),
+            label: "Leads captured",
+            note: kpis.leadsFromAppfolio
+              ? `plus ${num(kpis.leadsFromAppfolio)} applicants synced from AppFolio`
+              : undefined,
+          },
+          ...(traced ? [{ value: num(traced), label: "Became residents" }] : []),
+          ...propertyFigures.filter(
+            (f) => f.label.startsWith("Occupancy") || f.label === "Monthly rent roll",
+          ),
+        ]
+      : propertyFigures;
 
   // Chatbot funnel. Chevrons imply each step is a subset of the last, so
   // they only render when the three counts actually narrow.
@@ -276,11 +316,15 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
       ? `${pct(capturedRate)} of conversations ended with the visitor sharing contact details.`
       : "Website chatbot and popups, this period.";
 
+  // Applicants the AppFolio sync imported are not leads LeaseStack
+  // captured; they sit under Applications and as a footnote here.
+  const capturedSources = sources.filter((s) => s.source !== "AppFolio application");
+  const capturedSourceTotal = capturedSources.reduce((n, s) => n + s.count, 0) || 1;
   const sourceRows = [
-    ...sources.map((s) => ({
+    ...capturedSources.map((s) => ({
       label: s.source,
       value: s.count,
-      display: `${s.count} \u00b7 ${Math.round(s.pct)}%`,
+      display: `${s.count} \u00b7 ${Math.round((s.count / capturedSourceTotal) * 100)}%`,
     })),
     // Untracked channels only add context next to real rows; under an empty
     // period they would be the whole panel.
@@ -364,7 +408,7 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
 
             <div className="flex min-w-0 flex-col justify-end px-4 pb-3 pt-1 sm:px-6 sm:pb-4 sm:pt-4 print:px-6 print:pb-3 print:pt-4">
               <h1 className="text-[27px] font-semibold leading-[1.03] tracking-[-0.025em] sm:text-[34px] print:text-[30px]">
-                {property.name}
+                {displayName}
               </h1>
               {/* One meta line. The period used to need its own labelled row
                   beside "Attribution: First-touch" — a band of chrome to say
@@ -407,6 +451,16 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
             {answer.proof ? (
               <span className="text-primary"> {answer.proof}</span>
             ) : null}
+          </p>
+        ) : null}
+        {peak ? (
+          <p className="-mt-2 mb-4 text-[13px] text-muted-foreground">
+            In {peak.label},{" "}
+            <b className="font-semibold text-foreground">
+              {num(peak.chatbotFirst)} of {num(peak.movedIn)}
+            </b>{" "}
+            new residents started as a chatbot conversation (
+            {pct((peak.chatbotFirst / peak.movedIn) * 100)}).
           </p>
         ) : null}
         <FigureBand figures={figures} />
@@ -457,6 +511,11 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
               ) : (
                 <BarList rows={sourceRows} labelWidth="w-[130px]" />
               )}
+              {kpis.leadsFromAppfolio ? (
+                <p className="mt-2.5 text-[11px] leading-snug text-muted-foreground">
+                  {num(kpis.leadsFromAppfolio)} applicants came in through AppFolio and are counted under Applications.
+                </p>
+              ) : null}
             </Panel>
             {showConversion ? (
               <Panel
@@ -566,6 +625,14 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
               <FigureRow
                 stacked
                 figures={[
+                  ...(chatConversations > 0 && lsLeads > 0
+                    ? [
+                        { value: num(leasesSigned), label: "Started this period" },
+                        ...(lifecycleStats.applicationsInPeriod
+                          ? [{ value: num(lifecycleStats.applicationsInPeriod), label: "Applications" }]
+                          : []),
+                      ]
+                    : []),
                   {
                     value: num(lifecycleStats.leasesSignedLast180d),
                     label: "Started, last 180 days",
@@ -784,7 +851,7 @@ export function PropertyOnePager({ snapshot, property, hero }: Props) {
                   },
                   {
                     value: num(aeoStats.cited),
-                    label: `Answers citing this property (${pct((aeoStats.cited / aeoStats.totalChecks) * 100)})`,
+                    label: "Answers citing this property",
                   },
                   {
                     value: num(aeoStats.competitorCited),

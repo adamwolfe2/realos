@@ -39,7 +39,7 @@ describe("PropertyOnePager honors snapshot.hiddenSections", () => {
   it("builds the band from the surviving entries instead of leaving holes", () => {
     // No fixed column count: the band is a list, so a suppressed entry is
     // absent rather than an empty cell.
-    expect(src).toContain("const figures: Figure[] = [");
+    expect(src).toContain("const propertyFigures: Figure[] = [");
     expect(src).toContain("<FigureBand figures={figures} />");
     expect(src).not.toContain("kpiColCount");
   });
@@ -84,7 +84,7 @@ describe("generate-alltime-report --hide flag", () => {
 
   it("writes hiddenSections onto the snapshot only when asked", () => {
     expect(src).toContain(
-      'HIDE.length > 0 ? { ...generated, hiddenSections: HIDE } : generated',
+      'hiddenSections: [...(generated.hiddenSections ?? []), ...HIDE]',
     );
   });
 });

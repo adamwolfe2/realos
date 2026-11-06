@@ -381,6 +381,10 @@ export type ReportChatbotStatsExtended = ReportChatbotStats & {
   // "29 conversations" (lifetime) but the strip showed "24" (28-day
   // period). Surfacing both numbers so ownership reads both stories.
   lifetimeConversations?: number;
+  // Conversations outside Mon-Fri 9-5 (America/Los_Angeles). Absent on
+  // snapshots stored before 2026-11-06.
+  afterHoursConversations?: number;
+  afterHoursPct?: number | null;
 };
 
 // Persisted scope context so the rendered view can label which slice of
@@ -416,6 +420,10 @@ export type ReportSnapshot = {
   // view must omit the claim entirely rather than render "0 traced"
   // (never zero-pad a proof). Optional on legacy snapshots.
   tracedSignedLeads?: number;
+  // The month in the period with the most traced residents: "in August,
+  // 11 of 53 new residents started as a chatbot conversation". Absent
+  // when no month has at least two. Snapshots before 2026-11-06 lack it.
+  chatbotFirstPeak?: { month: string; label: string; movedIn: number; chatbotFirst: number };
   leadSources: ReportLeadSource[];
   adPerformance: ReportAdRow[];
   topPages: ReportTopPage[];
@@ -666,7 +674,8 @@ TOP GOOGLE SEARCH TERMS (times shown / clicks / avg position):
 ${snapshot.topQueries.slice(0, 10).map((q) => `- "${q.query}": ${q.impressions} shown, ${q.clicks} clicks, pos ${q.position}`).join("\n") || "- No query data"}
 
 CHATBOT:
-- Conversations: ${chat.conversations}, leads captured: ${chat.leadsFromChat}
+- Conversations: ${chat.conversations}, leads captured: ${chat.leadsFromChat}${snapshot.chatbotStatsExtended?.afterHoursConversations != null ? `, after hours (evenings and weekends): ${snapshot.chatbotStatsExtended.afterHoursConversations} (${snapshot.chatbotStatsExtended.afterHoursPct}%)` : ""}
+${snapshot.chatbotFirstPeak ? `- Peak month: in ${snapshot.chatbotFirstPeak.label}, ${snapshot.chatbotFirstPeak.chatbotFirst} of ${snapshot.chatbotFirstPeak.movedIn} new residents started as a chatbot conversation (lead with this)` : ""}
 ${asking?.themes?.length ? asking.themes.slice(0, 8).map((t) => `- topic asked about in ${t.count} conversations: ${t.label}`).join("\n") : ""}
 
 RULES: Use only the numbers listed above, exactly as given. Never add,
@@ -726,6 +735,11 @@ export type GenerateReportOptions = {
   // calendar-month client report. The prior window used for deltas is the
   // immediately-preceding range of equal length. periodEnd is exclusive.
   period?: { periodStart: Date; periodEnd: Date };
+  // Neutral prospect-facing variant: the property is called this instead
+  // of its name, branded search rows and quotes naming it are dropped, and
+  // the renderer hides address, website and photo (hiddenSections
+  // "identity"). The numbers are unchanged.
+  anonymizeAs?: string;
   // Skip the generateAiAnalysis() Claude call. Default false — zero
   // behavior change for every existing caller. Added for the live report
   // preview on /portal/reports, which re-generates a snapshot on every
@@ -941,6 +955,23 @@ export async function generateReportSnapshot(
   const now = options.now ?? new Date();
   const propertyId = options.propertyId ?? null;
   const scope = await buildScope(orgId, propertyId);
+  // Whole names plus every word of five letters or more ("commons"), so
+  // a misspelt quote ("Telegrsph Commons") or a street that shares the
+  // name ("telegraph ave") does not leak the identity.
+  const brandTokens = options.anonymizeAs
+    ? [scope.propertyName, scope.propertySlug, scope.brandName]
+        .filter((s): s is string => !!s)
+        .flatMap((s) => {
+          const flat = s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+          return [s.toLowerCase(), flat, ...flat.split(" ").filter((w) => w.length >= 5)];
+        })
+        .filter((s) => s.length > 3)
+    : [];
+  const namesBrand = (text: string) => {
+    const t = text.toLowerCase();
+    return brandTokens.some((b) => t.includes(b));
+  };
+  if (options.anonymizeAs) scope.propertyName = options.anonymizeAs;
   // Period resolution. An explicit `period` override wins over the
   // kind-derived rolling window; the prior comparison window is the
   // immediately-preceding range of equal length so deltas stay meaningful.
@@ -1571,12 +1602,14 @@ export async function generateReportSnapshot(
   }));
 
   // Top queries
-  const topQueries: ReportTopQuery[] = topQueriesRows.map((row) => ({
-    query: row.query,
-    clicks: row._sum.clicks ?? 0,
-    impressions: row._sum.impressions ?? 0,
-    position: row._avg.position ? Math.round(row._avg.position * 10) / 10 : 0,
-  }));
+  const topQueries: ReportTopQuery[] = topQueriesRows
+    .filter((row) => !namesBrand(row.query))
+    .map((row) => ({
+      query: row.query,
+      clicks: row._sum.clicks ?? 0,
+      impressions: row._sum.impressions ?? 0,
+      position: row._avg.position ? Math.round(row._avg.position * 10) / 10 : 0,
+    }));
 
   // Insights: one per kind (distinct in the query), newest first, max 20.
   const latestInsightRows = [...insightsRows]
@@ -1925,6 +1958,42 @@ export async function generateReportSnapshot(
     },
   });
 
+  // Peak month for the traced chain: the same lead filter as above, joined
+  // through Resident to the lease start, bucketed like monthlySignedLast12.
+  const tracedLeaseStarts = await prisma.lease
+    .findMany({
+      where: {
+        orgId,
+        ...(scope.propertyId ? { propertyId: scope.propertyId } : {}),
+        property: { lifecycle: "ACTIVE" },
+        startDate: { gte: periodStart, lt: periodEnd },
+        resident: {
+          lead: {
+            status: LeadStatus.SIGNED,
+            OR: [{ sourceDetail: null }, { sourceDetail: { not: APPFOLIO_APPLICATION_SOURCE } }],
+          },
+        },
+      },
+      select: { startDate: true },
+    })
+    .catch(() => [] as Array<{ startDate: Date | null }>);
+  const tracedByMonth = new Map<string, number>();
+  for (const l of tracedLeaseStarts) {
+    if (!l.startDate) continue;
+    const key = `${l.startDate.getFullYear()}-${String(l.startDate.getMonth() + 1).padStart(2, "0")}`;
+    tracedByMonth.set(key, (tracedByMonth.get(key) ?? 0) + 1);
+  }
+  let chatbotFirstPeak: ReportSnapshot["chatbotFirstPeak"];
+  for (const { month, count } of monthlySignedLast12 ?? []) {
+    const chatbotFirst = tracedByMonth.get(month) ?? 0;
+    if (chatbotFirst < 2 || count < chatbotFirst) continue;
+    if (!chatbotFirstPeak || chatbotFirst > chatbotFirstPeak.chatbotFirst) {
+      const [y, m] = month.split("-").map(Number);
+      const label = new Date(y, m - 1, 1).toLocaleString("en-US", { month: "long", year: "numeric" });
+      chatbotFirstPeak = { month, label, movedIn: count, chatbotFirst };
+    }
+  }
+
   // Per-property leases signed map — used below to enrich the
   // attribution table when org-wide reports want to show signed counts
   // by source. Kept as a Map so the lookup stays O(1) per property row.
@@ -1939,6 +2008,7 @@ export async function generateReportSnapshot(
   void leasesByPropertyId;
 
   const baseSnapshot: Omit<ReportSnapshot, "aiAnalysis"> = {
+    ...(options.anonymizeAs ? { hiddenSections: ["identity"] } : {}),
     kind,
     scope: {
       propertyId: scope.propertyId,
@@ -1950,6 +2020,7 @@ export async function generateReportSnapshot(
     kpis,
     kpiDeltas,
     funnel,
+    chatbotFirstPeak,
     tracedSignedLeads:
       tracedSignedLeadsCount > 0 ? tracedSignedLeadsCount : undefined,
     leadSources,
@@ -1959,7 +2030,10 @@ export async function generateReportSnapshot(
     insights,
     chatbotStats,
     chatbotStatsExtended,
-    prospectQuestions,
+    prospectQuestions:
+      prospectQuestions && options.anonymizeAs
+        ? { ...prospectQuestions, examples: prospectQuestions.examples.filter((q) => !namesBrand(JSON.stringify(q))) }
+        : prospectQuestions,
     properties,
     trafficTrend: trafficFallback,
     attributionBySource,
@@ -3039,7 +3113,7 @@ async function buildChatbotExtended(
   const propertyClause = propertyId
     ? { propertyId }
     : { OR: [{ propertyId: null }, { property: { lifecycle: "ACTIVE" as const } }] };
-  const [captured, lifetime] = await Promise.all([
+  const [captured, lifetime, inWindow] = await Promise.all([
     prisma.chatbotConversation.count({
       where: {
         orgId,
@@ -3051,11 +3125,25 @@ async function buildChatbotExtended(
     prisma.chatbotConversation.count({
       where: { orgId, ...propertyClause },
     }),
+    prisma.chatbotConversation.findMany({
+      where: { orgId, ...propertyClause, createdAt: { gte: periodStart, lt: periodEnd } },
+      select: { createdAt: true },
+    }),
   ]);
+  // ponytail: Property has no timezone column; every tenant is Pacific
+  // today. Add Property.timezone when the first non-Pacific org signs.
+  const afterHours = inWindow.filter((c) => {
+    const local = new Date(c.createdAt.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
+    const day = local.getDay();
+    const hour = local.getHours();
+    return day === 0 || day === 6 || hour < 9 || hour >= 17;
+  }).length;
   return {
     ...baseStats,
     capturedConversations: captured,
     lifetimeConversations: lifetime,
+    afterHoursConversations: afterHours,
+    afterHoursPct: inWindow.length > 0 ? Math.round((afterHours / inWindow.length) * 100) : null,
     capturedRatePct:
       baseStats.conversations > 0
         ? Math.round((captured / baseStats.conversations) * 100)

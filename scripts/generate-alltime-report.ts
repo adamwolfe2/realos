@@ -10,7 +10,9 @@
 // so a wrong .env.local (staging vs prod DATABASE_URL) is visible before
 // anything is touched.
 //
-//   pnpm exec tsx --env-file=.env.local scripts/generate-alltime-report.ts --org <slug>                 (dry run)
+// Run with TZ=UTC like production: lease start dates are calendar dates at
+// midnight UTC and the month buckets use local time.
+//   TZ=UTC pnpm exec tsx --env-file=.env.local scripts/generate-alltime-report.ts --org <slug>                 (dry run)
 //   pnpm exec tsx --env-file=.env.local scripts/generate-alltime-report.ts --org <slug> --property <slug>
 //   pnpm exec tsx --env-file=.env.local scripts/generate-alltime-report.ts --org <slug> --write          (persists)
 
@@ -33,6 +35,10 @@ const PROPERTY_SLUG = propertyFlag > -1 ? process.argv[propertyFlag + 1] : null;
 // ReportSnapshot.hiddenSections). Unknown keys are rejected up front so a
 // typo doesn't silently ship a section the operator meant to hide.
 const KNOWN_HIDE_KEYS = ["money", "turnover", "untracked-sources"];
+// --anonymize "A student residence near UC Berkeley" → neutral variant
+// (see GenerateReportOptions.anonymizeAs).
+const anonFlag = process.argv.indexOf("--anonymize");
+const ANONYMIZE_AS = anonFlag > -1 ? process.argv[anonFlag + 1] : undefined;
 const hideFlag = process.argv.indexOf("--hide");
 const HIDE =
   hideFlag > -1
@@ -141,9 +147,12 @@ async function main() {
   const generated = await generateReportSnapshot(org.id, "custom", {
     propertyId,
     period: { periodStart, periodEnd },
+    anonymizeAs: ANONYMIZE_AS,
   });
   const snapshot =
-    HIDE.length > 0 ? { ...generated, hiddenSections: HIDE } : generated;
+    HIDE.length > 0
+      ? { ...generated, hiddenSections: [...(generated.hiddenSections ?? []), ...HIDE] }
+      : generated;
   if (HIDE.length > 0) console.log(`  Hidden sections: ${HIDE.join(", ")}`);
 
   console.log(
