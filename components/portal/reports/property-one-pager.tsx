@@ -62,7 +62,7 @@ type Props = {
 // raw string if the value was never a parseable URL.
 // After-hours share as words when it reads strong ("2 in 3"), else omitted.
 function afterHoursShare(pct: number | null): string {
-  if (pct == null || pct < 50) return "";
+  if (pct == null || pct <= 50) return "";
   const words = pct >= 75 ? "3 in 4" : pct >= 64 ? "2 in 3" : "over half";
   return `, ${words} after hours`;
 }

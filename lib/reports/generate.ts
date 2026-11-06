@@ -705,7 +705,7 @@ ${snapshot.topQueries.slice(0, 10).map((q) => `- "${q.query}": ${q.impressions} 
 
 CHATBOT:
 - Conversations: ${chat.conversations}, leads captured: ${chat.leadsFromChat}${snapshot.chatbotStatsExtended?.afterHoursConversations != null ? `, after hours (evenings and weekends): ${snapshot.chatbotStatsExtended.afterHoursConversations} (${snapshot.chatbotStatsExtended.afterHoursPct}%)` : ""}
-${snapshot.chatbotStatsExtended?.capturedConversations != null ? `- Conversations where the visitor shared contact details: ${snapshot.chatbotStatsExtended.capturedConversations}` : ""}
+${snapshot.chatbotStatsExtended?.capturedConversations ? `- Conversations where the visitor shared contact details: ${snapshot.chatbotStatsExtended.capturedConversations}` : ""}
 ${snapshot.speedToApply ? `- Leads who applied did so a median of ${snapshot.speedToApply.medianDays} days after LeaseStack captured them` : ""}
 ${asking?.themes?.length ? asking.themes.slice(0, 8).map((t) => `- topic asked about in ${t.count} conversations: ${t.label}`).join("\n") : ""}
 
@@ -3271,11 +3271,13 @@ async function computeSpeedToApply(
   };
   const [captured, apps] = await Promise.all([
     prisma.lead.findMany({
-      where: { orgId, propertyId: scope.propertyId, externalSystem: null, createdAt: { gte: periodStart, lt: periodEnd } },
+      // Chatbot leads only: the tile is labelled "From chat to application".
+      where: { orgId, propertyId: scope.propertyId, externalSystem: null, source: LeadSource.CHATBOT, createdAt: { gte: periodStart, lt: periodEnd } },
       select: { email: true, phone: true, createdAt: true },
     }),
     prisma.application.findMany({
-      where: { propertyId: scope.propertyId, lead: { orgId }, appliedAt: { gte: periodStart, lt: periodEnd } },
+      // No periodEnd cap: a lead captured in the window may apply after it.
+      where: { propertyId: scope.propertyId, lead: { orgId }, appliedAt: { gte: periodStart } },
       select: { appliedAt: true, lead: { select: { email: true, phone: true } } },
     }),
   ]);
@@ -3300,6 +3302,6 @@ async function computeSpeedToApply(
   if (gaps.length < 5) return undefined;
   const mid = gaps.length / 2;
   const median = gaps.length % 2 ? gaps[Math.floor(mid)] : (gaps[mid - 1] + gaps[mid]) / 2;
-  const medianDays = Math.max(1, Math.round(median));
-  return medianDays <= 7 ? { medianDays, applicants: gaps.length } : undefined;
+  if (median > 7) return undefined;
+  return { medianDays: Math.max(1, Math.round(median)), applicants: gaps.length };
 }
