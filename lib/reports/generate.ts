@@ -28,6 +28,7 @@ import { realAdAccountWhere } from "@/lib/integrations/real-ad-account";
 import { reportPeriodWindow } from "@/lib/recency";
 import { previewPath } from "@/lib/security/preview-token";
 import { buildPopupStats, type ReportPopupStats } from "@/lib/reports/popup-stats";
+import { leadsSplitNote } from "@/lib/reports/leads-split";
 
 // ---------------------------------------------------------------------------
 // Report snapshot generator.
@@ -640,6 +641,7 @@ async function generateAiAnalysis(
     const life = snapshot.lifecycleStats;
     const reputation = snapshot.reputationStats;
     const asking = snapshot.prospectQuestions;
+    const leadsSplit = leadsSplitNote(snapshot.kpis);
     // "custom" (all-time) reports compare against a prior window that
     // predates tracking entirely; the one-pager hides those deltas for the
     // same reason ("surged 5440%" is a tracking start, not a result).
@@ -650,7 +652,7 @@ async function generateAiAnalysis(
 PERIOD: ${snapshot.kind} (${snapshot.periodStart} to ${snapshot.periodEnd})
 
 KEY FIGURES:
-- New leads: ${snapshot.kpis.leads}${vsPrior(snapshot.kpiDeltas.leadsPct)}
+- New leads: ${snapshot.kpis.leads}${vsPrior(snapshot.kpiDeltas.leadsPct)}${leadsSplit ? ` (${leadsSplit}; only the captured ones are LeaseStack's, never say LeaseStack captured all new leads)` : ""}
 - Applications: ${snapshot.kpis.applications}
 - Organic search sessions: ${snapshot.kpis.organicSessions}${vsPrior(snapshot.kpiDeltas.organicSessionsPct)}
 - Leases started (move-ins) this period, whole property, from AppFolio: ${life?.leasesSignedInPeriod ?? "n/a"}${snapshot.kind !== "custom" && life ? ` (prior period: ${life.priorLeasesSignedInPeriod})` : ""}
