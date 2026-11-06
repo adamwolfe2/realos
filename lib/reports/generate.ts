@@ -688,7 +688,7 @@ KEY FIGURES:
 - Applications: ${snapshot.kpis.applications}
 - Organic search sessions: ${snapshot.kpis.organicSessions}${vsPrior(snapshot.kpiDeltas.organicSessionsPct)}
 - Leases started (move-ins) this period, whole property, from AppFolio: ${life?.leasesSignedInPeriod ?? "n/a"}${snapshot.kind !== "custom" && life ? ` (prior period: ${life.priorLeasesSignedInPeriod})` : ""}
-- Of those move-ins, the number that trace back to a lead LeaseStack captured: ${snapshot.tracedSignedLeads ?? "n/a"} (move-ins are NOT a subset of the leads; never say leads "converted to" or "became" move-ins beyond this traced number)
+- Move-ins are NOT a subset of the leads: never say leads "converted to" or "became" move-ins or residents, and never state how many move-ins trace back to LeaseStack leads
 ${reputation && reputation.totalReviews > 0 ? `- Reputation: ${reputation.overallRating ?? "n/a"} stars across ${reputation.totalReviews} reviews and mentions (${reputation.positiveCount} positive, ${reputation.negativeCount} negative)` : ""}
 
 LEAD SOURCES:
