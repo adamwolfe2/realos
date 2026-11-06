@@ -30,11 +30,11 @@ describe("aggregateAeoByQuestion", () => {
   });
 });
 
-describe("one-pager narrative + AI-by-question", () => {
+describe("one-pager narrative", () => {
   it("drops zero rows and gates every new block on data being present", () => {
-    expect(onePager).toContain("(aeoStats?.byQuestion ?? []).filter((q) => q.total > 0)");
-    expect(onePager).toContain("(aeoStats?.byQuestion ?? []).filter((q) => q.total > 0)");
-    expect(onePager).toContain("{aeoQuestionRows.length > 0 ? (");
+    // The per-question AI breakdown stays on the operator dashboard; the
+    // client page shows the engine totals only (Adam, 2026-11-05).
+    expect(onePager).not.toContain("byQuestion");
     expect(onePager).toContain("{aiSummary || aiActions.length > 0 ? (");
     expect(onePager).toContain("{aiActions.length > 0 ? (");
   });
