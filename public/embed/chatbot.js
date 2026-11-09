@@ -1126,7 +1126,7 @@
       '    ' + avatarWithDot +
       '    <div class="rec-titles">' +
       '      <div class="rec-title">' + persona + ' <span class="rec-title-brand">· ' + brand + "</span></div>" +
-      '      <div class="rec-subtitle"><span class="rec-dot"></span>Online · Usually replies instantly</div>' +
+      '      <div class="rec-subtitle"><span class="rec-dot"></span>AI assistant · Replies instantly</div>' +
       "    </div>" +
       '    <button class="rec-panel-close" aria-label="Close">&times;</button>' +
       "  </header>" +
