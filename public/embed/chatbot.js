@@ -1186,7 +1186,7 @@
       ".rec-avatar-wrap { position: relative; flex-shrink: 0; }" +
       ".rec-avatar-wrap .rec-avatar { width: 40px; height: 40px; border: 2px solid rgba(255,255,255,0.4); }" +
       ".rec-online-dot { position: absolute; bottom: -2px; right: -2px; width: 12px; height: 12px; border-radius: 999px; background: #34d399; border: 2px solid #fff; }" +
-      ".rec-panel { position: absolute; right: 0; bottom: 72px; width: 400px; max-width: calc(100vw - 32px); height: 640px; max-height: calc(100vh - 100px); background: #fff; border: 1px solid rgba(0,0,0,0.08); border-radius: 16px; box-shadow: 0 16px 48px rgba(0,0,0,0.24); display: none; flex-direction: column; overflow: hidden; }" +
+      ".rec-panel { position: absolute; right: 0; bottom: 72px; width: 400px; max-width: calc(100vw - 32px); height: 640px; max-height: calc(100vh - 100px); max-height: calc(100dvh - 100px); background: #fff; border: 1px solid rgba(0,0,0,0.08); border-radius: 16px; box-shadow: 0 16px 48px rgba(0,0,0,0.24); display: none; flex-direction: column; overflow: hidden; }" +
       ".rec-root.rec-open .rec-panel { display: flex; }" +
       // Subtle in-palette gradient — previously this faded to a hard-coded
       // navy `#1a1a2e` which produced a muddy dark hue on the right side
@@ -1248,7 +1248,7 @@
       ".rec-intro-error { color: #b91c1c; font-size: 12px; min-height: 16px; }" +
       ".rec-intro-submit { all: unset; cursor: pointer; background: var(--rec-color); color: #fff; text-align: center; padding: 11px 14px; border-radius: 10px; font-size: 14px; font-weight: 600; margin-top: 4px; }" +
       ".rec-intro-submit[disabled] { opacity: 0.6; cursor: not-allowed; }" +
-      "@media (max-width: 480px) { .rec-panel { width: calc(100vw - 16px); right: -8px; bottom: 68px; height: 85vh; max-height: none; border-radius: 16px 16px 12px 12px; } }"
+      "@media (max-width: 480px) { .rec-panel { width: calc(100vw - 16px); right: -8px; bottom: 68px; height: calc(100vh - 100px); height: calc(100dvh - 100px); max-height: 720px; border-radius: 16px 16px 12px 12px; } }"
     );
   }
 })();
