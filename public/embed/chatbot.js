@@ -1109,11 +1109,15 @@
     return (
       '<div class="rec-teaser" role="button" aria-label="Open chat">' +
       '  <button class="rec-teaser-close" aria-label="Dismiss">&times;</button>' +
-      '  ' + avatarMarkup +
+      (avatar ? '' : '  ' + avatarMarkup) +
       '  <div class="rec-teaser-text">' + teaser + "</div>" +
       "</div>" +
-      '<button class="rec-launcher" aria-label="Open chat">' +
-      '  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">' +
+      '<button class="rec-launcher' + (avatar ? ' rec-launcher-face' : '') + '" aria-label="Open chat with ' + persona + '">' +
+      (avatar
+        ? '  <img class="rec-launcher-img" src="' + avatar + '" alt="" onerror="this.parentNode.classList.remove(\'rec-launcher-face\');this.remove();">' +
+          '  <span class="rec-launcher-dot" aria-hidden="true"></span>'
+        : '') +
+      '  <svg class="rec-launcher-icon" width="22" height="22" viewBox="0 0 24 24" fill="none">' +
       '    <path d="M4 5h16v11H7l-3 3V5z" fill="currentColor"/>' +
       "  </svg>" +
       "</button>" +
@@ -1167,6 +1171,11 @@
       "@supports (bottom: env(safe-area-inset-bottom)) { .rec-root { bottom: max(16px, calc(16px + env(safe-area-inset-bottom))); } }" +
       ".rec-launcher { all: unset; cursor: pointer; width: 56px; height: 56px; border-radius: 999px; background: var(--rec-color); color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(0,0,0,0.18); transition: transform .15s ease; }" +
       ".rec-launcher:hover { transform: scale(1.05); }" +
+      ".rec-launcher-face { position: relative; width: 60px; height: 60px; background: #fff; padding: 0; border: 3px solid #fff; box-sizing: border-box; }" +
+      ".rec-launcher-face .rec-launcher-img { width: 100%; height: 100%; border-radius: 999px; object-fit: cover; display: block; }" +
+      ".rec-launcher-face .rec-launcher-icon { display: none; }" +
+      ".rec-launcher-dot { display: none; }" +
+      ".rec-launcher-face .rec-launcher-dot { display: block; position: absolute; right: 1px; bottom: 1px; width: 13px; height: 13px; border-radius: 999px; background: #34d399; border: 2px solid #fff; }" +
       // Pin the teaser to a fixed width (was max-width). Absolutely-
       // positioned flex containers without an explicit width fall back to
       // min-content sizing, which collapsed the text column to the
