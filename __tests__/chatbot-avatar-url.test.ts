@@ -9,6 +9,9 @@ describe("optimizedAvatarUrl", () => {
       `https://leasestack.co/_next/image?url=${encodeURIComponent(BLOB)}&w=128&q=75`,
     );
   });
+  it("returns a relative URL when origin is empty (same-app pages)", () => {
+    expect(optimizedAvatarUrl(BLOB, "")).toBe(`/_next/image?url=${encodeURIComponent(BLOB)}&w=128&q=75`);
+  });
   it("passes null/empty through as null", () => {
     expect(optimizedAvatarUrl(null, "https://leasestack.co")).toBeNull();
     expect(optimizedAvatarUrl("", "https://leasestack.co")).toBeNull();
@@ -17,6 +20,7 @@ describe("optimizedAvatarUrl", () => {
     for (const u of [
       "https://img.clerk.com/a.png",
       "https://abc.public.blob.vercel-storage.com/a.svg",
+      "https://abc.public.blob.vercel-storage.com/a%2Esvg",
       "http://abc.public.blob.vercel-storage.com/a.png",
       "not a url",
     ]) expect(optimizedAvatarUrl(u, "https://leasestack.co")).toBe(u);
