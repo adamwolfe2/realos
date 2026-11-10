@@ -1,5 +1,6 @@
 import type { Organization, TenantSiteConfig } from "@prisma/client";
 import { ProactiveWidget } from "./proactive-widget";
+import { optimizedAvatarUrl } from "@/lib/chatbot/avatar-url";
 
 // Server component. Rendered inside app/(tenant)/layout.tsx once the tenant
 // has `moduleChatbot` and `TenantSiteConfig.enableChatbot` turned on. All
@@ -32,7 +33,8 @@ export function ChatbotLoader({
       slug={slug}
       brandName={brandName}
       personaName={personaName}
-      avatarUrl={config.chatbotAvatarUrl ?? null}
+      // Same-app page, so a relative optimizer URL works.
+      avatarUrl={optimizedAvatarUrl(config.chatbotAvatarUrl, "")}
       greeting={greeting}
       idleTriggerSeconds={idleTriggerSeconds}
       primaryCtaText={config.primaryCtaText ?? null}
