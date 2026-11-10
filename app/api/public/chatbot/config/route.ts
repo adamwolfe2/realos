@@ -3,6 +3,7 @@ import { LIVE_FEATURE_GATE_SELECT, liveFeaturesPaused } from "@/lib/billing/tria
 import type { SubscriptionStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { resolveChatbotConfig } from "@/lib/chatbot/resolve-config";
+import { optimizedAvatarUrl } from "@/lib/chatbot/avatar-url";
 import {
   chatbotConfigLimiter,
   checkRateLimit,
@@ -276,7 +277,8 @@ export async function GET(req: NextRequest) {
       // round frame on telegraphcommons.com), which read as a broken
       // render. Reporter screenshot 2026-05-20. The embed now renders an
       // explicit user-icon fallback when avatarUrl is null.
-      avatarUrl: cfg.chatbotAvatarUrl ?? null,
+      // Served resized via our image optimizer (see lib/chatbot/avatar-url).
+      avatarUrl: optimizedAvatarUrl(cfg.chatbotAvatarUrl, req.nextUrl.origin),
       captureMode: cfg.chatbotCaptureMode,
       idleTriggerSeconds: cfg.chatbotIdleTriggerSeconds,
       primaryCtaText: cfg.primaryCtaText ?? null,
