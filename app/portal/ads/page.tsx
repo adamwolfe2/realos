@@ -11,7 +11,7 @@ import {
   visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
-import { PageTitle, Panel, secondaryButton } from "@/components/portal/overview/kit";
+import { PageTitle, Panel } from "@/components/portal/overview/kit";
 import { EmptyState } from "@/components/portal/ui/empty-state";
 import { Megaphone } from "lucide-react";
 import { ExportButton } from "@/components/ui/export-button";
@@ -26,10 +26,16 @@ import {
 import { AdRetentionPanel } from "@/components/portal/ads/retention-panel";
 import { realAdAccountWhere } from "@/lib/integrations/real-ad-account";
 import { rollupAdsByProperty, sumRollups } from "@/lib/integrations/ads-property-rollup";
+import { byFormat, fatigue, FATIGUE_DROP, parseAdsRange, TOURED_OR_LATER, weeklyFunnel } from "@/lib/integrations/ads-insights-math";
+import { WeeklyProgress } from "./weekly-progress";
+import { FormatComparison } from "./format-comparison";
+import { RangeTabs } from "./range-tabs";
+import { WeeklyBrief, parseBriefContext } from "./weekly-brief";
+import { InsightCard } from "@/components/portal/insights/insight-card";
 import { PropertyBreakdown } from "./property-breakdown";
 
-// Roles that can edit the per-org retention override (Scale / Enterprise).
-const RETENTION_EDIT_ROLES: ReadonlySet<UserRole> = new Set([
+// Roles that can edit retention, campaign properties and act on suggestions.
+const ADS_EDIT_ROLES: ReadonlySet<UserRole> = new Set([
   UserRole.AGENCY_OWNER,
   UserRole.AGENCY_ADMIN,
   UserRole.AGENCY_OPERATOR,
@@ -49,7 +55,7 @@ export const dynamic = "force-dynamic";
 export default async function AdsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ properties?: string; property?: string }>;
+  searchParams: Promise<{ properties?: string; property?: string; range?: string }>;
 }) {
   const scope = await requireScope();
   // Either ads module unlocks the page; only gate when both are off.
@@ -81,7 +87,7 @@ export default async function AdsPage({
 
   const now = new Date();
   // 28-day window. We compare to the prior 28-day window for delta arrows.
-  const windowDays = 28;
+  const windowDays = parseAdsRange(sp.range);
   const dayMs = 24 * 60 * 60 * 1000;
   const currentStart = new Date(now.getTime() - windowDays * dayMs);
   const priorStart = new Date(now.getTime() - 2 * windowDays * dayMs);
@@ -276,7 +282,7 @@ export default async function AdsPage({
         adAccount: realAccountFilter,
         ...(Object.keys(propertyFilter).length > 0 ? { campaign: propertyFilter } : {}),
       },
-      _sum: { spendCents: true, conversions: true },
+      _sum: { spendCents: true, conversions: true, clicks: true, impressions: true },
     }),
     prisma.lead.groupBy({
       by: ["propertyId", "status"],
@@ -300,7 +306,95 @@ export default async function AdsPage({
     leadGroups: adLeadGroups.map((g) => ({ propertyId: g.propertyId, status: g.status, count: g._count._all })),
   });
   const adFunnel = sumRollups(propertyRollups);
-  const canAssignProperty = RETENTION_EDIT_ROLES.has(scope.role) && !scope.allowedPropertyIds;
+  const priorAdLeads = await prisma.lead.groupBy({
+    by: ["status"],
+    where: {
+      orgId: scope.orgId,
+      ...propertyFilter,
+      source: { in: [LeadSource.GOOGLE_ADS, LeadSource.META_ADS] },
+      createdAt: { gte: priorStart, lt: priorEnd },
+    },
+    _count: { _all: true },
+  });
+  const priorAdFunnel = priorAdLeads.reduce(
+    (t, g) => ({
+      leads: t.leads + g._count._all,
+      tours: t.tours + (TOURED_OR_LATER.has(g.status) ? g._count._all : 0),
+      signed: t.signed + (g.status === LeadStatus.SIGNED ? g._count._all : 0),
+    }),
+    { leads: 0, tours: 0, signed: 0 },
+  );
+  // Weekly progression (spend -> leads -> tours -> leases) and per-ad daily
+  // rows for the fatigue check.
+  const [adLeadsInWindow, creativeDaily] = await Promise.all([
+    prisma.lead.findMany({
+      where: {
+        orgId: scope.orgId,
+        ...propertyFilter,
+        source: { in: [LeadSource.GOOGLE_ADS, LeadSource.META_ADS] },
+        createdAt: { gte: since28d },
+      },
+      select: { createdAt: true, status: true },
+    }),
+    prisma.adCreativeMetricDaily.findMany({
+      where: { ...tenantWhere(scope), date: { gte: currentStart }, adCreative: creativeScope },
+      select: { adCreativeId: true, date: true, impressions: true, clicks: true },
+    }),
+  ]);
+  const weeks = weeklyFunnel(currentMetrics, adLeadsInWindow);
+  const dailyByCreative = new Map<string, { date: Date; impressions: number; clicks: number }[]>();
+  for (const r of creativeDaily) {
+    const list = dailyByCreative.get(r.adCreativeId) ?? [];
+    list.push(r);
+    dailyByCreative.set(r.adCreativeId, list);
+  }
+  const fatigueByCreative = new Map<string, number>();
+  for (const [id, rows] of dailyByCreative) {
+    const f = fatigue(rows);
+    if (f && f.drop >= FATIGUE_DROP) fatigueByCreative.set(id, f.drop);
+  }
+  // Weekly read + open ad suggestions (Insight rows from the detector cron).
+  const insightScope = {
+    orgId: scope.orgId,
+    category: "ads",
+    OR: [
+      { propertyId: null },
+      { propertyId: { in: properties.map((p) => p.id) } },
+    ],
+  };
+  const [briefRow, suggestionRows] = await Promise.all([
+    // The brief is written from the whole portfolio, so only full-portfolio
+    // users see it; a property-restricted user would read other buildings'
+    // numbers in its prose.
+    scope.allowedPropertyIds ? Promise.resolve(null) : prisma.insight.findFirst({
+      where: { orgId: scope.orgId, kind: "ads_weekly_brief" },
+      orderBy: { createdAt: "desc" },
+      select: { title: true, body: true, context: true },
+    }),
+    prisma.insight.findMany({
+      where: {
+        ...insightScope,
+        // Budget shift compares two buildings by name: full-portfolio users only.
+        kind: { notIn: scope.allowedPropertyIds ? ["ads_weekly_brief", "ad_budget_shift"] : ["ads_weekly_brief"] },
+        status: { in: ["open", "acknowledged"] },
+        AND: [{ OR: [{ snoozeUntil: null }, { snoozeUntil: { lt: now } }] }],
+      },
+      orderBy: { createdAt: "desc" },
+      take: 12,
+      select: {
+        id: true, kind: true, category: true, severity: true, status: true, title: true, body: true,
+        suggestedAction: true, href: true, createdAt: true, context: true,
+        property: { select: { id: true, name: true } },
+      },
+    }),
+  ]);
+  const SEVERITY_RANK: Record<string, number> = { critical: 0, warning: 1, info: 2 };
+  const suggestions = [...suggestionRows]
+    .sort((a, b) => (SEVERITY_RANK[a.severity] ?? 3) - (SEVERITY_RANK[b.severity] ?? 3))
+    .slice(0, 6)
+    .map((r) => ({ ...r, context: (r.context ?? null) as Record<string, unknown> | null }));
+  const windowTotalsByCampaign = new Map(campaignTotals.map((t) => [t.campaignId, t._sum]));
+  const canAssignProperty = ADS_EDIT_ROLES.has(scope.role) && !scope.allowedPropertyIds;
 
   const totalsByCreative = new Map(creativeTotals.map((t) => [t.adCreativeId, t._sum]));
   const creativeItems: CreativeItem[] = creativeRows.map((c) => {
@@ -320,6 +414,7 @@ export default async function AdsPage({
       clicks: t?.clicks ?? 0,
       spendCents: t?.spendCents ?? 0,
       leads: Math.round(t?.conversions ?? 0),
+      fatigueDrop: fatigueByCreative.get(c.id) ?? null,
     };
   });
 
@@ -328,7 +423,7 @@ export default async function AdsPage({
     adDataRetentionMonths: orgRetention?.adDataRetentionMonths ?? null,
   });
   const retentionSummary = describeAdRetentionPolicy(retentionPolicy);
-  const canEditRetention = RETENTION_EDIT_ROLES.has(scope.role);
+  const canEditRetention = ADS_EDIT_ROLES.has(scope.role);
 
   // Build spend-per-LeadSource from the 28-day daily metrics + account platform.
   const accountPlatformMap = new Map(accounts.map((a) => [a.id, a.platform]));
@@ -389,11 +484,12 @@ export default async function AdsPage({
         title="Paid ads"
         subtitle={
           accounts.length
-            ? `${accounts.length} ${accounts.length === 1 ? "account" : "accounts"} connected · ${totalSpendCents ? `$${Math.round(totalSpendCents / 100).toLocaleString()}` : "$0"} spent in 28 days · refreshes daily`
+            ? `${accounts.length} ${accounts.length === 1 ? "account" : "accounts"} connected · ${totalSpendCents ? `$${Math.round(totalSpendCents / 100).toLocaleString()}` : "$0"} spent in ${windowDays} days · refreshes daily`
             : "Connect Google Ads or Meta to see spend and results"
         }
         actions={
           <div className="flex items-center gap-2 flex-wrap">
+            <RangeTabs current={windowDays} params={sp} />
             <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded-[2px]" />}>
               <PropertyMultiSelect
                 properties={properties}
@@ -401,21 +497,25 @@ export default async function AdsPage({
               />
             </Suspense>
             <ExportButton href="/api/tenant/ad-metrics/export?days=90" />
-            <Link
-              href="/portal/creative"
-              className={secondaryButton}
-            >
-              Request creative
-            </Link>
-            <Link
-              href="/portal/connect"
-              className={secondaryButton}
-            >
-              Connect an ad account
-            </Link>
           </div>
         }
       />
+
+      {accounts.length > 0 && briefRow ? (
+        <WeeklyBrief brief={{ title: briefRow.title, body: briefRow.body, ...parseBriefContext(briefRow.context) }} />
+      ) : null}
+
+      {accounts.length > 0 && suggestions.length ? (
+        <Panel title="Suggestions" aside="From your numbers · you decide, we never change your campaigns">
+          <ul className="grid gap-3 lg:grid-cols-2">
+            {suggestions.map((i) => (
+              <li key={i.id}>
+                <InsightCard insight={i} dense readOnly={!ADS_EDIT_ROLES.has(scope.role)} />
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
 
       {accounts.length === 0 ? (
         <EmptyState
@@ -446,10 +546,10 @@ export default async function AdsPage({
             name: c.name,
             status: c.status ?? "UNKNOWN",
             objective: c.objective ?? null,
-            impressions: c.impressions ?? 0,
-            clicks: c.clicks ?? 0,
-            conversions: c.conversions ?? 0,
-            spendCents: c.spendToDateCents ?? 0,
+            impressions: windowTotalsByCampaign.get(c.id)?.impressions ?? 0,
+            clicks: windowTotalsByCampaign.get(c.id)?.clicks ?? 0,
+            conversions: windowTotalsByCampaign.get(c.id)?.conversions ?? 0,
+            spendCents: windowTotalsByCampaign.get(c.id)?.spendCents ?? 0,
             budgetCents: c.monthlyBudgetCents ?? null,
             dailyBudgetCents: c.dailyBudgetCents ?? null,
             propertyId: c.propertyId,
@@ -470,20 +570,32 @@ export default async function AdsPage({
             conversions: m._sum.conversions ?? 0,
           }))}
           adFunnel={adFunnel}
+          priorAdFunnel={priorAdFunnel}
+          rangeDays={windowDays}
           properties={properties}
           canAssignProperty={canAssignProperty}
         />
-        <PropertyBreakdown rows={propertyRollups} />
+        <PropertyBreakdown rows={propertyRollups} rangeDays={windowDays} />
+        <WeeklyProgress weeks={weeks} />
+        <FormatComparison rows={byFormat(creativeItems)} />
         </>
       )}
 
       {accounts.length > 0 ? (
-        <Panel title="Your ads" aside="Each ad you run, ranked by results · 28 days · we only read, never edit">
+        <Panel
+          title="Your ads"
+          aside={
+            <span className="inline-flex items-center gap-3">
+              <span>{`Ranked by results · ${windowDays} days · we only read, never edit`}</span>
+              <Link href="/portal/creative" className="font-medium text-[var(--t-accent)] hover:underline underline-offset-2">Request creative</Link>
+            </span>
+          }
+        >
           <AdCreativeGallery items={creativeItems} />
         </Panel>
       ) : null}
 
-      <Panel title="Marketing ROI by channel" aside="Spend, leads, applications and signed leases per source · 28 days">
+      <Panel title="Marketing ROI by channel" aside={`Spend, leads, applications and signed leases per source · ${windowDays} days`}>
         <MarketingRoiTable rows={roiRows} />
         <div className="mt-4 border-t border-[var(--t-divider)] pt-3">
           <AdRetentionPanel

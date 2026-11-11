@@ -1,17 +1,12 @@
 import "server-only";
+import { leadSourceForPlatform } from "@/lib/integrations/ad-lead-source";
 import { prisma } from "@/lib/db";
-import { LeadSource } from "@prisma/client";
 import { isoWeekKey } from "../iso-week";
 import type { Detector, DetectedInsight } from "../types";
 
 const DAY = 24 * 60 * 60 * 1000;
 const MIN_SPEND_CENTS = 50_000; // $500 — avoid noise from small-budget tests
 
-// Map AdAccount.platform to the LeadSources we credit it with.
-const SOURCE_BY_PLATFORM: Record<string, LeadSource[]> = {
-  GOOGLE_ADS: [LeadSource.GOOGLE_ADS],
-  META_ADS: [LeadSource.META_ADS],
-};
 
 /**
  * Cost-per-lead spike detector.
@@ -81,7 +76,8 @@ export const cplSpikeDetector: Detector = {
       if (currSpendC < MIN_SPEND_CENTS || prevSpendC < MIN_SPEND_CENTS) continue;
 
       // Count leads that credit this platform in both windows.
-      const sources = SOURCE_BY_PLATFORM[acct.platform] ?? [];
+      const leadSource = leadSourceForPlatform(acct.platform);
+      const sources = leadSource ? [leadSource] : [];
       if (sources.length === 0) continue;
 
       const [currLeads, prevLeads] = await Promise.all([
