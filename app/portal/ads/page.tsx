@@ -31,7 +31,7 @@ import { WeeklyProgress } from "./weekly-progress";
 import { FormatComparison } from "./format-comparison";
 import { RangeTabs } from "./range-tabs";
 import { WeeklyBrief, parseBriefContext } from "./weekly-brief";
-import { InsightCard } from "@/components/portal/insights/insight-card";
+import { SuggestionList } from "./suggestion-list";
 import { PropertyBreakdown } from "./property-breakdown";
 
 // Roles that can edit retention, campaign properties and act on suggestions.
@@ -501,20 +501,17 @@ export default async function AdsPage({
         }
       />
 
-      {accounts.length > 0 && briefRow ? (
-        <WeeklyBrief brief={{ title: briefRow.title, body: briefRow.body, ...parseBriefContext(briefRow.context) }} />
-      ) : null}
-
-      {accounts.length > 0 && suggestions.length ? (
-        <Panel title="Suggestions" aside="From your numbers · you decide, we never change your campaigns">
-          <ul className="grid gap-3 lg:grid-cols-2">
-            {suggestions.map((i) => (
-              <li key={i.id}>
-                <InsightCard insight={i} dense readOnly={!ADS_EDIT_ROLES.has(scope.role)} />
-              </li>
-            ))}
-          </ul>
-        </Panel>
+      {accounts.length > 0 && (briefRow || suggestions.length) ? (
+        <div className="grid gap-5 xl:grid-cols-5">
+          {briefRow ? (
+            <div className="xl:col-span-3">
+              <WeeklyBrief brief={{ title: briefRow.title, body: briefRow.body, ...parseBriefContext(briefRow.context) }} />
+            </div>
+          ) : null}
+          <div className={briefRow ? "xl:col-span-2" : "xl:col-span-5"}>
+            <SuggestionList items={suggestions} />
+          </div>
+        </div>
       ) : null}
 
       {accounts.length === 0 ? (

@@ -20,7 +20,6 @@ function per(spendCents: number, count: number): string {
 export function PropertyBreakdown({ rows, rangeDays }: { rows: PropertyAdRollup[]; rangeDays: number }) {
   if (rows.length === 0) return null;
   const maxSpend = Math.max(1, ...rows.map((r) => r.spendCents));
-  const hasPortfolioRow = rows.some((r) => r.propertyId === null && r.spendCents > 0);
 
   return (
     <Panel
@@ -47,7 +46,7 @@ export function PropertyBreakdown({ rows, rangeDays }: { rows: PropertyAdRollup[
             <th className="px-4 py-2 text-left">Property</th>
             <th className="px-4 py-2 text-left">Spend</th>
             <th className="px-4 py-2 text-right" title="Conversions as reported by Google and Meta">Platform conv.</th>
-            <th className="px-4 py-2 text-right">Leads</th>
+            <th className="px-4 py-2 text-right" title="From your leasing system, matched to the ad that brought the renter in">Leads</th>
             <th className="px-4 py-2 text-right">Tours</th>
             <th className="px-4 py-2 text-right">Leases</th>
             <th className="px-4 py-2 text-right">Cost / lead</th>
@@ -69,7 +68,7 @@ export function PropertyBreakdown({ rows, rangeDays }: { rows: PropertyAdRollup[
                   <div className="font-medium text-[var(--t-ink)]">{r.name}</div>
                 )}
                 {r.propertyId === null ? (
-                  <div className="text-[11.5px] text-[var(--t-muted)]">Campaigns that promote several properties</div>
+                  <div className="text-[11.5px] text-[var(--t-muted)]">Multi-property campaigns</div>
                 ) : null}
               </td>
               <td className="px-4 py-3">
@@ -97,10 +96,6 @@ export function PropertyBreakdown({ rows, rangeDays }: { rows: PropertyAdRollup[
           ))}
         </tbody>
       </table>
-      <p className="border-t border-[var(--t-divider)] px-4 py-2.5 text-[12px] text-[var(--t-muted)]">
-        Leads, tours and leases come from your leasing system, matched to the ad that brought the renter in.
-        {hasPortfolioRow ? " Portfolio-wide spend is not split across properties, so per-property costs only count that property's own campaigns." : ""}
-      </p>
     </Panel>
   );
 }
