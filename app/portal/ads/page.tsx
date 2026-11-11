@@ -25,6 +25,8 @@ import {
 } from "@/lib/billing/retention";
 import { AdRetentionPanel } from "@/components/portal/ads/retention-panel";
 import { realAdAccountWhere } from "@/lib/integrations/real-ad-account";
+import { rollupAdsByProperty, sumRollups } from "@/lib/integrations/ads-property-rollup";
+import { PropertyBreakdown } from "./property-breakdown";
 
 // Roles that can edit the per-org retention override (Scale / Enterprise).
 const RETENTION_EDIT_ROLES: ReadonlySet<UserRole> = new Set([
@@ -144,6 +146,8 @@ export default async function AdsPage({
         conversions: true,
         spendToDateCents: true,
         monthlyBudgetCents: true,
+        dailyBudgetCents: true,
+        propertyId: true,
         property: { select: { name: true } },
       },
     }),
@@ -261,6 +265,43 @@ export default async function AdsPage({
       _sum: { impressions: true, clicks: true, spendCents: true, conversions: true },
     }),
   ]);
+  // Per-property rollup: 28-day spend per campaign, plus ad-sourced leads
+  // by property and stage (the leasing side, synced from the PMS).
+  const [campaignTotals, adLeadGroups] = await Promise.all([
+    prisma.adMetricDaily.groupBy({
+      by: ["campaignId"],
+      where: {
+        ...tenantWhere(scope),
+        date: { gte: currentStart },
+        adAccount: realAccountFilter,
+        ...(Object.keys(propertyFilter).length > 0 ? { campaign: propertyFilter } : {}),
+      },
+      _sum: { spendCents: true, conversions: true },
+    }),
+    prisma.lead.groupBy({
+      by: ["propertyId", "status"],
+      where: {
+        orgId: scope.orgId,
+        ...propertyFilter,
+        source: { in: [LeadSource.GOOGLE_ADS, LeadSource.META_ADS] },
+        createdAt: { gte: since28d },
+      },
+      _count: { _all: true },
+    }),
+  ]);
+  const propertyRollups = rollupAdsByProperty({
+    properties,
+    campaigns,
+    campaignTotals: campaignTotals.map((t) => ({
+      campaignId: t.campaignId,
+      spendCents: t._sum.spendCents ?? 0,
+      conversions: t._sum.conversions ?? 0,
+    })),
+    leadGroups: adLeadGroups.map((g) => ({ propertyId: g.propertyId, status: g.status, count: g._count._all })),
+  });
+  const adFunnel = sumRollups(propertyRollups);
+  const canAssignProperty = RETENTION_EDIT_ROLES.has(scope.role) && !scope.allowedPropertyIds;
+
   const totalsByCreative = new Map(creativeTotals.map((t) => [t.adCreativeId, t._sum]));
   const creativeItems: CreativeItem[] = creativeRows.map((c) => {
     const t = totalsByCreative.get(c.id);
@@ -341,8 +382,6 @@ export default async function AdsPage({
     (sum, m) => sum + m.spendCents,
     0,
   );
-  const totalLeadsAttributed = roiRows.reduce((sum, r) => sum + r.leads, 0);
-  const totalSignedAttributed = roiRows.reduce((sum, r) => sum + r.signed, 0);
 
   return (
     <div className="w-full space-y-5">
@@ -412,6 +451,8 @@ export default async function AdsPage({
             conversions: c.conversions ?? 0,
             spendCents: c.spendToDateCents ?? 0,
             budgetCents: c.monthlyBudgetCents ?? null,
+            dailyBudgetCents: c.dailyBudgetCents ?? null,
+            propertyId: c.propertyId,
             propertyName: c.property?.name ?? null,
           }))}
           currentMetrics={currentMetrics.map((m) => ({
@@ -428,9 +469,11 @@ export default async function AdsPage({
             clicks: m._sum.clicks ?? 0,
             conversions: m._sum.conversions ?? 0,
           }))}
-          leadsAttributed={totalLeadsAttributed}
-          signedLeases={totalSignedAttributed}
+          adFunnel={adFunnel}
+          properties={properties}
+          canAssignProperty={canAssignProperty}
         />
+        <PropertyBreakdown rows={propertyRollups} />
         </>
       )}
 

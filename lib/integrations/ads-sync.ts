@@ -1,5 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
+import { matchCampaignToProperty } from "@/lib/integrations/campaign-property-match";
 import { AdPlatform, AuditAction, Prisma, type AdAccount } from "@prisma/client";
 import {
   fetchGoogleAdsAdDailyMetrics,
@@ -165,7 +167,8 @@ async function syncGoogleAds(
   const customerId = account.externalAccountId;
 
   const campaigns = await fetchGoogleAdsCampaigns(creds, customerId);
-  await upsertCampaigns(account, campaigns, AdPlatform.GOOGLE_ADS, stats);
+  const newCampaignIds = await upsertCampaigns(account, campaigns, AdPlatform.GOOGLE_ADS, stats);
+  await linkNewCampaigns(account, newCampaignIds, stats);
 
   const metrics = await fetchGoogleAdsDailyMetrics(
     creds,
@@ -197,7 +200,8 @@ async function syncMetaAds(
   const adAccountId = account.externalAccountId;
 
   const campaigns = await fetchMetaAdsCampaigns(creds, adAccountId);
-  await upsertCampaigns(account, campaigns, AdPlatform.META, stats);
+  const newCampaignIds = await upsertCampaigns(account, campaigns, AdPlatform.META, stats);
+  await linkNewCampaigns(account, newCampaignIds, stats);
 
   const metrics = await fetchMetaAdsDailyMetrics(
     creds,
@@ -351,7 +355,14 @@ async function upsertCampaigns(
   campaigns: (GoogleAdsCampaign | MetaAdsCampaign)[],
   platform: AdPlatform,
   stats: AdsSyncStats
-): Promise<void> {
+): Promise<Set<string>> {
+  // Which campaigns this account has never seen, for first-sight property linking.
+  const known = await prisma.adCampaign.findMany({
+    where: { adAccountId: account.id },
+    select: { externalCampaignId: true },
+  });
+  const knownIds = new Set(known.map((k) => k.externalCampaignId));
+  const created = new Set<string>();
   for (const c of campaigns) {
     try {
       await prisma.adCampaign.upsert({
@@ -387,11 +398,50 @@ async function upsertCampaigns(
         },
       });
       stats.campaignsUpserted += 1;
+      if (!knownIds.has(c.externalCampaignId)) created.add(c.externalCampaignId);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
       stats.failedWrites += 1;
       stats.warnings.push(`campaign ${c.externalCampaignId}: ${message}`);
     }
+  }
+  return created;
+}
+
+// A campaign seen for the first time gets a property from its name
+// ("Lair | Search" -> The Lair). Only first sight: after that the operator's
+// pick (including "Whole portfolio", stored as NULL) is never overwritten.
+// A failure here costs per-property reporting, not the sync, so it is
+// recorded as a warning instead of failing the run.
+async function linkNewCampaigns(
+  account: AdAccount,
+  newExternalIds: ReadonlySet<string>,
+  stats: AdsSyncStats,
+): Promise<void> {
+  if (newExternalIds.size === 0) return;
+  try {
+    const [unassigned, properties] = await Promise.all([
+      prisma.adCampaign.findMany({
+        where: { adAccountId: account.id, propertyId: null, externalCampaignId: { in: [...newExternalIds] } },
+        select: { id: true, name: true },
+      }),
+      prisma.property.findMany({
+        where: marketablePropertyWhere(account.orgId),
+        select: { id: true, name: true },
+      }),
+    ]);
+    for (const c of unassigned) {
+      const propertyId = matchCampaignToProperty(c.name, properties);
+      if (!propertyId) continue;
+      await prisma.adCampaign.updateMany({
+        where: { id: c.id, propertyId: null },
+        data: { propertyId },
+      });
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    console.error(`[ads-sync] property linking failed for account ${account.id}:`, err);
+    stats.warnings.push(`property linking: ${message}`);
   }
 }
 

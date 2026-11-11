@@ -185,12 +185,33 @@ function Thumb({ item }: { item: CreativeItem }) {
       />
     );
   }
+  if (!item.thumbnailUrl && item.platform === AdPlatform.GOOGLE_ADS && item.headline) {
+    return <SearchPreview item={item} />;
+  }
   return (
-    <div className="flex aspect-[2/1] w-full flex-col items-center justify-center gap-1 bg-neutral-50 px-4 text-center">
+    <div className="flex aspect-square w-full flex-col items-center justify-center gap-1 bg-neutral-50 px-4 text-center">
       {item.thumbnailUrl ? <ImageOff className="h-4 w-4 text-[var(--t-muted)]" /> : null}
       <span className="text-[11px] uppercase tracking-wide text-[var(--t-muted)]">
         {item.format === "video" ? "Video" : item.format === "carousel" ? "Carousel" : "Text ad"}
       </span>
+    </div>
+  );
+}
+
+// Search ads have no image: show them the way a renter sees them on Google.
+function SearchPreview({ item }: { item: CreativeItem }) {
+  const host =
+    item.landingUrl && URL.canParse(item.landingUrl)
+      ? new URL(item.landingUrl).hostname.replace(/^www\./, "")
+      : "";
+  return (
+    <div className="flex aspect-square w-full flex-col justify-center gap-1.5 bg-[var(--t-wash)] px-5" aria-label="Search ad preview">
+      <div className="rounded-[8px] border border-[var(--t-border)] bg-white p-3.5 shadow-[0_1px_2px_rgba(11,21,48,0.05)]">
+        <p className="text-[11px] font-semibold text-[#202124]">Sponsored</p>
+        {host ? <p className="truncate text-[11.5px] text-[#4d5156]">{host}</p> : null}
+        <p className="mt-1 line-clamp-2 text-[15px] leading-snug text-[#1a0dab]">{item.headline}</p>
+        {item.body ? <p className="mt-1 line-clamp-3 text-[12px] leading-relaxed text-[#4d5156]">{item.body}</p> : null}
+      </div>
     </div>
   );
 }

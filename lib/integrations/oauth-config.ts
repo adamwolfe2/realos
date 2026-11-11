@@ -1,4 +1,5 @@
 import "server-only";
+import { META_GRAPH_VERSION } from "@/lib/integrations/meta-graph-version";
 
 // ---------------------------------------------------------------------------
 // OAuth provider configs. Dormant until OAUTH_ENABLED=true AND
@@ -200,8 +201,8 @@ function metaConfig(scopes: string[]): ProviderConfig {
     );
   }
   return {
-    authorizationUrl: "https://www.facebook.com/v22.0/dialog/oauth",
-    tokenUrl: "https://graph.facebook.com/v22.0/oauth/access_token",
+    authorizationUrl: `https://www.facebook.com/${META_GRAPH_VERSION}/dialog/oauth`,
+    tokenUrl: `https://graph.facebook.com/${META_GRAPH_VERSION}/oauth/access_token`,
     clientId,
     clientSecret,
     scopes,

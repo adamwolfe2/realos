@@ -27,7 +27,9 @@ import type { AdAccount } from "@prisma/client";
 // gRPC adds Edge-incompatible deps, and we want to keep the cold-start fast.
 // ---------------------------------------------------------------------------
 
-const GOOGLE_ADS_API_VERSION = "v17";
+// v17 was sunset in 2025; v25 (Jul 2026) is supported until ~Aug 2027.
+// Bump before Google's sunset date: https://developers.google.com/google-ads/api/docs/sunset-dates
+const GOOGLE_ADS_API_VERSION = "v25";
 const GOOGLE_ADS_API_BASE = `https://googleads.googleapis.com/${GOOGLE_ADS_API_VERSION}`;
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 
@@ -476,9 +478,13 @@ function asNumber(v: unknown): number {
   return 0;
 }
 
+// Google returns "yyyy-MM-dd HH:mm:ss" in the customer's time zone (v23+).
+// We only keep the calendar day, pinned to UTC midnight like metric dates.
 function asDate(v: unknown): Date | null {
   if (!v || typeof v !== "string") return null;
-  const d = new Date(v);
+  const day = /^\d{4}-\d{2}-\d{2}/.exec(v)?.[0];
+  if (!day) return null;
+  const d = new Date(`${day}T00:00:00Z`);
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
@@ -494,8 +500,8 @@ export async function fetchGoogleAdsCampaigns(
         campaign.name,
         campaign.status,
         campaign.advertising_channel_type,
-        campaign.start_date,
-        campaign.end_date,
+        campaign.start_date_time,
+        campaign.end_date_time,
         campaign_budget.amount_micros
       FROM campaign
     `,
@@ -508,8 +514,8 @@ export async function fetchGoogleAdsCampaigns(
         name?: string;
         status?: string;
         advertisingChannelType?: string;
-        startDate?: string;
-        endDate?: string;
+        startDateTime?: string;
+        endDateTime?: string;
       };
       campaignBudget?: { amountMicros?: string | number };
     };
@@ -521,8 +527,8 @@ export async function fetchGoogleAdsCampaigns(
       dailyBudgetCents: r.campaignBudget?.amountMicros
         ? microsToCents(r.campaignBudget.amountMicros)
         : null,
-      startDate: asDate(r.campaign?.startDate),
-      endDate: asDate(r.campaign?.endDate),
+      startDate: asDate(r.campaign?.startDateTime),
+      endDate: asDate(r.campaign?.endDateTime),
     };
   }).filter((c) => c.externalCampaignId);
 }

@@ -8,6 +8,7 @@ import { Logo, Metric as Stat, MetricStrip, Panel, Pill, change } from "@/compon
 import { cn } from "@/lib/utils";
 import { DataPlaceholder } from "@/components/portal/ui/data-placeholder";
 import { Clock } from "lucide-react";
+import { CampaignPropertySelect } from "./campaign-property-select";
 
 // Lazy-load recharts (~80KB gzipped). The chart only renders when there's
 // data anyway, so deferring it cuts initial bundle for /portal/ads.
@@ -62,7 +63,10 @@ type Campaign = {
   /** Monthly budget as configured on the native platform. Null when the
    *  platform hasn't reported one (e.g. campaign uses a lifetime budget). */
   budgetCents: number | null;
+  /** Daily budget from the platform (Google campaign budget, Meta daily_budget). */
+  dailyBudgetCents: number | null;
   /** Property this campaign is scoped to, or null for an org-wide campaign. */
+  propertyId: string | null;
   propertyName: string | null;
 };
 
@@ -113,15 +117,18 @@ export function AdsDashboard({
   campaigns,
   currentMetrics,
   priorMetrics,
-  leadsAttributed,
-  signedLeases,
+  adFunnel,
+  properties,
+  canAssignProperty,
 }: {
   accounts: Account[];
   campaigns: Campaign[];
   currentMetrics: Metric[];
   priorMetrics: PriorMetric[];
-  leadsAttributed: number;
-  signedLeases: number;
+  /** Ad-sourced leads in LeaseStack over the window, and how far they got. */
+  adFunnel: { leads: number; tours: number; signed: number };
+  properties: { id: string; name: string }[];
+  canAssignProperty: boolean;
 }) {
   const [sortKey, setSortKey] = React.useState<SortKey>("spend");
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("desc");
@@ -175,11 +182,11 @@ export function AdsDashboard({
           label="Conversions"
           value={totals.conversions.toLocaleString(undefined, { maximumFractionDigits: 1 })}
           delta={change(totals.conversions, priorTotals.conversions)}
-          note="Reported by the platforms"
+          note={costPerConversionCents ? `As reported by Google and Meta · ${formatCents(costPerConversionCents)} each` : "As reported by Google and Meta"}
         />
-        <Stat label="Cost per conversion" value={costPerConversionCents ? formatCents(costPerConversionCents) : "—"} note="Spend over conversions" />
-        <Stat label="Leads attributed" value={leadsAttributed.toLocaleString()} note="Matched to a lead in LeaseStack" />
-        <Stat label="Signed leases" value={signedLeases.toLocaleString()} note="From ad-sourced leads" />
+        <Stat label="Leads from ads" value={adFunnel.leads.toLocaleString()} note={costPer(totals.spendCents, adFunnel.leads, "lead")} />
+        <Stat label="Tours" value={adFunnel.tours.toLocaleString()} note={costPer(totals.spendCents, adFunnel.tours, "tour")} />
+        <Stat label="Signed leases" value={adFunnel.signed.toLocaleString()} note={costPer(totals.spendCents, adFunnel.signed, "lease")} />
       </MetricStrip>
 
       <div className="grid gap-5 xl:grid-cols-3">
@@ -361,13 +368,21 @@ export function AdsDashboard({
                       </span>
                     </td>
                     <td className="px-4 py-2 text-xs text-muted-foreground">
-                      {c.propertyName ?? "Org-wide"}
+                      {canAssignProperty ? (
+                        <CampaignPropertySelect campaignId={c.id} propertyId={c.propertyId} properties={properties} />
+                      ) : (
+                        c.propertyName ?? "Whole portfolio"
+                      )}
                     </td>
                     <td className="px-4 py-2 text-center">
                       <Pill tone={campaignTone(c.status)}>{c.status.charAt(0) + c.status.slice(1).toLowerCase()}</Pill>
                     </td>
                     <td className="px-4 py-2 text-right tabular-nums">
-                      {c.budgetCents ? `${formatCents(c.budgetCents)}/mo` : "—"}
+                      {c.dailyBudgetCents
+                        ? `${formatCents(c.dailyBudgetCents)}/day`
+                        : c.budgetCents
+                          ? `${formatCents(c.budgetCents)}/mo`
+                          : "—"}
                     </td>
                     <td className="px-4 py-2 text-right tabular-nums">
                       {formatCents(c.spendCents)}
@@ -568,3 +583,8 @@ function formatCents(cents: number): string {
   });
 }
 
+
+function costPer(spendCents: number, count: number, unit: string): string {
+  if (count <= 0) return `No ${unit}s yet in this window`;
+  return `${formatCents(Math.round(spendCents / count))} per ${unit}`;
+}
