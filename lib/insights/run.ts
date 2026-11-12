@@ -17,6 +17,9 @@ import { seoLeadsDisconnectDetector } from "./detectors/seo-leads-disconnect";
 import { chatbotDropoffDetector } from "./detectors/chatbot-dropoff";
 import { audienceExhaustionDetector } from "./detectors/audience-exhaustion";
 import { rentVsPortfolioDetector } from "./detectors/rent-vs-portfolio";
+import { adBudgetShiftDetector } from "./detectors/ad-budget-shift";
+import { creativeFatigueDetector } from "./detectors/creative-fatigue";
+import { adsWeeklyBriefDetector } from "./detectors/ads-weekly-brief";
 import { marketablePropertyIds } from "@/lib/tenancy/property-filter";
 import { upsertInsights, autoResolveStale } from "./upsert";
 import { polishInsights } from "./llm-polish";
@@ -50,6 +53,12 @@ const DETECTORS: Detector[] = [
   chatbotDropoffDetector,
   audienceExhaustionDetector,
   rentVsPortfolioDetector,
+  // Paid ads (2026-11-11): budget shift between properties by cost per
+  // signed lease, and per-ad creative fatigue. Weekly-keyed.
+  adBudgetShiftDetector,
+  creativeFatigueDetector,
+  // Writes once per org per week (checks for the row before calling Claude).
+  adsWeeklyBriefDetector,
 ];
 
 // Detectors that produce one-insight-per-entity need their stale siblings

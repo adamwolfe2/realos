@@ -25,6 +25,8 @@ export type CreativeItem = {
   clicks: number;
   spendCents: number;
   leads: number;
+  /** Share the click rate fell, last 7 days vs first 7 of the window (0.4 = 40%). Null when not fatigued or too little data. */
+  fatigueDrop?: number | null;
 };
 
 type SortKey = "cpl" | "spend" | "leads" | "ctr";
@@ -146,11 +148,16 @@ function CreativeCard({ item, callout }: { item: CreativeItem; callout: "best" |
           <Cell label="Per lead" value={cpl === null ? "—" : money(cpl)} />
           <Cell label="CTR" value={pct(ctr(item))} />
         </dl>
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
             {callout === "best" ? <Pill tone="good">Best cost per lead</Pill> : null}
             {callout === "worst" ? <Pill tone="bad">{item.leads === 0 ? "Spend, no leads" : "Highest cost per lead"}</Pill> : null}
             {paused ? <Pill tone="neutral">Paused</Pill> : null}
+            {!paused && item.fatigueDrop ? (
+              <span title="Click rate in the last 7 days vs the first 7 days of this range. A refresh usually helps.">
+                <Pill tone="warn">{`Click rate down ${Math.round(item.fatigueDrop * 100)}%`}</Pill>
+              </span>
+            ) : null}
           </div>
           {item.landingUrl ? (
             <a
@@ -185,12 +192,33 @@ function Thumb({ item }: { item: CreativeItem }) {
       />
     );
   }
+  if (!item.thumbnailUrl && item.platform === AdPlatform.GOOGLE_ADS && item.headline) {
+    return <SearchPreview item={item} />;
+  }
   return (
-    <div className="flex aspect-[2/1] w-full flex-col items-center justify-center gap-1 bg-neutral-50 px-4 text-center">
+    <div className="flex aspect-square w-full flex-col items-center justify-center gap-1 bg-neutral-50 px-4 text-center">
       {item.thumbnailUrl ? <ImageOff className="h-4 w-4 text-[var(--t-muted)]" /> : null}
       <span className="text-[11px] uppercase tracking-wide text-[var(--t-muted)]">
         {item.format === "video" ? "Video" : item.format === "carousel" ? "Carousel" : "Text ad"}
       </span>
+    </div>
+  );
+}
+
+// Search ads have no image: show them the way a renter sees them on Google.
+function SearchPreview({ item }: { item: CreativeItem }) {
+  const host =
+    item.landingUrl && URL.canParse(item.landingUrl)
+      ? new URL(item.landingUrl).hostname.replace(/^www\./, "")
+      : "";
+  return (
+    <div className="flex aspect-square w-full flex-col justify-center gap-1.5 bg-[var(--t-wash)] px-5" aria-label="Search ad preview">
+      <div className="rounded-[8px] border border-[var(--t-border)] bg-white p-3.5 shadow-[0_1px_2px_rgba(11,21,48,0.05)]">
+        <p className="text-[11px] font-semibold text-[#202124]">Sponsored</p>
+        {host ? <p className="truncate text-[11.5px] text-[#4d5156]">{host}</p> : null}
+        <p className="mt-1 line-clamp-2 text-[15px] leading-snug text-[#1a0dab]">{item.headline}</p>
+        {item.body ? <p className="mt-1 line-clamp-3 text-[12px] leading-relaxed text-[#4d5156]">{item.body}</p> : null}
+      </div>
     </div>
   );
 }

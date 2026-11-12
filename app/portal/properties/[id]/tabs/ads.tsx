@@ -12,6 +12,7 @@ import {
 } from "@/components/portal/ad-library/ad-library-panel";
 import { DataPlaceholder } from "@/components/portal/ui/data-placeholder";
 import { Megaphone } from "lucide-react";
+import { Logo } from "@/components/portal/overview/kit";
 
 export async function AdsTab({
   orgId,
@@ -142,7 +143,10 @@ export async function AdsTab({
                     {c.name}
                   </td>
                   <td className="py-2.5 text-xs text-muted-foreground">
-                    {c.platform}
+                    <span className="inline-flex items-center gap-1.5">
+                      <Logo slug={c.platform === "META" ? "meta-ads" : "google-ads"} size={13} />
+                      {c.platform === "META" ? "Meta" : c.platform === "GOOGLE_ADS" ? "Google Ads" : c.platform}
+                    </span>
                   </td>
                   <td className="py-2.5">
                     <StatusChip status={c.status} />

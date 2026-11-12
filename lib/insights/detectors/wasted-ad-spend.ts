@@ -1,17 +1,13 @@
 import "server-only";
 import { prisma } from "@/lib/db";
-import { LeadSource } from "@prisma/client";
 import { isoWeekKey } from "../iso-week";
 import type { Detector, DetectedInsight } from "../types";
+import { adLeadWhere, leadSourceForPlatform } from "@/lib/integrations/ad-lead-source";
 import { propertyIdsToWhere } from "@/lib/tenancy/property-filter";
 
 const DAY = 24 * 60 * 60 * 1000;
 const MIN_WASTED_SPEND_CENTS = 25_000; // $250 minimum to flag
 
-const SOURCE_BY_PLATFORM: Record<string, LeadSource[]> = {
-  GOOGLE_ADS: [LeadSource.GOOGLE_ADS],
-  META_ADS: [LeadSource.META_ADS],
-};
 
 /**
  * Wasted ad-spend detector.
@@ -79,7 +75,8 @@ export const wastedAdSpendDetector: Detector = {
       // have campaign-level lead attribution yet, so we approximate at
       // the platform level — if the platform produced ZERO leads while
       // this campaign spent ≥$250, it's a strong waste signal.
-      const sources = SOURCE_BY_PLATFORM[campaign.platform] ?? [];
+      const leadSource = leadSourceForPlatform(campaign.platform);
+      const sources = leadSource ? [leadSource] : [];
       if (sources.length === 0) continue;
 
       const leadCount = await prisma.lead.count({
@@ -94,7 +91,7 @@ export const wastedAdSpendDetector: Detector = {
           ...(campaign.propertyId
             ? { propertyId: campaign.propertyId }
             : { OR: [propertyIdsToWhere(propertyIds), { propertyId: null }] }),
-          source: { in: sources },
+          ...adLeadWhere([campaign.platform]),
           createdAt: { gte: since },
         },
       });

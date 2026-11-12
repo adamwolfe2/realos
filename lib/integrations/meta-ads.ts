@@ -2,6 +2,7 @@ import "server-only";
 import { maybeDecrypt } from "@/lib/crypto";
 import { getOAuthCredentials } from "@/lib/integrations/oauth-credentials";
 import type { AdAccount } from "@prisma/client";
+import { META_GRAPH_VERSION } from "@/lib/integrations/meta-graph-version";
 
 // ---------------------------------------------------------------------------
 // Meta (Facebook + Instagram) Marketing API integration, read-only.
@@ -15,12 +16,12 @@ import type { AdAccount } from "@prisma/client";
 //   - Ad account ID (numeric, e.g. 1234567890; we accept either bare
 //     numeric or the act_ prefixed form and normalize).
 //
-// Pure-fetch implementation against Graph API v22.0. No SDK; the surface we
+// Pure-fetch implementation against the Graph API (version: META_GRAPH_VERSION). No SDK; the surface we
 // touch is small (campaigns + insights) and the SDK pulls in deps that are
 // awkward in Edge / serverless cold paths.
 // ---------------------------------------------------------------------------
 
-const GRAPH_API_VERSION = "v22.0";
+const GRAPH_API_VERSION = META_GRAPH_VERSION;
 const GRAPH_API_BASE = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
 
 export type MetaAdsCredentials = {
@@ -320,20 +321,8 @@ export async function fetchMetaAdsDailyMetrics(
     .map((r) => {
       // Spend in Meta is reported in account currency, as a decimal string.
       const spendCents = Math.round(Number(r.spend ?? 0) * 100);
-      const conversions = sumActions(r.actions, [
-        "lead",
-        "onsite_conversion.lead_grouped",
-        "complete_registration",
-        "purchase",
-      ]);
-      const conversionValueCents = Math.round(
-        sumActions(r.action_values, [
-          "lead",
-          "onsite_conversion.lead_grouped",
-          "complete_registration",
-          "purchase",
-        ]) * 100
-      );
+      const conversions = countConversions(r.actions);
+      const conversionValueCents = Math.round(countConversions(r.action_values) * 100);
       return {
         externalCampaignId: r.campaign_id!,
         date: r.date_start!,
@@ -374,7 +363,6 @@ export type MetaAdDailyMetric = {
   conversions: number;
 };
 
-const META_LEAD_ACTIONS = ["lead", "onsite_conversion.lead_grouped", "complete_registration", "purchase"];
 
 type MetaCreativeNode = {
   thumbnail_url?: string;
@@ -478,8 +466,28 @@ export async function fetchMetaAdDailyMetrics(
       impressions: Number(r.impressions ?? 0),
       clicks: Number(r.clicks ?? 0),
       spendCents: Math.round(Number(r.spend ?? 0) * 100),
-      conversions: sumActions(r.actions, META_LEAD_ACTIONS),
+      conversions: countConversions(r.actions),
     }));
+}
+
+// Meta's "lead" action is already the total of on-Facebook form leads and
+// website pixel leads, so adding "onsite_conversion.lead_grouped" (a subset)
+// on top counted every form lead twice. Use "lead" when Meta reports it and
+// fall back to the parts only when it doesn't.
+const META_LEAD_TOTAL = "lead";
+const META_LEAD_PARTS = ["onsite_conversion.lead_grouped", "offsite_conversion.fb_pixel_lead"];
+const META_OTHER_CONVERSIONS = ["complete_registration", "purchase"];
+
+/** Exported for tests. */
+export function countConversions(
+  actions: { action_type: string; value: string }[] | undefined,
+): number {
+  if (!Array.isArray(actions)) return 0;
+  const hasTotal = actions.some((a) => a.action_type === META_LEAD_TOTAL);
+  const leads = hasTotal
+    ? sumActions(actions, [META_LEAD_TOTAL])
+    : sumActions(actions, META_LEAD_PARTS);
+  return leads + sumActions(actions, META_OTHER_CONVERSIONS);
 }
 
 function sumActions(

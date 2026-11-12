@@ -6,7 +6,8 @@ vi.mock("server-only", () => ({}));
 
 const db = {
   adAccount: { findUnique: vi.fn(), updateMany: vi.fn() },
-  adCampaign: { findMany: vi.fn(), upsert: vi.fn(), update: vi.fn() },
+  adCampaign: { findMany: vi.fn(), upsert: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
+  property: { findMany: vi.fn() },
   adMetricDaily: { upsert: vi.fn(), aggregate: vi.fn() },
   adCreative: { findMany: vi.fn(), upsert: vi.fn() },
   adCreativeMetricDaily: { upsert: vi.fn() },
@@ -159,5 +160,35 @@ describe("runAdsSyncForAccount creative phase", () => {
     const finalUpdate = db.adAccount.updateMany.mock.calls.at(-1)?.[0];
     expect(finalUpdate.data).not.toHaveProperty("lastSyncAt");
     expect(finalUpdate.data.accessStatus).toBe("active");
+  });
+
+  it("links a campaign to a property the first time it is seen, never after", async () => {
+    vi.doMock("@/lib/integrations/meta-ads", async (orig) => ({
+      ...(await orig<typeof import("@/lib/integrations/meta-ads")>()),
+      resolveMetaAdsCredentials: async () => metaCreds,
+    }));
+    vi.resetModules();
+    const { runAdsSyncForAccount } = await import("@/lib/integrations/ads-sync");
+    arrangeAccount();
+    // c1 is already known (an operator set it to "Whole portfolio"); c2 is new.
+    db.adCampaign.findMany.mockImplementation(async (args: { where: { externalCampaignId?: { in: string[] } } }) =>
+      args.where.externalCampaignId
+        ? args.where.externalCampaignId.in.map((id) => ({ id: `db-${id}`, name: id === "c2" ? "Den | Leads" : "Lair | Search" }))
+        : [{ id: "db-c1", externalCampaignId: "c1" }],
+    );
+    db.property.findMany.mockResolvedValue([{ id: "lair", name: "The Lair" }, { id: "den", name: "The Den" }]);
+    db.adCampaign.updateMany.mockResolvedValue({ count: 1 });
+    db.adCreative.findMany.mockResolvedValue([]);
+    fetchMock
+      .mockResolvedValueOnce(json({ data: [{ id: "c1", name: "Lair | Search", status: "ACTIVE" }, { id: "c2", name: "Den | Leads", status: "ACTIVE" }] }))
+      .mockResolvedValueOnce(json({ data: [] }))
+      .mockResolvedValueOnce(json({ data: [] }))
+      .mockResolvedValueOnce(json({ data: [] }));
+
+    const result = await runAdsSyncForAccount("acct");
+    expect(result.ok).toBe(true);
+    expect(result.stats.warnings).toEqual([]);
+    expect(db.adCampaign.updateMany).toHaveBeenCalledTimes(1);
+    expect(db.adCampaign.updateMany.mock.calls[0][0]).toEqual({ where: { id: "db-c2", propertyId: null }, data: { propertyId: "den" } });
   });
 });

@@ -1,5 +1,6 @@
 import "server-only";
 import { currentLeaseWhere } from "@/lib/leases/current";
+import { adLeadWhere, adPlatformOfLead } from "@/lib/integrations/ad-lead-source";
 import { DRAFT_STALL_MS } from "@/lib/seo/draft-stalled";
 import { APPFOLIO_APPLICATION_SOURCE } from "@/lib/integrations/appfolio-sync";
 import { cleanCompetitorName, rankCompetitors } from "@/lib/reports/competitors";
@@ -1248,13 +1249,13 @@ export async function generateReportSnapshot(
     }),
     // Ad leads per platform (via source)
     prisma.lead.groupBy({
-      by: ["source"],
+      by: ["source", "trafficSource"],
       where: {
         orgId,
         ...scope.propertyClause,
         ...activePropertyClause(scope),
         createdAt: { gte: periodStart, lt: periodEnd },
-        source: { in: [LeadSource.GOOGLE_ADS, LeadSource.META_ADS] },
+        ...adLeadWhere(),
       },
       _count: { _all: true },
     }),
@@ -1605,13 +1606,8 @@ export async function generateReportSnapshot(
   }
   const leadsByPlatform = new Map<AdPlatform, number>();
   for (const row of adLeadGroups) {
-    const platform =
-      row.source === LeadSource.GOOGLE_ADS
-        ? AdPlatform.GOOGLE_ADS
-        : row.source === LeadSource.META_ADS
-          ? AdPlatform.META
-          : null;
-    if (platform) leadsByPlatform.set(platform, row._count._all);
+    const platform = adPlatformOfLead(row);
+    if (platform) leadsByPlatform.set(platform, (leadsByPlatform.get(platform) ?? 0) + row._count._all);
   }
   const adPerformance: ReportAdRow[] = Array.from(perfByPlatform.entries()).map(([platform, agg]) => {
     const spendUsd = Math.round(agg.spendCents / 100);

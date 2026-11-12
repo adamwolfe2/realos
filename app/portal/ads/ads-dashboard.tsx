@@ -4,10 +4,13 @@ import * as React from "react";
 import dynamic from "next/dynamic";
 import { formatDistanceToNow } from "date-fns";
 import { AdPlatform } from "@prisma/client";
+import { FunnelBar } from "./funnel-bar";
 import { Logo, Metric as Stat, MetricStrip, Panel, Pill, change } from "@/components/portal/overview/kit";
 import { cn } from "@/lib/utils";
 import { DataPlaceholder } from "@/components/portal/ui/data-placeholder";
-import { Clock } from "lucide-react";
+import Link from "next/link";
+import { Clock, ExternalLink } from "lucide-react";
+import { CampaignPropertySelect } from "./campaign-property-select";
 
 // Lazy-load recharts (~80KB gzipped). The chart only renders when there's
 // data anyway, so deferring it cuts initial bundle for /portal/ads.
@@ -62,7 +65,10 @@ type Campaign = {
   /** Monthly budget as configured on the native platform. Null when the
    *  platform hasn't reported one (e.g. campaign uses a lifetime budget). */
   budgetCents: number | null;
+  /** Daily budget from the platform (Google campaign budget, Meta daily_budget). */
+  dailyBudgetCents: number | null;
   /** Property this campaign is scoped to, or null for an org-wide campaign. */
+  propertyId: string | null;
   propertyName: string | null;
 };
 
@@ -113,15 +119,22 @@ export function AdsDashboard({
   campaigns,
   currentMetrics,
   priorMetrics,
-  leadsAttributed,
-  signedLeases,
+  adFunnel,
+  priorAdFunnel,
+  rangeDays,
+  properties,
+  canAssignProperty,
 }: {
   accounts: Account[];
   campaigns: Campaign[];
   currentMetrics: Metric[];
   priorMetrics: PriorMetric[];
-  leadsAttributed: number;
-  signedLeases: number;
+  /** Ad-sourced leads in LeaseStack over the window, and how far they got. */
+  adFunnel: { leads: number; tours: number; signed: number };
+  priorAdFunnel: { leads: number; tours: number; signed: number };
+  rangeDays: number;
+  properties: { id: string; name: string }[];
+  canAssignProperty: boolean;
 }) {
   const [sortKey, setSortKey] = React.useState<SortKey>("spend");
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("desc");
@@ -169,21 +182,22 @@ export function AdsDashboard({
   return (
     <div className="space-y-5">
       <MetricStrip cols={6}>
-        <Stat label="Spend" value={formatCents(totals.spendCents)} delta={change(totals.spendCents, priorTotals.spendCents)} note="Last 28 days vs the 28 before" />
+        <Stat label="Spend" value={formatCents(totals.spendCents)} delta={change(totals.spendCents, priorTotals.spendCents)} note={`Last ${rangeDays} days vs the ${rangeDays} before`} />
         <Stat label="Clicks" value={totals.clicks.toLocaleString()} delta={change(totals.clicks, priorTotals.clicks)} note={`${formatCents(cpcCents)} per click`} />
         <Stat
           label="Conversions"
           value={totals.conversions.toLocaleString(undefined, { maximumFractionDigits: 1 })}
           delta={change(totals.conversions, priorTotals.conversions)}
-          note="Reported by the platforms"
+          note={costPerConversionCents ? `As reported by Google and Meta · ${formatCents(costPerConversionCents)} each` : "As reported by Google and Meta"}
         />
-        <Stat label="Cost per conversion" value={costPerConversionCents ? formatCents(costPerConversionCents) : "—"} note="Spend over conversions" />
-        <Stat label="Leads attributed" value={leadsAttributed.toLocaleString()} note="Matched to a lead in LeaseStack" />
-        <Stat label="Signed leases" value={signedLeases.toLocaleString()} note="From ad-sourced leads" />
+        <Stat label="Leads from ads" value={adFunnel.leads.toLocaleString()} delta={change(adFunnel.leads, priorAdFunnel.leads)} note={costPer(totals.spendCents, adFunnel.leads, "lead")} />
+        <Stat label="Tours" value={adFunnel.tours.toLocaleString()} delta={change(adFunnel.tours, priorAdFunnel.tours)} note={costPer(totals.spendCents, adFunnel.tours, "tour")} />
+        <Stat label="Signed leases" value={adFunnel.signed.toLocaleString()} delta={change(adFunnel.signed, priorAdFunnel.signed)} note={costPer(totals.spendCents, adFunnel.signed, "lease")} />
       </MetricStrip>
+      <FunnelBar funnel={adFunnel} />
 
       <div className="grid gap-5 xl:grid-cols-3">
-        <Panel title="Daily spend vs conversions" aside="Last 28 days" className="xl:col-span-2">
+        <Panel title="Daily spend vs conversions" aside={`Last ${rangeDays} days`} className="xl:col-span-2">
           {series.length === 0 ? (
             <p className="text-[13px] text-[var(--t-muted)]">
               No metrics in the window yet. The next nightly sync will fill this in.
@@ -193,7 +207,16 @@ export function AdsDashboard({
           )}
         </Panel>
 
-        <Panel title="Accounts" aside={`${accounts.length} connected`} flush>
+        <Panel
+          title="Accounts"
+          aside={
+            <span className="inline-flex items-center gap-3">
+              <span>{accounts.length} connected</span>
+              <Link href="/portal/connect" className="font-medium text-[var(--t-accent)] hover:underline underline-offset-2">Connect another</Link>
+            </span>
+          }
+          flush
+        >
           <ul className="divide-y divide-[var(--t-divider)]">
             {accounts.map((a) => {
               const row = byAccount.get(a.id) ?? { spendCents: 0, conversions: 0 };
@@ -224,7 +247,7 @@ export function AdsDashboard({
         </Panel>
       </div>
 
-      <Panel title="Campaigns" aside="Lifetime totals as of last sync" flush className="overflow-x-auto">
+      <Panel title="Campaigns" aside={`Last ${rangeDays} days · click a campaign for detail`} flush className="overflow-x-auto">
         {sortedCampaigns.length === 0 ? (
           <div className="p-5">
             <DataPlaceholder
@@ -335,19 +358,26 @@ export function AdsDashboard({
                 return (
                   <tr key={c.id} id={c.id} className="scroll-mt-24">
                     <td className="px-4 py-2 text-sm text-foreground">
-                      {manageUrl ? (
-                        <a
-                          href={manageUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="hover:text-primary hover:underline underline-offset-2"
-                          title={`Open in ${platformLabel(c.platform)} ↗`}
+                      <span className="inline-flex items-start gap-1.5">
+                        <Link
+                          href={`/portal/ads/campaigns/${c.id}`}
+                          className="font-medium text-[var(--t-ink)] hover:text-[var(--t-accent)] hover:underline underline-offset-2"
                         >
                           {c.name}
-                        </a>
-                      ) : (
-                        c.name
-                      )}
+                        </Link>
+                        {manageUrl ? (
+                          <a
+                            href={manageUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-0.5 shrink-0 text-[var(--t-muted)] hover:text-[var(--t-ink)]"
+                            aria-label={`Open in ${platformLabel(c.platform)}`}
+                            title={`Open in ${platformLabel(c.platform)}`}
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        ) : null}
+                      </span>
                       {c.objective ? (
                         <div className="text-[10px] text-muted-foreground mt-0.5">
                           {c.objective}
@@ -361,13 +391,21 @@ export function AdsDashboard({
                       </span>
                     </td>
                     <td className="px-4 py-2 text-xs text-muted-foreground">
-                      {c.propertyName ?? "Org-wide"}
+                      {canAssignProperty ? (
+                        <CampaignPropertySelect campaignId={c.id} propertyId={c.propertyId} properties={properties} />
+                      ) : (
+                        c.propertyName ?? "Whole portfolio"
+                      )}
                     </td>
                     <td className="px-4 py-2 text-center">
                       <Pill tone={campaignTone(c.status)}>{c.status.charAt(0) + c.status.slice(1).toLowerCase()}</Pill>
                     </td>
                     <td className="px-4 py-2 text-right tabular-nums">
-                      {c.budgetCents ? `${formatCents(c.budgetCents)}/mo` : "—"}
+                      {c.dailyBudgetCents
+                        ? `${formatCents(c.dailyBudgetCents)}/day`
+                        : c.budgetCents
+                          ? `${formatCents(c.budgetCents)}/mo`
+                          : "—"}
                     </td>
                     <td className="px-4 py-2 text-right tabular-nums">
                       {formatCents(c.spendCents)}
@@ -568,3 +606,8 @@ function formatCents(cents: number): string {
   });
 }
 
+
+function costPer(spendCents: number, count: number, unit: string): string {
+  if (count <= 0) return `No ${unit}s yet in this window`;
+  return `${formatCents(Math.round(spendCents / count))} per ${unit}`;
+}

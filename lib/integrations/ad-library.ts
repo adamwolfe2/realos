@@ -1,11 +1,12 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { META_GRAPH_VERSION } from "@/lib/integrations/meta-graph-version";
 import type { AdLibrarySearchKind, Prisma } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
 // Meta Ad Library — public ad-tracking via Meta's open Ad Library API.
 //
-// graph.facebook.com/v19.0/ads_archive returns every active + recently-
+// graph.facebook.com/<version>/ads_archive returns every active + recently-
 // inactive ad for a given Page or search term. No customer credentials
 // required — we use an agency-level Meta App access token (stored in
 // META_AD_LIBRARY_TOKEN env var). One token serves every tenant.
@@ -18,7 +19,7 @@ import type { AdLibrarySearchKind, Prisma } from "@prisma/client";
 // Docs: https://www.facebook.com/ads/library/api/
 // ---------------------------------------------------------------------------
 
-const API_VERSION = "v19.0";
+const API_VERSION = META_GRAPH_VERSION;
 const ENDPOINT = `https://graph.facebook.com/${API_VERSION}/ads_archive`;
 
 const FIELDS = [
