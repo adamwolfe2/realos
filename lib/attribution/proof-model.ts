@@ -157,3 +157,54 @@ export function sourceProvenance(
   }
   return SOURCE_PROVENANCE[source];
 }
+
+export type TrafficSourceSummaryRow = {
+  /** Canonical source id, or "untracked" for leads captured before tracking / with no signal. */
+  id: string;
+  label: string;
+  leads: number;
+  applied: number;
+  signed: number;
+};
+
+/**
+ * Leads per first-touch traffic channel (Zillow, Google, Instagram...), with
+ * how many of them applied and verifiably signed. AppFolio-imported rows are
+ * excluded: they are PMS history, not website traffic. Sorted by leads desc,
+ * "untracked" always last so the tracked channels read first.
+ */
+export function summarizeTrafficSources(
+  rows: Array<{
+    trafficSourceId: string | null;
+    trafficSourceLabel: string | null;
+    stage: ProofStage;
+    verification: ProofVerification;
+  }>,
+): TrafficSourceSummaryRow[] {
+  const byId = new Map<string, TrafficSourceSummaryRow>();
+  for (const row of rows) {
+    if (row.verification === "imported") continue;
+    const id = row.trafficSourceId ?? "untracked";
+    // Unknown referrers share the "referral" id but keep their host label;
+    // key on the label so berkeley.edu and reddit-style hosts stay distinct.
+    const key = id === "referral" ? `referral:${row.trafficSourceLabel ?? ""}` : id;
+    const entry = byId.get(key) ?? {
+      id,
+      label: row.trafficSourceId ? (row.trafficSourceLabel ?? id) : "Not tracked",
+      leads: 0,
+      applied: 0,
+      signed: 0,
+    };
+    byId.set(key, {
+      ...entry,
+      leads: entry.leads + 1,
+      applied: entry.applied + (STAGE_RANK[row.stage] >= STAGE_RANK.Applied ? 1 : 0),
+      signed: entry.signed + (row.stage === "Signed" && row.verification === "verified" ? 1 : 0),
+    });
+  }
+  return [...byId.values()].sort((a, b) => {
+    if (a.id === "untracked") return 1;
+    if (b.id === "untracked") return -1;
+    return b.leads - a.leads;
+  });
+}

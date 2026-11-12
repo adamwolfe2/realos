@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { trafficSourceLabel } from "@/lib/attribution/touch";
 import { propertyOrOrgLevelWhereFragment } from "@/lib/tenancy/property-filter";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -112,6 +113,9 @@ export default async function ConversationDetail({
         ) : (
           <MetaChip label="Handoff" value="None" tone="muted" />
         )}
+        {convo.trafficSource ? (
+          <MetaChip label="Came from" value={trafficSourceLabel(convo) ?? convo.trafficSource} />
+        ) : null}
         {convo.pageUrl ? (
           <MetaChip label="Page" value={compactUrl(convo.pageUrl)} />
         ) : null}

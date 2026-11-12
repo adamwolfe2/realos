@@ -2,6 +2,11 @@ import "server-only";
 import { LeadSource } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { findOldestLeadByEmail } from "@/lib/leads/find-by-email";
+import {
+  attributionColumns,
+  attributionFill,
+  type ResolvedAttribution,
+} from "@/lib/attribution/touch";
 
 // ---------------------------------------------------------------------------
 // One Lead per (orgId, email) for chatbot captures.
@@ -25,6 +30,7 @@ export async function findOrCreateChatbotLead(args: {
   lastName: string | null;
   phone: string | null;
   pageUrl?: string | null;
+  attribution?: ResolvedAttribution | null;
 }): Promise<{ id: string; created: boolean; notify: boolean }> {
   const email = args.email.trim().toLowerCase();
 
@@ -36,6 +42,7 @@ export async function findOrCreateChatbotLead(args: {
     propertyId: true,
     source: true,
     createdAt: true,
+    trafficSource: true,
   });
 
   if (existing) {
@@ -48,6 +55,7 @@ export async function findOrCreateChatbotLead(args: {
         firstName: existing.firstName ?? args.firstName,
         lastName: existing.lastName ?? args.lastName,
         propertyId: existing.propertyId ?? args.propertyId,
+        ...attributionFill(existing.trafficSource, args.attribution ?? null),
       },
     });
     // Only the pre-chat twin (same email, chatbot, minutes earlier) was
@@ -70,6 +78,7 @@ export async function findOrCreateChatbotLead(args: {
       email,
       phone: args.phone,
       notes: `Captured by chatbot on ${args.pageUrl ?? "site"}`,
+      ...attributionColumns(args.attribution ?? null),
     },
     select: { id: true },
   });
