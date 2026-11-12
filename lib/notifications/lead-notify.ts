@@ -7,6 +7,8 @@ import {
   type Prisma,
 } from "@prisma/client";
 import { buildLeadNotifyEmail } from "@/lib/email/lead-notify-email";
+import { trafficSourceLabel } from "@/lib/attribution/touch";
+import { SOURCE_DOMAIN } from "@/lib/attribution/source-taxonomy";
 import { pushLeadToFunnel } from "@/lib/integrations/funnel-client";
 import { captureWithContext } from "@/lib/sentry";
 
@@ -74,7 +76,7 @@ export async function notifyLeadCaptured(
   input: LeadNotifyInput,
 ): Promise<void> {
   try {
-    const [org, property] = await Promise.all([
+    const [org, property, leadRow] = await Promise.all([
       prisma.organization.findUnique({
         where: { id: input.orgId },
         select: {
@@ -97,6 +99,12 @@ export async function notifyLeadCaptured(
             select: { name: true, notifyLeadEmailOverride: true },
           })
         : Promise.resolve(null),
+      // First-touch traffic source, read from the lead itself so every
+      // capture route gets "Came from: Zillow" without passing it through.
+      prisma.lead.findFirst({
+        where: { id: input.leadId, orgId: input.orgId },
+        select: { trafficSource: true, attribution: true },
+      }),
     ]);
 
     if (!org) {
@@ -235,6 +243,11 @@ export async function notifyLeadCaptured(
         phone: displayName(input.lead.phone),
         sourceLabel: displayName(input.lead.sourceLabel),
         intent: displayName(input.lead.intent),
+        cameFrom: trafficSourceLabel(leadRow),
+        cameFromLogoUrl:
+          leadRow?.trafficSource && SOURCE_DOMAIN[leadRow.trafficSource]
+            ? `${APP_URL}/logos/sources/${leadRow.trafficSource}.png`
+            : null,
       },
       propertyName,
       portalUrl,

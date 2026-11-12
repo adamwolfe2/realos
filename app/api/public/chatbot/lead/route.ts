@@ -6,6 +6,11 @@ import crypto from "crypto";
 import { prisma } from "@/lib/db";
 import { findOldestLeadByEmail } from "@/lib/leads/find-by-email";
 import {
+  attributionColumns,
+  attributionFill,
+  resolveAttribution,
+} from "@/lib/attribution/touch";
+import {
   ChatbotConversationStatus,
   LeadSource,
   LeadStatus,
@@ -65,6 +70,8 @@ const body = z.object({
   pageUrl: z.string().max(1000).optional(),
   // Explicit property slug (authoritative attribution), matching /chat.
   property: z.string().min(1).max(120).optional(),
+  // First-touch traffic attribution (untrusted, display-only). See lib/attribution/touch.ts.
+  touch: z.unknown().optional(),
 });
 
 export function OPTIONS() {
@@ -100,8 +107,9 @@ export async function POST(req: NextRequest) {
       { status: 400, headers: CORS_HEADERS }
     );
   }
-  const { slug, firstName, email, phone, pageUrl, property: propertySlug } =
+  const { slug, firstName, email, phone, pageUrl, property: propertySlug, touch } =
     parsed.data;
+  const attribution = resolveAttribution({ touch, pageUrl });
 
   const org = await prisma.organization.findUnique({
     where: { slug },
@@ -185,6 +193,8 @@ export async function POST(req: NextRequest) {
     const existing = await findOldestLeadByEmail(orgId, email, {
       id: true,
       phone: true,
+      trafficSource: true,
+      createdAt: true,
     });
 
     const notesLine = `Captured by chatbot on ${pageUrl ?? "site"}`;
@@ -196,6 +206,7 @@ export async function POST(req: NextRequest) {
         data: {
           lastActivityAt: new Date(),
           phone: existing.phone ?? phone ?? null,
+          ...attributionFill(existing, attribution),
         },
         select: { id: true },
       });
@@ -213,6 +224,7 @@ export async function POST(req: NextRequest) {
           email,
           phone: phone ?? null,
           notes: notesLine,
+          ...attributionColumns(attribution),
         },
         select: { id: true },
       });
@@ -246,6 +258,7 @@ export async function POST(req: NextRequest) {
         ipAddress: ip,
         leadId,
         lastMessageAt: now,
+        ...attributionColumns(attribution),
       },
       select: { id: true },
     });

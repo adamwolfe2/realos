@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { SourceLogo } from "@/components/portal/attribution/source-logo";
+import { trafficSourceLabel } from "@/lib/attribution/touch";
 import { trackServer } from "@/lib/analytics-server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -431,6 +433,11 @@ export default async function LeadDetailPage({
                 {lead.source}
                 {lead.sourceDetail ? ` \u00b7 ${lead.sourceDetail}` : ""}
               </Chip>
+              {lead.trafficSource ? (
+                <Chip icon={<SourceLogo logo={lead.trafficSource} size={12} />}>
+                  {`Came from ${trafficSourceLabel(lead) ?? lead.trafficSource}`}
+                </Chip>
+              ) : null}
               {lead.desiredMoveIn ? (
                 <Chip icon={<Calendar className="h-3 w-3" />}>
                   {`Move-in ${format(lead.desiredMoveIn, "MMM d, yyyy")}`}

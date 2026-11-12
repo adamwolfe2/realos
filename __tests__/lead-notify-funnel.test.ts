@@ -17,6 +17,7 @@ const h = vi.hoisted(() => ({
   db: {
     organization: { findUnique: vi.fn() },
     property: { findUnique: vi.fn() },
+    lead: { findFirst: vi.fn() },
     leadNotificationDelivery: {
       create: vi.fn(async () => ({ id: "delivery_1" })),
       update: vi.fn(async () => ({})),
@@ -75,6 +76,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   h.db.organization.findUnique.mockResolvedValue(ORG);
   h.db.property.findUnique.mockResolvedValue(null);
+  h.db.lead.findFirst.mockResolvedValue({ trafficSource: "zillow", attribution: { sourceLabel: "Zillow" } });
   h.db.leadNotificationDelivery.create.mockResolvedValue({ id: "delivery_1" });
   h.db.leadNotificationDelivery.update.mockResolvedValue({});
   h.sendBrandedEmail.mockResolvedValue({ ok: true, id: "resend_1" });

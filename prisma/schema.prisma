@@ -1340,6 +1340,13 @@ model Lead {
   // Classification
   source       LeadSource
   sourceDetail String? // Campaign name, referrer URL, etc.
+
+  // First-touch traffic source (where the visitor came FROM: zillow, google_organic,
+  // instagram, direct...). Canonical id from lib/attribution/source-taxonomy.ts,
+  // resolved by lib/attribution/touch.ts. Written once at capture, never overwritten.
+  // `source` above is the capture SURFACE (chatbot/form); this is the channel.
+  trafficSource String?
+  attribution   Json? // { sourceLabel, first: Touch, last: Touch | null }
   status       LeadStatus @default(NEW)
 
   // Scoring
@@ -1395,6 +1402,7 @@ model Lead {
   @@unique([orgId, externalSystem, externalId])
   @@index([orgId, status])
   @@index([orgId, source])
+  @@index([orgId, trafficSource])
   // Referrals + dashboard run 28-day groupBys by createdAt; no
   // existing index covers the date window.
   @@index([orgId, createdAt(sort: Desc)])
@@ -1802,6 +1810,9 @@ model ChatbotConversation {
   userAgent String?
   ipAddress String?
   pageUrl   String?
+  // First-touch traffic source for this chat (see Lead.trafficSource).
+  trafficSource String?
+  attribution   Json?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

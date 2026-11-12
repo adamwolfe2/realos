@@ -5,6 +5,7 @@ import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { resolveWindow, pctChange } from "@/lib/dashboard/window";
 import { DateRangePicker } from "@/components/portal/date-range-picker";
 import { SourceMark } from "@/components/portal/source-mark";
+import { trafficSourceLabel } from "@/lib/attribution/touch";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
@@ -172,6 +173,8 @@ export default async function LeadsKanbanPage({
         phone: true,
         source: true,
         externalSystem: true,
+        trafficSource: true,
+        attribution: true,
         status: true,
         score: true,
         createdAt: true,
@@ -328,6 +331,8 @@ export default async function LeadsKanbanPage({
     email: l.email,
     phone: l.phone,
     source: displayLeadSource(l.source, l.externalSystem),
+    trafficSource: l.trafficSource,
+    cameFrom: trafficSourceLabel(l),
     status: l.status,
     score: l.score,
     propertyName: l.property?.name ?? null,

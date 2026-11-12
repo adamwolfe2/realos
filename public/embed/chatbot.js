@@ -66,6 +66,58 @@
   // 5s instead of the portal widget's 3s — this runs on third-party sites.
   var INBOX_POLL_MS = 5000;
   var SESSION_KEY = "leasestack.chatbot.embed.session.v1";
+
+  // --- First-touch traffic attribution (shared verbatim with popup.js) ------
+  // Remembers where this visitor first arrived from (UTM tags, ad click ids,
+  // an external referrer) in this site's localStorage for 90 days, and sends
+  // it as `touch` with chats and leads. Server side: lib/attribution/touch.ts.
+  // `first` is the first touch that carried a signal (a plain direct visit is
+  // upgraded by a later tagged one); `last` is the latest tagged touch.
+  var LS_TOUCH_KEY = "ls_touch";
+  var LS_TOUCH_TTL_MS = 90 * 24 * 60 * 60 * 1000;
+  function lsTouchHasSignal(t) {
+    return !!(t && (t.referrer || t.utmSource || t.utmMedium || t.utmCampaign ||
+      t.gclid || t.fbclid || t.msclkid || t.zgRef));
+  }
+  function lsCaptureTouch() {
+    try {
+      var q = new URLSearchParams(window.location.search);
+      var g = function (k) { var v = q.get(k); return v ? v.slice(0, 300) : null; };
+      var ref = null;
+      try {
+        var bare = function (h) { return String(h || "").toLowerCase().replace(/^www\./, ""); };
+        var rh = document.referrer ? bare(new URL(document.referrer).hostname) : "";
+        // Same site (www or not) and our own / PMS / scheduling hops are not
+        // traffic sources: a visitor returning from AppFolio is not a referral.
+        var self = rh === bare(window.location.hostname) ||
+          /(^|\.)(appfolio\.com|leasestack\.co|calendly\.com|vercel\.app)$/.test(rh);
+        if (rh && !self) ref = document.referrer.slice(0, 2048);
+      } catch (e) { ref = null; }
+      var t = {
+        ts: Date.now(),
+        landingUrl: window.location.href.slice(0, 2048),
+        referrer: ref,
+        utmSource: g("utm_source"), utmMedium: g("utm_medium"),
+        utmCampaign: g("utm_campaign"), utmTerm: g("utm_term"),
+        utmContent: g("utm_content"), gclid: g("gclid"), fbclid: g("fbclid"),
+        msclkid: g("msclkid"), zgRef: g("zgRef")
+      };
+      var stored = null;
+      try { stored = JSON.parse(window.localStorage.getItem(LS_TOUCH_KEY) || "null"); } catch (e) { stored = null; }
+      if (!stored || !stored.first || Date.now() - (stored.first.ts || 0) > LS_TOUCH_TTL_MS) {
+        stored = { first: t, last: lsTouchHasSignal(t) ? t : null };
+      } else if (lsTouchHasSignal(t)) {
+        if (!lsTouchHasSignal(stored.first)) stored.first = t;
+        stored.last = t;
+      }
+      try { window.localStorage.setItem(LS_TOUCH_KEY, JSON.stringify(stored)); } catch (e) { /* private mode: still send this page's touch */ }
+      return stored;
+    } catch (e) {
+      return null;
+    }
+  }
+  var lsTouch = lsCaptureTouch();
+  // --- end first-touch attribution -----------------------------------------
   var SESSION_ACTIVE_KEY = "leasestack.chatbot.embed.active.v1";
 
   var EMAIL_RE = /[\w.+-]+@[\w-]+\.[\w.-]+/;
@@ -521,6 +573,7 @@
         phone: payload.phone || undefined,
         pageUrl: window.location.href,
         property: propertySlug || undefined,
+        touch: lsTouch || undefined,
       }),
     }).then(function (res) {
       if (!res.ok) {
@@ -872,6 +925,7 @@
         messages: state.history,
         pageUrl: window.location.href,
         property: propertySlug || undefined,
+        touch: lsTouch || undefined,
         // Stable per-browser id so a returning visitor's new conversation can
         // be joined to their previous ones. sessionId only lives for the tab
         // (sessionStorage), so without this a person who chatted last week

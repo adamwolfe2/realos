@@ -29,6 +29,9 @@ import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { RangePresetControl } from "@/components/portal/attribution/range-preset-control";
 import { StatusChip } from "@/components/portal/ui/status-chip";
 import { EmptyState } from "@/components/portal/ui/empty-state";
+import { SourceLogo } from "@/components/portal/attribution/source-logo";
+import { getSource } from "@/lib/attribution/source-taxonomy";
+import type { TrafficSourceSummaryRow } from "@/lib/attribution/proof-model";
 
 export const metadata: Metadata = { title: "Lead to lease proof" };
 export const dynamic = "force-dynamic";
@@ -189,6 +192,8 @@ export default async function AttributionPage({
         />
       </section>
 
+      <TrafficSourcesPanel rows={proof.trafficSources} />
+
       <section className="ls-card overflow-hidden">
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-3">
           <div>
@@ -244,6 +249,12 @@ export default async function AttributionPage({
                     </td>
                     <td className="px-4 py-3">
                       <SourceBadge row={row} />
+                      {row.trafficSourceId ? (
+                        <div className="mt-1 flex items-center gap-1.5 text-[11px] text-foreground">
+                          <SourceLogo logo={row.trafficSourceId} size={14} />
+                          <span>via {row.trafficSourceLabel}</span>
+                        </div>
+                      ) : null}
                       <div className="mt-1 text-[10px] text-muted-foreground">
                         {row.provenance}
                       </div>
@@ -385,6 +396,120 @@ function ProofState({
         {row.outcomeEvidence}
       </div>
     </div>
+  );
+}
+
+// Where website leads first came from (Zillow, Google, ChatGPT...), from the
+// first-touch source the embeds record. Tracked channels get brand-colored
+// bars scaled against each other; untracked leads are a footnote, not a bar,
+// so history from before tracking never dwarfs the real channels.
+const CATEGORY_LABEL: Record<string, string> = {
+  ils: "Listing site",
+  search: "Search",
+  ai: "AI assistant",
+  paid: "Paid ads",
+  social: "Social",
+  owned: "Owned",
+  referral: "Referring site",
+  direct: "Typed in or bookmarked",
+  leasing: "Leasing",
+  other: "Other",
+};
+
+function TrafficSourcesPanel({ rows }: { rows: TrafficSourceSummaryRow[] }) {
+  const tracked = rows.filter((row) => row.id !== "untracked");
+  const untracked = rows.find((row) => row.id === "untracked")?.leads ?? 0;
+  const trackedTotal = tracked.reduce((sum, row) => sum + row.leads, 0);
+  if (tracked.length === 0 && untracked === 0) return null;
+  const max = Math.max(...tracked.map((row) => row.leads), 1);
+  const plural = (n: number, word: string) => `${n.toLocaleString()} ${word}${n === 1 ? "" : "s"}`;
+
+  return (
+    <section className="ls-card overflow-hidden">
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border px-5 py-4">
+        <div>
+          <h2 className="text-sm font-semibold text-foreground">Where leads came from</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            The site or platform that sent each visitor, before they chatted, opened a popup or filled a form.
+          </p>
+        </div>
+        <span className="text-xs text-muted-foreground">
+          <span className="font-semibold tabular-nums text-foreground">{trackedTotal.toLocaleString()}</span>{" "}
+          {trackedTotal === 1 ? "lead" : "leads"} with a known source
+        </span>
+      </div>
+
+      {tracked.length === 0 ? (
+        <p className="px-5 py-6 text-sm text-muted-foreground">
+          No tracked leads in this window yet. New leads are tagged automatically as they come in.
+        </p>
+      ) : (
+        <table className="w-full text-left">
+          <thead className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+            <tr className="border-b border-border">
+              <th className="px-5 py-2 font-semibold">Source</th>
+              <th className="hidden px-2 py-2 font-semibold md:table-cell">Share</th>
+              <th className="w-20 px-2 py-2 text-right font-semibold">Leads</th>
+              <th className="w-20 px-2 py-2 text-right font-semibold">Applied</th>
+              <th className="w-20 py-2 pl-2 pr-5 text-right font-semibold">Signed</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {tracked.map((row) => {
+              const src = getSource(row.id);
+              const share = trackedTotal > 0 ? Math.round((row.leads / trackedTotal) * 100) : 0;
+              return (
+                <tr key={`${row.id}:${row.label}`}>
+                  <td className="px-5 py-3">
+                    <div className="flex items-center gap-3">
+                      <SourceLogo logo={row.id} size={32} />
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-semibold text-foreground">{row.label}</div>
+                        <div className="text-[11px] text-muted-foreground">
+                          {CATEGORY_LABEL[src.category] ?? "Other"}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="hidden w-[42%] px-2 py-3 md:table-cell">
+                    <div className="flex items-center gap-3">
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-secondary" aria-hidden="true">
+                        <div
+                          className="h-2 rounded-full"
+                          style={{
+                            width: `${Math.max((row.leads / max) * 100, 3)}%`,
+                            background: row.id === "referral" ? "#64748B" : src.color,
+                          }}
+                        />
+                      </div>
+                      <span className="w-10 text-right font-mono text-xs tabular-nums text-muted-foreground">
+                        {share}%
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-2 py-3 text-right font-mono text-sm font-semibold tabular-nums text-foreground">
+                    {row.leads.toLocaleString()}
+                  </td>
+                  <td className="px-2 py-3 text-right font-mono text-sm tabular-nums text-muted-foreground">
+                    {row.applied.toLocaleString()}
+                  </td>
+                  <td className="py-3 pl-2 pr-5 text-right font-mono text-sm tabular-nums text-muted-foreground">
+                    {row.signed.toLocaleString()}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+
+      {untracked > 0 ? (
+        <p className="border-t border-border bg-secondary/40 px-5 py-2.5 text-[11px] text-muted-foreground">
+          {plural(untracked, "lead")} in this window have no recorded source, mostly captured before
+          source tracking started on Nov 11, 2026. They are not counted above.
+        </p>
+      ) : null}
+    </section>
   );
 }
 
