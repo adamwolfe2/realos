@@ -6,6 +6,7 @@ import { AdPlatform, LeadStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { propertyInScope, requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { requireModule } from "@/lib/portal/module-gate";
+import { campaignLeadWhere } from "@/lib/integrations/ad-lead-source";
 import { realAdAccountWhere } from "@/lib/integrations/real-ad-account";
 import { fatigue, FATIGUE_DROP, parseAdsRange, TOURED_OR_LATER, weeklyFunnel } from "@/lib/integrations/ads-insights-math";
 import { Logo, Metric as Stat, MetricStrip, PageTitle, Panel, Pill, change } from "@/components/portal/overview/kit";
@@ -102,7 +103,7 @@ export default async function CampaignPage({
     prisma.lead.findMany({
       where: {
         orgId: scope.orgId,
-        sourceDetail: { in: [...new Set([campaign.name, campaign.name.trim()])] },
+        ...campaignLeadWhere(campaign),
         createdAt: { gte: start },
         ...(scope.allowedPropertyIds ? { propertyId: { in: scope.allowedPropertyIds } } : {}),
       },

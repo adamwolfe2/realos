@@ -1,8 +1,9 @@
 import "server-only";
 import { generateObject } from "ai";
+import { adLeadWhere } from "@/lib/integrations/ad-lead-source";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
-import { AdPlatform, LeadSource, LeadStatus } from "@prisma/client";
+import { AdPlatform, LeadStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { logUsage } from "@/lib/cost-tracker/log";
 import { tokenCostUsd } from "@/lib/aeo/engines/pricing";
@@ -106,7 +107,7 @@ async function gatherFacts(orgId: string, propertyIds: string[], monday: string)
       where: {
         orgId,
         ...propertyIdsToWhere(propertyIds),
-        source: { in: [LeadSource.GOOGLE_ADS, LeadSource.META_ADS] },
+        ...adLeadWhere(),
         createdAt: { gte: lastStart, lt: thisEnd },
       },
       select: { createdAt: true, status: true, property: { select: { name: true } } },

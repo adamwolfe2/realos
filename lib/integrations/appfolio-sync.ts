@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
-import { sourceFromCampaignName } from "@/lib/integrations/ad-lead-source";
+import { campaignLeadKeys, sourceFromCampaignKey } from "@/lib/integrations/ad-lead-source";
 import {
   AuditAction,
   BackendPlatform,
@@ -778,13 +778,15 @@ export async function runAppfolioSync(
       });
       const adCampaigns = await prisma.adCampaign.findMany({
         where: { orgId },
-        select: { name: true, platform: true },
+        select: { name: true, externalCampaignId: true, platform: true },
       });
-      const campaignPlatformByName = new Map(adCampaigns.map((c) => [c.name.trim(), c.platform]));
+      const campaignPlatformByKey = new Map(
+        adCampaigns.flatMap((c) => campaignLeadKeys(c).map((k) => [k.trim(), c.platform] as const)),
+      );
       for (const row of rows) {
         const raw = mapLeadPayload(row);
         if (!raw) continue;
-        const mapped = { ...raw, source: sourceFromCampaignName(raw, campaignPlatformByName) };
+        const mapped = { ...raw, source: sourceFromCampaignKey(raw, campaignPlatformByKey) };
         const localPropertyId = resolvePropertyId(mapped.propertyIds);
         if (isInactiveResolvedProperty(localPropertyId)) {
           stats.skippedInactiveProperty += 1;

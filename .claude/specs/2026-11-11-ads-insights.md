@@ -14,5 +14,8 @@ Stacked on PR #238 (feat/ads-demo-polish). Branch feat/ads-insights. Track, neve
    - existing vacancy-needs-boost / cpl-spike surface here too
 6. Weekly brief: Claude writes a short read of last week (what moved, why, 2-3 decisions) from the numbers only; stored once per org per ISO week as an Insight (kind ads_weekly_brief); shown at top of /portal/ads. No API key -> rule-written fallback.
 
-## Data gap to flag
-Lead -> campaign attribution is platform-level (AppFolio guest-card source). The Lair/Den sites can carry utm_campaign into the AppFolio showing URL `source=` to make cost per lease per campaign real.
+## Lead -> ad attribution (works for any client)
+- Ad credit = source GOOGLE_ADS/META_ADS, or a paid first touch recorded by the embeds/hosted sites (PR #240 `Lead.trafficSource` google_ads/meta_ads). One helper: `adLeadWhere()`; every ads page, detector and report uses it.
+- Campaign credit = `sourceDetail` or first-touch `utm_campaign` equal to the campaign name or its platform id. Ad URL tags: Google `utm_campaign={campaignid}` (no name ValueTrack exists), Meta `utm_campaign={{campaign.name}}` with `utm_medium=paid`.
+- AppFolio: the embeds rewrite `source=` on AppFolio links that carry one to the visitor's first-touch campaign; the sync turns an OTHER source matching a campaign key into that platform. LeaseStack never writes to AppFolio.
+- Not yet proven live: that AppFolio stores the showing link's `source` on the guest card. Check with one real test booking.

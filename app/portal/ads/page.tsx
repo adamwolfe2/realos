@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { adLeadWhere } from "@/lib/integrations/ad-lead-source";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
@@ -292,7 +293,7 @@ export default async function AdsPage({
       where: {
         orgId: scope.orgId,
         ...propertyFilter,
-        source: { in: [LeadSource.GOOGLE_ADS, LeadSource.META_ADS] },
+        ...adLeadWhere(),
         createdAt: { gte: since28d },
       },
       _count: { _all: true },
@@ -314,7 +315,7 @@ export default async function AdsPage({
     where: {
       orgId: scope.orgId,
       ...propertyFilter,
-      source: { in: [LeadSource.GOOGLE_ADS, LeadSource.META_ADS] },
+      ...adLeadWhere(),
       createdAt: { gte: priorStart, lt: priorEnd },
     },
     _count: { _all: true },
@@ -334,7 +335,7 @@ export default async function AdsPage({
       where: {
         orgId: scope.orgId,
         ...propertyFilter,
-        source: { in: [LeadSource.GOOGLE_ADS, LeadSource.META_ADS] },
+        ...adLeadWhere(),
         createdAt: { gte: since28d },
       },
       select: { createdAt: true, status: true },

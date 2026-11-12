@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
-import { LeadSource, LeadStatus } from "@prisma/client";
+import { adLeadWhere } from "@/lib/integrations/ad-lead-source";
+import { LeadStatus } from "@prisma/client";
 import { isoWeekKey } from "../iso-week";
 import type { Detector, DetectedInsight } from "../types";
 import { propertyIdsToWhere } from "@/lib/tenancy/property-filter";
@@ -53,7 +54,7 @@ export const adBudgetShiftDetector: Detector = {
         where: {
           orgId,
           ...propertyIdsToWhere(propertyIds),
-          source: { in: [LeadSource.GOOGLE_ADS, LeadSource.META_ADS] },
+          ...adLeadWhere(),
           status: LeadStatus.SIGNED,
           createdAt: { gte: since },
         },

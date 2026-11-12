@@ -1,5 +1,5 @@
 import "server-only";
-import { leadSourceForPlatform } from "@/lib/integrations/ad-lead-source";
+import { adLeadWhere, leadSourceForPlatform } from "@/lib/integrations/ad-lead-source";
 import { prisma } from "@/lib/db";
 import { isoWeekKey } from "../iso-week";
 import type { Detector, DetectedInsight } from "../types";
@@ -92,7 +92,7 @@ export const cplSpikeDetector: Detector = {
             // understate the leads that spend paid for and falsely spike
             // the CPL.
             OR: [{ propertyId: { in: propertyIds } }, { propertyId: null }],
-            source: { in: sources },
+            ...adLeadWhere([acct.platform]),
             createdAt: { gte: since7d },
           },
         }),
@@ -100,7 +100,7 @@ export const cplSpikeDetector: Detector = {
           where: {
             orgId,
             OR: [{ propertyId: { in: propertyIds } }, { propertyId: null }],
-            source: { in: sources },
+            ...adLeadWhere([acct.platform]),
             createdAt: { gte: since14d, lt: since7d },
           },
         }),

@@ -117,6 +117,31 @@
     }
   }
   var lsTouch = lsCaptureTouch();
+  // Hand the first touch's campaign tag to AppFolio links that already carry
+  // `source=` (showing/apply links on client sites), so a renter who books
+  // straight in AppFolio comes back through the sync credited to the ad
+  // campaign (lib/integrations/ad-lead-source.ts sourceFromCampaignKey).
+  // Guarded so the chatbot and popup embeds on one page bind it once.
+  if (lsTouch && lsTouch.first && lsTouch.first.utmCampaign && !window.__lsAppfolioSource) {
+    window.__lsAppfolioSource = true;
+    var lsCampaign = lsTouch.first.utmCampaign;
+    var lsTagAppfolio = function (e) {
+      var a = e.target && e.target.closest ? e.target.closest('a[href*="appfolio.com"]') : null;
+      if (!a) return;
+      try {
+        var u = new URL(a.href);
+        if (!u.searchParams.has("source")) return;
+        u.searchParams.set("source", lsCampaign);
+        a.href = u.toString();
+      } catch (err) {
+        console.warn("[leasestack] could not tag AppFolio link", err);
+      }
+    };
+    document.addEventListener("click", lsTagAppfolio, true);
+    document.addEventListener("auxclick", lsTagAppfolio, true);
+    // Right-click "Open in new tab" fires neither click event.
+    document.addEventListener("contextmenu", lsTagAppfolio, true);
+  }
   // --- end first-touch attribution -----------------------------------------
   var SESSION_ACTIVE_KEY = "leasestack.chatbot.embed.active.v1";
 

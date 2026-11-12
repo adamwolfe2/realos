@@ -2,7 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { isoWeekKey } from "../iso-week";
 import type { Detector, DetectedInsight } from "../types";
-import { leadSourceForPlatform } from "@/lib/integrations/ad-lead-source";
+import { adLeadWhere, leadSourceForPlatform } from "@/lib/integrations/ad-lead-source";
 import { propertyIdsToWhere } from "@/lib/tenancy/property-filter";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -91,7 +91,7 @@ export const wastedAdSpendDetector: Detector = {
           ...(campaign.propertyId
             ? { propertyId: campaign.propertyId }
             : { OR: [propertyIdsToWhere(propertyIds), { propertyId: null }] }),
-          source: { in: sources },
+          ...adLeadWhere([campaign.platform]),
           createdAt: { gte: since },
         },
       });
