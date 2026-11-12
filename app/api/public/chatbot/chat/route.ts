@@ -19,6 +19,12 @@ import { notifyChatbotLeadCaptured } from "@/lib/notifications/create";
 import { sendProspectProfileForConversation } from "@/lib/chatbot/send-prospect-profile";
 import { LeadNotifyChannel } from "@prisma/client";
 import { findOrCreateChatbotLead } from "@/lib/chatbot/find-or-create-lead";
+import {
+  attributionColumns,
+  attributionFill,
+  resolveAttribution,
+  type ResolvedAttribution,
+} from "@/lib/attribution/touch";
 import { stripChatbotMarkdown } from "@/lib/chatbot/strip-markdown";
 import { resolvePropertyForChatPage } from "@/lib/chatbot/property-attribution";
 import { resolveChatbotConfig } from "@/lib/chatbot/resolve-config";
@@ -82,6 +88,9 @@ const body = z.object({
   // always scoped by orgId on read, so a guessed value can only ever reach
   // this tenant's own prior conversations. See the lookup below.
   visitorHash: z.string().min(8).max(120).optional(),
+  // First-touch traffic attribution from the embed. Untrusted, display-only;
+  // validated + classified in lib/attribution/touch.ts (bad shape → ignored).
+  touch: z.unknown().optional(),
 });
 
 export function OPTIONS() {
@@ -116,8 +125,9 @@ export async function POST(req: NextRequest) {
       { status: 400, headers: CORS_HEADERS }
     );
   }
-  const { slug, sessionId, messages, pageUrl, property: propertySlug, visitorHash } =
+  const { slug, sessionId, messages, pageUrl, property: propertySlug, visitorHash, touch } =
     parsed.data;
+  const attribution = resolveAttribution({ touch, pageUrl });
 
   // Denial-of-Wallet: cap aggregate input size per request (each message is
   // already ≤4000 chars, but 50 of them is ~50K input tokens). See input-budget.
@@ -403,6 +413,7 @@ export async function POST(req: NextRequest) {
           // is never mis-attributed to an arbitrary property. (Codex.)
           propertyId: resolvedPropertyId,
           visitorHash: visitorHash ?? null,
+          attribution,
         });
       } catch (err) {
         console.error("[public/chatbot/chat] persistence error:", err);
@@ -442,6 +453,7 @@ async function persistConversation(args: {
   ipAddress?: string;
   propertyId?: string | null;
   visitorHash?: string | null;
+  attribution?: ResolvedAttribution | null;
 }) {
   const full = [
     ...args.messages,
@@ -459,7 +471,7 @@ async function persistConversation(args: {
 
   const existing = await prisma.chatbotConversation.findUnique({
     where: { sessionId: args.sessionId },
-    select: { id: true, orgId: true, leadId: true, status: true },
+    select: { id: true, orgId: true, leadId: true, status: true, trafficSource: true, createdAt: true },
   });
 
   let conversation;
@@ -495,6 +507,7 @@ async function persistConversation(args: {
         // visitor accepted cookies mid-conversation). Never overwrite an
         // existing value with null.
         visitorHash: args.visitorHash ?? undefined,
+        ...attributionFill(existing, args.attribution ?? null),
       },
     });
   } else {
@@ -515,6 +528,7 @@ async function persistConversation(args: {
         userAgent: args.userAgent ?? null,
         ipAddress: args.ipAddress ?? null,
         visitorHash: args.visitorHash ?? null,
+        ...attributionColumns(args.attribution ?? null),
       },
     });
   }
@@ -528,6 +542,7 @@ async function persistConversation(args: {
       lastName: extracted.lastName ?? null,
       phone: extracted.phone ?? null,
       pageUrl: args.pageUrl,
+      attribution: args.attribution ?? null,
     });
     await prisma.chatbotConversation.update({
       where: { id: conversation.id },

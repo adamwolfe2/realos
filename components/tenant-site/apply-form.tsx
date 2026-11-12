@@ -1,4 +1,5 @@
 "use client";
+import { touchFields } from "@/lib/attribution/touch-client";
 
 import { useState } from "react";
 
@@ -47,6 +48,7 @@ export function ApplyForm({
       desiredMoveIn: str(fd.get("desiredMoveIn")),
       budgetMax: str(fd.get("budgetMax")),
       notes: str(fd.get("notes")),
+      ...touchFields(),
     };
     try {
       const res = await fetch("/api/public/leads", {

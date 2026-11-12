@@ -30,6 +30,7 @@ import { BulkActionBar } from "@/components/portal/ui/bulk-action-bar";
 import { AlertDialog } from "@/components/portal/ui/alert-dialog";
 import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
 import { SourceMark } from "@/components/portal/source-mark";
+import { SourceLogo } from "@/components/portal/attribution/source-logo";
 import { leadDisplayName } from "@/lib/leads/display-name";
 
 export type LeadKanbanItem = {
@@ -39,6 +40,9 @@ export type LeadKanbanItem = {
   email: string | null;
   phone: string | null;
   source: string;
+  /** First-touch traffic source id (zillow, google_organic...) + its label; null when not tracked. */
+  trafficSource: string | null;
+  cameFrom: string | null;
   status: LeadStatus;
   score: number;
   propertyName: string | null;
@@ -500,6 +504,13 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
                       </span>
                       <SignalBadges item={item} />
                     </div>
+                    {item.trafficSource && item.cameFrom ? (
+                      <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span>via</span>
+                        <SourceLogo logo={item.trafficSource} size={16} />
+                        <span className="font-medium text-foreground">{item.cameFrom}</span>
+                      </div>
+                    ) : null}
                   </td>
                   <td className="px-4 py-3">
                     <StatusPill
@@ -617,6 +628,7 @@ function buildLeadsCsv(rows: LeadKanbanItem[]): string {
     "Phone",
     "Status",
     "Source",
+    "Came from",
     "Score",
     "Property",
     "Created at",
@@ -632,6 +644,7 @@ function buildLeadsCsv(rows: LeadKanbanItem[]): string {
         r.phone ?? "",
         r.status,
         r.source,
+        r.cameFrom ?? "",
         String(r.score ?? 0),
         r.propertyName ?? "",
         r.createdAt,
@@ -697,6 +710,17 @@ function LeadDrawerBody({ item }: { item: LeadKanbanItem }) {
           <dt className="text-muted-foreground">Source</dt>
           <dd className="col-span-2 text-foreground">
             {humanLeadSource(item.source)}
+          </dd>
+          <dt className="text-muted-foreground">Came from</dt>
+          <dd className="col-span-2 flex items-center gap-1.5 text-foreground">
+            {item.trafficSource && item.cameFrom ? (
+              <>
+                <SourceLogo logo={item.trafficSource} size={14} />
+                {item.cameFrom}
+              </>
+            ) : (
+              <span className="text-muted-foreground">Not tracked</span>
+            )}
           </dd>
           <dt className="text-muted-foreground">Property</dt>
           <dd className="col-span-2 text-foreground">

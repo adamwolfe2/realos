@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { SourceLogo } from "@/components/portal/attribution/source-logo";
+import { trafficSourceLabel } from "@/lib/attribution/touch";
 import { propertyOrOrgLevelWhereFragment } from "@/lib/tenancy/property-filter";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -112,6 +114,13 @@ export default async function ConversationDetail({
         ) : (
           <MetaChip label="Handoff" value="None" tone="muted" />
         )}
+        {convo.trafficSource ? (
+          <MetaChip
+            label="Came from"
+            value={trafficSourceLabel(convo) ?? convo.trafficSource}
+            icon={<SourceLogo logo={convo.trafficSource} size={14} />}
+          />
+        ) : null}
         {convo.pageUrl ? (
           <MetaChip label="Page" value={compactUrl(convo.pageUrl)} />
         ) : null}
@@ -179,10 +188,12 @@ function MetaChip({
   label,
   value,
   tone,
+  icon,
 }: {
   label: string;
   value: string;
   tone?: "warn" | "muted";
+  icon?: React.ReactNode;
 }) {
   const toneClass =
     tone === "warn"
@@ -197,6 +208,7 @@ function MetaChip({
       <span className="ls-eyebrow">
         {label}
       </span>
+      {icon}
       <span className="font-semibold">{value}</span>
     </span>
   );

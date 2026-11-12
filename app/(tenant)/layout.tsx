@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { TouchCapture } from "@/components/tenant-site/touch-capture";
 import type { Metadata } from "next";
 import { getTenantFromHeaders } from "@/lib/tenancy/tenant-context";
 import { TenantNav } from "@/components/tenant-site/nav";
@@ -93,6 +94,7 @@ export default async function TenantLayout({
         ga4MeasurementId={config?.ga4MeasurementId ?? null}
         gtmContainerId={readGtmContainerId(config?.customJson)}
       />
+      <TouchCapture />
       <TenantNav tenant={tenant} />
       <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">{children}</main>
       <TenantFooter tenant={tenant} />

@@ -1,3 +1,8 @@
+import {
+  attributionColumns,
+  attributionFill,
+  resolveAttribution,
+} from "@/lib/attribution/touch";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
@@ -32,6 +37,9 @@ const schema = z.object({
   desiredMoveIn: z.string().optional(),
   budgetMax: z.string().optional(),
   notes: z.string().max(2000).optional(),
+  // First-touch traffic attribution (untrusted, display-only). See lib/attribution/touch.ts.
+  touch: z.unknown().optional(),
+  pageUrl: z.string().max(2000).optional(),
 });
 
 // A repeat inquiry from a known lead only re-notifies the operator when the
@@ -179,8 +187,11 @@ export async function POST(req: NextRequest) {
         budgetMaxCents: true,
         notes: true,
         updatedAt: true,
+        trafficSource: true,
+        createdAt: true,
       })
     : null;
+  const attribution = resolveAttribution({ touch: data.touch, pageUrl: data.pageUrl });
 
   const lead = existing
     ? await prisma.lead.update({
@@ -199,6 +210,7 @@ export async function POST(req: NextRequest) {
             data.notes,
             data.sourceDetail ?? data.source,
           ),
+          ...attributionFill(existing, attribution),
         },
       })
     : await prisma.lead.create({
@@ -215,6 +227,7 @@ export async function POST(req: NextRequest) {
           desiredMoveIn,
           budgetMaxCents,
           notes: data.notes ?? null,
+          ...attributionColumns(attribution),
         },
       });
 
