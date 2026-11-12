@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { askedForContactLastTurn } from "@/lib/chatbot/asked-for-contact";
 import { liveFeaturesPaused } from "@/lib/billing/trial-status";
 import { z } from "zod";
 import { streamText } from "ai";
@@ -367,6 +368,7 @@ export async function POST(req: NextRequest) {
       // message. A replayed/padded history only makes the bot MORE willing to
       // ask, never less, so this can't be abused into suppressing capture.
       userTurnCount: messages.filter((m) => m.role === "user").length,
+      askedForContactLastTurn: askedForContactLastTurn(messages),
     },
   );
   const userAgent = req.headers.get("user-agent") ?? undefined;

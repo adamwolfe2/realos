@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { campaignLeadKeys, sourceFromCampaignKey } from "@/lib/integrations/ad-lead-source";
+import { attributionColumns, attributionFromReportedSource } from "@/lib/attribution/touch";
 import {
   AuditAction,
   BackendPlatform,
@@ -1601,9 +1602,17 @@ export async function upsertAppfolioLead(
     propertyId: propertyId ?? undefined,
   };
 
-  const existing = await prisma.lead.findUnique({ where, select: { id: true } });
+  // AppFolio's own lead source ("Zillow", "Apartments.com"...) as a traffic
+  // source, flagged reportedBy:"appfolio". Fill-only: never replaces a source
+  // our own tracking (or an earlier sync) already recorded.
+  const reported = attributionFromReportedSource(mapped.sourceDetail, "appfolio");
+
+  const existing = await prisma.lead.findUnique({ where, select: { id: true, trafficSource: true } });
   if (existing) {
-    await prisma.lead.update({ where, data });
+    await prisma.lead.update({
+      where,
+      data: { ...data, ...(existing.trafficSource ? {} : attributionColumns(reported)) },
+    });
     return;
   }
 
@@ -1626,7 +1635,7 @@ export async function upsertAppfolioLead(
         externalId: { startsWith: "application:" },
         email: { equals: email, mode: "insensitive" },
       },
-      select: { id: true },
+      select: { id: true, trafficSource: true },
     });
     if (applicantLead) {
       await prisma.lead.update({
@@ -1635,6 +1644,7 @@ export async function upsertAppfolioLead(
           // Adopt the guest_card identity so future syncs match via findUnique.
           externalId: mapped.externalId,
           ...data,
+          ...(applicantLead.trafficSource ? {} : attributionColumns(reported)),
         },
       });
       return;
@@ -1658,6 +1668,7 @@ export async function upsertAppfolioLead(
       preferredUnitType: mapped.preferredUnitType,
       notes: mapped.notes,
       propertyId: propertyId ?? null,
+      ...attributionColumns(reported),
       firstSeenAt: mapped.createdAt ?? new Date(),
       lastActivityAt: new Date(),
     },

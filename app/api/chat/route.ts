@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { askedForContactLastTurn } from "@/lib/chatbot/asked-for-contact";
 import { liveFeaturesPaused } from "@/lib/billing/trial-status";
 import { z } from "zod";
 import { streamText } from "ai";
@@ -162,6 +163,7 @@ export async function POST(req: NextRequest) {
     knowledgeBase,
     // Capture-rate slice A: no contact ask on the visitor's first turn.
     userTurnCount: messages.filter((m) => m.role === "user").length,
+      askedForContactLastTurn: askedForContactLastTurn(messages),
   });
   const userAgent = req.headers.get("user-agent") ?? undefined;
 

@@ -9,7 +9,7 @@ const utm = (s: string, m?: string) => classifySource(s, null, m).id;
 // "Referral": operators make spend decisions on these labels.
 describe("classifySource never credits the wrong platform", () => {
   it("referrer hosts match on domain boundaries, not substrings", () => {
-    expect(ref("https://www.pinterest.com/pin/1")).toBe("referral"); // contains "t.co"
+    expect(ref("https://www.pinterest.com/pin/1")).toBe("pinterest"); // contains "t.co", must not be X
     expect(ref("https://www.dropbox.com/s/x")).toBe("referral"); // contains "x.com"
     expect(ref("https://www.student.com/us/berkeley")).toBe("referral"); // contains "t.co"
     expect(ref("https://www.fbcdn.example.org/")).toBe("referral");
@@ -42,5 +42,26 @@ describe("classifySource never credits the wrong platform", () => {
     expect(utm("google", "cpc")).toBe("google_ads");
     expect(utm("google")).toBe("google_organic");
     expect(utm("facebook", "paid_social")).toBe("meta_ads");
+  });
+});
+
+describe("referrers seen in real SG traffic (PopupEvent, 2026-11-12)", () => {
+  it("email apps and link scanners are Email, never Google search", () => {
+    expect(ref("android-app://com.google.android.gm/")).toBe("email");
+    expect(ref("https://link.edgepilot.com/s/abc")).toBe("email");
+    expect(ref("https://nam12.safelinks.protection.outlook.com/?url=x")).toBe("email");
+    expect(ref("https://mail.yahoo.com/d/folders/1")).toBe("email");
+  });
+  it("the Google app is Google search", () => {
+    expect(ref("android-app://com.google.android.googlequicksearchbox/")).toBe("google_organic");
+  });
+  it("named sources", () => {
+    expect(ref("https://och.berkeley.edu/listings/1")).toBe("uc_berkeley");
+    expect(ref("https://www.pinterest.com/pin/1")).toBe("pinterest");
+    expect(ref("https://www.yelp.com/biz/the-lair")).toBe("yelp");
+    expect(ref("https://nextdoor.com/p/x")).toBe("nextdoor");
+    expect(ref("https://yandex.com/search")).toBe("yandex");
+    expect(ref("https://www.baidu.com/s?wd=x")).toBe("baidu");
+    expect(ref("https://search.yahoo.com/search?p=x")).toBe("yahoo");
   });
 });

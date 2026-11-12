@@ -7,6 +7,7 @@
 // ---------------------------------------------------------------------------
 
 import type { WeeklyDigest } from "./weekly-digest";
+import { SOURCE_DOMAIN } from "@/lib/attribution/source-taxonomy";
 
 // ---------------------------------------------------------------------------
 // Formatting helpers
@@ -124,6 +125,36 @@ function topPropertiesTable(
       </tbody>
     </table>
   `;
+}
+
+function leadSourcesBlock(sources: WeeklyDigest["leadSources"], portalUrl: string): string {
+  if (sources.rows.length === 0) return "";
+  const base = portalUrl.replace(/\/portal\/?$/, "");
+  const rows = sources.rows
+    .map((r) => {
+      const logo = SOURCE_DOMAIN[r.id]
+        ? `<img src="${e(`${base}/logos/sources/${r.id}.png`)}" width="16" height="16" alt="" style="vertical-align:-3px;margin-right:8px;border:0;" />`
+        : "";
+      return `
+    <tr>
+      <td style="padding:10px 12px;border-bottom:1px solid #F3F4F6;font-size:13px;color:#374151;">${logo}${e(r.label)}${
+        r.reportedByAppfolio > 0
+          ? ` <span style="color:#9CA3AF;font-size:11px;">(${r.reportedByAppfolio === r.count ? "per AppFolio" : `${r.reportedByAppfolio} per AppFolio`})</span>`
+          : ""
+      }</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #F3F4F6;font-size:13px;color:#111111;font-weight:600;text-align:right;">${r.count}</td>
+    </tr>`;
+    })
+    .join("");
+  const note =
+    sources.untracked > 0
+      ? `<p style="margin:8px 0 0;font-size:11px;color:#9CA3AF;">${sources.untracked} more ${sources.untracked === 1 ? "lead has" : "leads have"} no recorded source (AppFolio, manual entry, or older pages).</p>`
+      : "";
+  return `
+    <p style="margin:24px 0 0;font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#94A3B8;">Where leads came from</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #E5E7EB;margin-top:12px;">
+      <tbody>${rows}</tbody>
+    </table>${note}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -338,6 +369,13 @@ export function buildWeeklyDigestEmail(
                 ${topPropertiesTable(topProperties)}
               </td>
             </tr>`
+              : ""
+          }
+
+          <!-- Lead sources -->
+          ${
+            digest.leadSources && digest.leadSources.rows.length > 0
+              ? `<tr><td style="padding:0 32px;">${leadSourcesBlock(digest.leadSources, portalUrl)}</td></tr>`
               : ""
           }
 
