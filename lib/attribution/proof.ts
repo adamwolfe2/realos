@@ -10,7 +10,9 @@ import {
   deriveLeadProof,
   summarizeAttributionFlow,
   sourceProvenance,
+  summarizeTrafficSources,
   type AttributionFlowSummary,
+  type TrafficSourceSummaryRow,
   type ProofStage,
   type ProofVerification,
 } from "@/lib/attribution/proof-model";
@@ -21,6 +23,7 @@ import type {
   Prisma,
 } from "@prisma/client";
 import { leadDisplayName } from "@/lib/leads/display-name";
+import { trafficSourceLabel } from "@/lib/attribution/touch";
 
 export type AttributionProofRow = {
   id: string;
@@ -31,6 +34,9 @@ export type AttributionProofRow = {
   source: LeadSource;
   sourceId: string;
   sourceLabel: string;
+  /** First-touch traffic channel (Zillow, Google...). Null when not tracked. */
+  trafficSourceId: string | null;
+  trafficSourceLabel: string | null;
   provenance: string;
   firstTouchAt: Date;
   capturedAt: Date;
@@ -60,6 +66,7 @@ export type AttributionProof = {
   rows: AttributionProofRow[];
   reviewRows: AttributionReviewRow[];
   flow: AttributionFlowSummary;
+  trafficSources: TrafficSourceSummaryRow[];
   summary: {
     captured: number;
     applied: number;
@@ -166,6 +173,8 @@ export async function getAttributionProof(args: {
         source: true,
         status: true,
         externalSystem: true,
+        trafficSource: true,
+        attribution: true,
         firstSeenAt: true,
         createdAt: true,
         property: { select: { name: true } },
@@ -256,6 +265,8 @@ export async function getAttributionProof(args: {
       source: lead.source,
       sourceId: source.id,
       sourceLabel: source.label,
+      trafficSourceId: lead.trafficSource,
+      trafficSourceLabel: trafficSourceLabel(lead),
       provenance: sourceProvenance(lead.source, lead.externalSystem),
       firstTouchAt: lead.firstSeenAt,
       capturedAt: lead.createdAt,
@@ -327,6 +338,7 @@ export async function getAttributionProof(args: {
     rows,
     reviewRows,
     flow,
+    trafficSources: summarizeTrafficSources(rows),
     summary: {
       captured: flow.captured,
       applied: flow.applied,

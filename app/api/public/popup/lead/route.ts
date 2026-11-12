@@ -4,6 +4,11 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { findOldestLeadByEmail } from "@/lib/leads/find-by-email";
 import {
+  attributionColumns,
+  attributionFill,
+  resolveAttribution,
+} from "@/lib/attribution/touch";
+import {
   LeadSource,
   LeadStatus,
   PopupEventType,
@@ -73,6 +78,8 @@ const bodySchema = z.object({
   email: z.string().trim().toLowerCase().email().max(200).optional(),
   phone: z.string().trim().max(40).optional(),
   pageUrl: z.string().max(2000).optional(),
+  // First-touch traffic attribution (untrusted, display-only). See lib/attribution/touch.ts.
+  touch: z.unknown().optional(),
 });
 
 export function OPTIONS() {
@@ -194,17 +201,19 @@ export async function POST(req: NextRequest) {
   let leadId: string;
   const sourceDetail = `popup:${popup.id}`;
   const notesLine = `Captured by popup on ${data.pageUrl ?? "site"}`;
+  const attribution = resolveAttribution({ touch: data.touch, pageUrl: data.pageUrl });
 
   const existing = data.email
     ? await findOldestLeadByEmail(org.id, data.email, {
         id: true,
         phone: true,
         propertyId: true,
+        trafficSource: true,
       })
     : data.phone
       ? await prisma.lead.findFirst({
           where: { orgId: org.id, phone: data.phone },
-          select: { id: true, phone: true, propertyId: true },
+          select: { id: true, phone: true, propertyId: true, trafficSource: true },
         })
       : null;
 
@@ -217,6 +226,7 @@ export async function POST(req: NextRequest) {
         // Don't overwrite an existing property attribution — the lead
         // may have come in through a different building first.
         propertyId: existing.propertyId ?? propertyId,
+        ...attributionFill(existing.trafficSource, attribution),
       },
       select: { id: true },
     });
@@ -232,6 +242,7 @@ export async function POST(req: NextRequest) {
         email: data.email ?? null,
         phone: data.phone ?? null,
         notes: notesLine,
+        ...attributionColumns(attribution),
       },
       select: {
         id: true,

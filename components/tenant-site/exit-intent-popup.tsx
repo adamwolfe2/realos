@@ -1,4 +1,5 @@
 "use client";
+import { touchFields } from "@/lib/attribution/touch-client";
 
 import { useEffect, useRef, useState } from "react";
 import {
@@ -91,6 +92,7 @@ export function ExitIntentPopup({
           sourceDetail: offerCode
             ? `exit_intent:${offerCode}`
             : "exit_intent",
+          ...touchFields(),
         }),
       });
       if (!res.ok) throw new Error(`Submit failed (${res.status})`);

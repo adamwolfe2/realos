@@ -29,6 +29,8 @@ import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { RangePresetControl } from "@/components/portal/attribution/range-preset-control";
 import { StatusChip } from "@/components/portal/ui/status-chip";
 import { EmptyState } from "@/components/portal/ui/empty-state";
+import { SourceLogo } from "@/components/portal/attribution/source-logo";
+import type { TrafficSourceSummaryRow } from "@/lib/attribution/proof-model";
 
 export const metadata: Metadata = { title: "Lead to lease proof" };
 export const dynamic = "force-dynamic";
@@ -189,6 +191,8 @@ export default async function AttributionPage({
         />
       </section>
 
+      <TrafficSourcesPanel rows={proof.trafficSources} />
+
       <section className="ls-card overflow-hidden">
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-3">
           <div>
@@ -244,6 +248,12 @@ export default async function AttributionPage({
                     </td>
                     <td className="px-4 py-3">
                       <SourceBadge row={row} />
+                      {row.trafficSourceId ? (
+                        <div className="mt-1 flex items-center gap-1.5 text-[11px] text-foreground">
+                          <SourceLogo logo={row.trafficSourceId} size={14} />
+                          <span>via {row.trafficSourceLabel}</span>
+                        </div>
+                      ) : null}
                       <div className="mt-1 text-[10px] text-muted-foreground">
                         {row.provenance}
                       </div>
@@ -385,6 +395,44 @@ function ProofState({
         {row.outcomeEvidence}
       </div>
     </div>
+  );
+}
+
+// Where website leads first came from (Zillow, Google, Instagram...), from the
+// first-touch source the embeds record. Bars scale to the busiest channel.
+function TrafficSourcesPanel({ rows }: { rows: TrafficSourceSummaryRow[] }) {
+  if (rows.length === 0) return null;
+  const max = Math.max(...rows.map((row) => row.leads), 1);
+  return (
+    <section className="ls-card overflow-hidden">
+      <div className="border-b border-border px-4 py-3">
+        <h2 className="text-sm font-semibold text-foreground">Where leads came from</h2>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          First site visit before the chat, popup or form. Website leads only.
+        </p>
+      </div>
+      <ul className="divide-y divide-border">
+        {rows.map((row) => (
+          <li key={`${row.id}:${row.label}`} className="flex items-center gap-3 px-4 py-2.5">
+            {row.id === "untracked" ? (
+              <span className="inline-block h-5 w-5 shrink-0 border border-dashed border-border" aria-hidden="true" />
+            ) : (
+              <SourceLogo logo={row.id} size={20} />
+            )}
+            <span className="w-36 shrink-0 truncate text-xs font-medium text-foreground">{row.label}</span>
+            <div className="h-2 flex-1 bg-secondary" aria-hidden="true">
+              <div
+                className={row.id === "untracked" ? "h-2 bg-muted-foreground/30" : "h-2 bg-primary"}
+                style={{ width: `${Math.max((row.leads / max) * 100, 2)}%` }}
+              />
+            </div>
+            <span className="w-40 shrink-0 text-right font-mono text-xs tabular-nums text-muted-foreground">
+              <span className="text-foreground">{row.leads}</span> leads · {row.applied} applied · {row.signed} signed
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

@@ -28,6 +28,8 @@ type LeadNotifyEmailInput = {
     phone: string | null;
     sourceLabel: string | null;
     intent: string | null;
+    /** First-touch traffic source, e.g. "Zillow". Null when unknown. */
+    cameFrom?: string | null;
   };
   propertyName: string | null;
   portalUrl: string;
@@ -64,6 +66,7 @@ export function buildLeadNotifyEmail(
     row("Name", input.lead.name) +
     row("Email", input.lead.email) +
     row("Phone", input.lead.phone) +
+    row("Came from", input.lead.cameFrom ?? null) +
     row("Source", input.lead.sourceLabel ?? channelLabel) +
     row("Property", input.propertyName) +
     row("Intent", input.lead.intent);
@@ -113,6 +116,7 @@ export function buildLeadNotifyEmail(
     input.lead.name ? `Name: ${input.lead.name}` : null,
     input.lead.email ? `Email: ${input.lead.email}` : null,
     input.lead.phone ? `Phone: ${input.lead.phone}` : null,
+    input.lead.cameFrom ? `Came from: ${input.lead.cameFrom}` : null,
     input.lead.sourceLabel ? `Source: ${input.lead.sourceLabel}` : null,
     input.propertyName ? `Property: ${input.propertyName}` : null,
     input.lead.intent ? `Intent: ${input.lead.intent}` : null,

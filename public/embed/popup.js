@@ -152,6 +152,55 @@
   })();
 
   var SESSION_KEY = "leasestack.popup.sid";
+
+  // --- First-touch traffic attribution (shared verbatim with popup.js) ------
+  // Remembers where this visitor first arrived from (UTM tags, ad click ids,
+  // an external referrer) in this site's localStorage for 90 days, and sends
+  // it as `touch` with chats and leads. Server side: lib/attribution/touch.ts.
+  // `first` is the first touch that carried a signal (a plain direct visit is
+  // upgraded by a later tagged one); `last` is the latest tagged touch.
+  var LS_TOUCH_KEY = "ls_touch";
+  var LS_TOUCH_TTL_MS = 90 * 24 * 60 * 60 * 1000;
+  function lsTouchHasSignal(t) {
+    return !!(t && (t.referrer || t.utmSource || t.utmMedium || t.utmCampaign ||
+      t.gclid || t.fbclid || t.msclkid || t.zgRef));
+  }
+  function lsCaptureTouch() {
+    try {
+      var q = new URLSearchParams(window.location.search);
+      var g = function (k) { var v = q.get(k); return v ? v.slice(0, 300) : null; };
+      var ref = null;
+      try {
+        if (document.referrer &&
+            new URL(document.referrer).hostname !== window.location.hostname) {
+          ref = document.referrer.slice(0, 2048);
+        }
+      } catch (e) { ref = null; }
+      var t = {
+        ts: Date.now(),
+        landingUrl: window.location.href.slice(0, 2048),
+        referrer: ref,
+        utmSource: g("utm_source"), utmMedium: g("utm_medium"),
+        utmCampaign: g("utm_campaign"), utmTerm: g("utm_term"),
+        utmContent: g("utm_content"), gclid: g("gclid"), fbclid: g("fbclid"),
+        msclkid: g("msclkid"), zgRef: g("zgRef")
+      };
+      var stored = null;
+      try { stored = JSON.parse(window.localStorage.getItem(LS_TOUCH_KEY) || "null"); } catch (e) { stored = null; }
+      if (!stored || !stored.first || Date.now() - (stored.first.ts || 0) > LS_TOUCH_TTL_MS) {
+        stored = { first: t, last: lsTouchHasSignal(t) ? t : null };
+      } else if (lsTouchHasSignal(t)) {
+        if (!lsTouchHasSignal(stored.first)) stored.first = t;
+        stored.last = t;
+      }
+      try { window.localStorage.setItem(LS_TOUCH_KEY, JSON.stringify(stored)); } catch (e) { /* private mode: still send this page's touch */ }
+      return stored;
+    } catch (e) {
+      return null;
+    }
+  }
+  var lsTouch = lsCaptureTouch();
+  // --- end first-touch attribution -----------------------------------------
   var sid = (function () {
     try {
       var existing = sessionStorage.getItem(SESSION_KEY);
@@ -250,6 +299,7 @@
         phone: data.phone,
         pageUrl: window.location.href,
         visitorHash: readCookie("ls_vid"),
+        touch: lsTouch || undefined,
       }),
     })
       .then(function (r) {

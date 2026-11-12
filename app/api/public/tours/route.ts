@@ -1,3 +1,8 @@
+import {
+  attributionColumns,
+  attributionFill,
+  resolveAttribution,
+} from "@/lib/attribution/touch";
 import { NextRequest, NextResponse } from "next/server";
 import { runAfter } from "@/lib/after";
 import { z } from "zod";
@@ -30,6 +35,9 @@ const schema = z.object({
   scheduledAt: z.string().datetime().optional(),
   tourType: z.enum(["in_person", "virtual", "self_guided"]).optional(),
   notes: z.string().max(2000).optional(),
+  // First-touch traffic attribution (untrusted, display-only). See lib/attribution/touch.ts.
+  touch: z.unknown().optional(),
+  pageUrl: z.string().max(2000).optional(),
 });
 
 // POST /api/public/tours
@@ -83,7 +91,9 @@ export async function POST(req: NextRequest) {
   // Find or create the lead.
   const existing = await findOldestLeadByEmail(data.orgId, data.email, {
     id: true,
+    trafficSource: true,
   });
+  const attribution = resolveAttribution({ touch: data.touch, pageUrl: data.pageUrl });
 
   const lead = existing
     ? await prisma.lead.update({
@@ -95,6 +105,7 @@ export async function POST(req: NextRequest) {
           phone: data.phone ?? undefined,
           status: LeadStatus.TOUR_SCHEDULED,
           lastActivityAt: new Date(),
+          ...attributionFill(existing.trafficSource, attribution),
         } as Prisma.LeadUpdateInput,
       })
     : await prisma.lead.create({
@@ -108,6 +119,7 @@ export async function POST(req: NextRequest) {
           source: LeadSource.FORM,
           sourceDetail: "tour_request",
           status: LeadStatus.TOUR_SCHEDULED,
+          ...attributionColumns(attribution),
         },
       });
 
