@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Logo, Panel } from "@/components/portal/overview/kit";
 import type { PropertyAdRollup } from "@/lib/integrations/ads-property-rollup";
 
@@ -16,10 +17,9 @@ function per(spendCents: number, count: number): string {
   return spendCents > 0 && count > 0 ? dollars(Math.round(spendCents / count)) : "—";
 }
 
-export function PropertyBreakdown({ rows }: { rows: PropertyAdRollup[] }) {
+export function PropertyBreakdown({ rows, rangeDays }: { rows: PropertyAdRollup[]; rangeDays: number }) {
   if (rows.length === 0) return null;
   const maxSpend = Math.max(1, ...rows.map((r) => r.spendCents));
-  const hasPortfolioRow = rows.some((r) => r.propertyId === null && r.spendCents > 0);
 
   return (
     <Panel
@@ -34,7 +34,7 @@ export function PropertyBreakdown({ rows }: { rows: PropertyAdRollup[] }) {
             <span className="h-2 w-2 rounded-full" style={{ background: META_BLUE }} aria-hidden />
             <Logo slug="meta-ads" size={12} />Meta
           </span>
-          <span>28 days</span>
+          <span>{rangeDays} days</span>
         </span>
       }
       flush
@@ -46,7 +46,7 @@ export function PropertyBreakdown({ rows }: { rows: PropertyAdRollup[] }) {
             <th className="px-4 py-2 text-left">Property</th>
             <th className="px-4 py-2 text-left">Spend</th>
             <th className="px-4 py-2 text-right" title="Conversions as reported by Google and Meta">Platform conv.</th>
-            <th className="px-4 py-2 text-right">Leads</th>
+            <th className="px-4 py-2 text-right" title="From your leasing system, matched to the ad that brought the renter in">Leads</th>
             <th className="px-4 py-2 text-right">Tours</th>
             <th className="px-4 py-2 text-right">Leases</th>
             <th className="px-4 py-2 text-right">Cost / lead</th>
@@ -57,9 +57,18 @@ export function PropertyBreakdown({ rows }: { rows: PropertyAdRollup[] }) {
           {rows.map((r) => (
             <tr key={r.propertyId ?? "portfolio"} className="align-middle">
               <td className="px-4 py-3">
-                <div className="font-medium text-[var(--t-ink)]">{r.name}</div>
+                {r.propertyId ? (
+                  <Link
+                    href={`/portal/ads?property=${r.propertyId}${rangeDays === 28 ? "" : `&range=${rangeDays}`}`}
+                    className="font-medium text-[var(--t-ink)] hover:text-[var(--t-accent)] hover:underline underline-offset-2"
+                  >
+                    {r.name}
+                  </Link>
+                ) : (
+                  <div className="font-medium text-[var(--t-ink)]">{r.name}</div>
+                )}
                 {r.propertyId === null ? (
-                  <div className="text-[11.5px] text-[var(--t-muted)]">Campaigns that promote several properties</div>
+                  <div className="text-[11.5px] text-[var(--t-muted)]">Multi-property campaigns</div>
                 ) : null}
               </td>
               <td className="px-4 py-3">
@@ -87,10 +96,6 @@ export function PropertyBreakdown({ rows }: { rows: PropertyAdRollup[] }) {
           ))}
         </tbody>
       </table>
-      <p className="border-t border-[var(--t-divider)] px-4 py-2.5 text-[12px] text-[var(--t-muted)]">
-        Leads, tours and leases come from your leasing system, matched to the ad that brought the renter in.
-        {hasPortfolioRow ? " Portfolio-wide spend is not split across properties, so per-property costs only count that property's own campaigns." : ""}
-      </p>
     </Panel>
   );
 }

@@ -74,6 +74,8 @@ Constraints:
 // ~85% of runs (ApiUsage, May-Sep 2026). 10 per call leaves ~2.5x headroom.
 export const POLISH_CHUNK_SIZE = 10;
 
+const ALREADY_WRITTEN: ReadonlySet<string> = new Set(["ads_weekly_brief"]);
+
 export async function polishInsights(
   insights: DetectedInsight[],
   /** Optional cost-attribution scope. signals-daily passes the orgId
@@ -84,6 +86,14 @@ export async function polishInsights(
   if (insights.length === 0) return insights;
   if (!process.env.ANTHROPIC_API_KEY) {
     return insights;
+  }
+  // Already-written prose (the weekly ads brief) is passed through as is:
+  // the 420-char polish schema would cut it down and lose its decisions.
+  const toPolish = insights.filter((i) => !ALREADY_WRITTEN.has(i.kind));
+  if (toPolish.length < insights.length) {
+    const done = await polishInsights(toPolish, cost);
+    let cursor = 0;
+    return insights.map((i) => (ALREADY_WRITTEN.has(i.kind) ? i : done[cursor++]));
   }
   const chunks: DetectedInsight[][] = [];
   for (let i = 0; i < insights.length; i += POLISH_CHUNK_SIZE) {

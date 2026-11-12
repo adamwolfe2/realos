@@ -25,6 +25,8 @@ export type CreativeItem = {
   clicks: number;
   spendCents: number;
   leads: number;
+  /** Share the click rate fell, last 7 days vs first 7 of the window (0.4 = 40%). Null when not fatigued or too little data. */
+  fatigueDrop?: number | null;
 };
 
 type SortKey = "cpl" | "spend" | "leads" | "ctr";
@@ -146,11 +148,16 @@ function CreativeCard({ item, callout }: { item: CreativeItem; callout: "best" |
           <Cell label="Per lead" value={cpl === null ? "—" : money(cpl)} />
           <Cell label="CTR" value={pct(ctr(item))} />
         </dl>
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
             {callout === "best" ? <Pill tone="good">Best cost per lead</Pill> : null}
             {callout === "worst" ? <Pill tone="bad">{item.leads === 0 ? "Spend, no leads" : "Highest cost per lead"}</Pill> : null}
             {paused ? <Pill tone="neutral">Paused</Pill> : null}
+            {!paused && item.fatigueDrop ? (
+              <span title="Click rate in the last 7 days vs the first 7 days of this range. A refresh usually helps.">
+                <Pill tone="warn">{`Click rate down ${Math.round(item.fatigueDrop * 100)}%`}</Pill>
+              </span>
+            ) : null}
           </div>
           {item.landingUrl ? (
             <a

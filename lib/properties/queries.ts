@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { adLeadWhere, campaignLeadKeys, leadCampaignTags } from "@/lib/integrations/ad-lead-source";
 import { leadDayBucketsByProperty } from "@/lib/dashboard/lead-day-buckets";
 import {
   ApplicationStatus,
@@ -531,6 +532,7 @@ export async function getPropertyAds(
       select: {
         id: true,
         name: true,
+        externalCampaignId: true,
         platform: true,
         status: true,
       },
@@ -558,9 +560,9 @@ export async function getPropertyAds(
         orgId,
         propertyId,
         createdAt: { gte: since28d },
-        source: { in: [LeadSource.GOOGLE_ADS, LeadSource.META_ADS] },
+        ...adLeadWhere(),
       },
-      select: { sourceDetail: true },
+      select: { sourceDetail: true, attribution: true },
     }),
   ]);
 
@@ -579,13 +581,9 @@ export async function getPropertyAds(
     byCampaign.set(row.campaignId, existing);
   }
 
-  // Count leads per campaign name (best-effort attribution)
-  const leadsByName = new Map<string, number>();
-  for (const lead of leadsByCampaignName) {
-    const key = (lead.sourceDetail ?? "").toLowerCase();
-    if (!key) continue;
-    leadsByName.set(key, (leadsByName.get(key) ?? 0) + 1);
-  }
+  // A lead counts once toward each campaign whose name or platform id
+  // matches any of its tags (same rule as campaignLeadWhere).
+  const leadTags = leadsByCampaignName.map((lead) => new Set(leadCampaignTags(lead)));
 
   const campaignRows: PropertyCampaignRow[] = campaigns.map((c) => {
     const m = byCampaign.get(c.id) ?? {
@@ -594,7 +592,8 @@ export async function getPropertyAds(
       impressions: 0,
       conversions: 0,
     };
-    const leads28d = leadsByName.get(c.name.toLowerCase()) ?? 0;
+    const keys = campaignLeadKeys(c).map((k) => k.trim().toLowerCase());
+    const leads28d = leadTags.filter((tags) => keys.some((k) => tags.has(k))).length;
     const cplCents = leads28d > 0 ? Math.round(m.spend / leads28d) : null;
     const conversionPct =
       m.clicks > 0 ? Math.round((leads28d / m.clicks) * 100) : null;

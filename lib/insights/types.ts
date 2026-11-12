@@ -43,7 +43,11 @@ export type InsightKind =
   | "portfolio_outlier"
   // AEO alerts (2026-08-14, goal spec slice 10).
   | "negative_mention_spike"
-  | "aeo_competitor_overtake";
+  | "aeo_competitor_overtake"
+  // Paid ads (2026-11-11).
+  | "ad_budget_shift"
+  | "creative_fatigue"
+  | "ads_weekly_brief";
 
 export type InsightEntityType =
   | "lead"

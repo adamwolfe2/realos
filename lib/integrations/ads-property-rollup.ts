@@ -1,4 +1,5 @@
 import { AdPlatform, LeadStatus } from "@prisma/client";
+import { TOURED_OR_LATER } from "./ads-insights-math";
 
 // Per-property view of paid ads: what each property spent on Google and
 // Meta, and what that spend turned into once renters reached the leasing
@@ -17,14 +18,6 @@ export type PropertyAdRollup = {
   signed: number;
 };
 
-// A lead counts as toured once it reaches TOURED or any later stage.
-const TOURED_OR_LATER: ReadonlySet<LeadStatus> = new Set([
-  LeadStatus.TOURED,
-  LeadStatus.APPLICATION_SENT,
-  LeadStatus.APPLIED,
-  LeadStatus.APPROVED,
-  LeadStatus.SIGNED,
-]);
 
 export function rollupAdsByProperty(input: {
   properties: readonly { id: string; name: string }[];

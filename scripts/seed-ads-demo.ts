@@ -19,6 +19,7 @@
 import { prisma } from "@/lib/db";
 import { encrypt } from "@/lib/crypto";
 import { runAdsSyncForAccount } from "@/lib/integrations/ads-sync";
+import { runInsightDetectors } from "@/lib/insights/run";
 import { AdPlatform, LeadSource, LeadStatus, type Prisma } from "@prisma/client";
 
 const DEMO_ORG_SLUG = "telegraph-commons-demo";
@@ -53,6 +54,8 @@ type AdPlan = {
   cta?: string;
   photo?: number;
   weight: number;
+  /** Impressions climb over the window while clicks don't: click rate wears down. */
+  fatigues?: boolean;
 };
 type Plan = {
   id: string;
@@ -86,11 +89,11 @@ const META: Plan[] = [
   { id: "120001", name: "Westbrook Commons | Lead Form | Fall 27", status: "ACTIVE", objective: "OUTCOME_LEADS", dailyBudget: 45, cpc: [0.7, 1.1], ctr: [0.013, 0.019], cvr: [0.09, 0.13],
     ads: [
       { id: "620001", name: "Westbrook - Pool Deck", format: "image", headline: "Fall 2027 leasing is open", body: "Resort pool, study lounges and a 5 minute walk to class. Get pricing in one tap.", cta: "SIGN_UP", photo: 0, weight: 0.6 },
-      { id: "620002", name: "Westbrook - Unit Walkthrough", format: "video", headline: "Take the 30 second tour", body: "See a furnished 2 bed before you visit.", cta: "LEARN_MORE", photo: 1, weight: 0.4 },
+      { id: "620002", name: "Westbrook - Unit Walkthrough", format: "video", headline: "Take the 30 second tour", body: "See a furnished 2 bed before you visit.", cta: "LEARN_MORE", photo: 1, weight: 0.4, fatigues: true },
     ] },
   { id: "120002", name: "Park & Pearl | Reels | Tour Push", status: "ACTIVE", objective: "OUTCOME_TRAFFIC", dailyBudget: 30, cpc: [0.45, 0.8], ctr: [0.016, 0.024], cvr: [0.03, 0.05],
     ads: [
-      { id: "620003", name: "Park & Pearl - Rooftop Reel", format: "video", headline: "Sunset from the rooftop", body: "Tours daily. Pick a time that works for you.", cta: "BOOK_NOW", photo: 4, weight: 0.7 },
+      { id: "620003", name: "Park & Pearl - Rooftop Reel", format: "video", headline: "Sunset from the rooftop", body: "Tours daily. Pick a time that works for you.", cta: "BOOK_NOW", photo: 4, weight: 0.7, fatigues: true },
       { id: "620004", name: "Park & Pearl - Amenities Carousel", format: "carousel", headline: "Everything you need, one address", body: "Gym, co-working, pet spa and secure parking.", cta: "LEARN_MORE", photo: 5, weight: 0.3 },
     ] },
   { id: "120003", name: "Sage at Greenpoint | Lead Form", status: "ACTIVE", objective: "OUTCOME_LEADS", dailyBudget: 50, cpc: [0.8, 1.25], ctr: [0.011, 0.017], cvr: [0.08, 0.12],
@@ -133,7 +136,7 @@ function simulate(plan: Plan): Map<string, Day[]> {
       const adClicks = Math.round(clicks * share);
       byAd.get(ad.id)!.push({
         date: dayString(i),
-        impressions: Math.round(impressions * share),
+        impressions: Math.round(impressions * share * (ad.fatigues ? 1 + 1.6 * Math.max(0, progress - 0.6) / 0.4 : 1)),
         clicks: adClicks,
         spend: Math.round(spend * share * 100) / 100,
         conversions: Math.round(adClicks * cvr * between(0.6, 1.4)),
@@ -295,9 +298,10 @@ const LEAD_TAG = "ads-demo";
 const FIRST = ["Maya", "Jordan", "Priya", "Lucas", "Sofia", "Ethan", "Amara", "Noah", "Chloe", "Diego", "Hana", "Owen", "Leila", "Mateo", "Grace", "Kai"];
 const LAST = ["Chen", "Patel", "Nguyen", "Garcia", "Kim", "Okafor", "Silva", "Rossi", "Haddad", "Novak", "Tanaka", "Reyes", "Brooks", "Ali", "Moreau", "Lund"];
 
-function leadStatus(): LeadStatus {
+// signRate varies by property so the demo has a real cost-per-lease spread.
+function leadStatus(signRate = 0.07): LeadStatus {
   const r = rand();
-  if (r < 0.07) return LeadStatus.SIGNED;
+  if (r < signRate) return LeadStatus.SIGNED;
   if (r < 0.13) return LeadStatus.APPLIED;
   if (r < 0.3) return LeadStatus.TOURED;
   if (r < 0.42) return LeadStatus.TOUR_SCHEDULED;
@@ -317,10 +321,10 @@ async function seedAdLeads(orgId: string): Promise<number> {
   for (const plan of [...GOOGLE, ...META]) {
     const c = campaigns.find((x) => x.externalCampaignId === plan.id);
     if (!c) continue;
-    for (const d of campaignDays(plan).slice(-60)) {
+    for (const d of campaignDays(plan)) {
       const count = Math.round(d.conversions * between(0.25, 0.4));
       for (let i = 0; i < count; i++) {
-        const status = leadStatus();
+        const status = leadStatus(plan.name.startsWith("Westbrook") ? 0.16 : 0.07);
         const first = FIRST[Math.floor(rand() * FIRST.length)];
         const last = LAST[Math.floor(rand() * LAST.length)];
         const at = new Date(`${d.date}T${String(8 + Math.floor(rand() * 13)).padStart(2, "0")}:00:00Z`);
@@ -398,6 +402,15 @@ async function main() {
   for (const c of linked) console.log(`  ${c.name.padEnd(42)} -> ${c.property?.name ?? "(whole portfolio)"}`);
   console.log("fake API calls", calls);
   console.log("ad-sourced leads", await seedAdLeads(org.id));
+
+  // Suggestions + weekly brief through the real detector pass. Clears this
+  // org's ad insights first so the week's brief is written fresh.
+  await prisma.insight.deleteMany({ where: { orgId: org.id, category: "ads" } });
+  const insights = await runInsightDetectors(org.id);
+  const adDetectors = new Set(["wasted-ad-spend", "cpl-spike", "audience-exhaustion", "ad-budget-shift", "creative-fatigue", "ads-weekly-brief"]);
+  for (const r of insights.detectorResults.filter((d) => adDetectors.has(d.detector))) {
+    console.log(`  ${r.detector.padEnd(20)} ${r.error ? `ERROR ${r.error}` : `${r.insights.length} insight(s)`}`, r.insights.map((i) => i.title));
+  }
   if (failed) throw new Error("Sync reported warnings or failures; see above.");
 }
 
