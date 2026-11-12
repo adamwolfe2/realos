@@ -92,6 +92,7 @@ export async function POST(req: NextRequest) {
   const existing = await findOldestLeadByEmail(data.orgId, data.email, {
     id: true,
     trafficSource: true,
+    createdAt: true,
   });
   const attribution = resolveAttribution({ touch: data.touch, pageUrl: data.pageUrl });
 
@@ -105,7 +106,7 @@ export async function POST(req: NextRequest) {
           phone: data.phone ?? undefined,
           status: LeadStatus.TOUR_SCHEDULED,
           lastActivityAt: new Date(),
-          ...attributionFill(existing.trafficSource, attribution),
+          ...attributionFill(existing, attribution),
         } as Prisma.LeadUpdateInput,
       })
     : await prisma.lead.create({

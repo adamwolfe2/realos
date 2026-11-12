@@ -76,6 +76,9 @@ export const CANONICAL_SOURCES: CanonicalSource[] = [
   { id: "youtube", label: "YouTube", category: "social", color: "#FF0000", logo: "youtube", matchHosts: ["youtube.", "youtu.be"], matchUtm: ["youtube"] },
   { id: "x_twitter", label: "X / Twitter", category: "social", color: "#010101", logo: "x_twitter", matchHosts: ["twitter.", "x.com", "t.co"], matchUtm: ["twitter", "x.com"] },
 
+  // --- Webmail (must precede search: mail.google.com is email, not Google) --
+  { id: "email", label: "Email", category: "owned", color: "#0EA5E9", logo: "email", matchHosts: ["mail.google.", "outlook."], matchUtm: ["email", "newsletter", "drip", "cold-email"] },
+
   // --- Organic search ------------------------------------------------------
   { id: "google_organic", label: "Google", category: "search", color: "#4285F4", logo: "google", matchHosts: ["google."], matchUtm: ["google"] },
   { id: "bing_organic", label: "Bing", category: "search", color: "#258FFA", logo: "bing", matchHosts: ["bing."], matchUtm: ["bing"] },
@@ -85,7 +88,6 @@ export const CANONICAL_SOURCES: CanonicalSource[] = [
   // --- Owned capture surfaces ---------------------------------------------
   { id: "chatbot", label: "Chatbot", category: "owned", color: "#0f62fe", logo: "chatbot", matchHosts: [], matchUtm: ["chatbot"] },
   { id: "web_form", label: "Web form", category: "owned", color: "#0043ce", logo: "web_form", matchHosts: [], matchUtm: ["form", "webform"] },
-  { id: "email", label: "Email", category: "owned", color: "#0EA5E9", logo: "email", matchHosts: ["mail.google.", "outlook."], matchUtm: ["email", "newsletter", "drip", "cold-email"] },
 
   // --- Leasing / PMS pipeline ---------------------------------------------
   // AppFolio-synced leads (existing residents + PMS-originated prospects) are a
@@ -183,25 +185,25 @@ export function classifySource(
   referrer: string | null | undefined,
   utmMedium?: string | null | undefined,
 ): CanonicalSource {
-  const utm = utmSource?.trim().toLowerCase() ?? "";
+  const utm = tokens(utmSource);
   const medium = utmMedium?.trim().toLowerCase() ?? "";
 
   // 1. Paid intent: a cpc/ppc/paid medium on a known engine → the ads channel.
   if (utm && (medium.includes("cpc") || medium.includes("ppc") || medium.includes("paid"))) {
-    if (utm.includes("google")) return BY_ID.google_ads;
-    if (utm.includes("facebook") || utm.includes("meta") || utm.includes("instagram")) return BY_ID.meta_ads;
+    if (hasToken(utm, "google")) return BY_ID.google_ads;
+    if (["facebook", "fb", "meta", "instagram", "ig"].some((t) => hasToken(utm, t))) return BY_ID.meta_ads;
   }
 
-  // 2. Explicit UTM source.
+  // 2. Explicit UTM source — whole-token match ("ig" never matches "digital").
   if (utm) {
-    const byUtm = CANONICAL_SOURCES.find((s) => s.matchUtm.some((m) => utm.includes(m)));
+    const byUtm = CANONICAL_SOURCES.find((s) => s.matchUtm.some((m) => hasToken(utm, tokens(m))));
     if (byUtm) return byUtm;
   }
 
-  // 3. Referrer hostname.
+  // 3. Referrer hostname — domain-boundary match ("t.co" never matches pinterest.com).
   const host = hostOf(referrer);
   if (host) {
-    const byHost = CANONICAL_SOURCES.find((s) => s.matchHosts.some((h) => host.includes(h)));
+    const byHost = CANONICAL_SOURCES.find((s) => s.matchHosts.some((h) => hostMatches(host, h)));
     if (byHost) return byHost;
     // Unknown but real referrer → generic referral (keeps the hostname as detail).
     return { ...BY_ID.referral, label: host };
@@ -209,6 +211,26 @@ export function classifySource(
 
   // 4. No signal at all.
   return DIRECT;
+}
+
+/** Lowercase and join on "-": "Chatgpt.com" → "chatgpt-com", "ig_story" → "ig-story". */
+function tokens(value: string | null | undefined): string {
+  return (value ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+/** True when `needle` (already tokenized) appears as whole tokens inside `haystack`. */
+function hasToken(haystack: string, needle: string): boolean {
+  return needle.length > 0 && `-${haystack}-`.includes(`-${needle}-`);
+}
+
+/**
+ * Domain-boundary host match. "zillow." matches www.zillow.com, "t.co"
+ * matches t.co, "mail.google." matches mail.google.com — but none of them
+ * match a host that only contains the letters (pinterest.com, dropbox.com).
+ */
+function hostMatches(host: string, entry: string): boolean {
+  const e = entry.replace(/\.$/, "");
+  return e.length > 0 && `.${host}.`.includes(`.${e}.`);
 }
 
 function hostOf(referrer: string | null | undefined): string | null {

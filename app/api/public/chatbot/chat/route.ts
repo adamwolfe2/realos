@@ -471,7 +471,7 @@ async function persistConversation(args: {
 
   const existing = await prisma.chatbotConversation.findUnique({
     where: { sessionId: args.sessionId },
-    select: { id: true, orgId: true, leadId: true, status: true, trafficSource: true },
+    select: { id: true, orgId: true, leadId: true, status: true, trafficSource: true, createdAt: true },
   });
 
   let conversation;
@@ -507,7 +507,7 @@ async function persistConversation(args: {
         // visitor accepted cookies mid-conversation). Never overwrite an
         // existing value with null.
         visitorHash: args.visitorHash ?? undefined,
-        ...attributionFill(existing.trafficSource, args.attribution ?? null),
+        ...attributionFill(existing, args.attribution ?? null),
       },
     });
   } else {

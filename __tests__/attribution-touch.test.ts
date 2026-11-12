@@ -69,3 +69,25 @@ describe("touchFromUrl", () => {
     expect(touchFromUrl("https://a.com/x")).toBeNull();
   });
 });
+
+describe("no false credit from our own hops or old leads", () => {
+  it("a visitor returning from AppFolio / LeaseStack / Calendly is not a referral", () => {
+    for (const r of [
+      "https://sgrealestate.appfolio.com/listings/rental_applications/new",
+      "https://leasestack.co/portal",
+      "https://calendly.com/tc/tour",
+      "https://the-lair-abc.vercel.app/",
+    ]) {
+      expect(resolveAttribution({ touch: { first: { referrer: r } } })?.trafficSource).toBe("direct");
+    }
+  });
+
+  it("only fills a lead created in the last 24h; an older lead stays untracked", async () => {
+    const { attributionFill } = await import("@/lib/attribution/touch");
+    const a = resolveAttribution({ touch: { first: { utmSource: "zillow" } } });
+    const now = new Date("2026-11-11T12:00:00Z");
+    expect(attributionFill({ trafficSource: null, createdAt: new Date("2026-11-11T11:50:00Z") }, a, now).trafficSource).toBe("zillow");
+    expect(attributionFill({ trafficSource: null, createdAt: new Date("2026-09-01T00:00:00Z") }, a, now)).toEqual({});
+    expect(attributionFill({ trafficSource: "google_organic", createdAt: new Date("2026-11-11T11:59:00Z") }, a, now)).toEqual({});
+  });
+});

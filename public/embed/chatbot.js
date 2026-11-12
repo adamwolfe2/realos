@@ -85,10 +85,13 @@
       var g = function (k) { var v = q.get(k); return v ? v.slice(0, 300) : null; };
       var ref = null;
       try {
-        if (document.referrer &&
-            new URL(document.referrer).hostname !== window.location.hostname) {
-          ref = document.referrer.slice(0, 2048);
-        }
+        var bare = function (h) { return String(h || "").toLowerCase().replace(/^www\./, ""); };
+        var rh = document.referrer ? bare(new URL(document.referrer).hostname) : "";
+        // Same site (www or not) and our own / PMS / scheduling hops are not
+        // traffic sources: a visitor returning from AppFolio is not a referral.
+        var self = rh === bare(window.location.hostname) ||
+          /(^|\.)(appfolio\.com|leasestack\.co|calendly\.com|vercel\.app)$/.test(rh);
+        if (rh && !self) ref = document.referrer.slice(0, 2048);
       } catch (e) { ref = null; }
       var t = {
         ts: Date.now(),

@@ -209,11 +209,12 @@ export async function POST(req: NextRequest) {
         phone: true,
         propertyId: true,
         trafficSource: true,
+        createdAt: true,
       })
     : data.phone
       ? await prisma.lead.findFirst({
           where: { orgId: org.id, phone: data.phone },
-          select: { id: true, phone: true, propertyId: true, trafficSource: true },
+          select: { id: true, phone: true, propertyId: true, trafficSource: true, createdAt: true },
         })
       : null;
 
@@ -226,7 +227,7 @@ export async function POST(req: NextRequest) {
         // Don't overwrite an existing property attribution — the lead
         // may have come in through a different building first.
         propertyId: existing.propertyId ?? propertyId,
-        ...attributionFill(existing.trafficSource, attribution),
+        ...attributionFill(existing, attribution),
       },
       select: { id: true },
     });

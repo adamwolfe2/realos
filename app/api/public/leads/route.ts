@@ -188,6 +188,7 @@ export async function POST(req: NextRequest) {
         notes: true,
         updatedAt: true,
         trafficSource: true,
+        createdAt: true,
       })
     : null;
   const attribution = resolveAttribution({ touch: data.touch, pageUrl: data.pageUrl });
@@ -209,7 +210,7 @@ export async function POST(req: NextRequest) {
             data.notes,
             data.sourceDetail ?? data.source,
           ),
-          ...attributionFill(existing.trafficSource, attribution),
+          ...attributionFill(existing, attribution),
         },
       })
     : await prisma.lead.create({

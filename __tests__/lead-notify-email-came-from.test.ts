@@ -16,6 +16,13 @@ describe("lead alert email: Came from", () => {
     expect(out.text).toContain("Came from: Zillow");
     expect(out.html).toContain("Came from");
   });
+  it("renders the brand mark when a logo URL is given, escaped", () => {
+    const out = buildLeadNotifyEmail({
+      ...base,
+      lead: { ...lead, cameFrom: "Zillow", cameFromLogoUrl: "https://leasestack.co/logos/sources/zillow.png" },
+    } as Parameters<typeof buildLeadNotifyEmail>[0]);
+    expect(out.html).toContain('src="https://leasestack.co/logos/sources/zillow.png"');
+  });
   it("omits the row when unknown", () => {
     const out = buildLeadNotifyEmail({ ...base, lead } as Parameters<typeof buildLeadNotifyEmail>[0]);
     expect(out.text).not.toContain("Came from");

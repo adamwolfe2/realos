@@ -30,6 +30,8 @@ type LeadNotifyEmailInput = {
     intent: string | null;
     /** First-touch traffic source, e.g. "Zillow". Null when unknown. */
     cameFrom?: string | null;
+    /** Absolute URL of the source's brand mark (only for sources we ship a logo for). */
+    cameFromLogoUrl?: string | null;
   };
   propertyName: string | null;
   portalUrl: string;
@@ -55,6 +57,18 @@ function row(label: string, value: string | null): string {
     </tr>`;
 }
 
+function cameFromRow(label: string | null, logoUrl: string | null): string {
+  if (!label) return "";
+  const logo = logoUrl
+    ? `<img src="${escape(logoUrl)}" width="16" height="16" alt="" style="vertical-align:-3px;margin-right:6px;border:0;" />`
+    : "";
+  return `
+    <tr>
+      <td style="padding:8px 0;color:#6b7280;font-size:13px;vertical-align:top;white-space:nowrap;width:120px;">Came from</td>
+      <td style="padding:8px 0;color:#111827;font-size:14px;font-weight:500;">${logo}${escape(label)}</td>
+    </tr>`;
+}
+
 export function buildLeadNotifyEmail(
   input: LeadNotifyEmailInput,
 ): LeadNotifyEmailOutput {
@@ -66,7 +80,7 @@ export function buildLeadNotifyEmail(
     row("Name", input.lead.name) +
     row("Email", input.lead.email) +
     row("Phone", input.lead.phone) +
-    row("Came from", input.lead.cameFrom ?? null) +
+    cameFromRow(input.lead.cameFrom ?? null, input.lead.cameFromLogoUrl ?? null) +
     row("Source", input.lead.sourceLabel ?? channelLabel) +
     row("Property", input.propertyName) +
     row("Intent", input.lead.intent);

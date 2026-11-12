@@ -5,6 +5,8 @@
 
 const KEY = "ls_touch";
 const TTL_MS = 90 * 24 * 60 * 60 * 1000;
+// Our own / PMS / scheduling hops are not traffic sources (same list as the embeds).
+const IGNORED_REFERRER = /(^|\.)(appfolio\.com|leasestack\.co|calendly\.com|vercel\.app)$/;
 
 type ClientTouch = Record<string, string | number | null>;
 type Stored = { first: ClientTouch; last: ClientTouch | null };
@@ -28,7 +30,9 @@ export function captureTouch(): Stored | null {
   const g = (k: string) => q.get(k)?.slice(0, 300) || null;
   let referrer: string | null = null;
   try {
-    if (document.referrer && new URL(document.referrer).hostname !== window.location.hostname) {
+    const bare = (h: string) => h.toLowerCase().replace(/^www\./, "");
+    const rh = document.referrer ? bare(new URL(document.referrer).hostname) : "";
+    if (rh && rh !== bare(window.location.hostname) && !IGNORED_REFERRER.test(rh)) {
       referrer = document.referrer.slice(0, 2048);
     }
   } catch {
