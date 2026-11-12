@@ -130,3 +130,45 @@ describe("extractLeadCapture — name sanitizing", () => {
     expect(r.name).toBeUndefined();
   });
 });
+
+// 2026-11-11 Lair transcript (Zillow visitor, 5 user turns, no capture): every
+// question the bot couldn't answer (children, unfurnished, Jan move-in) ended
+// with the team's phone number and nothing else. "Get the answer from the
+// team" IS the deliverable — from turn 2 the bot must offer to have the team
+// send it and ask how to reach them, not just hand over our number.
+describe("unanswered questions become a follow-up offer (turn 2+)", () => {
+  it("turn 2+: an unknown answer is offered as a team follow-up with a contact ask", () => {
+    const prompt = buildSystemPrompt(makeOrg(), undefined, { userTurnCount: 3 });
+    expect(prompt).toContain("UNANSWERED QUESTION RULE");
+    expect(prompt).toContain("never let our phone number be the end of the reply");
+  });
+
+  it("turn 1 still never asks, even for an unknown answer", () => {
+    const prompt = buildSystemPrompt(makeOrg(), undefined, { userTurnCount: 1 });
+    expect(prompt).not.toContain("UNANSWERED QUESTION RULE");
+    expect(prompt).toContain("DO NOT ask for their email");
+  });
+
+  it("the content rule no longer sends unknowns straight to our contact info", () => {
+    const prompt = buildSystemPrompt(makeOrg(), undefined, { userTurnCount: 3 });
+    expect(prompt).not.toContain("pivot to the contact info or a tour");
+  });
+});
+
+describe("unanswered-question asks do not stack", () => {
+  it("defers to the ignored-ask rule so the bot never asks two replies in a row", () => {
+    const prompt = buildSystemPrompt(makeOrg(), undefined, { userTurnCount: 4 });
+    expect(prompt).toContain("the ignored-ask rule above still wins");
+  });
+});
+
+describe("server-detected ignored ask", () => {
+  it("forbids asking when the last reply already asked", () => {
+    const prompt = buildSystemPrompt(makeOrg(), undefined, { userTurnCount: 4, askedForContactLastTurn: true });
+    expect(prompt).toContain("YOUR LAST REPLY ALREADY ASKED HOW TO REACH THEM");
+  });
+  it("omits the block otherwise", () => {
+    const prompt = buildSystemPrompt(makeOrg(), undefined, { userTurnCount: 4 });
+    expect(prompt).not.toContain("YOUR LAST REPLY ALREADY ASKED");
+  });
+});

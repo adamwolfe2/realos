@@ -409,6 +409,8 @@ const CATEGORY_LABEL: Record<string, string> = {
   ai: "AI assistant",
   paid: "Paid ads",
   social: "Social",
+  local: "Local and reviews",
+  campus: "Campus housing",
   owned: "Owned",
   referral: "Referring site",
   direct: "Typed in or bookmarked",
@@ -430,7 +432,7 @@ function TrafficSourcesPanel({ rows }: { rows: TrafficSourceSummaryRow[] }) {
         <div>
           <h2 className="text-sm font-semibold text-foreground">Where leads came from</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            The site or platform that sent each visitor, before they chatted, opened a popup or filled a form.
+            The site or platform that sent each lead: tracked on your website, or as recorded in AppFolio where marked.
           </p>
         </div>
         <span className="text-xs text-muted-foreground">
@@ -467,6 +469,9 @@ function TrafficSourcesPanel({ rows }: { rows: TrafficSourceSummaryRow[] }) {
                         <div className="truncate text-sm font-semibold text-foreground">{row.label}</div>
                         <div className="text-[11px] text-muted-foreground">
                           {CATEGORY_LABEL[src.category] ?? "Other"}
+                          {row.reportedByAppfolio > 0
+                            ? ` · ${row.reportedByAppfolio === row.leads ? "all" : row.reportedByAppfolio} per AppFolio`
+                            : ""}
                         </div>
                       </div>
                     </div>

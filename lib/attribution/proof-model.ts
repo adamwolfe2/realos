@@ -1,3 +1,4 @@
+import { getSource } from "@/lib/attribution/source-taxonomy";
 import type {
   ApplicationStatus,
   LeadMatchDecisionStatus,
@@ -165,6 +166,8 @@ export type TrafficSourceSummaryRow = {
   leads: number;
   applied: number;
   signed: number;
+  /** How many of `leads` carry a source AppFolio recorded, not our own tracking. */
+  reportedByAppfolio: number;
 };
 
 /**
@@ -177,27 +180,36 @@ export function summarizeTrafficSources(
   rows: Array<{
     trafficSourceId: string | null;
     trafficSourceLabel: string | null;
+    trafficReportedBy?: "appfolio" | null;
     stage: ProofStage;
     verification: ProofVerification;
   }>,
 ): TrafficSourceSummaryRow[] {
   const byId = new Map<string, TrafficSourceSummaryRow>();
   for (const row of rows) {
-    if (row.verification === "imported") continue;
+    // AppFolio-imported rows count only when AppFolio itself recorded a real
+    // channel for them; otherwise they are PMS history, not traffic.
+    if (row.verification === "imported" && !(row.trafficSourceId && row.trafficReportedBy)) continue;
     const id = row.trafficSourceId ?? "untracked";
     // Unknown referrers share the "referral" id but keep their host label;
     // key on the label so berkeley.edu and reddit-style hosts stay distinct.
     const key = id === "referral" ? `referral:${row.trafficSourceLabel ?? ""}` : id;
     const entry = byId.get(key) ?? {
       id,
-      label: row.trafficSourceId ? (row.trafficSourceLabel ?? id) : "Not tracked",
+      label: !row.trafficSourceId
+        ? "Not tracked"
+        : id === "referral"
+          ? (row.trafficSourceLabel ?? id)
+          : getSource(id).label,
       leads: 0,
       applied: 0,
       signed: 0,
+      reportedByAppfolio: 0,
     };
     byId.set(key, {
       ...entry,
       leads: entry.leads + 1,
+      reportedByAppfolio: entry.reportedByAppfolio + (row.trafficReportedBy === "appfolio" ? 1 : 0),
       applied: entry.applied + (STAGE_RANK[row.stage] >= STAGE_RANK.Applied ? 1 : 0),
       signed: entry.signed + (row.stage === "Signed" && row.verification === "verified" ? 1 : 0),
     });

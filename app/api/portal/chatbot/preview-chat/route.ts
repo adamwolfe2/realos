@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { askedForContactLastTurn } from "@/lib/chatbot/asked-for-contact";
 import { z } from "zod";
 import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
@@ -89,6 +90,7 @@ export async function POST(req: NextRequest) {
     config,
     knowledgeBase: kbRow ? { ...kbRow, floorPlans: parseFloorPlans(kbRow.floorPlans) } : null,
     userTurnCount: messages.filter((m) => m.role === "user").length,
+      askedForContactLastTurn: askedForContactLastTurn(messages),
   });
 
   const startedAt = Date.now();

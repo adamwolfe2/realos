@@ -39,9 +39,9 @@ describe("resolveAttribution", () => {
   });
 
   it("unknown external referrer is a referral labelled with its host", () => {
-    const r = resolveAttribution({ touch: { first: { referrer: "https://www.berkeley.edu/housing" } } });
+    const r = resolveAttribution({ touch: { first: { referrer: "https://www.berkeleyside.org/housing" } } });
     expect(r?.trafficSource).toBe("referral");
-    expect(r?.attribution.sourceLabel).toBe("berkeley.edu");
+    expect(r?.attribution.sourceLabel).toBe("berkeleyside.org");
   });
 
   it("a valid touch with no signal is Direct", () => {
@@ -89,5 +89,23 @@ describe("no false credit from our own hops or old leads", () => {
     expect(attributionFill({ trafficSource: null, createdAt: new Date("2026-11-11T11:50:00Z") }, a, now).trafficSource).toBe("zillow");
     expect(attributionFill({ trafficSource: null, createdAt: new Date("2026-09-01T00:00:00Z") }, a, now)).toEqual({});
     expect(attributionFill({ trafficSource: "google_organic", createdAt: new Date("2026-11-11T11:59:00Z") }, a, now)).toEqual({});
+  });
+});
+
+describe("AppFolio-reported lead source", () => {
+  it("maps real platforms, flags them, and labels them per AppFolio", async () => {
+    const { attributionFromReportedSource, trafficSourceLabel } = await import("@/lib/attribution/touch");
+    const z = attributionFromReportedSource("Zillow", "appfolio");
+    expect(z?.trafficSource).toBe("zillow");
+    expect(z?.attribution.reportedBy).toBe("appfolio");
+    expect(trafficSourceLabel({ trafficSource: z!.trafficSource, attribution: z!.attribution })).toBe("Zillow (per AppFolio)");
+    expect(attributionFromReportedSource("Apartments.com", "appfolio")?.trafficSource).toBe("apartments_com");
+    expect(attributionFromReportedSource("Craigslist", "appfolio")?.trafficSource).toBe("craigslist");
+  });
+  it("never guesses a channel from a mechanism or unknown text", async () => {
+    const { attributionFromReportedSource } = await import("@/lib/attribution/touch");
+    for (const v of ["Website", "Walk-in", "Phone", "Email", "Chatbot", "Referral", "Other", "Drive by", "", null]) {
+      expect(attributionFromReportedSource(v as string | null, "appfolio")).toBeNull();
+    }
   });
 });

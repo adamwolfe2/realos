@@ -23,7 +23,7 @@ import type {
   Prisma,
 } from "@prisma/client";
 import { leadDisplayName } from "@/lib/leads/display-name";
-import { trafficSourceLabel } from "@/lib/attribution/touch";
+import { attributionReportedBy, trafficSourceLabel } from "@/lib/attribution/touch";
 
 export type AttributionProofRow = {
   id: string;
@@ -37,6 +37,7 @@ export type AttributionProofRow = {
   /** First-touch traffic channel (Zillow, Google...). Null when not tracked. */
   trafficSourceId: string | null;
   trafficSourceLabel: string | null;
+  trafficReportedBy: "appfolio" | null;
   provenance: string;
   firstTouchAt: Date;
   capturedAt: Date;
@@ -267,6 +268,7 @@ export async function getAttributionProof(args: {
       sourceLabel: source.label,
       trafficSourceId: lead.trafficSource,
       trafficSourceLabel: trafficSourceLabel(lead),
+      trafficReportedBy: attributionReportedBy(lead.attribution),
       provenance: sourceProvenance(lead.source, lead.externalSystem),
       firstTouchAt: lead.firstSeenAt,
       capturedAt: lead.createdAt,

@@ -5,6 +5,8 @@ import { format } from "date-fns";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { marketableOrgClause } from "@/lib/tenancy/property-filter";
 import { fetchDedupedSeoSnapshots, sumField } from "@/lib/seo/snapshot-supersede";
+import { getSource } from "@/lib/attribution/source-taxonomy";
+import { attributionReportedBy } from "@/lib/attribution/touch";
 
 // ---------------------------------------------------------------------------
 // WeeklyDigest type
@@ -29,6 +31,12 @@ export type WeeklyDigest = {
     leads: number;
     tours: number;
   }>;
+  // First-touch traffic source of this week's leads (Zillow 4, Google 3...).
+  // Only leads with a recorded source; `untracked` counts the rest honestly.
+  leadSources: {
+    rows: Array<{ id: string; label: string; count: number; reportedByAppfolio: number }>;
+    untracked: number;
+  };
   openInsights: number;
   unreadLeads: number;
   // SEO Agent digest — average composite score this week, delta vs prior,
@@ -283,6 +291,40 @@ export async function buildWeeklyDigest(orgId: string): Promise<WeeklyDigest> {
     propertyName: r.property?.name ?? null,
   }));
 
+  // Where this week's leads came from. Separate query: grouping on a new
+  // column keeps the big Promise.all destructure above untouched.
+  // findMany (not groupBy): provenance lives in the attribution Json, and a
+  // week of leads is small. AppFolio-reported sources stay labelled as such.
+  const weekLeads = await prisma.lead.findMany({
+    where: { orgId, ...leadClause, createdAt: { gte: thisWeekStart, lt: now } },
+    select: { trafficSource: true, attribution: true },
+    take: 5_000,
+  });
+  const bySource = new Map<string, { count: number; reportedByAppfolio: number }>();
+  let untracked = 0;
+  for (const lead of weekLeads) {
+    if (!lead.trafficSource) {
+      untracked += 1;
+      continue;
+    }
+    const prev = bySource.get(lead.trafficSource) ?? { count: 0, reportedByAppfolio: 0 };
+    bySource.set(lead.trafficSource, {
+      count: prev.count + 1,
+      reportedByAppfolio: prev.reportedByAppfolio + (attributionReportedBy(lead.attribution) ? 1 : 0),
+    });
+  }
+  const leadSources = {
+    rows: [...bySource.entries()]
+      .map(([id, v]) => ({
+        id,
+        label: id === "referral" ? "Other websites" : getSource(id).label,
+        ...v,
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6),
+    untracked,
+  };
+
   // Build property name lookup
   const propNameById = new Map<string, string>(
     propertiesList.map((p) => [p.id, p.name])
@@ -332,6 +374,7 @@ export async function buildWeeklyDigest(orgId: string): Promise<WeeklyDigest> {
       organicSessions,
     },
     topProperties,
+    leadSources,
     openInsights: openInsightsCount,
     unreadLeads: unreadLeadsCount,
     seo: {

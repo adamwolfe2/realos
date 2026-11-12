@@ -49,6 +49,8 @@ export type ResolvedAttribution = {
     sourceLabel: string;
     first: Touch;
     last: Touch | null;
+    /** Set when the source came from a system's own record (AppFolio's lead source), not our tracking. */
+    reportedBy?: "appfolio";
   };
 };
 
@@ -182,8 +184,41 @@ export function trafficSourceLabel(
 ): string | null {
   if (!row?.trafficSource) return null;
   const stored = row.attribution as { sourceLabel?: unknown } | null;
-  if (stored && typeof stored.sourceLabel === "string" && stored.sourceLabel) {
-    return stored.sourceLabel.slice(0, 120);
-  }
-  return getSource(row.trafficSource).label;
+  const base =
+    stored && typeof stored.sourceLabel === "string" && stored.sourceLabel
+      ? stored.sourceLabel.slice(0, 120)
+      : getSource(row.trafficSource).label;
+  // Never let a PMS-reported source read as our own tracking.
+  return attributionReportedBy(row.attribution) === "appfolio" ? `${base} (per AppFolio)` : base;
+}
+
+// Canonical ids that name a real marketing platform. A PMS "source" value that
+// only resolves to a capture surface (chatbot, web form, an emailed inquiry), a generic bucket
+// (referral, manual, other) or "direct" says nothing about the channel.
+const NON_CHANNEL_IDS = new Set(["direct", "other", "referral", "manual", "chatbot", "web_form", "appfolio", "email"]);
+
+/**
+ * Attribution from a lead source a PMS recorded itself (AppFolio guest card
+ * "source": "Zillow", "Apartments.com"...). Only a value that names a real
+ * platform is used; "Website", "Walk-in", "Phone" and unknown text return
+ * null (stays "Not tracked") rather than being guessed into a channel.
+ */
+export function attributionFromReportedSource(
+  raw: string | null | undefined,
+  reportedBy: "appfolio",
+): ResolvedAttribution | null {
+  const value = raw?.trim().slice(0, 200);
+  if (!value) return null;
+  const source = classifySource(value, null, null);
+  if (NON_CHANNEL_IDS.has(source.id)) return null;
+  return {
+    trafficSource: source.id,
+    attribution: { sourceLabel: source.label, first: { utmSource: value }, last: null, reportedBy },
+  };
+}
+
+/** True when the stored attribution came from a PMS record, not our tracking. */
+export function attributionReportedBy(attribution: unknown): "appfolio" | null {
+  const a = attribution as { reportedBy?: unknown } | null;
+  return a && a.reportedBy === "appfolio" ? "appfolio" : null;
 }

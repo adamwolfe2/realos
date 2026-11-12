@@ -26,7 +26,18 @@ describe("summarizeTrafficSources", () => {
   });
 
   it("keeps distinct unknown referrers apart", () => {
-    const out = summarizeTrafficSources([row("referral", "berkeley.edu"), row("referral", "yelp.com")]);
-    expect(out.map((r) => r.label).sort()).toEqual(["berkeley.edu", "yelp.com"]);
+    const out = summarizeTrafficSources([row("referral", "berkeleyside.org"), row("referral", "craigslistish.net")]);
+    expect(out.map((r) => r.label).sort()).toEqual(["berkeleyside.org", "craigslistish.net"]);
+  });
+});
+
+describe("AppFolio-reported sources in the summary", () => {
+  it("counts imported rows only when AppFolio recorded a real channel, and flags them", () => {
+    const out = summarizeTrafficSources([
+      { trafficSourceId: "zillow", trafficSourceLabel: "Zillow", trafficReportedBy: null, stage: "New lead", verification: "leasestack_only" },
+      { trafficSourceId: "zillow", trafficSourceLabel: "Zillow (per AppFolio)", trafficReportedBy: "appfolio", stage: "Applied", verification: "imported" },
+      { trafficSourceId: null, trafficSourceLabel: null, trafficReportedBy: null, stage: "Applied", verification: "imported" },
+    ] as Parameters<typeof summarizeTrafficSources>[0]);
+    expect(out).toEqual([{ id: "zillow", label: "Zillow", leads: 2, applied: 1, signed: 0, reportedByAppfolio: 1 }]);
   });
 });

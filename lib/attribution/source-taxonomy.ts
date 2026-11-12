@@ -18,6 +18,8 @@ export type SourceCategory =
   | "ai" // AI assistants / answer engines
   | "paid" // Paid acquisition channels
   | "social" // Organic social referrers
+  | "local" // Local / review sites — Yelp, Nextdoor
+  | "campus" // University housing / off-campus housing boards
   | "owned" // Our own capture surfaces — chatbot, forms, email
   | "referral" // Generic inbound referral
   | "leasing" // Leasing / PMS pipeline import (AppFolio) — not a marketing channel
@@ -77,12 +79,22 @@ export const CANONICAL_SOURCES: CanonicalSource[] = [
   { id: "x_twitter", label: "X / Twitter", category: "social", color: "#010101", logo: "x_twitter", matchHosts: ["twitter.", "x.com", "t.co"], matchUtm: ["twitter", "x.com"] },
 
   // --- Webmail (must precede search: mail.google.com is email, not Google) --
-  { id: "email", label: "Email", category: "owned", color: "#0EA5E9", logo: "email", matchHosts: ["mail.google.", "outlook."], matchUtm: ["email", "newsletter", "drip", "cold-email"] },
+  { id: "email", label: "Email", category: "owned", color: "#0EA5E9", logo: "email", matchHosts: ["mail.google.", "com.google.android.gm", "outlook.", "safelinks.protection.outlook.com", "mail.yahoo.", "edgepilot.com"], matchUtm: ["email", "newsletter", "drip", "cold-email"] },
+
+  // --- Campus housing boards (student housing gold) -------------------------
+  { id: "uc_berkeley", label: "UC Berkeley", category: "campus", color: "#003262", logo: "uc_berkeley", matchHosts: ["berkeley.edu"], matchUtm: ["berkeley", "ucberkeley", "uc-berkeley"] },
+
+  // --- More social / local -------------------------------------------------
+  { id: "pinterest", label: "Pinterest", category: "social", color: "#E60023", logo: "pinterest", matchHosts: ["pinterest.", "pin.it"], matchUtm: ["pinterest"] },
+  { id: "yelp", label: "Yelp", category: "local", color: "#D32323", logo: "yelp", matchHosts: ["yelp."], matchUtm: ["yelp"] },
+  { id: "nextdoor", label: "Nextdoor", category: "local", color: "#1B8751", logo: "nextdoor", matchHosts: ["nextdoor."], matchUtm: ["nextdoor"] },
 
   // --- Organic search ------------------------------------------------------
   { id: "google_organic", label: "Google", category: "search", color: "#4285F4", logo: "google", matchHosts: ["google."], matchUtm: ["google"] },
   { id: "bing_organic", label: "Bing", category: "search", color: "#258FFA", logo: "bing", matchHosts: ["bing."], matchUtm: ["bing"] },
   { id: "duckduckgo", label: "DuckDuckGo", category: "search", color: "#DE5833", logo: "duckduckgo", matchHosts: ["duckduckgo."], matchUtm: ["duckduckgo", "ddg"] },
+  { id: "yandex", label: "Yandex", category: "search", color: "#FC3F1D", logo: "yandex", matchHosts: ["yandex."], matchUtm: ["yandex"] },
+  { id: "baidu", label: "Baidu", category: "search", color: "#2932E1", logo: "baidu", matchHosts: ["baidu."], matchUtm: ["baidu"] },
   { id: "yahoo", label: "Yahoo", category: "search", color: "#6001D2", logo: "yahoo", matchHosts: ["search.yahoo.", "yahoo."], matchUtm: ["yahoo"] },
 
   // --- Owned capture surfaces ---------------------------------------------
@@ -138,6 +150,12 @@ export const SOURCE_DOMAIN: Record<string, string> = {
   bing_organic: "bing.com",
   duckduckgo: "duckduckgo.com",
   yahoo: "yahoo.com",
+  yandex: "yandex.com",
+  baidu: "baidu.com",
+  uc_berkeley: "berkeley.edu",
+  pinterest: "pinterest.com",
+  yelp: "yelp.com",
+  nextdoor: "nextdoor.com",
 };
 
 const BY_ID: Record<string, CanonicalSource> = Object.fromEntries(
