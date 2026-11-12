@@ -12,12 +12,14 @@ import { Logo, Metric as Stat, MetricStrip, PageTitle, Panel, Pill, change } fro
 import { AdCreativeGallery, type CreativeItem } from "../../ad-creative-gallery";
 import { RangeTabs } from "../../range-tabs";
 import { WeeklyProgress } from "../../weekly-progress";
+import { FunnelBar } from "../../funnel-bar";
 import { CampaignTrend } from "./campaign-trend";
 
 export const metadata: Metadata = { title: "Campaign" };
 export const dynamic = "force-dynamic";
 
 const DAY = 86_400_000;
+const LEADS_SHOWN = 15;
 
 const STAGE_LABEL: Partial<Record<LeadStatus, string>> = {
   NEW: "New",
@@ -43,13 +45,14 @@ export default async function CampaignPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ range?: string }>;
+  searchParams: Promise<{ range?: string; leads?: string }>;
 }) {
   const scope = await requireScope();
   const gate = (await requireModule("moduleGoogleAds")) && (await requireModule("moduleMetaAds"));
   if (gate) return gate;
   const [{ id }, sp] = await Promise.all([params, searchParams]);
   const days = parseAdsRange(sp.range);
+  const showAllLeads = sp.leads === "all";
 
   const realAccountFilter = await realAdAccountWhere(scope.orgId);
   const campaign = await prisma.adCampaign.findFirst({
@@ -178,6 +181,7 @@ export default async function CampaignPage({
         <Stat label="Tours" value={tours.toLocaleString()} note={leads.length ? `${Math.round((tours / leads.length) * 100)}% of leads` : "—"} />
         <Stat label="Signed leases" value={signed.toLocaleString()} note={signed ? `${dollars(Math.round(totals.spend / signed))} per lease` : "None yet in this range"} />
       </MetricStrip>
+      <FunnelBar funnel={{ leads: leads.length, tours, signed }} />
 
       <Panel title="Daily spend vs conversions" aside={`Last ${days} days`}>
         {daily.length ? (
@@ -209,7 +213,7 @@ export default async function CampaignPage({
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--t-divider)]">
-              {leads.slice(0, 50).map((l) => (
+              {(showAllLeads ? leads : leads.slice(0, LEADS_SHOWN)).map((l) => (
                 <tr key={l.id}>
                   <td className="px-4 py-2.5">
                     <Link href={`/portal/leads/${l.id}`} className="font-medium text-[var(--t-ink)] hover:text-[var(--t-accent)] hover:underline underline-offset-2">
@@ -229,7 +233,16 @@ export default async function CampaignPage({
               ))}
             </tbody>
           </table>
-        ) : (
+        ) : null}
+        {leads.length > LEADS_SHOWN && !showAllLeads ? (
+          <Link
+            href={`/portal/ads/campaigns/${campaign.id}?${new URLSearchParams({ ...(sp.range ? { range: sp.range } : {}), leads: "all" })}`}
+            className="block border-t border-[var(--t-divider)] px-4 py-2.5 text-[12.5px] font-medium text-[var(--t-accent)] hover:underline underline-offset-2"
+          >
+            Show all {leads.length} leads
+          </Link>
+        ) : null}
+        {leads.length ? null : (
           <p className="p-4 text-[13px] text-[var(--t-muted)]">
             No leads matched to this campaign yet. Leads are matched by the campaign name your leasing system records as the lead source detail.
           </p>

@@ -8,12 +8,13 @@ import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   marketableScopedPropertyClause,
   parsePropertyFilter,
+  parsePropertyFilterUrlOnly,
   visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PageTitle, Panel } from "@/components/portal/overview/kit";
 import { EmptyState } from "@/components/portal/ui/empty-state";
-import { Megaphone } from "lucide-react";
+import { ArrowLeft, Megaphone } from "lucide-react";
 import { ExportButton } from "@/components/ui/export-button";
 import { AdPlatform, LeadSource, LeadStatus, UserRole } from "@prisma/client";
 import { AdsDashboard } from "./ads-dashboard";
@@ -76,6 +77,8 @@ export default async function AdsPage({
     orderBy: { name: "asc" },
   });
   const properties = visibleProperties(scope, allProperties);
+  const focusProperty =
+    propertyIds?.length === 1 ? properties.find((p) => p.id === propertyIds[0]) ?? null : null;
   // Default (no selection) scopes to enabled properties; org-level
   // campaigns (propertyId=null) stay visible.
   const propertyFilter = await marketableScopedPropertyClause(
@@ -480,8 +483,13 @@ export default async function AdsPage({
 
   return (
     <div className="w-full space-y-5">
+      {focusProperty && parsePropertyFilterUrlOnly(sp) ? (
+        <Link href={windowDays === 28 ? "/portal/ads" : `/portal/ads?range=${windowDays}`} className="inline-flex items-center gap-1.5 text-[12.5px] text-[var(--t-muted)] hover:text-[var(--t-ink)]">
+          <ArrowLeft className="h-3.5 w-3.5" /> All properties
+        </Link>
+      ) : null}
       <PageTitle
-        title="Paid ads"
+        title={focusProperty ? `${focusProperty.name} · Paid ads` : "Paid ads"}
         subtitle={
           accounts.length
             ? `${accounts.length} ${accounts.length === 1 ? "account" : "accounts"} connected · ${totalSpendCents ? `$${Math.round(totalSpendCents / 100).toLocaleString()}` : "$0"} spent in ${windowDays} days · refreshes daily`

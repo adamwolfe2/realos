@@ -4,6 +4,7 @@ import * as React from "react";
 import dynamic from "next/dynamic";
 import { formatDistanceToNow } from "date-fns";
 import { AdPlatform } from "@prisma/client";
+import { FunnelBar } from "./funnel-bar";
 import { Logo, Metric as Stat, MetricStrip, Panel, Pill, change } from "@/components/portal/overview/kit";
 import { cn } from "@/lib/utils";
 import { DataPlaceholder } from "@/components/portal/ui/data-placeholder";
@@ -193,6 +194,7 @@ export function AdsDashboard({
         <Stat label="Tours" value={adFunnel.tours.toLocaleString()} delta={change(adFunnel.tours, priorAdFunnel.tours)} note={costPer(totals.spendCents, adFunnel.tours, "tour")} />
         <Stat label="Signed leases" value={adFunnel.signed.toLocaleString()} delta={change(adFunnel.signed, priorAdFunnel.signed)} note={costPer(totals.spendCents, adFunnel.signed, "lease")} />
       </MetricStrip>
+      <FunnelBar funnel={adFunnel} />
 
       <div className="grid gap-5 xl:grid-cols-3">
         <Panel title="Daily spend vs conversions" aside={`Last ${rangeDays} days`} className="xl:col-span-2">

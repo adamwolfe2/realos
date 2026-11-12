@@ -31,7 +31,7 @@ export function FormatComparison({ rows }: { rows: FormatRow[] }) {
             <li key={r.format} className="rounded-[var(--t-radius-sm)] border border-[var(--t-border)] p-3">
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-[13px] font-medium text-[var(--t-ink)]">{LABEL[r.format] ?? r.format}</span>
-                <span className="text-[12px] text-[var(--t-muted)]">{r.ads} {r.ads === 1 ? "ad" : "ads"}</span>
+                <span className="text-[12px] text-[var(--t-muted)]" title={`${dollars(r.spendCents)} spent${r.impressions ? ` · ${((r.clicks / r.impressions) * 100).toFixed(1)}% click rate` : ""}`}>{r.ads} {r.ads === 1 ? "ad" : "ads"}</span>
               </div>
               <div className="mt-2 text-[22px] font-semibold tabular-nums text-[var(--t-ink)]">
                 {value === null ? "—" : dollars(Math.round(value))}
@@ -45,10 +45,6 @@ export function FormatComparison({ rows }: { rows: FormatRow[] }) {
                     background: r === best ? "#15803d" : "#93b4ff",
                   }}
                 />
-              </div>
-              <div className="mt-2 flex justify-between text-[12px] tabular-nums text-[var(--t-muted)]">
-                <span>{dollars(r.spendCents)} spent</span>
-                <span>{r.impressions ? `${((r.clicks / r.impressions) * 100).toFixed(1)}% click rate` : "—"}</span>
               </div>
               {r === best ? <p className="mt-1.5 text-[12px] font-medium text-[#15803d]">Lowest cost per lead</p> : null}
             </li>
