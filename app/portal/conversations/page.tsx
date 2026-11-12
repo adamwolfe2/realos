@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { SourceLogo } from "@/components/portal/attribution/source-logo";
+import { trafficSourceLabel } from "@/lib/attribution/touch";
 import { Suspense } from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
@@ -391,6 +393,12 @@ export default async function ConversationsList({
                             <span className="text-[9.5px] text-muted-foreground">
                               · {c.messageCount} msg
                             </span>
+                            {c.trafficSource ? (
+                              <span className="inline-flex items-center gap-1 text-[9.5px] font-medium text-foreground/80">
+                                · <SourceLogo logo={c.trafficSource} size={12} />
+                                {trafficSourceLabel(c)}
+                              </span>
+                            ) : null}
                           </div>
                           {uniqueFlags.length > 0 ? (
                             <div className="flex items-center gap-1 shrink-0">

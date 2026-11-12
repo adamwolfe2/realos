@@ -55,7 +55,7 @@ export async function findOrCreateChatbotLead(args: {
         firstName: existing.firstName ?? args.firstName,
         lastName: existing.lastName ?? args.lastName,
         propertyId: existing.propertyId ?? args.propertyId,
-        ...attributionFill(existing.trafficSource, args.attribution ?? null),
+        ...attributionFill(existing, args.attribution ?? null),
       },
     });
     // Only the pre-chat twin (same email, chatbot, minutes earlier) was

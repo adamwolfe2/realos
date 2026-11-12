@@ -122,9 +122,21 @@ export function resolveAttribution(args: {
   return build(first, payload?.last ?? null);
 }
 
+// Our own / PMS / scheduling hops are never a traffic source (mirrors the embeds).
+const IGNORED_REFERRER = /(^|\.)(appfolio\.com|leasestack\.co|calendly\.com|vercel\.app)$/;
+function usableReferrer(referrer: string | null | undefined): string | null {
+  if (!referrer) return null;
+  try {
+    const host = new URL(referrer).hostname.toLowerCase().replace(/^www\./, "");
+    return IGNORED_REFERRER.test(host) ? null : referrer;
+  } catch {
+    return null; // not a URL: no usable referrer
+  }
+}
+
 function build(first: Touch, last: Touch | null): ResolvedAttribution {
   const utm = effectiveUtm(first);
-  const source = classifySource(utm.source, first.referrer, utm.medium);
+  const source = classifySource(utm.source, usableReferrer(first.referrer), utm.medium);
   return {
     trafficSource: source.id,
     attribution: { sourceLabel: source.label, first, last },
@@ -140,12 +152,25 @@ export function attributionColumns(
     : {};
 }
 
-/** Same, for an update: only fills a row that has no source yet (first touch is never overwritten). */
+/** A lead older than this was acquired before this visit; today's source is not its origin. */
+export const ATTRIBUTION_FILL_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Same, for an update. Fills ONLY a row that has no source yet AND was
+ * created within the last 24h (the pre-chat form → chat twin, a quick
+ * resubmit). An older lead coming back today keeps "Not tracked": crediting
+ * its original acquisition to today's channel would be a false attribution.
+ */
 export function attributionFill(
-  existingTrafficSource: string | null | undefined,
+  existing: { trafficSource: string | null; createdAt: Date },
   a: ResolvedAttribution | null,
+  now: Date = new Date(),
 ): { trafficSource?: string; attribution?: Prisma.InputJsonValue } {
-  return existingTrafficSource ? {} : attributionColumns(a);
+  if (existing.trafficSource) return {};
+  // Unknown age → don't guess; leaving it untracked is never a false credit.
+  if (!(existing.createdAt instanceof Date)) return {};
+  if (now.getTime() - existing.createdAt.getTime() > ATTRIBUTION_FILL_WINDOW_MS) return {};
+  return attributionColumns(a);
 }
 
 /**

@@ -17,7 +17,11 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
-import { attributionColumns, resolveAttribution } from "../lib/attribution/touch";
+import {
+  ATTRIBUTION_FILL_WINDOW_MS,
+  attributionColumns,
+  resolveAttribution,
+} from "../lib/attribution/touch";
 
 neonConfig.webSocketConstructor = ws;
 const connectionString = process.env.DATABASE_URL;
@@ -47,13 +51,23 @@ async function main() {
     where: { trafficSource: null, externalSystem: null },
     select: {
       id: true,
+      createdAt: true,
       sourceDetail: true,
-      conversations: { select: { pageUrl: true }, orderBy: { createdAt: "asc" }, take: 5 },
+      conversations: {
+        select: { pageUrl: true, createdAt: true },
+        orderBy: { createdAt: "asc" },
+        take: 5,
+      },
     },
   });
   const leadUpdates = leads
     .map((l) => {
-      const urls = [urlFromSourceDetail(l.sourceDetail), ...l.conversations.map((c) => c.pageUrl)];
+      // Only a chat that started with the lead itself (within 24h) says how the
+      // lead arrived; a later tagged chat is a return visit, not the origin.
+      const atCapture = l.conversations.filter(
+        (c) => Math.abs(c.createdAt.getTime() - l.createdAt.getTime()) <= ATTRIBUTION_FILL_WINDOW_MS,
+      );
+      const urls = [urlFromSourceDetail(l.sourceDetail), ...atCapture.map((c) => c.pageUrl)];
       for (const pageUrl of urls) {
         const a = resolveAttribution({ touch: undefined, pageUrl });
         if (a) return { id: l.id, a };

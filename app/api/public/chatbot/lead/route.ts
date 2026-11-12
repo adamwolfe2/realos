@@ -194,6 +194,7 @@ export async function POST(req: NextRequest) {
       id: true,
       phone: true,
       trafficSource: true,
+      createdAt: true,
     });
 
     const notesLine = `Captured by chatbot on ${pageUrl ?? "site"}`;
@@ -205,7 +206,7 @@ export async function POST(req: NextRequest) {
         data: {
           lastActivityAt: new Date(),
           phone: existing.phone ?? phone ?? null,
-          ...attributionFill(existing.trafficSource, attribution),
+          ...attributionFill(existing, attribution),
         },
         select: { id: true },
       });

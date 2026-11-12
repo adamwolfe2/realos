@@ -8,6 +8,7 @@ import {
 } from "@prisma/client";
 import { buildLeadNotifyEmail } from "@/lib/email/lead-notify-email";
 import { trafficSourceLabel } from "@/lib/attribution/touch";
+import { SOURCE_DOMAIN } from "@/lib/attribution/source-taxonomy";
 import { pushLeadToFunnel } from "@/lib/integrations/funnel-client";
 import { captureWithContext } from "@/lib/sentry";
 
@@ -243,6 +244,10 @@ export async function notifyLeadCaptured(
         sourceLabel: displayName(input.lead.sourceLabel),
         intent: displayName(input.lead.intent),
         cameFrom: trafficSourceLabel(leadRow),
+        cameFromLogoUrl:
+          leadRow?.trafficSource && SOURCE_DOMAIN[leadRow.trafficSource]
+            ? `${APP_URL}/logos/sources/${leadRow.trafficSource}.png`
+            : null,
       },
       propertyName,
       portalUrl,
