@@ -1255,16 +1255,16 @@
       ".rec-launcher-face .rec-launcher-icon { display: none; }" +
       ".rec-launcher-dot { display: none; }" +
       ".rec-launcher-face .rec-launcher-dot { display: block; position: absolute; right: 1px; bottom: 1px; width: 13px; height: 13px; border-radius: 999px; background: #34d399; border: 2px solid #fff; }" +
-      // Pin the teaser to a fixed width (was max-width). Absolutely-
-      // positioned flex containers without an explicit width fall back to
-      // min-content sizing, which collapsed the text column to the
-      // longest single word (e.g. "Telegraph") and wrapped each word onto
-      // its own line. Fixed width + flex:1 on the text child gives the
-      // bubble a stable, readable layout.
-      ".rec-teaser { position: absolute; right: 72px; bottom: 8px; width: 280px; max-width: calc(100vw - 96px); background: #fff; border: 1px solid rgba(0,0,0,0.08); border-radius: 14px; padding: 10px 32px 10px 12px; display: none; align-items: center; gap: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.14); cursor: pointer; font-size: 13px; line-height: 1.4; box-sizing: border-box; }" +
+      // The teaser hugs its text (max-content), capped at 280px. It needs an
+      // explicit width: an absolutely-positioned box inside the 60px root
+      // otherwise shrinks to min-content and wraps one word per line.
+      ".rec-teaser { position: absolute; right: 72px; bottom: 8px; width: max-content; max-width: min(280px, calc(100vw - 96px)); background: #fff; border: 1px solid rgba(0,0,0,0.08); border-radius: 14px; padding: 10px 32px 10px 12px; display: none; align-items: center; gap: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.14); cursor: pointer; font-size: 13px; line-height: 1.4; box-sizing: border-box; }" +
       ".rec-root.rec-teaser-visible .rec-teaser { display: flex; }" +
+      // Phones: sit above the launcher, not beside it, so the teaser never
+      // covers a host site's bottom call/tour bar.
+      "@media (max-width: 480px) { .rec-teaser { right: 0; bottom: 72px; max-width: min(280px, calc(100vw - 32px)); } }" +
       ".rec-teaser-text { flex: 1; min-width: 0; word-wrap: break-word; overflow-wrap: anywhere; }" +
-      ".rec-teaser-close { position: absolute; top: 4px; right: 6px; all: unset; cursor: pointer; font-size: 16px; color: #888; padding: 2px 6px; line-height: 1; }" +
+      ".rec-teaser-close { all: unset; position: absolute; top: 4px; right: 6px; cursor: pointer; font-size: 16px; color: #888; padding: 2px 6px; line-height: 1; }" +
       ".rec-avatar { width: 28px; height: 28px; border-radius: 999px; object-fit: cover; flex-shrink: 0; }" +
       // Fallback glyph used when avatarUrl is null/broken. Solid brand
       // background + white stroke so it reads as an intentional anonymous
