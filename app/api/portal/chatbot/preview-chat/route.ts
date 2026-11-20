@@ -5,6 +5,7 @@ import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { ChatbotCaptureMode } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { withMarketableLifecycle } from "@/lib/properties/marketable";
 import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
 import { buildSystemPrompt, type ChatbotTenant } from "@/lib/chatbot/build-system-prompt";
 import { resolveChatbotConfig } from "@/lib/chatbot/resolve-config";
@@ -65,7 +66,13 @@ export async function POST(req: NextRequest) {
     where: { id: scope.orgId },
     include: {
       tenantSiteConfig: true,
-      properties: { orderBy: { updatedAt: "desc" }, include: { listings: { where: { isAvailable: true } } } },
+      // ACTIVE only: an org with one live building and many EXCLUDED
+      // address-only rows is a single-property org for the preview.
+      properties: {
+        where: withMarketableLifecycle({}),
+        orderBy: { updatedAt: "desc" },
+        include: { listings: { where: { isAvailable: true } } },
+      },
     },
   });
   if (!org) return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
