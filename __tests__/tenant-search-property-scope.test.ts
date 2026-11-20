@@ -35,9 +35,7 @@ describe("tenant search property scoping", () => {
     await search();
     expect(h.lead.mock.calls[0][0].where.AND).toEqual([{ propertyId: "prop_a" }]);
     expect(h.property.mock.calls[0][0].where.AND).toEqual([{ id: "prop_a" }]);
-    expect(h.conversation.mock.calls[0][0].where.AND).toEqual([
-      { OR: [{ propertyId: "prop_a" }, { propertyId: null }] },
-    ]);
+    expect(h.conversation.mock.calls[0][0].where.AND).toEqual([{ propertyId: "prop_a" }]);
     // The text-match OR survives alongside the scope.
     expect(h.conversation.mock.calls[0][0].where.OR).toBeDefined();
   });

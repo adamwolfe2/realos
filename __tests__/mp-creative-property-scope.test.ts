@@ -39,13 +39,11 @@ const restrictedToA = { orgId: "org-1", allowedPropertyIds: ["prop-a"] };
 beforeEach(() => vi.clearAllMocks());
 
 describe("creative studio — restricted user on prop-a", () => {
-  it("list and counts are limited to prop-a plus org-level requests", async () => {
+  // 2026-11-20 (Adam): restricted seats no longer see org-level (NULL) rows.
+  it("list and counts are limited to prop-a, without org-level requests", async () => {
     h.scope.mockResolvedValue(restrictedToA);
     await CreativePage();
-    const expected = {
-      orgId: "org-1",
-      OR: [{ propertyId: "prop-a" }, { propertyId: null }],
-    };
+    const expected = { orgId: "org-1", propertyId: "prop-a" };
     expect(h.db.creativeRequest.findMany.mock.calls[0][0].where).toEqual(expected);
     expect(h.db.creativeRequest.groupBy.mock.calls[0][0].where).toEqual(expected);
   });

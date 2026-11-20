@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { ForbiddenError, requireWorkspaceAdmin } from "@/lib/tenancy/scope";
+import { ForbiddenError, requireOrgWideAdmin } from "@/lib/tenancy/scope";
 import { isReportStatusRestricted, REPORT_OPERATOR_ONLY_ERROR } from "@/lib/reports/access";
 
 // ---------------------------------------------------------------------------
@@ -58,7 +58,7 @@ export async function saveReportCadence(
 ): Promise<SaveReportCadenceResult> {
   let scope;
   try {
-    scope = await requireWorkspaceAdmin();
+    scope = await requireOrgWideAdmin();
   } catch (err) {
     if (err instanceof ForbiddenError) return { ok: false, error: err.message };
     throw err;

@@ -209,9 +209,16 @@ const { propertyOrOrgLevelWhereFragment } = await import(
 );
 
 describe("propertyOrOrgLevelWhereFragment — visitor export semantics", () => {
-  it("restricted operator keeps org-level (propertyId=null) visitors", () => {
+  // 2026-11-20 (Adam): restricted seats no longer see org-level (NULL) rows.
+  it("restricted operator does not get org-level (propertyId=null) rows", () => {
     expect(
       propertyOrOrgLevelWhereFragment({ allowedPropertyIds: ["prop-a"] }, null),
+    ).toEqual({ propertyId: "prop-a" });
+  });
+
+  it("unrestricted operator with a selection still gets org-level rows", () => {
+    expect(
+      propertyOrOrgLevelWhereFragment({ allowedPropertyIds: null }, ["prop-a"]),
     ).toEqual({ OR: [{ propertyId: "prop-a" }, { propertyId: null }] });
   });
 

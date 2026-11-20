@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { requireWorkspaceAdmin, ForbiddenError } from "@/lib/tenancy/scope";
+import { requireOrgWideAdmin, ForbiddenError } from "@/lib/tenancy/scope";
 import { encrypt } from "@/lib/crypto";
 import {
   testAppFolioConnection,
@@ -39,7 +39,7 @@ const bodySchema = z.discriminatedUnion("mode", [
 
 export async function POST(req: NextRequest) {
   try {
-    const scope = await requireWorkspaceAdmin();
+    const scope = await requireOrgWideAdmin();
     void scope; // auth check only — no org-specific data needed for a probe
 
     const parsed = bodySchema.safeParse(await req.json().catch(() => ({})));

@@ -85,11 +85,11 @@ describe("restricted scope on org-only routes (F-018)", () => {
     expect(mocks.popupEventFindMany).not.toHaveBeenCalled();
   });
 
-  it("ad-metrics export narrows campaigns to the grant plus org-level", async () => {
+  it("ad-metrics export narrows campaigns to the grant, without org-level campaigns", async () => {
     mocks.adDailyFindMany.mockResolvedValue([]);
     await adExport(new Request("http://localhost/api/tenant/ad-metrics/export"));
     expect(mocks.adDailyFindMany.mock.calls[0][0].where.campaign).toEqual({
-      OR: [{ propertyId: "p-mine" }, { propertyId: null }],
+      propertyId: "p-mine",
     });
   });
 });

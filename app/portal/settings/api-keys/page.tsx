@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
@@ -15,6 +16,8 @@ export const dynamic = "force-dynamic";
 
 export default async function ApiKeysPage() {
   const scope = await requireScope();
+  // Org-level page: property-restricted seats do not see it.
+  if (scope.allowedPropertyIds !== null) notFound();
 
   const keys = await prisma.apiKey.findMany({
     where: { orgId: scope.orgId },

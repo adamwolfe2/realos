@@ -5,7 +5,7 @@ import { z } from "zod";
 import { AuditAction, Prisma, UserRole } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import {
-  requireWorkspaceAdmin,
+  requireOrgWideAdmin,
   ForbiddenError,
   auditPayload,
 } from "@/lib/tenancy/scope";
@@ -79,7 +79,7 @@ export async function saveWhiteLabelSettings(
   formData: FormData,
 ): Promise<ActionResult> {
   try {
-    const scope = await requireWorkspaceAdmin();
+    const scope = await requireOrgWideAdmin();
 
     // Org + actor row in one round trip. We need:
     //   * whiteLabel flag (entitlement check)

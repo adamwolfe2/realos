@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import {
   requireWritableWorkspace,
+  assertOrgWideAccess,
   ForbiddenError,
   auditPayload,
 } from "@/lib/tenancy/scope";
@@ -51,6 +52,7 @@ const patchSchema = z.object({
 export async function PATCH(req: NextRequest) {
   try {
     const scope = await requireWritableWorkspace();
+    assertOrgWideAccess(scope);
 
     // Role gate — CLIENT_VIEWER / LEASING_AGENT cannot
     // change brand or primary-contact settings. Lead notifications fan

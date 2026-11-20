@@ -18,7 +18,7 @@ import { MARKETPLACE_ENTRIES } from "@/lib/marketplace/catalog";
 // quiet link to /portal/marketplace. The card is still available for
 // other surfaces (marketplace, onboarding) where the full pitch belongs.
 import { WebsiteBuildTracker } from "./website-build-tracker";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { canManageBilling } from "@/lib/billing/checkout-policy";
 import { hasCardOnFile } from "@/lib/billing/trial-status";
 import { formatChargeDate } from "@/lib/billing/trial-quote";
@@ -34,6 +34,8 @@ export default async function BillingPage({
   searchParams: Promise<{ addon?: string; canceled?: string }>;
 }) {
   const scope = await requireScope();
+  // Org-level page: property-restricted seats do not see billing.
+  if (scope.allowedPropertyIds !== null) notFound();
   const { addon: addonParam, canceled } = await searchParams;
   // Marketplace + welcome grid send paid add-ons here as ?addon=<key|slug>.
   // Paid entries only. Toggle modules are "active" via their Organization

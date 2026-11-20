@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { format, formatDistanceToNow } from "date-fns";
@@ -27,6 +28,8 @@ export default async function AuditLogPage({
   searchParams: Promise<{ page?: string; entity?: string }>;
 }) {
   const scope = await requireScope();
+  // Org-level page: property-restricted seats do not see it.
+  if (scope.allowedPropertyIds !== null) notFound();
   const sp = await searchParams;
   const page = Math.max(1, Number.parseInt(sp.page ?? "1", 10) || 1);
 

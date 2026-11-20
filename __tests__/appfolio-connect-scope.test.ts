@@ -17,7 +17,8 @@ const h = vi.hoisted(() => ({
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/crypto", () => ({ encrypt: (v: string) => `enc:${v}` }));
 vi.mock("@/lib/tenancy/scope", () => ({
-  requireWorkspaceAdmin: vi.fn(async () => ({ orgId: "org-1", userId: "u-1" })),
+  requireOrgWideAdmin: vi.fn(async () => ({ orgId: "org-1", userId: "u-1" })),
+  assertOrgWideAccess: vi.fn(),
   requireWritableWorkspace: vi.fn(async () => ({ orgId: "org-1", userId: "u-1" })),
   auditPayload: (_s: unknown, p: unknown) => p,
 }));

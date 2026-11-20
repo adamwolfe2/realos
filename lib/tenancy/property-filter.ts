@@ -240,6 +240,9 @@ export function propertyOrOrgLevelWhereFragment(
   const base = propertyWhereFragment(scope, selectedIds, field);
   if (Object.keys(base).length === 0) return base; // no filter — nothing to widen
   if (base[field] === "__no_property_access__") return base; // preserve deny
+  // Property-restricted seats never see org-level (NULL) rows: those can
+  // carry other buildings' context. Unrestricted seats keep the widening.
+  if (scope.allowedPropertyIds) return base;
   return { OR: [base, { [field]: null }] };
 }
 

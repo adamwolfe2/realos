@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
@@ -31,6 +32,8 @@ export const dynamic = "force-dynamic";
 
 export default async function WhiteLabelPage() {
   const scope = await requireScope();
+  // Org-level page: property-restricted seats do not see it.
+  if (scope.allowedPropertyIds !== null) notFound();
 
   const org = await prisma.organization.findUnique({
     where: { id: scope.orgId },
