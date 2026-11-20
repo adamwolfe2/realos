@@ -62,4 +62,13 @@ describe("dedupeSupersededByDate", () => {
       { date: dayB, propertyId: null, totalClicks: 50 },
     ]);
   });
+
+  it("keeps the NULL row when the org-wide connection is still live (its own site)", () => {
+    const day = new Date("2026-11-15");
+    const rows: Row[] = [
+      { date: day, propertyId: null, totalClicks: 178 },
+      { date: day, propertyId: "prop-1", totalClicks: 104 },
+    ];
+    expect(dedupeSupersededByDate(rows, true)).toEqual(rows);
+  });
 });

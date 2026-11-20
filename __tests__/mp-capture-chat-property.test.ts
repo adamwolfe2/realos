@@ -134,6 +134,17 @@ describe("resolvePropertyForChatPage on per-property domains", () => {
     expect(resolvePropertyForChatPage("https://riseondurant.com/", bare)).toBe("r");
   });
 
+  it("does not match a short slug or name inside a longer word", () => {
+    const short = [
+      { id: "rise", slug: "rise", name: "Rise", websiteUrl: "https://riseondurant.com" },
+      { id: "tc", slug: "telegraph-commons", name: "Telegraph Commons", websiteUrl: "https://telegraphcommons.com" },
+    ];
+    expect(
+      resolvePropertyForChatPage("https://telegraphcommons.com/blog/sunrise-views", short),
+    ).toBe("tc");
+    expect(resolvePropertyForChatPage("https://portfolio.test/rise/apply", short)).toBe("rise");
+  });
+
   it("stays null for an ambiguous page on a multi-property org", () => {
     expect(resolvePropertyForChatPage("https://unrelated.test/", props)).toBeNull();
   });

@@ -9,10 +9,10 @@ import "server-only";
 // of where the chat actually happened (audit BUG-08).
 //
 // Resolution strategy (priority order):
-//   1. URL contains the property's slug as a substring  ← strongest signal
+//   1. A host label or path segment equals the property's slug  ← strongest
 //      (longest match wins)
-//   2. URL contains the property's name (lowercased,
-//      whitespace stripped) as a substring             ← softer signal
+//   2. A host label or path segment equals the property's name
+//      (lowercased, whitespace and hyphens stripped)    ← softer signal
 //   2b. Page host equals exactly one property's websiteUrl host (scheme-less,
 //      www and case normalised) ← per-property domains
 //   3. Single-property tenant — only one option        ← safe fallback
@@ -75,24 +75,28 @@ export function resolvePropertyForChatPage(
     // The full string includes the query string, which is visitor-
     // controlled input (e.g. `?x=<slug>`) and would let an anonymous
     // visitor force attribution to an arbitrary building.
-    let haystack = "";
+    // Whole host labels and path segments only, never substrings: slug
+    // "rise" must not win on /blog/sunrise-views.
+    let tokens: string[] = [];
     try {
       const u = new URL(pageUrl);
-      haystack = `${u.hostname}${u.pathname}`.toLowerCase();
+      tokens = [...u.hostname.split("."), ...u.pathname.split("/")]
+        .map((t) => t.toLowerCase())
+        .filter(Boolean);
     } catch {
-      haystack = ""; // malformed URL — no match, not a raw-string fallback
+      tokens = []; // malformed URL — no match, not a raw-string fallback
     }
-    if (haystack) {
-      const bySlug = longestMatch(properties, (p) =>
-        p.slug && haystack.includes(p.slug.toLowerCase())
-          ? p.slug.toLowerCase()
-          : null
-      );
+    if (tokens.length > 0) {
+      const compactTokens = tokens.map((t) => t.replace(/[-_]/g, ""));
+      const bySlug = longestMatch(properties, (p) => {
+        const slug = p.slug?.toLowerCase();
+        return slug && tokens.includes(slug) ? slug : null;
+      });
       if (bySlug) return bySlug.id;
       const byName = longestMatch(properties, (p) => {
         if (!p.name) return null;
         const compact = p.name.toLowerCase().replace(/\s+/g, "");
-        return compact.length >= 4 && haystack.includes(compact) ? compact : null;
+        return compact.length >= 4 && compactTokens.includes(compact) ? compact : null;
       });
       if (byName) return byName.id;
       // Host last: a shared company site (A's websiteUrl = sgre.com) must not

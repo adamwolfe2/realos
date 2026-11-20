@@ -2,7 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { tenantWhere, type ScopedContext } from "@/lib/tenancy/scope";
 import { propertyWhereFragment } from "@/lib/tenancy/property-filter";
-import { dedupeSupersededByDate } from "@/lib/seo/snapshot-supersede";
+import { dedupeSupersededForOrg } from "@/lib/seo/snapshot-supersede";
 
 // ---------------------------------------------------------------------------
 // Portal SEO overview — property-scoped aggregate reads for /portal/seo.
@@ -46,7 +46,7 @@ export async function fetchSeoSnapshots(
   // legacy NULL-propertyId row and a property-scoped row for the same
   // date — see lib/seo/snapshot-supersede.ts. No-op when the fragment
   // above already constrained to specific propertyIds.
-  return dedupeSupersededByDate(rows);
+  return dedupeSupersededForOrg(rows, scope.orgId);
 }
 
 export async function fetchSeoTopQueries(

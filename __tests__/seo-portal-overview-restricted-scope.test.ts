@@ -12,6 +12,8 @@ vi.mock("@/lib/db", () => {
       seoQuery: make(),
       seoLandingPage: make(),
       seoActionRecommendation: make(),
+      // No org-wide GA4/GSC connection: NULL rows are stale, dedupe applies.
+      seoIntegration: { count: vi.fn(async () => 0) },
     },
   };
 });

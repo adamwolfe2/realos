@@ -334,7 +334,13 @@ export async function POST(req: NextRequest) {
   // and waits for the success state anyway).
   const appUrl = getSiteUrl();
   // Name the building so a multi-property org knows whose lead this is.
-  const orgLabel = await leadPropertyLabel(org.id, org.name, propertyId);
+  // Label the building the lead is actually filed under: a returning lead
+  // keeps its first building.
+  const orgLabel = await leadPropertyLabel(
+    org.id,
+    org.name,
+    existing?.propertyId ?? propertyId,
+  );
   const notifyResults = await Promise.allSettled([
     notifyNewLeadSlack({
       companyName: orgLabel,
