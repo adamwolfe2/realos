@@ -65,6 +65,9 @@ beforeEach(() => {
     lease: { count: count() },
     resident: { count: count() },
     chatbotConversation: { count: count() },
+    // deleteProperty also refuses when a teammate's only grant is this
+    // property; this file tests the activity guard, so nobody is orphaned.
+    user: { findMany: vi.fn(async () => []) },
     auditEvent: { create: vi.fn(async () => ({})) },
   };
 });

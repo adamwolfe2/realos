@@ -61,9 +61,7 @@ const GATE_RE =
   /\b(propertyInScope|allowedPropertyIds|propertyWhereFragment|propertyOrOrgLevelWhereFragment|marketableScopedPropertyClause|effectivePropertyIds|canAccessReport)\b/;
 
 const KNOWN_GAPS: Record<string, string> = {
-  "lib/actions/ad-library.ts": "ads slice: saves an ad with any org propertyId",
-  "lib/actions/popup-actions.ts": "popups slice: create/update/delete popups by org only",
-  "lib/actions/seo-connect.ts": "SEO slice: workspace-admin only",
+  "lib/actions/create-client.ts": "agency-only: creates a new org and its first property; propertyId only appears in a log line",
   "lib/actions/seo-oauth-bind.ts": "SEO slice: binds an org integration",
   "lib/actions/neighborhood-pages-helpers.ts": "pure mapper, no query",
 };

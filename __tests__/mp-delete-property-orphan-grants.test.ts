@@ -14,12 +14,22 @@ const h = vi.hoisted(() => ({
       delete: vi.fn(async () => ({})),
     },
     user: { findMany: vi.fn(async (_a?: any): Promise<any> => []) },
+    // deleteProperty also refuses when the property has activity; this file
+    // tests the grant guard, so the property is empty.
+    lead: { count: vi.fn(async () => 0) },
+    lease: { count: vi.fn(async () => 0) },
+    resident: { count: vi.fn(async () => 0) },
+    chatbotConversation: { count: vi.fn(async () => 0) },
     auditEvent: { create: vi.fn(async () => ({})) },
   },
 }));
 
 vi.mock("@/lib/db", () => ({ prisma: h.db }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("@/lib/portal/active-property", () => ({
+  getActivePropertyId: async () => null,
+  setActivePropertyId: vi.fn(async () => undefined),
+}));
 vi.mock("@/lib/integrations/appfolio-backfill", () => ({ requestAppfolioBackfill: vi.fn() }));
 vi.mock("@/lib/tenancy/scope", async () => {
   const actual = await vi.importActual<typeof import("@/lib/tenancy/scope")>(
