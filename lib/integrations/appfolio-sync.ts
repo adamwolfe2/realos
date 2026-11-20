@@ -255,9 +255,15 @@ export function orphanAdoptionMatches(
 ): Prisma.PropertyWhereInput[] {
   if (classification.excluded) return [];
   const matches: Prisma.PropertyWhereInput[] = [];
-  if (mapped.name) matches.push({ name: { equals: mapped.name, mode: "insensitive" } });
+  // Insensitive `equals` is an unescaped ILIKE: escape `_`/`%` so "Unit_A"
+  // can't adopt an operator's "UnitXA" building.
+  if (mapped.name) {
+    matches.push({ name: { equals: escapeLikePattern(mapped.name), mode: "insensitive" } });
+  }
   if (mapped.addressLine1) {
-    matches.push({ addressLine1: { equals: mapped.addressLine1, mode: "insensitive" } });
+    matches.push({
+      addressLine1: { equals: escapeLikePattern(mapped.addressLine1), mode: "insensitive" },
+    });
   }
   return matches;
 }

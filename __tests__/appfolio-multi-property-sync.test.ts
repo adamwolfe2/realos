@@ -99,7 +99,7 @@ vi.mock("@/lib/integrations/appfolio", async () => {
   };
 });
 
-import { runAppfolioSync } from "@/lib/integrations/appfolio-sync";
+import { orphanAdoptionMatches, runAppfolioSync } from "@/lib/integrations/appfolio-sync";
 
 const NOW_MINUS_1H = new Date(Date.now() - 60 * 60 * 1000);
 
@@ -393,5 +393,39 @@ describe("runAppfolioSync — two ACTIVE properties", () => {
     ];
     await runAppfolioSync("org-1");
     expect(state.endedLeaseIds).toEqual(["lease-C-gone"]);
+  });
+});
+
+describe("orphanAdoptionMatches — ILIKE wildcards", () => {
+  // Prisma compiles insensitive `equals` to ILIKE. Unescaped, `_` matches any
+  // one character and `%` any run, so AppFolio's "Unit_A" would adopt the
+  // operator's separate "UnitXA" building.
+  it("escapes `_` and `%` in the name and address it matches on", () => {
+    expect(
+      orphanAdoptionMatches({ name: "Unit_A", addressLine1: "10% Main St" }, { excluded: false }),
+    ).toEqual([
+      { name: { equals: "Unit\\_A", mode: "insensitive" } },
+      { addressLine1: { equals: "10\\% Main St", mode: "insensitive" } },
+    ]);
+  });
+
+  it("an escaped pattern no longer matches a different building as ILIKE would", () => {
+    const [nameMatch] = orphanAdoptionMatches({ name: "Unit_A", addressLine1: null }, { excluded: false });
+    const pattern = (nameMatch.name as { equals: string }).equals;
+    // Minimal ILIKE (default escape char `\`), case-insensitive.
+    const ilike = (value: string, pat: string) => {
+      let re = "";
+      for (let i = 0; i < pat.length; i++) {
+        const c = pat[i];
+        if (c === "\\") re += pat[++i].replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        else if (c === "_") re += ".";
+        else if (c === "%") re += ".*";
+        else re += c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      }
+      return new RegExp(`^${re}$`, "i").test(value);
+    };
+    expect(ilike("UnitXA", "Unit_A")).toBe(true); // the bug, unescaped
+    expect(ilike("UnitXA", pattern)).toBe(false);
+    expect(ilike("unit_a", pattern)).toBe(true); // still matches its own building
   });
 });
