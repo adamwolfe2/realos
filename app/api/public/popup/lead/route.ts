@@ -4,6 +4,7 @@ import { runAfter } from "@/lib/after";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { findOldestLeadByEmail } from "@/lib/leads/find-by-email";
+import { leadPropertyLabel } from "@/lib/leads/property-label";
 import {
   attributionColumns,
   attributionFill,
@@ -332,9 +333,11 @@ export async function POST(req: NextRequest) {
   // is acceptable for a one-shot conversion form (operator submits
   // and waits for the success state anyway).
   const appUrl = getSiteUrl();
+  // Name the building so a multi-property org knows whose lead this is.
+  const orgLabel = await leadPropertyLabel(org.id, org.name, propertyId);
   const notifyResults = await Promise.allSettled([
     notifyNewLeadSlack({
-      companyName: org.name,
+      companyName: orgLabel,
       contactName: data.email ?? data.phone ?? "Anonymous",
       contactEmail: data.email ?? "unknown@unknown.local",
       propertyType: "popup",
@@ -345,7 +348,7 @@ export async function POST(req: NextRequest) {
     org.primaryContactEmail
       ? notifyTenantOfLeadEmail({
           to: org.primaryContactEmail,
-          orgName: org.name,
+          orgName: orgLabel,
           leadId,
           firstName: null,
           lastName: null,
