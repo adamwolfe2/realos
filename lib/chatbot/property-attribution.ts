@@ -9,11 +9,12 @@ import "server-only";
 // of where the chat actually happened (audit BUG-08).
 //
 // Resolution strategy (priority order):
-//   0. Page host equals exactly one property's websiteUrl host ← per-property
-//      domains (each building on its own site)
 //   1. URL contains the property's slug as a substring  ← strongest signal
+//      (longest match wins)
 //   2. URL contains the property's name (lowercased,
 //      whitespace stripped) as a substring             ← softer signal
+//   2b. Page host equals exactly one property's websiteUrl host (scheme-less,
+//      www and case normalised) ← per-property domains
 //   3. Single-property tenant — only one option        ← safe fallback
 //   4. Multi-property tenant + ambiguous URL → null    ← honest "unknown"
 // ---------------------------------------------------------------------------
@@ -28,9 +29,15 @@ export type PropertyAttributionInput = {
 };
 
 function bareHost(url: string | null | undefined): string | null {
-  if (!url) return null;
+  const trimmed = url?.trim();
+  if (!trimmed) return null;
+  // websiteUrl is operator-typed and often stored without a scheme
+  // ("livehigby.com", "www.x.com/"); URL() rejects those outright.
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`;
   try {
-    return new URL(url).hostname.toLowerCase().replace(/^www\./, "");
+    return new URL(withScheme).hostname.toLowerCase().replace(/^www\./, "");
   } catch {
     return null;
   }
@@ -76,11 +83,6 @@ export function resolvePropertyForChatPage(
       haystack = ""; // malformed URL — no match, not a raw-string fallback
     }
     if (haystack) {
-      const pageHost = bareHost(pageUrl);
-      const byHost = pageHost
-        ? properties.filter((p) => bareHost(p.websiteUrl) === pageHost)
-        : [];
-      if (byHost.length === 1) return byHost[0].id;
       const bySlug = longestMatch(properties, (p) =>
         p.slug && haystack.includes(p.slug.toLowerCase())
           ? p.slug.toLowerCase()
@@ -93,6 +95,14 @@ export function resolvePropertyForChatPage(
         return compact.length >= 4 && haystack.includes(compact) ? compact : null;
       });
       if (byName) return byName.id;
+      // Host last: a shared company site (A's websiteUrl = sgre.com) must not
+      // swallow B living at sgre.com/southgate-annex. Only a host owned by
+      // exactly one property counts.
+      const pageHost = bareHost(pageUrl);
+      const byHost = pageHost
+        ? properties.filter((p) => bareHost(p.websiteUrl) === pageHost)
+        : [];
+      if (byHost.length === 1) return byHost[0].id;
     }
   }
 

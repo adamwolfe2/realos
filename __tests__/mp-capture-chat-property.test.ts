@@ -111,6 +111,29 @@ describe("resolvePropertyForChatPage on per-property domains", () => {
     ).toBe("long");
   });
 
+  it("a slug in the path beats a shared company-site host (second property added)", () => {
+    // A's websiteUrl is the shared company site; B lives under a path on it
+    // with no websiteUrl of its own. B's leads must stay B's.
+    const shared = [
+      { id: "a", slug: "telegraph-commons", name: "Telegraph Commons", websiteUrl: "https://sgre.com" },
+      { id: "b", slug: "southgate-annex", name: "Southgate Annex", websiteUrl: null },
+    ];
+    expect(resolvePropertyForChatPage("https://sgre.com/southgate-annex/apply", shared)).toBe("b");
+    expect(resolvePropertyForChatPage("https://www.sgre.com/southgateannex", shared)).toBe("b");
+    // Nothing else matches: the unique host owner wins.
+    expect(resolvePropertyForChatPage("https://sgre.com/contact", shared)).toBe("a");
+  });
+
+  it("matches websiteUrl values stored without a scheme, with www, slash or caps", () => {
+    const bare = [
+      // Slugs/names deliberately absent from the URLs: only the host can match.
+      { id: "h", slug: "prop-one", name: "Alpha One", websiteUrl: "livehigby.com" },
+      { id: "r", slug: "prop-two", name: "Beta Two", websiteUrl: "WWW.RiseOnDurant.com/" },
+    ];
+    expect(resolvePropertyForChatPage("https://www.livehigby.com/floorplans", bare)).toBe("h");
+    expect(resolvePropertyForChatPage("https://riseondurant.com/", bare)).toBe("r");
+  });
+
   it("stays null for an ambiguous page on a multi-property org", () => {
     expect(resolvePropertyForChatPage("https://unrelated.test/", props)).toBeNull();
   });
