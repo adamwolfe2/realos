@@ -74,6 +74,7 @@ export async function POST(req: NextRequest) {
           propertyType: true,
           residentialSubtype: true,
           commercialSubtype: true,
+          onboardingStep: true,
         },
       },
     },
@@ -86,6 +87,15 @@ export async function POST(req: NextRequest) {
   }
   const roleDenied = wizardRoleForbidden(user.role);
   if (roleDenied) return roleDenied;
+
+  // "done" is terminal (same rule as the features/back steps). A stale wizard
+  // tab or a replayed request on a live workspace must not rewrite its
+  // existing properties or mint new ones outside createProperty (which runs
+  // billing sync and scaffolding). Adding property N+1 goes through
+  // /portal/properties.
+  if (user.org.onboardingStep === "done") {
+    return NextResponse.json({ ok: true, nextStep: "done" });
+  }
 
   // Reuse the first property if the user is editing during a wizard
   // resume; otherwise create a new one. Slug is best-effort unique

@@ -20,8 +20,21 @@ const PROVIDER_LABEL: Record<OAuthProvider, string> = {
   google_ga4: "Google Analytics 4",
 };
 
-export function OAuthConnectButton({ provider }: { provider: OAuthProvider }) {
+export function OAuthConnectButton({
+  provider,
+  propertyId,
+  propertyName,
+}: {
+  provider: OAuthProvider;
+  /** GA4/GSC: scope the new connection to this LeaseStack property
+      (validated against the caller's grant by the start route). */
+  propertyId?: string;
+  propertyName?: string;
+}) {
   const label = PROVIDER_LABEL[provider];
+  const href = `/api/oauth/${providerToRouteSlug(provider)}/start${
+    propertyId ? `?propertyId=${encodeURIComponent(propertyId)}` : ""
+  }`;
   const globalDisabled = !isOAuthEnabled();
   const configured = isProviderConfigured(provider);
 
@@ -54,11 +67,13 @@ export function OAuthConnectButton({ provider }: { provider: OAuthProvider }) {
 
   return (
     <a
-      href={`/api/oauth/${providerToRouteSlug(provider)}/start`}
+      href={href}
       className="rounded-none border border-primary bg-primary text-primary-foreground px-3 py-2.5 flex items-center justify-between gap-3 hover:bg-primary-dark transition-colors"
     >
       <div className="min-w-0">
-        <div className="text-sm font-medium">Connect via {label} OAuth</div>
+        <div className="text-sm font-medium">
+          Connect via {label} OAuth{propertyName ? ` for ${propertyName}` : ""}
+        </div>
         <p className="text-[11px] text-primary-foreground/80 mt-0.5">
           Recommended. Tokens are stored encrypted and refreshed automatically.
         </p>

@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { classifyHealth } from "@/lib/integrations/status";
+import { PENDING_OAUTH_BIND } from "@/lib/integrations/seo-sync";
 
 // ---------------------------------------------------------------------------
 // Connect Hub status
@@ -45,6 +46,12 @@ export type ConnectSourceStatus = {
       Connect hub chip and the Integrations marketplace pill can never
       disagree about whether a source is broken. */
   hasError?: boolean;
+  /** Whose connection this is, for the selected property:
+      "property" = the property's own row; "org" = an org-wide connection
+      shared by every property (AppFolio, ad accounts, custom domain, or a
+      GA4/GSC row with propertyId=null). Unset when not connected. Cards
+      must show "org" as org-wide, never as the property being connected. */
+  coverage?: "property" | "org";
 };
 
 export async function getConnectStatusForOrg(
@@ -131,36 +138,45 @@ export async function getConnectStatusForOrg(
         .catch(() => null),
     ]);
 
-  const ga4 = seoIntegrations.find((s) => s.provider === "GA4");
-  const gsc = seoIntegrations.find((s) => s.provider === "GSC");
-  const ga4Rows = seoIntegrations.filter((s) => s.provider === "GA4");
-  const gscRows = seoIntegrations.filter((s) => s.provider === "GSC");
-  // Any row scoped to the active property, or org-wide (propertyId=null),
-  // counts as connected for that property. No activePropertyId (org-wide
-  // callers, or "All properties" selected) falls back to "any row at all"
-  // — same behavior as before per-property OAuth existed.
-  const connectedForActiveProperty = (
-    rows: Array<{ propertyId: string | null }>,
-  ): boolean =>
-    activePropertyId
-      ? rows.some(
-          (r) => r.propertyId === activePropertyId || r.propertyId === null,
-        )
-      : rows.length > 0;
+  // With a property selected, only that property's rows and org-wide
+  // (propertyId=null) rows describe it. The property's own row wins over the
+  // org-wide one for label / last sync, and only those rows can mark it
+  // errored, so property B never shows property A's GA4 account or A's
+  // broken sync. No activePropertyId (org-wide callers, "All properties")
+  // keeps every row, same as before per-property OAuth existed.
+  const rowsFor = (provider: "GA4" | "GSC") => {
+    // A row still waiting for its Google property pick is not a connection.
+    const rows = seoIntegrations.filter(
+      (s) => s.provider === provider && s.propertyIdentifier !== PENDING_OAUTH_BIND,
+    );
+    if (!activePropertyId) return rows;
+    return [
+      ...rows.filter((r) => r.propertyId === activePropertyId),
+      ...rows.filter((r) => r.propertyId === null),
+    ];
+  };
+  const ga4Rows = rowsFor("GA4");
+  const gscRows = rowsFor("GSC");
+  const ga4 = ga4Rows[0];
+  const gsc = gscRows[0];
+  const seoCoverage = (
+    row: { propertyId: string | null } | undefined,
+  ): ConnectSourceStatus["coverage"] =>
+    !row ? undefined : row.propertyId === null ? "org" : "property";
+  const orgCoverage = (connected: boolean): ConnectSourceStatus["coverage"] =>
+    connected ? "org" : undefined;
   const googleAds = adAccounts.find((a) => a.platform === "GOOGLE_ADS");
   const metaAds = adAccounts.find((a) => a.platform === "META_ADS");
 
   // Error aggregation — a multi-property tenant can have several GA4/GSC
-  // rows (one per property) or several ad accounts per platform. ANY row
+  // rows (one per property) or several ad accounts per platform. ANY
+  // relevant row (all rows org-wide; the selected property's + org-wide rows
+  // when a property is active)
   // erroring must flip the source to "error", same OR-across-rows rule
   // lib/integrations/status.ts uses (seoBySlug/adsBySlug) — picking only
   // the first row here would hide a broken second property/account.
-  const ga4HasError = seoIntegrations
-    .filter((s) => s.provider === "GA4")
-    .some((s) => s.status === "ERROR" || !!s.lastSyncError);
-  const gscHasError = seoIntegrations
-    .filter((s) => s.provider === "GSC")
-    .some((s) => s.status === "ERROR" || !!s.lastSyncError);
+  const ga4HasError = ga4Rows.some((s) => s.status === "ERROR" || !!s.lastSyncError);
+  const gscHasError = gscRows.some((s) => s.status === "ERROR" || !!s.lastSyncError);
   const googleAdsHasError = adAccounts
     .filter((a) => a.platform === "GOOGLE_ADS")
     .some((a) => !!a.lastSyncError);
@@ -190,10 +206,11 @@ export async function getConnectStatusForOrg(
             }
           : null,
       hasError: appfolioHasError,
+      coverage: orgCoverage(!!appfolio),
     },
     {
       id: "ga4",
-      connected: connectedForActiveProperty(ga4Rows),
+      connected: ga4Rows.length > 0,
       lastSyncAt: ga4?.lastSyncAt ?? null,
       accountLabel: ga4?.propertyIdentifier
         ? `Property ${ga4.propertyIdentifier}`
@@ -203,6 +220,7 @@ export async function getConnectStatusForOrg(
       // than a hand-rolled RED check so the two surfaces are structurally
       // incapable of disagreeing on whether GA4 is erroring.
       hasError: classifyHealth("ga4", ga4?.lastSyncAt ?? null, ga4HasError) === "error",
+      coverage: seoCoverage(ga4),
       // Wave-3 phase 4: OAuth (and the legacy manual-JSON form) can now bind
       // a GA4 SeoIntegration row to a specific property.
       // Group across every GA4 row instead of picking just the first (via
@@ -215,10 +233,11 @@ export async function getConnectStatusForOrg(
     },
     {
       id: "gsc",
-      connected: connectedForActiveProperty(gscRows),
+      connected: gscRows.length > 0,
       lastSyncAt: gsc?.lastSyncAt ?? null,
       accountLabel: gsc?.propertyIdentifier ?? null,
       hasError: classifyHealth("gsc", gsc?.lastSyncAt ?? null, gscHasError) === "error",
+      coverage: seoCoverage(gsc),
       scopedPropertyIds: seoIntegrations
         .filter((s) => s.provider === "GSC")
         .map((s) => s.propertyId)
@@ -232,6 +251,7 @@ export async function getConnectStatusForOrg(
         ? `Account ${googleAds.externalAccountId}`
         : null,
       hasError: googleAdsHasError,
+      coverage: orgCoverage(!!googleAds),
     },
     {
       id: "meta_ads",
@@ -241,12 +261,14 @@ export async function getConnectStatusForOrg(
         ? `Account ${metaAds.externalAccountId}`
         : null,
       hasError: metaAdsHasError,
+      coverage: orgCoverage(!!metaAds),
     },
     {
       id: "website",
       connected: !!website?.hostname,
       lastSyncAt: website?.updatedAt ?? null,
       accountLabel: website?.hostname ?? null,
+      coverage: orgCoverage(!!website?.hostname),
     },
   ];
 }

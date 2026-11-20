@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { integrationScopeError } from "@/lib/connect/scope-guard";
 import { auditPayload, requireWorkspaceAdmin } from "@/lib/tenancy/scope";
 import { encryptFunnelApiKey } from "@/lib/integrations/funnel-client";
 import { assertPublicHttpUrl, SsrfError } from "@/lib/security/ssrf-guard";
@@ -62,6 +63,9 @@ export async function connectFunnel(
     const message = err instanceof Error ? err.message : "Not authorized";
     return { ok: false, error: message };
   }
+  // Org-level connection: reaches every property (lib/connect/scope-guard).
+  const grantError = integrationScopeError(scope, null);
+  if (grantError) return { ok: false, error: grantError };
 
   const parsed = connectSchema.safeParse({
     apiKey: formData.get("apiKey")?.toString() || undefined,
@@ -174,6 +178,9 @@ export async function disconnectFunnel(): Promise<ConnectFunnelResult> {
     const message = err instanceof Error ? err.message : "Not authorized";
     return { ok: false, error: message };
   }
+  // Org-level connection: reaches every property (lib/connect/scope-guard).
+  const grantError = integrationScopeError(scope, null);
+  if (grantError) return { ok: false, error: grantError };
 
   const existing = await prisma.funnelIntegration.findUnique({
     where: { orgId: scope.orgId },

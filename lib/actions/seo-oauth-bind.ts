@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { integrationScopeError } from "@/lib/connect/scope-guard";
 import {
   auditPayload,
   ForbiddenError,
@@ -59,6 +60,8 @@ export async function bindSeoProperty(
     return { ok: false, error: "Pick a property to connect." };
   }
   const { provider, propertyIdentifier, propertyId } = parsed.data;
+  const grantError = integrationScopeError(scope, propertyId);
+  if (grantError) return { ok: false, error: grantError };
 
   let pending;
   try {

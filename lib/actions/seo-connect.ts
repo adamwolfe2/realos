@@ -11,6 +11,7 @@ import {
   propertyInScope,
   type ScopedContext,
 } from "@/lib/tenancy/scope";
+import { integrationScopeError } from "@/lib/connect/scope-guard";
 import { encrypt } from "@/lib/crypto";
 import { parseServiceAccountJson, testGscConnection } from "@/lib/integrations/gsc";
 import { testGa4Connection } from "@/lib/integrations/ga4";
@@ -116,6 +117,9 @@ export async function connectSeo(formData: FormData): Promise<ConnectSeoResult> 
   if (!grantAllows(scope, scopePropertyId)) {
     return { ok: false, error: OUT_OF_GRANT };
   }
+
+  const grantError = integrationScopeError(scope, scopePropertyId);
+  if (grantError) return { ok: false, error: grantError };
 
   // If a property was specified, validate it belongs to this org — never
   // trust a hidden form field. A bogus / cross-tenant id fails the connect:
@@ -294,6 +298,9 @@ export async function disconnectSeo(
   if (!grantAllows(scope, scopePropertyId)) {
     return { ok: false, error: OUT_OF_GRANT };
   }
+
+  const grantError = integrationScopeError(scope, scopePropertyId);
+  if (grantError) return { ok: false, error: grantError };
 
   const existing = await prisma.seoIntegration.findFirst({
     where: {

@@ -21,6 +21,14 @@ export type ScaffoldFeatures = {
   chatbot: boolean;
 };
 
+export type ScaffoldOptions = {
+  // Post-onboarding "add property N+1": the org's chatbot master toggle is
+  // the operator's live decision, so leave TenantSiteConfig alone and create
+  // the new property's row with chatbotEnabled=null (inherit the org toggle)
+  // instead of forcing it on. Onboarding keeps the default (false).
+  inheritOrgChatbotToggle?: boolean;
+};
+
 export type ScaffoldProperty = {
   id: string;
   name: string;
@@ -31,7 +39,9 @@ export async function scaffoldPropertyIntegrations(
   orgId: string,
   properties: ScaffoldProperty[],
   features: ScaffoldFeatures,
+  options: ScaffoldOptions = {},
 ): Promise<void> {
+  const inherit = options.inheritOrgChatbotToggle === true;
   if (properties.length === 0) return;
 
   // Collect (rather than swallow) per-step failures. Scaffolding stays
@@ -42,7 +52,7 @@ export async function scaffoldPropertyIntegrations(
   const failures: string[] = [];
 
   // --- Chatbot baseline (org-level) so per-property bots can serve. -------
-  if (features.chatbot) {
+  if (features.chatbot && !inherit) {
     try {
       await prisma.tenantSiteConfig.upsert({
         where: { orgId },
@@ -67,7 +77,7 @@ export async function scaffoldPropertyIntegrations(
             propertyId: property.id,
             // Enabled for this property out of the gate; persona defaults to
             // the property name so each bot introduces the right building.
-            chatbotEnabled: true,
+            chatbotEnabled: inherit ? null : true,
             chatbotPersonaName: property.name,
           },
         });

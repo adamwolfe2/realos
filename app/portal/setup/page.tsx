@@ -6,6 +6,7 @@ import { requireScope } from "@/lib/tenancy/scope";
 import { getConnectStatusForOrg, type ConnectSource } from "@/lib/connect/status";
 import { getProviderAvailability } from "@/lib/connect/provider-availability";
 import { getActivePropertyId } from "@/lib/portal/active-property";
+import { resolveChatbotConfig } from "@/lib/chatbot/resolve-config";
 import { Initial, Panel, Pill, Step } from "@/components/portal/overview/kit";
 import { ConnectSteps, type ManagedIds, type SourceId, type SourceTile } from "./connect-steps";
 
@@ -48,7 +49,7 @@ export default async function SetupPage({ searchParams }: { searchParams: Promis
   const scope = await requireScope();
   const sp = await searchParams;
   const allowed = scope.allowedPropertyIds;
-  const [properties, activeId] = await Promise.all([
+  const [properties, activeId, orgActiveCount] = await Promise.all([
     prisma.property.findMany({
       where: { orgId: scope.orgId, lifecycle: "ACTIVE", ...(allowed ? { id: { in: allowed } } : {}) },
       orderBy: { createdAt: "asc" },
@@ -59,21 +60,39 @@ export default async function SetupPage({ searchParams }: { searchParams: Promis
       console.error("[setup] active property read failed", err);
       return null;
     }),
+    // Org-wide count (not the caller's grant): decides whether unattributed
+    // chats can only belong to the one live property.
+    prisma.property.count({ where: { orgId: scope.orgId, lifecycle: "ACTIVE" } }),
   ]);
   const property = properties.find((p) => p.id === sp.property) ?? properties.find((p) => p.id === activeId) ?? properties[0] ?? null;
 
+  // With one ACTIVE property, chats the embed sent without a property
+  // (propertyId=null) are that property's; with 2+ only its own count.
+  const chatScope = !property
+    ? {}
+    : orgActiveCount <= 1
+      ? { OR: [{ propertyId: property.id }, { propertyId: null }] }
+      : { propertyId: property.id };
   const [org, site, statuses, lastChat] = await Promise.all([
     prisma.organization.findUnique({ where: { id: scope.orgId }, select: { name: true, notifyLeadEmail: true, notifyOnChatbotLead: true, moduleChatbot: true } }),
-    prisma.tenantSiteConfig.findUnique({ where: { orgId: scope.orgId }, select: { chatbotEnabled: true, chatbotPersonaName: true, chatbotGreeting: true, chatbotKnowledgeBase: true } }),
+    // The selected property's effective bot (its override, else the org's),
+    // and only its own conversations: property B must not read as "live"
+    // because property A's widget is getting chats.
+    resolveChatbotConfig(scope.orgId, property?.id ?? null),
     getConnectStatusForOrg(scope.orgId, property?.id ?? null),
-    prisma.chatbotConversation.findFirst({ where: { orgId: scope.orgId }, orderBy: { lastMessageAt: "desc" }, select: { lastMessageAt: true } }),
+    prisma.chatbotConversation.findFirst({ where: { orgId: scope.orgId, ...chatScope }, orderBy: { lastMessageAt: "desc" }, select: { lastMessageAt: true } }),
   ]);
 
   const tiles: SourceTile[] = SOURCES.map((s) => {
     const st = statuses.find((x) => x.id === s.status);
     const connected = Boolean(st?.connected);
     if (connected && st?.hasError) return { id: s.id, name: s.name, line: "Last sync failed. Reconnect to fix.", state: "error", stateText: "Needs attention" };
-    if (connected) return { id: s.id, name: s.name, line: st?.lastSyncAt ? `Synced ${fmtDate.format(st.lastSyncAt)}${st.accountLabel ? ` · ${st.accountLabel}` : ""}` : st?.accountLabel ?? s.line, state: "connected", stateText: "Connected" };
+    const synced = st?.lastSyncAt ? `Synced ${fmtDate.format(st.lastSyncAt)}${st.accountLabel ? ` · ${st.accountLabel}` : ""}` : st?.accountLabel ?? s.line;
+    // An org-wide connection (AppFolio, ad accounts, a GA4/GSC row with no
+    // property) is shared by every property: show it as that, never as this
+    // property being connected.
+    if (connected && st?.coverage === "org") return { id: s.id, name: s.name, line: `All properties · ${synced}`, state: "org", stateText: "Org-wide" };
+    if (connected) return { id: s.id, name: s.name, line: synced, state: "connected", stateText: "Connected" };
     return { id: s.id, name: s.name, line: s.line, state: "off", stateText: "Not connected" };
   });
 
@@ -88,7 +107,8 @@ export default async function SetupPage({ searchParams }: { searchParams: Promis
     { label: "Installed on your site", ok: installed },
   ];
 
-  const steps = [Boolean(property), tiles.some((t) => t.state === "connected"), installed];
+  // Data flowing from an org-wide source still completes the data step.
+  const steps = [Boolean(property), tiles.some((t) => t.state === "connected" || t.state === "org"), installed];
   const done = steps.filter(Boolean).length;
   const name = property?.name ?? org?.name ?? "your property";
   const broken = tiles.filter((t) => t.state === "error").length;
@@ -143,7 +163,7 @@ export default async function SetupPage({ searchParams }: { searchParams: Promis
 
       <Panel
         title={<Step n={2}>Connect your data</Step>}
-        aside={steps[1] ? <Pill tone="good">{tiles.filter((t) => t.state === "connected").length} connected</Pill> : <Pill tone="warn">Connect at least one</Pill>}
+        aside={steps[1] ? <Pill tone="good">{tiles.filter((t) => t.state === "connected" || t.state === "org").length} connected</Pill> : <Pill tone="warn">Connect at least one</Pill>}
       >
         <ConnectSteps tiles={tiles} ids={managedIds()} propertyId={property?.id ?? null} propertyName={name} />
         <p className="mt-3 text-[12.5px] text-[var(--t-muted)]">Coming soon: Yardi, Buildium, Entrata and RealPage.</p>
