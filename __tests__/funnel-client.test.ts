@@ -22,6 +22,49 @@ import {
 const baseConfig = { groupId: 1234 };
 
 describe("buildFunnelProspectPayload", () => {
+  // Interim multi-property fix: every building shares the org's one Funnel
+  // group, so the note is the only place staff can see which building a lead
+  // is for. Only `notes` changes; every other field is identical.
+  it("leads the note with the building name when the lead has one", () => {
+    const lead = { name: "Jane Doe", email: "jane@example.com", sourceLabel: "Popup on /pricing" };
+    const withProp = buildFunnelProspectPayload({
+      lead: { ...lead, propertyName: "Oak Commons" },
+      channel: LeadNotifyChannel.POPUP,
+      config: baseConfig,
+    });
+    const without = buildFunnelProspectPayload({
+      lead,
+      channel: LeadNotifyChannel.POPUP,
+      config: baseConfig,
+    });
+    expect(withProp.client.notes).toBe(`Property: Oak Commons\n${without.client.notes}`);
+    const { notes: _a, ...restWith } = withProp.client;
+    const { notes: _b, ...restWithout } = without.client;
+    expect(restWith).toEqual(restWithout);
+  });
+
+  it("leads the chatbot transcript note with the building name too", () => {
+    const payload = buildFunnelProspectPayload({
+      lead: { name: "Jane Doe", email: "jane@example.com", propertyName: "Oak Commons" },
+      channel: LeadNotifyChannel.CHATBOT,
+      config: baseConfig,
+      conversation: { messages: [{ role: "user", content: "Pets?" }] },
+    });
+    expect(payload.client.notes?.split("\n")[0]).toBe("Property: Oak Commons");
+    expect(payload.client.notes).toContain("Prospect: Pets?");
+  });
+
+  it("leaves the note unchanged when there is no building (org-level lead)", () => {
+    for (const propertyName of [undefined, null, "   "]) {
+      const payload = buildFunnelProspectPayload({
+        lead: { name: "Cher", email: "cher@example.com", propertyName },
+        channel: LeadNotifyChannel.FORM,
+        config: baseConfig,
+      });
+      expect(payload.client.notes).toBe("Lead captured via LeaseStack (form)");
+    }
+  });
+
   it("builds the exact {client:{…}} shape on the happy path", () => {
     const payload = buildFunnelProspectPayload({
       lead: {

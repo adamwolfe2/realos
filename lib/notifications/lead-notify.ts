@@ -139,6 +139,7 @@ export async function notifyLeadCaptured(
           phone: input.lead.phone ?? null,
           sourceLabel: input.lead.sourceLabel ?? null,
           intent: input.lead.intent ?? null,
+          propertyName: property?.name ?? null,
         },
         conversationId: input.conversationId ?? null,
       }).catch((err) => console.warn("[lead-notify] funnel push failed", err));

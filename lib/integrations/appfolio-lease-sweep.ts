@@ -13,6 +13,12 @@
 // alone: no evidence beyond absence, so they wait for their end date.
 import { LeaseStatus, ResidentStatus } from "@prisma/client";
 
+// Per-run cap for the catch-up sweep over buildings that are on the pull but
+// not ACTIVE in LeaseStack (switched to IMPORTED/EXCLUDED). Their rows are
+// skipped by the sync, so the main sweep never covered them; the first run
+// after this shipped could otherwise end a backlog in one go.
+export const INACTIVE_SWEEP_LIMIT = 200;
+
 const OPEN_STATUSES: LeaseStatus[] = [LeaseStatus.ACTIVE, LeaseStatus.EXPIRING];
 const CHUNK = 1000;
 
@@ -62,6 +68,8 @@ export async function endLeasesAbsentFromRentRoll(
     propertyIds: string[];
     seenExternalIds: ReadonlySet<string>;
     now: Date;
+    /** Cap on rows changed this call (bounded catch-up sweeps). */
+    limit?: number;
   },
 ): Promise<number> {
   if (args.propertyIds.length === 0) return 0;
@@ -77,7 +85,8 @@ export async function endLeasesAbsentFromRentRoll(
   });
   const ids = candidates
     .filter((l) => l.externalId && !args.seenExternalIds.has(l.externalId))
-    .map((l) => l.id);
+    .map((l) => l.id)
+    .slice(0, args.limit ?? Infinity);
   let ended = 0;
   for (let i = 0; i < ids.length; i += CHUNK) {
     const res = await db.lease.updateMany({
@@ -139,6 +148,8 @@ export async function markResidentsAbsentFromDirectoryPast(
     propertyIds: string[];
     seenExternalIds: ReadonlySet<string>;
     now: Date;
+    /** Cap on rows changed this call (bounded catch-up sweeps). */
+    limit?: number;
   },
 ): Promise<number> {
   if (args.propertyIds.length === 0) return 0;
@@ -154,7 +165,8 @@ export async function markResidentsAbsentFromDirectoryPast(
   });
   const ids = candidates
     .filter((r) => r.externalId && !args.seenExternalIds.has(r.externalId))
-    .map((r) => r.id);
+    .map((r) => r.id)
+    .slice(0, args.limit ?? Infinity);
   let moved = 0;
   for (let i = 0; i < ids.length; i += CHUNK) {
     const res = await db.resident.updateMany({

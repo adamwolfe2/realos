@@ -5,7 +5,10 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireWorkspaceAdmin, requireWritableWorkspace, auditPayload } from "@/lib/tenancy/scope";
 import { encrypt } from "@/lib/crypto";
-import { probeEmbedScrape } from "@/lib/integrations/appfolio";
+import {
+  appfolioListedPropertyIds,
+  probeEmbedScrape,
+} from "@/lib/integrations/appfolio";
 import {
   runAppfolioSync,
   type AppfolioSyncStats,
@@ -119,6 +122,7 @@ export async function connectAppfolio(
   // "Test connection" in the UI — we trust that gate and skip a second probe
   // here to avoid double-counting rate-limit hits and to keep save fast.
   let listingsFound: number | undefined;
+  let embedAddresses: string[] = [];
   if (parsed.data.authMode === "embed") {
     const probe = await probeEmbedScrape(subdomain);
     if (!probe.ok) {
@@ -128,6 +132,7 @@ export async function connectAppfolio(
       };
     }
     listingsFound = probe.count;
+    embedAddresses = probe.addresses;
   }
 
   const isEmbed = parsed.data.authMode === "embed";
@@ -168,13 +173,28 @@ export async function connectAppfolio(
         data: { orgId: scope.orgId, syncFrequencyMinutes: 60, ...integrationData },
       });
 
-  await prisma.property.updateMany({
-    where: {
-      orgId: scope.orgId,
-      backendPlatform: BackendPlatform.NONE,
-    },
-    data: { backendPlatform: BackendPlatform.APPFOLIO },
-  });
+  // Stamp APPFOLIO only on buildings that are actually on this AppFolio
+  // account. Embed: a building whose street address appears on a listing card
+  // (same matcher the listing sync uses). REST: nothing here; the sync's
+  // property_directory phase links buildings by name/address. Buildings
+  // managed elsewhere stay untouched (this used to mark every NONE row).
+  if (embedAddresses.length > 0) {
+    const candidates = await prisma.property.findMany({
+      where: { orgId: scope.orgId, backendPlatform: BackendPlatform.NONE },
+      select: { id: true, addressLine1: true },
+    });
+    const matchedIds = appfolioListedPropertyIds(embedAddresses, candidates);
+    if (matchedIds.length > 0) {
+      await prisma.property.updateMany({
+        where: {
+          orgId: scope.orgId,
+          id: { in: matchedIds },
+          backendPlatform: BackendPlatform.NONE,
+        },
+        data: { backendPlatform: BackendPlatform.APPFOLIO },
+      });
+    }
+  }
 
   await prisma.auditEvent.create({
     data: auditPayload(scope, {
