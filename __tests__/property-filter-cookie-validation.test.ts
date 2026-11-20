@@ -87,15 +87,18 @@ describe("parsePropertyFilter — cookie validation against marketable set", () 
     expect(setActivePropertyId).not.toHaveBeenCalled();
   });
 
-  it("tolerates prisma errors without throwing — falls through to portfolio view", async () => {
+  it("tolerates prisma errors without throwing — keeps the cookie selection", async () => {
     getActivePropertyId.mockResolvedValue("prop_x");
     findFirst.mockRejectedValue(new Error("DB unreachable"));
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const r = await parsePropertyFilter({}, "org_1");
-    // We don't return the unvalidated cookie id here because we couldn't
-    // confirm it's marketable — safer to widen to portfolio than to
-    // silently scope to a possibly-stale id.
-    expect(r).toBeNull();
-    expect(setActivePropertyId).toHaveBeenCalledWith(null);
+    // Multi-property: widening to the portfolio on a transient error
+    // showed property A + B data while the switcher still said "A".
+    // Stay narrow (fail closed); the grant and org filters still apply.
+    expect(r).toEqual(["prop_x"]);
+    expect(setActivePropertyId).not.toHaveBeenCalled();
+    expect(errSpy).toHaveBeenCalled();
+    errSpy.mockRestore();
   });
 
   it("tolerates a setActivePropertyId failure (best-effort clear)", async () => {
