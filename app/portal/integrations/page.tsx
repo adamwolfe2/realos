@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { ArrowRight } from "lucide-react";
@@ -33,6 +34,9 @@ const IN_SETUP = new Set(["appfolio", "ga4", "gsc", "google-ads", "meta-ads"]);
 
 export default async function IntegrationsPage() {
   const scope = await requireScope();
+  // Org-wide source status: hidden from property-restricted seats, who
+  // connect their own buildings in /portal/setup.
+  if (scope.allowedPropertyIds !== null) notFound();
   const statuses = await resolveIntegrationStatuses(scope.orgId);
   const bySlug = new Map(statuses.map((s) => [s.slug, s]));
 

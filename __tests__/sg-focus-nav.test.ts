@@ -32,6 +32,7 @@ const SG: PortalNavOrg = {
   moduleReferrals: false,
   modulePopups: false, // slimmed
   moduleVault: false,
+  orgWide: true, // SG's owners and admins; restricted seats covered below
   moduleReputation: false, // slimmed
   moduleInsights: true, // billed SKU that also gates the reports pages
   // Visibility-only: drops the Insights ROW while the SKU above stays ON,
@@ -184,5 +185,17 @@ describe("navHiddenItems", () => {
     // Exact href match only — no prefix/substring matching that could
     // silently take out neighbouring rows.
     expect(after).toEqual(before);
+  });
+});
+
+describe("property-restricted seat", () => {
+  it("does not get the org-level Integrations and Marketplace rows", () => {
+    const labels = visibleLabels({ ...SG, orgWide: false });
+    expect(labels).not.toContain("Integrations");
+    expect(labels).not.toContain("Marketplace");
+    // Everything else an org-wide seat sees is unchanged.
+    expect(labels).toEqual(
+      visibleLabels(SG).filter((l) => l !== "Integrations" && l !== "Marketplace"),
+    );
   });
 });

@@ -372,6 +372,8 @@ export default async function PortalLayout({
     moduleReferrals: org.moduleReferrals,
     modulePopups: org.modulePopups,
     moduleVault: org.moduleVault,
+    // Property-restricted seats don't get org-level pages in the sidebar.
+    orgWide: scope.allowedPropertyIds === null,
     moduleReputation: org.moduleReputation,
     moduleInsights: org.moduleInsights,
     navHiddenItems: org.navHiddenItems,
