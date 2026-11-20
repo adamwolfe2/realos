@@ -83,6 +83,19 @@ beforeEach(() => {
 });
 
 describe("notifyLeadCaptured — Funnel push is fail-soft", () => {
+  it("passes the lead's building name to the Funnel push", async () => {
+    h.push.mockResolvedValue({ ok: true });
+    h.db.property.findUnique.mockResolvedValue({ name: "Oak Commons", notifyLeadEmailOverride: null });
+
+    await notifyLeadCaptured({ ...INPUT, propertyId: "prop_B" });
+
+    expect(h.push).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lead: expect.objectContaining({ propertyName: "Oak Commons", email: "jane@example.com" }),
+      }),
+    );
+  });
+
   it("does not throw and still sends email when the Funnel push REJECTS", async () => {
     h.push.mockRejectedValue(new Error("Funnel API 500"));
 
