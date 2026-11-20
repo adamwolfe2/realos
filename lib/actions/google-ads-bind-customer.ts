@@ -4,6 +4,7 @@ import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { integrationScopeError } from "@/lib/connect/scope-guard";
 import { auditPayload, requireWorkspaceAdmin } from "@/lib/tenancy/scope";
 import { normalizeCustomerId } from "@/lib/integrations/google-ads";
 import { runAdsSyncForAccount } from "@/lib/integrations/ads-sync";
@@ -72,6 +73,9 @@ export async function bindGoogleAdsCustomer(
       error: err instanceof Error ? err.message : "Not authorized",
     };
   }
+  // Org-level connection: reaches every property (lib/connect/scope-guard).
+  const grantError = integrationScopeError(scope, null);
+  if (grantError) return { ok: false, error: grantError };
 
   const parsed = schema.safeParse({
     customerId: formData.get("customerId")?.toString() ?? "",

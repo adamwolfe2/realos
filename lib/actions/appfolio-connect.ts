@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { integrationScopeError } from "@/lib/connect/scope-guard";
 import { requireWorkspaceAdmin, requireWritableWorkspace, auditPayload } from "@/lib/tenancy/scope";
 import { encrypt } from "@/lib/crypto";
 import { probeEmbedScrape } from "@/lib/integrations/appfolio";
@@ -95,6 +96,9 @@ export async function connectAppfolio(
     const message = err instanceof Error ? err.message : "Not authorized";
     return { ok: false, error: message };
   }
+  // Org-level connection: reaches every property (lib/connect/scope-guard).
+  const grantError = integrationScopeError(scope, null);
+  if (grantError) return { ok: false, error: grantError };
 
   const authMode =
     (formData.get("authMode")?.toString() as "embed" | "rest") || "embed";
@@ -227,6 +231,9 @@ export async function disconnectAppfolio(): Promise<ConnectAppfolioResult> {
     const message = err instanceof Error ? err.message : "Not authorized";
     return { ok: false, error: message };
   }
+  // Org-level connection: reaches every property (lib/connect/scope-guard).
+  const grantError = integrationScopeError(scope, null);
+  if (grantError) return { ok: false, error: grantError };
 
   const existing = await prisma.appFolioIntegration.findUnique({
     where: { orgId: scope.orgId },

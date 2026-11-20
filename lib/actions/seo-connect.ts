@@ -4,6 +4,7 @@ import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { integrationScopeError } from "@/lib/connect/scope-guard";
 import { requireWorkspaceAdmin, requireWritableWorkspace, auditPayload } from "@/lib/tenancy/scope";
 import { encrypt } from "@/lib/crypto";
 import { parseServiceAccountJson, testGscConnection } from "@/lib/integrations/gsc";
@@ -97,6 +98,9 @@ export async function connectSeo(formData: FormData): Promise<ConnectSeoResult> 
     leasestackPropertyId && leasestackPropertyId.length > 0
       ? leasestackPropertyId
       : null;
+
+  const grantError = integrationScopeError(scope, scopePropertyId);
+  if (grantError) return { ok: false, error: grantError };
 
   // If a property was specified, validate it belongs to this org —
   // never trust a hidden form field. A bogus / cross-tenant id is
@@ -272,6 +276,9 @@ export async function disconnectSeo(
     parsed.data.leasestackPropertyId.length > 0
       ? parsed.data.leasestackPropertyId
       : null;
+
+  const grantError = integrationScopeError(scope, scopePropertyId);
+  if (grantError) return { ok: false, error: grantError };
 
   const existing = await prisma.seoIntegration.findFirst({
     where: {
