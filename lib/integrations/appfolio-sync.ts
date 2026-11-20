@@ -1382,63 +1382,72 @@ export async function runAppfolioSync(
     topLevelError = topLevelError ?? `delinquency: ${message}`;
   }
 
-  // 8. WORK ORDERS — maintenance ticket sync.
-  try {
-    // Recovery window — mirrors the applications/leads/showings phases. The
-    // work_order report honors fromDate, so a failed run resuming with a
-    // "since ~now" window would permanently lose tickets in the gap. This
-    // phase doesn't carry per-phase skip state (it uses the plain try/catch
-    // path, not recordPhaseFailure), so recovery is driven by an explicit
-    // operator retry; the phaseFailures check is kept for symmetry in case
-    // skip tracking is added here later.
-    const workOrdersRecovering =
-      options.retrySkipped || !!phaseFailures.work_orders;
-    const workOrdersFromDate = workOrdersRecovering
-      ? new Date(now.getTime() - PHASE_RECOVERY_BACKFILL_DAYS * 24 * 60 * 60 * 1000)
-      : fromDate;
-    const rows = await fetchAllPages(client, "work_order", {
-      fromDate: workOrdersFromDate,
-      toDate,
-    });
-    let workOrdersNoProperty = 0;
-    for (const row of rows) {
-      const mapped = mapWorkOrderPayload(row);
-      if (!mapped) continue;
-      const propertyId = resolvePropertyId(
-        mapped.propertyExternalId ? [mapped.propertyExternalId] : [],
-      );
-      if (!propertyId) {
-        workOrdersNoProperty += 1;
-        continue;
+  // 8. WORK ORDERS — maintenance ticket sync. Same failure tracking as
+  // leads/applications/showings: a failure records phaseFailures.work_orders,
+  // so the next run pulls the wide recovery window. Without it, a failure in
+  // the widened run after a building was activated still cleared the
+  // backfill request and that building's older tickets were never fetched.
+  if (isPhaseSkipped("work_orders")) {
+    stats.warnings.push(
+      `work-orders: phase auto-skipped after ${PHASE_SKIP_THRESHOLD} consecutive failures (last: ${phaseFailures.work_orders?.lastError ?? "unknown"}). Use Retry skipped phases to re-attempt.`,
+    );
+    phasesSkipped += 1;
+  } else {
+    try {
+      // Recovery window — mirrors the applications/leads/showings phases. The
+      // work_order report honors fromDate, so a failed run resuming with a
+      // "since ~now" window would permanently lose tickets in the gap.
+      const workOrdersRecovering =
+        options.retrySkipped || !!phaseFailures.work_orders;
+      const workOrdersFromDate = workOrdersRecovering
+        ? new Date(now.getTime() - PHASE_RECOVERY_BACKFILL_DAYS * 24 * 60 * 60 * 1000)
+        : fromDate;
+      const rows = await fetchAllPages(client, "work_order", {
+        fromDate: workOrdersFromDate,
+        toDate,
+      });
+      let workOrdersNoProperty = 0;
+      for (const row of rows) {
+        const mapped = mapWorkOrderPayload(row);
+        if (!mapped) continue;
+        const propertyId = resolvePropertyId(
+          mapped.propertyExternalId ? [mapped.propertyExternalId] : [],
+        );
+        if (!propertyId) {
+          workOrdersNoProperty += 1;
+          continue;
+        }
+        // Same lifecycle gate as leads/applications/residents/leases. This
+        // phase was the ONLY property-dimensioned writer without it, and it
+        // was the worst offender: 2,891 of SG Real Estate's 2,989 WorkOrder
+        // rows (97%) described buildings that are not in LeaseStack.
+        if (isInactiveResolvedProperty(propertyId)) {
+          stats.skippedInactiveProperty += 1;
+          continue;
+        }
+        const listingId =
+          (mapped.unitExternalId && listingByExternalId.get(mapped.unitExternalId)) ||
+          null;
+        const residentId =
+          (mapped.residentExternalId &&
+            residentByExternalId.get(mapped.residentExternalId)) ||
+          null;
+        await upsertWorkOrder(orgId, propertyId, listingId, residentId, mapped);
+        stats.workOrdersUpserted += 1;
       }
-      // Same lifecycle gate as leads/applications/residents/leases. This
-      // phase was the ONLY property-dimensioned writer without it, and it
-      // was the worst offender: 2,891 of SG Real Estate's 2,989 WorkOrder
-      // rows (97%) described buildings that are not in LeaseStack.
-      if (isInactiveResolvedProperty(propertyId)) {
-        stats.skippedInactiveProperty += 1;
-        continue;
+      if (workOrdersNoProperty > 0) {
+        stats.warnings.push(
+          `work-orders: ${workOrdersNoProperty} work order${workOrdersNoProperty === 1 ? "" : "s"} couldn't be matched to a specific Property (AppFolio omitted property_id in a multi-property account) — skipped rather than risk filing them under the wrong building.`,
+        );
       }
-      const listingId =
-        (mapped.unitExternalId && listingByExternalId.get(mapped.unitExternalId)) ||
-        null;
-      const residentId =
-        (mapped.residentExternalId &&
-          residentByExternalId.get(mapped.residentExternalId)) ||
-        null;
-      await upsertWorkOrder(orgId, propertyId, listingId, residentId, mapped);
-      stats.workOrdersUpserted += 1;
+      phasesCompleted += 1;
+      recordPhaseSuccess("work_orders");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      stats.warnings.push(`work-orders: ${message}`);
+      topLevelError = topLevelError ?? `work-orders: ${message}`;
+      recordPhaseFailure("work_orders", message);
     }
-    if (workOrdersNoProperty > 0) {
-      stats.warnings.push(
-        `work-orders: ${workOrdersNoProperty} work order${workOrdersNoProperty === 1 ? "" : "s"} couldn't be matched to a specific Property (AppFolio omitted property_id in a multi-property account) — skipped rather than risk filing them under the wrong building.`,
-      );
-    }
-    phasesCompleted += 1;
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    stats.warnings.push(`work-orders: ${message}`);
-    topLevelError = topLevelError ?? `work-orders: ${message}`;
   }
 
   // Connector is "healthy" if at least one phase completed (even with 0

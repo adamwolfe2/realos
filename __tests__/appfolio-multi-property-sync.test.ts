@@ -31,6 +31,10 @@ const state = vi.hoisted(() => ({
   leaseCreates: [] as Array<Record<string, unknown>>,
   leadCreates: [] as Array<Record<string, unknown>>,
   groupFilter: null as string | null,
+  failReports: new Set<string>(),
+  backfillRequestedAt: null as Date | null,
+  lastSyncStats: null as unknown,
+  integrationUpdates: [] as Array<Record<string, unknown>>,
   listingCreates: [] as Array<Record<string, unknown>>,
 }));
 
@@ -86,6 +90,7 @@ vi.mock("@/lib/integrations/appfolio", async () => {
       opts?: { fromDate?: Date },
     ) => {
       state.fetchCalls.push({ report, fromDate: opts?.fromDate });
+      if (state.failReports.has(report)) throw new Error(`${report} 503`);
       return state.reports[report] ?? [];
     },
   };
@@ -141,6 +146,10 @@ function setupPrisma() {
   });
   Object.assign(prismaMock, {
     appFolioIntegration: autoModel({
+      update: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
+        state.integrationUpdates.push(data);
+        return {};
+      }),
       findUnique: vi.fn(async () => ({
         id: "int-1",
         orgId: "org-1",
@@ -149,10 +158,10 @@ function setupPrisma() {
         apiKeyEncrypted: null,
         instanceSubdomain: "acme",
         lastSyncAt: NOW_MINUS_1H,
-        backfillRequestedAt: null,
+        backfillRequestedAt: state.backfillRequestedAt,
         syncStatus: "idle",
         syncStartedAt: null,
-        lastSyncStats: null,
+        lastSyncStats: state.lastSyncStats,
         propertyGroupFilter: state.groupFilter,
       })),
     }),
@@ -211,6 +220,10 @@ beforeEach(() => {
   state.leaseCreates = [];
   state.leadCreates = [];
   state.groupFilter = null;
+  state.failReports = new Set();
+  state.backfillRequestedAt = null;
+  state.lastSyncStats = null;
+  state.integrationUpdates = [];
   state.listingCreates = [];
   state.reports = {
     property_directory: [
@@ -286,5 +299,33 @@ describe("runAppfolioSync — two ACTIVE properties", () => {
       ["gc-none", null],
     ]);
     expect(result.stats.warnings.some((w) => w.includes("outside the property group"))).toBe(true);
+  });
+
+  it("a work_order failure in the backfill run is remembered, so the next run re-pulls the wide window", async () => {
+    state.props = baseProps().map((p) =>
+      p.id === "B" ? { ...p, backendPlatform: "APPFOLIO", backendPropertyId: "af-B" } : p,
+    );
+    // Run 1: B was just activated (backfill armed) but work_order fails.
+    state.backfillRequestedAt = new Date(Date.now() - 5 * 60 * 1000);
+    state.failReports = new Set(["work_order"]);
+    await runAppfolioSync("org-1");
+    const final = state.integrationUpdates.find((u) => "lastSyncStats" in u)!;
+    const stats = final.lastSyncStats as { phaseFailures: Record<string, { consecutiveFailures: number }> };
+    expect(stats.phaseFailures.work_orders?.consecutiveFailures).toBe(1);
+
+    // Run 2: backfill request already cleared, watermark advanced to ~now.
+    state.backfillRequestedAt = null;
+    state.failReports = new Set();
+    state.lastSyncStats = stats;
+    state.fetchCalls = [];
+    state.integrationUpdates = [];
+    await runAppfolioSync("org-1");
+    const wo = state.fetchCalls.find((c) => c.report === "work_order");
+    const days = (Date.now() - wo!.fromDate!.getTime()) / 86_400_000;
+    expect(days).toBeGreaterThan(30);
+    const after = state.integrationUpdates.find((u) => "lastSyncStats" in u)!;
+    expect(
+      (after.lastSyncStats as { phaseFailures: Record<string, unknown> }).phaseFailures.work_orders,
+    ).toBeUndefined();
   });
 });
