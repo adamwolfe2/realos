@@ -27,6 +27,8 @@ export const dynamic = "force-dynamic";
 
 export default async function MarketplacePage() {
   const scope = await requireScope();
+  // Org-level surface: hidden from property-restricted seats.
+  if (scope.allowedPropertyIds !== null) notFound();
 
   const org = await prisma.organization.findUnique({
     where: { id: scope.orgId },

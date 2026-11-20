@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -49,6 +50,9 @@ export const maxDuration = 300;
 
 export default async function IntegrationsPage() {
   const scope = await requireScope();
+  // Org-wide source status: hidden from property-restricted seats, who
+  // connect their own buildings in /portal/setup.
+  if (scope.allowedPropertyIds !== null) notFound();
   const [
     org,
     appfolio,

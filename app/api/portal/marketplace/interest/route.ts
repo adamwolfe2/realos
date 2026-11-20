@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { requireWritableWorkspace, ForbiddenError } from "@/lib/tenancy/scope";
+import { requireWritableWorkspace, ForbiddenError, assertOrgWideAccess } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { getModuleByKey } from "@/lib/marketplace/catalog";
 import { canManageBilling } from "@/lib/billing/checkout-policy";
@@ -32,6 +32,8 @@ const bodySchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const scope = await requireWritableWorkspace();
+    // Module switches are org-level: not for property-restricted seats.
+    assertOrgWideAccess(scope);
     let parsed;
     try {
       parsed = bodySchema.parse(await req.json());

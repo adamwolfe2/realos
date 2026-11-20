@@ -62,6 +62,8 @@ export type PortalNavOrg = {
   moduleReferrals: boolean;
   modulePopups: boolean;
   moduleVault: boolean;
+  // False for a property-restricted seat: hides org-level pages.
+  orgWide: boolean;
   moduleReputation: boolean;
   moduleInsights: boolean;
   moduleAttribution: boolean;
@@ -409,13 +411,13 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/portal/integrations",
         label: "Integrations",
         icon: Plug,
-        show: ALWAYS,
+        show: (o) => o.orgWide,
       },
       {
         href: "/portal/marketplace",
         label: "Marketplace",
         icon: ShoppingBag,
-        show: ALWAYS,
+        show: (o) => o.orgWide,
       },
       {
         href: "/portal/vault",

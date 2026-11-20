@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
+import { requireScope, ForbiddenError, assertOrgWideAccess } from "@/lib/tenancy/scope";
 import { getOAuthCredentials } from "@/lib/integrations/oauth-credentials";
 import {
   listAccessibleCustomers,
@@ -29,6 +29,8 @@ export async function GET() {
   let scope;
   try {
     scope = await requireScope();
+    // Lists every ad account on the org's login: org-wide seats only.
+    assertOrgWideAccess(scope);
   } catch (err) {
     if (err instanceof ForbiddenError) {
       return NextResponse.json({ error: err.message }, { status: err.status });

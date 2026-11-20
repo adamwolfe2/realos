@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireWorkspaceAdmin, ForbiddenError } from "@/lib/tenancy/scope";
+import { integrationScopeError } from "@/lib/connect/scope-guard";
 import { OrgType } from "@prisma/client";
 import { getAuthUrl } from "@/lib/oauth/meta";
 import { OAuthConfigError } from "@/lib/oauth/types";
@@ -37,6 +38,13 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       { error: "OAuth connect is initiated from the client portal." },
       { status: 403 },
     );
+  }
+
+  // Ad accounts are shared by every property: same refusal as
+  // lib/integrations/oauth-handler.
+  const grantError = integrationScopeError(scope, null);
+  if (grantError) {
+    return NextResponse.json({ error: grantError }, { status: 403 });
   }
 
   const url = new URL(req.url);
