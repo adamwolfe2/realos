@@ -8,7 +8,11 @@ import {
 } from "@/lib/tenancy/scope";
 import { AuditAction, AdPlatform } from "@prisma/client";
 import { buildCsv, csvFileResponse } from "@/lib/csv";
-import { propertyOrOrgLevelWhereFragment } from "@/lib/tenancy/property-filter";
+import {
+  parsePropertyFilterUrlOnly,
+  propertyOrOrgLevelWhereFragment,
+  propertyWhereFragment,
+} from "@/lib/tenancy/property-filter";
 
 // GET /api/tenant/ad-metrics/export
 //
@@ -28,13 +32,21 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const days = Math.max(1, Math.min(365, parseInt(url.searchParams.get("days") ?? "90", 10)));
   const platform = url.searchParams.get("platform");
+  const selected = parsePropertyFilterUrlOnly({
+    properties: url.searchParams.get("properties") ?? undefined,
+    property: url.searchParams.get("property") ?? undefined,
+  });
 
   const where: Record<string, unknown> = {
     ...tenantWhere(scope),
     date: { gte: new Date(Date.now() - days * 24 * 60 * 60 * 1000) },
-    // Restricted users: their buildings' campaigns plus org-level ones,
-    // matching the ads page. {} for unrestricted users matches every campaign.
-    campaign: propertyOrOrgLevelWhereFragment(scope, null),
+    // A property picked on the ads page (?properties=) exports just that
+    // property's campaigns, like the page shows. No pick: restricted users
+    // get their buildings' campaigns plus org-level ones; {} for
+    // unrestricted users matches every campaign.
+    campaign: selected
+      ? propertyWhereFragment(scope, selected)
+      : propertyOrOrgLevelWhereFragment(scope, null),
   };
 
   const metrics = await prisma.adMetricDaily.findMany({
