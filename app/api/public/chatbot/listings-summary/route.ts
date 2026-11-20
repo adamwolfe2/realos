@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { withMarketableLifecycle } from "@/lib/properties/marketable";
 import { LIVE_FEATURE_GATE_SELECT, liveFeaturesPaused } from "@/lib/billing/trial-status";
 import { prisma } from "@/lib/db";
 import {
@@ -64,6 +65,8 @@ export async function GET(req: NextRequest) {
       ...LIVE_FEATURE_GATE_SELECT,
       tenantSiteConfig: { select: { chatbotEnabled: true } },
       properties: {
+        // ACTIVE only: EXCLUDED address-only rows never count as a building.
+        where: withMarketableLifecycle({}),
         orderBy: { updatedAt: "desc" },
         select: {
           id: true,

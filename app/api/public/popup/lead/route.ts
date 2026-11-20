@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { runAfter } from "@/lib/after";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
@@ -199,7 +200,8 @@ export async function POST(req: NextRequest) {
   // stays null (org-level) rather than guessing.
   if (!propertyId) {
     const properties = await prisma.property.findMany({
-      where: { orgId: org.id },
+      // ACTIVE only: EXCLUDED/IMPORTED address-only rows never resolve.
+      where: marketablePropertyWhere(org.id),
       select: { id: true, slug: true, name: true, websiteUrl: true },
     });
     propertyId = resolvePropertyForChatPage(data.pageUrl, properties);

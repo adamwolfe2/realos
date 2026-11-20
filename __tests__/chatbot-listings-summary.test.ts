@@ -72,6 +72,12 @@ describe("listings-summary per-property scoping (P1-9)", () => {
     expect(json).toEqual({ openCount: 0, lowestRent: null, nextAvailable: null });
   });
 
+  it("queries only marketable (ACTIVE) properties, so EXCLUDED rows never count", async () => {
+    await GET(req("slug=org-slug&property=building-b"));
+    const where = h.findUnique.mock.calls[0][0].select.properties.where;
+    expect(where).toEqual({ lifecycle: { in: ["ACTIVE"] } });
+  });
+
   it("without ?property=, a genuine single-property fallback pools (legacy)", async () => {
     h.findUnique.mockResolvedValue({ ...ORG, properties: [ORG.properties[0]] });
     const res = await GET(req("slug=building-a"));

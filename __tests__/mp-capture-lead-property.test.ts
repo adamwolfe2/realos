@@ -12,9 +12,18 @@ import { NextRequest } from "next/server";
 // ---------------------------------------------------------------------------
 
 const PROPERTIES = [
-  { id: "prop_a", slug: "alpha", name: "Alpha House", websiteUrl: "https://alpha-living.test" },
-  { id: "prop_b", slug: "bravo", name: "Bravo Hall", websiteUrl: "https://bravo-hall.test" },
+  { id: "prop_a", slug: "alpha", name: "Alpha House", websiteUrl: "https://alpha-living.test", lifecycle: "ACTIVE" },
+  { id: "prop_b", slug: "bravo", name: "Bravo Hall", websiteUrl: "https://bravo-hall.test", lifecycle: "ACTIVE" },
+  // Address-only AppFolio row the customer never enabled.
+  { id: "prop_x", slug: "charlie-annex", name: "Charlie Annex", websiteUrl: null, lifecycle: "EXCLUDED" },
 ];
+
+// Minimal Prisma `where` emulation: honours `lifecycle: { in: [...] }` so a
+// query without the marketable filter really does see the EXCLUDED row.
+function applyLifecycle(where: { lifecycle?: { in?: string[] } } | undefined) {
+  const allowed = where?.lifecycle?.in;
+  return allowed ? PROPERTIES.filter((p) => allowed.includes(p.lifecycle)) : PROPERTIES;
+}
 
 const h = vi.hoisted(() => ({
   org: null as unknown,
@@ -32,7 +41,13 @@ vi.mock("next/server", async (orig) => ({
 }));
 vi.mock("@/lib/db", () => ({
   prisma: {
-    organization: { findUnique: vi.fn(async () => h.org) },
+    organization: {
+      findUnique: vi.fn(async (args: { include?: { properties?: { where?: never } } }) =>
+        h.org && (h.org as { properties?: unknown }).properties
+          ? { ...(h.org as object), properties: applyLifecycle(args?.include?.properties?.where) }
+          : h.org,
+      ),
+    },
     popupCampaign: { findFirst: vi.fn(async () => h.popup) },
     property: h.property,
     lead: h.lead,
@@ -86,7 +101,7 @@ function post(url: string, body: unknown) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  h.property.findMany.mockResolvedValue(PROPERTIES);
+  h.property.findMany.mockImplementation(async (args: { where?: never }) => applyLifecycle(args?.where));
   h.property.findFirst.mockResolvedValue(null);
   h.findOldestLeadByEmail.mockResolvedValue(null);
   h.lead.create.mockResolvedValue({ id: "lead_new", orgId: "org_1", firstName: null, lastName: null, email: "p@x.test", source: "FORM" });
@@ -111,7 +126,19 @@ describe("popup lead on a multi-property org", () => {
     );
     expect(res.status).toBe(201);
     expect(h.lead.create.mock.calls[0][0].data.propertyId).toBe("prop_b");
-    expect(h.property.findMany.mock.calls[0][0].where).toEqual({ orgId: "org_1" });
+    expect(h.property.findMany.mock.calls[0][0].where).toMatchObject({ orgId: "org_1" });
+  });
+
+  it("never attributes to an EXCLUDED property whose slug is in the URL", async () => {
+    await popupRoute.POST(
+      post("https://app.test/api/public/popup/lead", {
+        tenantSlug: "sg",
+        popupId: "pop_1",
+        email: "p@x.test",
+        pageUrl: "https://portfolio.test/charlie-annex/apply",
+      }),
+    );
+    expect(h.lead.create.mock.calls[0][0].data.propertyId).toBeNull();
   });
 
   it("stays org-level when the page cannot be tied to one property", async () => {
@@ -153,6 +180,18 @@ describe("pre-chat lead for an existing email on a multi-property org", () => {
     const res = await preChatRoute.POST(post("https://app.test/api/public/chatbot/lead", body));
     expect(res.status).toBe(201);
     expect(h.lead.update.mock.calls[0][0].data.propertyId).toBe("prop_b");
+  });
+
+  it("never attributes a new lead to an EXCLUDED property whose slug is in the URL", async () => {
+    await preChatRoute.POST(
+      post("https://app.test/api/public/chatbot/lead", {
+        slug: "sg",
+        firstName: "Pat",
+        email: "p@x.test",
+        pageUrl: "https://portfolio.test/charlie-annex/",
+      }),
+    );
+    expect(h.lead.create.mock.calls[0][0].data.propertyId).toBeNull();
   });
 
   it("never overwrites the property the lead already has", async () => {
