@@ -38,8 +38,9 @@ export type ScopedContext = {
   isImpersonating: boolean;
   // Property-level RBAC gate.
   //   null  → unrestricted (org-wide access). Default for any user with
-  //           zero UserPropertyAccess rows. Preserves legacy behavior for
-  //           every existing user as we ship this feature.
+  //           zero UserPropertyAccess rows, unless the user is flagged
+  //           User.propertyAccessRestricted: then the resolver throws
+  //           ForbiddenError instead (a restricted seat that lost its grants).
   //   []    → impossible to construct from this resolver (we collapse
   //           empty grants to null), but if it ever appears callers MUST
   //           treat it as "see nothing" — never as "see everything."
@@ -421,6 +422,15 @@ async function getScopeUncached(): Promise<ScopedContext | null> {
       });
     if (grants.length > 0) {
       allowedPropertyIds = grants.map((g) => g.propertyId);
+    } else if (user.propertyAccessRestricted) {
+      // Fail closed: this seat was limited to specific properties and every
+      // grant is gone (the property was deleted, rows cascade). Zero rows
+      // would otherwise read as org-wide. We refuse the session rather than
+      // hand out [] because several query helpers treat an empty id list as
+      // "no filter".
+      throw new ForbiddenError(
+        "Your property access was removed. Ask a workspace owner to restore it.",
+      );
     }
   }
 

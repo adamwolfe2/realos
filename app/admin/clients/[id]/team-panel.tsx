@@ -21,6 +21,9 @@ type Member = {
   // Non-empty = locked to those properties only. From
   // UserPropertyAccess rows.
   propertyIds: string[];
+  // True + zero propertyIds = a restricted seat that lost every grant:
+  // locked out until an admin picks properties or clears the restriction.
+  propertyAccessRestricted: boolean;
 };
 
 type Property = { id: string; name: string };
@@ -203,7 +206,9 @@ function MemberRow({
           title="Edit which properties this teammate can see"
         >
           {member.propertyIds.length === 0
-            ? "All properties"
+            ? member.propertyAccessRestricted
+              ? "No access"
+              : "All properties"
             : member.propertyIds.length === 1
               ? "1 property"
               : `${member.propertyIds.length} properties`}

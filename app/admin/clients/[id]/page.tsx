@@ -196,6 +196,7 @@ export default async function ClientDetail({
       role: true,
       clerkUserId: true,
       lastLoginAt: true,
+      propertyAccessRestricted: true,
       createdAt: true,
       // Pull each user's UserPropertyAccess rows so the agency team
       // panel can edit per-user property scope inline. Empty array =
@@ -216,6 +217,7 @@ export default async function ClientDetail({
     lastLoginAt: u.lastLoginAt,
     createdAt: u.createdAt,
     propertyIds: u.propertyAccess.map((p) => p.propertyId),
+    propertyAccessRestricted: u.propertyAccessRestricted,
   }));
 
   const lastLoginUser = await prisma.user.findFirst({

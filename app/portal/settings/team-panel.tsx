@@ -21,6 +21,9 @@ type Member = {
   // = locked to those properties only. Sourced from UserPropertyAccess
   // rows in /portal/settings page.tsx.
   propertyIds: string[];
+  // True + zero propertyIds = a restricted seat that lost every grant:
+  // locked out until an admin picks properties or clears the restriction.
+  propertyAccessRestricted: boolean;
 };
 
 type Property = { id: string; name: string };
@@ -246,7 +249,9 @@ function MemberRow({
           className="text-[11px] font-medium text-primary hover:underline underline-offset-2"
         >
           {member.propertyIds.length === 0
-            ? "All properties"
+            ? member.propertyAccessRestricted
+              ? "No access"
+              : "All properties"
             : member.propertyIds.length === 1
               ? "1 property"
               : `${member.propertyIds.length} properties`}

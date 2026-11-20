@@ -615,6 +615,12 @@ async function applyPropertyAccess(
 
   await prisma.$transaction(async (tx) => {
     await tx.userPropertyAccess.deleteMany({ where: { userId } });
+    // The flag is what makes a later loss of every grant (property deleted)
+    // lock the seat out instead of widening it. Clearing here is deliberate.
+    await tx.user.update({
+      where: { id: userId },
+      data: { propertyAccessRestricted: propertyIds.length > 0 },
+    });
     if (propertyIds.length > 0) {
       await tx.userPropertyAccess.createMany({
         data: propertyIds.map((propertyId) => ({

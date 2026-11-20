@@ -121,6 +121,10 @@ describe("applyPropertyAccess — scoped-role org-wide escalation guard", () => 
       email: "admin@client.test",
       role: UserRole.CLIENT_ADMIN,
     });
+    // Run the transaction body so the flag write is observable.
+    mockPrisma.$transaction.mockImplementation(
+      async (fn: (tx: MockPrisma) => Promise<unknown>) => fn(mockPrisma),
+    );
 
     const result = await updatePropertyAccessAsAgency({
       userId: VALID_CUID,
@@ -129,6 +133,10 @@ describe("applyPropertyAccess — scoped-role org-wide escalation guard", () => 
 
     expect(result.ok).toBe(true);
     expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.user.update).toHaveBeenCalledWith({
+      where: { id: VALID_CUID },
+      data: { propertyAccessRestricted: false },
+    });
   });
 
   it("allows a LEASING_AGENT scoped to at least one property", async () => {
@@ -138,6 +146,11 @@ describe("applyPropertyAccess — scoped-role org-wide escalation guard", () => 
       email: "agent2@client.test",
       role: UserRole.LEASING_AGENT,
     });
+    mockPrisma.property.findMany.mockResolvedValue([{ id: "prop-a" }]);
+    // Run the transaction body so the flag write is observable.
+    mockPrisma.$transaction.mockImplementation(
+      async (fn: (tx: MockPrisma) => Promise<unknown>) => fn(mockPrisma),
+    );
 
     const result = await updatePropertyAccessAsAgency({
       userId: VALID_CUID,
@@ -146,6 +159,10 @@ describe("applyPropertyAccess — scoped-role org-wide escalation guard", () => 
 
     expect(result.ok).toBe(true);
     expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.user.update).toHaveBeenCalledWith({
+      where: { id: VALID_CUID },
+      data: { propertyAccessRestricted: true },
+    });
   });
 });
 
