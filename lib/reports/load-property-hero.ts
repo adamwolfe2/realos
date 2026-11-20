@@ -198,6 +198,17 @@ export async function loadReportHero(
 ): Promise<ReportHeroImage | null> {
   const row = await loadPropertyHero(snapshot, orgId).catch(() => null);
   if (!row?.heroImageUrl) return null;
+  // Portfolio report over 2+ ACTIVE buildings: keep the photo, but never
+  // caption (or alt-text) the cover with one building's name — the numbers
+  // are the whole portfolio's, not that building's.
+  if (!snapshot.scope?.propertyId) {
+    const activeCount = await prisma.property.count({
+      where: { orgId, lifecycle: "ACTIVE" },
+    });
+    if (activeCount >= 2) {
+      return { imageUrl: row.heroImageUrl, name: titleName, caption: null };
+    }
+  }
   return {
     imageUrl: row.heroImageUrl,
     name: row.propertyName,
