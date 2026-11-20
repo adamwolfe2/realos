@@ -64,6 +64,14 @@ describe("listings-summary per-property scoping (P1-9)", () => {
     expect(json).toEqual({ openCount: 0, lowestRent: null, nextAvailable: null });
   });
 
+  it("without ?property=, a multi-property org does not pool every building", async () => {
+    // Org slug matches no property slug: unresolved, so no building's
+    // rent/availability may leak into another building's greeting.
+    const res = await GET(req("slug=org-slug"));
+    const json = await res.json();
+    expect(json).toEqual({ openCount: 0, lowestRent: null, nextAvailable: null });
+  });
+
   it("without ?property=, a genuine single-property fallback pools (legacy)", async () => {
     h.findUnique.mockResolvedValue({ ...ORG, properties: [ORG.properties[0]] });
     const res = await GET(req("slug=building-a"));

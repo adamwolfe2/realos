@@ -115,6 +115,14 @@ export async function GET(req: NextRequest) {
   const matchedProperty = propertySlug
     ? org.properties.find((p) => p.slug === propertySlug)
     : org.properties.find((p) => p.slug === slug);
+  // Unresolved on a multi-property org: return the empty summary (static
+  // greeting) rather than one building advertising another's rent.
+  if (!matchedProperty && org.properties.length > 1) {
+    return NextResponse.json(
+      { openCount: 0, lowestRent: null, nextAvailable: null },
+      { status: 200, headers: CORS_HEADERS }
+    );
+  }
   const scopedProperties = matchedProperty
     ? [matchedProperty]
     : org.properties;
