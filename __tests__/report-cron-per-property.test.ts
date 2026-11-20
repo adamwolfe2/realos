@@ -72,7 +72,7 @@ vi.mock("@/lib/db", () => ({
         const latest = new Map<string, Row>();
         for (const r of m.rows) {
           if (r.kind !== where.kind || r.generatedBy) continue;
-          const k = `${r.orgId}:${r.propertyId ?? "org"}`;
+          const k = r.propertyId ? `${r.orgId}:${r.propertyId}` : r.orgId;
           const prev = latest.get(k);
           if (!prev || (r.generatedAt?.getTime() ?? 0) > (prev.generatedAt?.getTime() ?? 0)) latest.set(k, r);
         }
@@ -138,12 +138,15 @@ describe.each([
     expect(m.send).toHaveBeenCalledTimes(1);
   });
 
-  it("one ACTIVE property: unchanged single org-wide draft", async () => {
+  it("one ACTIVE property + 100 EXCLUDED: unchanged single org-wide draft", async () => {
     m.orgs = [ORG("o1", cadence)];
     m.props.push({ id: "pA", orgId: "o1", lifecycle: "ACTIVE" });
+    for (let i = 0; i < 100; i++) m.props.push({ id: `x${i}`, orgId: "o1", lifecycle: "EXCLUDED" });
     await run(route);
     expect(m.rows).toHaveLength(1);
     expect(m.rows[0].propertyId ?? null).toBeNull();
+    expect(m.generate.mock.calls.map((c) => c[2])).toEqual([null]);
+    expect(m.send).toHaveBeenCalledTimes(1);
   });
 
   it("a re-run never duplicates any unit", async () => {
@@ -189,6 +192,6 @@ describe.each([
     const json = await res.json();
     // B (never drafted) was the stalest, so it went first.
     expect(m.generate.mock.calls.map((c) => c[2])).toEqual(["pB"]);
-    expect(json.deferred.sort()).toEqual(["o1:org", "o1:pA"].sort());
+    expect(json.deferred.sort()).toEqual(["o1", "o1:pA"].sort());
   });
 });

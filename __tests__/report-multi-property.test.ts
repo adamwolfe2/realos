@@ -104,6 +104,10 @@ describe("generateReportSnapshot with two ACTIVE properties", () => {
           ]
         : [],
     );
+    // Two ACTIVE properties (buildScope's take:2 probe).
+    mockPrisma.property.findMany.mockImplementation(async (args: { take?: number }) =>
+      args.take === 2 ? [{ id: "prop-a", slug: "a", name: "A" }, { id: "prop-b", slug: "b", name: "B" }] : [],
+    );
     const snap = await generateReportSnapshot("org-1", "weekly", { skipAi: true, now: NOW });
     const call = mockPrisma.insight.findMany.mock.calls.find(
       ([args]: [{ distinct?: string[] }]) => args.distinct,
@@ -138,6 +142,7 @@ describe("generateReportSnapshot with two ACTIVE properties", () => {
       slug: "b-house",
       name: "B House",
     }));
+    mockPrisma.property.count.mockImplementation(async () => 2);
     try {
       await generateReportSnapshot("org-1", "weekly", {
         skipAi: true,
@@ -146,6 +151,7 @@ describe("generateReportSnapshot with two ACTIVE properties", () => {
       });
     } finally {
       mockPrisma.property.findFirst.mockImplementation(async () => null);
+      mockPrisma.property.count.mockImplementation(async () => 0);
     }
     expect(mockPrisma.seoSnapshot.findMany).not.toHaveBeenCalled();
     const byDate = mockPrisma.seoQuery.groupBy.mock.calls.find(
@@ -154,6 +160,39 @@ describe("generateReportSnapshot with two ACTIVE properties", () => {
     expect(byDate).toBeDefined();
     // Scoped by the property's query patterns, not the whole org.
     expect(byDate[0].where.OR ?? byDate[0].where.query).toBeDefined();
+  });
+});
+
+describe("one ACTIVE property (+ EXCLUDED rows): multi-property-only behaviour stays off", () => {
+  it("org-wide insights keep origin/main's one-row-per-kind dedupe", async () => {
+    mockPrisma.property.findMany.mockImplementation(async (args: { take?: number }) =>
+      args.take === 2 ? [{ id: "tc", slug: "tc", name: "TC", websiteUrl: null }] : [],
+    );
+    await generateReportSnapshot("org-1", "weekly", { skipAi: true, now: NOW });
+    const call = mockPrisma.insight.findMany.mock.calls.find(
+      ([args]: [{ distinct?: string[] }]) => args.distinct,
+    );
+    expect(call[0].distinct).toEqual(["kind"]);
+    expect(call[0].orderBy).toEqual([{ kind: "asc" }, { createdAt: "desc" }]);
+  });
+
+  it("property-scoped report keeps origin/main's SeoSnapshot clicks series (the org's site is the property's)", async () => {
+    mockPrisma.property.findFirst.mockImplementation(async () => ({
+      id: "tc", slug: "tc", name: "TC", websiteUrl: null,
+    }));
+    mockPrisma.property.count.mockImplementation(async () => 1);
+    try {
+      await generateReportSnapshot("org-1", "weekly", { skipAi: true, now: NOW, propertyId: "tc" });
+    } finally {
+      mockPrisma.property.findFirst.mockImplementation(async () => null);
+      mockPrisma.property.count.mockImplementation(async () => 0);
+    }
+    const [args] = mockPrisma.seoSnapshot.findMany.mock.calls[0];
+    expect(args.where).toEqual({ orgId: "org-1", date: expect.any(Object) });
+    const byDate = mockPrisma.seoQuery.groupBy.mock.calls.find(
+      ([a]: [{ by: string[] }]) => a.by.includes("date"),
+    );
+    expect(byDate).toBeUndefined();
   });
 });
 
@@ -190,42 +229,92 @@ describe("reportSubjectName (AI narrative subject)", () => {
 });
 
 describe("report domain patterns per property", () => {
-  it("one bound domain: unchanged (the org's site is the property's)", () => {
-    expect(reportDomainsForProperty(["a.com"], null)).toEqual(["a.com"]);
+  // Gate = number of ACTIVE properties, never the number of bound domains.
+  it("one ACTIVE property: every bound domain is kept, whatever websiteUrl says", () => {
+    expect(reportDomainsForProperty(["tc.com", "www.tc.com"], null, 1)).toEqual(["tc.com", "www.tc.com"]);
+    expect(reportDomainsForProperty(["tc.com", "www.tc.com"], "https://other.com", 1)).toEqual(["tc.com", "www.tc.com"]);
   });
-  it("two bound domains: only the one matching the property's websiteUrl", () => {
-    expect(reportDomainsForProperty(["a.com", "www.b.com"], "https://b.com/rooms")).toEqual(["www.b.com"]);
-    expect(reportDomainsForProperty(["a.com", "b.com"], "a.com")).toEqual(["a.com"]);
+  it("2+ ACTIVE properties: only the domain matching the property's websiteUrl", () => {
+    expect(reportDomainsForProperty(["a.com", "www.b.com"], "https://b.com/rooms", 2)).toEqual(["www.b.com"]);
+    expect(reportDomainsForProperty(["a.com", "b.com"], "https://a.com", 2)).toEqual(["a.com"]);
   });
-  it("two bound domains, no or unparseable websiteUrl: none", () => {
-    expect(reportDomainsForProperty(["a.com", "b.com"], null)).toEqual([]);
-    expect(reportDomainsForProperty(["a.com", "b.com"], "http://")).toEqual([]);
+  it("2+ ACTIVE: scheme-less, www/apex, case and trailing slash all match", () => {
+    expect(reportDomainsForProperty(["a.com", "B.com/"], "WWW.b.com/", 3)).toEqual(["B.com/"]);
+    expect(reportDomainsForProperty(["a.com", "https://www.b.com"], "b.com", 2)).toEqual(["https://www.b.com"]);
+  });
+  it("2+ ACTIVE, no or unparseable websiteUrl: none", () => {
+    expect(reportDomainsForProperty(["a.com", "b.com"], null, 2)).toEqual([]);
+    expect(reportDomainsForProperty(["a.com", "b.com"], "http://", 2)).toEqual([]);
   });
 
-  it("B's property report no longer matches A's domain in its SEO clauses", async () => {
-    mockPrisma.property.findFirst.mockImplementation(async () => ({
-      id: "prop-b",
-      slug: "b-lofts",
-      name: "B Lofts",
-      websiteUrl: "https://blofts.com",
-    }));
-    mockPrisma.domainBinding.findMany.mockImplementation(async () => [
-      { hostname: "ahouse.com" },
-      { hostname: "blofts.com" },
-    ]);
-    mockPrisma.property.count.mockImplementation(async () => 2);
+  const runScoped = async (
+    property: { id: string; slug: string; name: string; websiteUrl: string | null },
+    activeCount: number,
+    hostnames: string[],
+  ) => {
+    mockPrisma.property.findFirst.mockImplementation(async () => property);
+    mockPrisma.domainBinding.findMany.mockImplementation(async () => hostnames.map((hostname) => ({ hostname })));
+    mockPrisma.property.count.mockImplementation(async () => activeCount);
     try {
-      await generateReportSnapshot("org-1", "weekly", { skipAi: true, now: NOW, propertyId: "prop-b" });
+      await generateReportSnapshot("org-1", "weekly", { skipAi: true, now: NOW, propertyId: property.id });
     } finally {
       mockPrisma.property.findFirst.mockImplementation(async () => null);
       mockPrisma.domainBinding.findMany.mockImplementation(async () => []);
       mockPrisma.property.count.mockImplementation(async () => 0);
     }
+    const [args] = mockPrisma.seoLandingPage.groupBy.mock.calls
+      .filter(([a]: [{ by: string[] }]) => a.by.includes("url"))
+      .at(-1);
+    return JSON.stringify(args.where);
+  };
+
+  it("(a) one ACTIVE property (+ EXCLUDED rows) with apex + www bindings and null websiteUrl keeps both domains", async () => {
+    // count is ACTIVE-only; the EXCLUDED rows never reach it.
+    const clause = await runScoped(
+      { id: "tc", slug: "telegraph-commons", name: "Telegraph Commons", websiteUrl: null },
+      1,
+      ["telegraphcommons.com", "www.telegraphcommons.com"],
+    );
+    expect(clause).toContain('"telegraphcommons.com"');
+    expect(clause).toContain("www.telegraphcommons.com");
+    const [countArgs] = mockPrisma.property.count.mock.calls.at(-1);
+    expect(countArgs.where).toEqual({ orgId: "org-1", lifecycle: "ACTIVE" });
+  });
+
+  it("(a) org-wide report, one ACTIVE property, apex + www, null websiteUrl: both domains kept", async () => {
+    mockPrisma.property.findMany.mockImplementation(async (args: { take?: number }) =>
+      args.take === 2 ? [{ id: "tc", slug: "telegraph-commons", name: "Telegraph Commons", websiteUrl: null }] : [],
+    );
+    mockPrisma.domainBinding.findMany.mockImplementation(async () => [
+      { hostname: "telegraphcommons.com" },
+      { hostname: "www.telegraphcommons.com" },
+    ]);
+    try {
+      await generateReportSnapshot("org-1", "weekly", { skipAi: true, now: NOW });
+    } finally {
+      mockPrisma.domainBinding.findMany.mockImplementation(async () => []);
+    }
     const [args] = mockPrisma.seoLandingPage.groupBy.mock.calls.find(
       ([a]: [{ by: string[] }]) => a.by.includes("url"),
     );
     const clause = JSON.stringify(args.where);
-    expect(clause).toContain("blofts.com");
-    expect(clause).not.toContain("ahouse.com");
+    expect(clause).toContain('"telegraphcommons.com"');
+    expect(clause).toContain("www.telegraphcommons.com");
+  });
+
+  it("(b) two ACTIVE properties on their own domains: each report uses only its own", async () => {
+    const hosts = ["ahouse.com", "blofts.com"];
+    const b = await runScoped({ id: "pb", slug: "b-lofts", name: "B Lofts", websiteUrl: "https://blofts.com" }, 2, hosts);
+    expect(b).toContain("blofts.com");
+    expect(b).not.toContain("ahouse.com");
+    const a = await runScoped({ id: "pa", slug: "a-house", name: "A House", websiteUrl: "https://ahouse.com" }, 2, hosts);
+    expect(a).toContain("ahouse.com");
+    expect(a).not.toContain("blofts.com");
+  });
+
+  it("(c) scheme-less websiteUrl matches its binding", async () => {
+    const b = await runScoped({ id: "pb", slug: "b-lofts", name: "B Lofts", websiteUrl: "www.BLofts.com/" }, 2, ["ahouse.com", "blofts.com"]);
+    expect(b).toContain("blofts.com");
+    expect(b).not.toContain("ahouse.com");
   });
 });

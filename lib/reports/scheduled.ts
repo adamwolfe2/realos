@@ -26,8 +26,10 @@ export type ScheduledReportUnit = {
   propertyId: string | null;
 };
 
+// Org-wide unit = bare orgId, so a single-ACTIVE-property org's cron output
+// (deferred list, error ids) is identical to before per-property drafts.
 export function unitKey(u: ScheduledReportUnit): string {
-  return `${u.orgId}:${u.propertyId ?? "org"}`;
+  return u.propertyId ? `${u.orgId}:${u.propertyId}` : u.orgId;
 }
 
 export async function planScheduledReportUnits(params: {

@@ -830,27 +830,40 @@ type Scope = {
   seoQueryClause: Prisma.SeoQueryWhereInput;
   // Snapshot signal — true means SEO scoping was actually applied.
   seoScoped: boolean;
+  // The org has 2+ ACTIVE properties (EXCLUDED/IMPORTED rows never count).
+  // Multi-property-only behaviour keys off this so an org with one ACTIVE
+  // property renders exactly as before.
+  multiActive: boolean;
 };
 
 // Which of the org's bound domains belong to this property. DomainBinding is
-// org-level, so with one domain the org's site is the property's site (as
-// before). With 2+, every property matched every domain, so B's report
-// counted A's site; keep only the domain matching the property's own
-// websiteUrl host (none if it has none). Same rule as domainsForProperty on
-// the add-property branch (lib/properties/queries.ts); kept local here so
-// the two can be unified after both merge.
+// org-level. The gate is the number of ACTIVE properties, never the number
+// of domains: with one ACTIVE property every bound domain (apex + www, any
+// alias) is that property's site, exactly as before. With 2+ ACTIVE
+// properties each one matched every domain, so B's report counted A's
+// site; keep only the domain whose host matches the property's websiteUrl
+// (none if it has none). Hosts compare scheme-less, www/apex-, case- and
+// trailing-slash-insensitive. Same semantics as domainsForProperty on the
+// add-property branch (lib/properties/queries.ts); kept local here so the
+// two can be unified after both merge.
+function bareHost(value: string): string | null {
+  const raw = value.trim();
+  if (!raw) return null;
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`;
+  if (!URL.canParse(withScheme)) return null;
+  const host = new URL(withScheme).hostname.toLowerCase().replace(/^www\./, "");
+  return host || null;
+}
+
 export function reportDomainsForProperty(
   hostnames: string[],
   websiteUrl: string | null | undefined,
+  activePropertyCount: number,
 ): string[] {
-  if (hostnames.length <= 1) return hostnames;
-  const bare = (h: string) => h.trim().toLowerCase().replace(/^www\./, "");
-  const raw = websiteUrl?.trim();
-  if (!raw) return [];
-  const withScheme = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
-  if (!URL.canParse(withScheme)) return [];
-  const host = bare(new URL(withScheme).hostname);
-  return hostnames.filter((h) => bare(h) === host);
+  if (activePropertyCount <= 1) return hostnames;
+  const host = websiteUrl ? bareHost(websiteUrl) : null;
+  if (!host) return [];
+  return hostnames.filter((h) => bareHost(h) === host);
 }
 
 async function buildScope(
@@ -883,7 +896,8 @@ async function buildScope(
       const patterns = buildPropertyUrlPatterns(
         sole.slug,
         sole.name,
-        reportDomainsForProperty(domains.map((d) => d.hostname), sole.websiteUrl),
+        // Sole ACTIVE property: all bound domains are its site.
+        reportDomainsForProperty(domains.map((d) => d.hostname), sole.websiteUrl, 1),
       );
       // GA4 reports landing pages as site-relative paths ("/availability"),
       // which never contain the slug or hostname — so path rows are the
@@ -918,6 +932,7 @@ async function buildScope(
         seoLandingClause,
         seoQueryClause,
         seoScoped: true,
+        multiActive: false,
       };
     }
     return {
@@ -930,6 +945,7 @@ async function buildScope(
       seoLandingClause: {},
       seoQueryClause: {},
       seoScoped: false,
+      multiActive: liveProperties.length >= 2,
     };
   }
 
@@ -951,23 +967,25 @@ async function buildScope(
       seoLandingClause: { url: { contains: "__no_match__" } },
       seoQueryClause: { query: { contains: "__no_match__" } },
       seoScoped: true,
+      multiActive: false,
     };
   }
 
+  // When this is the org's only live property, the org's GA4/GSC
+  // integrations ARE this property's site: keep relative-path landing
+  // pages and unbranded queries (see the portfolio branch above). The same
+  // ACTIVE-only count gates which bound domains belong to it.
+  const liveCount = await prisma.property
+    .count({ where: { orgId, lifecycle: "ACTIVE" } })
+    .catch(() => 0);
   const domains = await prisma.domainBinding
     .findMany({ where: { orgId }, select: { hostname: true } })
     .catch(() => [] as Array<{ hostname: string }>);
   const patterns = buildPropertyUrlPatterns(
     property.slug,
     property.name,
-    reportDomainsForProperty(domains.map((d) => d.hostname), property.websiteUrl),
+    reportDomainsForProperty(domains.map((d) => d.hostname), property.websiteUrl, liveCount),
   );
-  // When this is the org's only live property, the org's GA4/GSC
-  // integrations ARE this property's site: keep relative-path landing
-  // pages and unbranded queries (see the portfolio branch above).
-  const liveCount = await prisma.property
-    .count({ where: { orgId, lifecycle: "ACTIVE" } })
-    .catch(() => 0);
   const soleSite = liveCount === 1;
 
   const seoLandingClause: Prisma.SeoLandingPageWhereInput =
@@ -1007,6 +1025,7 @@ async function buildScope(
     seoLandingClause,
     seoQueryClause,
     seoScoped: true,
+    multiActive: liveCount >= 2,
   };
 }
 
@@ -1360,8 +1379,16 @@ export async function generateReportSnapshot(
       // weekly, so a multi-month window stacked 19 rewordings of one alert
       // (SG, 2026-10). Per property, not per org: property A's
       // vacancy_needs_boost must not hide property B's on a portfolio report.
-      distinct: ["kind", "propertyId"],
-      orderBy: [{ kind: "asc" }, { propertyId: "asc" }, { createdAt: "desc" }],
+      // One ACTIVE property: per kind, exactly as before.
+      ...(scope.multiActive
+        ? {
+            distinct: ["kind", "propertyId"] as Prisma.InsightScalarFieldEnum[],
+            orderBy: [{ kind: "asc" as const }, { propertyId: "asc" as const }, { createdAt: "desc" as const }],
+          }
+        : {
+            distinct: ["kind"] as Prisma.InsightScalarFieldEnum[],
+            orderBy: [{ kind: "asc" as const }, { createdAt: "desc" as const }],
+          }),
       select: {
         id: true,
         kind: true,
@@ -1820,7 +1847,16 @@ export async function generateReportSnapshot(
   // Clicks fallback, same scope as the sessions series: a property-scoped
   // report reads that property's own SeoQuery rows (an org-wide
   // SeoSnapshot read here charted every sibling property's clicks on it).
-  const gscDaily: Array<{ date: Date; totalClicks: number | null }> = scope.propertyId
+  const gscDaily: Array<{ date: Date; totalClicks: number | null }> = scope.propertyId && !scope.multiActive
+    ? // Sole ACTIVE property: the org's GSC rows ARE this property's (as before).
+      await prisma.seoSnapshot
+        .findMany({
+          where: { orgId, date: { gte: periodStart, lt: periodEnd } },
+          select: { date: true, totalClicks: true },
+          orderBy: { date: "asc" },
+        })
+        .catch(() => [] as Array<{ date: Date; totalClicks: number | null }>)
+    : scope.propertyId
     ? await prisma.seoQuery
         .groupBy({
           by: ["date"],
