@@ -8,11 +8,9 @@ import {
   insightDigestSubject,
   type DigestPayload,
 } from "@/lib/email/insight-digest-email";
-import {
-  getResend,
-  isValidEmail,
-  FROM_EMAIL,
-} from "@/lib/email/shared";
+import { getResend, FROM_EMAIL } from "@/lib/email/shared";
+
+import { digestAudiences } from "@/lib/email/digest-audiences";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -55,27 +53,17 @@ export async function GET(req: NextRequest) {
 
     for (const org of orgs) {
       try {
-        const counts = await getInsightCounts(org.id);
-        if (counts.total === 0) {
-          skippedNoInsights += 1;
-          continue;
-        }
-
-        const insights = await getOpenInsights(org.id, { limit: 5 });
-        if (insights.length === 0) {
-          skippedNoInsights += 1;
-          continue;
-        }
-
+        // Recipients are grouped by property access. A property-restricted
+        // member (UserPropertyAccess rows) gets a digest built from only
+        // their granted properties, same as /portal/insights shows them;
+        // everyone else gets the org-wide digest. Before this, every member
+        // got every property's insights (titles, bodies, property names).
         const members = await prisma.user.findMany({
           where: { orgId: org.id },
-          select: { email: true },
+          select: { email: true, propertyAccess: { select: { propertyId: true } } },
         });
-        const recipientEmails = members
-          .map((m) => m.email)
-          .filter(isValidEmail);
-
-        if (recipientEmails.length === 0) {
+        const audiences = digestAudiences(members);
+        if (audiences.length === 0) {
           skippedNoMembers += 1;
           continue;
         }
@@ -88,77 +76,88 @@ export async function GET(req: NextRequest) {
           continue;
         }
 
-        const payload: DigestPayload = {
-          orgName: org.name,
-          insights: insights.map((i) => ({
-            id: i.id,
-            severity:
-              (i.severity as "info" | "warning" | "critical") ?? "info",
-            category: i.category,
-            title: i.title,
-            body: i.body,
-            suggestedAction: i.suggestedAction ?? null,
-            href: i.href ?? null,
-            propertyName: i.property?.name ?? null,
-          })),
-          counts: {
-            critical: counts.critical,
-            warning: counts.warning,
-            info: counts.info,
-            total: counts.total,
-          },
-          portalUrl: portalBase,
-        };
-
-        const subject = insightDigestSubject(payload);
-        const html = buildInsightDigestEmail(payload);
-
-        const unsubMailbox =
-          process.env.UNSUBSCRIBE_EMAIL?.trim() ||
-          "unsubscribe@leasestack.co";
-
-        const sendResults = await Promise.allSettled(
-          recipientEmails.map((email) =>
-            resend.emails.send({
-              from: FROM_EMAIL,
-              to: email,
-              subject,
-              html,
-              headers: {
-                "List-Unsubscribe": `<mailto:${unsubMailbox}>`,
-                "X-Entity-Ref-ID": `daily-insight-${org.id}-${email}`,
-              },
-              tags: [
-                { name: "template", value: "daily-insight-digest" },
-                { name: "category", value: "broadcast" },
-              ],
-            }),
-          ),
-        );
-
         let orgSent = 0;
-        for (const result of sendResults) {
-          if (result.status === "fulfilled" && !result.value.error) {
-            orgSent += 1;
-          } else if (result.status === "rejected") {
-            const msg =
-              result.reason instanceof Error
-                ? result.reason.message
-                : String(result.reason);
-            errors.push({
-              orgId: org.id,
-              error: `send failed: ${msg}`,
-            });
-          } else if (
-            result.status === "fulfilled" &&
-            result.value.error
-          ) {
-            errors.push({
-              orgId: org.id,
-              error: `resend error: ${result.value.error.message}`,
-            });
+        let orgHadInsights = false;
+        for (const audience of audiences) {
+          const insightScope = { propertyIds: audience.propertyIds ?? undefined };
+          const counts = await getInsightCounts(org.id, insightScope);
+          if (counts.total === 0) continue;
+          const insights = await getOpenInsights(org.id, { ...insightScope, limit: 5 });
+          if (insights.length === 0) continue;
+          orgHadInsights = true;
+
+          const payload: DigestPayload = {
+            orgName: org.name,
+            insights: insights.map((i) => ({
+              id: i.id,
+              severity:
+                (i.severity as "info" | "warning" | "critical") ?? "info",
+              category: i.category,
+              title: i.title,
+              body: i.body,
+              suggestedAction: i.suggestedAction ?? null,
+              href: i.href ?? null,
+              propertyName: i.property?.name ?? null,
+            })),
+            counts: {
+              critical: counts.critical,
+              warning: counts.warning,
+              info: counts.info,
+              total: counts.total,
+            },
+            portalUrl: portalBase,
+          };
+
+          const subject = insightDigestSubject(payload);
+          const html = buildInsightDigestEmail(payload);
+
+          const unsubMailbox =
+            process.env.UNSUBSCRIBE_EMAIL?.trim() ||
+            "unsubscribe@leasestack.co";
+
+          const sendResults = await Promise.allSettled(
+            audience.emails.map((email) =>
+              resend.emails.send({
+                from: FROM_EMAIL,
+                to: email,
+                subject,
+                html,
+                headers: {
+                  "List-Unsubscribe": `<mailto:${unsubMailbox}>`,
+                  "X-Entity-Ref-ID": `daily-insight-${org.id}-${email}`,
+                },
+                tags: [
+                  { name: "template", value: "daily-insight-digest" },
+                  { name: "category", value: "broadcast" },
+                ],
+              }),
+            ),
+          );
+
+          for (const result of sendResults) {
+            if (result.status === "fulfilled" && !result.value.error) {
+              orgSent += 1;
+            } else if (result.status === "rejected") {
+              const msg =
+                result.reason instanceof Error
+                  ? result.reason.message
+                  : String(result.reason);
+              errors.push({
+                orgId: org.id,
+                error: `send failed: ${msg}`,
+              });
+            } else if (
+              result.status === "fulfilled" &&
+              result.value.error
+            ) {
+              errors.push({
+                orgId: org.id,
+                error: `resend error: ${result.value.error.message}`,
+              });
+            }
           }
         }
+        if (!orgHadInsights) skippedNoInsights += 1;
 
         sent += orgSent;
       } catch (err) {

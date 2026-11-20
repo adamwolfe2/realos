@@ -3,7 +3,12 @@ import { prisma } from "@/lib/db";
 import { LeadStatus, TourStatus, ApplicationStatus } from "@prisma/client";
 import { format } from "date-fns";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
-import { marketableOrgClause } from "@/lib/tenancy/property-filter";
+import {
+  marketableOrgClause,
+  marketablePropertyIds,
+  NO_MARKETABLE_PROPERTIES,
+  propertyIdsToWhere,
+} from "@/lib/tenancy/property-filter";
 import { fetchDedupedSeoSnapshots, sumField } from "@/lib/seo/snapshot-supersede";
 import { getSource } from "@/lib/attribution/source-taxonomy";
 import { attributionReportedBy } from "@/lib/attribution/touch";
@@ -67,6 +72,20 @@ function weekLabel(start: Date, end: Date): string {
   return `${format(start, "MMM d")} – ${format(end, "MMM d")}`;
 }
 
+// Restricted recipient: their grant intersected with the enabled set, and
+// no org-level rows (a restricted user never sees unattributed org data in
+// the portal either). An empty intersection matches nothing.
+async function restrictedClauses(
+  orgId: string,
+  granted: string[],
+): Promise<[Record<string, unknown>, Record<string, unknown>]> {
+  const allowed = new Set(granted);
+  const ids = (await marketablePropertyIds(orgId)).filter((id) => allowed.has(id));
+  const clause =
+    ids.length > 0 ? propertyIdsToWhere(ids) : { propertyId: NO_MARKETABLE_PROPERTIES };
+  return [clause, clause];
+}
+
 // ---------------------------------------------------------------------------
 // buildWeeklyDigest
 //
@@ -74,7 +93,16 @@ function weekLabel(start: Date, end: Date): string {
 // three primary signal sources have zero activity, which suppresses sending.
 // ---------------------------------------------------------------------------
 
-export async function buildWeeklyDigest(orgId: string): Promise<WeeklyDigest> {
+export async function buildWeeklyDigest(
+  orgId: string,
+  opts: {
+    /** Property-restricted recipient's granted property ids. Omitted =
+     * org-wide digest. When set, every number covers exactly these
+     * properties (intersected with the enabled set) and no org-level
+     * (null-property) rows, matching what that user sees in the portal. */
+    propertyIds?: string[];
+  } = {},
+): Promise<WeeklyDigest> {
   const now = new Date();
   const thisWeekStart = new Date(now.getTime() - 7 * DAY_MS);
   const lastWeekStart = new Date(now.getTime() - 14 * DAY_MS);
@@ -88,10 +116,12 @@ export async function buildWeeklyDigest(orgId: string): Promise<WeeklyDigest> {
   //                  unattributed captures.
   //   strictClause — models where propertyId is REQUIRED (Tour,
   //                  Application): no org-level rows exist to preserve.
-  const [leadClause, strictClause] = await Promise.all([
-    marketableOrgClause(orgId, "propertyId", { includeOrgLevel: true }),
-    marketableOrgClause(orgId, "propertyId"),
-  ]);
+  const [leadClause, strictClause] = opts.propertyIds
+    ? await restrictedClauses(orgId, opts.propertyIds)
+    : await Promise.all([
+        marketableOrgClause(orgId, "propertyId", { includeOrgLevel: true }),
+        marketableOrgClause(orgId, "propertyId"),
+      ]);
 
   const [
     org,
@@ -219,7 +249,10 @@ export async function buildWeeklyDigest(orgId: string): Promise<WeeklyDigest> {
 
     // Property names (for top-properties rollup)
     prisma.property.findMany({
-      where: marketablePropertyWhere(orgId),
+      where: {
+        ...marketablePropertyWhere(orgId),
+        ...(opts.propertyIds ? { id: { in: opts.propertyIds } } : {}),
+      },
       select: { id: true, name: true },
     }),
   ]);

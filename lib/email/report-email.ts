@@ -43,12 +43,22 @@ const KIND_LABELS = {
   custom: "Performance report",
 } as const;
 
+// A property-scoped report is named for its building: an org with two
+// properties otherwise sends two identical "<Org> monthly report" emails
+// with no way to tell which building's numbers are inside.
+function reportEmailName(input: Pick<ReportEmailInput, "orgName" | "snapshot">): string {
+  return input.snapshot.scope?.propertyId && input.snapshot.scope.propertyName
+    ? input.snapshot.scope.propertyName
+    : input.orgName;
+}
+
 export function buildReportEmail(input: ReportEmailInput): {
   subject: string;
   html: string;
   text: string;
 } {
-  const { snapshot, orgName, shareUrl, recipientName, headline, notes } = input;
+  const { snapshot, shareUrl, recipientName, headline, notes } = input;
+  const orgName = reportEmailName(input);
   const kindLabel = KIND_LABELS[snapshot.kind];
   const period = formatPeriod(snapshot.periodStart, snapshot.periodEnd);
   // senderName is intentionally NOT used in the body. Per the
@@ -626,7 +636,8 @@ function renderDataSourcesEmail(s: ReportSnapshot): string {
 }
 
 function buildPlainText(input: ReportEmailInput, period: string, kindLabel: string): string {
-  const { snapshot, orgName, shareUrl, headline, notes } = input;
+  const { snapshot, shareUrl, headline, notes } = input;
+  const orgName = reportEmailName(input);
   // senderName intentionally unused — plain-text mirrors the HTML body
   // and signs off as the LeaseStack brand only.
   void input.senderName;

@@ -353,7 +353,7 @@ export default async function ReportsListPage({
                     unreachable. */}
                 <select
                   name="propertyId"
-                  defaultValue={scope.allowedPropertyIds ? properties[0].id : ""}
+                  defaultValue={builderDefaultPropertyId(scope, properties, propertyIds)}
                   className="ls-select px-3 py-2 text-sm min-w-[200px]"
                   aria-label="Property scope"
                 >
@@ -629,6 +629,21 @@ async function generateReport(formData: FormData): Promise<void> {
 // ---------------------------------------------------------------------------
 // Local helpers
 // ---------------------------------------------------------------------------
+
+// Builder scope default follows the property switcher: one selected
+// property preselects that property's report. Restricted users never get
+// the org-wide option, so they default to the selected-or-first granted
+// property; otherwise "" (whole portfolio).
+function builderDefaultPropertyId(
+  scope: { allowedPropertyIds: string[] | null },
+  properties: Array<{ id: string }>,
+  selected: string[] | null,
+): string {
+  const picked =
+    selected?.length === 1 ? properties.find((p) => p.id === selected[0]) : undefined;
+  if (picked) return picked.id;
+  return scope.allowedPropertyIds ? (properties[0]?.id ?? "") : "";
+}
 
 function reportPill(status: string, dim?: boolean) {
   // A shared report is a positive terminal state (success); draft is neutral;
