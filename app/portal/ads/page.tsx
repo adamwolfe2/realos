@@ -27,7 +27,7 @@ import {
 } from "@/lib/billing/retention";
 import { AdRetentionPanel } from "@/components/portal/ads/retention-panel";
 import { realAdAccountWhere } from "@/lib/integrations/real-ad-account";
-import { rollupAdsByProperty, sumRollups } from "@/lib/integrations/ads-property-rollup";
+import { adsInsightPropertyClause, rollupAdsByProperty, sumRollups } from "@/lib/integrations/ads-property-rollup";
 import { byFormat, fatigue, FATIGUE_DROP, parseAdsRange, TOURED_OR_LATER, weeklyFunnel } from "@/lib/integrations/ads-insights-math";
 import { WeeklyProgress } from "./weekly-progress";
 import { FormatComparison } from "./format-comparison";
@@ -358,13 +358,12 @@ export default async function AdsPage({
     if (f && f.drop >= FATIGUE_DROP) fatigueByCreative.set(id, f.drop);
   }
   // Weekly read + open ad suggestions (Insight rows from the detector cron).
+  // A picked property narrows them to that property plus org-level ones, so
+  // "The Lair · Paid ads" never lists Southgate's campaigns.
   const insightScope = {
     orgId: scope.orgId,
     category: "ads",
-    OR: [
-      { propertyId: null },
-      { propertyId: { in: properties.map((p) => p.id) } },
-    ],
+    ...adsInsightPropertyClause(scope, propertyIds, properties),
   };
   const [briefRow, suggestionRows] = await Promise.all([
     // The brief is written from the whole portfolio, so only full-portfolio
@@ -505,7 +504,7 @@ export default async function AdsPage({
                 orgId={scope.orgId}
               />
             </Suspense>
-            <ExportButton href="/api/tenant/ad-metrics/export?days=90" />
+            <ExportButton href={`/api/tenant/ad-metrics/export?days=90${propertyIds?.length ? `&properties=${encodeURIComponent(propertyIds.join(","))}` : ""}`} />
           </div>
         }
       />
