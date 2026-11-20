@@ -12,7 +12,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const h = vi.hoisted(() => ({
   domainBinding: { findMany: vi.fn() },
-  property: { findFirst: vi.fn() },
+  property: { findFirst: vi.fn(), count: vi.fn(async () => 2) },
   seoLandingPage: { groupBy: vi.fn(async () => []) },
   seoQuery: { groupBy: vi.fn(async () => []) },
 }));
@@ -25,22 +25,28 @@ const { domainsForProperty, getPropertyTraffic } = await import(
   "@/lib/properties/queries"
 );
 
-describe("domainsForProperty", () => {
-  it("keeps the single-domain org behaviour unchanged", () => {
-    expect(domainsForProperty(["telegraphcommons.com"], null)).toEqual([
-      "telegraphcommons.com",
-    ]);
-  });
-  it("with two domains keeps only the property's own", () => {
+describe("domainsForProperty (gated on ACTIVE property count, not domain count)", () => {
+  it("one ACTIVE property keeps every bound domain, even apex + www with no websiteUrl", () => {
     expect(
-      domainsForProperty(["a-site.com", "www.b-site.com"], "https://b-site.com/apply"),
-    ).toEqual(["www.b-site.com"]);
-    expect(domainsForProperty(["a-site.com", "b-site.com"], "a-site.com")).toEqual([
-      "a-site.com",
-    ]);
+      domainsForProperty(["telegraphcommons.com", "www.telegraphcommons.com"], null, 1),
+    ).toEqual(["telegraphcommons.com", "www.telegraphcommons.com"]);
+    expect(
+      domainsForProperty(["telegraphcommons.com", "www.telegraphcommons.com"], "https://other.example", 1),
+    ).toEqual(["telegraphcommons.com", "www.telegraphcommons.com"]);
   });
-  it("with two domains and no websiteUrl attributes none", () => {
-    expect(domainsForProperty(["a-site.com", "b-site.com"], null)).toEqual([]);
+  it("two ACTIVE properties keep only the property's own domain(s)", () => {
+    const bound = ["a-site.com", "www.a-site.com", "b-site.com"];
+    expect(domainsForProperty(bound, "https://b-site.com/apply", 2)).toEqual(["b-site.com"]);
+    expect(domainsForProperty(bound, "a-site.com", 2)).toEqual(["a-site.com", "www.a-site.com"]);
+  });
+  it("tolerates scheme-less, www and trailing-slash websiteUrl values", () => {
+    const bound = ["a-site.com", "b-site.com"];
+    expect(domainsForProperty(bound, "www.b-site.com/", 2)).toEqual(["b-site.com"]);
+    expect(domainsForProperty(bound, "HTTP://WWW.B-SITE.COM", 2)).toEqual(["b-site.com"]);
+    expect(domainsForProperty(bound, " b-site.com/ ", 2)).toEqual(["b-site.com"]);
+  });
+  it("two ACTIVE properties and no websiteUrl attributes no domain", () => {
+    expect(domainsForProperty(["a-site.com", "b-site.com"], null, 2)).toEqual([]);
   });
 });
 
@@ -74,5 +80,20 @@ describe("getPropertyTraffic for property A in a two-domain org", () => {
     const qWhere = (h.seoQuery.groupBy.mock.calls[0] as any[])[0].where;
     expect(qWhere.OR[0]).toEqual({ propertyId: "prop-a" });
     expect(qWhere.OR[1].propertyId).toBeNull();
+  });
+});
+
+describe("getPropertyTraffic in a one-property org with apex + www", () => {
+  it("keeps both domains when the property has no websiteUrl", async () => {
+    h.property.count.mockResolvedValue(1);
+    h.domainBinding.findMany.mockResolvedValue([
+      { hostname: "telegraphcommons.com" },
+      { hostname: "www.telegraphcommons.com" },
+    ]);
+    h.property.findFirst.mockResolvedValue({ websiteUrl: null });
+    const res = await getPropertyTraffic("org-1", "prop-a", { slug: "tc", name: "Telegraph Commons" });
+    expect(res.patterns).toContain("%telegraphcommons.com%");
+    expect(res.patterns).toContain("%www.telegraphcommons.com%");
+    h.property.count.mockResolvedValue(2);
   });
 });

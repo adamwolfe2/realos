@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { adLeadWhere, campaignLeadKeys, leadCampaignTags } from "@/lib/integrations/ad-lead-source";
 import { leadDayBucketsByProperty } from "@/lib/dashboard/lead-day-buckets";
 import {
@@ -91,43 +92,50 @@ function buildUrlPatterns(
 }
 
 // Which of the org's bound domains belong to THIS property. DomainBinding is
-// org-level (no propertyId), so with one domain the org's site is the
-// property's site, as before. With two or more, folding every domain into
-// every property's patterns makes each property's traffic the whole org's
-// (A's tab counting all of B's domain). Then only the domain matching the
-// property's own websiteUrl host is kept; none if it has no websiteUrl.
+// org-level (no propertyId). With one ACTIVE property every bound domain
+// (apex, www, ...) is that property's site, as before. With 2+ ACTIVE
+// properties, folding every domain into every property's patterns makes each
+// property's traffic the whole org's, so only domains whose host matches the
+// property's websiteUrl host are kept (none without a websiteUrl). Hosts
+// compare without scheme, "www." or trailing path/slash.
+const bareHost = (value: string): string | null => {
+  const v = value.trim().toLowerCase();
+  if (!v) return null;
+  try {
+    const host = new URL(/^[a-z][a-z0-9+.-]*:\/\//.test(v) ? v : `https://${v}`).hostname;
+    return host.replace(/^www\./, "").replace(/\.$/, "") || null;
+  } catch {
+    // Unparseable: attribute no domain by host; slug/name still match.
+    return null;
+  }
+};
+
 export function domainsForProperty(
   hostnames: string[],
   websiteUrl: string | null | undefined,
+  activePropertyCount: number,
 ): string[] {
-  if (hostnames.length <= 1) return hostnames;
-  const bare = (h: string) => h.trim().toLowerCase().replace(/^www\./, "");
-  let host: string | null = null;
-  try {
-    host = websiteUrl
-      ? bare(new URL(/^https?:\/\//i.test(websiteUrl) ? websiteUrl : `https://${websiteUrl}`).hostname)
-      : null;
-  } catch {
-    // An unparseable websiteUrl attributes no domain; slug/name still match.
-    host = null;
-  }
-  return host ? hostnames.filter((h) => bare(h) === host) : [];
+  if (activePropertyCount <= 1) return hostnames;
+  const host = websiteUrl ? bareHost(websiteUrl) : null;
+  return host ? hostnames.filter((h) => bareHost(h) === host) : [];
 }
 
 async function loadPropertyDomains(
   orgId: string,
   propertyId: string,
 ): Promise<string[]> {
-  const [domains, property] = await Promise.all([
+  const [domains, property, activeCount] = await Promise.all([
     prisma.domainBinding.findMany({ where: { orgId }, select: { hostname: true } }),
     prisma.property.findFirst({
       where: { id: propertyId, orgId },
       select: { websiteUrl: true },
     }),
+    prisma.property.count({ where: marketablePropertyWhere(orgId) }),
   ]);
   return domainsForProperty(
     domains.map((d) => d.hostname),
     property?.websiteUrl,
+    activeCount,
   );
 }
 
