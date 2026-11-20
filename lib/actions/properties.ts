@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requestAppfolioBackfill } from "@/lib/integrations/appfolio-backfill";
+import { scaffoldPropertyIntegrations } from "@/lib/onboarding/scaffold";
+import { captureWithContext } from "@/lib/sentry";
 import {
   requireAgency,
   requireWorkspaceAdmin, requireWritableWorkspace,
@@ -202,6 +204,27 @@ export async function createProperty(
   } catch {
     // already logged
   }
+
+  // Same per-property scaffolding the onboarding wizard runs, so property
+  // N+1 lands with its own chatbot row (persona = its name) instead of
+  // blank. Inherits the org's live chatbot toggle rather than forcing it on.
+  // Best-effort: a scaffold miss is reported, never fails the create.
+  const org = await prisma.organization.findUnique({
+    where: { id: targetOrgId },
+    select: { moduleChatbot: true },
+  });
+  await scaffoldPropertyIntegrations(
+    targetOrgId,
+    [{ id: created.id, name: created.name, websiteUrl: created.websiteUrl }],
+    { chatbot: Boolean(org?.moduleChatbot) },
+    { inheritOrgChatbotToggle: true },
+  ).catch((err) => {
+    captureWithContext(err, {
+      route: "lib/actions/properties#createProperty/scaffold",
+      orgId: targetOrgId,
+      propertyId: created.id,
+    });
+  });
 
   revalidatePath(`/portal/properties`);
   if (scope.isAgency) revalidatePath(`/admin/clients/${targetOrgId}`);

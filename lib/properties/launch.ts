@@ -88,6 +88,9 @@ export async function getLaunchChecklist(
           moduleGoogleAds: true,
           moduleMetaAds: true,
           modulePopups: true,
+          // Org chatbot master toggle: a property row with
+          // chatbotEnabled=null inherits it (see lib/chatbot/resolve-config).
+          tenantSiteConfig: { select: { chatbotEnabled: true } },
         },
       },
     },
@@ -180,8 +183,13 @@ export async function getLaunchChecklist(
       (property.metaTitle || property.description),
   );
 
+  // Effective enabled = the same property ?? org fallback the public embed
+  // uses, so a property that inherits a switched-off org bot is not "set up".
   const chatbotConfigured = Boolean(
-    chatbotConfig && chatbotConfig.chatbotEnabled !== false,
+    chatbotConfig &&
+      (chatbotConfig.chatbotEnabled ??
+        modules?.tenantSiteConfig?.chatbotEnabled ??
+        false),
   );
 
   // Config is the "installed" half, a recent conversation is the "firing"

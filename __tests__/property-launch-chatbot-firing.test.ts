@@ -150,3 +150,50 @@ describe("launch checklist: chatbot_firing (embed actually live)", () => {
     expect(items.chatbot_firing).toBeUndefined();
   });
 });
+
+// Multi-property: property B added after onboarding gets a chatbot row with
+// chatbotEnabled=null (inherit the org toggle). The checklist must use the
+// same property ?? org fallback the public embed uses.
+describe("launch checklist: inherited chatbot toggle (multi-property)", () => {
+  const withOrgToggle = (enabled: boolean | null) =>
+    propertyRow({
+      org: {
+        moduleChatbot: true,
+        moduleSEO: false,
+        moduleGoogleAds: false,
+        moduleMetaAds: false,
+        modulePopups: false,
+        tenantSiteConfig: enabled === null ? null : { chatbotEnabled: enabled },
+      },
+    });
+
+  it("is configured when the property inherits an enabled org bot", async () => {
+    h.property.findFirst.mockResolvedValue(withOrgToggle(true));
+    h.propertyChatbotConfig.findUnique.mockResolvedValue({
+      chatbotEnabled: null,
+      chatbotKnowledgeBase: null,
+    });
+    const items = await itemsByKey();
+    expect(items.chatbot_configured.done).toBe(true);
+  });
+
+  it("is NOT configured when the property inherits a switched-off org bot", async () => {
+    h.property.findFirst.mockResolvedValue(withOrgToggle(false));
+    h.propertyChatbotConfig.findUnique.mockResolvedValue({
+      chatbotEnabled: null,
+      chatbotKnowledgeBase: null,
+    });
+    const items = await itemsByKey();
+    expect(items.chatbot_configured.done).toBe(false);
+  });
+
+  it("an explicit property override still wins over the org toggle", async () => {
+    h.property.findFirst.mockResolvedValue(withOrgToggle(false));
+    h.propertyChatbotConfig.findUnique.mockResolvedValue({
+      chatbotEnabled: true,
+      chatbotKnowledgeBase: null,
+    });
+    const items = await itemsByKey();
+    expect(items.chatbot_configured.done).toBe(true);
+  });
+});
