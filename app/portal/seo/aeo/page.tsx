@@ -2,6 +2,12 @@ import * as React from "react";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import {
+  effectivePropertyIds,
+  parsePropertyFilter,
+  propertyOrOrgLevelWhereFragment,
+  propertyWhereFragment,
+} from "@/lib/tenancy/property-filter";
 import { withMarketableLifecycle } from "@/lib/properties/marketable";
 import { AeoClient } from "./aeo-client";
 import type { EngineCardData } from "./aeo-engine-cards";
@@ -35,9 +41,20 @@ const ENGINES: AeoEngine[] = ["CHATGPT", "PERPLEXITY", "CLAUDE", "GEMINI"];
 // Prisma read. Everything below the data fetch is pure shaping into the
 // view-prop bundle passed to AeoClient. Keep this thin — the moment a
 // hook or onClick shows up here, it belongs in aeo-client.tsx instead.
-export default async function AeoPage() {
+export default async function AeoPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ property?: string; properties?: string }>;
+}) {
   const scope = await requireScope();
   const where = tenantWhere(scope);
+  // Property switcher + restricted-user grant. Citation checks and mention
+  // snapshots are written per property, so a selected property (or a
+  // restricted user's grant) narrows them; without this every property's
+  // rates were pooled into one org-wide number.
+  const requestedIds = await parsePropertyFilter(await searchParams, scope.orgId);
+  const propertyWhere = propertyWhereFragment(scope, requestedIds);
+  const effectiveIds = effectivePropertyIds(scope, requestedIds);
 
   const now = Date.now();
   const thirtyDaysAgo = new Date(now - 30 * DAY_MS);
@@ -64,6 +81,7 @@ export default async function AeoPage() {
     prisma.aeoCitationCheck.findMany({
         where: {
           ...where,
+          ...propertyWhere,
           queryRunAt: { gte: sixtyDaysAgo },
           // Property visibility only (2026-08-14): neighborhood-page content
           // scans have different prompt semantics and were silently mixed
@@ -89,6 +107,7 @@ export default async function AeoPage() {
     prisma.aeoCitationCheck.findMany({
         where: {
           ...where,
+          ...propertyWhere,
           neighborhoodPageId: null,
           queryRunAt: { gte: trendFloor },
         },
@@ -98,9 +117,7 @@ export default async function AeoPage() {
       const promptProperties = await prisma.property.findMany({
           where: {
             ...withMarketableLifecycle(tenantWhere(scope)),
-            ...(scope.allowedPropertyIds
-              ? { id: { in: scope.allowedPropertyIds } }
-              : {}),
+            ...(effectiveIds ? { id: { in: effectiveIds } } : {}),
           },
           select: {
             id: true,
@@ -128,6 +145,7 @@ export default async function AeoPage() {
     prisma.aeoMentionSnapshot.findMany({
         where: {
           ...where,
+          ...propertyWhere,
           capturedAt: { gte: thirtyDaysAgo },
         },
         select: {
@@ -656,7 +674,10 @@ export default async function AeoPage() {
       : await orgHasActiveAddon(scope.orgId, ADDON_AEO_BOOST);
   const onPageHistory = hasAeoBoost
     ? await prisma.aeoOnPageAudit.findMany({
-        where: { ...where },
+        where: {
+          ...where,
+          ...propertyOrOrgLevelWhereFragment(scope, requestedIds),
+        },
         orderBy: { capturedAt: "desc" },
         take: 5,
         select: {
