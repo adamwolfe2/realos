@@ -9,7 +9,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // ---------------------------------------------------------------------------
 
 const h = vi.hoisted(() => ({
-  property: { findMany: vi.fn() },
+  property: { findMany: vi.fn(), count: vi.fn(async () => 2) },
   organization: { findUnique: vi.fn() },
   chatbotConversation: { findFirst: vi.fn() },
   resolveChatbotConfig: vi.fn(),
@@ -53,6 +53,7 @@ vi.mock("@/app/portal/setup/connect-steps", () => ({ ConnectSteps: ConnectStepsM
 const { default: SetupPage } = await import("@/app/portal/setup/page");
 
 beforeEach(() => {
+  h.property.count.mockResolvedValue(2);
   h.property.findMany.mockResolvedValue([
     { id: "prop-a", name: "A", city: null, state: null, websiteUrl: null },
     { id: "prop-b", name: "B", city: null, state: null, websiteUrl: null },
@@ -123,5 +124,30 @@ describe("setup page data tiles: org-wide vs the property's own", () => {
     expect(byId.gsc.state).toBe("connected");
     expect(byId["google-ads"].state).toBe("off");
     expect(props!.propertyId).toBe("prop-b");
+  });
+});
+
+// Reviewer regression: a single-property org's chats often have
+// propertyId=null (the embed sent no property). With ONE active property
+// those chats are that property's; with 2+ they are not B's.
+describe("setup page chatbot evidence: single vs multi property", () => {
+  it("one ACTIVE property also counts unattributed (null) conversations", async () => {
+    h.property.count.mockResolvedValue(1);
+    h.property.findMany.mockResolvedValue([
+      { id: "prop-a", name: "A", city: null, state: null, websiteUrl: null },
+    ]);
+    await SetupPage({ searchParams: Promise.resolve({}) });
+    const where = (h.chatbotConversation.findFirst.mock.calls.at(-1) as any[])[0].where;
+    expect(where).toEqual({
+      orgId: "org-1",
+      OR: [{ propertyId: "prop-a" }, { propertyId: null }],
+    });
+  });
+
+  it("two ACTIVE properties stay strict to the selected property", async () => {
+    h.property.count.mockResolvedValue(2);
+    await SetupPage({ searchParams: Promise.resolve({}) });
+    const where = (h.chatbotConversation.findFirst.mock.calls.at(-1) as any[])[0].where;
+    expect(where).toEqual({ orgId: "org-1", propertyId: "prop-b" });
   });
 });

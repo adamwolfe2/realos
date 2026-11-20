@@ -49,7 +49,7 @@ export default async function SetupPage({ searchParams }: { searchParams: Promis
   const scope = await requireScope();
   const sp = await searchParams;
   const allowed = scope.allowedPropertyIds;
-  const [properties, activeId] = await Promise.all([
+  const [properties, activeId, orgActiveCount] = await Promise.all([
     prisma.property.findMany({
       where: { orgId: scope.orgId, lifecycle: "ACTIVE", ...(allowed ? { id: { in: allowed } } : {}) },
       orderBy: { createdAt: "asc" },
@@ -60,9 +60,19 @@ export default async function SetupPage({ searchParams }: { searchParams: Promis
       console.error("[setup] active property read failed", err);
       return null;
     }),
+    // Org-wide count (not the caller's grant): decides whether unattributed
+    // chats can only belong to the one live property.
+    prisma.property.count({ where: { orgId: scope.orgId, lifecycle: "ACTIVE" } }),
   ]);
   const property = properties.find((p) => p.id === sp.property) ?? properties.find((p) => p.id === activeId) ?? properties[0] ?? null;
 
+  // With one ACTIVE property, chats the embed sent without a property
+  // (propertyId=null) are that property's; with 2+ only its own count.
+  const chatScope = !property
+    ? {}
+    : orgActiveCount <= 1
+      ? { OR: [{ propertyId: property.id }, { propertyId: null }] }
+      : { propertyId: property.id };
   const [org, site, statuses, lastChat] = await Promise.all([
     prisma.organization.findUnique({ where: { id: scope.orgId }, select: { name: true, notifyLeadEmail: true, notifyOnChatbotLead: true, moduleChatbot: true } }),
     // The selected property's effective bot (its override, else the org's),
@@ -70,7 +80,7 @@ export default async function SetupPage({ searchParams }: { searchParams: Promis
     // because property A's widget is getting chats.
     resolveChatbotConfig(scope.orgId, property?.id ?? null),
     getConnectStatusForOrg(scope.orgId, property?.id ?? null),
-    prisma.chatbotConversation.findFirst({ where: { orgId: scope.orgId, ...(property ? { propertyId: property.id } : {}) }, orderBy: { lastMessageAt: "desc" }, select: { lastMessageAt: true } }),
+    prisma.chatbotConversation.findFirst({ where: { orgId: scope.orgId, ...chatScope }, orderBy: { lastMessageAt: "desc" }, select: { lastMessageAt: true } }),
   ]);
 
   const tiles: SourceTile[] = SOURCES.map((s) => {
