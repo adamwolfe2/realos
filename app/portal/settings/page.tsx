@@ -4,6 +4,8 @@ import { ChevronRight, KeyRound, Palette, Plug, ScrollText, Boxes } from "lucide
 import { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
+import { visibleProperties } from "@/lib/tenancy/property-filter";
+import { teamMembersForViewer } from "@/lib/portal/team-visibility";
 import { getConnectStatusForOrg } from "@/lib/connect/status";
 import { SettingsForm } from "./settings-form";
 import { ClientTeamPanel } from "./team-panel";
@@ -44,12 +46,16 @@ export default async function SettingsPage() {
         where: { orgId: scope.orgId, revokedAt: null },
       }),
       countActiveIntegrations(scope.orgId),
-      // Property list for the per-user property-access editor in the
-      // team panel. Always the full org list (admins see/edit access
-      // for everyone — they're not subject to UserPropertyAccess
-      // themselves at this org-management layer).
+      // Property list for the invite + property-access pickers: enabled
+      // (ACTIVE) properties plus any property someone already holds a grant
+      // on, so existing grants keep their names. Not the full synced
+      // portfolio (an AppFolio org has 100+ address-only rows). Narrowed to
+      // the viewer's own grant below.
       prisma.property.findMany({
-        where: { orgId: scope.orgId },
+        where: {
+          orgId: scope.orgId,
+          OR: [{ lifecycle: "ACTIVE" }, { userAccess: { some: {} } }],
+        },
         select: { id: true, name: true },
         orderBy: { name: "asc" },
       }),
@@ -149,11 +155,15 @@ export default async function SettingsPage() {
         aside="Owners and admins manage billing and settings"
       >
         <ClientTeamPanel
-          members={users.map((u) => ({
-            ...u,
-            propertyIds: u.propertyAccess.map((a) => a.propertyId),
-          }))}
-          properties={properties}
+          members={teamMembersForViewer(
+            scope,
+            users.map((u) => ({
+              ...u,
+              propertyIds: u.propertyAccess.map((a) => a.propertyId),
+            })),
+          )}
+          properties={visibleProperties(scope, properties)}
+          inviterRestricted={scope.allowedPropertyIds !== null}
           orgId={org.id}
           canManage={canManage}
           viewerUserId={viewer?.id ?? ""}

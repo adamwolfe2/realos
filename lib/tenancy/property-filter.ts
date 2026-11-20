@@ -93,12 +93,25 @@ export async function parsePropertyFilter(
   const { prisma } = await import("@/lib/db");
   const { marketablePropertyWhere } =
     await import("@/lib/properties/marketable");
-  const exists = await prisma.property
-    .findFirst({
+  let exists: { id: string } | null;
+  try {
+    exists = await prisma.property.findFirst({
       where: { ...marketablePropertyWhere(orgId), id: cookieId },
       select: { id: true },
-    })
-    .catch(() => null);
+    });
+  } catch (err) {
+    // Could not validate (transient DB error). Keep the operator's
+    // selection rather than widening to the whole portfolio: the layout's
+    // switcher still shows the cookie's property, so widening here would
+    // label pooled multi-property data as that one property. Narrow is
+    // safe: tenantWhere still pins the org and effectivePropertyIds still
+    // applies the user's grant, so a foreign id matches nothing.
+    console.error("parsePropertyFilter: cookie validation failed", {
+      orgId,
+      err,
+    });
+    return [cookieId];
+  }
   if (exists) return [cookieId];
 
   // Best-effort cookie clear. Don't await indefinitely; if the

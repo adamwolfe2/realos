@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
-import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { propertyInScope, requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import {
   CreativeRequestThread,
   type ThreadRequest,
@@ -22,7 +22,8 @@ export default async function CreativeRequestDetail({
   const request = await prisma.creativeRequest.findFirst({
     where: { id, ...tenantWhere(scope) },
   });
-  if (!request) notFound();
+  // Property-restricted users only see requests for their properties.
+  if (!request || !propertyInScope(scope, request.propertyId)) notFound();
 
   const thread: ThreadRequest = {
     id: request.id,

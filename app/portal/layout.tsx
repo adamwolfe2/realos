@@ -83,7 +83,11 @@ export default async function PortalLayout({
       orderBy: { name: "asc" },
     })
     .catch(() => [] as Array<{ id: string; name: string }>);
-  const marketableIds = marketableProps.map((p) => p.id);
+  // Narrowed to the user's property grant, so a teammate restricted to one
+  // property sees badge counts and a property count for their properties,
+  // not the whole org's. Unrestricted users: unchanged.
+  const gatedProps = visibleProperties(scope, marketableProps);
+  const marketableIds = gatedProps.map((p) => p.id);
   // Prisma treats `in: []` as match-nothing — exactly right for an org
   // with zero curated properties.
   const inMarketable = { propertyId: { in: marketableIds } };
@@ -279,8 +283,8 @@ export default async function PortalLayout({
   ]);
 
   // Derived from the single marketable-properties fetch above.
-  const propertyCount = marketableProps.length;
-  const rawScopeProperties = marketableProps;
+  const propertyCount = gatedProps.length;
+  const rawScopeProperties = gatedProps;
 
   if (!org) {
     if (scope.isAgency) redirect("/admin");

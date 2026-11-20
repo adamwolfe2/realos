@@ -1,10 +1,16 @@
 "use client";
 
 import { useTransition } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { selectActiveProperty } from "@/lib/actions/active-property";
-import { ALL_PROPERTIES_VALUE } from "@/lib/portal/active-property-constants";
+import {
+  ALL_PROPERTIES_VALUE,
+  PROPERTY_URL_PARAMS,
+  urlPinnedPropertyId,
+  withoutPropertyParams,
+} from "@/lib/portal/active-property-constants";
 
 // ---------------------------------------------------------------------------
 // Active-property switcher.
@@ -38,6 +44,9 @@ export function ActivePropertySwitcher({
   collapsed?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   // Single-property operators don't need a switcher — render nothing so
   // the chrome doesn't add a useless click target.
@@ -47,17 +56,30 @@ export function ActivePropertySwitcher({
     const raw = event.target.value;
     startTransition(async () => {
       await selectActiveProperty(raw === ALL_PROPERTIES_VALUE ? null : raw);
+      // A ?property= / ?properties= param outranks the cookie, so drop it or
+      // the page keeps showing the deep-linked property after the switch.
+      const sp = new URLSearchParams(searchParams.toString());
+      if (PROPERTY_URL_PARAMS.some((k) => sp.has(k))) {
+        router.replace(`${pathname}${withoutPropertyParams(sp)}`);
+      }
     });
   }
 
-  const value = activePropertyId ?? ALL_PROPERTIES_VALUE;
+  // Show what the page is actually scoped to: a URL pin wins the cookie,
+  // same order as parsePropertyFilter.
+  const pinned = urlPinnedPropertyId(
+    new URLSearchParams(searchParams.toString()),
+  );
+  const shownId =
+    pinned && properties.some((p) => p.id === pinned) ? pinned : activePropertyId;
+  const value = shownId ?? ALL_PROPERTIES_VALUE;
 
   if (collapsed) {
     // Collapsed state — render a hint icon only. The full switcher is
     // hidden because the sidebar is too narrow for the select chrome
     // to read; operators have to expand the sidebar to change scope.
-    const active = activePropertyId
-      ? properties.find((p) => p.id === activePropertyId)
+    const active = shownId
+      ? properties.find((p) => p.id === shownId)
       : null;
     const label = active?.name ?? "All properties";
     return (
