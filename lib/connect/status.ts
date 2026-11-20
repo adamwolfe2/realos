@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { classifyHealth } from "@/lib/integrations/status";
+import { PENDING_OAUTH_BIND } from "@/lib/integrations/seo-sync";
 
 // ---------------------------------------------------------------------------
 // Connect Hub status
@@ -45,6 +46,12 @@ export type ConnectSourceStatus = {
       Connect hub chip and the Integrations marketplace pill can never
       disagree about whether a source is broken. */
   hasError?: boolean;
+  /** Whose connection this is, for the selected property:
+      "property" = the property's own row; "org" = an org-wide connection
+      shared by every property (AppFolio, ad accounts, custom domain, or a
+      GA4/GSC row with propertyId=null). Unset when not connected. Cards
+      must show "org" as org-wide, never as the property being connected. */
+  coverage?: "property" | "org";
 };
 
 export async function getConnectStatusForOrg(
@@ -138,7 +145,10 @@ export async function getConnectStatusForOrg(
   // broken sync. No activePropertyId (org-wide callers, "All properties")
   // keeps every row, same as before per-property OAuth existed.
   const rowsFor = (provider: "GA4" | "GSC") => {
-    const rows = seoIntegrations.filter((s) => s.provider === provider);
+    // A row still waiting for its Google property pick is not a connection.
+    const rows = seoIntegrations.filter(
+      (s) => s.provider === provider && s.propertyIdentifier !== PENDING_OAUTH_BIND,
+    );
     if (!activePropertyId) return rows;
     return [
       ...rows.filter((r) => r.propertyId === activePropertyId),
@@ -149,6 +159,12 @@ export async function getConnectStatusForOrg(
   const gscRows = rowsFor("GSC");
   const ga4 = ga4Rows[0];
   const gsc = gscRows[0];
+  const seoCoverage = (
+    row: { propertyId: string | null } | undefined,
+  ): ConnectSourceStatus["coverage"] =>
+    !row ? undefined : row.propertyId === null ? "org" : "property";
+  const orgCoverage = (connected: boolean): ConnectSourceStatus["coverage"] =>
+    connected ? "org" : undefined;
   const googleAds = adAccounts.find((a) => a.platform === "GOOGLE_ADS");
   const metaAds = adAccounts.find((a) => a.platform === "META_ADS");
 
@@ -190,6 +206,7 @@ export async function getConnectStatusForOrg(
             }
           : null,
       hasError: appfolioHasError,
+      coverage: orgCoverage(!!appfolio),
     },
     {
       id: "ga4",
@@ -203,6 +220,7 @@ export async function getConnectStatusForOrg(
       // than a hand-rolled RED check so the two surfaces are structurally
       // incapable of disagreeing on whether GA4 is erroring.
       hasError: classifyHealth("ga4", ga4?.lastSyncAt ?? null, ga4HasError) === "error",
+      coverage: seoCoverage(ga4),
       // Wave-3 phase 4: OAuth (and the legacy manual-JSON form) can now bind
       // a GA4 SeoIntegration row to a specific property.
       // Group across every GA4 row instead of picking just the first (via
@@ -219,6 +237,7 @@ export async function getConnectStatusForOrg(
       lastSyncAt: gsc?.lastSyncAt ?? null,
       accountLabel: gsc?.propertyIdentifier ?? null,
       hasError: classifyHealth("gsc", gsc?.lastSyncAt ?? null, gscHasError) === "error",
+      coverage: seoCoverage(gsc),
       scopedPropertyIds: seoIntegrations
         .filter((s) => s.provider === "GSC")
         .map((s) => s.propertyId)
@@ -232,6 +251,7 @@ export async function getConnectStatusForOrg(
         ? `Account ${googleAds.externalAccountId}`
         : null,
       hasError: googleAdsHasError,
+      coverage: orgCoverage(!!googleAds),
     },
     {
       id: "meta_ads",
@@ -241,12 +261,14 @@ export async function getConnectStatusForOrg(
         ? `Account ${metaAds.externalAccountId}`
         : null,
       hasError: metaAdsHasError,
+      coverage: orgCoverage(!!metaAds),
     },
     {
       id: "website",
       connected: !!website?.hostname,
       lastSyncAt: website?.updatedAt ?? null,
       accountLabel: website?.hostname ?? null,
+      coverage: orgCoverage(!!website?.hostname),
     },
   ];
 }

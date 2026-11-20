@@ -47,7 +47,8 @@ vi.mock("@/components/portal/overview/kit", () => ({
   Pill: () => null,
   Step: () => null,
 }));
-vi.mock("@/app/portal/setup/connect-steps", () => ({ ConnectSteps: () => null }));
+const ConnectStepsMock = vi.hoisted(() => () => null);
+vi.mock("@/app/portal/setup/connect-steps", () => ({ ConnectSteps: ConnectStepsMock }));
 
 const { default: SetupPage } = await import("@/app/portal/setup/page");
 
@@ -84,5 +85,43 @@ describe("setup page chatbot step is scoped to the selected property", () => {
     const where = (h.chatbotConversation.findFirst.mock.calls.at(-1) as any[])[0].where;
     expect(where.propertyId).toBe("prop-a");
     expect(h.resolveChatbotConfig).toHaveBeenLastCalledWith("org-1", "prop-a");
+  });
+});
+
+// Round 2: an org-wide source must read "Org-wide", not "Connected", when a
+// property is selected; the property's own GA4 still reads "Connected".
+function findProps(node: unknown, type: unknown): Record<string, any> | null {
+  if (!node || typeof node !== "object") return null;
+  if (Array.isArray(node)) {
+    for (const n of node) {
+      const hit = findProps(n, type);
+      if (hit) return hit;
+    }
+    return null;
+  }
+  const el = node as { type?: unknown; props?: Record<string, any> };
+  if (el.type === type) return el.props ?? null;
+  return findProps(el.props?.children, type) ?? findProps(el.props?.title, type);
+}
+
+describe("setup page data tiles: org-wide vs the property's own", () => {
+  it("labels AppFolio and an org-wide GA4 row as org-wide, B's own GSC as connected", async () => {
+    h.getConnectStatusForOrg.mockResolvedValue([
+      { id: "appfolio", connected: true, lastSyncAt: null, accountLabel: "sg.appfolio.com", coverage: "org" },
+      { id: "ga4", connected: true, lastSyncAt: null, accountLabel: "Property 999", coverage: "org" },
+      { id: "gsc", connected: true, lastSyncAt: null, accountLabel: "sc-domain:b.com", coverage: "property" },
+      { id: "google_ads", connected: false, lastSyncAt: null, accountLabel: null },
+    ] as never);
+    const tree = await SetupPage({ searchParams: Promise.resolve({}) });
+    const props = findProps(tree, ConnectStepsMock);
+    const byId = Object.fromEntries(
+      (props!.tiles as Array<{ id: string; state: string; stateText: string }>).map((t) => [t.id, t]),
+    );
+    expect(byId.appfolio.state).toBe("org");
+    expect(byId.appfolio.stateText).toBe("Org-wide");
+    expect(byId.ga4.state).toBe("org");
+    expect(byId.gsc.state).toBe("connected");
+    expect(byId["google-ads"].state).toBe("off");
+    expect(props!.propertyId).toBe("prop-b");
   });
 });

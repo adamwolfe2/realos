@@ -14,7 +14,8 @@ export type SourceTile = {
   id: SourceId;
   name: string;
   line: string;
-  state: "connected" | "error" | "off";
+  /** "org" = an org-wide connection shared by every property. */
+  state: "connected" | "org" | "error" | "off";
   stateText: string;
 };
 
@@ -27,7 +28,7 @@ export type ManagedIds = {
 };
 
 const LOGO: Record<SourceId, string> = { appfolio: "appfolio", ga4: "ga4", gsc: "gsc", "google-ads": "google-ads", "meta-ads": "meta-ads" };
-const TONE: Record<SourceTile["state"], Tone> = { connected: "good", error: "bad", off: "neutral" };
+const TONE: Record<SourceTile["state"], Tone> = { connected: "good", org: "brand", error: "bad", off: "neutral" };
 
 const INPUT =
   "h-9 w-full rounded-[8px] border border-[var(--t-border)] bg-white px-3 text-[13.5px] text-[var(--t-ink)] placeholder:text-[var(--t-muted)] focus:border-[var(--t-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--t-accent)]/15";
@@ -77,8 +78,8 @@ export function ConnectSteps({ tiles, ids, propertyId, propertyName }: { tiles: 
             {tile.id === "appfolio" ? <AppfolioPath /> : null}
             {tile.id === "ga4" ? <GooglePath kind="GA4" email={ids.googleEmail} propertyId={propertyId} /> : null}
             {tile.id === "gsc" ? <GooglePath kind="GSC" email={ids.googleEmail} propertyId={propertyId} /> : null}
-            {tile.id === "google-ads" ? <AdsPath platform="google" available={ids.googleAdsOAuth} propertyId={propertyId} connected={tile.state === "connected"} /> : null}
-            {tile.id === "meta-ads" ? <AdsPath platform="meta" available={ids.metaAdsOAuth} propertyId={propertyId} connected={tile.state === "connected"} /> : null}
+            {tile.id === "google-ads" ? <AdsPath platform="google" available={ids.googleAdsOAuth} propertyId={propertyId} connected={tile.state !== "off"} /> : null}
+            {tile.id === "meta-ads" ? <AdsPath platform="meta" available={ids.metaAdsOAuth} propertyId={propertyId} connected={tile.state !== "off"} /> : null}
           </div>
         </div>
       ) : null}
@@ -252,7 +253,7 @@ function AdsPath({ platform, available, propertyId, connected }: { platform: key
         <a href={`${p.start}?${qs.toString()}`} className={PRIMARY}>{connected ? "Reconnect" : `Sign in with ${p.name}`}</a>
       </Step>
       <Step n={2} title="Pick your ad account">
-        <Muted>After you sign in, choose the ad account for this property. Your results show up on the Ads page within a few minutes, with the last 30 days filled in.</Muted>
+        <Muted>After you sign in, choose the ad account. Ad accounts are shared by all your properties, and each campaign is matched to the property it advertises. Results show up on the Ads page within a few minutes, with the last 30 days filled in.</Muted>
       </Step>
     </Steps>
   );

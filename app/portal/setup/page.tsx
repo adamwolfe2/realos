@@ -77,7 +77,12 @@ export default async function SetupPage({ searchParams }: { searchParams: Promis
     const st = statuses.find((x) => x.id === s.status);
     const connected = Boolean(st?.connected);
     if (connected && st?.hasError) return { id: s.id, name: s.name, line: "Last sync failed. Reconnect to fix.", state: "error", stateText: "Needs attention" };
-    if (connected) return { id: s.id, name: s.name, line: st?.lastSyncAt ? `Synced ${fmtDate.format(st.lastSyncAt)}${st.accountLabel ? ` · ${st.accountLabel}` : ""}` : st?.accountLabel ?? s.line, state: "connected", stateText: "Connected" };
+    const synced = st?.lastSyncAt ? `Synced ${fmtDate.format(st.lastSyncAt)}${st.accountLabel ? ` · ${st.accountLabel}` : ""}` : st?.accountLabel ?? s.line;
+    // An org-wide connection (AppFolio, ad accounts, a GA4/GSC row with no
+    // property) is shared by every property: show it as that, never as this
+    // property being connected.
+    if (connected && st?.coverage === "org") return { id: s.id, name: s.name, line: `All properties · ${synced}`, state: "org", stateText: "Org-wide" };
+    if (connected) return { id: s.id, name: s.name, line: synced, state: "connected", stateText: "Connected" };
     return { id: s.id, name: s.name, line: s.line, state: "off", stateText: "Not connected" };
   });
 
@@ -92,7 +97,8 @@ export default async function SetupPage({ searchParams }: { searchParams: Promis
     { label: "Installed on your site", ok: installed },
   ];
 
-  const steps = [Boolean(property), tiles.some((t) => t.state === "connected"), installed];
+  // Data flowing from an org-wide source still completes the data step.
+  const steps = [Boolean(property), tiles.some((t) => t.state === "connected" || t.state === "org"), installed];
   const done = steps.filter(Boolean).length;
   const name = property?.name ?? org?.name ?? "your property";
   const broken = tiles.filter((t) => t.state === "error").length;
@@ -147,7 +153,7 @@ export default async function SetupPage({ searchParams }: { searchParams: Promis
 
       <Panel
         title={<Step n={2}>Connect your data</Step>}
-        aside={steps[1] ? <Pill tone="good">{tiles.filter((t) => t.state === "connected").length} connected</Pill> : <Pill tone="warn">Connect at least one</Pill>}
+        aside={steps[1] ? <Pill tone="good">{tiles.filter((t) => t.state === "connected" || t.state === "org").length} connected</Pill> : <Pill tone="warn">Connect at least one</Pill>}
       >
         <ConnectSteps tiles={tiles} ids={managedIds()} propertyId={property?.id ?? null} propertyName={name} />
         <p className="mt-3 text-[12.5px] text-[var(--t-muted)]">Coming soon: Yardi, Buildium, Entrata and RealPage.</p>

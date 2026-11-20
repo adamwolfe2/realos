@@ -15,7 +15,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const h = vi.hoisted(() => {
   const fn = () => vi.fn(async (): Promise<any> => null);
   return {
-    property: { findFirst: fn() },
+    property: { findFirst: fn(), count: vi.fn(async () => 1) },
     seoIntegration: { findMany: fn() },
     adCampaign: { findFirst: fn() },
     propertyChatbotConfig: { findUnique: fn() },
@@ -56,6 +56,7 @@ function propertyRow(overrides: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   h.property.findFirst.mockReset().mockResolvedValue(propertyRow());
+  h.property.count.mockReset().mockResolvedValue(1);
   h.seoIntegration.findMany.mockReset().mockResolvedValue([]);
   h.adCampaign.findFirst.mockReset().mockResolvedValue(null);
   h.propertyChatbotConfig.findUnique.mockReset().mockResolvedValue(null);
@@ -195,5 +196,50 @@ describe("launch checklist: inherited chatbot toggle (multi-property)", () => {
     });
     const items = await itemsByKey();
     expect(items.chatbot_configured.done).toBe(true);
+  });
+});
+
+// Round 2: an org-wide (propertyId=null) GA4/GSC row is shared by every
+// property. In a multi-property org it is shown as org-wide and does not
+// mark property B connected; in a single-property org it is that property's.
+describe("launch checklist: org-wide GA4/GSC (multi-property)", () => {
+  const seoOn = () =>
+    propertyRow({
+      org: {
+        moduleChatbot: false,
+        moduleSEO: true,
+        moduleGoogleAds: false,
+        moduleMetaAds: false,
+        modulePopups: false,
+      },
+    });
+  const orgWideGa4 = { provider: "GA4", lastSyncAt: null, propertyId: null };
+
+  it("multi-property: org-wide row alone is not done and says org-wide", async () => {
+    h.property.findFirst.mockResolvedValue(seoOn());
+    h.property.count.mockResolvedValue(2);
+    h.seoIntegration.findMany.mockResolvedValue([orgWideGa4]);
+    const items = await itemsByKey();
+    expect(items.ga4_connected.done).toBe(false);
+    expect(items.ga4_connected.detail).toMatch(/org-wide/i);
+  });
+
+  it("multi-property: the property's own row is done", async () => {
+    h.property.findFirst.mockResolvedValue(seoOn());
+    h.property.count.mockResolvedValue(2);
+    h.seoIntegration.findMany.mockResolvedValue([
+      orgWideGa4,
+      { provider: "GA4", lastSyncAt: null, propertyId: "prop_1" },
+    ]);
+    const items = await itemsByKey();
+    expect(items.ga4_connected.done).toBe(true);
+  });
+
+  it("single-property org: the org-wide row is that property's", async () => {
+    h.property.findFirst.mockResolvedValue(seoOn());
+    h.property.count.mockResolvedValue(1);
+    h.seoIntegration.findMany.mockResolvedValue([orgWideGa4]);
+    const items = await itemsByKey();
+    expect(items.ga4_connected.done).toBe(true);
   });
 });

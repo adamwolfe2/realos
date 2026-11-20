@@ -85,3 +85,46 @@ describe("connect status per selected property", () => {
     expect(s.scopedPropertyIds).toEqual(["prop-a", "prop-b"]);
   });
 });
+
+// Round 2: an org-wide connection must read as org-wide for property B,
+// never as B's own, and a GA4 sign-in still waiting for its Google property
+// pick is not a connection at all.
+describe("connect status coverage", () => {
+  it("B's own row is coverage=property", async () => {
+    expect((await ga4("prop-b")).coverage).toBe("property");
+  });
+
+  it("an org-wide row is coverage=org for a property without its own row", async () => {
+    h.seoIntegration.findMany.mockResolvedValue([
+      rowA,
+      { ...rowB, propertyId: null, propertyIdentifier: "999" },
+    ]);
+    expect((await ga4("prop-c")).coverage).toBe("org");
+  });
+
+  it("org-level sources (AppFolio, ad accounts) are coverage=org", async () => {
+    h.appFolioIntegration.findFirst.mockResolvedValue({
+      instanceSubdomain: "sg",
+      lastSyncAt: recent,
+      autoSyncEnabled: true,
+      syncStatus: "idle",
+      lastError: null,
+    });
+    h.adAccount.findMany.mockResolvedValue([
+      { platform: "GOOGLE_ADS", externalAccountId: "1", lastSyncAt: recent, lastSyncError: null },
+    ]);
+    const all = await getConnectStatusForOrg("org-1", "prop-b");
+    expect(all.find((s) => s.id === "appfolio")?.coverage).toBe("org");
+    expect(all.find((s) => s.id === "google_ads")?.coverage).toBe("org");
+    expect(all.find((s) => s.id === "meta_ads")?.coverage).toBeUndefined();
+  });
+
+  it("a pending Google sign-in for B is not 'connected'", async () => {
+    h.seoIntegration.findMany.mockResolvedValue([
+      { ...rowB, propertyIdentifier: "PENDING_OAUTH_BIND" },
+    ]);
+    const s = await ga4("prop-b");
+    expect(s.connected).toBe(false);
+    expect(s.coverage).toBeUndefined();
+  });
+});

@@ -20,6 +20,7 @@
 
 import "server-only";
 import { prisma } from "@/lib/db";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import type { PropertyLaunchStatus } from "@prisma/client";
 
 // A chatbot is "firing" (proven live on the operator's real site) only if a
@@ -106,9 +107,8 @@ export async function getLaunchChecklist(
   // connected" on properties where GA4 was wired at the org level
   // (propertyId=null). Same root cause as the integrations sidebar
   // fix in overview.tsx — strict `{ orgId, propertyId }` filters skip
-  // org-wide rows. Switched to OR-with-null pattern: prefer the
-  // property-specific row if present, otherwise fall back to the
-  // org-wide row. Mirrors the production pickIntegration logic.
+  // org-wide rows. Load both; pickRow below decides whether the org-wide
+  // row is this property's (single-property org) or shared (multi-property).
   const [
     seoRows,
     googleCampaign,
@@ -116,6 +116,7 @@ export async function getLaunchChecklist(
     chatbotConfig,
     popup,
     lastChatbotConversation,
+    marketableCount,
   ] = await Promise.all([
     prisma.seoIntegration.findMany({
       where: { orgId, OR: [{ propertyId }, { propertyId: null }] },
@@ -159,21 +160,30 @@ export async function getLaunchChecklist(
         select: { lastMessageAt: true },
       })
       .catch(() => null),
+    // With one marketable property the org-wide GA4/GSC row can only be
+    // that property's; with more it is shared and not this property's own.
+    prisma.property.count({ where: marketablePropertyWhere(orgId) }),
   ]);
 
-  // Prefer the property-specific row over the org-wide (propertyId=null)
-  // row when both exist — mirrors pickIntegration in overview.tsx.
+  // The property's own row connects it. An org-wide (propertyId=null) row is
+  // shown as org-wide and does not complete the step, unless the org has a
+  // single marketable property (then the org-wide row is unambiguously its).
   const pickRow = (provider: "GA4" | "GSC") => {
     const matches = seoRows.filter((r) => r.provider === provider);
-    if (matches.length === 0) return undefined;
-    return (
-      matches.find((r) => r.propertyId === propertyId) ??
-      matches.find((r) => r.propertyId === null) ??
-      matches[0]
-    );
+    const own = matches.find((r) => r.propertyId === propertyId);
+    if (own) return { row: own, orgWide: false };
+    const shared = matches.find((r) => r.propertyId === null);
+    if (!shared) return { row: undefined, orgWide: false };
+    return marketableCount <= 1
+      ? { row: shared, orgWide: false }
+      : { row: undefined, orgWide: true };
   };
-  const ga4 = pickRow("GA4");
-  const gsc = pickRow("GSC");
+  const ga4Pick = pickRow("GA4");
+  const gscPick = pickRow("GSC");
+  const ga4 = ga4Pick.row;
+  const gsc = gscPick.row;
+  const orgWideDetail = (name: string) =>
+    `Only an org-wide ${name} connection exists; it is shared by all properties. Connect this property's own to track it.`;
 
   // "Marketing content" — minimal-viable check. The property page
   // needs at least a hero image AND title to be presentable to a
@@ -267,7 +277,9 @@ export async function getLaunchChecklist(
         ? `Last sync ${ga4.lastSyncAt.toISOString().slice(0, 10)}.`
         : ga4
           ? "Connected; awaiting first sync."
-          : null,
+          : ga4Pick.orgWide
+            ? orgWideDetail("GA4")
+            : null,
       actionLabel: "Connect GA4",
       actionHref: `/portal/seo?provider=GA4&property=${property.id}`,
       required: true,
@@ -282,7 +294,9 @@ export async function getLaunchChecklist(
         ? `Last sync ${gsc.lastSyncAt.toISOString().slice(0, 10)}.`
         : gsc
           ? "Connected; awaiting first sync."
-          : null,
+          : gscPick.orgWide
+            ? orgWideDetail("Search Console")
+            : null,
       actionLabel: "Connect GSC",
       actionHref: `/portal/seo?provider=GSC&property=${property.id}`,
       required: true,

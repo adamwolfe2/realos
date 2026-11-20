@@ -162,12 +162,9 @@ export default async function IntegrationsPage() {
     // A row still waiting for its property pick wins, so the "Choose
     // property" link always surfaces even for per-property sign-ins.
     const row =
-      rows.find((r) => r.propertyIdentifier === PENDING_OAUTH_BIND) ??
-      rows.find((r) => r.propertyId === null) ??
-      rows[0] ??
-      null;
+      rows.find((r) => r.propertyIdentifier === PENDING_OAUTH_BIND) ?? null;
     const label = provider === "GA4" ? "Google Analytics" : "Search Console";
-    if (row && row.propertyIdentifier === PENDING_OAUTH_BIND) {
+    if (row) {
       return (
         <div className="rounded-[2px] border border-border bg-muted/30 p-4 space-y-2">
           <StatusChip status="connecting" label="Choose a property" />
@@ -185,45 +182,76 @@ export default async function IntegrationsPage() {
         </div>
       );
     }
-    if (row) {
-      return (
+    // Every saved connection gets its own manage block, labelled with whose
+    // it is. Showing only the first row presented property A's connection as
+    // "the" GA4/GSC connection and left no way to connect property B here.
+    const multi = properties.length > 1;
+    const saved = rows.filter((r) => r.propertyIdentifier !== PENDING_OAUTH_BIND);
+    const manage = saved.map((r) => (
+      <div key={r.propertyId ?? "org"} className="space-y-2">
+        {multi || r.propertyId ? (
+          <p className="text-xs font-semibold text-foreground">
+            {r.property?.name ?? "All properties (org-wide)"}
+          </p>
+        ) : null}
         <SeoManage
           provider={provider}
-          propertyIdentifier={row.propertyIdentifier}
-          serviceAccountEmail={row.serviceAccountEmail}
-          lastSyncAt={row.lastSyncAt}
-          status={row.status}
-          lastError={row.lastSyncError}
+          propertyId={r.propertyId}
+          propertyIdentifier={r.propertyIdentifier}
+          serviceAccountEmail={r.serviceAccountEmail}
+          lastSyncAt={r.lastSyncAt}
+          status={r.status}
+          lastError={r.lastSyncError}
         />
-      );
+      </div>
+    ));
+    if (saved.length > 0 && !multi) return <div className="space-y-6">{manage}</div>;
+    const ownIds = new Set(saved.map((r) => r.propertyId));
+    const missing = multi ? properties.filter((p) => !ownIds.has(p.id)) : [];
+    if (saved.length > 0 && missing.length === 0) {
+      return <div className="space-y-6">{manage}</div>;
     }
     return (
-      <div className="space-y-3">
-        <PrerequisiteLine>
-          You&apos;ll need: a Google login with access to your {label}{" "}
-          property · ~1 min
-        </PrerequisiteLine>
-        <OAuthConnectButton
-          provider={provider === "GA4" ? "google_ga4" : "google_gsc"}
-        />
-        <details className="group ls-card">
-          <summary className="cursor-pointer text-[11px] font-medium text-muted-foreground px-3 py-2 hover:text-foreground select-none">
-            Advanced — use a service account instead
-          </summary>
-          <div className="px-3 pb-3 pt-1 border-t border-border">
-            <ConnectSeoForm
-              provider={provider}
-              properties={properties.length > 1 ? properties : []}
+      <div className="space-y-6">
+        {manage}
+        <div className={saved.length > 0 ? "pt-5 border-t border-border space-y-3" : "space-y-3"}>
+          <PrerequisiteLine>
+            You&apos;ll need: a Google login with access to your {label}{" "}
+            property · ~1 min
+          </PrerequisiteLine>
+          {multi ? (
+            missing.map((p) => (
+              <OAuthConnectButton
+                key={p.id}
+                provider={provider === "GA4" ? "google_ga4" : "google_gsc"}
+                propertyId={p.id}
+                propertyName={p.name}
+              />
+            ))
+          ) : (
+            <OAuthConnectButton
+              provider={provider === "GA4" ? "google_ga4" : "google_gsc"}
             />
-          </div>
-        </details>
-        <TrustFooter
-          scopeNote={
-            provider === "GA4"
-              ? "Read-only: Google's analytics.readonly scope"
-              : "Read-only: Google's webmasters.readonly scope"
-          }
-        />
+          )}
+          <details className="group ls-card">
+            <summary className="cursor-pointer text-[11px] font-medium text-muted-foreground px-3 py-2 hover:text-foreground select-none">
+              Advanced — use a service account instead
+            </summary>
+            <div className="px-3 pb-3 pt-1 border-t border-border">
+              <ConnectSeoForm
+                provider={provider}
+                properties={multi ? properties : []}
+              />
+            </div>
+          </details>
+          <TrustFooter
+            scopeNote={
+              provider === "GA4"
+                ? "Read-only: Google's analytics.readonly scope"
+                : "Read-only: Google's webmasters.readonly scope"
+            }
+          />
+        </div>
       </div>
     );
   }
@@ -500,6 +528,7 @@ function DetailRow({
 
 function SeoManage({
   provider,
+  propertyId,
   propertyIdentifier,
   serviceAccountEmail,
   lastSyncAt,
@@ -507,6 +536,7 @@ function SeoManage({
   lastError,
 }: {
   provider: "GSC" | "GA4";
+  propertyId: string | null;
   propertyIdentifier: string;
   serviceAccountEmail: string | null;
   lastSyncAt: Date | null;
@@ -546,7 +576,7 @@ function SeoManage({
 
       <div className="flex flex-wrap items-center gap-3">
         <SyncSeoButton />
-        <DisconnectSeoForm provider={provider} />
+        <DisconnectSeoForm provider={provider} propertyId={propertyId} />
       </div>
     </div>
   );
