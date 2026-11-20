@@ -6,12 +6,12 @@ import { generateReportSnapshot, type ReportKind, type ReportSnapshot } from "@/
 import { generateShareToken } from "@/lib/reports/token";
 import {
   canAccessReport,
-  REPORT_PORTFOLIO_ACCESS_ERROR,
   assertOperatorScope,
 } from "@/lib/reports/access";
 import { checkAiBillingGate, aiBillingDeniedResponseBody } from "@/lib/billing/gate";
 import { aiCallLimiter, notifyLimiter, checkRateLimit } from "@/lib/rate-limit";
 import { sendReportEmail } from "@/lib/email/send-report";
+import { resolveReportPropertyId } from "@/lib/reports/resolve-property";
 import { revalidatePath } from "next/cache";
 
 // ---------------------------------------------------------------------------
@@ -34,30 +34,10 @@ export async function createReport(
   const scope = await requireWritableWorkspace();
   assertOperatorScope(scope);
 
-  // If a property was requested, validate it belongs to this org. Pre-empts
-  // any chance of an off-tenant id slipping through and gives us a stable
-  // propertyId to persist on the ClientReport row.
-  let validPropertyId: string | null = null;
-  if (options.propertyId) {
-    const owned = await prisma.property.findFirst({
-      where: { id: options.propertyId, orgId: scope.orgId },
-      select: { id: true },
-    });
-    if (!owned) throw new Error("Property not found in this workspace");
-    // Property-restricted users may only snapshot properties they're granted
-    // (mirrors /portal/properties/[id]/snapshot). Same error as the org miss
-    // so the response doesn't reveal which check fired.
-    if (!canAccessReport(scope, owned.id)) {
-      throw new Error("Property not found in this workspace");
-    }
-    validPropertyId = owned.id;
-  } else if (!canAccessReport(scope, null)) {
-    // No propertyId means an org-wide snapshot rolling up every property.
-    // Mirrors POST /api/portal/reports, which 403s restricted users for the
-    // same reason: the snapshot would include buildings they can't see and
-    // the shareToken makes it world-readable.
-    throw new Error(REPORT_PORTFOLIO_ACCESS_ERROR);
-  }
+  // Org ownership + the user's property grant (restricted users may only
+  // snapshot granted properties, never the org-wide rollup). Shared with
+  // POST /api/portal/reports via lib/reports/resolve-property.ts.
+  const validPropertyId = await resolveReportPropertyId(scope, options.propertyId);
 
   // Snapshot generation invokes the LLM polish helper (Claude Haiku), so
   // this server action enforces the same two spend controls as the API
