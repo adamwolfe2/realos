@@ -317,7 +317,12 @@ export async function POST(req: NextRequest) {
     explicitProperty?.id ??
     resolvePropertyForChatPage(
       pageUrl,
-      org.properties.map((p) => ({ id: p.id, slug: p.slug, name: p.name })),
+      org.properties.map((p) => ({
+        id: p.id,
+        slug: p.slug,
+        name: p.name,
+        websiteUrl: p.websiteUrl,
+      })),
     ) ??
     (org.properties.length === 1 ? (org.properties[0]?.id ?? null) : null);
   const promptProperty =

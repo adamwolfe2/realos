@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
   } else {
     const properties = await prisma.property.findMany({
       where: { orgId },
-      select: { id: true, slug: true, name: true },
+      select: { id: true, slug: true, name: true, websiteUrl: true },
     });
     resolvedPropertyId = resolvePropertyForChatPage(data.pageUrl, properties);
   }

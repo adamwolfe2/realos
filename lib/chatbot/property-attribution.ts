@@ -9,6 +9,8 @@ import "server-only";
 // of where the chat actually happened (audit BUG-08).
 //
 // Resolution strategy (priority order):
+//   0. Page host equals exactly one property's websiteUrl host ← per-property
+//      domains (each building on its own site)
 //   1. URL contains the property's slug as a substring  ← strongest signal
 //   2. URL contains the property's name (lowercased,
 //      whitespace stripped) as a substring             ← softer signal
@@ -20,7 +22,33 @@ export type PropertyAttributionInput = {
   id: string;
   slug: string;
   name: string;
+  // Property's own marketing site. When the page host equals exactly one
+  // property's websiteUrl host, that property wins (per-property domains).
+  websiteUrl?: string | null;
 };
+
+function bareHost(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    return new URL(url).hostname.toLowerCase().replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
+// Longest match wins so "telegraph-commons" beats "telegraph" on the same URL.
+function longestMatch<T>(items: T[], key: (item: T) => string | null): T | undefined {
+  let best: T | undefined;
+  let bestLen = 0;
+  for (const item of items) {
+    const k = key(item);
+    if (k && k.length > bestLen) {
+      best = item;
+      bestLen = k.length;
+    }
+  }
+  return best;
+}
 
 export function resolvePropertyForChatPage(
   pageUrl: string | undefined | null,
@@ -48,14 +76,21 @@ export function resolvePropertyForChatPage(
       haystack = ""; // malformed URL — no match, not a raw-string fallback
     }
     if (haystack) {
-      const bySlug = properties.find(
-        (p) => p.slug && haystack.includes(p.slug.toLowerCase())
+      const pageHost = bareHost(pageUrl);
+      const byHost = pageHost
+        ? properties.filter((p) => bareHost(p.websiteUrl) === pageHost)
+        : [];
+      if (byHost.length === 1) return byHost[0].id;
+      const bySlug = longestMatch(properties, (p) =>
+        p.slug && haystack.includes(p.slug.toLowerCase())
+          ? p.slug.toLowerCase()
+          : null
       );
       if (bySlug) return bySlug.id;
-      const byName = properties.find((p) => {
-        if (!p.name) return false;
+      const byName = longestMatch(properties, (p) => {
+        if (!p.name) return null;
         const compact = p.name.toLowerCase().replace(/\s+/g, "");
-        return compact.length >= 4 && haystack.includes(compact);
+        return compact.length >= 4 && haystack.includes(compact) ? compact : null;
       });
       if (byName) return byName.id;
     }
