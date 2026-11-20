@@ -109,18 +109,44 @@ describe("daily-insight-digest with two properties", () => {
   });
 });
 
-describe("weekly-digest (org-wide numbers)", () => {
-  it("excludes property-restricted seats from the recipient query", async () => {
+describe("weekly-digest with a property-restricted seat", () => {
+  it("restricted seat gets a digest scoped to its grant; others get the org-wide digest", async () => {
     h.db.organization.findMany.mockResolvedValue([
       { id: "org-1", name: "SG", reportAutoSend: true },
     ]);
-    h.buildWeeklyDigest.mockResolvedValue({ hasData: true, orgId: "org-1" });
-    h.db.user.findMany.mockResolvedValue([]);
+    h.db.user.findMany.mockResolvedValue([
+      { email: "owner@x.co", propertyAccess: [] },
+      { email: "a-only@x.co", propertyAccess: [{ propertyId: "prop-a" }] },
+    ]);
+    h.buildWeeklyDigest.mockImplementation(
+      async (_org: string, opts: { propertyIds?: string[] } = {}) => ({
+        hasData: true,
+        orgId: "org-1",
+        orgName: opts.propertyIds ? "SCOPED-A" : "ORG-WIDE",
+        weekLabel: "Nov 1",
+        metrics: {
+          leadsThisWeek: 1, leadsDelta: 0, toursThisWeek: 0, toursDelta: 0,
+          applicationsThisWeek: 0, adSpendCents: 0, organicSessions: 0,
+        },
+        topProperties: [],
+        leadSources: { rows: [], untracked: 0 },
+        openInsights: 0,
+        unreadLeads: 0,
+        seo: {
+          avgScoreThisWeek: null, avgScoreLastWeek: null, scoreDelta: null,
+          openRecsCritical: 0, openRecsHigh: 0, topRecommendations: [], pendingDrafts: 0,
+        },
+      }),
+    );
 
     await weeklyDigest.GET(req());
 
-    const [args] = h.db.user.findMany.mock.calls[0];
-    expect(args.where.propertyAccess).toEqual({ none: {} });
+    expect(h.buildWeeklyDigest).toHaveBeenCalledWith("org-1", {});
+    expect(h.buildWeeklyDigest).toHaveBeenCalledWith("org-1", { propertyIds: ["prop-a"] });
+    const mails = (h.send.mock.calls as unknown as Array<[{ to: string; html: string }]>).map(([m]) => m);
+    expect(mails.find((m) => m.to === "a-only@x.co")?.html).toContain("SCOPED-A");
+    expect(mails.find((m) => m.to === "a-only@x.co")?.html).not.toContain("ORG-WIDE");
+    expect(mails.find((m) => m.to === "owner@x.co")?.html).toContain("ORG-WIDE");
   });
 });
 

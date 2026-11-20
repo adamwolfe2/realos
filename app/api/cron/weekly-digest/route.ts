@@ -6,11 +6,8 @@ import {
   buildWeeklyDigestEmail,
   weeklyDigestSubject,
 } from "@/lib/reports/email-template";
-import {
-  getResend,
-  isValidEmail,
-  FROM_EMAIL,
-} from "@/lib/email/shared";
+import { getResend, FROM_EMAIL } from "@/lib/email/shared";
+import { digestAudiences } from "@/lib/email/digest-audiences";
 import { verifyCronAuth } from "@/lib/cron/auth";
 import { AGENCY_ROLES } from "@/lib/agency/role-rank";
 
@@ -60,35 +57,19 @@ export async function GET(req: NextRequest) {
           continue;
         }
 
-        const digest = await buildWeeklyDigest(org.id);
-
-        if (!digest.hasData) {
-          skipped += 1;
-          continue;
-        }
-
-        // Resolve recipient emails from org members. White-glove: these
-        // are unreviewed live numbers, so only agency-side operator/admin
-        // roles get them — client-role users always see numbers through
-        // the reviewed weekly-report draft/share flow instead.
+        // Recipients: agency-side operator/admin roles only. White-glove:
+        // these are unreviewed live numbers, so client-role users always
+        // see numbers through the reviewed weekly-report draft/share flow
+        // instead. Grouped by property access: a property-restricted seat
+        // gets a digest built from exactly its granted properties; everyone
+        // else gets the org-wide digest.
         const members = await prisma.user.findMany({
-          // Property-restricted seats (any UserPropertyAccess row) are
-          // excluded: this digest is org-wide (every property's numbers
-          // and names), which they must not see. Per-property digests for
-          // them are a product call, not made here.
-          where: {
-            orgId: org.id,
-            role: { in: [...AGENCY_ROLES] },
-            propertyAccess: { none: {} },
-          },
-          select: { email: true },
+          where: { orgId: org.id, role: { in: [...AGENCY_ROLES] } },
+          select: { email: true, propertyAccess: { select: { propertyId: true } } },
         });
+        const audiences = digestAudiences(members);
 
-        const recipientEmails = members
-          .map((m) => m.email)
-          .filter(isValidEmail);
-
-        if (recipientEmails.length === 0) {
+        if (audiences.length === 0) {
           skipped += 1;
           continue;
         }
@@ -98,52 +79,63 @@ export async function GET(req: NextRequest) {
           continue;
         }
 
-        const subject = weeklyDigestSubject(digest);
-        const html = buildWeeklyDigestEmail(digest, `${portalBase}/portal`);
-
         const unsubMailbox =
           process.env.UNSUBSCRIBE_EMAIL?.trim() ||
           "unsubscribe@leasestack.co";
 
-        // Send one email per recipient so each gets a personal copy.
-        // Weekly digest is broadcast — full RFC 8058 header set so
-        // Gmail renders the visible Unsubscribe button.
-        const sendResults = await Promise.allSettled(
-          recipientEmails.map((email) =>
-            resend.emails.send({
-              from: FROM_EMAIL,
-              to: email,
-              subject,
-              html,
-              headers: {
-                "List-Unsubscribe": `<mailto:${unsubMailbox}>`,
-                "X-Entity-Ref-ID": `weekly-digest-${digest.orgId}-${email}`,
-              },
-              tags: [
-                { name: "template", value: "weekly-digest" },
-                { name: "category", value: "broadcast" },
-              ],
-            }),
-          ),
-        );
-
         let orgSent = 0;
-        for (const result of sendResults) {
-          if (result.status === "fulfilled" && !result.value.error) {
-            orgSent += 1;
-          } else if (result.status === "rejected") {
-            const msg =
-              result.reason instanceof Error
-                ? result.reason.message
-                : String(result.reason);
-            errors.push({ orgId: org.id, error: `send failed: ${msg}` });
-          } else if (result.status === "fulfilled" && result.value.error) {
-            errors.push({
-              orgId: org.id,
-              error: `resend error: ${result.value.error.message}`,
-            });
+        let orgHadData = false;
+        for (const audience of audiences) {
+          const digest = await buildWeeklyDigest(
+            org.id,
+            audience.propertyIds ? { propertyIds: audience.propertyIds } : {},
+          );
+          if (!digest.hasData) continue;
+          orgHadData = true;
+
+          const subject = weeklyDigestSubject(digest);
+          const html = buildWeeklyDigestEmail(digest, `${portalBase}/portal`);
+
+          // Send one email per recipient so each gets a personal copy.
+          // Weekly digest is broadcast — full RFC 8058 header set so
+          // Gmail renders the visible Unsubscribe button.
+          const sendResults = await Promise.allSettled(
+            audience.emails.map((email) =>
+              resend.emails.send({
+                from: FROM_EMAIL,
+                to: email,
+                subject,
+                html,
+                headers: {
+                  "List-Unsubscribe": `<mailto:${unsubMailbox}>`,
+                  "X-Entity-Ref-ID": `weekly-digest-${digest.orgId}-${email}`,
+                },
+                tags: [
+                  { name: "template", value: "weekly-digest" },
+                  { name: "category", value: "broadcast" },
+                ],
+              }),
+            ),
+          );
+
+          for (const result of sendResults) {
+            if (result.status === "fulfilled" && !result.value.error) {
+              orgSent += 1;
+            } else if (result.status === "rejected") {
+              const msg =
+                result.reason instanceof Error
+                  ? result.reason.message
+                  : String(result.reason);
+              errors.push({ orgId: org.id, error: `send failed: ${msg}` });
+            } else if (result.status === "fulfilled" && result.value.error) {
+              errors.push({
+                orgId: org.id,
+                error: `resend error: ${result.value.error.message}`,
+              });
+            }
           }
         }
+        if (!orgHadData) skipped += 1;
 
         sent += orgSent;
       } catch (err) {
