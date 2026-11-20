@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/db";
 import { readTenantHeaders } from "@/lib/tenancy/resolve";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 
 // Public listings endpoint for tenant marketing sites. Reads
 // x-tenant-org-id header set by middleware. No auth; rate limits live at
@@ -17,7 +18,10 @@ export async function GET(req: Request) {
   }
 
   const properties = await prisma.property.findMany({
-    where: { orgId },
+    // Enabled (ACTIVE) properties only. `{ orgId }` also returned every
+    // EXCLUDED / IMPORTED address-only row an AppFolio sync created, so a
+    // multi-property org's public site listed buildings it never enabled.
+    where: marketablePropertyWhere(orgId),
     include: {
       listings: {
         where: all ? {} : { isAvailable: true },
