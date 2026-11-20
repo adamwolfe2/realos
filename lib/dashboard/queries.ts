@@ -534,6 +534,10 @@ export async function getPortfolioLeadsSpark(
 export async function getActivityFeed(
   orgId: string,
   limit = 10,
+  // Optional page clauses (same shapes as DashboardScope). When omitted the
+  // feed covers the org's marketable set, which ignores the switcher and a
+  // restricted user's grant: pass the page's clauses from portal pages.
+  scope: Pick<DashboardScope, "propertyClause" | "requiredPropertyClause"> = {},
 ): Promise<ActivityItem[]> {
   const lookbackDays = 14;
   const since = new Date(Date.now() - lookbackDays * DAY_MS);
@@ -543,8 +547,9 @@ export async function getActivityFeed(
   // named real leads/tours/chats from buildings the operator never enabled
   // in LeaseStack. Tours require a propertyId; leads and chats do not.
   const [orgLevelClause, strictClause] = await Promise.all([
-    marketableOrgClause(orgId, "propertyId", { includeOrgLevel: true }),
-    marketableOrgClause(orgId, "propertyId"),
+    scope.propertyClause ??
+      marketableOrgClause(orgId, "propertyId", { includeOrgLevel: true }),
+    scope.requiredPropertyClause ?? marketableOrgClause(orgId, "propertyId"),
   ]);
   const [recentLeads, recentTours, recentChats] =
     await Promise.all([
@@ -1017,6 +1022,9 @@ export async function getPerformanceOverTime(
   orgId: string,
   rangeDays: number,
   includeComparison: boolean,
+  // Optional page clause (nullable-propertyId shape). Omitted = marketable
+  // org set, which ignores the switcher selection and the user's grant.
+  pagePropertyClause?: Record<string, unknown>,
 ): Promise<PerformancePoint[]> {
   // Clamp to a sane window so a hand-crafted URL can't ask for a 10-year
   // chart and stall the page.
@@ -1032,9 +1040,11 @@ export async function getPerformanceOverTime(
   // entire portfolio (SG: 942 leads vs the 150 that are actually theirs
   // to see here). Leads have a nullable propertyId — unattributed
   // captures stay counted.
-  const propertyClause = await marketableOrgClause(orgId, "propertyId", {
-    includeOrgLevel: true,
-  });
+  const propertyClause =
+    pagePropertyClause ??
+    (await marketableOrgClause(orgId, "propertyId", {
+      includeOrgLevel: true,
+    }));
   const [currentLeads, priorLeads] = await Promise.all([
     prisma.lead.findMany({
       where: { orgId, ...propertyClause, createdAt: { gte: currentStart } },

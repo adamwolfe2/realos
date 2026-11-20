@@ -510,7 +510,10 @@ export default async function PortalHome({
             value: number;
             notApplicable?: boolean;
           }>, "portal.page:518")),
-      getActivityFeed(scope.orgId, 10).catch(soft([], "portal.page:526")),
+      getActivityFeed(scope.orgId, 10, {
+        propertyClause,
+        requiredPropertyClause: requiredModelPropertyClause,
+      }).catch(soft([], "portal.page:526")),
       getIntegrationHealth(scope.orgId).catch(soft([], "portal.page:527")),
       // P1-2: scope the dashboard insight card + counts to the user's gated
       // properties so a property-restricted user never sees other buildings'
@@ -549,7 +552,7 @@ export default async function PortalHome({
         .catch(soft(null, "portal.page:565")),
       // Lead velocity over the selected window with optional prior-period
       // overlay. Powers the headline interactive chart.
-      getPerformanceOverTime(scope.orgId, rangeDaysCount, compare).catch(soft([] as PerformancePoint[], "portal.page:568")),
+      getPerformanceOverTime(scope.orgId, rangeDaysCount, compare, propertyClause).catch(soft([] as PerformancePoint[], "portal.page:568")),
       // Top 5 properties by lead count in the selected window. Drives the
       // URBN-style leaderboard panel.
       getTopPropertiesByLeads(
