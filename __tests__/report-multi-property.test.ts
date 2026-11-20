@@ -71,7 +71,9 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
-const { generateReportSnapshot, reportSubjectName } = await import("@/lib/reports/generate");
+const { generateReportSnapshot, reportSubjectName, reportDomainsForProperty } = await import(
+  "@/lib/reports/generate"
+);
 
 const D1 = new Date("2026-10-20T00:00:00.000Z");
 const NOW = new Date("2026-10-27T12:00:00.000Z");
@@ -184,5 +186,46 @@ describe("reportSubjectName (AI narrative subject)", () => {
         properties: [props[0]],
       }),
     ).toBe("the property");
+  });
+});
+
+describe("report domain patterns per property", () => {
+  it("one bound domain: unchanged (the org's site is the property's)", () => {
+    expect(reportDomainsForProperty(["a.com"], null)).toEqual(["a.com"]);
+  });
+  it("two bound domains: only the one matching the property's websiteUrl", () => {
+    expect(reportDomainsForProperty(["a.com", "www.b.com"], "https://b.com/rooms")).toEqual(["www.b.com"]);
+    expect(reportDomainsForProperty(["a.com", "b.com"], "a.com")).toEqual(["a.com"]);
+  });
+  it("two bound domains, no or unparseable websiteUrl: none", () => {
+    expect(reportDomainsForProperty(["a.com", "b.com"], null)).toEqual([]);
+    expect(reportDomainsForProperty(["a.com", "b.com"], "http://")).toEqual([]);
+  });
+
+  it("B's property report no longer matches A's domain in its SEO clauses", async () => {
+    mockPrisma.property.findFirst.mockImplementation(async () => ({
+      id: "prop-b",
+      slug: "b-lofts",
+      name: "B Lofts",
+      websiteUrl: "https://blofts.com",
+    }));
+    mockPrisma.domainBinding.findMany.mockImplementation(async () => [
+      { hostname: "ahouse.com" },
+      { hostname: "blofts.com" },
+    ]);
+    mockPrisma.property.count.mockImplementation(async () => 2);
+    try {
+      await generateReportSnapshot("org-1", "weekly", { skipAi: true, now: NOW, propertyId: "prop-b" });
+    } finally {
+      mockPrisma.property.findFirst.mockImplementation(async () => null);
+      mockPrisma.domainBinding.findMany.mockImplementation(async () => []);
+      mockPrisma.property.count.mockImplementation(async () => 0);
+    }
+    const [args] = mockPrisma.seoLandingPage.groupBy.mock.calls.find(
+      ([a]: [{ by: string[] }]) => a.by.includes("url"),
+    );
+    const clause = JSON.stringify(args.where);
+    expect(clause).toContain("blofts.com");
+    expect(clause).not.toContain("ahouse.com");
   });
 });

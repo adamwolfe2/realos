@@ -832,6 +832,27 @@ type Scope = {
   seoScoped: boolean;
 };
 
+// Which of the org's bound domains belong to this property. DomainBinding is
+// org-level, so with one domain the org's site is the property's site (as
+// before). With 2+, every property matched every domain, so B's report
+// counted A's site; keep only the domain matching the property's own
+// websiteUrl host (none if it has none). Same rule as domainsForProperty on
+// the add-property branch (lib/properties/queries.ts); kept local here so
+// the two can be unified after both merge.
+export function reportDomainsForProperty(
+  hostnames: string[],
+  websiteUrl: string | null | undefined,
+): string[] {
+  if (hostnames.length <= 1) return hostnames;
+  const bare = (h: string) => h.trim().toLowerCase().replace(/^www\./, "");
+  const raw = websiteUrl?.trim();
+  if (!raw) return [];
+  const withScheme = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  if (!URL.canParse(withScheme)) return [];
+  const host = bare(new URL(withScheme).hostname);
+  return hostnames.filter((h) => bare(h) === host);
+}
+
 async function buildScope(
   orgId: string,
   propertyId: string | null,
@@ -850,10 +871,10 @@ async function buildScope(
     const liveProperties = await prisma.property
       .findMany({
         where: { orgId, lifecycle: "ACTIVE" },
-        select: { id: true, slug: true, name: true },
+        select: { id: true, slug: true, name: true, websiteUrl: true },
         take: 2,
       })
-      .catch(() => [] as Array<{ id: string; slug: string; name: string }>);
+      .catch(() => [] as Array<{ id: string; slug: string; name: string; websiteUrl: string | null }>);
     if (liveProperties.length === 1) {
       const sole = liveProperties[0];
       const domains = await prisma.domainBinding
@@ -862,7 +883,7 @@ async function buildScope(
       const patterns = buildPropertyUrlPatterns(
         sole.slug,
         sole.name,
-        domains.map((d) => d.hostname),
+        reportDomainsForProperty(domains.map((d) => d.hostname), sole.websiteUrl),
       );
       // GA4 reports landing pages as site-relative paths ("/availability"),
       // which never contain the slug or hostname — so path rows are the
@@ -914,7 +935,7 @@ async function buildScope(
 
   const property = await prisma.property.findFirst({
     where: { id: propertyId, orgId },
-    select: { id: true, slug: true, name: true },
+    select: { id: true, slug: true, name: true, websiteUrl: true },
   });
   if (!property) {
     // Caller passed a property that doesn't belong to this org. Treat as
@@ -939,7 +960,7 @@ async function buildScope(
   const patterns = buildPropertyUrlPatterns(
     property.slug,
     property.name,
-    domains.map((d) => d.hostname),
+    reportDomainsForProperty(domains.map((d) => d.hostname), property.websiteUrl),
   );
   // When this is the org's only live property, the org's GA4/GSC
   // integrations ARE this property's site: keep relative-path landing
