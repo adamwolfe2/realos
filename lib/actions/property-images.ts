@@ -7,6 +7,7 @@ import {
   requireWritableWorkspace,
   tenantWhere,
   ForbiddenError,
+  propertyInScope,
 } from "@/lib/tenancy/scope";
 import {
   refreshPropertyImagesFromWebsite,
@@ -47,6 +48,9 @@ export async function scrapePropertyImagesAction(
 
   const parsed = scrapeInput.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Invalid input" };
+  if (!propertyInScope(scope, parsed.data.propertyId)) {
+    return { ok: false, error: "Property not found" };
+  }
 
   // Verify the property is in this org BEFORE the scrape — never let an
   // operator scrape against another tenant's property id.
@@ -92,6 +96,9 @@ export async function setPropertyImagesAction(input: unknown): Promise<
 
   const parsed = setInput.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Invalid input" };
+  if (!propertyInScope(scope, parsed.data.propertyId)) {
+    return { ok: false, error: "Property not found" };
+  }
 
   // Tenant guard.
   const property = await prisma.property.findFirst({

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { requireWritableWorkspace } from "@/lib/tenancy/scope";
+import { propertyInScope, requireWritableWorkspace } from "@/lib/tenancy/scope";
 
 // ---------------------------------------------------------------------------
 // Update the operator-editable property attributes (assetCategory +
@@ -62,7 +62,11 @@ export async function savePropertyAttributes(
   }
   const data = parsed.data;
 
-  // Tenant guard: the property must live under the caller's org.
+  // Tenant guard: the property must live under the caller's org AND be
+  // inside a property-restricted user's grant.
+  if (!propertyInScope(scope, data.propertyId)) {
+    return { ok: false, error: "Property not found." };
+  }
   const property = await prisma.property.findFirst({
     where: { id: data.propertyId, orgId: scope.orgId },
     select: { id: true },
