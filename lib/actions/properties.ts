@@ -339,6 +339,28 @@ export async function deleteProperty(
   });
   if (!existing) return { ok: false, error: "Property not found" };
 
+  // UserPropertyAccess cascades on delete and zero grants means UNRESTRICTED
+  // (scope.ts). A teammate whose only grant is this property would wake up
+  // with org-wide access, so refuse until they are re-granted or removed.
+  const orphaned = await prisma.user.findMany({
+    where: {
+      propertyAccess: {
+        some: { propertyId: existing.id },
+        every: { propertyId: existing.id },
+      },
+    },
+    select: { email: true },
+    take: 10,
+  });
+  if (orphaned.length > 0) {
+    return {
+      ok: false,
+      error: `These teammates only have access to "${existing.name}": ${orphaned
+        .map((u) => u.email)
+        .join(", ")}. Give them another property or remove them first.`,
+    };
+  }
+
   await prisma.property.delete({ where: { id: existing.id } });
 
   await prisma.auditEvent.create({
