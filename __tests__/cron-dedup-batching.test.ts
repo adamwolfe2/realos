@@ -27,14 +27,25 @@ describe("cron dedup batching — no per-org findFirst inside the loop", () => {
     expect(src).toMatch(/auditEvent\.findMany\(\{[\s\S]*?entityType:\s*"onboarding_drip"/);
   });
 
+  // The report crons' batched (org, property) dedup lookup lives in
+  // lib/reports/scheduled.ts (shared by both since per-property drafts,
+  // 2026-11): one findMany for every org before the loop, none inside it.
+  it("scheduled report planner batches the ClientReport dedup lookup", () => {
+    const src = readRoute("lib/reports/scheduled.ts");
+    expect(src).toMatch(/clientReport\.findMany\(\{[\s\S]*?orgId:\s*\{\s*in:\s*orgIds\s*\}[\s\S]*?kind,/);
+    expect(src).not.toMatch(/clientReport\.findFirst\(/);
+  });
+
   it("monthly-report batches the ClientReport dedup lookup", () => {
     const src = readRoute("app/api/cron/monthly-report/route.ts");
-    expect(src).toMatch(/clientReport\.findMany\(\{[\s\S]*?kind:\s*"monthly"/);
+    expect(src).toMatch(/planScheduledReportUnits\(\{[\s\S]*?kind:\s*"monthly"/);
+    expect(src).not.toMatch(/clientReport\.findFirst\(/);
   });
 
   it("weekly-report batches the ClientReport dedup lookup", () => {
     const src = readRoute("app/api/cron/weekly-report/route.ts");
-    expect(src).toMatch(/clientReport\.findMany\(\{[\s\S]*?kind:\s*"weekly"/);
+    expect(src).toMatch(/planScheduledReportUnits\(\{[\s\S]*?kind:\s*"weekly"/);
+    expect(src).not.toMatch(/clientReport\.findFirst\(/);
   });
 
   // F-123: per-row count/findFirst inside sync loops replaced with one batch.
