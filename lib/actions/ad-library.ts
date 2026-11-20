@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
-import { requireWritableWorkspace } from "@/lib/tenancy/scope";
+import { propertyInScope, requireWritableWorkspace } from "@/lib/tenancy/scope";
 import {
   parseAdvertiserInput,
   scanAdvertiser,
@@ -32,6 +32,9 @@ export async function trackAdvertiserAction(input: {
   // Validate property belongs to this tenant.
   let propertyId: string | null = null;
   if (input.propertyId) {
+    if (!propertyInScope(scope, input.propertyId)) {
+      return { ok: false, error: "You don't have access to that property." };
+    }
     const owned = await prisma.property.findFirst({
       where: { id: input.propertyId, orgId: scope.orgId },
       select: { id: true },
@@ -86,7 +89,8 @@ export async function rescanAdvertiserAction(
     where: { id: advertiserId, orgId: scope.orgId },
     select: { id: true, propertyId: true },
   });
-  if (!owned) return { ok: false, error: "Advertiser not found" };
+  // Restricted users only touch their own buildings' competitors.
+  if (!owned || !propertyInScope(scope, owned.propertyId)) return { ok: false, error: "Advertiser not found" };
 
   const result = await scanAdvertiser(advertiserId);
   if (owned.propertyId) {
@@ -111,7 +115,8 @@ export async function untrackAdvertiserAction(
     where: { id: advertiserId, orgId: scope.orgId },
     select: { id: true, propertyId: true },
   });
-  if (!owned) return { ok: false, error: "Advertiser not found" };
+  // Restricted users only touch their own buildings' competitors.
+  if (!owned || !propertyInScope(scope, owned.propertyId)) return { ok: false, error: "Advertiser not found" };
   await prisma.adLibraryAdvertiser.delete({ where: { id: advertiserId } });
   if (owned.propertyId) {
     revalidatePath(`/portal/properties/${owned.propertyId}`);
