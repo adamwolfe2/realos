@@ -20,3 +20,20 @@ describe("GET /api/tenant/listings", () => {
     expect(where.lifecycle).toEqual({ in: ["ACTIVE"] });
   });
 });
+
+describe("GET /api/tenant/listings — public field list", () => {
+  it("selects explicit fields and never the raw AppFolio payload", async () => {
+    h.findMany.mockClear();
+    await GET(new Request("http://x/api/tenant/listings?all=1"));
+    const args = h.findMany.mock.calls[0][0];
+    expect(args.include).toBeUndefined();
+    expect(Object.keys(args.select).sort()).toEqual(
+      ["addressLine1", "city", "heroImageUrl", "id", "listings", "name", "postalCode", "priceMax", "priceMin", "slug", "state"],
+    );
+    const listing = args.select.listings.select;
+    expect(listing.raw).toBeUndefined();
+    expect(listing.backendListingId).toBeUndefined();
+    expect(listing.priceCents).toBe(true);
+    expect(args.select.listings.where).toEqual({});
+  });
+});
