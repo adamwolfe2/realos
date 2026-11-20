@@ -72,7 +72,15 @@ export async function GET(req: NextRequest) {
         // roles get them — client-role users always see numbers through
         // the reviewed weekly-report draft/share flow instead.
         const members = await prisma.user.findMany({
-          where: { orgId: org.id, role: { in: [...AGENCY_ROLES] } },
+          // Property-restricted seats (any UserPropertyAccess row) are
+          // excluded: this digest is org-wide (every property's numbers
+          // and names), which they must not see. Per-property digests for
+          // them are a product call, not made here.
+          where: {
+            orgId: org.id,
+            role: { in: [...AGENCY_ROLES] },
+            propertyAccess: { none: {} },
+          },
           select: { email: true },
         });
 
