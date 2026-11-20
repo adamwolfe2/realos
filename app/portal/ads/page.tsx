@@ -431,7 +431,7 @@ export default async function AdsPage({
     adDataRetentionMonths: orgRetention?.adDataRetentionMonths ?? null,
   });
   const retentionSummary = describeAdRetentionPolicy(retentionPolicy);
-  const canEditRetention = ADS_EDIT_ROLES.has(scope.role);
+  const canEditRetention = ADS_EDIT_ROLES.has(scope.role) && !scope.allowedPropertyIds;
 
   // Build spend-per-LeadSource from the 28-day daily metrics + account platform.
   const accountPlatformMap = new Map(accounts.map((a) => [a.id, a.platform]));

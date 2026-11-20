@@ -2,16 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
-import { requireScope, requireWritableWorkspace } from "@/lib/tenancy/scope";
+import { propertyInScope, requireScope, requireWritableWorkspace } from "@/lib/tenancy/scope";
 
 // Mutations on org-shared insights: write seat + trial gate.
 async function getOwnedInsight(id: string) {
   const scope = await requireWritableWorkspace();
   const insight = await prisma.insight.findFirst({
     where: { id, orgId: scope.orgId },
-    select: { id: true },
+    select: { id: true, propertyId: true },
   });
-  if (!insight) throw new Error("Insight not found");
+  // A property-restricted user can't act on another building's insight.
+  if (!insight || !propertyInScope(scope, insight.propertyId)) throw new Error("Insight not found");
   return { scope, insight };
 }
 
