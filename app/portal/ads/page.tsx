@@ -518,7 +518,7 @@ export default async function AdsPage({
         <div className="grid gap-5 xl:grid-cols-5">
           {briefRow ? (
             <div className="xl:col-span-3">
-              <WeeklyBrief brief={{ title: briefRow.title, body: briefRow.body, ...parseBriefContext(briefRow.context) }} />
+              <WeeklyBrief brief={{ title: briefRow.title, body: briefRow.body, ...parseBriefContext(briefRow.context) }} portfolioWide={propertyIds !== null} />
             </div>
           ) : null}
           <div className={briefRow ? "xl:col-span-2" : "xl:col-span-5"}>
