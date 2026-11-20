@@ -36,6 +36,8 @@ const state = vi.hoisted(() => ({
   backfillRequestedAt: null as Date | null,
   lastSyncStats: null as unknown,
   integrationUpdates: [] as Array<Record<string, unknown>>,
+  dbLeases: [] as Array<{ id: string; externalId: string; propertyId: string }>,
+  endedLeaseIds: [] as string[],
   listingCreates: [] as Array<Record<string, unknown>>,
 }));
 
@@ -140,6 +142,15 @@ function setupPrisma() {
     ),
   });
   const lease = autoModel({
+    findMany: vi.fn(async ({ where }: { where: { propertyId?: { in: string[] } } }) =>
+      where.propertyId
+        ? state.dbLeases.filter((l) => where.propertyId!.in.includes(l.propertyId))
+        : [],
+    ),
+    updateMany: vi.fn(async ({ where }: { where: { id: { in: string[] } } }) => {
+      state.endedLeaseIds.push(...where.id.in);
+      return { count: where.id.in.length };
+    }),
     create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
       state.leaseCreates.push(data);
       return { id: `lease-${data.externalId}` };
@@ -230,6 +241,8 @@ beforeEach(() => {
   state.backfillRequestedAt = null;
   state.lastSyncStats = null;
   state.integrationUpdates = [];
+  state.dbLeases = [];
+  state.endedLeaseIds = [];
   state.listingCreates = [];
   state.reports = {
     property_directory: [
@@ -348,5 +361,37 @@ describe("runAppfolioSync — two ACTIVE properties", () => {
       .filter(Boolean);
     expect(emailLookups.length).toBeGreaterThan(0);
     for (const e of emailLookups) expect(e!.equals).toBe("jo\\_ann@x.com");
+  });
+
+  it("ends moved-out leases in a building switched to IMPORTED, but never one still on the roll", async () => {
+    state.props = [
+      ...baseProps().map((p) =>
+        p.id === "B" ? { ...p, backendPlatform: "APPFOLIO", backendPropertyId: "af-B" } : p,
+      ),
+      {
+        ...baseProps()[0],
+        id: "C",
+        name: "Cedar Court",
+        slug: "cedar-court",
+        backendPropertyId: "af-C",
+        lifecycle: "IMPORTED",
+      },
+    ];
+    state.reports.property_directory = [
+      ...state.reports.property_directory.filter((r) => r.property_id !== "af-B-park"),
+      { property_id: "af-C", name: "Cedar Court", address_line_1: "5 Cedar Ct" },
+    ];
+    state.reports.rent_roll = [
+      { lease_id: "l-B1", unit_id: "u-B1", property_id: "af-B", status: "Current" },
+      { lease_id: "l-C-still", unit_id: "u-C1", property_id: "af-C", status: "Current" },
+    ];
+    // In the DB from before C was switched off; the fake returns them as the
+    // sweep's past-term open candidates.
+    state.dbLeases = [
+      { id: "lease-C-gone", externalId: "l-C-gone", propertyId: "C" },
+      { id: "lease-C-still", externalId: "l-C-still", propertyId: "C" },
+    ];
+    await runAppfolioSync("org-1");
+    expect(state.endedLeaseIds).toEqual(["lease-C-gone"]);
   });
 });

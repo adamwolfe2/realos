@@ -35,6 +35,7 @@ import {
 } from "./appfolio";
 import {
   endLeasesAbsentFromRentRoll,
+  INACTIVE_SWEEP_LIMIT,
   isVacantUnitRow,
   markResidentsAbsentFromDirectoryPast,
   pullIsComplete,
@@ -1160,6 +1161,9 @@ export async function runAppfolioSync(
     // absence from this set is what marks a move-out below.
     const seenResidentExternalIds = new Set<string>();
     const residentSweepPropertyIds = new Set<string>();
+    // Buildings on this pull whose rows were skipped as not ACTIVE. Swept
+    // separately (bounded) so they don't keep moved-out residents forever.
+    const inactiveResidentSweepPropertyIds = new Set<string>();
     for (const row of rows) {
       const mapped = mapResidentPayload(row);
       if (!mapped) {
@@ -1176,6 +1180,7 @@ export async function runAppfolioSync(
       }
       if (isInactiveResolvedProperty(propertyId)) {
         stats.skippedInactiveProperty += 1;
+        inactiveResidentSweepPropertyIds.add(propertyId);
         continue;
       }
       const listingId =
@@ -1213,6 +1218,25 @@ export async function runAppfolioSync(
             }),
           { timeout: 30_000 },
         );
+        const inactiveMovedOut = await prisma.$transaction(
+          (tx) =>
+            markResidentsAbsentFromDirectoryPast(tx, {
+              orgId,
+              propertyIds: [...inactiveResidentSweepPropertyIds],
+              seenExternalIds: seenResidentExternalIds,
+              now,
+              limit: INACTIVE_SWEEP_LIMIT,
+            }),
+          { timeout: 30_000 },
+        );
+        // Logged, not a stats warning: any warning flips the integration to
+        // "partial sync", and this is routine housekeeping.
+        if (inactiveMovedOut > 0) {
+          stats.residentsMovedOut += inactiveMovedOut;
+          console.info(
+            `[appfolio] org ${orgId}: ${inactiveMovedOut} moved-out resident(s) marked PAST in ${inactiveResidentSweepPropertyIds.size} non-ACTIVE building(s) (cap ${INACTIVE_SWEEP_LIMIT}/run)`,
+          );
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";
         console.error(`[appfolio] resident move-out sweep failed for org ${orgId}:`, err);
@@ -1251,6 +1275,8 @@ export async function runAppfolioSync(
     // from this set is what marks a move-out below.
     const seenLeaseExternalIds = new Set<string>();
     const sweepPropertyIds = new Set<string>();
+    // See inactiveResidentSweepPropertyIds above.
+    const inactiveSweepPropertyIds = new Set<string>();
     for (const row of rows) {
       // Vacant units first: the mapper would accept a generic row `id` and
       // file the empty unit as a lease.
@@ -1270,6 +1296,7 @@ export async function runAppfolioSync(
       }
       if (isInactiveResolvedProperty(propertyId)) {
         stats.skippedInactiveProperty += 1;
+        inactiveSweepPropertyIds.add(propertyId);
         continue;
       }
       const listingId =
@@ -1308,6 +1335,23 @@ export async function runAppfolioSync(
             }),
           { timeout: 30_000 },
         );
+        const inactiveEnded = await prisma.$transaction(
+          (tx) =>
+            endLeasesAbsentFromRentRoll(tx, {
+              orgId,
+              propertyIds: [...inactiveSweepPropertyIds],
+              seenExternalIds: seenLeaseExternalIds,
+              now,
+              limit: INACTIVE_SWEEP_LIMIT,
+            }),
+          { timeout: 30_000 },
+        );
+        if (inactiveEnded > 0) {
+          stats.leasesEnded += inactiveEnded;
+          console.info(
+            `[appfolio] org ${orgId}: ${inactiveEnded} lease(s) ended in ${inactiveSweepPropertyIds.size} non-ACTIVE building(s) (cap ${INACTIVE_SWEEP_LIMIT}/run)`,
+          );
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";
         console.error(`[appfolio] lease end-sweep failed for org ${orgId}:`, err);
