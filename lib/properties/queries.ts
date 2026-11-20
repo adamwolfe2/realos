@@ -90,6 +90,54 @@ function buildUrlPatterns(
   return Array.from(patterns);
 }
 
+// Which of the org's bound domains belong to THIS property. DomainBinding is
+// org-level (no propertyId), so with one domain the org's site is the
+// property's site, as before. With two or more, folding every domain into
+// every property's patterns makes each property's traffic the whole org's
+// (A's tab counting all of B's domain). Then only the domain matching the
+// property's own websiteUrl host is kept; none if it has no websiteUrl.
+export function domainsForProperty(
+  hostnames: string[],
+  websiteUrl: string | null | undefined,
+): string[] {
+  if (hostnames.length <= 1) return hostnames;
+  const bare = (h: string) => h.trim().toLowerCase().replace(/^www\./, "");
+  let host: string | null = null;
+  try {
+    host = websiteUrl
+      ? bare(new URL(/^https?:\/\//i.test(websiteUrl) ? websiteUrl : `https://${websiteUrl}`).hostname)
+      : null;
+  } catch {
+    // An unparseable websiteUrl attributes no domain; slug/name still match.
+    host = null;
+  }
+  return host ? hostnames.filter((h) => bare(h) === host) : [];
+}
+
+async function loadPropertyDomains(
+  orgId: string,
+  propertyId: string,
+): Promise<string[]> {
+  const [domains, property] = await Promise.all([
+    prisma.domainBinding.findMany({ where: { orgId }, select: { hostname: true } }),
+    prisma.property.findFirst({
+      where: { id: propertyId, orgId },
+      select: { websiteUrl: true },
+    }),
+  ]);
+  return domainsForProperty(
+    domains.map((d) => d.hostname),
+    property?.websiteUrl,
+  );
+}
+
+// SEO rows stamped with a propertyId belong to that property outright; only
+// unstamped (org-wide) rows fall back to URL matching, so a URL that also
+// matches another property's stamped rows is not double-attributed.
+function seoRowScope<T>(propertyId: string, urlOr: T[]) {
+  return { OR: [{ propertyId }, { propertyId: null, OR: urlOr }] };
+}
+
 // ---------------------------------------------------------------------------
 // Overview: 28d KPI strip
 // ---------------------------------------------------------------------------
@@ -116,14 +164,13 @@ export async function getPropertyOverviewKpis(
   // Pull the org's domain bindings so SEO matching catches URLs hosted
   // at custom domains (e.g. telegraphcommons.com) that don't contain the
   // slug or slugified name. See buildUrlPatterns for the full rule set.
-  const domains = await prisma.domainBinding
-    .findMany({ where: { orgId }, select: { hostname: true } })
-    .catch(() => [] as Array<{ hostname: string }>);
-  const patterns = buildUrlPatterns(
-    propertyMeta.slug,
-    propertyMeta.name,
-    domains.map((d) => d.hostname),
+  const domains = await loadPropertyDomains(orgId, propertyId).catch(
+    (err: unknown) => {
+      console.error("[properties/queries] domain lookup failed", { orgId, propertyId, err });
+      return [] as string[];
+    },
   );
+  const patterns = buildUrlPatterns(propertyMeta.slug, propertyMeta.name, domains);
 
   const [
     leads28d,
@@ -195,7 +242,7 @@ export async function getPropertyOverviewKpis(
     }),
     patterns.length === 0
       ? Promise.resolve(null)
-      : getOrganicSessionsForUrls(orgId, patterns, since28d),
+      : getOrganicSessionsForUrls(orgId, propertyId, patterns, since28d),
   ]);
 
   return {
@@ -213,17 +260,13 @@ export async function getPropertyOverviewKpis(
 
 async function getOrganicSessionsForUrls(
   orgId: string,
+  propertyId: string,
   patterns: string[],
   since: Date,
 ): Promise<number | null> {
-  // SeoLandingPage gained a propertyId column in Wave 3 Phase 5, but this
-  // URL-pattern heuristic was deliberately not rewired to use it (a
-  // contained follow-up, matching the same deferral note on
-  // app/portal/seo/page.tsx). We still aggregate sessions by matching the
-  // URL against slug/name patterns (case-insensitive), which is now
-  // strictly worse than filtering on the column for orgs with
-  // property-scoped rows and can double-count a NULL-scoped row alongside
-  // a property-scoped row for the same url+date.
+  // Rows stamped with this propertyId count outright; unstamped rows fall
+  // back to the URL-pattern match (see seoRowScope). A NULL-scoped and a
+  // property-scoped row for the same url+date can still both count.
   const or: Prisma.SeoLandingPageWhereInput[] = patterns.map((p) => ({
     url: { contains: p.replace(/%/g, ""), mode: "insensitive" as const },
   }));
@@ -232,7 +275,7 @@ async function getOrganicSessionsForUrls(
     where: {
       orgId,
       date: { gte: since },
-      OR: or,
+      ...seoRowScope(propertyId, or),
     },
     _sum: { sessions: true },
   });
@@ -270,19 +313,14 @@ export async function getPropertyTraffic(
   propertyId: string,
   propertyMeta: { slug: string; name: string },
 ): Promise<PropertyTrafficData> {
-  // propertyId is accepted to keep the signature strict/auditable even though
-  // SEO rows are URL-based. We still scope on orgId, so no cross-tenant leak.
-  void propertyId;
-
   const since28d = new Date(Date.now() - WINDOW_DAYS * DAY_MS);
-  const domains = await prisma.domainBinding
-    .findMany({ where: { orgId }, select: { hostname: true } })
-    .catch(() => [] as Array<{ hostname: string }>);
-  const patterns = buildUrlPatterns(
-    propertyMeta.slug,
-    propertyMeta.name,
-    domains.map((d) => d.hostname),
+  const domains = await loadPropertyDomains(orgId, propertyId).catch(
+    (err: unknown) => {
+      console.error("[properties/queries] domain lookup failed", { orgId, propertyId, err });
+      return [] as string[];
+    },
   );
+  const patterns = buildUrlPatterns(propertyMeta.slug, propertyMeta.name, domains);
 
   if (patterns.length === 0) {
     return {
@@ -303,7 +341,7 @@ export async function getPropertyTraffic(
   const [landingPageRows, landingPageAggRows, queryRows] = await Promise.all([
     prisma.seoLandingPage.groupBy({
       by: ["url"],
-      where: { orgId, date: { gte: since28d }, OR: landingOr },
+      where: { orgId, date: { gte: since28d }, ...seoRowScope(propertyId, landingOr) },
       _sum: { sessions: true, users: true },
       _avg: { bounceRate: true },
       orderBy: { _sum: { sessions: "desc" } },
@@ -313,7 +351,7 @@ export async function getPropertyTraffic(
     // shares a date, so it lands in the same spark bucket.
     prisma.seoLandingPage.groupBy({
       by: ["date"],
-      where: { orgId, date: { gte: since28d }, OR: landingOr },
+      where: { orgId, date: { gte: since28d }, ...seoRowScope(propertyId, landingOr) },
       _sum: { sessions: true },
     }),
     // Top queries — we can't filter queries by URL directly. We approximate by
@@ -323,9 +361,12 @@ export async function getPropertyTraffic(
       where: {
         orgId,
         date: { gte: since28d },
-        OR: patterns.map((p) => ({
-          query: { contains: p.replace(/%/g, ""), mode: "insensitive" as const },
-        })),
+        ...seoRowScope(
+          propertyId,
+          patterns.map((p) => ({
+            query: { contains: p.replace(/%/g, ""), mode: "insensitive" as const },
+          })),
+        ),
       },
       _sum: { clicks: true, impressions: true },
       _avg: { ctr: true, position: true },
