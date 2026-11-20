@@ -222,6 +222,10 @@ export function resolveSyncWindowStart(
     fullBackfill?: boolean;
     lastSyncAt: Date | null;
     backfillRequestedAt: Date | null;
+    // Phase 0 just linked an ACTIVE, operator-created Property to its
+    // AppFolio record (orphan adoption). Its history sits before lastSyncAt,
+    // same as an IMPORTED->ACTIVE promotion, so it needs the wide window too.
+    adoptedActiveProperty?: boolean;
   },
 ): Date {
   const wide = new Date(
@@ -229,8 +233,29 @@ export function resolveSyncWindowStart(
   );
   if (input.fullBackfill) return wide;
   if (input.backfillRequestedAt != null) return wide;
+  if (input.adoptedActiveProperty) return wide;
   if (!input.lastSyncAt) return wide;
   return input.lastSyncAt;
+}
+
+/**
+ * Where-clauses (tried in order) for adopting an operator-created Property
+ * that has no AppFolio id yet. Name first, then street address. Empty when
+ * the AppFolio row is a classifier-excluded sub-record (parking, storage,
+ * placeholder): those share the real building's address and must never
+ * claim it.
+ */
+export function orphanAdoptionMatches(
+  mapped: { name: string | null; addressLine1: string | null },
+  classification: { excluded: boolean },
+): Prisma.PropertyWhereInput[] {
+  if (classification.excluded) return [];
+  const matches: Prisma.PropertyWhereInput[] = [];
+  if (mapped.name) matches.push({ name: { equals: mapped.name, mode: "insensitive" } });
+  if (mapped.addressLine1) {
+    matches.push({ addressLine1: { equals: mapped.addressLine1, mode: "insensitive" } });
+  }
+  return matches;
 }
 
 export async function runAppfolioSync(
@@ -287,7 +312,7 @@ export async function runAppfolioSync(
   // phase runs so the clear-on-success check below can detect a request
   // that arrived DURING this run.
   const backfillRequestedAt = integration.backfillRequestedAt;
-  const fromDate = resolveSyncWindowStart(now, {
+  let fromDate = resolveSyncWindowStart(now, {
     fullBackfill: options.fullBackfill,
     lastSyncAt: integration.lastSyncAt,
     backfillRequestedAt,
@@ -523,6 +548,11 @@ export async function runAppfolioSync(
   // attribution for every lead and listing because their `property_id`
   // pointed at AppFolio rows our DB had never seen. Auto-discovering
   // first means downstream phases find their Property in the map.
+  let adoptedActiveProperty = false;
+  // AppFolio ids Phase 0 dropped for being outside the property-group
+  // filter. The leads phase uses it to skip their guest cards instead of
+  // filing them as org-level leads.
+  const groupExcludedExternalIds = new Set<string>();
   try {
     const rows = await fetchAllPages(client, "property_directory");
     let propertiesSkippedByGroup = 0;
@@ -547,6 +577,7 @@ export async function runAppfolioSync(
         )
       ) {
         propertiesSkippedByGroup += 1;
+        groupExcludedExternalIds.add(mapped.externalId);
         continue;
       }
 
@@ -634,27 +665,29 @@ export async function runAppfolioSync(
       // one carrying the resident/lease/work-order data. Operators then
       // click into the manual row and see "no residents synced yet"
       // because the children attached to the synced twin.
-      const orphan = await prisma.property.findFirst({
-        where: {
-          orgId,
-          backendPropertyId: null,
-          OR: [
-            mapped.name
-              ? { name: { equals: mapped.name, mode: "insensitive" } }
-              : undefined,
-            mapped.addressLine1
-              ? {
-                  addressLine1: {
-                    equals: mapped.addressLine1,
-                    mode: "insensitive",
-                  },
-                }
-              : undefined,
-          ].filter(Boolean) as Prisma.PropertyWhereInput[],
-        },
-        select: { id: true },
+      //
+      // Multi-property guard: AppFolio lists parking / storage / "do not
+      // use" sub-records under the SAME street address as the real
+      // building. Adopting by address let such a sub-record claim the
+      // operator's ACTIVE building (its leads/leases then filed to the
+      // sub-record id, and the real building landed as a new IMPORTED row
+      // whose data the lifecycle gate drops). Classifier-excluded rows never
+      // adopt, and a name match beats an address match.
+      const classification = classifyProperty({
+        name: mapped.name,
+        totalUnits: mapped.totalUnits,
+        addressLine1: mapped.addressLine1,
       });
+      let orphan: { id: string; lifecycle: string } | null = null;
+      for (const match of orphanAdoptionMatches(mapped, classification)) {
+        orphan = await prisma.property.findFirst({
+          where: { orgId, backendPropertyId: null, ...match },
+          select: { id: true, lifecycle: true },
+        });
+        if (orphan) break;
+      }
       if (orphan) {
+        if (orphan.lifecycle === "ACTIVE") adoptedActiveProperty = true;
         await prisma.property.update({
           where: { id: orphan.id },
           data: {
@@ -680,15 +713,11 @@ export async function runAppfolioSync(
 
       const slug = await uniquePropertySlug(orgId, mapped.name ?? mapped.externalId);
 
-      // Auto-classify at import. High-confidence sub-records (parking,
-      // storage, "do not use", "Property 12345" placeholders) land as
-      // EXCLUDED so they never pollute counts. Everything else lands as
-      // IMPORTED for operator review in /portal/properties/curate.
-      const classification = classifyProperty({
-        name: mapped.name,
-        totalUnits: mapped.totalUnits,
-        addressLine1: mapped.addressLine1,
-      });
+      // Auto-classify at import (classification computed above). High-
+      // confidence sub-records (parking, storage, "do not use", "Property
+      // 12345" placeholders) land as EXCLUDED so they never pollute counts.
+      // Everything else lands as IMPORTED for operator review in
+      // /portal/properties/curate.
 
       const created = await prisma.property.create({
         data: {
@@ -749,6 +778,16 @@ export async function runAppfolioSync(
   const isInactiveResolvedProperty = (propertyId: string | null): boolean =>
     isInactiveAppfolioProperty(propertyId, propertyLifecycleById);
 
+  // A building the operator added by hand and Phase 0 just linked to
+  // AppFolio: widen this run so its guest cards / applications / work
+  // orders from before lastSyncAt land instead of being skipped forever.
+  fromDate = resolveSyncWindowStart(now, {
+    fullBackfill: options.fullBackfill,
+    lastSyncAt: integration.lastSyncAt,
+    backfillRequestedAt,
+    adoptedActiveProperty,
+  });
+
   // 1. LEADS — AppFolio v2 report: guest_cards
   if (isPhaseSkipped("leads")) {
     // Auto-skipped after 3 consecutive failures. Almost always indicates
@@ -784,6 +823,7 @@ export async function runAppfolioSync(
       const campaignPlatformByKey = new Map(
         adCampaigns.flatMap((c) => campaignLeadKeys(c).map((k) => [k.trim(), c.platform] as const)),
       );
+      let leadsOutsideGroup = 0;
       for (const row of rows) {
         const raw = mapLeadPayload(row);
         if (!raw) continue;
@@ -793,8 +833,24 @@ export async function runAppfolioSync(
           stats.skippedInactiveProperty += 1;
           continue;
         }
+        // A guest card for a building outside the configured property group
+        // is not ours (Phase 0 warns "their leads ... are skipped too"). It
+        // used to fall through as an org-level lead and show up in every
+        // property's pooled counts.
+        if (
+          !localPropertyId &&
+          mapped.propertyIds.some((id) => groupExcludedExternalIds.has(id))
+        ) {
+          leadsOutsideGroup += 1;
+          continue;
+        }
         await upsertAppfolioLead(orgId, mapped, localPropertyId);
         stats.leadsUpserted += 1;
+      }
+      if (leadsOutsideGroup > 0) {
+        stats.warnings.push(
+          `leads: ${leadsOutsideGroup} guest card${leadsOutsideGroup === 1 ? "" : "s"} for properties outside the property group "${integration.propertyGroupFilter}" skipped.`,
+        );
       }
       phasesCompleted += 1;
       recordPhaseSuccess("leads");
@@ -1044,8 +1100,11 @@ export async function runAppfolioSync(
 
   // Listing-by-external-id map for downstream phases that need to bridge
   // unit_id → local Listing.id. Built once after listings are upserted.
+  // Read the post-Phase-0 map, not the pre-sync `properties` snapshot: a
+  // property adopted or created this run would otherwise get its listings
+  // upserted above but leave its residents/leases/work orders unlinked.
   const listings = await prisma.listing.findMany({
-    where: { propertyId: { in: properties.map((p) => p.id) } },
+    where: { propertyId: { in: Array.from(new Set(propertyByExternalId.values())) } },
     select: { id: true, propertyId: true, backendListingId: true },
   });
   const listingByExternalId = new Map<string, string>();
