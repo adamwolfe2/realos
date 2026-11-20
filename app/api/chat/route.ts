@@ -349,6 +349,7 @@ async function persistConversation(args: {
         notifyChatbotLeadCaptured({
           id: args.sessionId,
           orgId: args.orgId,
+          propertyId: args.propertyId ?? null,
           capturedName: fullName,
           capturedEmail: extracted.email,
           leadId: lead.id,

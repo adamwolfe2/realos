@@ -5,6 +5,10 @@ import type { Lead, Tour, ChatbotConversation } from "@prisma/client";
 // ---------------------------------------------------------------------------
 // Notification creation helpers.
 // All functions are fire-and-forget safe: callers should use void + .catch().
+//
+// propertyId: every helper about one building stamps it, so the bell can be
+// filtered per seat (propertyOrOrgLevelWhereFragment in the bell routes). NULL = org-level; a
+// property-restricted seat does not see those.
 // ---------------------------------------------------------------------------
 
 function leadName(lead: {
@@ -17,12 +21,13 @@ function leadName(lead: {
 }
 
 export async function notifyLeadCreated(
-  lead: Pick<Lead, "id" | "orgId" | "firstName" | "lastName" | "email" | "source">
+  lead: Pick<Lead, "id" | "orgId" | "propertyId" | "firstName" | "lastName" | "email" | "source">
 ): Promise<void> {
   const name = leadName(lead);
   await prisma.notification.create({
     data: {
       orgId: lead.orgId,
+      propertyId: lead.propertyId,
       kind: "lead_created",
       title: `New lead: ${name}`,
       body: `Source: ${lead.source.toLowerCase().replace(/_/g, " ")}`,
@@ -34,7 +39,7 @@ export async function notifyLeadCreated(
 }
 
 export async function notifyTourScheduled(
-  tour: Pick<Tour, "id" | "leadId" | "scheduledAt" | "tourType"> & {
+  tour: Pick<Tour, "id" | "leadId" | "propertyId" | "scheduledAt" | "tourType"> & {
     orgId: string;
     leadName?: string;
   }
@@ -51,6 +56,7 @@ export async function notifyTourScheduled(
   await prisma.notification.create({
     data: {
       orgId: tour.orgId,
+      propertyId: tour.propertyId,
       kind: "tour_scheduled",
       title: `Tour scheduled${tour.leadName ? ` for ${tour.leadName}` : ""}`,
       body: `${type} on ${when}`,
@@ -64,13 +70,14 @@ export async function notifyTourScheduled(
 export async function notifyChatbotLeadCaptured(
   conversation: Pick<
     ChatbotConversation,
-    "id" | "orgId" | "capturedName" | "capturedEmail" | "leadId"
+    "id" | "orgId" | "propertyId" | "capturedName" | "capturedEmail" | "leadId"
   >
 ): Promise<void> {
   const name = conversation.capturedName || conversation.capturedEmail || "visitor";
   await prisma.notification.create({
     data: {
       orgId: conversation.orgId,
+      propertyId: conversation.propertyId,
       kind: "chatbot_lead",
       title: `Chatbot captured lead: ${name}`,
       body: conversation.capturedEmail ?? null,
@@ -115,6 +122,7 @@ export async function notifyIntegrationError(
 export async function notifyNewInsight(insight: {
   id: string;
   orgId: string;
+  propertyId: string | null;
   severity: string;
   title: string;
   body: string;
@@ -139,6 +147,7 @@ export async function notifyNewInsight(insight: {
   await prisma.notification.create({
     data: {
       orgId: insight.orgId,
+      propertyId: insight.propertyId,
       kind,
       title: insight.title,
       body: insight.body.slice(0, 300),
@@ -153,6 +162,7 @@ export async function notifyNewInsight(insight: {
 export async function notifyCriticalInsight(insight: {
   id: string;
   orgId: string;
+  propertyId: string | null;
   title: string;
   body: string;
   href?: string | null;
@@ -204,6 +214,7 @@ export async function notifyDraftSubmitted(input: {
  */
 export async function notifyDraftReviewed(input: {
   orgId: string;
+  propertyId: string | null;
   draftId: string;
   status: "APPROVED" | "CHANGES_REQUESTED" | "REJECTED" | "SHIPPED";
   format: string;
@@ -228,6 +239,7 @@ export async function notifyDraftReviewed(input: {
   await prisma.notification.create({
     data: {
       orgId: input.orgId,
+      propertyId: input.propertyId,
       kind: "draft_reviewed",
       title,
       body,
@@ -300,6 +312,7 @@ export async function notifyAiQuotaWarning(input: {
 export async function notifyPacingAlert(input: {
   insightId: string;
   orgId: string;
+  propertyId: string | null;
   severity: "warning" | "critical";
   title: string;
   body: string;
@@ -318,6 +331,7 @@ export async function notifyPacingAlert(input: {
   await prisma.notification.create({
     data: {
       orgId: input.orgId,
+      propertyId: input.propertyId,
       kind: "pacing_alert",
       title: input.title,
       body: input.body.slice(0, 300),

@@ -177,6 +177,9 @@ export async function getPopupSummary(
 export async function recordPopupEvent(input: {
   orgId: string;
   campaignId: string;
+  // Building whose site the event fired on. Callers pass the campaign's
+  // property, or the one resolved from the page for an org-wide campaign.
+  propertyId: string | null;
   type: PopupEventType;
   sessionId?: string;
   anonymousId?: string;
@@ -189,6 +192,7 @@ export async function recordPopupEvent(input: {
       data: {
         orgId: input.orgId,
         campaignId: input.campaignId,
+        propertyId: input.propertyId,
         type: input.type,
         sessionId: input.sessionId,
         anonymousId: input.anonymousId,

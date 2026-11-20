@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireWritableWorkspace, ForbiddenError } from "@/lib/tenancy/scope";
+import { requireWritableWorkspace, ForbiddenError, propertyInScope } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 
 export const runtime = "nodejs";
@@ -43,9 +43,10 @@ export async function POST(
   // Verify ownership — same pattern as the recent-events route.
   const campaign = await prisma.popupCampaign.findFirst({
     where: { id, orgId: scope.orgId },
-    select: { id: true, headline: true },
+    select: { id: true, headline: true, propertyId: true },
   });
-  if (!campaign) {
+  // Same 404 for out-of-grant campaigns as recent-events (propertyInScope).
+  if (!campaign || !propertyInScope(scope, campaign.propertyId)) {
     return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
   }
 
@@ -60,6 +61,7 @@ export async function POST(
     data: {
       orgId: scope.orgId,
       campaignId: id,
+      propertyId: campaign.propertyId,
       type: "SHOWN",
       sessionId,
       pageUrl: "[portal-test-fire]",

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
+import { propertyOrOrgLevelWhereFragment } from "@/lib/tenancy/property-filter";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,7 @@ export async function GET() {
     const notifications = await prisma.notification.findMany({
       where: {
         orgId: scope.orgId,
+      AND: [propertyOrOrgLevelWhereFragment(scope, null)],
         resolvedAt: null,
         OR: [{ snoozedUntil: null }, { snoozedUntil: { lte: now } }],
       },

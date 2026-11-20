@@ -142,6 +142,7 @@ export async function POST(req: NextRequest) {
     notifyTourScheduled({
       id: tour.id,
       leadId: lead.id,
+      propertyId: tour.propertyId,
       orgId: data.orgId,
       scheduledAt: tour.scheduledAt,
       tourType: tour.tourType,

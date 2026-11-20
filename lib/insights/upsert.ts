@@ -74,6 +74,7 @@ export async function upsertInsights(
         notifyPacingAlert({
           insightId: created.id,
           orgId,
+          propertyId: d.propertyId ?? null,
           severity: d.severity,
           title: d.title,
           body: d.body,
@@ -85,6 +86,7 @@ export async function upsertInsights(
         notifyNewInsight({
           id: created.id,
           orgId,
+          propertyId: d.propertyId ?? null,
           severity: d.severity,
           title: d.title,
           body: d.body,

@@ -295,6 +295,7 @@ export async function POST(req: NextRequest) {
       notifyChatbotLeadCaptured({
         id: sessionId,
         orgId,
+        propertyId,
         capturedName: last ? `${first} ${last}` : first,
         capturedEmail: email,
         leadId,

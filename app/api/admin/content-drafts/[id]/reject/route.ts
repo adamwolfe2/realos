@@ -40,6 +40,7 @@ export async function POST(
       status: true,
       orgId: true,
       format: true,
+      propertyId: true,
       property: { select: { name: true } },
     },
   });
@@ -105,6 +106,7 @@ export async function POST(
     parsed.mode === "reject" ? "REJECTED" : "CHANGES_REQUESTED";
   void notifyDraftReviewed({
     orgId: draft.orgId,
+    propertyId: draft.propertyId,
     draftId: draft.id,
     status: reviewedStatus,
     format: draft.format,
