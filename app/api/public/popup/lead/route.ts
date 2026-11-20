@@ -29,6 +29,7 @@ import {
   chatbotOriginBypassEnabled,
 } from "@/lib/tenancy/origin-guard";
 import { recordPopupEvent } from "@/lib/popups/queries";
+import { resolvePropertyForChatPage } from "@/lib/chatbot/property-attribution";
 import { getSiteUrl } from "@/lib/brand";
 
 // ---------------------------------------------------------------------------
@@ -183,7 +184,7 @@ export async function POST(req: NextRequest) {
   // propertyId (if set on the popup itself) so multi-property campaigns
   // attribute correctly even if the script tag drops the property
   // attribute. Falls back to the property slug from the script tag,
-  // then to null (org-level lead).
+  // then to page-URL inference, then to null (org-level lead).
   let propertyId: string | null = popup.propertyId ?? null;
   if (!propertyId && data.propertySlug) {
     const prop = await prisma.property.findFirst({
@@ -191,6 +192,17 @@ export async function POST(req: NextRequest) {
       select: { id: true },
     });
     propertyId = prop?.id ?? null;
+  }
+  // Org-wide campaign (propertyId null) embedded without data-property on a
+  // multi-property org: infer the building from the page it fired on (its
+  // own website / slug in the URL), same resolver as the chatbot. Ambiguous
+  // stays null (org-level) rather than guessing.
+  if (!propertyId) {
+    const properties = await prisma.property.findMany({
+      where: { orgId: org.id },
+      select: { id: true, slug: true, name: true, websiteUrl: true },
+    });
+    propertyId = resolvePropertyForChatPage(data.pageUrl, properties);
   }
 
   // Upsert by (orgId, email) so the same visitor converting twice on
