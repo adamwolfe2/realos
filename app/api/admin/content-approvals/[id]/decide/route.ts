@@ -79,6 +79,7 @@ export async function POST(
       format: true,
       output: true,
       recommendationId: true,
+      propertyId: true,
       property: { select: { name: true } },
     },
   });
@@ -170,6 +171,7 @@ export async function POST(
   // hiccup doesn't fail the API call.
   void notifyDraftReviewed({
     orgId: draft.orgId,
+    propertyId: draft.propertyId,
     draftId: draft.id,
     status: parsed.decision,
     format: draft.format,

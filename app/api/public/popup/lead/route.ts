@@ -263,6 +263,7 @@ export async function POST(req: NextRequest) {
       select: {
         id: true,
         orgId: true,
+        propertyId: true,
         firstName: true,
         lastName: true,
         email: true,
@@ -312,6 +313,7 @@ export async function POST(req: NextRequest) {
     await recordPopupEvent({
       orgId: org.id,
       campaignId: popup.id,
+      propertyId,
       type: PopupEventType.CONVERTED,
       sessionId: undefined,
       leadId,

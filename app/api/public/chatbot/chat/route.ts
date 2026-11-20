@@ -604,6 +604,7 @@ async function persistConversation(args: {
         run: notifyChatbotLeadCaptured({
           id: conversation.id,
           orgId: args.orgId,
+          propertyId: args.propertyId ?? null,
           capturedName: extracted.name ?? null,
           capturedEmail: extracted.email,
           leadId: lead.id,

@@ -52,6 +52,7 @@ export async function POST(
       recommendationId: true,
       orgId: true,
       format: true,
+      propertyId: true,
       property: { select: { name: true } },
     },
   });
@@ -130,6 +131,7 @@ export async function POST(
   const reviewedStatus = ship ? "SHIPPED" : "APPROVED";
   void notifyDraftReviewed({
     orgId: draft.orgId,
+    propertyId: draft.propertyId,
     draftId: draft.id,
     status: reviewedStatus,
     format: draft.format,

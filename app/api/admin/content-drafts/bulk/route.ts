@@ -63,6 +63,7 @@ export async function POST(req: NextRequest) {
       orgId: true,
       format: true,
       recommendationId: true,
+      propertyId: true,
       property: { select: { name: true } },
     },
   });
@@ -140,6 +141,7 @@ export async function POST(req: NextRequest) {
       Promise.allSettled([
         notifyDraftReviewed({
           orgId: d.orgId,
+          propertyId: d.propertyId,
           draftId: d.id,
           status: notifyStatus,
           format: d.format,

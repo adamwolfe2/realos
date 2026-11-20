@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/db";
+import { propertyOrOrgLevelWhereFragment } from "@/lib/tenancy/property-filter";
 import { requireScope } from "@/lib/tenancy/scope";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -16,6 +17,7 @@ export async function markNotificationRead(notificationId: string): Promise<void
     where: {
       id: notificationId,
       orgId: scope.orgId,
+      AND: [propertyOrOrgLevelWhereFragment(scope, null)],
       readAt: null,
     },
     data: { readAt: new Date() },
@@ -27,6 +29,7 @@ export async function markAllRead(): Promise<void> {
   await prisma.notification.updateMany({
     where: {
       orgId: scope.orgId,
+      AND: [propertyOrOrgLevelWhereFragment(scope, null)],
       readAt: null,
     },
     data: { readAt: new Date() },
@@ -52,7 +55,8 @@ export async function snoozeNotification(
   const scope = await requireScope();
   const snoozedUntil = new Date(Date.now() + days * DAY_MS);
   await prisma.notification.updateMany({
-    where: { id: notificationId, orgId: scope.orgId },
+    where: { id: notificationId, orgId: scope.orgId,
+      AND: [propertyOrOrgLevelWhereFragment(scope, null)] },
     data: {
       snoozedUntil,
       // Mark read so the bell badge clears while snoozed.
@@ -69,7 +73,8 @@ export async function snoozeNotification(
 export async function unsnoozeNotification(notificationId: string): Promise<void> {
   const scope = await requireScope();
   await prisma.notification.updateMany({
-    where: { id: notificationId, orgId: scope.orgId },
+    where: { id: notificationId, orgId: scope.orgId,
+      AND: [propertyOrOrgLevelWhereFragment(scope, null)] },
     data: { snoozedUntil: null },
   });
 }
@@ -86,7 +91,8 @@ export async function resolveNotification(notificationId: string): Promise<void>
   const scope = await requireScope();
   const now = new Date();
   await prisma.notification.updateMany({
-    where: { id: notificationId, orgId: scope.orgId },
+    where: { id: notificationId, orgId: scope.orgId,
+      AND: [propertyOrOrgLevelWhereFragment(scope, null)] },
     data: {
       resolvedAt: now,
       readAt: now,

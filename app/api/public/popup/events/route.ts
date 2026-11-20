@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
   // no-ops instead of revealing existence via different HTTP codes.
   const popup = await prisma.popupCampaign.findUnique({
     where: { id: parsed.data.popupId },
-    select: { id: true, orgId: true, status: true },
+    select: { id: true, orgId: true, status: true, propertyId: true },
   });
   if (!popup) {
     return NextResponse.json(
@@ -148,6 +148,10 @@ export async function POST(req: NextRequest) {
   await recordPopupEvent({
     orgId: popup.orgId,
     campaignId: popup.id,
+    // ponytail: org-wide campaigns (propertyId null) stay unstamped here; no
+    // real org runs one. Add the page-URL resolver the lead route uses when
+    // one does.
+    propertyId: popup.propertyId,
     type: parsed.data.type,
     sessionId: parsed.data.sessionId,
     anonymousId: parsed.data.anonymousId,
