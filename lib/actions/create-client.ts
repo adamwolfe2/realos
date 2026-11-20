@@ -12,9 +12,12 @@ import {
   CommercialSubtype,
   SubscriptionTier,
   TenantStatus,
+  PropertyLifecycle,
+  PropertyLifecycleSource,
   Prisma,
 } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { scaffoldPropertyIntegrations } from "@/lib/onboarding/scaffold";
 import {
   requireAgency,
   ForbiddenError,
@@ -140,6 +143,8 @@ export async function createClientDirect(
   // Step 1: org + project (28-task checklist) + tenantSiteConfig + optional
   // first property, all in one transaction.
   let org: { id: string; name: string; slug: string };
+  let firstProperty: { id: string; name: string; websiteUrl: string | null } | null =
+    null;
   try {
     org = await prisma.$transaction(async (tx) => {
       const created = await tx.organization.create({
@@ -196,8 +201,16 @@ export async function createClientDirect(
       });
 
       if (wantsProperty && propertyName) {
-        await tx.property.create({
+        firstProperty = await tx.property.create({
+          select: { id: true, name: true, websiteUrl: true },
           data: {
+            // Named by the agency at provisioning = an explicit, live
+            // building, same as createProperty and the onboarding wizard.
+            // The schema default (IMPORTED) left it out of setup, the
+            // switcher and every marketable count.
+            lifecycle: PropertyLifecycle.ACTIVE,
+            lifecycleSetBy: PropertyLifecycleSource.OPERATOR,
+            lifecycleSetAt: new Date(),
             orgId: created.id,
             name: propertyName,
             slug: deriveSlug(propertyName),
@@ -249,6 +262,24 @@ export async function createClientDirect(
           ? `Failed to create organization: ${err.message}`
           : "Failed to create organization",
     };
+  }
+
+  // Same per-property scaffolding createProperty runs for property N+1:
+  // the first property gets its own chatbot row inheriting the org toggle.
+  // Best-effort; the org already exists.
+  if (firstProperty) {
+    await scaffoldPropertyIntegrations(
+      org.id,
+      [firstProperty],
+      { chatbot: Boolean(modules.moduleChatbot) },
+      { inheritOrgChatbotToggle: true },
+    ).catch((err) => {
+      console.error("createClientDirect: property scaffold failed", {
+        orgId: org.id,
+        propertyId: firstProperty?.id,
+        err,
+      });
+    });
   }
 
   // Step 2: create the Clerk organization. Failure flags AT_RISK + logs a

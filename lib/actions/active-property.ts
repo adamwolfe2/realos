@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireScope } from "@/lib/tenancy/scope";
+import { propertyInScope, requireScope } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { setActivePropertyId } from "@/lib/portal/active-property";
@@ -32,18 +32,18 @@ export async function selectActiveProperty(
     return;
   }
 
-  // Validate the candidate id against the caller's marketable property
-  // set (org scope + lifecycle filter + access gate). One indexed query.
-  const candidate = await prisma.property.findFirst({
-    where: {
-      ...marketablePropertyWhere(scope.orgId),
-      id: rawValue,
-      ...(scope.allowedPropertyIds
-        ? { id: { in: scope.allowedPropertyIds } }
-        : {}),
-    },
-    select: { id: true },
-  });
+  // Validate the candidate id against the caller's access gate first, then
+  // the marketable property set (org scope + lifecycle filter). The gate
+  // used to be spread into the same object as `id: rawValue`, so for a
+  // restricted user `id: { in: allowed }` overwrote the picked id and
+  // findFirst returned an ARBITRARY allowed property: picking B could
+  // silently scope every page to A.
+  const candidate = propertyInScope(scope, rawValue)
+    ? await prisma.property.findFirst({
+        where: { ...marketablePropertyWhere(scope.orgId), id: rawValue },
+        select: { id: true },
+      })
+    : null;
 
   // Fall back to "All" if the user picked something they can't see —
   // either the row was archived since the dropdown loaded, or an

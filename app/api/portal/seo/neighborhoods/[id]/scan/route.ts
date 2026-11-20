@@ -41,7 +41,15 @@ export async function POST(
 
   // Ownership check — page must belong to the caller's effective org.
   const page = await prisma.neighborhoodPage.findFirst({
-    where: { id, orgId: scope.orgId },
+    where: {
+      id,
+      orgId: scope.orgId,
+      // Property-restricted users may only scan pages anchored on a granted
+      // property (same gate as lib/actions/neighborhood-pages.ts).
+      ...(scope.allowedPropertyIds
+        ? { propertyId: { in: scope.allowedPropertyIds } }
+        : {}),
+    },
     select: { id: true, orgId: true },
   });
   if (!page) {

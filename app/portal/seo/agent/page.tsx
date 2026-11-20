@@ -5,6 +5,7 @@ import { Bot, Gauge, LineChart, Search } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
+import { parsePropertyFilter } from "@/lib/tenancy/property-filter";
 import { getCachedOrGenerateRecommendations } from "@/lib/seo/agent";
 import { isDataforSeoConfigured } from "@/lib/seo/dataforseo";
 import { isGooglePlacesConfigured } from "@/lib/seo/google-places";
@@ -112,10 +113,13 @@ function deriveDomain(url: string | null): string | null {
 export default async function SeoAgentPage({
   searchParams,
 }: {
-  searchParams: Promise<{ propertyId?: string; range?: string }>;
+  searchParams: Promise<{ property?: string; propertyId?: string; range?: string }>;
 }) {
   const scope = await requireScope();
-  const { propertyId: propertyIdParam, range: rangeParam } = await searchParams;
+  const sp = await searchParams;
+  // ?property= is the portal-wide key; ?propertyId= kept for old bookmarks.
+  const propertyIdParam = sp.property ?? sp.propertyId;
+  const rangeParam = sp.range;
   const range: RangeKey = (
     ["7d", "28d", "90d", "12mo"] as const
   ).includes(rangeParam as RangeKey)
@@ -190,8 +194,16 @@ export default async function SeoAgentPage({
     );
   }
 
+  // No explicit param: honour the sidebar property switcher (cookie) so a
+  // multi-property org lands on the selected building, not the first
+  // LIVE one alphabetically.
+  const switcherIds = propertyIdParam
+    ? null
+    : await parsePropertyFilter({}, scope.orgId);
+  const switcherId = switcherIds?.length === 1 ? switcherIds[0] : null;
   const property =
     properties.find((p) => p.id === propertyIdParam) ??
+    properties.find((p) => p.id === switcherId) ??
     properties.find((p) => p.launchStatus === "LIVE") ??
     properties[0];
 
@@ -336,12 +348,14 @@ export default async function SeoAgentPage({
   // ──────────────────────────────────────────────────────────────────────
 
   // Integration status row.
-  const ga4 = seoIntegrations.find(
-    (i) => i.provider === "GA4" && (!i.propertyId || i.propertyId === property.id),
-  );
-  const gsc = seoIntegrations.find(
-    (i) => i.provider === "GSC" && (!i.propertyId || i.propertyId === property.id),
-  );
+  // This property's own connection first, then the legacy org-wide row.
+  const integrationFor = (provider: "GA4" | "GSC") =>
+    seoIntegrations.find(
+      (i) => i.provider === provider && i.propertyId === property.id,
+    ) ??
+    seoIntegrations.find((i) => i.provider === provider && !i.propertyId);
+  const ga4 = integrationFor("GA4");
+  const gsc = integrationFor("GSC");
   const integrations: Array<{
     label: string;
     icon: React.ReactNode;

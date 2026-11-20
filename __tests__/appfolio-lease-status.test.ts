@@ -133,6 +133,17 @@ describe("endLeasesAbsentFromRentRoll", () => {
     });
   });
 
+  it("honours a per-call limit (bounded catch-up sweep)", async () => {
+    const { db, updateMany } = fakeDb([
+      { id: "b1", externalId: "gone-1" },
+      { id: "b2", externalId: "gone-2" },
+      { id: "b3", externalId: "gone-3" },
+    ]);
+    const ended = await endLeasesAbsentFromRentRoll(db, { ...base, seenExternalIds: new Set(), limit: 2 });
+    expect(ended).toBe(2);
+    expect(updateMany.mock.calls[0][0].where.id).toEqual({ in: ["b1", "b2"] });
+  });
+
   it("does nothing when no property was seen in the pull", async () => {
     const { db, findMany, updateMany } = fakeDb([{ id: "b", externalId: "x" }]);
     expect(await endLeasesAbsentFromRentRoll(db, { ...base, propertyIds: [], seenExternalIds: new Set() })).toBe(0);

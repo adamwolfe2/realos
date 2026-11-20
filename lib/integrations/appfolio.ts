@@ -95,7 +95,9 @@ function parseAvailableDate(input: string): Date | null {
 // page and confirms at least one listing card parses. No credentials needed.
 export async function probeEmbedScrape(
   subdomain: string
-): Promise<{ ok: true; count: number } | { ok: false; error: string }> {
+): Promise<
+  { ok: true; count: number; addresses: string[] } | { ok: false; error: string }
+> {
   try {
     const url = `https://${subdomain}.appfolio.com/listings`;
     const response = await fetch(url, {
@@ -113,8 +115,14 @@ export async function probeEmbedScrape(
     }
     const html = await response.text();
     const $ = cheerio.load(html);
-    const count = $(".listing-item.result.js-listing-item").length;
-    return { ok: true, count };
+    const cards = $(".listing-item.result.js-listing-item");
+    // Card street addresses, so connect can tell which of the org's
+    // buildings are actually listed on this AppFolio account.
+    const addresses = cards
+      .map((_, el) => $(el).find(".js-listing-address").text().trim())
+      .get()
+      .filter((a: string) => a.length > 0);
+    return { ok: true, count: cards.length, addresses };
   } catch (err) {
     return {
       ok: false,
@@ -1918,6 +1926,63 @@ export function mapPropertyPayload(raw: RawRow): MappedProperty | null {
 // lastSyncedAt).
 // ---------------------------------------------------------------------------
 
+function rawField(listing: NormalizedListing, ...keys: string[]): unknown {
+  const raw = listing.raw;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const rec = raw as Record<string, unknown>;
+  for (const k of keys) if (rec[k] != null) return rec[k];
+  return null;
+}
+
+function listingAddress(listing: NormalizedListing): string | null {
+  const address = rawField(listing, "address");
+  return typeof address === "string" ? address : null;
+}
+
+function restListingPropertyId(listing: NormalizedListing): string | null {
+  const id = rawField(listing, "property_id", "PropertyId");
+  return typeof id === "string" || typeof id === "number" ? String(id) : null;
+}
+
+function normalizeAddress(value: string): string {
+  return value.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Which ACTIVE property an embed-scraped listing card belongs to, by street
+ * address. A property matches when its addressLine1 appears in the card's
+ * address on a token boundary (so "12 Main St" never matches "112 Main St").
+ * Exactly one match or null: a card that matches no building, or several,
+ * is skipped rather than filed under the wrong one.
+ */
+export function embedListingPropertyId(
+  cardAddress: string | null,
+  properties: ReadonlyArray<{ id: string; addressLine1: string | null }>,
+): string | null {
+  if (!cardAddress) return null;
+  const haystack = normalizeAddress(cardAddress);
+  const hits = properties.filter((p) => {
+    if (!p.addressLine1?.trim()) return false;
+    const needle = normalizeAddress(p.addressLine1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`(^|[^a-z0-9])${needle}($|[^a-z0-9])`).test(haystack);
+  });
+  return hits.length === 1 ? hits[0].id : null;
+}
+
+/**
+ * Ids of the buildings whose street address appears on at least one AppFolio
+ * listing card. Each building is checked on its own (a card may name only
+ * one), using the same token-boundary match as the listing sync.
+ */
+export function appfolioListedPropertyIds(
+  cardAddresses: readonly string[],
+  properties: ReadonlyArray<{ id: string; addressLine1: string | null }>,
+): string[] {
+  return properties
+    .filter((p) => cardAddresses.some((a) => embedListingPropertyId(a, [p]) === p.id))
+    .map((p) => p.id);
+}
+
 export type SyncOutcome = {
   synced: number;
   matchedProperties: number;
@@ -1954,8 +2019,22 @@ export async function syncListingsForOrg(
     data: { syncStatus: "syncing", lastError: null },
   });
 
+  // ACTIVE only: same lifecycle gate as the REST sync (isInactiveAppfolio
+  // Property). Counting IMPORTED/EXCLUDED rows here made a one-building org
+  // with a few curated-out address rows look "multi-property" and skip the
+  // listing sync entirely.
+  //
+  // NONE-platform buildings are candidates too: connect no longer stamps
+  // every building APPFOLIO up front (some are managed elsewhere). A NONE
+  // building is promoted to APPFOLIO only once a listing card actually
+  // carries its address, and only APPFOLIO buildings get their denorm
+  // fields rewritten below.
   const properties = await prisma.property.findMany({
-    where: { orgId, backendPlatform: BackendPlatform.APPFOLIO },
+    where: {
+      orgId,
+      backendPlatform: { in: [BackendPlatform.APPFOLIO, BackendPlatform.NONE] },
+      lifecycle: "ACTIVE",
+    },
   });
 
   try {
@@ -1982,16 +2061,11 @@ export async function syncListingsForOrg(
       );
       remoteListings = [];
     } else if (properties.length > 1) {
-      // Multi-property tenant on embed-scrape: scraped listings carry no
-      // property-group hint, so they can't be attributed to the right
-      // building. The old code dumped every scraped listing onto properties[0],
-      // corrupting every other property's availability + pricing. Skip the
-      // listing sync entirely — multi-property listing sync requires REST/OAuth
-      // creds. (Codex.)
-      console.warn(
-        `[appfolio] embed-scrape listing sync skipped for ${properties.length} properties (no group hint; needs REST/OAuth)`,
-      );
-      remoteListings = [];
+      // Multi-property tenant on embed-scrape: pull every card once and
+      // attribute each by its street address below (embedListingPropertyId).
+      // Cards matching no building, or more than one, are skipped, never
+      // guessed onto properties[0].
+      remoteListings = await fetchEmbedScrape(integration, null);
     } else {
       // Single property — scope the scrape by its street address to avoid
       // pulling in sibling-building listings.
@@ -2011,13 +2085,19 @@ export async function syncListingsForOrg(
     const matchedSet = new Set<string>();
 
     for (const rl of remoteListings) {
-      const fallbackProperty = properties[0];
-      // TODO: richer property matching once AppFolio payload exposes
-      // property_group reliably in embed-scrape mode. For now we assume
-      // everything from the scrape lives under the first property — correct
-      // for single-building tenants; multi-building tenants fall back to
-      // REST mode.
-      const property = fallbackProperty;
+      // REST unit_directory rows name their AppFolio property; embed cards
+      // don't. One embed building: everything scoped to it (the scrape was
+      // already address-filtered). Several: match the card's address. Never
+      // guess properties[0].
+      const propertyId =
+        mode === "REST"
+          ? (properties.find(
+              (p) => p.backendPropertyId != null && p.backendPropertyId === restListingPropertyId(rl),
+            )?.id ?? null)
+          : properties.length === 1
+            ? properties[0].id
+            : embedListingPropertyId(listingAddress(rl), properties);
+      const property = properties.find((p) => p.id === propertyId);
       if (!property) {
         skipped++;
         continue;
@@ -2057,8 +2137,22 @@ export async function syncListingsForOrg(
       synced++;
     }
 
-    // Refresh Property denormalized fields.
-    for (const p of properties) {
+    const promoted = properties.filter(
+      (p) => p.backendPlatform === BackendPlatform.NONE && matchedSet.has(p.id),
+    );
+    if (promoted.length > 0) {
+      await prisma.property.updateMany({
+        where: { id: { in: promoted.map((p) => p.id) }, backendPlatform: BackendPlatform.NONE },
+        data: { backendPlatform: BackendPlatform.APPFOLIO },
+      });
+    }
+    const appfolioProperties = properties.filter(
+      (p) => p.backendPlatform === BackendPlatform.APPFOLIO || matchedSet.has(p.id),
+    );
+
+    // Refresh Property denormalized fields (AppFolio buildings only — a
+    // building managed elsewhere keeps its own counts).
+    for (const p of appfolioProperties) {
       const agg = await prisma.listing.aggregate({
         where: { propertyId: p.id, isAvailable: true },
         _min: { priceCents: true },
@@ -2098,7 +2192,7 @@ export async function syncListingsForOrg(
       where: { orgId },
       data: { syncStatus: "error", lastError: message },
     });
-    for (const p of properties) {
+    for (const p of properties.filter((x) => x.backendPlatform === BackendPlatform.APPFOLIO)) {
       await prisma.property.update({
         where: { id: p.id },
         data: { syncError: message },

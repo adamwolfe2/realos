@@ -18,7 +18,7 @@ type Props = {
 // ---------------------------------------------------------------------------
 // PropertySwitcher — horizontal tab strip when an operator manages more
 // than one property. Avoids forcing URL-editing to jump between
-// /portal/seo/agent?propertyId=X. Hidden when there's only one property.
+// /portal/seo/agent?property=X. Hidden when there's only one property.
 //
 // Active tab uses the brand accent; LIVE properties bubble first so the
 // most-relevant data lands first when 6+ properties exist.
@@ -42,7 +42,7 @@ export function PropertySwitcher({ properties, activeId }: Props) {
         return (
           <Link
             key={p.id}
-            href={`/portal/seo/agent?propertyId=${p.id}`}
+            href={`/portal/seo/agent?property=${p.id}`}
             className={`inline-flex items-center gap-2 rounded-[2px] px-3 py-1.5 text-[12px] font-medium transition-colors ${
               isActive
                 ? "bg-primary text-primary-foreground"

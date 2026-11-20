@@ -115,7 +115,10 @@ export async function loadPortfolioReputationMetrics(
     select: { id: true },
   });
   let eligibleIds = eligibleProperties.map((p) => p.id);
-  if (options.propertyIds && options.propertyIds.length > 0) {
+  // null/undefined = no selection. An EMPTY array is a real selection that
+  // matches nothing (a restricted user's out-of-grant pick from
+  // effectivePropertyIds) and must not widen to the whole org.
+  if (options.propertyIds) {
     const filter = new Set(options.propertyIds);
     eligibleIds = eligibleIds.filter((id) => filter.has(id));
   }
@@ -516,7 +519,10 @@ export async function loadPortfolioReputationFeed(
     select: { id: true },
   });
   let eligibleIds = eligibleProperties.map((p) => p.id);
-  if (options.propertyIds && options.propertyIds.length > 0) {
+  // null/undefined = no selection. An EMPTY array is a real selection that
+  // matches nothing (a restricted user's out-of-grant pick from
+  // effectivePropertyIds) and must not widen to the whole org.
+  if (options.propertyIds) {
     const filter = new Set(options.propertyIds);
     eligibleIds = eligibleIds.filter((id) => filter.has(id));
   }

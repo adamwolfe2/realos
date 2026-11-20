@@ -4,6 +4,7 @@ import Link from "next/link";
 import { KeyRound, Plus, Upload, Lock, Eye, Clock, RotateCw } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import { Prisma } from "@prisma/client";
 import { VaultClient } from "./vault-client";
@@ -114,8 +115,16 @@ export default async function VaultPage() {
           property: { select: { id: true, name: true } },
         },
       }),
+      // Property dropdown: enabled properties the user can see. Was every
+      // property in the org (incl. AppFolio address-only rows), which
+      // listed other properties' names to a restricted teammate.
       prisma.property.findMany({
-        where: { orgId: scope.orgId },
+        where: {
+          ...marketablePropertyWhere(scope.orgId),
+          ...(scope.allowedPropertyIds
+            ? { id: { in: scope.allowedPropertyIds } }
+            : {}),
+        },
         select: { id: true, name: true },
         orderBy: { name: "asc" },
       }),

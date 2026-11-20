@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requestAppfolioBackfill } from "@/lib/integrations/appfolio-backfill";
+import { scaffoldPropertyIntegrations } from "@/lib/onboarding/scaffold";
+import { captureWithContext } from "@/lib/sentry";
 import {
   requireAgency,
   requireWorkspaceAdmin, requireWritableWorkspace,
@@ -199,9 +201,37 @@ export async function createProperty(
       "@/lib/billing/sync-subscription-quantity"
     );
     await syncSubscriptionQuantity(targetOrgId);
-  } catch {
-    // already logged
+  } catch (err) {
+    // The helper logs its own Stripe errors; this catches anything else
+    // (e.g. the import failing). Reported, never rethrown: the property is
+    // already created and must stay created.
+    captureWithContext(err, {
+      route: "lib/actions/properties#createProperty/syncSubscriptionQuantity",
+      orgId: targetOrgId,
+      propertyId: created.id,
+    });
   }
+
+  // Same per-property scaffolding the onboarding wizard runs, so property
+  // N+1 lands with its own chatbot row (persona = its name) instead of
+  // blank. Inherits the org's live chatbot toggle rather than forcing it on.
+  // Best-effort: a scaffold miss is reported, never fails the create.
+  const org = await prisma.organization.findUnique({
+    where: { id: targetOrgId },
+    select: { moduleChatbot: true },
+  });
+  await scaffoldPropertyIntegrations(
+    targetOrgId,
+    [{ id: created.id, name: created.name, websiteUrl: created.websiteUrl }],
+    { chatbot: Boolean(org?.moduleChatbot) },
+    { inheritOrgChatbotToggle: true },
+  ).catch((err) => {
+    captureWithContext(err, {
+      route: "lib/actions/properties#createProperty/scaffold",
+      orgId: targetOrgId,
+      propertyId: created.id,
+    });
+  });
 
   revalidatePath(`/portal/properties`);
   if (scope.isAgency) revalidatePath(`/admin/clients/${targetOrgId}`);
@@ -339,7 +369,58 @@ export async function deleteProperty(
   });
   if (!existing) return { ok: false, error: "Property not found" };
 
+  // UserPropertyAccess cascades on delete and zero grants means UNRESTRICTED
+  // (scope.ts). A teammate whose only grant is this property would wake up
+  // with org-wide access, so refuse until they are re-granted or removed.
+  const orphaned = await prisma.user.findMany({
+    where: {
+      propertyAccess: {
+        some: { propertyId: existing.id },
+        every: { propertyId: existing.id },
+      },
+    },
+    select: { email: true },
+    take: 10,
+  });
+  if (orphaned.length > 0) {
+    return {
+      ok: false,
+      error: `These teammates only have access to "${existing.name}": ${orphaned
+        .map((u) => u.email)
+        .join(", ")}. Give them another property or remove them first.`,
+    };
+  }
+
+  // Hard delete cascades listings, tours, applications, residents, leases,
+  // work orders and SEO data, and drops leads and chats to org level. Once a
+  // property has real activity that loss is permanent, so only empty
+  // properties may be deleted; anything else is archived or excluded, which
+  // keeps the history and stops it counting.
+  const where = { propertyId: existing.id };
+  const [leads, leases, residents, conversations] = await Promise.all([
+    prisma.lead.count({ where }),
+    prisma.lease.count({ where }),
+    prisma.resident.count({ where }),
+    prisma.chatbotConversation.count({ where }),
+  ]);
+  if (leads + leases + residents + conversations > 0) {
+    const held = [
+      [leads, "lead"],
+      [leases, "lease"],
+      [residents, "resident"],
+      [conversations, "chat conversation"],
+    ]
+      .filter(([n]) => (n as number) > 0)
+      .map(([n, label]) => `${n} ${label}${n === 1 ? "" : "s"}`)
+      .join(", ");
+    return {
+      ok: false,
+      error: `"${existing.name}" has ${held}. Deleting would permanently remove or orphan them. Archive or exclude it instead.`,
+    };
+  }
+
   await prisma.property.delete({ where: { id: existing.id } });
+  await clearActivePropertyIfIn([existing.id]);
 
   await prisma.auditEvent.create({
     data: auditPayload(
@@ -356,6 +437,25 @@ export async function deleteProperty(
   revalidatePath(`/portal/properties`);
   revalidatePath(`/admin/clients/${existing.orgId}`);
   return { ok: true };
+}
+
+// The acting user's property switcher must not keep pointing at a property
+// that just stopped being live (archived / excluded / restored to IMPORTED /
+// deleted). Other users' cookies are healed on read by
+// lib/tenancy/property-filter, which drops non-marketable ids.
+async function clearActivePropertyIfIn(propertyIds: string[]): Promise<void> {
+  try {
+    const { getActivePropertyId, setActivePropertyId } = await import(
+      "@/lib/portal/active-property"
+    );
+    const active = await getActivePropertyId();
+    if (active && propertyIds.includes(active)) await setActivePropertyId(null);
+  } catch (err) {
+    console.error("[properties] clearing the active-property cookie failed", {
+      propertyIds,
+      err,
+    });
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -443,6 +543,7 @@ export async function setPropertyLifecycle(
       excludeReason: action === "exclude" ? reason ?? "Operator-flagged" : null,
     },
   });
+  if (next !== "ACTIVE") await clearActivePropertyIfIn([propertyId]);
 
   await prisma.auditEvent.create({
     data: auditPayload(
@@ -532,6 +633,7 @@ export async function setPropertyLifecycleBulk(
       excludeReason: action === "exclude" ? "Bulk operator-flagged" : null,
     },
   });
+  if (next !== "ACTIVE" && result.count > 0) await clearActivePropertyIfIn(propertyIds);
 
   // Arm a backfill for every org whose buildings just went live. Re-reading
   // the affected rows (rather than assuming scope.orgId) matters because an

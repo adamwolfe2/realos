@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { withMarketableLifecycle } from "@/lib/properties/marketable";
 import { LIVE_FEATURE_GATE_SELECT, liveFeaturesPaused } from "@/lib/billing/trial-status";
 import { prisma } from "@/lib/db";
 import {
@@ -64,6 +65,8 @@ export async function GET(req: NextRequest) {
       ...LIVE_FEATURE_GATE_SELECT,
       tenantSiteConfig: { select: { chatbotEnabled: true } },
       properties: {
+        // ACTIVE only: EXCLUDED address-only rows never count as a building.
+        where: withMarketableLifecycle({}),
         orderBy: { updatedAt: "desc" },
         select: {
           id: true,
@@ -115,6 +118,14 @@ export async function GET(req: NextRequest) {
   const matchedProperty = propertySlug
     ? org.properties.find((p) => p.slug === propertySlug)
     : org.properties.find((p) => p.slug === slug);
+  // Unresolved on a multi-property org: return the empty summary (static
+  // greeting) rather than one building advertising another's rent.
+  if (!matchedProperty && org.properties.length > 1) {
+    return NextResponse.json(
+      { openCount: 0, lowestRent: null, nextAvailable: null },
+      { status: 200, headers: CORS_HEADERS }
+    );
+  }
   const scopedProperties = matchedProperty
     ? [matchedProperty]
     : org.properties;

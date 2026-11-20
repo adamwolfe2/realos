@@ -30,6 +30,32 @@ export const maxDuration = 300;
 // ---------------------------------------------------------------------------
 
 const BATCH_SIZE = 25;
+// Upper bound on the stale set we rank in memory.
+const MAX_STALE_CANDIDATES = 1000;
+
+// Newest row this cron wrote per property (SERP, Lighthouse or backlinks).
+// Any of the three counts, so a property whose SERP step keeps failing still
+// rotates to the back once its Lighthouse/backlink rows land.
+// ponytail: a property whose every step fails writes nothing and stays
+// first; the schema branch's Property.lastSeoScanAt (stamped on attempt)
+// replaces this.
+async function lastDataforSeoScanMs(
+  propertyIds: string[],
+): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  if (propertyIds.length === 0) return out;
+  const where = { propertyId: { in: propertyIds } };
+  const groups = await Promise.all([
+    prisma.serpRanking.groupBy({ by: ["propertyId"], where, _max: { date: true } }),
+    prisma.onPageAudit.groupBy({ by: ["propertyId"], where, _max: { date: true } }),
+    prisma.backlinkSummary.groupBy({ by: ["propertyId"], where, _max: { date: true } }),
+  ]);
+  for (const g of groups.flat()) {
+    const t = g._max.date?.getTime() ?? 0;
+    if (g.propertyId && t > (out.get(g.propertyId) ?? 0)) out.set(g.propertyId, t);
+  }
+  return out;
+}
 const SCAN_INTERVAL_MS = 24 * 60 * 60 * 1000; // 1 day min between scans per property
 
 export async function GET(req: NextRequest) {
@@ -57,9 +83,11 @@ export async function GET(req: NextRequest) {
     const deadline = startedAt + 180_000;
     const cutoff = new Date(Date.now() - SCAN_INTERVAL_MS);
 
-    // Pick LIVE properties that haven't been scanned today. Order by
-    // lastSyncedAt nulls-first so brand-new properties get scanned soonest.
-    const candidates = await prisma.property.findMany({
+    // Pick LIVE properties that haven't been scanned today, stalest scan
+    // first (see lastDataforSeoScanMs). The old lastSyncedAt order used a
+    // timestamp this cron never writes, so the same properties led every run
+    // and later ones (a second property in the same org) starved.
+    const stale = await prisma.property.findMany({
       where: {
         lifecycle: "ACTIVE",
         launchStatus: "LIVE",
@@ -77,9 +105,13 @@ export async function GET(req: NextRequest) {
         ],
       },
       select: { id: true, orgId: true, name: true, websiteUrl: true },
-      take: BATCH_SIZE,
-      orderBy: { lastSyncedAt: { sort: "asc", nulls: "first" } },
+      orderBy: { id: "asc" },
+      take: MAX_STALE_CANDIDATES,
     });
+    const lastScan = await lastDataforSeoScanMs(stale.map((p) => p.id));
+    const candidates = [...stale]
+      .sort((a, b) => (lastScan.get(a.id) ?? 0) - (lastScan.get(b.id) ?? 0))
+      .slice(0, BATCH_SIZE);
 
     const aggregate = {
       propertiesScanned: 0,

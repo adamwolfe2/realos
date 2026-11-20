@@ -8,6 +8,7 @@ import {
   requireWritableWorkspace,
   ForbiddenError,
   auditPayload,
+  propertyInScope,
 } from "@/lib/tenancy/scope";
 
 // Manual listings management. Operators without AppFolio Plus/Max API access
@@ -100,7 +101,11 @@ export async function createListing(
       return { ok: false, error: first?.message ?? "Validation failed" };
     }
 
-    // Property must belong to the caller's org. Reject otherwise.
+    // Property must belong to the caller's org and the caller's property
+    // grant. Reject otherwise.
+    if (!propertyInScope(scope, parsed.data.propertyId)) {
+      return { ok: false, error: "Property not found" };
+    }
     const property = await prisma.property.findFirst({
       where: { id: parsed.data.propertyId, orgId: scope.orgId },
       select: { id: true },
@@ -157,7 +162,7 @@ export async function deleteListing(
       },
       select: { id: true, propertyId: true },
     });
-    if (!listing) {
+    if (!listing || !propertyInScope(scope, listing.propertyId)) {
       return { ok: false, error: "Listing not found" };
     }
 
@@ -197,7 +202,7 @@ export async function toggleListingAvailable(
       },
       select: { id: true, propertyId: true },
     });
-    if (!listing) {
+    if (!listing || !propertyInScope(scope, listing.propertyId)) {
       return { ok: false, error: "Listing not found" };
     }
 

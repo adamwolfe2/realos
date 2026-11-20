@@ -64,8 +64,15 @@ export function adPlatformOfLead(lead: { source: LeadSource; trafficSource: stri
 }
 
 // Leads credited to one campaign: the leasing system's source detail, or
-// the utm_campaign of the first touch LeaseStack recorded.
-export function campaignLeadWhere(c: { name: string; externalCampaignId: string | null }): Prisma.LeadWhereInput {
+// the utm_campaign of the first touch LeaseStack recorded. A campaign tied
+// to one property only credits that property's leads (and ones with no
+// property yet): per-building accounts often reuse a campaign name
+// ("Search | Fall 27"), and the tag alone would credit both buildings.
+export function campaignLeadWhere(c: {
+  name: string;
+  externalCampaignId: string | null;
+  propertyId?: string | null;
+}): Prisma.LeadWhereInput {
   const keys = campaignLeadKeys(c);
   return {
     AND: [
@@ -75,6 +82,7 @@ export function campaignLeadWhere(c: { name: string; externalCampaignId: string 
           ...keys.map((k) => ({ attribution: { path: ["first", "utmCampaign"], equals: k } })),
         ],
       },
+      ...(c.propertyId ? [{ OR: [{ propertyId: c.propertyId }, { propertyId: null }] }] : []),
     ],
   };
 }

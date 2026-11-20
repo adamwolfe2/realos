@@ -555,7 +555,10 @@ function summarizePlan(plan: LearningRunPlan): ChatbotLearningRunResult["plan"] 
 }
 
 function propertyScope(propertyIds: string[] | null | undefined) {
-  if (!propertyIds || propertyIds.length === 0) return {};
+  // null/undefined = whole org (cron, unrestricted user). An empty array is a
+  // restricted user with no reachable property: org-level rows only, never
+  // the whole org.
+  if (!propertyIds) return {};
   return {
     OR: [{ propertyId: { in: propertyIds } }, { propertyId: null }],
   };

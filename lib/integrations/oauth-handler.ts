@@ -14,6 +14,7 @@ import {
 import { prisma } from "@/lib/db";
 import { encrypt } from "@/lib/crypto";
 import { requireWorkspaceAdmin, ForbiddenError, propertyInScope } from "@/lib/tenancy/scope";
+import { integrationScopeError } from "@/lib/connect/scope-guard";
 import { OrgType } from "@prisma/client";
 import { timingSafeEqual } from "@/lib/auth/timing-safe";
 
@@ -107,6 +108,15 @@ export async function handleOAuthStart(
       select: { id: true },
     });
     propertyId = property?.id ?? null;
+  }
+  // Ad accounts are org-level (propertyId is ignored for them) and a GA4/GSC
+  // start without a property lands on the org-wide row: both reach every
+  // property, so a property-restricted seat may not start them.
+  const scopedPropertyId =
+    provider === "google_ga4" || provider === "google_gsc" ? propertyId : null;
+  const grantError = integrationScopeError(scope, scopedPropertyId);
+  if (grantError) {
+    return NextResponse.json({ error: grantError }, { status: 403 });
   }
 
   const state = signState({

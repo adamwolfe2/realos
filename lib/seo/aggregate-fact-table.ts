@@ -80,7 +80,10 @@ async function aggregatePropertyDay(input: {
         },
       }),
       prisma.seoQuery.findMany({
-        where: { orgId, date },
+        // This property's GSC rows plus legacy org-wide (NULL) rows. Without
+        // the propertyId clause every property in a multi-property org got
+        // every sibling property's queries in its fact table.
+        where: { orgId, date, OR: [{ propertyId }, { propertyId: null }] },
         select: {
           query: true,
           impressions: true,

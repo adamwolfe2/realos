@@ -167,6 +167,17 @@ function buildPropertyGate(scope: ScopedContext): Record<string, unknown> {
 }
 
 /**
+ * Gate for UPDATE / DELETE. Stricter than the read gate: a restricted user
+ * may see an org-wide credential but not rotate, rescope or delete it, since
+ * that changes a secret every other property relies on (the same rule
+ * validatePropertyAssignment applies to creating org-wide credentials).
+ */
+function buildPropertyWriteGate(scope: ScopedContext): Record<string, unknown> {
+  if (!scope.allowedPropertyIds) return {};
+  return { propertyId: { in: scope.allowedPropertyIds } };
+}
+
+/**
  * Validate a propertyId assignment on create/update. Returns null if
  * the value is fine, or an error string otherwise.
  *
@@ -313,7 +324,7 @@ export async function updateCredential(
       id,
       ...tenantWhere(scope),
       deletedAt: null,
-      ...buildPropertyGate(scope),
+      ...buildPropertyWriteGate(scope),
     },
     select: { id: true, name: true, propertyId: true },
   });
@@ -401,7 +412,7 @@ export async function deleteCredential(
       id,
       ...tenantWhere(scope),
       deletedAt: null,
-      ...buildPropertyGate(scope),
+      ...buildPropertyWriteGate(scope),
     },
     select: { id: true, name: true },
   });

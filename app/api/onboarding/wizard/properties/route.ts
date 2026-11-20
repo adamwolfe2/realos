@@ -127,6 +127,7 @@ export async function POST(req: NextRequest) {
           trialEndsAt: true,
           subscriptionStatus: true,
           moduleChatbot: true,
+          onboardingStep: true,
         },
       },
     },
@@ -139,6 +140,15 @@ export async function POST(req: NextRequest) {
   }
   const roleDenied = wizardRoleForbidden(user.role);
   if (roleDenied) return roleDenied;
+
+  // "done" is terminal (same rule as the features/back steps). A stale wizard
+  // tab or a replayed request on a live workspace must not rewrite its
+  // existing properties or mint new ones outside createProperty (which runs
+  // billing sync and scaffolding). Adding property N+1 goes through
+  // /portal/properties.
+  if (user.org.onboardingStep === "done") {
+    return NextResponse.json({ ok: true, nextStep: "done" });
+  }
   const orgId = user.orgId;
   const org = user.org;
 

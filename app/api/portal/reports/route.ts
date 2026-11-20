@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireScope, requireWritableWorkspace, ForbiddenError } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
-import { generateReportSnapshot, type ReportKind } from "@/lib/reports/generate";
+import { z } from "zod";
+import { generateReportSnapshot } from "@/lib/reports/generate";
+import {
+  resolveReportPropertyId,
+  ReportPropertyAccessError,
+} from "@/lib/reports/resolve-property";
+import { propertyWhereFragment } from "@/lib/tenancy/property-filter";
 import { generateShareToken } from "@/lib/reports/token";
 import {
-  REPORT_PORTFOLIO_ACCESS_ERROR,
   isReportStatusRestricted,
   REPORT_OPERATOR_ONLY_ERROR,
 } from "@/lib/reports/access";
@@ -16,9 +21,14 @@ import {
 
 export const dynamic = "force-dynamic";
 
+const CreateReportBody = z.object({
+  kind: z.enum(["weekly", "monthly", "custom"]),
+  propertyId: z.string().min(1).max(64).nullish(),
+});
+
 // ---------------------------------------------------------------------------
 // POST /api/portal/reports
-// Body: { kind: "weekly" | "monthly" | "custom" }
+// Body: { kind: "weekly" | "monthly" | "custom", propertyId?: string }
 // Creates a new ClientReport in draft status with a frozen snapshot.
 // ---------------------------------------------------------------------------
 
@@ -37,19 +47,28 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Reports are org-wide snapshots — generateReportSnapshot rolls
-    // up the entire portfolio (every property's leads, spend, tours,
-    // etc.) and freezes it into a shareable artifact. A restricted
-    // user (UserPropertyAccess scoped to 1-of-N buildings) MUST NOT
-    // be able to generate one: the snapshot would include numbers
-    // from properties they're not allowed to see, and the shareToken
-    // makes that snapshot world-readable for anyone with the link.
-    // Listing existing reports is similarly restricted in GET below.
-    if (scope.allowedPropertyIds) {
+    // Body first so the property gate can run before any AI spend. A
+    // restricted user (UserPropertyAccess scoped to 1-of-N buildings) may
+    // generate a report for a granted property only; the org-wide rollup
+    // (no propertyId) would include buildings they cannot see, and the
+    // shareToken makes the snapshot world-readable. Same gate as
+    // createReport (lib/reports/resolve-property.ts).
+    const parsed = CreateReportBody.safeParse(await req.json().catch(() => null));
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: REPORT_PORTFOLIO_ACCESS_ERROR },
-        { status: 403 },
+        { error: "Invalid kind. Expected weekly, monthly, or custom." },
+        { status: 400 },
       );
+    }
+    const { kind } = parsed.data;
+    let propertyId: string | null;
+    try {
+      propertyId = await resolveReportPropertyId(scope, parsed.data.propertyId);
+    } catch (err) {
+      if (err instanceof ReportPropertyAccessError) {
+        return NextResponse.json({ error: err.message }, { status: 403 });
+      }
+      throw err;
     }
 
     // Billing gate — report generation invokes the LLM polish helper
@@ -72,21 +91,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json().catch(() => null);
-    const kind = body?.kind as ReportKind | undefined;
-
-    if (kind !== "weekly" && kind !== "monthly" && kind !== "custom") {
-      return NextResponse.json(
-        { error: "Invalid kind. Expected weekly, monthly, or custom." },
-        { status: 400 },
-      );
-    }
-
-    const snapshot = await generateReportSnapshot(scope.orgId, kind);
+    const snapshot = await generateReportSnapshot(scope.orgId, kind, { propertyId });
 
     const report = await prisma.clientReport.create({
       data: {
         orgId: scope.orgId,
+        propertyId,
         kind,
         periodStart: new Date(snapshot.periodStart),
         periodEnd: new Date(snapshot.periodEnd),
@@ -97,6 +107,7 @@ export async function POST(req: NextRequest) {
       },
       select: {
         id: true,
+        propertyId: true,
         kind: true,
         status: true,
         periodStart: true,
@@ -115,20 +126,13 @@ export async function POST(req: NextRequest) {
 }
 
 // ---------------------------------------------------------------------------
-// GET /api/portal/reports?kind=&status=&limit=
+// GET /api/portal/reports?kind=&status=&limit=&propertyId=
 // Lists ClientReports for the tenant, newest first.
 // ---------------------------------------------------------------------------
 
 export async function GET(req: NextRequest) {
   try {
     const scope = await requireScope();
-
-    // Mirror the POST gate: a restricted user can't enumerate
-    // existing snapshots either, because each snapshot contains
-    // org-wide aggregates they're not authorized to see.
-    if (scope.allowedPropertyIds) {
-      return NextResponse.json({ reports: [] });
-    }
 
     const url = new URL(req.url);
     const kind = url.searchParams.get("kind");
@@ -138,7 +142,15 @@ export async function GET(req: NextRequest) {
       200,
     );
 
-    const where: Record<string, unknown> = { orgId: scope.orgId };
+    // Property scope: ?propertyId= narrows to one building. A restricted
+    // user only ever lists reports for granted properties: org-wide reports
+    // (propertyId null) roll up buildings they can't see, so they are
+    // excluded, and an out-of-grant ?propertyId= matches nothing.
+    const propertyParam = url.searchParams.get("propertyId");
+    const where: Record<string, unknown> = {
+      orgId: scope.orgId,
+      ...propertyWhereFragment(scope, propertyParam ? [propertyParam] : null),
+    };
     if (kind === "weekly" || kind === "monthly" || kind === "custom") {
       where.kind = kind;
     }
@@ -165,6 +177,7 @@ export async function GET(req: NextRequest) {
         sharedAt: true,
         viewCount: true,
         headline: true,
+        propertyId: true,
       },
     });
 

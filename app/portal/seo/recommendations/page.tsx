@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import {
+  parsePropertyFilter,
+  propertyWhereFragment,
+} from "@/lib/tenancy/property-filter";
 import { PageHeader } from "@/components/admin/page-header";
 import { bucketCountsForRecommendations } from "@/lib/seo/categorize-recommendation";
 import { OpportunitiesClient } from "./opportunities-client";
@@ -29,16 +33,21 @@ export const dynamic = "force-dynamic";
 // right place to add it.
 // ---------------------------------------------------------------------------
 
-export default async function OpportunitiesPage() {
+export default async function OpportunitiesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ property?: string; properties?: string }>;
+}) {
   const scope = await requireScope();
+  // Switcher selection (URL or sidebar cookie) intersected with the user's
+  // property grant; restricted users with no selection get their full grant.
+  const requestedIds = await parsePropertyFilter(await searchParams, scope.orgId);
 
   const where: Record<string, unknown> = {
     ...tenantWhere(scope),
     status: { in: ["OPEN", "IN_PROGRESS"] as const },
+    ...propertyWhereFragment(scope, requestedIds),
   };
-  if (scope.allowedPropertyIds) {
-    where.propertyId = { in: scope.allowedPropertyIds };
-  }
 
   // Highest-score first so the top of the feed is always "what should we
   // ship next?". Severity is captured in the score by the engine, so a

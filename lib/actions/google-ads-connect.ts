@@ -4,6 +4,7 @@ import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { integrationScopeError } from "@/lib/connect/scope-guard";
 import { requireWritableWorkspace, auditPayload, requireWorkspaceAdmin } from "@/lib/tenancy/scope";
 import { encrypt } from "@/lib/crypto";
 import {
@@ -63,6 +64,9 @@ export async function connectGoogleAds(
       error: err instanceof Error ? err.message : "Not authorized",
     };
   }
+  // Org-level connection: reaches every property (lib/connect/scope-guard).
+  const grantError = integrationScopeError(scope, null);
+  if (grantError) return { ok: false, error: grantError };
 
   const parsed = connectSchema.safeParse({
     displayName: formData.get("displayName")?.toString() || undefined,
@@ -172,6 +176,9 @@ export async function disconnectGoogleAds(
       error: err instanceof Error ? err.message : "Not authorized",
     };
   }
+  // Org-level connection: reaches every property (lib/connect/scope-guard).
+  const grantError = integrationScopeError(scope, null);
+  if (grantError) return { ok: false, error: grantError };
 
   const accountId = formData.get("accountId")?.toString();
   if (!accountId) return { ok: false, error: "accountId is required" };

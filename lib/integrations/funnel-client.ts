@@ -37,6 +37,11 @@ export type FunnelLeadInput = {
   sourceLabel?: string | null;
   /** Stated intent, when known. */
   intent?: string | null;
+  /**
+   * The lead's building. Every building shares the org's one Funnel group
+   * until per-property groups exist, so the note is where staff see it.
+   */
+  propertyName?: string | null;
 };
 
 /** One chat turn, as stored in ChatbotConversation.messages JSON. */
@@ -160,10 +165,12 @@ export function buildFunnelProspectPayload(params: {
   // Chatbot leads carry the full transcript; every other channel gets a short
   // source note. Funnel has no Activity/Note endpoint — `notes` is the only
   // place a conversation summary can live.
-  const notes =
+  const baseNotes =
     channel === LeadNotifyChannel.CHATBOT && conversation
       ? formatConversationNotes(conversation, lead.sourceLabel)
       : shortSourceNote(lead, channel);
+  const propertyName = lead.propertyName?.trim();
+  const notes = propertyName ? `Property: ${propertyName}\n${baseNotes}` : baseNotes;
 
   const client: FunnelProspectRequest["client"] = {
     first_name: first,
@@ -377,6 +384,7 @@ export async function pushConversationLeadToFunnel(
           capturedName: true,
           capturedEmail: true,
           capturedPhone: true,
+          property: { select: { name: true } },
           lead: {
             select: {
               firstName: true,
@@ -385,6 +393,7 @@ export async function pushConversationLeadToFunnel(
               phone: true,
               intent: true,
               sourceDetail: true,
+              property: { select: { name: true } },
             },
           },
         },
@@ -412,6 +421,9 @@ export async function pushConversationLeadToFunnel(
         phone,
         sourceLabel: convo.pageUrl ? `Chatbot on ${convo.pageUrl}` : "Chatbot",
         intent: lead?.intent ?? null,
+        // The lead's filed building wins; the chat's page building is the
+        // fallback for a lead that was never assigned one.
+        propertyName: lead?.property?.name ?? convo.property?.name ?? null,
       },
       conversationId: convo.id,
     });

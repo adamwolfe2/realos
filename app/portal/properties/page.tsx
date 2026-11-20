@@ -613,7 +613,7 @@ export default async function PropertiesList({
                           : "text-[#da1e28] bg-[rgba(218,30,40,0.1)]";
                     return (
                       <Link
-                        href={`/portal/seo/agent?propertyId=${p.id}`}
+                        href={`/portal/seo/agent?property=${p.id}`}
                         className={`inline-flex items-center rounded-[2px] px-1.5 py-0.5 text-[11px] font-mono font-semibold tabular-nums hover:opacity-80 transition-opacity ${tone}`}
                         title="Open SEO Agent for this property"
                       >

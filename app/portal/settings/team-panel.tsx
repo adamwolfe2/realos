@@ -7,6 +7,7 @@ import {
   removeUserFromOrgAsClient,
   updatePropertyAccessAsClient,
 } from "@/lib/actions/manage-team";
+import { inviteMustNameProperties } from "@/lib/portal/team-visibility";
 
 type Member = {
   id: string;
@@ -49,6 +50,8 @@ type Props = {
   orgId: string;
   canManage: boolean;
   viewerUserId: string;
+  // Viewer holds a property grant: invites must name their properties.
+  inviterRestricted?: boolean;
 };
 
 export function ClientTeamPanel(props: Props) {
@@ -79,6 +82,7 @@ export function ClientTeamPanel(props: Props) {
         <InviteForm
           orgId={props.orgId}
           properties={props.properties}
+          inviterRestricted={props.inviterRestricted ?? false}
           onSuccess={() => setInviteOpen(false)}
         />
       ) : null}
@@ -402,10 +406,12 @@ function PropertyAccessEditor({
 function InviteForm({
   orgId,
   properties,
+  inviterRestricted,
   onSuccess,
 }: {
   orgId: string;
   properties: Property[];
+  inviterRestricted: boolean;
   onSuccess: () => void;
 }) {
   const [email, setEmail] = useState("");
@@ -419,7 +425,16 @@ function InviteForm({
     Set<string> | null
   >(null);
   const [state, setState] = useState<InviteState>({ kind: "idle" });
+  const mustRestrict = inviteMustNameProperties(inviterRestricted, role);
+  // A required choice with only one option is made for the operator.
+  const onlyProperty =
+    mustRestrict && properties.length === 1 ? properties[0] : null;
   const showPropertyControls = properties.length > 1;
+  const picked =
+    onlyProperty !== null
+      ? [onlyProperty.id]
+      : [...(restrictedPropertyIds ?? [])];
+  const missingProperties = mustRestrict && picked.length === 0;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -436,8 +451,8 @@ function InviteForm({
           // Only send propertyIds when the operator explicitly opted
           // into restriction. Omitting the key keeps legacy behavior
           // (org-wide access) so single-property orgs aren't affected.
-          ...(restrictedPropertyIds && restrictedPropertyIds.size > 0
-            ? { propertyIds: [...restrictedPropertyIds] }
+          ...((mustRestrict || restrictedPropertyIds) && picked.length > 0
+            ? { propertyIds: picked }
             : {}),
         }),
       });
@@ -539,20 +554,23 @@ function InviteForm({
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
               type="checkbox"
-              checked={restrictedPropertyIds !== null}
+              checked={mustRestrict || restrictedPropertyIds !== null}
+              disabled={mustRestrict}
               onChange={(e) =>
                 setRestrictedPropertyIds(e.target.checked ? new Set() : null)
               }
               className="h-3.5 w-3.5 accent-primary"
             />
             <span className="font-medium">
-              Limit access to specific properties
+              {mustRestrict
+                ? "Choose which properties they can access"
+                : "Limit access to specific properties"}
             </span>
           </label>
-          {restrictedPropertyIds !== null ? (
+          {mustRestrict || restrictedPropertyIds !== null ? (
             <div className="mt-2 pl-5 grid grid-cols-1 sm:grid-cols-2 gap-1 max-h-40 overflow-y-auto">
               {properties.map((p) => {
-                const checked = restrictedPropertyIds.has(p.id);
+                const checked = restrictedPropertyIds?.has(p.id) ?? false;
                 return (
                   <label
                     key={p.id}
@@ -563,8 +581,7 @@ function InviteForm({
                       checked={checked}
                       onChange={() =>
                         setRestrictedPropertyIds((prev) => {
-                          if (!prev) return prev;
-                          const next = new Set(prev);
+                          const next = new Set(prev ?? []);
                           if (next.has(p.id)) next.delete(p.id);
                           else next.add(p.id);
                           return next;
@@ -583,12 +600,16 @@ function InviteForm({
             </p>
           )}
         </div>
+      ) : onlyProperty ? (
+        <p className="text-[11px] text-muted-foreground">
+          Access: {onlyProperty.name}
+        </p>
       ) : null}
 
       <div className="flex items-center gap-3 flex-wrap">
         <button
           type="submit"
-          disabled={state.kind === "sending" || !email}
+          disabled={state.kind === "sending" || !email || missingProperties}
           className="rounded-[2px] bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold hover:bg-primary/90 disabled:opacity-40"
         >
           {state.kind === "sending" ? "Sending…" : "Send invite"}

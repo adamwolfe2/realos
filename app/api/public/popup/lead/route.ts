@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { runAfter } from "@/lib/after";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { findOldestLeadByEmail } from "@/lib/leads/find-by-email";
+import { leadPropertyLabel } from "@/lib/leads/property-label";
 import {
   attributionColumns,
   attributionFill,
@@ -29,6 +31,7 @@ import {
   chatbotOriginBypassEnabled,
 } from "@/lib/tenancy/origin-guard";
 import { recordPopupEvent } from "@/lib/popups/queries";
+import { resolvePropertyForChatPage } from "@/lib/chatbot/property-attribution";
 import { getSiteUrl } from "@/lib/brand";
 
 // ---------------------------------------------------------------------------
@@ -183,7 +186,7 @@ export async function POST(req: NextRequest) {
   // propertyId (if set on the popup itself) so multi-property campaigns
   // attribute correctly even if the script tag drops the property
   // attribute. Falls back to the property slug from the script tag,
-  // then to null (org-level lead).
+  // then to page-URL inference, then to null (org-level lead).
   let propertyId: string | null = popup.propertyId ?? null;
   if (!propertyId && data.propertySlug) {
     const prop = await prisma.property.findFirst({
@@ -191,6 +194,18 @@ export async function POST(req: NextRequest) {
       select: { id: true },
     });
     propertyId = prop?.id ?? null;
+  }
+  // Org-wide campaign (propertyId null) embedded without data-property on a
+  // multi-property org: infer the building from the page it fired on (its
+  // own website / slug in the URL), same resolver as the chatbot. Ambiguous
+  // stays null (org-level) rather than guessing.
+  if (!propertyId) {
+    const properties = await prisma.property.findMany({
+      // ACTIVE only: EXCLUDED/IMPORTED address-only rows never resolve.
+      where: marketablePropertyWhere(org.id),
+      select: { id: true, slug: true, name: true, websiteUrl: true },
+    });
+    propertyId = resolvePropertyForChatPage(data.pageUrl, properties);
   }
 
   // Upsert by (orgId, email) so the same visitor converting twice on
@@ -318,9 +333,17 @@ export async function POST(req: NextRequest) {
   // is acceptable for a one-shot conversion form (operator submits
   // and waits for the success state anyway).
   const appUrl = getSiteUrl();
+  // Name the building so a multi-property org knows whose lead this is.
+  // Label the building the lead is actually filed under: a returning lead
+  // keeps its first building.
+  const orgLabel = await leadPropertyLabel(
+    org.id,
+    org.name,
+    existing?.propertyId ?? propertyId,
+  );
   const notifyResults = await Promise.allSettled([
     notifyNewLeadSlack({
-      companyName: org.name,
+      companyName: orgLabel,
       contactName: data.email ?? data.phone ?? "Anonymous",
       contactEmail: data.email ?? "unknown@unknown.local",
       propertyType: "popup",
@@ -331,7 +354,7 @@ export async function POST(req: NextRequest) {
     org.primaryContactEmail
       ? notifyTenantOfLeadEmail({
           to: org.primaryContactEmail,
-          orgName: org.name,
+          orgName: orgLabel,
           leadId,
           firstName: null,
           lastName: null,

@@ -8,6 +8,7 @@ import {
   MousePointerClick,
   Target,
   ArrowRight,
+  Building2,
 } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
@@ -29,6 +30,7 @@ import {
   fetchSeoTopQueries,
 } from "@/lib/seo/portal-overview-queries";
 import { SeoProvider } from "@prisma/client";
+import { buildSeoSourceRows } from "@/lib/seo/source-rows";
 import {
   ConnectSeoForm,
   DisconnectSeoForm,
@@ -214,8 +216,7 @@ export default async function SeoPage({
     orderBy: { provider: "asc" },
   });
 
-  const gscIntegration = integrations.find((i) => i.provider === SeoProvider.GSC);
-  const ga4Integration = integrations.find((i) => i.provider === SeoProvider.GA4);
+  const gscIntegrations = integrations.filter((i) => i.provider === SeoProvider.GSC);
   const hasAny = integrations.length > 0;
 
   // When the operator arrives from a property's setup checklist
@@ -251,6 +252,14 @@ export default async function SeoPage({
     orderBy: { name: "asc" },
   });
   const properties = visibleProperties(scope, allProperties);
+  // Sources panel: one row per property in view (the selection, else every
+  // visible property), each with its own GSC/GA4 state.
+  const sourceRows = buildSeoSourceRows(
+    effectiveIds && effectiveIds.length > 0
+      ? properties.filter((p) => effectiveIds.includes(p.id))
+      : properties,
+    integrations,
+  );
 
   // If there's no integration at all, skip every snapshot/query fetch and
   // render the empty hero immediately.
@@ -341,7 +350,10 @@ export default async function SeoPage({
   // "sc-domain:telegraphcommons.com") so operators can confirm the data
   // source matches what they expect.
   const sourceLabel = "Google Search Console";
-  const propertyLabel = gscIntegration?.propertyIdentifier ?? null;
+  // Only name a site when exactly one GSC connection is in view; with
+  // several, any single identifier would mislabel the blended numbers.
+  const propertyLabel =
+    gscIntegrations.length === 1 ? gscIntegrations[0].propertyIdentifier : null;
   const rangeLabel = "Last 30 days vs prior 30 days";
 
   return (
@@ -405,26 +417,34 @@ export default async function SeoPage({
 
       <Panel title="Sources" flush>
         <div className="divide-y divide-[var(--t-divider)]">
-          <ProviderManageCard
-            title="Google Search Console"
-            provider="GSC"
-            connected={!!gscIntegration}
-            propertyIdentifier={gscIntegration?.propertyIdentifier ?? null}
-            serviceAccountEmail={gscIntegration?.serviceAccountEmail ?? null}
-            lastSyncAt={gscIntegration?.lastSyncAt ?? null}
-            lastSyncError={gscIntegration?.lastSyncError ?? null}
-            status={gscIntegration?.status ?? null}
-          />
-          <ProviderManageCard
-            title="Google Analytics 4"
-            provider="GA4"
-            connected={!!ga4Integration}
-            propertyIdentifier={ga4Integration?.propertyIdentifier ?? null}
-            serviceAccountEmail={ga4Integration?.serviceAccountEmail ?? null}
-            lastSyncAt={ga4Integration?.lastSyncAt ?? null}
-            lastSyncError={ga4Integration?.lastSyncError ?? null}
-            status={ga4Integration?.status ?? null}
-          />
+          {sourceRows.map((row) => (
+            <div key={row.key} className="divide-y divide-[var(--t-divider)]">
+              {sourceRows.length > 1 ? (
+                <div className="flex items-center gap-2 px-4 pt-3 pb-1 text-[11.5px] font-semibold uppercase tracking-wide text-[var(--t-muted)]">
+                  <Building2 className="h-3.5 w-3.5" aria-hidden />
+                  {row.label}
+                </div>
+              ) : null}
+              {([
+                ["GSC", "Google Search Console", row.gsc],
+                ["GA4", "Google Analytics 4", row.ga4],
+              ] as const).map(([provider, title, i]) => (
+                <ProviderManageCard
+                  key={provider}
+                  title={title}
+                  provider={provider}
+                  propertyId={row.propertyId}
+                  propertyName={row.label}
+                  connected={!!i}
+                  propertyIdentifier={i?.propertyIdentifier ?? null}
+                  serviceAccountEmail={i?.serviceAccountEmail ?? null}
+                  lastSyncAt={i?.lastSyncAt ?? null}
+                  lastSyncError={i?.lastSyncError ?? null}
+                  status={i?.status ?? null}
+                />
+              ))}
+            </div>
+          ))}
         </div>
         <details className="border-t border-[var(--t-divider)] px-4 py-3">
           <summary className="cursor-pointer text-[12.5px] font-medium text-[var(--t-muted)] hover:text-[var(--t-ink)]">
@@ -554,6 +574,8 @@ function SeoEmptyShell({
 function ProviderManageCard({
   title,
   provider,
+  propertyId,
+  propertyName,
   connected,
   propertyIdentifier,
   serviceAccountEmail,
@@ -563,6 +585,9 @@ function ProviderManageCard({
 }: {
   title: string;
   provider: "GSC" | "GA4";
+  /** LeaseStack property this row belongs to; null = legacy org-wide. */
+  propertyId: string | null;
+  propertyName: string;
   connected: boolean;
   propertyIdentifier: string | null;
   serviceAccountEmail: string | null;
@@ -578,7 +603,11 @@ function ProviderManageCard({
           <span className="flex-1 text-[13px] font-medium text-[var(--t-ink)]">{title}</span>
           <Pill tone="neutral">Not connected</Pill>
         </div>
-        <ConnectSeoForm provider={provider} />
+        <ConnectSeoForm
+          provider={provider}
+          properties={propertyId ? [{ id: propertyId, name: propertyName }] : []}
+          defaultPropertyId={propertyId}
+        />
       </div>
     );
   }
@@ -596,7 +625,7 @@ function ProviderManageCard({
           {lastSyncAt ? `Synced ${formatDistanceToNow(lastSyncAt, { addSuffix: true })}` : "Never synced"}
         </span>
         <Pill tone={healthy ? "good" : "bad"}>{healthy ? "Connected" : "Sync error"}</Pill>
-        <DisconnectSeoForm provider={provider} />
+        <DisconnectSeoForm provider={provider} propertyId={propertyId} />
       </div>
       {lastSyncError ? <p className="mt-1.5 pl-[26px] text-[12px] text-[#b91c1c]">{lastSyncError}</p> : null}
     </div>

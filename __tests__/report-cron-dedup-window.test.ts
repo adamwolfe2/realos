@@ -48,7 +48,11 @@ vi.mock("@/lib/db", () => ({
         return { id: `r${m.rows.length}`, shareToken: "tok" };
       },
       update: async () => ({}),
+      // Stalest-first ordering input (lib/reports/scheduled.ts).
+      groupBy: async () => [],
     },
+    // No ACTIVE properties: org-wide draft only, as before per-property drafts.
+    property: { findMany: async () => [] },
   },
 }));
 

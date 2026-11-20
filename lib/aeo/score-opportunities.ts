@@ -32,6 +32,7 @@ import {
   type OpportunityInputs,
 } from "./opportunity-score";
 import { resolveEngineSource } from "./engines";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 
 const TOP_QUERIES = 20;
 const OVERVIEW_TOP_QUERIES = 5;
@@ -149,7 +150,7 @@ export async function scoreOrgOpportunities(
     result.ranOpportunities = true;
 
     // Google AI Overview row — top-5 queries only to keep spend trivial.
-    const primaryHost = await loadPrimaryHost(orgId);
+    const ownedHosts = await loadOwnedHosts(orgId);
     const overviewQueries = topQueries
       .slice(0, OVERVIEW_TOP_QUERIES)
       .map((q) => q.query);
@@ -188,9 +189,9 @@ export async function scoreOrgOpportunities(
           continue;
         }
         const citedUrls = ai.data.citedUrls;
-        const cited = primaryHost
-          ? citedUrls.some((u) => citedUrlMatchesHost(u, primaryHost))
-          : false;
+        const cited = citedUrls.some((u) =>
+          ownedHosts.some((h) => citedUrlMatchesHost(u, h)),
+        );
         await prisma.aeoOverviewSnapshot.create({
           data: {
             orgId,
@@ -373,13 +374,37 @@ async function loadOnPageSeoScore(orgId: string): Promise<number | null> {
   return sum / rows.length;
 }
 
-async function loadPrimaryHost(orgId: string): Promise<string | null> {
-  const domain = await prisma.domainBinding.findFirst({
-    where: { orgId, isPrimary: true },
-    select: { hostname: true },
-  });
-  if (!domain) return null;
-  return domain.hostname.toLowerCase().replace(/^www\./, "");
+// Every host the org owns: its primary bound domain plus each marketable
+// property's own website. A multi-property org whose buildings run separate
+// sites must count a citation of ANY of them, not only the primary domain.
+async function loadOwnedHosts(orgId: string): Promise<string[]> {
+  const [domain, properties] = await Promise.all([
+    prisma.domainBinding.findFirst({
+      where: { orgId, isPrimary: true },
+      select: { hostname: true },
+    }),
+    prisma.property.findMany({
+      where: { ...marketablePropertyWhere(orgId), websiteUrl: { not: null } },
+      select: { websiteUrl: true },
+    }),
+  ]);
+  const hosts = [
+    domain?.hostname ?? null,
+    ...properties.map((p) => hostOf(p.websiteUrl)),
+  ]
+    .filter((h): h is string => !!h)
+    .map((h) => h.toLowerCase().replace(/^www\./, ""));
+  return [...new Set(hosts)];
+}
+
+function hostOf(url: string | null): string | null {
+  if (!url) return null;
+  try {
+    return new URL(url.startsWith("http") ? url : `https://${url}`).hostname;
+  } catch {
+    // Malformed websiteUrl: that property simply contributes no host.
+    return null;
+  }
 }
 
 function citedUrlMatchesHost(url: string, primaryHost: string): boolean {

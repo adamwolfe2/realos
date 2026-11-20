@@ -35,6 +35,42 @@ export type ManageTeamResult =
   | { ok: true }
   | { ok: false; error: string };
 
+// Zero UserPropertyAccess rows means UNRESTRICTED (org-wide) in scope.ts, so
+// both helpers below guard transitions that would silently widen a teammate.
+
+// True when a property-restricted caller is acting on a teammate outside
+// their own properties (an unrestricted teammate counts as outside). Same
+// rule updatePropertyAccessAsClient applies inline.
+async function outsideCallerProperties(
+  scope: ScopedContext,
+  targetUserId: string,
+): Promise<boolean> {
+  if (!scope.allowedPropertyIds) return false;
+  const rows = await prisma.userPropertyAccess.findMany({
+    where: { userId: targetUserId },
+    select: { propertyId: true },
+  });
+  const held = new Set(scope.allowedPropertyIds);
+  return rows.length === 0 || rows.some((r) => !held.has(r.propertyId));
+}
+
+// True when switching a teammate to LEASING_AGENT / CLIENT_VIEWER would leave
+// that scoped role with zero grants, i.e. org-wide access. The invite route
+// and the property-access editor already refuse this state; role change was
+// the third write path that could reach it.
+async function scopedRoleWithoutGrants(
+  userId: string,
+  nextRole: UserRole,
+): Promise<boolean> {
+  if (!PROPERTY_SCOPED_ROLES.has(nextRole)) return false;
+  return (await prisma.userPropertyAccess.count({ where: { userId } })) === 0;
+}
+
+const SCOPED_ROLE_NEEDS_GRANT =
+  "Give this teammate access to at least one property before changing them to this role.";
+const OUTSIDE_YOUR_PROPERTIES =
+  "You can only manage teammates within your properties.";
+
 // --- updateUserRole (agency) -----------------------------------------------
 
 const updateRoleSchema = z.object({
@@ -146,6 +182,10 @@ export async function updateUserRoleAsAgency(
     }
   }
 
+  if (await scopedRoleWithoutGrants(user.id, nextRole)) {
+    return { ok: false, error: SCOPED_ROLE_NEEDS_GRANT };
+  }
+
   await prisma.user.update({
     where: { id: user.id },
     data: { role: nextRole },
@@ -242,6 +282,13 @@ export async function updateUserRoleAsClient(
           "You can't remove the last Owner — promote another teammate to Owner first.",
       };
     }
+  }
+
+  if (await outsideCallerProperties(scope, target.id)) {
+    return { ok: false, error: OUTSIDE_YOUR_PROPERTIES };
+  }
+  if (await scopedRoleWithoutGrants(target.id, parsed.data.role)) {
+    return { ok: false, error: SCOPED_ROLE_NEEDS_GRANT };
   }
 
   await prisma.user.update({
@@ -436,6 +483,9 @@ export async function removeUserFromOrgAsClient(
   }
   if (AGENCY_ROLES.has(target.role)) {
     return { ok: false, error: "You can't remove an agency user from the portal." };
+  }
+  if (await outsideCallerProperties(scope, target.id)) {
+    return { ok: false, error: OUTSIDE_YOUR_PROPERTIES };
   }
 
   // Only an OWNER may remove an OWNER (a CLIENT_ADMIN cannot remove the Owner),

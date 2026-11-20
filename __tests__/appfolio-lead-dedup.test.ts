@@ -107,4 +107,18 @@ describe("upsertAppfolioLead — application/guest_card dedup", () => {
     expect(mockPrisma.lead.findFirst).not.toHaveBeenCalled();
     expect(mockPrisma.lead.create).toHaveBeenCalledTimes(1);
   });
+
+  it("escapes `_` in the email so the dedup lookup can't match a different prospect", async () => {
+    mockPrisma.lead.findUnique.mockResolvedValue(null);
+    mockPrisma.lead.findFirst.mockResolvedValue(null);
+    mockPrisma.lead.create.mockResolvedValue({ id: "lead-new" });
+
+    await upsertAppfolioLead("org-1", guestCard({ email: "Jo_Ann@x.com" }), "prop-1");
+
+    const findFirstArg = mockPrisma.lead.findFirst.mock.calls[0][0];
+    expect(findFirstArg.where.email).toEqual({
+      equals: "jo\\_ann@x.com",
+      mode: "insensitive",
+    });
+  });
 });

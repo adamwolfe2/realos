@@ -4,6 +4,7 @@ import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { integrationScopeError } from "@/lib/connect/scope-guard";
 import { auditPayload, requireWorkspaceAdmin } from "@/lib/tenancy/scope";
 import { runAdsSyncForAccount } from "@/lib/integrations/ads-sync";
 import { AdPlatform, AuditAction, Prisma } from "@prisma/client";
@@ -49,6 +50,9 @@ export async function bindMetaAdsAccount(
       error: err instanceof Error ? err.message : "Not authorized",
     };
   }
+  // Org-level connection: reaches every property (lib/connect/scope-guard).
+  const grantError = integrationScopeError(scope, null);
+  if (grantError) return { ok: false, error: grantError };
 
   const parsed = schema.safeParse({
     externalAccountId: formData.get("externalAccountId")?.toString() ?? "",

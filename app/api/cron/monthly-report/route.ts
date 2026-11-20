@@ -6,6 +6,7 @@ import { generateShareToken } from "@/lib/reports/token";
 import { sendReportEmail } from "@/lib/email/send-report";
 import { notifyReportDraftReady } from "@/lib/notifications/create";
 import { verifyCronAuth } from "@/lib/cron/auth";
+import { planScheduledReportUnits, unitKey } from "@/lib/reports/scheduled";
 
 const DEDUP_WINDOW_MS = 12 * 60 * 60 * 1000;
 
@@ -22,8 +23,9 @@ export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for u
 // unreviewed numbers to primaryContactEmail with no draft stage, directly
 // contradicting the Reports UI promise "Nothing is sent automatically".
 //
-// Idempotency: skips orgs that already have a monthly ClientReport for
-// the current calendar month's period window.
+// Orgs with 2+ ACTIVE properties also get one draft per ACTIVE property.
+// Idempotency: keyed on (org, property) — a unit already drafted for this
+// month's period window is skipped (lib/reports/scheduled.ts).
 //
 // Auth: Bearer CRON_SECRET.
 export async function GET(req: NextRequest) {
@@ -77,58 +79,46 @@ export async function GET(req: NextRequest) {
     const agencyOrg = await prisma.organization
       .findFirst({ where: { orgType: "AGENCY" }, select: { id: true }, orderBy: { createdAt: "asc" } })
       .catch(() => null);
-    const orgIds = orgs.map((o) => o.id);
-    const existingReports =
-      orgIds.length > 0
-        ? await prisma.clientReport.findMany({
-            where: {
-              orgId: { in: orgIds },
-              kind: "monthly",
-              // Window, not exact match: periodStart = runNow - period to
-              // the millisecond, so the catch-up run 2h later (vercel.json)
-              // or a manual re-run would otherwise miss the first run's
-              // rows and re-send every report.
-              // Only rows this cron creates: a manual or property-scoped
-              // report in the window must not suppress the org-wide one.
-              propertyId: null,
-              generatedBy: null,
-              periodStart: {
-                gte: new Date(sharedPeriodStart.getTime() - DEDUP_WINDOW_MS),
-                lte: sharedPeriodStart,
-              },
-            },
-            select: { orgId: true },
-          })
-        : [];
-    const alreadyReported = new Set(existingReports.map((r) => r.orgId));
+    // One unit per (org, property): org-wide draft for every org, plus one
+    // per ACTIVE property when the org has 2+. See lib/reports/scheduled.ts
+    // for the dedup key and stalest-first order.
+    const orgById = new Map(orgs.map((o) => [o.id, o]));
+    const { due, alreadyDrafted } = await planScheduledReportUnits({
+      kind: "monthly",
+      orgIds: orgs.map((o) => o.id),
+      periodStart: sharedPeriodStart,
+      dedupWindowMs: DEDUP_WINDOW_MS,
+    });
+    skipped += alreadyDrafted;
 
-    // Stop starting new orgs with headroom before maxDuration (300s); one
-    // in-flight org (sections + 30s AI + send) still has to finish. Orgs
+    // Stop starting new units with headroom before maxDuration (300s); one
+    // in-flight unit (sections + 30s AI + send) still has to finish. Units
     // left over are picked up by the second scheduled run, which skips
-    // orgs already reported (see DEDUP_WINDOW_MS).
+    // units already drafted (see DEDUP_WINDOW_MS).
     const deadline = startedAt + 200_000;
     const deferred: string[] = [];
-    for (const org of orgs) {
-      if (alreadyReported.has(org.id)) {
-        skipped += 1;
-        continue;
-      }
+    for (const unit of due) {
+      const org = orgById.get(unit.orgId);
+      if (!org) continue;
       if (Date.now() > deadline) {
-        deferred.push(org.id);
+        deferred.push(unitKey(unit));
         continue;
       }
       try {
 
-        // Auto-send ONLY on explicit opt-in (matches weekly-report cron).
+        // Auto-send ONLY on explicit opt-in (matches weekly-report cron),
+        // and only the org-wide draft: the recipient list is org-level.
         // Everyone else gets a draft + operator notification — the operator
         // reviews and shares manually, exactly as the Reports UI promises.
         const autoSend =
+          !unit.propertyId &&
           org.reportAutoSend &&
           org.reportCadence === "monthly" &&
           (org.reportRecipients?.length ?? 0) > 0;
 
         const snapshot = await generateReportSnapshot(org.id, "monthly", {
           now: runNow,
+          ...(unit.propertyId ? { propertyId: unit.propertyId } : {}),
         });
         const periodStart = new Date(snapshot.periodStart);
 
@@ -142,6 +132,7 @@ export async function GET(req: NextRequest) {
         const report = await prisma.clientReport.create({
           data: {
             orgId: org.id,
+            ...(unit.propertyId ? { propertyId: unit.propertyId } : {}),
             kind: "monthly",
             periodStart,
             periodEnd: new Date(snapshot.periodEnd),
@@ -183,7 +174,8 @@ export async function GET(req: NextRequest) {
             skipped += 1;
           }
         } else {
-          if (agencyOrg) {
+          // One bell per org per run: only the org-wide draft pings.
+          if (agencyOrg && !unit.propertyId) {
             await notifyReportDraftReady(agencyOrg.id, report.id, "monthly").catch(() => {
               // Notification failure must not fail the run; the draft exists.
             });
@@ -192,7 +184,7 @@ export async function GET(req: NextRequest) {
         }
       } catch (err) {
         errors.push({
-          orgId: org.id,
+          orgId: unitKey(unit),
           error: err instanceof Error ? err.message : String(err),
         });
       }

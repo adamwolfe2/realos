@@ -30,6 +30,11 @@ import { reportPeriodWindow } from "@/lib/recency";
 import { previewPath } from "@/lib/security/preview-token";
 import { buildPopupStats, type ReportPopupStats } from "@/lib/reports/popup-stats";
 import { leadsSplitNote } from "@/lib/reports/leads-split";
+import {
+  fetchDedupedSeoSnapshots,
+  sumField,
+  type DedupedSeoSnapshotRow,
+} from "@/lib/seo/snapshot-supersede";
 
 // ---------------------------------------------------------------------------
 // Report snapshot generator.
@@ -663,6 +668,26 @@ export function parseAiAnalysis(text: string): AiAnalysis {
   return AiAnalysisSchema.parse(JSON.parse(text.slice(start, end + 1))) as AiAnalysis;
 }
 
+// An org-wide report over 2+ ACTIVE properties sums their numbers. The
+// narrative must say so, or the model writes "the property" and presents
+// two buildings' combined leads as one building's.
+function isMultiPropertyRollup(
+  snapshot: Pick<ReportSnapshot, "scope" | "properties">,
+): boolean {
+  return !snapshot.scope?.propertyName && !snapshot.scope?.propertyId && (snapshot.properties?.length ?? 0) > 1;
+}
+
+export function reportSubjectName(
+  snapshot: Pick<ReportSnapshot, "scope" | "properties">,
+): string {
+  if (snapshot.scope?.propertyName) return snapshot.scope.propertyName;
+  if (isMultiPropertyRollup(snapshot)) {
+    const names = snapshot.properties.map((p) => p.name).join(", ");
+    return `a portfolio of ${snapshot.properties.length} properties (${names}); every figure below is the combined total for all of them, never attribute it to one property`;
+  }
+  return "the property";
+}
+
 async function generateAiAnalysis(
   snapshot: Omit<ReportSnapshot, "aiAnalysis">,
 ): Promise<AiAnalysis | null> {
@@ -684,7 +709,7 @@ async function generateAiAnalysis(
     // same reason ("surged 5440%" is a tracking start, not a result).
     const vsPrior = (pctChange: number | null | undefined) =>
       snapshot.kind !== "custom" && pctChange != null ? ` (${pctChange}% vs prior)` : "";
-    const prompt = `You are writing the narrative for a property's marketing & performance report, as the team that ran the marketing reporting results to the owner of ${snapshot.scope?.propertyName ?? "the property"}. The reader is not a marketer. Write plainly, name specific numbers, and say what they mean for leasing. Lead with what was delivered (leads captured, conversations answered, move-ins, search presence). Mention AI search only with the two AI figures given below, if any. Where a number shows room to grow, state the number without adjectives ("named in 3 of 112 answers", never "ranks poorly" or "only 13") and put the improvement in the next steps. Short sentences. No em dashes. If a number is 0 or missing, leave it out.
+    const prompt = `You are writing the narrative for a property's marketing & performance report, as the team that ran the marketing reporting results to the owner of ${reportSubjectName(snapshot)}. The reader is not a marketer. Write plainly, name specific numbers, and say what they mean for leasing. Lead with what was delivered (leads captured, conversations answered, move-ins, search presence). Mention AI search only with the two AI figures given below, if any. Where a number shows room to grow, state the number without adjectives ("named in 3 of 112 answers", never "ranks poorly" or "only 13") and put the improvement in the next steps. Short sentences. No em dashes. If a number is 0 or missing, leave it out.
 
 PERIOD: ${snapshot.kind} (${snapshot.periodStart} to ${snapshot.periodEnd})
 
@@ -692,7 +717,7 @@ KEY FIGURES:
 - New leads: ${snapshot.kpis.leads}${vsPrior(snapshot.kpiDeltas.leadsPct)}${leadsSplit ? ` (${leadsSplit}; only the captured ones are LeaseStack's, never say LeaseStack captured all new leads)` : ""}
 - Applications: ${snapshot.kpis.applications}
 - Organic search sessions: ${snapshot.kpis.organicSessions}${vsPrior(snapshot.kpiDeltas.organicSessionsPct)}
-- Leases started (move-ins) this period, whole property, from AppFolio: ${life?.leasesSignedInPeriod ?? "n/a"}${snapshot.kind !== "custom" && life ? ` (prior period: ${life.priorLeasesSignedInPeriod})` : ""}
+- Leases started (move-ins) this period, ${isMultiPropertyRollup(snapshot) ? "all properties combined" : "whole property"}, from AppFolio: ${life?.leasesSignedInPeriod ?? "n/a"}${snapshot.kind !== "custom" && life ? ` (prior period: ${life.priorLeasesSignedInPeriod})` : ""}
 - Move-ins are NOT a subset of the leads: never say leads "converted to" or "became" move-ins or residents, and never state how many move-ins trace back to LeaseStack leads
 ${reputation && reputation.totalReviews > 0 ? `- Reputation: ${reputation.overallRating ?? "n/a"} stars across ${reputation.totalReviews} reviews and mentions (${reputation.positiveCount} positive, ${reputation.negativeCount} negative)` : ""}
 
@@ -805,7 +830,41 @@ type Scope = {
   seoQueryClause: Prisma.SeoQueryWhereInput;
   // Snapshot signal — true means SEO scoping was actually applied.
   seoScoped: boolean;
+  // The org has 2+ ACTIVE properties (EXCLUDED/IMPORTED rows never count).
+  // Multi-property-only behaviour keys off this so an org with one ACTIVE
+  // property renders exactly as before.
+  multiActive: boolean;
 };
+
+// Which of the org's bound domains belong to this property. DomainBinding is
+// org-level. The gate is the number of ACTIVE properties, never the number
+// of domains: with one ACTIVE property every bound domain (apex + www, any
+// alias) is that property's site, exactly as before. With 2+ ACTIVE
+// properties each one matched every domain, so B's report counted A's
+// site; keep only the domain whose host matches the property's websiteUrl
+// (none if it has none). Hosts compare scheme-less, www/apex-, case- and
+// trailing-slash-insensitive. Same semantics as domainsForProperty on the
+// add-property branch (lib/properties/queries.ts); kept local here so the
+// two can be unified after both merge.
+function bareHost(value: string): string | null {
+  const raw = value.trim();
+  if (!raw) return null;
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`;
+  if (!URL.canParse(withScheme)) return null;
+  const host = new URL(withScheme).hostname.toLowerCase().replace(/^www\./, "");
+  return host || null;
+}
+
+export function reportDomainsForProperty(
+  hostnames: string[],
+  websiteUrl: string | null | undefined,
+  activePropertyCount: number,
+): string[] {
+  if (activePropertyCount <= 1) return hostnames;
+  const host = websiteUrl ? bareHost(websiteUrl) : null;
+  if (!host) return [];
+  return hostnames.filter((h) => bareHost(h) === host);
+}
 
 async function buildScope(
   orgId: string,
@@ -825,10 +884,10 @@ async function buildScope(
     const liveProperties = await prisma.property
       .findMany({
         where: { orgId, lifecycle: "ACTIVE" },
-        select: { id: true, slug: true, name: true },
+        select: { id: true, slug: true, name: true, websiteUrl: true },
         take: 2,
       })
-      .catch(() => [] as Array<{ id: string; slug: string; name: string }>);
+      .catch(() => [] as Array<{ id: string; slug: string; name: string; websiteUrl: string | null }>);
     if (liveProperties.length === 1) {
       const sole = liveProperties[0];
       const domains = await prisma.domainBinding
@@ -837,7 +896,8 @@ async function buildScope(
       const patterns = buildPropertyUrlPatterns(
         sole.slug,
         sole.name,
-        domains.map((d) => d.hostname),
+        // Sole ACTIVE property: all bound domains are its site.
+        reportDomainsForProperty(domains.map((d) => d.hostname), sole.websiteUrl, 1),
       );
       // GA4 reports landing pages as site-relative paths ("/availability"),
       // which never contain the slug or hostname — so path rows are the
@@ -872,6 +932,7 @@ async function buildScope(
         seoLandingClause,
         seoQueryClause,
         seoScoped: true,
+        multiActive: false,
       };
     }
     return {
@@ -884,12 +945,13 @@ async function buildScope(
       seoLandingClause: {},
       seoQueryClause: {},
       seoScoped: false,
+      multiActive: liveProperties.length >= 2,
     };
   }
 
   const property = await prisma.property.findFirst({
     where: { id: propertyId, orgId },
-    select: { id: true, slug: true, name: true },
+    select: { id: true, slug: true, name: true, websiteUrl: true },
   });
   if (!property) {
     // Caller passed a property that doesn't belong to this org. Treat as
@@ -905,23 +967,25 @@ async function buildScope(
       seoLandingClause: { url: { contains: "__no_match__" } },
       seoQueryClause: { query: { contains: "__no_match__" } },
       seoScoped: true,
+      multiActive: false,
     };
   }
 
+  // When this is the org's only live property, the org's GA4/GSC
+  // integrations ARE this property's site: keep relative-path landing
+  // pages and unbranded queries (see the portfolio branch above). The same
+  // ACTIVE-only count gates which bound domains belong to it.
+  const liveCount = await prisma.property
+    .count({ where: { orgId, lifecycle: "ACTIVE" } })
+    .catch(() => 0);
   const domains = await prisma.domainBinding
     .findMany({ where: { orgId }, select: { hostname: true } })
     .catch(() => [] as Array<{ hostname: string }>);
   const patterns = buildPropertyUrlPatterns(
     property.slug,
     property.name,
-    domains.map((d) => d.hostname),
+    reportDomainsForProperty(domains.map((d) => d.hostname), property.websiteUrl, liveCount),
   );
-  // When this is the org's only live property, the org's GA4/GSC
-  // integrations ARE this property's site: keep relative-path landing
-  // pages and unbranded queries (see the portfolio branch above).
-  const liveCount = await prisma.property
-    .count({ where: { orgId, lifecycle: "ACTIVE" } })
-    .catch(() => 0);
   const soleSite = liveCount === 1;
 
   const seoLandingClause: Prisma.SeoLandingPageWhereInput =
@@ -961,6 +1025,7 @@ async function buildScope(
     seoLandingClause,
     seoQueryClause,
     seoScoped: true,
+    multiActive: liveCount >= 2,
   };
 }
 
@@ -1027,6 +1092,21 @@ export async function generateReportSnapshot(
     : kind === "weekly"
       ? 7
       : 28;
+
+  // Org-wide organic reads. SeoSnapshot holds BOTH legacy org-wide rows
+  // (propertyId null) and per-property rows; once two properties sync their
+  // own GA4/GSC, a raw org sum counts a date twice (null row + property
+  // rows). Apply the read-side supersede rule and the ACTIVE-property gate
+  // the rest of this report uses. Property-scoped reports read
+  // SeoLandingPage/SeoQuery instead, so this is only built org-wide.
+  const orgSeoSnapshotWhere = (from: Date, to: Date): Prisma.SeoSnapshotWhereInput => ({
+    orgId,
+    date: { gte: from, lt: to },
+    OR: [{ propertyId: null }, { property: { lifecycle: "ACTIVE" } }],
+  });
+  const orgSeoRowsCurrent = scope.propertyId
+    ? Promise.resolve([] as DedupedSeoSnapshotRow[])
+    : fetchDedupedSeoSnapshots(orgSeoSnapshotWhere(periodStart, periodEnd));
 
   const [
     leadsCount,
@@ -1162,10 +1242,9 @@ export async function generateReportSnapshot(
           },
           _sum: { sessions: true },
         }).then((r) => ({ _sum: { organicSessions: r._sum.sessions ?? 0 } }))
-      : prisma.seoSnapshot.aggregate({
-          where: { orgId, date: { gte: periodStart, lt: periodEnd } },
-          _sum: { organicSessions: true },
-        }),
+      : orgSeoRowsCurrent.then((rows) => ({
+          _sum: { organicSessions: sumField(rows, "organicSessions") },
+        })),
     scope.propertyId
       ? prisma.seoLandingPage.aggregate({
           where: {
@@ -1175,10 +1254,9 @@ export async function generateReportSnapshot(
           },
           _sum: { sessions: true },
         }).then((r) => ({ _sum: { organicSessions: r._sum.sessions ?? 0 } }))
-      : prisma.seoSnapshot.aggregate({
-          where: { orgId, date: { gte: priorStart, lt: priorEnd } },
-          _sum: { organicSessions: true },
-        }),
+      : fetchDedupedSeoSnapshots(orgSeoSnapshotWhere(priorStart, priorEnd)).then(
+          (rows) => ({ _sum: { organicSessions: sumField(rows, "organicSessions") } }),
+        ),
     scope.propertyId
       ? prisma.seoLandingPage
           .groupBy({
@@ -1197,11 +1275,7 @@ export async function generateReportSnapshot(
               organicSessions: r._sum.sessions ?? 0,
             })),
           )
-      : prisma.seoSnapshot.findMany({
-          where: { orgId, date: { gte: periodStart, lt: periodEnd } },
-          select: { date: true, organicSessions: true },
-          orderBy: { date: "asc" },
-        }),
+      : orgSeoRowsCurrent,
     // Funnel from LeadStatus groupBy
     prisma.lead.groupBy({
       by: ["status"],
@@ -1294,12 +1368,27 @@ export async function generateReportSnapshot(
       where: {
         orgId,
         ...scope.propertyClause,
+        // Org-wide: org-level insights plus ACTIVE properties' (rows written
+        // before the detector runner's enabled-property filter still exist).
+        ...(scope.propertyId
+          ? {}
+          : { OR: [{ propertyId: null }, { property: { lifecycle: "ACTIVE" } }] }),
         createdAt: { gte: periodStart, lt: periodEnd },
       },
-      // Latest row per kind, in the DB: detectors re-fire weekly, so a
-      // multi-month window stacked 19 rewordings of one alert (SG, 2026-10).
-      distinct: ["kind"],
-      orderBy: [{ kind: "asc" }, { createdAt: "desc" }],
+      // Latest row per kind AND property, in the DB: detectors re-fire
+      // weekly, so a multi-month window stacked 19 rewordings of one alert
+      // (SG, 2026-10). Per property, not per org: property A's
+      // vacancy_needs_boost must not hide property B's on a portfolio report.
+      // One ACTIVE property: per kind, exactly as before.
+      ...(scope.multiActive
+        ? {
+            distinct: ["kind", "propertyId"] as Prisma.InsightScalarFieldEnum[],
+            orderBy: [{ kind: "asc" as const }, { propertyId: "asc" as const }, { createdAt: "desc" as const }],
+          }
+        : {
+            distinct: ["kind"] as Prisma.InsightScalarFieldEnum[],
+            orderBy: [{ kind: "asc" as const }, { createdAt: "desc" as const }],
+          }),
       select: {
         id: true,
         kind: true,
@@ -1340,8 +1429,14 @@ export async function generateReportSnapshot(
     // Property rollup — when scoped, this collapses to the single
     // property the report is for. No fake/seeded data ever — pure
     // Property table reads.
+    // Org-wide lists ACTIVE properties only: with ungated take:20, an org
+    // holding curated-out EXCLUDED/IMPORTED sub-records could push a live
+    // property off the table while listing buildings it never onboarded.
     prisma.property.findMany({
-      where: { orgId, ...(scope.propertyId ? { id: scope.propertyId } : {}) },
+      where: {
+        orgId,
+        ...(scope.propertyId ? { id: scope.propertyId } : { lifecycle: "ACTIVE" }),
+      },
       orderBy: { updatedAt: "desc" },
       take: scope.propertyId ? 1 : 20,
       select: {
@@ -1749,13 +1844,30 @@ export async function generateReportSnapshot(
     days,
     periodEnd,
   );
-  const gscDaily = await prisma.seoSnapshot
-    .findMany({
-      where: { orgId, date: { gte: periodStart, lt: periodEnd } },
-      select: { date: true, totalClicks: true },
-      orderBy: { date: "asc" },
-    })
-    .catch(() => [] as Array<{ date: Date; totalClicks: number | null }>);
+  // Clicks fallback, same scope as the sessions series: a property-scoped
+  // report reads that property's own SeoQuery rows (an org-wide
+  // SeoSnapshot read here charted every sibling property's clicks on it).
+  const gscDaily: Array<{ date: Date; totalClicks: number | null }> = scope.propertyId && !scope.multiActive
+    ? // Sole ACTIVE property: the org's GSC rows ARE this property's (as before).
+      await prisma.seoSnapshot
+        .findMany({
+          where: { orgId, date: { gte: periodStart, lt: periodEnd } },
+          select: { date: true, totalClicks: true },
+          orderBy: { date: "asc" },
+        })
+        .catch(() => [] as Array<{ date: Date; totalClicks: number | null }>)
+    : scope.propertyId
+    ? await prisma.seoQuery
+        .groupBy({
+          by: ["date"],
+          where: { orgId, ...scope.seoQueryClause, date: { gte: periodStart, lt: periodEnd } },
+          _sum: { clicks: true },
+          orderBy: { date: "asc" },
+        })
+        .then((rows) => rows.map((r) => ({ date: r.date, totalClicks: r._sum.clicks ?? 0 })))
+        .catch(sectionFailed("gscDaily"))
+        .then((rows) => rows ?? [])
+    : await orgSeoRowsCurrent;
   const trafficTrendFromClicks = bucketDaily(
     gscDaily.map((r) => ({ date: r.date, value: r.totalClicks ?? 0 })),
     days,

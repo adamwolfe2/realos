@@ -23,6 +23,7 @@ import { getSiteUrl } from "@/lib/brand";
 import { runAfter } from "@/lib/after";
 import { captureWithContext } from "@/lib/sentry";
 import { findOldestLeadByEmail } from "@/lib/leads/find-by-email";
+import { leadPropertyLabel } from "@/lib/leads/property-label";
 
 const schema = z.object({
   orgId: z.string().min(1),
@@ -284,9 +285,11 @@ export async function POST(req: NextRequest) {
   const moduleCount = 1;
 
   await runAfter("public.leads.side-effects", async () => {
+    // Name the building so a multi-property org knows whose lead this is.
+    const orgLabel = await leadPropertyLabel(org.id, org.name, lead.propertyId);
     const results = await Promise.allSettled([
       notifyNewLeadSlack({
-        companyName: org.name,
+        companyName: orgLabel,
         contactName:
           [data.firstName, data.lastName].filter(Boolean).join(" ") ||
           data.email ||
@@ -300,7 +303,7 @@ export async function POST(req: NextRequest) {
       org.primaryContactEmail
         ? notifyTenantOfLeadEmail({
             to: org.primaryContactEmail,
-            orgName: org.name,
+            orgName: orgLabel,
             leadId: lead.id,
             firstName: data.firstName,
             lastName: data.lastName,

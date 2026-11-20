@@ -4,6 +4,7 @@ import { SourceMark } from "@/components/portal/source-mark";
 import { ArrowRight, Check } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
+import { effectivePropertyIds, parsePropertyFilter } from "@/lib/tenancy/property-filter";
 import { soft } from "@/lib/soft";
 import { getFirstRunSignal } from "@/lib/portal/first-run";
 import { resolveIntegrationStatuses } from "@/lib/integrations/status";
@@ -49,7 +50,7 @@ const LEAD_SOURCE: Record<string, { label: string; color: string }> = {
 };
 const OTHER_SOURCE = { label: "Other", color: "#dcdcd8" };
 
-export default async function PortalOverview({ searchParams }: { searchParams: Promise<{ dashboard?: string }> }) {
+export default async function PortalOverview({ searchParams }: { searchParams: Promise<{ dashboard?: string; property?: string; properties?: string }> }) {
   const scope = await requireScope();
   const sp = await searchParams;
   if (sp.dashboard !== "1") {
@@ -61,7 +62,12 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
   }
 
   const orgId = scope.orgId;
-  const allowed = scope.allowedPropertyIds;
+  // The sidebar switcher (cookie) or a ?property= deep link, intersected
+  // with the user's grant. null = every property the user can see. Before,
+  // this read only the grant, so picking property B in the switcher left
+  // every KPI here pooled across A and B. [] (a selection outside the
+  // grant) matches nothing via `in: []`, failing closed.
+  const allowed = effectivePropertyIds(scope, await parsePropertyFilter(sp, orgId));
   const propScope = allowed ? { propertyId: { in: allowed } } : {};
   // Marketable gate: org-level rows plus rows on ACTIVE properties, wrapped
   // in AND so no sibling OR clobbers it.

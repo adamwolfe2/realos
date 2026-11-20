@@ -79,6 +79,31 @@ beforeEach(() => {
 });
 
 describe("pushConversationLeadToFunnel — full transcript reaches Funnel notes", () => {
+  it("names the lead's building (falling back to the conversation's) in the note", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue({ ok: true, status: 200, text: async () => "" });
+    vi.stubGlobal("fetch", fetchMock);
+    h.db.chatbotConversation.findUnique.mockResolvedValue({
+      ...FULL_CONVERSATION,
+      property: { name: "Chat Page Building" },
+      lead: { ...FULL_CONVERSATION.lead, property: { name: "Oak Commons" } },
+    });
+    await pushConversationLeadToFunnel("conv_1");
+    let body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.client.notes.split("\n")[0]).toBe("Property: Oak Commons");
+
+    h.db.chatbotConversation.findUnique.mockResolvedValue({
+      ...FULL_CONVERSATION,
+      property: { name: "Chat Page Building" },
+      lead: { ...FULL_CONVERSATION.lead, property: null },
+    });
+    await pushConversationLeadToFunnel("conv_1");
+    body = JSON.parse(fetchMock.mock.calls[1][1].body);
+    expect(body.client.notes.split("\n")[0]).toBe("Property: Chat Page Building");
+    vi.unstubAllGlobals();
+  });
+
   it("sends the WHOLE conversation, including turns after contact capture", async () => {
     const fetchMock = vi
       .fn()

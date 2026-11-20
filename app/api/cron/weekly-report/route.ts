@@ -6,6 +6,7 @@ import { generateShareToken } from "@/lib/reports/token";
 import { notifyReportDraftReady } from "@/lib/notifications/create";
 import { verifyCronAuth } from "@/lib/cron/auth";
 import { sendReportEmail } from "@/lib/email/send-report";
+import { planScheduledReportUnits, unitKey } from "@/lib/reports/scheduled";
 
 const DEDUP_WINDOW_MS = 12 * 60 * 60 * 1000;
 
@@ -21,8 +22,9 @@ export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for u
 // operator opens the draft, adds a headline + personal note, then chooses to
 // share the public link or email it via the portal.
 //
-// Idempotency: if a draft weekly report already exists for this week's
-// periodStart the run skips that org.
+// Orgs with 2+ ACTIVE properties also get one draft per ACTIVE property.
+// Idempotency: keyed on (org, property) — a unit already drafted for this
+// week's periodStart is skipped (lib/reports/scheduled.ts).
 //
 // Auth: Bearer CRON_SECRET.
 export async function GET(req: NextRequest) {
@@ -74,50 +76,35 @@ export async function GET(req: NextRequest) {
     const agencyOrg = await prisma.organization
       .findFirst({ where: { orgType: "AGENCY" }, select: { id: true }, orderBy: { createdAt: "asc" } })
       .catch(() => null);
-    const orgIds = orgs.map((o) => o.id);
-    const existingReports =
-      orgIds.length > 0
-        ? await prisma.clientReport.findMany({
-            where: {
-              orgId: { in: orgIds },
-              kind: "weekly",
-              // Window, not exact match: periodStart = runNow - period to
-              // the millisecond, so the catch-up run 2h later (vercel.json)
-              // or a manual re-run would otherwise miss the first run's
-              // rows and re-send every report.
-              // Only rows this cron creates: a manual or property-scoped
-              // report in the window must not suppress the org-wide one.
-              propertyId: null,
-              generatedBy: null,
-              periodStart: {
-                gte: new Date(sharedPeriodStart.getTime() - DEDUP_WINDOW_MS),
-                lte: sharedPeriodStart,
-              },
-            },
-            select: { orgId: true },
-          })
-        : [];
-    const alreadyDrafted = new Set(existingReports.map((r) => r.orgId));
+    // One unit per (org, property): org-wide draft for every org, plus one
+    // per ACTIVE property when the org has 2+. See lib/reports/scheduled.ts
+    // for the dedup key and stalest-first order.
+    const orgById = new Map(orgs.map((o) => [o.id, o]));
+    const { due, alreadyDrafted } = await planScheduledReportUnits({
+      kind: "weekly",
+      orgIds: orgs.map((o) => o.id),
+      periodStart: sharedPeriodStart,
+      dedupWindowMs: DEDUP_WINDOW_MS,
+    });
+    skipped += alreadyDrafted;
 
-    // Stop starting new orgs with headroom before maxDuration (300s); one
-    // in-flight org (sections + 30s AI + send) still has to finish. Orgs
+    // Stop starting new units with headroom before maxDuration (300s); one
+    // in-flight unit (sections + 30s AI + send) still has to finish. Units
     // left over are picked up by the second scheduled run, which skips
-    // orgs already reported (see DEDUP_WINDOW_MS).
+    // units already drafted (see DEDUP_WINDOW_MS).
     const deadline = startedAt + 200_000;
     const deferred: string[] = [];
-    for (const org of orgs) {
-      if (alreadyDrafted.has(org.id)) {
-        skipped += 1;
-        continue;
-      }
+    for (const unit of due) {
+      const org = orgById.get(unit.orgId);
+      if (!org) continue;
       if (Date.now() > deadline) {
-        deferred.push(org.id);
+        deferred.push(unitKey(unit));
         continue;
       }
       try {
-
         const snapshot = await generateReportSnapshot(org.id, "weekly", {
           now: runNow,
+          ...(unit.propertyId ? { propertyId: unit.propertyId } : {}),
         });
         const periodStart = new Date(snapshot.periodStart);
         const periodEnd = new Date(snapshot.periodEnd);
@@ -125,6 +112,7 @@ export async function GET(req: NextRequest) {
         const report = await prisma.clientReport.create({
           data: {
             orgId: org.id,
+            ...(unit.propertyId ? { propertyId: unit.propertyId } : {}),
             kind: "weekly",
             periodStart,
             periodEnd,
@@ -138,7 +126,9 @@ export async function GET(req: NextRequest) {
         // Suppressed (not client org.id) if no agency org resolves — an
         // empty-DB edge case; the draft still exists, only the bell ping
         // is skipped rather than misrouting it to the client.
-        if (agencyOrg) {
+        // One bell per org per run: only the org-wide draft pings. The
+        // per-property drafts sit beside it on the reports page.
+        if (agencyOrg && !unit.propertyId) {
           await notifyReportDraftReady(agencyOrg.id, report.id, "weekly").catch(() => {
             // fire-and-forget: don't fail the draft just because the bell is down
           });
@@ -147,10 +137,10 @@ export async function GET(req: NextRequest) {
         drafted += 1;
 
         // Auto-send when the org opted into weekly auto-send and has at
-        // least one recipient configured. Surface the skip reason on the
-        // cron run log so a half-configured org is visible — it never
-        // fails silently.
-        if (org.reportAutoSend && org.reportCadence === "weekly") {
+        // least one recipient configured. Org-wide draft only: the
+        // recipient list is org-level, and per-property drafts are for the
+        // operator to review and share.
+        if (!unit.propertyId && org.reportAutoSend && org.reportCadence === "weekly") {
           const recipients = org.reportRecipients ?? [];
           if (recipients.length === 0) {
             autoSendSkipped.push({
@@ -196,7 +186,7 @@ export async function GET(req: NextRequest) {
         }
       } catch (err) {
         errors.push({
-          orgId: org.id,
+          orgId: unitKey(unit),
           error: err instanceof Error ? err.message : String(err),
         });
       }

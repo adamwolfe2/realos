@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { propertyOrOrgLevelWhereFragment } from "@/lib/tenancy/property-filter";
 import { CreativeRequestStatus } from "@prisma/client";
 import { formatDistanceToNow } from "date-fns";
 import { StatCard } from "@/components/admin/stat-card";
@@ -16,7 +17,12 @@ export const dynamic = "force-dynamic";
 
 export default async function CreativePage() {
   const scope = await requireScope();
-  const tenant = tenantWhere(scope);
+  // Org filter plus the user's property grant. Org-level requests (no
+  // property) stay visible, matching propertyInScope on the API routes.
+  const tenant = {
+    ...tenantWhere(scope),
+    ...propertyOrOrgLevelWhereFragment(scope, null),
+  };
 
   const [requests, counts] = await Promise.all([
     prisma.creativeRequest.findMany({

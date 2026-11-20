@@ -493,7 +493,7 @@ export default async function SeoPortfolioPage({
           <DataTable<PropertyRow>
             columns={columns}
             rows={working}
-            getRowHref={(p) => `/portal/seo/agent?propertyId=${p.id}`}
+            getRowHref={(p) => `/portal/seo/agent?property=${p.id}`}
             sort={{
               by: sort,
               dir: sort === "name" ? "asc" : "desc",
