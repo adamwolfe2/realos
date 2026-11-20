@@ -17,7 +17,10 @@ import {
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { ALLOWED_WRITE_ROLES } from "@/lib/auth/write-roles";
-import { propertyWhereFragment } from "@/lib/tenancy/property-filter";
+import {
+  propertyOrOrgLevelWhereFragment,
+  propertyWhereFragment,
+} from "@/lib/tenancy/property-filter";
 import { cn } from "@/lib/utils";
 import { AddNoteForm } from "./add-note-form";
 import { LeadStatusForm } from "./lead-status-form";
@@ -97,6 +100,9 @@ export default async function LeadDetailPage({
         tours: { orderBy: { scheduledAt: "desc" } },
         applications: { orderBy: { createdAt: "desc" } },
         conversations: {
+          // A lead at A can carry a chat held on B (one lead per person per
+          // org). A user granted only A must not read B's transcript.
+          where: propertyOrOrgLevelWhereFragment(scope, null),
           orderBy: { lastMessageAt: "desc" },
           select: {
             id: true,
@@ -220,6 +226,7 @@ export default async function LeadDetailPage({
             orgId: scope.orgId,
             leadId: null,
             capturedEmail: { equals: lead.email, mode: "insensitive" },
+            ...propertyOrOrgLevelWhereFragment(scope, null),
           },
           orderBy: { lastMessageAt: "desc" },
           take: 5,
