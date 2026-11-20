@@ -61,6 +61,18 @@ export async function getActivePropertyId(
   const store = cookieStore ?? (await cookies());
   const raw = store.get(ACTIVE_PROPERTY_COOKIE)?.value;
   if (!raw || raw === ALL_PROPERTIES_VALUE) return null;
+  if (cookieStore) return raw;
+  // A property-restricted user's cookie can outlive their grant on it.
+  // Ignore it here, the one place both the layout switcher and
+  // parsePropertyFilter read the cookie, so they agree on "all of your
+  // properties" instead of the switcher saying All while pages render
+  // empty. (Server components can't clear cookies; the next switcher pick
+  // overwrites it.) getScope is request-cached, so this adds no query.
+  const { getScope } = await import("@/lib/tenancy/scope");
+  const scope = await getScope();
+  if (scope?.allowedPropertyIds && !scope.allowedPropertyIds.includes(raw)) {
+    return null;
+  }
   return raw;
 }
 
