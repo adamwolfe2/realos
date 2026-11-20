@@ -95,7 +95,9 @@ function parseAvailableDate(input: string): Date | null {
 // page and confirms at least one listing card parses. No credentials needed.
 export async function probeEmbedScrape(
   subdomain: string
-): Promise<{ ok: true; count: number } | { ok: false; error: string }> {
+): Promise<
+  { ok: true; count: number; addresses: string[] } | { ok: false; error: string }
+> {
   try {
     const url = `https://${subdomain}.appfolio.com/listings`;
     const response = await fetch(url, {
@@ -113,8 +115,14 @@ export async function probeEmbedScrape(
     }
     const html = await response.text();
     const $ = cheerio.load(html);
-    const count = $(".listing-item.result.js-listing-item").length;
-    return { ok: true, count };
+    const cards = $(".listing-item.result.js-listing-item");
+    // Card street addresses, so connect can tell which of the org's
+    // buildings are actually listed on this AppFolio account.
+    const addresses = cards
+      .map((_, el) => $(el).find(".js-listing-address").text().trim())
+      .get()
+      .filter((a: string) => a.length > 0);
+    return { ok: true, count: cards.length, addresses };
   } catch (err) {
     return {
       ok: false,
@@ -1961,6 +1969,20 @@ export function embedListingPropertyId(
   return hits.length === 1 ? hits[0].id : null;
 }
 
+/**
+ * Ids of the buildings whose street address appears on at least one AppFolio
+ * listing card. Each building is checked on its own (a card may name only
+ * one), using the same token-boundary match as the listing sync.
+ */
+export function appfolioListedPropertyIds(
+  cardAddresses: readonly string[],
+  properties: ReadonlyArray<{ id: string; addressLine1: string | null }>,
+): string[] {
+  return properties
+    .filter((p) => cardAddresses.some((a) => embedListingPropertyId(a, [p]) === p.id))
+    .map((p) => p.id);
+}
+
 export type SyncOutcome = {
   synced: number;
   matchedProperties: number;
@@ -2001,8 +2023,18 @@ export async function syncListingsForOrg(
   // Property). Counting IMPORTED/EXCLUDED rows here made a one-building org
   // with a few curated-out address rows look "multi-property" and skip the
   // listing sync entirely.
+  //
+  // NONE-platform buildings are candidates too: connect no longer stamps
+  // every building APPFOLIO up front (some are managed elsewhere). A NONE
+  // building is promoted to APPFOLIO only once a listing card actually
+  // carries its address, and only APPFOLIO buildings get their denorm
+  // fields rewritten below.
   const properties = await prisma.property.findMany({
-    where: { orgId, backendPlatform: BackendPlatform.APPFOLIO, lifecycle: "ACTIVE" },
+    where: {
+      orgId,
+      backendPlatform: { in: [BackendPlatform.APPFOLIO, BackendPlatform.NONE] },
+      lifecycle: "ACTIVE",
+    },
   });
 
   try {
@@ -2105,8 +2137,22 @@ export async function syncListingsForOrg(
       synced++;
     }
 
-    // Refresh Property denormalized fields.
-    for (const p of properties) {
+    const promoted = properties.filter(
+      (p) => p.backendPlatform === BackendPlatform.NONE && matchedSet.has(p.id),
+    );
+    if (promoted.length > 0) {
+      await prisma.property.updateMany({
+        where: { id: { in: promoted.map((p) => p.id) }, backendPlatform: BackendPlatform.NONE },
+        data: { backendPlatform: BackendPlatform.APPFOLIO },
+      });
+    }
+    const appfolioProperties = properties.filter(
+      (p) => p.backendPlatform === BackendPlatform.APPFOLIO || matchedSet.has(p.id),
+    );
+
+    // Refresh Property denormalized fields (AppFolio buildings only — a
+    // building managed elsewhere keeps its own counts).
+    for (const p of appfolioProperties) {
       const agg = await prisma.listing.aggregate({
         where: { propertyId: p.id, isAvailable: true },
         _min: { priceCents: true },
@@ -2146,7 +2192,7 @@ export async function syncListingsForOrg(
       where: { orgId },
       data: { syncStatus: "error", lastError: message },
     });
-    for (const p of properties) {
+    for (const p of properties.filter((x) => x.backendPlatform === BackendPlatform.APPFOLIO)) {
       await prisma.property.update({
         where: { id: p.id },
         data: { syncError: message },

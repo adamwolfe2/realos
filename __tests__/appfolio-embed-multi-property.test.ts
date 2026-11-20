@@ -20,6 +20,7 @@ type Prop = {
 const state = vi.hoisted(() => ({
   props: [] as Prop[],
   listingCreates: [] as Array<Record<string, unknown>>,
+  denormUpdated: [] as string[],
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -43,11 +44,20 @@ vi.mock("@/lib/db", () => ({
         state.props.filter(
           (p) =>
             p.orgId === where.orgId &&
-            p.backendPlatform === where.backendPlatform &&
+            (where.backendPlatform as { in: string[] }).in.includes(p.backendPlatform) &&
             (where.lifecycle === undefined || p.lifecycle === where.lifecycle),
         ),
       ),
-      update: vi.fn(async () => ({})),
+      update: vi.fn(async ({ where }: { where: { id: string } }) => {
+        state.denormUpdated.push(where.id);
+        return {};
+      }),
+      updateMany: vi.fn(async ({ where }: { where: { id: { in: string[] } } }) => {
+        for (const p of state.props) {
+          if (where.id.in.includes(p.id) && p.backendPlatform === "NONE") p.backendPlatform = "APPFOLIO";
+        }
+        return { count: 0 };
+      }),
     },
     listing: {
       findUnique: vi.fn(async () => null),
@@ -94,6 +104,7 @@ function prop(id: string, addressLine1: string | null, lifecycle = "ACTIVE"): Pr
 
 beforeEach(() => {
   state.listingCreates = [];
+  state.denormUpdated = [];
   vi.stubGlobal(
     "fetch",
     vi.fn(async () => new Response(HTML, { status: 200 })),
@@ -155,5 +166,40 @@ describe("syncListingsForOrg (embed) — several buildings", () => {
     expect(state.listingCreates.map((l) => [l.propertyId, l.backendListingId])).toEqual([
       ["A", "1"],
     ]);
+  });
+
+  it("promotes a not-yet-linked building that a card names, and leaves a building managed elsewhere alone", async () => {
+    state.props = [
+      prop("A", "1 Alpha Way"),
+      { ...prop("B", "200 Oak St"), backendPlatform: "NONE" },
+      { ...prop("E", "77 Elsewhere Ave"), backendPlatform: "NONE" },
+    ];
+    const out = await syncListingsForOrg("org-1");
+    expect(out.error).toBeNull();
+    expect(state.listingCreates.map((l) => [l.propertyId, l.backendListingId])).toEqual([
+      ["A", "1"],
+      ["B", "2"],
+    ]);
+    expect(state.props.find((p) => p.id === "B")!.backendPlatform).toBe("APPFOLIO");
+    expect(state.props.find((p) => p.id === "E")!.backendPlatform).toBe("NONE");
+    // E's own counts / lastSyncedAt are not rewritten by an AppFolio sync.
+    expect(state.denormUpdated.sort()).toEqual(["A", "B"]);
+  });
+});
+
+describe("appfolioListedPropertyIds", () => {
+  it("returns only buildings whose address is on a listing card", async () => {
+    const { appfolioListedPropertyIds } = await import("@/lib/integrations/appfolio");
+    expect(
+      appfolioListedPropertyIds(
+        ["200 Oak St Unit 4, Berkeley", "1 Alpha Way"],
+        [
+          { id: "A", addressLine1: "1 Alpha Way" },
+          { id: "B", addressLine1: "200 Oak St" },
+          { id: "E", addressLine1: "77 Elsewhere Ave" },
+          { id: "N", addressLine1: null },
+        ],
+      ),
+    ).toEqual(["A", "B"]);
   });
 });
