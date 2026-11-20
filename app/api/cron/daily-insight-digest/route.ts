@@ -60,7 +60,11 @@ export async function GET(req: NextRequest) {
         // got every property's insights (titles, bodies, property names).
         const members = await prisma.user.findMany({
           where: { orgId: org.id },
-          select: { email: true, propertyAccess: { select: { propertyId: true } } },
+          select: {
+            email: true,
+            propertyAccessRestricted: true,
+            propertyAccess: { select: { propertyId: true } },
+          },
         });
         const audiences = digestAudiences(members);
         if (audiences.length === 0) {

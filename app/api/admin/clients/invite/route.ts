@@ -283,6 +283,7 @@ export async function POST(req: NextRequest) {
           role,
           firstName: firstName ?? existing.firstName,
           lastName: lastName ?? existing.lastName,
+          propertyAccessRestricted: validPropertyIds.length > 0,
         },
       });
       id = updated.id;
@@ -295,6 +296,7 @@ export async function POST(req: NextRequest) {
           lastName,
           role,
           orgId: org.id,
+          propertyAccessRestricted: validPropertyIds.length > 0,
         },
       });
       id = created.id;

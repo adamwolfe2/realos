@@ -65,7 +65,11 @@ export async function GET(req: NextRequest) {
         // else gets the org-wide digest.
         const members = await prisma.user.findMany({
           where: { orgId: org.id, role: { in: [...AGENCY_ROLES] } },
-          select: { email: true, propertyAccess: { select: { propertyId: true } } },
+          select: {
+            email: true,
+            propertyAccessRestricted: true,
+            propertyAccess: { select: { propertyId: true } },
+          },
         });
         const audiences = digestAudiences(members);
 

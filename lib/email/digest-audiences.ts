@@ -12,11 +12,18 @@ export type DigestAudience = {
 };
 
 export function digestAudiences(
-  members: Array<{ email: string | null; propertyAccess: Array<{ propertyId: string }> }>,
+  members: Array<{
+    email: string | null;
+    propertyAccessRestricted: boolean;
+    propertyAccess: Array<{ propertyId: string }>;
+  }>,
 ): DigestAudience[] {
   const byKey = new Map<string, DigestAudience>();
   for (const m of members) {
     if (!m.email || !isValidEmail(m.email)) continue;
+    // A restricted seat that lost every grant is locked out of the portal
+    // (scope.ts); it must not fall through to the org-wide digest either.
+    if (m.propertyAccessRestricted && m.propertyAccess.length === 0) continue;
     const ids =
       m.propertyAccess.length > 0
         ? [...new Set(m.propertyAccess.map((g) => g.propertyId))].sort()

@@ -60,10 +60,12 @@ beforeEach(() => {
 describe("digestAudiences", () => {
   it("splits unrestricted members from property-restricted members", () => {
     const out = digestAudiences([
-      { email: "owner@x.co", propertyAccess: [] },
-      { email: "a-only@x.co", propertyAccess: [{ propertyId: "prop-a" }] },
-      { email: "a-too@x.co", propertyAccess: [{ propertyId: "prop-a" }] },
-      { email: "bad", propertyAccess: [] },
+      { email: "owner@x.co", propertyAccessRestricted: false, propertyAccess: [] },
+      { email: "a-only@x.co", propertyAccessRestricted: true, propertyAccess: [{ propertyId: "prop-a" }] },
+      { email: "a-too@x.co", propertyAccessRestricted: true, propertyAccess: [{ propertyId: "prop-a" }] },
+      { email: "bad", propertyAccessRestricted: false, propertyAccess: [] },
+      // Restricted seat that lost every grant: no digest at all.
+      { email: "locked-out@x.co", propertyAccessRestricted: true, propertyAccess: [] },
     ]);
     expect(out).toEqual([
       { propertyIds: null, emails: ["owner@x.co"] },

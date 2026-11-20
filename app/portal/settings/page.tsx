@@ -31,6 +31,7 @@ export default async function SettingsPage() {
           role: true,
           clerkUserId: true,
           lastLoginAt: true,
+          propertyAccessRestricted: true,
           // Property-level access grants. Empty array = unrestricted
           // org-wide access (legacy default for every existing user).
           propertyAccess: {

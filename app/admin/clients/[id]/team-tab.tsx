@@ -12,6 +12,7 @@ type Member = {
   lastLoginAt: Date | null;
   createdAt: Date;
   propertyIds: string[];
+  propertyAccessRestricted: boolean;
 };
 
 type Property = { id: string; name: string };
