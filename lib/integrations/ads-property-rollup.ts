@@ -82,3 +82,24 @@ export function adsInsightPropertyClause(
   const ids = selectedIds ? effectivePropertyIds(scope, selectedIds) ?? [] : visible.map((p) => p.id);
   return { OR: [{ propertyId: null }, { propertyId: { in: ids } }] };
 }
+
+// /portal/ads is "narrowed" when a property is picked or the user is
+// limited to some properties. `campaignFilter` is the page's campaign
+// property clause, so these stay in step with the campaign list.
+
+// Ad accounts: narrowed, only accounts with a campaign in scope, so a
+// restricted user never sees another building's account name, id or sync
+// error. Unrestricted with no pick: every account.
+export function adsAccountPropertyClause(narrowed: boolean, campaignFilter: Record<string, unknown>) {
+  return narrowed ? { adCampaigns: { some: campaignFilter } } : {};
+}
+
+// Ads (creatives): narrowed, only ads whose campaign is in scope; ads with
+// no campaign link can't be tied to a property, so they only show in the
+// unrestricted whole-portfolio view.
+export function adsCreativePropertyClause(narrowed: boolean, campaignFilter: Record<string, unknown>) {
+  if (narrowed) return { campaign: campaignFilter };
+  return Object.keys(campaignFilter).length > 0
+    ? { OR: [{ campaignId: null }, { campaign: campaignFilter }] }
+    : {};
+}
