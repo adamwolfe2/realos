@@ -1918,6 +1918,49 @@ export function mapPropertyPayload(raw: RawRow): MappedProperty | null {
 // lastSyncedAt).
 // ---------------------------------------------------------------------------
 
+function rawField(listing: NormalizedListing, ...keys: string[]): unknown {
+  const raw = listing.raw;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const rec = raw as Record<string, unknown>;
+  for (const k of keys) if (rec[k] != null) return rec[k];
+  return null;
+}
+
+function listingAddress(listing: NormalizedListing): string | null {
+  const address = rawField(listing, "address");
+  return typeof address === "string" ? address : null;
+}
+
+function restListingPropertyId(listing: NormalizedListing): string | null {
+  const id = rawField(listing, "property_id", "PropertyId");
+  return typeof id === "string" || typeof id === "number" ? String(id) : null;
+}
+
+function normalizeAddress(value: string): string {
+  return value.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Which ACTIVE property an embed-scraped listing card belongs to, by street
+ * address. A property matches when its addressLine1 appears in the card's
+ * address on a token boundary (so "12 Main St" never matches "112 Main St").
+ * Exactly one match or null: a card that matches no building, or several,
+ * is skipped rather than filed under the wrong one.
+ */
+export function embedListingPropertyId(
+  cardAddress: string | null,
+  properties: ReadonlyArray<{ id: string; addressLine1: string | null }>,
+): string | null {
+  if (!cardAddress) return null;
+  const haystack = normalizeAddress(cardAddress);
+  const hits = properties.filter((p) => {
+    if (!p.addressLine1?.trim()) return false;
+    const needle = normalizeAddress(p.addressLine1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`(^|[^a-z0-9])${needle}($|[^a-z0-9])`).test(haystack);
+  });
+  return hits.length === 1 ? hits[0].id : null;
+}
+
 export type SyncOutcome = {
   synced: number;
   matchedProperties: number;
@@ -1954,8 +1997,12 @@ export async function syncListingsForOrg(
     data: { syncStatus: "syncing", lastError: null },
   });
 
+  // ACTIVE only: same lifecycle gate as the REST sync (isInactiveAppfolio
+  // Property). Counting IMPORTED/EXCLUDED rows here made a one-building org
+  // with a few curated-out address rows look "multi-property" and skip the
+  // listing sync entirely.
   const properties = await prisma.property.findMany({
-    where: { orgId, backendPlatform: BackendPlatform.APPFOLIO },
+    where: { orgId, backendPlatform: BackendPlatform.APPFOLIO, lifecycle: "ACTIVE" },
   });
 
   try {
@@ -1982,16 +2029,11 @@ export async function syncListingsForOrg(
       );
       remoteListings = [];
     } else if (properties.length > 1) {
-      // Multi-property tenant on embed-scrape: scraped listings carry no
-      // property-group hint, so they can't be attributed to the right
-      // building. The old code dumped every scraped listing onto properties[0],
-      // corrupting every other property's availability + pricing. Skip the
-      // listing sync entirely — multi-property listing sync requires REST/OAuth
-      // creds. (Codex.)
-      console.warn(
-        `[appfolio] embed-scrape listing sync skipped for ${properties.length} properties (no group hint; needs REST/OAuth)`,
-      );
-      remoteListings = [];
+      // Multi-property tenant on embed-scrape: pull every card once and
+      // attribute each by its street address below (embedListingPropertyId).
+      // Cards matching no building, or more than one, are skipped, never
+      // guessed onto properties[0].
+      remoteListings = await fetchEmbedScrape(integration, null);
     } else {
       // Single property — scope the scrape by its street address to avoid
       // pulling in sibling-building listings.
@@ -2011,13 +2053,19 @@ export async function syncListingsForOrg(
     const matchedSet = new Set<string>();
 
     for (const rl of remoteListings) {
-      const fallbackProperty = properties[0];
-      // TODO: richer property matching once AppFolio payload exposes
-      // property_group reliably in embed-scrape mode. For now we assume
-      // everything from the scrape lives under the first property — correct
-      // for single-building tenants; multi-building tenants fall back to
-      // REST mode.
-      const property = fallbackProperty;
+      // REST unit_directory rows name their AppFolio property; embed cards
+      // don't. One embed building: everything scoped to it (the scrape was
+      // already address-filtered). Several: match the card's address. Never
+      // guess properties[0].
+      const propertyId =
+        mode === "REST"
+          ? (properties.find(
+              (p) => p.backendPropertyId != null && p.backendPropertyId === restListingPropertyId(rl),
+            )?.id ?? null)
+          : properties.length === 1
+            ? properties[0].id
+            : embedListingPropertyId(listingAddress(rl), properties);
+      const property = properties.find((p) => p.id === propertyId);
       if (!property) {
         skipped++;
         continue;
