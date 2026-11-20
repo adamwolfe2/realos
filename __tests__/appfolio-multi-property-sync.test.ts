@@ -30,6 +30,7 @@ const state = vi.hoisted(() => ({
   fetchCalls: [] as Array<{ report: string; fromDate?: Date }>,
   leaseCreates: [] as Array<Record<string, unknown>>,
   leadCreates: [] as Array<Record<string, unknown>>,
+  leadFindFirstWheres: [] as Array<Record<string, unknown>>,
   groupFilter: null as string | null,
   failReports: new Set<string>(),
   backfillRequestedAt: null as Date | null,
@@ -169,6 +170,10 @@ function setupPrisma() {
     listing,
     lease,
     lead: autoModel({
+      findFirst: vi.fn(async ({ where }: { where: Record<string, unknown> }) => {
+        state.leadFindFirstWheres.push(where);
+        return null;
+      }),
       create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
         state.leadCreates.push(data);
         return { id: `lead-${data.externalId}` };
@@ -219,6 +224,7 @@ beforeEach(() => {
   state.fetchCalls = [];
   state.leaseCreates = [];
   state.leadCreates = [];
+  state.leadFindFirstWheres = [];
   state.groupFilter = null;
   state.failReports = new Set();
   state.backfillRequestedAt = null;
@@ -327,5 +333,20 @@ describe("runAppfolioSync — two ACTIVE properties", () => {
     expect(
       (after.lastSyncStats as { phaseFailures: Record<string, unknown> }).phaseFailures.work_orders,
     ).toBeUndefined();
+  });
+
+  it("escapes `_` in an applicant email so it can't match a different applicant's lead", async () => {
+    state.props = baseProps().map((p) =>
+      p.id === "B" ? { ...p, backendPlatform: "APPFOLIO", backendPropertyId: "af-B" } : p,
+    );
+    state.reports.rental_applications = [
+      { rental_application_id: 77, property_id: "af-A", email: "Jo_Ann@x.com", status: "Submitted" },
+    ];
+    await runAppfolioSync("org-1");
+    const emailLookups = state.leadFindFirstWheres
+      .map((w) => w.email as { equals: string } | undefined)
+      .filter(Boolean);
+    expect(emailLookups.length).toBeGreaterThan(0);
+    for (const e of emailLookups) expect(e!.equals).toBe("jo\\_ann@x.com");
   });
 });

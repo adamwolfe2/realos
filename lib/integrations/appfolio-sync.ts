@@ -40,6 +40,9 @@ import {
   pullIsComplete,
 } from "./appfolio-lease-sweep";
 import { classifyProperty } from "@/lib/properties/marketable";
+// Prisma's insensitive `equals` is an unescaped ILIKE: `_`/`%` in an email
+// would act as wildcards and merge two different applicants. AGENTS.md rule.
+import { escapeLikePattern } from "@/lib/leads/find-by-email";
 import {
   buildLeadMatchIndex,
   LEAD_STATUSES_BELOW_SIGNED,
@@ -1701,7 +1704,7 @@ export async function upsertAppfolioLead(
         propertyId,
         externalSystem: EXTERNAL_SYSTEM,
         externalId: { startsWith: "application:" },
-        email: { equals: email, mode: "insensitive" },
+        email: { equals: escapeLikePattern(email), mode: "insensitive" },
       },
       select: { id: true, trafficSource: true },
     });
@@ -1961,7 +1964,7 @@ async function upsertAppfolioApplication(
         where: {
           orgId,
           propertyId,
-          email: { equals: email, mode: "insensitive" },
+          email: { equals: escapeLikePattern(email), mode: "insensitive" },
         },
         select: { id: true },
       });
