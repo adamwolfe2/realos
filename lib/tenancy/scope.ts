@@ -537,6 +537,27 @@ export async function requireWorkspaceAdmin(): Promise<ScopedContext> {
   return scope;
 }
 
+/**
+ * Org-level controls (company settings, API keys, white-label, lead routing,
+ * AppFolio/CRM connections, report cadence) belong to seats that see the
+ * whole org. A property-restricted seat (UserPropertyAccess grants) manages
+ * only its own buildings. Throws ForbiddenError.
+ */
+export function assertOrgWideAccess(scope: Pick<ScopedContext, "allowedPropertyIds">): void {
+  if (scope.allowedPropertyIds !== null) {
+    throw new ForbiddenError(
+      "Your access is limited to specific properties. Ask an owner to change workspace-wide settings.",
+    );
+  }
+}
+
+/** requireWorkspaceAdmin + org-wide (not property-restricted) access. */
+export async function requireOrgWideAdmin(): Promise<ScopedContext> {
+  const scope = await requireWorkspaceAdmin();
+  assertOrgWideAccess(scope);
+  return scope;
+}
+
 export async function requireWritableWorkspace(): Promise<ScopedContext> {
   const scope = await requireScope();
   // Read-only seats (CLIENT_VIEWER) never mutate, impersonating

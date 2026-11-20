@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { integrationScopeError } from "@/lib/connect/scope-guard";
-import { auditPayload, requireWorkspaceAdmin } from "@/lib/tenancy/scope";
+import { auditPayload, requireOrgWideAdmin } from "@/lib/tenancy/scope";
 import { encryptFunnelApiKey } from "@/lib/integrations/funnel-client";
 import { assertPublicHttpUrl, SsrfError } from "@/lib/security/ssrf-guard";
 import { AuditAction } from "@prisma/client";
@@ -58,7 +58,7 @@ export async function connectFunnel(
 ): Promise<ConnectFunnelResult> {
   let scope;
   try {
-    scope = await requireWorkspaceAdmin();
+    scope = await requireOrgWideAdmin();
   } catch (err) {
     const message = err instanceof Error ? err.message : "Not authorized";
     return { ok: false, error: message };
@@ -173,7 +173,7 @@ export async function connectFunnel(
 export async function disconnectFunnel(): Promise<ConnectFunnelResult> {
   let scope;
   try {
-    scope = await requireWorkspaceAdmin();
+    scope = await requireOrgWideAdmin();
   } catch (err) {
     const message = err instanceof Error ? err.message : "Not authorized";
     return { ok: false, error: message };

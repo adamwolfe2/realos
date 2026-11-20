@@ -83,14 +83,19 @@ export default async function SettingsPage() {
   ];
 
   const onCount = modules.filter(([, v]) => v).length;
+  const restricted = scope.allowedPropertyIds !== null;
 
   return (
     <div className="w-full space-y-5">
       <PageTitle
         title="Settings"
-        subtitle={`${org.name} · ${onCount} of ${modules.length} modules on`}
+        subtitle={restricted ? org.name : `${org.name} · ${onCount} of ${modules.length} modules on`}
       />
 
+      {/* Company info, workspace links, lead routing and modules are
+          org-level: a property-restricted seat sees only the team panel. */}
+      {restricted ? null : (
+      <>
       <SettingsForm
         initial={{
           name: org.name,
@@ -149,6 +154,8 @@ export default async function SettingsPage() {
             ))}
           </ul>
         </Panel>
+      </>
+      )}
 
       <Panel
         title={<span id="team" className="scroll-mt-24">Team</span>}

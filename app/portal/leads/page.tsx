@@ -60,6 +60,7 @@ export default async function LeadsKanbanPage({
     signal?: string;
     property?: string;
     properties?: string;
+    unassigned?: string;
     q?: string;
     page?: string;
     range?: string;
@@ -85,9 +86,16 @@ export default async function LeadsKanbanPage({
     "propertyId",
     { defaultIncludesOrgRows: true },
   );
+  // "No property" view: leads filed under no building. Org-wide seats only;
+  // a property-restricted seat never sees unassigned rows.
+  const canSeeUnassigned = scope.allowedPropertyIds === null;
+  const unassignedOnly = canSeeUnassigned && sp.unassigned === "1";
+  const unassignedCount = canSeeUnassigned
+    ? await prisma.lead.count({ where: { ...tenantWhere(scope), propertyId: null } })
+    : 0;
   const where: Prisma.LeadWhereInput = {
     ...tenantWhere(scope),
-    AND: [leadPropertyClause],
+    AND: [unassignedOnly ? { propertyId: null } : leadPropertyClause],
   };
   if (sp.source && (SOURCES as string[]).includes(sp.source)) {
     where.source = sp.source as LeadSource;
@@ -480,7 +488,16 @@ export default async function LeadsKanbanPage({
           ))}
         </div>
 
-        {sp.source || sp.property || sp.properties || sp.q ? (
+        {unassignedCount > 0 || unassignedOnly ? (
+          <SourcePill
+            label="No property"
+            count={unassignedCount}
+            active={unassignedOnly}
+            href={unassignedOnly ? "/portal/leads" : "/portal/leads?unassigned=1"}
+          />
+        ) : null}
+
+        {sp.source || sp.property || sp.properties || sp.q || unassignedOnly ? (
           <Link href="/portal/leads" className="text-[12px] text-muted-foreground hover:text-foreground">
             Clear
           </Link>

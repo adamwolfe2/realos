@@ -7,7 +7,7 @@ import { prisma } from "@/lib/db";
 import {
   ForbiddenError,
   auditPayload,
-  requireWorkspaceAdmin,
+  requireOrgWideAdmin,
 } from "@/lib/tenancy/scope";
 import { generateApiKey } from "@/lib/api-keys/generate";
 
@@ -105,7 +105,7 @@ export async function createApiKey(
 ): Promise<CreateApiKeyResult> {
   let scope;
   try {
-    scope = await requireWorkspaceAdmin();
+    scope = await requireOrgWideAdmin();
   } catch (err) {
     const message = err instanceof Error ? err.message : "Not authorized";
     return { ok: false, error: message };
@@ -180,7 +180,7 @@ export async function revokeApiKey(
 ): Promise<RevokeApiKeyResult> {
   let scope;
   try {
-    scope = await requireWorkspaceAdmin();
+    scope = await requireOrgWideAdmin();
   } catch (err) {
     const message = err instanceof Error ? err.message : "Not authorized";
     return { ok: false, error: message };
@@ -254,7 +254,7 @@ export type RotateApiKeyResult =
 export async function rotateApiKey(id: string): Promise<RotateApiKeyResult> {
   let scope;
   try {
-    scope = await requireWorkspaceAdmin();
+    scope = await requireOrgWideAdmin();
   } catch (err) {
     return {
       ok: false,

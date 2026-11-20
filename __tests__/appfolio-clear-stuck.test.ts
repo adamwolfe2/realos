@@ -23,7 +23,7 @@ vi.mock("@/lib/tenancy/scope", async () => {
   );
   return {
     ...actual,
-    requireWorkspaceAdmin: () => mockRequireWritableWorkspace(),
+    requireOrgWideAdmin: () => mockRequireWritableWorkspace(),
   };
 });
 

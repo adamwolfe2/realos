@@ -30,6 +30,8 @@ const AUTH_HELPERS = [
   "requireWritableWorkspace",
   // requireWritableWorkspace + admin-seat role gate (strictly stronger)
   "requireWorkspaceAdmin",
+  // requireWorkspaceAdmin + org-wide (not property-restricted) seat
+  "requireOrgWideAdmin",
   "requireAgency",
   "requireUser",
   "requireSuperAdmin",
