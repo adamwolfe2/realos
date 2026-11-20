@@ -22,6 +22,8 @@ vi.mock("@/lib/tenancy/scope", () => {
     requireScope: () => mocks.requireScope(),
     requireWritableWorkspace: () => mocks.requireWritableWorkspace(),
     tenantWhere: (s: { orgId: string }) => ({ orgId: s.orgId }),
+    propertyInScope: (s: { allowedPropertyIds?: string[] | null }, id: string | null) =>
+      !id || !s.allowedPropertyIds || s.allowedPropertyIds.includes(id),
     ForbiddenError,
   };
 });
