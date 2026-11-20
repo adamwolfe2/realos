@@ -113,10 +113,13 @@ function deriveDomain(url: string | null): string | null {
 export default async function SeoAgentPage({
   searchParams,
 }: {
-  searchParams: Promise<{ propertyId?: string; range?: string }>;
+  searchParams: Promise<{ property?: string; propertyId?: string; range?: string }>;
 }) {
   const scope = await requireScope();
-  const { propertyId: propertyIdParam, range: rangeParam } = await searchParams;
+  const sp = await searchParams;
+  // ?property= is the portal-wide key; ?propertyId= kept for old bookmarks.
+  const propertyIdParam = sp.property ?? sp.propertyId;
+  const rangeParam = sp.range;
   const range: RangeKey = (
     ["7d", "28d", "90d", "12mo"] as const
   ).includes(rangeParam as RangeKey)

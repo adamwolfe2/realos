@@ -61,3 +61,20 @@ describe("deep links into SEO/AEO/reputation use the parsed ?property= key", () 
     });
   }
 });
+
+describe("SEO agent links use ?property=", () => {
+  it("agent page reads ?property= (with ?propertyId= kept for old bookmarks)", () => {
+    expect(read("app/portal/seo/agent/page.tsx")).toContain(
+      "const propertyIdParam = sp.property ?? sp.propertyId;",
+    );
+  });
+  for (const file of [
+    "app/portal/properties/page.tsx",
+    "app/portal/seo/properties/page.tsx",
+    "components/portal/seo/property-switcher.tsx",
+  ]) {
+    it(file, () => {
+      expect(read(file)).not.toContain("/portal/seo/agent?propertyId=");
+    });
+  }
+});
