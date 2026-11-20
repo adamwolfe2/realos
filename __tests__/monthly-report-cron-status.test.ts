@@ -18,7 +18,8 @@ const h = vi.hoisted(() => ({
     // mocked as a no-op below so the id value here doesn't matter to these
     // status-sequencing assertions.
     organization: { findMany: vi.fn(), findFirst: vi.fn() },
-    clientReport: { findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
+    clientReport: { findMany: vi.fn(), create: vi.fn(), update: vi.fn(), groupBy: vi.fn() },
+    property: { findMany: vi.fn() },
   },
 }));
 
@@ -72,6 +73,8 @@ beforeEach(() => {
   h.db.organization.findMany.mockResolvedValue([AUTO_SEND_ORG]);
   h.db.organization.findFirst.mockResolvedValue({ id: "agency_1" });
   h.db.clientReport.findMany.mockResolvedValue([]);
+  h.db.clientReport.groupBy.mockResolvedValue([]);
+  h.db.property.findMany.mockResolvedValue([]);
   h.db.clientReport.create.mockResolvedValue({
     id: "report_1",
     shareToken: "test-share-token",
