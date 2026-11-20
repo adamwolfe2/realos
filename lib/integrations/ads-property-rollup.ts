@@ -1,5 +1,6 @@
 import { AdPlatform, LeadStatus } from "@prisma/client";
 import { TOURED_OR_LATER } from "./ads-insights-math";
+import { effectivePropertyIds } from "@/lib/tenancy/property-filter";
 
 // Per-property view of paid ads: what each property spent on Google and
 // Meta, and what that spend turned into once renters reached the leasing
@@ -68,4 +69,37 @@ export function sumRollups(rows: readonly PropertyAdRollup[]) {
     (t, r) => ({ leads: t.leads + r.leads, tours: t.tours + r.tours, signed: t.signed + r.signed }),
     { leads: 0, tours: 0, signed: 0 },
   );
+}
+
+// Which ads suggestions (Insight rows) the ads page lists: org-level ones
+// plus those about the picked properties, or about every property the
+// user can see when nothing is picked.
+export function adsInsightPropertyClause(
+  scope: { allowedPropertyIds: string[] | null },
+  selectedIds: string[] | null,
+  visible: readonly { id: string }[],
+) {
+  const ids = selectedIds ? effectivePropertyIds(scope, selectedIds) ?? [] : visible.map((p) => p.id);
+  return { OR: [{ propertyId: null }, { propertyId: { in: ids } }] };
+}
+
+// /portal/ads is "narrowed" when a property is picked or the user is
+// limited to some properties. `campaignFilter` is the page's campaign
+// property clause, so these stay in step with the campaign list.
+
+// Ad accounts: narrowed, only accounts with a campaign in scope, so a
+// restricted user never sees another building's account name, id or sync
+// error. Unrestricted with no pick: every account.
+export function adsAccountPropertyClause(narrowed: boolean, campaignFilter: Record<string, unknown>) {
+  return narrowed ? { adCampaigns: { some: campaignFilter } } : {};
+}
+
+// Ads (creatives): narrowed, only ads whose campaign is in scope; ads with
+// no campaign link can't be tied to a property, so they only show in the
+// unrestricted whole-portfolio view.
+export function adsCreativePropertyClause(narrowed: boolean, campaignFilter: Record<string, unknown>) {
+  if (narrowed) return { campaign: campaignFilter };
+  return Object.keys(campaignFilter).length > 0
+    ? { OR: [{ campaignId: null }, { campaign: campaignFilter }] }
+    : {};
 }

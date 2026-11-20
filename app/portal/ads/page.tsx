@@ -27,7 +27,13 @@ import {
 } from "@/lib/billing/retention";
 import { AdRetentionPanel } from "@/components/portal/ads/retention-panel";
 import { realAdAccountWhere } from "@/lib/integrations/real-ad-account";
-import { rollupAdsByProperty, sumRollups } from "@/lib/integrations/ads-property-rollup";
+import {
+  adsAccountPropertyClause,
+  adsCreativePropertyClause,
+  adsInsightPropertyClause,
+  rollupAdsByProperty,
+  sumRollups,
+} from "@/lib/integrations/ads-property-rollup";
 import { byFormat, fatigue, FATIGUE_DROP, parseAdsRange, TOURED_OR_LATER, weeklyFunnel } from "@/lib/integrations/ads-insights-math";
 import { WeeklyProgress } from "./weekly-progress";
 import { FormatComparison } from "./format-comparison";
@@ -106,9 +112,11 @@ export default async function AdsPage({
   // paths — legacy paste (credentialsEncrypted IS NOT NULL) and OAuth
   // picker (matching OAuthConnection row with externalAccountId bound).
   const realAccountFilter = await realAdAccountWhere(scope.orgId);
+  const narrowed = propertyIds !== null || Boolean(scope.allowedPropertyIds);
   const realAccountWhere = {
     ...tenantWhere(scope),
     ...realAccountFilter,
+    ...adsAccountPropertyClause(narrowed, propertyFilter),
   };
 
   // Tier-based retention policy fuels the sidebar panel. Cheap one-row
@@ -244,14 +252,11 @@ export default async function AdsPage({
 
   // Creative gallery: every synced ad for a real account, with 28-day
   // per-ad totals. Property scope goes through the campaign relation, the
-  // same way the daily metrics queries above do; org-level ads (no
-  // campaign link yet) stay visible like org-level campaigns.
+  // same way the daily metrics queries above do.
   const creativeScope = {
     ...tenantWhere(scope),
     adAccount: realAccountFilter,
-    ...(Object.keys(propertyFilter).length > 0
-      ? { OR: [{ campaignId: null }, { campaign: propertyFilter }] }
-      : {}),
+    ...adsCreativePropertyClause(narrowed, propertyFilter),
   };
   const [creativeRows, creativeTotals] = await Promise.all([
     prisma.adCreative.findMany({
@@ -358,13 +363,12 @@ export default async function AdsPage({
     if (f && f.drop >= FATIGUE_DROP) fatigueByCreative.set(id, f.drop);
   }
   // Weekly read + open ad suggestions (Insight rows from the detector cron).
+  // A picked property narrows them to that property plus org-level ones, so
+  // "The Lair · Paid ads" never lists Southgate's campaigns.
   const insightScope = {
     orgId: scope.orgId,
     category: "ads",
-    OR: [
-      { propertyId: null },
-      { propertyId: { in: properties.map((p) => p.id) } },
-    ],
+    ...adsInsightPropertyClause(scope, propertyIds, properties),
   };
   const [briefRow, suggestionRows] = await Promise.all([
     // The brief is written from the whole portfolio, so only full-portfolio
@@ -427,7 +431,7 @@ export default async function AdsPage({
     adDataRetentionMonths: orgRetention?.adDataRetentionMonths ?? null,
   });
   const retentionSummary = describeAdRetentionPolicy(retentionPolicy);
-  const canEditRetention = ADS_EDIT_ROLES.has(scope.role);
+  const canEditRetention = ADS_EDIT_ROLES.has(scope.role) && !scope.allowedPropertyIds;
 
   // Build spend-per-LeadSource from the 28-day daily metrics + account platform.
   const accountPlatformMap = new Map(accounts.map((a) => [a.id, a.platform]));
@@ -505,7 +509,7 @@ export default async function AdsPage({
                 orgId={scope.orgId}
               />
             </Suspense>
-            <ExportButton href="/api/tenant/ad-metrics/export?days=90" />
+            <ExportButton href={`/api/tenant/ad-metrics/export?days=90${propertyIds?.length ? `&properties=${encodeURIComponent(propertyIds.join(","))}` : ""}`} />
           </div>
         }
       />
@@ -514,7 +518,7 @@ export default async function AdsPage({
         <div className="grid gap-5 xl:grid-cols-5">
           {briefRow ? (
             <div className="xl:col-span-3">
-              <WeeklyBrief brief={{ title: briefRow.title, body: briefRow.body, ...parseBriefContext(briefRow.context) }} />
+              <WeeklyBrief brief={{ title: briefRow.title, body: briefRow.body, ...parseBriefContext(briefRow.context) }} portfolioWide={propertyIds !== null} />
             </div>
           ) : null}
           <div className={briefRow ? "xl:col-span-2" : "xl:col-span-5"}>

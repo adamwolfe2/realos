@@ -306,7 +306,7 @@ export async function getLaunchChecklist(
         ? `${googleCampaign.name}${googleCampaign.status === "PAUSED" ? " (paused)" : ""}.`
         : null,
       actionLabel: "Connect Google Ads",
-      actionHref: `/portal/ads?propertyId=${property.id}`,
+      actionHref: `/portal/ads?property=${property.id}`,
       required: false,
     });
   }
@@ -322,7 +322,7 @@ export async function getLaunchChecklist(
         ? `${metaCampaign.name}${metaCampaign.status === "PAUSED" ? " (paused)" : ""}.`
         : null,
       actionLabel: "Connect Meta Ads",
-      actionHref: `/portal/ads?propertyId=${property.id}`,
+      actionHref: `/portal/ads?property=${property.id}`,
       required: false,
     });
   }

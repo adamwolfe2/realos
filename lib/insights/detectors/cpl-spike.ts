@@ -1,6 +1,7 @@
 import "server-only";
 import { adLeadWhere, leadSourceForPlatform } from "@/lib/integrations/ad-lead-source";
 import { prisma } from "@/lib/db";
+import type { AdPlatform } from "@prisma/client";
 import { isoWeekKey } from "../iso-week";
 import type { Detector, DetectedInsight } from "../types";
 
@@ -50,11 +51,20 @@ export const cplSpikeDetector: Detector = {
       OR: [{ propertyId: { in: propertyIds } }, { propertyId: null }],
     };
 
-    for (const acct of accounts) {
+    // Per platform, not per account: an org can connect one account per
+    // building (unique key is orgId+platform+externalAccountId), and leads
+    // only know their platform. Per-account CPL would divide one account's
+    // spend by every account's leads and key two insights on one dedupeKey.
+    const accountIdsByPlatform = new Map<AdPlatform, string[]>();
+    for (const a of accounts) {
+      accountIdsByPlatform.set(a.platform, [...(accountIdsByPlatform.get(a.platform) ?? []), a.id]);
+    }
+
+    for (const [platform, adAccountIds] of accountIdsByPlatform) {
       const [currSpend, prevSpend] = await Promise.all([
         prisma.adMetricDaily.aggregate({
           where: {
-            adAccountId: acct.id,
+            adAccountId: { in: adAccountIds },
             date: { gte: since7d },
             campaign: campaignPropertyClause,
           },
@@ -62,7 +72,7 @@ export const cplSpikeDetector: Detector = {
         }),
         prisma.adMetricDaily.aggregate({
           where: {
-            adAccountId: acct.id,
+            adAccountId: { in: adAccountIds },
             date: { gte: since14d, lt: since7d },
             campaign: campaignPropertyClause,
           },
@@ -76,7 +86,7 @@ export const cplSpikeDetector: Detector = {
       if (currSpendC < MIN_SPEND_CENTS || prevSpendC < MIN_SPEND_CENTS) continue;
 
       // Count leads that credit this platform in both windows.
-      const leadSource = leadSourceForPlatform(acct.platform);
+      const leadSource = leadSourceForPlatform(platform);
       const sources = leadSource ? [leadSource] : [];
       if (sources.length === 0) continue;
 
@@ -92,7 +102,7 @@ export const cplSpikeDetector: Detector = {
             // understate the leads that spend paid for and falsely spike
             // the CPL.
             OR: [{ propertyId: { in: propertyIds } }, { propertyId: null }],
-            ...adLeadWhere([acct.platform]),
+            ...adLeadWhere([platform]),
             createdAt: { gte: since7d },
           },
         }),
@@ -100,7 +110,7 @@ export const cplSpikeDetector: Detector = {
           where: {
             orgId,
             OR: [{ propertyId: { in: propertyIds } }, { propertyId: null }],
-            ...adLeadWhere([acct.platform]),
+            ...adLeadWhere([platform]),
             createdAt: { gte: since14d, lt: since7d },
           },
         }),
@@ -115,7 +125,7 @@ export const cplSpikeDetector: Detector = {
       if (deltaPct < 30) continue;
 
       const severity: "warning" | "critical" = deltaPct >= 60 ? "critical" : "warning";
-      const label = acct.platform === "GOOGLE_ADS" ? "Google Ads" : "Meta Ads";
+      const label = platform === "GOOGLE_ADS" ? "Google Ads" : "Meta Ads";
 
       insights.push({
         kind: "cpl_spike",
@@ -127,9 +137,9 @@ export const cplSpikeDetector: Detector = {
           "Open Campaigns to check which ad sets changed. Common causes: a campaign exhausted its audience, creative fatigue, or a new competitor bidding up your terms.",
         entityType: "campaign",
         href: "/portal/ads",
-        dedupeKey: `cpl_spike:${acct.platform}:week:${weekKey}`,
+        dedupeKey: `cpl_spike:${platform}:week:${weekKey}`,
         context: {
-          platform: acct.platform,
+          platform,
           currentCpl: Math.round(currCpl * 100) / 100,
           previousCpl: Math.round(prevCpl * 100) / 100,
           deltaPct: Math.round(deltaPct * 10) / 10,

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireWritableWorkspace } from "@/lib/tenancy/scope";
@@ -19,10 +20,17 @@ const WRITE_ROLES: ReadonlySet<UserRole> = new Set([
   UserRole.CLIENT_ADMIN,
 ]);
 
+const pickInput = z.object({
+  campaignId: z.string().min(1).max(64),
+  propertyId: z.string().min(1).max(64).nullable(),
+});
+
 export async function setCampaignProperty(
   campaignId: string,
   propertyId: string | null,
 ): Promise<{ success: true } | { error: string }> {
+  const valid = pickInput.safeParse({ campaignId, propertyId });
+  if (!valid.success) return { error: "Invalid campaign or property." };
   try {
     const scope = await requireWritableWorkspace();
     // Users limited to some properties could move spend out of view of

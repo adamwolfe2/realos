@@ -26,7 +26,9 @@ const WRITE_ROLES: ReadonlySet<UserRole> = new Set([
 export async function setAdRetentionOverride(months: number | null) {
   try {
     const scope = await requireWritableWorkspace();
-    if (!WRITE_ROLES.has(scope.role)) {
+    // Retention deletes ad history for every property in the org, so a
+    // user limited to some properties can't change it.
+    if (!WRITE_ROLES.has(scope.role) || scope.allowedPropertyIds) {
       return { error: "You don't have permission to change retention." };
     }
 

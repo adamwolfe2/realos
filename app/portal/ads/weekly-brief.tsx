@@ -66,12 +66,14 @@ function Compare({ label, now, before, fmt }: { label: string; now: number; befo
   );
 }
 
-export function WeeklyBrief({ brief }: { brief: WeeklyBriefData }) {
+// The brief is written once per org from every property. On a single
+// property's view it is labelled as the portfolio's, never that property's.
+export function WeeklyBrief({ brief, portfolioWide = false }: { brief: WeeklyBriefData; portfolioWide?: boolean }) {
   const t = brief.thisWeek;
   const l = brief.lastWeek;
   return (
     <Panel
-      title="Last week"
+      title={portfolioWide ? "Last week · whole portfolio" : "Last week"}
       aside={
         <span className="inline-flex items-center gap-2">
           <Pill tone="ai">AI read</Pill>
@@ -79,6 +81,9 @@ export function WeeklyBrief({ brief }: { brief: WeeklyBriefData }) {
         </span>
       }
     >
+      {portfolioWide ? (
+        <p className="mb-2 text-[12px] text-[var(--t-muted)]">Covers every property, not just this one.</p>
+      ) : null}
       <p className="text-[15px] font-semibold leading-snug text-[var(--t-ink)]">{brief.title}</p>
 
       {t && l ? (

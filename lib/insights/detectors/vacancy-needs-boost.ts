@@ -97,7 +97,7 @@ export const vacancyNeedsBoostDetector: Detector = {
         propertyId: property.id,
         entityType: "property",
         entityId: property.id,
-        href: `/portal/ads?propertyId=${property.id}`,
+        href: `/portal/ads?property=${property.id}`,
         dedupeKey: `vacancy_needs_boost:${property.id}:week:${weekKey}`,
         context: {
           propertyId: property.id,
