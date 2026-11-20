@@ -60,6 +60,9 @@ export interface ScanOptions {
   orgId: string;
   /** Optional — scope to a single property. Otherwise scans every marketable property in the org. */
   propertyId?: string;
+  /** Optional — limit to these properties (a restricted user's grant).
+   *  An empty array scans nothing. */
+  propertyIds?: string[];
   /** Defaults to all configured engines. */
   engines?: EngineModule[];
   /** Cap on number of properties per run (top-N most recently updated). */
@@ -308,7 +311,10 @@ export async function runAeoScan(opts: ScanOptions): Promise<ScanResult> {
 async function loadProperties(opts: ScanOptions): Promise<PropertyRow[]> {
   const where = {
     ...marketablePropertyWhere(opts.orgId),
-    ...(opts.propertyId ? { id: opts.propertyId } : {}),
+    AND: [
+      opts.propertyId ? { id: opts.propertyId } : {},
+      opts.propertyIds ? { id: { in: opts.propertyIds } } : {},
+    ],
   };
   const rows = await prisma.property.findMany({
     where,

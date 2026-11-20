@@ -55,4 +55,13 @@ describe("runAeoScan property order (two-property org)", () => {
     await runAeoScan({ orgId: "o1", engines: [engine], deadline: Date.now() + 30_000 });
     expect(seen).toEqual(["B"]);
   });
+
+  it("limits the property query to propertyIds (a restricted user's grant)", async () => {
+    const { prisma } = await import("@/lib/db");
+    const findMany = prisma.property.findMany as unknown as ReturnType<typeof vi.fn>;
+    findMany.mockClear();
+    await runAeoScan({ orgId: "o1", engines: [], propertyIds: ["A"] });
+    const where = (findMany.mock.calls[0] as unknown as [{ where: { AND: unknown[] } }])[0].where;
+    expect(where.AND).toContainEqual({ id: { in: ["A"] } });
+  });
 });

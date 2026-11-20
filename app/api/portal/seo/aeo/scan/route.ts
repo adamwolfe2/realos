@@ -7,6 +7,7 @@ import {
   tenantWhere,
 } from "@/lib/tenancy/scope";
 import { runAeoScan } from "@/lib/aeo/orchestrate";
+import { propertyWhereFragment } from "@/lib/tenancy/property-filter";
 import { getEnabledEngines } from "@/lib/aeo/engines";
 
 // ---------------------------------------------------------------------------
@@ -56,6 +57,8 @@ export async function POST(req: NextRequest) {
     const recent = await prisma.aeoCitationCheck.count({
       where: {
         ...tenantWhere(scope),
+        // A restricted user's cooldown only counts their own properties.
+        ...propertyWhereFragment(scope, null),
         queryRunAt: { gte: cutoff },
       },
     });
@@ -92,7 +95,14 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const result = await runAeoScan({ orgId: scope.orgId, engines });
+    // Restricted users scan (and spend on) only their granted properties.
+    const result = await runAeoScan({
+      orgId: scope.orgId,
+      engines,
+      ...(scope.allowedPropertyIds
+        ? { propertyIds: scope.allowedPropertyIds }
+        : {}),
+    });
     return NextResponse.json({ ok: true, ...result });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

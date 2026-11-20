@@ -4,7 +4,13 @@ import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { requireWorkspaceAdmin, requireWritableWorkspace, auditPayload } from "@/lib/tenancy/scope";
+import {
+  requireWorkspaceAdmin,
+  requireWritableWorkspace,
+  auditPayload,
+  propertyInScope,
+  type ScopedContext,
+} from "@/lib/tenancy/scope";
 import { encrypt } from "@/lib/crypto";
 import { parseServiceAccountJson, testGscConnection } from "@/lib/integrations/gsc";
 import { testGa4Connection } from "@/lib/integrations/ga4";
@@ -26,6 +32,15 @@ import { AuditAction, SeoProvider, SeoSyncStatus } from "@prisma/client";
 // ---------------------------------------------------------------------------
 
 const PORTAL_PATH = "/portal/seo";
+const OUT_OF_GRANT = "That property is outside your access.";
+
+// A property-restricted admin may only touch connections for properties in
+// their grant, and never the org-wide (propertyId NULL) row, which feeds
+// every property's numbers.
+function grantAllows(scope: ScopedContext, propertyId: string | null): boolean {
+  if (!propertyId) return !scope.allowedPropertyIds;
+  return propertyInScope(scope, propertyId);
+}
 const PORTAL_HOME = "/portal";
 
 const connectSchema = z.object({
@@ -98,24 +113,28 @@ export async function connectSeo(formData: FormData): Promise<ConnectSeoResult> 
       ? leasestackPropertyId
       : null;
 
-  // If a property was specified, validate it belongs to this org —
-  // never trust a hidden form field. A bogus / cross-tenant id is
-  // silently coerced to NULL (legacy org-wide) rather than failing the
-  // connect, but we'll log a warning for ops visibility.
+  if (!grantAllows(scope, scopePropertyId)) {
+    return { ok: false, error: OUT_OF_GRANT };
+  }
+
+  // If a property was specified, validate it belongs to this org — never
+  // trust a hidden form field. A bogus / cross-tenant id fails the connect:
+  // silently falling back to the org-wide row would attach one building's
+  // Google site to every property's numbers.
   let validatedScopePropertyId: string | null = null;
   if (scopePropertyId) {
     const found = await prisma.property.findFirst({
       where: { id: scopePropertyId, orgId: scope.orgId },
       select: { id: true },
     });
-    if (found) {
-      validatedScopePropertyId = found.id;
-    } else {
-      console.warn(
-        "[seo-connect] propertyId not found for org; falling back to org-wide",
-        { orgId: scope.orgId, propertyId: scopePropertyId },
-      );
+    if (!found) {
+      console.warn("[seo-connect] propertyId not found for org", {
+        orgId: scope.orgId,
+        propertyId: scopePropertyId,
+      });
+      return { ok: false, error: "Property not found in your workspace." };
     }
+    validatedScopePropertyId = found.id;
   }
 
   let parsedSa;
@@ -272,6 +291,9 @@ export async function disconnectSeo(
     parsed.data.leasestackPropertyId.length > 0
       ? parsed.data.leasestackPropertyId
       : null;
+  if (!grantAllows(scope, scopePropertyId)) {
+    return { ok: false, error: OUT_OF_GRANT };
+  }
 
   const existing = await prisma.seoIntegration.findFirst({
     where: {

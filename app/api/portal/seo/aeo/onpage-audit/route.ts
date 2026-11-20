@@ -4,7 +4,9 @@ import {
   requireScope,
   requireWritableWorkspace,
   ForbiddenError,
+  propertyInScope,
 } from "@/lib/tenancy/scope";
+import { prisma } from "@/lib/db";
 import { runOnPageAudit } from "@/lib/aeo/run-onpage-audit";
 import {
   orgHasActiveAddon,
@@ -117,10 +119,26 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // The client-supplied propertyId must be this org's property AND inside
+  // the caller's grant; otherwise the audit row would be tagged with a
+  // property the caller can't see (or another org's property id).
+  const propertyId = parsed.data.propertyId ?? null;
+  if (propertyId) {
+    const owned = propertyInScope(scope, propertyId)
+      ? await prisma.property.findFirst({
+          where: { id: propertyId, orgId: scope.orgId },
+          select: { id: true },
+        })
+      : null;
+    if (!owned) {
+      return NextResponse.json({ error: "Property not found" }, { status: 404 });
+    }
+  }
+
   const result = await runOnPageAudit({
     orgId: scope.orgId,
     url: parsed.data.url,
-    propertyId: parsed.data.propertyId ?? null,
+    propertyId,
   });
 
   if (!result.ok) {
