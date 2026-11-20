@@ -327,7 +327,25 @@ async function loadProperties(opts: ScanOptions): Promise<PropertyRow[]> {
     orderBy: { updatedAt: "desc" },
     take: opts.maxProperties ?? 50,
   });
-  return rows;
+  if (rows.length < 2) return rows;
+  // Stalest property first. The cron's deadline cuts a scan mid-org, so a
+  // fixed order (updatedAt) re-scanned the same property every run and a
+  // second property in the org was never reached.
+  const last = await prisma.aeoCitationCheck.groupBy({
+    by: ["propertyId"],
+    where: {
+      orgId: opts.orgId,
+      propertyId: { in: rows.map((r) => r.id) },
+      neighborhoodPageId: null,
+    },
+    _max: { queryRunAt: true },
+  });
+  const lastMs = new Map(
+    last.map((l) => [l.propertyId, l._max.queryRunAt?.getTime() ?? 0]),
+  );
+  return [...rows].sort(
+    (a, b) => (lastMs.get(a.id) ?? 0) - (lastMs.get(b.id) ?? 0),
+  );
 }
 
 /**
