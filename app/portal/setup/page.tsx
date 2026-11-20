@@ -6,6 +6,7 @@ import { requireScope } from "@/lib/tenancy/scope";
 import { getConnectStatusForOrg, type ConnectSource } from "@/lib/connect/status";
 import { getProviderAvailability } from "@/lib/connect/provider-availability";
 import { getActivePropertyId } from "@/lib/portal/active-property";
+import { resolveChatbotConfig } from "@/lib/chatbot/resolve-config";
 import { Initial, Panel, Pill, Step } from "@/components/portal/overview/kit";
 import { ConnectSteps, type ManagedIds, type SourceId, type SourceTile } from "./connect-steps";
 
@@ -64,9 +65,12 @@ export default async function SetupPage({ searchParams }: { searchParams: Promis
 
   const [org, site, statuses, lastChat] = await Promise.all([
     prisma.organization.findUnique({ where: { id: scope.orgId }, select: { name: true, notifyLeadEmail: true, notifyOnChatbotLead: true, moduleChatbot: true } }),
-    prisma.tenantSiteConfig.findUnique({ where: { orgId: scope.orgId }, select: { chatbotEnabled: true, chatbotPersonaName: true, chatbotGreeting: true, chatbotKnowledgeBase: true } }),
+    // The selected property's effective bot (its override, else the org's),
+    // and only its own conversations: property B must not read as "live"
+    // because property A's widget is getting chats.
+    resolveChatbotConfig(scope.orgId, property?.id ?? null),
     getConnectStatusForOrg(scope.orgId, property?.id ?? null),
-    prisma.chatbotConversation.findFirst({ where: { orgId: scope.orgId }, orderBy: { lastMessageAt: "desc" }, select: { lastMessageAt: true } }),
+    prisma.chatbotConversation.findFirst({ where: { orgId: scope.orgId, ...(property ? { propertyId: property.id } : {}) }, orderBy: { lastMessageAt: "desc" }, select: { lastMessageAt: true } }),
   ]);
 
   const tiles: SourceTile[] = SOURCES.map((s) => {

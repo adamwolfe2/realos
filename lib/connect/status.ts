@@ -131,36 +131,36 @@ export async function getConnectStatusForOrg(
         .catch(() => null),
     ]);
 
-  const ga4 = seoIntegrations.find((s) => s.provider === "GA4");
-  const gsc = seoIntegrations.find((s) => s.provider === "GSC");
-  const ga4Rows = seoIntegrations.filter((s) => s.provider === "GA4");
-  const gscRows = seoIntegrations.filter((s) => s.provider === "GSC");
-  // Any row scoped to the active property, or org-wide (propertyId=null),
-  // counts as connected for that property. No activePropertyId (org-wide
-  // callers, or "All properties" selected) falls back to "any row at all"
-  // — same behavior as before per-property OAuth existed.
-  const connectedForActiveProperty = (
-    rows: Array<{ propertyId: string | null }>,
-  ): boolean =>
-    activePropertyId
-      ? rows.some(
-          (r) => r.propertyId === activePropertyId || r.propertyId === null,
-        )
-      : rows.length > 0;
+  // With a property selected, only that property's rows and org-wide
+  // (propertyId=null) rows describe it. The property's own row wins over the
+  // org-wide one for label / last sync, and only those rows can mark it
+  // errored, so property B never shows property A's GA4 account or A's
+  // broken sync. No activePropertyId (org-wide callers, "All properties")
+  // keeps every row, same as before per-property OAuth existed.
+  const rowsFor = (provider: "GA4" | "GSC") => {
+    const rows = seoIntegrations.filter((s) => s.provider === provider);
+    if (!activePropertyId) return rows;
+    return [
+      ...rows.filter((r) => r.propertyId === activePropertyId),
+      ...rows.filter((r) => r.propertyId === null),
+    ];
+  };
+  const ga4Rows = rowsFor("GA4");
+  const gscRows = rowsFor("GSC");
+  const ga4 = ga4Rows[0];
+  const gsc = gscRows[0];
   const googleAds = adAccounts.find((a) => a.platform === "GOOGLE_ADS");
   const metaAds = adAccounts.find((a) => a.platform === "META_ADS");
 
   // Error aggregation — a multi-property tenant can have several GA4/GSC
-  // rows (one per property) or several ad accounts per platform. ANY row
+  // rows (one per property) or several ad accounts per platform. ANY
+  // relevant row (all rows org-wide; the selected property's + org-wide rows
+  // when a property is active)
   // erroring must flip the source to "error", same OR-across-rows rule
   // lib/integrations/status.ts uses (seoBySlug/adsBySlug) — picking only
   // the first row here would hide a broken second property/account.
-  const ga4HasError = seoIntegrations
-    .filter((s) => s.provider === "GA4")
-    .some((s) => s.status === "ERROR" || !!s.lastSyncError);
-  const gscHasError = seoIntegrations
-    .filter((s) => s.provider === "GSC")
-    .some((s) => s.status === "ERROR" || !!s.lastSyncError);
+  const ga4HasError = ga4Rows.some((s) => s.status === "ERROR" || !!s.lastSyncError);
+  const gscHasError = gscRows.some((s) => s.status === "ERROR" || !!s.lastSyncError);
   const googleAdsHasError = adAccounts
     .filter((a) => a.platform === "GOOGLE_ADS")
     .some((a) => !!a.lastSyncError);
@@ -193,7 +193,7 @@ export async function getConnectStatusForOrg(
     },
     {
       id: "ga4",
-      connected: connectedForActiveProperty(ga4Rows),
+      connected: ga4Rows.length > 0,
       lastSyncAt: ga4?.lastSyncAt ?? null,
       accountLabel: ga4?.propertyIdentifier
         ? `Property ${ga4.propertyIdentifier}`
@@ -215,7 +215,7 @@ export async function getConnectStatusForOrg(
     },
     {
       id: "gsc",
-      connected: connectedForActiveProperty(gscRows),
+      connected: gscRows.length > 0,
       lastSyncAt: gsc?.lastSyncAt ?? null,
       accountLabel: gsc?.propertyIdentifier ?? null,
       hasError: classifyHealth("gsc", gsc?.lastSyncAt ?? null, gscHasError) === "error",
