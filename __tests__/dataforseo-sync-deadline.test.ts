@@ -11,7 +11,15 @@ import { NextRequest } from "next/server";
 const findMany = vi.hoisted(() => vi.fn());
 const sync = vi.hoisted(() => vi.fn());
 
-vi.mock("@/lib/db", () => ({ prisma: { property: { findMany } } }));
+const serpGroupBy = vi.hoisted(() => vi.fn(async () => []));
+vi.mock("@/lib/db", () => ({
+  prisma: {
+    property: { findMany },
+    serpRanking: { groupBy: serpGroupBy },
+    onPageAudit: { groupBy: vi.fn(async () => []) },
+    backlinkSummary: { groupBy: vi.fn(async () => []) },
+  },
+}));
 vi.mock("@/lib/cron/auth", () => ({ verifyCronAuth: () => null }));
 vi.mock("@/lib/health/cron-run", () => ({
   recordCronRun: async (_n: string, fn: () => Promise<{ result: unknown }>) =>
@@ -63,5 +71,25 @@ describe("GET /api/cron/dataforseo-sync", () => {
     // p0 (0-100s), p1 (100-200s), then past the 180s deadline → stop.
     expect(sync).toHaveBeenCalledTimes(2);
     expect(body.propertiesScanned).toBe(2);
+  });
+
+  it("scans the never-scanned property before one scanned recently (multi-property org)", async () => {
+    // Two LIVE properties in one org; A was scanned 2 days ago, B never.
+    findMany.mockResolvedValue([
+      { id: "A", orgId: "o", name: "Alpha", websiteUrl: null },
+      { id: "B", orgId: "o", name: "Beta", websiteUrl: null },
+    ]);
+    serpGroupBy.mockResolvedValueOnce([
+      { propertyId: "A", _max: { date: new Date(Date.now() - 2 * 86_400_000) } },
+    ] as never);
+    const order: string[] = [];
+    sync.mockImplementation(async ({ propertyId }: { propertyId: string }) => {
+      order.push(propertyId);
+      return STATS;
+    });
+    await GET(new NextRequest("http://localhost/api/cron/dataforseo-sync"));
+    expect(order).toEqual(["B", "A"]);
+    // No longer ordered by a timestamp the cron never writes.
+    expect(findMany.mock.calls[0][0].orderBy).not.toHaveProperty("lastSyncedAt");
   });
 });
