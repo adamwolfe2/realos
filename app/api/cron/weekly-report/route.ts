@@ -126,7 +126,9 @@ export async function GET(req: NextRequest) {
         // Suppressed (not client org.id) if no agency org resolves — an
         // empty-DB edge case; the draft still exists, only the bell ping
         // is skipped rather than misrouting it to the client.
-        if (agencyOrg) {
+        // One bell per org per run: only the org-wide draft pings. The
+        // per-property drafts sit beside it on the reports page.
+        if (agencyOrg && !unit.propertyId) {
           await notifyReportDraftReady(agencyOrg.id, report.id, "weekly").catch(() => {
             // fire-and-forget: don't fail the draft just because the bell is down
           });

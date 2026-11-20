@@ -23,6 +23,7 @@ const m = vi.hoisted(() => ({
   props: [] as Prop[],
   orgs: [] as Array<Record<string, unknown>>,
   send: vi.fn(),
+  notify: vi.fn(),
   generate: vi.fn(),
 }));
 
@@ -31,7 +32,7 @@ vi.mock("@/lib/health/cron-run", () => ({
 }));
 vi.mock("@/lib/cron/auth", () => ({ verifyCronAuth: () => null }));
 vi.mock("@/lib/reports/token", () => ({ generateShareToken: () => "tok" }));
-vi.mock("@/lib/notifications/create", () => ({ notifyReportDraftReady: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("@/lib/notifications/create", () => ({ notifyReportDraftReady: m.notify }));
 vi.mock("@/lib/email/send-report", () => ({ sendReportEmail: m.send }));
 vi.mock("@/lib/reports/generate", async () => {
   const resolvePeriod = (k: string, now: Date) => ({
@@ -113,6 +114,7 @@ beforeEach(() => {
   m.props.length = 0;
   m.generate.mockReset();
   m.send.mockReset().mockResolvedValue({ ok: true });
+  m.notify.mockReset().mockResolvedValue(undefined);
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-11-02T07:00:00Z"));
 });
@@ -136,6 +138,17 @@ describe.each([
     expect(m.generate.mock.calls.map((c) => c[2]).sort()).toEqual([null, "pA", "pB"].sort());
     // Auto-send (org-level recipients) still sends only the org-wide draft.
     expect(m.send).toHaveBeenCalledTimes(1);
+  });
+
+  it("three drafts in one run ping the bell once (org-wide draft only)", async () => {
+    m.orgs = [{ ...ORG("o1", cadence), reportAutoSend: false }];
+    m.props.push(
+      { id: "pA", orgId: "o1", lifecycle: "ACTIVE" },
+      { id: "pB", orgId: "o1", lifecycle: "ACTIVE" },
+    );
+    await run(route);
+    expect(m.rows).toHaveLength(3);
+    expect(m.notify).toHaveBeenCalledTimes(1);
   });
 
   it("one ACTIVE property + 100 EXCLUDED: unchanged single org-wide draft", async () => {

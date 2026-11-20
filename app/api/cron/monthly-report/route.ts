@@ -174,7 +174,8 @@ export async function GET(req: NextRequest) {
             skipped += 1;
           }
         } else {
-          if (agencyOrg) {
+          // One bell per org per run: only the org-wide draft pings.
+          if (agencyOrg && !unit.propertyId) {
             await notifyReportDraftReady(agencyOrg.id, report.id, "monthly").catch(() => {
               // Notification failure must not fail the run; the draft exists.
             });
