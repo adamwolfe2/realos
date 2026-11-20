@@ -10,8 +10,11 @@ import "server-only";
 //
 // Resolution strategy (priority order):
 //   1. URL contains the property's slug as a substring  ← strongest signal
+//      (longest match wins)
 //   2. URL contains the property's name (lowercased,
 //      whitespace stripped) as a substring             ← softer signal
+//   2b. Page host equals exactly one property's websiteUrl host (scheme-less,
+//      www and case normalised) ← per-property domains
 //   3. Single-property tenant — only one option        ← safe fallback
 //   4. Multi-property tenant + ambiguous URL → null    ← honest "unknown"
 // ---------------------------------------------------------------------------
@@ -20,7 +23,39 @@ export type PropertyAttributionInput = {
   id: string;
   slug: string;
   name: string;
+  // Property's own marketing site. When the page host equals exactly one
+  // property's websiteUrl host, that property wins (per-property domains).
+  websiteUrl?: string | null;
 };
+
+function bareHost(url: string | null | undefined): string | null {
+  const trimmed = url?.trim();
+  if (!trimmed) return null;
+  // websiteUrl is operator-typed and often stored without a scheme
+  // ("livehigby.com", "www.x.com/"); URL() rejects those outright.
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`;
+  try {
+    return new URL(withScheme).hostname.toLowerCase().replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
+// Longest match wins so "telegraph-commons" beats "telegraph" on the same URL.
+function longestMatch<T>(items: T[], key: (item: T) => string | null): T | undefined {
+  let best: T | undefined;
+  let bestLen = 0;
+  for (const item of items) {
+    const k = key(item);
+    if (k && k.length > bestLen) {
+      best = item;
+      bestLen = k.length;
+    }
+  }
+  return best;
+}
 
 export function resolvePropertyForChatPage(
   pageUrl: string | undefined | null,
@@ -48,16 +83,26 @@ export function resolvePropertyForChatPage(
       haystack = ""; // malformed URL — no match, not a raw-string fallback
     }
     if (haystack) {
-      const bySlug = properties.find(
-        (p) => p.slug && haystack.includes(p.slug.toLowerCase())
+      const bySlug = longestMatch(properties, (p) =>
+        p.slug && haystack.includes(p.slug.toLowerCase())
+          ? p.slug.toLowerCase()
+          : null
       );
       if (bySlug) return bySlug.id;
-      const byName = properties.find((p) => {
-        if (!p.name) return false;
+      const byName = longestMatch(properties, (p) => {
+        if (!p.name) return null;
         const compact = p.name.toLowerCase().replace(/\s+/g, "");
-        return compact.length >= 4 && haystack.includes(compact);
+        return compact.length >= 4 && haystack.includes(compact) ? compact : null;
       });
       if (byName) return byName.id;
+      // Host last: a shared company site (A's websiteUrl = sgre.com) must not
+      // swallow B living at sgre.com/southgate-annex. Only a host owned by
+      // exactly one property counts.
+      const pageHost = bareHost(pageUrl);
+      const byHost = pageHost
+        ? properties.filter((p) => bareHost(p.websiteUrl) === pageHost)
+        : [];
+      if (byHost.length === 1) return byHost[0].id;
     }
   }
 

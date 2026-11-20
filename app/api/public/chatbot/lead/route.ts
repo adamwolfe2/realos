@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { withMarketableLifecycle } from "@/lib/properties/marketable";
 import { runAfter } from "@/lib/after";
 import { liveFeaturesPaused } from "@/lib/billing/trial-status";
 import { z } from "zod";
@@ -120,7 +121,9 @@ export async function POST(req: NextRequest) {
       // the wrong (or no) property because the previous query was
       // take: 1 — multi-property orgs always lost attribution.
       properties: {
-        select: { id: true, slug: true, name: true },
+        // ACTIVE only: EXCLUDED/IMPORTED address-only rows never resolve.
+        where: withMarketableLifecycle({}),
+        select: { id: true, slug: true, name: true, websiteUrl: true },
       },
     },
   });
@@ -193,6 +196,7 @@ export async function POST(req: NextRequest) {
     const existing = await findOldestLeadByEmail(orgId, email, {
       id: true,
       phone: true,
+      propertyId: true,
       trafficSource: true,
       createdAt: true,
     });
@@ -206,6 +210,9 @@ export async function POST(req: NextRequest) {
         data: {
           lastActivityAt: new Date(),
           phone: existing.phone ?? phone ?? null,
+          // Fill a missing property only; never move a lead between
+          // buildings (same rule as the mid-chat/popup/form paths).
+          propertyId: existing.propertyId ?? propertyId,
           ...attributionFill(existing, attribution),
         },
         select: { id: true },

@@ -111,11 +111,19 @@ export async function getActivePopupsForEmbed(
  * Aggregate analytics across the org. Drives the dashboard tile on
  * /portal home and the summary strip on /portal/popups.
  */
-export async function getPopupSummary(orgId: string) {
+export async function getPopupSummary(
+  orgId: string,
+  // Effective property set (switcher selection ∩ grant). null = whole org.
+  // Org-wide campaigns (propertyId null) always count, as on the list.
+  propertyIds: string[] | null = null,
+) {
   const since28d = new Date(Date.now() - 28 * DAY_MS);
+  const campaignScope = propertyIds
+    ? { OR: [{ propertyId: { in: propertyIds } }, { propertyId: null }] }
+    : {};
   const [counts, recent] = await Promise.all([
     prisma.popupCampaign.aggregate({
-      where: { orgId, status: { not: PopupStatus.ARCHIVED } },
+      where: { orgId, status: { not: PopupStatus.ARCHIVED }, ...campaignScope },
       _sum: {
         shownCount: true,
         ctaClickCount: true,
@@ -126,7 +134,11 @@ export async function getPopupSummary(orgId: string) {
     }),
     prisma.popupEvent.groupBy({
       by: ["type"],
-      where: { orgId, occurredAt: { gte: since28d } },
+      where: {
+        orgId,
+        occurredAt: { gte: since28d },
+        ...(propertyIds ? { campaign: campaignScope } : {}),
+      },
       _count: { _all: true },
     }),
   ]);

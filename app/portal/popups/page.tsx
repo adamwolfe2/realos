@@ -33,7 +33,7 @@ export default async function PopupsListPage({
   const effectiveIds = effectivePropertyIds(scope, requestedIds);
   const [allPopups, summary] = await Promise.all([
     listPopups(scope.orgId).catch(() => []),
-    getPopupSummary(scope.orgId).catch(() => ({
+    getPopupSummary(scope.orgId, effectiveIds).catch(() => ({
       totalCampaigns: 0,
       shownAllTime: 0,
       convertedAllTime: 0,
@@ -48,8 +48,10 @@ export default async function PopupsListPage({
 
   // Filter to the active property when one is selected. Org-wide popups
   // (propertyId === null) always show since they fire on every property.
+  // An empty set (restricted user, forbidden selection) narrows to org-wide
+  // popups only, never widens to every property's campaigns.
   const popups =
-    effectiveIds && effectiveIds.length > 0
+    effectiveIds !== null
       ? allPopups.filter(
           (p) => p.propertyId === null || effectiveIds.includes(p.propertyId),
         )

@@ -12,7 +12,12 @@ import {
   Prisma,
 } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { auditPayload, requireWritableWorkspace } from "@/lib/tenancy/scope";
+import {
+  auditPayload,
+  propertyInScope,
+  requireWritableWorkspace,
+  type ScopedContext,
+} from "@/lib/tenancy/scope";
 import { getPopupTemplate } from "@/lib/popups/templates";
 
 // ---------------------------------------------------------------------------
@@ -157,18 +162,8 @@ export async function createPopup(
   // If the operator picked a property, sanity-check it belongs to the
   // org. Without this, a malicious client could pass an arbitrary
   // propertyId and link the popup to another tenant's property.
-  if (parsed.data.propertyId) {
-    const propertyOwned = await prisma.property.findFirst({
-      where: { id: parsed.data.propertyId, orgId: scope.orgId },
-      select: { id: true },
-    });
-    if (!propertyOwned) {
-      return {
-        ok: false,
-        error: "Property does not belong to this organization.",
-      };
-    }
-  }
+  const propertyError = await checkPropertyInput(scope, parsed.data.propertyId);
+  if (propertyError) return { ok: false, error: propertyError };
 
   const created = await prisma.popupCampaign.create({
     data: {
@@ -207,17 +202,11 @@ export async function updatePopup(
   // IDOR defense — refuse to update a popup that doesn't belong to the
   // caller's org. updateMany returns affected count; 0 means scope
   // mismatch.
-  if (parsed.data.propertyId) {
-    const propertyOwned = await prisma.property.findFirst({
-      where: { id: parsed.data.propertyId, orgId: scope.orgId },
-      select: { id: true },
-    });
-    if (!propertyOwned) {
-      return {
-        ok: false,
-        error: "Property does not belong to this organization.",
-      };
-    }
+  const propertyError = await checkPropertyInput(scope, parsed.data.propertyId);
+  if (propertyError) return { ok: false, error: propertyError };
+
+  if (!(await findPopupInScope(scope, id))) {
+    return { ok: false, error: "Popup not found." };
   }
 
   const updated = await prisma.popupCampaign.updateMany({
@@ -254,12 +243,9 @@ export async function setPopupStatus(
   // to temporarily stop a live campaign, or ARCHIVED to retire it
   // for good. This prevents a UI mishap (clicking the wrong status
   // pill) from silently hiding a live popup and wrecking attribution.
+  const current = await findPopupInScope(scope, id);
+  if (!current) return { ok: false, error: "Popup not found." };
   if (status === PopupStatus.DRAFT) {
-    const current = await prisma.popupCampaign.findFirst({
-      where: { id, orgId: scope.orgId },
-      select: { status: true },
-    });
-    if (!current) return { ok: false, error: "Popup not found." };
     if (current.status !== PopupStatus.DRAFT) {
       return {
         ok: false,
@@ -291,10 +277,7 @@ export async function setPopupStatus(
 
 export async function deletePopup(id: string): Promise<ActionResult> {
   const scope = await requireWritableWorkspace();
-  const target = await prisma.popupCampaign.findFirst({
-    where: { id, orgId: scope.orgId },
-    select: { name: true },
-  });
+  const target = await findPopupInScope(scope, id);
   if (!target) return { ok: false, error: "Popup not found." };
 
   await prisma.popupCampaign.deleteMany({
@@ -347,6 +330,35 @@ export async function createPopupFromForm(formData: FormData): Promise<void> {
   // Errors fall through — the page renders with no new row and the
   // operator can retry. We avoid throwing so we don't trigger the
   // global error boundary on a soft validation failure.
+}
+
+// The popup's org AND the user's property grant. tenantWhere-style org checks
+// alone let a user restricted to property A edit B's popups (same org).
+// Out-of-grant reads as "not found" so ids of other buildings don't leak.
+// Org-wide popups (propertyId null) pass, matching propertyInScope.
+async function findPopupInScope(scope: ScopedContext, id: string) {
+  const row = await prisma.popupCampaign.findFirst({
+    where: { id, orgId: scope.orgId },
+    select: { name: true, status: true, propertyId: true },
+  });
+  if (!row || !propertyInScope(scope, row.propertyId)) return null;
+  return row;
+}
+
+// A propertyId from the client must belong to the org AND the user's grant.
+async function checkPropertyInput(
+  scope: ScopedContext,
+  propertyId: string | null | undefined,
+): Promise<string | null> {
+  if (!propertyId) return null;
+  if (!propertyInScope(scope, propertyId)) {
+    return "You don't have access to that property.";
+  }
+  const owned = await prisma.property.findFirst({
+    where: { id: propertyId, orgId: scope.orgId },
+    select: { id: true },
+  });
+  return owned ? null : "Property does not belong to this organization.";
 }
 
 function firstZodError(err: z.ZodError): string {

@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { runAfter } from "@/lib/after";
 import { z } from "zod";
 import crypto from "node:crypto";
@@ -109,8 +110,9 @@ export async function POST(req: NextRequest) {
     resolvedPropertyId = property.id;
   } else {
     const properties = await prisma.property.findMany({
-      where: { orgId },
-      select: { id: true, slug: true, name: true },
+      // ACTIVE only: EXCLUDED/IMPORTED address-only rows never resolve.
+      where: marketablePropertyWhere(orgId),
+      select: { id: true, slug: true, name: true, websiteUrl: true },
     });
     resolvedPropertyId = resolvePropertyForChatPage(data.pageUrl, properties);
   }

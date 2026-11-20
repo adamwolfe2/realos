@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { withMarketableLifecycle } from "@/lib/properties/marketable";
 import { askedForContactLastTurn } from "@/lib/chatbot/asked-for-contact";
 import { liveFeaturesPaused } from "@/lib/billing/trial-status";
 import { z } from "zod";
@@ -144,6 +145,8 @@ export async function POST(req: NextRequest) {
     include: {
       tenantSiteConfig: true,
       properties: {
+        // ACTIVE only: EXCLUDED/IMPORTED address-only rows never resolve.
+        where: withMarketableLifecycle({}),
         orderBy: { updatedAt: "desc" },
         include: { listings: { where: { isAvailable: true } } },
       },
@@ -317,7 +320,12 @@ export async function POST(req: NextRequest) {
     explicitProperty?.id ??
     resolvePropertyForChatPage(
       pageUrl,
-      org.properties.map((p) => ({ id: p.id, slug: p.slug, name: p.name })),
+      org.properties.map((p) => ({
+        id: p.id,
+        slug: p.slug,
+        name: p.name,
+        websiteUrl: p.websiteUrl,
+      })),
     ) ??
     (org.properties.length === 1 ? (org.properties[0]?.id ?? null) : null);
   const promptProperty =

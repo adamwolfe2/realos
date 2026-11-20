@@ -75,7 +75,10 @@ export function buildSystemPrompt(
 ): string {
   const config: ChatbotConfigFields | null =
     opts?.config ?? org.tenantSiteConfig;
-  const property = opts?.property ?? org.properties[0];
+  // An explicit `property: null` means "unresolved on a multi-property org":
+  // answer at org level, never with properties[0]'s (another building's) units.
+  const property =
+    opts?.property !== undefined ? opts.property : org.properties[0];
   const listings = property?.listings ?? [];
   const knowledgeBase = opts?.knowledgeBase ?? null;
 
