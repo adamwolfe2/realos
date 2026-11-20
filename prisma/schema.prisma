@@ -725,6 +725,11 @@ model Organization {
   trialStartedAt DateTime?
   trialEndsAt    DateTime?
 
+  // Set by the aeo-scan cron at loop entry, success or failure, so the
+  // rotation can go stalest-attempt-first instead of re-picking orgs whose
+  // scans always fail (see the ponytail note in app/api/cron/aeo-scan).
+  lastAeoScanAttemptedAt DateTime?
+
   dailySignalSnapshots DailySignalSnapshot[]
 
   // Audit trail for every outbound lead-capture notification (chatbot,
@@ -781,6 +786,11 @@ model User {
   // affected by the property-RBAC rollout). ONE OR MORE rows = the
   // user can ONLY see those properties' data on every portal page.
   propertyAccess      UserPropertyAccess[]
+  // true = the user is limited to their propertyAccess rows, even when there
+  // are ZERO rows (restricted to nothing). false (default, every existing
+  // user) = legacy rule above: zero rows means org-wide. Lets the gate fail
+  // closed when a user's last grant is removed.
+  propertyAccessRestricted Boolean @default(false)
   bugReports          BugReport[]
   propertyEvaluations PropertyEvaluation[]
   proposalsCreated    Proposal[]
@@ -864,6 +874,10 @@ model DomainBinding {
   orgId String
   org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
+  // Optional: the property this hostname serves. NULL = org-level domain.
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
   hostname       String  @unique // telegraphcommons.com
   isPrimary      Boolean @default(false)
   vercelDomainId String?
@@ -874,6 +888,7 @@ model DomainBinding {
   updatedAt DateTime @updatedAt
 
   @@index([orgId])
+  @@index([propertyId])
 }
 
 model TenantSiteConfig {
@@ -1087,6 +1102,14 @@ model Property {
   backendPropertyGroup String? // For AppFolio: propertyGroup name
   lastSyncedAt         DateTime?
   syncError            String?
+  // Last SEO/DataForSEO scan ATTEMPT (success or failure). lastSyncedAt only
+  // moves on success, so a property whose scans keep failing would be
+  // re-picked forever; crons rotate on this instead.
+  lastSeoScanAttemptedAt DateTime?
+
+  // Per-property Funnel group id. Same type/meaning as
+  // FunnelIntegration.groupId (the org-level default); NULL = use that.
+  funnelGroupId Int?
 
   // Lifecycle — see PropertyLifecycle enum docs. Dashboards filter to
   // ACTIVE by default; new AppFolio-imported rows land as IMPORTED and
@@ -1257,6 +1280,13 @@ model Property {
   keywordIntersections           KeywordIntersection[]
   queryLandingDaily              QueryLandingDaily[]
   dailySignalSnapshots           DailySignalSnapshot[]
+  // Multi-property groundwork (20261120_add_per_property_columns).
+  domainBindings                 DomainBinding[]
+  defaultForAdAccounts           AdAccount[]
+  popupEvents                    PopupEvent[]
+  notifications                  Notification[]
+  aeoOverviewSnapshots           AeoOverviewSnapshot[]
+  siteIntelligence               SiteIntelligence[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2075,6 +2105,11 @@ model AdAccount {
   orgId String
   org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
+  // Optional default property for this account's campaigns whose names
+  // match no property. NULL = no default (campaign stays portfolio-wide).
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
   platform          AdPlatform
   externalAccountId String // Google Ads customer ID (10-digit, no dashes); Meta ad account ID (numeric, no act_ prefix)
   displayName       String? // Operator-chosen label, e.g. "Telegraph Commons - Search"
@@ -2109,6 +2144,7 @@ model AdAccount {
 
   @@unique([orgId, platform, externalAccountId])
   @@index([orgId, platform])
+  @@index([propertyId])
 }
 
 model AdCampaign {
@@ -2117,6 +2153,10 @@ model AdCampaign {
   org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   propertyId  String?
   property    Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  // Set when an operator picks the property by hand (including "Whole
+  // portfolio" = NULL propertyId). NULL = never hand-set, so a sync may
+  // re-link the campaign from its name.
+  propertyManuallySetAt DateTime?
   adAccountId String
   adAccount   AdAccount    @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
 
@@ -3194,6 +3234,10 @@ model Notification {
   orgId String
   org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
+  // Optional: the property this notification is about. NULL = org-wide.
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
   // Optional: target a specific user. Null = org-wide (visible to all members).
   userId String?
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -3232,6 +3276,7 @@ model Notification {
   @@index([orgId, kind])
   @@index([orgId, resolvedAt])
   @@index([orgId, snoozedUntil])
+  @@index([propertyId])
 }
 
 // ============================================================================
@@ -3771,6 +3816,10 @@ model PopupEvent {
   campaignId String
   campaign   PopupCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
+  // Property whose site the event fired on. NULL = unknown / org-wide.
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
   type PopupEventType
 
   // Visitor identifiers (matched against Visitor when possible)
@@ -3786,6 +3835,7 @@ model PopupEvent {
 
   @@index([orgId, occurredAt])
   @@index([campaignId, type, occurredAt])
+  @@index([propertyId])
 }
 
 // ============================================================================
@@ -4168,10 +4218,14 @@ model AeoOverviewSnapshot {
   cited      Boolean  @default(false)
   capturedAt DateTime @default(now())
   costUsd    Float    @default(0)
+  /// NULL = org-wide snapshot (legacy). Populated = captured for one property.
+  propertyId String?
 
-  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  org      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  property Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
 
   @@index([orgId, capturedAt])
+  @@index([propertyId])
 }
 
 // ---------------------------------------------------------------------------
@@ -4701,6 +4755,13 @@ model SiteIntelligence {
   orgId String       @unique
   org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
+  /// NULL = the org-level site. Populated = one property's own site.
+  /// CASCADE (not SetNull), same reason as SeoSnapshot: once per-property
+  /// rows coexist with the org row, nulling one on delete would collide
+  /// with the org-level row. The row is a regenerable crawl cache.
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
   /// Canonical URL the ingest was run against. Usually
   /// `https://<primary-domain>`.
   rootUrl String?
@@ -4734,6 +4795,7 @@ model SiteIntelligence {
   updatedAt DateTime @updatedAt
 
   @@index([orgId])
+  @@index([propertyId])
 }
 
 // ---------------------------------------------------------------------------
