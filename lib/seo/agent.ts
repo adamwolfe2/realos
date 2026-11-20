@@ -82,11 +82,13 @@ async function ctrFixRecs(
 ): Promise<SeoRecommendation[]> {
   // Queries with at least 500 impressions over the last 14d AND CTR < 1%
   // are the canonical "title/meta needs a rewrite" signal.
-  void propertyId;
+  // This property's Search Console rows plus legacy org-wide (NULL) rows;
+  // never a sibling property's queries.
   const rows = await prisma.seoQuery
     .findMany({
       where: {
         orgId,
+        OR: [{ propertyId }, { propertyId: null }],
         date: { gte: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) },
         impressions: { gte: 500 },
         ctr: { lt: 0.01 },
@@ -233,7 +235,7 @@ async function aeoGapRecs(
       title: `${top?.[0] ?? "A competitor"} is cited by AI engines where you should be`,
       detail: `In the last 30 days, ChatGPT / Perplexity / Claude cited ${top?.[0] ?? "a competitor"} for ${top?.[1] ?? competitorHits.length} of your target prompts. The Content Drafter can produce a counter-page focused on the exact gap.`,
       estimateMinutes: 12,
-      actionHref: `/portal/seo/aeo?propertyId=${propertyId}&intent=aeo-counter`,
+      actionHref: `/portal/seo/aeo?property=${propertyId}&intent=aeo-counter`,
       actionLabel: "Draft counter-page",
       evidence: {
         topCompetitor: top?.[0],
@@ -278,7 +280,7 @@ async function aeoNotCitedRecs(
       detail:
         "These are prompts your prospects ask the AI engines that don't surface anyone. Publishing the right page lets you own them outright.",
       estimateMinutes: 15,
-      actionHref: `/portal/seo/aeo?propertyId=${propertyId}&status=NOT_CITED`,
+      actionHref: `/portal/seo/aeo?property=${propertyId}&status=NOT_CITED`,
       actionLabel: "See gap list",
       evidence: { uncoveredPrompts: count },
     }),

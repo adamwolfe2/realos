@@ -76,6 +76,25 @@ describe("generateSeoRecommendations", () => {
     }
   });
 
+  it("CTR_FIX never uses a sibling property's GSC queries (two-property org)", async () => {
+    // Rows tagged by property; the mock honours the where's propertyId clause.
+    const rows = [
+      { propertyId: "p2", query: "sibling-query", impressions: 9000, ctr: 0.001, position: 9 },
+      { propertyId: "p1", query: "own-query", impressions: 800, ctr: 0.004, position: 7 },
+    ];
+    (prisma.seoQuery.findMany as AnyMock).mockImplementation(
+      async ({ where }: { where: { OR?: Array<{ propertyId: string | null }> } }) =>
+        rows.filter(
+          (r) => !where.OR || where.OR.some((c) => c.propertyId === r.propertyId),
+        ),
+    );
+    const recs = await generateSeoRecommendations({ orgId: "o1", propertyId: "p1" });
+    const queries = recs
+      .filter((r) => r.category === "CTR_FIX")
+      .map((r) => r.evidence.query);
+    expect(queries).toEqual(["own-query"]);
+  });
+
   it("emits a NEIGHBORHOOD_PAGE rec when zero pages are published for the city", async () => {
     const recs = await generateSeoRecommendations({
       orgId: "o1",
