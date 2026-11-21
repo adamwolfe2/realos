@@ -104,6 +104,8 @@ export async function GET(req: NextRequest) {
     // Count caught-and-continued failures so the run is recorded `partial`
     // (not a clean `ok`) when material errors occurred. (Codex.)
     let errorCount = 0;
+    // Why orgs' scans wrote nothing, for CronRun.error.
+    const failureReasons = new Set<string>();
 
     for (const org of orgs) {
       if (Date.now() > deadline) break;
@@ -111,6 +113,13 @@ export async function GET(req: NextRequest) {
       try {
         const result = await runAeoScan({ orgId: org.id, deadline });
         totalRows += result.rowsWritten;
+        // Every engine call refused (provider out of credit, key revoked):
+        // the scan "succeeds" with nothing saved. That ran as a clean `ok`
+        // for three weeks in Nov 2026 while DataForSEO answered 402.
+        if (result.rowsWritten === 0 && result.skipped > 0) {
+          errorCount += 1;
+          failureReasons.add(result.lastSkipReason ?? "every engine call was skipped");
+        }
         summary.push({
           orgId: org.id,
           orgName: org.name,
@@ -260,6 +269,7 @@ export async function GET(req: NextRequest) {
       }),
       recordsProcessed: totalRows,
       errorCount,
+      errorSummary: [...failureReasons].join("; ") || undefined,
     };
   });
 }
