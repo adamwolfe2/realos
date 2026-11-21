@@ -80,6 +80,9 @@ export interface ScanResult {
   promptsRun: number;
   rowsWritten: number;
   skipped: number;
+  /** Why the most recent engine call was skipped (e.g. the provider's
+   *  "Payment Required"). Lets the cron say why a scan wrote nothing. */
+  lastSkipReason?: string;
   errors: number;
   durationMs: number;
 }
@@ -118,6 +121,7 @@ export async function runAeoScan(opts: ScanOptions): Promise<ScanResult> {
 
   let rowsWritten = 0;
   let skipped = 0;
+  let lastSkipReason: string | undefined;
   let errors = 0;
   let promptsRun = 0;
 
@@ -194,6 +198,7 @@ export async function runAeoScan(opts: ScanOptions): Promise<ScanResult> {
         });
         if ("skipped" in result && result.skipped) {
           skipped += 1;
+          lastSkipReason = result.reason;
           continue;
         }
         try {
@@ -303,6 +308,7 @@ export async function runAeoScan(opts: ScanOptions): Promise<ScanResult> {
     promptsRun,
     rowsWritten,
     skipped,
+    lastSkipReason,
     errors,
     durationMs: Date.now() - start,
   };

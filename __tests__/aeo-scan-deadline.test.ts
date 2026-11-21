@@ -61,4 +61,18 @@ describe("runAeoScan deadline", () => {
     const r = await runAeoScan({ orgId: "o1", engines: [e] });
     expect(r.promptsRun).toBeGreaterThan(1);
   });
+
+  it("reports why engine calls were skipped, so a scan that saved nothing is diagnosable", async () => {
+    const e = {
+      engine: "CLAUDE",
+      runPrompt: vi.fn(async () => {
+        vi.advanceTimersByTime(60_000); // clear the per-engine throttle
+        return { skipped: true, reason: "Payment Required." };
+      }),
+    } as never;
+    const r = await runAeoScan({ orgId: "o1", engines: [e] });
+    expect(r.rowsWritten).toBe(0);
+    expect(r.skipped).toBeGreaterThan(0);
+    expect(r.lastSkipReason).toBe("Payment Required.");
+  });
 });
