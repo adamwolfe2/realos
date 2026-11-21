@@ -115,3 +115,30 @@ export function resolvePropertyForChatPage(
 
   return null;
 }
+
+// ---------------------------------------------------------------------------
+// Untagged embed safety net. chatbot.js sends its page (`?page=` = hostname +
+// pathname, no scheme or query) when the script tag has no data-property, so
+// the GET endpoints (config, listings-summary) resolve the building the same
+// way /chat does from pageUrl. It is a query param, not the Referer header,
+// because the config response is CDN-cached by URL.
+//
+//   string    -> the property that page belongs to
+//   null      -> multi-property org and the page matches no building: the
+//                caller must NOT fall back to another building's data
+//   undefined -> no page sent, or a single-property org: legacy behaviour
+// ---------------------------------------------------------------------------
+export function resolvePropertyForEmbedPage(
+  page: string | null | undefined,
+  properties: PropertyAttributionInput[],
+): string | null | undefined {
+  if (!page) return undefined;
+  const id =
+    page.length <= 300
+      ? resolvePropertyForChatPage(`https://${page}`, properties, {
+          requireUrlMatch: true,
+        })
+      : null;
+  if (id) return id;
+  return properties.length > 1 ? null : undefined;
+}
