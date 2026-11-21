@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withMarketableLifecycle } from "@/lib/properties/marketable";
 import { LIVE_FEATURE_GATE_SELECT, liveFeaturesPaused } from "@/lib/billing/trial-status";
 import { prisma } from "@/lib/db";
+import { resolvePropertyForEmbedPage } from "@/lib/chatbot/property-attribution";
 import {
   chatbotConfigLimiter,
   checkRateLimit,
@@ -49,6 +50,8 @@ export async function GET(req: NextRequest) {
   // building's listings into one greeting — Building B's site advertised
   // Building A's rent/availability. (P1-9)
   const propertySlug = req.nextUrl.searchParams.get("property");
+  // Untagged embeds send the page (host + path) instead (chatbot.js).
+  const page = req.nextUrl.searchParams.get("page");
   if (!slug) {
     return NextResponse.json(
       { openCount: 0, lowestRent: null, nextAvailable: null },
@@ -71,6 +74,8 @@ export async function GET(req: NextRequest) {
         select: {
           id: true,
           slug: true,
+          name: true,
+          websiteUrl: true,
           totalUnits: true,
           listings: {
             where: { isAvailable: true },
@@ -112,12 +117,20 @@ export async function GET(req: NextRequest) {
 
   // Resolve which building this greeting is for: an explicit `?property=` slug
   // wins (multi-property case — each building's site embeds its own slug); else
+  // the building whose website the untagged embed is on (`?page=`); else
   // fall back to a property whose slug matches the org `slug` (legacy); else
   // all properties (genuine single-property org). Without this, a multi-property
-  // tenant pools every building's listings into one greeting.
+  // tenant pools every building's listings into one greeting. A page that
+  // matches no building skips the legacy fallback: a new building's untagged
+  // site must not advertise the flagship's rent.
+  const hostPropertyId = propertySlug
+    ? undefined
+    : resolvePropertyForEmbedPage(page, org.properties);
   const matchedProperty = propertySlug
     ? org.properties.find((p) => p.slug === propertySlug)
-    : org.properties.find((p) => p.slug === slug);
+    : hostPropertyId !== undefined
+      ? org.properties.find((p) => p.id === hostPropertyId)
+      : org.properties.find((p) => p.slug === slug);
   // Unresolved on a multi-property org: return the empty summary (static
   // greeting) rather than one building advertising another's rent.
   if (!matchedProperty && org.properties.length > 1) {

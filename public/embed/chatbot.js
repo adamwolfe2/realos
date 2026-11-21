@@ -38,9 +38,12 @@
   // config + correct lead attribution (instead of the server guessing from the
   // page URL). Passed to BOTH config and chat so they stay in lockstep.
   var propertySlug = script.getAttribute("data-property") || null;
+  // Untagged: send the page (host + path, no query) so the server resolves
+  // the building the same way /chat does from pageUrl, and never serves
+  // another building's rent or persona.
   var propertyQS = propertySlug
     ? "&property=" + encodeURIComponent(propertySlug)
-    : "";
+    : "&page=" + encodeURIComponent(window.location.hostname + window.location.pathname);
 
   // Apex → www pin (mirrors public/embed/popup.js): Vercel auto-
   // redirects leasestack.co → www.leasestack.co with HTTP 307, and

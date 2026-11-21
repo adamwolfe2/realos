@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { LIVE_FEATURE_GATE_SELECT, liveFeaturesPaused } from "@/lib/billing/trial-status";
-import type { SubscriptionStatus } from "@prisma/client";
+import type { PropertyLifecycle, SubscriptionStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { resolveChatbotConfig } from "@/lib/chatbot/resolve-config";
+import { resolvePropertyForEmbedPage } from "@/lib/chatbot/property-attribution";
+import { MARKETABLE_LIFECYCLES } from "@/lib/properties/marketable";
 import { optimizedAvatarUrl } from "@/lib/chatbot/avatar-url";
 import {
   chatbotConfigLimiter,
@@ -88,6 +90,9 @@ export async function GET(req: NextRequest) {
   // so the bot serves THAT property's config (knowledge base, persona,
   // branding). Absent = legacy org-level behavior.
   const propertySlug = req.nextUrl.searchParams.get("property");
+  // Untagged embeds send the page (host + path) instead (chatbot.js). In the URL,
+  // so the edge cache keys on it.
+  const page = req.nextUrl.searchParams.get("page");
   if (!slug) {
     return NextResponse.json(
       { enabled: false },
@@ -117,7 +122,13 @@ export async function GET(req: NextRequest) {
     cancelAtPeriodEnd: boolean;
     primaryColor: string | null;
     logoUrl: string | null;
-    properties: Array<{ id: string; name: string; slug: string }>;
+    properties: Array<{
+      id: string;
+      name: string;
+      slug: string;
+      websiteUrl: string | null;
+      lifecycle: PropertyLifecycle;
+    }>;
     tenantSiteConfig: {
       chatbotEnabled: boolean;
       chatbotPersonaName: string | null;
@@ -153,7 +164,7 @@ export async function GET(req: NextRequest) {
         // name (legacy behavior) when no slug match is found.
         properties: {
           orderBy: { updatedAt: "desc" },
-          select: { id: true, name: true, slug: true },
+          select: { id: true, name: true, slug: true, websiteUrl: true, lifecycle: true },
         },
         tenantSiteConfig: {
           select: {
@@ -223,11 +234,21 @@ export async function GET(req: NextRequest) {
   }
 
   // Resolve which property this embed serves: explicit `?property=` slug wins,
-  // else the legacy heuristic (a property whose slug equals the org slug).
-  const matchedProperty =
-    (propertySlug
-      ? org.properties.find((p) => p.slug === propertySlug)
-      : undefined) ?? org.properties.find((p) => p.slug === slug);
+  // else the building whose website the untagged embed is on (`?page=`), else
+  // the legacy heuristic (a property whose slug equals the org slug). A page
+  // that matches no building of a multi-property org gets the org-level
+  // config, never another building's persona and knowledge base.
+  const hostPropertyId = propertySlug
+    ? undefined
+    : resolvePropertyForEmbedPage(
+        page,
+        org.properties.filter((p) => MARKETABLE_LIFECYCLES.includes(p.lifecycle)),
+      );
+  const matchedProperty = propertySlug
+    ? org.properties.find((p) => p.slug === propertySlug)
+    : hostPropertyId !== undefined
+      ? org.properties.find((p) => p.id === hostPropertyId)
+      : org.properties.find((p) => p.slug === slug);
 
   // Merge org-level + per-property chatbot config (field-level fallback). For a
   // property with no override row this returns the org config unchanged, so
