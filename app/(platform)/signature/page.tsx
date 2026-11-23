@@ -60,12 +60,12 @@ export default function SignaturePage() {
               <Link href="#builds" className="btn-secondary sm:w-auto" style={{ display: "flex", justifyContent: "center" }}>Explore the live builds</Link>
             </div>
             <div className="mt-10 md:mt-14 text-left">
-              <ProductFrame url="theritzpdx.vercel.app">
+              <ProductFrame url={new URL(HERO.reel.src).host}>
                 <LoopVideo reel={HERO.reel} label={`${HERO.name}: a recording of the build in use`} />
               </ProductFrame>
             </div>
             <p className="mx-auto mt-5" style={{ color: MUTED, fontSize: 13, lineHeight: 1.5, maxWidth: 720 }}>
-              A recording of the Portland concept build. Made from publicly published material; not affiliated with or endorsed by The Ritz-Carlton Hotel Company, Marriott International or the owner of The Residences.
+              A recording of {HERO.name}. {HERO.note}
             </p>
           </div>
         </div>
@@ -87,7 +87,7 @@ export default function SignaturePage() {
             {INCLUDED.map((f, i) => (
               <li key={f.title} className={i < 2 ? "lg:col-span-6" : "lg:col-span-3"}>
                 <div style={{ aspectRatio: "16 / 10", overflow: "hidden", border: `1px solid ${BORDER}`, borderRadius: 2, backgroundColor: "#f4f3f1", padding: f.whole ? "5%" : 0 }}>
-                  <Image src={f.img} alt={f.alt} width={f.w} height={f.h} sizes="(max-width: 1024px) 50vw, 620px" style={{ display: "block", width: "100%", height: "100%", objectFit: f.whole ? "contain" : "cover", objectPosition: f.whole ? "center" : "top" }} />
+                  <Image src={f.img} alt={f.alt} width={f.w} height={f.h} sizes={`(max-width: 1024px) 50vw, ${i < 2 ? 620 : 300}px`} style={{ display: "block", width: "100%", height: "100%", objectFit: f.whole ? "contain" : "cover", objectPosition: f.whole ? "center" : "top" }} />
                 </div>
                 <h3 className="mt-3" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(17px, 1.6vw, 22px)", fontWeight: 600, letterSpacing: "-0.015em", lineHeight: 1.2 }}>{f.title}</h3>
                 <p className="mt-1" style={{ color: MUTED, fontSize: 15, lineHeight: 1.45 }}>{f.line}</p>

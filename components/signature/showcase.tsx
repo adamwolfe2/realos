@@ -70,10 +70,12 @@ export function SignatureShowcase() {
                   <ArrowUpRight size={18} aria-hidden />
                 </a>
               </span>
-              <a href={e.views[0].url} target="_blank" rel="noopener" className="btn-secondary hidden md:inline-flex" style={{ alignItems: "center", gap: 8 }}>
-                Open in a new tab
-                <ArrowUpRight size={16} aria-hidden />
-              </a>
+              <span className="hidden md:block">
+                <a href={e.views[0].url} target="_blank" rel="noopener" className="btn-secondary" style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                  Open in a new tab
+                  <ArrowUpRight size={16} aria-hidden />
+                </a>
+              </span>
             </div>
             {e.note ? <p className="mt-4" style={{ fontSize: 13, lineHeight: 1.5, color: MUTED, maxWidth: 560 }}>{e.note}</p> : null}
           </li>
