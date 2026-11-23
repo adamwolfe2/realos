@@ -91,6 +91,34 @@ export const SHOWCASE: ShowcaseEntry[] = [
       { label: "The building", url: "https://fernwood-demo.vercel.app/", poster: "/signature/fernwood.webp", posterW: 1600, posterH: 1000, alt: "A six-story apartment building with a floor picker listing the homes open on level six" },
     ],
   },
+  {
+    key: "nikki-beach-antigua",
+    name: "Nikki Beach Residences, Antigua",
+    kind: "Resort residences and villas",
+    place: "Jolly Beach, Antigua",
+    status: "Concept",
+    line: "A beachfront resort you look over from above, with a page for each of its seven villas and every residence type.",
+    facts: [
+      ["Places on the resort plan", "21"],
+      ["Homes with a page", "10"],
+      ["Generated images", "0"],
+    ],
+    note: "Concept build made from the property's own published renderings and plans. Not affiliated with or endorsed by Nikki Beach Hospitality Group, Ayre Development or Blueprint Global.",
+    reel: {
+      src: "https://nikki-beach-antigua.vercel.app/reel/tour2x-1280.mp4",
+      srcSmall: "https://nikki-beach-antigua.vercel.app/reel/tour2x-768.mp4",
+      poster: "/signature/nikki-tour.webp",
+      w: 1280,
+      h: 750,
+    },
+    views: [
+      { label: "The resort", url: "https://nikki-beach-antigua.vercel.app/", poster: "/signature/nikki-resort.webp", posterW: 1600, posterH: 1000, alt: "Jolly Beach, the resort and the marina seen from the air" },
+      { label: "From above", url: "https://nikki-beach-antigua.vercel.app/#villa-3", poster: "/signature/nikki-plan.webp", posterW: 1600, posterH: 1000, alt: "The resort plan tilted in perspective with a pin on every place and villa three open" },
+      { label: "Homes for sale", url: "https://nikki-beach-antigua.vercel.app/residences", poster: "/signature/nikki-list.webp", posterW: 1600, posterH: 1000, alt: "Three residence types and seven villas as cards with sizes and launch prices" },
+      { label: "One villa", url: "https://nikki-beach-antigua.vercel.app/residences/villa-3", poster: "/signature/nikki-home.webp", posterW: 1600, posterH: 1000, alt: "The page for one beachfront villa: its renderings room by room" },
+      { label: "For the sales team", url: "https://nikki-beach-antigua.vercel.app/residences/send", poster: "/signature/nikki-send.webp", posterW: 1600, posterH: 670, alt: "A page where an agent picks a home and names the buyer to get a link" },
+    ],
+  },
 ];
 
 /** What every build includes, each shown with a real screen from a build above. */
