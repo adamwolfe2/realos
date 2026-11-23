@@ -6,14 +6,16 @@ import { BookDemoLink } from "@/components/marketing/book-demo-link";
 import { SectionShell, LabelChip } from "@/components/home/section-shell";
 import { ProductFrame } from "@/components/home/product-frame";
 import { SignatureShowcase } from "@/components/signature/showcase";
-import { COMPARE, FAQ, FOR_WHOM, INCLUDED, SIGNATURE_NAME, STEPS } from "@/lib/signature/showcase";
+import { LoopVideo } from "@/components/signature/loop-video";
+import { COMPARE, FAQ, FOR_WHOM, INCLUDED, SHOWCASE, SIGNATURE_NAME, STEPS, type Reel, type ShowcaseEntry } from "@/lib/signature/showcase";
 
 // ---------------------------------------------------------------------------
 // /signature — LeaseStack Signature, the premium add-on: an interactive
 // building and a private page for every residence, suite or villa.
 //
-// The page is the builds themselves: a hero screen, the live builds embedded,
-// then what each includes shown with real screens. Copy stays short.
+// The page is the builds themselves: a reel of one playing in the hero, the
+// builds as a gallery that opens each one live, then what each includes shown
+// with real screens. Copy stays short.
 //
 // Not linked from the nav or the sitemap, and noindex, until Adam launches it
 // (flip LAUNCHED). Two of the builds are concepts for properties that are not
@@ -29,6 +31,9 @@ export const metadata: Metadata = {
   robots: LAUNCHED ? undefined : { index: false, follow: false },
 };
 
+// the hero plays the reel of the first build that has one
+const HERO = SHOWCASE.find((e) => e.reel) as ShowcaseEntry & { reel: Reel };
+
 const INK = "#161616";
 const MUTED = "#6f6f6f";
 const BORDER = "#e0e0e0";
@@ -40,32 +45,28 @@ export default function SignaturePage() {
   return (
     <div style={{ backgroundColor: "#FFFFFF", color: INK }}>
       <SectionShell>
-        <div className="pt-14 md:pt-20 pb-12 md:pb-16">
-          <div className="grid gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.25fr)] lg:items-center">
-            <div>
-              <LabelChip>Premium add-on</LabelChip>
-              <h1 className="mt-5" style={{ color: INK, fontFamily: "var(--font-display)", fontSize: "clamp(42px, 5.6vw, 76px)", fontWeight: 550, lineHeight: 1.02, letterSpacing: "-0.04em" }}>
-                A private page for every residence.
-              </h1>
-              <p className="mt-6" style={lede}>
-                {SIGNATURE_NAME} turns a building into something a buyer can open: each home on its floor, with its measured plan, its rooms and its view. Your team sends one link. You see what they looked at.
-              </p>
-              <div className="mt-8 flex flex-col items-stretch sm:flex-row sm:items-center gap-3">
-                <BookDemoLink className="btn-primary sm:w-auto" style={{ display: "flex", justifyContent: "center" }}>Book a demo</BookDemoLink>
-                <Link href="#builds" className="btn-secondary sm:w-auto" style={{ display: "flex", justifyContent: "center" }}>Explore the live builds</Link>
-              </div>
+        <div className="relative pt-14 md:pt-20 pb-12 md:pb-16">
+          <div aria-hidden className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "linear-gradient(180deg, #ffffff 0%, #ffffff 38%, #f7f9fe 100%)" }} />
+          <div className="relative text-center">
+            <LabelChip>Premium add-on</LabelChip>
+            <h1 className="mx-auto mt-5" style={{ color: INK, fontFamily: "var(--font-display)", fontSize: "clamp(44px, 7vw, 92px)", fontWeight: 550, lineHeight: 1.02, letterSpacing: "-0.04em", maxWidth: 1040 }}>
+              A private page for every residence.
+            </h1>
+            <p className="mx-auto mt-6" style={{ ...lede, maxWidth: 640 }}>
+              {SIGNATURE_NAME} turns a building into something a buyer can open: each home on its floor, with its plan, its rooms and its view. Your team sends one link. You see what they looked at.
+            </p>
+            <div className="mt-8 flex flex-col items-stretch sm:flex-row sm:items-center justify-center gap-3">
+              <BookDemoLink className="btn-primary sm:w-auto" style={{ display: "flex", justifyContent: "center" }}>Book a demo</BookDemoLink>
+              <Link href="#builds" className="btn-secondary sm:w-auto" style={{ display: "flex", justifyContent: "center" }}>Explore the live builds</Link>
             </div>
-            <div className="relative">
-              <ProductFrame url="theritzpdx.vercel.app/homes/2810">
-                <Image src="/signature/ritz-home.webp" alt="The page for one residence: its living room, its facts and its floor lit on the tower" width={1600} height={878} priority sizes="(max-width: 1024px) 100vw, 700px" style={{ display: "block", width: "100%", height: "auto" }} />
+            <div className="mt-10 md:mt-14 text-left">
+              <ProductFrame url={new URL(HERO.reel.src).host}>
+                <LoopVideo reel={HERO.reel} label={`${HERO.name}: a recording of the build in use`} />
               </ProductFrame>
-              <div className="absolute hidden sm:block" style={{ left: -14, bottom: -28, width: "21%", border: "1px solid #d6d6d6", borderRadius: 14, overflow: "hidden", backgroundColor: "#fff", boxShadow: "0 24px 48px -16px rgba(22,22,22,0.35)" }}>
-                <Image src="/signature/ritz-phone.webp" alt="The same page on a phone, prepared for a named buyer" width={786} height={1704} sizes="160px" style={{ display: "block", width: "100%", height: "auto" }} />
-              </div>
-              <p className="mt-10 sm:mt-12 sm:pl-[24%]" style={{ color: MUTED, fontSize: 13, lineHeight: 1.5 }}>
-                Concept build from publicly published material. Not affiliated with or endorsed by The Ritz-Carlton Hotel Company, Marriott International or the owner of The Residences.
-              </p>
             </div>
+            <p className="mx-auto mt-5" style={{ color: MUTED, fontSize: 13, lineHeight: 1.5, maxWidth: 720 }}>
+              A recording of {HERO.name}. {HERO.note}
+            </p>
           </div>
         </div>
       </SectionShell>
@@ -73,7 +74,7 @@ export default function SignaturePage() {
       <SectionShell id="builds" bg="#f7f9fe">
         <div className="py-14 md:py-20">
           <h2 style={h2}>Open one.</h2>
-          <p className="mt-4 mb-8" style={lede}>These are working builds, not mock-ups. Pick a property, then explore it live.</p>
+          <p className="mt-4 mb-10" style={lede}>These are working builds, not mock-ups. Each one opens full screen, live.</p>
           <SignatureShowcase />
         </div>
       </SectionShell>
@@ -82,11 +83,11 @@ export default function SignaturePage() {
         <div className="py-14 md:py-20">
           <h2 style={h2}>What every build includes.</h2>
           <p className="mt-4" style={lede}>Each screen below is from the Portland concept build above.</p>
-          <ul className="mt-10 grid grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-8 md:gap-x-6 md:gap-y-12">
-            {INCLUDED.map((f) => (
-              <li key={f.title}>
+          <ul className="mt-10 grid grid-cols-2 lg:grid-cols-12 gap-x-4 gap-y-8 md:gap-x-6 md:gap-y-12">
+            {INCLUDED.map((f, i) => (
+              <li key={f.title} className={i < 2 ? "lg:col-span-6" : "lg:col-span-3"}>
                 <div style={{ aspectRatio: "16 / 10", overflow: "hidden", border: `1px solid ${BORDER}`, borderRadius: 2, backgroundColor: "#f4f3f1", padding: f.whole ? "5%" : 0 }}>
-                  <Image src={f.img} alt={f.alt} width={f.w} height={f.h} sizes="(max-width: 1024px) 50vw, 400px" style={{ display: "block", width: "100%", height: "100%", objectFit: f.whole ? "contain" : "cover", objectPosition: f.whole ? "center" : "top" }} />
+                  <Image src={f.img} alt={f.alt} width={f.w} height={f.h} sizes={`(max-width: 1024px) 50vw, ${i < 2 ? 620 : 300}px`} style={{ display: "block", width: "100%", height: "100%", objectFit: f.whole ? "contain" : "cover", objectPosition: f.whole ? "center" : "top" }} />
                 </div>
                 <h3 className="mt-3" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(17px, 1.6vw, 22px)", fontWeight: 600, letterSpacing: "-0.015em", lineHeight: 1.2 }}>{f.title}</h3>
                 <p className="mt-1" style={{ color: MUTED, fontSize: 15, lineHeight: 1.45 }}>{f.line}</p>

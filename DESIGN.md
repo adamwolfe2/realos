@@ -147,7 +147,9 @@ All shadows are cool-toned (`rgba(15,23,42,…)`) — the warm shadows in the ol
 - Duration scale (CSS tokens `--dur-micro` / `--dur-ui` / `--dur-enter`; framer `DUR`): **120ms** micro (hover, press, focus) · **200ms** small UI
   state (tabs, dialogs, chips, card hovers) · **300ms** entrances, drawers,
   height changes · **600–900ms** data reveals (bars, arcs, count-ups). Motion
-  plays ONCE; no infinite loops outside loading indicators.
+  plays ONCE; no infinite loops outside loading indicators. Exception: a silent
+  product recording (the reels on /signature) may loop, because it is content, not decoration.
+  It plays only while on screen, has a pause control and never autoplays under reduced motion.
 - Entrance keyframes declare only a `from` state so the element's base style
   IS its final state — print and reduced-motion then render finished content
   (see the "print-safe entrance utilities" block in `globals.css`).
