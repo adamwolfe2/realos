@@ -14,6 +14,16 @@ export type ShowcaseView = {
   alt: string;
 };
 
+/** A silent screen recording of the build in use. It streams from the build's own host (media-src in next.config.mjs). */
+export type Reel = {
+  src: string;
+  /** A lighter encode for phones. */
+  srcSmall: string;
+  poster: string;
+  w: number;
+  h: number;
+};
+
 export type ShowcaseEntry = {
   key: string;
   name: string;
@@ -25,6 +35,7 @@ export type ShowcaseEntry = {
   facts: [string, string][];
   /** Shown under a concept build so nobody reads it as an endorsement. */
   note?: string;
+  reel?: Reel;
   views: ShowcaseView[];
 };
 
@@ -42,6 +53,13 @@ export const SHOWCASE: ShowcaseEntry[] = [
       ["Generated images on a home page", "0"],
     ],
     note: "Concept build made from publicly published material. Not affiliated with or endorsed by The Ritz-Carlton Hotel Company, Marriott International or the owner of The Residences.",
+    reel: {
+      src: "https://theritzpdx.vercel.app/reel/tour-1280.mp4",
+      srcSmall: "https://theritzpdx.vercel.app/reel/tour-768.mp4",
+      poster: "/signature/ritz-tour.webp",
+      w: 1280,
+      h: 750,
+    },
     views: [
       { label: "The tower", url: "https://theritzpdx.vercel.app/", poster: "/signature/ritz-tower.webp", posterW: 1600, posterH: 1000, alt: "The tower at dusk with a directory of its 35 floors" },
       { label: "Homes for sale", url: "https://theritzpdx.vercel.app/homes", poster: "/signature/ritz-list.webp", posterW: 1600, posterH: 1000, alt: "Fourteen residences as cards beside the tower drawn floor by floor" },
@@ -59,7 +77,7 @@ export const SHOWCASE: ShowcaseEntry[] = [
     facts: [
       ["Homes", "64"],
       ["Floors to pick from", "6"],
-      ["Plans", "3D, room by room"],
+      ["Plans, room by room", "3D"],
     ],
     note: "A fictional property, built to show the product on a mid-rise apartment building.",
     views: [
@@ -70,8 +88,8 @@ export const SHOWCASE: ShowcaseEntry[] = [
 
 /** What every build includes, each shown with a real screen from a build above. */
 export const INCLUDED: { title: string; line: string; img: string; w: number; h: number; alt: string; /** show the whole screen instead of filling the tile */ whole?: boolean }[] = [
-  { title: "The building, floor by floor", line: "What is available, reserved and sold, on the building itself.", img: "/signature/ritz-list.webp", w: 1600, h: 1000, alt: "Residences as cards beside a floor-by-floor grid of the tower" },
   { title: "A page for every residence", line: "One link to text. It opens on that home, its floor lit on the tower.", img: "/signature/ritz-home.webp", w: 1600, h: 878, alt: "A residence page with photograph, facts and the tower" },
+  { title: "The building, floor by floor", line: "What is available, reserved and sold, on the building itself.", img: "/signature/ritz-list.webp", w: 1600, h: 1000, alt: "Residences as cards beside a floor-by-floor grid of the tower" },
   { title: "Room by room", line: "Your photography, in order, labelled with where it was taken.", img: "/signature/ritz-room.webp", w: 1600, h: 858, alt: "A kitchen photograph in the room-by-room viewer" },
   { title: "The measured plan", line: "The plan of that exact home, not a typical layout.", img: "/signature/ritz-plan.webp", w: 1000, h: 1293, alt: "A measured floor plan with room dimensions", whole: true },
   { title: "A link with their name on it", line: "Your team picks a home, adds a first name, and copies the link.", img: "/signature/ritz-send.webp", w: 1600, h: 670, alt: "The link builder: a list of residences, a name field and the finished link", whole: true },
