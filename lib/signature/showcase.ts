@@ -73,7 +73,7 @@ export const INCLUDED: { title: string; line: string; img: string; w: number; h:
   { title: "The building, floor by floor", line: "What is available, reserved and sold, on the building itself.", img: "/signature/ritz-list.webp", w: 1600, h: 1000, alt: "Residences as cards beside a floor-by-floor grid of the tower" },
   { title: "A page for every residence", line: "One link to text. It opens on that home, its floor lit on the tower.", img: "/signature/ritz-home.webp", w: 1600, h: 878, alt: "A residence page with photograph, facts and the tower" },
   { title: "Room by room", line: "Your photography, in order, labelled with where it was taken.", img: "/signature/ritz-room.webp", w: 1600, h: 858, alt: "A kitchen photograph in the room-by-room viewer" },
-  { title: "The measured plan", line: "The plan of that exact home, not a typical layout.", img: "/signature/ritz-plan.webp", w: 1000, h: 1293, alt: "A measured floor plan with room dimensions" },
+  { title: "The measured plan", line: "The plan of that exact home, not a typical layout.", img: "/signature/ritz-plan.webp", w: 1000, h: 1293, alt: "A measured floor plan with room dimensions", whole: true },
   { title: "A link with their name on it", line: "Your team picks a home, adds a first name, and copies the link.", img: "/signature/ritz-send.webp", w: 1600, h: 670, alt: "The link builder: a list of residences, a name field and the finished link", whole: true },
   { title: "What they looked at", line: "Each enquiry arrives with the homes and rooms that person opened.", img: "/signature/ritz-enquiry.webp", w: 1200, h: 551, alt: "An enquiry showing the buyer, the residence and the rooms viewed", whole: true },
 ];

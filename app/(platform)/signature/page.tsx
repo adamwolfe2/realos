@@ -62,6 +62,9 @@ export default function SignaturePage() {
               <div className="absolute hidden sm:block" style={{ left: -14, bottom: -28, width: "21%", border: "1px solid #d6d6d6", borderRadius: 14, overflow: "hidden", backgroundColor: "#fff", boxShadow: "0 24px 48px -16px rgba(22,22,22,0.35)" }}>
                 <Image src="/signature/ritz-phone.webp" alt="The same page on a phone, prepared for a named buyer" width={786} height={1704} sizes="160px" style={{ display: "block", width: "100%", height: "auto" }} />
               </div>
+              <p className="mt-10 sm:mt-12 sm:pl-[24%]" style={{ color: MUTED, fontSize: 13, lineHeight: 1.5 }}>
+                Concept build from publicly published material. Not affiliated with or endorsed by The Ritz-Carlton Hotel Company, Marriott International or the owner of The Residences.
+              </p>
             </div>
           </div>
         </div>
@@ -78,6 +81,7 @@ export default function SignaturePage() {
       <SectionShell>
         <div className="py-14 md:py-20">
           <h2 style={h2}>What every build includes.</h2>
+          <p className="mt-4" style={lede}>Each screen below is from the Portland concept build above.</p>
           <ul className="mt-10 grid grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-8 md:gap-x-6 md:gap-y-12">
             {INCLUDED.map((f) => (
               <li key={f.title}>

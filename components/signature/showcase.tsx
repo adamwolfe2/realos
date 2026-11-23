@@ -24,6 +24,8 @@ export function SignatureShowcase() {
   const [live, setLive] = useState(false);
   const entry = SHOWCASE.find((e) => e.key === entryKey) ?? SHOWCASE[0];
   const view = entry.views[viewIndex] ?? entry.views[0];
+  // the frame is 16:10; a screenshot much wider than that is shown whole instead of losing its sides
+  const wide = view.posterW / view.posterH > 1.8;
   const address = view.url.replace(/^https:\/\//, "").replace(/\/$/, "");
 
   const pickEntry = (key: string) => {
@@ -34,15 +36,14 @@ export function SignatureShowcase() {
 
   return (
     <div>
-      <div role="tablist" aria-label="Builds" className="grid gap-2 sm:grid-cols-2">
+      <div role="group" aria-label="Builds" className="grid gap-2 sm:grid-cols-2">
         {SHOWCASE.map((e) => {
           const on = e.key === entry.key;
           return (
             <button
               key={e.key}
               type="button"
-              role="tab"
-              aria-selected={on}
+              aria-pressed={on}
               onClick={() => pickEntry(e.key)}
               className="text-left transition-colors"
               style={{
@@ -110,7 +111,7 @@ export function SignatureShowcase() {
             />
           ) : (
             <>
-              <Image src={view.poster} alt={view.alt} fill sizes="(max-width: 1240px) 100vw, 1176px" style={{ objectFit: "cover", objectPosition: "top" }} priority={entry.key === SHOWCASE[0].key && viewIndex === 0} />
+              <Image src={view.poster} alt={view.alt} fill sizes="(max-width: 1240px) 100vw, 1176px" style={wide ? { objectFit: "contain", backgroundColor: "#f4f3f1", padding: "3%" } : { objectFit: "cover", objectPosition: "top" }} priority={entry.key === SHOWCASE[0].key && viewIndex === 0} />
               <div className="absolute inset-0 flex items-end justify-center pb-6 md:pb-10" style={{ backgroundImage: "linear-gradient(180deg, rgba(16,16,16,0) 55%, rgba(16,16,16,0.55) 100%)" }}>
                 {/* .btn-primary sets its own display, so the phone / desktop switch lives on wrappers */}
                 <span className="hidden md:block">
@@ -135,9 +136,9 @@ export function SignatureShowcase() {
         <p style={{ color: INK, fontSize: 19, lineHeight: 1.45, maxWidth: 520 }}>{entry.line}</p>
         <dl className="grid grid-cols-3 gap-4">
           {entry.facts.map(([k, v]) => (
-            <div key={k} style={{ borderTop: `1px solid ${INK}`, paddingTop: 10 }}>
-              <dd style={{ fontFamily: "var(--font-display)", fontSize: "clamp(20px, 2.2vw, 28px)", fontWeight: 600, letterSpacing: "-0.02em", lineHeight: 1.1, color: INK }}>{v}</dd>
+            <div key={k} className="flex flex-col-reverse justify-end" style={{ borderTop: `1px solid ${INK}`, paddingTop: 10 }}>
               <dt className="mt-1" style={{ fontSize: 13, color: MUTED }}>{k}</dt>
+              <dd style={{ fontFamily: "var(--font-display)", fontSize: "clamp(20px, 2.2vw, 28px)", fontWeight: 600, letterSpacing: "-0.02em", lineHeight: 1.1, color: INK }}>{v}</dd>
             </div>
           ))}
         </dl>
