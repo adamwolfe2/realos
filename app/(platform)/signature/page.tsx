@@ -48,7 +48,7 @@ export default function SignaturePage() {
         <div className="relative pt-14 md:pt-20 pb-12 md:pb-16">
           <div aria-hidden className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "linear-gradient(180deg, #ffffff 0%, #ffffff 38%, #f7f9fe 100%)" }} />
           <div className="relative text-center">
-            <LabelChip>Premium add-on</LabelChip>
+            <LabelChip>Limited time offer</LabelChip>
             <h1 className="mx-auto mt-5" style={{ color: INK, fontFamily: "var(--font-display)", fontSize: "clamp(44px, 7vw, 92px)", fontWeight: 550, lineHeight: 1.02, letterSpacing: "-0.04em", maxWidth: 1040 }}>
               A private page for every residence.
             </h1>

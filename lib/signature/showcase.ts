@@ -14,7 +14,7 @@ export type ShowcaseView = {
   alt: string;
 };
 
-/** A silent screen recording of the build in use. It streams from the build's own host (media-src in next.config.mjs). */
+/** A silent screen recording of the build in use: a cut of about twenty seconds, at double speed. It streams from the build's own host (media-src in next.config.mjs). */
 export type Reel = {
   src: string;
   /** A lighter encode for phones. */
@@ -54,8 +54,8 @@ export const SHOWCASE: ShowcaseEntry[] = [
     ],
     note: "Concept build made from publicly published material. Not affiliated with or endorsed by The Ritz-Carlton Hotel Company, Marriott International or the owner of The Residences.",
     reel: {
-      src: "https://theritzpdx.vercel.app/reel/tour-1280.mp4",
-      srcSmall: "https://theritzpdx.vercel.app/reel/tour-768.mp4",
+      src: "https://theritzpdx.vercel.app/reel/tour2x-1280.mp4",
+      srcSmall: "https://theritzpdx.vercel.app/reel/tour2x-768.mp4",
       poster: "/signature/ritz-tour.webp",
       w: 1280,
       h: 750,
@@ -80,6 +80,13 @@ export const SHOWCASE: ShowcaseEntry[] = [
       ["Plans, room by room", "3D"],
     ],
     note: "A fictional property, built to show the product on a mid-rise apartment building.",
+    reel: {
+      src: "https://fernwood-demo.vercel.app/reel/tour2x-1280.mp4",
+      srcSmall: "https://fernwood-demo.vercel.app/reel/tour2x-768.mp4",
+      poster: "/signature/fernwood-tour.webp",
+      w: 1280,
+      h: 750,
+    },
     views: [
       { label: "The building", url: "https://fernwood-demo.vercel.app/", poster: "/signature/fernwood.webp", posterW: 1600, posterH: 1000, alt: "A six-story apartment building with a floor picker listing the homes open on level six" },
     ],
