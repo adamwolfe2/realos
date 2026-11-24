@@ -170,9 +170,10 @@ export function PlatformNav() {
         transition: "padding-top 500ms cubic-bezier(0.22, 1, 0.36, 1)",
       }}
     >
+      {/* md+: 1fr auto 1fr grid so the links sit on the page center, not between uneven sides. */}
       <div
         data-floating={scrolled ? "true" : "false"}
-        className="mx-auto h-16 md:h-[68px] flex items-center justify-between gap-4"
+        className="mx-auto h-16 md:h-[68px] flex items-center justify-between gap-4 md:grid md:grid-cols-[1fr_auto_1fr]"
         style={{
           // Width morph: edge-to-edge at top, floating pill on scroll.
           // The 1180px cap reads as a comfortable laptop width.
@@ -210,7 +211,7 @@ export function PlatformNav() {
             " box-shadow 500ms cubic-bezier(0.22, 1, 0.36, 1)",
         }}
       >
-        <Link href="/" className="flex items-center" aria-label="LeaseStack home">
+        <Link href="/" className="flex items-center justify-self-start" aria-label="LeaseStack home">
 <LeaseStackLogo size={28} />
         </Link>
 
@@ -240,7 +241,7 @@ export function PlatformNav() {
           ) : null}
         </nav>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 justify-self-end">
           <div className="hidden md:flex items-center gap-1">
             <Link
               href="/sign-in"
