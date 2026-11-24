@@ -30,9 +30,10 @@ export function SignatureShowcase() {
 
   return (
     <>
-      <ul className={`grid gap-x-6 gap-y-12 md:grid-cols-2 ${SHOWCASE.length > 2 ? "xl:grid-cols-3" : ""}`}>
+      {/* Each card is a 7-row subgrid, so titles, facts and buttons line up across cards whatever wraps. */}
+      <ul className={`grid gap-x-6 -mb-12 md:grid-cols-2 ${SHOWCASE.length > 2 ? "xl:grid-cols-3" : ""}`}>
         {SHOWCASE.map((e, i) => (
-          <li key={e.key} className="flex flex-col">
+          <li key={e.key} className="grid grid-rows-subgrid row-span-7 gap-y-0 pb-12">
             <div style={{ border: `1px solid #d6d6d6`, borderRadius: 2, overflow: "hidden", boxShadow: "0 1px 2px rgba(22,22,22,0.06), 0 24px 48px -20px rgba(22,22,22,0.22)" }}>
               {e.reel ? (
                 <LoopVideo reel={e.reel} label={`${e.name}: a recording of the build in use`} />
@@ -42,7 +43,7 @@ export function SignatureShowcase() {
                 </div>
               )}
             </div>
-            <div className="mt-5 flex items-baseline justify-between gap-4">
+            <div className="mt-5 flex items-start justify-between gap-4">
               <h3 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(22px, 2.2vw, 30px)", fontWeight: 600, letterSpacing: "-0.02em", lineHeight: 1.12, color: INK }}>{e.name}</h3>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "#0f43b8", backgroundColor: "#e8efff", padding: "4px 8px", borderRadius: 2, whiteSpace: "nowrap" }}>{e.status}</span>
             </div>
