@@ -100,6 +100,11 @@ const PHASE_LABEL: Record<string, string> = {
 const PLAN_LIMIT_RE = /\b404\b|not a valid report|(not |un)available on|no longer available/i;
 const isPlanLimit = (w: string) => PLAN_LIMIT_RE.test(w);
 
+/** False when AppFolio's showings report isn't on this account's plan. */
+export function showingsOnPlan(stats: AppFolioSyncStatsSummary | null | undefined): boolean {
+  return !(stats?.unsupportedReports ?? []).some((r) => /^showings\b/i.test(r) && isPlanLimit(r));
+}
+
 /** One quiet line naming the reports this AppFolio plan doesn't expose, or null. */
 export function planLimitedSummary(unsupportedReports: readonly string[] | undefined): string | null {
   const phases = [...new Set((unsupportedReports ?? []).filter(isPlanLimit).map((w) => w.split(":")[0].trim()))].filter(Boolean);

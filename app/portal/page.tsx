@@ -16,7 +16,7 @@ import { AgentTrace, type Step } from "@/components/portal/overview/agent-trace"
 import { ConversationPreview } from "@/components/portal/overview/conversation-preview";
 import { patternReason } from "@/lib/chatbot/learning/pattern-labels";
 import { getPortfolioOverview } from "@/lib/portal/portfolio-overview";
-import { getAppFolioStatus } from "@/lib/integrations/appfolio-status";
+import { getAppFolioStatus, showingsOnPlan } from "@/lib/integrations/appfolio-status";
 import { PortfolioMultiples, since } from "@/components/portal/overview/portfolio";
 import { PortfolioTable } from "@/components/portal/overview/portfolio-table";
 
@@ -277,7 +277,7 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
   );
 
   if (portfolio && portfolio.rows.length > 1) {
-    const toursOnPlan = !appfolioStatus?.stats?.unsupportedReports.some((r) => /^showings\b.*(40[04]|not a valid report|unavailable on this)/i.test(r));
+    const toursOnPlan = showingsOnPlan(appfolioStatus?.stats);
     return (
       <div className="w-full space-y-5">
         <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">

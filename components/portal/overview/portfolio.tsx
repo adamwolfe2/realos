@@ -34,7 +34,7 @@ export function TrendLine({ s, height = 56, className }: { s: Series; height?: n
   );
 }
 
-function Cell({ label, value, delta, source, children, title }: {
+export function Cell({ label, value, delta, source, children, title }: {
   label: string;
   value: ReactNode;
   delta?: { text: string; tone: string } | null;
@@ -65,11 +65,11 @@ function Range({ today, lag = 0 }: { today: Date; lag?: number }) {
   );
 }
 
-function Gap({ children }: { children: ReactNode }) {
+export function Gap({ children }: { children: ReactNode }) {
   return <p className="flex h-[56px] items-center text-[12.5px] text-[var(--t-muted)]">{children}</p>;
 }
 
-function trendCell(label: string, s: Series, today: Date, source: ReactNode, title: string, lag = 0, base?: { cur: number; prev: number }) {
+export function trendCell(label: string, s: Series, today: Date, source: ReactNode, title: string, lag = 0, base?: { cur: number; prev: number }) {
   const cur = sum(s.cur);
   const b = base ?? { cur, prev: sum(s.prev) };
   return (
