@@ -152,7 +152,11 @@ export type GenerateResult = { properties: number; llmCalls: number; answers: nu
  * proposal has a dedupe key, and signals already proposed are skipped
  * before any model call.
  */
-export async function generateProposals(orgId: string, opts: { propertyIds?: string[] | null; dryRun?: boolean } = {}): Promise<GenerateResult & { preview: unknown[] }> {
+/**
+ * @param opts.deadline epoch ms: no new property is started after it (the
+ *   cron and the button both run inside a 300s function).
+ */
+export async function generateProposals(orgId: string, opts: { propertyIds?: string[] | null; dryRun?: boolean; deadline?: number } = {}): Promise<GenerateResult & { preview: unknown[]; stoppedEarly: boolean }> {
   const now = new Date();
   const week = weekOf(now);
   const cur = new Date(Math.floor(now.getTime() / DAY) * DAY - (WINDOW - 1) * DAY);
@@ -161,7 +165,7 @@ export async function generateProposals(orgId: string, opts: { propertyIds?: str
     select: { id: true, name: true, websiteUrl: true, chatbotConfig: { select: { chatbotKnowledgeBase: true } } },
     take: 200,
   });
-  const result = { properties: 0, llmCalls: 0, answers: 0, needsAnswer: 0, popups: 0, site: 0, preview: [] as unknown[] };
+  const result = { properties: 0, llmCalls: 0, answers: 0, needsAnswer: 0, popups: 0, site: 0, preview: [] as unknown[], stoppedEarly: false };
   if (!props.length) return result;
   const ids = props.map((p) => p.id);
 
@@ -233,9 +237,17 @@ export async function generateProposals(orgId: string, opts: { propertyIds?: str
       .map((a) => ({ id: a.id, kind: a.kind, title: a.title, detail: a.detail }));
 
     if (!qs.length && !popup && !site.length) continue;
+    if (opts.deadline && Date.now() > opts.deadline) {
+      // ponytail: sequential, one property at a time; the rest wait for the next run.
+      result.stoppedEarly = true;
+      break;
+    }
     result.properties += 1;
     const d = opts.dryRun ? null : await draft(orgId, p.id, prompt({ name: p.name, websiteUrl: p.websiteUrl, kb }, qs, popup, site));
     if (d) result.llmCalls += 1;
+    // No draft (model error, no key): write nothing so the next run retries,
+    // rather than locking every question in as "Needs SG's answer".
+    if (!d && !opts.dryRun) continue;
 
     const [unanswered, leads] = await Promise.all([
       metricValue("unanswered", { orgId, propertyId: p.id }, cur, now),

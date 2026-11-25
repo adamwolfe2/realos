@@ -19,10 +19,13 @@ export async function GET(req: NextRequest) {
   if (authError) return authError;
 
   return recordCronRun("self-improve", async () => {
+    const deadline = Date.now() + 240_000;
     const since = new Date(Date.now() - 28 * 86_400_000);
+    // Most recently active workspaces first.
     const orgRows = await prisma.chatbotConversation.findMany({
       where: { createdAt: { gte: since }, property: { lifecycle: "ACTIVE" } },
       distinct: ["orgId"],
+      orderBy: { createdAt: "desc" },
       select: { orgId: true },
       take: MAX_ORGS_PER_RUN,
     });
@@ -32,7 +35,8 @@ export async function GET(req: NextRequest) {
     const orgs: Array<{ orgId: string; proposals?: number; llmCalls?: number; error?: string }> = [];
     for (const { orgId } of orgRows) {
       try {
-        const r = await generateProposals(orgId);
+        if (Date.now() > deadline) break;
+        const r = await generateProposals(orgId, { deadline });
         const made = r.answers + r.needsAnswer + r.popups + r.site;
         proposals += made;
         orgs.push({ orgId, proposals: made, llmCalls: r.llmCalls });

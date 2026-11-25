@@ -243,7 +243,10 @@ export async function applyPopupProposal(input: unknown): Promise<ActionResult> 
     return { ok: false, error: "The pop-up was edited since this was proposed. Dismiss it; next week's run proposes from the new copy." };
   }
 
-  const applied: Proposal = { ...proposal, popup: { ...proposal.popup, proposed: next } };
+  // Delay only means something for the time-on-page trigger; record what really went live.
+  const timed = campaign.trigger === "TIME_ON_PAGE";
+  const live = { ...next, delaySeconds: timed ? next.delaySeconds : campaign.triggerThreshold };
+  const applied: Proposal = { ...proposal, popup: { ...proposal.popup, proposed: live } };
   await prisma.$transaction([
     prisma.popupCampaign.update({
       where: { id: campaign.id },
@@ -251,8 +254,7 @@ export async function applyPopupProposal(input: unknown): Promise<ActionResult> 
         headline: next.headline,
         body: next.body,
         ctaText: next.ctaText,
-        // Delay only means something for the time-on-page trigger.
-        ...(campaign.trigger === "TIME_ON_PAGE" ? { triggerThreshold: next.delaySeconds } : {}),
+        ...(timed ? { triggerThreshold: next.delaySeconds } : {}),
       },
     }),
     prisma.siteImprovementRecommendation.update({
@@ -268,7 +270,7 @@ export async function applyPopupProposal(input: unknown): Promise<ActionResult> 
         diff: {
           recommendationId: rec.id,
           before: { ...cur, delaySeconds: campaign.triggerThreshold },
-          after: next,
+          after: live,
         } as Prisma.InputJsonValue,
       }),
     }),

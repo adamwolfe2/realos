@@ -56,21 +56,23 @@ export async function generateProposalsAction(): Promise<
     }
     throw err;
   }
-  // A double click must not pay for a second pass.
+  // A double click must not pay for a second pass. ponytail: check-then-act;
+  // a click racing the weekly cron can pay twice for a few cents (rows are
+  // still unique on dedupeKey). Add a lock row if this ever matters.
   const recent = await prisma.chatbotKnowledgeSuggestion.findFirst({
     where: { orgId: scope.orgId, dedupeKey: { startsWith: "si:" }, createdAt: { gte: new Date(Date.now() - 2 * 60_000) } },
     select: { id: true },
   });
   if (recent) return { ok: false, error: "Proposals were generated a moment ago. Try again in a few minutes." };
 
-  const r = await generateProposals(scope.orgId, { propertyIds: effectivePropertyIds(scope, null) });
+  const r = await generateProposals(scope.orgId, { propertyIds: effectivePropertyIds(scope, null), deadline: Date.now() + 240_000 });
   revalidatePath("/portal/conversations/insights");
   revalidatePath("/portal");
   const made = r.answers + r.needsAnswer + r.popups + r.site;
   return {
     ok: true,
     message: made
-      ? `${made} new proposal${made === 1 ? "" : "s"}: ${r.answers} drafted answers, ${r.needsAnswer} need SG's answer, ${r.popups} pop-up, ${r.site} website.`
+      ? `${made} new proposal${made === 1 ? "" : "s"}: ${r.answers} drafted answers, ${r.needsAnswer} need SG's answer, ${r.popups} pop-up, ${r.site} website.${r.stoppedEarly ? " More next run." : ""}`
       : "Nothing new to propose. Every current signal already has a proposal.",
   };
 }

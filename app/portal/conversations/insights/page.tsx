@@ -120,10 +120,11 @@ export default async function ChatbotInsightsPage({
   });
 
   // Before/after for approved self-improve proposals.
+  // ponytail: each read scans up to 1000 chats; at most 8 measured per load.
   const approved = [
     ...learning.appliedKnowledge.map((k) => ({ row: k, p: readProposal(k.proposal) })),
     ...learning.appliedProposals.map((r) => ({ row: r, p: readProposal(r.proposal) })),
-  ];
+  ].filter((a) => a.p).slice(0, 8);
   const proposalImpacts = new Map<string, ProposalImpact | null>(
     await Promise.all(
       approved.map(async ({ row, p }) => [row.id, p ? await proposalImpact(p, row).catch((err: unknown) => {
