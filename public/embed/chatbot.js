@@ -895,8 +895,39 @@
     root.classList.remove("rec-open");
   }
 
+  // True when the host page has its own fixed/sticky overlay (cookie banner,
+  // promo bar) where the teaser would render. Our root sits at max z-index,
+  // so showing the teaser there would cover the banner's buttons. Probed
+  // while the teaser is still display:none, so we see the host page.
+  function hostOverlayUnderTeaser() {
+    if (!document.elementsFromPoint) return false;
+    var phone = window.innerWidth <= 480;
+    var y = window.innerHeight - (phone ? 110 : 40);
+    var xs = [window.innerWidth - 40, window.innerWidth - 160];
+    for (var i = 0; i < xs.length; i++) {
+      var hits = document.elementsFromPoint(xs[i], y);
+      for (var j = 0; j < hits.length; j++) {
+        var el = hits[j];
+        if (el.id === "leasestack-chatbot-host" || root.contains(el)) continue;
+        for (var n = el; n && n !== document.body && n !== document.documentElement; n = n.parentElement) {
+          var pos = window.getComputedStyle(n).position;
+          if (pos === "fixed" || pos === "sticky") return true;
+        }
+        break; // topmost host element is in normal flow: area is clear
+      }
+    }
+    return false;
+  }
+
+  var teaserDeferrals = 0;
   function showTeaser() {
     if (state.teaserDismissed || state.open) return;
+    // ponytail: polls every 3s for up to 2 min, then gives up; event hooks
+    // per consent tool if a host banner ever outlasts that.
+    if (hostOverlayUnderTeaser()) {
+      if (teaserDeferrals++ < 40) setTimeout(showTeaser, 3000);
+      return;
+    }
     state.teaserShown = true;
     root.classList.add("rec-teaser-visible");
   }
