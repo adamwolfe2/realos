@@ -816,13 +816,10 @@ export function PropertyOnePager({ snapshot, property, hero: heroProp }: Props) 
                     </>
                   ) : null}
                   <span className="basis-full text-[11.5px] text-muted-foreground">
-                    {plural(
-                      reputationStats.totalReviews,
-                      "review or mention",
-                      "reviews and mentions",
-                    )}{" "}
-                    · {num(reputationStats.positiveCount)} positive ·{" "}
-                    {num(reputationStats.negativeCount)} negative
+                    {plural(reputationStats.totalReviews, "review", "reviews")}
+                    {reputationStats.positiveCount + reputationStats.negativeCount > 0
+                      ? ` · ${num(reputationStats.positiveCount)} positive · ${num(reputationStats.negativeCount)} negative mentions`
+                      : ""}
                   </span>
                 </div>
                 <div className="flex flex-col gap-2.5">

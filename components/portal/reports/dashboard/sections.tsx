@@ -561,7 +561,10 @@ function ReputationSection(s: ReportSnapshot): React.ReactNode {
           </span>
           <Stars rating={r.overallRating} className="text-[15px]" />
           <span className="text-caption font-medium text-muted-foreground">
-            {num(r.totalReviews)} reviews · {num(r.positiveCount)} positive, {num(r.negativeCount)} negative
+            {num(r.totalReviews)} reviews
+            {r.positiveCount + r.negativeCount > 0
+              ? ` · ${num(r.positiveCount)} positive, ${num(r.negativeCount)} negative mentions`
+              : ""}
           </span>
           {r.responseRatePct != null ? (
             <span className={`ml-auto rounded-full border px-2.5 py-1 text-[10.5px] font-medium ${r.responseRatePct < 50 ? "border-destructive/30 bg-destructive/5 font-semibold text-destructive" : "border-border bg-card text-muted-foreground"}`}>

@@ -719,7 +719,7 @@ KEY FIGURES:
 - Organic search sessions: ${snapshot.kpis.organicSessions}${vsPrior(snapshot.kpiDeltas.organicSessionsPct)}
 - Leases started (move-ins) this period, ${isMultiPropertyRollup(snapshot) ? "all properties combined" : "whole property"}, from AppFolio: ${life?.leasesSignedInPeriod ?? "n/a"}${snapshot.kind !== "custom" && life ? ` (prior period: ${life.priorLeasesSignedInPeriod})` : ""}
 - Move-ins are NOT a subset of the leads: never say leads "converted to" or "became" move-ins or residents, and never state how many move-ins trace back to LeaseStack leads
-${reputation && reputation.totalReviews > 0 ? `- Reputation: ${reputation.overallRating ?? "n/a"} stars across ${reputation.totalReviews} reviews and mentions (${reputation.positiveCount} positive, ${reputation.negativeCount} negative)` : ""}
+${reputation && reputation.totalReviews > 0 ? `- Reputation: ${reputation.overallRating ?? "n/a"} stars across ${reputation.totalReviews} reviews (tracked mentions: ${reputation.positiveCount} positive, ${reputation.negativeCount} negative)` : ""}
 
 LEAD SOURCES:
 ${snapshot.leadSources.map((s) => `- ${s.source}: ${s.count} (${s.pct}%)`).join("\n") || "- No leads this period"}
@@ -2965,6 +2965,7 @@ async function buildReputationStats(
     highlightRows,
     concernRows,
     reviewedAgg,
+    google,
   ] = await Promise.all([
     prisma.propertyMention.aggregate({
       where: { orgId, ...propertyClause },
@@ -3056,6 +3057,10 @@ async function buildReputationStats(
     prisma.propertyMention.count({
       where: { orgId, ...propertyClause, reviewedByUserId: { not: null } },
     }),
+    prisma.property.findMany({
+      where: propertyId ? { id: propertyId, orgId } : { orgId, lifecycle: "ACTIVE" },
+      select: { googleAggRating: true, googleAggReviewCount: true },
+    }),
   ]);
 
   const totalReviews = lifetime._count._all;
@@ -3064,10 +3069,6 @@ async function buildReputationStats(
   // The mention average mixes scraped Reddit/Yelp rows and read 5.0/50 while
   // the property page showed Google's 4.0/49. Mention average is the
   // fallback when no property has a Google rating synced.
-  const google = await prisma.property.findMany({
-    where: propertyId ? { id: propertyId, orgId } : { orgId, lifecycle: "ACTIVE" },
-    select: { googleAggRating: true, googleAggReviewCount: true },
-  });
   let googleWeighted = 0;
   let googleCount = 0;
   for (const p of google) {
