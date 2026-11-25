@@ -95,7 +95,7 @@ function firstImage(hero: string | null, photos: unknown): string | null {
 export async function getPortfolioOverview(orgId: string, propertyIds: string[] | null): Promise<PortfolioOverview> {
   const now = Date.now();
   const today = dayStart(now);
-  const since = new Date(today - (2 * WINDOW - 1) * DAY);
+  const since = new Date(today - 2 * WINDOW * DAY);
 
   const properties = await prisma.property.findMany({
     where: { orgId, lifecycle: "ACTIVE", ...(propertyIds ? { id: { in: propertyIds } } : {}) },
@@ -106,6 +106,17 @@ export async function getPortfolioOverview(orgId: string, propertyIds: string[] 
     orderBy: { name: "asc" },
     take: 200,
   });
+  const zero = (): Series => ({ cur: Array(WINDOW).fill(0), prev: Array(WINDOW).fill(0) });
+  // Single-property workspaces keep the classic overview: skip the rest.
+  if (properties.length < 2) {
+    return {
+      rows: [],
+      totals: { available: 0, visitors: zero(), visitorsConnected: 0, visitorsLike: { cur: 0, prev: 0, sites: 0 }, chats: zero(), leads: zero(), apps: zero(), leadMix: { chat: 0, popup: 0, other: 0 } },
+      appfolioSyncedAt: null,
+      analyticsSyncedAt: null,
+      today: new Date(today),
+    };
+  }
   const ids = properties.map((p) => p.id);
   const inProps = { propertyId: { in: ids } };
 
@@ -188,7 +199,6 @@ export async function getPortfolioOverview(orgId: string, propertyIds: string[] 
     };
   });
 
-  const zero = (): Series => ({ cur: Array(WINDOW).fill(0), prev: Array(WINDOW).fill(0) });
   const totals = { available: 0, visitors: zero(), visitorsConnected: 0, visitorsLike: { cur: 0, prev: 0, sites: 0 }, chats: zero(), leads: zero(), apps: zero(), leadMix: { chat: 0, popup: 0, other: 0 } };
   for (const r of rows) {
     totals.available += r.available;
