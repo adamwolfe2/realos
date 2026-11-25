@@ -23,9 +23,12 @@ const PREVIEW_HOST = /(^localhost$)|\.(vercel\.app|netlify\.app|pages\.dev|githu
  *  unparseable one, or a preview host (SG's *.vercel.app drafts) = not live:
  *  GA4 / Search Console can't be connected to a site nobody can find yet. */
 export function siteLive(url: string | null | undefined): boolean {
-  if (!url) return false;
-  const host = URL.canParse(url) ? new URL(url).hostname : null;
-  return Boolean(host) && !PREVIEW_HOST.test(host!);
+  const raw = url?.trim();
+  if (!raw) return false;
+  // Operator-typed URLs are often stored without a scheme.
+  const full = /^[a-z][a-z\d+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`;
+  const host = URL.canParse(full) ? new URL(full).hostname.replace(/\.$/, "") : "";
+  return Boolean(host) && !PREVIEW_HOST.test(host);
 }
 
 export type PortfolioRow = {
