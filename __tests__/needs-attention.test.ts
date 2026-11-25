@@ -10,8 +10,9 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     property: {
       findMany: vi.fn(async () => [
-        { id: "a", name: "Alpha", chatbotConfig: { chatbotEnabled: true } },
-        { id: "b", name: "Beta", chatbotConfig: null },
+        { id: "a", name: "Alpha", websiteUrl: "https://alpha.com", chatbotConfig: { chatbotEnabled: true } },
+        { id: "b", name: "Beta", websiteUrl: "https://beta.vercel.app", chatbotConfig: null },
+        { id: "c", name: "Gamma", websiteUrl: "https://www.gamma.com", chatbotConfig: { chatbotEnabled: true } },
       ]),
     },
     listing: {
@@ -42,6 +43,20 @@ vi.mock("@/lib/db", () => ({
 }));
 
 import { getNeedsAttention } from "@/lib/portal/needs-attention";
+import { siteLive } from "@/lib/portal/portfolio-overview";
+
+describe("siteLive", () => {
+  it("treats preview hosts and missing URLs as not live", () => {
+    expect(siteLive("https://wesley-house.vercel.app")).toBe(false);
+    expect(siteLive(null)).toBe(false);
+    expect(siteLive("not a url")).toBe(false);
+    expect(siteLive("liveatthelair.com")).toBe(true); // no scheme
+    expect(siteLive("rumi-at-king.vercel.app")).toBe(false);
+    expect(siteLive("https://telegraph.leasestack.co")).toBe(false);
+    expect(siteLive("https://www.liveatthelair.com")).toBe(true);
+    expect(siteLive("https://2737durant.com")).toBe(true);
+  });
+});
 
 describe("getNeedsAttention", () => {
   it("ranks real issues and labels the ready-date fallback", async () => {
@@ -54,6 +69,8 @@ describe("getNeedsAttention", () => {
     expect(ready.title).toBe("1 unit past its ready-for-showing date by 60+ days"); // parking left out
     expect(items.find((i) => i.kind === "rank-drop")!.detail).toBe('"alpha apartments" 3.0 → 8.0');
     expect(items.find((i) => i.id === "missing:Chatbot")!.detail).toBe("Beta");
+    // Beta is still a preview site: "not live yet", not "not connected".
+    expect(items.find((i) => i.id === "missing:GA4 / Search Console")!.detail).toBe("Gamma");
     expect(items.find((i) => i.kind === "unanswered")!.title).toBe("Chatbot couldn't answer 1 question"); // "pets?" twice
   });
 

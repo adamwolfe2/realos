@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
 import { listingKind } from "@/lib/listings/kind";
 import { Prisma } from "@prisma/client";
-import { LISTED_TRACKING_SINCE, NEXT_TERM, WINDOW } from "@/lib/portal/portfolio-overview";
+import { LISTED_TRACKING_SINCE, NEXT_TERM, WINDOW, siteLive } from "@/lib/portal/portfolio-overview";
 import { questionKey, unansweredQuestions } from "@/lib/portal/property-cockpit";
 import type { AppFolioStatus } from "@/lib/integrations/appfolio-status";
 
@@ -38,7 +38,7 @@ const DROP_PLACES = 3; // average position worse by this many places
 const DROP_MIN_IMPRESSIONS = 20;
 
 /** chatbotConfigured: the property's own setting, null = uses the workspace bot. */
-type Prop = { id: string; name: string; chatbotConfigured: boolean | null };
+type Prop = { id: string; name: string; chatbotConfigured: boolean | null; live: boolean };
 
 /**
  * @param propertyIds properties in view (null = all ACTIVE).
@@ -53,12 +53,12 @@ export async function getNeedsAttention(orgId: string, propertyIds: string[] | n
 
   const props = await prisma.property.findMany({
     where: { orgId, lifecycle: "ACTIVE", ...(propertyIds ? { id: { in: propertyIds } } : {}) },
-    select: { id: true, name: true, chatbotConfig: { select: { chatbotEnabled: true } } },
+    select: { id: true, name: true, websiteUrl: true, chatbotConfig: { select: { chatbotEnabled: true } } },
     take: 200,
   });
   if (!props.length) return [];
   const ids = props.map((p) => p.id);
-  const byId = new Map<string, Prop>(props.map((p) => [p.id, { id: p.id, name: p.name, chatbotConfigured: p.chatbotConfig ? Boolean(p.chatbotConfig.chatbotEnabled) : null }]));
+  const byId = new Map<string, Prop>(props.map((p) => [p.id, { id: p.id, name: p.name, chatbotConfigured: p.chatbotConfig ? Boolean(p.chatbotConfig.chatbotEnabled) : null, live: siteLive(p.websiteUrl) }]));
   const inProps = { orgId, propertyId: { in: ids } };
 
   const [listings, visits, leads, seo, drops, convs, chatted, suggestions] = await Promise.all([
@@ -261,7 +261,8 @@ export async function getNeedsAttention(orgId: string, propertyIds: string[] | n
   const chattedIds = new Set(chatted.map((c) => c.propertyId));
   const analytics = new Set(seo.map((s) => s.propertyId));
   const missing: [string, Prop[]][] = [
-    ["GA4 / Search Console", [...byId.values()].filter((p) => !analytics.has(p.id))],
+    // A site still on a preview host can't be connected yet: not a gap.
+    ["GA4 / Search Console", [...byId.values()].filter((p) => p.live && !analytics.has(p.id))],
     ["Chatbot", [...byId.values()].filter((p) => p.chatbotConfigured !== true && !chattedIds.has(p.id))],
   ];
   for (const [label, list] of missing) {

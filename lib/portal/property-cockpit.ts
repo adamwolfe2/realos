@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { listingKind, type ListingKind } from "@/lib/listings/kind";
-import { NEXT_TERM, WINDOW, bucket, sum, type Series } from "@/lib/portal/portfolio-overview";
+import { NEXT_TERM, WINDOW, bucket, siteLive, sum, type Series } from "@/lib/portal/portfolio-overview";
 import { extractFirstUserMessage, topQuestions } from "@/lib/chatbot/conversation-analytics";
 
 // ---------------------------------------------------------------------------
@@ -27,7 +27,7 @@ export type CockpitListing = {
 
 export type QueryRow = { query: string; clicks: number; impressions: number; position: number | null; prevPosition: number | null };
 export type PageRow = { path: string; sessions: number; leads: number };
-export type Health = { label: string; state: "fresh" | "stale" | "error" | "off"; at: Date | null; note?: string };
+export type Health = { label: string; state: "fresh" | "stale" | "error" | "off" | "prelaunch"; at: Date | null; note?: string };
 
 export type PropertyCockpit = {
   today: Date;
@@ -52,6 +52,8 @@ export type PropertyCockpit = {
   };
   popup: { shown: number; clicked: number; converted: number; prevShown: number; prevConverted: number; live: boolean } | null;
   health: Health[];
+  /** Website live on its own domain (siteLive). */
+  live: boolean;
 };
 
 // The bot admits it lacks the answer ("I don't have that in front of me",
@@ -128,7 +130,7 @@ export async function getPropertyCockpit(orgId: string, propertyId: string): Pro
   // Ownership first: every query below is scoped to this org's property.
   const property = await prisma.property.findFirst({
     where: { id: propertyId, orgId },
-    select: { lastSyncedAt: true, backendPlatform: true, lifecycleSetAt: true, chatbotConfig: { select: { chatbotEnabled: true } } },
+    select: { lastSyncedAt: true, websiteUrl: true, backendPlatform: true, lifecycleSetAt: true, chatbotConfig: { select: { chatbotEnabled: true } } },
   });
   if (!property) throw new Error(`property ${propertyId} not found in org`);
 
@@ -197,6 +199,7 @@ export async function getPropertyCockpit(orgId: string, propertyId: string): Pro
 
   const ga4 = seo.find((s) => s.provider === "GA4") ?? null;
   const gsc = seo.find((s) => s.provider === "GSC") ?? null;
+  const live = siteLive(property.websiteUrl);
   const yesterday = today - DAY; // GA4/GSC land a day behind
 
   // Leads per landing page: chats that captured a lead + pop-up sign-ups.
@@ -302,10 +305,11 @@ export async function getPropertyCockpit(orgId: string, propertyId: string): Pro
           live: popupLive > 0,
         }
       : null,
+    live,
     health: [
       freshness("AppFolio", appfolioOn ? property.lastSyncedAt ?? null : null, now, 36, appfolioOn ? appfolio?.lastError : null),
-      freshness("GA4", ga4?.lastSyncAt ?? null, now, 36, ga4?.lastSyncError),
-      freshness("Search Console", gsc?.lastSyncAt ?? null, now, 36, gsc?.lastSyncError),
+      live || ga4 ? freshness("GA4", ga4?.lastSyncAt ?? null, now, 36, ga4?.lastSyncError) : { label: "GA4", state: "prelaunch", at: null },
+      live || gsc ? freshness("Search Console", gsc?.lastSyncAt ?? null, now, 36, gsc?.lastSyncError) : { label: "Search Console", state: "prelaunch", at: null },
       // Chat and pop-up have no sync: freshness is the last event seen. A
       // live bot or pop-up with nothing yet is "waiting", not "not connected".
       activity("Chatbot", property.chatbotConfig ? Boolean(property.chatbotConfig.chatbotEnabled) : Boolean(lastChat), lastChat, now, 24 * 7),
