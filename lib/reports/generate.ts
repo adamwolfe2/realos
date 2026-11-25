@@ -353,6 +353,9 @@ export type ReportReputationMention = {
 export type ReportReputationStats = {
   overallRating: number | null;
   totalReviews: number;
+  // True when overallRating/totalReviews are Google's own rating and review
+  // count; false/absent = tracked-mention fallback (Reddit, Yelp...).
+  googleRated?: boolean;
   newInPeriod: number;
   newInPeriodPct: number | null;
   positiveCount: number;
@@ -719,7 +722,7 @@ KEY FIGURES:
 - Organic search sessions: ${snapshot.kpis.organicSessions}${vsPrior(snapshot.kpiDeltas.organicSessionsPct)}
 - Leases started (move-ins) this period, ${isMultiPropertyRollup(snapshot) ? "all properties combined" : "whole property"}, from AppFolio: ${life?.leasesSignedInPeriod ?? "n/a"}${snapshot.kind !== "custom" && life ? ` (prior period: ${life.priorLeasesSignedInPeriod})` : ""}
 - Move-ins are NOT a subset of the leads: never say leads "converted to" or "became" move-ins or residents, and never state how many move-ins trace back to LeaseStack leads
-${reputation && reputation.totalReviews > 0 ? `- Reputation: ${reputation.overallRating ?? "n/a"} stars across ${reputation.totalReviews} reviews (tracked mentions: ${reputation.positiveCount} positive, ${reputation.negativeCount} negative)` : ""}
+${reputation && reputation.totalReviews > 0 ? `- Reputation: ${reputation.overallRating ?? "n/a"} stars across ${reputation.totalReviews} ${reputation.googleRated ? "Google reviews" : "reviews and mentions"} (tracked mentions: ${reputation.positiveCount} positive, ${reputation.negativeCount} negative)` : ""}
 
 LEAD SOURCES:
 ${snapshot.leadSources.map((s) => `- ${s.source}: ${s.count} (${s.pct}%)`).join("\n") || "- No leads this period"}
@@ -3122,6 +3125,7 @@ async function buildReputationStats(
           ? Math.round(lifetime._avg.rating * 10) / 10
           : null,
     totalReviews: googleCount > 0 ? googleCount : totalReviews,
+    googleRated: googleCount > 0,
     newInPeriod: periodNew,
     newInPeriodPct: pctChange(periodNew, priorNew),
     positiveCount,

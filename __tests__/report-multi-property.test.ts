@@ -199,6 +199,7 @@ describe("generateReportSnapshot with two ACTIVE properties", () => {
     }
     expect(snap.reputationStats?.overallRating).toBe(4);
     expect(snap.reputationStats?.totalReviews).toBe(49);
+    expect(snap.reputationStats?.googleRated).toBe(true);
   });
 
   it("property with a Google rating but no stored mentions still gets reputation stats", async () => {
