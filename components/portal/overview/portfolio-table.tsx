@@ -125,9 +125,9 @@ export function PortfolioTable({ rows, now }: { rows: PortfolioRow[]; now: numbe
                 <Num title={listedTitle(r.listed)}>
                   {r.listed.median === null ? <Dash /> : r.listed.atLeast && r.listed.median < 1 ? <span className="text-[12px] text-[var(--t-muted)]">Tracking</span> : <>{r.listed.atLeast ? <span className="text-[var(--t-muted)]">≥</span> : null}{fmt.format(r.listed.median)}<span className="text-[var(--t-muted)]">d</span></>}
                 </Num>
-                <td className="px-2 py-2 text-right sm:px-3" title={vis === null ? "GA4 / Search Console not connected for this site" : `${vis} search visits, last 28 days vs ${fmt.format(r.visitors!.prev.reduce((a, n) => a + n, 0))} the 28 before`}>
+                <td className="px-2 py-2 text-right sm:px-3" title={vis === null ? (r.live ? "GA4 / Search Console not connected for this site" : "The site is still a preview, not live on its own domain: GA4 / Search Console connect at launch") : `${vis} search visits, last 28 days vs ${fmt.format(r.visitors!.prev.reduce((a, n) => a + n, 0))} the 28 before`}>
                   {vis === null ? (
-                    <span className="text-[12px] text-[var(--t-muted)]">Not connected</span>
+                    <span className="text-[12px] text-[var(--t-muted)]">{r.live ? "Not connected" : "Not live yet"}</span>
                   ) : (
                     <span className="inline-flex items-center justify-end gap-2.5 align-middle">
                       <Spark data={r.visitors!.cur} />
@@ -148,10 +148,10 @@ export function PortfolioTable({ rows, now }: { rows: PortfolioRow[]; now: numbe
       </table>
       <p className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-[var(--t-divider)] px-4 py-2.5 text-[11.5px] text-[var(--t-muted)]">
         <span>Data dots: AppFolio, GA4 + Search Console, chatbot</span>
-        {(["fresh", "stale", "error", "off"] as const).map((k) => (
+        {(["fresh", "stale", "error", "off", "prelaunch"] as const).map((k) => (
           <span key={k} className="inline-flex items-center gap-1.5">
             <span aria-hidden className="h-2 w-2 rounded-full" style={{ background: DOT[k] }} />
-            {{ fresh: "Synced", stale: "Over 36h old", error: "Sync failed", off: "Not connected" }[k]}
+            {{ fresh: "Synced", stale: "Over 36h old", error: "Sync failed", off: "Not connected", prelaunch: "Not live yet" }[k]}
           </span>
         ))}
       </p>
@@ -197,7 +197,7 @@ function Spark({ data }: { data: number[] }) {
   );
 }
 
-const DOT: Record<SourceHealth["state"], string> = { fresh: "#16a34a", stale: "#d97706", error: "#dc2626", off: "#c3cbdb" };
+const DOT: Record<SourceHealth["state"], string> = { fresh: "#16a34a", stale: "#d97706", error: "#dc2626", off: "#c3cbdb", prelaunch: "#e3e7ef" };
 
 function ago(d: Date | null, now: number) {
   if (!d) return "";
@@ -207,6 +207,7 @@ function ago(d: Date | null, now: number) {
 
 function line(name: string, h: SourceHealth, now: number) {
   if (h.state === "off") return `${name}: not connected`;
+  if (h.state === "prelaunch") return `${name}: site not live yet`;
   if (h.state === "error") return `${name}: last sync failed${h.error ? ` (${h.error.slice(0, 80)})` : ""}`;
   return `${name}: ${h.at ? `synced ${ago(h.at, now)}` : "live"}${h.state === "stale" ? " (stale)" : ""}`;
 }

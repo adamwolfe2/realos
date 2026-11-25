@@ -36,7 +36,7 @@ export function PropertyCockpitView({ data, now, toursOnPlan }: { data: Property
   );
 }
 
-const DOT: Record<Health["state"], string> = { fresh: "#16a34a", stale: "#d97706", error: "#dc2626", off: "#c3cbdb" };
+const DOT: Record<Health["state"], string> = { fresh: "#16a34a", stale: "#d97706", error: "#dc2626", off: "#c3cbdb", prelaunch: "#e3e7ef" };
 
 function ago(d: Date, now: number) {
   const h = Math.round((now - d.getTime()) / 3_600_000);
@@ -51,7 +51,7 @@ function HealthStrip({ health, now }: { health: Health[]; now: number }) {
           <span aria-hidden className="h-2 w-2 rounded-full" style={{ background: DOT[h.state] }} />
           <span className="text-[var(--t-ink)]">{h.label}</span>
           <span className="text-[var(--t-muted)]">
-            {h.state === "off" ? "Not connected" : h.state === "error" ? "Last sync failed" : h.at ? `${ago(h.at, now)}${h.state === "stale" ? " (stale)" : ""}` : "No activity yet"}
+            {h.state === "off" ? "Not connected" : h.state === "prelaunch" ? "Not live yet" : h.state === "error" ? "Last sync failed" : h.at ? `${ago(h.at, now)}${h.state === "stale" ? " (stale)" : ""}` : "No activity yet"}
           </span>
         </li>
       ))}
@@ -67,7 +67,9 @@ function Funnel({ data, toursOnPlan }: { data: PropertyCockpit; toursOnPlan: boo
     <dl id="funnel" className="scroll-mt-6 grid grid-cols-2 overflow-hidden rounded-[var(--t-radius)] border border-[var(--t-border)] bg-[var(--t-card)] shadow-[var(--t-shadow)] lg:grid-cols-5 [&>*]:-ml-px [&>*]:-mt-px [&>*]:border-l [&>*]:border-t [&>*]:border-[var(--t-divider)]">
       {f.visitors
         ? trendCell("Organic visitors", f.visitors, data.today, "GA4 + Search Console", "Search visits per day (larger of GA4 organic sessions and Search Console clicks), last 28 days vs the 28 before.", 1)
-        : <Cell label="Organic visitors" value="—" source="GA4 + Search Console" title="No GA4 or Search Console connected for this site."><Gap>Not connected</Gap></Cell>}
+        : data.live
+          ? <Cell label="Organic visitors" value="—" source="GA4 + Search Console" title="No GA4 or Search Console connected for this site."><Gap>Not connected</Gap></Cell>
+          : <Cell label="Organic visitors" value="—" source="GA4 + Search Console" title="The site is still a preview, not live on its own domain. GA4 and Search Console connect at launch."><Gap>Not live yet</Gap></Cell>}
       {trendCell("Chats", f.chats, data.today, v ? `${pct(c, v)} of visitors · chatbot` : "LeaseStack chatbot", "Chatbot conversations started, last 28 days vs the 28 before.")}
       {trendCell("Website leads", f.leads, data.today, `Chat ${f.leadMix.chat} · Pop-up ${f.leadMix.popup} · Other ${f.leadMix.other}`, "Leads captured on the site, last 28 days vs the 28 before. AppFolio applicants count under Applications.")}
       {f.apps

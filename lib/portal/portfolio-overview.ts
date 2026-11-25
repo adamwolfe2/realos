@@ -13,7 +13,20 @@ export const WINDOW = 28;
 const DAY = 86_400_000;
 
 export type Series = { cur: number[]; prev: number[] }; // daily, oldest first
-export type SourceHealth = { state: "fresh" | "stale" | "error" | "off"; at: Date | null; error?: string | null };
+/** "prelaunch": the site is not live on its own domain yet, so there is nothing to connect. */
+export type SourceHealth = { state: "fresh" | "stale" | "error" | "off" | "prelaunch"; at: Date | null; error?: string | null };
+
+/** Hosts that serve previews, not a property's live site. */
+const PREVIEW_HOST = /(^localhost$)|\.(vercel\.app|netlify\.app|pages\.dev|github\.io)$/i;
+
+/** True when the property's website is live on its own domain. No URL, an
+ *  unparseable one, or a preview host (SG's *.vercel.app drafts) = not live:
+ *  GA4 / Search Console can't be connected to a site nobody can find yet. */
+export function siteLive(url: string | null | undefined): boolean {
+  if (!url) return false;
+  const host = URL.canParse(url) ? new URL(url).hostname : null;
+  return Boolean(host) && !PREVIEW_HOST.test(host!);
+}
 
 export type PortfolioRow = {
   id: string;
@@ -34,6 +47,8 @@ export type PortfolioRow = {
   readyDaysOldest: number | null;
   readyCount: number;
   visitors: Series | null; // null = no GA4/GSC connection for this property
+  /** Website live on its own domain (siteLive). */
+  live: boolean;
   /** GA4/GSC rows exist for the prior window (false = connected recently). */
   visitorsHadPrior: boolean;
   chats: Series;
@@ -151,7 +166,7 @@ export async function getPortfolioOverview(orgId: string, propertyIds: string[] 
   const properties = await prisma.property.findMany({
     where: { orgId, lifecycle: "ACTIVE", ...(propertyIds ? { id: { in: propertyIds } } : {}) },
     select: {
-      id: true, name: true, city: true, heroImageUrl: true, photoUrls: true, lastSyncedAt: true, lifecycleSetAt: true,
+      id: true, name: true, city: true, websiteUrl: true, heroImageUrl: true, photoUrls: true, lastSyncedAt: true, lifecycleSetAt: true,
       chatbotConfig: { select: { chatbotEnabled: true } },
     },
     orderBy: { name: "asc" },
@@ -244,6 +259,7 @@ export async function getPortfolioOverview(orgId: string, propertyIds: string[] 
       visitors: seoRows.length
         ? bucket((snapsBy.get(p.id) ?? []).map((s) => ({ at: s.date, n: Math.max(s.organicSessions, s.totalClicks) })), yesterday)
         : null,
+      live: siteLive(p.websiteUrl),
       visitorsHadPrior: (snapsBy.get(p.id) ?? []).some((s) => s.date.getTime() <= yesterday - WINDOW * DAY),
       chats: bucket((chatsBy.get(p.id) ?? []).map((c) => ({ at: c.createdAt })), today),
       leads: bucket(pLeads.map((l) => ({ at: l.createdAt })), today),
@@ -259,7 +275,7 @@ export async function getPortfolioOverview(orgId: string, propertyIds: string[] 
       appsTrackedBothWindows: !p.lifecycleSetAt || p.lifecycleSetAt.getTime() <= today - (2 * WINDOW - 1 - BACKFILL_DAYS) * DAY,
       health: {
         appfolio: health(p.lastSyncedAt, now, appfolio?.lastError ?? null),
-        analytics: health(lastSeo, now, seoError),
+        analytics: !seoRows.length && !siteLive(p.websiteUrl) ? { state: "prelaunch", at: null } : health(lastSeo, now, seoError),
         // Chats arriving prove a bot is live (the workspace bot) even when
         // this property's own setting is off; a silent explicit off stays off.
         chatbot: (p.chatbotConfig?.chatbotEnabled || chatsBy.has(p.id)) ? { state: "fresh", at: null } : { state: "off", at: null },
