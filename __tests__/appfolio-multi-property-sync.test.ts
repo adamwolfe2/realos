@@ -197,13 +197,18 @@ function setupPrisma() {
       }),
     }),
     adCampaign: autoModel(),
-    resident: autoModel(),
+    resident: autoModel({
+      updateMany: vi.fn(async () => ({ count: 1 })),
+      update: vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({ id: "r", ...data })),
+    }),
     workOrder: autoModel(),
     application: autoModel(),
     tour: autoModel(),
     auditEvent: autoModel(),
     leadMatchDecision: autoModel(),
-    $transaction: vi.fn(async (fn: (tx: unknown) => unknown) => fn(prismaMock)),
+    $transaction: vi.fn(async (arg: unknown) =>
+      Array.isArray(arg) ? Promise.all(arg) : (arg as (tx: unknown) => unknown)(prismaMock),
+    ),
   });
 }
 
@@ -399,6 +404,31 @@ describe("runAppfolioSync — two ACTIVE properties", () => {
     ];
     await runAppfolioSync("org-1");
     expect(state.endedLeaseIds).toEqual(["lease-C-gone"]);
+  });
+});
+
+describe("runAppfolioSync — lease re-pointed at another tenant", () => {
+  it("releases currentLeaseId from the previous holder before claiming it (unique)", async () => {
+    state.reports.tenant_directory = [{ tenant_id: "t-new", property_id: "af-A", first_name: "N" }];
+    state.reports.rent_roll = [
+      { lease_id: "l-A1", tenant_id: "t-new", property_id: "af-A", status: "Current" },
+    ];
+    await runAppfolioSync("org-1");
+    const resident = prismaMock.resident as Record<string, ReturnType<typeof vi.fn>>;
+    expect(resident.updateMany).toHaveBeenCalledWith({
+      where: { currentLeaseId: "lease-l-A1", id: { not: expect.any(String) } },
+      data: { currentLeaseId: null },
+    });
+    expect(resident.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { currentLeaseId: "lease-l-A1" } }),
+    );
+    const claim = resident.update.mock.calls.findIndex(
+      ([a]) => (a as { data?: unknown }).data != null &&
+        JSON.stringify((a as { data: unknown }).data) === JSON.stringify({ currentLeaseId: "lease-l-A1" }),
+    );
+    expect(resident.updateMany.mock.invocationCallOrder[0]).toBeLessThan(
+      resident.update.mock.invocationCallOrder[claim],
+    );
   });
 });
 
