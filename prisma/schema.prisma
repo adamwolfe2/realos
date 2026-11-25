@@ -322,6 +322,8 @@ enum SiteImprovementType {
   TOUR_CTA
   APPLICATION_COPY
   POLICY_COPY
+  SEO_COPY
+  POPUP_COPY
 }
 
 enum SiteImprovementTarget {
@@ -329,6 +331,7 @@ enum SiteImprovementTarget {
   CHATBOT_KNOWLEDGE_BASE
   SITE_BUILDER
   CONTENT_WORKFLOW
+  POPUP
 }
 
 enum CreativeRequestStatus {
@@ -2011,6 +2014,9 @@ model ChatbotKnowledgeSuggestion {
   sourceCaseIds String[]             @default([])
   status        RecommendationStatus @default(OPEN)
   dedupeKey     String
+  /// Self-improve proposal (lib/self-improve/proposal.ts): question,
+  /// evidence, needs-SG's-answer flag, metric to move. Null = learning loop.
+  proposal      Json?
   appliedAt     DateTime?
   dismissedAt   DateTime?
   createdAt     DateTime             @default(now())
@@ -2062,6 +2068,8 @@ model SiteImprovementRecommendation {
   suggestedBody      String                @db.Text
   status             RecommendationStatus  @default(OPEN)
   dedupeKey          String
+  /// Self-improve proposal (lib/self-improve/proposal.ts). Null = learning loop.
+  proposal           Json?
   appliedAt          DateTime?
   dismissedAt        DateTime?
   createdAt          DateTime              @default(now())

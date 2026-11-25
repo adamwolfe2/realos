@@ -26,6 +26,7 @@ import { randomUUID } from "node:crypto";
 import { parseArgs } from "node:util";
 // App code path (lazy prisma, reads DATABASE_URL at call time, after dotenv above).
 import { requestAppfolioBackfill } from "@/lib/integrations/appfolio-backfill";
+import { approvedBlocks } from "@/lib/self-improve/proposal";
 
 const SG_ORG = "cmo402dwz0002c93lf3okkgi0";
 const AF = "https://sgrealestate.appfolio.com";
@@ -215,7 +216,7 @@ const show = (label: string, have: Record<string, unknown> | undefined, changes:
 
   const { block, count } = await listingsBlock();
   console.log(`  listings: ${count} public AppFolio listings matched /${MATCH.source}/`);
-  const kb = `You are ${ASSISTANT}, the leasing assistant for ${NAME}, at ${STREET}, ${CITY}, CA ${ZIP}. Managed by SG Real Estate.
+  const kbBase = `You are ${ASSISTANT}, the leasing assistant for ${NAME}, at ${STREET}, ${CITY}, CA ${ZIP}. Managed by SG Real Estate.
 
 ${FACTS}
 
@@ -224,8 +225,13 @@ ${RULES}
 
 ${block}`;
 
-  if (args["show-kb"]) console.log(`----- KB -----\n${kb}\n--------------`);
   const [bot] = await q(`select * from "PropertyChatbotConfig" where "propertyId" = $1`, prop.id);
+  // Answers approved in the portal (Suggested fixes) survive a KB refresh.
+  const kept = approvedBlocks(bot?.chatbotKnowledgeBase as string | null);
+  const kb = [kbBase, ...kept].join("\n\n");
+  if (kept.length) console.log(`  KB: keeping ${kept.length} approved answer block(s)`);
+  if (kb.length > 12_000) throw new Error(`KB is ${kb.length} chars, over the 12,000 limit: trim the facts file or the approved answers first`);
+  if (args["show-kb"]) console.log(`----- KB -----\n${kb}\n--------------`);
   const botWant = {
     chatbotEnabled: true,
     chatbotPersonaName: ASSISTANT,

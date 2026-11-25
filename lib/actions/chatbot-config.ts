@@ -26,7 +26,7 @@ export type ActionResult =
   | { ok: false; error: string };
 
 const HEX_COLOR = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
-const KNOWLEDGE_BASE_MAX = 5000;
+const KNOWLEDGE_BASE_MAX = 12_000; // SG KBs (facts + live listings + approved answers) run 3-7k
 
 const captureModeSchema = z.nativeEnum(ChatbotCaptureMode);
 

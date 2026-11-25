@@ -15,6 +15,7 @@ const PATTERN_LABEL: Record<string, { title: string; reason: string }> = {
   AVAILABILITY_QUESTION_NO_CAPTURE: { title: "Availability question, no contact info", reason: "availability questions went unanswered" },
   TOUR_INTENT_NO_TOUR: { title: "Tour request never booked", reason: "tour requests never booked" },
   APPLICATION_HELP_NEEDED: { title: "Stuck on the application", reason: "prospects got stuck on the application" },
+  self_improve_answer: { title: "Question the chatbot couldn't answer", reason: "the chatbot couldn't answer" },
   BOT_FALLBACK_PATTERN: { title: "Chatbot could not answer", reason: "the chatbot could not answer" },
 };
 

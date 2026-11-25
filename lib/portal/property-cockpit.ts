@@ -62,20 +62,24 @@ const NO_ANSWER = /\bI (?:don'?t|do not) (?:have|know)\b|\bI'?m not sure\b|in fr
 
 type Msg = { role?: string; content?: string };
 
-/** User questions the bot answered with "I don't have that". */
-export function unansweredQuestions(messages: unknown): string[] {
+/** User questions the bot answered with "I don't have that", with that reply. */
+export function unansweredExchanges(messages: unknown): { question: string; reply: string }[] {
   if (!Array.isArray(messages)) return [];
-  const out: string[] = [];
+  const out: { question: string; reply: string }[] = [];
   let lastUser: string | null = null;
   for (const m of messages as Msg[]) {
     if (!m || typeof m.content !== "string") continue;
     if (m.role === "user") lastUser = m.content.trim();
     else if (m.role === "assistant" && lastUser && NO_ANSWER.test(m.content)) {
-      out.push(lastUser);
+      out.push({ question: lastUser, reply: m.content.trim() });
       lastUser = null;
     }
   }
   return out;
+}
+
+export function unansweredQuestions(messages: unknown): string[] {
+  return unansweredExchanges(messages).map((e) => e.question);
 }
 
 /** Case/punctuation-insensitive key so repeats of a question group. */

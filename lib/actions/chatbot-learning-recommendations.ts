@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { AuditAction, Prisma, RecommendationStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { answerBlock, isSteering, mentionsProtectedClass, readProposal, type Proposal } from "@/lib/self-improve/proposal";
 import {
   ForbiddenError,
   auditPayload,
@@ -11,10 +12,16 @@ import {
   type ScopedContext,
 } from "@/lib/tenancy/scope";
 
-const KNOWLEDGE_BASE_MAX = 5000;
+// Matches lib/actions/chatbot-config.ts. SG's generated KBs run 3-7k chars.
+const KNOWLEDGE_BASE_MAX = 12_000;
 
 const idSchema = z.object({
   id: z.string().min(1),
+});
+
+// Approve with the operator's edited or real answer (self-improve proposals).
+const applySchema = idSchema.extend({
+  text: z.string().trim().min(1).max(1200).optional(),
 });
 
 type ActionResult =
@@ -28,10 +35,10 @@ export async function applyChatbotKnowledgeSuggestion(
   if (!scopeResult.ok) return scopeResult;
   const scope = scopeResult.scope;
 
-  const parsed = idSchema.safeParse(input);
+  const parsed = applySchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Invalid input" };
 
-  const suggestion = await prisma.chatbotKnowledgeSuggestion.findFirst({
+  const found = await prisma.chatbotKnowledgeSuggestion.findFirst({
     where: scopedWhere(scope, parsed.data.id),
     select: {
       id: true,
@@ -40,14 +47,26 @@ export async function applyChatbotKnowledgeSuggestion(
       patternType: true,
       suggestedText: true,
       affectedCount: true,
+      proposal: true,
     },
   });
-  if (!suggestion) return { ok: false, error: "Knowledge suggestion not found" };
-  if (suggestion.status !== RecommendationStatus.OPEN) {
+  if (!found) return { ok: false, error: "Knowledge suggestion not found" };
+  if (found.status !== RecommendationStatus.OPEN) {
     return { ok: false, error: "This knowledge suggestion was already handled." };
   }
 
-  const block = buildKnowledgeBlock(suggestion);
+  // Self-improve proposals: the answer is the edited text or the draft; a
+  // "Needs SG's answer" card can't apply until someone writes the answer.
+  const proposal = readProposal(found.proposal);
+  const answer = parsed.data.text ?? found.suggestedText.trim();
+  if (proposal?.question) {
+    if (!answer) return { ok: false, error: "Write SG's answer first." };
+    if (isSteering(answer)) {
+      return { ok: false, error: "This wording could exclude or steer renters by a protected class. Rewrite it so it applies to everyone." };
+    }
+  }
+  const suggestion = { ...found, suggestedText: proposal?.question ? answer : found.suggestedText };
+  const block = proposal?.question ? answerBlock(proposal.question, answer) : buildKnowledgeBlock(suggestion);
   if (suggestion.propertyId) {
     const current = await prisma.propertyChatbotConfig.findUnique({
       where: { propertyId: suggestion.propertyId },
@@ -73,7 +92,7 @@ export async function applyChatbotKnowledgeSuggestion(
       }),
       prisma.chatbotKnowledgeSuggestion.update({
         where: { id: suggestion.id },
-        data: { status: RecommendationStatus.APPLIED, appliedAt: new Date() },
+        data: { status: RecommendationStatus.APPLIED, appliedAt: new Date(), suggestedText: suggestion.suggestedText },
       }),
       prisma.auditEvent.create({
         data: auditPayload(scope as ScopedContext, {
@@ -114,7 +133,7 @@ export async function applyChatbotKnowledgeSuggestion(
       }),
       prisma.chatbotKnowledgeSuggestion.update({
         where: { id: suggestion.id },
-        data: { status: RecommendationStatus.APPLIED, appliedAt: new Date() },
+        data: { status: RecommendationStatus.APPLIED, appliedAt: new Date(), suggestedText: suggestion.suggestedText },
       }),
       prisma.auditEvent.create({
         data: auditPayload(scope as ScopedContext, {
@@ -180,6 +199,88 @@ export async function markSiteRecommendationPlanned(
     nextStatus: RecommendationStatus.APPLIED,
     message: "Site recommendation marked planned.",
   });
+}
+
+const popupSchema = idSchema.extend({
+  headline: z.string().trim().min(1).max(80),
+  body: z.string().trim().min(1).max(300),
+  ctaText: z.string().trim().min(1).max(30),
+  delaySeconds: z.number().int().min(0).max(120),
+});
+
+/**
+ * Approve a self-improve pop-up proposal: writes the (possibly edited) copy
+ * and delay onto the live campaign. Refuses when the campaign was edited
+ * since the proposal was drafted, so an approval never overwrites newer copy.
+ */
+export async function applyPopupProposal(input: unknown): Promise<ActionResult> {
+  const scopeResult = await getWritableScope();
+  if (!scopeResult.ok) return scopeResult;
+  const scope = scopeResult.scope;
+
+  const parsed = popupSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Check the pop-up fields: headline up to 80 characters, CTA up to 30." };
+  const { id, ...next } = parsed.data;
+  if ([next.headline, next.body, next.ctaText].some(mentionsProtectedClass)) {
+    return { ok: false, error: "Pop-up copy can't mention protected classes (fair housing). Rewrite it." };
+  }
+
+  const rec = await prisma.siteImprovementRecommendation.findFirst({
+    where: scopedWhere(scope, id),
+    select: { id: true, status: true, propertyId: true, proposal: true },
+  });
+  const proposal = readProposal(rec?.proposal);
+  if (!rec || !proposal?.popup) return { ok: false, error: "Pop-up proposal not found" };
+  if (rec.status !== RecommendationStatus.OPEN) return { ok: false, error: "This proposal was already handled." };
+
+  const campaign = await prisma.popupCampaign.findFirst({
+    where: { id: proposal.popup.campaignId, orgId: scope.orgId },
+    select: { id: true, headline: true, body: true, ctaText: true, trigger: true, triggerThreshold: true },
+  });
+  if (!campaign) return { ok: false, error: "The pop-up no longer exists." };
+  const cur = proposal.popup.current;
+  const timedNow = campaign.trigger === "TIME_ON_PAGE";
+  if (campaign.headline !== cur.headline || campaign.body !== cur.body || campaign.ctaText !== cur.ctaText || (timedNow && campaign.triggerThreshold !== cur.delaySeconds)) {
+    return { ok: false, error: "The pop-up was edited since this was proposed. Dismiss it; next week's run proposes from the new copy." };
+  }
+
+  // Delay only means something for the time-on-page trigger; record what really went live.
+  const timed = campaign.trigger === "TIME_ON_PAGE";
+  const live = { ...next, delaySeconds: timed ? next.delaySeconds : campaign.triggerThreshold };
+  const applied: Proposal = { ...proposal, popup: { ...proposal.popup, proposed: live } };
+  await prisma.$transaction([
+    prisma.popupCampaign.update({
+      where: { id: campaign.id },
+      data: {
+        headline: next.headline,
+        body: next.body,
+        ctaText: next.ctaText,
+        ...(timed ? { triggerThreshold: next.delaySeconds } : {}),
+      },
+    }),
+    prisma.siteImprovementRecommendation.update({
+      where: { id: rec.id },
+      data: { status: RecommendationStatus.APPLIED, appliedAt: new Date(), proposal: applied as Prisma.InputJsonValue },
+    }),
+    prisma.auditEvent.create({
+      data: auditPayload(scope as ScopedContext, {
+        action: AuditAction.UPDATE,
+        entityType: "PopupCampaign",
+        entityId: campaign.id,
+        description: "Applied self-improve pop-up proposal",
+        diff: {
+          recommendationId: rec.id,
+          before: { ...cur, delaySeconds: campaign.triggerThreshold },
+          after: live,
+        } as Prisma.InputJsonValue,
+      }),
+    }),
+  ]);
+  revalidatePath("/portal/popups");
+  revalidatePath(`/portal/popups/${campaign.id}`);
+  if (rec.propertyId) revalidatePath(`/portal/properties/${rec.propertyId}`);
+  revalidateInsights();
+  return { ok: true, message: "Pop-up updated. Conversion is tracked from today." };
 }
 
 export async function dismissSiteRecommendation(

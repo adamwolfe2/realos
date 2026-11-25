@@ -38,7 +38,7 @@ const body = z.object({
   draft: z.object({
     personaName: z.string().max(100).optional(),
     greeting: z.string().max(500).optional(),
-    knowledgeBase: z.string().max(5000).optional(),
+    knowledgeBase: z.string().max(12_000).optional(), // matches lib/actions/chatbot-config.ts
     captureMode: z.nativeEnum(ChatbotCaptureMode).optional(),
   }),
 });
