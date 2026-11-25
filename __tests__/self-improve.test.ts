@@ -136,3 +136,13 @@ describe("generateProposals", () => {
     expect(by("Can I negotiate rent?").proposal.needsAnswer).toBe(true);
   });
 });
+
+describe("guards added after review", () => {
+  it("catches sex-based and postposed exclusions; CRLF KBs keep approved blocks", () => {
+    expect(isProtectedTopic("is there a women only floor?")).toBe(true);
+    expect(isSteering("Women-only floor available.")).toBe(true);
+    expect(isSteering("Families are not allowed in studios.")).toBe(true);
+    expect(isSteering("Pets are allowed with a deposit.")).toBe(false);
+    expect(approvedBlocks('Facts\r\n\r\nApproved answer (renters asked: "x"):\r\ny')).toHaveLength(1);
+  });
+});

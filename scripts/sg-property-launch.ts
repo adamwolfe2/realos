@@ -230,6 +230,7 @@ ${block}`;
   const kept = approvedBlocks(bot?.chatbotKnowledgeBase as string | null);
   const kb = [kbBase, ...kept].join("\n\n");
   if (kept.length) console.log(`  KB: keeping ${kept.length} approved answer block(s)`);
+  if (kb.length > 12_000) throw new Error(`KB is ${kb.length} chars, over the 12,000 limit: trim the facts file or the approved answers first`);
   if (args["show-kb"]) console.log(`----- KB -----\n${kb}\n--------------`);
   const botWant = {
     chatbotEnabled: true,

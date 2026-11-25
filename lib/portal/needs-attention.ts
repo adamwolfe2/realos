@@ -227,7 +227,7 @@ export async function getNeedsAttention(orgId: string, propertyIds: string[] | n
       title: `Chatbot couldn't answer ${qs.length} question${qs.length === 1 ? "" : "s"}`,
       detail: `"${qs[0].slice(0, 80)}"${fix ? " · proposed fixes are waiting in Suggested fixes" : " · add the answer to the knowledge base"}`,
       source: "LeaseStack chatbot",
-      href: fix ? "/portal/conversations/insights" : page(pid, "questions"),
+      href: fix ? `/portal/conversations/insights?property=${pid}` : page(pid, "questions"),
     });
   }
 

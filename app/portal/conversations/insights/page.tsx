@@ -120,11 +120,11 @@ export default async function ChatbotInsightsPage({
   });
 
   // Before/after for approved self-improve proposals.
-  // ponytail: each read scans up to 1000 chats; at most 8 measured per load.
+  // ponytail: each read scans up to 1000 chats; at most 5 per kind per load.
   const approved = [
-    ...learning.appliedKnowledge.map((k) => ({ row: k, p: readProposal(k.proposal) })),
-    ...learning.appliedProposals.map((r) => ({ row: r, p: readProposal(r.proposal) })),
-  ].filter((a) => a.p).slice(0, 8);
+    ...learning.appliedKnowledge.map((k) => ({ row: k, p: readProposal(k.proposal) })).filter((a) => a.p).slice(0, 5),
+    ...learning.appliedProposals.map((r) => ({ row: r, p: readProposal(r.proposal) })).filter((a) => a.p).slice(0, 5),
+  ];
   const proposalImpacts = new Map<string, ProposalImpact | null>(
     await Promise.all(
       approved.map(async ({ row, p }) => [row.id, p ? await proposalImpact(p, row).catch((err: unknown) => {
@@ -338,10 +338,10 @@ export default async function ChatbotInsightsPage({
                     <div className="min-w-0 flex-1">
                       <p className="text-[12px] text-muted-foreground">{r.property?.name ?? "Workspace"} · {r.suggestedTitle}</p>
                       <p className="text-[13px] text-foreground">{p?.popup ? `"${p.popup.proposed.headline}" · shows after ${p.popup.proposed.delaySeconds}s` : r.suggestedBody.split("\n")[0]}</p>
-                      <p className="mt-0.5 text-[12px] text-muted-foreground">{r.appliedAt ? `${p?.popup ? "Applied" : "Marked done"} ${format(r.appliedAt, "MMM d")}` : ""}</p>
+                      <p className="mt-0.5 text-[12px] text-muted-foreground">{r.appliedAt ? `${p?.popup ? "Applied" : "Marked planned"} ${format(r.appliedAt, "MMM d")}` : ""}</p>
                       <ProposalImpactLine impact={proposalImpacts.get(r.id) ?? null} appliedAt={r.appliedAt} />
                     </div>
-                    <span className="shrink-0 text-[12px] font-medium text-[#15803d]">{p?.popup ? "Live" : "Done"}</span>
+                    <span className="shrink-0 text-[12px] font-medium text-[#15803d]">{p?.popup ? "Live" : "Planned"}</span>
                   </li>
                 );
               })}

@@ -38,7 +38,7 @@ import {
 const MODEL = "claude-sonnet-4-5"; // same model as the SEO draft writer
 const MAX_QUESTIONS = 8; // per property per run
 const MAX_OUTPUT_TOKENS = 2000;
-const KB_CHARS = 9000;
+const KB_CHARS = 12_000; // the KB limit
 const POPUP_MIN_SHOWN = 100; // 28-day shows before conversion means anything
 const POPUP_WEAK_RATE = 0.02;
 export const PATTERN = "self_improve_answer";

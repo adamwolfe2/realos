@@ -2,6 +2,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { ArrowRight, ExternalLink, Scale } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { safeHttpUrl } from "@/lib/safe-url";
 import { METRIC_LABEL, change, formatMetric, type Proposal } from "@/lib/self-improve/proposal";
 import type { ProposalImpact } from "@/lib/self-improve/metrics";
 import { AnswerActions, PopupActions } from "./proposal-actions";
@@ -33,7 +34,7 @@ function MetricNow({ p }: { p: Proposal }) {
   const m = METRIC_LABEL[p.metric.key];
   return (
     <p className="mt-1.5 text-[12px] text-muted-foreground">
-      Should {m.lowerIsBetter ? "lower" : "raise"} {m.label.toLowerCase()}: now{" "}
+      Should {m.lowerIsBetter ? "lower" : "raise"} {m.label.toLowerCase()}: at proposal{" "}
       <span className="tabular-nums text-foreground">{formatMetric(p.metric.key, p.metric.value, p.metric.of)}</span> ({p.metric.days}d)
     </p>
   );
@@ -131,8 +132,8 @@ export function SiteProposalRow({ p, title, body, property, actions }: { p: Prop
       <p className="mt-0.5 whitespace-pre-line text-[13px] leading-5 text-foreground">{body}</p>
       <div className="mt-2 flex flex-wrap items-center gap-x-3 text-[12px] text-muted-foreground">
         <span>Proposal only: the site team makes the change.</span>
-        {p.link ? (
-          <a href={p.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline">
+        {safeHttpUrl(p.link) ? (
+          <a href={safeHttpUrl(p.link)!} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline">
             Open site <ExternalLink className="h-3 w-3" />
           </a>
         ) : null}

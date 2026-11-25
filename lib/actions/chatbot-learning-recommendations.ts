@@ -239,7 +239,8 @@ export async function applyPopupProposal(input: unknown): Promise<ActionResult> 
   });
   if (!campaign) return { ok: false, error: "The pop-up no longer exists." };
   const cur = proposal.popup.current;
-  if (campaign.headline !== cur.headline || campaign.body !== cur.body || campaign.ctaText !== cur.ctaText) {
+  const timedNow = campaign.trigger === "TIME_ON_PAGE";
+  if (campaign.headline !== cur.headline || campaign.body !== cur.body || campaign.ctaText !== cur.ctaText || (timedNow && campaign.triggerThreshold !== cur.delaySeconds)) {
     return { ok: false, error: "The pop-up was edited since this was proposed. Dismiss it; next week's run proposes from the new copy." };
   }
 

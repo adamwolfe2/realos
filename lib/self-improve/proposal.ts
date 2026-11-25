@@ -86,7 +86,7 @@ export function formatMetric(key: MetricKey, value: number, of: number | null): 
 // Act and California FEHA, incl. source of income such as Section 8). The
 // answer is a policy only SG can state, so these always need SG's answer.
 const PROTECTED_TOPIC =
-  /section\s*8|voucher|housing choice|source of income|subsidi[sz]|\bssi\b|\bssdi\b|welfare|disab|wheelchair|accessib|service (animal|dog)|emotional support|\besa\b|famil(y|ies)|\bkids?\b|child|pregnan|religio|church|mosque|synagogue|\brace\b|ethnic|national origin|immigra|citizen|\bssn\b|social security|gender|transgender|sexual orientation|\blgbt|marital|married|\bage\b|senior|elderly|veteran|military|criminal|felon|arrest/i;
+  /section\s*8|voucher|housing choice|source of income|subsidi[sz]|\bssi\b|\bssdi\b|welfare|disab|wheelchair|accessib|service (animal|dog)|emotional support|\besa\b|famil(y|ies)|\bkids?\b|child|pregnan|religio|church|mosque|synagogue|\brace\b|ethnic|national origin|immigra|citizen|\bssn\b|social security|gender|transgender|sexual orientation|\b(wom[ae]n|men|female|male|sex)\b|ancestry|\blgbt|marital|married|\bage\b|senior|elderly|veteran|military|criminal|felon|arrest/i;
 
 export function isProtectedTopic(question: string): boolean {
   return PROTECTED_TOPIC.test(question);
@@ -97,7 +97,7 @@ export const FAIR_HOUSING_NOTE =
 
 // Wording that would exclude or steer (never proposed, never applied).
 const STEERING =
-  /\b(no|not|don'?t|do not|cannot|can'?t|won'?t)\b[^.]{0,40}\b(section\s*8|vouchers?|subsidi\w*|assistance|children|kids|famil\w+|disab\w+|immigrants?)\b|\badults? only\b|\bno (kids|children)\b|\b(perfect|ideal|best) for (young|single|mature|christian)\b|\b(young|single) professionals only\b|\bmature (tenants|adults|residents)\b|\benglish[- ]speaking\b|\bchristian\b|\bchurch[- ]going\b/i;
+  /\b(no|not|don'?t|do not|cannot|can'?t|won'?t)\b[^.]{0,40}\b(section\s*8|vouchers?|subsidi\w*|assistance|children|kids|famil\w+|disab\w+|immigrants?)\b|\badults? only\b|\bno (kids|children)\b|\b(perfect|ideal|best) for (young|single|mature|christian)\b|\b(young|single) professionals only\b|\b(wom[ae]n|men|female|male|girls|boys)[- ]only\b|\b(families|children|kids|vouchers?|section\s*8|pets? and children)\b[^.]{0,30}\b(not|aren'?t|isn'?t|never)\b[^.]{0,15}\b(allowed|accepted|permitted|welcome)\b|\bmature (tenants|adults|residents)\b|\benglish[- ]speaking\b|\bchristian\b|\bchurch[- ]going\b/i;
 
 /** True when text excludes or steers by a protected class. */
 export function isSteering(text: string): boolean {
@@ -128,7 +128,7 @@ export function answerBlock(question: string, answer: string): string {
 /** Approved blocks in an existing KB (learning-loop and self-improve ones). */
 export function approvedBlocks(kb: string | null | undefined): string[] {
   if (!kb) return [];
-  return kb.split(/\n{2,}/).filter((b) => b.startsWith(APPROVED_PREFIX) || b.startsWith("Approved chatbot learning:"));
+  return kb.replace(/\r\n?/g, "\n").split(/\n{2,}/).filter((b) => b.startsWith(APPROVED_PREFIX) || b.startsWith("Approved chatbot learning:"));
 }
 
 // --- Weeks -----------------------------------------------------------------
@@ -159,7 +159,7 @@ export function measureWindow(appliedAt: Date, now: Date) {
 
 export type Measured = { key: MetricKey; days: number; before: { value: number; of: number | null }; after: { value: number; of: number | null } };
 
-/** Change as a signed rate delta (percentage points of the rate, or count %). */
+/** Relative % change of the rate (or of the count when there is no base). */
 export function change(m: Measured): { pct: number | null; better: boolean | null } {
   const rate = (x: { value: number; of: number | null }) => (x.of === null ? x.value : x.of ? x.value / x.of : null);
   const b = rate(m.before);

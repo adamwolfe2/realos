@@ -59,10 +59,12 @@ export async function generateProposalsAction(): Promise<
   // A double click must not pay for a second pass. ponytail: check-then-act;
   // a click racing the weekly cron can pay twice for a few cents (rows are
   // still unique on dedupeKey). Add a lock row if this ever matters.
-  const recent = await prisma.chatbotKnowledgeSuggestion.findFirst({
-    where: { orgId: scope.orgId, dedupeKey: { startsWith: "si:" }, createdAt: { gte: new Date(Date.now() - 2 * 60_000) } },
-    select: { id: true },
-  });
+  const fresh = { orgId: scope.orgId, dedupeKey: { startsWith: "si:" }, createdAt: { gte: new Date(Date.now() - 2 * 60_000) } };
+  const [recentKb, recentSite] = await Promise.all([
+    prisma.chatbotKnowledgeSuggestion.findFirst({ where: fresh, select: { id: true } }),
+    prisma.siteImprovementRecommendation.findFirst({ where: fresh, select: { id: true } }),
+  ]);
+  const recent = recentKb ?? recentSite;
   if (recent) return { ok: false, error: "Proposals were generated a moment ago. Try again in a few minutes." };
 
   const r = await generateProposals(scope.orgId, { propertyIds: effectivePropertyIds(scope, null), deadline: Date.now() + 240_000 });
@@ -73,6 +75,8 @@ export async function generateProposalsAction(): Promise<
     ok: true,
     message: made
       ? `${made} new proposal${made === 1 ? "" : "s"}: ${r.answers} drafted answers, ${r.needsAnswer} need SG's answer, ${r.popups} pop-up, ${r.site} website.${r.stoppedEarly ? " More next run." : ""}`
-      : "Nothing new to propose. Every current signal already has a proposal.",
+      : r.properties > r.llmCalls
+        ? "Drafting failed for some properties; nothing was saved for them. Try again later."
+        : "Nothing new to propose. Every current signal already has a proposal.",
   };
 }
