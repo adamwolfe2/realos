@@ -23,11 +23,11 @@ export function PropertyCockpitView({ data, now, toursOnPlan }: { data: Property
       <Funnel data={data} toursOnPlan={toursOnPlan} />
       <ListingsTable listings={data.listings} now={now} />
       <div className="grid items-start gap-4 lg:grid-cols-2">
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <SearchPanel data={data} />
           <ChatPanel data={data} />
         </div>
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <PagesPanel data={data} />
           <PopupPanel data={data} />
         </div>
@@ -73,7 +73,8 @@ function Funnel({ data, toursOnPlan }: { data: PropertyCockpit; toursOnPlan: boo
       {f.apps
         ? trendCell(
             "Applications",
-            f.apps,
+            // A hollow prior window is not drawn: no dashed line to compare.
+            f.appsComparable ? f.apps : { cur: f.apps.cur, prev: [] },
             data.today,
             f.appsComparable ? "AppFolio · by received date" : "AppFolio · no change: activated recently",
             "Primary applicants by the date AppFolio received them. Applicants can apply without becoming a website lead first, so this can exceed leads. No change is shown when the building was activated in LeaseStack too recently for a full prior 28 days.",
@@ -104,33 +105,36 @@ function ListingsTable({ listings, now }: { listings: CockpitListing[]; now: num
     <Panel title="Advertised units" aside={<span title={`Days listed tracked since ${sinceDay}`}>{listings.length} on AppFolio</span>} flush>
       {listings.length ? (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[620px] border-collapse text-[13px]">
+          <table className="w-full border-collapse text-[13px] sm:min-w-[620px]">
             <thead>
               <tr className="border-b border-[var(--t-divider)] text-[12px] text-[var(--t-muted)]">
                 <th scope="col" className="sticky left-0 z-10 h-9 bg-[var(--t-card)] pl-4 pr-2 text-left font-medium">Unit</th>
-                <th scope="col" className="px-2 text-left font-medium">Kind</th>
-                <th scope="col" className="px-2 text-right font-medium">Beds</th>
+                <th scope="col" className="hidden px-2 text-left font-medium sm:table-cell">Kind</th>
+                <th scope="col" className="hidden px-2 text-right font-medium sm:table-cell">Beds</th>
                 <th scope="col" className="px-2 text-right font-medium">Rent</th>
                 <th scope="col" className="px-2 text-right font-medium" title={`Days since LeaseStack first saw it advertised. Listings advertised before ${sinceDay} show at least that many days.`}>Listed</th>
                 <th scope="col" className="px-2 text-right font-medium" title="AppFolio ready-for-showing date">Move-in</th>
-                <th scope="col" className="pl-2 pr-4 text-right font-medium" title="Where AppFolio posts it">Posted</th>
+                <th scope="col" className="hidden pl-2 pr-4 text-right font-medium sm:table-cell" title="Where AppFolio posts it">Posted</th>
               </tr>
             </thead>
             <tbody>
               {listings.map((l) => (
                 <tr key={l.id} className="border-b border-[var(--t-divider)] last:border-0">
-                  <td className="sticky left-0 z-10 max-w-[220px] truncate bg-[var(--t-card)] py-2 pl-4 pr-2 text-[var(--t-ink)]" title={l.unit}>{l.unit}</td>
-                  <td className="whitespace-nowrap px-2 text-[var(--t-text)]">
+                  <td className="sticky left-0 z-10 max-w-[150px] bg-[var(--t-card)] py-2 pl-4 pr-2 text-[var(--t-ink)] sm:max-w-[220px]" title={l.unit}>
+                    <span className="block truncate">{l.unit}</span>
+                    <span className="block text-[11.5px] text-[var(--t-muted)] sm:hidden">{KIND[l.kind]}{l.nextTerm ? " · pre-lease" : ""}</span>
+                  </td>
+                  <td className="hidden whitespace-nowrap px-2 text-[var(--t-text)] sm:table-cell">
                     {KIND[l.kind]}
                     {l.nextTerm ? <span className="ml-1.5 text-[11.5px] text-[var(--t-muted)]">pre-lease</span> : null}
                   </td>
-                  <td className="px-2 text-right tabular-nums text-[var(--t-text)]">{l.beds === null ? "—" : l.beds === 0 ? "Studio" : fmt.format(l.beds)}</td>
+                  <td className="hidden px-2 text-right tabular-nums text-[var(--t-text)] sm:table-cell">{l.beds === null ? "—" : l.beds === 0 ? "Studio" : fmt.format(l.beds)}</td>
                   <td className="whitespace-nowrap px-2 text-right tabular-nums text-[var(--t-ink)]">{l.priceCents === null ? <span className="text-[var(--t-muted)]">No price</span> : usd(l.priceCents)}</td>
                   <td className="whitespace-nowrap px-2 text-right tabular-nums text-[var(--t-text)]">{daysListed(l, now)}</td>
                   <td className="whitespace-nowrap px-2 text-right tabular-nums text-[var(--t-text)]">
                     {l.availableFrom ? (l.availableFrom.getTime() <= now ? "Now" : day.format(l.availableFrom)) : "—"}
                   </td>
-                  <td className="whitespace-nowrap pl-2 pr-4 text-right text-[12px] text-[var(--t-muted)]">
+                  <td className="hidden whitespace-nowrap pl-2 pr-4 text-right text-[12px] text-[var(--t-muted)] sm:table-cell">
                     {[l.posted.website && "Site", l.posted.internet && "Syndicated"].filter(Boolean).join(" · ") || "—"}
                   </td>
                 </tr>

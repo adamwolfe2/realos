@@ -116,14 +116,20 @@ function asYes(v: unknown): boolean {
 export async function getPropertyCockpit(orgId: string, propertyId: string): Promise<PropertyCockpit> {
   const now = Date.now();
   const today = dayStart(now);
-  const since = new Date(today - 2 * WINDOW * DAY);
+  // Two equal 28-day windows: [since, cur) and [cur, today], today partial.
+  const since = new Date(today - (2 * WINDOW - 1) * DAY);
   const cur = new Date(today - (WINDOW - 1) * DAY);
   const where = { orgId, propertyId };
+  // Ownership first: every query below is scoped to this org's property.
+  const property = await prisma.property.findFirst({
+    where: { id: propertyId, orgId },
+    select: { lastSyncedAt: true, backendPlatform: true, lifecycleSetAt: true, chatbotConfig: { select: { chatbotEnabled: true } } },
+  });
+  if (!property) throw new Error(`property ${propertyId} not found in org`);
 
-  const [property, listings, snapshots, seo, queries, pages, convs, leads, apps, popup, popupLive, suggestions, appfolio] = await Promise.all([
-    prisma.property.findFirst({ where: { id: propertyId, orgId }, select: { lastSyncedAt: true, backendPlatform: true, lifecycleSetAt: true, chatbotConfig: { select: { chatbotEnabled: true } } } }),
+  const [listings, snapshots, seo, queries, pages, convDates, curConvs, lastChatRow, leads, apps, popupCur, popupPrev, popupSignups, popupLast, popupLive, suggestions, appfolio] = await Promise.all([
     prisma.listing.findMany({
-      where: { propertyId, isAvailable: true },
+      where: { propertyId, property: { orgId }, isAvailable: true },
       select: { id: true, unitNumber: true, unitType: true, bedrooms: true, priceCents: true, listedAt: true, availableFrom: true, raw: true },
     }),
     prisma.seoSnapshot.findMany({ where: { ...where, date: { gte: since } }, select: { date: true, organicSessions: true, totalClicks: true } }),
@@ -145,19 +151,26 @@ export async function getPropertyCockpit(orgId: string, propertyId: string): Pro
       orderBy: { _sum: { sessions: "desc" } },
       take: 12,
     }),
+    prisma.chatbotConversation.findMany({ where: { ...where, createdAt: { gte: since } }, select: { createdAt: true } }),
+    // Transcripts only for the current window (questions, page attribution).
+    // ponytail: newest 1000 chats; a property past that needs a rollup.
     prisma.chatbotConversation.findMany({
-      where: { ...where, createdAt: { gte: since } },
+      where: { ...where, createdAt: { gte: cur } },
       select: { createdAt: true, messages: true, pageUrl: true, leadId: true },
       orderBy: { createdAt: "desc" },
-      take: 2000,
+      take: 1000,
     }),
+    prisma.chatbotConversation.findFirst({ where, orderBy: { createdAt: "desc" }, select: { createdAt: true } }),
     // AppFolio-imported applicants are counted under applications.
     prisma.lead.findMany({
       where: { ...where, createdAt: { gte: since }, OR: [{ externalSystem: null }, { externalSystem: { not: "appfolio" } }] },
       select: { createdAt: true, source: true, sourceDetail: true },
     }),
-    prisma.application.findMany({ where: { propertyId, applicantRole: "PRIMARY", receivedAt: { gte: since } }, select: { receivedAt: true } }),
-    prisma.popupEvent.findMany({ where: { ...where, occurredAt: { gte: since } }, select: { type: true, occurredAt: true, pageUrl: true } }),
+    prisma.application.findMany({ where: { propertyId, property: { orgId }, applicantRole: "PRIMARY", receivedAt: { gte: since } }, select: { receivedAt: true } }),
+    prisma.popupEvent.groupBy({ by: ["type"], where: { ...where, occurredAt: { gte: cur } }, _count: { _all: true } }),
+    prisma.popupEvent.groupBy({ by: ["type"], where: { ...where, occurredAt: { gte: since, lt: cur } }, _count: { _all: true } }),
+    prisma.popupEvent.findMany({ where: { ...where, type: "CONVERTED", occurredAt: { gte: cur } }, select: { pageUrl: true } }),
+    prisma.popupEvent.aggregate({ where, _max: { occurredAt: true } }),
     prisma.popupCampaign.count({ where: { orgId, status: "ACTIVE", OR: [{ propertyId }, { propertyId: null }] } }),
     prisma.chatbotKnowledgeSuggestion.findMany({
       where: { ...where, status: "OPEN" },
@@ -180,8 +193,6 @@ export async function getPropertyCockpit(orgId: string, propertyId: string): Pro
   const ga4 = seo.find((s) => s.provider === "GA4") ?? null;
   const gsc = seo.find((s) => s.provider === "GSC") ?? null;
   const yesterday = today - DAY; // GA4/GSC land a day behind
-  const curConvs = convs.filter((c) => c.createdAt >= cur);
-  const curPopup = popup.filter((e) => e.occurredAt >= cur);
 
   // Leads per landing page: chats that captured a lead + pop-up sign-ups.
   const leadsByPath = new Map<string, number>();
@@ -190,7 +201,7 @@ export async function getPropertyCockpit(orgId: string, propertyId: string): Pro
     if (p) leadsByPath.set(p, (leadsByPath.get(p) ?? 0) + 1);
   };
   for (const c of curConvs) if (c.leadId) addLead(c.pageUrl);
-  for (const e of curPopup) if (e.type === "CONVERTED") addLead(e.pageUrl);
+  for (const e of popupSignups) addLead(e.pageUrl);
 
   const pageRows = new Map<string, PageRow>();
   for (const p of pages) {
@@ -228,20 +239,19 @@ export async function getPropertyCockpit(orgId: string, propertyId: string): Pro
     }
   }
 
-  const count = (rows: typeof popup, type: string, from: Date, to?: Date) =>
-    rows.filter((e) => e.type === type && e.occurredAt >= from && (!to || e.occurredAt < to)).length;
-  const lastChat = convs[0]?.createdAt ?? null;
-  const lastPopup = popup.reduce<Date | null>((d, e) => (!d || e.occurredAt > d ? e.occurredAt : d), null);
-  const appfolioOn = Boolean(appfolio) && property?.backendPlatform === "APPFOLIO";
+  const count = (rows: typeof popupCur, type: string) => rows.find((r) => r.type === type)?._count._all ?? 0;
+  const lastChat = lastChatRow?.createdAt ?? null;
+  const lastPopup = popupLast._max.occurredAt ?? null;
+  const appfolioOn = Boolean(appfolio) && property.backendPlatform === "APPFOLIO";
 
   return {
     today: new Date(today),
     funnel: {
       visitors: ga4 || gsc ? bucket(snapshots.map((s) => ({ at: s.date, n: Math.max(s.organicSessions, s.totalClicks) })), yesterday) : null,
-      chats: bucket(convs.map((c) => ({ at: c.createdAt })), today),
+      chats: bucket(convDates.map((c) => ({ at: c.createdAt })), today),
       leads: bucket(leads.map((l) => ({ at: l.createdAt })), today),
       leadMix: mix(leads.filter((l) => l.createdAt >= cur)),
-      appsComparable: !property?.lifecycleSetAt || property.lifecycleSetAt.getTime() <= since.getTime() + 30 * DAY,
+      appsComparable: !property.lifecycleSetAt || property.lifecycleSetAt.getTime() <= since.getTime() + 30 * DAY,
       apps: appfolioOn ? bucket(apps.map((a) => ({ at: a.receivedAt! })), today) : null,
     },
     listings: listings
@@ -277,23 +287,23 @@ export async function getPropertyCockpit(orgId: string, propertyId: string): Pro
       suggestions: suggestions.map((s) => ({ id: s.id, text: s.suggestedText, affected: s.affectedCount })),
       conversations: curConvs.length,
     },
-    popup: popupLive || popup.length
+    popup: popupLive || lastPopup
       ? {
-          shown: count(popup, "SHOWN", cur),
-          clicked: count(popup, "CTA_CLICKED", cur),
-          converted: count(popup, "CONVERTED", cur),
-          prevShown: count(popup, "SHOWN", since, cur),
-          prevConverted: count(popup, "CONVERTED", since, cur),
+          shown: count(popupCur, "SHOWN"),
+          clicked: count(popupCur, "CTA_CLICKED"),
+          converted: count(popupCur, "CONVERTED"),
+          prevShown: count(popupPrev, "SHOWN"),
+          prevConverted: count(popupPrev, "CONVERTED"),
           live: popupLive > 0,
         }
       : null,
     health: [
-      freshness("AppFolio", appfolioOn ? property?.lastSyncedAt ?? null : null, now, 36, appfolioOn ? appfolio?.lastError : null),
+      freshness("AppFolio", appfolioOn ? property.lastSyncedAt ?? null : null, now, 36, appfolioOn ? appfolio?.lastError : null),
       freshness("GA4", ga4?.lastSyncAt ?? null, now, 36, ga4?.lastSyncError),
       freshness("Search Console", gsc?.lastSyncAt ?? null, now, 36, gsc?.lastSyncError),
       // Chat and pop-up have no sync: freshness is the last event seen. A
       // live bot or pop-up with nothing yet is "waiting", not "not connected".
-      activity("Chatbot", property?.chatbotConfig ? Boolean(property.chatbotConfig.chatbotEnabled) : Boolean(lastChat), lastChat, now, 24 * 7),
+      activity("Chatbot", property.chatbotConfig ? Boolean(property.chatbotConfig.chatbotEnabled) : Boolean(lastChat), lastChat, now, 24 * 7),
       activity("Pop-up", popupLive > 0 || Boolean(lastPopup), lastPopup, now, 24 * 3),
     ],
   };

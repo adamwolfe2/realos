@@ -248,12 +248,6 @@ export async function OverviewTab({
         },
       })
       .catch(() => [] as Array<ActivityMentionRow>),
-    // Norman feedback (issue #75): the Marketing box was rendering
-    // static counts (listings, all-time leads) that didn't reflect the
-    // operator's day-to-day marketing performance. We add chatbot
-    // conversations and visitor-session aggregates here so the new
-    // Marketing section can show data-backed, time-windowed metrics
-    // (28-day window matches every other KPI on this page).
     getPropertyCockpit(orgId, propertyId).catch((err) => {
       console.error("[property.overview] cockpit failed", { propertyId, err });
       return null;
@@ -414,7 +408,13 @@ export async function OverviewTab({
             data health for this one property, ahead of the activity feed.
             Replaces MarketingSection (its funnel printed tours as 0 on an
             AppFolio plan without the showings report). */}
-        {cockpit ? <PropertyCockpitView data={cockpit} now={Date.now()} toursOnPlan={showingsOnPlan(appfolioStatus?.stats)} /> : null}
+        {cockpit ? (
+          <PropertyCockpitView data={cockpit} now={Date.now()} toursOnPlan={showingsOnPlan(appfolioStatus?.stats)} />
+        ) : (
+          <p className="rounded-[var(--t-radius)] border border-[var(--t-border)] bg-[var(--t-card)] px-4 py-3 text-[13px] text-[var(--t-muted)]">
+            Property metrics couldn&apos;t load right now. Refresh to try again.
+          </p>
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.75fr)_minmax(280px,0.75fr)] gap-4">
           {/* LEFT — the work. */}
           <div className="space-y-4 min-w-0">
@@ -457,9 +457,6 @@ export async function OverviewTab({
               lastSyncedAt={property.lastSyncedAt}
             />
 
-            {/* MarketingCard moved to main column as <MarketingSection>
-                per issue #75. Description + price-range still useful
-                context; surfaced inline on the meta card instead. */}
             {(property.description || priceRange) ? (
               <PropertyDescriptionCard
                 description={property.description}
