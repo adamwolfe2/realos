@@ -238,7 +238,7 @@
 [data-theme] .portal-main tbody tr:hover { background-color: var(--t-wash); }
 [data-theme] :is(input, textarea, select):focus {
   border-color: var(--t-accent) !important;
-  box-shadow: 0 0 0 3px rgba(31, 94, 255, 0.12);
+  box-shadow: 0 0 0 3px rgba(27, 84, 232, 0.12);
   outline: none;
 }
 [data-theme] :is(button, a, [role="button"], [role="tab"], summary):focus-visible {

@@ -154,7 +154,7 @@ export function FeedRow({ mention }: { mention: PortfolioReputationFeedItem }) {
             ) : null}
             {sentiment && sentimentTone ? (
               <span
-                className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold border ${sentimentTone} ${lowConfidence ? "opacity-60" : ""}`}
+                className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold border ${sentimentTone} ${lowConfidence ? "border-dashed" : ""}`}
                 title={
                   mention.sentimentConfidence != null
                     ? `Confidence ${Math.round(mention.sentimentConfidence * 100)}%`

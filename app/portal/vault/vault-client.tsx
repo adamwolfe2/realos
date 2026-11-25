@@ -723,7 +723,7 @@ function ImportModal({
             </div>
           ) : null}
           {result ? (
-            <div className="rounded-[2px] border border-success/20 bg-success/10 px-3 py-2 text-xs text-success">
+            <div className="rounded-[2px] border border-success/20 bg-success/10 px-3 py-2 text-xs text-success-dark">
               <p className="font-medium">
                 Imported {result.created} credentials · skipped{" "}
                 {result.skipped}

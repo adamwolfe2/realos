@@ -540,7 +540,12 @@ function Field({
   // Link the label to a single form control so it has an accessible name.
   // Grids of option buttons (div children) keep a plain heading label.
   const autoId = useId();
-  const single = isValidElement<{ id?: string }>(children) && children.type !== "div";
+  // Only real form controls take the id; composite widgets (chip groups,
+  // option grids) keep a plain heading label.
+  const single =
+    isValidElement<{ id?: string }>(children) &&
+    (children.type === Input ||
+      (typeof children.type === "string" && ["input", "select", "textarea"].includes(children.type)));
   const id = single ? (children.props.id ?? autoId) : undefined;
   const control = single ? cloneElement(children, { id }) : null;
   return (

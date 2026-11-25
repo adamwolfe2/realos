@@ -17,7 +17,7 @@ const BRAND = "#0f62fe";
 const BRAND_LIGHT = "#93C5FD";
 const INK = "#1E2A3A";
 const MUTED = "#94A3B8";
-const SUCCESS = "#059669";
+const SUCCESS = "#047857"; // AA as text on white
 const DANGER = "#DC2626";
 const BORDER = "#E2E8F0";
 
