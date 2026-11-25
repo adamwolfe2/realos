@@ -50,7 +50,7 @@ function Cell({ label, value, delta, source, children, title }: {
       </dt>
       <dd className="mt-1 text-[24px] font-semibold leading-tight tracking-[-0.02em] tabular-nums text-[var(--t-ink)]">{value}</dd>
       <div className="mt-2 min-h-[56px] flex-1">{children}</div>
-      <p className="mt-2 truncate text-[11.5px] text-[var(--t-muted)]">{source}</p>
+      <p className="mt-2 text-[11.5px] leading-snug text-[var(--t-muted)]">{source}</p>
     </div>
   );
 }

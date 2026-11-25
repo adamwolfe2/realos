@@ -44,6 +44,12 @@ export type PortfolioOverview = {
   today: Date;
 };
 
+// Next-term / floor-plan listings ("Prelease 2B/2B 2027-2028", "Spring
+// Double 2027") advertise a future lease, not a vacant unit; their AppFolio
+// ready date is a template leftover (The Den's read 2023), so they are left
+// out of days-ready.
+export const NEXT_TERM = /pre[\s-]?leas|spring|fall|summer|20\d\d|\b\d\d\/\d\d\b/i;
+
 const dayStart = (t: number) => Math.floor(t / DAY) * DAY;
 
 /** Daily buckets for the WINDOW days ending on `end` (inclusive) and the WINDOW before. */
@@ -104,7 +110,7 @@ export async function getPortfolioOverview(orgId: string, propertyIds: string[] 
   const inProps = { propertyId: { in: ids } };
 
   const [listings, snapshots, seo, chats, leads, apps, appfolio] = await Promise.all([
-    prisma.listing.findMany({ where: { ...inProps, isAvailable: true }, select: { propertyId: true, priceCents: true, availableFrom: true } }),
+    prisma.listing.findMany({ where: { ...inProps, isAvailable: true }, select: { propertyId: true, priceCents: true, availableFrom: true, unitNumber: true } }),
     prisma.seoSnapshot.findMany({ where: { orgId, ...inProps, date: { gte: since } }, select: { propertyId: true, date: true, organicSessions: true, totalClicks: true } }),
     prisma.seoIntegration.findMany({ where: { orgId, ...inProps, serviceAccountJsonEncrypted: { not: "DEMO_SEED" } }, select: { propertyId: true, lastSyncAt: true, lastSyncError: true } }),
     prisma.chatbotConversation.findMany({ where: { orgId, ...inProps, createdAt: { gte: since } }, select: { propertyId: true, createdAt: true } }),
@@ -141,7 +147,7 @@ export async function getPortfolioOverview(orgId: string, propertyIds: string[] 
     const ls = listingsBy.get(p.id) ?? [];
     const prices = ls.map((l) => l.priceCents).filter((c): c is number => typeof c === "number" && c >= 10_000);
     const readyDays = ls
-      .filter((l) => l.availableFrom && l.availableFrom.getTime() <= now)
+      .filter((l) => l.availableFrom && l.availableFrom.getTime() <= now && !NEXT_TERM.test(l.unitNumber ?? ""))
       .map((l) => Math.floor((now - l.availableFrom!.getTime()) / DAY));
     const seoRows = seoBy.get(p.id) ?? [];
     const lastSeo = seoRows.reduce<Date | null>((d, r) => (r.lastSyncAt && (!d || r.lastSyncAt > d) ? r.lastSyncAt : d), null);

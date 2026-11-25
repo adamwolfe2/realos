@@ -22,7 +22,7 @@ const COLS: { key: Key; label: string; title: string; align?: "left" }[] = [
   { key: "name", label: "Property", title: "Sort by name", align: "left" },
   { key: "available", label: "Available", title: "Units and floor plans advertised on AppFolio now" },
   { key: "rent", label: "Asking rent", title: "Lowest to highest advertised rent on available listings (AppFolio)" },
-  { key: "ready", label: "Days ready", title: "Median days since AppFolio's ready-for-showing date, for units already past it. Listing age (first listed) isn't tracked yet." },
+  { key: "ready", label: "Days ready", title: "Median days since AppFolio's ready-for-showing date, for units already past it (pre-lease and next-term listings left out). Listing age (first listed) isn't tracked yet." },
   { key: "visitors", label: "Organic visitors", title: "Search visits, last 28 days (larger of GA4 organic sessions and Search Console clicks per day)" },
   { key: "chats", label: "Chats", title: "Chatbot conversations, last 28 days" },
   { key: "leads", label: "Leads", title: "Website leads (chat, pop-up, forms), last 28 days" },
@@ -62,7 +62,7 @@ export function PortfolioTable({ rows, now }: { rows: PortfolioRow[]; now: numbe
 
   return (
     <div className="overflow-x-auto rounded-[var(--t-radius)] border border-[var(--t-border)] bg-[var(--t-card)] shadow-[var(--t-shadow)]">
-      <table className="w-full min-w-[860px] border-collapse text-[13px]">
+      <table className="w-full min-w-[700px] border-collapse text-[13px] sm:min-w-[860px]">
         <thead>
           <tr className="border-b border-[var(--t-divider)]">
             {COLS.map((c, i) => {
@@ -73,16 +73,16 @@ export function PortfolioTable({ rows, now }: { rows: PortfolioRow[]; now: numbe
                   scope="col"
                   aria-sort={on ? (sort.desc ? "descending" : "ascending") : "none"}
                   className={cn(
-                    "h-10 whitespace-nowrap px-3 font-medium text-[var(--t-muted)]",
+                    "h-10 whitespace-nowrap px-2 font-medium text-[var(--t-muted)] sm:px-3",
                     c.align === "left" ? "text-left" : "text-right",
-                    i === 0 && "sticky left-0 z-10 bg-[var(--t-card)] pl-4",
+                    i === 0 && "sticky left-0 z-10 bg-[var(--t-card)] pl-3 sm:pl-4",
                   )}
                 >
                   <button
                     type="button"
                     title={c.title}
                     onClick={() => setSort((s) => ({ key: c.key, desc: s.key === c.key ? !s.desc : c.key !== "name" }))}
-                    className={cn("inline-flex items-center gap-1 text-[12px] hover:text-[var(--t-ink)]", on && "text-[var(--t-ink)]")}
+                    className={cn("inline-flex items-center gap-1 rounded-sm text-[12px] outline-none hover:text-[var(--t-ink)] focus-visible:ring-2 focus-visible:ring-[var(--t-accent)]/40", on && "text-[var(--t-ink)]")}
                   >
                     {c.label}
                     {on ? (sort.desc ? <ArrowDown className="h-3 w-3" aria-hidden /> : <ArrowUp className="h-3 w-3" aria-hidden />) : null}
@@ -102,12 +102,12 @@ export function PortfolioTable({ rows, now }: { rows: PortfolioRow[]; now: numbe
                 onClick={() => router.push(`/portal/properties/${r.id}`)}
                 className="group cursor-pointer border-b border-[var(--t-divider)] last:border-0 hover:bg-[var(--t-wash)]"
               >
-                <td className="sticky left-0 z-10 bg-[var(--t-card)] py-2 pl-4 pr-3 group-hover:bg-[var(--t-wash)]">
-                  <Link href={`/portal/properties/${r.id}`} onClick={(e) => e.stopPropagation()} className="flex min-w-0 items-center gap-2.5">
+                <td className="sticky left-0 z-10 bg-[var(--t-card)] py-2 pl-3 pr-2 shadow-[1px_0_0_var(--t-divider)] group-hover:bg-[var(--t-wash)] sm:pl-4 sm:pr-3 sm:shadow-none">
+                  <Link href={`/portal/properties/${r.id}`} onClick={(e) => e.stopPropagation()} className="flex min-w-0 items-center gap-2.5 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--t-accent)]/40">
                     <PropertyAvatar src={r.image} size="sm" className="rounded-md" />
                     <span className="min-w-0">
-                      <span className="block max-w-[180px] truncate font-medium text-[var(--t-ink)]">{r.name}</span>
-                      {r.city ? <span className="block text-[11.5px] text-[var(--t-muted)]">{r.city}</span> : null}
+                      <span className="block max-w-[96px] truncate font-medium text-[var(--t-ink)] sm:max-w-[180px]">{r.name}</span>
+                      {r.city ? <span className="hidden text-[11.5px] text-[var(--t-muted)] sm:block">{r.city}</span> : null}
                     </span>
                   </Link>
                 </td>
@@ -118,13 +118,13 @@ export function PortfolioTable({ rows, now }: { rows: PortfolioRow[]; now: numbe
                 <Num title={r.readyDaysMedian === null ? "No unit past its ready date" : `Median of ${r.readyCount} unit${r.readyCount === 1 ? "" : "s"} past AppFolio's ready-for-showing date; oldest ${fmt.format(r.readyDaysOldest!)} days`}>
                   {r.readyDaysMedian === null ? <Dash /> : <>{fmt.format(r.readyDaysMedian)}<span className="text-[var(--t-muted)]">d</span></>}
                 </Num>
-                <td className="px-3 py-2 text-right" title={vis === null ? "GA4 / Search Console not connected for this site" : `${vis} search visits, last 28 days vs ${fmt.format(r.visitors!.prev.reduce((a, n) => a + n, 0))} the 28 before`}>
+                <td className="px-2 py-2 text-right sm:px-3" title={vis === null ? "GA4 / Search Console not connected for this site" : `${vis} search visits, last 28 days vs ${fmt.format(r.visitors!.prev.reduce((a, n) => a + n, 0))} the 28 before`}>
                   {vis === null ? (
                     <span className="text-[12px] text-[var(--t-muted)]">Not connected</span>
                   ) : (
-                    <span className="inline-flex items-center justify-end gap-2.5">
+                    <span className="inline-flex items-center justify-end gap-2.5 align-middle">
                       <Spark data={r.visitors!.cur} />
-                      <span className="w-9 tabular-nums text-[var(--t-ink)]">{fmt.format(vis)}</span>
+                      <span className="w-9 leading-none tabular-nums text-[var(--t-ink)]">{fmt.format(vis)}</span>
                     </span>
                   )}
                 </td>
@@ -139,12 +139,21 @@ export function PortfolioTable({ rows, now }: { rows: PortfolioRow[]; now: numbe
           })}
         </tbody>
       </table>
+      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-[var(--t-divider)] px-4 py-2.5 text-[11.5px] text-[var(--t-muted)]">
+        <span>Data dots: AppFolio, GA4 + Search Console, chatbot</span>
+        {(["fresh", "stale", "error", "off"] as const).map((k) => (
+          <span key={k} className="inline-flex items-center gap-1.5">
+            <span aria-hidden className="h-2 w-2 rounded-full" style={{ background: DOT[k] }} />
+            {{ fresh: "Synced", stale: "Over 36h old", error: "Sync failed", off: "Not connected" }[k]}
+          </span>
+        ))}
+      </p>
     </div>
   );
 }
 
 function Num({ children, title }: { children: React.ReactNode; title: string }) {
-  return <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums text-[var(--t-ink)]" title={title}>{children}</td>;
+  return <td className="whitespace-nowrap px-2 py-2 text-right tabular-nums text-[var(--t-ink)] sm:px-3" title={title}>{children}</td>;
 }
 
 function Dash() {
@@ -157,7 +166,7 @@ function Spark({ data }: { data: number[] }) {
   const max = Math.max(1, ...data);
   const pts = data.map((v, i) => `${((i / (data.length - 1)) * W).toFixed(1)},${(H - 1 - (v / max) * (H - 3)).toFixed(1)}`).join(" ");
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} aria-hidden className="shrink-0">
+    <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} aria-hidden className="hidden shrink-0 sm:block">
       <polyline points={pts} fill="none" stroke="var(--t-accent)" strokeWidth="1.25" strokeLinejoin="round" />
     </svg>
   );
