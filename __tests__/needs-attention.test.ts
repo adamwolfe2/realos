@@ -52,6 +52,7 @@ describe("siteLive", () => {
     expect(siteLive("not a url")).toBe(false);
     expect(siteLive("liveatthelair.com")).toBe(true); // no scheme
     expect(siteLive("rumi-at-king.vercel.app")).toBe(false);
+    expect(siteLive("https://telegraph.leasestack.co")).toBe(false);
     expect(siteLive("https://www.liveatthelair.com")).toBe(true);
     expect(siteLive("https://2737durant.com")).toBe(true);
   });

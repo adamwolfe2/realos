@@ -16,8 +16,8 @@ export type Series = { cur: number[]; prev: number[] }; // daily, oldest first
 /** "prelaunch": the site is not live on its own domain yet, so there is nothing to connect. */
 export type SourceHealth = { state: "fresh" | "stale" | "error" | "off" | "prelaunch"; at: Date | null; error?: string | null };
 
-/** Hosts that serve previews, not a property's live site. */
-const PREVIEW_HOST = /(^localhost$)|\.(vercel\.app|netlify\.app|pages\.dev|github\.io)$/i;
+/** Hosts that serve previews, not a property's live site (*.leasestack.co is the platform fallback host). */
+const PREVIEW_HOST = /(^localhost$)|\.(vercel\.app|netlify\.app|pages\.dev|github\.io|leasestack\.co)$/i;
 
 /** True when the property's website is live on its own domain. No URL, an
  *  unparseable one, or a preview host (SG's *.vercel.app drafts) = not live:

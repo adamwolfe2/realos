@@ -125,7 +125,7 @@ export function PortfolioTable({ rows, now }: { rows: PortfolioRow[]; now: numbe
                 <Num title={listedTitle(r.listed)}>
                   {r.listed.median === null ? <Dash /> : r.listed.atLeast && r.listed.median < 1 ? <span className="text-[12px] text-[var(--t-muted)]">Tracking</span> : <>{r.listed.atLeast ? <span className="text-[var(--t-muted)]">≥</span> : null}{fmt.format(r.listed.median)}<span className="text-[var(--t-muted)]">d</span></>}
                 </Num>
-                <td className="px-2 py-2 text-right sm:px-3" title={vis === null ? (r.live ? "GA4 / Search Console not connected for this site" : "The site is still a preview, not live on its own domain: GA4 / Search Console connect at launch") : `${vis} search visits, last 28 days vs ${fmt.format(r.visitors!.prev.reduce((a, n) => a + n, 0))} the 28 before`}>
+                <td className="px-2 py-2 text-right sm:px-3" title={vis === null ? (r.live ? "GA4 / Search Console not connected for this site" : "The site isn't live on its own domain yet: GA4 / Search Console connect at launch") : `${vis} search visits, last 28 days vs ${fmt.format(r.visitors!.prev.reduce((a, n) => a + n, 0))} the 28 before`}>
                   {vis === null ? (
                     <span className="text-[12px] text-[var(--t-muted)]">{r.live ? "Not connected" : "Not live yet"}</span>
                   ) : (

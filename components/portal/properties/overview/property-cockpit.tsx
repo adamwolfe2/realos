@@ -69,7 +69,7 @@ function Funnel({ data, toursOnPlan }: { data: PropertyCockpit; toursOnPlan: boo
         ? trendCell("Organic visitors", f.visitors, data.today, "GA4 + Search Console", "Search visits per day (larger of GA4 organic sessions and Search Console clicks), last 28 days vs the 28 before.", 1)
         : data.live
           ? <Cell label="Organic visitors" value="—" source="GA4 + Search Console" title="No GA4 or Search Console connected for this site."><Gap>Not connected</Gap></Cell>
-          : <Cell label="Organic visitors" value="—" source="GA4 + Search Console" title="The site is still a preview, not live on its own domain. GA4 and Search Console connect at launch."><Gap>Not live yet</Gap></Cell>}
+          : <Cell label="Organic visitors" value="—" source="GA4 + Search Console" title="The site isn't live on its own domain yet. GA4 and Search Console connect at launch."><Gap>Not live yet</Gap></Cell>}
       {trendCell("Chats", f.chats, data.today, v ? `${pct(c, v)} of visitors · chatbot` : "LeaseStack chatbot", "Chatbot conversations started, last 28 days vs the 28 before.")}
       {trendCell("Website leads", f.leads, data.today, `Chat ${f.leadMix.chat} · Pop-up ${f.leadMix.popup} · Other ${f.leadMix.other}`, "Leads captured on the site, last 28 days vs the 28 before. AppFolio applicants count under Applications.")}
       {f.apps
