@@ -154,7 +154,7 @@ export default async function PortalDraftsListPage({
           <p className="text-xs font-semibold text-foreground line-clamp-2 leading-tight">
             {d.targetQuery
               ? d.targetQuery.charAt(0).toUpperCase() + d.targetQuery.slice(1)
-              : `${d.format.replace(/_/g, " ").toLowerCase().replace(/^./, (c) => c.toUpperCase())} draft`}
+              : `${d.format.replace(/_/g, " ").toLowerCase().replace(/^./, (c) => c.toUpperCase())} draft · ${d.createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
           </p>
           {d.reviewNotes ? (
             <p className="text-[11px] text-foreground line-clamp-2 leading-tight mt-0.5">

@@ -125,7 +125,7 @@ function renderBody(event: TimelineEvent): React.ReactNode {
           <p className="text-sm text-foreground">
             <span className="font-medium">Lead created</span> via{" "}
             <span className="text-foreground">
-              {leadSourceLabel(event.source, event.sourceDetail)}
+              {leadSourceLabel(event.source, event.sourceDetail, event.externalSystem)}
             </span>
           </p>
           <p className="mt-0.5 text-xs text-muted-foreground">

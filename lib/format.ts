@@ -139,8 +139,11 @@ export function leadSourceLabel(
 ): string {
   if (sourceDetail?.startsWith("popup:")) return "Website pop-up";
   const base = humanLeadSource(displayLeadSource(source, externalSystem));
+  // "prefix:value" strings and bare cuids are internal; hide them.
   const detail =
-    sourceDetail && !/c[a-z0-9]{20,}/.test(sourceDetail) ? sourceDetail : null;
+    sourceDetail && !sourceDetail.includes(":") && !/^c[a-z0-9]{20,}$/.test(sourceDetail)
+      ? sourceDetail
+      : null;
   return detail ? `${base} · ${detail}` : base;
 }
 export function humanChatbotStatus(s: ChatbotConversationStatus | string): string {
