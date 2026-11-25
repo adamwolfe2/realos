@@ -120,7 +120,9 @@ export default async function BillingPage({
         },
       }),
     prisma.domainBinding.findMany({
-        where: { orgId: scope.orgId },
+        // Client-facing list: custom domains only. *.vercel.app bindings are
+        // our preview hosts and carry no SSL state of their own.
+        where: { orgId: scope.orgId, NOT: { hostname: { endsWith: ".vercel.app" } } },
         orderBy: [{ isPrimary: "desc" }, { hostname: "asc" }],
         select: { hostname: true, isPrimary: true, sslStatus: true, dnsConfigured: true },
       }),

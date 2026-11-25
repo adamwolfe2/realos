@@ -11,6 +11,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { leadSourceLabel } from "@/lib/format";
 import { ChatTranscript } from "./chat-transcript";
 import type { TimelineEvent } from "./timeline-events";
 
@@ -119,13 +120,13 @@ function EventBody({ event }: { event: TimelineEvent }) {
 function renderBody(event: TimelineEvent): React.ReactNode {
   switch (event.kind) {
     case "lead_created": {
-      const detail = event.sourceDetail ? ` · ${event.sourceDetail}` : "";
       return (
         <>
           <p className="text-sm text-foreground">
             <span className="font-medium">Lead created</span> via{" "}
-            <span className="text-foreground">{event.source}</span>
-            {detail}
+            <span className="text-foreground">
+              {leadSourceLabel(event.source, event.sourceDetail, event.externalSystem)}
+            </span>
           </p>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {timeLabel(event.ts)} · {exactTime(event.ts)}

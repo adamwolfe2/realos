@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { humanLeadSource } from "@/lib/format";
 import { Suspense } from "react";
 import { adLeadWhere } from "@/lib/integrations/ad-lead-source";
 import Link from "next/link";
@@ -235,7 +236,7 @@ export default async function AdsPage({
           createdAt: { gte: since28d },
         },
       },
-      select: { lead: { select: { source: true } } },
+      select: { leadId: true, lead: { select: { source: true } } },
     }),
     prisma.lead.groupBy({
       by: ["source"],
@@ -447,9 +448,13 @@ export default async function AdsPage({
     }
   }
 
-  // Count applications per source.
+  // Leads with at least one application, per source. Counting application
+  // rows let a lead with two applications push App rate past 100%.
   const appCountBySource: Partial<Record<LeadSource, number>> = {};
+  const leadsWithApp = new Set<string>();
   for (const app of appsByLeadSource) {
+    if (leadsWithApp.has(app.leadId)) continue;
+    leadsWithApp.add(app.leadId);
     const src = app.lead.source;
     appCountBySource[src] = (appCountBySource[src] ?? 0) + 1;
   }
@@ -471,7 +476,7 @@ export default async function AdsPage({
   const roiRows: RoiRow[] = leadsBySource
     .filter((r) => r._count._all > 0)
     .map((r) => ({
-      channel: channelLabel[r.source] ?? r.source,
+      channel: channelLabel[r.source] ?? humanLeadSource(r.source),
       spendCents: spendBySource[r.source] ?? 0,
       leads: r._count._all,
       applications: appCountBySource[r.source] ?? 0,

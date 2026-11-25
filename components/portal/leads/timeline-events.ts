@@ -21,6 +21,7 @@ export type TimelineEvent =
       ts: Date;
       source: string;
       sourceDetail: string | null;
+      externalSystem: string | null;
     }
   | {
       kind: "chatbot_conversation";
@@ -117,6 +118,7 @@ export function buildTimeline(lead: LeadWithLinks): TimelineEvent[] {
     ts: lead.firstSeenAt,
     source: lead.source,
     sourceDetail: lead.sourceDetail,
+    externalSystem: lead.externalSystem ?? null,
   });
 
   // Chatbot conversations — one event each

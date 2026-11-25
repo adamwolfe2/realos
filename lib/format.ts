@@ -130,6 +130,22 @@ export function humanLeadSource(s: LeadSource | string): string {
   if (s === "APPFOLIO") return "AppFolio";
   return (LEAD_SOURCE as Record<string, string>)[s] ?? sentenceFromEnum(String(s));
 }
+// Client-facing source line. sourceDetail can hold internal ids
+// ("popup:<cuid>"); those never reach the UI.
+export function leadSourceLabel(
+  source: LeadSource | string,
+  sourceDetail: string | null | undefined,
+  externalSystem?: string | null,
+): string {
+  if (sourceDetail?.startsWith("popup:")) return "Website pop-up";
+  const base = humanLeadSource(displayLeadSource(source, externalSystem));
+  // "prefix:value" strings and bare cuids are internal; hide them.
+  const detail =
+    sourceDetail && !sourceDetail.includes(":") && !/^c[a-z0-9]{20,}$/.test(sourceDetail)
+      ? sourceDetail
+      : null;
+  return detail ? `${base} · ${detail}` : base;
+}
 export function humanChatbotStatus(s: ChatbotConversationStatus | string): string {
   return (CHATBOT_STATUS as Record<string, string>)[s] ?? sentenceFromEnum(String(s));
 }
