@@ -7,7 +7,7 @@ import {
   Clock,
   Plug,
 } from "lucide-react";
-import type { AppFolioStatus } from "@/lib/integrations/appfolio-status";
+import { planLimitedSummary, type AppFolioStatus } from "@/lib/integrations/appfolio-status";
 import { RunAppFolioSyncButton } from "./run-appfolio-sync-button";
 import { StaleOnLoadTrigger } from "@/components/portal/sync/stale-on-load-trigger";
 import { AppFolioSyncPoller } from "./appfolio-sync-poller";
@@ -122,47 +122,16 @@ export function AppFolioStatusBanner({
   }
 
   if (status.state === "partial") {
-    // Partial-success state. Some phases pulled data, some skipped or failed.
-    // Two sub-cases:
-    //   a) Plan limitation only (unsupportedReports > 0, no actionable warnings):
-    //      quiet amber note — the operator's AppFolio plan doesn't expose
-    //      certain reports (e.g. guest_cards on Core). Everything else is fine.
-    //      Saving new credentials auto-resets skipped phases for re-evaluation.
-    //   b) Transient failure or mixed: show the first actionable warning and
-    //      offer a Retry sync button.
-    const hasActionableWarnings = (status.stats?.warnings?.length ?? 0) > 0;
-    const planLimitedPhases = status.stats?.unsupportedReports ?? [];
-    const isPlanLimitationOnly = !hasActionableWarnings && planLimitedPhases.length > 0;
-
-    if (isPlanLimitationOnly) {
-      return (
-        <Banner
-          tone="warn"
-          icon={<AlertTriangle className="h-4 w-4" />}
-          title="Some AppFolio reports are unavailable on your plan."
-          body={`${planLimitedPhases.length} report phase${planLimitedPhases.length === 1 ? "" : "s"} ${
-            planLimitedPhases.length === 1 ? "is" : "are"
-          } not exposed on your AppFolio plan: ${planLimitedPhases.map((w) => w.split(":")[0]).join(", ")}. All other data syncs normally. Upgrade your AppFolio plan and save new credentials to re-enable these reports.`}
-          meta={
-            status.lastSyncAt
-              ? `Last sync ${formatDistanceToNow(status.lastSyncAt, {
-                  addSuffix: true,
-                })}.`
-              : undefined
-          }
-          action={<RunAppFolioSyncButton label="Retry sync" />}
-        />
-      );
-    }
-
+    // Partial-success state: some phases failed with a real (retryable)
+    // error. Plan-limited reports never land here (see getAppFolioStatus).
     return (
       <Banner
         tone="warn"
         icon={<AlertTriangle className="h-4 w-4" />}
         title="AppFolio sync completed with warnings."
         body={`${status.stats?.phasesCompleted ?? 0} of ${status.stats?.totalPhases ?? 8} report phases pulled data. ${
-          status.stats?.warnings?.[0]
-            ? `First warning: ${truncate(status.stats.warnings[0], 200)}`
+          status.lastError
+            ? `First warning: ${truncate(status.lastError, 200)}`
             : ""
         } If this keeps happening on the same phase, the report may not be available on your AppFolio plan — use "Retry skipped phases" after upgrading.`}
         meta={
@@ -245,6 +214,7 @@ export function AppFolioStatusBanner({
     : null;
   const warnings = status.stats?.warnings ?? [];
   const hasWarnings = warnings.length > 0;
+  const planLimited = planLimitedSummary(status.stats?.unsupportedReports);
 
   return (
     <div className="space-y-2">
@@ -268,6 +238,7 @@ export function AppFolioStatusBanner({
         }
         action={<RunAppFolioSyncButton label="Sync now" subtle />}
       />
+      {planLimited ? <p className="px-1 text-xs text-muted-foreground">{planLimited}</p> : null}
       {hasWarnings ? (
         <details className="rounded-[2px] border border-border bg-secondary px-4 py-2.5 text-xs text-[#8a6d00]">
           <summary className="cursor-pointer font-semibold">

@@ -29,7 +29,7 @@ const GRAY = "#8d8d8d";
 
 const SL = CS.sinceLaunch;
 
-const TITLE = `${CS.property}: ${SL.tracedLeases} signed leases traced back to the lead`;
+const TITLE = `${CS.property}: ${SL.tracedLeases} new leases traced back to the lead`;
 const DESCRIPTION = `How ${CS.customer} runs ${CS.property}'s website, chatbot and AppFolio data on ${BRAND_NAME}, and traces every new lease back to where the renter came from.`;
 
 export const metadata: Metadata = {

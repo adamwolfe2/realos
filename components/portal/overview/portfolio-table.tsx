@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PropertyAvatar } from "@/components/portal/properties/property-avatar";
-import type { PortfolioRow, Series, SourceHealth } from "@/lib/portal/portfolio-overview";
+import { LISTED_TRACKING_SINCE, type PortfolioRow, type Series, type SourceHealth } from "@/lib/portal/portfolio-overview";
+import type { KindRange } from "@/lib/listings/kind";
 
 // One row per property. Client-side only for sorting; every value arrives
 // computed from the server loader. Phones scroll the table sideways with the
@@ -14,15 +15,16 @@ import type { PortfolioRow, Series, SourceHealth } from "@/lib/portal/portfolio-
 
 const fmt = new Intl.NumberFormat("en-US");
 const usd = (c: number) => `$${fmt.format(Math.round(c / 100))}`;
+const sinceDay = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(LISTED_TRACKING_SINCE);
 const total = (s: Series) => s.cur.reduce((a, n) => a + n, 0);
 
-type Key = "name" | "available" | "rent" | "ready" | "visitors" | "chats" | "leads" | "apps";
+type Key = "name" | "available" | "rent" | "listed" | "visitors" | "chats" | "leads" | "apps";
 
 const COLS: { key: Key; label: string; title: string; align?: "left" }[] = [
   { key: "name", label: "Property", title: "Sort by name", align: "left" },
-  { key: "available", label: "Available", title: "Units and floor plans advertised on AppFolio now" },
-  { key: "rent", label: "Asking rent", title: "Lowest to highest advertised rent on available listings (AppFolio)" },
-  { key: "ready", label: "Days ready", title: "Median days since AppFolio's ready-for-showing date, for units already past it (pre-lease and next-term listings left out). Listing age (first listed) isn't tracked yet." },
+  { key: "available", label: "Available", title: "Rooms and whole units advertised on AppFolio now (parking and storage left out)" },
+  { key: "rent", label: "Asking rent", title: "Advertised rent on AppFolio, by kind: rooms (a bed or room in a shared unit) and apartments (whole units and studios)" },
+  { key: "listed", label: "Days listed", title: `Median days on market: since LeaseStack first saw the listing advertised on AppFolio. Tracking started ${sinceDay}; listings advertised before then count as at least that many days.` },
   { key: "visitors", label: "Organic visitors", title: "Search visits, last 28 days (larger of GA4 organic sessions and Search Console clicks per day)" },
   { key: "chats", label: "Chats", title: "Chatbot conversations, last 28 days" },
   { key: "leads", label: "Leads", title: "Website leads (chat, pop-up, forms), last 28 days" },
@@ -34,7 +36,7 @@ function value(r: PortfolioRow, k: Key): number | string | null {
     case "name": return r.name.toLowerCase();
     case "available": return r.available;
     case "rent": return r.rentMin;
-    case "ready": return r.readyDaysMedian;
+    case "listed": return r.listed.median;
     case "visitors": return r.visitors ? total(r.visitors) : null;
     case "chats": return total(r.chats);
     case "leads": return total(r.leads);
@@ -112,11 +114,16 @@ export function PortfolioTable({ rows, now }: { rows: PortfolioRow[]; now: numbe
                   </Link>
                 </td>
                 <Num title={`${r.available} advertised on AppFolio`}>{r.available}</Num>
-                <Num title={r.rentMin === null ? "No advertised price" : "Advertised rent, AppFolio"}>
-                  {r.rentMin === null ? <Dash /> : r.rentMin === r.rentMax ? usd(r.rentMin) : <>{usd(r.rentMin)}<span className="text-[var(--t-muted)]">–</span>{usd(r.rentMax!)}</>}
-                </Num>
-                <Num title={r.readyDaysMedian === null ? "No unit past its ready date" : `Median of ${r.readyCount} unit${r.readyCount === 1 ? "" : "s"} past AppFolio's ready-for-showing date; oldest ${fmt.format(r.readyDaysOldest!)} days`}>
-                  {r.readyDaysMedian === null ? <Dash /> : <>{fmt.format(r.readyDaysMedian)}<span className="text-[var(--t-muted)]">d</span></>}
+                <td className="whitespace-nowrap px-2 py-1.5 text-right tabular-nums text-[var(--t-ink)] sm:px-3" title="Advertised rent on AppFolio, by kind">
+                  {r.rent.room.count || r.rent.unit.count ? (
+                    <span className="inline-grid grid-cols-[auto_auto] items-baseline gap-x-1.5 gap-y-0.5 leading-tight">
+                      <RentLine label="Rooms" k={r.rent.room} />
+                      <RentLine label="Apts" k={r.rent.unit} />
+                    </span>
+                  ) : <Dash />}
+                </td>
+                <Num title={listedTitle(r.listed)}>
+                  {r.listed.median === null ? <Dash /> : r.listed.atLeast && r.listed.median < 1 ? <span className="text-[12px] text-[var(--t-muted)]">Tracking</span> : <>{r.listed.atLeast ? <span className="text-[var(--t-muted)]">≥</span> : null}{fmt.format(r.listed.median)}<span className="text-[var(--t-muted)]">d</span></>}
                 </Num>
                 <td className="px-2 py-2 text-right sm:px-3" title={vis === null ? "GA4 / Search Console not connected for this site" : `${vis} search visits, last 28 days vs ${fmt.format(r.visitors!.prev.reduce((a, n) => a + n, 0))} the 28 before`}>
                   {vis === null ? (
@@ -150,6 +157,24 @@ export function PortfolioTable({ rows, now }: { rows: PortfolioRow[]; now: numbe
       </p>
     </div>
   );
+}
+
+function RentLine({ label, k }: { label: string; k: KindRange }) {
+  if (!k.count) return null;
+  const range = k.min === null ? "No price" : k.min === k.max ? usd(k.min) : `${usd(k.min)}–${usd(k.max!).slice(1)}`;
+  return (
+    <>
+      <span className="text-left text-[11px] text-[var(--t-muted)]">{label}</span>
+      <span>{range}</span>
+    </>
+  );
+}
+
+function listedTitle(l: PortfolioRow["listed"]): string {
+  if (!l.total) return "Nothing advertised";
+  const untracked = l.total - l.tracked;
+  if (!l.tracked) return `All ${l.total} listings were advertised before tracking started ${sinceDay}`;
+  return `${l.tracked} of ${l.total} listings first seen since ${sinceDay}${untracked ? `; ${untracked} advertised before then` : ""}`;
 }
 
 function Num({ children, title }: { children: React.ReactNode; title: string }) {

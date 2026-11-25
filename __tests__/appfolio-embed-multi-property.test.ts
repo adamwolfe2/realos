@@ -66,12 +66,9 @@ vi.mock("@/lib/db", () => ({
         state.listingCreates.push(data);
         return data;
       }),
-      aggregate: vi.fn(async () => ({
-        _min: { priceCents: null },
-        _max: { priceCents: null },
-        _count: { _all: 0 },
-      })),
+      findMany: vi.fn(async () => []),
     },
+    propertyAvailabilityDaily: { upsert: vi.fn(async () => ({})) },
   },
 }));
 

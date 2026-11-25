@@ -89,6 +89,24 @@ export function isUnsupportedAppfolioWarning(warning: string): boolean {
   return UNSUPPORTED_REPORT_RE.test(warning);
 }
 
+const PHASE_LABEL: Record<string, string> = {
+  leads: "guest cards (leads)",
+  showings: "showings (tours)",
+  applications: "applications",
+};
+
+// The report itself is missing from the plan (404 / "not a valid report"),
+// as opposed to a phase auto-skipped after repeated server errors.
+const PLAN_LIMIT_RE = /\b404\b|not a valid report|(not |un)available on|no longer available/i;
+const isPlanLimit = (w: string) => PLAN_LIMIT_RE.test(w);
+
+/** One quiet line naming the reports this AppFolio plan doesn't expose, or null. */
+export function planLimitedSummary(unsupportedReports: readonly string[] | undefined): string | null {
+  const phases = [...new Set((unsupportedReports ?? []).filter(isPlanLimit).map((w) => w.split(":")[0].trim()))].filter(Boolean);
+  if (!phases.length) return null;
+  return `Not on this AppFolio plan: ${phases.map((p) => PHASE_LABEL[p] ?? p).join(", ")}. Expected; everything else syncs.`;
+}
+
 export async function getAppFolioStatus(orgId: string): Promise<AppFolioStatus> {
   // Resilient query: if a column is missing in production (schema drift
   // from dev `prisma db push` history), fall back to a reduced column set
@@ -248,30 +266,28 @@ export async function getAppFolioStatus(orgId: string): Promise<AppFolioStatus> 
   // instead of either lying with green "Synced" or screaming red
   // "Failed" for a 5/6-successful run.
   //
-  // Two distinct partial conditions:
-  //   1. Transient failure: phasesAccounted < totalPhases AND actionable
-  //      warnings present — some phases failed with recoverable errors.
-  //   2. Plan limitation: unsupportedReports.length > 0 — at least one
-  //      phase has been permanently skipped because the report isn't
-  //      exposed on this AppFolio plan (404). The phases count as
-  //      "accounted for" via phasesSkipped (so phasesAccounted ===
-  //      totalPhases), but the operator still deserves a quiet amber
-  //      notice that leads / showings etc. are not syncing and why.
-  //      Credential change resets these skips (see PATCH /api/tenant/appfolio).
+  // Only a real (transient) failure is partial: phasesAccounted <
+  // totalPhases AND actionable warnings present. A report that isn't on
+  // the account's AppFolio plan (404, auto-skipped) is the expected steady
+  // state, not a warning: it stays "synced", and stats.unsupportedReports
+  // drives one quiet "not on your plan" line on the integration page.
+  // (SG 2026-11-25: guest_cards + showings 404 kept a permanent
+  // "completed with warnings, 8 of 10 phases" banner on every page.)
+  // Credential change resets these skips (see PATCH /api/tenant/appfolio).
   const phasesAccounted =
     (stats?.phasesCompleted ?? 0) + (stats?.phasesSkipped ?? 0);
+  // A phase auto-skipped after repeated 500s/timeouts is a real failure,
+  // even though the skip message lands in unsupportedReports.
+  const failedSkips = (stats?.unsupportedReports ?? []).filter((w) => !isPlanLimit(w));
   const hasTransientFailures =
     !!stats &&
-    phasesAccounted < stats.totalPhases &&
-    stats.warnings.length > 0;
-  const hasPlanLimitations =
-    !!stats && (stats.unsupportedReports?.length ?? 0) > 0;
-  if (hasTransientFailures || hasPlanLimitations) {
+    ((phasesAccounted < stats.totalPhases && stats.warnings.length > 0) || failedSkips.length > 0);
+  if (hasTransientFailures) {
     return {
       state: "partial",
       lastSyncAt: integ.lastSyncAt,
       syncStartedAt,
-      lastError: stats!.warnings[0] ?? stats!.unsupportedReports[0] ?? null,
+      lastError: stats!.warnings[0] ?? failedSkips[0] ?? null,
       subdomain: integ.instanceSubdomain ?? null,
       stale,
       stats,
@@ -292,7 +308,7 @@ export async function getAppFolioStatus(orgId: string): Promise<AppFolioStatus> 
 // Defensive shape coercion. The DB column is JSONB so anything could be in
 // there; treat unknown / partial shapes as missing instead of crashing the
 // status helper.
-function parseStats(raw: unknown): AppFolioSyncStatsSummary | null {
+export function parseStats(raw: unknown): AppFolioSyncStatsSummary | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
   const num = (k: string) =>
