@@ -27,9 +27,15 @@ import { patternTitle } from "@/lib/chatbot/learning/pattern-labels";
 import { RunLearningButton } from "./run-learning-button";
 import { RecommendationActions } from "./recommendation-actions";
 import { barPct } from "@/lib/charts/bar-width";
+import { readProposal } from "@/lib/self-improve/proposal";
+import { proposalImpact, type ProposalImpact } from "@/lib/self-improve/metrics";
+import { GenerateProposalsButton } from "./proposal-actions";
+import { AnswerProposalRow, PopupProposalRow, ProposalImpactLine, SiteProposalRow } from "./proposal-rows";
 
 export const metadata: Metadata = { title: "Chatbot insights" };
 export const dynamic = "force-dynamic";
+// "Generate proposals" runs one model call per property with new signals.
+export const maxDuration = 300;
 
 const PERIODS = [
   { days: 7, label: "7 days" },
@@ -113,6 +119,20 @@ export default async function ChatbotInsightsPage({
     return new Map<string, FixImpact>();
   });
 
+  // Before/after for approved self-improve proposals.
+  const approved = [
+    ...learning.appliedKnowledge.map((k) => ({ row: k, p: readProposal(k.proposal) })),
+    ...learning.appliedProposals.map((r) => ({ row: r, p: readProposal(r.proposal) })),
+  ];
+  const proposalImpacts = new Map<string, ProposalImpact | null>(
+    await Promise.all(
+      approved.map(async ({ row, p }) => [row.id, p ? await proposalImpact(p, row).catch((err: unknown) => {
+        console.error("[portal/conversations/insights] proposal impact failed:", err);
+        return null;
+      }) : null] as const),
+    ),
+  );
+
   const c = learning.counts;
   const queueCount =
     c.openKnowledgeSuggestions + c.openSiteRecommendations + c.openTasks + c.openInsights;
@@ -181,6 +201,7 @@ export default async function ChatbotInsightsPage({
             ))}
           </div>
           <RunLearningButton />
+          <GenerateProposalsButton />
         </div>
       </div>
 
@@ -199,19 +220,41 @@ export default async function ChatbotInsightsPage({
           ) : (
             <>
               <QueueGroup title="Chatbot answers" icon={<Wrench className="h-3.5 w-3.5" />} count={c.openKnowledgeSuggestions}>
-                {learning.knowledgeSuggestions.map((sg) => (
-                  <QueueRow
-                    key={sg.id}
-                    marks={<SourceMark source="CHATBOT" size={22} />}
-                    meta={`${patternTitle(sg.patternType)} · learned from ${sg.affectedCount} chats`}
-                    body={sg.suggestedText}
-                    evidence={evidenceFor(sg.sourceCaseIds)}
-                    actions={<RecommendationActions id={sg.id} kind="knowledge" />}
-                  />
-                ))}
+                {learning.knowledgeSuggestions.map((sg) => {
+                  const p = readProposal(sg.proposal);
+                  if (p?.question) {
+                    return <AnswerProposalRow key={sg.id} id={sg.id} p={p} draft={sg.suggestedText} property={sg.property?.name ?? null} count={sg.affectedCount} />;
+                  }
+                  return (
+                    <QueueRow
+                      key={sg.id}
+                      marks={<SourceMark source="CHATBOT" size={22} />}
+                      meta={`${patternTitle(sg.patternType)} · learned from ${sg.affectedCount} chats`}
+                      body={sg.suggestedText}
+                      evidence={evidenceFor(sg.sourceCaseIds)}
+                      actions={<RecommendationActions id={sg.id} kind="knowledge" />}
+                    />
+                  );
+                })}
               </QueueGroup>
-              <QueueGroup title="Website" icon={<AlertTriangle className="h-3.5 w-3.5" />} count={c.openSiteRecommendations}>
-                {learning.siteRecommendations.map((rec) => (
+              <QueueGroup title="Website and pop-ups" icon={<AlertTriangle className="h-3.5 w-3.5" />} count={c.openSiteRecommendations}>
+                {learning.siteRecommendations.map((rec) => {
+                  const p = readProposal(rec.proposal);
+                  const property = rec.property?.name ?? null;
+                  if (p?.popup) return <PopupProposalRow key={rec.id} id={rec.id} p={p} why={rec.suggestedBody} property={property} />;
+                  if (p) {
+                    return (
+                      <SiteProposalRow
+                        key={rec.id}
+                        p={p}
+                        title={rec.suggestedTitle}
+                        body={rec.suggestedBody}
+                        property={property}
+                        actions={<RecommendationActions id={rec.id} kind="site" />}
+                      />
+                    );
+                  }
+                  return (
                   <QueueRow
                     key={rec.id}
                     marks={<SiteRecMarks fromChats={Boolean(rec.insightId)} body={rec.suggestedBody} />}
@@ -220,7 +263,8 @@ export default async function ChatbotInsightsPage({
                     evidence={evidenceFor(rec.insight?.sourceCaseIds)}
                     actions={<RecommendationActions id={rec.id} kind="site" />}
                   />
-                ))}
+                  );
+                })}
               </QueueGroup>
               <QueueGroup title="Objections" icon={<Lightbulb className="h-3.5 w-3.5" />} count={c.openInsights}>
                 {learning.topInsights.map((insight) => (
@@ -258,27 +302,48 @@ export default async function ChatbotInsightsPage({
         </section>
 
         {/* Self-healing record: fixes already live in the chatbot. */}
-        {learning.appliedKnowledge.length > 0 ? (
+        {learning.appliedKnowledge.length > 0 || learning.appliedProposals.length > 0 ? (
           <section className="ls-card overflow-hidden">
             <div className="flex items-center gap-2 bg-[var(--t-wash)] px-5 py-2.5 text-[12px] font-medium text-muted-foreground">
               <CheckCircle2 className="h-3.5 w-3.5 text-[#16a34a]" />
-              Fixed and live in the chatbot
+              Approved and tracked
               <span className="tabular-nums">{c.appliedLast30d} this month</span>
             </div>
             <ul className="divide-y divide-border">
-              {learning.appliedKnowledge.map((k) => (
-                <li key={k.id} className="flex items-start gap-3 px-5 py-3">
-                  <SourceMark source="CHATBOT" size={22} />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[13px] text-foreground">{k.suggestedText}</p>
-                    <p className="mt-0.5 text-[12px] text-muted-foreground">
-                      {k.appliedAt ? `Applied ${format(k.appliedAt, "MMM d")} · ` : ""}learned from {k.affectedCount} chats
-                    </p>
-                    <ImpactLine impact={impact.get(k.id)} appliedAt={k.appliedAt} />
-                  </div>
-                  <span className="shrink-0 text-[12px] font-medium text-[#15803d]">Live</span>
-                </li>
-              ))}
+              {learning.appliedKnowledge.map((k) => {
+                const p = readProposal(k.proposal);
+                return (
+                  <li key={k.id} className="flex items-start gap-3 px-5 py-3">
+                    <SourceMark source="CHATBOT" size={22} />
+                    <div className="min-w-0 flex-1">
+                      {p?.question ? <p className="text-[12px] text-muted-foreground">{k.property?.name ? `${k.property.name} · ` : ""}&ldquo;{p.question}&rdquo;</p> : null}
+                      <p className="text-[13px] text-foreground">{k.suggestedText}</p>
+                      <p className="mt-0.5 text-[12px] text-muted-foreground">
+                        {k.appliedAt ? `Applied ${format(k.appliedAt, "MMM d")} · ` : ""}{p ? `asked in ${k.affectedCount} chats` : `learned from ${k.affectedCount} chats`}
+                      </p>
+                      {p ? <ProposalImpactLine impact={proposalImpacts.get(k.id) ?? null} appliedAt={k.appliedAt} /> : <ImpactLine impact={impact.get(k.id)} appliedAt={k.appliedAt} />}
+                    </div>
+                    <span className="shrink-0 text-[12px] font-medium text-[#15803d]">Live</span>
+                  </li>
+                );
+              })}
+              {learning.appliedProposals.map((r) => {
+                const p = readProposal(r.proposal);
+                return (
+                  <li key={r.id} className="flex items-start gap-3 px-5 py-3">
+                    <span className="grid h-[22px] w-[22px] shrink-0 place-items-center rounded-[6px] border border-border bg-white">
+                      <Wrench className="h-3 w-3 text-muted-foreground" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[12px] text-muted-foreground">{r.property?.name ?? "Workspace"} · {r.suggestedTitle}</p>
+                      <p className="text-[13px] text-foreground">{p?.popup ? `"${p.popup.proposed.headline}" · shows after ${p.popup.proposed.delaySeconds}s` : r.suggestedBody.split("\n")[0]}</p>
+                      <p className="mt-0.5 text-[12px] text-muted-foreground">{r.appliedAt ? `${p?.popup ? "Applied" : "Marked done"} ${format(r.appliedAt, "MMM d")}` : ""}</p>
+                      <ProposalImpactLine impact={proposalImpacts.get(r.id) ?? null} appliedAt={r.appliedAt} />
+                    </div>
+                    <span className="shrink-0 text-[12px] font-medium text-[#15803d]">{p?.popup ? "Live" : "Done"}</span>
+                  </li>
+                );
+              })}
             </ul>
           </section>
         ) : null}

@@ -106,6 +106,7 @@ export async function loadChatbotLearningSummary(params: {
     latestRun,
     appliedKnowledge,
     appliedLast30d,
+    appliedProposals,
   ] = await Promise.all([
     prisma.leadFollowUpTask.count({
       where: { orgId: params.orgId, status: LeadFollowUpTaskStatus.OPEN, ...propertyWhere },
@@ -157,16 +158,19 @@ export async function loadChatbotLearningSummary(params: {
       orderBy: [{ impactScore: "desc" }, { createdAt: "desc" }],
       take: 8,
     }),
+    // Self-improve proposals land here too (one per unanswered question),
+    // so the queue shows a full week's worth.
     prisma.chatbotKnowledgeSuggestion.findMany({
       where: { orgId: params.orgId, status: RecommendationStatus.OPEN, ...propertyWhere },
       orderBy: [{ affectedCount: "desc" }, { createdAt: "desc" }],
-      take: 5,
+      take: 25,
+      include: { property: { select: { name: true } } },
     }),
     prisma.siteImprovementRecommendation.findMany({
       where: { orgId: params.orgId, status: RecommendationStatus.OPEN, ...propertyWhere },
       orderBy: { createdAt: "desc" },
-      take: 5,
-      include: { insight: { select: { sourceCaseIds: true } } },
+      take: 15,
+      include: { insight: { select: { sourceCaseIds: true } }, property: { select: { name: true } } },
     }),
     prisma.cronRun.findFirst({
       where: { jobName: "chatbot-learning-loop" },
@@ -184,7 +188,8 @@ export async function loadChatbotLearningSummary(params: {
     prisma.chatbotKnowledgeSuggestion.findMany({
       where: { orgId: params.orgId, status: RecommendationStatus.APPLIED, ...propertyWhere },
       orderBy: { appliedAt: "desc" },
-      take: 6,
+      take: 10,
+      include: { property: { select: { name: true } } },
     }),
     prisma.chatbotKnowledgeSuggestion.count({
       where: {
@@ -193,6 +198,13 @@ export async function loadChatbotLearningSummary(params: {
         appliedAt: { gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) },
         ...propertyWhere,
       },
+    }),
+    // Approved pop-up and website proposals, tracked before/after.
+    prisma.siteImprovementRecommendation.findMany({
+      where: { orgId: params.orgId, status: RecommendationStatus.APPLIED, proposal: { not: Prisma.DbNull }, ...propertyWhere },
+      orderBy: { appliedAt: "desc" },
+      take: 10,
+      include: { property: { select: { name: true } } },
     }),
   ]);
 
@@ -209,6 +221,7 @@ export async function loadChatbotLearningSummary(params: {
     },
     latestRun,
     appliedKnowledge,
+    appliedProposals,
     recentTasks,
     topInsights,
     knowledgeSuggestions,

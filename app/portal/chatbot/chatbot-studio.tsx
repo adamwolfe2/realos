@@ -19,7 +19,7 @@ type FormState = PreviewDraft & {
 
 type Section = "identity" | "knowledge" | "capture" | "routing" | "install";
 
-const KB_MAX = 5000;
+const KB_MAX = 12_000; // matches lib/actions/chatbot-config.ts
 // Under this the bot mostly answers "I'll have the team follow up".
 const KB_THIN = 300;
 
