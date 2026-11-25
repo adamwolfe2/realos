@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { requireScope } from "@/lib/tenancy/scope";
 import { MetricStrip, Metric, PageTitle, Panel, Pill, Row } from "@/components/portal/overview/kit";
 import { AlertBanner } from "@/components/portal/ui/alert-banner";
@@ -53,6 +54,7 @@ export default async function BillingPage({
   const [
     org,
     marketablePropertyCount,
+    liveIdCount,
     websiteBuildRows,
     domains,
     adCampaigns,
@@ -97,6 +99,9 @@ export default async function BillingPage({
           where: { orgId: scope.orgId, lifecycle: { in: ["IMPORTED", "ACTIVE"] } },
         })
         .catch(() => 0),
+    // Display count: live buildings only. The count above also includes
+    // IMPORTED rows awaiting review and still drives trial pricing.
+    prisma.property.count({ where: marketablePropertyWhere(scope.orgId) }),
     prisma.websiteBuildRequest.findMany({
         where: { orgId: scope.orgId },
         orderBy: { createdAt: "desc" },
@@ -268,6 +273,10 @@ export default async function BillingPage({
       }
     }
   }
+  // Properties Stripe bills: the tier line's quantity is the property count
+  // (graduated and legacy flat tiers alike; the sync keeps it updated).
+  const billedPropertyQty =
+    lineItems.find((l) => !l.isAddon && !l.isMetered)?.quantity ?? null;
   const subscriptionMrrCents = lineItems
     .filter((l) => !l.isMetered)
     .reduce((sum, l) => sum + Math.round(l.monthlyCents), 0);
@@ -335,7 +344,7 @@ export default async function BillingPage({
     <div className="w-full space-y-5">
       <PageTitle
         title="Billing"
-        subtitle={`${planLabel} plan · ${marketablePropertyCount.toLocaleString()} ${marketablePropertyCount === 1 ? "property" : "properties"}`}
+        subtitle={`${planLabel} plan · ${liveIdCount.toLocaleString()} ${liveIdCount === 1 ? "property" : "properties"}`}
         actions={<BillingPortalButton />}
       />
 
@@ -461,7 +470,11 @@ export default async function BillingPage({
                 : "—"
             }
           />
-          <Metric label="Properties" value={marketablePropertyCount.toLocaleString()} note="Billed per property" />
+          <Metric
+            label="Properties"
+            value={liveIdCount.toLocaleString()}
+            note={billedPropertyQty != null ? `${billedPropertyQty} on your plan` : "Live"}
+          />
           <Metric
             label="Next invoice"
             value={currentPeriodEnd && !cancelAtPeriodEnd ? new Date(currentPeriodEnd).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}

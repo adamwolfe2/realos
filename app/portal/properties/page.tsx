@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { isPlaceholderSeoScore } from "@/lib/seo/score-snapshot";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { withMarketableLifecycle } from "@/lib/properties/marketable";
 import {
@@ -321,13 +322,34 @@ export default async function PropertiesList({
     .findMany({
       where: { propertyId: { in: pageIds } },
       orderBy: { weekOf: "desc" },
-      select: { propertyId: true, compositeScore: true, weekOf: true },
+      select: {
+        propertyId: true,
+        compositeScore: true,
+        technicalScore: true,
+        contentScore: true,
+        authorityScore: true,
+        weekOf: true,
+      },
     })
-    .catch(() => [] as Array<{ propertyId: string | null; compositeScore: number; weekOf: Date }>);
+    .catch((err) => {
+      console.error("[portal/properties] SEO score query failed:", err);
+      return [] as Array<{
+        propertyId: string | null;
+        compositeScore: number;
+        technicalScore: number;
+        contentScore: number;
+        authorityScore: number;
+        weekOf: Date;
+      }>;
+    });
   const seoScoreByProperty = new Map<string, number>();
+  // Latest week per property decides; a placeholder latest row means "not
+  // scored", never a fall-back to an older week's score.
+  const seenScore = new Set<string>();
   for (const s of latestScores) {
-    if (!s.propertyId) continue;
-    if (!seoScoreByProperty.has(s.propertyId)) {
+    if (!s.propertyId || seenScore.has(s.propertyId)) continue;
+    seenScore.add(s.propertyId);
+    if (!isPlaceholderSeoScore(s)) {
       seoScoreByProperty.set(s.propertyId, s.compositeScore);
     }
   }

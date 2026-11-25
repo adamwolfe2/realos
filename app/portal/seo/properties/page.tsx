@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { isPlaceholderSeoScore } from "@/lib/seo/score-snapshot";
 import { requireScope } from "@/lib/tenancy/scope";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { PageHeader } from "@/components/admin/page-header";
@@ -115,7 +116,13 @@ export default async function SeoPortfolioPage({
     prisma.seoScoreHistory.findMany({
       where: { propertyId: { in: propertyIds } },
       orderBy: { weekOf: "desc" },
-      select: { propertyId: true, compositeScore: true },
+      select: {
+        propertyId: true,
+        compositeScore: true,
+        technicalScore: true,
+        contentScore: true,
+        authorityScore: true,
+      },
     }),
     // Open + in-progress recs grouped by property+severity.
     prisma.seoActionRecommendation.groupBy({
@@ -158,8 +165,13 @@ export default async function SeoPortfolioPage({
   ]);
 
   const scoreByProperty = new Map<string, number>();
+  // Latest week per property decides; a placeholder latest row means "not
+  // scored", never a fall-back to an older week's score.
+  const seenScore = new Set<string>();
   for (const s of scoreRows) {
-    if (s.propertyId && !scoreByProperty.has(s.propertyId)) {
+    if (!s.propertyId || seenScore.has(s.propertyId)) continue;
+    seenScore.add(s.propertyId);
+    if (!isPlaceholderSeoScore(s)) {
       scoreByProperty.set(s.propertyId, s.compositeScore);
     }
   }

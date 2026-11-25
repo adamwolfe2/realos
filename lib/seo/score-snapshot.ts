@@ -27,6 +27,22 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { AeoCitationStatus } from "@prisma/client";
 
+/**
+ * True when a stored score carries no measured input: no recent audit
+ * (technical falls back to 50), no ranked target queries and no backlink
+ * rank. Those rows all land on the same composite (18), so showing them as
+ * a score is noise. Callers render "not scored" instead.
+ */
+export function isPlaceholderSeoScore(row: {
+  technicalScore: number;
+  contentScore: number;
+  authorityScore: number;
+}): boolean {
+  return (
+    row.technicalScore === 50 && row.contentScore === 0 && row.authorityScore === 0
+  );
+}
+
 function mondayUtcOf(d: Date): Date {
   const out = new Date(
     Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
