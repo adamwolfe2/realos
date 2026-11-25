@@ -45,7 +45,7 @@ function ago(d: Date, now: number) {
 
 function HealthStrip({ health, now }: { health: Health[]; now: number }) {
   return (
-    <ul className="flex flex-wrap items-center gap-x-5 gap-y-1.5 rounded-[var(--t-radius)] border border-[var(--t-border)] bg-[var(--t-card)] px-4 py-2.5 text-[12.5px] shadow-[var(--t-shadow)]" aria-label="Data sources">
+    <ul id="data-health" className="scroll-mt-6 flex flex-wrap items-center gap-x-5 gap-y-1.5 rounded-[var(--t-radius)] border border-[var(--t-border)] bg-[var(--t-card)] px-4 py-2.5 text-[12.5px] shadow-[var(--t-shadow)]" aria-label="Data sources">
       {health.map((h) => (
         <li key={h.label} className="inline-flex items-center gap-1.5" title={h.note ?? undefined}>
           <span aria-hidden className="h-2 w-2 rounded-full" style={{ background: DOT[h.state] }} />
@@ -64,7 +64,7 @@ function Funnel({ data, toursOnPlan }: { data: PropertyCockpit; toursOnPlan: boo
   const v = f.visitors ? sum(f.visitors.cur) : null;
   const c = sum(f.chats.cur);
   return (
-    <dl className="grid grid-cols-2 overflow-hidden rounded-[var(--t-radius)] border border-[var(--t-border)] bg-[var(--t-card)] shadow-[var(--t-shadow)] lg:grid-cols-5 [&>*]:-ml-px [&>*]:-mt-px [&>*]:border-l [&>*]:border-t [&>*]:border-[var(--t-divider)]">
+    <dl id="funnel" className="scroll-mt-6 grid grid-cols-2 overflow-hidden rounded-[var(--t-radius)] border border-[var(--t-border)] bg-[var(--t-card)] shadow-[var(--t-shadow)] lg:grid-cols-5 [&>*]:-ml-px [&>*]:-mt-px [&>*]:border-l [&>*]:border-t [&>*]:border-[var(--t-divider)]">
       {f.visitors
         ? trendCell("Organic visitors", f.visitors, data.today, "GA4 + Search Console", "Search visits per day (larger of GA4 organic sessions and Search Console clicks), last 28 days vs the 28 before.", 1)
         : <Cell label="Organic visitors" value="—" source="GA4 + Search Console" title="No GA4 or Search Console connected for this site."><Gap>Not connected</Gap></Cell>}
@@ -102,7 +102,7 @@ function daysListed(l: CockpitListing, now: number) {
 function ListingsTable({ listings, now }: { listings: CockpitListing[]; now: number }) {
   const sinceDay = day.format(LISTED_TRACKING_SINCE);
   return (
-    <Panel title="Advertised units" aside={<span title={`Days listed tracked since ${sinceDay}`}>{listings.length} on AppFolio</span>} flush>
+    <Panel id="units" title="Advertised units" aside={<span title={`Days listed tracked since ${sinceDay}`}>{listings.length} on AppFolio</span>} flush>
       {listings.length ? (
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-[13px] sm:min-w-[620px]">
@@ -152,7 +152,7 @@ function ListingsTable({ listings, now }: { listings: CockpitListing[]; now: num
 function SearchPanel({ data }: { data: PropertyCockpit }) {
   const q = data.queries;
   return (
-    <Panel title="Search queries" aside={<span>Search Console · 28 days</span>} flush>
+    <Panel id="search" title="Search queries" aside={<span>Search Console · 28 days</span>} flush>
       {q === null ? (
         <p className="px-4 py-4 text-[13px] text-[var(--t-muted)]">Search Console isn&apos;t connected for this site. <Link href="/portal/setup" className="text-[var(--t-accent)] hover:underline">Connect it</Link></p>
       ) : q.length === 0 ? (
@@ -198,7 +198,7 @@ function PagesPanel({ data }: { data: PropertyCockpit }) {
   const p = data.pages;
   const max = Math.max(1, ...(p ?? []).map((r) => r.sessions));
   return (
-    <Panel title="Landing pages" aside={<span>GA4 sessions · leads on page</span>} flush>
+    <Panel id="pages" title="Landing pages" aside={<span>GA4 sessions · leads on page</span>} flush>
       {p === null ? (
         <p className="px-4 py-4 text-[13px] text-[var(--t-muted)]">GA4 isn&apos;t connected for this site. <Link href="/portal/setup" className="text-[var(--t-accent)] hover:underline">Connect it</Link></p>
       ) : p.length === 0 ? (
@@ -227,7 +227,7 @@ function PagesPanel({ data }: { data: PropertyCockpit }) {
 function ChatPanel({ data }: { data: PropertyCockpit }) {
   const c = data.chat;
   return (
-    <Panel title="What renters ask" aside={<span>{c.conversations} chats · 28 days</span>} flush>
+    <Panel id="questions" title="What renters ask" aside={<span>{c.conversations} chats · 28 days</span>} flush>
       {c.conversations === 0 ? (
         <p className="px-4 py-4 text-[13px] text-[var(--t-muted)]">No chats in the last 28 days.</p>
       ) : (

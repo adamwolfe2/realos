@@ -16,6 +16,8 @@ import { AgentTrace, type Step } from "@/components/portal/overview/agent-trace"
 import { ConversationPreview } from "@/components/portal/overview/conversation-preview";
 import { patternReason } from "@/lib/chatbot/learning/pattern-labels";
 import { getPortfolioOverview } from "@/lib/portal/portfolio-overview";
+import { getNeedsAttention } from "@/lib/portal/needs-attention";
+import { NeedsAttention } from "@/components/portal/overview/needs-attention";
 import { getAppFolioStatus, showingsOnPlan } from "@/lib/integrations/appfolio-status";
 import { PortfolioMultiples, since } from "@/components/portal/overview/portfolio";
 import { PortfolioTable } from "@/components/portal/overview/portfolio-table";
@@ -278,6 +280,7 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
 
   if (portfolio && portfolio.rows.length > 1) {
     const toursOnPlan = showingsOnPlan(appfolioStatus?.stats);
+    const attention = await getNeedsAttention(orgId, allowed, appfolioStatus).catch(soft(null, "portal.overview:needs-attention"));
     return (
       <div className="w-full space-y-5">
         <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
@@ -294,6 +297,7 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
             ].filter(Boolean).join(" · ")}
           </p>
         </header>
+        {attention ? <NeedsAttention items={attention} /> : null}
         <PortfolioMultiples data={portfolio} now={now} toursOnPlan={toursOnPlan} />
         <PortfolioTable rows={portfolio.rows} now={now} />
         {agentPanels}

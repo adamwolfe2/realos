@@ -25,7 +25,9 @@ const DELTA_TEXT: Record<Tone, string> = {
   ai: "text-[var(--t-accent)]",
 };
 
-export function Panel({ title, aside, children, className, flush }: {
+export function Panel({ id, title, aside, children, className, flush }: {
+  /** Anchor for deep links (e.g. /portal/properties/x#units). */
+  id?: string;
   title?: ReactNode;
   aside?: ReactNode;
   children: ReactNode;
@@ -33,7 +35,7 @@ export function Panel({ title, aside, children, className, flush }: {
   flush?: boolean;
 }) {
   return (
-    <section className={cn("min-w-0 rounded-[var(--t-radius)] border border-[var(--t-border)] bg-[var(--t-card)] shadow-[var(--t-shadow)]", className)}>
+    <section id={id} className={cn("min-w-0 scroll-mt-6 rounded-[var(--t-radius)] border border-[var(--t-border)] bg-[var(--t-card)] shadow-[var(--t-shadow)]", className)}>
       {title ? (
         <header className="flex h-12 items-center justify-between gap-3 border-b border-[var(--t-divider)] px-4">
           <h2 className="text-[13.5px] font-semibold text-[var(--t-ink)]">{title}</h2>

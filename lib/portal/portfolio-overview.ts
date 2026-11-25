@@ -260,7 +260,9 @@ export async function getPortfolioOverview(orgId: string, propertyIds: string[] 
       health: {
         appfolio: health(p.lastSyncedAt, now, appfolio?.lastError ?? null),
         analytics: health(lastSeo, now, seoError),
-        chatbot: (p.chatbotConfig ? p.chatbotConfig.chatbotEnabled : chatsBy.has(p.id)) ? { state: "fresh", at: null } : { state: "off", at: null },
+        // Chats arriving prove a bot is live (the workspace bot) even when
+        // this property's own setting is off; a silent explicit off stays off.
+        chatbot: (p.chatbotConfig?.chatbotEnabled || chatsBy.has(p.id)) ? { state: "fresh", at: null } : { state: "off", at: null },
       },
     };
   });
