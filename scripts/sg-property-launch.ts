@@ -328,8 +328,12 @@ ${block}`;
   // building's records while it was inactive, so the next AppFolio run must
   // widen to the backfill window. Armed on every apply (harmless when nothing
   // is missing) so re-running the launch also repairs a skipped backfill.
-  await requestAppfolioBackfill([SG_ORG]);
-  console.log("  applied (AppFolio backfill armed for the next sync)");
+  await requestAppfolioBackfill([SG_ORG]); // logs + captures, never throws: verify below
+  const [armed] = await q<{ backfillRequestedAt: Date | null }>(
+    `select "backfillRequestedAt" from "AppFolioIntegration" where "orgId" = $1`, SG_ORG,
+  );
+  if (!armed?.backfillRequestedAt) throw new Error("applied, but the AppFolio backfill was NOT armed; re-run");
+  console.log(`  applied (AppFolio backfill armed ${new Date(armed.backfillRequestedAt).toISOString()})`);
 })()
   .catch((e) => {
     console.error(e);

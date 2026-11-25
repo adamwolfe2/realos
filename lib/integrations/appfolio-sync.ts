@@ -106,7 +106,8 @@ const DEFAULT_BACKFILL_DAYS = 30;
 // over-fetching cheap; once recovered, incremental syncs take over. Decided
 // records older than ~6 months aren't actionable, so 180 days is a safe ceiling.
 const PHASE_RECOVERY_BACKFILL_DAYS = 180;
-const LISTING_WRITE_CONCURRENCY = 10;
+// Per org; the cron runs several orgs at once against one Neon pool (max 10).
+const LISTING_WRITE_CONCURRENCY = 4;
 
 export type AppfolioSyncStats = {
   leadsUpserted: number;
@@ -1051,7 +1052,9 @@ export async function runAppfolioSync(
     // Unit ids seen per ACTIVE property this pull: drives the unseen ->
     // unavailable sweep and the Property.availableCount recompute below.
     const seenListingIds = new Map<string, Set<string>>();
-    const writes: Array<() => Promise<unknown>> = [];
+    // Keyed by property+unit so a repeated row is written once (last wins,
+    // as with the old sequential loop) and never races itself in a batch.
+    const writes = new Map<string, () => Promise<unknown>>();
     for (const row of rows) {
       const mapped = mapListingPayload(row);
       if (!mapped) continue;
@@ -1112,7 +1115,7 @@ export async function runAppfolioSync(
       const seen = seenListingIds.get(propertyId) ?? new Set<string>();
       seen.add(mapped.backendListingId);
       seenListingIds.set(propertyId, seen);
-      writes.push(() =>
+      writes.set(`${propertyId}:${mapped.backendListingId}`, () =>
         prisma.listing.upsert({
           where: syncListingWhere,
           update: syncListingData,
@@ -1123,10 +1126,11 @@ export async function runAppfolioSync(
     // Bounded-concurrency writes, one upsert per unit (the WebSocket pool
     // adapter supports upsert). Sequential find+update was 2 round trips per
     // unit, and SG went from 5 to 17 ACTIVE buildings against a 300s limit.
-    for (let i = 0; i < writes.length; i += LISTING_WRITE_CONCURRENCY) {
-      await Promise.all(writes.slice(i, i + LISTING_WRITE_CONCURRENCY).map((w) => w()));
+    const writeList = [...writes.values()];
+    for (let i = 0; i < writeList.length; i += LISTING_WRITE_CONCURRENCY) {
+      await Promise.all(writeList.slice(i, i + LISTING_WRITE_CONCURRENCY).map((w) => w()));
     }
-    stats.listingsUpserted += writes.length;
+    stats.listingsUpserted += writeList.length;
     // Absence only means "no longer listed" when the pull was complete.
     if (unitDirectoryTruncated) {
       stats.warnings.push("listings: unit directory truncated — delisted units not updated this run.");
