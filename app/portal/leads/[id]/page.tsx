@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { leadSourceLabel } from "@/lib/format";
 import { SourceLogo } from "@/components/portal/attribution/source-logo";
 import { trafficSourceLabel } from "@/lib/attribution/touch";
 import { trackServer } from "@/lib/analytics-server";
@@ -437,8 +438,7 @@ export default async function LeadDetailPage({
                 <Chip icon={<Phone className="h-3 w-3" />}>{lead.phone}</Chip>
               ) : null}
               <Chip icon={<Radar className="h-3 w-3" />}>
-                {lead.source}
-                {lead.sourceDetail ? ` \u00b7 ${lead.sourceDetail}` : ""}
+                {leadSourceLabel(lead.source, lead.sourceDetail, lead.externalSystem)}
               </Chip>
               {lead.trafficSource ? (
                 <Chip icon={<SourceLogo logo={lead.trafficSource} size={12} />}>

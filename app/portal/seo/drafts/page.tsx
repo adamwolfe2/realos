@@ -98,7 +98,6 @@ export default async function PortalDraftsListPage({
       select: {
         id: true,
         format: true,
-        brief: true,
         targetQuery: true,
         status: true,
         estimatedScore: true,
@@ -150,14 +149,13 @@ export default async function PortalDraftsListPage({
       // min-content overflow trap).
       accessor: (d) => (
         <div className="min-w-0 max-w-[420px]">
+          {/* The brief is the internal prompt for the writer; clients see
+              the search the draft targets instead. */}
           <p className="text-xs font-semibold text-foreground line-clamp-2 leading-tight">
-            {d.brief}
+            {d.targetQuery
+              ? d.targetQuery.charAt(0).toUpperCase() + d.targetQuery.slice(1)
+              : `${d.format.replace(/_/g, " ").toLowerCase().replace(/^./, (c) => c.toUpperCase())} draft`}
           </p>
-          {d.targetQuery ? (
-            <p className="text-[10px] font-mono text-muted-foreground truncate leading-tight mt-0.5">
-              target: {d.targetQuery}
-            </p>
-          ) : null}
           {d.reviewNotes ? (
             <p className="text-[11px] text-foreground line-clamp-2 leading-tight mt-0.5">
               <span className="font-medium text-primary">Notes:</span>{" "}
