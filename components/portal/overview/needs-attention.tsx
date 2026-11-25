@@ -47,7 +47,7 @@ export function NeedsAttention({ items }: { items: AttentionItem[] }) {
 
 function Rows({ items }: { items: AttentionItem[] }) {
   return (
-    <ul className="grid lg:grid-cols-2 [&>li]:border-[var(--t-divider)] [&>li:not(:last-child)]:border-b lg:[&>li:nth-child(odd)]:border-r lg:[&>li:nth-last-child(2):nth-child(odd)]:border-b-0">
+    <ul className="grid lg:grid-cols-2 [&>li]:border-[var(--t-divider)] [&>li:not(:last-child)]:border-b lg:[&>li:nth-child(odd)]:border-r lg:[&>li:nth-last-child(2):nth-child(odd)]:border-b-0 lg:[&>li:last-child:nth-child(odd)]:border-r-0">
       {items.map((it) => {
         const Icon = ICON[it.kind];
         return (
@@ -55,7 +55,7 @@ function Rows({ items }: { items: AttentionItem[] }) {
             <Link href={it.href} className="group flex min-w-0 items-start gap-3 px-4 py-3 outline-none hover:bg-[var(--t-wash)] focus-visible:bg-[var(--t-wash)]">
               <Icon aria-hidden className={cn("mt-0.5 h-4 w-4 shrink-0", it.kind === "sync" ? "text-[#b91c1c]" : "text-[var(--t-muted)]")} />
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13px] text-[var(--t-ink)]">
+                <span className="block text-[13px] leading-snug text-[var(--t-ink)] lg:truncate">
                   {it.propertyName ? <span className="font-medium">{it.propertyName}: </span> : null}
                   {it.title}
                 </span>

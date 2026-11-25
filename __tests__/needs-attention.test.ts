@@ -25,16 +25,17 @@ vi.mock("@/lib/db", () => ({
     seoSnapshot: { groupBy: vi.fn(async () => [{ propertyId: "a", _sum: { organicSessions: 120, totalClicks: 80 } }]) },
     lead: { groupBy: vi.fn(async () => []) },
     seoIntegration: { findMany: vi.fn(async () => [{ propertyId: "a", provider: "GA4", lastSyncError: null }]) },
-    seoQuery: {
-      findMany: vi.fn(async () => [
-        { propertyId: "a", query: "alpha apartments", date: ago(3), impressions: 40, position: 8 },
-        { propertyId: "a", query: "alpha apartments", date: ago(40), impressions: 40, position: 3 },
-      ]),
-    },
+    // SQL rows: impression-weighted position per query, each window.
+    $queryRaw: vi.fn(async () => [
+      { propertyId: "a", query: "alpha apartments", cur: 8, prev: 3, curImp: BigInt(40), prevImp: BigInt(40) },
+      { propertyId: "a", query: "alpha", cur: 2, prev: 1, curImp: BigInt(40), prevImp: BigInt(40) }, // 1 place: noise
+    ]),
     chatbotConversation: {
       findMany: vi.fn(async () => [
         { propertyId: "a", messages: [{ role: "user", content: "pets?" }, { role: "assistant", content: "I don't have that in front of me." }] },
+        { propertyId: "a", messages: [{ role: "user", content: "Pets?" }, { role: "assistant", content: "I'm not sure." }] },
       ]),
+      groupBy: vi.fn(async () => [{ propertyId: "a" }]),
     },
     chatbotKnowledgeSuggestion: { findMany: vi.fn(async () => []) },
   },
@@ -44,7 +45,7 @@ import { getNeedsAttention } from "@/lib/portal/needs-attention";
 
 describe("getNeedsAttention", () => {
   it("ranks real issues and labels the ready-date fallback", async () => {
-    const items = await getNeedsAttention("org", null, { state: "failed", lastError: "401 bad credentials" } as never);
+    const items = await getNeedsAttention("org", null, { state: "failed", lastError: "401 bad credentials" } as never, true);
     expect(items.map((i) => i.kind)).toEqual(["sync", "stale-units", "traffic-no-leads", "stale-units", "unanswered", "rank-drop", "missing-source", "missing-source"]);
     const listed = items.find((i) => i.id === "listed:a")!;
     expect(listed.title).toBe("1 unit listed 30+ days"); // pre-lease left out
@@ -53,5 +54,11 @@ describe("getNeedsAttention", () => {
     expect(ready.title).toBe("1 unit past its ready-for-showing date by 60+ days"); // parking left out
     expect(items.find((i) => i.kind === "rank-drop")!.detail).toBe('"alpha apartments" 3.0 → 8.0');
     expect(items.find((i) => i.id === "missing:Chatbot")!.detail).toBe("Beta");
+    expect(items.find((i) => i.kind === "unanswered")!.title).toBe("Chatbot couldn't answer 1 question"); // "pets?" twice
+  });
+
+  it("property-restricted viewers get no workspace-wide AppFolio item", async () => {
+    const items = await getNeedsAttention("org", ["a"], { state: "failed", lastError: "401" } as never, false);
+    expect(items.some((i) => i.kind === "sync")).toBe(false);
   });
 });

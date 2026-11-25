@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/db";
 import { listingKind } from "@/lib/listings/kind";
-import { NEXT_TERM, WINDOW } from "@/lib/portal/portfolio-overview";
-import { unansweredQuestions } from "@/lib/portal/property-cockpit";
+import { Prisma } from "@prisma/client";
+import { LISTED_TRACKING_SINCE, NEXT_TERM, WINDOW } from "@/lib/portal/portfolio-overview";
+import { questionKey, unansweredQuestions } from "@/lib/portal/property-cockpit";
 import type { AppFolioStatus } from "@/lib/integrations/appfolio-status";
 
 // ---------------------------------------------------------------------------
@@ -39,7 +40,12 @@ const DROP_MIN_IMPRESSIONS = 20;
 /** chatbotConfigured: the property's own setting, null = uses the workspace bot. */
 type Prop = { id: string; name: string; chatbotConfigured: boolean | null };
 
-export async function getNeedsAttention(orgId: string, propertyIds: string[] | null, appfolio: AppFolioStatus | null): Promise<AttentionItem[]> {
+/**
+ * @param propertyIds properties in view (null = all ACTIVE).
+ * @param orgWide the viewer may see workspace-wide items (the AppFolio feed
+ *   is one per workspace; a property-restricted user gets nothing from it).
+ */
+export async function getNeedsAttention(orgId: string, propertyIds: string[] | null, appfolio: AppFolioStatus | null, orgWide: boolean): Promise<AttentionItem[]> {
   const now = Date.now();
   const today = Math.floor(now / DAY) * DAY;
   const cur = new Date(today - (WINDOW - 1) * DAY);
@@ -55,7 +61,7 @@ export async function getNeedsAttention(orgId: string, propertyIds: string[] | n
   const byId = new Map<string, Prop>(props.map((p) => [p.id, { id: p.id, name: p.name, chatbotConfigured: p.chatbotConfig ? Boolean(p.chatbotConfig.chatbotEnabled) : null }]));
   const inProps = { orgId, propertyId: { in: ids } };
 
-  const [listings, visits, leads, seo, queries, convs, suggestions] = await Promise.all([
+  const [listings, visits, leads, seo, drops, convs, chatted, suggestions] = await Promise.all([
     prisma.listing.findMany({
       where: { propertyId: { in: ids }, property: { orgId }, isAvailable: true },
       select: { propertyId: true, unitNumber: true, unitType: true, raw: true, listedAt: true, availableFrom: true },
@@ -70,17 +76,28 @@ export async function getNeedsAttention(orgId: string, propertyIds: string[] | n
       where: { orgId, propertyId: { in: ids }, serviceAccountJsonEncrypted: { not: "DEMO_SEED" } },
       select: { propertyId: true, provider: true, lastSyncError: true },
     }),
-    prisma.seoQuery.findMany({
-      where: { ...inProps, date: { gte: since }, impressions: { gt: 0 } },
-      select: { propertyId: true, query: true, date: true, impressions: true, position: true },
-    }),
-    // ponytail: newest 2000 chats across the portfolio; plenty for SG today.
+    // Impression-weighted average position per query, each window, in SQL.
+    prisma.$queryRaw<{ propertyId: string; query: string; cur: number; prev: number; curImp: bigint; prevImp: bigint }[]>(Prisma.sql`
+      SELECT "propertyId", query,
+        SUM(position * impressions) FILTER (WHERE date >= ${cur}) / NULLIF(SUM(impressions) FILTER (WHERE date >= ${cur}), 0) AS cur,
+        SUM(position * impressions) FILTER (WHERE date < ${cur}) / NULLIF(SUM(impressions) FILTER (WHERE date < ${cur}), 0) AS prev,
+        COALESCE(SUM(impressions) FILTER (WHERE date >= ${cur}), 0) AS "curImp",
+        COALESCE(SUM(impressions) FILTER (WHERE date < ${cur}), 0) AS "prevImp"
+      FROM "SeoQuery"
+      WHERE "orgId" = ${orgId} AND "propertyId" IN (${Prisma.join(ids)}) AND date >= ${since} AND impressions > 0
+      GROUP BY "propertyId", query
+      HAVING SUM(impressions) FILTER (WHERE date >= ${cur}) >= ${DROP_MIN_IMPRESSIONS}
+         AND SUM(impressions) FILTER (WHERE date < ${cur}) >= ${DROP_MIN_IMPRESSIONS}`),
+    // ponytail: newest 500 chats across the portfolio (SG: ~40 a month);
+    // a much busier workspace needs the no-answer check at write time.
     prisma.chatbotConversation.findMany({
       where: { ...inProps, createdAt: { gte: cur } },
       select: { propertyId: true, messages: true },
       orderBy: { createdAt: "desc" },
-      take: 2000,
+      take: 500,
     }),
+    // Same evidence and window as the portfolio table's chatbot dot.
+    prisma.chatbotConversation.groupBy({ by: ["propertyId"], where: { ...inProps, createdAt: { gte: since } } }),
     prisma.chatbotKnowledgeSuggestion.findMany({
       where: { ...inProps, status: "OPEN" },
       select: { propertyId: true, suggestedText: true },
@@ -92,7 +109,7 @@ export async function getNeedsAttention(orgId: string, propertyIds: string[] | n
   const page = (id: string, anchor: string) => `/portal/properties/${id}#${anchor}`;
 
   // 1. Sync failures. AppFolio is one feed for the whole workspace.
-  if (appfolio && (appfolio.state === "failed" || appfolio.state === "partial")) {
+  if (orgWide && appfolio && (appfolio.state === "failed" || appfolio.state === "partial")) {
     items.push({
       id: "sync:appfolio",
       kind: "sync",
@@ -165,7 +182,7 @@ export async function getNeedsAttention(orgId: string, propertyIds: string[] | n
       propertyName: null,
       title: `${units} unit${units === 1 ? " past its" : "s past their"} ready-for-showing date by ${READY_STALE_DAYS}+ days`,
       detail: ready.slice(0, 3).map(([pid, s]) => `${name(pid)} ${s.ready.length}`).join(" · ") + (ready.length > 3 ? ` · ${ready.length - 3} more` : ""),
-      source: "AppFolio ready date · true days on market tracked since Nov 25",
+      source: `AppFolio ready date · days on market tracked since ${new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(LISTED_TRACKING_SINCE)}`,
       href: page(ready[0][0], "units"),
     });
   }
@@ -193,8 +210,10 @@ export async function getNeedsAttention(orgId: string, propertyIds: string[] | n
   const unanswered = new Map<string, string[]>();
   for (const c of convs) {
     if (!c.propertyId) continue;
-    const qs = unansweredQuestions(c.messages);
-    if (qs.length) unanswered.set(c.propertyId, [...(unanswered.get(c.propertyId) ?? []), ...qs]);
+    // Distinct questions, same normalisation as the property page.
+    const seen = new Map((unanswered.get(c.propertyId) ?? []).map((q) => [questionKey(q), q]));
+    for (const q of unansweredQuestions(c.messages)) if (questionKey(q) && !seen.has(questionKey(q))) seen.set(questionKey(q), q);
+    if (seen.size) unanswered.set(c.propertyId, [...seen.values()]);
   }
   const fixBy = new Map(suggestions.filter((s) => s.propertyId).map((s) => [s.propertyId!, s.suggestedText]));
   for (const [pid, qs] of unanswered) {
@@ -206,32 +225,22 @@ export async function getNeedsAttention(orgId: string, propertyIds: string[] | n
       propertyId: pid,
       propertyName: name(pid),
       title: `Chatbot couldn't answer ${qs.length} question${qs.length === 1 ? "" : "s"}`,
-      detail: fix ? `"${qs[0].slice(0, 80)}" · Suggested KB fix ready to review` : `"${qs[0].slice(0, 80)}" · add the answer to the knowledge base`,
+      detail: `"${qs[0].slice(0, 80)}"${fix ? " · a drafted chatbot fix is waiting for review" : " · add the answer to the knowledge base"}`,
       source: "LeaseStack chatbot",
       href: page(pid, "questions"),
     });
   }
 
   // 5. Google position drops: impression-weighted average position per
-  // query, last 28 days vs the 28 before.
-  const agg = new Map<string, { pid: string; query: string; cw: number; cn: number; pw: number; pn: number }>();
-  for (const q of queries) {
-    if (!q.propertyId) continue;
-    const key = `${q.propertyId}\u0000${q.query}`;
-    const a = agg.get(key) ?? { pid: q.propertyId, query: q.query, cw: 0, cn: 0, pw: 0, pn: 0 };
-    if (q.date >= cur) { a.cw += q.position * q.impressions; a.cn += q.impressions; }
-    else { a.pw += q.position * q.impressions; a.pn += q.impressions; }
-    agg.set(key, a);
+  // query, last 28 days vs the 28 before (computed in SQL above).
+  const dropsBy = new Map<string, { query: string; from: number; to: number; impressions: number }[]>();
+  for (const d of drops) {
+    const to = Number(d.cur);
+    const from = Number(d.prev);
+    if (!(to - from >= DROP_PLACES)) continue;
+    dropsBy.set(d.propertyId, [...(dropsBy.get(d.propertyId) ?? []), { query: d.query, from, to, impressions: Number(d.curImp) }]);
   }
-  const drops = new Map<string, { query: string; from: number; to: number; impressions: number }[]>();
-  for (const a of agg.values()) {
-    if (a.cn < DROP_MIN_IMPRESSIONS || a.pn < DROP_MIN_IMPRESSIONS) continue;
-    const to = a.cw / a.cn;
-    const from = a.pw / a.pn;
-    if (to - from < DROP_PLACES) continue;
-    drops.set(a.pid, [...(drops.get(a.pid) ?? []), { query: a.query, from, to, impressions: a.cn }]);
-  }
-  for (const [pid, ds] of drops) {
+  for (const [pid, ds] of dropsBy) {
     const worst = ds.sort((x, y) => y.impressions - x.impressions)[0];
     items.push({
       id: `rank:${pid}`,
@@ -249,11 +258,11 @@ export async function getNeedsAttention(orgId: string, propertyIds: string[] | n
   // 6. Missing data sources: one item per source, naming the buildings.
   // A property without its own chatbot config uses the workspace bot, so
   // chats are the evidence it is on.
-  const chatted = new Set(convs.map((c) => c.propertyId));
+  const chattedIds = new Set(chatted.map((c) => c.propertyId));
   const analytics = new Set(seo.map((s) => s.propertyId));
   const missing: [string, Prop[]][] = [
     ["GA4 / Search Console", [...byId.values()].filter((p) => !analytics.has(p.id))],
-    ["Chatbot", [...byId.values()].filter((p) => p.chatbotConfigured !== true && !chatted.has(p.id))],
+    ["Chatbot", [...byId.values()].filter((p) => p.chatbotConfigured !== true && !chattedIds.has(p.id))],
   ];
   for (const [label, list] of missing) {
     if (!list.length) continue;
@@ -267,7 +276,9 @@ export async function getNeedsAttention(orgId: string, propertyIds: string[] | n
       title: `${label} not connected on ${list.length} site${list.length === 1 ? "" : "s"}`,
       detail: names.slice(0, 4).join(" · ") + (names.length > 4 ? ` · ${names.length - 4} more` : ""),
       source: "Setup",
-      href: list.length === 1 ? page(list[0].id, "data-health") : "/portal/setup",
+      // Setup, not the property page: a property with no data yet shows
+      // its onboarding card there, without the cockpit's anchors.
+      href: "/portal/setup",
     });
   }
 

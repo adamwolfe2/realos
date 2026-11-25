@@ -87,6 +87,13 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
   // Multi-property workspaces get the portfolio cockpit; it is loaded
   // alongside the rest and ignored when only one property is in scope.
   const multi = allowed === null || allowed.length > 1;
+  const appfolioStatusP = multi ? getAppFolioStatus(orgId).catch(soft(null, "portal.overview:appfolio-status")) : null;
+  // Started now so it runs alongside everything else, not after it.
+  const attentionP = appfolioStatusP
+    ? appfolioStatusP
+        .then((status) => getNeedsAttention(orgId, allowed, status, scope.allowedPropertyIds === null))
+        .catch(soft(null, "portal.overview:needs-attention"))
+    : null;
   const [org, properties, convs, recentCaptured, leadRows, knowledge, site, insights, appliedRows, statuses, lastRun, leasing, portfolio, appfolioStatus] = await Promise.all([
     prisma.organization.findUnique({ where: { id: orgId }, select: { name: true } }),
     prisma.property.findMany({
@@ -114,7 +121,7 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
     prisma.chatbotLearningCase.findFirst({ where: { orgId }, orderBy: { createdAt: "desc" }, select: { createdAt: true } }),
     getLeasingSummary(orgId, allowed ?? null).catch(soft(null, "portal.overview:leasing")),
     multi ? getPortfolioOverview(orgId, allowed).catch(soft(null, "portal.overview:portfolio")) : null,
-    multi ? getAppFolioStatus(orgId).catch(soft(null, "portal.overview:appfolio-status")) : null,
+    appfolioStatusP,
   ]);
 
   // ---- Conversations.
@@ -280,7 +287,7 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
 
   if (portfolio && portfolio.rows.length > 1) {
     const toursOnPlan = showingsOnPlan(appfolioStatus?.stats);
-    const attention = await getNeedsAttention(orgId, allowed, appfolioStatus).catch(soft(null, "portal.overview:needs-attention"));
+    const attention = await attentionP;
     return (
       <div className="w-full space-y-5">
         <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
