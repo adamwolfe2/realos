@@ -561,7 +561,10 @@ function ReputationSection(s: ReportSnapshot): React.ReactNode {
           </span>
           <Stars rating={r.overallRating} className="text-[15px]" />
           <span className="text-caption font-medium text-muted-foreground">
-            {num(r.totalReviews)} {r.googleRated ? "reviews" : "reviews and mentions"}
+            {num(r.totalReviews)}{" "}
+            {r.googleRated
+              ? r.totalReviews === 1 ? "review" : "reviews"
+              : r.totalReviews === 1 ? "review or mention" : "reviews and mentions"}
             {r.positiveCount + r.negativeCount > 0
               ? ` · ${num(r.positiveCount)} positive, ${num(r.negativeCount)} negative mentions`
               : ""}
