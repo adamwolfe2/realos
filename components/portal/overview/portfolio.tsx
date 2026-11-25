@@ -83,6 +83,7 @@ export function trendCell(label: string, s: Series, today: Date, source: ReactNo
 export function PortfolioMultiples({ data, now, toursOnPlan }: { data: PortfolioOverview; now: number; toursOnPlan: boolean }) {
   const t = data.totals;
   const n = data.rows.length;
+  const notLive = data.rows.filter((r) => !r.live).length;
   const mix = t.leadMix;
   return (
     <dl className="grid grid-cols-2 overflow-hidden rounded-[var(--t-radius)] border border-[var(--t-border)] bg-[var(--t-card)] shadow-[var(--t-shadow)] lg:grid-cols-3 [&>*]:-ml-px [&>*]:-mt-px [&>*]:border-l [&>*]:border-t [&>*]:border-[var(--t-divider)]">
@@ -108,8 +109,8 @@ export function PortfolioMultiples({ data, now, toursOnPlan }: { data: Portfolio
         )}
       </Cell>
       {t.visitorsConnected
-        ? trendCell("Organic visitors", t.visitors, data.today, `GA4 + Search Console · ${t.visitorsConnected} of ${n} sites${data.rows.some((r) => !r.live) ? ` · ${data.rows.filter((r) => !r.live).length} not live yet` : ""} · synced ${since(data.analyticsSyncedAt, now)}`, `Search visits per day: the larger of GA4 organic sessions and Search Console clicks, last 28 days. The change compares only the ${t.visitorsLike.sites} site${t.visitorsLike.sites === 1 ? "" : "s"} with data in the 28 days before; sites connected since then are new, not growth.`, 1, t.visitorsLike)
-        : <Cell label="Organic visitors" value="—" source="GA4 + Search Console" title={data.orgWideAnalytics ? "GA4/Search Console is connected for the whole workspace, not per site, so it can't be split by property. Connect each site's own GA4 and Search Console." : "No property has GA4 or Search Console connected."}><Gap>{data.orgWideAnalytics ? "Workspace-wide only" : "Not connected"}</Gap></Cell>}
+        ? trendCell("Organic visitors", t.visitors, data.today, `GA4 + Search Console · ${t.visitorsConnected} of ${n} sites${notLive ? ` · ${notLive} not live yet` : ""} · synced ${since(data.analyticsSyncedAt, now)}`, `Search visits per day: the larger of GA4 organic sessions and Search Console clicks, last 28 days. The change compares only the ${t.visitorsLike.sites} site${t.visitorsLike.sites === 1 ? "" : "s"} with data in the 28 days before; sites connected since then are new, not growth.`, 1, t.visitorsLike)
+        : <Cell label="Organic visitors" value="—" source="GA4 + Search Console" title={data.orgWideAnalytics ? "GA4/Search Console is connected for the whole workspace, not per site, so it can't be split by property. Connect each site's own GA4 and Search Console." : "No property has GA4 or Search Console connected."}><Gap>{data.orgWideAnalytics ? "Workspace-wide only" : notLive === n ? "Not live yet" : "Not connected"}</Gap></Cell>}
       {trendCell("Website leads", t.leads, data.today, `Chat ${mix.chat} · Pop-up ${mix.popup} · Other ${mix.other}`, "Leads captured on the property websites (chatbot, pop-up, forms), last 28 days vs the 28 before. AppFolio applicants are counted under Applications.")}
       {trendCell("Chats", t.chats, data.today, "LeaseStack chatbot · live", "Chatbot conversations started, last 28 days vs the 28 before.")}
       {data.appfolioConnected

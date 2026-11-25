@@ -184,14 +184,14 @@ export default async function ChatbotInsightsPage({
             {" · "}Approval on, nothing sends on its own
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center rounded-full bg-secondary p-0.5">
             {PERIODS.map((p) => (
               <Link
                 key={p.days}
                 href={periodQS(p.days)}
                 className={cn(
-                  "rounded-full px-3 py-1 text-[12px] font-medium transition-colors",
+                  "whitespace-nowrap rounded-full px-3 py-1 text-[12px] font-medium transition-colors",
                   p.days === periodDays
                     ? "bg-card text-foreground shadow-[0_1px_2px_rgba(11,21,48,0.08)]"
                     : "text-muted-foreground hover:text-foreground",
@@ -215,7 +215,7 @@ export default async function ChatbotInsightsPage({
               <Lightbulb className="mx-auto h-5 w-5 text-primary" />
               <p className="mt-2 text-[14px] font-medium text-foreground">Nothing waiting</p>
               <p className="mt-1 text-[13px] text-muted-foreground">
-                The agent drafts fixes from new conversations after each learning pass.
+                New proposals arrive every Monday. Press Generate proposals to check now.
               </p>
             </div>
           ) : (

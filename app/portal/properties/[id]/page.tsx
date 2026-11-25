@@ -9,6 +9,8 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft, ArrowRight } from "lucide-react";
+import { DateRangePicker } from "@/components/portal/date-range-picker";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { PropertyHeroBanner } from "@/components/portal/properties/property-hero-banner";
@@ -319,20 +321,6 @@ export default async function PropertyDetail({
     });
   }
 
-  const fmtDelta = (cur: number, prior: number): {
-    delta?: string;
-    tone?: "positive" | "negative" | "neutral";
-  } => {
-    if (cur === 0 && prior === 0) return {};
-    if (prior === 0) return { delta: "New", tone: "positive" };
-    const pct = Math.round(((cur - prior) / prior) * 100);
-    if (pct === 0) return { delta: "Flat", tone: "neutral" };
-    return {
-      delta: `${pct > 0 ? "+" : ""}${pct}% vs prior`,
-      tone: pct > 0 ? "positive" : "negative",
-    };
-  };
-
   const subtitleParts: string[] = [];
   if (property.city) subtitleParts.push(property.city);
   if (property.residentialSubtype) {
@@ -358,72 +346,16 @@ export default async function PropertyDetail({
     );
   }
 
-  // Hide-zero on the hero stat row. Pre-cleanup (2026-06-04) every
-  // tile rendered as "—" when its signal was unset, so a brand-new
-  // tenant saw four em-dashes. Now we only render tiles whose data
-  // is real; the row narrows naturally to surface live metrics.
-  const allHeroStats: Array<{
-    label: string;
-    value: string;
-    delta?: string;
-    tone?: "positive" | "negative" | "neutral";
-    hasData: boolean;
-  }> = [
-    {
-      label: "leads",
-      value: leadsCurrent > 0 ? leadsCurrent.toLocaleString("en-US") : "—",
-      ...(leadsComparable ? fmtDelta(leadsCurrent, leadsPrior) : {}),
-      hasData: leadsCurrent > 0,
-    },
-    {
-      label: "conversations",
-      value:
-        convosCurrent > 0 ? convosCurrent.toLocaleString("en-US") : "—",
-      ...fmtDelta(convosCurrent, convosPrior),
-      hasData: convosCurrent > 0,
-    },
-    {
-      label: "Units",
-      value:
-        property.totalUnits != null && property.totalUnits > 0
-          ? property.totalUnits.toLocaleString("en-US")
-          : "—",
-      hasData: (property.totalUnits ?? 0) > 0,
-    },
-    {
-      label: "Reputation",
-      value:
-        rating?.googleAggRating != null
-          ? `${rating.googleAggRating.toFixed(1)} / 5`
-          : "—",
-      delta:
-        rating?.googleAggReviewCount != null && rating.googleAggReviewCount > 0
-          ? `${rating.googleAggReviewCount} reviews`
-          : undefined,
-      tone: "neutral" as const,
-      hasData: rating?.googleAggRating != null,
-    },
-  ];
-  const heroStats = allHeroStats
-    .filter((s) => s.hasData)
-    .map(({ hasData: _hd, ...rest }) => rest);
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <Link
-          href="/portal/properties"
-          className="inline-flex items-center text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-        >
-          ← All properties
-        </Link>
-        <Link
-          href={`/portal/properties/${property.id}/snapshot`}
-          className="inline-flex items-center rounded-[2px] border border-border bg-card px-3 py-1.5 text-[12px] font-medium text-foreground transition-colors hover:bg-muted"
-        >
-          Marketing snapshot →
-        </Link>
-      </div>
+      <Link
+        href="/portal/properties"
+        className="inline-flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ArrowLeft aria-hidden className="h-3.5 w-3.5" />
+        All properties
+      </Link>
 
       {/* Premium "profile picture" hero. Replaces the previous flat
           PageHeader + PropertyAvatar combo so featured properties like
@@ -433,13 +365,23 @@ export default async function PropertyDetail({
       <PropertyHeroBanner
         propertyId={property.id}
         propertyName={property.name}
-        subtitle={
-          subtitleParts.length > 0
-            ? `${subtitleParts.join(" · ")}${fullAddress ? ` — ${fullAddress}` : ""}`
-            : fullAddress
-        }
+        // Address only: the property type label added little, and the
+        // headline numbers live in the glance cards right below.
+        subtitle={fullAddress || subtitleParts[0]}
         heroImageUrl={avatarSrc}
-        stats={heroStats}
+        stats={[]}
+        actions={
+          <>
+            <DateRangePicker label={win.label} />
+            <Link
+              href={`/portal/properties/${property.id}/snapshot`}
+              className="inline-flex h-9 items-center gap-1.5 rounded-[var(--t-radius-sm,8px)] border border-border bg-card px-3 text-[13px] font-medium text-foreground transition-colors hover:bg-muted"
+            >
+              Marketing snapshot
+              <ArrowRight aria-hidden className="h-3.5 w-3.5" />
+            </Link>
+          </>
+        }
         imageOffsetX={property.heroImageOffsetX}
         imageOffsetY={property.heroImageOffsetY}
         imageScale={property.heroImageScale}
@@ -463,7 +405,7 @@ export default async function PropertyDetail({
       <PropertyTabs
         initialTab={tab ?? "overview"}
         propertyName={property.name}
-        glance={<PropertyGlance cards={glanceCards} propertyPath={`/portal/properties/${property.id}`} windowLabel={win.label} windowQuery={win.query} />}
+        glance={<PropertyGlance cards={glanceCards} propertyPath={`/portal/properties/${property.id}`} windowQuery={win.query} />}
         showOccupancy={showOccupancyTab}
         showAds={showAdsTab}
         panels={{

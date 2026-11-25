@@ -215,9 +215,10 @@ export async function getNeedsAttention(orgId: string, propertyIds: string[] | n
     for (const q of unansweredQuestions(c.messages)) if (questionKey(q) && !seen.has(questionKey(q))) seen.set(questionKey(q), q);
     if (seen.size) unanswered.set(c.propertyId, [...seen.values()]);
   }
-  const fixBy = new Map(suggestions.filter((s) => s.propertyId).map((s) => [s.propertyId!, s.suggestedText]));
+  // Any open fix counts, including "Needs SG's answer" proposals (no draft text yet).
+  const hasFix = new Set(suggestions.map((s) => s.propertyId).filter(Boolean));
   for (const [pid, qs] of unanswered) {
-    const fix = fixBy.get(pid);
+    const fix = hasFix.has(pid);
     items.push({
       id: `unanswered:${pid}`,
       kind: "unanswered",

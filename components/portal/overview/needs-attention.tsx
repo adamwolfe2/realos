@@ -52,15 +52,18 @@ function Rows({ items }: { items: AttentionItem[] }) {
         const Icon = ICON[it.kind];
         return (
           <li key={it.id} className="min-w-0">
-            <Link href={it.href} className="group flex min-w-0 items-start gap-3 px-4 py-3 outline-none hover:bg-[var(--t-wash)] focus-visible:bg-[var(--t-wash)]">
+            <Link href={it.href} className="group flex min-w-0 items-start gap-3 px-4 py-2.5 outline-none hover:bg-[var(--t-wash)] focus-visible:bg-[var(--t-wash)]">
               <Icon aria-hidden className={cn("mt-0.5 h-4 w-4 shrink-0", it.kind === "sync" ? "text-[#b91c1c]" : "text-[var(--t-muted)]")} />
               <span className="min-w-0 flex-1">
-                <span className="block text-[13px] leading-snug text-[var(--t-ink)] lg:truncate">
-                  {it.propertyName ? <span className="font-medium">{it.propertyName}: </span> : null}
-                  {it.title}
+                <span className="block line-clamp-2 text-[13px] leading-snug text-[var(--t-ink)] lg:truncate" title={it.title}>
+                  {it.propertyName ? <span className="font-medium">{it.propertyName} </span> : null}
+                  <span className={it.propertyName ? "text-[var(--t-ink)]/80" : undefined}>{it.title}</span>
                 </span>
-                <span className="mt-0.5 block truncate text-[12px] text-[var(--t-muted)]" title={it.detail}>{it.detail}</span>
-                <span className="mt-0.5 block text-[11px] text-[var(--t-muted)]">{it.source}</span>
+                {/* Detail and source on one line: the evidence, then where it came from. */}
+                <span className="mt-0.5 block truncate text-[12px] text-[var(--t-muted)]" title={`${it.detail} · ${it.source}`}>
+                  {it.detail}
+                  <span className="text-[var(--t-muted)]/80"> · {it.source}</span>
+                </span>
               </span>
               <ChevronRight aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-[var(--t-muted)] group-hover:text-[var(--t-ink)]" />
             </Link>

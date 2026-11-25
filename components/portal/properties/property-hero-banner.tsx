@@ -82,6 +82,8 @@ type Props = {
   imageOffsetX?: number;
   imageOffsetY?: number;
   imageScale?: number;
+  /** Detail view: controls on the right of the title (date range, links). */
+  actions?: React.ReactNode;
 };
 
 export function PropertyHeroBanner({
@@ -96,6 +98,7 @@ export function PropertyHeroBanner({
   imageOffsetX = 0,
   imageOffsetY = 0,
   imageScale = 1,
+  actions,
 }: Props) {
   const [currentImage, setCurrentImage] = React.useState(heroImageUrl);
   const [uploading, setUploading] = React.useState(false);
@@ -307,8 +310,8 @@ export function PropertyHeroBanner({
   const gridCols = compact
     ? "grid-cols-1 sm:grid-cols-[180px_minmax(0,1fr)]"
     : slimEmpty
-      ? "grid-cols-[64px_minmax(0,1fr)]"
-      : "grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)]";
+      ? "grid-cols-[64px_minmax(0,1fr)] sm:grid-cols-[64px_minmax(0,1fr)_auto]"
+      : "grid-cols-[72px_minmax(0,1fr)] sm:grid-cols-[112px_minmax(0,1fr)_auto]";
   // Norman 2026-05-21 fifth pass: the rounded-xl + perspective tilt
   // were treating the BG-removed PNG as if it were a card. Dropped
   // both. The building silhouette IS the shape now. Bigger size +
@@ -316,7 +319,7 @@ export function PropertyHeroBanner({
   // sides of its column.
   // Compact (dashboard) variant: contained image block — no negative-margin
   // spill, no float-out. Detail view keeps the larger silhouette treatment.
-  const imageSize = compact ? "h-[140px]" : slimEmpty ? "h-16" : "h-[150px]";
+  const imageSize = compact ? "h-[140px]" : slimEmpty ? "h-16" : "h-[72px] sm:h-[104px]";
   const imageLift = "";
 
   return (
@@ -656,6 +659,9 @@ export function PropertyHeroBanner({
             </div>
           ) : null}
         </div>
+        {actions && !compact ? (
+          <div className="col-span-2 flex flex-wrap items-center gap-2 sm:col-span-1 sm:justify-end sm:self-start">{actions}</div>
+        ) : null}
       </div>
 
       {error ? (
