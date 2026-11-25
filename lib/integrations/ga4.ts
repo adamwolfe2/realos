@@ -206,7 +206,7 @@ export async function fetchGa4OrganicDaily(
       },
       limit: "1000",
     },
-  }, { timeout: GA4_RUNREPORT_TIMEOUT_MS });
+  }, { timeout: GA4_SYNC_RUNREPORT_TIMEOUT_MS });
   const rows = resp.data.rows ?? [];
   return rows.map((r) => ({
     date: ymdFromGa4((r.dimensionValues?.[0]?.value ?? "") as string),
@@ -227,6 +227,11 @@ export type Ga4SourceRow = {
 // caller's try/catch resolves the source to null, and the page degrades to
 // the other attribution sources instead of hanging. (Brief: "GA4 without timeout".)
 const GA4_RUNREPORT_TIMEOUT_MS = 8000;
+// The background seo-sync cron has no visitor waiting, and GA4's Data API is
+// routinely slower than 8s during Google's overnight processing (every
+// "The operation was aborted." seo-sync run fell 09:00-14:00 UTC). Give the
+// two sync-only reports more room instead of dropping the day's data.
+const GA4_SYNC_RUNREPORT_TIMEOUT_MS = 20_000;
 
 export type Ga4SourceLandingRow = {
   source: string; // GA4 sessionSource
@@ -267,7 +272,7 @@ export async function fetchGa4OrganicLandingPages(
       orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
       limit: "1000",
     },
-  }, { timeout: GA4_RUNREPORT_TIMEOUT_MS });
+  }, { timeout: GA4_SYNC_RUNREPORT_TIMEOUT_MS });
   const rows = resp.data.rows ?? [];
   return rows.map((r) => ({
     date: ymdFromGa4((r.dimensionValues?.[0]?.value ?? "") as string),

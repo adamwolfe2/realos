@@ -1120,20 +1120,40 @@ function asYesNo(v: unknown): boolean | null {
 
 // Mapper for the `unit_directory` v2 report. Snake_case columns; numeric
 // id; rent fields can be string ("0.00") or null; sqft is a comma-formatted
-// string ("2,680"); availability comes from `rent_ready` ("Yes"/"No").
+// string ("2,680"); availability = posted_to_website/posted_to_internet.
 export function mapListingPayload(raw: RawRow): NormalizedListing | null {
   const externalId = asString(raw.unit_id ?? raw.id ?? raw.rentable_uid);
   if (!externalId) return null;
-  const rent = asNumber(raw.market_rent ?? raw.advertised_rent ?? raw.rent);
+  // advertised_rent is the price AppFolio shows on the public listing;
+  // market_rent is an internal figure that can sit far from it (SG: Stranda
+  // 206 market $4,500 vs listed $3,995; a Lair bed market $8,750 vs $942).
+  // First positive value wins; "0.00" means not set.
+  const rent = [raw.advertised_rent, raw.market_rent, raw.rent]
+    .map(asNumber)
+    .find((n): n is number => n != null && n > 0) ?? null;
   const beds = asNumber(raw.bedrooms);
   const baths = asNumber(raw.bathrooms);
   const sqft = asInt(raw.sqft);
   const available = asDate(raw.ready_for_showing_on);
   const description = asString(raw.marketing_description ?? raw.description);
+  // "Available" = AppFolio is marketing the unit: posted to the AppFolio
+  // listings site (posted_to_website) or syndicated (posted_to_internet).
+  // rent_ready / rentable only say the unit COULD be rented; on SG's account
+  // they were Yes for most occupied units too (Stranda: 25 of 30 rows,
+  // public listings page showed 4), and the chatbot quoted those rents.
+  // Older payloads without the posted_* fields keep the old fallback.
+  const postedWebsite = asYesNo(raw.posted_to_website);
+  const postedInternet = asYesNo(raw.posted_to_internet);
   const rentReady = asYesNo(raw.rent_ready);
   const rentable = asYesNo(raw.rentable);
   const isAvailable =
-    rentReady !== null ? rentReady : rentable !== null ? rentable : true;
+    postedWebsite !== null || postedInternet !== null
+      ? postedWebsite === true || postedInternet === true
+      : rentReady !== null
+        ? rentReady
+        : rentable !== null
+          ? rentable
+          : true;
 
   return {
     backendListingId: externalId,

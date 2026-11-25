@@ -41,6 +41,10 @@ import {
   pullIsComplete,
 } from "./appfolio-lease-sweep";
 import { classifyProperty } from "@/lib/properties/marketable";
+import {
+  markUnseenListingsUnavailable,
+  refreshPropertyListingDenorm,
+} from "./appfolio-listing-denorm";
 // Prisma's insensitive `equals` is an unescaped ILIKE: `_`/`%` in an email
 // would act as wildcards and merge two different applicants. AGENTS.md rule.
 import { escapeLikePattern } from "@/lib/leads/find-by-email";
@@ -102,12 +106,16 @@ const DEFAULT_BACKFILL_DAYS = 30;
 // over-fetching cheap; once recovered, incremental syncs take over. Decided
 // records older than ~6 months aren't actionable, so 180 days is a safe ceiling.
 const PHASE_RECOVERY_BACKFILL_DAYS = 180;
+// Per org; the cron runs several orgs at once against one Neon pool (max 10).
+const LISTING_WRITE_CONCURRENCY = 4;
 
 export type AppfolioSyncStats = {
   leadsUpserted: number;
   toursUpserted: number;
   tenantsMatched: number;
   listingsUpserted: number;
+  // Listings that dropped out of a complete unit_directory pull.
+  listingsMarkedUnavailable: number;
   // New phases
   propertiesUpserted: number;
   residentsUpserted: number;
@@ -277,6 +285,7 @@ export async function runAppfolioSync(
     toursUpserted: 0,
     tenantsMatched: 0,
     listingsUpserted: 0,
+    listingsMarkedUnavailable: 0,
     propertiesUpserted: 0,
     residentsUpserted: 0,
     leasesUpserted: 0,
@@ -1031,11 +1040,21 @@ export async function runAppfolioSync(
   // would go stale. We fetch the full directory each run; idempotent
   // upserts keep this safe.
   try {
+    let unitDirectoryTruncated = false;
     const rows = await fetchAllPages(client, "unit_directory", {
       extraFilters: integration.propertyGroupFilter
         ? { property_group: integration.propertyGroupFilter }
         : undefined,
+      onTruncated: () => {
+        unitDirectoryTruncated = true;
+      },
     });
+    // Unit ids seen per ACTIVE property this pull: drives the unseen ->
+    // unavailable sweep and the Property.availableCount recompute below.
+    const seenListingIds = new Map<string, Set<string>>();
+    // Keyed by property+unit so a repeated row is written once (last wins,
+    // as with the old sequential loop) and never races itself in a batch.
+    const writes = new Map<string, () => Promise<unknown>>();
     for (const row of rows) {
       const mapped = mapListingPayload(row);
       if (!mapped) continue;
@@ -1093,14 +1112,32 @@ export async function runAppfolioSync(
         raw: mapped.raw,
         lastSyncedAt: new Date(),
       };
-      const existingSyncListing = await prisma.listing.findUnique({ where: syncListingWhere, select: { id: true } });
-      if (existingSyncListing) {
-        await prisma.listing.update({ where: syncListingWhere, data: syncListingData });
-      } else {
-        await prisma.listing.create({ data: { propertyId, backendListingId: mapped.backendListingId, ...syncListingData } });
-      }
-      stats.listingsUpserted += 1;
+      const seen = seenListingIds.get(propertyId) ?? new Set<string>();
+      seen.add(mapped.backendListingId);
+      seenListingIds.set(propertyId, seen);
+      writes.set(`${propertyId}:${mapped.backendListingId}`, () =>
+        prisma.listing.upsert({
+          where: syncListingWhere,
+          update: syncListingData,
+          create: { propertyId, backendListingId: mapped.backendListingId, ...syncListingData },
+        }),
+      );
     }
+    // Bounded-concurrency writes, one upsert per unit (the WebSocket pool
+    // adapter supports upsert). Sequential find+update was 2 round trips per
+    // unit, and SG went from 5 to 17 ACTIVE buildings against a 300s limit.
+    const writeList = [...writes.values()];
+    for (let i = 0; i < writeList.length; i += LISTING_WRITE_CONCURRENCY) {
+      await Promise.all(writeList.slice(i, i + LISTING_WRITE_CONCURRENCY).map((w) => w()));
+    }
+    stats.listingsUpserted += writeList.length;
+    // Absence only means "no longer listed" when the pull was complete.
+    if (unitDirectoryTruncated) {
+      stats.warnings.push("listings: unit directory truncated — delisted units not updated this run.");
+    } else {
+      stats.listingsMarkedUnavailable = await markUnseenListingsUnavailable(seenListingIds);
+    }
+    await refreshPropertyListingDenorm([...seenListingIds.keys()]);
     phasesCompleted += 1;
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
@@ -1561,6 +1598,7 @@ export async function runAppfolioSync(
     toursUpserted: stats.toursUpserted,
     tenantsMatched: stats.tenantsMatched,
     listingsUpserted: stats.listingsUpserted,
+    listingsMarkedUnavailable: stats.listingsMarkedUnavailable,
     propertiesUpserted: stats.propertiesUpserted,
     residentsUpserted: stats.residentsUpserted,
     leasesUpserted: stats.leasesUpserted,
