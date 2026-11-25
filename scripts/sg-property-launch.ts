@@ -132,7 +132,10 @@ export function parseListings(html: string, match: RegExp, source: string): stri
     const bb = field(item, "js-listing-blurb-bed-bath");
     const sqft = field(item, "js-listing-square-feet").match(/([\d,]+)/)?.[1];
     const avail = availLabel(field(item, "js-listing-available"));
-    const unit = address.match(/[-–,]\s*#?([A-Za-z]?\d{2,4}[A-Za-z]?)\s*,/)?.[1];
+    // "... - 1Bedroom 2027 - 2028, Berkeley" is a lease year, not unit 2028: two
+    // listings tagged "(unit 2028)" made the Stranda bot swap the 1bd and 2bd prices.
+    const unitMatch = address.match(/[-–,]\s*#?([A-Za-z]?\d{2,4}[A-Za-z]?)\s*,/)?.[1];
+    const unit = unitMatch && !/^20\d\d$/.test(unitMatch) ? unitMatch : undefined;
     const showing = `${AF}/listings/showings/new?listable_uid=${uid}&source=${source}`;
     out.push({
       rent,

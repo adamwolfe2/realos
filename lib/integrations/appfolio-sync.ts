@@ -2419,10 +2419,20 @@ async function upsertLease(
   // and the resident exists. Don't override a more-recent ACTIVE lease with
   // an older ENDED one.
   if (residentId && (mapped.status === "ACTIVE" || mapped.status === "EXPIRING")) {
-    await prisma.resident.update({
-      where: { id: residentId },
-      data: { currentLeaseId: leaseId },
-    });
+    // currentLeaseId is @unique. When AppFolio re-points a lease at a
+    // different tenant (roommate swap, re-keyed occupancy), the previous
+    // holder still claims it and the update threw P2002, aborting the whole
+    // leases phase (SG, 2026-11-25). Release it from anyone else first.
+    await prisma.$transaction([
+      prisma.resident.updateMany({
+        where: { currentLeaseId: leaseId, id: { not: residentId } },
+        data: { currentLeaseId: null },
+      }),
+      prisma.resident.update({
+        where: { id: residentId },
+        data: { currentLeaseId: leaseId },
+      }),
+    ]);
   }
 
   return leaseId;
