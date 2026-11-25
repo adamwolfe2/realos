@@ -134,6 +134,7 @@ export function TargetQueryManager({ propertyId }: Props) {
 
       <div className="flex flex-col sm:flex-row items-stretch gap-2 mb-4">
         <input
+          aria-label="New target query"
           type="text"
           value={newQuery}
           onChange={(e) => setNewQuery(e.target.value)}
@@ -144,6 +145,7 @@ export function TargetQueryManager({ propertyId }: Props) {
           className="flex-1 rounded-[2px] border border-border bg-background px-3 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
         <select
+          aria-label="Search intent"
           value={newIntent}
           onChange={(e) => setNewIntent(e.target.value as Intent)}
           className="ls-select px-2 py-1.5 text-[12px] text-foreground"

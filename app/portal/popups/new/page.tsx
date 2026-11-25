@@ -46,30 +46,41 @@ export default async function NewPopupPage() {
         className="grid grid-cols-1 md:grid-cols-2 gap-3"
       >
         {POPUP_TEMPLATES.map((t) => (
-          <form key={t.id} action={createPopupFromForm} className="contents">
-            <input type="hidden" name="templateId" value={t.id} />
-            <input type="hidden" name="name" value={t.defaults.name} />
-            <SubmitButton
-              className="group text-left rounded-[2px] border border-border bg-card overflow-hidden hover:border-primary/40 hover:shadow-[0_8px_24px_-12px_rgba(15,23,42,0.18)] transition-all focus:outline-none focus:ring-2 focus:ring-primary/40"
+          <div
+            key={t.id}
+            className="group relative rounded-[2px] border border-border bg-card overflow-hidden hover:border-primary/40 hover:shadow-[0_8px_24px_-12px_rgba(15,23,42,0.18)] transition-all focus-within:ring-2 focus-within:ring-primary/40"
+          >
+            {/* The preview renders real <button>s and a <form>, so it sits
+                outside the template's form (nested interactive elements are
+                invalid HTML and broke hydration). The submit button's
+                ::after stretches over the whole card. */}
+            <div
+              aria-hidden="true"
+              inert
+              className="aspect-[16/10] bg-secondary border-b border-border relative overflow-hidden pointer-events-none"
             >
-              <div className="aspect-[16/10] bg-secondary border-b border-border relative overflow-hidden">
-                <PopupTemplateThumbnail template={t} />
-              </div>
-              <div className="p-4 space-y-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <h3 className="text-base font-semibold tracking-tight text-foreground group-hover:text-primary transition-colors">
-                    {t.label}
-                  </h3>
-                  <span className="ls-eyebrow shrink-0">
-                    {t.badge}
-                  </span>
+              <PopupTemplateThumbnail template={t} />
+            </div>
+            <form action={createPopupFromForm}>
+              <input type="hidden" name="templateId" value={t.id} />
+              <input type="hidden" name="name" value={t.defaults.name} />
+              <SubmitButton className="block w-full text-left focus:outline-none after:absolute after:inset-0 after:content-['']">
+                <div className="p-4 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="text-base font-semibold tracking-tight text-foreground group-hover:text-primary transition-colors">
+                      {t.label}
+                    </h3>
+                    <span className="ls-eyebrow shrink-0">
+                      {t.badge}
+                    </span>
+                  </div>
+                  <p className="text-[12px] text-muted-foreground leading-snug">
+                    {t.description}
+                  </p>
                 </div>
-                <p className="text-[12px] text-muted-foreground leading-snug">
-                  {t.description}
-                </p>
-              </div>
-            </SubmitButton>
-          </form>
+              </SubmitButton>
+            </form>
+          </div>
         ))}
       </section>
 

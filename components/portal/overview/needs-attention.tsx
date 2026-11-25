@@ -62,7 +62,7 @@ function Rows({ items }: { items: AttentionItem[] }) {
                 {/* Detail and source on one line: the evidence, then where it came from. */}
                 <span className="mt-0.5 block truncate text-[12px] text-[var(--t-muted)]" title={`${it.detail} · ${it.source}`}>
                   {it.detail}
-                  <span className="text-[var(--t-muted)]/80"> · {it.source}</span>
+                  <span className="text-[var(--t-muted)]"> · {it.source}</span>
                 </span>
               </span>
               <ChevronRight aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-[var(--t-muted)] group-hover:text-[var(--t-ink)]" />

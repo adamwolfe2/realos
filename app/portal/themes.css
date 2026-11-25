@@ -27,11 +27,11 @@
   --t-radius: 12px;
   --t-radius-sm: 8px;
   --t-shadow: 0 1px 2px rgba(11, 21, 48, 0.04);
-  --t-accent: #1f5eff;
+  --t-accent: #1b54e8; /* AA: 5.2:1 on its 10% tint, 6:1 on white */
   --t-accent-soft: #e8efff;
   --t-nav-active-bg: #ffffff;
-  --t-nav-active-fg: #1f5eff;
-  --t-primary-bg: #1f5eff;
+  --t-nav-active-fg: #1b54e8;
+  --t-primary-bg: #1b54e8;
   --t-primary-fg: #ffffff;
   --t-sidebar-edge: transparent;
 }
@@ -238,7 +238,7 @@
 [data-theme] .portal-main tbody tr:hover { background-color: var(--t-wash); }
 [data-theme] :is(input, textarea, select):focus {
   border-color: var(--t-accent) !important;
-  box-shadow: 0 0 0 3px rgba(31, 94, 255, 0.12);
+  box-shadow: 0 0 0 3px rgba(27, 84, 232, 0.12);
   outline: none;
 }
 [data-theme] :is(button, a, [role="button"], [role="tab"], summary):focus-visible {

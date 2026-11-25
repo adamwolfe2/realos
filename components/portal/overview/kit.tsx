@@ -64,7 +64,7 @@ export function Metric({ label, value, delta, note }: { label: string; value: Re
         <span className="text-[24px] font-semibold leading-none tracking-[-0.02em] tabular-nums text-[var(--t-ink)]">{value}</span>
         {delta ? <span className={cn("text-[12.5px] font-medium tabular-nums", DELTA_TEXT[delta.tone])}>{delta.text}</span> : null}
       </dd>
-      {note ? <p className="mt-1.5 text-[12px] text-[var(--t-muted)]">{note}</p> : null}
+      {note ? <dd className="mt-1.5 text-[12px] text-[var(--t-muted)]">{note}</dd> : null}
     </div>
   );
 }

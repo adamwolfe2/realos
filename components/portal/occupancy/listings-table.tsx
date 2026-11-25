@@ -420,7 +420,7 @@ export function ListingsTable({
                   <div className="flex flex-col">
                     <span>{l.unitPrimary}</span>
                     {l.unitDetail ? (
-                      <span className="text-[10px] text-muted-foreground/80">
+                      <span className="text-[10px] text-muted-foreground">
                         {l.unitDetail}
                       </span>
                     ) : null}

@@ -21,7 +21,7 @@ export const dynamic = "force-dynamic";
 const STATUS_TONE: Record<string, string> = {
   GENERATING:        "bg-muted text-muted-foreground",
   PENDING_REVIEW:    "bg-primary/10 text-primary",
-  APPROVED:          "bg-success/15 text-success font-semibold",
+  APPROVED:          "bg-success/15 text-success-dark font-semibold",
   CHANGES_REQUESTED: "bg-muted text-foreground",
   REJECTED:          "bg-muted text-muted-foreground line-through",
   SHIPPED:           "bg-success text-success-foreground",

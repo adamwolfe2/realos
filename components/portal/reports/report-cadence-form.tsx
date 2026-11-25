@@ -222,7 +222,7 @@ export function ReportCadenceForm({
 
       <div className="flex items-start justify-between gap-3 ls-card p-3">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-foreground">
+          <p id="report-autosend-label" className="text-sm font-semibold text-foreground">
             Send automatically when a snapshot is generated
           </p>
           <p className="text-[12px] text-muted-foreground mt-0.5 leading-relaxed">
@@ -244,10 +244,11 @@ export function ReportCadenceForm({
           type="button"
           role="switch"
           aria-checked={effectiveAutoSend}
+          aria-labelledby="report-autosend-label"
           disabled={!canAutoSend}
           onClick={() => setAutoSend((v) => !v)}
           className={`shrink-0 inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-            effectiveAutoSend ? "bg-primary" : "bg-muted"
+            effectiveAutoSend ? "bg-primary" : "bg-muted ring-1 ring-inset ring-border"
           } ${!canAutoSend ? "opacity-50 cursor-not-allowed" : ""}`}
         >
           <span

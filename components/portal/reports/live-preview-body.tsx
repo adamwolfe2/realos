@@ -63,7 +63,12 @@ export async function LivePreviewBody({
     );
   }
   return (
-    <div className="max-h-[calc(78vh-11rem)] overflow-y-auto rounded-[2px] border border-border">
+    <div
+      tabIndex={0}
+      role="region"
+      aria-label="Report preview"
+      className="max-h-[calc(78vh-11rem)] overflow-y-auto rounded-[2px] border border-border focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+    >
       <PropertyOnePager snapshot={snapshot} property={property} />
     </div>
   );

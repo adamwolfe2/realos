@@ -216,7 +216,7 @@ function FilterChip({ filter }: { filter: ToolbarFilter }) {
           {filter.icon}
         </span>
       ) : null}
-      <span className="text-muted-foreground/80">{filter.field}:</span>
+      <span className="text-muted-foreground">{filter.field}:</span>
       <span>{filter.value}</span>
       <Link
         href={filter.removeHref}

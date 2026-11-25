@@ -13,7 +13,7 @@ export const BRAND = "#0f62fe";
 export const BRAND_LIGHT = "#93C5FD";
 export const INK = "#1E2A3A";
 export const MUTED = "#94A3B8";
-export const SUCCESS = "#059669";
+export const SUCCESS = "#047857"; // AA as text on white
 export const DANGER = "#DC2626";
 export const BORDER = "#E2E8F0";
 

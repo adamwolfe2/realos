@@ -219,7 +219,7 @@ function StatusBadge({ status }: { status: string }) {
   // brand-primary vs neutral instead).
   const tone =
     status === "ACTIVE"
-      ? "bg-[rgba(36,161,72,0.10)] text-[#24a148]"
+      ? "bg-[rgba(36,161,72,0.10)] text-[#15803d]"
       : status === "PAUSED"
         ? "bg-muted text-muted-foreground border border-border"
         : status === "ARCHIVED"

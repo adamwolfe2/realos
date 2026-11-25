@@ -143,6 +143,7 @@ export function AeoCustomPrompts({
       <form onSubmit={onAdd} className="flex flex-col sm:flex-row gap-2 mb-4">
         {properties.length > 1 ? (
           <select
+            aria-label="Property"
             value={propertyId}
             onChange={(e) => setPropertyId(e.target.value)}
             className="h-9 rounded-[2px] border border-border bg-background px-2 text-[13px] text-foreground sm:w-56"

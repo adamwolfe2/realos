@@ -629,7 +629,7 @@ export default async function PropertiesList({
                     }
                     const tone =
                       score >= 75
-                        ? "text-[#24a148] bg-[rgba(36,161,72,0.1)]"
+                        ? "text-[#15803d] bg-[rgba(36,161,72,0.1)]"
                         : score >= 50
                           ? "text-[#8a6d00] bg-[rgba(241,194,27,0.16)]"
                           : "text-[#da1e28] bg-[rgba(218,30,40,0.1)]";
@@ -725,7 +725,7 @@ function ActiveFilterChips({
       title={`Clear ${label}`}
     >
       <span>{label}</span>
-      <span aria-hidden="true" className="text-primary/70">×</span>
+      <span aria-hidden="true" className="text-primary">×</span>
     </Link>
   );
 

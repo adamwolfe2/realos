@@ -31,7 +31,8 @@ export const dynamic = "force-dynamic";
 function scoreTone(score: number | null): string {
   if (score == null) return "text-muted-foreground";
   if (score >= 75) return "text-primary font-semibold";
-  if (score >= 50) return "text-primary/70";
+  // Mid tier: dark ink, so the two tiers differ in hue as well as weight.
+  if (score >= 50) return "text-foreground";
   return "text-muted-foreground";
 }
 

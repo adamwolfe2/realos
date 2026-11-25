@@ -77,7 +77,7 @@ body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-ins
      Amber = alerts/attention, Muted Green = positive trends. */
   --color-warning: #f1c21b;
   --color-warning-foreground: #1E2A3A;
-  --color-success: #24a148;
+  --color-success: #15803d; /* AA as text: 5:1 on white */
   --color-success-foreground: #FFFFFF;
   --color-success-dark: #0e6027;   /* Carbon green-70 — readable as text */
 
@@ -154,7 +154,7 @@ body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-ins
   /* ── Status ────────────────────────────────────────────────────────── */
   --error:          #da1e28;
   --focus-blue:     #0f62fe;
-  --success:        #24a148;
+  --success:        #15803d;
   --warning:        #f1c21b;
 
   /* ── Legacy + semantic aliases so older files inherit cleanly ──────── */
@@ -717,7 +717,7 @@ body {
 /* Bare coloured mono, not a filled pill. The marketing snapshot renders
    movement as "^ vs prior" in coloured mono with no chrome; the tinted pill
    read as a status badge and competed with real badges on the same row. */
-.ls-delta-up   { color: #24a148; }
+.ls-delta-up   { color: #15803d; }
 .ls-delta-down { color: #da1e28; }
 .ls-delta-flat { color: var(--gray-70); }
 
@@ -802,7 +802,7 @@ body {
 .ls-pill-neutral { background: var(--gray-10-hover); color: var(--gray-70); }
 .ls-pill-info    { background: rgba(15, 98, 254, 0.10); color: #0043ce; }
 .ls-pill-active  { background: rgba(15, 98, 254, 0.12); color: #0043ce; }
-.ls-pill-success { background: rgba(36, 161, 72, 0.10); color: #24a148; }
+.ls-pill-success { background: rgba(36, 161, 72, 0.10); color: #15803d; }
 .ls-pill-warning { background: rgba(241, 194, 27, 0.12); color: #8a6d00; }
 .ls-pill-danger  { background: rgba(218, 30, 40, 0.10); color: #da1e28; }
 

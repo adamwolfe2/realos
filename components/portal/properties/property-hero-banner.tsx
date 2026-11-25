@@ -601,7 +601,7 @@ export function PropertyHeroBanner({
                     </p>
                     <p className="ls-eyebrow mt-1.5 leading-tight">{s.label}</p>
                     {s.hint ? (
-                      <p className="text-[10.5px] text-muted-foreground/90 mt-0.5 leading-tight">
+                      <p className="text-[10.5px] text-muted-foreground mt-0.5 leading-tight">
                         {s.hint}
                       </p>
                     ) : null}

@@ -426,7 +426,7 @@ export function SyncAppfolioButton() {
       </button>
       {result && result.ok ? (
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-xs text-[#24a148]">
+          <span className="text-xs text-[#15803d]">
             {formatSyncSummary(result.stats)}
           </span>
           {result.stats.warnings.length > 0 ? (

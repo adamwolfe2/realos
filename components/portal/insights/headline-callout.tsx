@@ -47,7 +47,7 @@ export function HeadlineCallout({ signal, bare = false }: HeadlineCalloutProps) 
 
   const iconColor =
     signal.tone === "positive"
-      ? "text-[#24a148]"
+      ? "text-[#15803d]"
       : signal.tone === "negative"
         ? "text-[#da1e28]"
         : "text-muted-foreground";

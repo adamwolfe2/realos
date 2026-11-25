@@ -44,7 +44,7 @@ export function MessageBubbleList({ messages }: { messages: TranscriptMessage[] 
             >
               <div
                 className={`text-[10px] uppercase tracking-widest mb-1 ${
-                  isUser ? "text-primary-foreground/70" : "text-muted-foreground"
+                  isUser ? "text-primary-foreground/90" : "text-muted-foreground"
                 }`}
               >
                 {isUser ? "Visitor" : "Assistant"}
@@ -53,7 +53,7 @@ export function MessageBubbleList({ messages }: { messages: TranscriptMessage[] 
               {m.ts ? (
                 <div
                   className={`text-[10px] mt-1 tabular-nums ${
-                    isUser ? "text-primary-foreground/70" : "text-muted-foreground"
+                    isUser ? "text-primary-foreground/90" : "text-muted-foreground"
                   }`}
                 >
                   {format(new Date(m.ts), "MMM d, p")}

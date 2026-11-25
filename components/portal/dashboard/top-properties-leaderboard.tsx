@@ -57,7 +57,7 @@ export function TopPropertiesLeaderboard({
         const delta = row.leadsCurrent - row.leadsPrior;
         const trendClass =
           delta > 0
-            ? "text-[#24a148]"
+            ? "text-[#15803d]"
             : delta < 0
               ? "text-destructive"
               : "text-muted-foreground";

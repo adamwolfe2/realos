@@ -54,7 +54,7 @@ export function PropertySwitcher({ properties, activeId }: Props) {
               <span
                 className={`text-[10.5px] truncate max-w-[140px] ${
                   isActive
-                    ? "text-primary-foreground/80"
+                    ? "text-primary-foreground"
                     : "text-muted-foreground"
                 }`}
               >

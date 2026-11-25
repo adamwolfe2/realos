@@ -11,7 +11,7 @@ export function ManagedByChip({ sla }: { sla?: string }) {
     <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary whitespace-nowrap">
       <BadgeCheck className="h-3 w-3" aria-hidden="true" />
       Managed by LeaseStack
-      {sla ? <span className="text-primary/70">· {sla}</span> : null}
+      {sla ? <span className="text-primary">· {sla}</span> : null}
     </span>
   );
 }

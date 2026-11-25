@@ -94,7 +94,7 @@ export function CreativeRequestForm({
     <form onSubmit={submit} className="space-y-5">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <label className="flex flex-col gap-1 text-sm">
-          <span className="text-xs tracking-widest uppercase opacity-70">
+          <span className="text-xs tracking-widest uppercase text-muted-foreground">
             For property
           </span>
           <select
@@ -110,7 +110,7 @@ export function CreativeRequestForm({
           </select>
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          <span className="text-xs tracking-widest uppercase opacity-70">
+          <span className="text-xs tracking-widest uppercase text-muted-foreground">
             Format
           </span>
           <select
@@ -132,7 +132,7 @@ export function CreativeRequestForm({
       </div>
 
       <label className="flex flex-col gap-1 text-sm">
-        <span className="text-xs tracking-widest uppercase opacity-70">
+        <span className="text-xs tracking-widest uppercase text-muted-foreground">
           Title
         </span>
         <input
@@ -144,7 +144,7 @@ export function CreativeRequestForm({
       </label>
 
       <label className="flex flex-col gap-1 text-sm">
-        <span className="text-xs tracking-widest uppercase opacity-70">
+        <span className="text-xs tracking-widest uppercase text-muted-foreground">
           What do you want us to make?
         </span>
         <textarea
@@ -158,7 +158,7 @@ export function CreativeRequestForm({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <label className="flex flex-col gap-1 text-sm">
-          <span className="text-xs tracking-widest uppercase opacity-70">
+          <span className="text-xs tracking-widest uppercase text-muted-foreground">
             Needed by
           </span>
           <input
@@ -168,7 +168,7 @@ export function CreativeRequestForm({
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          <span className="text-xs tracking-widest uppercase opacity-70">
+          <span className="text-xs tracking-widest uppercase text-muted-foreground">
             Audience
           </span>
           <input
@@ -180,7 +180,7 @@ export function CreativeRequestForm({
       </div>
 
       <label className="flex flex-col gap-1 text-sm">
-        <span className="text-xs tracking-widest uppercase opacity-70">
+        <span className="text-xs tracking-widest uppercase text-muted-foreground">
           Copy ideas
         </span>
         <textarea
@@ -233,10 +233,11 @@ function UploadField({
 }) {
   return (
     <div className="flex flex-col gap-2 text-sm">
-      <p className="text-xs tracking-widest uppercase opacity-70">{label}</p>
-      <p className="text-xs opacity-60">{hint}</p>
+      <p className="text-xs tracking-widest uppercase text-muted-foreground">{label}</p>
+      <p className="text-xs text-muted-foreground">{hint}</p>
       <input
         type="file"
+        aria-label={label}
         multiple
         accept="image/*,application/pdf"
         disabled={uploading}

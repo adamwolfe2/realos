@@ -145,7 +145,7 @@ export function ConnectFunnelForm({
               Last error: {lastError}
             </p>
           ) : (
-            <p className="text-[#24a148]">No recent errors.</p>
+            <p className="text-[#15803d]">No recent errors.</p>
           )}
         </div>
       ) : null}

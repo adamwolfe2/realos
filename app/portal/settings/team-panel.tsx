@@ -228,6 +228,7 @@ function MemberRow({
         ) : null}
       </div>
       <select
+        aria-label={`Role for ${member.email}`}
         value={role}
         onChange={(e) => onRoleSelect(e.target.value as UserRole)}
         disabled={pending || disableControls}
@@ -537,6 +538,7 @@ function InviteForm({
           Role
         </span>
         <select
+          aria-label="Role"
           value={role}
           onChange={(e) => setRole(e.target.value as UserRole)}
           className="rounded-[2px] border border-border bg-background px-2.5 py-1.5 text-sm"

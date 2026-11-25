@@ -39,7 +39,7 @@ export const FLAG_TONE: Record<
 > = {
   quality_good: {
     bg: "bg-[rgba(36,161,72,0.10)]",
-    text: "text-[#24a148]",
+    text: "text-[#15803d]",
     dot: "bg-[#24a148]",
     ring: "ring-[#24a148]/30",
   },
@@ -59,7 +59,7 @@ export const FLAG_TONE: Record<
     // High-intent is a success signal, not a brand/neutral one — green
     // family, same as quality_good, so the operator reads both as "good".
     bg: "bg-[rgba(36,161,72,0.10)]",
-    text: "text-[#24a148]",
+    text: "text-[#15803d]",
     dot: "bg-[#24a148]",
     ring: "ring-[#24a148]/25",
   },

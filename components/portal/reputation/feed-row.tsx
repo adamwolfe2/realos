@@ -8,7 +8,7 @@ import type { PortfolioReputationFeedItem } from "@/lib/reputation/portfolio";
 import { safeNum } from "@/components/portal/reputation/reputation-utils";
 
 const SENTIMENT_TONE: Record<Sentiment, string> = {
-  POSITIVE: "bg-[rgba(36,161,72,0.10)] text-[#24a148] border-[#24a148]/30",
+  POSITIVE: "bg-[rgba(36,161,72,0.10)] text-[#15803d] border-[#24a148]/30",
   NEUTRAL: "bg-muted text-muted-foreground border-border",
   NEGATIVE: "bg-muted text-muted-foreground border-border",
   MIXED: "bg-secondary text-foreground border-border",
@@ -154,7 +154,7 @@ export function FeedRow({ mention }: { mention: PortfolioReputationFeedItem }) {
             ) : null}
             {sentiment && sentimentTone ? (
               <span
-                className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold border ${sentimentTone} ${lowConfidence ? "opacity-60" : ""}`}
+                className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold border ${sentimentTone} ${lowConfidence ? "border-dashed" : ""}`}
                 title={
                   mention.sentimentConfidence != null
                     ? `Confidence ${Math.round(mention.sentimentConfidence * 100)}%`

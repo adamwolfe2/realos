@@ -203,7 +203,7 @@ export function WelcomeLanding({
                 <p className="ls-eyebrow">
                   Your site is live
                 </p>
-                <span className="inline-flex items-center gap-1.5 rounded-[2px] bg-success/10 px-2 py-0.5 text-[10px] font-mono font-semibold uppercase tracking-[0.1em] text-success">
+                <span className="inline-flex items-center gap-1.5 rounded-[2px] bg-success/10 px-2 py-0.5 text-[10px] font-mono font-semibold uppercase tracking-[0.1em] text-success-dark">
                   <span
                     aria-hidden
                     className="inline-block w-1.5 h-1.5 rounded-full bg-success"

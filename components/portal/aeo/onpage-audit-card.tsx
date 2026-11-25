@@ -60,7 +60,7 @@ function ChecklistRow({ check }: { check: OnPageAuditCheck }) {
     <li className="flex items-start gap-2.5 py-2 border-b border-border last:border-b-0">
       <div className="mt-0.5 shrink-0">
         {check.pass ? (
-          <Check className="w-3.5 h-3.5 text-[#24a148]" />
+          <Check className="w-3.5 h-3.5 text-[#15803d]" />
         ) : (
           <X className="w-3.5 h-3.5 text-[#da1e28]" />
         )}
@@ -75,7 +75,7 @@ function ChecklistRow({ check }: { check: OnPageAuditCheck }) {
         className={
           "inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold border " +
           (check.pass
-            ? "bg-[rgba(36,161,72,0.10)] text-[#24a148] border-[#24a148]/30"
+            ? "bg-[rgba(36,161,72,0.10)] text-[#15803d] border-[#24a148]/30"
             : "bg-[rgba(218,30,40,0.10)] text-[#da1e28] border-[#da1e28]/30")
         }
       >
@@ -90,7 +90,7 @@ function ChecklistRow({ check }: { check: OnPageAuditCheck }) {
 function ScoreRing({ score }: { score: number }) {
   const band =
     score >= 70
-      ? "border-[#24a148] text-[#24a148]"
+      ? "border-[#24a148] text-[#15803d]"
       : score >= 40
         ? "border-[#0f62fe] text-[#0f62fe]"
         : "border-[#da1e28] text-[#da1e28]";

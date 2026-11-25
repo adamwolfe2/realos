@@ -391,7 +391,7 @@ export function SyncSeoButton() {
         {isPending ? "Syncing…" : "Sync now"}
       </button>
       {result && result.ok ? (
-        <span className="text-xs text-[#24a148]">
+        <span className="text-xs text-[#15803d]">
           Pulled {result.stats.gscDays} GSC days, {result.stats.gscQueries}{" "}
           queries, {result.stats.ga4Days} GA4 days,{" "}
           {result.stats.ga4LandingPages} landing pages.

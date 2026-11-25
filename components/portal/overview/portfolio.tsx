@@ -34,23 +34,24 @@ export function TrendLine({ s, height = 56, className }: { s: Series; height?: n
   );
 }
 
-export function Cell({ label, value, delta, source, children, title }: {
+export function Cell({ label, value, delta, source, children, title, className }: {
   label: string;
   value: ReactNode;
   delta?: { text: string; tone: string } | null;
   source: ReactNode;
   children?: ReactNode;
   title: string;
+  className?: string;
 }) {
   return (
-    <div className="flex min-w-0 flex-col px-4 py-3.5" title={title}>
+    <div className={cn("flex min-w-0 flex-col px-4 py-3.5", className)} title={title}>
       <dt className="flex items-baseline justify-between gap-2 text-[12.5px] text-[var(--t-muted)]">
         <span className="truncate">{label}</span>
         {delta ? <span className={cn("shrink-0 text-[12px] font-medium tabular-nums", delta.tone === "good" ? "text-[#15803d]" : delta.tone === "bad" ? "text-[#b91c1c]" : "text-[var(--t-muted)]")}>{delta.text}</span> : null}
       </dt>
       <dd className="mt-1 text-[24px] font-semibold leading-tight tracking-[-0.02em] tabular-nums text-[var(--t-ink)]">{value}</dd>
-      <div className="mt-2 min-h-[56px] flex-1">{children}</div>
-      <p className="mt-2 text-[11.5px] leading-snug text-[var(--t-muted)]">{source}</p>
+      <dd className="mt-2 min-h-[56px] flex-1">{children}</dd>
+      <dd className="mt-2 text-[11.5px] leading-snug text-[var(--t-muted)]">{source}</dd>
     </div>
   );
 }

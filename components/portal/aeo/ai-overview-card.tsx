@@ -54,7 +54,7 @@ function OverviewItem({ row }: { row: AiOverviewRow }) {
           className={
             "inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold border " +
             (row.cited
-              ? "bg-[rgba(36,161,72,0.10)] text-[#24a148] border-[#24a148]/30"
+              ? "bg-[rgba(36,161,72,0.10)] text-[#15803d] border-[#24a148]/30"
               : "bg-muted text-muted-foreground border-border")
           }
         >
@@ -136,7 +136,7 @@ export function AiOverviewCard({
                 <span
                   className={
                     "font-semibold " +
-                    (cited > 0 ? "text-[#24a148]" : "text-[#da1e28]")
+                    (cited > 0 ? "text-[#15803d]" : "text-[#da1e28]")
                   }
                 >
                   {cited} of {rows.length}

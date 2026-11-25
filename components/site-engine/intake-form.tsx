@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { cloneElement, isValidElement, useId } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -536,10 +537,23 @@ function Field({
   hint?: string;
   children: React.ReactNode;
 }) {
+  // Link the label to a single form control so it has an accessible name.
+  // Grids of option buttons (div children) keep a plain heading label.
+  const autoId = useId();
+  // Only real form controls take the id; composite widgets (chip groups,
+  // option grids) keep a plain heading label.
+  const single =
+    isValidElement<{ id?: string }>(children) &&
+    (children.type === Input ||
+      (typeof children.type === "string" && ["input", "select", "textarea"].includes(children.type)));
+  const id = single ? (children.props.id ?? autoId) : undefined;
+  const control = single ? cloneElement(children, { id }) : null;
   return (
     <div className="space-y-1.5">
-      <Label className="text-sm font-medium">{label}</Label>
-      {children}
+      <Label htmlFor={id} className="text-sm font-medium">
+        {label}
+      </Label>
+      {control ?? children}
       {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
     </div>
   );
@@ -825,8 +839,9 @@ function AssetsSection({ form, update }: SectionProps) {
       </header>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Label className="text-sm font-medium">Asset type</Label>
+        <Label htmlFor="intake-asset-type" className="text-sm font-medium">Asset type</Label>
         <select
+          id="intake-asset-type"
           value={nextType}
           onChange={(e) => setNextType(e.target.value as Asset["type"])}
           className="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
@@ -843,6 +858,7 @@ function AssetsSection({ form, update }: SectionProps) {
         <Input
           ref={fileInputRef}
           type="file"
+          aria-label="Upload files"
           multiple
           accept="image/*,application/pdf"
           onChange={(e) => handleFiles(e.target.files)}
