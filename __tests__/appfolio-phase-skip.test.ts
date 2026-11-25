@@ -122,12 +122,13 @@ describe("appfolio-status.ts — parseStats reads phaseWarnings into unsupported
     expect(content).toContain("new Set([...unsupportedFromWarnings, ...storedPhaseWarnings])");
   });
 
-  it("partial detection triggers on unsupportedReports even when phasesAccounted === totalPhases", () => {
+  // Plan-limited reports are an expected state (behavior covered in
+  // __tests__/appfolio-status-plan-limited.test.ts): partial is only for
+  // real failures.
+  it("partial detection triggers on transient failures only", () => {
     const content = readStatus();
-    // The new hasPlanLimitations condition
-    expect(content).toContain("hasPlanLimitations");
-    expect(content).toContain("stats.unsupportedReports?.length ?? 0");
-    expect(content).toContain("hasTransientFailures || hasPlanLimitations");
+    expect(content).toContain("if (hasTransientFailures) {");
+    expect(content).not.toContain("hasPlanLimitations");
   });
 });
 

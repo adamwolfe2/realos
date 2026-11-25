@@ -44,6 +44,7 @@ import { classifyProperty } from "@/lib/properties/marketable";
 import {
   markUnseenListingsUnavailable,
   refreshPropertyListingDenorm,
+  startsListing,
 } from "./appfolio-listing-denorm";
 // Prisma's insensitive `equals` is an unescaped ILIKE: `_`/`%` in an email
 // would act as wildcards and merge two different applicants. AGENTS.md rule.
@@ -1052,6 +1053,18 @@ export async function runAppfolioSync(
     // Unit ids seen per ACTIVE property this pull: drives the unseen ->
     // unavailable sweep and the Property.availableCount recompute below.
     const seenListingIds = new Map<string, Set<string>>();
+    // Prior availability per unit, for Listing.listedAt: stamped when a unit
+    // starts being advertised (new, or relisted after dropping off). A
+    // property with no rows yet is on its first pull, where "new" only means
+    // "advertised before we looked", so its units stay NULL (age unknown).
+    const prior = await prisma.listing.findMany({
+      where: { propertyId: { in: Array.from(new Set(propertyByExternalId.values())) } },
+      select: { propertyId: true, backendListingId: true, isAvailable: true },
+    });
+    const priorAvailable = new Map(prior.map((l) => [`${l.propertyId}:${l.backendListingId}`, l.isAvailable]));
+    // AppFolio-keyed rows only: an operator-entered row is not sync history.
+    const propertiesWithRows = new Set(prior.filter((l) => l.backendListingId).map((l) => l.propertyId));
+    const syncStartedAt = new Date();
     // Keyed by property+unit so a repeated row is written once (last wins,
     // as with the old sequential loop) and never races itself in a batch.
     const writes = new Map<string, () => Promise<unknown>>();
@@ -1115,11 +1128,15 @@ export async function runAppfolioSync(
       const seen = seenListingIds.get(propertyId) ?? new Set<string>();
       seen.add(mapped.backendListingId);
       seenListingIds.set(propertyId, seen);
-      writes.set(`${propertyId}:${mapped.backendListingId}`, () =>
+      const key = `${propertyId}:${mapped.backendListingId}`;
+      const listedAt = startsListing(mapped.isAvailable, priorAvailable.get(key), propertiesWithRows.has(propertyId))
+        ? { listedAt: syncStartedAt }
+        : {};
+      writes.set(key, () =>
         prisma.listing.upsert({
           where: syncListingWhere,
-          update: syncListingData,
-          create: { propertyId, backendListingId: mapped.backendListingId, ...syncListingData },
+          update: { ...syncListingData, ...listedAt },
+          create: { propertyId, backendListingId: mapped.backendListingId, ...syncListingData, ...listedAt },
         }),
       );
     }
@@ -1137,7 +1154,8 @@ export async function runAppfolioSync(
     } else {
       stats.listingsMarkedUnavailable = await markUnseenListingsUnavailable(seenListingIds);
     }
-    await refreshPropertyListingDenorm([...seenListingIds.keys()]);
+    const trendWarning = await refreshPropertyListingDenorm([...seenListingIds.keys()]);
+    if (trendWarning) stats.warnings.push(trendWarning);
     phasesCompleted += 1;
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";

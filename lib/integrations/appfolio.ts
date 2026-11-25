@@ -2,6 +2,7 @@ import "server-only";
 import * as cheerio from "cheerio";
 import { prisma } from "@/lib/db";
 import { maybeDecrypt } from "@/lib/crypto";
+import { refreshPropertyListingDenorm } from "./appfolio-listing-denorm";
 import {
   AppFolioIntegration,
   BackendPlatform,
@@ -2172,24 +2173,13 @@ export async function syncListingsForOrg(
 
     // Refresh Property denormalized fields (AppFolio buildings only — a
     // building managed elsewhere keeps its own counts).
-    for (const p of appfolioProperties) {
-      const agg = await prisma.listing.aggregate({
-        where: { propertyId: p.id, isAvailable: true },
-        _min: { priceCents: true },
-        _max: { priceCents: true },
-        _count: { _all: true },
-      });
-      await prisma.property.update({
-        where: { id: p.id },
-        data: {
-          priceMin: agg._min.priceCents ?? null,
-          priceMax: agg._max.priceCents ?? null,
-          availableCount: agg._count._all,
-          lastSyncedAt: new Date(),
-          syncError: null,
-        },
-      });
-    }
+    // Same homes-only count and rent range as the REST sync writes.
+    const trendWarning = await refreshPropertyListingDenorm(appfolioProperties.map((p) => p.id));
+    if (trendWarning) console.warn(`[appfolio] ${trendWarning}`);
+    await prisma.property.updateMany({
+      where: { id: { in: appfolioProperties.map((p) => p.id) } },
+      data: { lastSyncedAt: new Date(), syncError: null },
+    });
 
     await prisma.appFolioIntegration.update({
       where: { orgId },

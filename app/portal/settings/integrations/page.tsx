@@ -39,6 +39,7 @@ import {
 import { OAuthConnectButton } from "./oauth-button";
 import { isProviderConfigured } from "@/lib/integrations/oauth-config";
 import { PENDING_OAUTH_BIND } from "@/lib/integrations/google-properties";
+import { parseStats, planLimitedSummary } from "@/lib/integrations/appfolio-status";
 
 export const metadata: Metadata = { title: "Integrations" };
 export const dynamic = "force-dynamic";
@@ -76,6 +77,7 @@ export default async function IntegrationsPage() {
         lastSyncAt: true,
         syncStatus: true,
         lastError: true,
+        lastSyncStats: true,
       },
     }),
     prisma.funnelIntegration.findUnique({
@@ -268,6 +270,7 @@ export default async function IntegrationsPage() {
         lastSyncAt={appfolio!.lastSyncAt ?? null}
         syncStatus={appfolio!.syncStatus ?? null}
         lastError={appfolio!.lastError ?? null}
+        planLimited={planLimitedSummary(parseStats(appfolio!.lastSyncStats)?.unsupportedReports)}
       />
     ) : (
       <ConnectAppfolioForm />
@@ -451,12 +454,15 @@ function AppfolioManage({
   lastSyncAt,
   syncStatus,
   lastError,
+  planLimited,
 }: {
   subdomain: string;
   mode: string;
   lastSyncAt: Date | null;
   syncStatus: string | null;
   lastError: string | null;
+  /** Reports not on this AppFolio plan: expected, said once, quietly. */
+  planLimited: string | null;
 }) {
   // Same status ladder as the Connect hub: error → first-sync-running →
   // live/stale (AppFolio's hourly cron makes 48h unambiguously stale).
@@ -487,6 +493,7 @@ function AppfolioManage({
           {lastError}
         </p>
       ) : null}
+      {planLimited ? <p className="text-xs text-muted-foreground">{planLimited}</p> : null}
 
       <div className="flex flex-wrap items-center gap-3">
         <SyncAppfolioButton />

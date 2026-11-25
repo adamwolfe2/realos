@@ -1287,6 +1287,7 @@ model Property {
   notifications                  Notification[]
   aeoOverviewSnapshots           AeoOverviewSnapshot[]
   siteIntelligence               SiteIntelligence[]
+  availabilityDaily              PropertyAvailabilityDaily[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1302,6 +1303,22 @@ model Property {
   @@index([orgId, lifecycle, updatedAt(sort: Desc)])
   @@index([orgId, launchStatus])
   @@index([backendPlatform, backendPropertyId])
+}
+
+// One row per property per day, written by the AppFolio sync: what was
+// advertised that day, split by kind (lib/listings/kind.ts), so availability
+// has a real trend line. History starts the day this table shipped.
+model PropertyAvailabilityDaily {
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  date       DateTime @db.Date
+  rooms      Int
+  units      Int
+  other      Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@id([propertyId, date])
 }
 
 model Listing {
@@ -1326,6 +1343,10 @@ model Listing {
   isAvailable   Boolean   @default(true)
   availableFrom DateTime?
   availableTo   DateTime?
+  // First time the AppFolio sync saw this unit advertised; restamped when it
+  // is relisted after dropping off. NULL = advertised before tracking began
+  // (2026-11-25), so its real age is unknown. AppFolio has no listed date.
+  listedAt      DateTime?
 
   photoUrls   Json?
   description String? @db.Text

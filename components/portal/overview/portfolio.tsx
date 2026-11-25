@@ -83,18 +83,29 @@ function trendCell(label: string, s: Series, today: Date, source: ReactNode, tit
 export function PortfolioMultiples({ data, now, toursOnPlan }: { data: PortfolioOverview; now: number; toursOnPlan: boolean }) {
   const t = data.totals;
   const n = data.rows.length;
-  const buildings = data.rows.filter((r) => r.available > 0).length;
   const mix = t.leadMix;
   return (
     <dl className="grid grid-cols-2 overflow-hidden rounded-[var(--t-radius)] border border-[var(--t-border)] bg-[var(--t-card)] shadow-[var(--t-shadow)] lg:grid-cols-3 [&>*]:-ml-px [&>*]:-mt-px [&>*]:border-l [&>*]:border-t [&>*]:border-[var(--t-divider)]">
       <Cell
-        label="Available units"
+        label="Available homes"
         value={fmt.format(t.available)}
-        source={`AppFolio listings · synced ${since(data.appfolioSyncedAt, now)}`}
-        title="Units and floor plans SG advertises on AppFolio right now. Daily history is not stored yet, so there is no trend line."
+        source={`${fmt.format(t.rooms)} rooms · ${fmt.format(t.units)} apts · AppFolio · ${since(data.appfolioSyncedAt, now)}`}
+        title="Rooms (a bed or room in a shared unit) and apartments (whole units and studios) advertised on AppFolio right now; parking and storage left out. The line is the daily count since tracking started."
       >
-        <AvailabilityBar rows={data.rows} />
-        <p className="mt-1.5 text-[11px] text-[var(--t-muted)]">{buildings} of {n} buildings advertising</p>
+        {data.availability.length >= 2 ? (
+          <>
+            <TrendLine s={{ cur: data.availability.map((a) => a.homes), prev: [] }} />
+            <div className="mt-1 flex justify-between text-[11px] tabular-nums text-[var(--t-muted)]">
+              <span>{day.format(data.availability[0].date)}</span>
+              <span>{day.format(data.availability[data.availability.length - 1].date)}{data.availabilitySites < n ? ` · ${data.availabilitySites} of ${n} sites` : ""}</span>
+            </div>
+          </>
+        ) : (
+          <>
+            <AvailabilityBar rows={data.rows} />
+            <p className="mt-1.5 text-[11px] text-[var(--t-muted)]">Daily trend starts {day.format(data.availability[0]?.date ?? data.today)}</p>
+          </>
+        )}
       </Cell>
       {t.visitorsConnected
         ? trendCell("Organic visitors", t.visitors, data.today, `GA4 + Search Console · ${t.visitorsConnected} of ${n} sites · synced ${since(data.analyticsSyncedAt, now)}`, `Search visits per day: the larger of GA4 organic sessions and Search Console clicks, last 28 days. The change compares only the ${t.visitorsLike.sites} site${t.visitorsLike.sites === 1 ? "" : "s"} with data in the 28 days before; sites connected since then are new, not growth.`, 1, t.visitorsLike)
@@ -102,7 +113,15 @@ export function PortfolioMultiples({ data, now, toursOnPlan }: { data: Portfolio
       {trendCell("Website leads", t.leads, data.today, `Chat ${mix.chat} · Pop-up ${mix.popup} · Other ${mix.other}`, "Leads captured on the property websites (chatbot, pop-up, forms), last 28 days vs the 28 before. AppFolio applicants are counted under Applications.")}
       {trendCell("Chats", t.chats, data.today, "LeaseStack chatbot · live", "Chatbot conversations started, last 28 days vs the 28 before.")}
       {data.appfolioConnected
-        ? trendCell("Applications", t.apps, data.today, `AppFolio · synced ${since(data.appfolioSyncedAt, now)}`, "Primary applicants by the date AppFolio received the application, last 28 days vs the 28 before.")
+        ? trendCell(
+            "Applications",
+            t.apps,
+            data.today,
+            `AppFolio · change on ${t.appsLike.sites} of ${n} sites · ${since(data.appfolioSyncedAt, now)}`,
+            `Primary applicants by the date AppFolio received the application, last 28 days. AppFolio applications are imported only while a building is active in LeaseStack, so the change compares only the ${t.appsLike.sites} building${t.appsLike.sites === 1 ? "" : "s"} tracked for the whole 56 days; buildings activated since then have no full prior window.`,
+            0,
+            t.appsLike.sites ? t.appsLike : { cur: 0, prev: 0 },
+          )
         : <Cell label="Applications" value="—" source="AppFolio" title="AppFolio is not connected, so applications aren't tracked."><Gap>Not connected</Gap></Cell>}
       {toursOnPlan
         ? trendCell("Tours", t.tours, data.today, "LeaseStack + AppFolio tours", "Tours created, last 28 days vs the 28 before.")

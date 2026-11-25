@@ -630,8 +630,8 @@ export default async function PortalLayout({
                 <>
                   {appfolioStatus.stats?.phasesCompleted ?? 0} of{" "}
                   {appfolioStatus.stats?.totalPhases ?? 8} phases pulled data.
-                  {appfolioStatus.stats?.warnings?.[0]
-                    ? ` First warning: ${summarizeAppfolioError(appfolioStatus.stats.warnings[0])}`
+                  {appfolioStatus.lastError
+                    ? ` First warning: ${summarizeAppfolioError(appfolioStatus.lastError)}`
                     : ""}
                 </>
               ) : staleAgeDays != null ? (

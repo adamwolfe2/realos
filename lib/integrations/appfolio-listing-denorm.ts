@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/db";
+import { rentByKind } from "@/lib/listings/kind";
+import { captureWithContext } from "@/lib/sentry";
 
 /**
  * Listing availability bookkeeping run at the end of the AppFolio
@@ -18,8 +20,22 @@ import { prisma } from "@/lib/db";
  *
  * 2. `refreshPropertyListingDenorm` — Property.availableCount / priceMin /
  *    priceMax were only written by the legacy embed sync, so every property
- *    on the REST sync read availableCount=0. Recomputed from Listing rows.
+ *    on the REST sync read availableCount=0. Recomputed from Listing rows,
+ *    homes only (rooms + whole units; parking/storage/commercial left out),
+ *    and today's counts recorded in PropertyAvailabilityDaily so the
+ *    portfolio's available-units card has a real trend line.
  */
+/**
+ * Whether this sync starts a listing's time on market (Listing.listedAt):
+ * advertised now, and either relisted (was unavailable) or new on a
+ * property we already track. A property's first pull has no history, so
+ * "new" there only means "advertised before we looked": left NULL.
+ */
+export function startsListing(isAvailable: boolean, wasAvailable: boolean | undefined, propertyHasRows: boolean): boolean {
+  if (!isAvailable || wasAvailable === true) return false;
+  return wasAvailable === false || propertyHasRows;
+}
+
 export async function markUnseenListingsUnavailable(
   seenByProperty: ReadonlyMap<string, ReadonlySet<string>>,
 ): Promise<number> {
@@ -39,36 +55,48 @@ export async function markUnseenListingsUnavailable(
   return marked;
 }
 
+/** Returns a warning when the daily availability row could not be written
+ *  (the trend is a nice-to-have: it must never fail the listings phase). */
 export async function refreshPropertyListingDenorm(
   propertyIds: readonly string[],
-): Promise<void> {
+  now: Date = new Date(),
+): Promise<string | null> {
   const ids = [...new Set(propertyIds)];
-  if (ids.length === 0) return;
-  const [counts, prices] = await Promise.all([
-    prisma.listing.groupBy({
-      by: ["propertyId"],
-      where: { propertyId: { in: ids }, isAvailable: true },
-      _count: { _all: true },
-    }),
-    // Zero/blank rents are "contact for rate" placeholders, not a price.
-    prisma.listing.groupBy({
-      by: ["propertyId"],
-      where: { propertyId: { in: ids }, isAvailable: true, priceCents: { gt: 0 } },
-      _min: { priceCents: true },
-      _max: { priceCents: true },
-    }),
-  ]);
-  const countBy = new Map(counts.map((c) => [c.propertyId, c._count._all]));
-  const priceBy = new Map(prices.map((p) => [p.propertyId, p]));
+  if (ids.length === 0) return null;
+  let trendError: string | null = null;
+  const listings = await prisma.listing.findMany({
+    where: { propertyId: { in: ids }, isAvailable: true },
+    select: { propertyId: true, unitNumber: true, unitType: true, priceCents: true, raw: true },
+  });
+  const byProperty = new Map<string, typeof listings>();
+  for (const l of listings) byProperty.set(l.propertyId, [...(byProperty.get(l.propertyId) ?? []), l]);
+  // UTC calendar day: one availability row per property per day, last run wins.
+  const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   for (const id of ids) {
-    const price = priceBy.get(id);
+    const k = rentByKind(byProperty.get(id) ?? []);
+    const mins = [k.room.min, k.unit.min].filter((n): n is number => n !== null);
+    const maxs = [k.room.max, k.unit.max].filter((n): n is number => n !== null);
     await prisma.property.update({
       where: { id },
       data: {
-        availableCount: countBy.get(id) ?? 0,
-        priceMin: price?._min.priceCents ?? null,
-        priceMax: price?._max.priceCents ?? null,
+        availableCount: k.room.count + k.unit.count,
+        priceMin: mins.length ? Math.min(...mins) : null,
+        priceMax: maxs.length ? Math.max(...maxs) : null,
       },
     });
+    const counts = { rooms: k.room.count, units: k.unit.count, other: k.other.count };
+    try {
+      await prisma.propertyAvailabilityDaily.upsert({
+        where: { propertyId_date: { propertyId: id, date } },
+        create: { propertyId: id, date, ...counts },
+        update: counts,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`[appfolio-listing-denorm] availability snapshot failed for ${id}`, err);
+      captureWithContext(err, { handler: "refreshPropertyListingDenorm", propertyId: id });
+      trendError = trendError ?? message;
+    }
   }
+  return trendError ? `listings-trend: daily availability not recorded (${trendError.slice(0, 160)})` : null;
 }
