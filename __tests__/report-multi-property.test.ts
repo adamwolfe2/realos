@@ -136,6 +136,89 @@ describe("generateReportSnapshot with two ACTIVE properties", () => {
     ]);
   });
 
+  it("property-scoped organic visits match the property page (own SeoSnapshot rows, larger of sessions and clicks)", async () => {
+    // Regression: SG snapshot read 0 visits (URL-pattern match dropped GA4's
+    // relative paths) while the property page showed 235.
+    mockPrisma.property.findFirst.mockImplementation(async () => ({
+      id: "prop-b",
+      slug: "b-house",
+      name: "B House",
+    }));
+    mockPrisma.property.count.mockImplementation(async () => 2);
+    mockPrisma.seoSnapshot.findMany.mockImplementation(async () => [
+      { date: new Date("2026-10-21T00:00:00.000Z"), propertyId: "prop-b", organicSessions: 12, totalClicks: 30 },
+      { date: new Date("2026-10-22T00:00:00.000Z"), propertyId: "prop-b", organicSessions: 0, totalClicks: 0 },
+      { date: new Date("2026-10-23T00:00:00.000Z"), propertyId: "prop-b", organicSessions: 50, totalClicks: 8 },
+    ]);
+    let snap;
+    try {
+      snap = await generateReportSnapshot("org-1", "weekly", {
+        skipAi: true,
+        now: NOW,
+        propertyId: "prop-b",
+      });
+    } finally {
+      mockPrisma.property.findFirst.mockImplementation(async () => null);
+      mockPrisma.property.count.mockImplementation(async () => 0);
+      mockPrisma.seoSnapshot.findMany.mockImplementation(async () => []);
+    }
+    expect(snap.kpis.organicSessions).toBe(80);
+  });
+
+  it("property-scoped reputation shows the property's Google rating, not the mention average", async () => {
+    // Regression: SG snapshot read 5.0 / 50 (mention average) while the
+    // property page showed Google's 4.0 / 49.
+    mockPrisma.property.findFirst.mockImplementation(async () => ({
+      id: "prop-b",
+      slug: "b-house",
+      name: "B House",
+    }));
+    mockPrisma.property.count.mockImplementation(async () => 2);
+    mockPrisma.property.findMany.mockImplementation(async (args: { where?: { id?: string } }) =>
+      args.where?.id === "prop-b" ? [{ googleAggRating: 4, googleAggReviewCount: 49 }] : [],
+    );
+    mockPrisma.propertyMention.aggregate.mockImplementation(async () => ({
+      _avg: { rating: 5 },
+      _count: { _all: 50 },
+    }));
+    let snap;
+    try {
+      snap = await generateReportSnapshot("org-1", "weekly", {
+        skipAi: true,
+        now: NOW,
+        propertyId: "prop-b",
+      });
+    } finally {
+      mockPrisma.property.findFirst.mockImplementation(async () => null);
+      mockPrisma.property.count.mockImplementation(async () => 0);
+      mockPrisma.propertyMention.aggregate.mockImplementation(async () => ({
+        _sum: {},
+        _avg: {},
+        _count: { _all: 0 },
+      }));
+    }
+    expect(snap.reputationStats?.overallRating).toBe(4);
+    expect(snap.reputationStats?.totalReviews).toBe(49);
+    expect(snap.reputationStats?.googleRated).toBe(true);
+  });
+
+  it("property with a Google rating but no stored mentions still gets reputation stats", async () => {
+    mockPrisma.property.findFirst.mockImplementation(async () => ({ id: "prop-b", slug: "b-house", name: "B House" }));
+    mockPrisma.property.count.mockImplementation(async () => 2);
+    mockPrisma.property.findMany.mockImplementation(async (args: { where?: { id?: string } }) =>
+      args.where?.id === "prop-b" ? [{ googleAggRating: 4.3, googleAggReviewCount: 12 }] : [],
+    );
+    let snap;
+    try {
+      snap = await generateReportSnapshot("org-1", "weekly", { skipAi: true, now: NOW, propertyId: "prop-b" });
+    } finally {
+      mockPrisma.property.findFirst.mockImplementation(async () => null);
+      mockPrisma.property.count.mockImplementation(async () => 0);
+    }
+    expect(snap.reputationStats?.overallRating).toBe(4.3);
+    expect(snap.reputationStats?.totalReviews).toBe(12);
+  });
+
   it("property-scoped report never charts org-wide SeoSnapshot clicks (sibling data)", async () => {
     mockPrisma.property.findFirst.mockImplementation(async () => ({
       id: "prop-b",
@@ -153,7 +236,10 @@ describe("generateReportSnapshot with two ACTIVE properties", () => {
       mockPrisma.property.findFirst.mockImplementation(async () => null);
       mockPrisma.property.count.mockImplementation(async () => 0);
     }
-    expect(mockPrisma.seoSnapshot.findMany).not.toHaveBeenCalled();
+    // Only the property's own rows may be read, never org-wide or siblings.
+    for (const [args] of mockPrisma.seoSnapshot.findMany.mock.calls) {
+      expect(args.where.propertyId).toBe("prop-b");
+    }
     const byDate = mockPrisma.seoQuery.groupBy.mock.calls.find(
       ([args]: [{ by: string[] }]) => args.by.includes("date"),
     );
@@ -187,8 +273,10 @@ describe("one ACTIVE property (+ EXCLUDED rows): multi-property-only behaviour s
       mockPrisma.property.findFirst.mockImplementation(async () => null);
       mockPrisma.property.count.mockImplementation(async () => 0);
     }
-    const [args] = mockPrisma.seoSnapshot.findMany.mock.calls[0];
-    expect(args.where).toEqual({ orgId: "org-1", date: expect.any(Object) });
+    const orgCall = mockPrisma.seoSnapshot.findMany.mock.calls.find(
+      ([a]: [{ where: Record<string, unknown> }]) => !("propertyId" in a.where),
+    );
+    expect(orgCall[0].where).toEqual({ orgId: "org-1", date: expect.any(Object) });
     const byDate = mockPrisma.seoQuery.groupBy.mock.calls.find(
       ([a]: [{ by: string[] }]) => a.by.includes("date"),
     );

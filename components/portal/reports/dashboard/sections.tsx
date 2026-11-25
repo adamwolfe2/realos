@@ -174,7 +174,7 @@ function OverviewSection(s: ReportSnapshot, p: PropertyMeta, navTo: NavTo): Reac
       icon: Star,
       label: "Online reputation",
       value: reputationStats?.overallRating != null ? reputationStats.overallRating.toFixed(1) : "—",
-      context: `${num(reputationStats?.totalReviews ?? 0)} reviews`,
+      context: `${num(reputationStats?.totalReviews ?? 0)} ${reputationStats?.googleRated ? "reviews" : "reviews and mentions"}`,
     },
     {
       id: "ai-visibility",
@@ -561,7 +561,13 @@ function ReputationSection(s: ReportSnapshot): React.ReactNode {
           </span>
           <Stars rating={r.overallRating} className="text-[15px]" />
           <span className="text-caption font-medium text-muted-foreground">
-            {num(r.totalReviews)} reviews · {num(r.positiveCount)} positive, {num(r.negativeCount)} negative
+            {num(r.totalReviews)}{" "}
+            {r.googleRated
+              ? r.totalReviews === 1 ? "review" : "reviews"
+              : r.totalReviews === 1 ? "review or mention" : "reviews and mentions"}
+            {r.positiveCount + r.negativeCount > 0
+              ? ` · ${num(r.positiveCount)} positive, ${num(r.negativeCount)} negative mentions`
+              : ""}
           </span>
           {r.responseRatePct != null ? (
             <span className={`ml-auto rounded-full border px-2.5 py-1 text-[10.5px] font-medium ${r.responseRatePct < 50 ? "border-destructive/30 bg-destructive/5 font-semibold text-destructive" : "border-border bg-card text-muted-foreground"}`}>

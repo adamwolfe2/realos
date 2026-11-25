@@ -353,6 +353,9 @@ export type ReportReputationMention = {
 export type ReportReputationStats = {
   overallRating: number | null;
   totalReviews: number;
+  // True when overallRating/totalReviews are Google's own rating and review
+  // count; false/absent = tracked-mention fallback (Reddit, Yelp...).
+  googleRated?: boolean;
   newInPeriod: number;
   newInPeriodPct: number | null;
   positiveCount: number;
@@ -719,7 +722,7 @@ KEY FIGURES:
 - Organic search sessions: ${snapshot.kpis.organicSessions}${vsPrior(snapshot.kpiDeltas.organicSessionsPct)}
 - Leases started (move-ins) this period, ${isMultiPropertyRollup(snapshot) ? "all properties combined" : "whole property"}, from AppFolio: ${life?.leasesSignedInPeriod ?? "n/a"}${snapshot.kind !== "custom" && life ? ` (prior period: ${life.priorLeasesSignedInPeriod})` : ""}
 - Move-ins are NOT a subset of the leads: never say leads "converted to" or "became" move-ins or residents, and never state how many move-ins trace back to LeaseStack leads
-${reputation && reputation.totalReviews > 0 ? `- Reputation: ${reputation.overallRating ?? "n/a"} stars across ${reputation.totalReviews} reviews and mentions (${reputation.positiveCount} positive, ${reputation.negativeCount} negative)` : ""}
+${reputation && reputation.totalReviews > 0 ? `- Reputation: ${reputation.overallRating ?? "n/a"} stars across ${reputation.totalReviews} ${reputation.googleRated ? "Google reviews" : "reviews and mentions"} (tracked mentions: ${reputation.positiveCount} positive, ${reputation.negativeCount} negative)` : ""}
 
 LEAD SOURCES:
 ${snapshot.leadSources.map((s) => `- ${s.source}: ${s.count} (${s.pct}%)`).join("\n") || "- No leads this period"}
@@ -1097,8 +1100,8 @@ export async function generateReportSnapshot(
   // (propertyId null) and per-property rows; once two properties sync their
   // own GA4/GSC, a raw org sum counts a date twice (null row + property
   // rows). Apply the read-side supersede rule and the ACTIVE-property gate
-  // the rest of this report uses. Property-scoped reports read
-  // SeoLandingPage/SeoQuery instead, so this is only built org-wide.
+  // the rest of this report uses. Property-scoped reports use
+  // propertyOrganicDaily below, so this is only built org-wide.
   const orgSeoSnapshotWhere = (from: Date, to: Date): Prisma.SeoSnapshotWhereInput => ({
     orgId,
     date: { gte: from, lt: to },
@@ -1107,6 +1110,39 @@ export async function generateReportSnapshot(
   const orgSeoRowsCurrent = scope.propertyId
     ? Promise.resolve([] as DedupedSeoSnapshotRow[])
     : fetchDedupedSeoSnapshots(orgSeoSnapshotWhere(periodStart, periodEnd));
+
+  // Property-scoped organic visits per day, same definition as the property
+  // page cockpit (lib/portal/property-cockpit.ts): the property's own
+  // SeoSnapshot rows, larger of GA4 organic sessions and GSC clicks. The
+  // URL-pattern match on SeoLandingPage dropped GA4's relative paths once an
+  // org had 2+ live properties, so the snapshot read 0 while the property
+  // page showed hundreds. Landing pages stay as the fallback for a property
+  // without its own GA4/GSC sync (pages on a shared org-wide site).
+  const propertyOrganicDaily = async (
+    from: Date,
+    to: Date,
+  ): Promise<Array<{ date: Date; organicSessions: number }>> => {
+    const own = await fetchDedupedSeoSnapshots({
+      orgId,
+      propertyId: scope.propertyId,
+      date: { gte: from, lt: to },
+    });
+    if (own.length > 0) {
+      return own
+        .map((r) => ({ date: r.date, organicSessions: Math.max(r.organicSessions, r.totalClicks) }))
+        .sort((a, b) => a.date.getTime() - b.date.getTime());
+    }
+    const rows = await prisma.seoLandingPage.groupBy({
+      by: ["date"],
+      where: { orgId, ...scope.seoLandingClause, date: { gte: from, lt: to } },
+      _sum: { sessions: true },
+      orderBy: { date: "asc" },
+    });
+    return rows.map((r) => ({ date: r.date, organicSessions: r._sum.sessions ?? 0 }));
+  };
+  const propertyOrganicCurrent = scope.propertyId
+    ? propertyOrganicDaily(periodStart, periodEnd)
+    : Promise.resolve([]);
 
   const [
     leadsCount,
@@ -1226,56 +1262,24 @@ export async function generateReportSnapshot(
       _sum: { spendCents: true },
       orderBy: { date: "asc" },
     }),
-    // Organic sessions — when scoped to a property, pull from
-    // SeoLandingPage rows whose URL matches the property's slug/name/
-    // domain patterns (URL-keyed = the only way to attribute organic
-    // traffic to a single building). When org-wide, use the SeoSnapshot
-    // rollup which is faster (already aggregated daily across the
-    // tenant). Behavior is identical for the org-wide path; the bug
-    // pre-fix was showing the org-wide rollup on property reports.
+    // Organic sessions: property scope reads propertyOrganicDaily (same
+    // definition as the property page); org-wide uses the SeoSnapshot
+    // rollup with the supersede dedupe.
     scope.propertyId
-      ? prisma.seoLandingPage.aggregate({
-          where: {
-            orgId,
-            ...scope.seoLandingClause,
-            date: { gte: periodStart, lt: periodEnd },
-          },
-          _sum: { sessions: true },
-        }).then((r) => ({ _sum: { organicSessions: r._sum.sessions ?? 0 } }))
+      ? propertyOrganicCurrent.then((rows) => ({
+          _sum: { organicSessions: rows.reduce((a, r) => a + r.organicSessions, 0) },
+        }))
       : orgSeoRowsCurrent.then((rows) => ({
           _sum: { organicSessions: sumField(rows, "organicSessions") },
         })),
     scope.propertyId
-      ? prisma.seoLandingPage.aggregate({
-          where: {
-            orgId,
-            ...scope.seoLandingClause,
-            date: { gte: priorStart, lt: priorEnd },
-          },
-          _sum: { sessions: true },
-        }).then((r) => ({ _sum: { organicSessions: r._sum.sessions ?? 0 } }))
+      ? propertyOrganicDaily(priorStart, priorEnd).then((rows) => ({
+          _sum: { organicSessions: rows.reduce((a, r) => a + r.organicSessions, 0) },
+        }))
       : fetchDedupedSeoSnapshots(orgSeoSnapshotWhere(priorStart, priorEnd)).then(
           (rows) => ({ _sum: { organicSessions: sumField(rows, "organicSessions") } }),
         ),
-    scope.propertyId
-      ? prisma.seoLandingPage
-          .groupBy({
-            by: ["date"],
-            where: {
-              orgId,
-              ...scope.seoLandingClause,
-              date: { gte: periodStart, lt: periodEnd },
-            },
-            _sum: { sessions: true },
-            orderBy: { date: "asc" },
-          })
-          .then((rows) =>
-            rows.map((r) => ({
-              date: r.date,
-              organicSessions: r._sum.sessions ?? 0,
-            })),
-          )
-      : orgSeoRowsCurrent,
+    scope.propertyId ? propertyOrganicCurrent : orgSeoRowsCurrent,
     // Funnel from LeadStatus groupBy
     prisma.lead.groupBy({
       by: ["status"],
@@ -2964,6 +2968,7 @@ async function buildReputationStats(
     highlightRows,
     concernRows,
     reviewedAgg,
+    google,
   ] = await Promise.all([
     prisma.propertyMention.aggregate({
       where: { orgId, ...propertyClause },
@@ -3055,10 +3060,28 @@ async function buildReputationStats(
     prisma.propertyMention.count({
       where: { orgId, ...propertyClause, reviewedByUserId: { not: null } },
     }),
+    prisma.property.findMany({
+      where: propertyId ? { id: propertyId, orgId } : { orgId, lifecycle: "ACTIVE" },
+      select: { googleAggRating: true, googleAggReviewCount: true },
+    }),
   ]);
 
   const totalReviews = lifetime._count._all;
-  if (totalReviews === 0) return undefined;
+  // Headline rating = Google's own rating, review-count weighted across the
+  // scope (same rule as the property page and lib/reputation/portfolio.ts).
+  // The mention average mixes scraped Reddit/Yelp rows and read 5.0/50 while
+  // the property page showed Google's 4.0/49. Mention average is the
+  // fallback when no property has a Google rating synced.
+  let googleWeighted = 0;
+  let googleCount = 0;
+  for (const p of google) {
+    if (p.googleAggRating != null && (p.googleAggReviewCount ?? 0) > 0) {
+      googleWeighted += p.googleAggRating * p.googleAggReviewCount!;
+      googleCount += p.googleAggReviewCount!;
+    }
+  }
+
+  if (totalReviews === 0 && googleCount === 0) return undefined;
 
   const positiveCount =
     sentimentGroups.find((s) => s.sentiment === Sentiment.POSITIVE)?._count
@@ -3096,10 +3119,13 @@ async function buildReputationStats(
 
   return {
     overallRating:
-      lifetime._avg.rating != null
-        ? Math.round(lifetime._avg.rating * 10) / 10
-        : null,
-    totalReviews,
+      googleCount > 0
+        ? Math.round((googleWeighted / googleCount) * 10) / 10
+        : lifetime._avg.rating != null
+          ? Math.round(lifetime._avg.rating * 10) / 10
+          : null,
+    totalReviews: googleCount > 0 ? googleCount : totalReviews,
+    googleRated: googleCount > 0,
     newInPeriod: periodNew,
     newInPeriodPct: pctChange(periodNew, priorNew),
     positiveCount,
