@@ -3059,7 +3059,25 @@ async function buildReputationStats(
   ]);
 
   const totalReviews = lifetime._count._all;
-  if (totalReviews === 0) return undefined;
+  // Headline rating = Google's own rating, review-count weighted across the
+  // scope (same rule as the property page and lib/reputation/portfolio.ts).
+  // The mention average mixes scraped Reddit/Yelp rows and read 5.0/50 while
+  // the property page showed Google's 4.0/49. Mention average is the
+  // fallback when no property has a Google rating synced.
+  const google = await prisma.property.findMany({
+    where: propertyId ? { id: propertyId, orgId } : { orgId, lifecycle: "ACTIVE" },
+    select: { googleAggRating: true, googleAggReviewCount: true },
+  });
+  let googleWeighted = 0;
+  let googleCount = 0;
+  for (const p of google) {
+    if (p.googleAggRating != null && (p.googleAggReviewCount ?? 0) > 0) {
+      googleWeighted += p.googleAggRating * p.googleAggReviewCount!;
+      googleCount += p.googleAggReviewCount!;
+    }
+  }
+
+  if (totalReviews === 0 && googleCount === 0) return undefined;
 
   const positiveCount =
     sentimentGroups.find((s) => s.sentiment === Sentiment.POSITIVE)?._count
@@ -3084,24 +3102,6 @@ async function buildReputationStats(
       topics: Array.isArray(m.topics) ? (m.topics as string[]) : null,
       flagged: m.flagged,
     };
-  }
-
-  // Headline rating = Google's own rating, review-count weighted across the
-  // scope (same rule as the property page and lib/reputation/portfolio.ts).
-  // The mention average mixes scraped Reddit/Yelp rows and read 5.0/50 while
-  // the property page showed Google's 4.0/49. Mention average is the
-  // fallback when no property has a Google rating synced.
-  const google = await prisma.property.findMany({
-    where: propertyId ? { id: propertyId, orgId } : { orgId, lifecycle: "ACTIVE" },
-    select: { googleAggRating: true, googleAggReviewCount: true },
-  });
-  let googleWeighted = 0;
-  let googleCount = 0;
-  for (const p of google) {
-    if (p.googleAggRating != null && (p.googleAggReviewCount ?? 0) > 0) {
-      googleWeighted += p.googleAggRating * p.googleAggReviewCount!;
-      googleCount += p.googleAggReviewCount!;
-    }
   }
 
   const recent = recentRows.map(toMention);

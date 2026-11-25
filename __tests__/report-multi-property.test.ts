@@ -146,9 +146,9 @@ describe("generateReportSnapshot with two ACTIVE properties", () => {
     }));
     mockPrisma.property.count.mockImplementation(async () => 2);
     mockPrisma.seoSnapshot.findMany.mockImplementation(async () => [
-      { date: D1, propertyId: "prop-b", organicSessions: 12, totalClicks: 30 },
-      { date: D1, propertyId: "prop-b", organicSessions: 0, totalClicks: 0 },
-      { date: D1, propertyId: "prop-b", organicSessions: 50, totalClicks: 8 },
+      { date: new Date("2026-10-21T00:00:00.000Z"), propertyId: "prop-b", organicSessions: 12, totalClicks: 30 },
+      { date: new Date("2026-10-22T00:00:00.000Z"), propertyId: "prop-b", organicSessions: 0, totalClicks: 0 },
+      { date: new Date("2026-10-23T00:00:00.000Z"), propertyId: "prop-b", organicSessions: 50, totalClicks: 8 },
     ]);
     let snap;
     try {
@@ -199,6 +199,23 @@ describe("generateReportSnapshot with two ACTIVE properties", () => {
     }
     expect(snap.reputationStats?.overallRating).toBe(4);
     expect(snap.reputationStats?.totalReviews).toBe(49);
+  });
+
+  it("property with a Google rating but no stored mentions still gets reputation stats", async () => {
+    mockPrisma.property.findFirst.mockImplementation(async () => ({ id: "prop-b", slug: "b-house", name: "B House" }));
+    mockPrisma.property.count.mockImplementation(async () => 2);
+    mockPrisma.property.findMany.mockImplementation(async (args: { where?: { id?: string } }) =>
+      args.where?.id === "prop-b" ? [{ googleAggRating: 4.3, googleAggReviewCount: 12 }] : [],
+    );
+    let snap;
+    try {
+      snap = await generateReportSnapshot("org-1", "weekly", { skipAi: true, now: NOW, propertyId: "prop-b" });
+    } finally {
+      mockPrisma.property.findFirst.mockImplementation(async () => null);
+      mockPrisma.property.count.mockImplementation(async () => 0);
+    }
+    expect(snap.reputationStats?.overallRating).toBe(4.3);
+    expect(snap.reputationStats?.totalReviews).toBe(12);
   });
 
   it("property-scoped report never charts org-wide SeoSnapshot clicks (sibling data)", async () => {
