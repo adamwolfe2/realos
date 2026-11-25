@@ -353,7 +353,7 @@ function SignalsTab({
           <SignalCard
             label="Chatbot"
             value={`${latest.chatbot?.conversations ?? 0}`}
-            caption="conversations · 24h"
+            caption="conversations · last 28 days"
             deltaPct={numOrNull(wow.chatbotConversations)}
             series={chatbotSeries}
             href="/portal/chatbot"
@@ -361,7 +361,7 @@ function SignalsTab({
           <SignalCard
             label="New leads"
             value={`${latest.leads?.newLeads ?? 0}`}
-            caption="last 24h"
+            caption="last 28 days"
             deltaPct={numOrNull(wow.newLeads)}
             series={leadsSeries}
             href="/portal/leads"

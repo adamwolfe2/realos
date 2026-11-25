@@ -2,6 +2,7 @@ import "server-only";
 
 import { LeadStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { leadEventWhere } from "@/lib/dashboard/event-window";
 import {
   COMPUTE_VERSION,
   scopeKey,
@@ -198,7 +199,9 @@ async function buildLeads(
   since28d: Date,
 ): Promise<LeadsSignal | null> {
   const [newLeads, statusCounts] = await Promise.all([
-    prisma.lead.count({ where: { orgId, createdAt: { gte: since28d } } }),
+    // By event date, not insert time: an AppFolio backfill inserts months of
+    // history "now" and would inflate the 28-day count.
+    prisma.lead.count({ where: { orgId, ...leadEventWhere(since28d) } }),
     getLeadStatusCounts(orgId).catch(() => new Map<LeadStatus, number>()),
   ]);
 

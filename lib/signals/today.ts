@@ -84,7 +84,7 @@ export function pickHeadlineSignal(
     if (wow != null && Math.abs(wow) >= 10) {
       candidates.push({
         kind: "chatbot",
-        message: `Chatbot engagement ${wow >= 0 ? "up" : "down"} ${Math.abs(Math.round(wow))}% week-over-week, ${cb.conversations} conversations in 24h.`,
+        message: `Chatbot engagement ${wow >= 0 ? "up" : "down"} ${Math.abs(Math.round(wow))}% week-over-week, ${cb.conversations} conversations in the last 28 days.`,
         href: "/portal/chatbot",
         deltaPct: wow,
         tone: wow >= 0 ? "positive" : "negative",
@@ -92,7 +92,7 @@ export function pickHeadlineSignal(
     } else if (cb.conversations >= 5) {
       candidates.push({
         kind: "chatbot",
-        message: `${cb.conversations} chatbot conversations in the last 24h.`,
+        message: `${cb.conversations} chatbot conversations in the last 28 days.`,
         href: "/portal/chatbot",
         deltaPct: pctChange(baseCount, cb.conversations),
         tone: "neutral",

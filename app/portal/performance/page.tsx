@@ -311,17 +311,16 @@ export default async function PortalHome({
         },
       }),
       prisma.lead.count({ where: { ...where, ...propertyClause } }),
+      // Leads dated by firstSeenAt, not insert time: an AppFolio backfill
+      // inserts months of history "now" and read as a +500% month.
       prisma.lead.count({
-        where: { ...where, ...propertyClause, createdAt: { gte: since28d } },
+        where: { ...where, ...propertyClause, ...leadEventWhere(since28d) },
       }),
       prisma.lead.count({
         where: {
           ...where,
           ...propertyClause,
-          createdAt: {
-            gte: new Date(Date.now() - 56 * DAY),
-            lt: since28d,
-          },
+          ...leadEventWhere(new Date(Date.now() - 56 * DAY), since28d),
         },
       }),
       // Signed leases (28d) — the money KPI. Anchored on convertedAt (the
@@ -416,7 +415,7 @@ export default async function PortalHome({
         where: {
           lead: where,
           ...requiredModelPropertyClause,
-          createdAt: { gte: since28d },
+          ...applicationEventWhere(since28d),
         },
       }),
       prisma.application.count({
@@ -1191,7 +1190,7 @@ export default async function PortalHome({
           <div className="space-y-2 min-w-0">
             <DashboardSection
               title="Lead performance over time"
-              description={`Leads created per day, last ${rangeDaysCount} days. Hover any point for the exact count.`}
+              description={`New leads per day by first contact, last ${rangeDaysCount} days. Hover any point for the exact count.`}
               href="/portal/leads"
               hrefLabel="Open leads"
             >

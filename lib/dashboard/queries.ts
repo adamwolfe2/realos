@@ -1047,17 +1047,17 @@ export async function getPerformanceOverTime(
     }));
   const [currentLeads, priorLeads] = await Promise.all([
     prisma.lead.findMany({
-      where: { orgId, ...propertyClause, createdAt: { gte: currentStart } },
-      select: { createdAt: true },
+      where: { orgId, ...propertyClause, ...leadEventWhere(currentStart) },
+      select: { firstSeenAt: true },
     }),
     includeComparison
       ? prisma.lead.findMany({
           where: {
             orgId,
             ...propertyClause,
-            createdAt: { gte: priorStart, lt: priorEnd },
+            ...leadEventWhere(priorStart, priorEnd),
           },
-          select: { createdAt: true },
+          select: { firstSeenAt: true },
         })
       : Promise.resolve([]),
   ]);
@@ -1068,14 +1068,14 @@ export async function getPerformanceOverTime(
 
   for (const lead of currentLeads) {
     const idx = Math.floor(
-      (lead.createdAt.getTime() - currentStart.getTime()) / DAY_MS,
+      (lead.firstSeenAt.getTime() - currentStart.getTime()) / DAY_MS,
     );
     if (idx >= 0 && idx < days) currentBuckets[idx] += 1;
   }
   if (includeComparison) {
     for (const lead of priorLeads) {
       const idx = Math.floor(
-        (lead.createdAt.getTime() - priorStart.getTime()) / DAY_MS,
+        (lead.firstSeenAt.getTime() - priorStart.getTime()) / DAY_MS,
       );
       if (idx >= 0 && idx < days) priorBuckets[idx] += 1;
     }

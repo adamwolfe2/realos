@@ -13,6 +13,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { prisma } from "@/lib/db";
+import { withMarketableLifecycle } from "@/lib/properties/marketable";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import {
   effectivePropertyIds,
@@ -66,7 +67,12 @@ export default async function ComparePropertiesPage({
 
   // Picker options — org properties the caller is allowed to see.
   const allProperties = await prisma.property.findMany({
-    where: { ...tenantWhere(scope), ...propertyWhereFragment(scope, null, "id") },
+    // Live properties only: excluded/imported AppFolio rows are not buildings
+    // an operator compares.
+    where: withMarketableLifecycle({
+      ...tenantWhere(scope),
+      ...propertyWhereFragment(scope, null, "id"),
+    }),
     orderBy: { name: "asc" },
     select: { id: true, name: true, city: true, state: true },
   });
