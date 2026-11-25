@@ -1159,7 +1159,7 @@ export async function getTopPropertiesByLeads(
       where: {
         orgId,
         propertyId: { in: ids },
-        createdAt: { gte: currentStart },
+        ...leadEventWhere(currentStart),
       },
       _count: { _all: true },
     }),
@@ -1168,7 +1168,7 @@ export async function getTopPropertiesByLeads(
       where: {
         orgId,
         propertyId: { in: ids },
-        createdAt: { gte: priorStart, lt: priorEnd },
+        ...leadEventWhere(priorStart, priorEnd),
       },
       _count: { _all: true },
     }),

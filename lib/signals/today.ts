@@ -130,7 +130,7 @@ export function pickHeadlineSignal(
     if (wow != null && Math.abs(wow) >= 15) {
       candidates.push({
         kind: "leads",
-        message: `New leads ${wow >= 0 ? "up" : "down"} ${Math.abs(Math.round(wow))}% week-over-week, ${leads.newLeads} fresh in 24h.`,
+        message: `New leads ${wow >= 0 ? "up" : "down"} ${Math.abs(Math.round(wow))}% week-over-week, ${leads.newLeads} in the last 28 days.`,
         href: "/portal/leads",
         deltaPct: wow,
         tone: wow >= 0 ? "positive" : "negative",

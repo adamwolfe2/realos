@@ -273,12 +273,10 @@ export default async function BillingPage({
       }
     }
   }
-  // Properties Stripe bills: only graduated (per-property) tier lines carry
-  // a property quantity; a flat tier's quantity is not a property count.
+  // Properties Stripe bills: the tier line's quantity is the property count
+  // (graduated and legacy flat tiers alike; the sync keeps it updated).
   const billedPropertyQty =
-    lineItems.find(
-      (l) => !l.isAddon && !l.isMetered && l.detail.includes("graduated"),
-    )?.quantity ?? null;
+    lineItems.find((l) => !l.isAddon && !l.isMetered)?.quantity ?? null;
   const subscriptionMrrCents = lineItems
     .filter((l) => !l.isMetered)
     .reduce((sum, l) => sum + Math.round(l.monthlyCents), 0);

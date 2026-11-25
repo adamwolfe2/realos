@@ -110,7 +110,7 @@ export default async function ComparePropertiesPage({
   const since28d = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000);
 
   const properties = await prisma.property.findMany({
-    where: { id: { in: requestedIds }, orgId: scope.orgId },
+    where: withMarketableLifecycle({ id: { in: requestedIds }, orgId: scope.orgId }),
     select: {
       id: true,
       name: true,
