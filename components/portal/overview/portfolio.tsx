@@ -98,13 +98,19 @@ export function PortfolioMultiples({ data, now, toursOnPlan }: { data: Portfolio
       </Cell>
       {t.visitorsConnected
         ? trendCell("Organic visitors", t.visitors, data.today, `GA4 + Search Console · ${t.visitorsConnected} of ${n} sites · synced ${since(data.analyticsSyncedAt, now)}`, `Search visits per day: the larger of GA4 organic sessions and Search Console clicks, last 28 days. The change compares only the ${t.visitorsLike.sites} site${t.visitorsLike.sites === 1 ? "" : "s"} with data in the 28 days before; sites connected since then are new, not growth.`, 1, t.visitorsLike)
-        : <Cell label="Organic visitors" value="—" source="GA4 + Search Console" title="No property has GA4 or Search Console connected."><Gap>Not connected</Gap></Cell>}
+        : <Cell label="Organic visitors" value="—" source="GA4 + Search Console" title={data.orgWideAnalytics ? "GA4/Search Console is connected for the whole workspace, not per site, so it can't be split by property. Connect each site's own GA4 and Search Console." : "No property has GA4 or Search Console connected."}><Gap>{data.orgWideAnalytics ? "Workspace-wide only" : "Not connected"}</Gap></Cell>}
       {trendCell("Website leads", t.leads, data.today, `Chat ${mix.chat} · Pop-up ${mix.popup} · Other ${mix.other}`, "Leads captured on the property websites (chatbot, pop-up, forms), last 28 days vs the 28 before. AppFolio applicants are counted under Applications.")}
       {trendCell("Chats", t.chats, data.today, "LeaseStack chatbot · live", "Chatbot conversations started, last 28 days vs the 28 before.")}
-      {trendCell("Applications", t.apps, data.today, `AppFolio · synced ${since(data.appfolioSyncedAt, now)}`, "Primary applicants by the date AppFolio received the application, last 28 days vs the 28 before.")}
-      <Cell label="Tours" value="—" source="AppFolio showings report" title={toursOnPlan ? "No tours recorded." : "AppFolio returns 404 for the showings report on this account's plan, so tours can't be tracked yet."}>
-        <Gap>{toursOnPlan ? "None recorded" : "Not on this AppFolio plan"}</Gap>
-      </Cell>
+      {data.appfolioConnected
+        ? trendCell("Applications", t.apps, data.today, `AppFolio · synced ${since(data.appfolioSyncedAt, now)}`, "Primary applicants by the date AppFolio received the application, last 28 days vs the 28 before.")
+        : <Cell label="Applications" value="—" source="AppFolio" title="AppFolio is not connected, so applications aren't tracked."><Gap>Not connected</Gap></Cell>}
+      {toursOnPlan
+        ? trendCell("Tours", t.tours, data.today, "LeaseStack + AppFolio tours", "Tours created, last 28 days vs the 28 before.")
+        : (
+          <Cell label="Tours" value="—" source="AppFolio showings report" title="AppFolio returns 404 for the showings report on this account's plan, so tours can't be tracked yet.">
+            <Gap>Not on this AppFolio plan</Gap>
+          </Cell>
+        )}
     </dl>
   );
 }

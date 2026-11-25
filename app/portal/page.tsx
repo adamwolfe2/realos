@@ -277,7 +277,7 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
   );
 
   if (portfolio && portfolio.rows.length > 1) {
-    const toursOnPlan = !appfolioStatus?.stats?.unsupportedReports.some((r) => /^showings/i.test(r));
+    const toursOnPlan = !appfolioStatus?.stats?.unsupportedReports.some((r) => /^showings\b.*(40[04]|not a valid report|unavailable on this)/i.test(r));
     return (
       <div className="w-full space-y-5">
         <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">

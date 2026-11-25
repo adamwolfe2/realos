@@ -27,10 +27,10 @@ describe("portfolio overview", () => {
   });
 
   it("treats pre-lease and next-term floor plans as not-yet-vacant listings", () => {
-    for (const name of ["Prelease 2B/2B 2027-2028", "Pre lease 1Bed", "Spring Double 2027", "PRELEASE 27/28 - Single Room", "Single Occupancy Pre-lease"]) {
+    for (const name of ["Stranda Apartments - 2Bedroom 2027 - 2028", "Double 2027–2028 – [Premium]", "Prelease 2B/2B 2027-2028", "Pre lease 1Bed", "Spring Double 2027", "PRELEASE 27/28 - Single Room", "Single Occupancy Pre-lease"]) {
       expect(NEXT_TERM.test(name), name).toBe(true);
     }
-    for (const name of ["206-5", "603 Room 1 Bed A", "408 - Furnished", "Telegraph Commons - Double"]) {
+    for (const name of ["206-5", "2015", "Unit 2027", "603 Room 1 Bed A", "408 - Furnished", "Telegraph Commons - Double"]) {
       expect(NEXT_TERM.test(name), name).toBe(false);
     }
   });

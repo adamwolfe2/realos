@@ -38,7 +38,11 @@ export type PortfolioRow = {
 
 export type PortfolioOverview = {
   rows: PortfolioRow[];
-  totals: { available: number; visitors: Series; visitorsConnected: number; /** Sites with data in both windows: the only fair base for a delta. */ visitorsLike: { cur: number; prev: number; sites: number }; chats: Series; leads: Series; apps: Series; leadMix: PortfolioRow["leadMix"] };
+  totals: { available: number; visitors: Series; visitorsConnected: number; /** Sites with data in both windows: the only fair base for a delta. */ visitorsLike: { cur: number; prev: number; sites: number }; chats: Series; leads: Series; apps: Series; tours: Series; leadMix: PortfolioRow["leadMix"] };
+  /** AppFolio connected for this org; without it applications are unknown, not zero. */
+  appfolioConnected: boolean;
+  /** Legacy org-wide GA4/GSC row (propertyId null) that per-site rows can't attribute. */
+  orgWideAnalytics: boolean;
   appfolioSyncedAt: Date | null;
   analyticsSyncedAt: Date | null;
   today: Date;
@@ -48,7 +52,7 @@ export type PortfolioOverview = {
 // Double 2027") advertise a future lease, not a vacant unit; their AppFolio
 // ready date is a template leftover (The Den's read 2023), so they are left
 // out of days-ready.
-export const NEXT_TERM = /pre[\s-]?leas|spring|fall|summer|20\d\d|\b\d\d\/\d\d\b/i;
+export const NEXT_TERM = /pre[\s-]?leas|\b(spring|fall|summer)\b|\b20\d\d\s*[-–/]\s*(20)?\d\d\b|\b\d\d\/\d\d\b/i;
 
 const dayStart = (t: number) => Math.floor(t / DAY) * DAY;
 
@@ -111,7 +115,9 @@ export async function getPortfolioOverview(orgId: string, propertyIds: string[] 
   if (properties.length < 2) {
     return {
       rows: [],
-      totals: { available: 0, visitors: zero(), visitorsConnected: 0, visitorsLike: { cur: 0, prev: 0, sites: 0 }, chats: zero(), leads: zero(), apps: zero(), leadMix: { chat: 0, popup: 0, other: 0 } },
+      totals: { available: 0, visitors: zero(), visitorsConnected: 0, visitorsLike: { cur: 0, prev: 0, sites: 0 }, chats: zero(), leads: zero(), apps: zero(), tours: zero(), leadMix: { chat: 0, popup: 0, other: 0 } },
+      appfolioConnected: false,
+      orgWideAnalytics: false,
       appfolioSyncedAt: null,
       analyticsSyncedAt: null,
       today: new Date(today),
@@ -120,10 +126,10 @@ export async function getPortfolioOverview(orgId: string, propertyIds: string[] 
   const ids = properties.map((p) => p.id);
   const inProps = { propertyId: { in: ids } };
 
-  const [listings, snapshots, seo, chats, leads, apps, appfolio] = await Promise.all([
+  const [listings, snapshots, seo, chats, leads, apps, tours, appfolio] = await Promise.all([
     prisma.listing.findMany({ where: { ...inProps, isAvailable: true }, select: { propertyId: true, priceCents: true, availableFrom: true, unitNumber: true } }),
     prisma.seoSnapshot.findMany({ where: { orgId, ...inProps, date: { gte: since } }, select: { propertyId: true, date: true, organicSessions: true, totalClicks: true } }),
-    prisma.seoIntegration.findMany({ where: { orgId, ...inProps, serviceAccountJsonEncrypted: { not: "DEMO_SEED" } }, select: { propertyId: true, lastSyncAt: true, lastSyncError: true } }),
+    prisma.seoIntegration.findMany({ where: { orgId, OR: [inProps, { propertyId: null }], serviceAccountJsonEncrypted: { not: "DEMO_SEED" } }, select: { propertyId: true, lastSyncAt: true, lastSyncError: true } }),
     prisma.chatbotConversation.findMany({ where: { orgId, ...inProps, createdAt: { gte: since } }, select: { propertyId: true, createdAt: true } }),
     // AppFolio-imported leads are applicants stamped with their import time
     // (a backfill lands dozens on one day); they are counted as applications
@@ -133,6 +139,7 @@ export async function getPortfolioOverview(orgId: string, propertyIds: string[] 
       select: { propertyId: true, createdAt: true, source: true, sourceDetail: true },
     }),
     prisma.application.findMany({ where: { ...inProps, applicantRole: "PRIMARY", receivedAt: { gte: since } }, select: { propertyId: true, receivedAt: true } }),
+    prisma.tour.findMany({ where: { ...inProps, createdAt: { gte: since } }, select: { createdAt: true } }),
     prisma.appFolioIntegration.findUnique({ where: { orgId }, select: { lastSyncAt: true, lastError: true } }),
   ]);
 
@@ -199,7 +206,7 @@ export async function getPortfolioOverview(orgId: string, propertyIds: string[] 
     };
   });
 
-  const totals = { available: 0, visitors: zero(), visitorsConnected: 0, visitorsLike: { cur: 0, prev: 0, sites: 0 }, chats: zero(), leads: zero(), apps: zero(), leadMix: { chat: 0, popup: 0, other: 0 } };
+  const totals = { available: 0, visitors: zero(), visitorsConnected: 0, visitorsLike: { cur: 0, prev: 0, sites: 0 }, chats: zero(), leads: zero(), apps: zero(), tours: bucket(tours.map((t) => ({ at: t.createdAt })), today), leadMix: { chat: 0, popup: 0, other: 0 } };
   for (const r of rows) {
     totals.available += r.available;
     if (r.visitors) {
@@ -222,6 +229,8 @@ export async function getPortfolioOverview(orgId: string, propertyIds: string[] 
   return {
     rows,
     totals,
+    appfolioConnected: Boolean(appfolio),
+    orgWideAnalytics: seo.some((r) => r.propertyId === null),
     appfolioSyncedAt: appfolio?.lastSyncAt ?? null,
     analyticsSyncedAt: seo.reduce<Date | null>((d, r) => (r.lastSyncAt && (!d || r.lastSyncAt > d) ? r.lastSyncAt : d), null),
     today: new Date(today),
