@@ -131,6 +131,12 @@ function setupPrisma() {
       state.listingCreates.push(data);
       return { id: `listing-${data.backendListingId}`, ...data };
     }),
+    // The sync writes listings with upsert; findUnique (autoModel) is never
+    // consulted, so every upsert in this in-memory table is a create.
+    upsert: vi.fn(async ({ create }: { create: Record<string, unknown> }) => {
+      state.listingCreates.push(create);
+      return { id: `listing-${create.backendListingId}`, ...create };
+    }),
     findMany: vi.fn(async ({ where }: { where: { propertyId: { in: string[] } } }) =>
       state.listingCreates
         .filter((l) => where.propertyId.in.includes(l.propertyId as string))

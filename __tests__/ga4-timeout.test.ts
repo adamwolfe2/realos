@@ -19,7 +19,7 @@ describe("GA4 runReport timeout", () => {
 
   it("passes the timeout option to every runReport call", () => {
     const calls = src.match(/runReport\(/g) ?? [];
-    const timeouts = src.match(/timeout:\s*GA4_RUNREPORT_TIMEOUT_MS/g) ?? [];
+    const timeouts = src.match(/timeout:\s*GA4_(?:SYNC_)?RUNREPORT_TIMEOUT_MS/g) ?? [];
     expect(calls.length).toBeGreaterThan(0);
     // One timeout option per runReport call site.
     expect(timeouts.length).toBe(calls.length);

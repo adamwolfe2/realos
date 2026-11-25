@@ -1,4 +1,5 @@
 import "server-only";
+import { runAfter } from "@/lib/after";
 import { runInsightDetectors } from "./run";
 
 // ---------------------------------------------------------------------------
@@ -10,10 +11,10 @@ import { runInsightDetectors } from "./run";
 // sync-completion handler calls triggerInsightsForOrg() so the user gets
 // immediate feedback.
 //
-// We fire-and-forget on a microtask so the calling handler doesn't block
-// on the insight pass (detectors can take a few seconds across a portfolio).
-// Errors are logged to Sentry but never bubble to the caller — a failed
-// insight pass should NEVER break a sync write.
+// The pass runs after the response via next/server after(), so the calling
+// handler doesn't block on it (detectors can take a few seconds across a
+// portfolio). Errors are logged to Sentry but never bubble to the caller —
+// a failed insight pass should NEVER break a sync write.
 // ---------------------------------------------------------------------------
 
 /**
@@ -24,23 +25,18 @@ import { runInsightDetectors } from "./run";
  *                 so we can correlate insight bursts to the trigger source.
  */
 export function triggerInsightsForOrg(orgId: string, reason: string): void {
-  // Use queueMicrotask so the trigger fires AFTER the calling transaction
-  // has committed but BEFORE the response is fully serialised. Detector
-  // queries see the just-written data, and the user perceives "instant".
-  queueMicrotask(() => {
-    runInsightDetectors(orgId)
-      .then((summary) => {
-        if (summary.totalInserted > 0 || summary.totalUpdated > 0) {
-          console.info(
-            `[insights] on-arrival pass triggered by ${reason} for org ${orgId}: ${summary.totalInserted} new, ${summary.totalUpdated} updated, ${summary.totalResolved} resolved`,
-          );
-        }
-      })
-      .catch((err) => {
-        console.error(
-          `[insights] on-arrival pass failed for org ${orgId} (reason=${reason}):`,
-          err,
-        );
-      });
+  // after() (via runAfter) keeps the function alive until the pass finishes.
+  // The old queueMicrotask fire-and-forget let Vercel freeze the instance
+  // mid-query once the cron responded; the dead socket then surfaced as
+  // "Connection terminated unexpectedly" inside the NEXT request on that
+  // instance (17x in prod logs, e.g. seo_sync_complete failing under
+  // /api/cron/aeo-scan).
+  void runAfter(`insights:${reason}`, async () => {
+    const summary = await runInsightDetectors(orgId);
+    if (summary.totalInserted > 0 || summary.totalUpdated > 0) {
+      console.info(
+        `[insights] on-arrival pass triggered by ${reason} for org ${orgId}: ${summary.totalInserted} new, ${summary.totalUpdated} updated, ${summary.totalResolved} resolved`,
+      );
+    }
   });
 }
