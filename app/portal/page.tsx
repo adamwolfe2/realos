@@ -15,6 +15,10 @@ import { displayLeadSource } from "@/lib/format";
 import { AgentTrace, type Step } from "@/components/portal/overview/agent-trace";
 import { ConversationPreview } from "@/components/portal/overview/conversation-preview";
 import { patternReason } from "@/lib/chatbot/learning/pattern-labels";
+import { getPortfolioOverview } from "@/lib/portal/portfolio-overview";
+import { getAppFolioStatus } from "@/lib/integrations/appfolio-status";
+import { PortfolioMultiples, since } from "@/components/portal/overview/portfolio";
+import { PortfolioTable } from "@/components/portal/overview/portfolio-table";
 
 export const metadata: Metadata = { title: "Overview" };
 export const dynamic = "force-dynamic";
@@ -78,7 +82,10 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
   const since30 = new Date(now - 30 * DAY);
   const since60 = new Date(now - 60 * DAY);
 
-  const [org, properties, convs, recentCaptured, leadRows, knowledge, site, insights, appliedRows, statuses, lastRun, leasing] = await Promise.all([
+  // Multi-property workspaces get the portfolio cockpit; it is loaded
+  // alongside the rest and ignored when only one property is in scope.
+  const multi = allowed === null || allowed.length > 1;
+  const [org, properties, convs, recentCaptured, leadRows, knowledge, site, insights, appliedRows, statuses, lastRun, leasing, portfolio, appfolioStatus] = await Promise.all([
     prisma.organization.findUnique({ where: { id: orgId }, select: { name: true } }),
     prisma.property.findMany({
       where: { orgId, lifecycle: "ACTIVE", ...(allowed ? { id: { in: allowed } } : {}) },
@@ -104,6 +111,8 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
     resolveIntegrationStatuses(orgId).catch(soft([], "portal.overview:statuses")),
     prisma.chatbotLearningCase.findFirst({ where: { orgId }, orderBy: { createdAt: "desc" }, select: { createdAt: true } }),
     getLeasingSummary(orgId, allowed ?? null).catch(soft(null, "portal.overview:leasing")),
+    multi ? getPortfolioOverview(orgId, allowed).catch(soft(null, "portal.overview:portfolio")) : null,
+    multi ? getAppFolioStatus(orgId).catch(soft(null, "portal.overview:appfolio-status")) : null,
   ]);
 
   // ---- Conversations.
@@ -245,6 +254,53 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
     );
   }
 
+  const agentPanels = (
+      <div className="grid gap-5 lg:grid-cols-12">
+        <Panel title="Agent activity" aside={<Link href="/portal/conversations/insights" className="hover:text-[var(--t-ink)]">Full log</Link>} className="lg:col-span-7" flush>
+          <AgentTrace steps={steps.slice(0, 5)} now={now} />
+        </Panel>
+        <Panel title="Latest conversation" aside={<Link href="/portal/conversations" className="hover:text-[var(--t-ink)]">All conversations</Link>} className="lg:col-span-5" flush>
+          {featured ? (
+            <ConversationPreview
+              id={featured.id}
+              name={featured.capturedName ?? featured.capturedEmail ?? "Website visitor"}
+              property={featured.property?.name ?? null}
+              persona={featured.property?.chatbotConfig?.chatbotPersonaName ?? "your chatbot"}
+              messages={featured.messages}
+              summary={summary}
+            />
+          ) : (
+            <p className="px-4 py-6 text-[13.5px] text-[var(--t-muted)]">The first captured conversation shows up here.</p>
+          )}
+        </Panel>
+      </div>
+  );
+
+  if (portfolio && portfolio.rows.length > 1) {
+    const toursOnPlan = !appfolioStatus?.stats?.unsupportedReports.some((r) => /^showings\b.*(40[04]|not a valid report|unavailable on this)/i.test(r));
+    return (
+      <div className="w-full space-y-5">
+        <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div className="min-w-0">
+            <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-[var(--t-ink)]">Portfolio</h1>
+            <p className="mt-0.5 text-[13.5px] text-[var(--t-muted)]">
+              {org?.name ?? "Workspace"} · {portfolio.rows.length} properties · last 28 days
+            </p>
+          </div>
+          <p className="text-[12.5px] text-[var(--t-muted)]">
+            {[
+              portfolio.appfolioSyncedAt && `AppFolio synced ${since(portfolio.appfolioSyncedAt, now)}`,
+              portfolio.analyticsSyncedAt && `GA4 synced ${since(portfolio.analyticsSyncedAt, now)}`,
+            ].filter(Boolean).join(" · ")}
+          </p>
+        </header>
+        <PortfolioMultiples data={portfolio} now={now} toursOnPlan={toursOnPlan} />
+        <PortfolioTable rows={portfolio.rows} now={now} />
+        {agentPanels}
+      </div>
+    );
+  }
+
   return (
     <div className="w-full space-y-5">
       <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -277,25 +333,7 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
         <Metric label="Fixes waiting" value={waiting} delta={appliedRows.length ? { text: `${appliedRows.length} applied`, tone: "good" } : null} note="Drafted from your data" />
       </dl>
 
-      <div className="grid gap-5 lg:grid-cols-12">
-        <Panel title="Agent activity" aside={<Link href="/portal/conversations/insights" className="hover:text-[var(--t-ink)]">Full log</Link>} className="lg:col-span-7" flush>
-          <AgentTrace steps={steps.slice(0, 5)} now={now} />
-        </Panel>
-        <Panel title="Latest conversation" aside={<Link href="/portal/conversations" className="hover:text-[var(--t-ink)]">All conversations</Link>} className="lg:col-span-5" flush>
-          {featured ? (
-            <ConversationPreview
-              id={featured.id}
-              name={featured.capturedName ?? featured.capturedEmail ?? "Website visitor"}
-              property={featured.property?.name ?? null}
-              persona={featured.property?.chatbotConfig?.chatbotPersonaName ?? "your chatbot"}
-              messages={featured.messages}
-              summary={summary}
-            />
-          ) : (
-            <p className="px-4 py-6 text-[13.5px] text-[var(--t-muted)]">The first captured conversation shows up here.</p>
-          )}
-        </Panel>
-      </div>
+      {agentPanels}
 
       <div className="grid gap-5 lg:grid-cols-12">
         <Panel title="Conversations by week" aside={<span className="hidden items-center gap-3 sm:flex"><Legend color="var(--t-accent)">Left contact info</Legend><Legend color="#dfe9ff">Browsed only</Legend></span>} className="lg:col-span-8">
