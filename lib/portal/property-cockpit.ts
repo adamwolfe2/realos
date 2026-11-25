@@ -76,6 +76,11 @@ export function unansweredQuestions(messages: unknown): string[] {
   return out;
 }
 
+/** Case/punctuation-insensitive key so repeats of a question group. */
+export function questionKey(q: string): string {
+  return q.toLowerCase().replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, " ").trim();
+}
+
 /** "/availability?utm=x" and "https://site.com/availability/" both read "/availability". */
 export function pagePath(url: string | null): string | null {
   if (!url || url === "(not set)") return null;
@@ -231,7 +236,7 @@ export async function getPropertyCockpit(orgId: string, propertyId: string): Pro
   const unanswered = new Map<string, { question: string; count: number; at: Date }>();
   for (const c of curConvs) {
     for (const q of unansweredQuestions(c.messages)) {
-      const key = q.toLowerCase().replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, " ").trim();
+      const key = questionKey(q);
       if (!key) continue;
       const u = unanswered.get(key);
       if (u) u.count += 1;

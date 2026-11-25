@@ -16,6 +16,8 @@ import { AgentTrace, type Step } from "@/components/portal/overview/agent-trace"
 import { ConversationPreview } from "@/components/portal/overview/conversation-preview";
 import { patternReason } from "@/lib/chatbot/learning/pattern-labels";
 import { getPortfolioOverview } from "@/lib/portal/portfolio-overview";
+import { getNeedsAttention } from "@/lib/portal/needs-attention";
+import { NeedsAttention } from "@/components/portal/overview/needs-attention";
 import { getAppFolioStatus, showingsOnPlan } from "@/lib/integrations/appfolio-status";
 import { PortfolioMultiples, since } from "@/components/portal/overview/portfolio";
 import { PortfolioTable } from "@/components/portal/overview/portfolio-table";
@@ -85,6 +87,13 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
   // Multi-property workspaces get the portfolio cockpit; it is loaded
   // alongside the rest and ignored when only one property is in scope.
   const multi = allowed === null || allowed.length > 1;
+  const appfolioStatusP = multi ? getAppFolioStatus(orgId).catch(soft(null, "portal.overview:appfolio-status")) : null;
+  // Started now so it runs alongside everything else, not after it.
+  const attentionP = appfolioStatusP
+    ? appfolioStatusP
+        .then((status) => getNeedsAttention(orgId, allowed, status, scope.allowedPropertyIds === null))
+        .catch(soft(null, "portal.overview:needs-attention"))
+    : null;
   const [org, properties, convs, recentCaptured, leadRows, knowledge, site, insights, appliedRows, statuses, lastRun, leasing, portfolio, appfolioStatus] = await Promise.all([
     prisma.organization.findUnique({ where: { id: orgId }, select: { name: true } }),
     prisma.property.findMany({
@@ -112,7 +121,7 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
     prisma.chatbotLearningCase.findFirst({ where: { orgId }, orderBy: { createdAt: "desc" }, select: { createdAt: true } }),
     getLeasingSummary(orgId, allowed ?? null).catch(soft(null, "portal.overview:leasing")),
     multi ? getPortfolioOverview(orgId, allowed).catch(soft(null, "portal.overview:portfolio")) : null,
-    multi ? getAppFolioStatus(orgId).catch(soft(null, "portal.overview:appfolio-status")) : null,
+    appfolioStatusP,
   ]);
 
   // ---- Conversations.
@@ -278,6 +287,7 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
 
   if (portfolio && portfolio.rows.length > 1) {
     const toursOnPlan = showingsOnPlan(appfolioStatus?.stats);
+    const attention = await attentionP;
     return (
       <div className="w-full space-y-5">
         <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
@@ -294,6 +304,7 @@ export default async function PortalOverview({ searchParams }: { searchParams: P
             ].filter(Boolean).join(" · ")}
           </p>
         </header>
+        {attention ? <NeedsAttention items={attention} /> : null}
         <PortfolioMultiples data={portfolio} now={now} toursOnPlan={toursOnPlan} />
         <PortfolioTable rows={portfolio.rows} now={now} />
         {agentPanels}
