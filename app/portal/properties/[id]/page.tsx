@@ -106,6 +106,7 @@ export default async function PropertyDetail({
       totalUnits: true,
       yearBuilt: true,
       lifecycle: true,
+      lifecycleSetAt: true,
       launchStatus: true,
       backendPlatform: true,
       backendPropertyGroup: true,
@@ -263,13 +264,19 @@ export default async function PropertyDetail({
     REALPAGE: "realpage",
   };
   const pmsLogo = PMS_LOGO[property.backendPlatform ?? ""];
+  // AppFolio leads are imported only while a building is ACTIVE (plus a
+  // 30-day backfill on activation). A building activated inside the prior
+  // window has a hollow baseline, so its lead change would be fake growth.
+  const leadsComparable =
+    !property.lifecycleSetAt || property.lifecycleSetAt.getTime() <= priorStart.getTime() + 30 * 86_400_000;
+
   const glanceCards: GlanceCard[] = [
     {
       tab: "leads",
       title: "Leads",
       value: leadsCurrent.toLocaleString("en-US"),
       label: "new leads",
-      delta: pctChange(leadsCurrent, leadsPrior),
+      delta: leadsComparable ? pctChange(leadsCurrent, leadsPrior) : null,
       marks: leadSources.slice(0, 5).map((g) => <SourceMark key={g.source} source={g.source} size={24} />),
     },
     {
@@ -365,7 +372,7 @@ export default async function PropertyDetail({
     {
       label: "leads",
       value: leadsCurrent > 0 ? leadsCurrent.toLocaleString("en-US") : "—",
-      ...fmtDelta(leadsCurrent, leadsPrior),
+      ...(leadsComparable ? fmtDelta(leadsCurrent, leadsPrior) : {}),
       hasData: leadsCurrent > 0,
     },
     {

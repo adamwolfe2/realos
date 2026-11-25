@@ -1,8 +1,5 @@
 import { prisma } from "@/lib/db";
-import {
-  getPropertyOverviewKpis,
-  centsToUsdShort,
-} from "@/lib/properties/queries";
+import { centsToUsdShort } from "@/lib/properties/queries";
 import {
   LeaseStatus,
   type BackendPlatform,
@@ -36,7 +33,9 @@ import {
 } from "@/components/portal/properties/overview/activity-timeline";
 import { PropertyIntegrationsList } from "@/components/portal/properties/overview/property-integrations-list";
 import { PropertyMetaCard } from "@/components/portal/properties/overview/property-meta-card";
-import { MarketingSection } from "@/components/portal/properties/overview/marketing-section";
+import { PropertyCockpitView } from "@/components/portal/properties/overview/property-cockpit";
+import { getPropertyCockpit } from "@/lib/portal/property-cockpit";
+import { getAppFolioStatus, showingsOnPlan } from "@/lib/integrations/appfolio-status";
 import { PropertyDescriptionCard } from "@/components/portal/properties/overview/property-description-card";
 import { OnboardingShellCard } from "@/components/portal/properties/overview/onboarding-shell-card";
 import { currentLeaseWhere } from "@/lib/leases/current";
@@ -78,11 +77,6 @@ type OverviewProperty = {
   profileTags: string[];
 };
 
-// 28-day window in ms — matches getPropertyOverviewKpis and every other
-// time-windowed KPI on this page. Inlined as a constant so the
-// Marketing section's chatbot count uses the same horizon.
-const WINDOW_28D_MS = 28 * 24 * 60 * 60 * 1000;
-
 export async function OverviewTab({
   orgId,
   propertyId,
@@ -97,7 +91,6 @@ export async function OverviewTab({
   const next120 = new Date(Date.now() + 120 * 24 * 60 * 60 * 1000);
 
   const [
-    kpis,
     listingCounts,
     expiringLeases,
     ,
@@ -112,9 +105,9 @@ export async function OverviewTab({
     recentTours,
     recentLeases,
     recentMentions,
-    chatbotConversations28d,
+    cockpit,
+    appfolioStatus,
   ] = await Promise.all([
-    getPropertyOverviewKpis(orgId, propertyId, propertyMeta),
     prisma.property.findFirst({
       where: { id: propertyId, orgId },
       select: {
@@ -261,27 +254,20 @@ export async function OverviewTab({
     // conversations and visitor-session aggregates here so the new
     // Marketing section can show data-backed, time-windowed metrics
     // (28-day window matches every other KPI on this page).
-    prisma.chatbotConversation
-      .count({ where: { orgId, propertyId, createdAt: { gte: new Date(Date.now() - WINDOW_28D_MS) } } })
-      .catch(() => 0),
+    getPropertyCockpit(orgId, propertyId).catch((err) => {
+      console.error("[property.overview] cockpit failed", { propertyId, err });
+      return null;
+    }),
+    getAppFolioStatus(orgId).catch((err) => {
+      console.error("[property.overview] appfolio status failed", { orgId, err });
+      return null;
+    }),
   ]);
 
   const totalUnits = property.totalUnits ?? null;
   // "Available to lease" = marketing inventory (Bug #44 parity with the
   // per-unit table). For student housing this is often next-term
   // pre-leasing, NOT current vacancy — so it must not drive occupancy.
-  const rawAvailable =
-    listingCounts?.availableCount != null
-      ? listingCounts.availableCount
-      : (listingCounts?.listings.length ?? 0);
-  const availableUnits =
-    totalUnits != null
-      ? Math.max(0, Math.min(totalUnits, rawAvailable))
-      : Math.max(0, rawAvailable);
-  // Occupancy reflects CURRENT leased reality: prefer active lease count
-  // (rent roll), cap at totalUnits; fall back to listings only when no
-  // lease signal exists. Mirrors getPropertyOccupancy + reports/generate.
-  // Renewal buckets — 0-30 / 31-60 / 61-90 / 91-120
   const now = Date.now();
   const buckets = [
     { label: "0–30d", count: 0, rentCents: 0 },
@@ -423,51 +409,15 @@ export async function OverviewTab({
           </div>
         </section>
       ) : (
+        <>
+        {/* SG cockpit slice 2: funnel, units, search, questions, pop-up and
+            data health for this one property, ahead of the activity feed.
+            Replaces MarketingSection (its funnel printed tours as 0 on an
+            AppFolio plan without the showings report). */}
+        {cockpit ? <PropertyCockpitView data={cockpit} now={Date.now()} toursOnPlan={showingsOnPlan(appfolioStatus?.stats)} /> : null}
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.75fr)_minmax(280px,0.75fr)] gap-4">
           {/* LEFT — the work. */}
           <div className="space-y-4 min-w-0">
-            {/* Norman 2026-05-21: the in-tab InsightsHero / AiInsightCard
-                pair is now served by the PropertyIntelligencePanel
-                rendered ABOVE the tab nav (see page.tsx). Removed here
-                to eliminate the duplicate insight surface — operators
-                were seeing the same recommendations stacked twice
-                ("INSIGHTS FOR TELEGRAPH COMMONS" + "INTELLIGENCE · LIVE
-                SIGNALS"). The new panel uses the live recommendation
-                engine and supersedes both. */}
-
-            {/* Norman 2026-05-21 second screenshot: the standalone
-                Tours / Applications / Available units KPI row was
-                another bulky stat surface duplicating signal that
-                MarketingSection's funnel already shows (Leads → Tours
-                → Applications). Removed. The "Available units" /
-                "Total units" inventory signal is now surfaced as a
-                fact row in the MarketingSection header so the operator
-                doesn't lose it. Net: one fewer section, ~120px of
-                vertical real estate reclaimed. */}
-
-            {/* Marketing — promoted from sidebar to main column per
-                Norman feedback (#75). Replaces the static listings +
-                all-time leads pair (which read as 141 vs 3 and looked
-                wrong) with the four marketing signals the operator
-                actually uses to judge a property: organic traffic,
-                paid spend, chatbot engagement, and conversion to
-                application. Every metric uses the same 28-day window
-                as the KPI strip above. */}
-            <MarketingSection
-              propertyId={propertyId}
-              organicSessions28d={kpis.organicSessions28d}
-              organicMapped={kpis.organicMapped}
-              adSpendCents28d={kpis.adSpendCents28d}
-              chatbotConversations28d={chatbotConversations28d}
-              leads28d={kpis.leads28d}
-              tours28d={kpis.tours28d}
-              applications28d={kpis.applications28d}
-              hasAdsModule={property.orgHasAdsModule}
-              chatbotEnabled={tenantSiteConfig?.chatbotEnabled ?? false}
-              availableUnits={availableUnits}
-              totalUnits={totalUnits}
-            />
-
             <ActivityTimeline events={activity} />
 
             {/* Renewal timeline hidden (issue #77) — rent-roll cadence is
@@ -538,6 +488,7 @@ export async function OverviewTab({
             /> */}
           </aside>
         </div>
+        </>
       )}
     </div>
   );
