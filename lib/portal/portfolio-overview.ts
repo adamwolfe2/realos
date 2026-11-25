@@ -201,7 +201,7 @@ export async function getPortfolioOverview(orgId: string, propertyIds: string[] 
       health: {
         appfolio: health(p.lastSyncedAt, now, appfolio?.lastError ?? null),
         analytics: health(lastSeo, now, seoError),
-        chatbot: p.chatbotConfig?.chatbotEnabled || chatsBy.has(p.id) ? { state: "fresh", at: null } : { state: "off", at: null },
+        chatbot: (p.chatbotConfig ? p.chatbotConfig.chatbotEnabled : chatsBy.has(p.id)) ? { state: "fresh", at: null } : { state: "off", at: null },
       },
     };
   });
