@@ -34,8 +34,8 @@ function MetricNow({ p }: { p: Proposal }) {
   const m = METRIC_LABEL[p.metric.key];
   return (
     <p className="mt-1.5 text-[12px] text-muted-foreground">
-      Should {m.lowerIsBetter ? "lower" : "raise"} {m.label.toLowerCase()}: at proposal{" "}
-      <span className="tabular-nums text-foreground">{formatMetric(p.metric.key, p.metric.value, p.metric.of)}</span> ({p.metric.days}d)
+      {m.lowerIsBetter ? "Lowers" : "Raises"} {m.label.toLowerCase()}:{" "}
+      <span className="tabular-nums text-foreground">{formatMetric(p.metric.key, p.metric.value, p.metric.of)}</span> in the {p.metric.days} days before this was proposed
     </p>
   );
 }

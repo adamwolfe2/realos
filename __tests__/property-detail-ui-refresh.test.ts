@@ -9,7 +9,7 @@ describe("property detail UI refresh", () => {
     const hero = read("components/portal/properties/property-hero-banner.tsx");
 
     expect(hero).toContain("Property overview");
-    expect(hero).toContain('sm:grid-cols-[160px_minmax(0,1fr)]');
+    expect(hero).toContain('sm:grid-cols-[112px_minmax(0,1fr)_auto]'); // image, title, actions
     expect(hero).not.toContain('"text-3xl sm:text-4xl md:text-5xl"');
     expect(hero).not.toContain("Featured property");
   });

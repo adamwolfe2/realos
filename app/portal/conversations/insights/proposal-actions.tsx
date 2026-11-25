@@ -138,7 +138,7 @@ export function GenerateProposalsButton() {
       type="button"
       disabled={busy !== null}
       onClick={() => run("gen", generateProposalsAction)}
-      className="inline-flex h-9 items-center gap-1.5 rounded-[8px] bg-primary px-3 text-[13px] font-medium text-primary-foreground shadow-[0_1px_2px_rgba(11,21,48,0.12)] hover:brightness-110 disabled:opacity-50"
+      className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-[8px] bg-primary px-3 text-[13px] font-medium text-primary-foreground shadow-[0_1px_2px_rgba(11,21,48,0.12)] hover:brightness-110 disabled:opacity-50"
     >
       <Spin on={busy === "gen"} icon={<Sparkles className="h-4 w-4" />} />
       {busy === "gen" ? "Generating..." : "Generate proposals"}

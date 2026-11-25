@@ -1,7 +1,6 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { ArrowRight } from "lucide-react";
-import { DateRangePicker } from "@/components/portal/date-range-picker";
 
 // Property "at a glance": one card per area, each with a headline number and
 // the logos of the tools behind it. Clicking a card opens that area on its
@@ -22,25 +21,23 @@ export type GlanceCard = {
 export function PropertyGlance({
   cards,
   propertyPath,
-  windowLabel,
   windowQuery,
 }: {
   cards: GlanceCard[];
   propertyPath: string;
-  windowLabel: string;
   windowQuery: string;
 }) {
+  // One row whatever the count (3 or 4 cards), 2-up on phones.
   return (
-    <div className="space-y-3">
-    <div className="flex items-center justify-end">
-      <DateRangePicker label={windowLabel} />
-    </div>
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div
+      className="grid grid-cols-2 gap-3 lg:[grid-template-columns:repeat(var(--glance-n),minmax(0,1fr))]"
+      style={{ "--glance-n": cards.length } as CSSProperties}
+    >
       {cards.map((c) => (
         <Link
           key={c.tab}
           href={`${propertyPath}?tab=${c.tab}&${windowQuery}`}
-          className="group ls-card flex flex-col justify-between gap-4 p-5 hover:border-[var(--t-accent)]"
+          className="group ls-card flex flex-col justify-between gap-3 p-4 hover:border-[var(--t-accent)] sm:p-5"
         >
           <div className="flex items-center justify-between gap-2">
             <span className="text-[13px] font-medium text-foreground">{c.title}</span>
@@ -65,7 +62,6 @@ export function PropertyGlance({
           <div className="flex h-6 items-center gap-1.5">{c.marks}</div>
         </Link>
       ))}
-    </div>
     </div>
   );
 }

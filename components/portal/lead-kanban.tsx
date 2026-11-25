@@ -90,7 +90,9 @@ function relativeTime(iso: string): string {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   if (days < 30) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString();
+  const d = new Date(iso);
+  // One date style: "Jul 20", plus the year when it is not this year.
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", ...(d.getFullYear() === new Date().getFullYear() ? {} : { year: "numeric" }) });
 }
 
 export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
@@ -453,7 +455,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
                     isSelected ? "bg-primary/5" : "hover:bg-muted/30",
                   )}
                 >
-                  <td className="px-3 py-3">
+                  <td className="px-3 py-2">
                     <button
                       type="button"
                       onClick={() => toggleOne(item.id)}
@@ -472,7 +474,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
                       )}
                     </button>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-2">
                     {/* Name uses a real <Link> so SSR / no-JS / right-click
                         "open in new tab" still navigate to the canonical
                         detail page. The row's onClick opens the drawer; the
@@ -491,12 +493,12 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
                       </p>
                     )}
                   </td>
-                  <td className="px-4 py-3 hidden sm:table-cell">
+                  <td className="px-4 py-2 hidden sm:table-cell">
                     <span className="text-sm text-foreground">
                       {item.propertyName ?? <span className="text-muted-foreground">—</span>}
                     </span>
                   </td>
-                  <td className="px-4 py-3 hidden md:table-cell">
+                  <td className="px-4 py-2 hidden md:table-cell">
                     <div className="flex items-center gap-2 flex-wrap">
                       <SourceMark source={item.source} size={24} />
                       <span className="text-sm text-foreground">
@@ -512,13 +514,13 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
                       </div>
                     ) : null}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-2">
                     <StatusPill
                       label={STATUS_LABEL[item.status]}
                       tone={STATUS_TONE[item.status]}
                     />
                   </td>
-                  <td className="px-4 py-3 text-right hidden lg:table-cell">
+                  <td className="px-4 py-2 text-right tabular-nums hidden lg:table-cell">
                     {item.score > 0 ? (
                       <span
                         className={cn(
@@ -534,7 +536,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right hidden sm:table-cell">
+                  <td className="px-4 py-2 text-right tabular-nums hidden sm:table-cell">
                     <span className="text-xs text-muted-foreground tabular-nums">
                       {relativeTime(item.createdAt)}
                     </span>

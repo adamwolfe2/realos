@@ -316,7 +316,8 @@ export async function getPropertyCockpit(orgId: string, propertyId: string): Pro
       live || gsc ? freshness("Search Console", gsc?.lastSyncAt ?? null, now, 36, gsc?.lastSyncError) : { label: "Search Console", state: "prelaunch", at: null },
       // Chat and pop-up have no sync: freshness is the last event seen. A
       // live bot or pop-up with nothing yet is "waiting", not "not connected".
-      activity("Chatbot", property.chatbotConfig ? Boolean(property.chatbotConfig.chatbotEnabled) : Boolean(lastChat), lastChat, now, 24 * 7),
+      // chatbotEnabled null = inherits the workspace bot: chats prove it is on.
+      activity("Chatbot", property.chatbotConfig?.chatbotEnabled === false ? false : Boolean(property.chatbotConfig?.chatbotEnabled) || Boolean(lastChat), lastChat, now, 24 * 7),
       activity("Pop-up", popupLive > 0 || Boolean(lastPopup), lastPopup, now, 24 * 3),
     ],
   };
