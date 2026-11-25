@@ -111,7 +111,7 @@ export function TopMovers({
                   : null;
             const color =
               tone === "positive"
-                ? "text-[#24a148]"
+                ? "text-[#15803d]"
                 : tone === "negative"
                   ? "text-[#da1e28]"
                   : "text-muted-foreground";

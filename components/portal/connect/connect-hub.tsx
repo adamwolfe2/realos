@@ -457,7 +457,7 @@ export function ConnectHub({
               : "All sources connected. Insights will continue to refresh as new data arrives."}
         </p>
         {unavailableCount > 0 ? (
-          <p className="text-[11px] text-muted-foreground/80 mt-2 leading-snug border-t border-border pt-2">
+          <p className="text-[11px] text-muted-foreground mt-2 leading-snug border-t border-border pt-2">
             <Clock className="inline w-2.5 h-2.5 mr-1 -mt-0.5" />
             {unavailableCount} source{unavailableCount === 1 ? " is" : "s are"}{" "}
             still being provisioned by your agency. You&apos;ll be notified

@@ -158,7 +158,7 @@ function MessageBubble({ message }: { message: LeadConversationMessage }) {
         <div
           className={cn(
             "ls-eyebrow mb-0.5 flex items-center gap-1",
-            isUser ? "text-primary-foreground/80" : "text-muted-foreground",
+            isUser ? "text-primary-foreground" : "text-muted-foreground",
           )}
         >
           {isUser ? (

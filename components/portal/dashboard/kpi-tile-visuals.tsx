@@ -228,7 +228,7 @@ export function AnimatedGauge({
     <svg
       ref={ref}
       viewBox={`0 0 ${w} ${h}`}
-      preserveAspectRatio="xMidYEnd meet"
+      preserveAspectRatio="xMidYMax meet"
       className="w-full overflow-visible"
       style={{ height: `${h}px` }}
       aria-hidden="true"

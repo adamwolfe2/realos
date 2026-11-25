@@ -248,7 +248,7 @@ export function SyncButton({
         {pending ? "Syncing…" : "Sync now"}
       </button>
       {result && result.ok ? (
-        <span className="text-xs text-[#24a148]">
+        <span className="text-xs text-[#15803d]">
           Synced {result.campaigns} campaigns, {result.metrics} metric rows.
         </span>
       ) : null}

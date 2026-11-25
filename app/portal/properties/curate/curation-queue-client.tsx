@@ -380,7 +380,7 @@ export function CurationQueueClient({
                     </p>
                   )}
                   {item.excludeReason && (
-                    <p className="text-[11px] text-muted-foreground/80 mt-1">
+                    <p className="text-[11px] text-muted-foreground mt-1">
                       Reason: {item.excludeReason}
                     </p>
                   )}

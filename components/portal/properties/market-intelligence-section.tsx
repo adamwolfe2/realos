@@ -241,7 +241,7 @@ function RentGapBar({
 
   const directionTone =
     gap.direction === "below"
-      ? "text-[#24a148]"
+      ? "text-[#15803d]"
       : gap.direction === "above"
         ? "text-[#da1e28]"
         : "text-muted-foreground";

@@ -439,6 +439,7 @@ export function AeoResponsesTable({ rows }: { rows: ResponseRow[] }) {
             Group: Prompt
           </button>
           <select
+            aria-label="Filter by status"
             value={filter}
             onChange={(e) => setFilter(e.target.value as StatusFilter)}
             className="ls-select h-8 px-2 text-[12px] font-medium text-foreground"

@@ -8,7 +8,7 @@ import type { PortfolioReputationFeedItem } from "@/lib/reputation/portfolio";
 import { safeNum } from "@/components/portal/reputation/reputation-utils";
 
 const SENTIMENT_TONE: Record<Sentiment, string> = {
-  POSITIVE: "bg-[rgba(36,161,72,0.10)] text-[#24a148] border-[#24a148]/30",
+  POSITIVE: "bg-[rgba(36,161,72,0.10)] text-[#15803d] border-[#24a148]/30",
   NEUTRAL: "bg-muted text-muted-foreground border-border",
   NEGATIVE: "bg-muted text-muted-foreground border-border",
   MIXED: "bg-secondary text-foreground border-border",

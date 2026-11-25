@@ -74,7 +74,7 @@ export function OAuthConnectButton({
         <div className="text-sm font-medium">
           Connect via {label} OAuth{propertyName ? ` for ${propertyName}` : ""}
         </div>
-        <p className="text-[11px] text-primary-foreground/80 mt-0.5">
+        <p className="text-[11px] text-primary-foreground mt-0.5">
           Recommended. Tokens are stored encrypted and refreshed automatically.
         </p>
       </div>

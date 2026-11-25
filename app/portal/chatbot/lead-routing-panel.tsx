@@ -208,7 +208,7 @@ export function LeadRoutingPanel({
 
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px]">
           {recipientCount > 0 && enabled ? (
-            <span className="text-[#24a148] font-medium">
+            <span className="text-[#15803d] font-medium">
               Active for {recipientCount} recipient
               {recipientCount === 1 ? "" : "s"}
             </span>

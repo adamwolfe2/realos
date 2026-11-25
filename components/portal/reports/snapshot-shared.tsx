@@ -233,6 +233,7 @@ export function Stars({
     rating != null ? Math.max(0, Math.min(5, Math.round(rating))) : 0;
   return (
     <span
+      role="img"
       className={`tracking-wide text-primary ${className ?? ""}`}
       aria-label={
         rating != null ? `${rating.toFixed(1)} out of 5 stars` : "No rating yet"

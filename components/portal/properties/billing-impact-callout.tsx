@@ -131,7 +131,7 @@ export function BillingImpactCallout({
             </div>
           )}
 
-          <p className="mt-3 text-[11px] text-muted-foreground/80 leading-snug">
+          <p className="mt-3 text-[11px] text-muted-foreground leading-snug">
             Properties marked <strong>Excluded</strong> stay in your AppFolio
             mirror but never count toward billing or appear in dashboards. You
             can always restore an excluded property later from the Excluded

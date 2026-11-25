@@ -65,7 +65,7 @@ function sentimentBadge(s: Sentiment | null, confidence?: number | null) {
     return (
       <Badge
         variant="secondary"
-        className="bg-[rgba(36,161,72,0.10)] text-[#24a148] hover:bg-[rgba(36,161,72,0.10)] rounded-[2px]"
+        className="bg-[rgba(36,161,72,0.10)] text-[#15803d] hover:bg-[rgba(36,161,72,0.10)] rounded-[2px]"
         title={tip}
       >
         positive

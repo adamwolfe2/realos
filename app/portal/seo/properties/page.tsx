@@ -31,7 +31,7 @@ export const dynamic = "force-dynamic";
 function scoreTone(score: number | null): string {
   if (score == null) return "text-muted-foreground";
   if (score >= 75) return "text-primary font-semibold";
-  if (score >= 50) return "text-primary/70";
+  if (score >= 50) return "text-primary";
   return "text-muted-foreground";
 }
 

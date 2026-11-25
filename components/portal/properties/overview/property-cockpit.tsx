@@ -84,11 +84,9 @@ function Funnel({ data, toursOnPlan }: { data: PropertyCockpit; toursOnPlan: boo
             f.appsComparable ? undefined : { cur: 0, prev: 0 },
           )
         : <Cell label="Applications" value="—" source="AppFolio" title="AppFolio is not connected."><Gap>Not connected</Gap></Cell>}
-      <div className="col-span-2 lg:col-span-1">
-        {toursOnPlan
-          ? <Cell label="Tours" value="—" source="AppFolio showings" title="Tours are not tracked per property yet."><Gap>Not tracked yet</Gap></Cell>
-          : <Cell label="Tours" value="—" source="AppFolio showings report" title="AppFolio returns 404 for the showings report on this account's plan."><Gap>Not on this AppFolio plan</Gap></Cell>}
-      </div>
+      {toursOnPlan
+        ? <Cell className="col-span-2 lg:col-span-1" label="Tours" value="—" source="AppFolio showings" title="Tours are not tracked per property yet."><Gap>Not tracked yet</Gap></Cell>
+        : <Cell className="col-span-2 lg:col-span-1" label="Tours" value="—" source="AppFolio showings report" title="AppFolio returns 404 for the showings report on this account's plan."><Gap>Not on this AppFolio plan</Gap></Cell>}
     </dl>
   );
 }

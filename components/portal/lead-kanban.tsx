@@ -830,6 +830,7 @@ function SignalBadges({ item }: { item: LeadKanbanItem }) {
       {badges.map((b) => (
         <span
           key={b.key}
+          role="img"
           title={b.title}
           aria-label={b.title}
           className="inline-flex items-center justify-center h-4 w-4 rounded-[2px] border border-border bg-card text-muted-foreground"

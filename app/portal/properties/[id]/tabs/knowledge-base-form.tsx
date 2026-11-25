@@ -370,7 +370,7 @@ function CompletenessBanner({
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           {complete ? (
-            <CheckCircle2 className="h-4 w-4 text-[#24a148]" aria-hidden="true" />
+            <CheckCircle2 className="h-4 w-4 text-[#15803d]" aria-hidden="true" />
           ) : (
             <AlertTriangle className="h-4 w-4 text-[#8a6d00]" aria-hidden="true" />
           )}
@@ -396,7 +396,7 @@ function CompletenessBanner({
         {items.map((it) => (
           <li key={it.key} className="flex items-center gap-1.5 text-[11px]">
             {it.done ? (
-              <CheckCircle2 className="h-3 w-3 text-[#24a148] shrink-0" aria-hidden="true" />
+              <CheckCircle2 className="h-3 w-3 text-[#15803d] shrink-0" aria-hidden="true" />
             ) : (
               <Circle
                 className={cn(
