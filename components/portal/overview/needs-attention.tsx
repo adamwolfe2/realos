@@ -55,7 +55,7 @@ function Rows({ items }: { items: AttentionItem[] }) {
             <Link href={it.href} className="group flex min-w-0 items-start gap-3 px-4 py-2.5 outline-none hover:bg-[var(--t-wash)] focus-visible:bg-[var(--t-wash)]">
               <Icon aria-hidden className={cn("mt-0.5 h-4 w-4 shrink-0", it.kind === "sync" ? "text-[#b91c1c]" : "text-[var(--t-muted)]")} />
               <span className="min-w-0 flex-1">
-                <span className="block line-clamp-2 text-[13px] leading-snug text-[var(--t-ink)] lg:truncate" title={it.title}>
+                <span className="line-clamp-2 text-[13px] leading-snug text-[var(--t-ink)] lg:block lg:truncate" title={it.title}>
                   {it.propertyName ? <span className="font-medium">{it.propertyName} </span> : null}
                   <span className={it.propertyName ? "text-[var(--t-ink)]/80" : undefined}>{it.title}</span>
                 </span>

@@ -100,7 +100,7 @@ export async function getNeedsAttention(orgId: string, propertyIds: string[] | n
     prisma.chatbotConversation.groupBy({ by: ["propertyId"], where: { ...inProps, createdAt: { gte: since } } }),
     prisma.chatbotKnowledgeSuggestion.findMany({
       where: { ...inProps, status: "OPEN" },
-      select: { propertyId: true, suggestedText: true },
+      select: { propertyId: true },
     }),
   ]);
 
